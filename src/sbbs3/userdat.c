@@ -2341,17 +2341,26 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		if(cfg->text != NULL) {
 			char str[256];
 			char tmp[128];
+			char prefix[128]="";
 			ultoac(mod,tmp);
 			char username[64];
-			if(client != NULL && uploader.level >= SYSOP_LEVEL)
-				SAFEPRINTF2(username,"%s [%s]", user->alias, client->host);
-			else
+			if(client != NULL && uploader.level >= SYSOP_LEVEL) {
+				if(client->host != NULL && strcmp(client->host, STR_NO_HOSTNAME) != 0)
+					SAFEPRINTF2(username,"%s [%s]", user->alias, client->host);
+				else
+					SAFEPRINTF2(username,"%s [%s]", user->alias, client->addr);
+			} else
 				SAFECOPY(username, user->alias);
+			if(strcmp(cfg->dir[f.dir]->code, "TEMP") == 0 || bytes < (ulong)f.size)
+				SAFECOPY(prefix, cfg->text[Partially]);
+			if(client != NULL) {
+				SAFECAT(prefix, client->protocol);
+				SAFECAT(prefix, "-");
+			}
 			/* Inform uploader of downloaded file */
 			SAFEPRINTF4(str, cfg->text[DownloadUserMsg]
 				,getfname(filename)
-				,(strcmp(cfg->dir[f.dir]->code, "TEMP") == 0)
-					|| (bytes < (ulong)f.size) ? cfg->text[Partially] : nulstr
+				,prefix
 				,username, tmp);
 			putsmsg(cfg, uploader.number, str);
 		}
