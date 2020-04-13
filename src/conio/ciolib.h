@@ -646,9 +646,9 @@ CIOLIBEXPORT int CIOLIBCALL ciomouse_delevent(int event);
 #define CIO_KEY_RIGHT     (0x4d << 8)
 #define CIO_KEY_PPAGE     (0x49 << 8)
 #define CIO_KEY_NPAGE     (0x51 << 8)
-#define CIO_KEY_SHIFT_F(x)((x<11)?((0x53+x) << 8):((0x7c+x) << 8))
-#define CIO_KEY_CTRL_F(x) ((x<11)?((0x67+x) << 8):((0x7e+x) << 8))
-#define CIO_KEY_ALT_F(x)  ((x<11)?((0x67+x) << 8):((0x80+x) << 8))
+#define CIO_KEY_SHIFT_F(x)((x<11)?((0x53 + x) << 8):((0x7c + x) << 8))
+#define CIO_KEY_CTRL_F(x) ((x<11)?((0x5d + x) << 8):((0x7e + x) << 8))
+#define CIO_KEY_ALT_F(x)  ((x<11)?((0x67 + x) << 8):((0x80 + x) << 8))
 #define CIO_KEY_BACKTAB   (0x0f << 8)
 
 #define CIO_KEY_MOUSE     0x7d00	// This is the right mouse on Schneider/Amstrad PC1512 PC keyboards "F-14"

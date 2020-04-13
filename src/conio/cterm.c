@@ -1417,7 +1417,7 @@ static enum {
 	if (seq[0] < 0x40 || seq[0] > 0x7e)
 		return SEQ_BROKEN;
 
-	intermediate_len = strspn(&seq[1+parameter_len], " !\"#$%&'()*+,-./");
+	intermediate_len = strspn(&seq[1], " !\"#$%&'()*+,-./");
 	if (seq[1+intermediate_len] == 0)
 		goto incomplete;
 	if (seq[1+intermediate_len] < 0x30 || seq[1+intermediate_len] > 0x7e)
