@@ -62,6 +62,8 @@ utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
 		$(UTILS)
 
+gtkutils: gtkmonitor gtkchat gtkuseredit gtkuserlist
+
 dlls:	$(JS_DEPS) smblib xpdev-mt \
 		$(MTOBJODIR) $(LIBODIR) \
 		$(SBBS) $(FTPSRVR) $(MAILSRVR) $(SERVICES)
@@ -82,6 +84,21 @@ uedit:
 umonitor:
 	$(MAKE) -C umonitor $(MAKEFLAGS)
 
+.PHONY: gtkmonitor
+gtkmonitor:
+	$(MAKE) -C gtkmonitor $(MAKEFLAGS)
+
+.PHONY: gtkchat
+gtkchat:
+	$(MAKE) -C gtkchat $(MAKEFLAGS)
+
+.PHONY: gtkuseredit
+gtkuseredit:
+	$(MAKE) -C gtkuseredit $(MAKEFLAGS)
+
+.PHONY: gtkuserlist
+gtkuserlist:
+	$(MAKE) -C gtkuserlist $(MAKEFLAGS)
 
 ifdef SBBSEXEC
 .PHONY: install
