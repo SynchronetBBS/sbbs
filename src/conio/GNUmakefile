@@ -42,7 +42,7 @@ ifeq ($(os),netbsd)
  endif
 endif
 
-ifeq ($(shell [ -e /usr/include/ncursesw/ncurses.h ] ; then echo YES ; fi),YES)
+ifeq ($(shell if [ -e /usr/include/ncursesw/ncurses.h ] ; then echo YES ; fi),YES)
  CFLAGS += -DDEBIAN_HATES_YOU
 endif
 
