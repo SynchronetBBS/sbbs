@@ -87,7 +87,7 @@ static char* dir_prop_desc[] = {
 	,"directory link (for HTML index)"
 	,"user has sufficient access to upload files"
 	,"user has sufficient access to download files"
-	,"user is exempt from download credit costs"
+	,"user is exempt from download credit costs (or the directory is configured for free downloads)"
 	,"user has operator access to this directory"
 	,"directory is for offline storage <i>(introduced in v3.14)</i>"
 	,"directory is for uploads only <i>(introduced in v3.14)</i>"
