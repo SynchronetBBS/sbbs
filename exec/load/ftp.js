@@ -506,6 +506,9 @@ FTP.prototype.do_get = function(cmd, dest)
 			else
 				f.write(rbuf);
 		}
+		else {
+			throw("recv timeout");
+		}
 	} while(data_socket.is_connected && this.socket.is_connected);
 	data_socket.close();
 	if (f !== undefined)
