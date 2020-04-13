@@ -8,7 +8,7 @@ ifeq ($(OS),netbsd)
 FLAGS	+=	-D__unix__
 endif
 # Somebody make this compile under gcc. :-)  I'll get you started:
-CC = gcc
+CC ?= gcc
 FLAGS += -O2 -Wall -std=c99 -pedantic -I../../odoors -L../../odoors/libs-`uname`
 ifdef PROFILE
 FLAGS	+=	-pg
