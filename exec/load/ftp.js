@@ -8,6 +8,8 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 
 	if (host === undefined)
 		throw("No hostname specified");
+	
+	this.revision = "JSFTP v" + "$Revision$".split(' ')[1];
 
 	if (port === undefined)
 		port = 21;
@@ -370,7 +372,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 					continue;
 			}
 			else {
-				throw("recvline() returned null");
+				throw("recvline timeout");
 			}
 		} while(this.socket.is_connected && !done);
 		return ret;
