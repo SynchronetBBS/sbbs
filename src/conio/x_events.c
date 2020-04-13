@@ -610,9 +610,9 @@ static int x11_event(XEvent *ev)
 				if(ev->xselection.requestor!=win)
 					break;
 				if(ev->xselection.property) {
-					x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, 0, AnyPropertyType, &pastebuf_format, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
+					x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, 0, True, AnyPropertyType, &pastebuf_format, &format, &len, &bytes_left, (unsigned char **)(&pastebuf));
 					if(bytes_left > 0 && format==8) {
-						x11.XGetWindowProperty(dpy, win, ev->xselection.property,0,bytes_left,0,AnyPropertyType,&pastebuf_format,&format,&len,&dummy,(unsigned char **)&pastebuf);
+						x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, bytes_left, True, AnyPropertyType, &pastebuf_format, &format, &len, &dummy, (unsigned char **)&pastebuf);
 						if (x11.utf8 && pastebuf_format == x11.utf8) {
 							char *opb = pastebuf;
 							pastebuf = (char *)utf8_to_cp437((uint8_t *)pastebuf, '?');
@@ -642,46 +642,46 @@ static int x11_event(XEvent *ev)
 			{
 				XSelectionRequestEvent *req;
 				XEvent respond;
-				Atom supported[2];
+				Atom supported[3];
+				int count = 0;
 
 				req=&(ev->xselectionrequest);
 				pthread_mutex_lock(&copybuf_mutex);
-				if(copybuf==NULL) {
-					respond.xselection.property=None;
-				}
-				else {
+				if (x11.targets == 0)
+					x11.targets = x11.XInternAtom(dpy, "TARGETS", False);
+				respond.xselection.property=None;
+				if(copybuf!=NULL) {
 					if(req->target==XA_STRING) {
 						x11.XChangeProperty(dpy, req->requestor, req->property, XA_STRING, 8, PropModeReplace, (unsigned char *)copybuf, strlen(copybuf));
 						respond.xselection.property=req->property;
 					}
 					else if(req->target == x11.utf8) {
 						uint8_t *utf8_str = cp437_to_utf8(copybuf, strlen(copybuf), NULL);
-						if (utf8_str == NULL)
-							respond.xselection.property=None;
-						else {
+						if (utf8_str != NULL) {
 							x11.XChangeProperty(dpy, req->requestor, req->property, x11.utf8, 8, PropModeReplace, utf8_str, strlen((char *)utf8_str));
 							respond.xselection.property=req->property;
 						}
 					}
 					else if(req->target == x11.targets) {
-						supported[0] = XA_STRING;
-						if (x11.utf8) {
-							supported[1] = x11.utf8;
-							x11.XChangeProperty(dpy, req->requestor, req->property, req->target, 32, PropModeReplace, (unsigned char *)supported, 2);
-						}
-						else
-							x11.XChangeProperty(dpy, req->requestor, req->property, req->target, 32, PropModeReplace, (unsigned char *)supported, 1);
+						if (x11.utf8 == 0)
+							x11.utf8 = x11.XInternAtom(dpy, "UTF8_STRING", False);
+
+						supported[count++] = x11.targets;
+						supported[count++] = XA_STRING;
+						if (x11.utf8)
+							supported[count++] = x11.utf8;
+						x11.XChangeProperty(dpy, req->requestor, req->property, XA_ATOM, 32, PropModeReplace, (unsigned char *)supported, count);
+						respond.xselection.property=req->property;
 					}
-					else
-						respond.xselection.property=None;
 				}
-				respond.xselection.type=SelectionNotify;
-				respond.xselection.display=req->display;
 				respond.xselection.requestor=req->requestor;
 				respond.xselection.selection=req->selection;
-				respond.xselection.target=req->target;
 				respond.xselection.time=req->time;
+				respond.xselection.target=req->target;
+				respond.xselection.type=SelectionNotify;
+				respond.xselection.display=req->display;
 				x11.XSendEvent(dpy,req->requestor,0,0,&respond);
+				x11.XFlush(dpy);
 				pthread_mutex_unlock(&copybuf_mutex);
 			}
 			break;
