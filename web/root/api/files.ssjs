@@ -1,3 +1,4 @@
+load('sbbsdefs.js');
 var settings = load('modopts.js', 'web');
 
 load(settings.web_directory + '/lib/init.js');
@@ -29,7 +30,14 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 						return true;
 					}
 				});
-				if (file === null) break;
+				if (file === null) {
+					reply.error = 'File not found';
+					break;
+				}
+				if (!file_area.dir[dircode].is_exempt && file.credits > (user.security.credits + user.security.free_credits)) {
+					reply.error = 'Not enough credits to download this file';
+					break;
+				}
 				http_reply.header['Content-Type'] = 'application/octet-stream';
 				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
 				http_reply.header['Content-Encoding'] = 'binary';
