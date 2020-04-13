@@ -1119,69 +1119,75 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		}
 		else if (this.lastUserInput == KEY_PAGE_UP)
 		{
-			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-			var newTopItemIdx = this.topItemIdx - numItemsPerPage;
-			if (newTopItemIdx < 0)
-				newTopItemIdx = 0;
-			if (newTopItemIdx != this.topItemIdx)
+			// Only do this if we're not already at the top of the list
+			if (this.topItemIdx > 0)
 			{
-				this.topItemIdx = newTopItemIdx;
-				this.selectedItemIdx -= numItemsPerPage;
-				if (this.selectedItemIdx < 0)
-					this.selectedItemIdx = 0;
-				this.Draw(selectedItemIndexes);
-			}
-			else
-			{
-				// The top index is the top index for the last page.
-				// If wrapping is enabled, then go back to the first page.
-				if (this.wrapNavigation)
+				var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
+				var newTopItemIdx = this.topItemIdx - numItemsPerPage;
+				if (newTopItemIdx < 0)
+					newTopItemIdx = 0;
+				if (newTopItemIdx != this.topItemIdx)
 				{
-					var topIndexForLastPage = numItems - numItemsPerPage;
-					if (topIndexForLastPage < 0)
-						topIndexForLastPage = 0;
-					else if (topIndexForLastPage >= numItems)
-						topIndexForLastPage = numItems - 1;
-
-					this.topItemIdx = topIndexForLastPage;
-					this.selectedItemIdx = topIndexForLastPage;
+					this.topItemIdx = newTopItemIdx;
+					this.selectedItemIdx -= numItemsPerPage;
+					if (this.selectedItemIdx < 0)
+						this.selectedItemIdx = 0;
 					this.Draw(selectedItemIndexes);
+				}
+				else
+				{
+					// The top index is the top index for the last page.
+					// If wrapping is enabled, then go back to the first page.
+					if (this.wrapNavigation)
+					{
+						var topIndexForLastPage = numItems - numItemsPerPage;
+						if (topIndexForLastPage < 0)
+							topIndexForLastPage = 0;
+						else if (topIndexForLastPage >= numItems)
+							topIndexForLastPage = numItems - 1;
+
+						this.topItemIdx = topIndexForLastPage;
+						this.selectedItemIdx = topIndexForLastPage;
+						this.Draw(selectedItemIndexes);
+					}
 				}
 			}
 		}
 		else if (this.lastUserInput == KEY_PAGE_DOWN)
 		{
 			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
-			// Figure out how many pages are needed to list all the items
-			//var numPages = Math.ceil(numItems / this.size.height);
-			// Figure out the top index for the last page.
-			//var topIndexForLastPage = (this.size.height * numPages) - this.size.height;
-			var topIndexForLastPage = numItems - numItemsPerPage;
-			if (topIndexForLastPage < 0)
-				topIndexForLastPage = 0;
-			else if (topIndexForLastPage >= numItems)
-				topIndexForLastPage = numItems - 1;
-			if (topIndexForLastPage != this.topItemIdx)
+			// Only do the pageDown if we're not showing the last item already
+			var lastItemIdx = this.NumItems() - 1;
+			if (lastItemIdx > this.topItemIdx+numItemsPerPage-1)
 			{
-				// Update the selected & top item indexes
-				this.selectedItemIdx += numItemsPerPage;
-				this.topItemIdx += numItemsPerPage;
-				if (this.selectedItemIdx >= topIndexForLastPage)
-					this.selectedItemIdx = topIndexForLastPage;
-				if (this.topItemIdx > topIndexForLastPage)
-					this.topItemIdx = topIndexForLastPage;
-				this.Draw(selectedItemIndexes);
-			}
-			else
-			{
-				// The top index is the top index for the last page.
-				// If wrapping is enabled, then go back to the first page.
-				if (this.wrapNavigation)
+				// Figure out the top index for the last page.
+				var topIndexForLastPage = numItems - numItemsPerPage;
+				if (topIndexForLastPage < 0)
+					topIndexForLastPage = 0;
+				else if (topIndexForLastPage >= numItems)
+					topIndexForLastPage = numItems - 1;
+				if (topIndexForLastPage != this.topItemIdx)
 				{
-					this.topItemIdx = 0;
-					this.selectedItemIdx = 0;
+					// Update the selected & top item indexes
+					this.selectedItemIdx += numItemsPerPage;
+					this.topItemIdx += numItemsPerPage;
+					if (this.selectedItemIdx >= topIndexForLastPage)
+						this.selectedItemIdx = topIndexForLastPage;
+					if (this.topItemIdx > topIndexForLastPage)
+						this.topItemIdx = topIndexForLastPage;
+					this.Draw(selectedItemIndexes);
 				}
-				this.Draw(selectedItemIndexes);
+				else
+				{
+					// The top index is the top index for the last page.
+					// If wrapping is enabled, then go back to the first page.
+					if (this.wrapNavigation)
+					{
+						this.topItemIdx = 0;
+						this.selectedItemIdx = 0;
+					}
+					this.Draw(selectedItemIndexes);
+				}
 			}
 		}
 		else if (this.lastUserInput == KEY_HOME)
