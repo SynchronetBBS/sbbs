@@ -18,7 +18,8 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				file_area.dir[http_request.query.dir[0]].can_download &&
 				typeof http_request.query.file !== 'undefined'
 			) {
-				var fileBase = new FileBase(file_area.dir[http_request.query.dir[0]].code);
+				var dircode = file_area.dir[http_request.query.dir[0]].code;
+				var fileBase = new FileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
 					if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
@@ -42,6 +43,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				}
 				f.close();
 				reply = false;
+				user.downloaded_file(dircode, file.path);
 			}
 			break;
 		default:
