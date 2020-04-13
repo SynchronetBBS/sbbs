@@ -1405,20 +1405,27 @@ static enum {
 	SEQ_COMPLETE
 } legal_sequence(const char *seq, size_t max_len)
 {
+	size_t intermediate_len;
+
 	if (seq == NULL)
 		return SEQ_BROKEN;
 
 	if (seq[0] == 0)
 		goto incomplete;
 
-	/* Check that it's part of C1 set or part of the Independent control functions */
+	/* Check that it's part of C1 set, part of the Independent control functions, or an nF sequence type (ECMA 35)*/
 	if (seq[0] < 0x40 || seq[0] > 0x7e)
+		return SEQ_BROKEN;
+
+	intermediate_len = strspn(&seq[1+parameter_len], " !\"#$%&'()*+,-./");
+	if (seq[1+intermediate_len] == 0)
+		goto incomplete;
+	if (seq[1+intermediate_len] < 0x30 || seq[1+intermediate_len] > 0x7e)
 		return SEQ_BROKEN;
 
 	/* Check if it's CSI */
 	if (seq[0] == '[') {
 		size_t parameter_len;
-		size_t intermediate_len;
 
 		if (seq[1] >= '<' && seq[1] <= '?')
 			parameter_len = strspn(&seq[1], "0123456789:;<=>?");
@@ -3324,7 +3331,11 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								seq_default(seq, 0, ABS_MINX);
 								seq_default(seq, 1, ABS_MAXX);
 								col = seq->param_int[0];
+								if (col == 0)
+									col = cterm->left_margin;
 								max_col = seq->param_int[1];
+								if (max_col == 0)
+									max_col = cterm->right_margin;
 								if(col >= ABS_MINX && max_col > col && max_col <= ABS_MAXX) {
 									cterm->left_margin = col;
 									cterm->right_margin = max_col;

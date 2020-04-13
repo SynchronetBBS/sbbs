@@ -1021,6 +1021,7 @@ CSI Pn1 ; Pn2 s
 	Set Left and Right Margins
 	Defaults: Pn1 = 1
 	          Pn2 = last column on screen
+	If either Pn1 or Pn2 is zero, the current setting is retained.
 	Selects left and right margins, defining the scrolling region. Pn1 is
 	the column number of the first column in the scrolling region. Pn2 is
 	the column number of the right column.
