@@ -552,6 +552,8 @@ static void setup_surfaces_locked(void)
 	if (win == NULL) {
 		// SDL2: This is slow sometimes... not sure why.
 		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, cvstat.winheight, flags, &win, &renderer) == 0) {
+			if (texture) 
+				sdl.DestroyTexture(texture);
 			sdl.RenderClear(renderer);
 			texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
 		}
@@ -562,6 +564,8 @@ static void setup_surfaces_locked(void)
 	}
 	else {
 		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
+		if (texture) 
+			sdl.DestroyTexture(texture);
 		texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
 	}
 	sdl.SetWindowMinimumSize(win, cvstat.charwidth * cvstat.cols, cvstat.charheight * cvstat.rows);
@@ -1229,7 +1233,7 @@ static void sdl_video_event_thread(void *data)
 								if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
 									sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
 								if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
-									sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh );
+									sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
 									sdl.DestroyTexture(texture);
 									texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.charwidth*cvstat.cols, cvstat.charheight*cvstat.rows);
 									bitmap_drv_request_pixels();
