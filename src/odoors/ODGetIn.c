@@ -105,6 +105,15 @@ tODKeySequence aKeySequences[] =
    {"\033[23~", OD_KEY_F11, FALSE},
    {"\033[24~", OD_KEY_F12, FALSE},
 
+   /* XTerm specific control sequences */
+   {"\033[15~", OD_KEY_F5},
+
+   /* Old, deprecated XTerm specific control sequences */
+   {"\033[11~", OD_KEY_F1},
+   {"\033[12~", OD_KEY_F2},
+   {"\033[13~", OD_KEY_F3},
+   {"\033[14~", OD_KEY_F4},
+
    /* ANSI-specific control sequences. */
    {"\033[L", OD_KEY_HOME, FALSE},
    {"\033Ow", OD_KEY_F3, FALSE},
