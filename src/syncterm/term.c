@@ -3066,19 +3066,19 @@ BOOL doterm(struct bbslist *bbs)
 						conn_send("\033[V",3,0);
 						break;
 					case CIO_KEY_F(1):
-						conn_send("\033OP",3,0);
+						conn_send("\033[11~",3,0);
 						break;
 					case CIO_KEY_F(2):
-						conn_send("\033OQ",3,0);
+						conn_send("\033[12~",3,0);
 						break;
 					case CIO_KEY_F(3):
-						conn_send("\033OR",3,0);
+						conn_send("\033[13~",3,0);
 						break;
 					case CIO_KEY_F(4):
-						conn_send("\033OS",3,0);
+						conn_send("\033[14~",3,0);
 						break;
 					case CIO_KEY_F(5):
-						conn_send("\033Ot",3,0);
+						conn_send("\033[15~",3,0);
 						break;
 					case CIO_KEY_F(6):
 						conn_send("\033[17~",5,0);
@@ -3101,6 +3101,114 @@ BOOL doterm(struct bbslist *bbs)
 					case CIO_KEY_F(12):
 						conn_send("\033[24~",5,0);
 						break;
+					case CIO_KEY_SHIFT_F(1):
+						conn_send("\033[11;2~",3,0);
+						break;
+					case CIO_KEY_SHIFT_F(2):
+						conn_send("\033[12;2~",3,0);
+						break;
+					case CIO_KEY_SHIFT_F(3):
+						conn_send("\033[13;2~",3,0);
+						break;
+					case CIO_KEY_SHIFT_F(4):
+						conn_send("\033[14;2~",3,0);
+						break;
+					case CIO_KEY_SHIFT_F(5):
+						conn_send("\033[15;2~",3,0);
+						break;
+					case CIO_KEY_SHIFT_F(6):
+						conn_send("\033[17;2~",5,0);
+						break;
+					case CIO_KEY_SHIFT_F(7):
+						conn_send("\033[18;2~",5,0);
+						break;
+					case CIO_KEY_SHIFT_F(8):
+						conn_send("\033[19;2~",5,0);
+						break;
+					case CIO_KEY_SHIFT_F(9):
+						conn_send("\033[20;2~",5,0);
+						break;
+					case CIO_KEY_SHIFT_F(10):
+						conn_send("\033[21;2~",5,0);
+						break;
+					case CIO_KEY_SHIFT_F(11):
+						conn_send("\033[23;2~",5,0);
+						break;
+					case CIO_KEY_SHIFT_F(12):
+						conn_send("\033[24;2~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(1):
+						conn_send("\033[11;5~",3,0);
+						break;
+					case CIO_KEY_CTRL_F(2):
+						conn_send("\033[12;5~",3,0);
+						break;
+					case CIO_KEY_CTRL_F(3):
+						conn_send("\033[13;5~",3,0);
+						break;
+					case CIO_KEY_CTRL_F(4):
+						conn_send("\033[14;5~",3,0);
+						break;
+					case CIO_KEY_CTRL_F(5):
+						conn_send("\033[15;5~",3,0);
+						break;
+					case CIO_KEY_CTRL_F(6):
+						conn_send("\033[17;5~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(7):
+						conn_send("\033[18;5~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(8):
+						conn_send("\033[19;5~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(9):
+						conn_send("\033[20;5~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(10):
+						conn_send("\033[21;5~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(11):
+						conn_send("\033[23;5~",5,0);
+						break;
+					case CIO_KEY_CTRL_F(12):
+						conn_send("\033[24;5~",5,0);
+						break;
+					case CIO_KEY_ALT_F(1):
+						conn_send("\033[11;3~",3,0);
+						break;
+					case CIO_KEY_ALT_F(2):
+						conn_send("\033[12;3~",3,0);
+						break;
+					case CIO_KEY_ALT_F(3):
+						conn_send("\033[13;3~",3,0);
+						break;
+					case CIO_KEY_ALT_F(4):
+						conn_send("\033[14;3~",3,0);
+						break;
+					case CIO_KEY_ALT_F(5):
+						conn_send("\033[15;3~",3,0);
+						break;
+					case CIO_KEY_ALT_F(6):
+						conn_send("\033[17;3~",5,0);
+						break;
+					case CIO_KEY_ALT_F(7):
+						conn_send("\033[18;3~",5,0);
+						break;
+					case CIO_KEY_ALT_F(8):
+						conn_send("\033[19;3~",5,0);
+						break;
+					case CIO_KEY_ALT_F(9):
+						conn_send("\033[20;3~",5,0);
+						break;
+					case CIO_KEY_ALT_F(10):
+						conn_send("\033[21;3~",5,0);
+						break;
+					case CIO_KEY_ALT_F(11):
+						conn_send("\033[23;3~",5,0);
+						break;
+					case CIO_KEY_ALT_F(12):
+						conn_send("\033[24;3~",5,0);
+						break;
 					case CIO_KEY_IC:
 						conn_send("\033[@",3,0);
 						break;
@@ -3111,6 +3219,9 @@ BOOL doterm(struct bbslist *bbs)
 					case 19:	/* CTRL-S */
 						ch[0]=key;
 						conn_send(ch,1,0);
+						break;
+					case CIO_KEY_BACKTAB:
+						conn_send("\033[Z", 3, 0);
 						break;
 					case '\b':
 						key='\b';
