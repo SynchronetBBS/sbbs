@@ -1070,7 +1070,7 @@ int             main(int argc, char *argv[]) {
 
 					sscanf(*fname, SBYDBT_PREFIX".%d", &cnt);
 					sprintf(numstr, SBYDB_PREFIX".%03d", cnt);
-					copyfile(numstr, SBYDB_PREFIX""TEMP_EXTENSION);
+					copyfile(numstr, SBYDB_PREFIX "" TEMP_EXTENSION);
 					ny_remove(numstr);
 
 					//printf("J");
@@ -1081,7 +1081,7 @@ int             main(int argc, char *argv[]) {
 						while (ny_fread(&ibscr_rec, sizeof(ibbs_scr_rec), 1, jfile) == 1) {
 							//printf("L");
 
-							njustfile = ShareFileOpen(SBYDB_PREFIX""TEMP_EXTENSION, "r+b");
+							njustfile = ShareFileOpen(SBYDB_PREFIX "" TEMP_EXTENSION, "r+b");
 							justfile = ShareFileOpen(numstr, "a+b");
 							found = FALSE;
 							//printf("M");
@@ -1120,7 +1120,7 @@ int             main(int argc, char *argv[]) {
 						fclose(jfile);
 					}
 					ny_remove(*fname);
-					ny_remove(SBYDB_PREFIX""TEMP_EXTENSION);
+					ny_remove(SBYDB_PREFIX "" TEMP_EXTENSION);
 					//printf("S");
 					justfile = ShareFileOpen(IBBSSPY_FILENAME, "r+b");
 					//fseek(justfile, 0, SEEK_SET);

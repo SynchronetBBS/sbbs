@@ -1,5 +1,5 @@
-CC	= gcc
-CXX	= g++
+CC	?= gcc
+CXX	?= g++
 SRC_ROOT	:=	../../..
 include ${SRC_ROOT}/build/Common.gmake
 

@@ -6618,7 +6618,7 @@ dobadwords(char *s) {
 					}
 					tryagain=TRUE;
 				}
-				if(++p=='\0')
+				if(++p==NULL)
 					break;
 			}
 		}
