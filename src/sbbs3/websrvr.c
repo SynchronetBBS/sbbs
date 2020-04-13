@@ -6286,7 +6286,27 @@ void http_output_thread(void *arg)
 		if(!getsockopt(session->socket, IPPROTO_TCP, TCP_MAXSEG, (char*)&i, &sl)) {
 			/* Check for sanity... */
 			if(i>100) {
-				obuf->highwater_mark=i-12;
+#ifdef _WIN32
+#ifdef TCP_TIMESTAMPS
+				DWORD ts;
+				sl = sizeof(ts);
+				if (!getsockopt(session->socket, IPPROTO_TCP, TCP_TIMESTAMPS, (char *)&ts, &sl)) {
+					if (ts)
+						i -= 12;
+				}
+#endif
+#else
+#if (defined(TCP_INFO) && defined(TCPI_OPT_TIMESTAMPS))
+				struct tcp_info tcpi;
+
+				sl = sizeof(tcpi);
+				if (!getsockopt(session->socket, IPPROTO_TCP, TCP_INFO,&tcpi, &sl)) {
+					if (tcpi.tcpi_options & TCPI_OPT_TIMESTAMPS)
+						i -= 12;
+				}
+#endif
+#endif
+				obuf->highwater_mark=i;
 				lprintf(LOG_DEBUG,"%04d Autotuning outbuf highwater mark to %d based on MSS"
 					,session->socket,i);
 				mss=obuf->highwater_mark;
