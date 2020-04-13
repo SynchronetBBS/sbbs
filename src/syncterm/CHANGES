@@ -46,6 +46,13 @@ Update to SDL2
 Allow snapping to scale using ALT-<arrow-key> in SDL mode
 Support XTerm style mouse reporting (except drag and keyboard modbits)
 CTRL-F/CTRL-G will now search the listing
+Support changing left/right margins the same way xterm does
+Implement ESC c to reset the terminal
+Implement Character Position Barckward
+Add UTF-8 copy/paste support
+Use Unicode in curses mode to allow full cp437 emulation
+Add -iI for forced ASCII curses mode
+Send sequences for backtab, shift/alt/ctrl + Function key
 
 Version 1.0
 -----------
