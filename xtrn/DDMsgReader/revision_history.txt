@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.31     2020-04-13   The area change feature now uses DDLightbarMenu.  There
+                      is no more internal lightbar code in this message reader.
 1.30     2020-04-07   The message list features now uses DDLightbarMenu rather
                       than the internal lightbar menu code.  Requires the
                       latest dd_lightbar_menu.js (in sbbs/exec/load).
