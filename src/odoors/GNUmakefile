@@ -207,7 +207,7 @@ ${EXEDIR}ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
 	$(CC) $(CFLAGS) ex_music.c -o $@ -lODoors
 
 ${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
+	$(CC) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
 
 ${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}libODoors${SHLIB}
 	$(CC) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ -lODoors -DMULTINODE_AWARE
