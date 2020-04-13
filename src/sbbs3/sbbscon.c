@@ -158,7 +158,11 @@ BOOL				syslog_always=FALSE;
 
 static const char* prompt;
 
-static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
+static const char* usage  = "\nusage: %s [[cmd | setting] [...]] [path/ini_file]\n"
+							"\n"
+							"Commands:\n"
+							"\n"
+							"\tversion    show version/revision details and exit\n"
 							"\n"
 							"Global settings:\n"
 							"\n"
@@ -222,7 +226,7 @@ static const char* web_usage  = "Web server settings:\n"
 							"\n"
 							"\twp<port>   set HTTP server port\n"
 							"\two<value>  set Web server option value (advanced)\n"
-							"\tw-         disable Web server (no services module)\n"
+							"\tw-         disable Web server\n"
 							;
 
 static int lputs(int level, char *str)
@@ -1564,6 +1568,26 @@ int main(int argc, char** argv)
 		if(strcspn(arg,"\\/")!=strlen(arg)) {
 			strcpy(ini_file,arg);
 			continue;
+		}
+		if(stricmp(arg, "version") == 0) {
+			char revision[16];
+			sscanf("$Revision$", "%*s %s", revision);
+			char compiler[32];
+			DESCRIBE_COMPILER(compiler);
+			printf("%s\n", bbs_ver());
+			printf("%s\n", mail_ver());
+			printf("%s\n", ftp_ver());
+			printf("%s\n", web_ver());
+			printf("%s\n", services_ver());
+			printf("Synchronet Console %s%s  Compiled %s %s with %s\n"
+				,revision
+#ifdef _DEBUG
+				," Debug"
+#else
+				,""
+#endif
+				,__DATE__, __TIME__, compiler);
+			return EXIT_SUCCESS;
 		}
 		if(!stricmp(arg,"ni")) {
 			ini_file[0]=0;
