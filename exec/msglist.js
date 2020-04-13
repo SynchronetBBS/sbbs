@@ -654,7 +654,7 @@ function download_msg_source(msg)
 {
 	var fname = system.temp_dir + "msg_" + msg.number + ".txt";
 	var f = new File(fname);
-	if(!f.open("w"))
+	if(!f.open("wb"))
 		return false;
 	var text = msgbase.get_msg_body(msg
 				,/* strip ctrl-a */false
@@ -730,11 +730,16 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 	var view_hex = false;
 	var view_wrapped = true;
 	var view_source = false;
+	var last_msg;
 	var area_name = format(options.area_name_fmt || "\x01n\x01k\x017%s / %s\x01h"
 						,grp_name, sub_name);
 
 	console.line_counter = 0;
 	while(!js.terminated) {
+		if(!last_msg)
+			last_msg = msgbase.last_msg;
+		else if(msgbase.last_msg != last_msg)
+			return true;	// Reload new messages
 		var pagesize = console.screen_rows - 3;
 		if(preview)
 			pagesize = Math.floor(pagesize / 2);
@@ -751,9 +756,12 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			current = list.length-1;
 		}
 		
-		if(msgbase.cfg) // Update "last read" pointer
-			msg_area.sub[msgbase.cfg.code].last_read = list[current].number;
-		
+		if(list[current]) {
+			if(msgbase.cfg) // Update "last read" pointer
+				msg_area.sub[msgbase.cfg.code].last_read = list[current].number;
+			else
+				userprops.last_read_mail = list[current].number;
+		}
 		if(console.screen_columns >= 80)
 			right_justify(format(options.area_nums_fmt || "[message %u of %u]"
 				, current + 1, list.length));
@@ -816,7 +824,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			console.cleartoeol();
 			console.crlf();
 		}
-		if(preview) {
+		if(preview && list[current]) {
 			var msg = list[current];
 			var text = get_msg_lines(msgbase, msg);
 			remove_extra_blank_lines(text);
@@ -884,14 +892,16 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 		var cmds = [];
 		if(!preview)
 			cmds.push("~Preview");
-		if(!(list[current].attr&MSG_NOREPLY)) {
-			if(mail)
-				cmds.push("~Reply");
-			else
-				cmds.push("~Reply/~Mail");
+		if(list[current]) {
+			if(!(list[current].attr&MSG_NOREPLY)) {
+				if(mail)
+					cmds.push("~Reply");
+				else
+					cmds.push("~Reply/~Mail");
+			}
+			if(list[current].auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH))
+				cmds.push("~Dload");
 		}
-		if(list[current].auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH))
-			cmds.push("~Dload");
 		cmds.push("~Goto");
 		cmds.push("~Find");
 		var fmt = ", fmt:0-%u"
@@ -911,6 +921,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 					list[i].flagged = flagged;
 				break;
 			case KEY_DEL:
+				if(!list[current])
+					break;
 				if(msgbase.cfg && !msg_area.sub[msgbase.cfg.code].is_operator)
 					break;
 				flagged = 0;
@@ -1421,6 +1433,10 @@ if(options.large_msg_threshold === undefined)
 	options.large_msg_threshold = 0x10000;
 if(options.preview_properties === undefined)
 	options.preview_properties = "date,attributes,subject";
+if(options.reverse_mail === undefined)
+	options.reverse_mail = true;
+if(options.reverse_msgs === undefined)
+	options.reverse_msgs = true;
 if(options.date_fmt === undefined)
 	options.date_fmt = "%Y-%m-%d";
 // options.date_time_fmt = "%a %b %d %Y %H:%M:%S";
@@ -1474,13 +1490,30 @@ if((system.settings&SYS_SYSVDELM) && (user.is_sysop || (system.settings&SYS_USRV
 if(msgbase.attributes & SMB_EMAIL) {
 	if(isNaN(which))
 		which = MAIL_YOUR;
-//	lm_mode |= LM_REVERSE;
+	if(options.reverse_mail)
+		lm_mode |= LM_REVERSE;
 	if(lm_mode&(LM_NOSPAM | LM_SPAMONLY))
 		remove_list_format_property("spam");
+} else {
+	if(options.reverse_msgs)
+		lm_mode |= LM_REVERSE;
 }
 
 if(!usernumber)
 	usernumber = user.number;
+
+var userprops_lib = bbs.mods.userprops;
+if(!userprops_lib)
+	userprops_lib = load(bbs.mods.userprops = {}, "userprops.js");
+var userprops_section = "msglist:" + msgbase_code;
+if(!msgbase.cfg)
+	userprops_section += (":" + ["your","sent","any","all"][which]);
+
+var userprops = userprops_lib.get(userprops_section);
+if(!userprops)
+	userprops = {};
+if(!options.track_last_read_mail)
+	userprops.last_read_mail = undefined;
 
 js.on_exit("console.status = " + console.status);
 console.status |= CON_CR_CLREOL;
@@ -1520,10 +1553,15 @@ do {
 	console.print("\x01[\x01>Loading messages \x01i...\x01n ");
 	var list = load_msgs(msgbase, which, lm_mode, usernumber);
 	if(!list || !list.length) {
-		alert("No messages");
+		alert("No " + ((lm_mode&LM_UNREAD) ? "Unread ":"") 
+			+ grp_name + " / " + sub_name + " messages");
 		break;
 	}
 	var curmsg = 0;
 	if(msgbase.cfg)
 		curmsg = msg_area.sub[msgbase.cfg.code].last_read;
+	else
+		curmsg = userprops.last_read_mail;
 } while(list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name) === true);
+
+userprops_lib.set(userprops_section, userprops);
