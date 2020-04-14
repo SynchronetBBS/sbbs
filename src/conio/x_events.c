@@ -534,13 +534,19 @@ static void handle_resize_event(int width, int height)
 	old_scaling = x_cvstat.scaling;
 	if(x_cvstat.scaling > 16)
 		x_setscaling(16);
+
 	/*
-	 * We only need to resize if the width/height are not even multiples
+	 * We only need to resize if the width/height are not even multiples,
+	 * or if the two axis don't scale the same way.
 	 * Otherwise, we can simply resend everything
 	 */
-	if((width % (x_cvstat.charwidth * x_cvstat.cols) != 0)
+	if (newFSH != newFSW)
+		resize_window();
+	else if((width % (x_cvstat.charwidth * x_cvstat.cols) != 0)
 			|| (height % (x_cvstat.charheight * x_cvstat.rows) != 0))
 		resize_window();
+	else
+		resize_xim();
 	bitmap_drv_request_pixels();
 }
 
@@ -587,12 +593,12 @@ static int x11_event(XEvent *ev)
 			x11_window_height=ev->xconfigure.height;
 			handle_resize_event(ev->xconfigure.width, ev->xconfigure.height);
 			break;
-        case NoExpose:
-                break;
-        case GraphicsExpose:
+		case NoExpose:
+			break;
+		case GraphicsExpose:
 			expose_rect(ev->xgraphicsexpose.x, ev->xgraphicsexpose.y, ev->xgraphicsexpose.width, ev->xgraphicsexpose.height);
 			break;
-        case Expose:
+		case Expose:
 			expose_rect(ev->xexpose.x, ev->xexpose.y, ev->xexpose.width, ev->xexpose.height);
 			break;
 
