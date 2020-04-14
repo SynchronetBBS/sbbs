@@ -224,6 +224,7 @@ extern "C" {
 	#define snprintf		_snprintf
 #endif
 	#define vsnprintf		_vsnprintf
+	#define NEEDS_STRLCPY
 #endif
 
 #if defined(__WATCOMC__)
@@ -242,6 +243,10 @@ extern "C" {
 		#define stricmp			strcasecmp
 		#define strnicmp		strncasecmp
 	#endif
+#endif
+
+#if defined(NEEDS_STRLCPY)
+	size_t strlcpy(char *dst, const char *src, size_t size);
 #endif
 
 #if defined(_WIN32)

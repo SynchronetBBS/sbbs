@@ -78,6 +78,23 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	return(numchars);
 }
 
+#ifdef NEEDS_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+	size_t i;
+
+	if(size < 1)
+		return 0;
+
+	for(i = 0; src[i] != '\0'; i++) {
+		if(i < (size - 1))
+			*(dst++) = src[i];
+	}
+	*dst = 0;
+	return i;
+}
+#endif
+
 #ifdef _WIN32
 /****************************************************************************/
 /* Case insensitive version of strstr()	- currently heavy-handed			*/
