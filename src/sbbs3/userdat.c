@@ -2327,7 +2327,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	/**************************/
 	/* Update Uploader's Info */
 	/**************************/
-	user_t uploader = {{0}};
+	user_t uploader = {0};
 	uploader.number=matchuser(cfg, f.uler, TRUE /*sysop_alias*/);
 	if(uploader.number
 		&& uploader.number != user->number 
