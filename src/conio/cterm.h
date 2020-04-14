@@ -198,6 +198,22 @@ struct cterminal {
 	int (*mouse_state_query)(int parameter, void *cbdata);
 	void *mouse_state_query_cbdata;
 
+	/* Macros */
+	char *macros[64];
+	size_t macro_lens[64];
+	uint64_t in_macro;
+	int macro;
+#define MACRO_INACTIVE	0
+#define MACRO_POSSIBLE	1
+#define MACRO_STARTED	2
+	int macro_num;
+	int macro_del;
+#define MACRO_DELETE_OLD	0
+#define MACRO_DELETE_ALL	1
+	int macro_encoding;
+#define MACRO_ENCODING_ASCII	0
+#define MACRO_ENCODING_HEX	1
+
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
 	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
