@@ -152,16 +152,16 @@ void DLLCALL _splitpath(const char *path, char *drive, char *dir, char *fname, c
 	ext[0]=0;
 	drive[0]=0;			/* no drive letters on Unix */
 
-	strcpy(dir,path);	/* Optional directory path, including trailing slash. */
+	snprintf(dir, MAX_PATH+1, "%s", path);	/* Optional directory path, including trailing slash. */
 	p=getfname(dir);
-	strcpy(fname,p);	/* Base filename (no extension) */
+	snprintf(fname, MAX_PATH+1, "%s", p);	/* Base filename (no extension) */
 	if(p==dir)
 		dir[0]=0;		/* no directory specified in path */
 	else
 		*p=0;			/* truncate dir at filename */
 	p=getfext(fname);
 	if(p!=NULL) {
-		strcpy(ext,p);	/* Optional filename extension, including leading period (.) */
+		snprintf(ext, MAX_PATH+1, "%s", p);	/* Optional filename extension, including leading period (.) */
 		*p=0;
 	}
 }
