@@ -83,6 +83,7 @@ struct x11 {
                        unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
 	Colormap (*XCreateColormap)(Display *display, Window w, Visual *visual, int alloc);
 	XClassHint *(*XAllocClassHint)(void);
+	int (*XSetForeground)(Display *display, GC gc, unsigned long foreground);
 	Atom utf8;
 	Atom targets;
 };

@@ -238,8 +238,8 @@ my_fls(unsigned long mask)
 /* Get a connection to the X server and create the window. */
 static int init_window()
 {
-    XGCValues gcv;
-    int i;
+	XGCValues gcv;
+	int i;
 	XWMHints *wmhints;
 	XClassHint *classhints;
 	int ret;
@@ -313,17 +313,16 @@ static int init_window()
 	WM_DELETE_WINDOW = x11.XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 
 	gcv.function = GXcopy;
-    gcv.foreground = white;
-    gcv.background = black;
+	gcv.foreground = black | 0xff000000;
+	gcv.background = white;
 	gcv.graphics_exposures = False;
-
 	gc=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 
-    x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
+	x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
 		     ExposureMask | ButtonPressMask
 		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
 
-    x11.XStoreName(dpy, win, "SyncConsole");
+	x11.XStoreName(dpy, win, "SyncConsole");
 	x11.XSetWMProtocols(dpy, win, &WM_DELETE_WINDOW, 1);
 
 	return(0);
@@ -434,7 +433,7 @@ static int video_init()
 
 static void local_draw_rect(struct rectlist *rect)
 {
-	int x,y,xscale,yscale;
+	int x,y,xscale,yscale,xoff=0,yoff=0;
 	unsigned int r, g, b;
 	unsigned long pixel;
 	int cleft = rect->rect.width;
@@ -445,6 +444,14 @@ static void local_draw_rect(struct rectlist *rect)
 
 	if (bitmap_width != cleft || bitmap_height != ctop)
 		return;
+
+	xoff = (x11_window_width - xim->width) / 2;
+	if (xoff < 0)
+		xoff = 0;
+	yoff = (x11_window_height - xim->height) / 2;
+	if (yoff < 0)
+		yoff = 0;
+
 	/* TODO: Translate into local colour depth */
 	for(y=0;y<rect->rect.height;y++) {
 		idx = y*rect->rect.width;
@@ -497,7 +504,7 @@ static void local_draw_rect(struct rectlist *rect)
 		}
 		/* This line was changed */
 		if (last && (((y & 0x1f) == 0x1f) || (y == rect->rect.height-1)) && cright >= 0) {
-			x11.XPutImage(dpy,win,gc,xim,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,cleft*x_cvstat.scaling,ctop*x_cvstat.scaling*x_cvstat.vmultiplier,(cright-cleft+1)*x_cvstat.scaling,(cbottom-ctop+1)*x_cvstat.scaling*x_cvstat.vmultiplier);
+			x11.XPutImage(dpy, win, gc, xim, cleft*x_cvstat.scaling, ctop*x_cvstat.scaling*x_cvstat.vmultiplier, cleft*x_cvstat.scaling + xoff, ctop*x_cvstat.scaling*x_cvstat.vmultiplier + yoff, (cright-cleft+1)*x_cvstat.scaling, (cbottom-ctop+1)*x_cvstat.scaling*x_cvstat.vmultiplier);
 			cleft = rect->rect.width;
 			cright = cbottom = -1;
 			ctop = rect->rect.height;
@@ -505,7 +512,7 @@ static void local_draw_rect(struct rectlist *rect)
 	}
 
 	if (last == NULL)
-		x11.XPutImage(dpy,win,gc,xim,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.x*x_cvstat.scaling,rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier,rect->rect.width*x_cvstat.scaling,rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
+		x11.XPutImage(dpy, win, gc, xim, rect->rect.x*x_cvstat.scaling, rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier, rect->rect.x*x_cvstat.scaling + xoff, rect->rect.y*x_cvstat.scaling*x_cvstat.vmultiplier + yoff, rect->rect.width*x_cvstat.scaling, rect->rect.height*x_cvstat.scaling*x_cvstat.vmultiplier);
 	else
 		bitmap_drv_free_rect(last);
 	last = rect;
@@ -553,12 +560,37 @@ static void handle_resize_event(int width, int height)
 static void expose_rect(int x, int y, int width, int height)
 {
 	int sx,sy,ex,ey;
+	int xoff=0, yoff=0;
 
-	sx=x/x_cvstat.scaling;
-	sy=y/(x_cvstat.scaling*x_cvstat.vmultiplier);
+	xoff = (x11_window_width - xim->width) / 2;
+	if (xoff < 0)
+		xoff = 0;
+	yoff = (x11_window_height - xim->height) / 2;
+	if (yoff < 0)
+		yoff = 0;
 
-	ex=x+width-1;
-	ey=y+height-1;
+	if (xoff > 0 || yoff > 0) {
+		if (x < xoff || y < yoff || x + width > xoff + xim->width || y + height > yoff + xim->height) {
+			x11.XFillRectangle(dpy, win, gc, 0, 0, x11_window_width, yoff);
+			x11.XFillRectangle(dpy, win, gc, 0, yoff, xoff, yoff + xim->height);
+			x11.XFillRectangle(dpy, win, gc, xoff+xim->width, yoff, x11_window_width, yoff + xim->height);
+			x11.XFillRectangle(dpy, win, gc, 0, yoff + xim->height, x11_window_width, x11_window_height);
+		}
+	}
+
+	sx=(x-xoff)/x_cvstat.scaling;
+	sy=(y-yoff)/(x_cvstat.scaling*x_cvstat.vmultiplier);
+	if (sx < 0)
+		sx = 0;
+	if (sy < 0)
+		sy = 0;
+
+	ex=(x-xoff)+width-1;
+	ey=(y-yoff)+height-1;
+	if (ex < 0)
+		ex = 0;
+	if (ey < 0)
+		ey = 0;
 	if((ex+1)%x_cvstat.scaling) {
 		ex += x_cvstat.scaling-(ex%x_cvstat.scaling);
 	}
@@ -572,7 +604,11 @@ static void expose_rect(int x, int y, int width, int height)
 	if (last) {
 		bitmap_drv_free_rect(last);
 		last = NULL;
+		bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 	}
+	// Do nothing...
+	if (sx == ex || sy == ey)
+		return;
 	bitmap_drv_request_some_pixels(sx, sy, ex-sx+1, ey-sy+1);
 }
 

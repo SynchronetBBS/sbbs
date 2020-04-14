@@ -418,6 +418,10 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XSetForeground=xp_dlsym(dl,XSetForeground))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 
 	if(sem_init(&pastebuf_set, 0, 0)) {
 		xp_dlclose(dl);
