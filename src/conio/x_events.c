@@ -368,7 +368,7 @@ static void resize_window()
 
 static void init_mode_internal(int mode)
 {
-    int oldcols;
+	int oldcols;
 
 	oldcols=x_cvstat.cols;
 
@@ -391,7 +391,7 @@ static void init_mode_internal(int mode)
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 	pthread_mutex_unlock(&blinker_lock);
-    map_window();
+	map_window();
 }
 
 static void check_scaling(void)
@@ -405,10 +405,11 @@ static void check_scaling(void)
 static int init_mode(int mode)
 {
 	init_mode_internal(mode);
+	resize_window();
 	bitmap_drv_request_pixels();
 
 	sem_post(&mode_set);
-    return(0);
+	return(0);
 }
 
 static int video_init()
