@@ -53,6 +53,11 @@ Add UTF-8 copy/paste support
 Use Unicode in curses mode to allow full cp437 emulation
 Add -iI for forced ASCII curses mode
 Send sequences for backtab, shift/alt/ctrl + Function key
+Fix X11 copy/paste
+Changed codes used for F1-F5
+Speed change keys changed to CTRL up/down
+Add support for DEC style macros
+Fix X11 handing of non-multiple window sizes
 
 Version 1.0
 -----------
