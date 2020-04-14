@@ -4769,8 +4769,6 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										/* CGTerm does nothing there... we */
 										/* Erase under cursor. */
 								TERM_XY(&x, &y);
-								l=WHEREX();
-								k=WHEREY();
 								if (x <= TERM_MAXX) {
 									sx = x;
 									sy = y;
