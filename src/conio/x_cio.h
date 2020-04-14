@@ -75,6 +75,7 @@ void x11_drawrect(struct rectlist *data);
 void x11_flush(void);
 void x_setscaling(int newval);
 int x_getscaling(void);
+void x_seticon(const void *icon, unsigned long size);
 #ifdef __cplusplus
 }
 #endif

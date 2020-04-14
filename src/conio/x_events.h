@@ -15,6 +15,7 @@ enum x11_local_events {
 	,X11_LOCAL_DRAWRECT
 	,X11_LOCAL_FLUSH
 	,X11_LOCAL_BEEP
+	,X11_LOCAL_SETICON
 };
 
 struct x11_local_event {
@@ -24,6 +25,7 @@ struct x11_local_event {
 		char	name[81];
 		char	title[81];
 		struct	rectlist *rect;
+		unsigned long	*icon_data;
 	} data;
 };
 
@@ -80,6 +82,7 @@ struct x11 {
 	Window (*XCreateWindow)(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, 
                        unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes);
 	Colormap (*XCreateColormap)(Display *display, Window w, Visual *visual, int alloc);
+	XClassHint *(*XAllocClassHint)(void);
 	Atom utf8;
 	Atom targets;
 };
