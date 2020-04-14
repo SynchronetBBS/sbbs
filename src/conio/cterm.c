@@ -3398,7 +3398,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				TERM_XY(&col, &row);
 				row++;
 				if(row > TERM_MAXY)
-					i = TERM_MAXY;
+					row = TERM_MAXY;
 				GOTOXY(col, row);
 				break;
 			case 'H':
@@ -3408,7 +3408,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				TERM_XY(&col, &row);
 				row--;
 				if(row < TERM_MINY)
-					i = TERM_MINY;
+					row = TERM_MINY;
 				GOTOXY(col, row);
 				break;
 			case 'P':	// Device Control String - DCS
