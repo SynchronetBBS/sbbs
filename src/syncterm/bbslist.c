@@ -1257,10 +1257,12 @@ custom_mode_adjusted(int *cur, char **opt)
 	uifcbail();
 	textmode(0);
 	cvmode = find_vmode(ti.currmode);
-	vparams[cvmode].cols = settings.custom_cols;
-	vparams[cvmode].rows = settings.custom_rows;
-	vparams[cvmode].charheight = settings.custom_fontheight;
-	textmode(ti.currmode);
+	if (cvmode >= 0) {
+		vparams[cvmode].cols = settings.custom_cols;
+		vparams[cvmode].rows = settings.custom_rows;
+		vparams[cvmode].charheight = settings.custom_fontheight;
+		textmode(ti.currmode);
+	}
 	init_uifc(TRUE, TRUE);
 
 	// Draw BBS List
