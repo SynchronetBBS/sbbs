@@ -1248,9 +1248,11 @@ custom_mode_adjusted(int *cur, char **opt)
 	gettextinfo(&ti);
 	if (ti.currmode != CIOLIB_MODE_CUSTOM) {
 		cvmode = find_vmode(ti.currmode);
-		vparams[cvmode].cols = settings.custom_cols;
-		vparams[cvmode].rows = settings.custom_rows;
-		vparams[cvmode].charheight = settings.custom_fontheight;
+		if (cvmode >= 0) {
+			vparams[cvmode].cols = settings.custom_cols;
+			vparams[cvmode].rows = settings.custom_rows;
+			vparams[cvmode].charheight = settings.custom_fontheight;
+		}
 		return;
 	}
 
