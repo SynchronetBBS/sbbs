@@ -627,277 +627,17 @@ static void sdl_add_key(unsigned int keyval)
 	}
 }
 
-static unsigned int cp437_convert(unsigned int unicode)
-{
-	if(unicode < 0x80)
-		return(unicode);
-	switch(unicode) {
-		case 0x00c7:
-			return(0x80);
-		case 0x00fc:
-			return(0x81);
-		case 0x00e9:
-			return(0x82);
-		case 0x00e2:
-			return(0x83);
-		case 0x00e4:
-			return(0x84);
-		case 0x00e0:
-			return(0x85);
-		case 0x00e5:
-			return(0x86);
-		case 0x00e7:
-			return(0x87);
-		case 0x00ea:
-			return(0x88);
-		case 0x00eb:
-			return(0x89);
-		case 0x00e8:
-			return(0x8a);
-		case 0x00ef:
-			return(0x8b);
-		case 0x00ee:
-			return(0x8c);
-		case 0x00ec:
-			return(0x8d);
-		case 0x00c4:
-			return(0x8e);
-		case 0x00c5:
-			return(0x8f);
-		case 0x00c9:
-			return(0x90);
-		case 0x00e6:
-			return(0x91);
-		case 0x00c6:
-			return(0x92);
-		case 0x00f4:
-			return(0x93);
-		case 0x00f6:
-			return(0x94);
-		case 0x00f2:
-			return(0x95);
-		case 0x00fb:
-			return(0x96);
-		case 0x00f9:
-			return(0x97);
-		case 0x00ff:
-			return(0x98);
-		case 0x00d6:
-			return(0x99);
-		case 0x00dc:
-			return(0x9a);
-		case 0x00a2:
-			return(0x9b);
-		case 0x00a3:
-			return(0x9c);
-		case 0x00a5:
-			return(0x9d);
-		case 0x20a7:
-			return(0x9e);
-		case 0x0192:
-			return(0x9f);
-		case 0x00e1:
-			return(0xa0);
-		case 0x00ed:
-			return(0xa1);
-		case 0x00f3:
-			return(0xa2);
-		case 0x00fa:
-			return(0xa3);
-		case 0x00f1:
-			return(0xa4);
-		case 0x00d1:
-			return(0xa5);
-		case 0x00aa:
-			return(0xa6);
-		case 0x00ba:
-			return(0xa7);
-		case 0x00bf:
-			return(0xa8);
-		case 0x2310:
-			return(0xa9);
-		case 0x00ac:
-			return(0xaa);
-		case 0x00bd:
-			return(0xab);
-		case 0x00bc:
-			return(0xac);
-		case 0x00a1:
-			return(0xad);
-		case 0x00ab:
-			return(0xae);
-		case 0x00bb:
-			return(0xaf);
-		case 0x2591:
-			return(0xb0);
-		case 0x2592:
-			return(0xb1);
-		case 0x2593:
-			return(0xb2);
-		case 0x2502:
-			return(0xb3);
-		case 0x2524:
-			return(0xb4);
-		case 0x2561:
-			return(0xb5);
-		case 0x2562:
-			return(0xb6);
-		case 0x2556:
-			return(0xb7);
-		case 0x2555:
-			return(0xb8);
-		case 0x2563:
-			return(0xb9);
-		case 0x2551:
-			return(0xba);
-		case 0x2557:
-			return(0xbb);
-		case 0x255d:
-			return(0xbc);
-		case 0x255c:
-			return(0xbd);
-		case 0x255b:
-			return(0xbe);
-		case 0x2510:
-			return(0xbf);
-		case 0x2514:
-			return(0xc0);
-		case 0x2534:
-			return(0xc1);
-		case 0x252c:
-			return(0xc2);
-		case 0x251c:
-			return(0xc3);
-		case 0x2500:
-			return(0xc4);
-		case 0x253c:
-			return(0xc5);
-		case 0x255e:
-			return(0xc6);
-		case 0x255f:
-			return(0xc7);
-		case 0x255a:
-			return(0xc8);
-		case 0x2554:
-			return(0xc9);
-		case 0x2569:
-			return(0xca);
-		case 0x2566:
-			return(0xcb);
-		case 0x2560:
-			return(0xcc);
-		case 0x2550:
-			return(0xcd);
-		case 0x256c:
-			return(0xce);
-		case 0x2567:
-			return(0xcf);
-		case 0x2568:
-			return(0xd0);
-		case 0x2564:
-			return(0xd1);
-		case 0x2565:
-			return(0xd2);
-		case 0x2559:
-			return(0xd3);
-		case 0x2558:
-			return(0xd4);
-		case 0x2552:
-			return(0xd5);
-		case 0x2553:
-			return(0xd6);
-		case 0x256b:
-			return(0xd7);
-		case 0x256a:
-			return(0xd8);
-		case 0x2518:
-			return(0xd9);
-		case 0x250c:
-			return(0xda);
-		case 0x2588:
-			return(0xdb);
-		case 0x2584:
-			return(0xdc);
-		case 0x258c:
-			return(0xdd);
-		case 0x2590:
-			return(0xde);
-		case 0x2580:
-			return(0xdf);
-		case 0x03b1:
-			return(0xe0);
-		case 0x00df:
-			return(0xe1);
-		case 0x0393:
-			return(0xe2);
-		case 0x03c0:
-			return(0xe3);
-		case 0x03a3:
-			return(0xe4);
-		case 0x03c3:
-			return(0xe5);
-		case 0x00b5:
-			return(0xe6);
-		case 0x03c4:
-			return(0xe7);
-		case 0x03a6:
-			return(0xe8);
-		case 0x0398:
-			return(0xe9);
-		case 0x03a9:
-			return(0xea);
-		case 0x03b4:
-			return(0xeb);
-		case 0x221e:
-			return(0xec);
-		case 0x03c6:
-			return(0xed);
-		case 0x03b5:
-			return(0xee);
-		case 0x2229:
-			return(0xef);
-		case 0x2261:
-			return(0xf0);
-		case 0x00b1:
-			return(0xf1);
-		case 0x2265:
-			return(0xf2);
-		case 0x2264:
-			return(0xf3);
-		case 0x2320:
-			return(0xf4);
-		case 0x2321:
-			return(0xf5);
-		case 0x00f7:
-			return(0xf6);
-		case 0x2248:
-			return(0xf7);
-		case 0x00b0:
-			return(0xf8);
-		case 0x2219:
-			return(0xf9);
-		case 0x00b7:
-			return(0xfa);
-		case 0x221a:
-			return(0xfb);
-		case 0x207f:
-			return(0xfc);
-		case 0x00b2:
-			return(0xfd);
-		case 0x25a0:
-			return(0xfe);
-		case 0x00a0:
-			return(0xff);
-	}
-	return(0x01ffff);
-}
-
 /* Called from event thread only */
 static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 {
 	int expect;
 	int i;
 
+	/* We don't handle META */
+	if (mod & KMOD_GUI)
+		return(0x0001ffff);
+
+	/* Glah! */
 #ifdef __DARWIN__
 	if(keysym==0x7f && !(mod & KMOD_CTRL)) {
 		keysym=0x08;
@@ -906,13 +646,10 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 #endif
 
 	/*
-	 * No Unicode translation available.
-	 * Or there *IS* an SDL keysym.
-	 * Or ALT (GUI) pressed
+	 * Only do this crap if ALT or CTRL is held down...
+	 * For everything else, just believe SDL.
 	 */
-	// SDL2: This needs to be replaced with... betterness.
-	if((keysym > SDLK_UNKNOWN) || (mod & (KMOD_GUI|KMOD_ALT))) {
-
+	if(mod & (KMOD_CTRL|KMOD_ALT)) {
 		/* Find the SDL keysym */
 		for(i=0;sdl_keyval[i].keysym;i++) {
 			if(sdl_keyval[i].keysym==keysym) {
@@ -920,10 +657,7 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 
 				/*
 				 * Using the modifiers, look up the expected scan code.
-				 * Under windows, this is what unicode will be set to
-				 * if the ALT key is not AltGr
 				 */
-
 				if(mod & KMOD_CTRL)
 					expect=sdl_keyval[i].ctrl;
 				else if(mod & KMOD_SHIFT) {
@@ -943,118 +677,33 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 				 * Now handle the ALT case so that expect will
 				 * be what we expect to return
 				 */
-				if(mod & (KMOD_GUI|KMOD_ALT)) {
-
+				if(mod & KMOD_ALT) {
 					/* Yes, this is a "normal" ALT combo */
-					if(keysym==expect || keysym == 0)
+					if(keysym==expect)
 						return(sdl_keyval[i].alt);
 
-					/* AltGr apparently... translate unicode or give up */
-					return(cp437_convert(keysym));
+					/* AltGr apparently... give up */
+					return(0x0001ffff);
 				}
 
-				/*
-				 * If the keysym is a keypad one
-				 * AND numlock is locked
-				 * AND none of Control, Shift, ALT, or GUI are pressed
-				 */
-				if(keysym >= SDLK_KP_0 && keysym <= SDLK_KP_EQUALS && 
-						(!(mod & (KMOD_CTRL|KMOD_SHIFT|KMOD_ALT|KMOD_GUI) ))) {
-#if defined(_WIN32)
-					/*
-					 * SDL2: Is this comment still true?
-					 * Apparently, Win32 SDL doesn't interpret keypad with numlock...
-					 * and doesn't know the state of numlock either...
-					 * So, do that here. *sigh*
-					 */
-
-					mod &= ~KMOD_NUM;	// Ignore "current" mod state
-					if (GetKeyState(VK_NUMLOCK) & 1)
-						mod |= KMOD_NUM;
-#endif
-					if (mod & KMOD_NUM) {
-						switch(keysym) {
-							case SDLK_KP_0:
-								return('0');
-							case SDLK_KP_1:
-								return('1');
-							case SDLK_KP_2:
-								return('2');
-							case SDLK_KP_3:
-								return('3');
-							case SDLK_KP_4:
-								return('4');
-							case SDLK_KP_5:
-								return('5');
-							case SDLK_KP_6:
-								return('6');
-							case SDLK_KP_7:
-								return('7');
-							case SDLK_KP_8:
-								return('8');
-							case SDLK_KP_9:
-								return('9');
-							case SDLK_KP_PERIOD:
-								return('.');
-							case SDLK_KP_DIVIDE:
-								return('/');
-							case SDLK_KP_MULTIPLY:
-								return('*');
-							case SDLK_KP_MINUS:
-								return('-');
-							case SDLK_KP_PLUS:
-								return('+');
-							case SDLK_KP_ENTER:
-								return('\r');
-							case SDLK_KP_EQUALS:
-								return('=');
-						}
-					}
-				}
-
-				/*
-				 * "Extended" keys are always right since we can't compare to unicode
-				 * This does *NOT* mean ALT-x, it means things like F1 and Print Screen
-				 */
-				if(sdl_keyval[i].key > 255)			/* Extended regular key */
-					return(expect);
-
-				/*
-				 * If there is no unicode translation available,
-				 * we *MUST* use our table since we have
-				 * no other data to use.  This is apparently
-				 * never true on OS X.
-				 */
-				if(!keysym)
-					return(expect);
-
-				/*
-				 * At this point, we no longer have a reason to distrust the
-				 * unicode mapping.  If we can coerce it into CP437, we will.
-				 * If we can't, just give up.
-				 */
-				return(cp437_convert(expect));
+				return(expect);
 			}
 		}
 	}
 	/*
-	 * Well, we can't find it in our table...
-	 * If there's a unicode character, use that if possible.
+	 * Well, we can't find it in our table, or it's a regular key.
 	 */
-	if(keysym)
-		return(cp437_convert(keysym));
-
-	/*
-	 * No unicode... perhaps it's ASCII?
-	 * Most likely, this would be a strangely
-	 * entered control character.
-	 *
-	 * If *any* modifier key is down though
-	 * we're not going to trust the keysym
-	 * value since we can't.
-	 */
-	if(keysym <= 127 && !(mod & (KMOD_GUI|KMOD_ALT|KMOD_CTRL|KMOD_SHIFT)))
-		return(keysym);
+	if(keysym > 0 && keysym < 128) {
+		if (isalpha(keysym)) {
+			/*
+			 * If CAPS and SHIFT are not in the same state,
+			 * upper-case.
+			 */
+			if(!!(mod & KMOD_CAPS) != !!(mod & KMOD_SHIFT))
+				return toupper(keysym);
+		}
+		return keysym;
+	}
 
 	/* Give up.  It's not working out for us. */
 	return(0x0001ffff);
