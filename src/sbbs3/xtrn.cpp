@@ -476,6 +476,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fprintf(fp, "SBBSEXEC=%s\n", exec_dir);
         fprintf(fp, "SBBSNNUM=%d\n", cfg.node_num);
 		fprintf(fp, "PCBNODE=%d\n", cfg.node_num);
+		fprintf(fp, "PCBDRIVE=%.2s\n", node_dir);
+		fprintf(fp, "PCBDIR=%s\n", node_dir + 2);
 		/* date/time env vars */
 		fprintf(fp, "DAY=%02u\n", tm.tm_mday);
 		fprintf(fp, "WEEKDAY=%s\n",wday[tm.tm_wday]);
@@ -1179,6 +1181,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fprintf(doscmdrc,"SBBSEXEC=E:\\exec\\\n");
 		fprintf(doscmdrc,"SBBSNNUM=%d\n",cfg.node_num);
 		fprintf(doscmdrc,"PCBNODE=%d\n",cfg.node_num);
+		fprintf(doscmdrc,"PCBDRIVE=D:\n");
+		fprintf(doscmdrc,"PCBDIR=\\\n");
 
 		fclose(doscmdrc);
 		SAFECOPY(str,fullcmdline);
@@ -1312,6 +1316,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		fprintf(dosemubat,"set SBBSDATA=%s\r\n",datadrive);
 		fprintf(dosemubat,"set SBBSEXEC=%s\r\n",execdrive);
 		fprintf(dosemubat,"set PCBNODE=%d\r\n",cfg.node_num);
+		fprintf(dosemubat,"set PCBDRIVE=%s\r\n",nodedrive);
+		fprintf(dosemubat,"set PCBDIR=\\\r\n");
 
 		// let's do this cleanly like dosemu's default autoexec.bat does -wk42
 		/* clear existing redirections on dos side and */
