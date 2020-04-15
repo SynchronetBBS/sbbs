@@ -26,12 +26,13 @@ int orig_x;
 int orig_y;
 uint32_t orig_palette[16];
 
-int	init_uifc(BOOL scrn, BOOL bottom) {
+int
+init_uifc(BOOL scrn, BOOL bottom) {
 	int	i;
 	struct	text_info txtinfo;
 	char	top[80];
 
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	if(!uifc_initialized) {
 		/* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len=0;
@@ -50,6 +51,13 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 		uifc_initialized=UIFC_INIT;
 		get_modepalette(orig_palette);
 		set_modepalette(palettes[COLOUR_PALETTE]);
+		if ((cio_api.options & (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING)) == (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING)) {
+			uifc.bclr=BLUE;
+			uifc.hclr=YELLOW;
+			uifc.lclr=WHITE;
+			uifc.cclr=CYAN;
+			uifc.lbclr=BLUE|(LIGHTGRAY<<4);	/* lightbar color */
+		}
 	}
 
 	if(scrn) {

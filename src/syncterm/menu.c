@@ -5,6 +5,7 @@
 #include <genwrap.h>
 #include <uifc.h>
 #include <ciolib.h>
+#include <vidmodes.h>
 
 #include "cterm.h"
 #include "term.h"
@@ -43,6 +44,7 @@ void viewscroll(void)
 	setfont(0, FALSE, 4);
 	drawwin();
 	top=cterm->backpos;
+	set_modepalette(palettes[COLOUR_PALETTE]);
 	gotoxy(1,1);
 	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
 	for(i=0;(!i) && (!quitting);) {
