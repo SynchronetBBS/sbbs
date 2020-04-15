@@ -37,6 +37,7 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos);
 int sdl_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b);
 void sdl_setwinsize(int w, int h);
 void sdl_setwinposition(int x, int y);
+void sdl_beep(void);
 #ifdef __cplusplus
 }
 #endif

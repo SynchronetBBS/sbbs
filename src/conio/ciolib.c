@@ -195,6 +195,7 @@ static int try_sdl_init(int mode)
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
+		cio_api.beep = sdl_beep;
 		return(1);
 	}
 	return(0);

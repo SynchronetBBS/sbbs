@@ -1392,3 +1392,15 @@ int sdl_initciolib(int mode)
 	sdl_keylock=sdl.SDL_CreateMutex();
 	return(sdl_init(mode));
 }
+
+void
+sdl_beep(void)
+{
+        static unsigned char wave[2206];
+
+	if (wave[2205] == 0) {
+		xptone_makewave(440, wave, 2205, WAVE_SHAPE_SINE_SAW_HARM);
+		wave[2205] = 1;
+	}
+        xp_play_sample(wave, 2205, TRUE);
+}
