@@ -1127,6 +1127,8 @@ int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
 	return SMB_SELFPACK;
 }
 
+/* Open Synchronet Message Base and create, if necessary (e.g. first time opened) */
+/* If return value is not SMB_SUCCESS, sub-board is not left open */
 int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 {
 	int retval;
@@ -1148,8 +1150,13 @@ int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 		smb->status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
 	}
 	smb->retry_time = cfg->smb_retry_time;
-	if((retval = smb_open(smb)) == SMB_SUCCESS)
-		smb->subnum = subnum;
+	if((retval = smb_open(smb)) == SMB_SUCCESS) {
+		if(filelength(fileno(smb->shd_fp)) < sizeof(smbhdr_t) + sizeof(smb->status)) {
+			if((retval = smb_create(smb)) != SMB_SUCCESS)
+				smb_close(smb);
+		}
+		if(retval == SMB_SUCCESS)
+			smb->subnum = subnum;
+	}
 	return retval;
 }
-
