@@ -4698,12 +4698,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									GOTOXY(x, y);
 									break;
 								case 155:	/* Return */
-									TERM_XY(&x, &y);
+									TERM_XY(NULL, &y);
 									if (y == TERM_MAXY)
 										scrollup(cterm);
 									else
 										y++;
-									GOTOXY(x, y);
+									GOTOXY(1, y);
 									break;
 								case 156:	/* Delete Line */
 									dellines(cterm, 1);
