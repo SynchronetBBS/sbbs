@@ -2923,10 +2923,7 @@ BOOL doterm(struct bbslist *bbs)
 					default:
 						if(key<256) {
 							/* ASCII Translation */
-							if(key<32) {
-								break;
-							}
-							else if(key<123) {
+							if(key<123) {
 								ch[0]=key;
 								conn_send(ch,1,0);
 							}
