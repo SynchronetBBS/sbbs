@@ -645,49 +645,43 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 	}
 #endif
 
-	/*
-	 * Only do this crap if ALT or CTRL is held down...
-	 * For everything else, just believe SDL.
-	 */
-	if(mod & (KMOD_CTRL|KMOD_ALT)) {
-		/* Find the SDL keysym */
-		for(i=0;sdl_keyval[i].keysym;i++) {
-			if(sdl_keyval[i].keysym==keysym) {
-				/* KeySym found in table */
+	/* Find the SDL keysym */
+	for(i=0;sdl_keyval[i].keysym;i++) {
+		if(sdl_keyval[i].keysym==keysym) {
+			/* KeySym found in table */
 
-				/*
-				 * Using the modifiers, look up the expected scan code.
-				 */
-				if(mod & KMOD_CTRL)
-					expect=sdl_keyval[i].ctrl;
-				else if(mod & KMOD_SHIFT) {
-					if(mod & KMOD_CAPS)
-						expect=sdl_keyval[i].key;
-					else
-						expect=sdl_keyval[i].shift;
-				}
-				else {
-					if(mod & KMOD_CAPS && (toupper(sdl_keyval[i].key) == sdl_keyval[i].shift))
-						expect=sdl_keyval[i].shift;
-					else
-						expect=sdl_keyval[i].key;
-				}
-
-				/*
-				 * Now handle the ALT case so that expect will
-				 * be what we expect to return
-				 */
-				if(mod & KMOD_ALT) {
-					/* Yes, this is a "normal" ALT combo */
-					if(keysym==expect)
-						return(sdl_keyval[i].alt);
-
-					/* AltGr apparently... give up */
-					return(0x0001ffff);
-				}
-
-				return(expect);
+			/*
+			 * Using the modifiers, look up the expected scan code.
+			 */
+			if(mod & KMOD_CTRL)
+				expect=sdl_keyval[i].ctrl;
+			else if(mod & KMOD_SHIFT) {
+				if(mod & KMOD_CAPS)
+					expect=sdl_keyval[i].key;
+				else
+					expect=sdl_keyval[i].shift;
 			}
+			else {
+				if(mod & KMOD_CAPS && (toupper(sdl_keyval[i].key) == sdl_keyval[i].shift))
+					expect=sdl_keyval[i].shift;
+				else
+					expect=sdl_keyval[i].key;
+			}
+
+			/*
+			 * Now handle the ALT case so that expect will
+			 * be what we expect to return
+			 */
+			if(mod & KMOD_ALT) {
+				/* Yes, this is a "normal" ALT combo */
+				if(keysym==expect)
+					return(sdl_keyval[i].alt);
+
+				/* AltGr apparently... give up */
+				return(0x0001ffff);
+			}
+
+			return(expect);
 		}
 	}
 	/*
