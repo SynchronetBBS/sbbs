@@ -335,10 +335,14 @@ static int sdl_init_mode(int mode)
 	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.cols * cvstat.charwidth)) * (vstat.cols * vstat.charwidth);
 	vstat.winheight = ((double)cvstat.winheight / (cvstat.rows * cvstat.charheight * cvstat.vmultiplier)) * (vstat.rows * vstat.charwidth * vstat.vmultiplier);
 	if (oldcols != vstat.cols) {
-		if (oldcols == 40)
+		if (oldcols == 40) {
 			vstat.winwidth /= 2;
-		if (vstat.cols == 40)
+			vstat.winheight /= 2;
+		}
+		if (vstat.cols == 40) {
 			vstat.winwidth *= 2;
+			vstat.winheight *= 2;
+		}
 	}
 	if (vstat.winwidth < vstat.charwidth * vstat.cols)
 		vstat.winwidth = vstat.charwidth * vstat.cols;
