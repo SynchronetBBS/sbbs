@@ -1104,18 +1104,18 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		confnum = n;
 	else if(n != confnum) {
 		char info[128];
-		SAFEPRINTF(info, "expected: %u", confnum);
-		errormsg(WHERE, ERR_CHK, "conference number", n, info);
+		SAFEPRINTF(info, "conference number (expected: %u)", confnum);
+		errormsg(WHERE, ERR_CHK, info, n, section);
 		return false;
 	}
 
 	smb.subnum = resolve_qwkconf(confnum, hubnum);
 	if(smb.subnum == INVALID_SUB) {
-		errormsg(WHERE, ERR_CHK, "conference number", confnum, "invalid");
+		errormsg(WHERE, ERR_CHK, "conference number (invalid)", confnum, section);
 		return false;
 	}
 	if(cfg.sub[smb.subnum]->misc&SUB_NOVOTING) {
-		errormsg(WHERE, ERR_CHK, "conference number", confnum, "voting not allowed");
+		errormsg(WHERE, ERR_CHK, "conference number (voting not allowed)", confnum, section);
 		return false;
 	}
 	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
