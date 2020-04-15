@@ -58,9 +58,6 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, lon
 	if(smb->status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		*dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
-	if(filelength(fileno(smb->shd_fp)) < 1) /* MsgBase doesn't exist yet, create it */
-		i=smb_create(smb);
-
 	*storage=smb_storage_mode(cfg, smb);
 
 	return i;

@@ -112,12 +112,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
-	if(filelength(fileno(p->smb.shd_fp)) < 1) { /* MsgBase doesn't exist yet, create it */
-		if((p->smb_result = smb_create(&(p->smb))) != SMB_SUCCESS) {
-			JS_RESUMEREQUEST(cx, rc);
-			return JS_TRUE;
-		}
-	}
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);

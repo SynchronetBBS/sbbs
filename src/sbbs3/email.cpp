@@ -198,15 +198,6 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 
-	if(smb_fgetlength(smb.shd_fp)<1) {	 /* Create it if it doesn't exist */
-		if((i=smb_create(&smb))!=0) {
-			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
-			errormsg(WHERE,ERR_CREATE,smb.file,i,smb.last_error);
-			return(false); 
-		} 
-	}
-
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
