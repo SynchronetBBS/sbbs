@@ -1083,8 +1083,12 @@ void sbbs_t::qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t net_type
 {
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
-	for(int i=0; section_list != NULL && section_list[i] != NULL; i++)
-		qwk_vote(*ini, section_list[i], net_type, qnet_id, /* confnum: */0, hubnum);
+	for(int i=0; section_list != NULL && section_list[i] != NULL; i++) {
+		if(strnicmp(section_list[i], "poll:", 5) == 0
+			|| strnicmp(section_list[i], "vote:", 5) == 0
+			|| strnicmp(section_list[i], "close:", 6) == 0)
+			qwk_vote(*ini, section_list[i], net_type, qnet_id, /* confnum: */0, hubnum);
+	}
 	strListFree(&section_list);
 }
 
