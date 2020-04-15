@@ -2961,7 +2961,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							*speed = newspeed;
 					}
 					else if (strcmp(seq->ctrl_func, "*z") == 0) {
-						if (seq->param_int[0] >= 0 && seq->param_int[0] <= 63) {
+						if (seq->param_count > 0 && seq->param_int[0] <= 63) {
 							if (cterm->macros[seq->param_int[0]]) {
 								if ((cterm->in_macro & (1<<seq->param_int[0])) == 0) {
 									cterm->escbuf[0]=0;
