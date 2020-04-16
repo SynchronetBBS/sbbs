@@ -202,7 +202,7 @@ if_true
 # Commands
 
 cmdkey A
-	exec_bin "automsg.js"
+	auto_message
 	end_cmd
     
 cmdkey /A
@@ -245,7 +245,7 @@ cmdkey /F
 	end_cmd
 
 cmdkey G
-	exec_bin "text_sec"
+	text_file_section
 	end_cmd
 
 cmdkey I
@@ -257,7 +257,7 @@ cmdkey J
 	end_cmd
     
 cmdkey L
-    exec_bin "msglist"
+    msg_list
     end_cmd
 
 cmdkey /L
