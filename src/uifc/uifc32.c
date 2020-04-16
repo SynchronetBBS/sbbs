@@ -438,11 +438,20 @@ void docopy(void)
 						break;
 					case CIOLIB_BUTTON_1_DRAG_END:
 						lines=abs(mevent.endy-mevent.starty)+1;
-						copybuf=malloc((endy-starty+1)*(endx-startx+1)+1+lines*2);
+						copybuf=malloc(((endy-starty+1)*(endx-startx+1)+1+lines*2)*4);
 						outpos=0;
 						for(y=starty-1;y<endy;y++) {
 							for(x=startx-1;x<endx;x++) {
-								copybuf[outpos++]=screen->vmem[(y*api->scrn_width+x)].ch ? screen->vmem[(y*api->scrn_width+x)].ch : ' ';
+								size_t outlen;
+								uint8_t *utf8str;
+								char ch;
+
+								ch = screen->vmem[(y*api->scrn_width+x)].ch ? screen->vmem[(y*api->scrn_width+x)].ch : ' ';
+								utf8str = cp_to_utf8(conio_fontdata[screen->vmem[(y*api->scrn_width+x)].font].cp, &ch, 1, &outlen);
+								if (utf8str == NULL)
+									continue;
+								memcpy(copybuf + outpos, utf8str, outlen);
+								outpos += outlen;
 							}
 							#ifdef _WIN32
 								copybuf[outpos++]='\r';
@@ -2132,7 +2141,9 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					i=mevnt.startx-left+soffset;
 					if(i>j)
 						i=j;
-					pastebuf=getcliptext();
+					pb=(uint8_t *)getcliptext();
+					pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
+					free(pb);
 					pb=(unsigned char *)pastebuf;
 					f=0;
 				}
@@ -2211,7 +2222,9 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						i=mevnt.startx-left+soffset;
 						if(i>j)
 							i=j;
-						pastebuf=getcliptext();
+						pb=(uint8_t *)getcliptext();
+						pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
+						free(pb);
 						pb=(unsigned char *)pastebuf;
 						ch=0;
 					}
@@ -2255,8 +2268,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					continue;
 				case CTRL_V:
 				case CIO_KEY_SHIFT_IC:	/* Shift-Insert: Paste */
-					if((pastebuf=getcliptext()) != NULL)
-						pb=(unsigned char *)pastebuf;
+					pb=(uint8_t *)getcliptext();
+					pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
+					free(pb);
+					pb=(unsigned char *)pastebuf;
 					continue;
 				case CIO_KEY_IC:	/* insert */
 					api->insert_mode = !api->insert_mode;
@@ -2325,13 +2340,21 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					continue;
 				case CTRL_C:
 				case CIO_KEY_CTRL_IC:	/* Ctrl-Insert */
-					copytext(str, j);
+				{
+					size_t sz;
+					uint8_t *utf8 = cp_to_utf8(CIOLIB_CP437, str, j, &sz);
+					copytext((char *)utf8, sz);
+					free(utf8);
 					continue;
+				}
 				case CTRL_X:
 				case CIO_KEY_SHIFT_DC:
 					if(j)
 					{
-						copytext(str, j);
+						size_t sz;
+						uint8_t *utf8 = cp_to_utf8(CIOLIB_CP437, str, j, &sz);
+						copytext((char *)utf8, sz);
+						free(utf8);
 						i=j=0;
 					}
 					continue;

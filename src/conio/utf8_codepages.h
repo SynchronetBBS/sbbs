@@ -3,6 +3,7 @@
 
 enum ciolib_codepage {
 	CIOLIB_CP437,
+	CIOLIB_CP1251,
 	CIOLIB_CP_COUNT
 };
 
