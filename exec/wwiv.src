@@ -163,7 +163,7 @@ cmdkey J
 	end_cmd
 
 cmdkey L
-	exec_xtrn SBL
+	exec_xtrn sbbslist
 	end_cmd
 
 cmdkey /L
