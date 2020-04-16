@@ -703,6 +703,23 @@ static unsigned int sdl_get_char_code(unsigned int keysym, unsigned int mod)
 	return(0x0001ffff);
 }
 
+static void
+sdl_add_keys(uint8_t *utf8s)
+{
+	char *chars;
+	char *p;
+
+	chars = utf8_to_cp437(utf8s, '\x0d');
+	if (chars) {
+		for (p = chars; *p; p++) {
+			if (*p == '\x0d')
+				continue;
+			sdl_add_key(*((uint8_t *)p));
+		}
+		free(chars);
+	}
+}
+
 /* Mouse event/keyboard thread */
 static void sdl_mouse_thread(void *data)
 {
@@ -744,7 +761,8 @@ static int win_to_text_ypos(int winpos)
 static void sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
-	int			old_w, old_h;
+	int		old_w, old_h;
+	int		block_text = 0;
 
 	pthread_mutex_lock(&vstatlock);
 	old_w = cvstat.winwidth;
@@ -766,55 +784,65 @@ static void sdl_video_event_thread(void *data)
 		else {
 			switch (ev.type) {
 				case SDL_KEYDOWN:			/* Keypress */
-					if ((ev.key.keysym.mod & KMOD_ALT) &&
-					    (ev.key.keysym.sym == SDLK_LEFT ||
-					     ev.key.keysym.sym == SDLK_RIGHT ||
-					     ev.key.keysym.sym == SDLK_UP ||
-					     ev.key.keysym.sym == SDLK_DOWN)) {
-						int w, h;
-						pthread_mutex_lock(&vstatlock);
-						w = cvstat.winwidth;
-						h = cvstat.winheight;
-						switch(ev.key.keysym.sym) {
-							case SDLK_LEFT:
-								if (w % (cvstat.charwidth * cvstat.cols)) {
-									w = w - w % (cvstat.charwidth * cvstat.cols);
-								}
-								else {
-									w -= (cvstat.charwidth * cvstat.cols);
-									if (w < (cvstat.charwidth * cvstat.cols))
-										w = cvstat.charwidth * cvstat.cols;
-								}
-								break;
-							case SDLK_RIGHT:
-								w = (w - w % (cvstat.charwidth * cvstat.cols)) + (cvstat.charwidth * cvstat.cols);
-								break;
-							case SDLK_UP:
-								if (h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) {
-									h = h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
-								}
-								else {
-									h -= (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
-									if (h < (cvstat.charheight * cvstat.rows * cvstat.vmultiplier))
-										h = cvstat.charheight * cvstat.rows * cvstat.vmultiplier;
-								}
-								break;
-							case SDLK_DOWN:
-								h = (h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) + (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
-								break;
+					if (ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) {
+						block_text = 1;
+						if ((ev.key.keysym.mod & KMOD_ALT) &&
+						    (ev.key.keysym.sym == SDLK_LEFT ||
+						     ev.key.keysym.sym == SDLK_RIGHT ||
+						     ev.key.keysym.sym == SDLK_UP ||
+						     ev.key.keysym.sym == SDLK_DOWN)) {
+							int w, h;
+							pthread_mutex_lock(&vstatlock);
+							w = cvstat.winwidth;
+							h = cvstat.winheight;
+							switch(ev.key.keysym.sym) {
+								case SDLK_LEFT:
+									if (w % (cvstat.charwidth * cvstat.cols)) {
+										w = w - w % (cvstat.charwidth * cvstat.cols);
+									}
+									else {
+										w -= (cvstat.charwidth * cvstat.cols);
+										if (w < (cvstat.charwidth * cvstat.cols))
+											w = cvstat.charwidth * cvstat.cols;
+									}
+									break;
+								case SDLK_RIGHT:
+									w = (w - w % (cvstat.charwidth * cvstat.cols)) + (cvstat.charwidth * cvstat.cols);
+									break;
+								case SDLK_UP:
+									if (h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) {
+										h = h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
+									}
+									else {
+										h -= (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
+										if (h < (cvstat.charheight * cvstat.rows * cvstat.vmultiplier))
+											h = cvstat.charheight * cvstat.rows * cvstat.vmultiplier;
+									}
+									break;
+								case SDLK_DOWN:
+									h = (h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) + (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
+									break;
+							}
+							if (w > 16384 || h > 16384)
+								beep();
+							else {
+								cvstat.winwidth = w;
+								cvstat.winheight = h;
+							}
+							pthread_mutex_unlock(&vstatlock);
+							break;
 						}
-						if (w > 16384 || h > 16384)
-							beep();
-						else {
-							cvstat.winwidth = w;
-							cvstat.winheight = h;
-						}
-						pthread_mutex_unlock(&vstatlock);
 					}
-					else
+					if (block_text || !isprint(ev.key.keysym.sym))
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 					break;
-				case SDL_KEYUP:				/* Ignored (handled in KEYDOWN event) */
+				case SDL_TEXTINPUT:
+					if (!block_text)
+						sdl_add_keys((uint8_t *)ev.text.text);
+					break;
+				case SDL_KEYUP:
+					if (!(ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)))
+						block_text = 0;
 					break;
 				case SDL_MOUSEMOTION:
 					if(!ciolib_mouse_initialized)
