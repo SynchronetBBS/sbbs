@@ -71,6 +71,7 @@ void ssh_input_thread(void *args)
 			continue;
 
 		pthread_mutex_lock(&ssh_mutex);
+		cl.FlushData(ssh_session);
 		status=cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 		pthread_mutex_unlock(&ssh_mutex);
 
