@@ -665,7 +665,7 @@ static int x11_event(XEvent *ev)
 						x11.XGetWindowProperty(dpy, win, ev->xselection.property, 0, bytes_left, True, AnyPropertyType, &pastebuf_format, &format, &len, &dummy, (unsigned char **)&pastebuf);
 						if (x11.utf8 && pastebuf_format == x11.utf8) {
 							char *opb = pastebuf;
-							pastebuf = (char *)utf8_to_cp437((uint8_t *)pastebuf, '?');
+							pastebuf = (char *)utf8_to_cp(CIOLIB_CP437, (uint8_t *)pastebuf, '?', strlen(pastebuf), NULL);
 							if (pastebuf == NULL)
 								pastebuf = opb;
 							else
@@ -706,7 +706,7 @@ static int x11_event(XEvent *ev)
 						respond.xselection.property=req->property;
 					}
 					else if(req->target == x11.utf8) {
-						uint8_t *utf8_str = cp437_to_utf8(copybuf, strlen(copybuf), NULL);
+						uint8_t *utf8_str = cp_to_utf8(CIOLIB_CP437, copybuf, strlen(copybuf), NULL);
 						if (utf8_str != NULL) {
 							x11.XChangeProperty(dpy, req->requestor, req->property, x11.utf8, 8, PropModeReplace, utf8_str, strlen((char *)utf8_str));
 							respond.xselection.property=req->property;

@@ -2,8 +2,26 @@
 #include <stdlib.h>
 #include "utf8_codepages.h"
 
+struct ciolib_cpmap {
+	uint32_t	unicode;
+	uint8_t		cpchar;
+};
+
+struct codepage_def {
+	char name[32];
+	enum ciolib_codepage cp;
+	uint8_t *(*to_utf8)(const char *cp437str, size_t buflen, size_t *outlen, struct codepage_def *cpdef);
+	char *(*utf8_to)(const uint8_t *utf8str, char unmapped, size_t buflen, size_t *outlen, struct codepage_def *cpdef);
+	uint8_t (*from_unicode_cpoint)(uint32_t cpoint, char unmapped, struct codepage_def *cpdef);
+	uint8_t (*from_unicode_cpoint_ext)(uint32_t cpoint, char unmapped, struct codepage_def *cpdef);
+	struct ciolib_cpmap *cp_table;
+	size_t cp_table_sz;
+	uint32_t *cp_unicode_table;
+	uint32_t *cp_ext_unicode_table;
+};
+
 // Sorted by unicode codepoint...
-struct cp437map cp437_table[160] = {
+static struct ciolib_cpmap cp437_table[160] = {
 	{0x0000, 0},   {0x00A0, 255}, {0x00A1, 173}, {0x00A2, 155},
 	{0x00A3, 156}, {0x00A5, 157}, {0x00A7, 21},  {0x00AA, 166},
 	{0x00AB, 174}, {0x00AC, 170}, {0x00B0, 248}, {0x00B1, 241},
@@ -46,14 +64,14 @@ struct cp437map cp437_table[160] = {
 	{0x2665, 3},   {0x2666, 4},   {0x266A, 13},  {0x266B, 14},
 };
 
-uint32_t cp437_ext_table[32] = {
+static uint32_t cp437_ext_table[32] = {
 	0x0000, 0x263A, 0x263B, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
 	0x25D8, 0x25CB, 0x25D9, 0x2642, 0x2640, 0x266A, 0x266B, 0x263C,
 	0x25BA, 0x25C4, 0x2195, 0x203C, 0x00B6, 0x00A7, 0x25AC, 0x21A8,
 	0x2191, 0x2193, 0x2192, 0x2190, 0x221F, 0x2194, 0x25B2, 0x25BC
 };
 
-uint32_t cp437_unicode_table[128] = {
+static uint32_t cp437_unicode_table[128] = {
 	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7, 
 	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5, 
 	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9, 
@@ -76,7 +94,7 @@ static int
 cmptab(const void *key, const void *entry)
 {
 	const uint32_t *pkey = key;
-	const struct cp437map *pentry = entry;
+	const struct ciolib_cpmap *pentry = entry;
 
 	if (*pkey == pentry->unicode)
 		return 0;
@@ -85,28 +103,26 @@ cmptab(const void *key, const void *entry)
 	return 1;
 }
 
-uint8_t
-cp437_from_unicode_cp(uint32_t cp, char unmapped)
+static uint8_t
+cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, struct codepage_def *cpdef)
 {
-	struct cp437map *mapped;
+	struct ciolib_cpmap *mapped;
 
-	if (cp < 128)
-		return cp;
-	mapped = bsearch(&cp, cp437_table, 
-	    sizeof(cp437_table) / sizeof(cp437_table[0]),
-	    sizeof(cp437_table[0]), cmptab);
+	if (cpoint < 128)
+		return cpoint;
+	mapped = bsearch(&cpoint, cpdef->cp_table, cpdef->cp_table_sz, sizeof(cpdef->cp_table[0]), cmptab);
 	if (mapped == NULL)
 		return unmapped;
-	return mapped->cp437;
+	return mapped->cpchar;
 }
 
-uint8_t
-cp437_from_unicode_cp_ext(uint32_t cp, char unmapped)
+static uint8_t
+cptable_from_unicode_cpoint_ext(uint32_t cpoint, char unmapped, struct codepage_def *cpdef)
 {
-	if (cp < 32) {
-		return cp437_ext_table[cp];
+	if (cpoint < 32) {
+		return cpdef->cp_ext_unicode_table[cpoint];
 	}
-	return cp437_from_unicode_cp(cp, unmapped);
+	return cptable_from_unicode_cpoint(cpoint, unmapped, cpdef);
 }
 
 static int
@@ -199,8 +215,8 @@ utf8_bytes(uint32_t cp)
 	return -1;
 }
 
-uint8_t *
-cp437_to_utf8(const char *cp437str, size_t buflen, size_t *outlen)
+static uint8_t *
+cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, struct codepage_def *cpdef)
 {
 	size_t needed = 0;
 	int cplen;
@@ -211,7 +227,7 @@ cp437_to_utf8(const char *cp437str, size_t buflen, size_t *outlen)
 
 	// Calculate the number of bytes needed
 	for (idx = 0; idx < buflen; idx++) {
-		ch = cp437str[idx];
+		ch = cpstr[idx];
 		if (ch == 0)
 			cplen = 4;
 		else if (ch < 128)
@@ -229,7 +245,7 @@ cp437_to_utf8(const char *cp437str, size_t buflen, size_t *outlen)
 
 	rp = ret;
 	for (idx = 0; idx < buflen; idx++) {
-		ch = cp437str[idx];
+		ch = cpstr[idx];
 		if (ch == 0) {
 			*(rp++) = 0xef;
 			*(rp++) = 0xbf;
@@ -241,13 +257,15 @@ cp437_to_utf8(const char *cp437str, size_t buflen, size_t *outlen)
 			cplen = 1;
 		}
 		else {
-			cplen = write_cp(rp, cp437_unicode_table[ch - 128]);
+			cplen = write_cp(rp, cpdef->cp_unicode_table[ch - 128]);
 			if (cplen < 1)
 				goto error;
 		}
 		rp += cplen;
 	}
 	*rp = 0;
+	if (outlen)
+		*outlen = rp - ret;
 	return ret;
 
 error:
@@ -263,12 +281,12 @@ error:
  * Does not normalize the unicode, just a simple mapping
  * (TODO: Normalize into combined chars etc)
  */
-char *
-utf8_to_cp437(const uint8_t *utf8str, char unmapped)
+static char *
+utf8_to_cpstr(const uint8_t *utf8str, char unmapped, size_t inlen, size_t *outlen, struct codepage_def *cpdef)
 {
-	const uint8_t *p;
+	size_t idx;
 	char *rp;
-	size_t outlen = 0;
+	size_t outsz = 0;
 	int incode = 0;
 	uint32_t codepoint;
 	char *ret = NULL;
@@ -276,41 +294,41 @@ utf8_to_cp437(const uint8_t *utf8str, char unmapped)
 	// TODO: Normalize UTF-8...
 
 	// Calculate the number of code points and validate.
-	for (p = utf8str; *p; p++) {
+	for (idx = 0; idx < inlen; idx++) {
 		if (incode) {
-			switch (*p & 0xc0) {
+			switch (utf8str[idx] & 0xc0) {
 				case 0x80:
 					incode--;
 					if (incode == 0)
-						outlen++;
+						outsz++;
 					break;
 				default:
 					goto error;
 			}
 		}
 		else {
-			if (*p & 0x80) {
-				if ((*p & 0xe0) == 0xc0)
+			if (utf8str[idx] & 0x80) {
+				if ((utf8str[idx] & 0xe0) == 0xc0)
 					incode = 1;
-				else if ((*p & 0xf0) == 0xe0)
+				else if ((utf8str[idx] & 0xf0) == 0xe0)
 					incode = 2;
-				else if ((*p & 0xf8) == 0xf0)
+				else if ((utf8str[idx] & 0xf8) == 0xf0)
 					incode = 3;
 				else
 					goto error;
 			}
 			else
-				outlen++;
+				outsz++;
 		}
 	}
-	ret = malloc(outlen + 1);
+	ret = malloc(outsz + 1);
 	if (ret == NULL)
 		goto error;
 	rp = ret;
 
 	// Fill the string...
-	while (*utf8str) {
-		utf8str += read_cp(utf8str, &codepoint);
+	for (idx = 0; idx < inlen; idx++) {
+		utf8str += read_cp(&utf8str[idx], &codepoint);
 		if (codepoint == 0xffff || codepoint == 0xfffe)
 			goto error;
 		if (codepoint < 128)
@@ -319,13 +337,53 @@ utf8_to_cp437(const uint8_t *utf8str, char unmapped)
 		else if (codepoint == 0xa6) 
 			*(rp++) = '|';
 		else {
-			*(rp++) = cp437_from_unicode_cp(codepoint, unmapped);
+			*(rp++) = cptable_from_unicode_cpoint(codepoint, unmapped, cpdef);
 		}
 	}
 	*rp = 0;
+	if (outlen)
+		*outlen = rp - ret;
 
 	return ret;
 error:
 	free(ret);
 	return NULL;
+}
+
+struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
+	{"CP437", CIOLIB_CP437, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cptable_from_unicode_cpoint_ext, 
+		cp437_table, sizeof(cp437_table) / sizeof(cp437_table[0]),
+		cp437_unicode_table, cp437_ext_table},
+};
+
+uint8_t *cp_to_utf8(enum ciolib_codepage cp, const char *cpstr, size_t buflen, size_t *outlen)
+{
+	if (cp < 0 || cp >= CIOLIB_CP_COUNT)
+		return NULL;
+
+	return ciolib_cp[cp].to_utf8(cpstr, buflen, outlen, &ciolib_cp[cp]);
+}
+
+char *utf8_to_cp(enum ciolib_codepage cp, const uint8_t *utf8str, char unmapped, size_t buflen, size_t *outlen)
+{
+	if (cp < 0 || cp >= CIOLIB_CP_COUNT)
+		return NULL;
+
+	return ciolib_cp[cp].utf8_to(utf8str, unmapped, buflen, outlen, &ciolib_cp[cp]);
+}
+
+uint8_t cp_from_unicode_cp(enum ciolib_codepage cp, uint32_t cpoint, char unmapped)
+{
+	if (cp < 0 || cp >= CIOLIB_CP_COUNT)
+		return unmapped;
+
+	return ciolib_cp[cp].from_unicode_cpoint(cpoint, unmapped, &ciolib_cp[cp]);
+}
+
+uint8_t cp_from_unicode_cp_ext(enum ciolib_codepage cp, uint32_t cpoint, char unmapped)
+{
+	if (cp < 0 || cp >= CIOLIB_CP_COUNT)
+		return unmapped;
+
+	return ciolib_cp[cp].from_unicode_cpoint_ext(cpoint, unmapped, &ciolib_cp[cp]);
 }
