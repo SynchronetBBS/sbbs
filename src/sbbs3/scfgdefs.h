@@ -596,6 +596,7 @@ typedef struct
 	char			sync_mod[LEN_MODNAME+1];			/* Synchronization module */
 	char			expire_mod[LEN_MODNAME+1];			/* User expiration module */
 	char			textsec_mod[LEN_MODNAME+1];			/* Text section module */
+	char			automsg_mod[LEN_MODNAME+1];			/* Auto-message module */
 	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
 	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
 	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */
