@@ -14,6 +14,10 @@
 // into the terminal server, for example:
 //   ;exec ?install-xtrn ../xtrn/minesweeper
 //
+// The .ini root section keys supported:
+//
+// info = Description of the program being install (79 chars or less)
+//
 // The .ini sections and keys supported (zero or more of each may be included):
 //
 // [prog:<code>]
@@ -48,18 +52,24 @@
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
 //		ars				= access requirements string (40 chars max)
 //
+// [service:<protocol>]
+//      see ctrl/services.ini 
+//
 // [exec:<file>.js [args]]  ; execute file.js with these arguments
 //		startup_dir		= directory to make current before execution
 //
 // [eval:<js-expression>]
 //      cmd             = evaluate this string rather than the js-expression
+//
+// [ini:<filename.ini>[:section]]
+//      keys            = comma-separated list of keys to add/update in .ini
+//      values          = list of values to eval() and assign to keys[]
 
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
 //		note			= note to sysop displayed before installation
 //      prompt          = confirmation prompt (or false if no prompting)
 //		required		= if true, this item must be installed to continue
-//      requires_service = name of a service that must be enabled for this item
 //
 // Notes:
 //
@@ -112,19 +122,7 @@ function install_xtrn_item(cnf, type, desc, item)
 			|| deny(desc + " (" + item.code + ") already exists, continue"))
 			return false;
 	}
-	
-	if(item.requires_service) {
-		var services_ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
-		if(!services_ini.open("r"))
-			return "Error " + services_ini.error + " opening " + services_ini.name;
-		var enabled = services_ini.iniGetObject(item.requires_service)
-			&& services_ini.iniGetValue(item.requires_service, "enabled", true);
-		services_ini.close();
-		if(!enabled)
-			return "Service '" + item.requires_service 
-				+ "' must first be installed and enabled in " + services_ini.name;
-	}
-	
+
 	while (!item.code && !aborted()
 		|| (find_code(cnf[type], item.code) >= 0
 			&& print(desc + " Internal Code (" + item.code + ") already exists!")))
@@ -203,6 +201,10 @@ function install(ini_fname)
 	var ini_file = new File(ini_fname);
 	if (!ini_file.open("r"))
 		return ini_file.name + " open error " + ini_file.error;
+	
+	var info = ini_file.iniGetValue(null, "info");
+	if(info)
+		print(info);
 
 	var cnflib = load({}, "cnflib.js");
 	var xtrn_cnf = cnflib.read("xtrn.cnf");
@@ -231,6 +233,73 @@ function install(ini_fname)
 			else if(item.required)
 				return false;
 		}
+	}
+	
+	var services_ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
+	var list = ini_file.iniGetAllObjects("protocol", "service:");
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var prompt = "Install/enable the " + item.protocol + " service in " + services_ini.name;
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+		var required = item.required;
+		if(!services_ini.open(services_ini.exists ? 'r+':'w+'))
+			return "Error " + services_ini.error + " opening " + services_ini.name;
+		var service = services_ini.iniGetObject(item.protocol);
+		var enabled = services_ini.iniGetValue(item.protocol, "enabled", true);
+		var result = true;
+		if(!service || !enabled) {
+			if(!service)
+				service = JSON.parse(JSON.stringify(item));
+			service.Enabled = true;
+			delete service.prompt;
+			delete service.required;
+			delete service.protocol;
+//			print("Adding " + JSON.stringify(service) + " to " + services_ini.name);
+			result = services_ini.iniSetObject(item.protocol, service);
+			if (result === true)
+				installed++;
+			else
+				alert("Failed to add " + JSON.stringify(service) + " to " + services_ini.name);
+		}
+		services_ini.close();
+		if(required && result !== true)
+			return false;
+	}
+	
+	var list = ini_file.iniGetAllObjects("filename", "ini:");
+	for (var i = 0; i < list.length; i++) {
+		var item = list[i];
+		var a = item.filename.split(':');
+		item.filename = file_cfgname(system.ctrl_dir, a[0]);
+		item.section = a[1] || null;
+		item.keys = item.keys.split(',');
+		item.values = item.values.split(',');
+		var prompt = "Add/update the " + (item.section || "root") + " section of " + item.filename;
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+		var file = new File(item.filename);
+		if(!file.open(file.exists ? 'r+':'w+'))
+			return "Error " + file.error + " opening " + file.name;
+		var result = true;
+		print(JSON.stringify(item));
+		for(var k in item.keys) {
+			print("Setting " + item.keys[k] + " = " + eval(item.values[k]));
+			result = file.iniSetValue(item.section, item.keys[k], eval(item.values[k]));
+		}
+		file.close();
+		if(required && result !== true)
+			return false;
 	}
 	
 	var list = ini_file.iniGetAllObjects("cmd", "exec:");
