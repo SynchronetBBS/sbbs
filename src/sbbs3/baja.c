@@ -3222,6 +3222,9 @@ void compile(char *src)
 		if(!stricmp(p,"MSG_YOUR_SCAN_ALL")) {
 			fprintf(out,"%c",CS_MSG_YOUR_SCAN_ALL);
 			continue; }
+		if(!stricmp(p,"MSG_LIST")) {
+			fprintf(out,"%c",CS_MSG_LIST);
+			continue; }
 		if(!stricmp(p,"CHAT_SECTION")) {
 			fprintf(out,"%c",CS_CHAT_SECTION);
 			continue; }

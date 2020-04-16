@@ -234,7 +234,7 @@ enum {
 	,CS_MSG_YOUR_SCAN_ALL
 	,CS_MSG_NEW_SCAN_SUB
 	,CS_MSG_SET_GROUP
-	,CS_MSG_UNUSED4
+	,CS_MSG_LIST
 	,CS_MSG_UNUSED3
 	,CS_MSG_UNUSED2
 	,CS_MSG_UNUSED1
@@ -326,7 +326,7 @@ enum {
 
 /* Variable instructions (sub-op-code) */
 
-/* Preceeded by CS_VAR_INSTRUCTION */
+/* Preceded by CS_VAR_INSTRUCTION */
 
 enum {
 
@@ -469,14 +469,14 @@ enum {
 	,MATCHUSER						/* Set int var to user number of user name (str var) */
 	};
 
-/* Preceeded by CS_STR_FUNCTION */
+/* Preceded by CS_STR_FUNCTION */
 									
 enum {								/* More string arg functions */
 	 CS_LOGIN						/* Login/password prompt */
 	,CS_LOAD_TEXT					/* Load alternative TEXT.DAT */
 	};
 
-/* Preceeded by CS_ONE_MORE_BYTE */
+/* Preceded by CS_ONE_MORE_BYTE */
 enum {								/* More single byte instructions */
 	 CS_ONLINE						/* Online execution only */
 	,CS_OFFLINE 					/* Offline execution allowed */
@@ -490,18 +490,18 @@ enum {								/* More single byte instructions */
 	,CS_END_LOOP					/* End of looping code block */
 	};
 
-/* Preceeded by CS_TWO_MORE_BYTES */
+/* Preceded by CS_TWO_MORE_BYTES */
 enum {								/* More two byte instructions */
 	 CS_USER_EVENT					/* External user event */
 	};
 
-/* Preceeded by CS_NET_FUNCTION */
+/* Preceded by CS_NET_FUNCTION */
 
 enum {
 	 CS_SOCKET_OPEN					/* Open a socket */
 	,CS_SOCKET_CLOSE				/* Close a socket */
 	,CS_SOCKET_CONNECT				/* Outbound connection */
-	,CS_SOCKET_ACCEPT				/* Accept an incomming connection */
+	,CS_SOCKET_ACCEPT				/* Accept an incoming connection */
 	,CS_SOCKET_NREAD				/* Get number of bytes in input buffer */
 	,CS_SOCKET_PEEK					/* Peek at input buffer */
 	,CS_SOCKET_READ					/* Read input buffer */
@@ -533,7 +533,7 @@ enum {
 	,CS_FTP_UNUSED1
 	};
 
-/* Preceeded by CS_FIO_FUNCTION */
+/* Preceded by CS_FIO_FUNCTION */
 enum {
 	 FIO_OPEN						/* Open file (static filename) */
 	,FIO_CLOSE						/* Close file */

@@ -2131,8 +2131,8 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("MSG_NEW_SCAN_SUB");
 			case CS_MSG_SET_GROUP:
 				NONE("MSG_SET_GROUP");
-			case CS_MSG_UNUSED4:
-				NONE("MSG_UNUSED4");
+			case CS_MSG_LIST:
+				NONE("MSG_LIST");
 			case CS_MSG_UNUSED3:
 				NONE("MSG_UNUSED3");
 			case CS_MSG_UNUSED2:
