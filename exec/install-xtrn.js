@@ -59,6 +59,7 @@
 //		note			= note to sysop displayed before installation
 //      prompt          = confirmation prompt (or false if no prompting)
 //		required		= if true, this item must be installed to continue
+//      requires_service = name of a service that must be enabled for this item
 //
 // Notes:
 //
@@ -110,6 +111,18 @@ function install_xtrn_item(cnf, type, desc, item)
 		if(options.auto
 			|| deny(desc + " (" + item.code + ") already exists, continue"))
 			return false;
+	}
+	
+	if(item.requires_service) {
+		var services_ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
+		if(!services_ini.open("r"))
+			return "Error " + services_ini.error + " opening " + services_ini.name;
+		var enabled = services_ini.iniGetObject(item.requires_service)
+			&& services_ini.iniGetValue(item.requires_service, "enabled", true);
+		services_ini.close();
+		if(!enabled)
+			return "Service '" + item.requires_service 
+				+ "' must first be installed and enabled in " + services_ini.name;
 	}
 	
 	while (!item.code && !aborted()
@@ -178,7 +191,7 @@ function install(ini_fname)
 {
 	ini_fname = fullpath(ini_fname);
 	var installed = 0;
-	if(!options.auto) {
+	if(!options.auto || options.debug) {
 		var banner = "* Installing " + ini_fname + " use Ctrl-C to abort *";
 		var line = "";
 		for (var i = 0; i < banner.length; i++)
