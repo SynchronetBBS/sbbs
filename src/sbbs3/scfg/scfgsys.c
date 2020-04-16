@@ -1631,6 +1631,7 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Logout",cfg.logout_mod);
 					sprintf(opt[i++],"%-16.16s%s","New User",cfg.newuser_mod);
 					sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
+					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
@@ -1652,6 +1653,7 @@ void sys_cfg(void)
 						"`Logout`       Executed during terminal logout procedure (offline)\n"
 						"`New User`     Executed at end of new terminal user creation process\n"
 						"`Expired User` Executed during daily event when user expires (offline)\n"
+						"`Auto Message` Executed when a user chooses to edit the auto-message\n"
 						"`Text Section` Executed to handle general text file (viewing) section\n"
 						"\n"
 						"Full module command-lines may be used for the operations listed below:\n"
@@ -1700,22 +1702,26 @@ void sys_cfg(void)
 								,cfg.expire_mod,sizeof(cfg.expire_mod)-1,K_EDIT);
 							break;
 						case 7:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Auto Message Module"
+								,cfg.automsg_mod,sizeof(cfg.automsg_mod)-1,K_EDIT);
+							break;
+						case 8:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Text File Section Module"
 								,cfg.textsec_mod,sizeof(cfg.textsec_mod)-1,K_EDIT);
 							break;
-						case 8:
+						case 9:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"
 								,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
 							break;
-						case 9:
+						case 10:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Command"
 								,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
 							break;
-						case 10:
+						case 11:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Command"
 								,cfg.scansubs_mod,sizeof(cfg.scansubs_mod)-1,K_EDIT);
 							break;
-						case 11:
+						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Command"
 								,cfg.listmsgs_mod,sizeof(cfg.listmsgs_mod)-1,K_EDIT);
 							break;
