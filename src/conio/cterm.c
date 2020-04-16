@@ -1162,10 +1162,7 @@ clear2bol(struct cterminal * cterm)
 	TERM_XY(&x, &y);
 	buf = malloc(x * sizeof(*buf));
 	for(i = 0; i < x; i++) {
-		if(cterm->emulation == CTERM_EMULATION_ATASCII)
-			buf[i].ch = 0;
-		else
-			buf[i].ch = ' ';
+		buf[i].ch = ' ';
 		buf[i].legacy_attr = cterm->attr;
 		buf[i].fg = cterm->fg_color;
 		buf[i].bg = cterm->bg_color;
@@ -4767,27 +4764,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									GOTOXY(x, y);
 									break;
 								default:
-									/* Translate to screen codes */
-									k=buf[j];
-									if(k < 32) {
-										k +=64;
-									}
-									else if(k < 96) {
-										k -= 32;
-									}
-									else if(k < 128) {
-										/* No translation */
-									}
-									else if(k < 160) {
-										k +=64;
-									}
-									else if(k < 224) {
-										k -= 32;
-									}
-									else if(k < 256) {
-										/* No translation */
-									}
-									ch[0] = k;
+									ch[0] = buf[j];
 									ch[1] = cterm->attr;
 									SCR_XY(&sx, &sy);
 									PUTTEXT(sx, sy, sx, sy, ch);

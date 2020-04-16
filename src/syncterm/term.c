@@ -1900,8 +1900,6 @@ void font_control(struct bbslist *bbs)
 					setfont(i,FALSE,1);
 					if (i >=32 && i<= 35 && cterm->emulation != CTERM_EMULATION_PETASCII)
 						enable_xlat = CIOLIB_XLAT_CHARS;
-					if (i==36 && cterm->emulation != CTERM_EMULATION_ATASCII)
-						enable_xlat = CIOLIB_XLAT_CHARS;
 				}
 			}
 			else
