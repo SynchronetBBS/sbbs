@@ -327,7 +327,7 @@ function install(ini_fname)
 		if (item.startup_dir === undefined)
 			item.startup_dir = startup_dir;
 		if (!item.args)
-			items.args = "";
+			item.args = "";
 		var result = js.exec.apply(null
 			,[js_file, item.startup_dir, {}].concat(js_args));
 		if (result !== 0 && item.required)
