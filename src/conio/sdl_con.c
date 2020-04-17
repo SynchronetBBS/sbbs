@@ -281,8 +281,7 @@ void sdl_copytext(const char *text, size_t buflen)
 char *sdl_getcliptext(void)
 {
 	uint8_t *u8 = (uint8_t *)sdl.GetClipboardText();
-	char *ret;
-	ret = utf8_to_cp(CIOLIB_CP437, u8, '?', strlen((char *)u8), NULL);
+	char *ret = strdup((char *)u8);
 	sdl.free(u8);
 	return ret;
 }
