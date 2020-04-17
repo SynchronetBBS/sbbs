@@ -502,7 +502,7 @@ void sys_cfg(void)
 				done=0;
 				while(!done) {
 					i=0;
-					sprintf(opt[i++],"%-33.33s%s","Allow Aliases"
+					sprintf(opt[i++],"%-33.33s%s","Allow User Aliases"
 						,cfg.uq&UQ_ALIASES ? "Yes" : "No");
 					sprintf(opt[i++],"%-33.33s%s","Allow Time Banking"
 						,cfg.sys_misc&SM_TIMEBANK ? "Yes" : "No");
