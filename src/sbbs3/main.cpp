@@ -1107,6 +1107,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
     char*		prompt=NULL;
+	size_t		result;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1130,7 +1131,9 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		free(prompt);
 	}
 
-	if(!sbbs->getstr(instr,sizeof(instr)-1,K_EDIT)) {
+	result = sbbs->getstr(instr,sizeof(instr)-1,K_EDIT);
+	sbbs->attr(LIGHTGRAY);
+	if(!result) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
