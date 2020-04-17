@@ -312,7 +312,7 @@ static int _putch(unsigned char ch, BOOL refresh_now)
 			wch[0]=ch;
 			break;
 		case CIOLIB_MODE_CURSES:
-			wch[0] = cp_from_unicode_cp_ext(CIOLIB_CP437, ch, ch);
+			wch[0] = cp_from_unicode_cp_ext(getcodepage(), ch, ch);
 			break;
 	}
 

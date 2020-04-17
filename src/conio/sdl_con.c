@@ -705,11 +705,9 @@ sdl_add_keys(uint8_t *utf8s)
 	char *chars;
 	char *p;
 
-	chars = utf8_to_cp(CIOLIB_CP437, utf8s, '\x0d', strlen((char *)utf8s), NULL);
+	chars = utf8_to_cp(getcodepage(), utf8s, '\x00', strlen((char *)utf8s), NULL);
 	if (chars) {
 		for (p = chars; *p; p++) {
-			if (*p == '\x0d')
-				continue;
 			sdl_add_key(*((uint8_t *)p));
 		}
 		free(chars);
