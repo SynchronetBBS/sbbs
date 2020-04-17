@@ -844,18 +844,20 @@ static int x11_event(XEvent *ev)
 					case XLookupNone:
 						ks = 0xffff;
 						break;
-					case XLookupChars:
 					case XLookupBoth:
-						for (i = 0; i < cnt; i++) {
-							ch = cp_from_unicode_cp(getcodepage(), wbuf[i], 0);
-							if (ch) {
-								write(key_pipe[1], &ch, 1);
+					case XLookupChars:
+						if (lus == XLookupChars || ((ev->xkey.state & (Mod1Mask | ControlMask)) == 0)) {
+							for (i = 0; i < cnt; i++) {
+								ch = cp_from_unicode_cp(getcodepage(), wbuf[i], 0);
+								if (ch) {
+									write(key_pipe[1], &ch, 1);
+								}
 							}
+							break;
 						}
-						break;
+						// Fallthrough
 					case XLookupKeySym:
 						switch (ks) {
-						
 							case XK_Escape:
 								scan = 1;
 								goto docode;
