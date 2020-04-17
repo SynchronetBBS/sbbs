@@ -7,6 +7,7 @@
 #include <genwrap.h>
 #include <ciolib.h>
 #include <cterm.h>
+#include <vidmodes.h>
 
 #include "gen_defs.h"
 #include "threadwrap.h"
@@ -146,6 +147,7 @@ void mousedrag(struct vmem_cell *scrollback)
 	gettext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,tscreen);
 	savscrn = savescreen();
 	ciolib_xlat = old_xlat;
+	set_modepalette(palettes[COLOUR_PALETTE]);
 	while(1) {
 		key=getch();
 		if(key==0 || key==0xe0)
