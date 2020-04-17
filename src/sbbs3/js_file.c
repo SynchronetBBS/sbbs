@@ -1337,6 +1337,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 	char*		sec_name;
 	char*		prefix=NULL;
 	char**		sec_list;
+	str_list_t	ini;
     jsint       i,k;
     jsval       val;
     JSObject*	array;
@@ -1384,7 +1385,8 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
     array = JS_NewArrayObject(cx, 0, NULL);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sec_list = iniReadSectionList(p->fp,prefix);
+	ini = iniReadFile(p->fp);
+	sec_list = iniGetSectionList(ini, prefix);
 	JS_RESUMEREQUEST(cx, rc);
     for(i=0;sec_list && sec_list[i];i++) {
 	    object = JS_NewObject(cx, NULL, NULL, obj);
@@ -1398,7 +1400,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 		rc=JS_SUSPENDREQUEST(cx);
-		key_list = iniReadNamedStringList(p->fp,sec_list[i]);
+		key_list = iniGetNamedStringList(ini,sec_list[i]);
 		JS_RESUMEREQUEST(cx, rc);
 		for(k=0;key_list && key_list[k];k++) {
 			if(lowercase)
@@ -1412,58 +1414,6 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 
 		val=OBJECT_TO_JSVAL(object);
-		/* exception here, Apr-4-2010:
-
-  2000007a()
-js_iniGetAllObjects(JSContext * 0x049383e0, JSObject * 0x049c76a8, unsigned int 0x00000001, long * 0x049c0490, long * 0x02c5c494) line 1064 + 24 bytes
-js_Invoke(JSContext * 0x049383e0, unsigned int 0x00000001, unsigned int 0x00000000) line 1375 + 23 bytes
-js_Interpret(JSContext * 0x049383e0, unsigned char * 0x031ab4b2, long * 0x02c5d6ac) line 3944 + 15 bytes
-js_Execute(JSContext * 0x049383e0, JSObject * 0x049b73e8, JSObject * 0x02f2a7e0, JSStackFrame * 0x00000000, unsigned int 0x00000000, long * 0x02c5d7bc) line 1633 + 19 bytes
-JS_ExecuteScript(JSContext * 0x049383e0, JSObject * 0x049b73e8, JSObject * 0x02f2a7e0, long * 0x02c5d7bc) line 4188 + 25 bytes
-sbbs_t::js_execfile(const char * 0x0226b59a, const char * 0x022060fa) line 668 + 39 bytes
-sbbs_t::external(const char * 0x0226b599, long 0x00000100, const char * 0x022060fa) line 413 + 30 bytes
-event_thread(void * 0x022622b8) line 2745 + 113 bytes
-_threadstart(void * 0x0227dab0) line 187 + 13 bytes
-
-
-and July-15-2010:
-
- 	20000000()
- 	js32.dll!JS_SetElement(JSContext * cx, JSObject * obj, long index, long * vp)  Line 3178 + 0x20 bytes	C
->	sbbs.dll!js_iniGetAllObjects(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1081 + 0x18 bytes	C
- 	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
- 	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
- 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSObject * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
- 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSObject * script, long * rval)  Line 4188 + 0x19 bytes	C
- 	sbbs.dll!sbbs_t::js_execfile(const char * cmd, const char * startup_dir)  Line 686 + 0x27 bytes	C++
- 	sbbs.dll!sbbs_t::external(const char * cmdline, long mode, const char * startup_dir)  Line 413 + 0x1e bytes	C++
- 	sbbs.dll!event_thread(void * arg)  Line 2745 + 0x71 bytes	C++
-
-And July-22-2010:
-
- 	js32.dll!JS_SetElement(JSContext * cx, JSObject * obj, long index, long * vp)  Line 3178 + 0x20 bytes	C
->	sbbs.dll!js_iniGetAllObjects(JSContext * cx, JSObject * obj, unsigned int argc, long * argv, long * rval)  Line 1095 + 0x18 bytes	C
- 	js32.dll!js_Invoke(JSContext * cx, unsigned int argc, unsigned int flags)  Line 1375 + 0x17 bytes	C
- 	js32.dll!js_Interpret(JSContext * cx, unsigned char * pc, long * result)  Line 3944 + 0xf bytes	C
- 	js32.dll!js_Execute(JSContext * cx, JSObject * chain, JSObject * script, JSStackFrame * down, unsigned int flags, long * result)  Line 1633 + 0x13 bytes	C
- 	js32.dll!JS_ExecuteScript(JSContext * cx, JSObject * obj, JSObject * script, long * rval)  Line 4188 + 0x19 bytes	C
- 	websrvr.dll!exec_ssjs(http_session_t * session, char * script)  Line 4638 + 0x24 bytes	C
- 	websrvr.dll!respond(http_session_t * session)  Line 4684 + 0x12 bytes	C
- 	websrvr.dll!http_session_thread(void * arg)  Line 5091 + 0xc bytes	C
-
-
-And Sept-17-2011:
-
-JS_SetElement(JSContext * 0x058b7138, JSObject * 0x0578cd78, long 2, long * 0x084cb338) line 3178 + 32 bytes
-js_iniGetAllObjects(JSContext * 0x058b7138, JSObject * 0x0578cd60, unsigned int 0, long * 0x063adfbc, long * 0x084cb460) line 1115 + 24 bytes
-js_Invoke(JSContext * 0x058b7138, unsigned int 0, unsigned int 0) line 1375 + 23 bytes
-js_Interpret(JSContext * 0x058b7138, unsigned char * 0x04e9298b, long * 0x084cc678) line 3944 + 15 bytes
-js_Execute(JSContext * 0x058b7138, JSObject * 0x057b4b48, JSScript * 0x04e92880, JSStackFrame * 0x00000000, unsigned int 0, long * 0x084cc860) line 1633 + 19 bytes
-JS_ExecuteScript(JSContext * 0x058b7138, JSObject * 0x057b4b48, JSScript * 0x04e92880, long * 0x084cc860) line 4188 + 25 bytes
-exec_ssjs(http_session_t * 0x084ce0f0, char * 0x084ce221) line 4644 + 36 bytes
-respond(http_session_t * 0x084ce0f0) line 4690 + 18 bytes
-http_session_thread(void * 0x00000000) line 5098 + 12 bytes
-  */
         if(!JS_SetElement(cx, array, i, &val))
 			break;
 	}
@@ -1472,6 +1422,7 @@ http_session_thread(void * 0x00000000) line 5098 + 12 bytes
 	if(name != name_def)
 		free(name);
 	iniFreeStringList(sec_list);
+	iniFreeStringList(ini);
 	JS_RESUMEREQUEST(cx, rc);
 
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
