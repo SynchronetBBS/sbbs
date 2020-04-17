@@ -2,6 +2,7 @@
 #define _X_EVENTS_H_
 
 #include <X11/Xlib.h>
+#include <X11/Xresource.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
@@ -84,6 +85,12 @@ struct x11 {
 	Colormap (*XCreateColormap)(Display *display, Window w, Visual *visual, int alloc);
 	XClassHint *(*XAllocClassHint)(void);
 	int (*XSetForeground)(Display *display, GC gc, unsigned long foreground);
+	char *(*XSetLocaleModifiers)(char *modifier_list);
+	XIM (*XOpenIM)(Display *display, XrmDatabase db, char *res_name, char *res_class);
+	XIC (*XCreateIC)(XIM im, ...);
+	int (*XwcLookupString)(XIC ic, XKeyPressedEvent *event, wchar_t *buffer_return, int wchars_buffer, KeySym *keysym_return, Status *status_return);
+	void (*XSetICFocus)(XIC ic);
+	Bool (*XFilterEvent)(XEvent *event, Window w);
 	Atom utf8;
 	Atom targets;
 };

@@ -31,6 +31,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -422,6 +423,32 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XSetLocaleModifiers=xp_dlsym(dl,XSetLocaleModifiers))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XOpenIM=xp_dlsym(dl,XOpenIM))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateIC=xp_dlsym(dl,XCreateIC))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XwcLookupString=xp_dlsym(dl,XwcLookupString))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetICFocus=xp_dlsym(dl,XSetICFocus))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFilterEvent=xp_dlsym(dl,XFilterEvent))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	setlocale(LC_ALL, "");
+	x11.XSetLocaleModifiers("@im=none");
 
 	if(sem_init(&pastebuf_set, 0, 0)) {
 		xp_dlclose(dl);
