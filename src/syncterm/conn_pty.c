@@ -446,9 +446,10 @@ int pty_connect(struct bbslist *bbs)
 		lang = getenv("LANG");
 		if (lang) {
 			slang = strdup(lang);
-			dot = strchr(slang, '.');
-			if (slang && dot) {
-				*dot = 0;
+			if (slang)
+				dot = strchr(slang, '.');
+				if (dot)
+					*dot = 0;
 				lang = xp_asprintf("%s.IBM437", slang);
 				setenv("LANG", lang, 1);
 				xp_asprintf_free(lang);
