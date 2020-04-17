@@ -382,6 +382,10 @@ static void init_mode_internal(int mode)
 
 	pthread_mutex_lock(&blinker_lock);
 	pthread_mutex_lock(&vstatlock);
+	if (last) {
+		bitmap_drv_free_rect(last);
+		last = NULL;
+	}
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 
 	/* Deal with 40 col doubling */
