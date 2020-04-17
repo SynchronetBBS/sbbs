@@ -446,7 +446,7 @@ int pty_connect(struct bbslist *bbs)
 		lang = getenv("LANG");
 		if (lang) {
 			slang = strdup(lang);
-			if (slang)
+			if (slang) {
 				dot = strchr(slang, '.');
 				if (dot)
 					*dot = 0;
