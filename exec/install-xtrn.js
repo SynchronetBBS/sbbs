@@ -16,7 +16,12 @@
 //
 // The .ini root section keys supported:
 //
-// info = Description of the program being install (79 chars or less)
+// Name = Name of the program being installed (79 chars or less)
+// Desc = Description of the program being installed (79 chars or less)
+// From = Comma-separated list of programmers/authors/publishers
+// Cats = Comma-separated list of applicable categories (e.g. "Games")
+// Subs = Comma-separated list of applicable sub-categories (e.g. "Adventure")
+// Inst = Installer .ini file source/revision/author/date information
 //
 // The .ini sections and keys supported (zero or more of each may be included):
 //
@@ -202,9 +207,24 @@ function install(ini_fname)
 	if (!ini_file.open("r"))
 		return ini_file.name + " open error " + ini_file.error;
 	
-	var info = ini_file.iniGetValue(null, "info");
-	if(info)
-		print(info);
+	var inst = ini_file.iniGetValue(null, "inst");
+	if(inst)
+		print("Install file: " + inst);
+	var name = ini_file.iniGetValue(null, "name");
+	if(name)
+		print("[ " + name + " ]");
+	var desc = ini_file.iniGetValue(null, "desc");
+	if(desc)
+		print(desc);
+	var by = ini_file.iniGetValue(null, "by", []);
+	if(by)
+		print("By: " + by.join(", "));
+	var cats = ini_file.iniGetValue(null, "cats", []);
+	if(cats.length)
+		print("Categories: " + cats.join(", "));
+	var subs = ini_file.iniGetValue(null, "subs", []);
+	if(subs.length)
+		print("Sub-categories: " + subs.join(", "));
 
 	var cnflib = load({}, "cnflib.js");
 	var xtrn_cnf = cnflib.read("xtrn.cnf");
