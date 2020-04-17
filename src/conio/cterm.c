@@ -5112,6 +5112,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										k -= 128;
 								}
 								if(cterm->c64reversemode)
+									k += 128;
 								ch[0] = k;
 								ch[1] = cterm->attr;
 								SCR_XY(&sx, &sy);
