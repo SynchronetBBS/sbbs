@@ -831,17 +831,21 @@ char *win32_getcliptext(void)
 	HGLOBAL	clipbuf;
 	LPTSTR	clip;
 	char *ret = NULL;
+	size_t u8sz;
 
-	if(!IsClipboardFormatAvailable(CF_OEMTEXT))
+	if(!IsClipboardFormatAvailable(CF_UNICODETEXT))
 		return(NULL);
 	if(!OpenClipboard(NULL))
 		return(NULL);
-	clipbuf=GetClipboardData(CF_OEMTEXT);
+	clipbuf=GetClipboardData(CF_UNICODETEXT);
 	if(clipbuf!=NULL) {
 		clip=GlobalLock(clipbuf);
-		ret=(char *)malloc(strlen(clip)+1);
-		if(ret != NULL)
-			strcpy(ret, clip);
+		u8sz = WideCharToMultiByte(CP_UTF8, 0, clip, -1, NULL, 0, NULL, NULL);
+		ret=(char *)malloc(u8sz);
+		if(ret != NULL) {
+			if (WideCharToMultiByte(CP_UTF8, 0, clip, -1, ret, u8sz, NULL, NULL) != u8sz)
+				FREE_AND_NULL(ret);
+		}
 		GlobalUnlock(clipbuf);
 	}
 	CloseClipboard();
