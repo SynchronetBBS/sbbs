@@ -262,11 +262,9 @@ void viewofflinescroll(void)
 				,(sbtxtinfo.screenwidth-scrollback_cols)/2+scrollback_cols
 				,sbtxtinfo.screenheight
 				,scrollback_buf+(scrollback_cols*top));
-		ciolib_xlat=CIOLIB_XLAT_CHARS;
 		cputs("Scrollback");
 		gotoxy(scrollback_cols-9,1);
 		cputs("Scrollback");
-		ciolib_xlat=CIOLIB_XLAT_NONE;
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {

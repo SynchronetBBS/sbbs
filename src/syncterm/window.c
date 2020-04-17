@@ -13,7 +13,6 @@ int drawwin(void)
 	char	*p;
 	char	str[32];
 	int		x,y,c;
-	int		old_xlat;
 
     gettextinfo(&txtinfo);
 
@@ -58,9 +57,6 @@ int drawwin(void)
 			winbuf[c++]=YELLOW|(BLUE<<4);
 		}
 	}
-	old_xlat = ciolib_xlat;
-	ciolib_xlat = CIOLIB_XLAT_CHARS;
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,winbuf);
-	ciolib_xlat = old_xlat;
 	return(0);
 }

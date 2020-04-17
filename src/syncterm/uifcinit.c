@@ -20,7 +20,6 @@ static int uifc_initialized=0;
 #define WITH_BOT	(1<<2)
 
 static void (*bottomfunc)(int);
-int orig_ciolib_xlat;
 int orig_vidflags;
 int orig_x;
 int orig_y;
@@ -36,12 +35,10 @@ init_uifc(BOOL scrn, BOOL bottom) {
 	if(!uifc_initialized) {
 		/* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len=0;
-		orig_ciolib_xlat = ciolib_xlat;
 		orig_vidflags = getvideoflags();
 		orig_x=wherex();
 		orig_y=wherey();
 		setvideoflags(orig_vidflags&(CIOLIB_VIDEO_NOBLINK|CIOLIB_VIDEO_BGBRIGHT));
-		ciolib_xlat = CIOLIB_XLAT_CHARS;
 		uifc.chars = NULL;
 		if((i=uifcini32(&uifc))!=0) {
 			fprintf(stderr,"uifc library init returned error %d\n",i);
@@ -93,7 +90,6 @@ void uifcbail(void)
 {
 	if(uifc_initialized) {
 		uifc.bail();
-		ciolib_xlat = orig_ciolib_xlat;
 		set_modepalette(orig_palette);
 		setvideoflags(orig_vidflags);
 		loadfont(NULL);

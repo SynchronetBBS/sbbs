@@ -249,7 +249,6 @@ struct conio_font_data_struct {
         char 	*eight_by_sixteen;
         char 	*eight_by_fourteen;
         char 	*eight_by_eight;
-        char	*put_xlat;
         char 	*desc;
         enum ciolib_codepage cp;
 };
@@ -375,12 +374,6 @@ CIOLIBEXPORTVAR int _wscroll;
 CIOLIBEXPORTVAR int directvideo;
 CIOLIBEXPORTVAR int hold_update;
 CIOLIBEXPORTVAR int puttext_can_move;
-CIOLIBEXPORTVAR int ciolib_xlat;
-#define CIOLIB_XLAT_NONE	0
-#define CIOLIB_XLAT_CHARS	1
-#define CIOLIB_XLAT_ATTR	2
-#define CIOLIB_XLAT_ALL		(CIOLIB_XLAT_CHARS | CIOLIB_XLAT_ATTR)
-
 CIOLIBEXPORTVAR int ciolib_reaper;
 CIOLIBEXPORTVAR char *ciolib_appname;
 
