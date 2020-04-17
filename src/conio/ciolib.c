@@ -1872,7 +1872,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_setwinposition(int x, int y)
 
 CIOLIBEXPORT enum ciolib_codepage CIOLIBCALL ciolib_getcodepage(void)
 {
-	int font = ciolib_getfont(0);
+	int font = ciolib_getfont(1);
 
 	if (font < 0)
 		return CIOLIB_CP437;
