@@ -457,6 +457,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_set_vmem(struct vmem_cell *cell, uint8_t ch,
 CIOLIBEXPORT void CIOLIBCALL ciolib_set_vmem_attr(struct vmem_cell *cell, uint8_t attr);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setwinsize(int width, int height);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setwinposition(int x, int y);
+CIOLIBEXPORT enum ciolib_codepage CIOLIBCALL ciolib_getcodepage(void);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
@@ -540,6 +541,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define set_vmem_attr(a, b)		ciolib_set_vmem_attr(a, b)
 	#define setwinsize(a,b)			ciolib_setwinsize(a,b)
 	#define setwinposition(a,b)		ciolib_setwinposition(a,b)
+	#define getcodepage()			ciolib_getcodepage()
 #endif
 
 #ifdef WITH_SDL
