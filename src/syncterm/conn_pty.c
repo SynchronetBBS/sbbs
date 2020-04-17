@@ -450,9 +450,11 @@ int pty_connect(struct bbslist *bbs)
 				dot = strchr(slang, '.');
 				if (dot)
 					*dot = 0;
-				lang = xp_asprintf("%s.IBM437", slang);
-				setenv("LANG", lang, 1);
-				xp_asprintf_free(lang);
+				lang = xp_asprintf("%s.%s", slang, ciolib_cp[getcodepage()].name);
+				if (lang) {
+					setenv("LANG", lang, 1);
+					xp_asprintf_free(lang);
+				}
 				free(slang);
 			}
 		}
