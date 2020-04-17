@@ -217,7 +217,7 @@ function install(ini_fname)
 	if(desc)
 		print(desc);
 	var by = ini_file.iniGetValue(null, "by", []);
-	if(by)
+	if(by.length)
 		print("By: " + by.join(", "));
 	var cats = ini_file.iniGetValue(null, "cats", []);
 	if(cats.length)
@@ -437,3 +437,8 @@ for(var i in ini_list) {
 		alert(result);
 }
 print("Installed " + installed + " external programs.");
+if(installed > 0) {
+	print("Requesting Synchronet recycle (configuration-reload)");
+	if(!file_touch(system.ctrl_dir + "recycle"))
+		alert("Recycle semaphore file update failure");
+}
