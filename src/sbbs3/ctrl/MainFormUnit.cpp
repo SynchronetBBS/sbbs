@@ -4014,7 +4014,7 @@ void __fastcall TMainForm::FidonetPollMenuItemClick(TObject *Sender)
 //---------------------------------------------------------------------------
 
 
-void __fastcall TMainForm::FileMenuRunJSMenuItemClick(TObject *Sender)
+void __fastcall TMainForm::FileRunJSMenuItemClick(TObject *Sender)
 {
 	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
 

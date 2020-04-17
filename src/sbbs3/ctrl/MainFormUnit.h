@@ -349,7 +349,8 @@ __published:	// IDE-managed Components
     TMenuItem *FileRunUpdateMenuItem;
     TMenuItem *FileRunChkSetupMenuItem;
     TMenuItem *FileRunInitFidonetMenuItem;
-    TMenuItem *FileMenuRunJSMenuItem;
+    TMenuItem *FileRunJSMenuItem;
+    TMenuItem *FileRunInstallXtrnMenuItem;
 	void __fastcall FileExitMenuItemClick(TObject *Sender);
 	void __fastcall ViewToolbarMenuItemClick(TObject *Sender);
 	void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
@@ -450,7 +451,7 @@ __published:	// IDE-managed Components
     void __fastcall RefreshLogClick(TObject *Sender);
     void __fastcall FidonetConfigureMenuItemClick(TObject *Sender);
     void __fastcall FidonetPollMenuItemClick(TObject *Sender);
-    void __fastcall FileMenuRunJSMenuItemClick(TObject *Sender);
+    void __fastcall FileRunJSMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TMainForm(TComponent* Owner);

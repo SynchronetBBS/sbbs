@@ -13636,9 +13636,14 @@ object MainForm: TMainForm
           Hint = 'init-fidonet.js'
           OnClick = RunJSClick
         end
-        object FileMenuRunJSMenuItem: TMenuItem
+        object FileRunInstallXtrnMenuItem: TMenuItem
+          Caption = 'Install External Programs'
+          Hint = 'install-xtrn.js'
+          OnClick = RunJSClick
+        end
+        object FileRunJSMenuItem: TMenuItem
           Caption = 'Other JavaScript Module...'
-          OnClick = FileMenuRunJSMenuItemClick
+          OnClick = FileRunJSMenuItemClick
         end
       end
       object FileEditMenuItem: TMenuItem
