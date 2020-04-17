@@ -1,8 +1,8 @@
-           ************************************
-           *****  BBS DICE WARZ (2008)   ******
-           ** for use with Synchronet v3.14+ **
-           ***  by Matt Johnson  **************
-           ************************************
+					************************************
+					******  BBS DICE WARZ (2008) *******
+					** for use with Synchronet v3.14+ **
+					*******  by Matt Johnson  **********
+					************************************
 
 This game was modelled after "Dice Wars" which is a web-interface strategy 
 game involving dice, similar to Risk. 
@@ -15,7 +15,7 @@ players, or a mix of humans and computers.
 While the settings can be adjusted, the default maximum dice per tile is 8, 
 and the default maximum reserve dice is 30.
 
-                  ####GAMEPLAY#### 
+							####GAMEPLAY#### 
 
 When it is your turn, you press "T" to start your turn, and then "A" to 
 begin attacking. Use the arrow keys to move around the map, and the [ENTER] 
@@ -53,7 +53,7 @@ territories are already full.
 The game is over (for you) when you have either conquered all of the 
 tiles on the board, or had all of your tiles taken over by other players.
 
-                  ####THANKS TO#### 
+							####THANKS TO#### 
 
 Landis for his coding advice.
 Chrispi for his relentless bug detection.
