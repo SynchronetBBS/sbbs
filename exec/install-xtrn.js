@@ -18,7 +18,7 @@
 //
 // Name = Name of the program being installed (79 chars or less)
 // Desc = Description of the program being installed (79 chars or less)
-// From = Comma-separated list of programmers/authors/publishers
+// By   = Comma-separated list of programmers/authors/publishers
 // Cats = Comma-separated list of applicable categories (e.g. "Games")
 // Subs = Comma-separated list of applicable sub-categories (e.g. "Adventure")
 // Inst = Installer .ini file source/revision/author/date information
@@ -104,13 +104,13 @@ function aborted()
 	return false;
 }
 
-function install_xtrn_item(cnf, type, desc, item)
+function install_xtrn_item(cnf, type, name, desc, item)
 {
 	if (!item.code)
 		return false;
 
 	if (!item.name)
-		item.name = item.code;
+		item.name = name || item.code;
 	
 	function find_code(objs, code)
 	{
@@ -245,7 +245,7 @@ function install(ini_fname)
 			var item = list[i];
 			if (item.startup_dir === undefined)
 				item.startup_dir = startup_dir;
-			var result = install_xtrn_item(xtrn_cnf, types[t].struct, types[t].desc, item);
+			var result = install_xtrn_item(xtrn_cnf, types[t].struct, name, types[t].desc, item);
 			if (typeof result !== 'boolean')
 				return result;
 			if (result === true)
