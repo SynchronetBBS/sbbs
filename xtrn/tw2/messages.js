@@ -172,13 +172,13 @@ function ResetAllMessages()
 {
 	var i;
 
-	uifc.pop("SysOp Messages");
+	if(this.uifc) uifc.pop("SysOp Messages");
 	db.write(Settings.DB,'log',[],LOCK_WRITE);
 	db.push(Settings.DB,'log',{Date:strftime("%a %b %d %H:%M:%S %Z"),Message:" TW 500 initialized"},LOCK_WRITE);
 
-	uifc.pop("Player Messages");
+	if(this.uifc) uifc.pop("Player Messages");
 	db.write(Settings.DB,'updates',[],LOCK_WRITE);
 
-	uifc.pop("Radio Messages");
+	if(this.uifc) uifc.pop("Radio Messages");
 	db.write(Settings.DB,'radio',[],LOCK_WRITE);
 }

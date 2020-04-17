@@ -443,7 +443,7 @@ function ResetAllPlanets()
 {
 	var i;
 
-	uifc.pop("Creating Planets");
+	if(this.uifc) uifc.pop("Creating Planets");
 	db.lock(Settings.DB,'planets',LOCK_WRITE);
 	db.write(Settings.DB,'planets',[]);
 	db.push(Settings.DB,'planets',DefaultPlanet);

@@ -367,7 +367,7 @@ function InitializeSectors()
 {
 	var i,prop;
 
-	uifc.pop("Writing Sectors");
+	if(this.uifc) uifc.pop("Writing Sectors");
 	/* Write sectors.dat */
 	db.lock(Settings.DB,'sectors',LOCK_WRITE);
 	db.write(Settings.DB,'sectors',[]);
