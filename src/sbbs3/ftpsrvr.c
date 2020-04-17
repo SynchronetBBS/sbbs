@@ -1334,7 +1334,7 @@ static void send_thread(void* arg)
 {
 	char		buf[8192];
 	char		fname[MAX_PATH+1];
-	char		str[128];
+	char		str[256];
 	char		tmp[128];
 	char		username[128];
 	char		host_ip[INET6_ADDRSTRLEN];
