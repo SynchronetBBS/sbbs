@@ -176,13 +176,8 @@ static int try_sdl_init(int mode)
 		cio_api.setname=sdl_setname;
 		cio_api.seticon=sdl_seticon;
 		cio_api.settitle=sdl_settitle;
-#ifdef _WIN32
-		cio_api.copytext=win32_copytext;
-		cio_api.getcliptext=win32_getcliptext;
-#else
 		cio_api.copytext=sdl_copytext;
 		cio_api.getcliptext=sdl_getcliptext;
-#endif
 		cio_api.get_window_info=sdl_get_window_info;
 		cio_api.setwinsize=sdl_setwinsize;
 		cio_api.setwinposition=sdl_setwinposition;
