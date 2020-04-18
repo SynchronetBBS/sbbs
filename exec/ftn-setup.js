@@ -3,12 +3,17 @@
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
+const fidoaddr = load({}, 'fidoaddr.js');
 
 const con_attr = console.attributes;
 const sys_status = bbs.sys_status;
 bbs.sys_status|=SS_MOFF;
 
-console.clear(BG_BLACK|LIGHTGRAY);
+const addrs = {};
+system.fido_addr_list.forEach(function (e) {
+    const a = fidoaddr.parse(e);
+    addrs[a.zone] = e;
+});
 
 const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLUE|WHITE);
 const main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
@@ -18,7 +23,7 @@ const tree = new Tree(tree_frame);
 
 frame.putmsg('FTN Setup');
 frame.gotoxy(1, frame.height);
-frame.putmsg('[UP/DN] to navigate, [Enter] to select, [Q] to quit');
+frame.putmsg('[Up/Down/Home/End] to navigate, [Enter] to select, [Q] to quit');
 
 tree.colors.fg = LIGHTGRAY;
 tree.colors.bg = BG_BLACK;
@@ -32,13 +37,14 @@ if (f.open('r')) {
     f.iniGetSections('zone:', 'zone').forEach(function (e) {
         const net = f.iniGetObject(e);
         const zone = e.substr(5);
-        const item = tree.addItem(format('Zone %3d: %s', zone, net.name), function () {
+        const item = tree.addItem(format('Zone %5d: %s', zone, net.name), function () {
             console.clear(BG_BLACK|LIGHTGRAY);
-            bbs.exec('?init-fidonet ' + zone);
+            js.exec('init-fidonet.js', {}, zone);
             frame.invalidate();
         });
         if (item.text.length > longest) longest = item.text.length;
         item.__ftn_setup = net;
+        item.__ftn_setup._zone_number = parseInt(zone, 10);
     });
 	f.close();
 }
@@ -47,6 +53,7 @@ tree_frame.width = longest + 1;
 info_frame.x = tree_frame.width + 2;
 info_frame.width = main_frame.width - tree_frame.width - 2;
 
+console.clear(BG_BLACK|LIGHTGRAY);
 frame.open();
 tree.open();
 frame.cycle();
@@ -66,6 +73,9 @@ while (!js.terminated) {
         if (zone.info) info_frame.putmsg('\1h\1cInformation\1w: \1n' + zone.info + '\r\n');
         if (zone.coord) info_frame.putmsg('\1h\1cCoordinator\1w: \1n' + zone.coord + '\r\n');
         if (zone.email) info_frame.putmsg('      \1h\1cEmail\1w: \1n' + zone.email + '\r\n');
+        if (addrs[zone._zone_number]) {
+            info_frame.putmsg('\r\n\1h\1rExisting address found: ' + addrs[zone._zone_number]);
+        }
     }
     if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
 }
