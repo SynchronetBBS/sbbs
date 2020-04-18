@@ -70,11 +70,11 @@ while (!js.terminated) {
         info_frame.clear();
         info_frame.putmsg('\1h\1w' + zone.name + '\r\n');
         if (zone.desc) info_frame.putmsg('\1n\1w' + word_wrap(zone.desc, info_frame.width) + '\r\n');
-        if (zone.info) info_frame.putmsg('\1h\1cInformation\1w: \1n' + zone.info + '\r\n');
-        if (zone.coord) info_frame.putmsg('\1h\1cCoordinator\1w: \1n' + zone.coord + '\r\n');
-        if (zone.email) info_frame.putmsg('      \1h\1cEmail\1w: \1n' + zone.email + '\r\n');
+        if (zone.info) info_frame.putmsg('\1h\1cInformation\1w:\r\n\1n' + zone.info + '\r\n\r\n');
+        if (zone.coord) info_frame.putmsg('\1h\1cCoordinator\1w:\r\n\1n' + zone.coord + '\r\n\r\n');
+        if (zone.email) info_frame.putmsg('\1h\1cEmail\1w:\r\n\1n' + zone.email + '\r\n\r\n');
         if (addrs[zone._zone_number]) {
-            info_frame.putmsg('\r\n\1h\1rExisting address found: ' + addrs[zone._zone_number]);
+            info_frame.putmsg('\1h\1rExisting address found: ' + addrs[zone._zone_number]);
         }
     }
     if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
