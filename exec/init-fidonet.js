@@ -424,14 +424,12 @@ for(var i = 0; i < system.fido_addr_list.length; i++) {
 var hub = {zone: netzone ? netzone : NaN, net: NaN, node: NaN};
 if(network.addr)
 	hub = fidoaddr.parse(network.addr);
-do {
-	while((isNaN(hub.zone) || hub.zone < 1) && !aborted())
-		hub.zone = parseInt(prompt("Your hub's zone number (e.g. 1 for FidoNet North America)"));
-	while((isNaN(hub.net) || hub.net < 1) && !aborted())
-		hub.net = parseInt(prompt("Your hub's network number"));
-	while((isNaN(hub.node) ||  hub.node < 0) && !aborted())
-		hub.node = parseInt(prompt("Your hub's node number"));
-} while(!confirm("Your hub's address is " + fidoaddr.to_str(hub)) && !aborted());
+while(((isNaN(hub.zone) || hub.zone < 1)
+	|| (isNaN(hub.net)  || hub.net < 1)
+	|| (isNaN(hub.node) ||  hub.node < 0)
+	|| !confirm("Your hub's address is " + fidoaddr.to_str(hub))) && !aborted()) {
+	hub = fidoaddr.parse(prompt("Your hub's address (zone:net/node)"));
+}
 
 var link = get_linked_node(fidoaddr.to_str(hub));
 if(!link)
@@ -756,7 +754,7 @@ print(netname + " initial setup completely successfully.");
 print();
 if(your.node == 9999) {
 	print("You used a temporary node address (" + fidoaddr.to_str(your) +
-		").  You will need to update your");
+		"). You will need to update your");
 	print("SCFG->Networks->FidoNet->Address once your permanent node address has been");
 	print("assigned to you.");
 	print();
@@ -765,3 +763,4 @@ if(your.node == 9999) {
 print("See your 'Events' log output for outbound BinkP connections.");
 print("See your 'Services' log output for inbound BinkP connections.");
 print("Use exec/echocfg for follow-up FidoNet-related configuration.");
+exit(0);
