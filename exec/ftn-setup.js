@@ -40,7 +40,10 @@ if (f.open('r')) {
         const zone = e.substr(5);
         const item = tree.addItem(format('Zone %5d: %s', zone, net.name), function () {
             console.clear(BG_BLACK|LIGHTGRAY);
-            js.exec('init-fidonet.js', {}, zone);
+            var result = js.exec('init-fidonet.js', {}, zone);
+			if(result && !console.aborted)
+				alert(result);
+			console.pause();
             frame.invalidate();
         });
         if (item.text.length > longest) longest = item.text.length;
