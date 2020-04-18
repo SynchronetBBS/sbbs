@@ -1851,8 +1851,8 @@ utf8_to_cpstr(const uint8_t *utf8str, char unmapped, size_t inlen, size_t *outle
 	rp = ret;
 
 	// Fill the string...
-	for (idx = 0; idx < inlen; idx++) {
-		utf8str += read_cp(&utf8str[idx], &codepoint);
+	for (idx = 0; idx < inlen;) {
+		idx += read_cp(&utf8str[idx], &codepoint);
 		if (codepoint == 0xffff || codepoint == 0xfffe)
 			goto error;
 		*(rp++) = cptable_from_unicode_cpoint(codepoint, unmapped, cpdef);
