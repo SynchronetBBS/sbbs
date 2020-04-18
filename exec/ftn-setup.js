@@ -63,7 +63,7 @@ var zone;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
     key = console.getkey();
-    if (key == 'q') break;
+    if (key.toLowerCase() == 'q') break;
     tree.getcmd(key);
     if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
         zone = tree.currentItem.__ftn_setup;
