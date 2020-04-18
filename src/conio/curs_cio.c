@@ -312,7 +312,7 @@ static int _putch(unsigned char ch, BOOL refresh_now)
 			wch[0]=ch;
 			break;
 		case CIOLIB_MODE_CURSES:
-			wch[0] = cp_from_unicode_cp_ext(getcodepage(), ch, ch);
+			wch[0] = cpoint_from_cpchar_ext(getcodepage(), ch);
 			break;
 	}
 
@@ -628,7 +628,7 @@ int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
 						}
 						break;
 					case CIOLIB_MODE_CURSES:
-						thischar = cp_from_unicode_cp_ext(CIOLIB_CP437, ext_char, '?');
+						thischar = cpchar_from_unicode_cpoint(CIOLIB_CP437, ext_char, '?');
 						break;
 				}
 			}
@@ -1079,7 +1079,7 @@ int curs_getch(void)
 
 			default:
 				// TODO: May not be right for wide...
-				ch = cp_from_unicode_cp(CIOLIB_CP437, ch, 0);
+				ch = cpchar_from_unicode_cpoint(getcodepage(), ch, 0);
 				break;
 		}
 	}
