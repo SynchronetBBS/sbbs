@@ -1,3 +1,5 @@
+// $Id$
+
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
