@@ -56,7 +56,7 @@ while (!js.terminated) {
     key = console.getkey();
     if (key == 'q') break;
     tree.getcmd(key);
-    if (key == KEY_UP || key == KEY_DOWN) {
+    if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
         zone = tree.currentItem.__ftn_setup;
         info_frame.clear();
         info_frame.putmsg('\1h\1w' + zone.name + '\r\n');
