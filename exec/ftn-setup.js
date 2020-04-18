@@ -5,8 +5,9 @@ load('frame.js');
 load('tree.js');
 const fidoaddr = load({}, 'fidoaddr.js');
 
-const con_attr = console.attributes;
-const sys_status = bbs.sys_status;
+js.on_exit('console.attributes = ' + console.attributes);
+js.on_exit('bbs.sys_status = ' + bbs.sys_status);
+
 bbs.sys_status|=SS_MOFF;
 
 const addrs = {};
@@ -81,6 +82,3 @@ while (!js.terminated) {
 }
 
 frame.close();
-
-console.attributes = con_attr;
-bbs.sys_status = sys_status;
