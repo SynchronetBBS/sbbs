@@ -805,7 +805,7 @@ void win32_settitle(const char *title)
 void win32_copytext(const char *text, size_t buflen)
 {
 	HGLOBAL	clipbuf;
-	LPTSTR	clip;
+	LPWSTR	clip;
 	int new_buflen = MultiByteToWideChar(CP_UTF8, 0, text, buflen, NULL, 0);
 
 	new_buflen = MultiByteToWideChar(CP_UTF8, 0, text, buflen, NULL, 0);
@@ -837,9 +837,9 @@ void win32_copytext(const char *text, size_t buflen)
 char *win32_getcliptext(void)
 {
 	HGLOBAL	clipbuf;
-	LPTSTR	clip;
+	LPWSTR	clip;
 	char *ret = NULL;
-	size_t u8sz;
+	int u8sz;
 
 	if (!IsClipboardFormatAvailable(CF_UNICODETEXT))
 		return(NULL);
