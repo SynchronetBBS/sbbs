@@ -227,9 +227,9 @@ function install(ini_fname)
 		print("Sub-categories: " + subs.join(", "));
 
 	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
+	var xtrn_cnf = cnflib.read(system.ctrl_dir + "xtrn.cnf");
 	if (!xtrn_cnf)
-		return "Failed to read xtrn.cnf";
+		return "Failed to read " + system.ctrl_dir + "xtrn.cnf";
 	
 	var startup_dir = ini_fname.substr(0, Math.max(ini_fname.lastIndexOf("/"), ini_fname.lastIndexOf("\\"), 0));
 
@@ -374,8 +374,8 @@ function install(ini_fname)
 	}
 
 	if (installed) {
-		if (!options.debug && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-			return "Failed to write xtrn.cnf";
+		if (!options.debug && !cnflib.write(system.ctrl_dir + "xtrn.cnf", undefined, xtrn_cnf))
+			return "Failed to write " + system.ctrl_dir + "xtrn.cnf";
 		print("Installed " + installed + " items from " + ini_fname + " successfully");
 	}
 
