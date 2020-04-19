@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.32     2020-04-19   Removed some code that's no longer used.  Also, fixed an
+                      issue when changing to another sub-board with the
+                      traditional-style (non-lightbar) list where it was slow to
+                      list sub-boards.  For the number of messages, it was
+                      checking all headers to ignore ones marked as deleted,
+                      etc., but that can be fairly slow..  Now it just uses
+                      total_msgs for the MessageBase object, which is a lot
+                      faster and still gives an idea of how many messages are
+                      there.
 1.31     2020-04-13   The area change feature now uses DDLightbarMenu.  There
                       is no more internal lightbar code in this message reader.
 1.30     2020-04-07   The message list features now uses DDLightbarMenu rather

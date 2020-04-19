@@ -35,6 +35,16 @@
  *                              The area change feature now uses DDLightbarMenu.
  *                              There is no more internal lightbar code in this
  *                              message reader.
+ * 2020-04-19 Eric Oulashin     Version 1.32
+ *                              Removed some code that's no longer used.  Also,
+ *                              fixed an issue when changing to another sub-board
+ *                              with the traditional-style (non-lightbar) list
+ *                              where it was slow to list sub-boards.  For the number
+ *                              of messages, it was checking all headers to ignore
+ *                              ones marked as deleted, etc., but that can be
+ *                              fairly slow..  Now it just uses total_msgs for the
+ *                              MessageBase object, which is a lot faster and still
+ *                              gives an idea of how many messages are there.
  */
 
 
@@ -144,8 +154,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.31";
-var READER_DATE = "2020-04-13";
+var READER_VERSION = "1.32";
+var READER_DATE = "2020-04-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1238,11 +1248,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ListMsgGrps = DigDistMsgReader_ListMsgGrps_Traditional;
 	this.ListSubBoardsInMsgGroup = DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional;
 	// Lightbar-specific methods
-	this.ListScreenfulOfMsgGrps = DigDistMsgReader_listScreenfulOfMsgGrps;
 	this.WriteMsgGroupLine = DigDistMsgReader_writeMsgGroupLine;
 	this.UpdateMsgAreaPageNumInHeader = DigDistMsgReader_updateMsgAreaPageNumInHeader;
-	this.ListScreenfulOfSubBrds = DigDistMsgReader_ListScreenfulOfSubBrds;
-	this.WriteMsgSubBoardLine = DigDistMsgReader_WriteMsgSubBrdLine;
 	this.GetMsgSubBoardLine = DigDistMsgReader_GetMsgSubBrdLine;
 	// Choose Message Area help screen
 	this.ShowChooseMsgAreaHelpScreen = DigDistMsgReader_showChooseMsgAreaHelpScreen;
@@ -10871,6 +10878,8 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 				subBoardInfo = new MsgSubBoardInfo();
 				subBoardInfo.subBoardNum = +(arrSubBoardNum);
 				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
+				// Note: numReadableMsgs() is slow because it goes through and
+				// checks for deleted messages, etc., so just use msgBase.total_msgs
 				//subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
 				subBoardInfo.numPosts = msgBase.total_msgs;
 
@@ -10977,7 +10986,10 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 			if (msgBase.open())
 			{
 				// Get the date & time when the last message was imported.
-				var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				// Note: numReadableMsgs() is slow because it goes through and
+				// checks for deleted messages, etc., so just use msgBase.total_msgs
+				//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				var numMsgs = msgBase.total_msgs;
 				if (numMsgs > 0)
 				{
 					var msgIdx = msgBase.total_msgs-1;
@@ -11031,77 +11043,6 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 //////////////////////////////////////////////
 // Message group list stuff (lightbar mode) //
 //////////////////////////////////////////////
-
-// Displays a screenful of message groups, for the lightbar interface.
-//
-// Parameters:
-//  pStartIndex: The message group index to start at (0-based)
-//  pStartScreenRow: The row on the screen to start at (1-based)
-//  pEndScreenRow: The row on the screen to end at (1-based)
-//  pClearScreenFirst: Boolean - Whether or not to clear the screen first
-//  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
-//                  screen row if there aren't enough message groups to fill
-//                  the screen.
-function DigDistMsgReader_listScreenfulOfMsgGrps(pStartIndex, pStartScreenRow,
-                                                  pEndScreenRow, pClearScreenFirst,
-                                                  pBlankToEndRow)
-{
-	// Check the parameters; If they're bad, then just return.
-	if ((typeof(pStartIndex) != "number") ||
-	    (typeof(pStartScreenRow) != "number") ||
-	    (typeof(pEndScreenRow) != "number"))
-	{
-		return;
-	}
-	if ((pStartIndex < 0) || (pStartIndex >= msg_area.grp_list.length))
-		return;
-	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-		return;
-	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-		return;
-
-	// If pStartScreenRow is greather than pEndScreenRow, then swap them.
-	if (pStartScreenRow > pEndScreenRow)
-	{
-		var temp = pStartScreenRow;
-		pStartScreenRow = pEndScreenRow;
-		pEndScreenRow = temp;
-	}
-
-	// Calculate the ending index to use for the message groups array.
-	var endIndex = pStartIndex + (pEndScreenRow-pStartScreenRow);
-	if (endIndex >= msg_area.grp_list.length)
-		endIndex = msg_area.grp_list.length - 1;
-	var onePastEndIndex = endIndex + 1;
-
-	// Clear the screen, go to the specified screen row, and display the message
-	// group information.
-	if (pClearScreenFirst)
-		console.clear("\1n");
-	console.gotoxy(1, pStartScreenRow);
-	var grpIndex = pStartIndex;
-	for (; grpIndex < onePastEndIndex; ++grpIndex)
-	{
-		this.WriteMsgGroupLine(grpIndex, false);
-		if (grpIndex < endIndex)
-			console.crlf();
-	}
-
-	// If pBlankToEndRow is true and we're not at the end row yet, then
-	// write blank lines to the end row.
-	if (pBlankToEndRow)
-	{
-		var screenRow = pStartScreenRow + (endIndex - pStartIndex) + 1;
-		if (screenRow <= pEndScreenRow)
-		{
-			for (; screenRow <= pEndScreenRow; ++screenRow)
-			{
-				console.gotoxy(1, screenRow);
-				console.clearline("\1n");
-			}
-		}
-	}
-}
 
 // For the DigDistMsgReader class - Writes a message group information line.
 //
@@ -11163,102 +11104,6 @@ function DigDistMsgReader_updateMsgAreaPageNumInHeader(pPageNum, pNumPages, pGro
 
 	if (pRestoreCurPos)
 		console.gotoxy(originalCurPos);
-}
-
-// Displays a screenful of message sub-boards, for the lightbar interface.
-//
-// Parameters:
-//  pGrpIndex: The index of the message group (0-based)
-//  pStartSubIndex: The message sub-board index to start at (0-based)
-//  pStartScreenRow: The row on the screen to start at (1-based)
-//  pEndScreenRow: The row on the screen to end at (1-based)
-//  pClearScreenFirst: Boolean - Whether or not to clear the screen first
-//  pBlankToEndRow: Boolean - Whether or not to write blank lines to the end
-//                  screen row if there aren't enough message groups to fill
-//                  the screen.
-//  pHighlightIndex: Optional - The index of an item to highlight
-function DigDistMsgReader_ListScreenfulOfSubBrds(pGrpIndex, pStartSubIndex,
-                                                  pStartScreenRow, pEndScreenRow,
-                                                  pClearScreenFirst, pBlankToEndRow,
-                                                  pHighlightIndex)
-{
-	// Check the parameters; If they're bad, then just return.
-	if ((typeof(pGrpIndex) != "number") ||
-	    (typeof(pStartSubIndex) != "number") ||
-	    (typeof(pStartScreenRow) != "number") ||
-	    (typeof(pEndScreenRow) != "number"))
-	{
-		return;
-	}
-	if ((pGrpIndex < 0) || (pGrpIndex >= msg_area.grp_list.length))
-		return;
-	if ((pStartSubIndex < 0) ||
-	    (pStartSubIndex >= msg_area.grp_list[pGrpIndex].sub_list.length))
-	{
-		return;
-	}
-	if ((pStartScreenRow < 1) || (pStartScreenRow > console.screen_rows))
-		return;
-	if ((pEndScreenRow < 1) || (pEndScreenRow > console.screen_rows))
-		return;
-	// If pStartScreenRow is greather than pEndScreenRow, then swap them.
-	if (pStartScreenRow > pEndScreenRow)
-	{
-		var temp = pStartScreenRow;
-		pStartScreenRow = pEndScreenRow;
-		pEndScreenRow = temp;
-	}
-
-	// Calculate the ending index to use for the sub-board array.
-	var endIndex = pStartSubIndex + (pEndScreenRow-pStartScreenRow);
-	if (endIndex >= msg_area.grp_list[pGrpIndex].sub_list.length)
-		endIndex = msg_area.grp_list[pGrpIndex].sub_list.length - 1;
-	var onePastEndIndex = endIndex + 1;
-
-	// Clear the screen and go to the specified screen row.
-	if (pClearScreenFirst)
-		console.clear("\1n");
-	console.gotoxy(1, pStartScreenRow);
-
-	// Start listing the sub-boards.
-
-	var highlightIdx = (typeof(pHighlightIndex) == "number" ? pHighlightIndex : -1);
-	var highlight = false;
-	var subIndex = pStartSubIndex;
-	for (; subIndex < onePastEndIndex; ++subIndex)
-	{
-		highlight = (subIndex == highlightIdx);
-		this.WriteMsgSubBoardLine(pGrpIndex, subIndex, highlight);
-		if (subIndex < endIndex)
-			console.crlf();
-	}
-
-	// If pBlankToEndRow is true and we're not at the end row yet, then
-	// write blank lines to the end row.
-	if (pBlankToEndRow)
-	{
-		var screenRow = pStartScreenRow + (endIndex - pStartSubIndex) + 1;
-		if (screenRow <= pEndScreenRow)
-		{
-			for (; screenRow <= pEndScreenRow; ++screenRow)
-			{
-				console.gotoxy(1, screenRow);
-				console.clearline("\1n");
-			}
-		}
-	}
-}
-
-// For the DigDistMsgReader class: Writes a message sub-board information line for
-// the message area chooser functionality.
-//
-// Parameters:
-//  pGrpIndex: The index of the message group (assumed to be valid)
-//  pSubIndex: The index of the sub-board within the message group to write (assumed to be valid)
-//  pHighlight: Boolean - Whether or not to write the line highlighted.
-function DigDistMsgReader_WriteMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
-{
-	console.print("\1n" + this.GetMsgSubBoardLine(pGrpIndex, pSubIndex, pHighlight));
 }
 
 // For the DigDistMsgReader class: Returns a formatted string with sub-board
