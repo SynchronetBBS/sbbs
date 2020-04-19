@@ -69,6 +69,7 @@ function str_cmds(str)
 			if(file_exists(errlog)) {
 				write(bbs.text(ErrorLogHdr));
 				console.printfile(errlog);
+				console.aborted = false;
 				if(!console.noyes(bbs.text(DeleteErrorLogQ)))
 					file_remove(errlog);
 			}
@@ -728,7 +729,7 @@ function str_cmds(str)
 //# Quiet Node
 	if(user.compare_ars("exempt Q")) {
 		if(str=="HELP")
-			writeln("QUIET\tToggles quiet setting (you are not lised as online).");
+			writeln("QUIET\tToggles quiet setting (you are not listed as online).");
 		if(str=="QUIET") {
 			if(system.node_list[bbs.node_num-1].status==NODE_QUIET)
 				system.node_list[bbs.node_num-1].status=NODE_INUSE;
@@ -743,7 +744,7 @@ function str_cmds(str)
 			writeln("\tmentioned).");
 		}
 		if(str=="ANON") {
-			bbs.node_settings ^= NODE_ANON;
+			system.node_list[bbs.node_num-1].misc ^= NODE_ANON;
 			display_node(bbs.node_num);
 			return;
 		}
@@ -804,9 +805,9 @@ function str_cmds(str)
 	if(str=="HELP")
 		writeln("POFF\tToggles if other users can page you for this session.");
 	if(str=="POFF") {
-		bbs.node_settings ^= NODE_POFF;
+		system.node_list[bbs.node_num-1].misc ^= NODE_POFF;
 		write("Paging is ");
-		if(bbs.node_settings & NODE_POFF)
+		if(system.node_list[bbs.node_num-1].misc & NODE_POFF)
 			writeln("OFF");
 		else
 			writeln("ON");
