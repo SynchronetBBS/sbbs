@@ -1627,6 +1627,7 @@ int main(int argc, char **argv)
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
+		uifcbail();
 		textmode(screen_to_ciolib(bbs->screen_mode));
 		load_font_files();
 		setfont(find_font_id(bbs->font),TRUE,1);
@@ -1656,7 +1657,6 @@ int main(int argc, char **argv)
 					strListFree(&inifile);
 				}
 			}
-			uifcbail();
 			sprintf(str,"SyncTERM - %s",bbs->name);
 			settitle(str);
 			term.nostatus=bbs->nostatus;
