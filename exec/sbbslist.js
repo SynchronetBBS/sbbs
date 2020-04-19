@@ -896,7 +896,7 @@ function this_bbs()
 		bbs.network.push({ name: "DOVE-Net", address: system.qwk_id});
 	if(msg_area.grp["FidoNet"] || msg_area.grp["Fidonet"])
 		bbs.network.push({ name: "FidoNet", address: system.fido_addr_list[0] });
-	print("Testing common BBS service ports");
+	print("Testing common BBS service ports (this may take a minute)");
     var ports = [];
     for(var i in lib.common_bbs_services) {
 		var prot = lib.common_bbs_services[i];
@@ -904,7 +904,7 @@ function this_bbs()
 			continue;
         if(ports.indexOf(standard_service_port[prot]) >= 0) // Already tested this port
             continue;
-		printf("%s ", prot);
+		printf("\b\b\b%s ...", prot);
         ports.push(standard_service_port[prot]);
 		if(test_port(standard_service_port[prot]))
 			bbs.service.push({ protocol: prot, address: system.inet_addr, port: standard_service_port[prot] });
