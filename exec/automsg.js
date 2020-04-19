@@ -20,7 +20,7 @@ function automsg()
 				break;
 			case 'W':
 				if(user.security.restrictions&UFLAG_W) {
-					console.print(text[R_AutoMsg]);
+					console.print(bbs.text[R_AutoMsg]);
 					break;
 				}
 				bbs.action=NODE_AMSG;
