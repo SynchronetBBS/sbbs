@@ -90,7 +90,7 @@
 #endif
 
 #include <errno.h>		/* errno */
-#include "wrapdll.h"	/* DLLEXPORT/DLLCALL */
+#include "wrapdll.h"	/* DLLEXPORT */
 
 typedef struct {
 	char*	name;
@@ -222,22 +222,21 @@ static  int wsa_error;
 extern "C" {
 #endif
 
-DLLEXPORT socket_option_t* DLLCALL
-		getSocketOptionList(void);
-DLLEXPORT int DLLCALL		getSocketOptionByName(const char* name, int* level);
+DLLEXPORT socket_option_t* getSocketOptionList(void);
+DLLEXPORT int getSocketOptionByName(const char* name, int* level);
 
-DLLEXPORT int DLLCALL		sendfilesocket(int sock, int file, off_t* offset, off_t count);
-DLLEXPORT int DLLCALL		recvfilesocket(int sock, int file, off_t* offset, off_t count);
-DLLEXPORT BOOL DLLCALL	socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
-DLLEXPORT int DLLCALL 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
+DLLEXPORT int sendfilesocket(int sock, int file, off_t* offset, off_t count);
+DLLEXPORT int recvfilesocket(int sock, int file, off_t* offset, off_t count);
+DLLEXPORT BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
+DLLEXPORT int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				   ,uint retries, uint wait_secs, const char* prot
 				   ,int (*lprintf)(int level, const char *fmt, ...));
-DLLEXPORT int DLLCALL		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
-DLLEXPORT union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
-DLLEXPORT const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
-DLLEXPORT uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr);
-DLLEXPORT void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
-DLLEXPORT BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
+DLLEXPORT int nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
+DLLEXPORT union xp_sockaddr* inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
+DLLEXPORT const char* inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
+DLLEXPORT uint16_t inet_addrport(union xp_sockaddr *addr);
+DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
+DLLEXPORT BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
 
 #ifdef __cplusplus
 }
