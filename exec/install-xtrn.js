@@ -441,4 +441,9 @@ if(installed > 0) {
 	print("Requesting Synchronet recycle (configuration-reload)");
 	if(!file_touch(system.ctrl_dir + "recycle"))
 		alert("Recycle semaphore file update failure");
+	if(!this.jsexec_revision) {
+		print();
+		print("It appears you have run this script from the BBS. You must log-off now for the");
+		print("server to recycle and configuration changes to take effect.");
+	}
 }

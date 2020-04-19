@@ -763,4 +763,9 @@ if(your.node == 9999) {
 print("See your 'Events' log output for outbound BinkP connections.");
 print("See your 'Services' log output for inbound BinkP connections.");
 print("Use exec/echocfg for follow-up FidoNet-related configuration.");
+if(!this.jsexec_revision) {
+	print();
+	print("It appears you have run this script from the BBS. You must log-off now for the");
+	print("server to recycle and configuration changes to take effect.");
+}
 exit(0);
