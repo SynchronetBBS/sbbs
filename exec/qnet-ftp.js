@@ -8,17 +8,27 @@
 // Usage: ?qnet-ftp <hub-id> <address> <password> [port]
 // Example: ?qnet-ftp VERT vert.synchro.net YOURPASS 21
 
+const REVISION = "$Revision$".split(' ')[1];
+
 require('ftp.js', 'FTP');
 
+var username = system.qwk_id;
 var hubid = argv[0];
 var addr = argv[1];
-var username = system.qwk_id
 var password = argv[2];
 var port = argv[3] || 21;
+
+var options = load({}, "modopts.js", "qnet-ftp:"+hubid);
+if(!options)
+	options = load({}, "modopts.js", "qnet-ftp");
+if(!options)
+	options = {};
 
 var rep = system.data_dir + hubid + ".rep";
 var qwk = hubid + ".qwk";
 var qwk_fname = system.data_dir + qwk;
+
+log(LOG_DEBUG, js.exec_file + " v" + REVISION);
 
 if(file_getcase(qwk_fname)) {
 	alert(qwk_fname + " already exists");
@@ -34,15 +44,20 @@ if(file_getcase(qwk_fname)) {
 
 var ftp;
 try {
-	ftp = new FTP(addr, username, password, port);
+	ftp = new FTP(addr, username, password, port, options.dataport, options.bindhost);
 } catch(e) {
 	print("FTP Session with " + addr + " failed: " + e);
 	exit(1);
 }
 
+log(LOG_DEBUG, "Connected to " + addr + " via " + ftp.revision);
+
+if(options.passive === false)
+	ftp.passive = false;
+
 rep = file_getcase(rep);
 if(rep) {
-	print("Sending REP Packet: " + rep);
+	print("Sending REP Packet: " + rep + format(" (%1.1fKB)", file_size(rep) / 1024.0));
 	try {
 		ftp.stor(rep, file_getname(rep));
 		print("REP packet sent successfully");
@@ -60,7 +75,8 @@ try {
 		alert("Invalid QWK Packet size: " + file_size(qwk_fname));
 		file_remove(qwk_fname);
 	} else
-		print("Downloaded " + file_getname(qwk_fname) + " successfully");
+		print("Downloaded " + file_getname(qwk_fname) 
+			+ format(" (%1.1fKB)", file_size(qwk_fname) / 1024.0) + " successfully");
 } catch(e) {
 	alert("Download of " + qwk + " failed: " + e);
 }
