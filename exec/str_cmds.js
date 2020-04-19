@@ -15,9 +15,14 @@
 // The command string must be the first argument string
 // when this module is loaded.
 
-load("sbbsdefs.js");
-load("nodedefs.js");
-load("text.js");
+require("sbbsdefs.js", 'EX_STDIO');
+require("nodedefs.js", 'NODE_SYSP');
+var text = bbs.mods.text;
+if(!text)
+	text = bbs.mods.text = load({}, "text.js");
+var presence = bbs.mods.presence_lib;
+if(!presence)
+	presence = bbs.mods.presence_lib = load({}, "presence_lib.js");
 
 if(argc>0)
 	str_cmds(argv.join(" "));	// use command-line arguments if supplied
@@ -67,21 +72,21 @@ function str_cmds(str)
 		if(str=="ERR") {
 			var errlog=system.logs_dir+"error.log";
 			if(file_exists(errlog)) {
-				write(bbs.text(ErrorLogHdr));
+				write(bbs.text(text.ErrorLogHdr));
 				console.printfile(errlog);
 				console.aborted = false;
-				if(!console.noyes(bbs.text(DeleteErrorLogQ)))
+				if(!console.noyes(bbs.text(text.DeleteErrorLogQ)))
 					file_remove(errlog);
 			}
 			else {
-				write(format(bbs.text(FileDoesNotExist),errlog));
+				write(format(bbs.text(text.FileDoesNotExist),errlog));
 			}
 			for(i=0;i<system.nodes;i++) {
 				if(system.node_list[i].errors)
 					break;
 			}
 			if(i<system.nodes) {
-				if(!console.noyes(bbs.text(ClearErrCounter))) {
+				if(!console.noyes(bbs.text(text.ClearErrCounter))) {
 					for(i=0;i<system.nodes; i++) {
 						system.node_list[i].errors=0;
 					}
@@ -96,7 +101,7 @@ function str_cmds(str)
 			if(file_exists(system.logs_dir+"guru.log")) {
 				console.printfile(system.logs_dir+"guru.log");
 				console.crlf();
-				if(!console.noyes(bbs.text(DeleteGuruLogQ)))
+				if(!console.noyes(bbs.text(text.DeleteGuruLogQ)))
 					file_remove(system.logs_dir+"guru.log");
 			}
 		}
@@ -555,7 +560,7 @@ function str_cmds(str)
 		if(word=="ALTUL") {
 			str=str.substr(6);
 			bbs.alt_ul_dir=(str+0);
-			printf(bbs.text(AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(OFF));
+			printf(bbs.text(text.AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(text.OFF));
 			return;
 		}
 
@@ -572,7 +577,7 @@ function str_cmds(str)
 				}
 			}
 			if(i<system.nodes) {
-				write(bbs.text(ResortWarning));
+				write(bbs.text(text.ResortWarning));
 				return;
 			}
 			if(str.search(/^ALL$/i)!=-1) {
@@ -674,7 +679,7 @@ function str_cmds(str)
 				k+=l;
 			}
 			if(k>1)
-				printf(bbs.text(NFilesListed),k);
+				printf(bbs.text(text.NFilesListed),k);
 			return;
 		}
 
@@ -692,7 +697,7 @@ function str_cmds(str)
 					return;
 			}
 			if(!file_exists(str)) {
-				write(bbs.text(FileNotFound));
+				write(bbs.text(text.FileNotFound));
 				return;
 			}
 			if(!bbs.check_syspass())
@@ -873,54 +878,11 @@ function get_filename(str)
 
 function display_node(node_num)
 {
-	var n=node_num-1;
-
-	printf("Node %2d: ",node_num);
-	var node = system.node_list[node_num-1];
-
-	if(node.status==NODE_QUIET || node.status==NODE_INUSE) {
-		write(system.username(node.useron)
-			+ " "
-			+ format(NodeAction[node.action],system.node_list[n].aux));
-	} else
-		printf(NodeStatus[node.status],node.aux);
-
-	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
-		write(" (");
-		if(node.misc&NODE_AOFF)
-			write('A');
-		if(node.misc&NODE_LOCK)
-			write('L');
-		if(node.misc&(NODE_MSGW|NODE_NMSG))
-			write('M');
-		if(node.misc&NODE_POFF)
-			write('P');
-		write(')');
-	}
-	if(((node.misc
-		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-		|| node.status==NODE_QUIET)) {
-		write(" [");
-		if(node.misc&NODE_ANON)
-			write('A');
-		if(node.misc&NODE_INTR)
-			write('I');
-		if(node.misc&NODE_RRUN)
-			write('R');
-		if(node.misc&NODE_UDAT)
-			write('U');
-		if(node.status==NODE_QUIET)
-			write('Q');
-		if(node.misc&NODE_EVENT)
-			write('E');
-		if(node.misc&NODE_DOWN)
-			write('D');
-		if(node.misc&NODE_LCHAT)
-			write('C');
-		write(']'); }
-	if(node.errors)
-		printf(" %d error%s",node.errors, node.errors>1 ? 's' : '' );
-	printf("\r\n");
+	var options = bbs.mods.nodelist_options;
+	if(!options)
+		options = load({}, "nodelist_options.js");
+	print("Node " + format(options.format, node_num
+		, presence.node_status(system.get_node(node_num), user.is_sysop, options, node_num - 1)));
 }
 
 function add_commas(val, pad)
