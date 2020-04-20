@@ -1865,7 +1865,7 @@ utf8_to_cpstr(const uint8_t *utf8str, char unmapped, size_t inlen, size_t *outle
 		idx += read_cp(&utf8str[idx], &codepoint);
 		if (codepoint == 0xffff || codepoint == 0xfffe)
 			goto error;
-		*(rp++) = cptable_from_unicode_cpoint(codepoint, unmapped, cpdef);
+		*(rp++) = cpdef->from_unicode_cpoint(codepoint, unmapped, cpdef);
 	}
 	*rp = 0;
 	if (outlen)
