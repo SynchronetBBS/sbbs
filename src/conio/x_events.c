@@ -852,7 +852,7 @@ static int x11_event(XEvent *ev)
 					case XLookupChars:
 						if (lus == XLookupChars || ((ev->xkey.state & (Mod1Mask | ControlMask)) == 0)) {
 							for (i = 0; i < cnt; i++) {
-								ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], ch);
+								ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
 									write(key_pipe[1], &ch, 1);
 								}
