@@ -72,6 +72,9 @@ static socket_option_t socket_options[] = {
 #ifdef SO_REUSEPORT	/* BSD */
 	{ "REUSEPORT",			0,				SOL_SOCKET,		SO_REUSEPORT		},	
 #endif
+#ifdef SO_EXCLUSIVEADDRUSE /* WinSock */
+	{ "EXCLUSIVEADDRUSE",	0,				SOL_SOCKET,		SO_EXCLUSIVEADDRUSE },
+#endif
 	{ "KEEPALIVE",			SOCK_STREAM,	SOL_SOCKET,		SO_KEEPALIVE		},
 	{ "DONTROUTE",			0,				SOL_SOCKET,		SO_DONTROUTE		},
 	{ "BROADCAST",			SOCK_DGRAM,		SOL_SOCKET,		SO_BROADCAST		},
