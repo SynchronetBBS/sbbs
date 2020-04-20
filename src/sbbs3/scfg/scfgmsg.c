@@ -774,6 +774,8 @@ void msgs_cfg()
 									cfg.sub[j]->maxmsgs = template->maxmsgs;
 									cfg.sub[j]->maxcrcs = template->maxcrcs;
 									cfg.sub[j]->maxage	= template->maxage;
+									cfg.sub[j]->pmode	= template->pmode;
+									cfg.sub[j]->n_pmode	= template->n_pmode;
 									cfg.sub[j]->faddr	= template->faddr; 
 								} 
 							} 
