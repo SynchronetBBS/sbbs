@@ -8,7 +8,7 @@ struct ciolib_cpmap {
 };
 
 // Sorted by unicode codepoint...
-static struct ciolib_cpmap cp437_table[162] = {
+const static struct ciolib_cpmap cp437_table[162] = {
 	{0x0000, 0},   {0x00A0, 255}, {0x00A1, 173}, {0x00A2, 155},
 	{0x00A3, 156}, {0x00A5, 157}, {0x00A6, '|'}, {0x00A7, 21},  {0x00AA, 166},
 	{0x00AB, 174}, {0x00AC, 170}, {0x00B0, 248}, {0x00B1, 241},
@@ -52,14 +52,14 @@ static struct ciolib_cpmap cp437_table[162] = {
 	{0xfffd, '?'}
 };
 
-static uint32_t cp437_ext_table[32] = {
+const static uint32_t cp437_ext_table[32] = {
 	0x0000, 0x263A, 0x263B, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
 	0x25D8, 0x25CB, 0x25D9, 0x2642, 0x2640, 0x266A, 0x266B, 0x263C,
 	0x25BA, 0x25C4, 0x2195, 0x203C, 0x00B6, 0x00A7, 0x25AC, 0x21A8,
 	0x2191, 0x2193, 0x2192, 0x2190, 0x221F, 0x2194, 0x25B2, 0x25BC
 };
 
-static uint32_t cp437_unicode_table[128] = {
+const static uint32_t cp437_unicode_table[128] = {
 	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7, 
 	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5, 
 	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9, 
@@ -78,7 +78,7 @@ static uint32_t cp437_unicode_table[128] = {
 	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0
 };
 
-static struct ciolib_cpmap cp1251_table[159] = {
+const static struct ciolib_cpmap cp1251_table[159] = {
 	{0x00a0, 160}, {0x00a4, 164}, {0x00a6, 166}, {0x00a7,  21},
 	{0x00a7, 167}, {0x00a9, 169}, {0x00ab, 171}, {0x00ac, 172},
 	{0x00ad, 173}, {0x00ae, 174}, {0x00b0, 176}, {0x00b1, 177},
@@ -121,7 +121,7 @@ static struct ciolib_cpmap cp1251_table[159] = {
 	{0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp1251_unicode_table[128] = {
+const static uint32_t cp1251_unicode_table[128] = {
 	0x0402, 0x0403, 0x201a, 0x0453, 0x201e, 0x2026, 0x2020, 0x2021,
 	0x20ac, 0x2030, 0x0409, 0x2039, 0x040a, 0x040c, 0x040b, 0x040f,
 	0x0452, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014,
@@ -140,7 +140,7 @@ static uint32_t cp1251_unicode_table[128] = {
 	0x0448, 0x0449, 0x044a, 0x044b, 0x044c, 0x044d, 0x044e, 0x044f
 };
 
-static struct ciolib_cpmap koi8_r_table[160] = {
+const static struct ciolib_cpmap koi8_r_table[160] = {
 	{0x00a0, 154}, {0x00a7,  21}, {0x00a9, 191}, {0x00b0, 156},
 	{0x00b2, 157}, {0x00b6,  20}, {0x00b7, 158}, {0x00f7, 159},
 	{0x0401, 179}, {0x0410, 225}, {0x0411, 226}, {0x0412, 247},
@@ -183,7 +183,7 @@ static struct ciolib_cpmap koi8_r_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t koi8_r_unicode_table[128] = {
+const static uint32_t koi8_r_unicode_table[128] = {
 	0x2500, 0x2502, 0x250c, 0x2510, 0x2514, 0x2518, 0x251c, 0x2524,
 	0x252c, 0x2534, 0x253c, 0x2580, 0x2584, 0x2588, 0x258c, 0x2590,
 	0x2591, 0x2592, 0x2593, 0x2320, 0x25a0, 0x2219, 0x221a, 0x2248,
@@ -202,14 +202,14 @@ static uint32_t koi8_r_unicode_table[128] = {
 	0x042c, 0x042b, 0x0417, 0x0428, 0x042d, 0x0429, 0x0427, 0x042a
 };
 
-static uint32_t empty_ext_table[32] = {
+const static uint32_t empty_ext_table[32] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd
 };
 
-static struct ciolib_cpmap iso8859_2_table[128] = {
+const static struct ciolib_cpmap iso8859_2_table[128] = {
 	{0x00a0, 160}, {0x00a4, 164}, {0x00a7, 167}, {0x00a7,  21},
 	{0x00a8, 168}, {0x00ad, 173}, {0x00b0, 176}, {0x00b4, 180},
 	{0x00b6,  20}, {0x00b8, 184}, {0x00c1, 193}, {0x00c2, 194},
@@ -244,7 +244,7 @@ static struct ciolib_cpmap iso8859_2_table[128] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd,   0}
 };
 
-static uint32_t iso8859_2_unicode_table[128] = {
+const static uint32_t iso8859_2_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -263,7 +263,7 @@ static uint32_t iso8859_2_unicode_table[128] = {
 	0x0159, 0x016f, 0x00fa, 0x0171, 0x00fc, 0x00fd, 0x0163, 0x02d9
 };
 
-static struct ciolib_cpmap iso8859_4_table[128] = {
+const static struct ciolib_cpmap iso8859_4_table[128] = {
 	{0x00a0, 160}, {0x00a4, 164}, {0x00a7,  21}, {0x00a7, 167},
 	{0x00a8, 168}, {0x00ad, 173}, {0x00af, 175}, {0x00b0, 176},
 	{0x00b4, 180}, {0x00b6,  20}, {0x00b8, 184}, {0x00c1, 193},
@@ -298,7 +298,7 @@ static struct ciolib_cpmap iso8859_4_table[128] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t iso8859_4_unicode_table[128] = {
+const static uint32_t iso8859_4_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -318,7 +318,7 @@ static uint32_t iso8859_4_unicode_table[128] = {
 };
 
 #if 0
-static struct ciolib_cpmap cp866_table[160] = {
+const static struct ciolib_cpmap cp866_table[160] = {
 	{0x00a0, 255}, {0x00a4, 253}, {0x00a7,  21}, {0x00b0, 248},
 	{0x00b6,  20}, {0x00b7, 250}, {0x0401, 240}, {0x0404, 242},
 	{0x0407, 244}, {0x040e, 246}, {0x0410, 128}, {0x0411, 129},
@@ -361,7 +361,7 @@ static struct ciolib_cpmap cp866_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp866_unicode_table[128] = {
+const static uint32_t cp866_unicode_table[128] = {
 	0x0410, 0x0411, 0x0412, 0x0413, 0x0414, 0x0415, 0x0416, 0x0417,
 	0x0418, 0x0419, 0x041a, 0x041b, 0x041c, 0x041d, 0x041e, 0x041f,
 	0x0420, 0x0421, 0x0422, 0x0423, 0x0424, 0x0425, 0x0426, 0x0427,
@@ -381,7 +381,7 @@ static uint32_t cp866_unicode_table[128] = {
 };
 #endif
 
-static struct ciolib_cpmap cp866m_table[160] = {
+const static struct ciolib_cpmap cp866m_table[160] = {
 	{0x00a0, 255}, {0x00a7,  21}, {0x00b0, 248}, {0x00B2, 253},
 	{0x00b6,  20}, {0x00b7, 250}, {0x00F7, 246}, {0x0401, 240},
 	{0x0410, 128}, {0x0411, 129}, {0x0412, 130}, {0x0413, 131},
@@ -424,7 +424,7 @@ static struct ciolib_cpmap cp866m_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp866m_unicode_table[128] = {
+const static uint32_t cp866m_unicode_table[128] = {
 	0x0410, 0x0411, 0x0412, 0x0413, 0x0414, 0x0415, 0x0416, 0x0417,
 	0x0418, 0x0419, 0x041a, 0x041b, 0x041c, 0x041d, 0x041e, 0x041f,
 	0x0420, 0x0421, 0x0422, 0x0423, 0x0424, 0x0425, 0x0426, 0x0427,
@@ -443,7 +443,7 @@ static uint32_t cp866m_unicode_table[128] = {
 	0x00b0, 0x2219, 0x00b7, 0x221a, 0x045F, 0x00B2, 0x25a0, 0x00a0
 };
 
-static struct ciolib_cpmap iso8859_9_table[128] = {
+const static struct ciolib_cpmap iso8859_9_table[128] = {
 	{0x00a0, 160}, {0x00a1, 161}, {0x00a2, 162}, {0x00a3, 163},
 	{0x00a4, 164}, {0x00a5, 165}, {0x00a6, 166}, {0x00a7, 167},
 	{0x00a7,  21}, {0x00a8, 168}, {0x00a9, 169}, {0x00aa, 170},
@@ -478,7 +478,7 @@ static struct ciolib_cpmap iso8859_9_table[128] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'},
 };
 
-static uint32_t iso8859_9_unicode_table[128] = {
+const static uint32_t iso8859_9_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -497,7 +497,7 @@ static uint32_t iso8859_9_unicode_table[128] = {
 	0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x0131, 0x015f, 0x00ff
 };
 
-static struct ciolib_cpmap iso8859_8_table[92] = {
+const static struct ciolib_cpmap iso8859_8_table[92] = {
 	{0x00a0, 160}, {0x00a2, 162}, {0x00a3, 163}, {0x00a4, 164},
 	{0x00a5, 165}, {0x00a6, 166}, {0x00a7, 167}, {0x00a7,  21},
 	{0x00a8, 168}, {0x00a9, 169}, {0x00ab, 171}, {0x00ac, 172},
@@ -523,7 +523,7 @@ static struct ciolib_cpmap iso8859_8_table[92] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'},
 };
 
-static uint32_t iso8859_8_unicode_table[128] = {
+const static uint32_t iso8859_8_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -542,7 +542,7 @@ static uint32_t iso8859_8_unicode_table[128] = {
 	0x05e8, 0x05e9, 0x05ea, 0xfffd, 0xfffd, 0x200e, 0x200f, 0xfffd
 };
 
-static struct ciolib_cpmap koi8_u_table[160] = {
+const static struct ciolib_cpmap koi8_u_table[160] = {
 	{0x00a0, 154}, {0x00a7,  21}, {0x00a9, 191}, {0x00b0, 156},
 	{0x00b2, 157}, {0x00b6,  20}, {0x00b7, 158}, {0x00f7, 159},
 	{0x0401, 179}, {0x0404, 180}, {0x0406, 182}, {0x0407, 183},
@@ -585,7 +585,7 @@ static struct ciolib_cpmap koi8_u_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t koi8_u_unicode_table[128] = {
+const static uint32_t koi8_u_unicode_table[128] = {
 	0x2500, 0x2502, 0x250c, 0x2510, 0x2514, 0x2518, 0x251c, 0x2524,
 	0x252c, 0x2534, 0x253c, 0x2580, 0x2584, 0x2588, 0x258c, 0x2590,
 	0x2591, 0x2592, 0x2593, 0x2320, 0x25a0, 0x2219, 0x221a, 0x2248,
@@ -604,7 +604,7 @@ static uint32_t koi8_u_unicode_table[128] = {
 	0x042c, 0x042b, 0x0417, 0x0428, 0x042d, 0x0429, 0x0427, 0x042a
 };
 
-static struct ciolib_cpmap iso8859_15_table[128] = {
+const static struct ciolib_cpmap iso8859_15_table[128] = {
 	{0x00a0, 160}, {0x00a1, 161}, {0x00a2, 162}, {0x00a3, 163},
 	{0x00a5, 165}, {0x00a7, 167}, {0x00a7,  21}, {0x00a9, 169},
 	{0x00aa, 170}, {0x00ab, 171}, {0x00ac, 172}, {0x00ad, 173},
@@ -639,7 +639,7 @@ static struct ciolib_cpmap iso8859_15_table[128] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t iso8859_15_unicode_table[128] = {
+const static uint32_t iso8859_15_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -658,7 +658,7 @@ static uint32_t iso8859_15_unicode_table[128] = {
 	0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff
 };
 
-static struct ciolib_cpmap iso8859_5_table[128] = {
+const static struct ciolib_cpmap iso8859_5_table[128] = {
 	{0x00a0, 160}, {0x00a7,  21}, {0x00a7, 253}, {0x00ad, 173},
 	{0x00b6,  20}, {0x0401, 161}, {0x0402, 162}, {0x0403, 163},
 	{0x0404, 164}, {0x0405, 165}, {0x0406, 166}, {0x0407, 167},
@@ -693,7 +693,7 @@ static struct ciolib_cpmap iso8859_5_table[128] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t iso8859_5_unicode_table[128] = {
+const static uint32_t iso8859_5_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -712,7 +712,7 @@ static uint32_t iso8859_5_unicode_table[128] = {
 	0x0458, 0x0459, 0x045a, 0x045b, 0x045c, 0x00a7, 0x045e, 0x045f
 };
 
-static struct ciolib_cpmap cp850_table[160] = {
+const static struct ciolib_cpmap cp850_table[160] = {
 	{0x00a0, 255}, {0x00a1, 173}, {0x00a2, 189}, {0x00a3, 156},
 	{0x00a4, 207}, {0x00a5, 190}, {0x00a6, 221}, {0x00a7,  21},
 	{0x00a7, 245}, {0x00a8, 249}, {0x00a9, 184}, {0x00aa, 166},
@@ -755,7 +755,7 @@ static struct ciolib_cpmap cp850_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp850_unicode_table[128] = {
+const static uint32_t cp850_unicode_table[128] = {
 	0x00c7, 0x00fc, 0x00e9, 0x00e2, 0x00e4, 0x00e0, 0x00e5, 0x00e7,
 	0x00ea, 0x00eb, 0x00e8, 0x00ef, 0x00ee, 0x00ec, 0x00c4, 0x00c5,
 	0x00c9, 0x00e6, 0x00c6, 0x00f4, 0x00f6, 0x00f2, 0x00fb, 0x00f9,
@@ -774,7 +774,7 @@ static uint32_t cp850_unicode_table[128] = {
 	0x00b0, 0x00a8, 0x00b7, 0x00b9, 0x00b3, 0x00b2, 0x25a0, 0x00a0
 };
 
-static struct ciolib_cpmap cp865_table[160] = {
+const static struct ciolib_cpmap cp865_table[160] = {
 	{0x00a0, 255}, {0x00a1, 173}, {0x00a3, 156}, {0x00a4, 175},
 	{0x00a7,  21}, {0x00aa, 166}, {0x00ab, 174}, {0x00ac, 170},
 	{0x00b0, 248}, {0x00b1, 241}, {0x00b2, 253}, {0x00b5, 230},
@@ -817,7 +817,7 @@ static struct ciolib_cpmap cp865_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp865_unicode_table[128] = {
+const static uint32_t cp865_unicode_table[128] = {
 	0x00c7, 0x00fc, 0x00e9, 0x00e2, 0x00e4, 0x00e0, 0x00e5, 0x00e7,
 	0x00ea, 0x00eb, 0x00e8, 0x00ef, 0x00ee, 0x00ec, 0x00c4, 0x00c5,
 	0x00c9, 0x00e6, 0x00c6, 0x00f4, 0x00f6, 0x00f2, 0x00fb, 0x00f9,
@@ -837,7 +837,7 @@ static uint32_t cp865_unicode_table[128] = {
 
 };
 
-static struct ciolib_cpmap iso8859_7_table[125] = {
+const static struct ciolib_cpmap iso8859_7_table[125] = {
 	{0x00a0, 160}, {0x00a3, 163}, {0x00a6, 166}, {0x00a7,  21},
 	{0x00a7, 167}, {0x00a8, 168}, {0x00a9, 169}, {0x00ab, 171},
 	{0x00ac, 172}, {0x00ad, 173}, {0x00b0, 176}, {0x00b1, 177},
@@ -872,7 +872,7 @@ static struct ciolib_cpmap iso8859_7_table[125] = {
 	{0xfffd, '?'}
 };
 
-static uint32_t iso8859_7_unicode_table[128] = {
+const static uint32_t iso8859_7_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -891,7 +891,7 @@ static uint32_t iso8859_7_unicode_table[128] = {
 	0x03c8, 0x03c9, 0x03ca, 0x03cb, 0x03cc, 0x03cd, 0x03ce, 0xfffd
 };
 
-static struct ciolib_cpmap iso8859_1_table[128] = {
+const static struct ciolib_cpmap iso8859_1_table[128] = {
 	{0x00a0, 160}, {0x00a1, 161}, {0x00a2, 162}, {0x00a3, 163},
 	{0x00a4, 164}, {0x00a5, 165}, {0x00a6, 166}, {0x00a7, 167},
 	{0x00a7,  21}, {0x00a8, 168}, {0x00a9, 169}, {0x00aa, 170},
@@ -926,7 +926,7 @@ static struct ciolib_cpmap iso8859_1_table[128] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t iso8859_1_unicode_table[128] = {
+const static uint32_t iso8859_1_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -945,7 +945,7 @@ static uint32_t iso8859_1_unicode_table[128] = {
 	0x00f8, 0x00f9, 0x00fa, 0x00fb, 0x00fc, 0x00fd, 0x00fe, 0x00ff
 };
 
-static struct ciolib_cpmap cp866m2_table[160] = {
+const static struct ciolib_cpmap cp866m2_table[160] = {
 	{0x00a0, 255}, {0x00a7,  21}, {0x00A9, 252}, {0x00b0, 248},
 	{0x00B2, 253}, {0x00b6,  20}, {0x00b7, 250}, {0x00F7, 246},
 	{0x0401, 240}, {0x0410, 128}, {0x0411, 129}, {0x0412, 130},
@@ -988,7 +988,7 @@ static struct ciolib_cpmap cp866m2_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp866m2_unicode_table[128] = {
+const static uint32_t cp866m2_unicode_table[128] = {
 	0x0410, 0x0411, 0x0412, 0x0413, 0x0414, 0x0415, 0x0416, 0x0417,
 	0x0418, 0x0419, 0x041a, 0x041b, 0x041c, 0x041d, 0x041e, 0x041f,
 	0x0420, 0x0421, 0x0422, 0x0423, 0x0424, 0x0425, 0x0426, 0x0427,
@@ -1007,7 +1007,7 @@ static uint32_t cp866m2_unicode_table[128] = {
 	0x00b0, 0x2219, 0x00b7, 0x221a, 0x00A9, 0x00B2, 0x25a0, 0x00a0
 };
 
-static struct ciolib_cpmap cp866u_table[160] = {
+const static struct ciolib_cpmap cp866u_table[160] = {
 	{0x00a0, 255}, {0x00a7,  21}, {0x00A9, 252}, {0x00B2, 253},
 	{0x00b6,  20}, {0x00b7, 250}, {0x0401, 240}, {0x0404, 244},
 	{0x0406, 246}, {0x0407, 248}, {0x0410, 128}, {0x0411, 129},
@@ -1050,7 +1050,7 @@ static struct ciolib_cpmap cp866u_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp866u_unicode_table[128] = {
+const static uint32_t cp866u_unicode_table[128] = {
 	0x0410, 0x0411, 0x0412, 0x0413, 0x0414, 0x0415, 0x0416, 0x0417,
 	0x0418, 0x0419, 0x041a, 0x041b, 0x041c, 0x041d, 0x041e, 0x041f,
 	0x0420, 0x0421, 0x0422, 0x0423, 0x0424, 0x0425, 0x0426, 0x0427,
@@ -1069,7 +1069,7 @@ static uint32_t cp866u_unicode_table[128] = {
 	0x0407, 0x0457, 0x00b7, 0x221a, 0x00A9, 0x00B2, 0x25a0, 0x00a0
 };
 
-static struct ciolib_cpmap cp1131_table[160] = {
+const static struct ciolib_cpmap cp1131_table[160] = {
 	{0x00a0, 255}, {0x00a7,  21}, {0x00b6,  20}, {0x00b7, 250},
 	{0x0401, 240}, {0x0404, 242}, {0x0406, 248}, {0x0407, 244},
 	{0x040e, 246}, {0x0410, 128}, {0x0411, 129}, {0x0412, 130},
@@ -1112,7 +1112,7 @@ static struct ciolib_cpmap cp1131_table[160] = {
 	{0x2666,   4}, {0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t cp1131_unicode_table[128] = {
+const static uint32_t cp1131_unicode_table[128] = {
 	0x0410, 0x0411, 0x0412, 0x0413, 0x0414, 0x0415, 0x0416, 0x0417,
 	0x0418, 0x0419, 0x041a, 0x041b, 0x041c, 0x041d, 0x041e, 0x041f,
 	0x0420, 0x0421, 0x0422, 0x0423, 0x0424, 0x0425, 0x0426, 0x0427,
@@ -1131,7 +1131,7 @@ static uint32_t cp1131_unicode_table[128] = {
 	0x0406, 0x0456, 0x00b7, 0x221a, 0x0490, 0x0491, 0x2219, 0x00a0
 };
 
-static struct ciolib_cpmap armscii8_table[123] = {
+const static struct ciolib_cpmap armscii8_table[123] = {
 	{0x00a0, 160}, {0x00a7, 162}, {0x00a7,  21}, {0x00ab, 167},
 	{0x00b6,  20}, {0x00bb, 166}, {0x02bc, 254}, {0x0531, 178},
 	{0x0532, 180}, {0x0533, 182}, {0x0534, 184}, {0x0535, 186},
@@ -1165,7 +1165,7 @@ static struct ciolib_cpmap armscii8_table[123] = {
 	{0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t armscii8_unicode_table[128] = {
+const static uint32_t armscii8_unicode_table[128] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -1184,7 +1184,7 @@ static uint32_t armscii8_unicode_table[128] = {
 	0x0554, 0x0584, 0x0555, 0x0585, 0x0556, 0x0586, 0x02bc, 0xfffd
 };
 
-static struct ciolib_cpmap haik8_table[123] = {
+const static struct ciolib_cpmap haik8_table[123] = {
 	{0x00a0, 128}, {0x00a7,  21}, {0x00a7, 130}, {0x00ab, 135},
 	{0x00b6,  20}, {0x00bb, 134}, {0x02bc, 254}, {0x0531, 146},
 	{0x0532, 148}, {0x0533, 150}, {0x0534, 152}, {0x0535, 154},
@@ -1218,7 +1218,7 @@ static struct ciolib_cpmap haik8_table[123] = {
 	{0x266a,  13}, {0x266b,  14}, {0xfffd, '?'}
 };
 
-static uint32_t haik8_unicode_table[128] = {
+const static uint32_t haik8_unicode_table[128] = {
 	0x00a0, 0x058e, 0x00a7, 0x0589, 0x0029, 0x002a, 0x00bb, 0x00ab,
 	0x2014, 0x002e, 0x055d, 0x002c, 0x2013, 0x058a, 0x2026, 0x055c,
 	0x055b, 0x055e, 0x0531, 0x0561, 0x0532, 0x0562, 0x0533, 0x0563,
@@ -1237,7 +1237,7 @@ static uint32_t haik8_unicode_table[128] = {
 	0x0554, 0x0584, 0x0555, 0x0585, 0x0556, 0x0586, 0x02bc, 0xfffd
 };
 
-static struct ciolib_cpmap atascii_table[275] = {
+const static struct ciolib_cpmap atascii_table[275] = {
 	{0x0007, 252}, {0x0008, 126}, {0x0009, 127}, {0x000d, 155},
 	{0x001b,  27}, {0x0020,  32}, {0x0020, 160}, {0x0021, 161},
 	{0x0021,  33}, {0x0022,  34}, {0x0022, 162}, {0x0023, 163},
@@ -1309,7 +1309,7 @@ static struct ciolib_cpmap atascii_table[275] = {
 	{0x1fb87,   2},{0x1fb87, 130},{0xfffd, '?'},
 };
 
-static uint32_t atascii_unicode_table[256] = {
+const static uint32_t atascii_unicode_table[256] = {
 	0x2665, 0x251c,0x1fb87, 0x2518, 0x2524, 0x2510, 0x2571, 0x2572,
 	0x25e2, 0x2597, 0x25e3, 0x259d, 0x2598,0x1fb82, 0x2582, 0x2596,
 	0x2663, 0x250c, 0x2500, 0x253c, 0x2022, 0x2584, 0x258e, 0x252c,
@@ -1344,7 +1344,7 @@ static uint32_t atascii_unicode_table[256] = {
 	0x0078, 0x0079, 0x007a, 0x2660, 0x0007, 0x007f, 0x25c0, 0x25b6
 };
 
-static uint32_t atascii_ext_table[256] = {
+const static uint32_t atascii_ext_table[256] = {
 	0x2665, 0x251c,0x1fb87, 0x2518, 0x2524, 0x2510, 0x2571, 0x2572,
 	0x25e2, 0x2597, 0x25e3, 0x259d, 0x2598,0x1fb82, 0x2582, 0x2596,
 	0x2663, 0x250c, 0x2500, 0x253c, 0x2022, 0x2584, 0x258e, 0x252c,
@@ -1379,7 +1379,7 @@ static uint32_t atascii_ext_table[256] = {
 	0x0078, 0x0079, 0x007a, 0x2660, 0x007c, 0x21b0, 0x25c0, 0x25b6
 };
 
-static struct ciolib_cpmap petsciiu_table[193] = {
+const static struct ciolib_cpmap petsciiu_table[193] = {
 	{0x0020,  32}, {0x0021,  33}, {0x0022,  34}, {0x0023,  35},
 	{0x0024,  36}, {0x0025,  37}, {0x0026,  38}, {0x0027,  39},
 	{0x0028,  40}, {0x0029,  41}, {0x002a,  42}, {0x002b,  43},
@@ -1431,7 +1431,7 @@ static struct ciolib_cpmap petsciiu_table[193] = {
 	{0xfffd, '?'}
 };
 
-static uint32_t petsciiu_unicode_table[256] = {
+const static uint32_t petsciiu_unicode_table[256] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -1466,7 +1466,7 @@ static uint32_t petsciiu_unicode_table[256] = {
 	0x1fb83,0x2583,0x1fb7f, 0x2596, 0x259d, 0x2518, 0x2598, 0x03c0
 };
 
-static struct ciolib_cpmap petsciil_table[193] = {
+const static struct ciolib_cpmap petsciil_table[193] = {
 	{0x0020,  32}, {0x0021,  33}, {0x0022,  34}, {0x0023,  35},
 	{0x0024,  36}, {0x0025,  37}, {0x0026,  38}, {0x0027,  39},
 	{0x0028,  40}, {0x0029,  41}, {0x002a,  42}, {0x002b,  43},
@@ -1518,7 +1518,7 @@ static struct ciolib_cpmap petsciil_table[193] = {
 	{0xfffd, '?'}
 };
 
-static uint32_t petsciil_unicode_table[256] = {
+const static uint32_t petsciil_unicode_table[256] = {
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
 	0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd, 0xfffd,
@@ -1567,7 +1567,7 @@ cmptab(const void *key, const void *entry)
 }
 
 static uint8_t
-cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, struct codepage_def *cpdef)
+cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct codepage_def *cpdef)
 {
 	struct ciolib_cpmap *mapped;
 
@@ -1580,7 +1580,7 @@ cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, struct codepage_def 
 }
 
 static uint32_t
-cpoint_from_cptable(uint8_t ch, struct codepage_def *cpdef)
+cpoint_from_cptable(uint8_t ch, const struct codepage_def *cpdef)
 {
 	if (ch < 128)
 		return ch;
@@ -1588,7 +1588,7 @@ cpoint_from_cptable(uint8_t ch, struct codepage_def *cpdef)
 }
 
 static uint32_t
-cpoint_from_cptable_ext(uint8_t ch, struct codepage_def *cpdef)
+cpoint_from_cptable_ext(uint8_t ch, const struct codepage_def *cpdef)
 {
 	if (ch < 32)
 		return cpdef->cp_ext_unicode_table[ch];
@@ -1596,13 +1596,13 @@ cpoint_from_cptable_ext(uint8_t ch, struct codepage_def *cpdef)
 }
 
 static uint32_t
-ft_cpoint_from_cptable(uint8_t ch, struct codepage_def *cpdef)
+ft_cpoint_from_cptable(uint8_t ch, const struct codepage_def *cpdef)
 {
 	return cpdef->cp_unicode_table[ch];
 }
 
 static uint32_t
-ft_cpoint_from_cptable_ext(uint8_t ch, struct codepage_def *cpdef)
+ft_cpoint_from_cptable_ext(uint8_t ch, const struct codepage_def *cpdef)
 {
 	return cpdef->cp_ext_unicode_table[ch];
 }
@@ -1698,7 +1698,7 @@ utf8_bytes(uint32_t cp)
 }
 
 static uint8_t *
-cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, struct codepage_def *cpdef)
+cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, const struct codepage_def *cpdef)
 {
 	size_t needed = 0;
 	int cplen;
@@ -1756,7 +1756,7 @@ error:
 }
 
 static uint8_t
-ft_from_unicode_cpoint(uint32_t cpoint, char unmapped, struct codepage_def *cpdef)
+ft_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct codepage_def *cpdef)
 {
 	struct ciolib_cpmap *mapped;
 
@@ -1767,7 +1767,7 @@ ft_from_unicode_cpoint(uint32_t cpoint, char unmapped, struct codepage_def *cpde
 }
 
 static uint8_t *
-ftstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, struct codepage_def *cpdef)
+ftstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, const struct codepage_def *cpdef)
 {
 	size_t needed = 0;
 	int cplen;
@@ -1816,7 +1816,7 @@ error:
  * (TODO: Normalize into combined chars etc)
  */
 static char *
-utf8_to_cpstr(const uint8_t *utf8str, char unmapped, size_t inlen, size_t *outlen, struct codepage_def *cpdef)
+utf8_to_cpstr(const uint8_t *utf8str, char unmapped, size_t inlen, size_t *outlen, const struct codepage_def *cpdef)
 {
 	size_t idx;
 	char *rp;
@@ -1877,7 +1877,7 @@ error:
 	return NULL;
 }
 
-struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
+const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	{"CP437", CIOLIB_CP437, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		cp437_table, sizeof(cp437_table) / sizeof(cp437_table[0]),
 		cp437_unicode_table, cp437_ext_table},
