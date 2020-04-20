@@ -939,6 +939,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(nulstr);
 	}
 
+	if(strcmp(sp,"STR") == 0) {
+		return main_csi.str;
+	}
+
 	if(!strncmp(sp,"EXEC:",5)) {
 		exec_bin(sp+5,&main_csi);
 		return(nulstr);
