@@ -242,7 +242,7 @@ function Instructions()
 	console.write("Do you want instructions (Y/N) [N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
 		console.crlf();
-		console.printfile(fname("twinstr.doc"));
+		console.printfile(fname("twinstr.doc"), P_CPM_EOF);
 	}
 }
 
