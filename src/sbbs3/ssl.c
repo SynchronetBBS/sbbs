@@ -42,6 +42,7 @@ static int DLLCALL crypt_ll(int error)
 		case CRYPT_ERROR_INCOMPLETE:
 		case CRYPT_ERROR_NOSECURE:
 		case CRYPT_ERROR_BADDATA:
+		case CRYPT_ERROR_INVALID:
 			return LOG_WARNING;
 		case CRYPT_ERROR_INTERNAL:
 			return LOG_NOTICE;
