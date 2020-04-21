@@ -837,10 +837,10 @@ static void playnote_thread(void *args)
 		}
 		else
 			listSemWait(&cterm->notes);
-		device_open=xptone_open();
 		note=listShiftNode(&cterm->notes);
 		if(note==NULL)
 			break;
+		device_open=xptone_open();
 		if(note->dotted)
 			duration=360000/note->tempo;
 		else
@@ -869,6 +869,8 @@ static void playnote_thread(void *args)
 			sem_post(&cterm->note_completed_sem);
 		free(note);
 	}
+	if (device_open)
+		xptone_close();
 	cterm->playnote_thread_running=FALSE;
 	sem_post(&cterm->playnote_thread_terminated);
 }
@@ -5260,6 +5262,7 @@ void CIOLIBCALL cterm_closelog(struct cterminal *cterm)
 	cterm->log=CTERM_LOG_NONE;
 }
 
+FILE *dbg;
 void CIOLIBCALL cterm_end(struct cterminal *cterm)
 {
 	int i;
