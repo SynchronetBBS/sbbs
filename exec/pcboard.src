@@ -235,11 +235,11 @@ cmdstr I
 	end_cmd
 
 cmdstr NODES
-	exec_bin "nodelist"
+	nodelist_all
 	end_cmd
     
 cmdstr WHO
-	exec_bin "nodelist -active"
+	nodelist_users
 	end_cmd
 
 cmdstr CHAT

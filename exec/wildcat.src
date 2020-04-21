@@ -98,7 +98,7 @@ cmdkey Y
 	end_cmd
 
 cmdkey W
-	exec_bin "nodelist -active"
+	nodelist_users
 	crlf
 	pause
 	end_cmd

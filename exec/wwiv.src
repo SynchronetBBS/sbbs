@@ -167,11 +167,11 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	exec_bin "nodelist"
+	nodelist_users
 	end_cmd
     
 cmdkey W
-    exec_bin "nodelist -active"
+    nodelist_all
     end_cmd
 
 cmdkey $
@@ -567,11 +567,11 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	exec_bin "nodelist"
+	nodelist_users
 	end_cmd
     
 cmdkey W
-    exec_bin "nodelist -active"
+    nodelist_all
     end_cmd
 
 cmdkey N
