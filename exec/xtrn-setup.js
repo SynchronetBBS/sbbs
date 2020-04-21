@@ -26,7 +26,7 @@ tree.colors.lbg = BG_CYAN;
 tree.colors.kfg = LIGHTCYAN;
 
 var longest = 0;
-directory(system.exec_dir + '../xtrn/*', GLOB_ONLYDIR).filter(function (e) {
+directory(system.exec_dir + '../xtrn/*', GLOB_ONLYDIR).forEach(function (e) {
     const ini = e + '/install-xtrn.ini';
     if (!file_exists(ini)) return;
     const f = new File(ini);
