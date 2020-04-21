@@ -65,7 +65,8 @@ while (!js.terminated) {
         xtrn = tree.currentItem.__xtrn_setup;
         info_frame.clear();
         info_frame.putmsg('\x01h\x01w' + xtrn.Name + '\r\n');
-        if (xtrn.Desc) info_frame.putmsg('\x01n\x01w' + xtrn.Desc + '\r\n\r\n');
+        if (xtrn.Desc) info_frame.putmsg('\x01n\x01w' + xtrn.Desc + '\r\n');
+		info_frame.putmsg('\r\n');
         if (xtrn.By) info_frame.putmsg('\x01h\x01cBy\x01w:\r\n\x01w' + xtrn.By + '\r\n\r\n');
         if (xtrn.Cats) info_frame.putmsg('\x01h\x01cCategories\x01w:\r\n\x01n' + xtrn.Cats + '\r\n\r\n');
         if (xtrn.Subs) info_frame.putmsg('\x01h\x01cSubcategories\x01w:\r\n\x01n' + xtrn.Subs + '\r\n\r\n');
