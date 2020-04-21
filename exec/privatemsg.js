@@ -1,27 +1,10 @@
 // $Id$
 
-// Private Message (Ctrl-P) Hot Key Handler
-
-// Install this module in SCFG->External Programs->Global Hot Key Events:
-// Global Hot Key             Ctrl-P        
-// Command Line               ?privatemsg.js
-//
-// or, by running "jsexec privatemsg.js install"
+// Private Message Module
+// Installed in SCFG->System->Loadable Modules->Private Msg
 
 if(argc == 1 && argv[0] == "install") {
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if(!xtrn_cnf) {
-		alert("Failed to read xtrn.cnf");
-		exit(-1);
-	}
-	xtrn_cnf.hotkey.push({ key: ascii(ctrl('P')), cmd: '?privatemsg.js' });
-	
-	if(!cnflib.write("xtrn.cnf", undefined, xtrn_cnf)) {
-		alert("Failed to write xtrn.cnf");
-		exit(-1);
-	}
-
+	// Nothing to do
 	exit(0);
 }
 
