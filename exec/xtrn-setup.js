@@ -33,8 +33,12 @@ directory(system.exec_dir + '../xtrn/*', GLOB_ONLYDIR).forEach(function (e) {
     if (!f.open('r')) return;
     const xtrn = f.iniGetObject();
     f.close();
+	if(!xtrn.Name) return;
     const item = tree.addItem(xtrn.Name, function () {
-        js.exec('install-xtrn', {}, e);
+		console.clear(LIGHTGRAY);
+        js.exec('install-xtrn.js', {}, e);
+		console.pause();
+		frame.invalidate();
     });
     item.__xtrn_setup = xtrn;
     if (xtrn.Name.length > longest) longest = xtrn.Name.length;
@@ -62,8 +66,8 @@ while (!js.terminated) {
         info_frame.putmsg('\x01h\x01w' + xtrn.Name + '\r\n');
         if (xtrn.Desc) info_frame.putmsg('\x01n\x01w' + word_wrap(xtrn.Desc, info_frame.width) + '\r\n');
         if (xtrn.By) info_frame.putmsg('\x01h\x01cBy\x01w:\r\n\x01w' + xtrn.By + '\r\n\r\n');
-        if (xtrn.Cats) info_frame.putmsg('\x01h\x01cCategories:\x01w:\r\n\x01n' + xtrn.Cats + '\r\n\r\n');
-        if (xtrn.Subs) info_frame.putmsg('\x01h\x01cSubcategories:\x01w:\r\n\x01n' + xtrn.Subs + '\r\n\r\n');
+        if (xtrn.Cats) info_frame.putmsg('\x01h\x01cCategories\x01w:\r\n\x01n' + xtrn.Cats + '\r\n\r\n');
+        if (xtrn.Subs) info_frame.putmsg('\x01h\x01cSubcategories\x01w:\r\n\x01n' + xtrn.Subs + '\r\n\r\n');
     }
     if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
 }
