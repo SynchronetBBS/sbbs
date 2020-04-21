@@ -20,6 +20,7 @@ const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BL
 const main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
 const tree_frame = new Frame(1, main_frame.y + 1, Math.floor(main_frame.width / 2), main_frame.height - 2, BG_BLACK|LIGHTGRAY, main_frame);
 const info_frame = new Frame(tree_frame.width + 1, main_frame.y + 1, main_frame.width - tree_frame.width - 1, main_frame.height - 2, BG_BLACK|WHITE, main_frame);
+info_frame.word_wrap = true;
 const tree = new Tree(tree_frame);
 
 frame.putmsg('FTN Setup');
@@ -40,10 +41,7 @@ if (f.open('r')) {
         const zone = e.substr(5);
         const item = tree.addItem(format('Zone %5d: %s', zone, net.name), function () {
             console.clear(BG_BLACK|LIGHTGRAY);
-            var result = js.exec('init-fidonet.js', {}, zone);
-			if(result && !console.aborted)
-				alert(result);
-			console.pause();
+            js.exec('init-fidonet.js', {}, zone);
             frame.invalidate();
         });
         if (item.text.length > longest) longest = item.text.length;
@@ -73,7 +71,7 @@ while (!js.terminated) {
         zone = tree.currentItem.__ftn_setup;
         info_frame.clear();
         info_frame.putmsg('\1h\1w' + zone.name + '\r\n');
-        if (zone.desc) info_frame.putmsg('\1n\1w' + word_wrap(zone.desc, info_frame.width) + '\r\n');
+        if (zone.desc) info_frame.putmsg('\1n\1w' + zone.desc + '\r\n\r\n');
         if (zone.info) info_frame.putmsg('\1h\1cInformation\1w:\r\n\1n' + zone.info + '\r\n\r\n');
         if (zone.coord) info_frame.putmsg('\1h\1cCoordinator\1w:\r\n\1n' + zone.coord + '\r\n\r\n');
         if (zone.email) info_frame.putmsg('\1h\1cEmail\1w:\r\n\1n' + zone.email + '\r\n\r\n');
