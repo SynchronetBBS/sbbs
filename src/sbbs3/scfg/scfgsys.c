@@ -1637,6 +1637,9 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
 					sprintf(opt[i++],"%-16.16s%s","List Msgs",cfg.listmsgs_mod);
+					sprintf(opt[i++],"%-16.16s%s","List Nodes",cfg.nodelist_mod);
+					sprintf(opt[i++],"%-16.16s%s","Who's Online",cfg.whosonline_mod);
+					sprintf(opt[i++],"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`Loadable Modules:`\n"
@@ -1661,7 +1664,10 @@ void sys_cfg(void)
 						"`Read Mail`    Executed when a user reads email/netmail\n"
 						"`Scan Msgs`    Executed when a user reads or scans a message sub-board\n"
 						"`Scan Subs`    Executed when a user scans one or more sub-boards for msgs\n"
-						"`List Msgs`    Executed when a user list msgs from the msg read prompt\n"
+						"`List Msgs`    Executed when a user lists msgs from the msg read prompt\n"
+						"`List Nodes`   Executed when a user lists all nodes\n"
+						"`Who's Online` Executed when a user lists the nodes in-use (e.g. `^U`)\n"
+						"`Private Msg`  Executed when a user sends a private node msg (e.g. `^P`)\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"in your `exec` or `mods` directories.\n"
@@ -1724,6 +1730,18 @@ void sys_cfg(void)
 						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Command"
 								,cfg.listmsgs_mod,sizeof(cfg.listmsgs_mod)-1,K_EDIT);
+							break;
+						case 13:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Nodes Command"
+								,cfg.nodelist_mod,sizeof(cfg.nodelist_mod)-1,K_EDIT);
+							break;
+						case 14:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Command"
+								,cfg.whosonline_mod,sizeof(cfg.whosonline_mod)-1,K_EDIT);
+							break;
+						case 15:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Command"
+								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;
 					} 
 				}
