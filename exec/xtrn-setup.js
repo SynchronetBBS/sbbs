@@ -13,6 +13,7 @@ const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BL
 const main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
 const tree_frame = new Frame(1, main_frame.y + 1, Math.floor(main_frame.width / 2), main_frame.height - 2, BG_BLACK|LIGHTGRAY, main_frame);
 const info_frame = new Frame(tree_frame.width + 1, main_frame.y + 1, main_frame.width - tree_frame.width - 1, main_frame.height - 2, BG_BLACK|WHITE, main_frame);
+info_frame.word_wrap = true;
 const tree = new Tree(tree_frame);
 
 frame.putmsg('External Program Setup');
@@ -64,7 +65,7 @@ while (!js.terminated) {
         xtrn = tree.currentItem.__xtrn_setup;
         info_frame.clear();
         info_frame.putmsg('\x01h\x01w' + xtrn.Name + '\r\n');
-        if (xtrn.Desc) info_frame.putmsg('\x01n\x01w' + word_wrap(xtrn.Desc, info_frame.width) + '\r\n');
+        if (xtrn.Desc) info_frame.putmsg('\x01n\x01w' + xtrn.Desc + '\r\n\r\n');
         if (xtrn.By) info_frame.putmsg('\x01h\x01cBy\x01w:\r\n\x01w' + xtrn.By + '\r\n\r\n');
         if (xtrn.Cats) info_frame.putmsg('\x01h\x01cCategories\x01w:\r\n\x01n' + xtrn.Cats + '\r\n\r\n');
         if (xtrn.Subs) info_frame.putmsg('\x01h\x01cSubcategories\x01w:\r\n\x01n' + xtrn.Subs + '\r\n\r\n');
