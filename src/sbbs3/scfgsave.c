@@ -277,8 +277,11 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	n=0;
 	for(i=0;i<26;i++)
 		put_int(n,stream);
+	put_str(cfg->nodelist_mod, stream);
+	put_str(cfg->whosonline_mod, stream);
+	put_str(cfg->privatemsg_mod, stream);
 	n=0xffff;
-	for(i=0;i<254;i++)
+	for(i=0;i<158;i++)
 		put_int(n,stream);
 
 	put_int(cfg->user_backup_level,stream);

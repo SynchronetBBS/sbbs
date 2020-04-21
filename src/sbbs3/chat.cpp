@@ -1354,9 +1354,14 @@ void sbbs_t::nodemsg()
 
 	if(nodemsg_inside>1)	/* nested once only */
 		return;
+	nodemsg_inside++;
+	if(cfg.privatemsg_mod[0] != '\0') {
+		exec_bin(cfg.privatemsg_mod, &main_csi);
+		nodemsg_inside--;
+		return;
+	}
 	sys_status|=SS_IN_CTRLP;
 	getnodedat(cfg.node_num,&savenode,0);
-	nodemsg_inside++;
 	wordwrap[0]=0;
 	while(online && !done) {
 		if(useron.rest&FLAG('C')) {

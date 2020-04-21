@@ -313,7 +313,16 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_int(c, instream);
 	for(i=0;i<21;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
-	for(i=0;i<254;i++)					/* unused - initialized to 0xff */
+	get_str(cfg->nodelist_mod,instream);
+	if(cfg->nodelist_mod[0] == '\xff')
+		SAFECOPY(cfg->nodelist_mod, "nodelist");
+	get_str(cfg->whosonline_mod,instream);
+	if(cfg->whosonline_mod[0] == '\xff')
+		SAFECOPY(cfg->whosonline_mod, "nodelist -active");
+	get_str(cfg->privatemsg_mod,instream);
+	if(cfg->privatemsg_mod[0] == '\xff')
+		SAFECOPY(cfg->privatemsg_mod, "privatemsg");
+	for(i=0;i<158;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);
