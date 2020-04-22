@@ -41,8 +41,8 @@
 
 /****************************************************************************/
 /* Returns the ANSI code to obtain the value of atr. Mixed attributes		*/
-/* high intensity colors, or background/forground cobinations don't work.   */
-/* A call to attr is more appropriate, being it is intelligent				*/
+/* high intensity colors, or background/foreground combinations don't work. */
+/* A call to attr() is more appropriate, being it is intelligent			*/
 /****************************************************************************/
 const char *sbbs_t::ansi(int atr)
 {
