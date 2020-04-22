@@ -549,7 +549,7 @@ function remove_dupes(list, verbose)
     var i;
 
     for(i in list) {
-		var bbs = list[i]
+		var bbs = list[i];
 		var name = bbs.name.toLowerCase();
 		if(name.slice(-4) == " bbs")
 			name = name.slice(0, -4);
@@ -755,6 +755,34 @@ function syncterm_list(list, dir)
     }
     f.close();
 	return f.name;
+}
+
+function share_list(list, qwk)
+{
+	var new_list = [];
+	for(i in list) {
+		var bbs = list[i];
+		delete bbs.entry.autoverify;
+		delete bbs.entry.exported;
+		if(qwk) {
+			if(bbs.entry.created.at && isNaN(parseInt(bbs.entry.created.at, 10)))
+				bbs.entry.created.at = system.qwk_id + "/" + bbs.entry.created.at;
+			else
+				bbs.entry.created.at = system.qwk_id;
+			if(bbs.entry.updated.at && isNaN(parseInt(bbs.entry.updated.at, 10)))
+				bbs.entry.updated.at = system.qwk_id + "/" + bbs.entry.updated.at;
+			else
+				bbs.entry.updated.at = system.qwk_id;
+		} else {
+			if(isNaN(parseInt(bbs.entry.created.at, 10)))
+				bbs.entry.created.at = system.fido_addr_list[0];
+			if(isNaN(parseInt(bbs.entry.updated.at, 10)))
+				bbs.entry.updated.at = system.fido_addr_list[0];
+		}
+		bbs.imported = true;
+		new_list.push(bbs);
+	}
+	return new_list;
 }
 
 const base64_max_line_len = 72;
