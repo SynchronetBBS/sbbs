@@ -1145,8 +1145,8 @@ dellines(struct cterminal * cterm, int lines)
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
 	TERM_XY(&x, &y);
 	SCR_XY(&sx, &sy);
-	MOVETEXT(minx, sy + lines, minx, maxy, minx, sy);
-	for(i = TERM_MAXY - lines; i <= maxy; i++) {
+	MOVETEXT(minx, sy + lines, maxx, maxy, minx, sy);
+	for(i = TERM_MAXY - lines; i <= TERM_MAXY; i++) {
 		GOTOXY(TERM_MINX, i);
 		CLREOL();
 	}
