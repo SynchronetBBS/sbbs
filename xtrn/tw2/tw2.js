@@ -68,7 +68,7 @@ function Menu(sector)
 			console.writeln("You have " + player.TurnsLeft + " turns left.");
 		}
 		console.attributes="HC";
-		console.write("Command (?=Help)? ");
+		console.print("Command (?=Help)? ");
 		var valid=new Array('A','C','D','E','F','G','I','L','M','P','Q','T','Z','?');
 		var i;
 		for(i=0; i<sector.Warps.length; i++) {
@@ -103,7 +103,7 @@ function Menu(sector)
 				if(user.level < 90)
 					break;
 				console.writeln("<TW Editor>");
-				console.write("Do you wish to use the editor? Y/N [N] ");
+				console.print("Do you wish to use the editor? Y/N [N] ");
 				if(InputFunc(['Y','N'])=='Y') {
 					console.writeln("Running Tradewars ][ Editor...");
 					Editor();
@@ -168,7 +168,7 @@ function Menu(sector)
 				console.attributes="W";
 				console.writeln("<Quit>");
 				console.attributes="W";
-				console.write("Are you sure (Y/N)? ");
+				console.print("Are you sure (Y/N)? ");
 				if(InputFunc(['Y','N'])=='Y') {
 					exit_tw2=true;
 					return;
@@ -239,7 +239,7 @@ function do_exit()
 
 function Instructions()
 {
-	console.write("Do you want instructions (Y/N) [N]? ");
+	console.print("Do you want instructions (Y/N) [N]? ");
 	if(InputFunc(['Y','N'])=='Y') {
 		console.crlf();
 		console.printfile(fname("twinstr.doc"), P_CPM_EOF);
