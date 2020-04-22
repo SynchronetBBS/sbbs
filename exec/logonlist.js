@@ -12,6 +12,8 @@
 
 "use strict";
 
+require("sbbsdefs.js", 'SYS_LISTLOC');
+
 function install()
 {
 	var maint_event = "?logonlist -m";
@@ -78,7 +80,7 @@ function print(hdr, num, days_ago)
 			,record.total ? record.node : ""
 			,record.total ? record.total : ""
 			,record.user.alias
-			,record.user.location
+			,(system.settings & SYS_LISTLOC) ? record.user.location : record.user.note
 			,date.getHours()
 			,date.getMinutes()
 			,record.user.connection
