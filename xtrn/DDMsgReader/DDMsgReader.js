@@ -45,6 +45,12 @@
  *                              fairly slow..  Now it just uses total_msgs for the
  *                              MessageBase object, which is a lot faster and still
  *                              gives an idea of how many messages are there.
+ * 2020-04-21 Eric Oulashin     Version 1.33
+ *                              Fixed: A new user starting to read messages in
+ *                              a sub-board no longer causes an error (it checks
+ *                              for the scan_ptr being 0xffffffff).  This had
+ *                              been fixed in a couple places previously, but
+ *                              apparently not this particular case.
  */
 
 
@@ -154,8 +160,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.32";
-var READER_DATE = "2020-04-19";
+var READER_VERSION = "1.33";
+var READER_DATE = "2020-04-21";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1826,7 +1832,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	}
 	else if (this.hdrsForCurrentSubBoard.length > 0)
 	{
-		selectedMessageOffset = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+		selectedMessageOffset = this.GetMsgIdx(GetScanPtrOrLastMsgNum(this.subBoardCode));
 		if (selectedMessageOffset < 0)
 			selectedMessageOffset = 0;
 		else if (selectedMessageOffset >= this.hdrsForCurrentSubBoard.length)
@@ -4352,9 +4358,7 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	// scan & last read message pointers.
 	if ((this.subBoardCode != "mail") && (this.searchType == SEARCH_NONE))
 	{
-		// What if newest_message_header.number is invalid  (e.g. NaN or 0xffffffff or >
-		// msgbase.last_msg)?
-		if (msgHeader.number > msg_area.sub[this.subBoardCode].scan_ptr)
+		if (msgHeader.number > GetScanPtrOrLastMsgNum(this.subBoardCode))
 			msg_area.sub[this.subBoardCode].scan_ptr = msgHeader.number;
 		msg_area.sub[this.subBoardCode].last_read = msgHeader.number;
 	}
@@ -8215,10 +8219,10 @@ function absMsgNumToIdx(pMsgbase, pMsgNum)
 		return -1;
 	
 	var messageIdx = 0;
-	// If pMsgNum is 4294967295 (0xffffffff, or ~0), that is a special value
+	// If pMsgNum is 0xffffffff (0xffffffff, or ~0), that is a special value
 	// for the user's scan_ptr meaning it should point to the latest message
 	// in the messagebase.
-	if (pMsgNum == 4294967295)
+	if (pMsgNum == 0xffffffff)
 		messageIdx = pMsgbase.total_msgs - 1; // Or this.NumMessages() - 1 but can't because this isn't a class member function
 	else
 	{
@@ -12046,15 +12050,16 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	// the user hasn't read messages in the sub-board yet.  In that case,
 	// just use 0.  Otherwise, get the user's scan pointer message index.
 	var msgIdx = 0;
-	//if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
-	//msgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].scan_ptr);
-	if (msg_area.sub[this.subBoardCode].scan_ptr != 4294967295) // Crazy value the first time a user reads messages
+	// If pMsgNum is 4294967295 (0xffffffff, or ~0), that is a special value
+	// for the user's scan_ptr meaning it should point to the latest message
+	// in the messagebase.
+	if (msg_area.sub[this.subBoardCode].scan_ptr != 0xffffffff)
 		msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
 	// Sanity checking for msgIdx
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs))
+		if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs) || (msg_area.sub[this.subBoardCode].scan_ptr == 0xffffffff))
 		{
 			msgIdx = -1;
 			// Look for the first message not marked as deleted
@@ -15489,7 +15494,7 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 						                     msg_area.sub[pSubCode].scan_ptr);
 					}
 					//startMsgIndex = absMsgNumToIdx(msgbase, msg_area.sub[pSubCode].last_read);
-					startMsgIndex = absMsgNumToIdx(msgbase, msg_area.sub[pSubCode].scan_ptr);
+					startMsgIndex = absMsgNumToIdx(msgbase, GetScanPtrOrLastMsgNum(pSubCode));
 					if (startMsgIndex == -1)
 					{
 						msg_area.sub[pSubCode].scan_ptr = 0;
@@ -19313,6 +19318,46 @@ function strWithToUserColor(pStr, pToUserColor)
 function hasSyncAttrCodes(pStr)
 {
 	return (pStr.search(/\1[krgybmcwhifn\-_01234567]/i) > -1);
+}
+
+// Gets the value of the user's current scan_ptr in a sub-board, or if it's
+// 0xffffffff, returns the message number of the last readable message in
+// the sub-board (this is the message number, not the index).
+//
+// Parameters:
+//  pSubCode: A sub-board internal code
+//
+// Return value: The user's scan_ptr value or the message number of the
+//               last readable message in the sub-board
+function GetScanPtrOrLastMsgNum(pSubCode)
+{
+	var msgNumToReturn = 0;
+	// If pMsgNum is 4294967295 (0xffffffff, or ~0), that is a special value
+	// for the user's scan_ptr meaning it should point to the latest message
+	// in the messagebase.
+	if (msg_area.sub[pSubCode].scan_ptr != 0xffffffff)
+		msgNumToReturn = msg_area.sub[pSubCode].scan_ptr;
+	else
+	{
+		var msgbase = new MsgBase(pSubCode);
+		if (msgbase.open())
+		{
+			var numMsgs = msgbase.total_msgs;
+			for (var msgIdx = numMsgs - 1; msgIdx >= 0; --msgIdx)
+			{
+				var msgHdr = msgbase.get_msg_header(true, msgIdx);
+				if ((msgHdr != null) && ((msgHdr.attr & MSG_DELETE) == 0))
+				{
+					msgNumToReturn = msgHdr.number;
+					break;
+				}
+			}
+
+			msgbase.close();
+		}
+	}
+
+	return msgNumToReturn;
 }
 
 // For debugging: Writes some text on the screen at a given location with a given pause.

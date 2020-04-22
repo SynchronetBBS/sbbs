@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.33     2020-04-21   Fixed: A new user starting to read messages in a sub-board
+                      no longer causes an error (it checks for the scan_ptr
+                      being 0xffffffff).  This had been fixed in a couple places
+                      previously, but apparently not this particular case.
 1.32     2020-04-19   Removed some code that's no longer used.  Also, fixed an
                       issue when changing to another sub-board with the
                       traditional-style (non-lightbar) list where it was slow to
