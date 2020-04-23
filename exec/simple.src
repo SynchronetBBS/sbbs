@@ -19,7 +19,7 @@ async
 
 menu simple/main
 menu simple/prompt
-print "n"
+print "\x01n"
 
 getstrupr 10
 crlf
@@ -49,7 +49,7 @@ cmdstr S
         async
 	menu simple/sendmsg
 	menu simple/prompt
-	print "n"
+	print "\x01n"
 	getstrupr 10
 	crlf
 	pause_reset
@@ -94,7 +94,7 @@ cmdstr R
 	async
 	menu simple/readmsg
 	menu simple/prompt
-	print "n"
+	print "\x01n"
 	getstrupr 10
 	crlf
 	pause_reset
@@ -132,28 +132,28 @@ cmdstr R
 
       # Read all new messages
 	cmdstr N
-		print "lbhScanning for new messages...\r\n"
+		print "\x01l\x01b\x01hScanning for new messages...\r\n"
 		msg_new_scan_all
 		end_cmd
 
 	cmdstr NEW
-		print "lbhScanning for new messages...\r\n"
+		print "\x01l\x01b\x01hScanning for new messages...\r\n"
 		msg_new_scan_all
 		end_cmd
 
       # Read all new messages TO: YOU
 	cmdstr Y
-		print "lbhScanning for your messages...\r\n"
+		print "\x01l\x01b\x01hScanning for your messages...\r\n"
 		msg_your_scan_all
 		end_cmd
 
 	cmdstr YOU
-		print "lbhScanning for your messages...\r\n"
+		print "\x01l\x01b\x01hScanning for your messages...\r\n"
 		msg_your_scan_all
 		end_cmd
 
 	cmdstr YOUR
-		print "lbhScanning for your messages...\r\n"
+		print "\x01l\x01b\x01hScanning for your messages...\r\n"
 		msg_your_scan_all
 		end_cmd
 
@@ -208,7 +208,7 @@ cmdstr F
 	async
 	menu simple/filelist
 	menu simple/prompt
-	print "n"
+	print "\x01n"
 	getstrupr 10
 	crlf
         pause_reset
@@ -223,7 +223,7 @@ cmdstr F
 		end_cmd
 
 	cmdstr N
-		print "\r\nbhUse c@NEWFILETIME@b for new file scan "
+		print "\r\n\x01b\x01hUse \x01c@NEWFILETIME@\x01b for new file scan "
 		yes_no "date/time"
 		if_false
 			file_ptrs_cfg
@@ -235,12 +235,12 @@ cmdstr F
 		end_cmd
 
 	cmdstr F
-		print "\r\nchFind Text in File Descriptions (no wildcards)\r\n"
+		print "\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\r\n"
 		file_find_text_all
 		end_cmd
 
 	cmdstr S
-		print "\r\nchSearch for Filename(s)\r\n"
+		print "\r\n\x01c\x01hSearch for Filename(s)\r\n"
 		file_find_name_all
 		end_cmd
 
@@ -309,7 +309,7 @@ if_false
 return
 
 :sendmail
-print "\r\nbhSend E-mail to (User name or number): n"
+print "\r\n\x01b\x01hSend E-mail to (User name or number): \x01n"
 getname 40
 compare_str ""
 if_true
@@ -357,7 +357,7 @@ return
 
 menu maincfg
 async
-print "\r\nyhCommand: n"
+print "\r\n\x01y\x01hCommand: \x01n"
 getstrupr 10
 logkey
 
