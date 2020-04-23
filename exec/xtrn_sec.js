@@ -68,6 +68,9 @@ if(options.underline === undefined)
 if(options.which === undefined)
 	options.which = bbs.text(WhichXtrnProg);
 
+if(options.clear_screen === undefined)
+	options.clear_screen = true;
+
 function sort_by_name(a, b)
 {
 	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
@@ -120,6 +123,9 @@ function external_program_menu(xsec)
 			exec_xtrn(prog_list[0]);
 			break;
 		}
+		
+		if(options.clear_screen)
+			console.clear(LIGHTGRAY);
 
 		var secnum = xtrn_area.sec_list[xsec].number+1
 		if(bbs.menu_exists("xtrn" + secnum + "_head")) {
