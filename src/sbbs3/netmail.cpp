@@ -892,11 +892,11 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 }
 
 /****************************************************************************/
+/* Internet mail															*/
 /****************************************************************************/
 bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg)
 {
-	char	str[256],str2[256],msgpath[256],ch
-			,buf[SDT_BLOCK_LEN],*p;
+	char	str[256],str2[256],msgpath[256],ch, *p;
 	char 	tmp[512];
 	char	title[256] = "";
 	char	name[256] = "";
@@ -904,10 +904,9 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	const char*	editor=NULL;
 	const char*	charset=NULL;
 	char	your_addr[128];
-	ushort	xlat=XLAT_NONE,net=NET_INTERNET;
-	int 	i,j,x,file;
+	ushort	net=NET_INTERNET;
+	int 	i,x,file;
 	long	l;
-	ulong	length,offset;
 	FILE	*instream;
 	smbmsg_t msg;
 
@@ -1041,83 +1040,43 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return(false); 
 	}
-	sprintf(smb.file,"%smail",cfg.data_dir);
-	smb.retry_time=cfg.smb_retry_time;
-	smb.subnum=INVALID_SUB;
-	if((i=smb_open(&smb))!=SMB_SUCCESS) {
+	if((i=smb_open_sub(&cfg, &smb, INVALID_SUB))!=SMB_SUCCESS) {
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return(false); 
 	}
-
-	if(filelength(fileno(smb.shd_fp))<1) {	 /* Create it if it doesn't exist */
-		smb.status.max_crcs=cfg.mail_maxcrcs;
-		smb.status.max_age=cfg.mail_maxage;
-		smb.status.max_msgs=0;
-		smb.status.attr=SMB_EMAIL;
-		if((i=smb_create(&smb))!=SMB_SUCCESS) {
-			smb_close(&smb);
-			smb_stack(&smb,SMB_STACK_POP);
-			errormsg(WHERE,ERR_CREATE,smb.file,i,smb.last_error);
-			return(false); 
-		} 
-	}
-
-	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(false); 
-	}
-
-	length=(long)flength(msgpath)+2;	 /* +2 for translation string */
-
-	if(length&0xfff00000UL) {
-		smb_unlocksmbhdr(&smb);
-		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_LEN,msgpath,length);
-		return(false); 
-	}
-
-	if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
-		smb_unlocksmbhdr(&smb);
-		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(false); 
-	}
-	if(cfg.sys_misc&SM_FASTMAIL)
-		offset=smb_fallocdat(&smb,length,1);
-	else
-		offset=smb_allocdat(&smb,length,1);
-	smb_close_da(&smb);
 
 	if((instream=fnopen(&file,msgpath,O_RDONLY|O_BINARY))==NULL) {
-		smb_freemsgdat(&smb,offset,length,1);
-		smb_unlocksmbhdr(&smb);
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,msgpath,O_RDONLY|O_BINARY);
 		return(false); 
 	}
-
-	setvbuf(instream,NULL,_IOFBF,2*1024);
-	fseek(smb.sdt_fp,offset,SEEK_SET);
-	xlat=XLAT_NONE;
-	fwrite(&xlat,2,1,smb.sdt_fp);
-	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
-	while(!feof(instream)) {
-		memset(buf,0,x);
-		j=fread(buf,1,x,instream);
-		if(j<1)
-			break;
-		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
-			buf[j-1]=buf[j-2]=0;
-		fwrite(buf,j,1,smb.sdt_fp);
-		x=SDT_BLOCK_LEN; 
+	off_t length = filelength(file);
+	if(length < 1) {
+		fclose(instream);
+		smb_close(&smb);
+		smb_stack(&smb, SMB_STACK_POP);
+		errormsg(WHERE, ERR_LEN, msgpath, length);
+		return(false); 
 	}
-	fflush(smb.sdt_fp);
+	char* msgbuf;
+	if((msgbuf = (char*)malloc(length + 1)) == NULL) {
+		fclose(instream);
+		smb_close(&smb);
+		smb_stack(&smb, SMB_STACK_POP);
+		errormsg(WHERE, ERR_ALLOC, msgpath, length);
+		return(false); 
+	}
+	if(fread(msgbuf, sizeof(char), length, instream) != length) {
+		fclose(instream);
+		free(msgbuf);
+		smb_close(&smb);
+		smb_stack(&smb, SMB_STACK_POP);
+		errormsg(WHERE, ERR_READ, msgpath, length);
+		return(false); 
+	}
+	msgbuf[length] = 0;
 	fclose(instream);
 
 	memset(&msg,0,sizeof(smbmsg_t));
@@ -1126,8 +1085,6 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
-
-	msg.hdr.offset=offset;
 
 	net=NET_INTERNET;
 	smb_hfield_str(&msg,RECIPIENT,name);
@@ -1139,31 +1096,23 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	sprintf(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
 
-	/*
-	smb_hfield(&msg,SENDERNETTYPE,sizeof(net),&net);
-	smb_hfield(&msg,SENDERNETADDR,strlen(sys_inetaddr),sys_inetaddr);
-	*/
-
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
 	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
-	add_msg_ids(&cfg, &smb, &msg, remsg);
-
 	editor_info_to_msg(&msg, editor, charset);
 
-	smb_dfield(&msg,TEXT_BODY,length);
+	i = savemsg(&cfg, &smb, &msg, &client, startup->host_name, msgbuf, remsg);
 
-	i=smb_addmsghdr(&smb,&msg,smb_storage_mode(&cfg, &smb));	// calls smb_unlocksmbhdr() 
+	free(msgbuf);
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 
 	smb_freemsgmem(&msg);
 	if(i!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
-		smb_freemsgdat(&smb,offset,length,1);
 		return(false); 
 	}
 
@@ -1172,6 +1121,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	if(cfg.inetmail_sem[0]) 	 /* update semaphore file */
 		ftouch(cmdstr(cfg.inetmail_sem,nulstr,nulstr,NULL));
+
 	if(!(useron.exempt&FLAG('S')))
 		subtract_cdt(&cfg,&useron,cfg.inetmail_cost);
 
