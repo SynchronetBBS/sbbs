@@ -41,12 +41,17 @@
 /* This is the external programs (doors) section of the bbs                 */
 /* Return 1 if no externals available, 0 otherwise. 						*/
 /****************************************************************************/
-int sbbs_t::xtrn_sec()
+int sbbs_t::xtrn_sec(const char* section)
 {
 	char	str[MAX_PATH+1];
 	int		xsec;
 	uint	i,j,k,*usrxtrn,usrxtrns,*usrxsec,usrxsecs;
 	long	l;
+
+	if(cfg.xtrnsec_mod[0] != '\0') {
+		SAFEPRINTF2(str, "%s %s", cfg.xtrnsec_mod, section);
+		return exec_bin(str, &main_csi);
+	}
 
 	if(useron.rest&FLAG('X')) {
 		bputs(text[R_ExternalPrograms]);

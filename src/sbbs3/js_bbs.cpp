@@ -2049,6 +2049,8 @@ js_qwk_sec(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_xtrn_sec(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		section = "";
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2056,9 +2058,11 @@ js_xtrn_sec(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
+	if(argc > 0) {
+		JSVALUE_TO_ASTRING(cx, argv[0], section, LEN_CODE + 1, NULL);
+	}
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->xtrn_sec();
+	sbbs->xtrn_sec(section);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -2496,6 +2500,8 @@ js_change_user(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_logonlist(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		args="";
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2504,8 +2510,11 @@ js_logonlist(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
+	if(argc > 0) {
+		JSVALUE_TO_ASTRING(cx, argv[0], args, LEN_CMD, NULL);
+	}
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->logonlist();
+	sbbs->logonlist(args);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -4192,8 +4201,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("enter the text files section")
 	,310
 	},
-	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("enter the external programs section")
+	{"xtrn_sec",		js_xtrn_sec,		0,	JSTYPE_VOID,	JSDOCSTR("[section]")
+	,JSDOCSTR("enter the external programs section (or go directly to the specified <i>section</i>)")
 	,310
 	},
 	{"xfer_policy",		js_xfer_policy,		0,	JSTYPE_VOID,	JSDOCSTR("")
@@ -4280,8 +4289,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("change to a different user")
 	,310
 	},
-	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	JSDOCSTR("")
-	,JSDOCSTR("display the logon list")
+	{"list_logons",		js_logonlist,		0,	JSTYPE_VOID,	JSDOCSTR("[arguments]")
+	,JSDOCSTR("display the logon list (optionally passing arguments to the logon list module)")
 	,310
 	},
 	{"read_mail",		js_readmail,		0,	JSTYPE_VOID,	JSDOCSTR("[which=<tt>MAIL_YOUR</tt>] [,user_number=<i>current</i>] [,loadmail_mode=<tt>0</tt>]")

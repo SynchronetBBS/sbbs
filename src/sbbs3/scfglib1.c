@@ -309,9 +309,10 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	if(!cfg->textsec_mod[0]) SAFECOPY(cfg->textsec_mod,"text_sec");
 	get_str(cfg->automsg_mod,instream);
 	if(!cfg->automsg_mod[0]) SAFECOPY(cfg->automsg_mod,"automsg");
+	get_str(cfg->xtrnsec_mod,instream);
+	if(!cfg->xtrnsec_mod[0]) SAFECOPY(cfg->xtrnsec_mod,"xtrn_sec");
 
-	get_int(c, instream);
-	for(i=0;i<21;i++)					/* unused - initialized to NULL */
+	for(i=0;i<17;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);
 	get_str(cfg->nodelist_mod,instream);
 	if(cfg->nodelist_mod[0] == '\xff')
@@ -322,7 +323,10 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->privatemsg_mod,instream);
 	if(cfg->privatemsg_mod[0] == '\xff')
 		SAFECOPY(cfg->privatemsg_mod, "privatemsg");
-	for(i=0;i<158;i++)					/* unused - initialized to 0xff */
+	get_str(cfg->logonlist_mod,instream);
+	if(cfg->logonlist_mod[0] == '\xff')
+		SAFECOPY(cfg->logonlist_mod, "logonlist");
+	for(i=0;i<126;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);

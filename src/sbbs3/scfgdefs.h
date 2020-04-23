@@ -596,6 +596,7 @@ typedef struct
 	char			sync_mod[LEN_MODNAME+1];			/* Synchronization module */
 	char			expire_mod[LEN_MODNAME+1];			/* User expiration module */
 	char			textsec_mod[LEN_MODNAME+1];			/* Text section module */
+	char			xtrnsec_mod[LEN_MODNAME+1];			/* External Program section module */
 	char			automsg_mod[LEN_MODNAME+1];			/* Auto-message module */
 	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
 	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
@@ -604,6 +605,7 @@ typedef struct
 	char			nodelist_mod[LEN_CMD+1];
 	char			whosonline_mod[LEN_CMD+1];
 	char			privatemsg_mod[LEN_CMD+1];
+	char			logonlist_mod[LEN_CMD+1];
 	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line - unused! */
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
