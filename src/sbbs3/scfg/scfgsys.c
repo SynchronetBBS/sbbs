@@ -1633,10 +1633,12 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Expired User",cfg.expire_mod);
 					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
+					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
 					sprintf(opt[i++],"%-16.16s%s","List Msgs",cfg.listmsgs_mod);
+					sprintf(opt[i++],"%-16.16s%s","List Logons",cfg.logonlist_mod);
 					sprintf(opt[i++],"%-16.16s%s","List Nodes",cfg.nodelist_mod);
 					sprintf(opt[i++],"%-16.16s%s","Who's Online",cfg.whosonline_mod);
 					sprintf(opt[i++],"%-16.16s%s","Private Msg",cfg.privatemsg_mod);
@@ -1658,6 +1660,7 @@ void sys_cfg(void)
 						"`Expired User` Executed during daily event when user expires (offline)\n"
 						"`Auto Message` Executed when a user chooses to edit the auto-message\n"
 						"`Text Section` Executed to handle general text file (viewing) section\n"
+						"`Xtrn Section` Executed to handle external programs (doors) section\n"
 						"\n"
 						"Full module command-lines may be used for the operations listed below:\n"
 						"\n"
@@ -1665,6 +1668,7 @@ void sys_cfg(void)
 						"`Scan Msgs`    Executed when a user reads or scans a message sub-board\n"
 						"`Scan Subs`    Executed when a user scans one or more sub-boards for msgs\n"
 						"`List Msgs`    Executed when a user lists msgs from the msg read prompt\n"
+						"`List Logons`  Executed when a user lists logons (i.e. '-y' for yesterday)\n"
 						"`List Nodes`   Executed when a user lists all nodes\n"
 						"`Who's Online` Executed when a user lists the nodes in-use (e.g. `^U`)\n"
 						"`Private Msg`  Executed when a user sends a private node msg (e.g. `^P`)\n"
@@ -1716,30 +1720,38 @@ void sys_cfg(void)
 								,cfg.textsec_mod,sizeof(cfg.textsec_mod)-1,K_EDIT);
 							break;
 						case 9:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Section Module"
+								,cfg.xtrnsec_mod,sizeof(cfg.xtrnsec_mod)-1,K_EDIT);
+							break;
+						case 10:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"
 								,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
 							break;
-						case 10:
+						case 11:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Command"
 								,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
 							break;
-						case 11:
+						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Command"
 								,cfg.scansubs_mod,sizeof(cfg.scansubs_mod)-1,K_EDIT);
 							break;
-						case 12:
+						case 13:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Command"
 								,cfg.listmsgs_mod,sizeof(cfg.listmsgs_mod)-1,K_EDIT);
 							break;
-						case 13:
+						case 14:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"List Logons Command"
+								,cfg.logonlist_mod,sizeof(cfg.logonlist_mod)-1,K_EDIT);
+							break;
+						case 15:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Nodes Command"
 								,cfg.nodelist_mod,sizeof(cfg.nodelist_mod)-1,K_EDIT);
 							break;
-						case 14:
+						case 16:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Command"
 								,cfg.whosonline_mod,sizeof(cfg.whosonline_mod)-1,K_EDIT);
 							break;
-						case 15:
+						case 17:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Command"
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;
