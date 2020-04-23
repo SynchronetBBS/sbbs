@@ -1803,11 +1803,6 @@ void music_control(struct bbslist *bbs)
 	struct	text_info txtinfo;
 	struct ciolib_screen *savscrn;
 	int i;
-	char *opts[4]={
-			 "ESC[| ANSI Music only"
-			,"ESC[N (BANSI-Style) and ESC[| ANSI Music"
-			,"ANSI Music Enabled"
-	};
 
    	gettextinfo(&txtinfo);
    	savscrn = savescreen();
@@ -1818,27 +1813,8 @@ void music_control(struct bbslist *bbs)
 	init_uifc(FALSE, FALSE);
 
 	i=cterm->music_enable;
-	uifc.helpbuf="`ANSI Music Setup`\n\n"
-				"~ ANSI Music Disabled ~ Completely disables ANSI music\n"
-				"                      Enables Delete Line\n"
-				"~ ESC[N ~               Enables BANSI-Style ANSI music\n"
-				"                      Enables Delete Line\n"
-				"~ ANSI Music Enabled ~  Enables both ESC[M and ESC[N ANSI music.\n"
-				"                      Delete Line is disabled.\n"
-				"\n"
-				"So-Called ANSI Music has a long and troubled history.  Although the\n"
-				"original ANSI standard has well defined ways to provide private\n"
-				"extensions to the spec, none of these methods were used.  Instead,\n"
-				"so-called ANSI music replaced the Delete Line ANSI sequence.  Many\n"
-				"full-screen editors use DL, and to this day, some programs (Such as\n"
-				"BitchX) require it to run.\n\n"
-				"To deal with this, BananaCom decided to use what *they* thought was an\n"
-				"unspecified escape code, ESC[N, for ANSI music.  Unfortunately, this is\n"
-				"broken also.  Although rarely implemented in BBS clients, ESC[N is\n"
-				"the erase field sequence.\n\n"
-				"SyncTERM has now defined a third ANSI music sequence which *IS* legal\n"
-				"according to the ANSI spec.  Specifically ESC[|.";
-	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",opts)!=-1)
+	uifc.helpbuf=music_helpbuf;
+	if(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"ANSI Music Setup",music_names)!=-1)
 		cterm->music_enable=i;
 	else
 		check_exit(FALSE);

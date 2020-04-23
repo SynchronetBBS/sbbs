@@ -93,6 +93,9 @@ struct bbslist {
 	char			font[80];
 };
 
+extern char *music_names[];
+extern char music_helpbuf[];
+
 struct bbslist *show_bbslist(char *current, int connected);
 extern char *log_levels[];
 extern char *rate_names[];
