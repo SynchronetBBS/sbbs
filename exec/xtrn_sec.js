@@ -29,11 +29,17 @@ var options;
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
 	options = {multicolumn: true, sort: false};	// default values
 
-if(options.multicolumn == undefined)
+if(options.multicolumn === undefined)
 	options.multicolumn = true;
 
-if(options.multicolumn_separator == undefined)
+if(options.multicolumn_separator === undefined)
 	options.multicolumn_separator = " ";
+
+if(options.multicolumn_fmt === undefined)
+	options.multicolumn_fmt = bbs.text(XtrnProgLstFmt);
+
+if(options.singlecolumn_fmt === undefined)
+	options.singlecolumn_fmt = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
 
 if(options.singlecolumn_margin == undefined)
 	options.singlecolumn_margin = 7;
@@ -43,6 +49,24 @@ if(options.singlecolumn_height == undefined)
 
 if(console.screen_columns < 80)
 	options.multicolumn = false;
+
+if(options.restricted_user_msg === undefined)
+	options.restricted_user_msg = bbs.text(R_ExternalPrograms);
+
+if(options.no_programs_msg === undefined)
+	options.no_programs_msg = bbs.text(NoXtrnPrograms);
+
+if(options.header_fmt === undefined)
+	options.header_fmt = bbs.text(XtrnProgLstHdr);
+
+if(options.titles === undefined)
+	options.titles = bbs.text(XtrnProgLstTitles);
+
+if(options.underline === undefined)
+	options.underline = bbs.text(XtrnProgLstUnderline);
+
+if(options.which === undefined)
+	options.which = bbs.text(WhichXtrnProg);
 
 function sort_by_name(a, b)
 {
@@ -79,14 +103,14 @@ function external_program_menu(xsec)
 
 		console.aborted = false;
 	    if(user.security.restrictions&UFLAG_X) {
-		    write(bbs.text(R_ExternalPrograms));
+		    write(options.restricted_user_msg);
 		    break;
 	    }
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
 		if(!prog_list.length) {
-			write(bbs.text(NoXtrnPrograms));
+			write(options.no_programs_msg);
 			console.pause();
 			break;
 		}
@@ -108,17 +132,17 @@ function external_program_menu(xsec)
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
 			if(options.sort)
 				prog_list.sort(sort_by_name);
-			printf(bbs.text(XtrnProgLstHdr),xtrn_area.sec_list[xsec].name);
-			write(bbs.text(XtrnProgLstTitles));
+			printf(options.header_fmt, xtrn_area.sec_list[xsec].name);
+			write(options.titles);
 			if(multicolumn) {
 				write(options.multicolumn_separator);
-				write(bbs.text(XtrnProgLstTitles));
+				write(options.titles);
 			}
 			console.crlf();
-			write(bbs.text(XtrnProgLstUnderline));
+			write(options.underline);
 			if(multicolumn) {
 				write(options.multicolumn_separator);
-				write(bbs.text(XtrnProgLstUnderline));
+				write(options.underline);
 			}
 			console.crlf();
 			var n;
@@ -128,9 +152,7 @@ function external_program_menu(xsec)
 				n=prog_list.length;
 
 			for(i=0;i<n && !console.aborted;i++) {
-				printf(multicolumn ? bbs.text(XtrnProgLstFmt)
-						: (options.singlecolumn_lstfmt
-						|| "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ")
+				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
 					,i+1
 					,prog_list[i].name
 					,prog_list[i].cost);
@@ -139,7 +161,7 @@ function external_program_menu(xsec)
 					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
 					if(j<prog_list.length) {
 						write(options.multicolumn_separator);
-						printf(bbs.text(XtrnProgLstFmt),j+1
+						printf(options.multicolumn_fmt, j+1
 							,prog_list[j].name
 							,prog_list[j].cost);
 					}
@@ -148,7 +170,7 @@ function external_program_menu(xsec)
 				console.crlf();
 			}
 			bbs.node_sync();
-			console.mnemonics(bbs.text(WhichXtrnProg));
+			console.mnemonics(options.which);
 		}
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
@@ -172,12 +194,12 @@ function external_section_menu()
 
 		console.aborted = false;
 	    if(user.security.restrictions&UFLAG_X) {
-		    write(bbs.text(R_ExternalPrograms));
+		    write(options.restricted_user_msg);
 		    break;
 	    }
 
 	    if(!xtrn_area.sec_list.length) {
-		    write(bbs.text(NoXtrnPrograms));
+		    write(options.no_programs_msg);
 		    break;
 	    }
 
