@@ -80,6 +80,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpdev_mt", "..\xpdev\xpdev_
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "load_cfg", "load_cfg.vcxproj", "{08FC395F-BC60-499D-9CE9-170ED718BB94}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktdump", "pktdump.vcxproj", "{85112FF8-B520-4806-A2C8-7525F495AE8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -234,6 +236,10 @@ Global
 		{08FC395F-BC60-499D-9CE9-170ED718BB94}.Debug|Win32.Build.0 = Debug|Win32
 		{08FC395F-BC60-499D-9CE9-170ED718BB94}.Release|Win32.ActiveCfg = Release|Win32
 		{08FC395F-BC60-499D-9CE9-170ED718BB94}.Release|Win32.Build.0 = Release|Win32
+		{85112FF8-B520-4806-A2C8-7525F495AE8F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{85112FF8-B520-4806-A2C8-7525F495AE8F}.Debug|Win32.Build.0 = Debug|Win32
+		{85112FF8-B520-4806-A2C8-7525F495AE8F}.Release|Win32.ActiveCfg = Release|Win32
+		{85112FF8-B520-4806-A2C8-7525F495AE8F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
