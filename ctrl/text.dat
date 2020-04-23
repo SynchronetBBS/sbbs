@@ -460,7 +460,7 @@
 "\7\r\n\1r\1h\1iYou must leave %s mail in order to be "\   378 NoFeedbackWarning
 	"validated!\1n\r\n"
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
-"\1l\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
+"\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
 "\1n\1cNum \1h\xb3\1n\1c Name                             "       381 XtrnProgLstTitles
 "\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
