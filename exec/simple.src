@@ -169,19 +169,19 @@ end_cmd
 
 #Open door menu
 cmdstr O
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdstr OPEN
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdstr DOOR
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdstr DOORS
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 #Account config (user defaults)

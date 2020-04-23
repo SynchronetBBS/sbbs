@@ -328,7 +328,7 @@ cmdkey U
 	getcmd LSAY\r
 
 	cmdkey L
-		exec_bin "logonlist"
+		userlist_logons
 		end_cmd
 	cmdkey Y
 		exec_bin "logonlist -y"
@@ -356,7 +356,7 @@ cmdkey /V
     end_cmd
 
 cmdkey X
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdkey Z

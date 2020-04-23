@@ -251,7 +251,7 @@ cmdkey /U
 	end_cmd
 
 cmdkey .
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdkey Z
