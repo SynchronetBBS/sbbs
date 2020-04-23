@@ -66,7 +66,7 @@ bool sbbs_t::lookup_netuser(char *into)
 	int i;
 	FILE *stream;
 
-	if(strchr(into,'@'))
+	if(into == NULL || into[0] == 0 || strchr(into,'@'))
 		return(false);
 	SAFECOPY(to,into);
 	strupr(to);
