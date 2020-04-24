@@ -2222,13 +2222,24 @@ ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj
 	for(c=0;c<length;c++)
 		if(str[c]==ETX || str[c]==CR) break;
 	str[c]=0;
-	val = strtoul(str, NULL, 10);
-	if(adj<0L && val<(ulong)-adj)		/* don't go negative */
-		val=0;
-	else if(adj > 0 && val + adj < val)
-		val = ULONG_MAX;
-	else
-		val += (ulong)adj;
+	if(length > 5) {
+		val = strtoul(str, NULL, 10);
+		if(adj<0L && val<(ulong)-adj)		/* don't go negative */
+			val=0;
+		else if(adj > 0 && val + adj < val)
+			val = ULONG_MAX;
+		else
+			val += (ulong)adj;
+	} else {
+		ushort sval = (ushort)strtoul(str, NULL, 10);
+		if(adj < 0L && sval < (ushort)-adj)		/* don't go negative */
+			sval = 0;
+		else if(adj > 0 && sval + adj < sval)
+			sval = USHRT_MAX;
+		else
+			sval += (ushort)adj;
+		val = sval;
+	}
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 	putrec(str,0,length,ultoa(val,tmp,10));
 	if(write(file,str,length)!=length) {
