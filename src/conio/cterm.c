@@ -2993,7 +2993,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							GOTOXY(i,j);
 							break;
 						case 'A':	/* Cursor Up */
-						case 'F':	/* Cursor preceding line */
 						case 'k':	/* Line Position Backward */
 							seq_default(seq, 0, 1);
 							TERM_XY(&col, &row);
@@ -3003,7 +3002,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							GOTOXY(col, row);
 							break;
 						case 'B':	/* Cursor Down */
-						case 'E':	/* Cursor next line */
 						case 'e':	/* Line Position Forward */
 							seq_default(seq, 0, 1);
 							TERM_XY(&col, &row);
@@ -3030,8 +3028,26 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								col = TERM_MINX;
 							GOTOXY(col, row);
 							break;
-						// for case 'E' see case 'B'
-						// for case 'F' see case 'A'
+						case 'E':	/* Cursor next line */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							row += seq->param_int[0];
+							while(row > TERM_MAXY) {
+								scrollup(cterm);
+								row--;
+							}
+							col = TERM_MINX;
+							GOTOXY(col, row);
+							break;
+						case 'F':	/* Cursor preceding line */
+							seq_default(seq, 0, 1);
+							TERM_XY(&col, &row);
+							row -= seq->param_int[0];
+							if (row < TERM_MINY)
+								row = TERM_MINY;
+							col = TERM_MINX;
+							GOTOXY(col, row);
+							break;
 						case '`':
 						case 'G':	/* Cursor Position Absolute */
 							seq_default(seq, 0, 1);
