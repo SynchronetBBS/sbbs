@@ -785,6 +785,26 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return str;
 	}
 
+	if(strcmp(sp, "MAXCALLS") == 0) {
+		safe_snprintf(str,maxlen,"%u",cfg.level_callsperday[useron.level]);
+		return str;
+	}
+
+	if(strcmp(sp, "MAXPOSTS") == 0) {
+		safe_snprintf(str,maxlen,"%u",cfg.level_postsperday[useron.level]);
+		return str;
+	}
+
+	if(strcmp(sp, "MAXMAILS") == 0) {
+		safe_snprintf(str,maxlen,"%u",cfg.level_emailperday[useron.level]);
+		return str;
+	}
+
+	if(strcmp(sp, "MAXLINES") == 0) {
+		safe_snprintf(str,maxlen,"%u",cfg.level_linespermsg[useron.level]);
+		return str;
+	}
+
 	if(!strcmp(sp,"MINLEFT") || !strcmp(sp,"LEFT") || !strcmp(sp,"TIMELEFT")) {
 		gettimeleft();
 		safe_snprintf(str,maxlen,"%lu",timeleft/60);
