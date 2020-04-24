@@ -81,7 +81,7 @@ int strListIndexOf(const str_list_t list, const char* str)
 	return -1;
 }
 
-int strListFind(const str_list_t list, const char* str, BOOL case_sensistive)
+int strListFind(const str_list_t list, const char* str, BOOL case_sensitive)
 {
 	size_t		i;
 
@@ -89,7 +89,7 @@ int strListFind(const str_list_t list, const char* str, BOOL case_sensistive)
 		return -1;
 
 	for(i=0; list[i]!=NULL; i++) {
-		if(case_sensistive) {
+		if(case_sensitive) {
 			if(strcmp(list[i],str) == 0)
 				return i;
 		} else {
@@ -795,6 +795,24 @@ int strListStripStrings(str_list_t list, const char* set)
 				*(o++) = *p;
 		}
 		*o = '\0';
+	}
+	return i;
+}
+
+/* Remove duplicate strings from list, return the new list length */
+int strListDedupe(str_list_t* list, BOOL case_sensitive)
+{
+	size_t		i,j;
+
+	if(list == NULL || *list == NULL)
+		return 0;
+
+	for(i = 0; (*list)[i] != NULL; i++) {
+		for(j = i + 1; (*list)[j] != NULL; j++) {
+			if((case_sensitive && strcmp((*list)[i], (*list)[j]) == 0)
+				|| (!case_sensitive && stricmp((*list)[i], (*list)[j]) == 0))
+				strListDelete(list, j);
+		}
 	}
 	return i;
 }

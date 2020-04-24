@@ -166,6 +166,8 @@ DLLEXPORT int			strListTruncateTrailingLineEndings(str_list_t);
 DLLEXPORT int			strListTruncateStrings(str_list_t, const char* set);
 /* Remove all occurrences of chars in set from string in list */
 DLLEXPORT int			strListStripStrings(str_list_t, const char* set);
+/* Remove duplicate strings from list, return the new list length */
+DLLEXPORT int			strListDedupe(str_list_t*, BOOL case_sensitive);
 
 /************/
 /* File I/O */
