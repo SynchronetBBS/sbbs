@@ -625,7 +625,7 @@ function prev_msg(list, current, prop)
 	return current;
 }
 
-function mail_reply(msg)
+function mail_reply(msg, reply_all)
 {
 	console.clear();
 	var success = false;
@@ -637,11 +637,17 @@ function mail_reply(msg)
 			addr = msg.from + '@' + msg.from_net_addr;
 		else
 			addr = msg.from_net_addr;
+		if(reply_all) {
+			if(msg.to_list && msg.to_list != msg.to)
+				addr += "," + msg.to_list;
+			if(msg.cc_list && msg.cc_list != msg.to)
+				addr += "," + msg.cc_list;
+		}
 		console.putmsg(bbs.text(EnterNetMailAddress));
 		addr = console.getstr(addr, 128, K_EDIT|K_AUTODEL|K_LINE);
 		if(!addr || console.aborted)
 			return;
-		success = bbs.netmail(addr, msg);
+		success = bbs.netmail(addr.split(','), msg);
 	} else if(msg.from_ext)
 		success = bbs.email(parseInt(msg.from_ext, 10), msg);
 	if(!success) {
@@ -1001,7 +1007,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case 'A':
 						case 'R':
 							if(mail)
-								mail_reply(list[current]);
+								mail_reply(list[current], key == 'A');
 							else {
 								console.clear();
 								bbs.post_msg(msgbase.subnum, list[current]);
@@ -1180,7 +1186,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			case 'A':
 			case 'R':
 				if(mail)
-					mail_reply(list[current]);
+					mail_reply(list[current], key.toUpperCase() == 'A');
 				else {
 					console.clear();
 					bbs.post_msg(msgbase.subnum, list[current]);
@@ -1516,7 +1522,7 @@ if(!options.track_last_read_mail)
 	userprops.last_read_mail = undefined;
 
 js.on_exit("console.status = " + console.status);
-console.status |= CON_CR_CLREOL;
+//console.status |= CON_CR_CLREOL;
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru |= (1<<16);      // Disable Ctrl-P handling in sbbs
 console.ctrlkey_passthru |= (1<<26);      // Disable Ctrl-Z handling in sbbs
