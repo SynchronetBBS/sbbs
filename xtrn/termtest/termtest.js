@@ -16,6 +16,24 @@ function ask_user(str)
 	return(console.yesno(str));
 }
 
+function read_ansi_seq(timeout)
+{
+	var seq = '';
+	var ch;
+
+	while (seq.search(/^(?:\x1b(?:\[(?:[0-\?]*(?:[ -/]*(?:[@-~])?)?)?)?)?$/) == 0) {
+		ch = console.inkey(0, timeout);
+		if (ch === '' || ch === null || ch === undefined)
+			break;
+		seq += ch;
+		if (seq.search(/[@-~]$/) > 1)
+			return seq;
+	}
+	mswait(timeout);
+	while(console.inkey());
+	return null;
+}
+
 var tests = [
 	{'name':"NUL", 'func':function() {
 		console.gotoxy(1,1);
@@ -39,6 +57,7 @@ var tests = [
 	{'name':"HT", 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\t");
+		// TODO: XTerm fails this test... ???
 		if (check_xy(1, 1))
 			return false;
 		console.gotoxy(console.screen_columns, 1);
@@ -279,6 +298,87 @@ var tests = [
 	{'name':'SU', 'func':function() {
 		return null;
 		// TODO: Interactive...
+	}},
+	{'name':'XTSRGA', 'func':function() {
+		// TODO: XTerm, even with "-ti vt340" fails this test!
+		console.clear();
+		console.write("NOTE: If this test hangs, press enter to abort.");
+		console.write("\x1b[?2;1S");
+		var seq = read_ansi_seq(500);
+		console.clear();
+		if (seq === null)
+			return false;
+		var m = seq.match(/^\x1b\[\?([0-9]+);([0-9]+)(?:;([0-9]+)(?:;([0-9]+))?)?S$/);
+		if (m === null)
+			return false;
+		if (m[1] !== '2' || m[2] !== '0' || (m[3] == null) || (m[4] == null))
+			return false;
+		return true;
+		// TODO: Many other options...
+	}},
+	{'name':'SD', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'ECH', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'CVT', 'func':function() {
+		// TODO: XTerm fails this test...
+		console.gotoxy(1,1);
+		console.write("\t");
+		var pos1 = console.getxy();
+		console.write("\t");
+		var pos2 = console.getxy();
+		console.gotoxy(1,1);
+		console.write("\x1b[Y");
+		if (!check_xy(pos1.x, pos1.y))
+			return false;
+		console.gotoxy(1,1);
+		console.write("\x1b[1Y");
+		if (!check_xy(pos1.x, pos1.y))
+			return false;
+		console.gotoxy(1,1);
+		console.write("\x1b[2Y");
+		if (!check_xy(pos2.x, pos2.y))
+			return false;
+		return true;
+	}},
+	{'name':'CBT', 'func':function() {
+		console.gotoxy(1,1);
+		console.write("\t");
+		var pos1 = console.getxy();
+		console.write("\t");
+		var pos2 = console.getxy();
+		console.write("\t");
+		var pos3 = console.getxy();
+		console.gotoxy(pos3.x,pos3.y);
+		console.write("\x1b[Z");
+		if (!check_xy(pos2.x, pos2.y))
+			return false;
+		console.gotoxy(pos3.x,pos3.y);
+		console.write("\x1b[1Z");
+		if (!check_xy(pos2.x, pos2.y))
+			return false;
+		console.gotoxy(pos3.x,pos3.y);
+		console.write("\x1b[2Z");
+		if (!check_xy(pos1.x, pos1.y))
+			return false;
+		return true;
+	}},
+	{'name':'HPA', 'func':function() {
+		console.gotoxy(20, 1);
+		console.write("\x1b[`");
+		if (!check_xy(1, 1))
+			return false;
+		console.write("\x1b["+console.screen_columns+"`");
+		if (!check_xy(console.screen_columns, 1))
+			return false;
+		console.write("\x1b[1`");
+		if (!check_xy(1, 1))
+			return false;
+		return true;
 	}},
 ];
 
