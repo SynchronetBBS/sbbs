@@ -2050,7 +2050,7 @@ static JSBool
 js_xtrn_sec(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		section = "";
+	char*		section = (char*)"";
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
@@ -2501,7 +2501,7 @@ static JSBool
 js_logonlist(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		args="";
+	char*		args=(char*)"";
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
