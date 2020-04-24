@@ -1104,7 +1104,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		errormsg(WHERE, ERR_ALLOC, msgpath, length);
 		return(false); 
 	}
-	if(fread(msgbuf, sizeof(char), length, instream) != length) {
+	if(fread(msgbuf, sizeof(char), length, instream) != (size_t)length) {
 		strListFree(&rcpt_list);
 		fclose(instream);
 		free(msgbuf);
