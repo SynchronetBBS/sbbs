@@ -778,3 +778,23 @@ int strListTruncateStrings(str_list_t list, const char* set)
 	}
 	return i;
 }
+
+/* Strip chars in 'set' from strings in list */
+int strListStripStrings(str_list_t list, const char* set)
+{
+	size_t		i;
+	char*		o;
+	char*		p;
+
+	if(list == NULL)
+		return 0;
+
+	for(i = 0; list[i] != NULL; i++) {
+		for(o = p = list[i]; (*p != '\0'); p++) {
+			if(strchr(set, *p) == NULL)
+				*(o++) = *p;
+		}
+		*o = '\0';
+	}
+	return i;
+}

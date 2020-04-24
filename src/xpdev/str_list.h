@@ -164,6 +164,8 @@ DLLEXPORT int			strListTruncateTrailingWhitespaces(str_list_t);
 DLLEXPORT int			strListTruncateTrailingLineEndings(str_list_t);
 /* Truncate strings in list at first occurrence of any char in 'set' */
 DLLEXPORT int			strListTruncateStrings(str_list_t, const char* set);
+/* Remove all occurrences of chars in set from string in list */
+DLLEXPORT int			strListStripStrings(str_list_t, const char* set);
 
 /************/
 /* File I/O */
