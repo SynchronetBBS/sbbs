@@ -44,7 +44,7 @@ void pt_zone_kludge(fmsghdr_t hdr,int fido);
 /****************************************************************************/
 /* Send FidoNet/QWK/Internet NetMail from BBS								*/
 /****************************************************************************/
-bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resmb, smbmsg_t* remsg)
+bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resmb, smbmsg_t* remsg, str_list_t cc_list)
 {
 	char	str[256],fname[128],*buf,*p,ch;
 	char	to[256] = "";
@@ -59,7 +59,8 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	long	length,l;
 	faddr_t src_addr;
 	faddr_t dest_addr;
-	uint16_t net_type;
+	char*	net_addr;
+	uint16_t net_type = NET_NONE;
 	smbmsg_t msg;
 	memset(&msg, 0, sizeof(msg));
 
@@ -80,7 +81,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	if(remsg != NULL) {
 		if(subj[0] == 0 && remsg->subj != NULL)
 			SAFECOPY(subj, remsg->subj);
-		if(to[0] == 0) {
+		if(to[0] == 0 && strListCount(cc_list) < 1) {
 			if((p = smb_netaddrstr(&remsg->from_net, tmp)) != NULL) {
 				if(strchr(p, '@')) {
 					SAFECOPY(to, p);
@@ -95,14 +96,18 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 
 	lookup_netuser(to);
 
-	net_type = smb_netaddr_type(to);
-	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s", to, smb_nettype((enum smb_net_type)net_type));
+	net_addr = to;
+	if(*net_addr == '\0' && cc_list != NULL)
+		net_addr = cc_list[0];
+	net_type = smb_netaddr_type(net_addr);
+
+	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s", net_addr, smb_nettype((enum smb_net_type)net_type));
 	if(net_type == NET_QWK) {
 		if(mode&WM_FILE) {
 			bputs(text[EmailFilesNotAllowed]);
 			mode&=~WM_FILE;
 		}
-		return qnetmail(to, subj, mode, resmb, remsg);
+		return qnetmail(net_addr, subj, mode, resmb, remsg);
 	}
 	if(net_type == NET_INTERNET) {
 		if(!(cfg.inetmail_misc&NMAIL_ALLOW)) {
@@ -113,12 +118,13 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 			bputs(text[EmailFilesNotAllowed]);
 			mode&=~WM_FILE;
 		}
-		return inetmail(to, subj, mode, resmb, remsg);
+		return inetmail(to, subj, mode, resmb, remsg, cc_list);
 	}
+	SAFECOPY(to, net_addr);
 	p=strrchr(to,'@');      /* Find '@' in name@addr */
 	if(p==NULL || net_type != NET_FIDO) {
 		if(!(sys_status&SS_ABORT))
-			bputs(text[InvalidNetMailAddr]);
+			bprintf(text[InvalidNetMailAddr], net_addr);
 		return false; 
 	}
 	if(!cfg.total_faddrs || (!SYSOP && !(cfg.netmail_misc&NMAIL_ALLOW))) {
@@ -429,7 +435,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		if(cfg.inetmail_misc&NMAIL_ALLOW) {	/* Internet */
 			inet=1;
 		} else {
-			bputs(text[InvalidNetMailAddr]);
+			bprintf(text[InvalidNetMailAddr], to);
 			free(qwkbuf);
 			return; 
 		} 
@@ -721,7 +727,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	/****************************** FidoNet **********************************/
 
 	if(!fidoaddr.zone || !cfg.netmail_dir[0]) {  // No fido netmail allowed
-		bputs(text[InvalidNetMailAddr]);
+		bprintf(text[InvalidNetMailAddr], to);
 		free(qwkbuf);
 		return; 
 	}
@@ -894,7 +900,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 /****************************************************************************/
 /* Internet mail															*/
 /****************************************************************************/
-bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg)
+bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resmb, smbmsg_t* remsg, str_list_t cc_list)
 {
 	char	str[256],str2[256],msgpath[256],ch, *p;
 	char 	tmp[512];
@@ -904,23 +910,53 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	const char*	editor=NULL;
 	const char*	charset=NULL;
 	char	your_addr[128];
-	ushort	net=NET_INTERNET;
 	int 	i,x,file;
 	long	l;
 	FILE	*instream;
 	smbmsg_t msg;
 
-	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
-		bputs(text[TooManyEmailsToday]);
-		return(false); 
+	if((!SYSOP && !(cfg.inetmail_misc&NMAIL_ALLOW)) || useron.rest&FLAG('M')) {
+		bputs(text[NoNetMailAllowed]);
+		return false;
 	}
 
+	str_list_t rcpt_list = strListInit();
+	if(into != NULL && *into)
+		strListPush(&rcpt_list, into);
+	for(i = 0; cc_list != NULL && cc_list[i] != NULL; i++) {
+		char* p = cc_list[i];
+		char* at = strchr(p, '@');
+		if(at == NULL) {
+			bprintf(text[InvalidNetMailAddr], p);
+			continue;
+		}
+		while(at > p && *at > ' ')
+			at--;
+		p = at;
+		SKIP_WHITESPACE(p);
+		uint16_t net_type = smb_netaddr_type(p);
+		if(net_type != NET_INTERNET) {
+			bprintf(text[InvalidNetMailAddr], p);
+			break;
+		}
+		strListPush(&rcpt_list, p);
+	}
+	strListStripStrings(rcpt_list, "<>");
+	size_t rcpt_count = strListDedupe(&rcpt_list, /* case-sensitive */FALSE);
+
+	if(useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
+		strListFree(&rcpt_list);
+		bputs(text[TooManyEmailsToday]);
+		return false; 
+	}
+/*
 	if(into != NULL) {
 		SAFECOPY(name,into);
 		if((p = strrchr((char*)into, '<')) != NULL) {
 			SAFECOPY(addr, p + 1);
 			p = strrchr(addr, '>');
 			if(p == NULL) {
+				strListFree(&rcpt_list);
 				bputs(text[InvalidNetMailAddr]);
 				return false;
 			}
@@ -929,55 +965,54 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 			SAFECOPY(addr, into);
 		}
 	}
+*/
 	if(subj != NULL)
 		SAFECOPY(title,subj);
 	if(remsg != NULL) {
 		if(title[0] == 0 && remsg->subj != NULL)
 			SAFECOPY(title, remsg->subj);
-		if(name[0] == 0 && remsg->from != NULL)
-			SAFECOPY(name, remsg->from);
-		if(addr[0] == 0 && remsg->from_net.addr != NULL)
-			smb_netaddrstr(&remsg->from_net, addr);
+		if(remsg->from_net.addr != NULL && rcpt_count < 1) {
+			strListPush(&rcpt_list, smb_netaddrstr(&remsg->from_net, addr));
+			// What about from (name) ?
+			rcpt_count = 1;
+		}
 	}
 
-	if((!SYSOP && !(cfg.inetmail_misc&NMAIL_ALLOW)) || useron.rest&FLAG('M')) {
-		bputs(text[NoNetMailAllowed]);
-		return(false); 
+	/* Get this user's Internet mailing address */
+	usermailaddr(&cfg,your_addr
+		,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
+
+	if(rcpt_count > 1) { /* remove "self" from reply-all list */
+		int found = strListFind(rcpt_list, your_addr, /* case_sensitive */FALSE);
+		if(found >= 0) {
+			strListDelete(&rcpt_list, found);
+			rcpt_count--;
+		}
 	}
 
-	if(strchr(addr, ' ') != NULL || strchr(addr, '@') <= addr) {
-		bputs(text[InvalidNetMailAddr]);
+	if(rcpt_count < 1 /* strchr(addr, ' ') != NULL || strchr(addr, '@') <= addr */) {
+		bprintf(text[InvalidNetMailAddr], into);
+		strListFree(&rcpt_list);
 		return false;
 	}
 
 	if(cfg.inetmail_cost && !(useron.exempt&FLAG('S'))) {
-		if(useron.cdt+useron.freecdt<cfg.inetmail_cost) {
+		if(useron.cdt+useron.freecdt < cfg.inetmail_cost * rcpt_count) {
+			strListFree(&rcpt_list);
 			bputs(text[NotEnoughCredits]);
 			return(false); 
 		}
-		sprintf(str,text[NetMailCostContinueQ],cfg.inetmail_cost);
-		if(noyes(str))
-			return(false); 
+		SAFEPRINTF(str, text[NetMailCostContinueQ], cfg.inetmail_cost * rcpt_count);
+		if(noyes(str)) {
+			strListFree(&rcpt_list);
+			return(false);
+		}
 	}
 
-	/* Get destination user name */
-	p=strrchr(name,'<');
-	if(!p)
-		p=strrchr(name,'@');
-	if(!p)
-		p=strrchr(name,'!');
-	if(p) {
-		*p=0;
-		truncsp(name);
-		if(name[0] == 0)
-			SAFECOPY(name, addr);
-	}
+	char to_list[512];
+	strListJoin(rcpt_list, to_list, sizeof(to_list), ", ");
 
-	/* Get this user's internet mailing address */
-	usermailaddr(&cfg,your_addr
-		,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
-
-	bprintf(text[InternetMailing],addr,your_addr);
+	bprintf(text[InternetMailing], to_list, your_addr);
 	action=NODE_SMAL;
 	nodesync();
 
@@ -987,16 +1022,18 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	}
 
 	SAFEPRINTF(msgpath,"%snetmail.msg",cfg.node_dir);
-	if(!writemsg(msgpath,nulstr,title,WM_NETMAIL|mode,INVALID_SUB,into,/* from: */your_addr, &editor, &charset)) {
+	if(!writemsg(msgpath,nulstr,title,WM_NETMAIL|mode,INVALID_SUB, to_list, /* from: */your_addr, &editor, &charset)) {
+		strListFree(&rcpt_list);
 		bputs(text[Aborted]);
 		return(false); 
 	}
 
 	if(mode&WM_FILE) {
-		sprintf(str2,"%sfile/%04u.out",cfg.data_dir,useron.number);
+		SAFEPRINTF2(str2,"%sfile/%04u.out",cfg.data_dir,useron.number);
 		MKDIR(str2);
-		sprintf(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
+		SAFEPRINTF3(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
 		if(fexistcase(str2)) {
+			strListFree(&rcpt_list);
 			bputs(text[FileAlreadyThere]);
 			remove(msgpath);
 			return(false); 
@@ -1004,15 +1041,16 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		{ /* Remote */
 			xfer_prot_menu(XFER_UPLOAD);
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(str,"%c",text[YNQP][2]);
+			SAFEPRINTF(str,"%c",text[YNQP][2]);
 			for(x=0;x<cfg.total_prots;x++)
 				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[x]->mnemonic);
+					SAFEPRINTF(tmp,"%c",cfg.prot[x]->mnemonic);
 					SAFECAT(str,tmp); 
 				}
 			ch=(char)getkeys(str,0);
 			if(ch==text[YNQP][2] || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
+				strListFree(&rcpt_list);
 				remove(msgpath);
 				return(false); 
 			}
@@ -1023,7 +1061,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 			if(x<cfg.total_prots)	/* This should be always */
 				protocol(cfg.prot[x],XFER_UPLOAD,str2,nulstr,true); 
 		}
-		sprintf(tmp,"%s%s",cfg.temp_dir,title);
+		SAFEPRINTF2(tmp,"%s%s",cfg.temp_dir,title);
 		if(!fexistcase(str2) && fexistcase(tmp))
 			mv(tmp,str2,0);
 		l=(long)flength(str2);
@@ -1031,48 +1069,46 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));
 		else {
 			bprintf(text[FileNotReceived],title);
+			strListFree(&rcpt_list);
 			remove(msgpath);
 			return(false); 
 		} 
 	}
 
-	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_OPEN,"MAIL",i);
-		return(false); 
-	}
+	smb_t smb;
 	if((i=smb_open_sub(&cfg, &smb, INVALID_SUB))!=SMB_SUCCESS) {
-		smb_stack(&smb,SMB_STACK_POP);
+		strListFree(&rcpt_list);
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		return(false); 
 	}
 
 	if((instream=fnopen(&file,msgpath,O_RDONLY|O_BINARY))==NULL) {
+		strListFree(&rcpt_list);
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
 		errormsg(WHERE,ERR_OPEN,msgpath,O_RDONLY|O_BINARY);
 		return(false); 
 	}
 	off_t length = filelength(file);
 	if(length < 1) {
+		strListFree(&rcpt_list);
 		fclose(instream);
 		smb_close(&smb);
-		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_LEN, msgpath, length);
 		return(false); 
 	}
 	char* msgbuf;
 	if((msgbuf = (char*)malloc(length + 1)) == NULL) {
+		strListFree(&rcpt_list);
 		fclose(instream);
 		smb_close(&smb);
-		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_ALLOC, msgpath, length);
 		return(false); 
 	}
 	if(fread(msgbuf, sizeof(char), length, instream) != length) {
+		strListFree(&rcpt_list);
 		fclose(instream);
 		free(msgbuf);
 		smb_close(&smb);
-		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_READ, msgpath, length);
 		return(false); 
 	}
@@ -1086,14 +1122,12 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
-	net=NET_INTERNET;
-	smb_hfield_str(&msg,RECIPIENT,name);
-	smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(net),&net);
-	smb_hfield_str(&msg,RECIPIENTNETADDR,addr);
+	if(rcpt_count > 1)
+		smb_hfield_str(&msg, RECIPIENTLIST, to_list);
 
 	smb_hfield_str(&msg,SENDER,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name);
 
-	sprintf(str,"%u",useron.number);
+	SAFEPRINTF(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
 
 	/* Security logging */
@@ -1105,16 +1139,82 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	editor_info_to_msg(&msg, editor, charset);
 
 	i = savemsg(&cfg, &smb, &msg, &client, startup->host_name, msgbuf, remsg);
-
 	free(msgbuf);
-	smb_close(&smb);
-	smb_stack(&smb,SMB_STACK_POP);
 
-	smb_freemsgmem(&msg);
 	if(i!=SMB_SUCCESS) {
+		smb_close(&smb);
+		smb_freemsgmem(&msg);
+		strListFree(&rcpt_list);
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 		return(false); 
 	}
+
+	for(rcpt_count = 0; rcpt_list[rcpt_count] != NULL; rcpt_count++) {
+
+		uint16_t net_type = smb_netaddr_type(rcpt_list[rcpt_count]);
+		if(net_type != NET_INTERNET) {
+			bprintf(text[InvalidNetMailAddr], rcpt_list[rcpt_count]);
+			break;
+		}
+
+		/* Get destination user address */
+		if((p = strrchr(rcpt_list[rcpt_count], '<')) != NULL) {
+			p++;
+			SKIP_WHITESPACE(p);
+			SAFECOPY(addr, p);
+			p = strrchr(addr, '>');
+			if(p == NULL) {
+				bprintf(text[InvalidNetMailAddr], rcpt_list[rcpt_count]);
+				break;
+			}
+			*p = 0;
+		} else {
+			p = rcpt_list[rcpt_count];
+			SKIP_WHITESPACE(p);
+			SAFECOPY(addr, p);
+		}
+		truncsp(addr);
+
+		/* Get destination user name */
+		p = rcpt_list[rcpt_count];
+		SKIP_WHITESPACE(p);
+		SAFECOPY(name, p);
+		p=strrchr(name,'<');
+		if(!p)
+			p=strrchr(name,'@');
+		if(!p)
+			p=strrchr(name,'!');
+		if(p) {
+			*p=0;
+			if(name[0] == 0)
+				SAFECOPY(name, addr);
+		}
+		truncsp(name);
+
+		smbmsg_t newmsg;
+		if((i = smb_copymsgmem(&smb, &newmsg, &msg)) != SMB_SUCCESS) {
+			errormsg(WHERE, "copying", "message header", i, smb.last_error);
+			break;
+		}
+
+		smb_hfield_str(&newmsg, RECIPIENT, name);
+		smb_hfield(&newmsg, RECIPIENTNETTYPE, sizeof(net_type), &net_type);
+		smb_hfield_str(&newmsg, RECIPIENTNETADDR, addr);
+		i=smb_addmsghdr(&smb, &newmsg, smb_storage_mode(&cfg, &smb));
+		smb_freemsgmem(&newmsg);
+		if(i != SMB_SUCCESS) {
+			errormsg(WHERE, "adding", "message header", i, smb.last_error);
+			break;
+		}
+	}
+
+	if(rcpt_count > 1)
+		smb_incmsg_dfields(&smb, &msg, (uint16_t)(rcpt_count - 1));
+
+	smb_close(&smb);
+
+	smb_freemsgmem(&msg);
+	strListFree(&rcpt_list);
 
 	if(mode&WM_FILE && online==ON_REMOTE)
 		autohangup();
@@ -1123,16 +1223,15 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		ftouch(cmdstr(cfg.inetmail_sem,nulstr,nulstr,NULL));
 
 	if(!(useron.exempt&FLAG('S')))
-		subtract_cdt(&cfg,&useron,cfg.inetmail_cost);
+		subtract_cdt(&cfg,&useron,cfg.inetmail_cost * rcpt_count);
 
-	useron.emails++;
-	logon_emails++;
+	useron.emails += (ushort)rcpt_count;
+	logon_emails += rcpt_count;
 	putuserrec(&cfg,useron.number,U_EMAILS,5,ultoa(useron.emails,tmp,10)); 
-	useron.etoday++;
+	useron.etoday += (ushort)rcpt_count;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	sprintf(str,"sent Internet Mail to %s (%s)"
-		,name,addr);
+	SAFEPRINTF(str, "sent Internet Mail to %s", to_list);
 	logline("EN",str);
 	return(true);
 }
@@ -1169,7 +1268,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	addr=strrchr(to,'@');
 	if(!addr) {
-		bputs(text[InvalidNetMailAddr]);
+		bprintf(text[InvalidNetMailAddr], to);
 		return(false); 
 	}
 	*addr=0;
@@ -1178,13 +1277,13 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	truncsp(addr);
 	touser=qwk_route(&cfg,addr,fulladdr,sizeof(fulladdr)-1);
 	if(!fulladdr[0]) {
-		bputs(text[InvalidNetMailAddr]);
+		bprintf(text[InvalidNetMailAddr], addr);
 		return(false); 
 	}
 
 	truncsp(to);
 	if(!stricmp(to,"SBBS") && !SYSOP) {
-		bputs(text[InvalidNetMailAddr]);
+		bprintf(text[InvalidNetMailAddr], to);
 		return(false); 
 	}
 	bprintf(text[NetMailing],to,fulladdr
