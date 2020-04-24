@@ -79,8 +79,8 @@
 	"\r\n\r\n\1n"
 "\1n\r\n\1cþ \1h\1bReading Sent E-mail \1n\1cþ \1h\1b"\		061 ReadingSentMail
 	"(\1w?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n"
-"\1h\1?\1mSending Internet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
-	"                    From: \1w%s\r\n"
+"\1h\1?\1mInternet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
+	"            From: \1w%s\r\n"
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
 	"(\1w%u \1bof \1w%u\1b): \1n" 
@@ -221,7 +221,7 @@
 "\r\n\1q\1_\1g\1hFile Libraries \1n\1g                   "\     181 LibLstHdr
 	"                       Directories\r\n\r\n\1h"
 "\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             182 LibLstFmt
-"\1n\r\nInvalid NetMail address.\r\n"                   183 InvalidNetMailAddr
+"\1n\r\nInvalid NetMail address: \1h%s\1n\r\n"                183 InvalidNetMailAddr
 "\1_\r\n\1g\1h%s \1n\1gTransfer Policy\r\n\r\n\1n"            184 TransferPolicyHdr
 "\1n\1h[\1y%c\1w] \1b%-25s  "                           185 TransferProtLstFmt
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
