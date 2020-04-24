@@ -949,23 +949,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		bputs(text[TooManyEmailsToday]);
 		return false; 
 	}
-/*
-	if(into != NULL) {
-		SAFECOPY(name,into);
-		if((p = strrchr((char*)into, '<')) != NULL) {
-			SAFECOPY(addr, p + 1);
-			p = strrchr(addr, '>');
-			if(p == NULL) {
-				strListFree(&rcpt_list);
-				bputs(text[InvalidNetMailAddr]);
-				return false;
-			}
-			*p = 0;
-		} else {
-			SAFECOPY(addr, into);
-		}
-	}
-*/
+
 	if(subj != NULL)
 		SAFECOPY(title,subj);
 	if(remsg != NULL) {
@@ -973,7 +957,6 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 			SAFECOPY(title, remsg->subj);
 		if(remsg->from_net.addr != NULL && rcpt_count < 1) {
 			strListPush(&rcpt_list, smb_netaddrstr(&remsg->from_net, addr));
-			// What about from (name) ?
 			rcpt_count = 1;
 		}
 	}
@@ -990,7 +973,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		}
 	}
 
-	if(rcpt_count < 1 /* strchr(addr, ' ') != NULL || strchr(addr, '@') <= addr */) {
+	if(rcpt_count < 1) {
 		bprintf(text[InvalidNetMailAddr], into);
 		strListFree(&rcpt_list);
 		return false;
