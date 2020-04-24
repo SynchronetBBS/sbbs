@@ -921,6 +921,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		if(useron.posts)
 			f = (float)useron.logons / useron.posts;
 		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : useron.posts > useron.logons ? 100 : 0);
+		return str;
 	}
 
 	if(!strcmp(sp,"LASTNEW"))
