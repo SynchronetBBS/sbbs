@@ -404,7 +404,7 @@ CSI Ps1 ; Ps2 sp D (FNT)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn E
+CSI Pn E (CNL)
 	Cursor Next Line
 	Defaults: Pn = 1
 	Moves the cursor to the first column of the line Pn down from the
@@ -414,30 +414,30 @@ CSI Pn E
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn F
+CSI Pn F (CPL)
 	Cursor Preceding Line
 	Defaults: Pn = 1
-	Moves the cursor to the first column if the row Pn up from the
+	Moves the cursor to the first column of the row Pn up from the
 	current position.  Attempting to move past the screen boundaries
 	stops the cursor at the screen boundary.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn G
+CSI Pn G (CHA)
 	Cursor Character Absolute
 	Defaults: Pn = 1
 	Movies the cursor to column Pn of the current row.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn1 ; Pn2 H
+CSI Pn1 ; Pn2 H (CUP)
 	Cursor Position
 	Defaults: Pn1 = 1  Pn2 = 1
 	Moves the cursor to the Pn2th column of the Pn1th line.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Ps J
+CSI Ps J (ED)
 	Erase in Page
 	Defaults: Ps = 0
 	Erases from the current screen according to the value of Ps
@@ -451,7 +451,7 @@ CSI Ps J
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE BANSI.TXT
 
-CSI Ps K
+CSI Ps K (EL)
 	Erase in Line
 	Defaults: Ps = 0
 	Erases from the current line according to the value pf Ps
@@ -462,7 +462,7 @@ CSI Ps K
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn L
+CSI Pn L (IL)
 	Insert Line(s)
 	Defaults: Pn = 1
 	Inserts Pn lines at the current line position.  The current line and
@@ -471,7 +471,7 @@ CSI Pn L
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn M
+CSI Pn M (DL)
 	Delete Line(s) / "ANSI" Music
 	Defaults: Pn = 1
 	Deletes the current line and the Pn - 1 lines after it scrolling the
@@ -484,7 +484,8 @@ CSI Pn M
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE: BANSI.TXT
 
-CSI = Ps M
+CSI = Ps M (STERMSAM)
+	SyncTERM Set ANSI Music
 	NON-STANDARD EXTENSION.
 	Defaults:  Ps = 0
 	Sets the current state of ANSI music parsing.
@@ -495,7 +496,8 @@ CSI = Ps M
 
 	SOURCE: CTerm only.
 
-CSI N
+CSI N (BCAM)
+	BananaCom ANSI Music
 	"ANSI" Music / Not implemented.
 	If "ANSI" Music is set to BananaCom (CSI = 1 M) or fully enabled
 	(CSI = 2 M) performs "ANSI" music.  See "ANSI" MUSIC section for more
@@ -503,7 +505,7 @@ CSI N
 
 	SOURCE: BANSI.TXT
 
-CSI Pn P
+CSI Pn P (DCH)
 	Delete Character
 	Defaults: Pn = 1
 	Deletes the character at the current position by shifting all
@@ -513,7 +515,7 @@ CSI Pn P
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn S
+CSI Pn S (SU)
 	Scroll Up
 	Defaults: Pn = 1
 	Scrolls all text on the screen up Pn lines.  New lines emptied at the
