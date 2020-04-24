@@ -10,6 +10,8 @@ function check_xy(x, y)
 
 function ask_user(str)
 {
+	if (!interactive)
+		return null;
 	console.clear();
 	return(console.yesno(str));
 }
@@ -21,6 +23,8 @@ var tests = [
 		return check_xy(1, 1);
 	}},
 	{'name':"BEL", 'func':function() {
+		if (!interactive)
+			return null;
 		console.write("\x07");
 		return ask_user("Did you hear a beep?");
 	}},
@@ -51,6 +55,11 @@ var tests = [
 		console.gotoxy(1,1);
 		console.write("1234\r");
 		return check_xy(1, 1);
+	}},
+	{'name':"NEL", 'func':function() {
+		console.gotoxy(3,1);
+		console.write("\x1bE");
+		return check_xy(1,2);
 	}},
 	{'name':"HTS", 'func':function() {
 		console.gotoxy(3,1);
@@ -100,6 +109,177 @@ var tests = [
 		return check_xy(1, 1);
 		// TODO: So much stuff here... basically verify that things get reset
 	}},
+	{'name':'ICH', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'SL', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'CUU', 'func':function() {
+		console.gotoxy(20, 10);
+		console.write("\x1b[A");
+		if (!check_xy(20, 9))
+			return false;
+		console.write("\x1b[1A");
+		if (!check_xy(20, 8))
+			return false;
+		console.write("\x1b[2A");
+		if (!check_xy(20, 6))
+			return false;
+		return true;
+	}},
+	{'name':'SR', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'CUD', 'func':function() {
+		console.gotoxy(20, 1);
+		console.write("\x1b[B");
+		if (!check_xy(20, 2))
+			return false;
+		console.write("\x1b[1B");
+		if (!check_xy(20, 3))
+			return false;
+		console.write("\x1b[2B");
+		if (!check_xy(20, 5))
+			return false;
+		return true;
+	}},
+	{'name':'CUF', 'func':function() {
+		console.gotoxy(1, 1);
+		console.write("\x1b[C");
+		if (!check_xy(2, 1))
+			return false;
+		console.write("\x1b[1C");
+		if (!check_xy(3, 1))
+			return false;
+		console.write("\x1b[2C");
+		if (!check_xy(5, 1))
+			return false;
+		return true;
+	}},
+	{'name':'CUB', 'func':function() {
+		console.gotoxy(5, 1);
+		console.write("\x1b[D");
+		if (!check_xy(4, 1))
+			return false;
+		console.write("\x1b[1D");
+		if (!check_xy(3, 1))
+			return false;
+		console.write("\x1b[2D");
+		if (!check_xy(1, 1))
+			return false;
+		return true;
+	}},
+	{'name':'FNT', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'CNL', 'func':function() {
+		console.gotoxy(20, 1);
+		console.write("\x1b[E");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 1);
+		console.write("\x1b[1E");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 1);
+		console.write("\x1b[2E");
+		if (!check_xy(1, 3))
+			return false;
+		return true;
+		// TODO: Scrolling
+	}},
+	{'name':'CPL', 'func':function() {
+		console.gotoxy(20, 3);
+		console.write("\x1b[F");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[1F");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 5);
+		console.write("\x1b[2F");
+		if (!check_xy(1, 3))
+			return false;
+		return true;
+	}},
+	{'name':'CHA', 'func':function() {
+		console.gotoxy(20, 1);
+		console.write("\x1b[G");
+		if (!check_xy(1, 1))
+			return false;
+		console.write("\x1b["+console.screen_columns+"G");
+		if (!check_xy(console.screen_columns, 1))
+			return false;
+		console.write("\x1b[1G");
+		if (!check_xy(1, 1))
+			return false;
+		return true;
+	}},
+	{'name':'CUP', 'func':function() {
+		console.gotoxy(20, 3);
+		console.write("\x1b[H");
+		if (!check_xy(1, 1))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[;H");
+		if (!check_xy(1, 1))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[2H");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[2;H");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[2;2H");
+		if (!check_xy(2, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[;2H");
+		if (!check_xy(2, 1))
+			return false;
+		return true;
+	}},
+	{'name':'ED', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'EL', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'IL', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'DL', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'STERMAM', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'BCAM', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'DCH', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'SU', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
 ];
 
 function main()
@@ -138,11 +318,14 @@ function main()
 	return results;
 }
 
+var interactive = console.yesno("Run interactive tests?");
 var res = main();
 console.clear();
 res.forEach(function(r, idx) {
 	console.print(format("%-15s\x01H", tests[idx].name))
-	if (r)
+	if (r === null)
+		console.print("Skipped\x01N\r\n");
+	else if (r)
 		console.print("\x01GPassed\x01N\r\n");
 	else
 		console.print("\x01RFailed\x01N\r\n");
