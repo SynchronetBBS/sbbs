@@ -23,36 +23,36 @@ here: https://github.com/mattiase/wraptest
 
 Control characters:
 
-NUL:
+0x00 - NUL:
 	In doorway mode, indicates that the next character is
 	a literal character.  The IBM CP437 character will
 	be displayed.  This allows ESC and other control
 	characters to be placed on the screen.
 
-CR:
-	Move cursor position to column 1 of the current line
+0x07 - BEL:
+	Beep
 
-LF:
-	Move cursor position to same column of the next row.
-	If current row is the last row, scrolls the screen up
-	and fills the new row with the current attribute.
-
-BS:
+0x08 - BS:
 	Non-destructive backspace.  Moves cursor position to
 	the previous column unless the current column is the
 	first, in which case no operation is performed.
 
-0x07:
-	Beep
-
-TAB:
-	Moves to the next tab stop.  Does not overwrite any
-	characters in between.  If the starting position is
+0x09 - HT:
+	Moves to the next horizontal tab stop.  Does not overwrite
+	any characters in between.  If the starting position is
 	last column, advances to next line.  If starting
 	position is the last column of the last line, performs
 	a scroll, filling the new line at bottom with the
 	current attribute and moves to the first character in
 	the new line.
+
+0x0A - LF:
+	Move cursor position to same column of the next row.
+	If current row is the last row, scrolls the screen up
+	and fills the new row with the current attribute.
+
+0x0D - CR:
+	Move cursor position to column 1 of the current line
 
 Control Codes:
 --------------
@@ -61,22 +61,21 @@ Control codes are in the following format:
 ESC {'0' (ZERO) to '~'}
 	Legal combinations which are not handled are silently dropped.
 
-ESC H	Set Tab
+ESC E	Next Line (NEL)
+	Moves to the line home position of the next line.
+	(Same as CR LF)
+
+ESC H	Set Tab (HTS)
 	Sets a tab stop at the current column
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-ESC M	Reverse Line Feed
+ESC M	Reverse Line Feed (RI)
 	Move up one line
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-ESC _	Application Program String
-	Begins a string consisting of the characters 0x08 - 0x0d and
-	0x20-0x7e, terminated by a String Terminator (ST)
-	The string is currently ignored.
-
-ESC P	Device Control String
+ESC P	Device Control String (DCS)
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	Supported OSC values:
@@ -203,12 +202,14 @@ ESC P	Device Control String
 		terminating ; may be left out if the sequence to be
 		repeated ends at the end of the string.
 
-ESC ^	Privacy Message
-	Begins a string consisting of the characters 0x08 - 0x0d and
-	0x20-0x7e, terminated by a String Terminator (ST)
+ESC X	Start Of String (SOS)
+	As the above strings, but may contain any characters except
+	a Start Of String sequence or a String Terminator sequence.
 	The string is currently ignored.
 
-ESC ]	Operating System Command
+ESC \	String Terminator (ST)
+
+ESC ]	Operating System Command (OSC)
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	Supported OSC values:
@@ -230,14 +231,17 @@ ESC ]	Operating System Command
 
 		SOURCE: xterm
 
-ESC X	Start Of String
-	As the above strings, but may contain any characters except
-	a Start Of String sequence or a String Terminator sequence.
+ESC ^	Privacy Message (PM)
+	Begins a string consisting of the characters 0x08 - 0x0d and
+	0x20-0x7e, terminated by a String Terminator (ST)
 	The string is currently ignored.
 
-ESC \	String Terminator
+ESC _	Application Program String (APS)
+	Begins a string consisting of the characters 0x08 - 0x0d and
+	0x20-0x7e, terminated by a String Terminator (ST)
+	The string is currently ignored.
 
-ESC c	Reset Terminal
+ESC c	Reset to Initial State (RIS)
 	Resets all the terminal settings, clears the screen, and homes
 	the cursor.
 
@@ -271,7 +275,7 @@ Sequence Parameters:
 
 	If a default is defined, the parameter is optional
 
-CSI Pn @
+CSI Pn @ (ICH)
 	Insert Character(s)
 	Defaults: Pn = 1
 	Moves text from the current position to the right edge Pn characters
@@ -280,8 +284,8 @@ CSI Pn @
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn SP @
-	Shift Left
+CSI Pn SP @ (SL)
+	Scroll Left
 	Defaults: Pn = 1
 	Shifts the contents of the screen left Pn columns(s) with
 	leftmost columns going off-screen and the resulting hole being
@@ -289,7 +293,7 @@ CSI Pn SP @
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn A
+CSI Pn A (CUU)
 	Cursor Up
 	Defaults: Pn = 1
 	Moves the cursor position up Pn lines from the current position.
@@ -298,8 +302,8 @@ CSI Pn A
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn SP A
-	Shift Right
+CSI Pn SP A (SR)
+	Scroll Right
 	Defaults: Pn = 1
 	Shifts the contents of the screen right Pn columns(s) with
 	rightmost columns going off-screen and the resulting hole being
@@ -307,7 +311,7 @@ CSI Pn SP A
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn B
+CSI Pn B (CUD)
 	Cursor Down
 	Defaults: Pn = 1
 	Moves the cursor position down Pn lines from the current position.
@@ -316,7 +320,7 @@ CSI Pn B
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn C
+CSI Pn C (CUF)
 	Cursor Right
 	Defaults: Pn = 1
 	Moves the cursor position right Pn columns from the current position.
@@ -325,7 +329,7 @@ CSI Pn C
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn D
+CSI Pn D (CUB)
 	Cursor Left
 	Defaults: Pn = 1
 	Moves the cursor position left Pn columns from the current position.
@@ -334,7 +338,7 @@ CSI Pn D
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Ps1 ; Ps2 sp D
+CSI Ps1 ; Ps2 sp D (FNT)
 	Font Selection
 	Defaults: Ps1 = 0  Ps2 = 0
 	"sp" indicates a single space character.
