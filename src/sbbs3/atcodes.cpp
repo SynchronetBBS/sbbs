@@ -916,6 +916,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(str);
 	}
 
+	if(strcmp(sp, "PCR") == 0) {
+		float f = 0;
+		if(useron.posts)
+			f = (float)useron.logons / useron.posts;
+		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : useron.posts > useron.logons ? 100 : 0);
+	}
+
 	if(!strcmp(sp,"LASTNEW"))
 		return(unixtodstr(&cfg,(time32_t)ns_time,str));
 
