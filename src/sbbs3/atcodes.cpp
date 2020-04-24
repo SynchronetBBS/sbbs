@@ -956,6 +956,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(str);
 	}
 
+	if(strcmp(sp, "FREECDT") == 0) {
+		safe_snprintf(str, maxlen, "%lu", useron.freecdt);
+		return str;
+	}
+
 	if(!strcmp(sp,"CONF")) {
 		safe_snprintf(str,maxlen,"%s %s"
 			,usrgrps ? cfg.grp[usrgrp[curgrp]]->sname :nulstr
