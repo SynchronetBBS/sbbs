@@ -770,10 +770,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 	}
 
 	if(!strcmp(sp,"TPERD"))                /* Synchronet only */
-		return(sectostr(cfg.level_timeperday[useron.level],str)+1);
+		return(sectostr(cfg.level_timeperday[useron.level],str)+4);
 
 	if(!strcmp(sp,"TPERC"))                /* Synchronet only */
-		return(sectostr(cfg.level_timepercall[useron.level],str)+1);
+		return(sectostr(cfg.level_timepercall[useron.level],str)+4);
 
 	if(strcmp(sp, "MPERC") == 0 || strcmp(sp, "TIMELIMIT") == 0) {
 		safe_snprintf(str,maxlen,"%u",cfg.level_timepercall[useron.level]);
@@ -867,20 +867,31 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 	}
 
 	if(strcmp(sp, "TTODAY") == 0)
-		return sectostr(useron.ttoday, str) + 1;
+		return sectostr(useron.ttoday, str) + 3;
 
 	if(strcmp(sp, "TTOTAL") == 0)
-		return sectostr(useron.timeon, str);
+		return sectostr(useron.timeon, str) + 3;
 
 	if(strcmp(sp, "TLAST") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.tlast);
 		return str;
 	}
 
-	if(strcmp(sp, "TEXTRA") == 0) {
+	if(strcmp(sp, "MEXTRA") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.textra);
 		return str;
 	}
+
+	if(strcmp(sp, "TEXTRA") == 0)
+		return sectostr(useron.textra, str) + 3;
+
+	if(strcmp(sp, "MBANKED") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.min);
+		return str;
+	}
+
+	if(strcmp(sp, "TBANKED") == 0)
+		return sectostr(useron.min, str) + 3;
 
 	if(!strcmp(sp,"MSGLEFT") || !strcmp(sp,"MSGSLEFT")) {
 		safe_snprintf(str,maxlen,"%u",useron.posts);
