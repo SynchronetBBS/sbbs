@@ -186,9 +186,9 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 			JS_ReportError(cx, "Invalid \"to_list\" string in recipient object");
 			return(FALSE);
 		}
-		if((smb_result = smb_hfield_str(msg, RFC822TO, cp))!=SMB_SUCCESS) {
+		if((smb_result = smb_hfield_str(msg, RECIPIENTLIST, cp))!=SMB_SUCCESS) {
 			free(cp);
-			JS_ReportError(cx, "Error %d adding RFC822TO field to message header", smb_result);
+			JS_ReportError(cx, "Error %d adding RECIPIENTLIST field to message header", smb_result);
 			goto err;
 		}
 	}
@@ -617,8 +617,8 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			JS_ReportError(cx, "Invalid \"replyto_list\" string in header object");
 			goto err;
 		}
-		if((smb_result = smb_hfield_str(msg, RFC822REPLYTO, cp))!=SMB_SUCCESS) {
-			JS_ReportError(cx, "Error %d adding RFC822REPLYTO field to message header", smb_result);
+		if((smb_result = smb_hfield_str(msg, REPLYTOLIST, cp))!=SMB_SUCCESS) {
+			JS_ReportError(cx, "Error %d adding REPLYTOLIST field to message header", smb_result);
 			goto err;
 		}
 	}
@@ -1539,7 +1539,12 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 					case FIDOSEENBY:
 					case FIDOPATH:
 					case RFC822HEADER:
+					case RFC822TO:
+					case RFC822CC:
+					case RFC822ORG:
 					case RFC822FROM:
+					case RFC822REPLYTO:
+					case RFC822SUBJECT:
 					case SMTPRECEIVED:
 					case UNKNOWNASCII:
 						/* only support these header field types */
