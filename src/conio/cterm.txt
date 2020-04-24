@@ -564,7 +564,7 @@ CSI Pn Y (CVT)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn Z
+CSI Pn Z (CBT)
 	Cursor Backward Tabulation
 	Defaults: Pn = 1
 	Move the cursor to the p1th preceding tab stop.  Will not go past the
@@ -572,7 +572,7 @@ CSI Pn Z
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn `
+CSI Pn ` (HPA)
 	Character Position Absolute
 	Defaults: Pn = 1
 	Move the cursor to the specified position on the current row.
