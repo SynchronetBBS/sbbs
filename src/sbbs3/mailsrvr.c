@@ -724,7 +724,8 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		if(!sockprintf(socket,prot,sess,"Cc: %s", p == NULL ? msg->cc_list : p))
 			return(0);
 	np=NULL;
-	if((p = smb_get_hfield(msg, RFC822REPLYTO, NULL)) == NULL) {
+	p = smb_get_hfield(msg, RFC822REPLYTO, NULL);
+	if(p == NULL && (p = msg->replyto_list) == NULL) {
 		np=msg->replyto;
 		if(msg->replyto_net.type==NET_INTERNET)
 			p=msg->replyto_net.addr;
@@ -3631,6 +3632,16 @@ static void smtp_thread(void* arg)
 							smb_hfield_str(&msg, SMB_CARBONCOPY, np);
 						else
 							hfield->type = SMB_CARBONCOPY;
+						free(np);
+					}
+				}
+				if((p = smb_get_hfield(&msg, RFC822REPLYTO, &hfield)) != NULL) {
+					char* np = strdup(p);
+					if(np != NULL) {
+						if(mimehdr_value_decode(np, &msg))
+							smb_hfield_str(&msg, REPLYTOLIST, np);
+						else
+							hfield->type = REPLYTOLIST;
 						free(np);
 					}
 				}
