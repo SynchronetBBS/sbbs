@@ -826,6 +826,45 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(str);
 	}
 
+	if(strcmp(sp, "EMAILS") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.emails);
+		return str;
+	}
+
+	if(strcmp(sp, "FBACKS") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.fbacks);
+		return str;
+	}
+
+	if(strcmp(sp, "ETODAY") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.etoday);
+		return str;
+	}
+
+	if(strcmp(sp, "PTODAY") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.ptoday);
+		return str;
+	}
+
+	if(strcmp(sp, "LTODAY") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.ltoday);
+		return str;
+	}
+
+	if(strcmp(sp, "TTODAY") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.ttoday);
+		return str;
+	}
+
+	if(strcmp(sp, "TLAST") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.tlast);
+		return str;
+	}
+
+	if(strcmp(sp, "TEXTRA") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron.textra);
+		return str;
+	}
 
 	if(!strcmp(sp,"MSGLEFT") || !strcmp(sp,"MSGSLEFT")) {
 		safe_snprintf(str,maxlen,"%u",useron.posts);
