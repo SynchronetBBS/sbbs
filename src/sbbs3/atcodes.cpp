@@ -984,6 +984,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return(str);
 	}
 
+	if(strcmp(sp, "CREDITS") == 0) {
+		safe_snprintf(str, maxlen, "%lu", useron.cdt);
+		return str;
+	}
+
 	if(strcmp(sp, "FREECDT") == 0) {
 		safe_snprintf(str, maxlen, "%lu", useron.freecdt);
 		return str;
