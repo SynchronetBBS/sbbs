@@ -35,7 +35,7 @@ Added CSI Pn g to clear tabs
 Added CSI 2 $ w to request a tab report
 Added ESC M as a reverse linefeed
 Added CSI Pn e as an alias to CSI Pn B
-Added CSI Pn Y to move a specified numer of tab stops
+Added CSI Pn Y and CSI Pn I to move a specified numer of tab stops
 Added CSI Pn SP c to remove a specific tab stop
 Added CSI Pn k as an alias to CSI Pn A
 Support for a "Custom" video mode added
