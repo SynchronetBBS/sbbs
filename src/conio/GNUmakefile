@@ -30,9 +30,6 @@ else
   NEED_BITMAP := 1
   OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
   OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
-  ifeq ($(os),darwin)
-   OBJS 	+=      $(MTOBJODIR)$(DIRSEP)pasteboard$(OFILE)
-  endif
  endif
 endif
 
