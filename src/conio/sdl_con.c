@@ -311,7 +311,6 @@ void sdl_flush(void)
 static int sdl_init_mode(int mode)
 {
 	int oldcols;
-	int cmw, cmh, nmw, nmh;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
@@ -346,13 +345,6 @@ static int sdl_init_mode(int mode)
 		vstat.winheight = vstat.charheight * vstat.rows;
 	if(vstat.vmultiplier < 1)
 		vstat.vmultiplier = 1;
-	if (win) {
-		cmw = cvstat.charwidth * cvstat.cols;
-		nmw = vstat.charwidth * vstat.cols;
-		cmh = cvstat.charheight * cvstat.rows;
-		nmh = vstat.charheight * vstat.rows;
-		sdl.SetWindowMinimumSize(win, cmw < nmw ? cmw : nmw, cmh < nmh ? cmh : nmh);
-	}
 
 	cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
@@ -405,6 +397,14 @@ void sdl_setwinsize_locked(int w, int h)
 		h = cvstat.charheight * cvstat.rows;
 	cvstat.winwidth = vstat.winwidth = w;
 	cvstat.winheight = vstat.winheight = h;
+	if (win) {
+		int cmw, nmw, cmh, nmh;
+		cmw = cvstat.charwidth * cvstat.cols;
+		nmw = vstat.charwidth * vstat.cols;
+		cmh = cvstat.charheight * cvstat.rows;
+		nmh = vstat.charheight * vstat.rows;
+		sdl.SetWindowMinimumSize(win, cmw < nmw ? cmw : nmw, cmh < nmh ? cmh : nmh);
+	}
 }
 
 void sdl_setwinsize(int w, int h)
