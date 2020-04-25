@@ -2383,6 +2383,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
 										break;
 									}
+								}
+								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+									strcat(retbuf, tmp);
+							}
+							else if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								if(retbuf == NULL)
+									break;
+								tmp[0] = 0;
+								if (seq->param_count > 1)
+									break;
+								seq_default(seq, 0, 1);
+								switch(seq->param_int[0]) {
 									case 62: /* Query macro space available */
 									{
 										// Just fake it as int16_max
@@ -3525,9 +3537,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 255:
 									if (retbuf != NULL) {
-										sprintf(tmp, "\x1b[%d;%dR", CURR_MAXY,CURR_MAXX);
-										if (strlen(retbuf) + strlen(tmp) < retsize)
+										sprintf(tmp, "\x1b[%d;%dR", CURR_MAXY, CURR_MAXX);
+										if (strlen(retbuf) + strlen(tmp) < retsize) {
 											strcat(retbuf, tmp);
+										}
 									}
 									break;
 							}
