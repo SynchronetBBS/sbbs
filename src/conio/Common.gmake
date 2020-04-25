@@ -93,55 +93,53 @@ ifdef USE_SDL
 endif
 
 ifdef WITH_SDL
- ifndef WITH_SDL_AUDIO
-  # Prefer local include over system includes.
-  #CFLAGS += -I$(SRC_ROOT)/../include/sdl
-  ifdef SDL_CONFIG
-   ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
-	CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
-	CIOLIB-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
-	CIOLIB_CFLAGS	+=	-DWITH_SDL
-	CIOLIB_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
-	ifdef STATIC_SDL
-     CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
-     CIOLIB-MT_CFLAGS	+=	-DSTATIC_SDL
-     CIOLIB-LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
-     CIOLIB-CFLAGS	+=	-DSTATIC_SDL
-	else
-     ifeq ($(os),darwin)
-      ifeq ($(shell uname -r),6.8)
-       CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-       CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-      endif
-     endif
-     ifeq ($(os),linux)
-      CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-      CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-     endif
-     ifeq ($(os),sunos)
-      CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-      CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
-     endif
-	endif
-   endif
-  else
-   ifeq ($(os),darwin)
-	CIOLIB-MT_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
-	WITH_SDL	:=	1
-	STATIC_SDL	:=	1
-	CIOLIB-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-	CIOLIB-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-	CIOLIB_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
-	CIOLIB_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-	CIOLIB_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+ # Prefer local include over system includes.
+ #CFLAGS += -I$(SRC_ROOT)/../include/sdl
+ ifdef SDL_CONFIG
+  ifeq ($(shell ${SDL_CONFIG} --cflags > /dev/null 2>&1 && echo YES),YES)
+   CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
+   CIOLIB-MT_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
+   CIOLIB_CFLAGS	+=	-DWITH_SDL
+   CIOLIB_CFLAGS	+=	$(shell $(SDL_CONFIG) --cflags)
+   ifdef STATIC_SDL
+    CIOLIB-MT_LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
+    CIOLIB-MT_CFLAGS	+=	-DSTATIC_SDL
+    CIOLIB-LIBS	+=	$(shell $(SDL_CONFIG) --static-libs)
+    CIOLIB-CFLAGS	+=	-DSTATIC_SDL
    else
-    ifeq ($(os),win32)
-     CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
-     WITH_SDL	:=	1
-     CIOLIB_CFLAGS	+=	-DWITH_SDL
-     CIOLIB-MT_LIBS := -lmingw32 $(CIOLIB-MT_LIBS)
-     CIOLIB_LIBS := -lmingw32 $(CIOLIB_LIBS)
+    ifeq ($(os),darwin)
+     ifeq ($(shell uname -r),6.8)
+      CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+      CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+     endif
     endif
+    ifeq ($(os),linux)
+     CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+     CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+    endif
+    ifeq ($(os),sunos)
+     CIOLIB-MT_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+     CIOLIB_LIBS		+=  $(UL_PRE)dl$(UL_SUF)
+    endif
+   endif
+  endif
+ else
+  ifeq ($(os),darwin)
+   CIOLIB-MT_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+   WITH_SDL	:=	1
+   STATIC_SDL	:=	1
+   CIOLIB-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   CIOLIB-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   CIOLIB_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
+   CIOLIB_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   CIOLIB_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+  else
+   ifeq ($(os),win32)
+    CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
+    WITH_SDL	:=	1
+    CIOLIB_CFLAGS	+=	-DWITH_SDL
+    CIOLIB-MT_LIBS := -lmingw32 $(CIOLIB-MT_LIBS)
+    CIOLIB_LIBS := -lmingw32 $(CIOLIB_LIBS)
    endif
   endif
  endif
