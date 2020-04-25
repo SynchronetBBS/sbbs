@@ -397,14 +397,6 @@ void sdl_setwinsize_locked(int w, int h)
 		h = cvstat.charheight * cvstat.rows;
 	cvstat.winwidth = vstat.winwidth = w;
 	cvstat.winheight = vstat.winheight = h;
-	if (win) {
-		int cmw, nmw, cmh, nmh;
-		cmw = cvstat.charwidth * cvstat.cols;
-		nmw = vstat.charwidth * vstat.cols;
-		cmh = cvstat.charheight * cvstat.rows;
-		nmh = vstat.charheight * vstat.rows;
-		sdl.SetWindowMinimumSize(win, cmw < nmw ? cmw : nmw, cmh < nmh ? cmh : nmh);
-	}
 }
 
 void sdl_setwinsize(int w, int h)
@@ -567,6 +559,7 @@ static void setup_surfaces_locked(void)
 		}
 	}
 	else {
+		sdl.SetWindowMinimumSize(win, cvstat.charwidth * cvstat.cols, cvstat.charheight * cvstat.rows);
 		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
 		if (texture) 
 			sdl.DestroyTexture(texture);
