@@ -372,7 +372,7 @@ int sdl_init(int mode)
 		fullscreen=1;
 	// Needs to be *after* bitmap_drv_init()
 #if defined(__DARWIN__)
-	sem_post(&initsdl_sem);
+	sem_post(&startsdl_sem);
 #else
 	_beginthread(sdl_video_event_thread, 0, NULL);
 #endif
@@ -1058,7 +1058,13 @@ void sdl_video_event_thread(void *data)
 
 int sdl_initciolib(int mode)
 {
+#if defined(__DARWIN__)
+	sem_post(&initsdl_sem);
+	sem_wait(&initsdldone_sem);
+	if (initsdl_ret) {
+#else
 	if(init_sdl_video()) {
+#endif
 		fprintf(stderr,"SDL Video Initialization Failed\n");
 		return(-1);
 	}

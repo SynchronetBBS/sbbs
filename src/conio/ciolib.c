@@ -1882,7 +1882,11 @@ CIOLIBEXPORT enum ciolib_codepage CIOLIBCALL ciolib_getcodepage(void)
 #endif
 
 sem_t initsdl_sem;
+sem_t initsdldone_sem;
+sem_t startsdl_sem;
 sem_t main_sem;
+int initsdl_ret = -1;
+
 struct main_args {
 	int argc;
 	char **argv;
@@ -1897,6 +1901,7 @@ void main_stub(void *argptr)
 	args->ret = CIOLIB_main(args->argc, args->argv);
 	args->no_sdl = 1;
 	sem_post(&initsdl_sem);
+	sem_post(&startsdl_sem);
 	sem_post(&main_sem);
 	exit_sdl_con();
 }
@@ -1906,11 +1911,18 @@ int main(int argc, char **argv)
 	struct main_args ma = {argc, argv, -1, 0};
 
 	sem_init(&initsdl_sem, 0, 0);
+	sem_init(&initsdldone_sem, 0, 0);
+	sem_init(&startsdl_sem, 0, 0);
 	sem_init(&main_sem, 0, 0);
 	_beginthread(main_stub, 0, &ma);
 	sem_wait(&initsdl_sem);
 	if (!ma.no_sdl) {
-		sdl_video_event_thread(NULL);
+		initsdl_ret = init_sdl_video();
+		sem_post(&initsdldone_sem);
+		if (initsdl_ret != -1) {
+			sem_wait(&startsdl_sem);
+			sdl_video_event_thread(NULL);
+		}
 	}
 	sem_wait(&main_sem);
 	return ma.ret;
