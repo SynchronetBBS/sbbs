@@ -62,7 +62,7 @@ var tests = [
 			return false;
 		console.gotoxy(console.screen_columns, 1);
 		console.write("\t");
-		return check_xy(1,2);
+		return check_xy(console.screen_columns, 1);
 		// TODO: Check scroll... somehow.
 	}},
 	{'name':"LF", 'func':function() {
@@ -267,6 +267,28 @@ var tests = [
 			return false;
 		return true;
 	}},
+	{'name':'CHT', 'func':function() {
+		console.gotoxy(1,1);
+		console.write("\t");
+		var pos1 = console.getxy();
+		console.write("\t");
+		var pos2 = console.getxy();
+		console.write("\t");
+		var pos3 = console.getxy();
+		console.gotoxy(pos3.x,pos3.y);
+		console.write("\x1b[Z");
+		if (!check_xy(pos2.x, pos2.y))
+			return false;
+		console.gotoxy(pos3.x,pos3.y);
+		console.write("\x1b[1Z");
+		if (!check_xy(pos2.x, pos2.y))
+			return false;
+		console.gotoxy(pos3.x,pos3.y);
+		console.write("\x1b[2Z");
+		if (!check_xy(pos1.x, pos1.y))
+			return false;
+		return true;
+	}},
 	{'name':'ED', 'func':function() {
 		return null;
 		// TODO: Interactive...
@@ -283,7 +305,7 @@ var tests = [
 		return null;
 		// TODO: Interactive...
 	}},
-	{'name':'STERMAM', 'func':function() {
+	{'name':'CTAM', 'func':function() {
 		return null;
 		// TODO: Interactive...
 	}},
@@ -300,7 +322,7 @@ var tests = [
 		// TODO: Interactive...
 	}},
 	{'name':'XTSRGA', 'func':function() {
-		// TODO: XTerm, even with "-ti vt340" fails this test!
+		// TODO: XTerm, even with "-ti vt340" fails this test (never a response)
 		console.clear();
 		console.write("NOTE: If this test hangs, press enter to abort.");
 		console.write("\x1b[?2;1S");
@@ -325,7 +347,6 @@ var tests = [
 		// TODO: Interactive...
 	}},
 	{'name':'CVT', 'func':function() {
-		// TODO: XTerm fails this test...
 		console.gotoxy(1,1);
 		console.write("\t");
 		var pos1 = console.getxy();
@@ -380,6 +401,133 @@ var tests = [
 			return false;
 		return true;
 	}},
+	{'name':'HPR', 'func':function() {
+		console.gotoxy(1, 1);
+		console.write("\x1b[a");
+		if (!check_xy(2, 1))
+			return false;
+		console.write("\x1b[1a");
+		if (!check_xy(3, 1))
+			return false;
+		console.write("\x1b[2a");
+		if (!check_xy(5, 1))
+			return false;
+		return true;
+	}},
+	{'name':'REP', 'func':function() {
+		console.gotoxy(1, 1);
+		console.write(" \x1b[b");
+		if (!check_xy(3, 1))
+			return false;
+		console.gotoxy(1, 1);
+		console.write(" \x1b[1b");
+		if (!check_xy(3, 1))
+			return false;
+		console.gotoxy(1, 1);
+		console.write(" \x1b[10b");
+		if (!check_xy(12, 1))
+			return false;
+		return true;
+	}},
+	{'name':'DA', 'func':function() {
+		console.write("\x1b[c");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[.*c$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'CTDA', 'func':function() {
+		console.write("\x1b[<0c");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[\<.*c$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'VPA', 'func':function() {
+		console.gotoxy(20, 2);
+		console.write("\x1b[d");
+		if (!check_xy(20, 1))
+			return false;
+		console.write("\x1b[2d");
+		return check_xy(20,2);
+	}},
+	{'name':'TSR', 'func':function() {
+		console.gotoxy(1, 1);
+		console.write("\t");
+		var pos = console.getxy();
+		console.write("\x1b["+pos.x+" d");
+		console.gotoxy(1, 1);
+		console.write("\t");
+		if (check_xy(pos.x, pos.y))
+			return false;
+		return true;
+	}},
+	{'name':'VPR', 'func':function() {
+		console.gotoxy(20, 1);
+		console.write("\x1b[e");
+		if (!check_xy(20, 2))
+			return false;
+		console.write("\x1b[1e");
+		if (!check_xy(20, 3))
+			return false;
+		console.write("\x1b[2e");
+		if (!check_xy(20, 5))
+			return false;
+		return true;
+	}},
+	{'name':'CUP', 'func':function() {
+		console.gotoxy(20, 3);
+		console.write("\x1b[f");
+		if (!check_xy(1, 1))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[;f");
+		if (!check_xy(1, 1))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[2f");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[2;f");
+		if (!check_xy(1, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[2;2f");
+		if (!check_xy(2, 2))
+			return false;
+		console.gotoxy(20, 3);
+		console.write("\x1b[;2f");
+		if (!check_xy(2, 1))
+			return false;
+		return true;
+	}},
+	{'name':'TBC', 'func':function() {
+		console.gotoxy(1, 1);
+		console.write("\t");
+		var pos = console.getxy();
+		console.write("\x1b[0g");
+		console.gotoxy(1, 1);
+		console.write("\t");
+		if (check_xy(pos.x, pos.y))
+			return false;
+		console.write("\x1bc");
+		console.write("\x1b[3g");
+		console.gotoxy(console.screen_columns, 1);
+		console.write("\x1bH");
+		console.gotoxy(1,1);
+		console.write("\t");
+		if (!check_xy(80,1)) {
+			console.write("\x1bc");
+			return false;
+		}
+		console.write("\x1bc");
+		return true;
+	}},
 ];
 
 function main()
@@ -418,17 +566,38 @@ function main()
 	return results;
 }
 
-var interactive = console.yesno("Run interactive tests?");
+var interactive = console.yesno("Run interactive tests");
+console.write("\x1b[E");
 var res = main();
+var longest = 0;
+var i;
+var col = 0;
+tests.forEach(function(tst) {
+	if (tst.name.length > longest)
+		longest = tst.name.length;
+});
+var cols = Math.floor(console.screen_columns / (longest + 1 + 7 + 2));
 console.clear();
 res.forEach(function(r, idx) {
-	console.print(format("%-15s\x01H", tests[idx].name))
+	console.print(tests[idx].name);
+	for (i=tests[idx].name.length; i<longest; i++)
+		console.print('.');
+	console.print('.');
 	if (r === null)
-		console.print("Skipped\x01N\r\n");
+		console.print("Skipped\x01N");
 	else if (r)
-		console.print("\x01GPassed\x01N\r\n");
+		console.print(".\x01GPassed\x01N");
 	else
-		console.print("\x01RFailed\x01N\r\n");
+		console.print(".\x01RFailed\x01N");
+	col++;
+	if (col >= cols) {
+		console.print("\r\n");
+		col = 0;
+	}
+	else
+		console.print("  ");
 });
+if (col > 0)
+	console.print("\r\n");
 console.print("Press any key to return to BBS. ");
 console.getkey();
