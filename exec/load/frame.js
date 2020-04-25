@@ -952,12 +952,12 @@ Frame.prototype.cleartoeol = function(attr) {
 		return false;
 	for(var x=px;x<this.__properties__.data[py].length;x++) {
 		if(this.__properties__.data[py][x]) {
-			this.__properties__.data[py][x].ch = undefined;
+			if(this.__properties__.data[py][x].ch !== undefined) {
+				this.__properties__.data[py][x].ch = undefined;
+				this.__properties__.display.updateChar(this,x - this.__position__.offset.x, this.__position__.cursor.y);
+			}
 			this.__properties__.data[py][x].attr = attr;
 		}
-	}
-	for(var x=this.__position__.cursor.x;x<this.width;x++) {
-		this.__properties__.display.updateChar(this,x,this.__position__.cursor.y);
 	}
 }
 Frame.prototype.crlf = function() {
@@ -991,7 +991,7 @@ Frame.prototype.putmsg = function(str,attr) {
 		var remainingWidth = this.width - this.__position__.cursor.x;
 		if(str.length > remainingWidth) {
 			str = word_wrap(str,remainingWidth,str.length,false).split('\n');
-			str = str.shift() + '\r\n' + word_wrap(str.join('\r\n'),this.width,remainingWidth,false);
+			str = str.shift() + '\r\n' + word_wrap(str.join('\r\n'),this.width,remainingWidth,false).trimRight();
 		}
 	}
 	str = str.toString().split('');
@@ -1565,6 +1565,7 @@ Display.prototype.__updateChar__ = function(x,y/*,data*/) {
 		this.__properties__.update[y] = {};
 	this.__properties__.update[y][x] = 1; /*data; */
 }
+
 Display.prototype.__getUpdateList__ = function() {
 	var list = [];
 	for(var y in this.__properties__.update) {
