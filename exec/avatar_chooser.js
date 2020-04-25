@@ -335,11 +335,15 @@ function CollectionLister(dir, parent_frame) {
 
 	function display_collection_info(sauce, fn) {
 
-		frames.info.clear();
-		frames.info.putmsg('Author: ' + (sauce.author.length ? sauce.author : 'Unknown') + '\r\n');
-		frames.info.putmsg('Group: ' + (sauce.group.length ? sauce.group : 'Unknown') + '\r\n');
-		frames.info.putmsg('Avatars: ' + Math.floor(sauce.rows / avatar_lib.defs.height) + '\r\n');
-		frames.info.putmsg('ICE Colors: ' + (sauce.ice_color ? 'Yes' : 'No') + '\r\n');
+		function crlf() {
+			frames.info.cleartoeol();
+			frames.info.crlf();
+		}
+		frames.info.home();
+		frames.info.putmsg('Author: ' + (sauce.author.length ? sauce.author : 'Unknown')); crlf();
+		frames.info.putmsg('Group: ' + (sauce.group.length ? sauce.group : 'Unknown')); crlf();
+		frames.info.putmsg('Avatars: ' + Math.floor(sauce.rows / avatar_lib.defs.height)); crlf();
+		frames.info.putmsg('ICE Colors: ' + (sauce.ice_color ? 'Yes' : 'No')); crlf();
 		frames.info.putmsg('Updated: ' + sauce.date.toLocaleDateString());
 
         const f = new File(fn);
