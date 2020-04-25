@@ -31,17 +31,22 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define NCURSES_WIDECHAR 1
-#ifdef XCURSES
- #include <xcurses.h>
+#ifdef __DARWIN__
+ #define _XOPEN_SOURCE_EXTENDED 1
+ #include <ncurses.h>
 #else
- #ifdef N_CURSES_LIB
-  #include <ncurses.h>
+ #define NCURSES_WIDECHAR 1
+ #ifdef XCURSES
+  #include <xcurses.h>
  #else
-  #ifdef DEBIAN_HATES_YOU
-   #include <ncursesw/ncurses.h>
+  #ifdef N_CURSES_LIB
+   #include <ncurses.h>
   #else
-   #include <curses.h>
+   #ifdef DEBIAN_HATES_YOU
+    #include <ncursesw/ncurses.h>
+   #else
+    #include <curses.h>
+   #endif
   #endif
  #endif
 #endif

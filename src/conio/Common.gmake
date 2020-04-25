@@ -28,7 +28,11 @@ ifneq ($(os),win32)
  ifdef USE_SYSTEM_CURSES
   CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
  else
-  CIOLIB-MT_LIBS		+=	$(UL_PRE)ncursesw$(UL_SUF)
+  ifeq ($(os),darwin)
+   CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+  else
+   CIOLIB-MT_LIBS		+=	$(UL_PRE)ncursesw$(UL_SUF)
+  endif
  endif
  ifndef NO_X
   ifdef STATIC
