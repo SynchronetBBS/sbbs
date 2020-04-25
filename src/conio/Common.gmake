@@ -65,29 +65,27 @@ endif
 
 # Find SDL headers!
 ifdef USE_SDL
- ifndef WITH_SDL_AUDIO
-  ifdef SDL_CONFIG
-   ifeq ($(shell command -v ${SDL_CONFIG} > /dev/null && if [ `${SDL_CONFIG} --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+ ifdef SDL_CONFIG
+  ifeq ($(shell command -v ${SDL_CONFIG} > /dev/null && if [ `${SDL_CONFIG} --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+   WITH_SDL	:=	1
+  endif
+ else
+  ifeq ($(os),darwin)
+   ifeq ($(shell if [ -d /Library/Frameworks/SDL2.framework ] ; then echo YES ; fi),YES)
+    SDL_FRAMEWORK_PATH ?= /Library/Frameworks
+   endif
+   ifdef SDL_FRAMEWORK_PATH
     WITH_SDL	:=	1
+    CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
    endif
   else
-   ifeq ($(os),darwin)
-    ifeq ($(shell if [ -d /Library/Frameworks/SDL2.framework ] ; then echo YES ; fi),YES)
-     SDL_FRAMEWORK_PATH ?= /Library/Frameworks
-    endif
-    ifdef SDL_FRAMEWORK_PATH
-     WITH_SDL	:=	1
-     CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
-    endif
+   ifeq ($(shell command -v sdl2-config > /dev/null && sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
+    SDL_CONFIG := sdl2-config
+    WITH_SDL	:=	1
    else
-    ifeq ($(shell command -v sdl2-config > /dev/null && sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
-     SDL_CONFIG := sdl2-config
+    ifeq ($(shell command -v sdl-config > /dev/null && if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+     SDL_CONFIG := sdl-config
      WITH_SDL	:=	1
-    else
-     ifeq ($(shell command -v sdl-config > /dev/null && if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
-      SDL_CONFIG := sdl-config
-      WITH_SDL	:=	1
-     endif
     endif
    endif
   endif
