@@ -329,7 +329,7 @@ static int sdl_init_mode(int mode)
 	oldcols = cvstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
 	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.cols * cvstat.charwidth)) * (vstat.cols * vstat.charwidth);
-	vstat.winheight = ((double)cvstat.winheight / (cvstat.rows * cvstat.charheight * cvstat.vmultiplier)) * (vstat.rows * vstat.charwidth * vstat.vmultiplier);
+	vstat.winheight = ((double)cvstat.winheight / (cvstat.rows * cvstat.charheight * cvstat.vmultiplier)) * (vstat.rows * vstat.charheight * vstat.vmultiplier);
 	if (oldcols != vstat.cols) {
 		if (oldcols == 40) {
 			vstat.winwidth /= 2;
