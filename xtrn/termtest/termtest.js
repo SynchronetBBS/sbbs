@@ -2,7 +2,7 @@
 
 function check_xy(x, y)
 {
-	var pos = console.getxy();
+	var pos = fast_getxy();
 	if (pos.x !== x || pos.y !== y)
 		return false;
 	return true;
@@ -34,6 +34,34 @@ function read_ansi_seq(timeout)
 	return null;
 }
 
+function read_ansi_string(timeout)
+{
+	var seq = '';
+	var ch;
+
+	while (seq.search(/^(?:\x1b(?:[PX\]\^_](?:[\x08-\x0d\x20-\x7e]*(?:\x1b(?:\\)?)?)?)?)?$/) == 0) {
+		ch = console.inkey(0, timeout);
+		if (ch === '' || ch === null || ch === undefined)
+			break;
+		seq += ch;
+		if (seq.search(/\\/) > 1)
+			return seq;
+	}
+	mswait(timeout);
+	while(console.inkey());
+	return null;
+}
+
+function fast_getxy()
+{
+	console.write("\x1b[6n");
+	var seq = read_ansi_seq(500);
+	var m = seq.match(/^\x1b\[([0-9]+);([0-9]+)R$/);
+	if (m === null)
+		return {x:0, y:0};
+	return {x:parseInt(m[2], 10), y:parseInt(m[1], 10)};
+}
+
 var tests = [
 	{'name':"NUL", 'func':function() {
 		console.gotoxy(1,1);
@@ -44,7 +72,7 @@ var tests = [
 		if (!interactive)
 			return null;
 		console.write("\x07");
-		return ask_user("Did you hear a beep?");
+		return ask_user("Did you hear a beep");
 	}},
 	{'name':"BS", 'func':function() {
 		console.gotoxy(1,2);
@@ -57,7 +85,6 @@ var tests = [
 	{'name':"HT", 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\t");
-		// TODO: XTerm fails this test... ???
 		if (check_xy(1, 1))
 			return false;
 		console.gotoxy(console.screen_columns, 1);
@@ -270,11 +297,11 @@ var tests = [
 	{'name':'CHT', 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\t");
-		var pos1 = console.getxy();
+		var pos1 = fast_getxy();
 		console.write("\t");
-		var pos2 = console.getxy();
+		var pos2 = fast_getxy();
 		console.write("\t");
-		var pos3 = console.getxy();
+		var pos3 = fast_getxy();
 		console.gotoxy(pos3.x,pos3.y);
 		console.write("\x1b[Z");
 		if (!check_xy(pos2.x, pos2.y))
@@ -323,8 +350,6 @@ var tests = [
 	}},
 	{'name':'XTSRGA', 'func':function() {
 		// TODO: XTerm, even with "-ti vt340" fails this test (never a response)
-		console.clear();
-		console.write("NOTE: If this test hangs, press enter to abort.");
 		console.write("\x1b[?2;1S");
 		var seq = read_ansi_seq(500);
 		console.clear();
@@ -349,9 +374,9 @@ var tests = [
 	{'name':'CVT', 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\t");
-		var pos1 = console.getxy();
+		var pos1 = fast_getxy();
 		console.write("\t");
-		var pos2 = console.getxy();
+		var pos2 = fast_getxy();
 		console.gotoxy(1,1);
 		console.write("\x1b[Y");
 		if (!check_xy(pos1.x, pos1.y))
@@ -369,11 +394,11 @@ var tests = [
 	{'name':'CBT', 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\t");
-		var pos1 = console.getxy();
+		var pos1 = fast_getxy();
 		console.write("\t");
-		var pos2 = console.getxy();
+		var pos2 = fast_getxy();
 		console.write("\t");
-		var pos3 = console.getxy();
+		var pos3 = fast_getxy();
 		console.gotoxy(pos3.x,pos3.y);
 		console.write("\x1b[Z");
 		if (!check_xy(pos2.x, pos2.y))
@@ -458,7 +483,7 @@ var tests = [
 	{'name':'TSR', 'func':function() {
 		console.gotoxy(1, 1);
 		console.write("\t");
-		var pos = console.getxy();
+		var pos = fast_getxy();
 		console.write("\x1b["+pos.x+" d");
 		console.gotoxy(1, 1);
 		console.write("\t");
@@ -509,7 +534,7 @@ var tests = [
 	{'name':'TBC', 'func':function() {
 		console.gotoxy(1, 1);
 		console.write("\t");
-		var pos = console.getxy();
+		var pos = fast_getxy();
 		console.write("\x1b[0g");
 		console.gotoxy(1, 1);
 		console.write("\t");
@@ -528,6 +553,186 @@ var tests = [
 		console.write("\x1bc");
 		return true;
 	}},
+	{'name':'BCDM', 'func':function() {
+		return null;
+		// TODO: Doorway mode...
+	}},
+	{'name':'DECSET', 'func':function() {
+		return null;
+		// TODO: Lots of stuff in here...
+	}},
+	{'name':'HPB', 'func':function() {
+		console.gotoxy(5, 1);
+		console.write("\x1b[j");
+		if (!check_xy(4, 1))
+			return false;
+		console.write("\x1b[1j");
+		if (!check_xy(3, 1))
+			return false;
+		console.write("\x1b[2j");
+		if (!check_xy(1, 1))
+			return false;
+		return true;
+	}},
+	{'name':'VPB', 'func':function() {
+		console.gotoxy(20, 10);
+		console.write("\x1b[k");
+		if (!check_xy(20, 9))
+			return false;
+		console.write("\x1b[1k");
+		if (!check_xy(20, 8))
+			return false;
+		console.write("\x1b[2k");
+		if (!check_xy(20, 6))
+			return false;
+		return true;
+	}},
+	{'name':'BCRST', 'func':function() {
+		return null;
+		// TODO: Doorway mode...
+	}},
+	{'name':'DECRST', 'func':function() {
+		return null;
+		// TODO: Lots of stuff in here...
+	}},
+	{'name':'SGR', 'func':function() {
+		return null;
+		// TODO: Interactive
+	}},
+	{'name':'DSR', 'func':function() {
+		console.write("\x1b[5n");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[[012]n$/) === -1)
+			return false;
+		console.gotoxy(1,1);
+		if (!check_xy(1,1))
+			return false;
+		return true;
+	}},
+	{'name':'BCDSR', 'func':function() {
+		console.write("\x1b[255n");
+		seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		var m = seq.match(/^\x1b\[([0-9]+);([0-9]+)R$/);
+		if (m === null)
+			return false;
+		if (parseInt(m[1], 10) !== console.screen_rows)
+			return false;
+		if (parseInt(m[2], 10) !== console.screen_columns)
+			return false;
+		return true;
+	}},
+	{'name':'CTSMRR', 'func':function() {
+		console.write("\x1b[=1n");
+		seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[=1;[0-9]+;(?:0|1|99);[0-9]+;[0-9]+;[0-9]+;[0-9]+n$/) === -1)
+			return false;
+		console.write("\x1b[=2n");
+		seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[=2;(?:[0-9]+;?)*n$/) === -1)
+			return false;
+		console.write("\x1b[=3n");
+		seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[=3;[0-9]+;[0-9]+n$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'DECDSR', 'func':function() {
+		console.write("\x1b[?62n");
+		seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[[0-9]+\*\{$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'DECSTBM', 'func':function() {
+		console.gotoxy(10, 10);
+		// TODO: XTerm moves to 1;1 here...
+		console.write("\x1b[10;11r");
+		console.gotoxy(10, 10);
+		console.write("\r\n\r\n\r\n");
+		if (!check_xy(1, 11))
+			return false;
+		console.write("\x1b[5A");
+		if (!check_xy(1, 10))
+			return false;
+		console.write("\x1b[r");
+		return true;
+	}},
+	{'name':'DECSCS', 'func':function() {
+		return null;
+		// TODO: Interactive
+	}},
+	{'name':'CTSMS', 'func':function() {
+		return null;
+		// TODO: Interactive
+	}},
+	{'name':'DECSLRM', 'func':function() {
+		console.write("\x1b[?69h");
+		// TODO: XTerm moves to 1;1 here...
+		console.write("\x1b[10;11s");
+		console.gotoxy(10, 10);
+		console.write("\b\b\b");
+		if (!check_xy(10, 10)) {
+			console.write("\x1bc");
+			return false;
+		}
+		console.write("\x1b[10C");
+		if (!check_xy(11, 10)) {
+			console.write("\x1bc");
+			return false;
+		}
+		console.write("\x1b[s");
+		console.write("\x1b[?69l");
+		return true;
+	}},
+	{'name':'SCOSC', 'func':function() {
+		console.gotoxy(2,2);
+		console.write("\x1b[s");
+		console.gotoxy(1,1);
+		console.write('     ');
+		console.write("\x1b[u");
+		return check_xy(2,2);
+	}},
+	{'name':'CT24BC', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
+	{'name':'CTRMS', 'func':function() {
+		return null;
+		// TODO: Lots of stuff in here...
+	}},
+	{'name':'SCORC', 'func':function() {
+		console.gotoxy(2,2);
+		console.write("\x1b[s");
+		console.gotoxy(1,1);
+		console.write('     ');
+		console.write("\x1b[u");
+		return check_xy(2,2);
+	}},
+	{'name':'DECTABSR', 'func':function() {
+		console.write("\x1b[2$w");
+		var seq = read_ansi_string(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1bP2\$u(?:[0-9]\/?)*\x1b\\$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'CTOSF', 'func':function() {
+		return null;
+		// TODO: Interactive...
+	}},
 ];
 
 function main()
@@ -536,25 +741,25 @@ function main()
 
 	/*
 	 * First, ensure that console.clear(), console.gotoxy(), and
-	 * console.getxy() work...
+	 * fast_getxy() work...
 	 * 
 	 * These are use by many of the movement tests.
 	 */
 
 	console.clear();
-	var pos = console.getxy();
+	var pos = fast_getxy();
 	if (pos.x !== 1 || pos.y !== 1) {
 		// Note: this is not required by the spec...
 		throw("Clear screen doesn't home cursor");
 	}
 	console.writeln("Just some text");
 	console.write("To move the cursor");
-	pos = console.getxy();
+	pos = fast_getxy();
 	if (pos.x !== 19 || pos.y !== 2) {
-		throw("console.getxy() error! " + JSON.stringify(pos));
+		throw("fast_getxy() error! " + JSON.stringify(pos));
 	}
 	console.gotoxy(3, 2);
-	pos = console.getxy();
+	pos = fast_getxy();
 	if (pos.x !== 3 || pos.y !== 2) {
 		throw("console.gotoxy() error!");
 	}
@@ -567,8 +772,12 @@ function main()
 }
 
 var interactive = console.yesno("Run interactive tests");
-console.write("\x1b[E");
+console.write("\x1bc");
+var oldpt = console.ctrlkey_passthru;
+console.ctrlkey_passthru = 0x7FFFFFFF;
 var res = main();
+console.write("\x1bc");
+console.ctrlkey_passthru = oldpt;
 var longest = 0;
 var i;
 var col = 0;
