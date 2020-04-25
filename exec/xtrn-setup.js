@@ -1,4 +1,5 @@
 // $Id$
+// vi: tabstop=4
 
 load('sbbsdefs.js');
 load('frame.js');
@@ -62,20 +63,53 @@ frame.cycle();
 
 var key;
 var xtrn;
+var high_water = 0;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
     key = console.getkey();
     if (key.toLowerCase() == 'q') break;
     tree.getcmd(key);
+    function crlf() {
+		info_frame.cleartoeol();
+		info_frame.crlf();
+    }
     if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
         xtrn = tree.currentItem.__xtrn_setup;
-        info_frame.clear();
-        info_frame.putmsg('\x01h\x01w' + xtrn.Name + '\r\n');
-        if (xtrn.Desc) info_frame.putmsg('\x01n\x01w' + xtrn.Desc + '\r\n');
-		info_frame.putmsg('\r\n');
-        if (xtrn.By) info_frame.putmsg('\x01h\x01cBy\x01w:\r\n\x01w' + xtrn.By + '\r\n\r\n');
-        if (xtrn.Cats) info_frame.putmsg('\x01h\x01cCategories\x01w:\r\n\x01n' + xtrn.Cats + '\r\n\r\n');
-        if (xtrn.Subs) info_frame.putmsg('\x01h\x01cSubcategories\x01w:\r\n\x01n' + xtrn.Subs + '\r\n\r\n');
+        info_frame.home();
+        info_frame.putmsg('\x01h\x01w' + xtrn.Name);
+		crlf();
+        if (xtrn.Desc) {
+			info_frame.cleartoeol();
+			info_frame.putmsg('\x01n\x01w' + xtrn.Desc);
+			crlf();
+		}
+		crlf();
+        if (xtrn.By) {
+			info_frame.putmsg('\x01h\x01cBy\x01w:');
+			crlf();
+			info_frame.putmsg('\x01w' + xtrn.By);
+			crlf();
+			crlf();
+		}
+        if (xtrn.Cats) {
+			info_frame.putmsg('\x01h\x01cCategories\x01w:');
+			crlf();
+			info_frame.putmsg('\x01n' + xtrn.Cats);
+			crlf();
+			crlf();
+		}
+        if (xtrn.Subs) {
+			info_frame.putmsg('\x01h\x01cSubcategories\x01w:');
+			crlf();
+			info_frame.putmsg('\x01n' + xtrn.Subs);
+			crlf();
+		}
+		var y = info_frame.cursor.y;
+		while(high_water > y) {
+			crlf();
+			high_water--;
+		}
+		high_water = y;
     }
     if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
 }
