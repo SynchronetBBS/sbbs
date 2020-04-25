@@ -55,12 +55,6 @@ $(CIOLIB-MT_SHLIB_BUILD): $(MTOBJODIR) $(OBJS)
 	@echo Creating $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(OBJS) $(SHLIBOPTS) -o $@
 
-ifeq ($(os),darwin)
-$(MTOBJODIR)$(DIRSEP)pasteboard$(OFILE): pasteboard.m
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(CCFLAGS) -o $@ -c $<
-endif
-
 ifeq ($(os),win32)
 mtlib: $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}
 
