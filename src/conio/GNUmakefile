@@ -21,9 +21,7 @@ endif
 
 ifdef WITH_SDL_AUDIO
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
- ifeq ($(os),darwin)
-  OBJS 	+=      $(MTOBJODIR)$(DIRSEP)pasteboard$(OFILE)
- endif
+ OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
  NEED_BITMAP := 1
 else
  ifdef WITH_SDL
