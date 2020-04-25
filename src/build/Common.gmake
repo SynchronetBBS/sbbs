@@ -407,9 +407,7 @@ HASH_SRC 	:=	$(SRC_ROOT)$(DIRSEP)hash
 
 # SDL ciolib enabled by default for the moment.
 ifndef WITHOUT_SDL
- ifndef USE_SDL_AUDIO
-  USE_SDL	:=	1
- endif
+ USE_SDL	:=	1
 endif
 
 # Pull in lib-specific flags
