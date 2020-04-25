@@ -4221,13 +4221,8 @@ ctputs(struct cterminal *cterm, char *buf)
 						break;
 					}
 				}
-				if(cx > TERM_MAXX) {
-					cx = 1;
-					if(cy == TERM_MAXY)
-						scrollup(cterm);
-					else if(cy < TERM_MAXY)
-						cy++;
-				}
+				if(cx > TERM_MAXX)
+					cx = TERM_MAXX;
 				GOTOXY(cx,cy);
 				break;
 			default:
