@@ -42,7 +42,7 @@ struct codepage_def {
 	const uint32_t *cp_ext_unicode_table;
 };
 
-const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT];
+extern const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT];
 
 uint8_t *cp_to_utf8(enum ciolib_codepage cp, const char *cpstr, size_t buflen, size_t *outlen);
 char *utf8_to_cp(enum ciolib_codepage cp, const uint8_t *utf8str, char unmapped, size_t buflen, size_t *outlen);
