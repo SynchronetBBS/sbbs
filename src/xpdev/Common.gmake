@@ -159,10 +159,10 @@ ifdef WITH_SDL_AUDIO
   ifeq ($(os),darwin)
    XPDEV-MT_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
    XPDEV-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   XPDEV-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   XPDEV-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
    XPDEV_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
    XPDEV_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   XPDEV_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   XPDEV_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
    XPDEV-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
   endif
  endif

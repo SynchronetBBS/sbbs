@@ -129,10 +129,10 @@ ifdef WITH_SDL
    WITH_SDL	:=	1
    STATIC_SDL	:=	1
    CIOLIB-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   CIOLIB-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   CIOLIB-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
    CIOLIB_CFLAGS	+=	-DWITH_SDL -DSTATIC_SDL
    CIOLIB_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   CIOLIB_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -framework Cocoa -framework Carbon -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+   CIOLIB_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
   else
    ifeq ($(os),win32)
     CIOLIB-MT_CFLAGS	+=	-DWITH_SDL
