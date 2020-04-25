@@ -798,7 +798,7 @@ delete_tabstop(struct cterminal *cterm, int pos)
 {
 	int i;
 
-	for (i = 0; i < cterm->tab_count && cterm->tabs[i] < pos; i++) {
+	for (i = 0; i < cterm->tab_count && cterm->tabs[i] <= pos; i++) {
 		if (cterm->tabs[i] == pos) {
 			memcpy(&cterm->tabs[i], &cterm->tabs[i+1], (cterm->tab_count - i - 1) * sizeof(cterm->tabs[0]));
 			cterm->tab_count--;
@@ -2146,7 +2146,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												strcat(tmp, ";6");
 											if (cio_api.mouse)
 												strcat(tmp, ";7");
-											strcat(tmp, "n");
+											strcat(tmp, "c");
 									}
 								}
 								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
@@ -2868,8 +2868,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								break;
 						}
 					}
-					// Font Select
-					else if (strcmp(seq->ctrl_func, " c") == 0) {
+					else if (strcmp(seq->ctrl_func, " d") == 0) {
 						if (seq->param_count > 0) {
 							delete_tabstop(cterm, seq->param_int[0]);
 						}
@@ -3076,6 +3075,24 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							GOTOXY(col,row);
 							break;
 						case 'I':	/* TODO? Cursor Forward Tabulation */
+						case 'Y':	/* Cursor Line Tabulation */
+							seq_default(seq, 0, 1);
+							if (seq->param_int[0] < 1)
+								break;
+							TERM_XY(&col, &row);
+							for(i = 0; i < cterm->tab_count; i++) {
+								if(cterm->tabs[i] > col)
+									break;
+							}
+							if (i == cterm->tab_count)
+								break;
+							for (k = 0; k < seq->param_int[0] && i + k < cterm->tab_count; k++) {
+								if (cterm->tabs[i + k] <= TERM_MAXX)
+									col = cterm->tabs[i + k];
+								else
+									break;
+							}
+							GOTOXY(col,row);
 							break;
 						case 'J':	/* Erase In Page */
 							seq_default(seq, 0, 0);
@@ -3222,25 +3239,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							vmem_puttext(col2, row2, col2 + i - 1, row2, vc);
 							free(vc);
 							break;
-						case 'Y':	/* Cursor Line Tabulation */
-							seq_default(seq, 0, 1);
-							if (seq->param_int[0] < 1)
-								break;
-							TERM_XY(&col, &row);
-							for(i = 0; i < cterm->tab_count; i++) {
-								if(cterm->tabs[i] > col)
-									break;
-							}
-							if (i == cterm->tab_count)
-								break;
-							for (k = 0; k < seq->param_int[0] && i + k < cterm->tab_count; k++) {
-								if (cterm->tabs[i + k] <= TERM_MAXX)
-									col = cterm->tabs[i + k];
-								else
-									break;
-							}
-							GOTOXY(col,row);
-							break;
+						// for case 'Y': see case 'I':
 						case 'Z':	/* Cursor Backward Tabulation */
 							seq_default(seq, 0, 1);
 							i=strtoul(cterm->escbuf+1,NULL,10);

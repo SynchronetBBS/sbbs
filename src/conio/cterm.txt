@@ -433,6 +433,14 @@ CSI Pn1 ; Pn2 H (CUP)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI Pn I (CHT)
+	Cursor Forward Tabulation
+	Defaults: Pn = 1
+	Move the cursor to the Pn-th next tab stop.
+	Basically the same as sending TAB Pn times.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
 CSI Ps J (ED)
 	Erase in Page
 	Defaults: Ps = 0
@@ -480,8 +488,8 @@ CSI Pn M (DL)
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE: BANSI.TXT
 
-CSI = Ps M (STERMSAM)
-	SyncTERM Set ANSI Music
+CSI = Ps M (CTSAM)
+	CTerm Set ANSI Music
 	NON-STANDARD EXTENSION.
 	Defaults:  Ps = 0
 	Sets the current state of ANSI music parsing.
@@ -576,7 +584,7 @@ CSI Pn ` (HPA)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn a
+CSI Pn a (HPR)
 	Cursor Position Forward
 	Defaults: Pn = 1
 	Moves the cursor position forward Pn columns from the current position.
@@ -585,7 +593,7 @@ CSI Pn a
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn b
+CSI Pn b (REP)
 	Repeat
 	Defaults: Pn = 1
 	Repeats the previous graphic character Pn times.  Will not repeat
@@ -593,7 +601,7 @@ CSI Pn b
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Ps c
+CSI Ps c (DA)
 	Device Attributes
 	Defaults: Ps = 0
 	If Ps is 0, CTerm will reply with the sequence:
@@ -607,14 +615,7 @@ CSI Ps c
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn SP c
-	Tab Stop Remove
-	Defaults: None
-	Removes a tab stop at postion Pn.
-
-	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
-
-CSI < Ps c
+CSI < Ps c (CTDA)
 	CTerm Device Attributes
 
 	Defaults: Ps = 0
@@ -632,10 +633,17 @@ CSI < Ps c
 	6 - Extended palette is available
 	7 - Mouse is available
 
-CSI Ps d
+CSI Ps d (VPA)
 	Line Position Absolute
 	Defaults: Ps = 1
 	Moves to row specified by Ps.
+
+	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
+
+CSI Pn SP d (TSR)
+	Tab Stop Remove
+	Defaults: None
+	Removes a tab stop at postion Pn.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
