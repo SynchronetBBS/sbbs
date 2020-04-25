@@ -1875,3 +1875,44 @@ CIOLIBEXPORT enum ciolib_codepage CIOLIBCALL ciolib_getcodepage(void)
 		return CIOLIB_CP437;
 	return conio_fontdata[font].cp;
 }
+
+#if defined(__DARWIN__)
+#ifdef main
+#undef main
+#endif
+
+sem_t initsdl_sem;
+sem_t main_sem;
+struct main_args {
+	int argc;
+	char **argv;
+	int ret;
+	int no_sdl;
+};
+
+int CIOLIB_main(int, char **);
+void main_stub(void *argptr)
+{
+	struct main_args *args = (struct main_args *)argptr;
+	args->ret = CIOLIB_main(args->argc, args->argv);
+	args->no_sdl = 1;
+	sem_post(&initsdl_sem);
+	sem_post(&main_sem);
+	exit_sdl_con();
+}
+
+int main(int argc, char **argv)
+{
+	struct main_args ma = {argc, argv, -1, 0};
+
+	sem_init(&initsdl_sem, 0, 0);
+	sem_init(&main_sem, 0, 0);
+	_beginthread(main_stub, 0, &ma);
+	sem_wait(&initsdl_sem);
+	if (!ma.no_sdl) {
+		sdl_video_event_thread(NULL);
+	}
+	sem_wait(&main_sem);
+	return ma.ret;
+}
+#endif

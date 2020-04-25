@@ -35,6 +35,9 @@
 #define _CIOLIB_H_
 
 #include <string.h>	/* size_t */
+#if defined(__DARWIN__)
+#include <semwrap.h>
+#endif
 #include "gen_defs.h"
 #include "utf8_codepages.h"
 
@@ -548,11 +551,16 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#include <gen_defs.h>
 	#include <SDL.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__DARWIN__)
 	#ifdef main
 		#undef main
 	#endif
 	#define main	CIOLIB_main
+#endif
+
+#if defined(__DARWIN__)
+	extern sem_t initsdl_sem;
+	extern sem_t main_sem;
 #endif
 #endif
 

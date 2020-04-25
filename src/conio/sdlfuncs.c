@@ -346,7 +346,9 @@ int init_sdl_audio(void)
 static void QuitWrap(void)
 {
 	if (sdl_initialized) {
+#if !defined(__DARWIN__)
 		exit_sdl_con();
+#endif
 		if(sdl.Quit)
 			sdl.Quit();
 	}

@@ -181,7 +181,7 @@ const struct sdl_keyvals sdl_keyval[] =
 	{0, 0, 0, 0, 0}	/** END **/
 };
 
-static void sdl_video_event_thread(void *data);
+void sdl_video_event_thread(void *data);
 
 static void sdl_user_func(int func, ...)
 {
@@ -371,7 +371,11 @@ int sdl_init(int mode)
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
 		fullscreen=1;
 	// Needs to be *after* bitmap_drv_init()
+#if defined(__DARWIN__)
+	sem_post(&initsdl_sem);
+#else
 	_beginthread(sdl_video_event_thread, 0, NULL);
+#endif
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
 	sdl_init_mode(3);
 
@@ -752,7 +756,7 @@ static int win_to_text_ypos(int winpos)
 	return ret;
 }
 
-static void sdl_video_event_thread(void *data)
+void sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
 	int		old_w, old_h;
