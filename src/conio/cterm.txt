@@ -671,13 +671,13 @@ CSI Ps g (TBC)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI = 255 h
+CSI = 255 h (BCSET)
 	NON-STANDARD EXTENSION
 	Enable DoorWay Mode
 
 	SOURCE: BANSI.TXT
 
-CSI ? Ps... h
+CSI ? Ps... h (DECSET)
 	NON-STANDARD EXTENSION
 	Set Mode
 	Sets one or more mode.  The following modes are supported:
@@ -776,7 +776,7 @@ CSI ? Ps... h
 	     (Not supported by SyncTERM)
 	     SOURCE: xterm
 
-CSI Pn j
+CSI Pn j (HPB)
 	Character Position Backward
 	Defaults: Pn = 1
 	Moves the cursor position left Pn columns from the current position.
@@ -785,7 +785,7 @@ CSI Pn j
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn k
+CSI Pn k (VPB)
 	Line Position Backward
 	Defaults: Pn = 1
 	Moves the cursor position up Pn lines from the current position.
@@ -794,13 +794,13 @@ CSI Pn k
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI = 255 l
+CSI = 255 l (BCRST)
 	NON-STANDARD EXTENSION
 	Disable DoorWay Mode
 
 	SOURCE: BANSI.TXT
 
-CSI ? Ps... l
+CSI ? Ps... l (DECRST)
 	NON-STANDARD EXTENSION
 	Reset Mode
 	Resets one or more mode.  The following modes are supported:
@@ -871,7 +871,7 @@ CSI ? Ps... l
 	     (Not supported by SyncTERM)
 	     SOURCE: xterm
 
-CSI Ps... m
+CSI Ps... m (SGR)
 	Select Graphic Rendition
 	Defaults: Ps1 = 0
 	Sets or clears one or more text attributes.  Unlimited parameters are
@@ -950,7 +950,7 @@ CSI Ps... m
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 	SOURCE: XTerm
 
-CSI Ps n
+CSI Ps n (DSR)
 	Device Status Report
 	Defaults: Ps = 0
 	A request for a status report.  CTerm handles the following three
@@ -962,7 +962,7 @@ CSI Ps n
 		  CTerm will reply with CSI y ; x R where y is the current line
 		  and x is
 		  the current row.
-	255	- NON-STANDARD EXTENSION
+	255	- NON-STANDARD EXTENSION (BCDSR)
 		  Replies as though a CSI 6 n was received with the cursor in
 		  the bottom right corner.  i.e.: Returns the terminal size as
 		  a position report.
@@ -971,7 +971,7 @@ CSI Ps n
 		(parameters 5 and 6 only)
 	SOURCE: BANSI.TXT (parameter 255)
 
-CSI = Ps n
+CSI = Ps n (CTSMRR)
 	NON-STANDARD EXTENSION
 	State/Mode Request/Report
 	Defaults: Ps = 1
@@ -1004,16 +1004,21 @@ CSI = Ps n
 	Where pH is the height of a character cell in pixels, and pW is
 	the width of a character cell in pixels.
 
-	When Ps is 62, CTerm will respond with a Mode Report of the form
+	SOURCE: CTerm only.
+
+CSI ? Ps n (DECDSR)
+
+	When Ps is 62 (DECMSR), CTerm will respond with a Mode Report of
+	the form
 	CSI 32767 * {
 	This indicates that 524,272 bytes are available for macro storage.
 	This is not actually true, SyncTERM will use all available memory
 	for macro storage, but some software checks this value, and some
 	parsers don't allow more than INT16_MAX parameter values.
 
-	SOURCE: CTerm only.
+	SOURCE: VT420
 
-CSI Pn1 ; Pn2 r
+CSI Pn1 ; Pn2 r (DECSTBM)
 	NON-STANDARD EXTENSION.
 	Set Top and Bottom Margins
 	Defaults: Pn1 = 1
@@ -1024,9 +1029,9 @@ CSI Pn1 ; Pn2 r
 	
 	SOURCE: xterm
 
-CSI Ps1 ; Ps2 * r
+CSI Ps1 ; Ps2 * r (DECSCS)
 	NON-STANDARD EXTENSION.
-	Set the output emulation speed.
+	Set the output emulation speed (Select Communication Speed).
 	If Ps1 or Ps2 are omitted, causes output speed emulation to stop
 	Ps1 may be empty.
 	Sequence is ignored if Ps1 is not empty, 0, or 1.
@@ -1049,7 +1054,7 @@ CSI Ps1 ; Ps2 * r
 
 	SOURCE: VT4xx Specification from http://www.vt100.net/
 
-CSI ? Ps... s
+CSI ? Ps... s (CTSMS)
 	NON-STANDARD EXTENSION
 	Save Mode Setting
 	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
@@ -1058,7 +1063,7 @@ CSI ? Ps... s
 
 	SOURCE: SyncTERM only
 
-CSI Pn1 ; Pn2 s
+CSI Pn1 ; Pn2 s (DECSLRM)
         (Only when DEC Left Right Margin Mode  - 69 - is enabled)
 	NON-STANDARD EXTENSION.
 	Set Left and Right Margins
@@ -1071,7 +1076,7 @@ CSI Pn1 ; Pn2 s
 
 	SOURCE: xterm
 
-CSI s
+CSI s (SCOSC)
         (Only when DEC Left Right Margin Mode  - 69 - is disabled)
 	NON-STANDARD EXTENSION
 	Save Current Position
@@ -1081,7 +1086,7 @@ CSI s
 
 	SOURCE: ANSI.SYS
 
-CSI Ps ; Pn1 ; Pn2 ; Pn3 t
+CSI Ps ; Pn1 ; Pn2 ; Pn3 t (CT24BC)
 	NON-STANDARD EXTENSION
 	Select a 24-bit colour
 	If Ps is 0, sets the background colour.
@@ -1093,7 +1098,7 @@ CSI Ps ; Pn1 ; Pn2 ; Pn3 t
 	and background colours though, so the current screen should always
 	be as expected.
 
-CSI ? Ps...  u
+CSI ? Ps...  u (CTRMS)
 	NON-STANDARD EXTENSION
 	Restore Mode Setting
 	Saves the current mode states as specified by CSI ? l and CSI ? h.  If
@@ -1102,7 +1107,7 @@ CSI ? Ps...  u
 
 	SOURCE: SyncTERM only
 
-CSI u
+CSI u (SCORC)
 	NON-STANDARD EXTENSION
 	Restore Cursor Position
 	Move the cursor to the last position saved by CSI s.  If no position
@@ -1110,7 +1115,7 @@ CSI u
 
 	SOURCE: ANSI.SYS
 
-CSI 2 $ w
+CSI 2 $ w (DECTABSR)
 	Request Tab Stop Report
 	Requests a list of tab stops.
 	The list is in the form:
@@ -1127,7 +1132,7 @@ CSI Pn * z
 	Pn specifies the macro number.  If Pn is not 0..63, no action is
 	taken.
 
-CSI = Ps1 ; Ps2 {
+CSI = Ps1 ; Ps2 { (CTOSF)
 	NON-STANDARD EXTENSION (Deprecated)
 	Defaults:  Ps1 = 255  Ps2 = 0
 	Indicates that a font block is following.
