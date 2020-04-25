@@ -241,12 +241,14 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+#ifndef STATIC_SDL
 	{
 		int (HACK_HACK_HACK *ra)(char *name, Uint32 style, void *hInst);
 		if ((ra = xp_dlsym(sdl_dll, SDL_RegisterApp)) != NULL) {
 			ra(ciolib_appname, 0, NULL);
 		}
 	}
+#endif
 
 	sdlf->gotfuncs=1;
 	sdl_funcs_loaded=1;

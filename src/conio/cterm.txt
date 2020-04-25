@@ -647,24 +647,24 @@ CSI Pn SP d (TSR)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Ps e
-	Line Position Relative
+CSI Pn e (VPR)
+	Line Position Forward
 	Defaults: Ps = 1
 	Moves forward Ps rows.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn1 ; Pn2 f
-	Cursor Position
+CSI Pn1 ; Pn2 (HVP)
+	Character and Line Position
 	Defaults: Pn1 = 1  Pn2 = 1
 	Moves the cursor to the Pn2th column of the Pn1th line.
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
-CSI Pn g
-	Clear Tab(s)
+CSI Ps g (TBC)
+	Tabulation Clear
 	Defaults: Pn = 0
-	Deletes tab stpos according to the values of P1:
+	Deletes tab stops according to the values of P1:
 	0 - Deletes tab stop at current position.
 	3 - Deletes all tab stops.
 	5 - Deletes all tab stops.
