@@ -1444,7 +1444,8 @@ function save_file()
 {
 	var f=new File(output_filename());
 	if(!f.open("wb")) {
-		alert("Error " + f.error + " opening " + f.name);
+		console.clear();
+		js.report_error(f.error + " (" + errno_str + ") opening " + f.name, true);
 		return false;
 	}
 	var s=make_strings(/* soft-CRs: */Boolean(options.soft_cr), /* embed-colors: */true);
@@ -1960,6 +1961,7 @@ console.ctrlkey_passthru="+ACGKLNPQRTUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
+console.writeln("Opening " + input_filename);
 var f=new File(input_filename);
 if(f.open("r",false)) {
 	ypos=0;
