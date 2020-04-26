@@ -3707,8 +3707,13 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 	/* Write fixed-length header fields */
 	memset(&pkdmsg,0,sizeof(pkdmsg));
 	pkdmsg.type		= 2;
-	pkdmsg.orignet	= addr.net;
-	pkdmsg.orignode	= addr.node;
+	if(area.tag == NULL)	{ /* NetMail, so use original origin address */
+		pkdmsg.orignet	= hdr->orignet;
+		pkdmsg.orignode = hdr->orignode;
+	} else {
+		pkdmsg.orignet	= addr.net;
+		pkdmsg.orignode	= addr.node;
+	}
 	pkdmsg.destnet	= hdr->destnet;
 	pkdmsg.destnode	= hdr->destnode;
 	pkdmsg.attr		= hdr->attr;
@@ -4676,14 +4681,12 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 	fmsghdr_t hdr;
 	struct	tm *tm;
 	post_t *post;
-	area_t fakearea;
 	addrlist_t msg_seen,msg_path;
 	time_t	tt;
 	time_t now = time(NULL);
 
 	memset(&msg_seen,0,sizeof(addrlist_t));
 	memset(&msg_path,0,sizeof(addrlist_t));
-	memset(&fakearea,0,sizeof(area_t));
 	memset(&hdr,0,sizeof(hdr));
 
 	printf("\nScanning for Outbound EchoMail...");
