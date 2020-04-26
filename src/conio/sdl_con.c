@@ -84,6 +84,7 @@ enum {
 	,SDL_USEREVENT_HIDEMOUSE
 	,SDL_USEREVENT_INIT
 	,SDL_USEREVENT_QUIT
+	,SDL_USEREVENT_GETWINPOS
 };
 
 const struct sdl_keyvals sdl_keyval[] =
@@ -246,6 +247,10 @@ static int sdl_user_func_ret(int func, ...)
 	/* Drain the swamp */
 	while(1) {
 		switch(func) {
+			case SDL_USEREVENT_GETWINPOS:
+				ev.user.data1 = va_arg(argptr, void *);
+				ev.user.data2 = va_arg(argptr, void *);
+				// Fallthrough
 			case SDL_USEREVENT_SETVIDMODE:
 			case SDL_USEREVENT_INIT:
 			case SDL_USEREVENT_QUIT:
@@ -506,13 +511,11 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	int wx, wy;
 
 	if (xpos || ypos) {
-		sdl.LockMutex(win_mutex);
-		sdl.GetWindowPosition(win, &wx, &wy);
+		sdl_user_func_ret(SDL_USEREVENT_GETWINPOS, &wx, &wy);
 		if(xpos)
 			*xpos=wx;
 		if(ypos)
 			*ypos=wy;
-		sdl.UnlockMutex(win_mutex);
 	}
 
 	if (width || height) {
@@ -1030,6 +1033,9 @@ void sdl_video_event_thread(void *data)
 							sdl_ufunc_retval=0;
 							sdl.SemPost(sdl_ufunc_ret);
 							break;
+						case SDL_USEREVENT_GETWINPOS:
+							sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
+							sdl.SemPost(sdl_ufunc_ret);
 					}
 					break;
 				}

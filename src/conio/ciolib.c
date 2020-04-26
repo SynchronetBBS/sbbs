@@ -1909,7 +1909,6 @@ void main_stub(void *argptr)
 int main(int argc, char **argv)
 {
 	struct main_args ma = {argc, argv, -1, 0};
-
 	sem_init(&initsdl_sem, 0, 0);
 	sem_init(&initsdldone_sem, 0, 0);
 	sem_init(&startsdl_sem, 0, 0);
