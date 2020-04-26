@@ -83,6 +83,7 @@ int sbbs_t::show_atcode(const char *instr)
 	bool	truncated = true;
 	bool	doubled = false;
 	bool	thousep = false;	// thousands-separated
+	bool	uppercase = false;
 	long	pmode = 0;
 	const char *cp;
 
@@ -101,6 +102,8 @@ int sbbs_t::show_atcode(const char *instr)
 	if((p = strchr(sp, '|')) != NULL) {
 		if(strchr(p, 'T') != NULL)
 			thousep = true;
+		if(strchr(p, 'U') != NULL)
+			uppercase = true;
 		if(strchr(p, 'L') != NULL)
 			padded_left = true;
 		else if(strchr(p, 'R') != NULL)
@@ -128,6 +131,8 @@ int sbbs_t::show_atcode(const char *instr)
 		zero_padded=true;
 	else if((p=strstr(sp,"-T"))!=NULL)
 		thousep=true;
+	else if((p=strstr(sp,"-U"))!=NULL)
+		uppercase=true;
 	else if((p=strstr(sp,"->"))!=NULL)	/* wrap */
 		truncated = false;
 	if(p!=NULL) {
@@ -146,6 +151,13 @@ int sbbs_t::show_atcode(const char *instr)
 	char separated[128];
 	if(thousep)
 		cp = separate_thousands(cp, separated, sizeof(separated), ',');
+
+	if(uppercase) {
+		char upper[128];
+		SAFECOPY(upper, cp);
+		strupr(upper);
+		cp = upper;
+	}
 
 	if(p==NULL || truncated == false)
 		disp_len = strlen(cp);
@@ -1046,7 +1058,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 	if(!strcmp(sp,"MEMO1"))
 		return(useron.note);
 
-	if(!strcmp(sp,"MEMO2") || !strcmp(sp,"COMPANY"))
+	if(strcmp(sp,"REALNAME") == 0 || !strcmp(sp,"MEMO2") || !strcmp(sp,"COMPANY"))
 		return(useron.name);
 
 	if(!strcmp(sp,"ZIP"))
