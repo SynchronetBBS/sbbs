@@ -136,7 +136,7 @@ int msgdump(FILE* fp, const char* fname)
 	return(0);
 }
 
-char* usage = "usage: fmsgdump [-body] [-ctrl] <file1.msg> [file2.msg] [...]\n";
+char* usage = "usage: fmsgdump [-body | -ctrl] <file1.msg> [file2.msg] [...]\n";
 
 int main(int argc, char** argv)
 {
