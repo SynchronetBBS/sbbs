@@ -468,6 +468,26 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	}
 	strListFree(&domains);
 
+	/**********/
+	/* Robots */
+	/**********/
+	str_list_t robots = iniGetSectionList(ini, "robot:");
+	cfg->robot_count = strListCount(robots);
+	if((cfg->robot_list = realloc(cfg->robot_list, sizeof(struct robot)*cfg->robot_count)) == NULL) {
+		strListFree(&robots);
+		return false;
+	}
+	cfg->robot_count = 0;
+	char* robot;
+	while((robot = strListRemove(&robots, 0)) != NULL) {
+		struct robot* bot = &cfg->robot_list[cfg->robot_count++];
+		memset(bot, 0, sizeof(*bot));
+		SAFECOPY(bot->name, robot + 6);
+		SAFECOPY(bot->semfile, iniGetString(ini, robot, "SemFile", "", value));
+	}
+	strListFree(&robots);
+
+
 	/* make sure we have some sane "maximum" size values here: */
 	if(cfg->maxpktsize<1024)
 		cfg->maxpktsize=DFLT_PKT_SIZE;
@@ -650,6 +670,16 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		if(strcmp(cfg->outbound, dom->root) != 0)
 			iniSetString(&ini,	section,	"OutboundRoot",	dom->root, style);
 		iniSetString(&ini,	section,	"NodeList",		dom->nodelist, style);
+	}
+
+	/* Robots */
+	iniRemoveSections(&ini, "robot:");
+	for(unsigned i=0; i < cfg->robot_count; i++) {
+		struct robot* bot = &cfg->robot_list[i];
+		if(bot->name[0] == 0)
+			continue;
+		SAFEPRINTF(section, "robot:%s", bot->name);
+		iniSetString(&ini, section, "SemFile", bot->semfile, style);
 	}
 
 	iniWriteFile(fp, ini);

@@ -42,7 +42,7 @@
 #include "fidodefs.h"
 
 #define SBBSECHO_VERSION_MAJOR		3
-#define SBBSECHO_VERSION_MINOR		10
+#define SBBSECHO_VERSION_MINOR		11
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -159,6 +159,12 @@ struct fido_domain {
 	char		dns_suffix[64];
 };
 
+struct robot {
+	char		name[FIDO_NAME_LEN];
+	char		semfile[MAX_PATH + 1];
+	unsigned	recv_count;
+};
+
 typedef struct {
 	char		inbound[MAX_PATH+1]; 	/* Inbound directory */
 	char		secure_inbound[MAX_PATH+1];		/* Secure Inbound directory */
@@ -224,6 +230,8 @@ typedef struct {
 	int64_t		min_free_diskspace;
 	struct fido_domain* domain_list;
 	unsigned	domain_count;
+	struct robot* robot_list;
+	unsigned	robot_count;
 	char		binkp_caps[64];
 	char		binkp_sysop[64];
 	bool		binkp_plainAuthOnly;

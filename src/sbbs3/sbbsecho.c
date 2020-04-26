@@ -4438,105 +4438,116 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		}
 	}
 
-	if(stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0
-		|| stricmp(hdr.to, "SBBSecho") == 0
-		|| stricmp(hdr.to, FIDO_PING_NAME) == 0) {
-		fmsgbuf=getfmsg(fp,NULL);
-		if(path[0]) {
-			if(cfg.delete_netmail && opt_delete_netmail) {
-				fclose(fp);
-				delfile(path, __LINE__);
-			}
-			else {
-				hdr.attr|=FIDO_RECV;
-				(void)fseek(fp,0L,SEEK_SET);
-				(void)fwrite(&hdr,sizeof(fmsghdr_t),1,fp);
-				fclose(fp); /* Gotta close it here for areafix stuff */
-			}
+	struct robot* robot = NULL;
+	for(unsigned u = 0; u < cfg.robot_count; u++) {
+		if(stricmp(hdr.to, cfg.robot_list[u].name) == 0) {
+			robot = &cfg.robot_list[u];
+			lprintf(LOG_DEBUG, "%s NetMail received for robot: %s", info, cfg.robot_list[u].name);
+			break;
 		}
-		addr.zone=hdr.origzone;
-		addr.net=hdr.orignet;
-		addr.node=hdr.orignode;
-		addr.point=hdr.origpoint;
-		lprintf(LOG_INFO, "%s", info);
-		if(stricmp(hdr.from, hdr.to) == 0)
-			lprintf(LOG_NOTICE, "Refusing to auto-reply to NetMail from %s", hdr.from);
-		else {
-			if(stricmp(hdr.to, FIDO_PING_NAME) == 0) {
-
-				lprintf(LOG_INFO, "PING (for %s) Request received from %s", faddrtoa(&addr), hdr.from);
-
-				char subj[FIDO_SUBJ_LEN];
-
-				REPLACE_CHARS(fmsgbuf, '\1', '@', tp);
-
-				int bodylen = 0;
-				char* body = malloc(strlen(fmsgbuf) + 4000);
-				if(body == NULL)
-					body = fmsgbuf;
-				else {
-					bodylen += sprintf(body, "Your PING request was received at: %s %s\r"
-						,timestr(&scfg, time32(NULL), tmp), smb_zonestr(sys_timezone(&scfg),NULL));
-					bodylen += sprintf(body+bodylen, "by: %s (sysop: %s) @ %s\r"
-						,scfg.sys_name, scfg.sys_op, smb_faddrtoa(&scfg.faddr[match], NULL));
-					time_t t = (time_t)fmsgtime(hdr.time);
-					bodylen += sprintf(body+bodylen, "\rThe received message header contained:\r\r"
-						"Subj: %s\r"
-						"Attr: %04hX\r"
-						"To  : %s (%s)\r"
-						"From: %s (%s)\r"
-						"Date: %s (parsed: 0x%08lX, %.24s)\r"
-						,hdr.subj
-						,hdr.attr
-						,hdr.to, smb_faddrtoa(&scfg.faddr[match], NULL)
-						,hdr.from, faddrtoa(&addr)
-						,hdr.time, (ulong)t, ctime(&t));
-					bodylen += sprintf(body+bodylen,"\r======[ Received message text ]======\r%s"
-													"\r======[ End received msg text ]======\r", fmsgbuf);
-				}
-				SAFEPRINTF(subj, "Pong: %s", hdr.subj);
-				create_netmail(/* to: */hdr.from, /* msg: */NULL, subj, body, addr);
-				if(body != fmsgbuf) {
-					FREE_AND_NULL(body);
-				}
-			} else {	/* AreaFix */
-				p=process_areafix(addr,fmsgbuf,/* Password: */hdr.subj, /* To: */hdr.from);
-				if(p != NULL && cfg.areamgr[0] != 0) {
-					uint notify = matchuser(&scfg, cfg.areamgr, TRUE);
-					if(notify) {
-						SAFEPRINTF(hdr.subj, "FAILED Area Management Request from %s", faddrtoa(&addr));
-						SAFECOPY(hdr.to, cfg.areamgr);
-						SAFECOPY(hdr.from, "SBBSecho");
-						hdr.origzone=hdr.orignet=hdr.orignode=hdr.origpoint=0;
-						hdr.time[0] = 0;	/* Generate a new timestamp */
-						if(fmsgtosmsg(p, &hdr, notify, INVALID_SUB) == IMPORT_SUCCESS) {
-							sprintf(str,"\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
-							putsmsg(&scfg,notify,str);
-						}
-					} else
-						lprintf(LOG_ERR, "Configured Area Manager, user not found: %s", cfg.areamgr);
-				}
-			}
-		}
-		FREE_AND_NULL(fmsgbuf);
-		return(-2);
 	}
 
-	usernumber=atoi(hdr.to);
-	if(!usernumber && strListFind(cfg.sysop_alias_list, hdr.to, /* case sensitive: */false) >= 0)
-		usernumber = 1;
-	if(!usernumber)
-		usernumber = lookup_user(&scfg, &user_list, hdr.to);
-	if(!usernumber && cfg.default_recipient[0])
-		usernumber = matchuser(&scfg, cfg.default_recipient, TRUE);
-	if(!usernumber) {
-		lprintf(LOG_WARNING,"%s Unknown user",info);
+	if(robot == NULL) {
+		if(stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0
+			|| stricmp(hdr.to, "SBBSecho") == 0
+			|| stricmp(hdr.to, FIDO_PING_NAME) == 0) {
+			fmsgbuf=getfmsg(fp,NULL);
+			if(path[0]) {
+				if(cfg.delete_netmail && opt_delete_netmail) {
+					fclose(fp);
+					delfile(path, __LINE__);
+				}
+				else {
+					hdr.attr|=FIDO_RECV;
+					(void)fseek(fp,0L,SEEK_SET);
+					(void)fwrite(&hdr,sizeof(fmsghdr_t),1,fp);
+					fclose(fp); /* Gotta close it here for areafix stuff */
+				}
+			}
+			addr.zone=hdr.origzone;
+			addr.net=hdr.orignet;
+			addr.node=hdr.orignode;
+			addr.point=hdr.origpoint;
+			lprintf(LOG_INFO, "%s", info);
+			if(stricmp(hdr.from, hdr.to) == 0)
+				lprintf(LOG_NOTICE, "Refusing to auto-reply to NetMail from %s", hdr.from);
+			else {
+				if(stricmp(hdr.to, FIDO_PING_NAME) == 0) {
 
-		if(!path[0]) {
-			printf(" - ");
-			pkt_to_msg(fp,&hdr,info,inbound);
+					lprintf(LOG_INFO, "PING (for %s) Request received from %s", faddrtoa(&addr), hdr.from);
+
+					char subj[FIDO_SUBJ_LEN];
+
+					REPLACE_CHARS(fmsgbuf, '\1', '@', tp);
+
+					int bodylen = 0;
+					char* body = malloc(strlen(fmsgbuf) + 4000);
+					if(body == NULL)
+						body = fmsgbuf;
+					else {
+						bodylen += sprintf(body, "Your PING request was received at: %s %s\r"
+							,timestr(&scfg, time32(NULL), tmp), smb_zonestr(sys_timezone(&scfg),NULL));
+						bodylen += sprintf(body+bodylen, "by: %s (sysop: %s) @ %s\r"
+							,scfg.sys_name, scfg.sys_op, smb_faddrtoa(&scfg.faddr[match], NULL));
+						time_t t = (time_t)fmsgtime(hdr.time);
+						bodylen += sprintf(body+bodylen, "\rThe received message header contained:\r\r"
+							"Subj: %s\r"
+							"Attr: %04hX\r"
+							"To  : %s (%s)\r"
+							"From: %s (%s)\r"
+							"Date: %s (parsed: 0x%08lX, %.24s)\r"
+							,hdr.subj
+							,hdr.attr
+							,hdr.to, smb_faddrtoa(&scfg.faddr[match], NULL)
+							,hdr.from, faddrtoa(&addr)
+							,hdr.time, (ulong)t, ctime(&t));
+						bodylen += sprintf(body+bodylen,"\r======[ Received message text ]======\r%s"
+														"\r======[ End received msg text ]======\r", fmsgbuf);
+					}
+					SAFEPRINTF(subj, "Pong: %s", hdr.subj);
+					create_netmail(/* to: */hdr.from, /* msg: */NULL, subj, body, addr);
+					if(body != fmsgbuf) {
+						FREE_AND_NULL(body);
+					}
+				} else {	/* AreaFix */
+					p=process_areafix(addr,fmsgbuf,/* Password: */hdr.subj, /* To: */hdr.from);
+					if(p != NULL && cfg.areamgr[0] != 0) {
+						uint notify = matchuser(&scfg, cfg.areamgr, TRUE);
+						if(notify) {
+							SAFEPRINTF(hdr.subj, "FAILED Area Management Request from %s", faddrtoa(&addr));
+							SAFECOPY(hdr.to, cfg.areamgr);
+							SAFECOPY(hdr.from, "SBBSecho");
+							hdr.origzone=hdr.orignet=hdr.orignode=hdr.origpoint=0;
+							hdr.time[0] = 0;	/* Generate a new timestamp */
+							if(fmsgtosmsg(p, &hdr, notify, INVALID_SUB) == IMPORT_SUCCESS) {
+								sprintf(str,"\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
+								putsmsg(&scfg,notify,str);
+							}
+						} else
+							lprintf(LOG_ERR, "Configured Area Manager, user not found: %s", cfg.areamgr);
+					}
+				}
+			}
+			FREE_AND_NULL(fmsgbuf);
+			return(-2);
 		}
-		return(2);
+
+		usernumber=atoi(hdr.to);
+		if(!usernumber && strListFind(cfg.sysop_alias_list, hdr.to, /* case sensitive: */false) >= 0)
+			usernumber = 1;
+		if(!usernumber)
+			usernumber = lookup_user(&scfg, &user_list, hdr.to);
+		if(!usernumber && cfg.default_recipient[0])
+			usernumber = matchuser(&scfg, cfg.default_recipient, TRUE);
+		if(!usernumber) {
+			lprintf(LOG_WARNING,"%s Unknown user",info);
+
+			if(!path[0]) {
+				printf(" - ");
+				pkt_to_msg(fp,&hdr,info,inbound);
+			}
+			return(2);
+		}
 	}
 
 	/*********************/
@@ -4566,17 +4577,18 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		return(0);
 	}
 
-	addr.zone=hdr.origzone;
-	addr.net=hdr.orignet;
-	addr.node=hdr.orignode;
-	addr.point=hdr.origpoint;
-	sprintf(str,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail%s from \1h%s\1n\r\n"
-		,FIDO_NAME_LEN-1
-		,hdr.from
-		,hdr.attr&FIDO_FILE ? " with attachment" : ""
-		,smb_faddrtoa(&addr,NULL));
-	putsmsg(&scfg,usernumber,str);
-
+	if(usernumber) {
+		addr.zone=hdr.origzone;
+		addr.net=hdr.orignet;
+		addr.node=hdr.orignode;
+		addr.point=hdr.origpoint;
+		sprintf(str,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail%s from \1h%s\1n\r\n"
+			,FIDO_NAME_LEN-1
+			,hdr.from
+			,hdr.attr&FIDO_FILE ? " with attachment" : ""
+			,smb_faddrtoa(&addr,NULL));
+		putsmsg(&scfg,usernumber,str);
+	}
 	if(hdr.attr&FIDO_FILE) {	/* File attachment */
 		SAFECOPY(subj,hdr.subj);
 		tp=subj;
@@ -4605,6 +4617,8 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		}
 	}
 	netmail++;
+	if(robot != NULL)
+		robot->recv_count++;
 
 	FREE_AND_NULL(fmsgbuf);
 
@@ -6649,6 +6663,13 @@ int main(int argc, char **argv)
 			lprintf(LOG_DEBUG, "Touching outgoing semfile: %s", cfg.outgoing_sem);
 			if(!ftouch(cfg.outgoing_sem))
 				lprintf(LOG_ERR, "Error %d (%s) touching outgoing semfile: %s", errno, strerror(errno), cfg.outgoing_sem);
+		}
+	}
+	for(unsigned u = 0; u < cfg.robot_count; u++) {
+		if(cfg.robot_list[u].semfile[0] && cfg.robot_list[u].recv_count) {
+			lprintf(LOG_DEBUG, "Touching robot semfile: %s", cfg.robot_list[u].semfile);
+			if(!ftouch(cfg.robot_list[u].semfile))
+				lprintf(LOG_ERR, "Error %d (%s) touching robot semfile: %s", errno, strerror(errno), cfg.robot_list[u].semfile);
 		}
 	}
 	bail(0);
