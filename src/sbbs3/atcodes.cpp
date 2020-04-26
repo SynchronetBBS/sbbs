@@ -918,7 +918,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode)
 		return sectostr(useron.textra, str) + 3;
 
 	if(strcmp(sp, "MBANKED") == 0) {
-		safe_snprintf(str, maxlen, "%u", useron.min);
+		safe_snprintf(str, maxlen, "%lu", useron.min);
 		return str;
 	}
 
