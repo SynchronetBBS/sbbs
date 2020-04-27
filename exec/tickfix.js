@@ -199,7 +199,9 @@ for(var i = 0; i < idx_list.length; i++) {
 	var hdr = msgbase.get_msg_header(true, i, /* expand_fields: */false);
 	if(AreaMgr.indexOf[hdr.to.toLowerCase()] < 0)
 		continue;
-	if(hdr.from_net_type != NET_FIDO)
+	if(hdr.from_net_type != NET_FIDO || hdr.to_net_type != NET_FIDO)
+		continue;
+	if(system.fido_addr_list.indexOf(hdr.to_net_addr) < 0)
 		continue;
 	if(!node_map[hdr.from_net_addr]) {
 		reply_to_msg(hdr, "Unknown node address: " + hdr.from_net_addr);
