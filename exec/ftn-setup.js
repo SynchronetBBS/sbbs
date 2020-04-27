@@ -62,7 +62,6 @@ frame.cycle();
 
 var key;
 var zone;
-var high_water = 0;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
     key = console.getkey();
@@ -70,49 +69,26 @@ while (!js.terminated) {
     tree.getcmd(key);
     if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
         zone = tree.currentItem.__ftn_setup;
-	function crlf() {
-		info_frame.cleartoeol();
-		info_frame.crlf();
-	}
-        info_frame.home();
-        info_frame.putmsg('\1h\1w' + zone.name);
-	crlf();
+        info_frame.erase(' ');
+        info_frame.putmsg('\1h\1w' + zone.name + '\r\n');
         if (zone.desc) {
-		info_frame.putmsg('\1n\1w' + zone.desc);
-		crlf();
-		crlf();
+		info_frame.putmsg('\1n\1w' + zone.desc + '\r\n\r\n');
 	}
         if (zone.info) {
-		info_frame.putmsg('\1h\1cInformation\1w:');
-		crlf();
-		info_frame.putmsg('\1n' + zone.info);
-		crlf();
-		crlf();
+		info_frame.putmsg('\1h\1cInformation\1w:\r\n');
+		info_frame.putmsg('\1n' + zone.info + '\r\n\r\n');
 	}
         if (zone.coord) {
-		info_frame.putmsg('\1h\1cCoordinator\1w:');
-		crlf();
-		info_frame.putmsg('\1n' + zone.coord);
-		crlf();
-		crlf();
+		info_frame.putmsg('\1h\1cCoordinator\1w:\r\n');
+		info_frame.putmsg('\1n' + zone.coord + '\r\n\r\n');
 	}
         if (zone.email) {
-		info_frame.putmsg('\1h\1cEmail\1w:');
-		crlf();
-		info_frame.putmsg('\1n' + zone.email);
-		crlf();
-		crlf();
+		info_frame.putmsg('\1h\1cEmail\1w:\r\n');
+		info_frame.putmsg('\1n' + zone.email + '\r\n\r\n');
 	}
         if (addrs[zone._zone_number]) {
-		info_frame.putmsg('\1h\1rExisting address found: ' + addrs[zone._zone_number]);
-		crlf();
+		info_frame.putmsg('\1h\1rExisting address found: ' + addrs[zone._zone_number] + '\r\n');
         }
-	var y = info_frame.cursor.y;
-	while(high_water > y) {
-		crlf();
-		high_water--;
-	}
-	high_water = y;
     }
     if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
 }
