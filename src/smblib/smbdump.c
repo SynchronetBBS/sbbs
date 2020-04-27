@@ -88,6 +88,21 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 					,smb_hfieldtype(msg->hfield[i].type)
 					,smb_nettype((enum smb_net_type)*(uint16_t*)msg->hfield_dat[i]));
 				break;
+			case SENDERNETADDR:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,smb_netaddr(&msg->from_net));
+				break;
+			case RECIPIENTNETADDR:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,smb_netaddr(&msg->to_net));
+				break;
+			case REPLYTONETADDR:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,smb_netaddr(&msg->replyto_net));
+				break;
 			default:
 				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
 					,smb_hfieldtype(msg->hfield[i].type)
