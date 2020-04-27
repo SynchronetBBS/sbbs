@@ -162,6 +162,7 @@ struct fido_domain {
 struct robot {
 	char		name[FIDO_NAME_LEN];
 	char		semfile[MAX_PATH + 1];
+	uint16_t	attr;
 	unsigned	recv_count;
 };
 

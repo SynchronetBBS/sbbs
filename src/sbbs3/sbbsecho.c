@@ -3278,6 +3278,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		msg.hdr.attr|=MSG_KILLREAD;
 	if(hdr->attr&FIDO_FILE)
 		msg.hdr.auxattr|=MSG_FILEATTACH;
+	if(hdr->attr&FIDO_INTRANS)
+		msg.hdr.netattr|=MSG_INTRANSIT;
 
 	msg.hdr.when_imported.time=now;
 	msg.hdr.when_imported.zone=sys_timezone(&scfg);
@@ -4442,7 +4444,8 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 	for(unsigned u = 0; u < cfg.robot_count; u++) {
 		if(stricmp(hdr.to, cfg.robot_list[u].name) == 0) {
 			robot = &cfg.robot_list[u];
-			lprintf(LOG_DEBUG, "%s NetMail received for robot: %s", info, cfg.robot_list[u].name);
+			hdr.attr |= robot->attr;
+			lprintf(LOG_DEBUG, "%s NetMail received for robot: %s", info, robot->name);
 			break;
 		}
 	}
@@ -5251,6 +5254,10 @@ int export_netmail(void)
 
 		printf("NetMail msg #%u from %s to %s (%s): "
 			,msg.hdr.number, msg.from, msg.to, smb_faddrtoa(msg.to_net.addr,NULL));
+		if(msg.hdr.netattr&MSG_INTRANSIT) {
+			printf("in-transit\n");
+			continue;
+		}
 		if((msg.hdr.netattr&MSG_SENT) && !cfg.ignore_netmail_sent_attr) {
 			printf("already sent\n");
 			continue;
