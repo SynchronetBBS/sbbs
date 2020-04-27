@@ -1653,7 +1653,7 @@ Display.prototype.__drawChar__ = function(ch,attr,xpos,ypos) {
 Display.prototype.__getTopCanvas__ = function(x,y) {
 	var top = undefined;
 	for each(var c in this.__properties__.canvas) {
-		if(c.hasData(x,y))
+		if(c.frame.parent == undefined || c.hasData(x,y))
 			top = c;
 	}
 	return top;
