@@ -4,12 +4,18 @@
 // Requires SBBSecho v3.11 or later
 // Install using "jsexec tickfix -install"
 
+const REVISION = "$Revision$".split(' ')[1];
 require('smbdefs.js', 'NET_FIDO');
 var fidoaddr = load({}, 'fidoaddr.js');
 
-const REVISION = "$Revision$".split(' ')[1];
-const AreaMgr = "FileFix"; // for incoming requests
-const backup_level = 10;
+// Parse tickfix.ini
+var f = new File(file_cfgname(system.ctrl_dir, "tickfix.ini"));
+f.open("r");
+var AreaMgr = f.iniGetValue(null, "AreaMgr", ["FileFix"]);
+var backup_level = f.iniGetValue(null, "Backups", 10);
+f.close();
+for(var i in AreaMgr)
+	AreaMgr[i] = AreaMgr[i].toLowerCase();
 
 const help_text = 
 	"TickFix " + REVISION + " Help\r\n" +
@@ -191,7 +197,7 @@ for(var i = 0; i < idx_list.length; i++) {
 	if((idx.attr&MSG_DELETE) || idx.to != 0)
 		continue;
 	var hdr = msgbase.get_msg_header(true, i, /* expand_fields: */false);
-	if(hdr.to.toLowerCase() != AreaMgr.toLowerCase())
+	if(AreaMgr.indexOf[hdr.to.toLowerCase()] < 0)
 		continue;
 	if(hdr.from_net_type != NET_FIDO)
 		continue;
