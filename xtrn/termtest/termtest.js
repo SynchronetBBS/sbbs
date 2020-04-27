@@ -88,8 +88,9 @@ var tests = [
 		if (check_xy(1, 1))
 			return false;
 		console.gotoxy(console.screen_columns, 1);
+		// TODO: XTerm does some weird stuff here...
 		console.write("\t");
-		return check_xy(console.screen_columns, 1);
+		return check_xy(1, 2);
 		// TODO: Check scroll... somehow.
 	}},
 	{'name':"LF", 'func':function() {
@@ -546,7 +547,7 @@ var tests = [
 		console.write("\x1bH");
 		console.gotoxy(1,1);
 		console.write("\t");
-		if (!check_xy(80,1)) {
+		if (!check_xy(console.screen_columns,1)) {
 			console.write("\x1bc");
 			return false;
 		}
