@@ -137,11 +137,11 @@ const char* program_id(void)
 	return str;
 }
 
-const char* tear_line(void)
+const char* tear_line(char ch)
 {
 	static char str[256];
 
-	sprintf(str,"--- SBBSecho %u.%02u-%s\r"
+	sprintf(str,"%c%c%c SBBSecho %u.%02u-%s\r", ch, ch, ch
 		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC);
 
 	return str;
@@ -1277,7 +1277,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		/* Write the tear line */
 		if(bodylen > 0 && body[bodylen-1] != '\r' && body[bodylen-1] != '\n')
 			fputc('\r', fp);
-		fprintf(fp, "%s", tear_line());
+		fprintf(fp, "%s", tear_line(strstr(body, "\n--- ") == NULL ? '-' : ' '));
 	}
 	fputc(FIDO_STORED_MSG_TERMINATOR, fp);
 	lprintf(LOG_INFO, "Created NetMail (%s)%s from %s (%s) to %s (%s), attr: %04hX, subject: %s"
@@ -4985,7 +4985,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 			if(msg.from_net.type != NET_FIDO && !(scfg.sub[subnum]->misc&SUB_NOTAG)) {
 				if(!tear) {  /* No previous tear line */
-					strcat((char *)fmsgbuf,tear_line());
+					strcat((char *)fmsgbuf,tear_line('-'));
 				}
 
 				sprintf(str," * Origin: %s (%s)\r"
@@ -5263,6 +5263,8 @@ int export_netmail(void)
 			continue;
 		}
 
+		lprintf(LOG_DEBUG, "Exporting NetMail message #%u from %s to %s (%s)"
+			,msg.hdr.number, msg.from, msg.to, smb_faddrtoa(msg.to_net.addr,NULL));
 		char* msg_subj = msg.subj;
 		if((txt=smb_getmsgtxt(email, &msg, GETMSGTXT_BODY_ONLY)) != NULL) {
 			char filename[MAX_PATH+1] = {0};
