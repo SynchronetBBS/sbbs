@@ -3,12 +3,6 @@
 // Logon List module (replaces old hard-coded logon.lst)
 
 // Install with 'jsexec logonlist install'
-// ... also, for all command shells (exec/*.src files), replace:
-//     userlist_logons
-// with:
-//     exec_bin logonlist
-//
-// ... and then run 'jsexec update'
 
 "use strict";
 
