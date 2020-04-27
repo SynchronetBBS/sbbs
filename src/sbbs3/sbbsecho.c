@@ -4348,7 +4348,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 {
 	char info[512],str[256],tmp[256],subj[256]
 		,*fmsgbuf=NULL,*p,*tp,*sp;
-	int i,match,usernumber;
+	int i,match,usernumber = 0;
 	ulong length;
 	fidoaddr_t addr;
 
