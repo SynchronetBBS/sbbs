@@ -5685,7 +5685,7 @@ NO_SSH:
 			if(fexist(str))
 				sbbs->printfile(str,P_NOABORT);
 			else {
-				sbbs->putcom("\r\nSorry, all telnet nodes are in use or otherwise unavailable.\r\n");
+				sbbs->putcom("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
 				sbbs->putcom("Please try again later.\r\n");
 			}
 			mswait(3000);
