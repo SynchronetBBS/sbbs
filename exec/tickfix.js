@@ -22,10 +22,10 @@ const help_text =
 	"\r\n" +
 	"In the body of the message, one or more:\r\n" +
 	"\r\n" +
-	"+<tag>     Connect an area\n"
-	"+ALL       Connect all areas\n"
-	"-<tag>     Disconnect an area\n"
-	"-ALL       Disconnect all areas\n"
+	"+<tag>     Connect an area\n" +
+	"+ALL       Connect all areas\n" +
+	"-<tag>     Disconnect an area\n" +
+	"-ALL       Disconnect all areas\n" +
 	"%HELP      This message\r\n" +
 	"%LIST      List of all available areas (tags)\r\n" +
 	"%QUERY     List of linked / connected areas\r\n" +
