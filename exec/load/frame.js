@@ -950,6 +950,7 @@ Frame.prototype.erase(ch, attr) {
 			this.__properties__.display.updateChar(this, x, y);
 		}
 	}
+	this.home();
 }
 Frame.prototype.clearline = function(attr) {
 	if(attr == undefined)
