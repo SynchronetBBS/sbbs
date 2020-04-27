@@ -1674,22 +1674,6 @@ function Cursor(x,y,frame) {
 		y:undefined,
 		frame:undefined
 	}
-	this.__defineGetter__("x", function() {
-		return this.__properties__.x;
-	});
-	this.__defineSetter__("x", function(x) {
-		if(isNaN(x))
-			throw("invalid x coordinate: " + x);
-		this.__properties__.x = x;
-	});
-	this.__defineGetter__("y", function() {
-		return this.__properties__.y;
-	});
-	this.__defineSetter__("y", function(y) {
-		if(isNaN(y))
-			throw("invalid y coordinate: " + y);
-		this.__properties__.y = y;
-	});
 
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
@@ -1699,6 +1683,25 @@ function Cursor(x,y,frame) {
 	this.x = x;
 	this.y = y;
 }
+
+Cursor.prototype.__defineGetter__("x", function() {
+	return this.__properties__.x;
+});
+Cursor.prototype.__defineSetter__("x", function(x) {
+	if(isNaN(x))
+		throw("invalid x coordinate: " + x);
+	this.__properties__.x = x;
+});
+Cursor.prototype.__defineGetter__("y", function() {
+	return this.__properties__.y;
+});
+Cursor.prototype.__defineSetter__("y", function(y) {
+	if(isNaN(y))
+		throw("invalid y coordinate: " + y);
+	this.__properties__.y = y;
+});
+
+
 
 /* self-validating scroll offset object */
 function Offset(x,y,frame) {
@@ -1707,30 +1710,6 @@ function Offset(x,y,frame) {
 		y:undefined,
 		frame:undefined
 	}
-	this.__defineGetter__("x", function() {
-		return this.__properties__.x;
-	});
-	this.__defineSetter__("x", function(x) {
-		if(x == undefined)
-			throw("invalid x offset: " + x);
-		else if(x < 0)
-			x = 0;
-/* 		else if(x > this.__properties__.frame.data_width - this.__properties__.frame.width)
-			x = this.__properties__.frame.data_width - this.__properties__.frame.width;
- */		this.__properties__.x = x;
-	});
-	this.__defineGetter__("y", function() {
-		return this.__properties__.y;
-	});
-	this.__defineSetter__("y", function(y) {
-		if(y == undefined)
-			throw("invalid y offset: " + y);
-		else if(y < 0)
-			y = 0;
-/* 		else if(y > this.__properties__.frame.data_height - this.__properties__.frame.height)
-			y = this.__properties__.frame.data_height - this.__properties__.frame.height;
- */		this.__properties__.y = y;
-	});
 
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
@@ -1740,3 +1719,24 @@ function Offset(x,y,frame) {
 	this.x = x;
 	this.y = y;
 }
+
+Offset.prototype.__defineGetter__("x", function() {
+	return this.__properties__.x;
+});
+Offset.prototype.__defineSetter__("x", function(x) {
+	if(x == undefined)
+		throw("invalid x offset: " + x);
+	else if(x < 0)
+		x = 0;
+	this.__properties__.x = x;
+});
+Offset.prototype.__defineGetter__("y", function() {
+	return this.__properties__.y;
+});
+Offset.prototype.__defineSetter__("y", function(y) {
+	if(y == undefined)
+		throw("invalid y offset: " + y);
+	else if(y < 0)
+		y = 0;
+	this.__properties__.y = y;
+});
