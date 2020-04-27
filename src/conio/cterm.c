@@ -4233,8 +4233,15 @@ ctputs(struct cterminal *cterm, char *buf)
 						break;
 					}
 				}
-				if(cx > TERM_MAXX)
-					cx = TERM_MAXX;
+				if(cx > TERM_MAXX || i == cterm->tab_count) {
+					cx = TERM_MINX;
+					if (cy >= TERM_MAXY) {
+						scrollup(cterm);
+						cy = TERM_MAXY;
+					}
+					else
+						cy++;
+				}
 				GOTOXY(cx,cy);
 				break;
 			default:

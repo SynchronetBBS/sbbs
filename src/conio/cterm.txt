@@ -39,8 +39,11 @@ Control characters:
 
 0x09 - HT:
 	Moves to the next horizontal tab stop.  Does not overwrite
-	any characters in between.  If the starting position is
-	last column, cursor does not move.
+	any characters in between.  If there are no tab stops left
+	in the line, moves to the first position of the next line.
+	If the starting position is on the last line, will perform
+	a scroll, filling the new line at bottom with the current
+	attribute.
 
 0x0A - LF:
 	Move cursor position to same column of the next row.
