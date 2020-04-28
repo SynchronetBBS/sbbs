@@ -104,63 +104,68 @@ function reply_to_msg(re, text)
 		delete_msg(re);
 }
 
-function handle_command(addr, cmd)
+function handle_command(hdr, cmd)
 {
+	var me = hdr.to_net_addr;
+	var you = hdr.from_net_addr;
 	switch(cmd.toLowerCase()) {
 		case "%help":
 			return help_text;
 		case "%list":
-			return format("All (%u) available areas:\r\n\r\n", area_list.length) + area_list.join("\r\n");
+			return format("%u file areas are available from %s to %s:\r\n\r\n"
+				,area_list.length, me, you) + area_list.join("\r\n");
 		case "%query":
 			var response = [];
 			for(var a in area_map) {
-				if(area_map[a].indexOf(addr) >= 0)
+				if(area_map[a].indexOf(you) >= 0)
 					response.push(a.toUpperCase());
 			}
-			return format("All (%u) connected areas:\r\n\r\n", response.length) + response.join("\r\n");
+			return format("%u file areas are connected from %s to %s:\r\n\r\n"
+				,response.length, me, you) + response.join("\r\n");
 		case "%unlinked":
 			var response = [];
 			for(var a in area_map) {
-				if(area_map[a].indexOf(addr) < 0)
+				if(area_map[a].indexOf(you) < 0)
 					response.push(a.toUpperCase());
 			}
-			return format("All (%u) unconnected areas:\r\n\r\n", response.length) + response.join("\r\n");
+			return format("%u available file areas on %s are not connected to %s:\r\n\r\n"
+				,response.length, me, you) + response.join("\r\n");
 		default:
 			var tag = cmd.toLowerCase();
 			if(tag[0] == '-') {	// Remove
 				tag = tag.substring(1);
 				if(tag == "all") {
 					for(var a in area_map) {
-						var i = area_map[a].indexOf(addr);
+						var i = area_map[a].indexOf(you);
 						if(i >= 0)
 							area_map[a].splice(i, 1);
 					}
-					return addr + " is now disconnected from all areas";
+					return you + " is now disconnected from all file areas on " + me;
 				}
 				if(!area_map[tag])
 					return "Unrecognized area tag: " + tag.toUpperCase();
-				var i = area_map[tag].indexOf(addr);
+				var i = area_map[tag].indexOf(you);
 				if(i < 0)
-					return addr + " is not connected to area: " + tag.toUpperCase();
+					return you + " is not connected to area: " + tag.toUpperCase();
 				area_map[tag].splice(i, 1);
-				return addr + " is now disconnected from area: " + tag.toUpperCase();
+				return you + " is now disconnected from area: " + tag.toUpperCase();
 			}
 			if(tag[0] == '+')
 				tag = tag.substring(1);
 			if(tag == "all") {
 				for(var a in area_map) {
-					if(area_map[a].indexOf(addr) < 0)
-						area_map[a].push(addr);
+					if(area_map[a].indexOf(you) < 0)
+						area_map[a].push(you);
 				}
-				return addr + " is now connected to all areas";
+				return you + " is now connected to all available file areas on " + me;
 			}
 			if(area_map[tag]) { // Add
-				if(area_map[tag].indexOf(addr) >= 0)
-					return addr + " is already connected to area: " + tag.toUpperCase();
-				area_map[tag].push(addr);
-				return addr + " is now connected to area: " + tag.toUpperCase();
+				if(area_map[tag].indexOf(you) >= 0)
+					return you + " is already connected to area: " + tag.toUpperCase();
+				area_map[tag].push(you);
+				return you + " is now connected to area: " + tag.toUpperCase();
 			}
-			return "!Unrecognized area-tag or command: '" + cmd + "'";
+			return "!Unrecognized area-tag or command on " + me + ": '" + cmd + "'";
 	}
 }
 
@@ -232,7 +237,7 @@ for(var i = 0; i < idx_list.length; i++) {
 	var line = text.split('\r\n');
 	for(var l = 0; l < line.length; l++) {
 		if(line[l])
-			response.push(handle_command(hdr.from_net_addr, line[l]));
+			response.push(handle_command(hdr, line[l]));
 	}
 	reply_to_msg(hdr, response.join('\r\n'));
 }
