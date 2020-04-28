@@ -391,6 +391,7 @@ int pty_connect(struct bbslist *bbs)
 	struct termios ts;
 	char	*termcap;
 	int	cols, rows;
+	int cp;
 
 	ts.c_iflag = TTYDEF_IFLAG;
 	ts.c_oflag = TTYDEF_OFLAG;
@@ -403,6 +404,7 @@ int pty_connect(struct bbslist *bbs)
 	ws.ws_col = cols;
 	ws.ws_row = rows;
 
+	cp = getcodepage();
 	child_pid = forkpty(&master, NULL, &ts, &ws);
 	switch(child_pid) {
 	case -1:
@@ -442,7 +444,7 @@ int pty_connect(struct bbslist *bbs)
 		termcap=xp_asprintf("%d",ws.ws_row);
 		setenv("LINES",termcap,1);
 		xp_asprintf_free(termcap);
-		setenv("MM_CHARSET", ciolib_cp[getcodepage()].name, 1);
+		setenv("MM_CHARSET", ciolib_cp[cp].name, 1);
 		if(bbs->addr[0])
 			execl("/bin/sh", "/bin/sh", "-c", bbs->addr, (char *)0);
 		else {
