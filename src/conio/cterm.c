@@ -73,6 +73,7 @@
 #include "cterm.h"
 #include "vidmodes.h"
 #include "base64.h"
+#include <crc16.h>
 
 #define	BUFSIZE	2048
 
@@ -2557,15 +2558,35 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							else if (seq->param_str[0] == '?' && parse_parameters(seq)) {
 								if(retbuf == NULL)
 									break;
-								tmp[0] = 0;
-								if (seq->param_count > 1)
-									break;
 								seq_default(seq, 0, 1);
+								tmp[0] = 0;
 								switch(seq->param_int[0]) {
 									case 62: /* Query macro space available */
 									{
+										if (seq->param_count > 1)
+											break;
 										// Just fake it as int16_max
 										strcpy(tmp, "\x1b[32767*{");
+										break;
+									}
+									case 63: /* Quero macro space "checksum" */
+									{
+										uint16_t crc = 0;
+										if (seq->param_count > 2)
+											break;
+										seq_default(seq, 1, 1);
+										for (k = 0; k < (sizeof(cterm->macros) / sizeof(cterm->macros[0])); k++) {
+											if (cterm->macros[k]) {
+												for (i = 0; i <= cterm->macro_lens[k]; i++)
+													crc = ucrc16(cterm->macros[k][i], crc);
+											}
+											else
+												crc = ucrc16(0, crc);
+										}
+										*tmp = 0;
+										snprintf(tmp, sizeof(tmp), "\x1bP%u!%04x\x1b\\", (unsigned)seq->param_int[1], crc);
+										if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+											strcat(retbuf, tmp);
 										break;
 									}
 								}
@@ -3140,6 +3161,55 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						}
 						if(newspeed >= 0)
 							*speed = newspeed;
+					}
+					else if (strcmp(seq->ctrl_func, "*y") == 0) {
+						if (seq->param_count >= 6) {
+							if (seq->param_int[0] != UINT64_MAX &&
+							    seq->param_int[0] <= UINT16_MAX &&
+							    seq->param_int[1] == 1 &&
+							    seq->param_int[2] != UINT64_MAX &&
+							    seq->param_int[3] != UINT64_MAX &&
+							    seq->param_int[4] != UINT64_MAX &&
+							    seq->param_int[5] != UINT64_MAX) {
+								struct ciolib_pixels *pix;
+								uint16_t crc;
+								int good = 0;
+								int vmode;
+								gettextinfo(&ti);
+								vmode = find_vmode(ti.currmode);
+								if (vmode != -1 &&
+								    (seq->param_int[3] > 0 && seq->param_int[3] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[2] > 0 && seq->param_int[2] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[5] > 0 && seq->param_int[5] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[4] > 0 && seq->param_int[4] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[2] <= seq->param_int[4]) &&
+								    (seq->param_int[3] <= seq->param_int[5]) &&
+								    (pix = getpixels(
+								      (seq->param_int[3] - 1 + cterm->x)*vparams[vmode].charwidth, 
+								      (seq->param_int[2] - 1 + cterm->y)*vparams[vmode].charheight, 
+								      (seq->param_int[5] + cterm->x)*vparams[vmode].charwidth - 1, 
+								      (seq->param_int[4] + cterm->y)*vparams[vmode].charheight - 1)) != NULL) {
+									crc = crc16((void *)pix->pixels, sizeof(pix->pixels[0])*pix->width*pix->height);
+									good = 1;
+									freepixles(pix);
+								}
+								else {
+									size_t sz = sizeof(struct vmem_cell) * (seq->param_int[2] - seq->param_int[4] + 1) * (seq->param_int[3] - seq->param_int[5] + 1);
+									struct vmem_cell *vm = malloc(sz);
+									if (vm != NULL) {
+										vmem_gettext(seq->param_int[3], seq->param_int[2], seq->param_int[5], seq->param_int[4], vm);
+										crc = crc16((void *)vm, sz);
+										good = 1;
+									}
+								}
+								if (good) {
+									*tmp = 0;
+									snprintf(tmp, sizeof(tmp), "\x1bP%u!~%04x\x1b\\", (unsigned)seq->param_int[0], crc);
+									if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+										strcat(retbuf, tmp);
+								}
+							}
+						}
 					}
 					else if (strcmp(seq->ctrl_func, "*z") == 0) {
 						if (seq->param_count > 0 && seq->param_int[0] <= 63) {

@@ -1013,15 +1013,20 @@ CSI = Ps n (CTSMRR)
 
 	SOURCE: CTerm only.
 
-CSI ? Ps n (DECDSR)
+CSI ? Ps [ ; Pn ] n (DECDSR)
 
-	When Ps is 62 (DECMSR), CTerm will respond with a Mode Report of
-	the form
+	When Ps is 62 (DECMSR) and there is no Pn, CTerm will respond
+	with a Mode Report of the form
 	CSI 32767 * {
 	This indicates that 524,272 bytes are available for macro storage.
 	This is not actually true, SyncTERM will use all available memory
 	for macro storage, but some software checks this value, and some
 	parsers don't allow more than INT16_MAX parameter values.
+
+	When Ps is 63 (DECCKSR) Pn defaults to 1, and CTerm will respond
+	with a checksum of the defined macros in the form
+	DCS Pn ! xxxx ST
+	Where xxxx is the hex checksum.
 
 	SOURCE: VT420
 
@@ -1132,6 +1137,20 @@ CSI 2 $ w (DECTABSR)
 	The string Pt is a list of tab stops separated by /s.
 	
 	SOURCE: VT320
+
+CSI Pn1 ; Ps ; Pn2 ; Pn3 ; Pn4 ; Pn5 * y (DECRQCRA)
+	Request Checksum of Rectangular Area
+	Returns a checksum for the specified rectangular area.
+	Pn1 is an ID that is returned in the response.
+	Ps MUST be 1
+	Pn2 specifies the top row of the rectangle
+	Pn3 specifies the left column of the rectangle
+	Pn4 specifies the bottom row of the rectangle
+	Pn5 specifies the right column of the rectangle
+	The return value is in the format of DCS Pn1 ! ~ xxxx ST
+	Where xxxx is the hex value of the checksum.
+
+	Source: VT420
 
 CSI Pn * z
 	Invoke Macro (DECINVM)

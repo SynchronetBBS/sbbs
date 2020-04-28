@@ -2,7 +2,7 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-CFLAGS += $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
+CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
 
 ifeq ($(os),win32)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
