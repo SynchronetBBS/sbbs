@@ -1,5 +1,7 @@
 // Terminal test utility...
 
+var has_cksum = false;
+
 function check_xy(x, y)
 {
 	var pos = fast_getxy();
@@ -32,6 +34,30 @@ function read_ansi_seq(timeout)
 	mswait(timeout);
 	while(console.inkey());
 	return null;
+}
+
+function interactive_or_string(str, x, y)
+{
+	var oldcs;
+	var newcs;
+
+	if (has_cksum) {
+		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length)+"*y");
+		oldcs = read_ansi_string(500);
+		console.gotoxy(x, y);
+		console.write(str);
+		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length)+"*y");
+		newcs = read_ansi_string(500);
+		if (newcs === oldcs)
+			return true;
+		return false;
+	}
+	if (!interactive)
+		return null;
+	console.gotoxy(x, y+1);
+	var ret = console.yesno("Do you see the string \""+str+"\" on the line above");
+	console.clear();
+	return ret;
 }
 
 function read_ansi_string(timeout)
@@ -157,8 +183,20 @@ var tests = [
 		// TODO: So much stuff here... basically verify that things get reset
 	}},
 	{'name':'ICH', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		var ret;
+		console.gotoxy(1, 1);
+		console.write("InsertCharacter");
+		console.gotoxy(7, 1);
+		console.write("\x1b[@");
+		ret = interactive_or_string("Insert Character", 1, 1);
+		if (!ret)
+			return ret;
+		console.gotoxy(1, 1);
+		console.write("InsertCharacters");
+		console.gotoxy(7, 1);
+		console.write("\x1b[3@");
+		console.write(" 3");
+		return interactive_or_string("Insert 3 Characters", 1, 1);
 	}},
 	{'name':'SL', 'func':function() {
 		return null;
@@ -301,19 +339,17 @@ var tests = [
 		var pos1 = fast_getxy();
 		console.write("\t");
 		var pos2 = fast_getxy();
-		console.write("\t");
-		var pos3 = fast_getxy();
-		console.gotoxy(pos3.x,pos3.y);
-		console.write("\x1b[Z");
-		if (!check_xy(pos2.x, pos2.y))
-			return false;
-		console.gotoxy(pos3.x,pos3.y);
-		console.write("\x1b[1Z");
-		if (!check_xy(pos2.x, pos2.y))
-			return false;
-		console.gotoxy(pos3.x,pos3.y);
-		console.write("\x1b[2Z");
+		console.gotoxy(1, 1);
+		console.write("\x1b[I");
 		if (!check_xy(pos1.x, pos1.y))
+			return false;
+		console.gotoxy(1, 1);
+		console.write("\x1b[1I");
+		if (!check_xy(pos1.x, pos1.y))
+			return false;
+		console.gotoxy(1, 1);
+		console.write("\x1b[2I");
+		if (!check_xy(pos2.x, pos2.y))
 			return false;
 		return true;
 	}},
@@ -658,15 +694,22 @@ var tests = [
 	}},
 	{'name':'DECSTBM', 'func':function() {
 		console.gotoxy(10, 10);
-		// TODO: XTerm moves to 1;1 here...
 		console.write("\x1b[10;11r");
+		if (!check_xy(1, 1)) {
+			console.write("\x1b[r");
+			return false;
+		}
 		console.gotoxy(10, 10);
 		console.write("\r\n\r\n\r\n");
-		if (!check_xy(1, 11))
+		if (!check_xy(1, 11)) {
+			console.write("\x1b[r");
 			return false;
+		}
 		console.write("\x1b[5A");
-		if (!check_xy(1, 10))
+		if (!check_xy(1, 10)) {
+			console.write("\x1b[r");
 			return false;
+		}
 		console.write("\x1b[r");
 		return true;
 	}},
@@ -680,8 +723,11 @@ var tests = [
 	}},
 	{'name':'DECSLRM', 'func':function() {
 		console.write("\x1b[?69h");
-		// TODO: XTerm moves to 1;1 here...
 		console.write("\x1b[10;11s");
+		if (!check_xy(1, 1)) {
+			console.write("\x1bc");
+			return false;
+		}
 		console.gotoxy(10, 10);
 		console.write("\b\b\b");
 		if (!check_xy(10, 10)) {
@@ -773,9 +819,13 @@ function main()
 }
 
 var interactive = console.yesno("Run interactive tests");
+console.write("\x1b[1;1;1;1;1;1*y");
+if (read_ansi_string(500).search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+	has_csum = true;
 console.write("\x1bc");
 var oldpt = console.ctrlkey_passthru;
 console.ctrlkey_passthru = 0x7FFFFFFF;
+
 var res = main();
 console.write("\x1bc");
 console.ctrlkey_passthru = oldpt;
