@@ -175,10 +175,16 @@ function process_tic(tic)
 	}
 
 	function do_move(path, tic) {
-		if (rename_or_move(tic.full_path, path+tic.file))
-			tic.full_path = path+tic.file;
+		var dst = path+tic.file;
+		var actual = file_getcase(dst);
+		if (actual) {
+			file_remove(actual);
+			dst = actual;
+		}
+		if (rename_or_move(tic.full_path, dst))
+			tic.full_path = dst;
 		else {
-			log(LOG_ERROR, "Cannot move '"+tic.full_path+"' to '"+path+tic.file+"'!");
+			log(LOG_ERROR, "Cannot move '"+tic.full_path+"' to '"+dst+"'!");
 			return false;
 		}
 		return true;
