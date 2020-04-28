@@ -1082,6 +1082,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return main_csi.str;
 	}
 
+	if(strncmp(sp, "STRVAR:", 7) == 0) {
+		uint32_t crc = crc32(sp + 7, 0);
+		if(main_csi.str_var && main_csi.str_var_name) {
+			for(i=0;i<main_csi.str_vars;i++)
+				if(main_csi.str_var_name[i] == crc)
+					return main_csi.str_var[i];
+		}
+		return nulstr;
+	}
+
 	if(!strncmp(sp,"EXEC:",5)) {
 		exec_bin(sp+5,&main_csi);
 		return(nulstr);
