@@ -879,13 +879,13 @@ var tests = [
 		seq = read_ansi_string(500);
 		if (seq === null)
 			return false;
-		if (seq.search(/^\x1bP[0-9]+!~[A-Za-z0-9]{4}\x1b\\$/) === -1)
+		if (seq.search(/^\x1bP[0-9]+!~[A-Z0-9]{4}\x1b\\$/) === -1)
 			return false;
 		console.write("\x1b[?63;2n");
 		seq = read_ansi_string(500);
 		if (seq === null)
 			return false;
-		if (seq.search(/^\x1bP2!~[A-Za-z0-9]{4}\x1b\\$/) === -1)
+		if (seq.search(/^\x1bP2!~[A-Z0-9]{4}\x1b\\$/) === -1)
 			return false;
 		return true;
 	}},
@@ -976,7 +976,7 @@ var tests = [
 	{'name':'DECRQCRA', 'func':function() {
 		console.write("\x1b[1;1;1;1;1;1*y");
 		var ras = read_ansi_string(500);
-		if (ras === null || ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+		if (ras === null || ras.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) !== -1)
 			return true;
 		return false;
 	}},
@@ -1031,7 +1031,7 @@ var oldpt = console.ctrlkey_passthru;
 console.ctrlkey_passthru = 0x7FFFFFFF;
 console.write("\x1b[1;1;1;1;1;1*y");
 var ras = read_ansi_string(500);
-if (ras !== null && ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+if (ras !== null && ras.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) !== -1)
 	has_cksum = true;
 console.write("\x1bc");
 var res = main();
