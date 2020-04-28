@@ -5305,6 +5305,8 @@ int export_netmail(void)
 		create_netmail(msg.to, &msg, msg_subj, txt, *(fidoaddr_t*)msg.to_net.addr);
 		FREE_AND_NULL(txt);
 
+		msg.hdr.netattr |= MSG_SENT;
+		msg.hdr.netattr &= ~MSG_INTRANSIT;
 		if(cfg.delete_netmail || (msg.hdr.netattr&MSG_KILLSENT)) {
 			/* Delete exported netmail */
 			msg.hdr.attr |= MSG_DELETE;
@@ -5313,8 +5315,6 @@ int export_netmail(void)
 					,i, email->last_error, __LINE__, msg.hdr.number);
 			(void)fseek(email->sid_fp, (msg.offset+1)*sizeof(msg.idx), SEEK_SET);
 		} else {
-			/* Just mark as "sent" */
-			msg.hdr.netattr |= MSG_SENT;
 			if((i = smb_putmsghdr(email, &msg)) != SMB_SUCCESS)
 				lprintf(LOG_ERR,"!ERROR %d (%s) line %d updating msg header for mail msg #%u"
 					,i, email->last_error, __LINE__, msg.hdr.number);
