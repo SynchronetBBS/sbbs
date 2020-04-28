@@ -42,11 +42,11 @@ function interactive_or_string(str, x, y)
 	var newcs;
 
 	if (has_cksum) {
-		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length)+"*y");
+		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length - 1)+"*y");
 		oldcs = read_ansi_string(500);
 		console.gotoxy(x, y);
 		console.write(str);
-		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length)+"*y");
+		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length - 1)+"*y");
 		newcs = read_ansi_string(500);
 		if (newcs === oldcs)
 			return true;
@@ -82,6 +82,8 @@ function fast_getxy()
 {
 	console.write("\x1b[6n");
 	var seq = read_ansi_seq(500);
+	if (seq === null)
+		return {x:0, y:0};
 	var m = seq.match(/^\x1b\[([0-9]+);([0-9]+)R$/);
 	if (m === null)
 		return {x:0, y:0};
@@ -199,8 +201,17 @@ var tests = [
 		return interactive_or_string("Insert 3 Characters", 1, 1);
 	}},
 	{'name':'SL', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		var ret;
+		console.gotoxy(1, 1);
+		console.write(" Shift Left");
+		console.write("\x1b[ @");
+		ret = interactive_or_string("Shift Left", 1, 1);
+		if (!ret)
+			return ret;
+		console.gotoxy(1, 1);
+		console.write("   Shift Left 3");
+		console.write("\x1b[3 @");
+		return interactive_or_string("Shift Left 3", 1, 1);
 	}},
 	{'name':'CUU', 'func':function() {
 		console.gotoxy(20, 10);
@@ -216,8 +227,21 @@ var tests = [
 		return true;
 	}},
 	{'name':'SR', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		var ret;
+		console.gotoxy(1, 1);
+		console.write("Shift Right");
+		console.write("\x1b[ A");
+		console.gotoxy(1, 1);
+		console.write('x');
+		ret = interactive_or_string("xShift Right", 1, 1);
+		if (!ret)
+			return ret;
+		console.gotoxy(1, 1);
+		console.write("Shift Right 3");
+		console.write("\x1b[3 A");
+		console.gotoxy(1, 1);
+		console.write('xxx');
+		return interactive_or_string("xxxShift Right 3", 1, 1);
 	}},
 	{'name':'CUD', 'func':function() {
 		console.gotoxy(20, 1);
@@ -276,7 +300,6 @@ var tests = [
 		if (!check_xy(1, 3))
 			return false;
 		return true;
-		// TODO: Scrolling
 	}},
 	{'name':'CPL', 'func':function() {
 		console.gotoxy(20, 3);
@@ -354,20 +377,107 @@ var tests = [
 		return true;
 	}},
 	{'name':'ED', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("This is a string that should be erased... except for this bit.");
+		console.gotoxy(42, 1);
+		console.write("\x1b[1J");
+		var ret = interactive_or_string("                                          except for this bit.", 1, 1);
+		if (!ret)
+			return ret;
+		console.gotoxy(console.screen_columns - 51, console.screen_rows);
+		console.write("Except for this bit, all of this should be erased.");
+		console.gotoxy(console.screen_columns - 32, console.screen_rows);
+		console.write("\x1b[0J");
+		ret = interactive_or_string("Except for this bit                               ", console.screen_columns - 51, console.screen_rows);
+		if (!ret)
+			return ret;
+		console.gotoxy(1, 1);
+		console.write("This is a string that should be erased...");
+		console.gotoxy(console.screen_columns - 40, console.screen_rows);
+		console.write("This string should be erased as well...");
+		console.write("\x1b[2J");
+		ret = interactive_or_string("                                         ", 1, 1);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("                                       ", console.screen_columns - 40, console.screen_rows);
+		return ret;
 	}},
 	{'name':'EL', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("First Line\r\nSecond Line\r\nThird Line\r\nFourth Line");
+		console.gotoxy(6, 1);
+		console.write("\x1b[K");
+		var ret = interactive_or_string("First     ", 1, 1);
+		if (!ret)
+			return ret;
+		console.gotoxy(7, 2);
+		console.write("\x1b[0K");
+		ret = interactive_or_string("Second     ", 1, 2);
+		if (!ret)
+			return ret;
+		console.gotoxy(6, 3);
+		console.write("\x1b[1K");
+		ret = interactive_or_string("      Line", 1, 3);
+		if (!ret)
+			return ret;
+		console.gotoxy(7, 4);
+		console.write("\x1b[2K");
+		return interactive_or_string("           ", 1, 4);
 	}},
 	{'name':'IL', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("First Line\r\nSecond Line\r\nThird Line\r\nFourth Line");
+		console.gotoxy(1, 2);
+		console.write("\x1b[L");
+		var ret = interactive_or_string("           ", 1, 2);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("Second Line", 1, 3);
+		if (!ret)
+			return ret;
+		console.gotoxy(2, 4);
+		console.write("\x1b[1L");
+		ret = interactive_or_string("           ", 1, 4);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("Third Line", 1, 5);
+		if (!ret)
+			return ret;
+		console.gotoxy(3, 6);
+		console.write("\x1b[2L");
+		ret = interactive_or_string("           ", 1, 6);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("           ", 1, 7);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("Fourth Line  ", 1, 8);
+		return ret;
 	}},
 	{'name':'DL', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("First Line\r\nKillme\r\nSecond Line\r\nKillme too\r\nThird Line\r\nKillme also\r\nKillme last\r\nFourth Line\r\n");
+		console.gotoxy(1, 2);
+		console.write("\x1b[M");
+		console.gotoxy(1, 3);
+		console.write("\x1b[1M");
+		console.gotoxy(1, 4);
+		console.write("\x1b[2M");
+		var ret = interactive_or_string("First Line", 1, 1);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("Second Line", 1, 2);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("Third Line", 1, 3);
+		if (!ret)
+			return ret;
+		ret = interactive_or_string("Fourth Line", 1, 4);
+		return ret;
 	}},
 	{'name':'CTAM', 'func':function() {
 		return null;
@@ -378,12 +488,37 @@ var tests = [
 		// TODO: Interactive...
 	}},
 	{'name':'DCH', 'func':function() {
-		return null;
+		console.gotoxy(1, 1);
+		console.write("This  Line  Has   Single    Spaces");
+		console.gotoxy(5, 1);
+		console.write("\x1b[P");
+		console.gotoxy(10, 1);
+		console.write("\x1b[1P");
+		console.gotoxy(14, 1);
+		console.write("\x1b[2P");
+		console.gotoxy(21, 1);
+		console.write("\x1b[3P");
+		return interactive_or_string("This Line Has Single Spaces", 1, 1);
 		// TODO: Interactive...
 	}},
 	{'name':'SU', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("First Line\r\nSecond Line\r\nThird Line\r\nFourth Line\r\nFifth Line\r\n");
+		var ret = interactive_or_string("First Line", 1, 1);
+		if (!ret)
+			return ret;
+		console.write("\x1b[S");
+		ret = interactive_or_string("Second Line", 1, 1);
+		if (!ret)
+			return ret;
+		console.write("\x1b[1S");
+		ret = interactive_or_string("Third Line", 1, 1);
+		if (!ret)
+			return ret;
+		console.write("\x1b[2S");
+		ret = interactive_or_string("Fifth Line", 1, 1);
+		return ret;
 	}},
 	{'name':'XTSRGA', 'func':function() {
 		// TODO: XTerm, even with "-ti vt340" fails this test (never a response)
@@ -401,12 +536,35 @@ var tests = [
 		// TODO: Many other options...
 	}},
 	{'name':'SD', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("First Line\r\n");
+		var ret = interactive_or_string("First Line", 1, 1);
+		if (!ret)
+			return ret;
+		console.write("\x1b[T");
+		ret = interactive_or_string("First Line", 1, 2);
+		if (!ret)
+			return ret;
+		console.write("\x1b[1T");
+		ret = interactive_or_string("First Line", 1, 3);
+		if (!ret)
+			return ret;
+		console.write("\x1b[2T");
+		ret = interactive_or_string("First Line", 1, 5);
+		return ret;
 	}},
 	{'name':'ECH', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("One-Another-Two--Whee");
+		console.gotoxy(4, 1);
+		console.write("\x1b[X");
+		console.gotoxy(12, 1);
+		console.write("\x1b[1X");
+		console.gotoxy(16, 1);
+		console.write("\x1b[2X");
+		return interactive_or_string("One Another Two  Whee", 1, 1);
 	}},
 	{'name':'CVT', 'func':function() {
 		console.gotoxy(1,1);
@@ -429,6 +587,7 @@ var tests = [
 		return true;
 	}},
 	{'name':'CBT', 'func':function() {
+		// TODO: Sometimes fails...
 		console.gotoxy(1,1);
 		console.write("\t");
 		var pos1 = fast_getxy();
@@ -650,7 +809,7 @@ var tests = [
 	}},
 	{'name':'BCDSR', 'func':function() {
 		console.write("\x1b[255n");
-		seq = read_ansi_seq(500);
+		var seq = read_ansi_seq(500);
 		if (seq === null)
 			return false;
 		var m = seq.match(/^\x1b\[([0-9]+);([0-9]+)R$/);
@@ -664,7 +823,7 @@ var tests = [
 	}},
 	{'name':'CTSMRR', 'func':function() {
 		console.write("\x1b[=1n");
-		seq = read_ansi_seq(500);
+		var seq = read_ansi_seq(500);
 		if (seq === null)
 			return false;
 		if (seq.search(/^\x1b\[=1;[0-9]+;(?:0|1|99);[0-9]+;[0-9]+;[0-9]+;[0-9]+n$/) === -1)
@@ -685,10 +844,22 @@ var tests = [
 	}},
 	{'name':'DECDSR', 'func':function() {
 		console.write("\x1b[?62n");
-		seq = read_ansi_seq(500);
+		var seq = read_ansi_seq(500);
 		if (seq === null)
 			return false;
 		if (seq.search(/^\x1b\[[0-9]+\*\{$/) === -1)
+			return false;
+		console.write("\x1b[?63n");
+		seq = read_ansi_string(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1bP1![A-Za-z0-9]{4}\x1b\\$/) === -1)
+			return false;
+		console.write("\x1b[?63;2n");
+		seq = read_ansi_string(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1bP2![A-Za-z0-9]{4}\x1b\\$/) === -1)
 			return false;
 		return true;
 	}},
@@ -776,6 +947,17 @@ var tests = [
 			return false;
 		return true;
 	}},
+	{'name':'DECRQCRA', 'func':function() {
+		console.write("\x1b[1;1;1;1;1;1*y");
+		var ras = read_ansi_string(500);
+		if (ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+			return true;
+		return false;
+	}},
+	{'name':'DECINVM', 'func':function() {
+		return null;
+		// TODO: Macros!
+	}},
 	{'name':'CTOSF', 'func':function() {
 		return null;
 		// TODO: Interactive...
@@ -819,13 +1001,13 @@ function main()
 }
 
 var interactive = console.yesno("Run interactive tests");
-console.write("\x1b[1;1;1;1;1;1*y");
-if (read_ansi_string(500).search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
-	has_csum = true;
-console.write("\x1bc");
 var oldpt = console.ctrlkey_passthru;
 console.ctrlkey_passthru = 0x7FFFFFFF;
-
+console.write("\x1b[1;1;1;1;1;1*y");
+var ras = read_ansi_string(500);
+if (ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+	has_cksum = true;
+console.write("\x1bc");
 var res = main();
 console.write("\x1bc");
 console.ctrlkey_passthru = oldpt;
