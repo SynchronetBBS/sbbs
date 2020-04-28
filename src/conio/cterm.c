@@ -2153,7 +2153,7 @@ do_backtab(struct cterminal *cterm)
 
 	CURR_XY(&cx, &cy);
 	ox = cx;
-	for (i = cterm->tab_count; i >= 0; i--) {
+	for (i = cterm->tab_count - 1; i >= 0; i--) {
 		if (cterm->tabs[i] < cx) {
 			cx = cterm->tabs[i];
 			break;
