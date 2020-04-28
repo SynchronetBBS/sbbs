@@ -38,10 +38,11 @@
  *           are in this space.
  * "absterm" position inside the full terminal area.  These coordinates
  *           are used when origin mode is off.
- * "term"    The ciolib window.  These coordinates are used when origin
- *           mode is on, and for screen updates.
+ * "term"    The scrolling region.  These coordinates are used when origin
+ *           mode is on.
  * "curr"    Either absterm or term depending on the state of origin mode
- *           This is what's sent to and received from the remote.
+ *           This is what's sent to and received from the remote, and
+ *           matches the CTerm window.
  */
 
 #include <ctype.h>
@@ -766,12 +767,32 @@ coord_get_xy(struct cterminal *cterm, enum cterm_coordinates coord, int *x, int 
 	if (y)
 		*y = WHEREY();
 
-	coord_conv_xy(cterm, CTERM_COORD_TERM, coord, x, y);
+	coord_conv_xy(cterm, CTERM_COORD_CURR, coord, x, y);
 }
 #define SCR_XY(x,y)	coord_get_xy(cterm, CTERM_COORD_SCREEN, x, y)
 #define ABS_XY(x,y)	coord_get_xy(cterm, CTERM_COORD_ABSTERM, x, y)
 #define TERM_XY(x,y)	coord_get_xy(cterm, CTERM_COORD_TERM, x, y)
 #define CURR_XY(x,y)	coord_get_xy(cterm, CTERM_COORD_CURR, x, y)
+static void
+setwindow(struct cterminal *cterm)
+{
+	int col, row, max_col, max_row;
+
+	col = CURR_MINX;
+	row = CURR_MINY;
+	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &col, &row);
+	max_col = CURR_MAXX;
+	max_row = CURR_MAXY;
+	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &max_col, &max_row);
+	WINDOW(col, row, max_col, max_row);
+}
+
+static void
+term_gotoxy(struct cterminal *cterm, int x, int y)
+{
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &x, &y);
+	GOTOXY(x, y);
+}
 
 static void
 insert_tabstop(struct cterminal *cterm, int pos)
@@ -1096,8 +1117,8 @@ scrolldown(struct cterminal *cterm)
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
 	MOVETEXT(minx, miny, maxx, maxy - 1, minx, miny + 1);
-	TERM_XY(&x, &y);
-	GOTOXY(TERM_MINX, TERM_MINY);
+	CURR_XY(&x, &y);
+	term_gotoxy(cterm, TERM_MINX, TERM_MINY);
 	CLREOL();
 	GOTOXY(x, y);
 }
@@ -1122,10 +1143,21 @@ scrollup(struct cterminal *cterm)
 		vmem_gettext(cterm->x, miny, cterm->x + cterm->width - 1, miny, cterm->scrollback+(cterm->backpos-1)*cterm->width);
 	}
 	MOVETEXT(minx, miny + 1, maxx, maxy, minx, miny);
-	TERM_XY(&x, &y);
-	GOTOXY(TERM_MINX, TERM_MAXY);
+	CURR_XY(&x, &y);
+	term_gotoxy(cterm, TERM_MINX, TERM_MAXY);
 	CLREOL();
 	GOTOXY(x, y);
+}
+
+static void
+cond_scrollup(struct cterminal *cterm)
+{
+	int x, y;
+
+	TERM_XY(&x, &y);
+	if (x >= TERM_MINX && x <= TERM_MAXX &&
+	    y >= TERM_MINY && y <= TERM_MAXY)
+		scrollup(cterm);
 }
 
 static void
@@ -1144,13 +1176,16 @@ dellines(struct cterminal * cterm, int lines)
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
 	TERM_XY(&x, &y);
+	// Can't delete lines outside of window
+	if (x < TERM_MINX || x > TERM_MAXX || y < TERM_MINY || y > TERM_MAXY)
+		return;
 	SCR_XY(&sx, &sy);
 	MOVETEXT(minx, sy + lines, maxx, maxy, minx, sy);
 	for(i = TERM_MAXY - lines; i <= TERM_MAXY; i++) {
-		GOTOXY(TERM_MINX, i);
+		term_gotoxy(cterm, TERM_MINX, i);
 		CLREOL();
 	}
-	GOTOXY(x, y);
+	term_gotoxy(cterm, x, y);
 }
 
 static void
@@ -1159,9 +1194,9 @@ clear2bol(struct cterminal * cterm)
 	struct vmem_cell *buf;
 	int i;
 	int x, y;
-	int minx = TERM_MINX;
+	int minx = CURR_MINX;
 
-	TERM_XY(&x, &y);
+	CURR_XY(&x, &y);
 	buf = malloc(x * sizeof(*buf));
 	for(i = 0; i < x; i++) {
 		buf[i].ch = ' ';
@@ -1170,8 +1205,8 @@ clear2bol(struct cterminal * cterm)
 		buf[i].bg = cterm->bg_color;
 		buf[i].font = ciolib_attrfont(cterm->attr);
 	}
-	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &x, &y);
-	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, NULL);
+	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
+	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &minx, NULL);
 	vmem_puttext(minx, y, x, y, buf);
 	free(buf);
 }
@@ -1192,7 +1227,7 @@ cterm_clearscreen(struct cterminal *cterm, char attr)
 		    cterm->scrollback + (cterm->backpos - cterm->height) * cterm->width);
 	}
 	CLRSCR();
-	GOTOXY(TERM_MINX, TERM_MINY);
+	GOTOXY(CURR_MINX, CURR_MINY);
 }
 
 /*
@@ -1543,6 +1578,11 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 	if ((*end < '?' || *end > '~') && !finish)
 		return;
 
+	/*
+	 * TODO: Sixel interaction with scrolling margins...
+	 * This one is interesting because there is no real terminal
+	 * which supported left/right margins *and* sixel graphics.
+	 */
 	while (p <= end) {
 		if (*p >= '?' && *p <= '~') {
 			unsigned data = *p - '?';
@@ -1679,6 +1719,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 				case '-':	// Graphics New Line
 					{
 						int max_row = TERM_MAXY;
+						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &max_row, NULL);
 						GETTEXTINFO(&ti);
 						vmode = find_vmode(ti.currmode);
 
@@ -1697,7 +1738,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						if (cterm->sx_height)
 							cterm->sx_height -= cterm->sx_height > 6 ? 6 : cterm->sx_height;
 						while ((cterm->sx_y + 6 * cterm->sx_iv - 1) >= (cterm->y + max_row - 1) * vparams[vmode].charheight) {
-							scrollup(cterm);
+							cond_scrollup(cterm);
 							cterm->sx_y -= vparams[vmode].charheight;
 						}
 						cterm->sx_first_pass = 1;
@@ -1752,11 +1793,11 @@ all_done:
 			cterm->sx_y = (cterm->sx_y - 1) / vparams[vmode].charheight + 1;
 			cterm->sx_y -= (cterm->y - 1);
 
-			GOTOXY(cterm->sx_x,cterm->sx_y);
+			term_gotoxy(cterm, cterm->sx_x, cterm->sx_y);
 		}
 	}
 	else {
-		GOTOXY(cterm->sx_start_x, cterm->sx_start_y);
+		term_gotoxy(cterm, cterm->sx_start_x, cterm->sx_start_y);
 	}
 	cterm->cursor = cterm->sx_orig_cursor;
 	SETCURSORTYPE(cterm->cursor);
@@ -2066,6 +2107,132 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 	free_sub_parameters(&sub);
 }
 
+static void
+do_tab(struct cterminal *cterm)
+{
+	int i;
+	int cx, cy, ox;
+	int lm, rm, bm;
+
+	rm = TERM_MAXX;
+	bm = TERM_MAXY;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, &bm);
+	lm = TERM_MINX;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &lm, NULL);
+
+	CURR_XY(&cx, &cy);
+	ox = cx;
+	for (i = 0; i < cterm->tab_count; i++) {
+		if (cterm->tabs[i] > cx) {
+			cx = cterm->tabs[i];
+			break;
+		}
+	}
+	if ((ox > rm && cx > CURR_MAXX) || (ox <= rm && cx > rm) || i == cterm->tab_count) {
+		cx = lm;
+		if (cy == bm) {
+			cond_scrollup(cterm);
+			cy = bm;
+		}
+		else if(cy < CURR_MAXY)
+			cy++;
+	}
+	GOTOXY(cx, cy);
+}
+
+static void
+do_backtab(struct cterminal *cterm)
+{
+	int i;
+	int cx, cy, ox;
+	int lm;
+
+	lm = TERM_MINX;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &lm, NULL);
+
+	CURR_XY(&cx, &cy);
+	ox = cx;
+	for (i = cterm->tab_count; i >= 0; i--) {
+		if (cterm->tabs[i] < cx) {
+			cx = cterm->tabs[i];
+			break;
+		}
+	}
+	if (ox >= lm && cx < lm)
+		cx = lm;
+	GOTOXY(cx, cy);
+}
+
+static void
+adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
+{
+	int x, y;
+	int tx, ty;
+
+	/*
+	 * If we're inside the scrolling margins, we simply move inside
+	 * them, and scrolling works.
+	 */
+	TERM_XY(&tx, &ty);
+	if (tx >= TERM_MINX && tx <= TERM_MAXX &&
+	    ty >= TERM_MINY && ty <= TERM_MAXY) {
+		if (xadj == INT_MIN)
+			tx = TERM_MINX;
+		else
+			tx += xadj;
+		if (yadj == INT_MIN)
+			ty = TERM_MINX;
+		else
+			ty += yadj;
+		if (scroll) {
+			while(ty > TERM_MAXY) {
+				scrollup(cterm);
+				ty--;
+			}
+			while(ty < TERM_MINY) {
+				scrolldown(cterm);
+				ty++;
+			}
+		}
+		else {
+			if (ty > TERM_MAXY)
+				ty = TERM_MAXY;
+			if (ty < TERM_MINY)
+				ty = TERM_MINY;
+		}
+		if (tx > TERM_MAXX)
+			tx = TERM_MAXX;
+		if (tx < TERM_MINX)
+			tx = TERM_MINX;
+		term_gotoxy(cterm, tx, ty);
+		return;
+	}
+	/*
+	 * Outside of the scrolling margins, we can cross a margin
+	 * into the scrolling region, but can't cross going out.
+	 */
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &tx, &ty);
+	x = tx;
+	y = ty;
+	if (xadj == INT_MIN)
+		tx = TERM_MINX;
+	else
+		tx += xadj;
+	if (yadj == INT_MIN)
+		ty = TERM_MINX;
+	else
+		ty += yadj;
+	if (x <= cterm->right_margin && tx > cterm->right_margin)
+		tx = cterm->right_margin;
+	if (y <= cterm->bottom_margin && ty > cterm->bottom_margin)
+		ty = cterm->bottom_margin;
+	if (tx < cterm->left_margin && x >= cterm->left_margin)
+		tx = cterm->left_margin;
+	if (ty < cterm->top_margin && y >= cterm->top_margin)
+		ty = cterm->top_margin;
+	GOTOXY(tx, ty);
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
 {
 	char	*p;
@@ -2162,7 +2329,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									switch(seq->param_int[i]) {
 										case 6:
 											cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
-											GOTOXY(1,cterm->top_margin);
+											setwindow(cterm);
 											break;
 										case 7:
 											cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
@@ -2237,7 +2404,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									switch(seq->param_int[i]) {
 										case 6:
 											cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
-											GOTOXY(1,1);
+											setwindow(cterm);
 											break;
 										case 7:
 											cterm->extattr &= ~(CTERM_EXTATTR_AUTOWRAP);
@@ -2438,6 +2605,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
 									cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
 									cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
+									setwindow(cterm);
 									break;
 								}
 								else {
@@ -2447,6 +2615,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
 												cterm->saved_mode &= ~(CTERM_SAVEMODE_ORIGIN);
 												cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_ORIGINMODE)?CTERM_SAVEMODE_ORIGIN:0;
+												setwindow(cterm);
 												break;
 											case 7:
 												cterm->saved_mode_mask |= CTERM_SAVEMODE_AUTOWRAP;
@@ -2562,6 +2731,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
 										else
 											cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
+										setwindow(cterm);
 									}
 									if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP) {
 										if (cterm->saved_mode & CTERM_SAVEMODE_AUTOWRAP)
@@ -2648,6 +2818,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													else
 														cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
 												}
+												setwindow(cterm);
 												break;
 											case 7:
 												if(cterm->saved_mode_mask & CTERM_SAVEMODE_AUTOWRAP) {
@@ -2988,6 +3159,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					switch(seq->final_byte) {
 						case '@':	/* Insert Char */
 							TERM_XY(&i, &j);
+							if (i < TERM_MINX || i > TERM_MAXX || j < TERM_MINY || j > TERM_MAXY)
+								break;
 							col = i;
 							row = j;
 							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
@@ -3001,71 +3174,54 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							MOVETEXT(col, row, max_col - seq->param_int[0], row, col + seq->param_int[0], row);
 							for(l=0; l < seq->param_int[0]; l++)
 								PUTCH(' ');
-							GOTOXY(i,j);
+							term_gotoxy(cterm, i, j);
 							break;
 						case 'A':	/* Cursor Up */
 						case 'k':	/* Line Position Backward */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, &row);
-							row -= seq->param_int[0];
-							if(row < TERM_MINY)
-								row = TERM_MINY;
-							GOTOXY(col, row);
+							if (seq->param_int[0] < 1)
+								break;
+							adjust_currpos(cterm, 0, 0 - seq->param_int[0], 0);
 							break;
 						case 'B':	/* Cursor Down */
 						case 'e':	/* Line Position Forward */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, &row);
-							row += seq->param_int[0];
-							if(row > TERM_MAXY)
-								row = TERM_MAXY;
-							GOTOXY(col, row);
+							if (seq->param_int[0] < 1)
+								break;
+							adjust_currpos(cterm, 0, seq->param_int[0], 0);
 							break;
 						case 'a':	/* Character Position Forward */
 						case 'C':	/* Cursor Right */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, &row);
-							col += seq->param_int[0];
-							if(col > TERM_MAXX)
-								col = TERM_MAXX;
-							GOTOXY(col, row);
+							if (seq->param_int[0] < 1)
+								break;
+							adjust_currpos(cterm, seq->param_int[0], 0, 0);
 							break;
 						case 'j':	/* Character Position Backward */
 						case 'D':	/* Cursor Left */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, &row);
-							col -= seq->param_int[0];
-							if(col < TERM_MINX)
-								col = TERM_MINX;
-							GOTOXY(col, row);
+							if (seq->param_int[0] < 1)
+								break;
+							adjust_currpos(cterm, 0 - seq->param_int[0], 0, 0);
 							break;
 						case 'E':	/* Cursor next line */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, &row);
-							row += seq->param_int[0];
-							while(row > TERM_MAXY) {
-								scrollup(cterm);
-								row--;
-							}
-							col = TERM_MINX;
-							GOTOXY(col, row);
+							if (seq->param_int[0] < 1)
+								break;
+							adjust_currpos(cterm, INT_MIN, seq->param_int[0], 0);
 							break;
 						case 'F':	/* Cursor preceding line */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, &row);
-							row -= seq->param_int[0];
-							if (row < TERM_MINY)
-								row = TERM_MINY;
-							col = TERM_MINX;
-							GOTOXY(col, row);
+							if (seq->param_int[0] < 1)
+								break;
+							adjust_currpos(cterm, INT_MIN, 0 - seq->param_int[0], 0);
 							break;
 						case '`':
 						case 'G':	/* Cursor Position Absolute */
 							seq_default(seq, 0, 1);
-							TERM_XY(NULL, &row);
+							CURR_XY(NULL, &row);
 							col = seq->param_int[0];
-							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, &col, NULL);
-							if(col >= TERM_MINX && col <= TERM_MAXX) {
+							if(col >= CURR_MINX && col <= CURR_MAXX) {
 								GOTOXY(col, row);
 							}
 							break;
@@ -3075,61 +3231,48 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 1, 1);
 							row=seq->param_int[0];
 							col=seq->param_int[1];
-							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, &col, &row);
-							if (row < TERM_MINY)
-								row = TERM_MINY;
-							if(col < TERM_MINX)
-								col = TERM_MINX;
-							if(row > TERM_MAXY)
-								row = TERM_MAXY;
-							if(col > TERM_MAXX)
-								col = TERM_MAXX;
-							GOTOXY(col,row);
+							if (row < CURR_MINY)
+								row = CURR_MINY;
+							if(col < CURR_MINX)
+								col = CURR_MINX;
+							if(row > CURR_MAXY)
+								row = CURR_MAXY;
+							if(col > CURR_MAXX)
+								col = CURR_MAXX;
+							GOTOXY(col, row);
 							break;
-						case 'I':	/* TODO? Cursor Forward Tabulation */
+						case 'I':	/* Cursor Forward Tabulation */
 						case 'Y':	/* Cursor Line Tabulation */
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
 								break;
-							TERM_XY(&col, &row);
-							for(i = 0; i < cterm->tab_count; i++) {
-								if(cterm->tabs[i] > col)
-									break;
-							}
-							if (i == cterm->tab_count)
-								break;
-							for (k = 0; k < seq->param_int[0] && i + k < cterm->tab_count; k++) {
-								if (cterm->tabs[i + k] <= TERM_MAXX)
-									col = cterm->tabs[i + k];
-								else
-									break;
-							}
-							GOTOXY(col,row);
+							for (i = 0; i < seq->param_int[0]; i++)
+								do_tab(cterm);
 							break;
 						case 'J':	/* Erase In Page */
 							seq_default(seq, 0, 0);
 							switch(seq->param_int[0]) {
 								case 0:
 									CLREOL();
-									TERM_XY(&col, &row);
+									CURR_XY(&col, &row);
 									for (i = row + 1; i <= TERM_MAXY; i++) {
-										GOTOXY(TERM_MINY, i);
+										term_gotoxy(cterm, TERM_MINY, i);
 										CLREOL();
 									}
 									GOTOXY(col, row);
 									break;
 								case 1:
 									clear2bol(cterm);
-									TERM_XY(&col, &row);
+									CURR_XY(&col, &row);
 									for (i = row - 1; i >= TERM_MINY; i--) {
-										GOTOXY(TERM_MINX, i);
+										term_gotoxy(cterm, TERM_MINX, i);
 										CLREOL();
 									}
-									GOTOXY(col,row);
+									GOTOXY(col, row);
 									break;
 								case 2:
 									cterm_clearscreen(cterm, (char)cterm->attr);
-									GOTOXY(TERM_MINX, TERM_MINY);
+									GOTOXY(CURR_MINX, CURR_MINY);
 									break;
 							}
 							break;
@@ -3143,8 +3286,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									clear2bol(cterm);
 									break;
 								case 2:
-									TERM_XY(&col, &row);
-									GOTOXY(TERM_MINX, row);
+									CURR_XY(&col, &row);
+									term_gotoxy(cterm, CURR_MINX, row);
 									CLREOL();
 									GOTOXY(col, row);
 									break;
@@ -3152,7 +3295,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'L':		/* Insert line */
 							TERM_XY(&col, &row);
-							if(row < TERM_MINY || row > TERM_MAXY)
+							if(row < TERM_MINY || row > TERM_MAXY || col < TERM_MINX || col > TERM_MAXX)
 								break;
 							seq_default(seq, 0, 1);
 							i = seq->param_int[0];
@@ -3167,18 +3310,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							if(i)
 								MOVETEXT(col2, row2, max_col, max_row - i, col2, row2 + i);
 							for (j = 0; j < i; j++) {
-								GOTOXY(TERM_MINX, row+j);
+								term_gotoxy(cterm, TERM_MINX, row+j);
 								CLREOL();
 							}
-							GOTOXY(col, row);
+							term_gotoxy(cterm, col, row);
 							break;
 						case 'M':	/* Delete Line (also ANSI music) */
 							if(cterm->music_enable==CTERM_MUSIC_ENABLED) {
 								cterm->music=1;
 							}
 							else {
-								TERM_XY(NULL, &row);
-								if(row >= TERM_MINY && row <= TERM_MAXY) {
+								TERM_XY(&col, &row);
+								if(col >= TERM_MINX && col <= TERM_MAXX && row >= TERM_MINY && row <= TERM_MAXY) {
 									seq_default(seq, 0, 1);
 									i = seq->param_int[0];
 									dellines(cterm, i);
@@ -3196,6 +3339,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'P':	/* Delete char */
 							seq_default(seq, 0, 1);
 							TERM_XY(&col, &row);
+							if (col < TERM_MINX || col > TERM_MAXX || row < TERM_MINY || row > TERM_MAXY)
+								break;
 							i = seq->param_int[0];
 							if(i > TERM_MAXX - col + 1)
 								i = TERM_MAXX - col + 1;
@@ -3205,9 +3350,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							row2 = row;
 							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
 							MOVETEXT(col2 + i, row2, max_col, row2, col2, row2);
-							GOTOXY(TERM_MAXX - i,row);
+							term_gotoxy(cterm, TERM_MAXX - i, row);
 							CLREOL();
-							GOTOXY(col, row);
+							term_gotoxy(cterm, col, row);
 							break;
 						case 'Q':	/* TODO? Select Editing Extent */
 							break;
@@ -3232,9 +3377,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'X':	/* Erase Character */
 							seq_default(seq, 0, 1);
 							i=seq->param_int[0];
-							TERM_XY(&col, &row);
-							if(i > TERM_MAXX - col)
-								i=TERM_MAXX - col;
+							CURR_XY(&col, &row);
+							if(i > CURR_MAXX - col)
+								i=CURR_MAXX - col;
 							vc=malloc(i * sizeof(*vc));
 							for(k=0; k < i; k++) {
 								vc[k].ch=' ';
@@ -3245,26 +3390,19 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							col2 = col;
 							row2 = row;
-							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
-							max_col = TERM_MAXX;
-							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, NULL);
+							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &col2, &row2);
+							max_col = CURR_MAXX;
+							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &max_col, NULL);
 							vmem_puttext(col2, row2, col2 + i - 1, row2, vc);
 							free(vc);
 							break;
 						// for case 'Y': see case 'I':
 						case 'Z':	/* Cursor Backward Tabulation */
 							seq_default(seq, 0, 1);
-							i=strtoul(cterm->escbuf+1,NULL,10);
-							TERM_XY(&col, &row);
-							for (j = cterm->tab_count - 1; j >= 0; j--) {
-								if (cterm->tabs[j] < col) {
-									k = j - seq->param_int[0] + 1;
-									if (k < 0)
-										k = 0;
-									GOTOXY(cterm->tabs[k], row);
-									break;
-								}
-							}
+							if (seq->param_int[0] < 1)
+								break;
+							for (i = 0; i < seq->param_int[0]; i++)
+								do_backtab(cterm);
 							break;
 						case '[':	/* TODO? Start Reversed String */
 							break;
@@ -3304,13 +3442,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'd':	/* Line Position Absolute */
 							seq_default(seq, 0, 1);
-							TERM_XY(&col, NULL);
+							CURR_XY(&col, NULL);
 							row = seq->param_int[0];
-							coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_TERM, NULL, &row);
-							if (row < 1)
-								row = 1;
-							if (row > TERM_MAXY)
-								row = TERM_MAXY;
+							if (row < CURR_MINY)
+								row = CURR_MINY;
+							if (row > CURR_MAXY)
+								row = CURR_MAXY;
 							GOTOXY(col, row);
 							break;
 						// for case 'e': see case 'B':
@@ -3563,13 +3700,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							if(row >= ABS_MINY && max_row > row && max_row <= ABS_MAXY) {
 								cterm->top_margin = row;
 								cterm->bottom_margin = max_row;
-								col = TERM_MINX;
-								row = TERM_MINY;
-								coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
-								max_col = TERM_MAXX;
-								max_row = TERM_MAXY;
-								coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
-								WINDOW(col, row, max_col, max_row);
+								setwindow(cterm);
+								GOTOXY(CURR_MINX, CURR_MINY);
 							}
 							break;
 						case 's':
@@ -3585,18 +3717,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								if(col >= ABS_MINX && max_col > col && max_col <= ABS_MAXX) {
 									cterm->left_margin = col;
 									cterm->right_margin = max_col;
-									col = TERM_MINX;
-									row = TERM_MINY;
-									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col, &row);
-									max_col = TERM_MAXX;
-									max_row = TERM_MAXY;
-									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
-									WINDOW(col, row, max_col, max_row);
+									setwindow(cterm);
+									GOTOXY(CURR_MINX, CURR_MINY);
 								}
 							}
 							else {
-								cterm->save_xpos=WHEREX();
-								cterm->save_ypos=WHEREY();
+								CURR_XY(&cterm->save_xpos, &cterm->save_ypos);
 							}
 							break;
 						case 't':
@@ -3620,9 +3746,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
 								// TODO: What to do about the window when position is restored...
 								//       Absolute position stored?  Relative?
-								if(cterm->save_ypos < TERM_MINY || cterm->save_ypos > TERM_MAXY || cterm->save_xpos < TERM_MINX || cterm->save_xpos > TERM_MAXX)
+								if(cterm->save_ypos < CURR_MINY || cterm->save_ypos > CURR_MAXY || cterm->save_xpos < CURR_MINX || cterm->save_xpos > CURR_MAXX)
 									break;
-								GOTOXY(cterm->save_xpos,cterm->save_ypos);
+								GOTOXY(cterm->save_xpos, cterm->save_ypos);
 							}
 							break;
 						case 'y':	/* ToDo?  VT100 Tests */
@@ -3636,24 +3762,13 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				}
 				break;
 			case 'E':	// Next Line
-				TERM_XY(&col, &row);
-				row++;
-				if(row > TERM_MAXY) {
-					scrollup(cterm);
-					row = TERM_MAXY;
-				}
-				col = TERM_MINX;
-				GOTOXY(col, row);
+				adjust_currpos(cterm, INT_MIN, 1, 1);
 				break;
 			case 'H':
 				insert_tabstop(cterm, WHEREX());
 				break;
 			case 'M':	// Previous line
-				TERM_XY(&col, &row);
-				row--;
-				if(row < TERM_MINY)
-					row = TERM_MINY;
-				GOTOXY(col, row);
+				adjust_currpos(cterm, 0, -1, 1);
 				break;
 			case 'P':	// Device Control String - DCS
 				cterm->string = CTERM_STRING_DCS;
@@ -3674,7 +3789,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			case 'c':
 				CLRSCR();
 				cterm_reset(cterm);
-				GOTOXY(TERM_MINX, TERM_MINY);
+				term_gotoxy(cterm, CURR_MINX, CURR_MINY);
 				break;
 			case '\\':
 				if (cterm->strbuf) {
@@ -3972,7 +4087,6 @@ cterm_reset(struct cterminal *cterm)
 {
 	int  i;
 	struct text_info ti;
-	int wx, wy, ww, wh;
 
 	cterm->altfont[0] = cterm->altfont[1] = cterm->altfont[2] = cterm->altfont[3] = getfont(1);
 	cterm->top_margin=1;
@@ -4046,14 +4160,7 @@ cterm_reset(struct cterminal *cterm)
 		FREE_AND_NULL(cterm->macros[i]);
 		cterm->macro_lens[i] = 0;
 	}
-	wx = TERM_MINX;
-	wy = TERM_MINY;
-	ww = TERM_MAXX;
-	wh = TERM_MAXY;
-	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &wx, &wy);
-	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ww, &wh);
-	if(ti.winleft != wx || ti.wintop != wy || ti.winright != ww || ti.winleft != wh)
-		WINDOW(wx, wy, ww, wh);
+	setwindow(cterm);
 
 	/* Set up tabs for ATASCII */
 	if(cterm->emulation == CTERM_EMULATION_ATASCII) {
@@ -4146,7 +4253,6 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 void CIOLIBCALL cterm_start(struct cterminal *cterm)
 {
 	struct text_info ti;
-	int wx, wy, ww, wh;
 
 	if (!cterm->started) {
 		GETTEXTINFO(&ti);
@@ -4169,17 +4275,43 @@ void CIOLIBCALL cterm_start(struct cterminal *cterm)
 		ciolib_setcolour(cterm->fg_color, cterm->bg_color);
 		SETCURSORTYPE(cterm->cursor);
 		cterm->started=1;
-		wx = TERM_MINX;
-		wy = TERM_MINY;
-		ww = TERM_MAXX;
-		wh = TERM_MAXY;
-		coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &wx, &wy);
-		coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ww, &wh);
-		if(ti.winleft != wx || ti.wintop != wy || ti.winright != ww || ti.winleft != wh)
-			WINDOW(wx, wy, ww, wh);
+		setwindow(cterm);
 		cterm_clearscreen(cterm, cterm->attr);
-		GOTOXY(1,1);
+		term_gotoxy(cterm, 1, 1);
 	}
+}
+
+static void
+advance_char(struct cterminal *cterm, int *x, int *y, int move)
+{
+	int lm = cterm->left_margin;
+	int rm = cterm->right_margin;
+	int bm = cterm->bottom_margin;
+
+	if((*x == rm || *x == CURR_MAXX) && (!(cterm->extattr & CTERM_EXTATTR_AUTOWRAP))) {
+		return;
+	}
+	else {
+		if(*y == bm && (*x == rm || *x == CURR_MAXX)) {
+			cond_scrollup(cterm);
+			move = 1;
+			*x = lm;
+		}
+		else {
+			if(*x == rm || *x == CURR_MAXX) {
+				*x=lm;
+				if (*y < CURR_MAXY)
+					(*y)++;
+				if (move)
+					GOTOXY(*x, *y);
+			}
+			else {
+				(*x)++;
+			}
+		}
+	}
+	if (move)
+		GOTOXY(*x, *y);
 }
 
 static void
@@ -4188,38 +4320,42 @@ ctputs(struct cterminal *cterm, char *buf)
 	char *outp;
 	char *p;
 	int		oldscroll;
-	int		cx;
-	int		cy;
-	int		i;
+	int cx, cy;
+	int lm, rm, bm;
 
 	outp = buf;
 	oldscroll = *cterm->_wscroll;
 	*cterm->_wscroll = 0;
-	TERM_XY(&cx, &cy);
+	CURR_XY(&cx, &cy);
 	if (cterm->log == CTERM_LOG_ASCII && cterm->logfile != NULL)
 		fputs(buf, cterm->logfile);
+	lm = TERM_MINX;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &lm, NULL);
+	rm = TERM_MAXX;
+	bm = TERM_MAXY;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, &bm);
 	for (p = buf; *p; p++) {
 		switch(*p) {
 			case '\r':
-				cx = TERM_MINX;
+				*p = 0;
+				CPUTS(outp);
+				outp = p + 1;
+				adjust_currpos(cterm, INT_MIN, 0, 0);
+				CURR_XY(&cx, &cy);
 				break;
 			case '\n':
 				*p = 0;
 				CPUTS(outp);
 				outp = p + 1;
-				if(cy == TERM_MAXY)
-					scrollup(cterm);
-				else if(cy < TERM_MAXY)
-					cy++;
-				GOTOXY(cx, cy);
+				adjust_currpos(cterm, 0, 1, 1);
+				CURR_XY(&cx, &cy);
 				break;
 			case '\b':
 				*p=0;
 				CPUTS(outp);
 				outp = p + 1;
-				if(cx > TERM_MINX)
-					cx--;
-				GOTOXY(cx, cy);
+				adjust_currpos(cterm, -1, 0, 0);
+				CURR_XY(&cx, &cy);
 				break;
 			case 7:		/* Bell */
 				break;
@@ -4227,55 +4363,19 @@ ctputs(struct cterminal *cterm, char *buf)
 				*p=0;
 				CPUTS(outp);
 				outp=p+1;
-				for(i=0;i<cterm->tab_count;i++) {
-					if(cterm->tabs[i]>cx) {
-						cx=cterm->tabs[i];
-						break;
-					}
-				}
-				if(cx > TERM_MAXX || i == cterm->tab_count) {
-					cx = TERM_MINX;
-					if (cy >= TERM_MAXY) {
-						scrollup(cterm);
-						cy = TERM_MAXY;
-					}
-					else
-						cy++;
-				}
-				GOTOXY(cx,cy);
+				do_tab(cterm);
+				CURR_XY(&cx, &cy);
 				break;
 			default:
-				if(cx == TERM_MAXX && (!(cterm->extattr & CTERM_EXTATTR_AUTOWRAP))) {
+				if (cx == cterm->right_margin || cx == CURR_MAXX) {
 					char ch;
 					ch = *(p + 1);
 					*(p + 1) = 0;
 					CPUTS(outp);
-					*(p + 1) = ch;
+					*(p+1) = ch;
 					outp = p + 1;
-					GOTOXY(cx, cy);
 				}
-				else {
-					if(cy == TERM_MAXY && cx ==TERM_MAXX) {
-						char ch;
-						ch = *(p + 1);
-						*(p + 1) = 0;
-						CPUTS(outp);
-						*(p+1) = ch;
-						outp = p + 1;
-						scrollup(cterm);
-						cx = TERM_MINX;
-						GOTOXY(cx, cy);
-					}
-					else {
-						if(cx == TERM_MAXX && cy < TERM_MAXY) {
-							cx=TERM_MINX;
-							cy++;
-						}
-						else {
-							cx++;
-						}
-					}
-				}
+				advance_char(cterm, &cx, &cy, 0);
 				break;
 		}
 	}
@@ -4329,7 +4429,7 @@ static void parse_sixel_intro(struct cterminal *cterm)
 		cterm->sx_orig_cursor = cterm->cursor;
 		cterm->cursor = _NOCURSOR;
 		SETCURSORTYPE(cterm->cursor);
-		GOTOXY(TERM_MINX, TERM_MINY);
+		term_gotoxy(cterm, TERM_MINX, TERM_MINY);
 		*cterm->hold_update = 1;
 		cterm->sx_trans = hgrid = 0;
 		ratio = strtoul(cterm->strbuf, &p, 10);
@@ -4446,7 +4546,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
-	int i, j, k, x, y, mx, my;
+	int i, j, k, x, y;
 	int sx, sy, ex, ey;
 	struct text_info	ti;
 	int	olddmc;
@@ -4485,17 +4585,10 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	if(retbuf!=NULL)
 		retbuf[0]=0;
 	GETTEXTINFO(&ti);
-	x = TERM_MINX;
-	y = TERM_MINY;
-	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &x, &y);
-	mx = TERM_MAXX;
-	my = TERM_MAXY;
-	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &mx, &my);
-	if(ti.winleft != x || ti.wintop != y || ti.winright != mx || ti.winbottom != my)
-		WINDOW(x, y, mx, my);
+	setwindow(cterm);
 	x = cterm->xpos;
 	y = cterm->ypos;
-	coord_conv_xy(cterm, CTERM_COORD_ABSTERM, CTERM_COORD_TERM, &x, &y);
+	coord_conv_xy(cterm, CTERM_COORD_ABSTERM, CTERM_COORD_CURR, &x, &y);
 	GOTOXY(x, y);
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -4674,7 +4767,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 					if(ch[0]==14) {
 						*cterm->hold_update=0;
 						*cterm->puttext_can_move=0;
-						TERM_XY(&x, &y);
+						CURR_XY(&x, &y);
 						GOTOXY(x, y);
 						SETCURSORTYPE(cterm->cursor);
 						*cterm->hold_update=1;
@@ -4699,31 +4792,31 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									cterm->attr=1;
 									break;
 								case 28:	/* Up (TODO: Wraps??) */
-									TERM_XY(&x, &y);
+									CURR_XY(&x, &y);
 									y--;
-									if(y < TERM_MINY)
-										y = TERM_MINY;
+									if(y < CURR_MINY)
+										y = CURR_MINY;
 									GOTOXY(x, y);
 									break;
 								case 29:	/* Down (TODO: Wraps??) */
-									TERM_XY(&x, &y);
+									CURR_XY(&x, &y);
 									y++;
-									if(y > TERM_MAXY)
-										y = TERM_MAXY;
+									if(y > CURR_MAXY)
+										y = CURR_MAXY;
 									GOTOXY(x, y);
 									break;
 								case 30:	/* Left (TODO: Wraps around to same line?) */
-									TERM_XY(&x, &y);
+									CURR_XY(&x, &y);
 									x--;
-									if(x < TERM_MINX)
-										y = TERM_MINX;
+									if(x < CURR_MINX)
+										y = CURR_MINX;
 									GOTOXY(x, y);
 									break;
 								case 31:	/* Right (TODO: Wraps around to same line?) */
-									TERM_XY(&x, &y);
+									CURR_XY(&x, &y);
 									x++;
-									if(x > TERM_MAXX)
-										y = TERM_MAXX;
+									if(x > CURR_MAXX)
+										y = CURR_MAXX;
 									GOTOXY(x, y);
 									break;
 								case 125:	/* Clear Screen */
@@ -4731,13 +4824,13 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									break;
 								case 126:	/* Backspace (TODO: Wraps around to previous line?) */
 											/* DOES NOT delete char, merely erases */
-									TERM_XY(&x, &y);
+									CURR_XY(&x, &y);
 									x--;
-									if (x < TERM_MINX) {
+									if (x < CURR_MINX) {
 										y--;
-										if (y < TERM_MINY)
+										if (y < CURR_MINY)
 											break;
-										y = TERM_MAXY;
+										y = CURR_MAXY;
 									}
 									GOTOXY(x, y);
 									PUTCH(0);
@@ -4745,48 +4838,42 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									break;
 								/* We abuse the ESC buffer for tab stops */
 								case 127:	/* Tab (Wraps around to next line) */
-									TERM_XY(&x, &y);
-									for (k = x + 1; k <= TERM_MAXX; k++) {
+									CURR_XY(&x, &y);
+									for (k = x + 1; k <= CURR_MAXX; k++) {
 										if(cterm->escbuf[k]) {
 											x = k;
 											break;
 										}
 									}
-									if (k > TERM_MAXX) {
-										x = TERM_MINX;
+									if (k > CURR_MAXX) {
+										x = CURR_MINX;
 										y++;
-										if(y > TERM_MAXY) {
-											scrollup(cterm);
-											y = TERM_MAXY;
+										if(y > CURR_MAXY) {
+											cond_scrollup(cterm);
+											y = CURR_MAXY;
 										}
 									}
 									GOTOXY(x, y);
 									break;
 								case 155:	/* Return */
-									TERM_XY(NULL, &y);
-									if (y == TERM_MAXY)
-										scrollup(cterm);
-									else
-										y++;
-									GOTOXY(1, y);
+									adjust_currpos(cterm, INT_MIN, +1, 1);
 									break;
 								case 156:	/* Delete Line */
 									dellines(cterm, 1);
-									TERM_XY(NULL, &y);
-									GOTOXY(TERM_MINX, y);
+									adjust_currpos(cterm, INT_MIN, 0, 0);
 									break;
 								case 157:	/* Insert Line */
-									TERM_XY(&x, &y);
-									if (y < TERM_MAXY) {
-										sx = TERM_MINX;
+									CURR_XY(&x, &y);
+									if (y < CURR_MAXY) {
+										sx = CURR_MINX;
 										sy = y;
-										coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sx, &sy);
-										ex = TERM_MAXX;
-										ey = TERM_MAXY;
-										coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ex, &ey);
+										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+										ex = CURR_MAXX;
+										ey = CURR_MAXY;
+										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, &ey);
 										MOVETEXT(sx, sy, ex, ey - 1, sx, sy + 1);
 									}
-									GOTOXY(TERM_MINX, y);
+									GOTOXY(CURR_MINX, y);
 									CLREOL();
 									break;
 								case 158:	/* Clear Tab */
@@ -4805,27 +4892,27 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									}
 									break;
 								case 254:	/* Delete Char */
-									TERM_XY(&x, &y);
-									if(x < TERM_MAXX) {
+									CURR_XY(&x, &y);
+									if(x < CURR_MAXX) {
 										sx = x;
 										sy = y;
-										coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sx, &sy);
-										ex = TERM_MAXX;
-										coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ex, NULL);
+										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+										ex = CURR_MAXX;
+										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, NULL);
 										MOVETEXT(sx + 1, sy, ex, sy, sx, sy);
 									}
-									GOTOXY(TERM_MAXX, k);
+									GOTOXY(CURR_MAXX, k);
 									CLREOL();
 									GOTOXY(x, y);
 									break;
 								case 255:	/* Insert Char */
-									TERM_XY(&x, &y);
-									if(x < TERM_MAXX) {
+									CURR_XY(&x, &y);
+									if(x < CURR_MAXX) {
 										sx = x;
 										sy = y;
-										coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sx, &sy);
-										ex = TERM_MAXX;
-										coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ex, NULL);
+										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+										ex = CURR_MAXX;
+										coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, NULL);
 										MOVETEXT(sx, sy, ex - 1, sy, sx + 1, sy);
 									}
 									PUTCH(0);
@@ -4837,29 +4924,15 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									SCR_XY(&sx, &sy);
 									PUTTEXT(sx, sy, sx, sy, ch);
 									ch[1]=0;
-									TERM_XY(&x, &y);
-									if(x == TERM_MAXX) {
-										if(y == TERM_MAXY) {
-											scrollup(cterm);
-											GOTOXY(TERM_MINX, y);
-										}
-										else
-											GOTOXY(TERM_MINX, y + 1);
-									}
-									else
-										GOTOXY(x + 1, y);
+									CURR_XY(&x, &y);
+									advance_char(cterm, &x, &y, 1);
 									break;
 							}
 						}
 						else {
 							switch(buf[j]) {
 								case 155:	/* Return */
-									TERM_XY(NULL, &y);
-									if (y == TERM_MAXY)
-										scrollup(cterm);
-									else
-										y++;
-									GOTOXY(1, y);
+									adjust_currpos(cterm, INT_MIN, +1, 1);
 									break;
 								default:
 									/* Translate to screen codes */
@@ -4887,17 +4960,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									SCR_XY(&sx, &sy);
 									PUTTEXT(sx, sy, sx, sy, ch);
 									ch[1]=0;
-									TERM_XY(&x, &y);
-									if(x == TERM_MAXX) {
-										if(y == TERM_MAXY) {
-											scrollup(cterm);
-											GOTOXY(TERM_MINX, y);
-										}
-										else
-											GOTOXY(TERM_MINX, y + 1);
-									}
-									else
-										GOTOXY(x + 1, y);
+									CURR_XY(&x, &y);
+									advance_char(cterm, &x, &y, 1);
 									break;
 							}
 							cterm->attr=7;
@@ -5038,83 +5102,74 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 								c64_set_reverse(cterm, 0);
 								/* Fall-through */
 							case 141:
-								TERM_XY(&x, &y);
-								x = TERM_MINX;
+								adjust_currpos(cterm, INT_MIN, 0, 0);
 								/* Fall-through */
 							case 17:
-								if(y == TERM_MAXY) {
-									scrollup(cterm);
-									y = TERM_MAXY;
-								}
-								else
-									y++;
-								GOTOXY(x, y);
+								adjust_currpos(cterm, 0, 1, 1);
 								break;
 							case 147:
 								cterm_clearscreen(cterm, cterm->attr);
 								/* Fall through */
 							case 19:
-								GOTOXY(TERM_MINX, TERM_MINY);
+								adjust_currpos(cterm, INT_MIN, INT_MIN, 0);
 								break;
 							case 20:	/* Delete (Wrapping backspace) */
-								TERM_XY(&x, &y);
-								if(x == TERM_MINX) {
-									if (y == TERM_MINY)
+								CURR_XY(&x, &y);
+								if(x == CURR_MINX) {
+									if (y == CURR_MINY)
 										break;
-									x = TERM_MINX;
+									x = CURR_MINX;
 									GOTOXY(x, k-1);
 								}
 								else
 									GOTOXY(--x, k);
-								if(x < TERM_MAXX) {
+								if(x < CURR_MAXX) {
 									sx = x;
 									sy = y;
-									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sx, &sy);
-									ex = TERM_MAXX;
-									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ex, NULL);
+									coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+									ex = CURR_MAXX;
+									coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, NULL);
 									MOVETEXT(sx + 1, sy, ex, sy, sx, sy);
 								}
-								GOTOXY(TERM_MAXX, y);
+								GOTOXY(CURR_MAXX, y);
 								CLREOL();
 								GOTOXY(x, y);
 								break;
 							case 157:	/* Cursor Left (wraps) */
-								TERM_XY(&x, &y);
-								if (x == TERM_MINX) {
-									if(y > TERM_MINY)
-										GOTOXY(TERM_MAXX, y - 1);
+								CURR_XY(&x, &y);
+								if (x == CURR_MINX) {
+									if(y > CURR_MINY)
+										GOTOXY(CURR_MAXX, y - 1);
 								}
 								else
 									GOTOXY(x - 1, y);
 								break;
 							case 29:	/* Cursor Right (wraps) */
-								TERM_XY(&x, &y);
-								if (x == TERM_MAXX) {
-									if (y == TERM_MAXY) {
-										scrollup(cterm);
-										GOTOXY(TERM_MINX, y);
+								CURR_XY(&x, &y);
+								if (x == CURR_MAXX) {
+									if (y == CURR_MAXY) {
+										cond_scrollup(cterm);
+										GOTOXY(CURR_MINX, y);
 									}
 									else
-										GOTOXY(TERM_MINX, y + 1);
+										GOTOXY(CURR_MINX, y + 1);
 								}
 								else
 									GOTOXY(x + 1, y);
 								break;
 							case 145:	/* Cursor Up (No scroll */
-								TERM_XY(&x, &y);
-								if (y > TERM_MINY)
-									GOTOXY(x, y - 1);
+								adjust_currpos(cterm, 0, -1, 0);
 								break;
 							case 148:	/* Insert TODO verify last column */
 										/* CGTerm does nothing there... we */
 										/* Erase under cursor. */
-								TERM_XY(&x, &y);
-								if (x <= TERM_MAXX) {
+								CURR_XY(&x, &y);
+								if (x <= CURR_MAXX) {
 									sx = x;
 									sy = y;
-									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sx, &sy);
-									ex = TERM_MAXX;
-									coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &ex, NULL);
+									coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+									ex = CURR_MAXX;
+									coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &ex, NULL);
 									MOVETEXT(sx, sy, ex - 1, sy, sx + 1, sy);
 								}
 								PUTCH(' ');
@@ -5162,17 +5217,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 								SCR_XY(&sx, &sy);
 								PUTTEXT(sx, sy, sx, sy, ch);
 								ch[1]=0;
-								TERM_XY(&x, &y);
-								if(x == TERM_MAXX) {
-									if(y == TERM_MAXY) {
-										scrollup(cterm);
-										GOTOXY(TERM_MINX, y);
-									}
-									else
-										GOTOXY(TERM_MINX, y + 1);
-								}
-								else
-									GOTOXY(x + 1, y);
+								CURR_XY(&x, &y);
+								advance_char(cterm, &x, &y, 1);
 								break;
 						}
 					}
@@ -5187,18 +5233,8 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							SCR_XY(&sx, &sy);
 							vmem_puttext(sx, sy, sx, sy, tmpvc);
 							ch[1]=0;
-
-							TERM_XY(&x, &y);
-							if(x == TERM_MAXX) {
-								if(y == TERM_MAXY) {
-									scrollup(cterm);
-									GOTOXY(TERM_MINX, y);
-								}
-								else
-									GOTOXY(TERM_MINX, y + 1);
-							}
-							else
-								GOTOXY(x + 1, y);
+							CURR_XY(&x, &y);
+							advance_char(cterm, &x, &y, 1);
 							cterm->doorway_char=0;
 						}
 						else {
@@ -5229,7 +5265,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
 										fputs("\x0c", cterm->logfile);
 									cterm_clearscreen(cterm, (char)cterm->attr);
-									GOTOXY(TERM_MINX, TERM_MINY);
+									GOTOXY(CURR_MINX, CURR_MINY);
 									break;
 								case 27:		/* ESC */
 									uctputs(cterm, prn);
@@ -5252,7 +5288,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 
 	*cterm->hold_update=olddmc;
 	*cterm->puttext_can_move=oldptnm;
-	TERM_XY(&x, &y);
+	CURR_XY(&x, &y);
 	GOTOXY(x, y);
 	SETCURSORTYPE(cterm->cursor);
 
