@@ -73,6 +73,7 @@ static pthread_mutex_t handle_mutex;
 static const unsigned char *sample_buffer;
 static int samples_posted;
 static size_t sample_size;
+
 #endif
 
 static BOOL sound_device_open_failed=FALSE;
@@ -134,7 +135,7 @@ struct portaudio_api_struct *pa_api=NULL;
 static SDL_AudioSpec	spec;
 static int				sdl_audio_buf_len=0;
 static int				sdl_audio_buf_pos=0;
-static unsigned char	*swave;
+static const unsigned char	*swave;
 static SDL_sem			*sdlToneDone;
 #endif
 
@@ -337,7 +338,7 @@ void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 			sdl.SemPost(sdlToneDone);
 			sdl_audio_buf_len=0;
 			sdl_audio_buf_pos=0;
-			free(swave);
+			free((void *)swave);
 		}
 	}
 }
