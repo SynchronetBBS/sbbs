@@ -3616,7 +3616,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		get_msgid(&scfg,subnum,&msg,msg_id,sizeof(msg_id));
 		smb_hfield_str(&msg,RFC822MSGID,msg_id);
 	}
-	if(smbfile->status.max_crcs==0)
+	if(smbfile->status.max_crcs==0 || (subnum == INVALID_SUB && user == 0))
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 	/* Bad echo area collects a *lot* of messages, and thus, hashes - so no dupe checking */
 	if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
