@@ -2585,8 +2585,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										}
 										*tmp = 0;
 										snprintf(tmp, sizeof(tmp), "\x1bP%u!%04x\x1b\\", (unsigned)seq->param_int[1], crc);
-										if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-											strcat(retbuf, tmp);
 										break;
 									}
 								}
