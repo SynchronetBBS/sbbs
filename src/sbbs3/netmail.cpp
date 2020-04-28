@@ -243,6 +243,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		} 
 	}
 
+	msg.hdr.netattr |= MSG_LOCAL; 
 	lprintf(LOG_DEBUG, "NetMail subject: %s", subj);
 	p=subj;
 	if((SYSOP || useron.exempt&FLAG('F'))

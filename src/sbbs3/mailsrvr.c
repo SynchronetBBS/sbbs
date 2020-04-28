@@ -3877,6 +3877,7 @@ static void smtp_thread(void* arg)
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
 					if(nettype == NET_FIDO) {
+						newmsg.hdr.netattr |= MSG_LOCAL;
 						char* tp = strchr(rcpt_name, '@');
 						if(tp != NULL)
 							*tp = 0;
