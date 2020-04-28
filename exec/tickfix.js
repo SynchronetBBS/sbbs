@@ -207,11 +207,15 @@ for(var i = 0; i < idx_list.length; i++) {
 		reply_to_msg(hdr, "Unknown node address: " + hdr.from_net_addr);
 		continue;
 	}
+	if(!node_map[hdr.from_net_addr].areafix) {
+		reply_to_msg(hdr, "AreaFix not enabled for node: " + hdr.from_net_addr);
+		continue;
+	}
 	if(!node_map[hdr.from_net_addr].areafixpwd) {
 		reply_to_msg(hdr, "No AreaFix password for node: " + hdr.from_net_addr);
 		continue;
 	}
-	if(hdr.subject.toLowerCase() != node_map[hdr.from_net_addr].areafixpwd.toLowerCase()) {
+	if(hdr.subject.toLowerCase() != String(node_map[hdr.from_net_addr].areafixpwd).toLowerCase()) {
 		reply_to_msg(hdr, "Wrong AreaFix password for node: " + hdr.from_net_addr);
 		continue;
 	}
