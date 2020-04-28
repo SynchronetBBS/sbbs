@@ -499,7 +499,6 @@ var tests = [
 		console.gotoxy(21, 1);
 		console.write("\x1b[3P");
 		return interactive_or_string("This Line Has Single Spaces", 1, 1);
-		// TODO: Interactive...
 	}},
 	{'name':'SU', 'func':function() {
 		console.clear();
@@ -587,7 +586,6 @@ var tests = [
 		return true;
 	}},
 	{'name':'CBT', 'func':function() {
-		// TODO: Sometimes fails...
 		console.gotoxy(1,1);
 		console.write("\t");
 		var pos1 = fast_getxy();
@@ -853,13 +851,13 @@ var tests = [
 		seq = read_ansi_string(500);
 		if (seq === null)
 			return false;
-		if (seq.search(/^\x1bP1![A-Za-z0-9]{4}\x1b\\$/) === -1)
+		if (seq.search(/^\x1bP[0-9]+!~[A-Za-z0-9]{4}\x1b\\$/) === -1)
 			return false;
 		console.write("\x1b[?63;2n");
 		seq = read_ansi_string(500);
 		if (seq === null)
 			return false;
-		if (seq.search(/^\x1bP2![A-Za-z0-9]{4}\x1b\\$/) === -1)
+		if (seq.search(/^\x1bP2!~[A-Za-z0-9]{4}\x1b\\$/) === -1)
 			return false;
 		return true;
 	}},
@@ -1005,7 +1003,7 @@ var oldpt = console.ctrlkey_passthru;
 console.ctrlkey_passthru = 0x7FFFFFFF;
 console.write("\x1b[1;1;1;1;1;1*y");
 var ras = read_ansi_string(500);
-if (ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+if (ras !== null && ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
 	has_cksum = true;
 console.write("\x1bc");
 var res = main();
