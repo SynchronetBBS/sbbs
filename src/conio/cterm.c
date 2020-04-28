@@ -3020,7 +3020,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
 							}
-							vmem_puttext(max_col - i, row, max_col, max_row, vc);
+							vmem_puttext(max_col - i + 1, row, max_col, max_row, vc);
 							free(vc);
 						}
 					}
