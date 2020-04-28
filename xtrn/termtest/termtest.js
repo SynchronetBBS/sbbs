@@ -50,6 +50,19 @@ function interactive_or_string(str, x, y)
 		newcs = read_ansi_string(500);
 		if (newcs === oldcs)
 			return true;
+		// Check if spaces are actually erased...
+		console.gotoxy(x, y);
+		console.cleartoeol();
+		str.split('').forEach(function(ch) {
+			if (ch === ' ')
+				console.write("\x1b[C");
+			else
+				console.write(ch);
+		});
+		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length - 1)+"*y");
+		newcs = read_ansi_string(500);
+		if (newcs === oldcs)
+			return true;
 		return false;
 	}
 	if (!interactive)
@@ -403,17 +416,17 @@ var tests = [
 	{'name':'ED', 'func':function() {
 		console.clear();
 		console.gotoxy(1, 1);
-		console.write("This is a string that should be erased... except for this bit.");
+		console.write("This is a string that should be erased... except-for-this-bit.");
 		console.gotoxy(42, 1);
 		console.write("\x1b[1J");
-		var ret = interactive_or_string("                                          except for this bit.", 1, 1);
+		var ret = interactive_or_string("                                          except-for-this-bit.", 1, 1);
 		if (!ret)
 			return ret;
 		console.gotoxy(console.screen_columns - 51, console.screen_rows);
-		console.write("Except for this bit, all of this should be erased.");
+		console.write("Except-for-this-bit, all of this should be erased.");
 		console.gotoxy(console.screen_columns - 32, console.screen_rows);
 		console.write("\x1b[0J");
-		ret = interactive_or_string("Except for this bit                               ", console.screen_columns - 51, console.screen_rows);
+		ret = interactive_or_string("Except-for-this-bit                               ", console.screen_columns - 51, console.screen_rows);
 		if (!ret)
 			return ret;
 		console.gotoxy(1, 1);
@@ -478,7 +491,7 @@ var tests = [
 		ret = interactive_or_string("           ", 1, 7);
 		if (!ret)
 			return ret;
-		ret = interactive_or_string("Fourth Line  ", 1, 8);
+		ret = interactive_or_string("Fourth Line", 1, 8);
 		return ret;
 	}},
 	{'name':'DL', 'func':function() {
@@ -545,7 +558,7 @@ var tests = [
 	}},
 	{'name':'XTSRGA', 'func':function() {
 		// TODO: XTerm, even with "-ti vt340" fails this test (never a response)
-		console.write("\x1b[?2;1S");
+		console.write("\x1b[?2;1;S");
 		var seq = read_ansi_seq(500);
 		console.clear();
 		if (seq === null)
