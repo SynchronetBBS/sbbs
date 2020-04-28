@@ -2584,7 +2584,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 												crc = ucrc16(0, crc);
 										}
 										*tmp = 0;
-										snprintf(tmp, sizeof(tmp), "\x1bP%u!%04x\x1b\\", (unsigned)seq->param_int[1], crc);
+										snprintf(tmp, sizeof(tmp), "\x1bP%u!~%04x\x1b\\", (unsigned)seq->param_int[1], crc);
 										break;
 									}
 								}
