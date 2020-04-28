@@ -488,8 +488,10 @@ void sbbs_t::backspace(int count)
 				outcom(' ');
 				outcom('\b');
 			}
-			if(column)
+			if(column > 0)
 				column--;
+			if(lbuflen > 0)
+				lbuflen--;
 		}
 	}
 }
@@ -678,8 +680,11 @@ int sbbs_t::outchar(char ch)
 			case '\b':	// 8
 				if(column > 0)
 					column--;
-				if(lbuflen > 0)
-					lbuflen--;
+				if(lbuflen<LINE_BUFSIZE) {
+					if(lbuflen == 0)
+						latr = curatr;
+					lbuf[lbuflen++] = ch;
+				}
 				break;
 			case '\n':	// 10
 				if(lncntr || lastlinelen)
@@ -762,6 +767,7 @@ void sbbs_t::center(char *instr, unsigned int columns)
 	SAFECOPY(str,instr);
 	truncsp(str);
 	len = bstrlen(str);
+	carriage_return();
 	if(len < columns)
 		cursor_right((columns - len) / 2);
 	bputs(str);
@@ -1366,6 +1372,7 @@ struct savedline {
 bool sbbs_t::saveline(void)
 {
 	struct savedline line;
+	lprintf(LOG_DEBUG, "Saving %d chars, cursor at col %d: '%.*s'", lbuflen, column, lbuflen, lbuf);
 	line.beg_attr = latr;
 	line.end_attr = curatr;
 	line.column = column;
@@ -1380,11 +1387,14 @@ bool sbbs_t::restoreline(void)
 	struct savedline* line = (struct savedline*)listPopNode(&savedlines);
 	if(line == NULL)
 		return false;
+	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %d: '%s'", strlen(line->buf), line->column, line->buf);
 	lbuflen=0;
 	attr(line->beg_attr);
 	rputs(line->buf);
 	curatr = line->end_attr;
-	column = line->column;
+	carriage_return();
+	cursor_right(line->column);
 	free(line);
+	insert_indicator();
 	return true;
 }

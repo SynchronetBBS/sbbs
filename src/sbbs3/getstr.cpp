@@ -54,6 +54,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 	uint	atr;
 	int		hidx = -1;
 	long	org_column = column;
+	int		org_lbuflen = lbuflen;
 
 	long term = term_supports();
 	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
@@ -66,8 +67,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 	if(mode&K_LINE && (term&(ANSI|PETSCII)) && !(mode&K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for(i=0;i<maxlen;i++)
-			outchar(' ');
-		cursor_left(maxlen); 
+			outcom(' ');
+		cursor_left(maxlen);
+		column = org_column;
 	}
 	if(wordwrap[0]) {
 		SAFECOPY(str1,wordwrap);
@@ -366,7 +368,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 				break;
 			case CTRL_R:    /* Ctrl-R Redraw Line */
 				if(!(mode&K_NOECHO))
-					redrwstr(str1,i,l,K_GETSTR);
+					redrwstr(str1,i,l,K_MSG);
 				break;
 			case TERM_KEY_INSERT:	/* Ctrl-V			Toggles Insert/Overwrite */
 				if(mode&K_NOECHO)
@@ -426,6 +428,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 					cursor_left(i);
 					cleartoeol();
 					l=0;
+					lbuflen = org_lbuflen;
 				}
 				i=0;
 				console|=CON_DELETELINE;
@@ -704,17 +707,20 @@ long sbbs_t::getnum(ulong max, ulong dflt)
 void sbbs_t::insert_indicator(void)
 {
 	if(term_supports(ANSI)) {
+		char str[32];
+		long col = column;
 		ansi_save();
 		ansi_gotoxy(cols,1);
-		uint z=curatr;                       /* and go to EOL */
+		int tmpatr;
 		if(console&CON_INSERT) {
-			attr(BLINK|BLACK|(LIGHTGRAY<<4));
-			outchar('I');
+			putcom(ansi_attr(tmpatr = BLINK|BLACK|(LIGHTGRAY<<4), curatr, str, term_supports(COLOR)));
+			outcom('I');
 		} else {
-			attr(LIGHTGRAY);
-			outchar(' ');
+			putcom(ansi(tmpatr = ANSI_NORMAL));
+			outcom(' ');
 		}
-		attr(z);
+		putcom(ansi_attr(curatr, tmpatr, str, term_supports(COLOR)));
 		ansi_restore();
+		column = col;
 	}
 }
