@@ -815,7 +815,7 @@ public:
 
 	/* atcodes.cpp */
 	int		show_atcode(const char *code);
-	const char*	atcode(char* sp, char* str, size_t maxlen, long* pmode = NULL);
+	const char*	atcode(char* sp, char* str, size_t maxlen, long* pmode = NULL, bool centered = false);
 
 	/* getnode.cpp */
 	int		getsmsg(int usernumber, bool clearline = false);
