@@ -54,9 +54,37 @@ function interactive_or_string(str, x, y)
 	}
 	if (!interactive)
 		return null;
-	console.gotoxy(x, y+1);
-	var ret = console.yesno("Do you see the string \""+str+"\" on the line above");
-	console.clear();
+	if (x > 3) {
+		console.gotoxy(x - 2, y);
+		console.print("\x01H\x01Y->\x01N\b");
+	}
+	else {
+		console.gotoxy(x+str.length, y);
+		console.print("\x01H\x01Y<-\x01N\b");
+	}
+	if (y < console.screen_rows / 2)
+		console.gotoxy(1, console.screen_rows - 2);
+	else
+		console.gotoxy(1, 1);
+	console.cleartoeol();
+	var ret = console.yesno("Do you see the string \""+str+"\" at the yellow arrow");
+	if (x > 3) {
+		console.gotoxy(x - 2, y);
+		console.print("\x01N  \b");
+	}
+	else {
+		console.gotoxy(x+str.length, y);
+		console.print("\x01N  \b");
+	}
+	if (y < console.screen_rows / 2) {
+		console.gotoxy(1, console.screen_rows - 2);
+		console.write("\x1b[0J");
+	}
+	else {
+		console.gotoxy(1, 3);
+		console.write("\x1b[1J");
+	}
+	
 	return ret;
 }
 
@@ -948,7 +976,7 @@ var tests = [
 	{'name':'DECRQCRA', 'func':function() {
 		console.write("\x1b[1;1;1;1;1;1*y");
 		var ras = read_ansi_string(500);
-		if (ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
+		if (ras === null || ras.search(/^\x1bP1!~[a-zA-Z0-9]{4}\x1b\\$/) !== -1)
 			return true;
 		return false;
 	}},
