@@ -503,6 +503,7 @@ int pty_close(void)
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
 	FREE_AND_NULL(conn_api.wr_buf);
+	close(master);
 	return(0);
 }
 
