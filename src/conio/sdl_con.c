@@ -778,7 +778,7 @@ void sdl_video_event_thread(void *data)
 		else {
 			switch (ev.type) {
 				case SDL_KEYDOWN:			/* Keypress */
-					if (ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) {
+					if ((ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) && !(ev.key.keysym.mod & KMOD_MODE)) {
 						block_text = 1;
 						if ((ev.key.keysym.mod & KMOD_ALT) &&
 						    (ev.key.keysym.sym == SDLK_LEFT ||
