@@ -456,7 +456,7 @@ function send_fetch_response(msgnum, fmat, uid)
 			if(objtype == undefined)
 				continue;
 
-			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS$/)==0) {
+			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS$/i)==0) {
 				tmp='';
 				for(j in fmat[i]) {
 					if(part.headers[fmat[i][j].toLowerCase()]!=undefined)
@@ -465,7 +465,7 @@ function send_fetch_response(msgnum, fmat, uid)
 
 				resp += objtype+" ("+fmat[i].join(" ")+")] "+encode_binary(tmp+"\r\n")+" ";
 			}
-			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS\.NOT$/)==0) {
+			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS\.NOT$/i)==0) {
 				tmp=eval(part.headers.toSource());
 				delete tmp['::'];
 				delete tmp[':mime:'];
@@ -522,17 +522,17 @@ function send_fetch_response(msgnum, fmat, uid)
 				case 'RFC822.TEXT':
 					set_seen_flag();
 					get_rfc822_text();
-					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/i,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
 					break;
 				case 'RFC822.HEADER':
 					set_seen_flag();
 					get_rfc822_header();
-					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
+					resp += fmat[i].replace(/\.PEEK/i,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
 					break;
 				case 'RFC822':
 					set_seen_flag();
 					get_rfc822();
-					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/i,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
 					break;
 				case 'ENVELOPE':
 					set_seen_flag();
