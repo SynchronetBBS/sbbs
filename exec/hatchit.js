@@ -296,6 +296,7 @@ function main() {
 	var origin;
 
 	uifc.init('HatchIT');
+	js.on_exit('uifc.bail()');
 	file = pick_file();
 	if (file === undefined || file.path === undefined)
 		return;
@@ -315,7 +316,6 @@ function main() {
 	if (uifc.list(WIN_MID, "Proceed?", ["No", "Yes"]) == 1) {
 		hatch_file(file, area, origin);
 	}
-	uifc.bail();
 }
 
 main();
