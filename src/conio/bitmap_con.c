@@ -1426,8 +1426,10 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 		return NULL;
 	}
 
+	bitmap_draw_one_char(vstat.curs_col, vstat.curs_row);
 	for (y = sy; y <= ey; y++)
 		memcpy(&pixels->pixels[width*(y-sy)], &screen.screen[PIXEL_OFFSET(screen, sx, y)], width * sizeof(pixels->pixels[0]));
+	bitmap_draw_one_char_cursor(vstat.curs_col, vstat.curs_row);
 	pthread_mutex_unlock(&screen.screenlock);
 	pthread_mutex_unlock(&blinker_lock);
 
