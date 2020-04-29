@@ -559,10 +559,8 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 #endif
 
 #if defined(__DARWIN__)
-	extern sem_t initsdl_sem;
 	extern sem_t main_sem;
 	extern sem_t startsdl_sem;
-	extern sem_t initsdldone_sem;
 	extern int initsdl_ret;
 #endif
 #endif

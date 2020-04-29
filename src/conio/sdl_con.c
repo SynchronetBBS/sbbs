@@ -1057,8 +1057,6 @@ void sdl_video_event_thread(void *data)
 int sdl_initciolib(int mode)
 {
 #if defined(__DARWIN__)
-	sem_post(&initsdl_sem);
-	sem_wait(&initsdldone_sem);
 	if (initsdl_ret) {
 #else
 	if(init_sdl_video()) {
