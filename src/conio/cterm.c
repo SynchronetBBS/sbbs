@@ -810,7 +810,7 @@ insert_tabstop(struct cterminal *cterm, int pos)
 		return;
 	cterm->tabs = new_stops;
 	if (i < cterm->tab_count)
-		memcpy(&cterm->tabs[i + 1], &cterm->tabs[i], (cterm->tab_count - i) * sizeof(cterm->tabs[0]));
+		memmove(&cterm->tabs[i + 1], &cterm->tabs[i], (cterm->tab_count - i) * sizeof(cterm->tabs[0]));
 	cterm->tabs[i] = pos;
 	cterm->tab_count++;
 }
@@ -4182,8 +4182,14 @@ cterm_reset(struct cterminal *cterm)
 	cterm->ypos = TERM_MINY;
 	cterm->cursor=_NORMALCURSOR;
 	cterm->extattr = CTERM_EXTATTR_AUTOWRAP | CTERM_EXTATTR_SXSCROLL;
-	memcpy(cterm->tabs, cterm_tabs, sizeof(cterm_tabs));
-	cterm->tab_count = sizeof(cterm_tabs) / sizeof(cterm_tabs[0]);
+	FREE_AND_NULL(cterm->tabs);
+	cterm->tabs = malloc(sizeof(cterm_tabs));
+	if (cterm->tabs) {
+		memcpy(cterm->tabs, cterm_tabs, sizeof(cterm_tabs));
+		cterm->tab_count = sizeof(cterm_tabs) / sizeof(cterm_tabs[0]);
+	}
+	else
+		cterm->tab_count = 0;
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
 	cterm->saved_mode = 0;
 	cterm->saved_mode_mask = 0;
@@ -4287,11 +4293,6 @@ struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypo
 	cterm->log=CTERM_LOG_NONE;
 	cterm->logfile=NULL;
 	cterm->emulation=emulation;
-	cterm->tabs = malloc(sizeof(cterm_tabs));
-	if (cterm->tabs == NULL) {
-		free(cterm);
-		return NULL;
-	}
 	cterm_reset(cterm);
 	if(cterm->scrollback!=NULL)
 		memset(cterm->scrollback,0,cterm->width*2*cterm->backlines);
