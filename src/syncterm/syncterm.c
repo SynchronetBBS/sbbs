@@ -1543,6 +1543,12 @@ int main(int argc, char **argv)
                 			break;
 					}
                     break;
+#ifdef __DARWIN__
+				case 'P':
+					if (strncmp("-psn_", argv[i], 5) == 0)
+						break;
+					goto USAGE;
+#endif
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
 					override_conn=TRUE;
