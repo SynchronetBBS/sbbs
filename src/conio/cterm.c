@@ -3838,6 +3838,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								nc = map_rgb(seq->param_int[1]<<8, seq->param_int[2]<<8, seq->param_int[3]<<8);
 								if (nc != UINT32_MAX)
 									*c = nc;
+								setcolour(cterm->fg_color, cterm->bg_color);
 							}
 							break;
 						case 'u':
