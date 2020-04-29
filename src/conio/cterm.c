@@ -5428,8 +5428,16 @@ void CIOLIBCALL cterm_end(struct cterminal *cterm)
 			listFree(&cterm->notes);
 		}
 
-		if (cterm->strbuf)
-			FREE_AND_NULL(cterm->strbuf);
+		FREE_AND_NULL(cterm->strbuf);
+		FREE_AND_NULL(cterm->tabs);
+		FREE_AND_NULL(cterm->fg_tc_str);
+		FREE_AND_NULL(cterm->bg_tc_str);
+		FREE_AND_NULL(cterm->sx_pixels);
+		FREE_AND_NULL(cterm->sx_mask);
+		for (i = 0; i < (sizeof(cterm->macros) / sizeof(cterm->macros[0])); i++) {
+			FREE_AND_NULL(cterm->macros[i]);
+		}
+
 		free(cterm);
 	}
 }
