@@ -2390,6 +2390,7 @@ BOOL doterm(struct bbslist *bbs)
 	int ooii_mode=0;
 	recv_byte_buffer_len=recv_byte_buffer_pos=0;
 	struct mouse_state ms = {};
+	int speedwatch = 0;
 
 	gettextinfo(&txtinfo);
 	if(bbs->conn_type == CONN_TYPE_SERIAL)
@@ -2464,6 +2465,43 @@ BOOL doterm(struct bbslist *bbs)
 							nextchar = lastchar + 1/(long double)(speed/10);
 						}
 
+						switch (speedwatch) {
+							case 0:
+								if (inch == '\x1b')
+									speedwatch = 1;
+								break;
+							case 1:
+								if (inch == '[')
+									speedwatch = 2;
+								else
+									speedwatch = 0;
+								break;
+							case 2:
+								if (inch == '0' || inch == '1')
+									speedwatch = 3;
+								else
+									speedwatch = 0;
+								break;
+							case 3:
+								if (inch == ';')
+									speedwatch = 4;
+								else
+									speedwatch = 0;
+								break;
+							case 4:
+								if (inch >= '0' && inch <= '9')
+									break;
+								if (inch == '*')
+									speedwatch = 5;
+								else
+									speedwatch = 0;
+								break;
+							case 5:
+								if (inch == 'r')
+									remain = 1;
+								speedwatch = 0;
+								break;
+						}
 						j=strlen((char *)zrqbuf);
 						if(inch == zrqinit[j] || inch == zrinit[j]) {
 							zrqbuf[j]=inch;
