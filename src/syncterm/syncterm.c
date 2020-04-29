@@ -901,7 +901,6 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 {
 	FSRef		ref;
-	long		size;
 
 	/* First, get the path */
 	switch(type) {
