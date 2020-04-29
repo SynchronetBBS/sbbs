@@ -1107,6 +1107,37 @@ static void play_music(struct cterminal *cterm)
 }
 
 static void
+term_clreol(struct cterminal *cterm)
+{
+	int x, y;
+	int rm;
+	struct vmem_cell *buf;
+	int i;
+	int width;
+
+	CURR_XY(&x, &y);
+	rm = CURR_MAXX;
+
+	width = rm - x + 1;
+	if (width < 1)
+		return;
+	buf = malloc(width * sizeof(*buf));
+	if (!buf)
+		return;
+	for (i = 0; i < width; i++) {
+		buf[i].ch = ' ';
+		buf[i].legacy_attr = cterm->attr;
+		buf[i].fg = cterm->fg_color;
+		buf[i].bg = cterm->bg_color;
+		buf[i].font = ciolib_attrfont(cterm->attr);
+	}
+	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
+	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &rm, NULL);
+	vmem_puttext(x, y, rm, y, buf);
+	free(buf);
+}
+
+static void
 scrolldown(struct cterminal *cterm)
 {
 	int minx = TERM_MINX;
@@ -1120,7 +1151,7 @@ scrolldown(struct cterminal *cterm)
 	MOVETEXT(minx, miny, maxx, maxy - 1, minx, miny + 1);
 	CURR_XY(&x, &y);
 	term_gotoxy(cterm, TERM_MINX, TERM_MINY);
-	CLREOL();
+	term_clreol(cterm);
 	GOTOXY(x, y);
 }
 
@@ -1146,7 +1177,7 @@ scrollup(struct cterminal *cterm)
 	MOVETEXT(minx, miny + 1, maxx, maxy, minx, miny);
 	CURR_XY(&x, &y);
 	term_gotoxy(cterm, TERM_MINX, TERM_MAXY);
-	CLREOL();
+	term_clreol(cterm);
 	GOTOXY(x, y);
 }
 
@@ -1184,7 +1215,7 @@ dellines(struct cterminal * cterm, int lines)
 	MOVETEXT(minx, sy + lines, maxx, maxy, minx, sy);
 	for(i = TERM_MAXY - lines; i <= TERM_MAXY; i++) {
 		term_gotoxy(cterm, TERM_MINX, i);
-		CLREOL();
+		term_clreol(cterm);
 	}
 	term_gotoxy(cterm, x, y);
 }
@@ -3379,7 +3410,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								MOVETEXT(col2, row2, max_col, max_row - i, col2, row2 + i);
 							for (j = 0; j < i; j++) {
 								term_gotoxy(cterm, TERM_MINX, row+j);
-								CLREOL();
+								term_clreol(cterm);
 							}
 							term_gotoxy(cterm, col, row);
 							break;
@@ -3419,7 +3450,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &col2, &row2);
 							MOVETEXT(col2 + i, row2, max_col, row2, col2, row2);
 							term_gotoxy(cterm, TERM_MAXX - i, row);
-							CLREOL();
+							term_clreol(cterm);
 							term_gotoxy(cterm, col, row);
 							break;
 						case 'Q':	/* TODO? Select Editing Extent */
@@ -4246,6 +4277,19 @@ cterm_reset(struct cterminal *cterm)
 	for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
 		setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
 
+	/* Reset mouse state */
+	if (cterm->mouse_state_change) {
+		cterm->mouse_state_change(9, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1000, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1001, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1002, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1003, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1004, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1005, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1006, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1007, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1015, 0, cterm->mouse_state_change_cbdata);
+	}
 }
 
 struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, struct vmem_cell *scrollback, int emulation)
@@ -4943,7 +4987,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										MOVETEXT(sx, sy, ex, ey - 1, sx, sy + 1);
 									}
 									GOTOXY(CURR_MINX, y);
-									CLREOL();
+									term_clreol(cterm);
 									break;
 								case 158:	/* Clear Tab */
 									cterm->escbuf[WHEREX()]=0;
@@ -4971,7 +5015,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 										MOVETEXT(sx + 1, sy, ex, sy, sx, sy);
 									}
 									GOTOXY(CURR_MAXX, k);
-									CLREOL();
+									term_clreol(cterm);
 									GOTOXY(x, y);
 									break;
 								case 255:	/* Insert Char */
@@ -5201,7 +5245,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									MOVETEXT(sx + 1, sy, ex, sy, sx, sy);
 								}
 								GOTOXY(CURR_MAXX, y);
-								CLREOL();
+								term_clreol(cterm);
 								GOTOXY(x, y);
 								break;
 							case 157:	/* Cursor Left (wraps) */
