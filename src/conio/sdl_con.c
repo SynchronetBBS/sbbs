@@ -26,7 +26,6 @@
 #include "bitmap_con.h"
 
 #include "SDL.h"
-#include "SDL_thread.h"
 
 #include "sdlfuncs.h"
 
@@ -42,22 +41,22 @@ int sdl_exitcode=0;
 SDL_Window	*win=NULL;
 SDL_Renderer	*renderer=NULL;
 SDL_Texture	*texture=NULL;
-SDL_mutex	*win_mutex;
+pthread_mutex_t win_mutex;
 SDL_Surface	*sdl_icon=NULL;
 
-SDL_sem *sdl_ufunc_ret;
-SDL_sem *sdl_ufunc_rec;
-SDL_mutex *sdl_ufunc_mtx;
+sem_t sdl_ufunc_ret;
+sem_t sdl_ufunc_rec;
+pthread_mutex_t sdl_ufunc_mtx;
 int sdl_ufunc_retval;
 
-SDL_sem	*sdl_flush_sem;
+sem_t sdl_flush_sem;
 int pending_updates=0;
 
 int fullscreen=0;
 
 int	sdl_init_good=0;
-SDL_mutex *sdl_keylock;
-SDL_sem *sdl_key_pending;
+pthread_mutex_t sdl_keylock;
+sem_t sdl_key_pending;
 static unsigned int sdl_pending_mousekeys=0;
 
 static struct video_stats cvstat;
@@ -70,7 +69,7 @@ struct sdl_keyvals {
 		,alt;
 };
 
-static SDL_mutex *sdl_headlock;
+static pthread_mutex_t sdl_headlock;
 static struct rectlist *update_list = NULL;
 static struct rectlist *update_list_tail = NULL;
 
@@ -194,14 +193,14 @@ static void sdl_user_func(int func, ...)
 	ev.user.data1=NULL;
 	ev.user.data2=NULL;
 	ev.user.code=func;
-	sdl.LockMutex(sdl_ufunc_mtx);
+	pthread_mutex_lock(&sdl_ufunc_mtx);
 	while (1) {
 		va_start(argptr, func);
 		switch(func) {
 			case SDL_USEREVENT_SETICON:
 				ev.user.data1=va_arg(argptr, void *);
 				if((ev.user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
-					sdl.UnlockMutex(sdl_ufunc_mtx);
+					pthread_mutex_unlock(&sdl_ufunc_mtx);
 					va_end(argptr);
 					return;
 				}
@@ -210,7 +209,7 @@ static void sdl_user_func(int func, ...)
 			case SDL_USEREVENT_SETNAME:
 			case SDL_USEREVENT_SETTITLE:
 				if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
-					sdl.UnlockMutex(sdl_ufunc_mtx);
+					pthread_mutex_unlock(&sdl_ufunc_mtx);
 					va_end(argptr);
 					return;
 				}
@@ -228,7 +227,7 @@ static void sdl_user_func(int func, ...)
 			YIELD();
 		break;
 	}
-	sdl.UnlockMutex(sdl_ufunc_mtx);
+	pthread_mutex_unlock(&sdl_ufunc_mtx);
 }
 
 /* Called from main thread only */
@@ -243,7 +242,7 @@ static int sdl_user_func_ret(int func, ...)
 	ev.user.data2=NULL;
 	ev.user.code=func;
 	va_start(argptr, func);
-	sdl.LockMutex(sdl_ufunc_mtx);
+	pthread_mutex_lock(&sdl_ufunc_mtx);
 	/* Drain the swamp */
 	while(1) {
 		switch(func) {
@@ -258,15 +257,15 @@ static int sdl_user_func_ret(int func, ...)
 					YIELD();
 				break;
 			default:
-				sdl.UnlockMutex(sdl_ufunc_mtx);
+				pthread_mutex_unlock(&sdl_ufunc_mtx);
 				va_end(argptr);
 				return -1;
 		}
-		rv = sdl.SemWait(sdl_ufunc_ret);
+		rv = sem_wait(&sdl_ufunc_ret);
 		if(rv==0)
 			break;
 	}
-	sdl.UnlockMutex(sdl_ufunc_mtx);
+	pthread_mutex_unlock(&sdl_ufunc_mtx);
 	va_end(argptr);
 	return(sdl_ufunc_retval);
 }
@@ -296,14 +295,14 @@ void sdl_drawrect(struct rectlist *data)
 {
 	if(sdl_init_good) {
 		data->next = NULL;
-		sdl.LockMutex(sdl_headlock);
+		pthread_mutex_lock(&sdl_headlock);
 		if (update_list == NULL)
 			update_list = update_list_tail = data;
 		else {
 			update_list_tail->next = data;
 			update_list_tail = data;
 		}
-		sdl.UnlockMutex(sdl_headlock);
+		pthread_mutex_unlock(&sdl_headlock);
 	}
 	else
 		bitmap_drv_free_rect(data);
@@ -414,9 +413,9 @@ void sdl_setwinsize(int w, int h)
 
 void sdl_setwinposition(int x, int y)
 {
-	sdl.LockMutex(win_mutex);
+	pthread_mutex_lock(&win_mutex);
 	sdl.SetWindowPosition(win, x, y);
-	sdl.UnlockMutex(win_mutex);
+	pthread_mutex_unlock(&win_mutex);
 }
 
 void sdl_getwinsize_locked(int *w, int *h)
@@ -439,9 +438,9 @@ int sdl_kbhit(void)
 {
 	int ret;
 
-	sdl.LockMutex(sdl_keylock);
+	pthread_mutex_lock(&sdl_keylock);
 	ret=(sdl_key!=sdl_keynext);
-	sdl.UnlockMutex(sdl_keylock);
+	pthread_mutex_unlock(&sdl_keylock);
 	return(ret);
 }
 
@@ -450,8 +449,8 @@ int sdl_getch(void)
 {
 	int ch;
 
-	sdl.SemWait(sdl_key_pending);
-	sdl.LockMutex(sdl_keylock);
+	sem_wait(&sdl_key_pending);
+	pthread_mutex_lock(&sdl_keylock);
 
 	/* This always frees up space in keybuf for one more char */
 	ch=sdl_keybuf[sdl_key++];
@@ -461,10 +460,10 @@ int sdl_getch(void)
 	       	sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE >> 8;
 		else							/* Even number... first char */
 	        sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE & 0xff;
-        sdl.SemPost(sdl_key_pending);
+        sem_post(&sdl_key_pending);
 		sdl_pending_mousekeys--;
 	}
-	sdl.UnlockMutex(sdl_keylock);
+	pthread_mutex_unlock(&sdl_keylock);
 	return(ch);
 }
 
@@ -542,7 +541,7 @@ static void setup_surfaces_locked(void)
 	else
 		flags |= SDL_WINDOW_RESIZABLE;
 
-	sdl.LockMutex(win_mutex);
+	pthread_mutex_lock(&win_mutex);
 	charwidth = cvstat.charwidth;
 	charheight = cvstat.charheight;
 	cols = cvstat.cols;
@@ -579,7 +578,7 @@ static void setup_surfaces_locked(void)
 		sdl_exitcode=1;
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
 	}
-	sdl.UnlockMutex(win_mutex);
+	pthread_mutex_unlock(&win_mutex);
 }
 
 static void setup_surfaces(void)
@@ -600,10 +599,10 @@ static void sdl_add_key(unsigned int keyval)
 		return;
 	}
 	if(keyval <= 0xffff) {
-		sdl.LockMutex(sdl_keylock);
+		pthread_mutex_lock(&sdl_keylock);
 		if(sdl_keynext+1==sdl_key) {
 			beep();
-			sdl.UnlockMutex(sdl_keylock);
+			pthread_mutex_unlock(&sdl_keylock);
 			return;
 		}
 		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
@@ -611,16 +610,16 @@ static void sdl_add_key(unsigned int keyval)
 				sdl_pending_mousekeys+=2;
 			else
 				beep();
-			sdl.UnlockMutex(sdl_keylock);
+			pthread_mutex_unlock(&sdl_keylock);
 			return;
 		}
 		sdl_keybuf[sdl_keynext++]=keyval & 0xff;
-		sdl.SemPost(sdl_key_pending);
+		sem_post(&sdl_key_pending);
 		if(keyval>0xff) {
 			sdl_keybuf[sdl_keynext++]=keyval >> 8;
-			sdl.SemPost(sdl_key_pending);
+			sem_post(&sdl_key_pending);
 		}
-		sdl.UnlockMutex(sdl_keylock);
+		pthread_mutex_unlock(&sdl_keylock);
 	}
 }
 
@@ -904,7 +903,7 @@ void sdl_video_event_thread(void *data)
 									newh = "2";
 								else
 									newh = "0";
-								sdl.LockMutex(win_mutex);
+								pthread_mutex_lock(&win_mutex);
 								if (ev.window.event == SDL_WINDOWEVENT_RESIZED)
 									sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
 								if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
@@ -913,7 +912,7 @@ void sdl_video_event_thread(void *data)
 									texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.charwidth*cvstat.cols, cvstat.charheight*cvstat.rows);
 									bitmap_drv_request_pixels();
 								}
-								sdl.UnlockMutex(win_mutex);
+								pthread_mutex_unlock(&win_mutex);
 								pthread_mutex_unlock(&vstatlock);
 								break;
 							}
@@ -930,15 +929,15 @@ void sdl_video_event_thread(void *data)
 							sdl_ufunc_retval=0;
 							if (ciolib_reaper)
 								exit(0);
-							sdl.SemPost(sdl_ufunc_ret);
+							sem_post(&sdl_ufunc_ret);
 							return;
 						case SDL_USEREVENT_FLUSH:
-							sdl.LockMutex(win_mutex);
+							pthread_mutex_lock(&win_mutex);
 							if (win != NULL) {
-								sdl.LockMutex(sdl_headlock);
+								pthread_mutex_lock(&sdl_headlock);
 								list = update_list;
 								update_list = update_list_tail = NULL;
-								sdl.UnlockMutex(sdl_headlock);
+								pthread_mutex_unlock(&sdl_headlock);
 								for (; list; list = old_next) {
 									SDL_Rect src;
 
@@ -974,12 +973,12 @@ void sdl_video_event_thread(void *data)
 								}
 								sdl.RenderPresent(renderer);
 							}
-							sdl.UnlockMutex(win_mutex);
+							pthread_mutex_unlock(&win_mutex);
 							break;
 						case SDL_USEREVENT_SETNAME:
-							sdl.LockMutex(win_mutex);
+							pthread_mutex_lock(&win_mutex);
 							sdl.SetWindowTitle(win, (char *)ev.user.data1);
-							sdl.UnlockMutex(win_mutex);
+							pthread_mutex_unlock(&win_mutex);
 							free(ev.user.data1);
 							break;
 						case SDL_USEREVENT_SETICON:
@@ -995,15 +994,15 @@ void sdl_video_event_thread(void *data)
 									, *(DWORD *)"\0\0\377\0"
 									, *(DWORD *)"\0\0\0\377"
 							);
-							sdl.LockMutex(win_mutex);
+							pthread_mutex_lock(&win_mutex);
 							sdl.SetWindowIcon(win, sdl_icon);
-							sdl.UnlockMutex(win_mutex);
+							pthread_mutex_unlock(&win_mutex);
 							free(ev.user.data2);
 							break;
 						case SDL_USEREVENT_SETTITLE:
-							sdl.LockMutex(win_mutex);
+							pthread_mutex_lock(&win_mutex);
 							sdl.SetWindowTitle(win, (char *)ev.user.data1);
-							sdl.UnlockMutex(win_mutex);
+							pthread_mutex_unlock(&win_mutex);
 							free(ev.user.data1);
 							break;
 						case SDL_USEREVENT_SETVIDMODE:
@@ -1013,7 +1012,7 @@ void sdl_video_event_thread(void *data)
 							old_h = cvstat.winheight;
 							pthread_mutex_unlock(&vstatlock);
 							sdl_ufunc_retval=0;
-							sdl.SemPost(sdl_ufunc_ret);
+							sem_post(&sdl_ufunc_ret);
 							break;
 						case SDL_USEREVENT_HIDEMOUSE:
 							sdl.ShowCursor(SDL_DISABLE);
@@ -1024,18 +1023,18 @@ void sdl_video_event_thread(void *data)
 						case SDL_USEREVENT_INIT:
 							if(!sdl_init_good) {
 								if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
-									sdl.LockMutex(win_mutex);
+									pthread_mutex_lock(&win_mutex);
 									_beginthread(sdl_mouse_thread, 0, NULL);
 									sdl_init_good=1;
-									sdl.UnlockMutex(win_mutex);
+									pthread_mutex_unlock(&win_mutex);
 								}
 							}
 							sdl_ufunc_retval=0;
-							sdl.SemPost(sdl_ufunc_ret);
+							sem_post(&sdl_ufunc_ret);
 							break;
 						case SDL_USEREVENT_GETWINPOS:
 							sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
-							sdl.SemPost(sdl_ufunc_ret);
+							sem_post(&sdl_ufunc_ret);
 					}
 					break;
 				}
@@ -1067,13 +1066,13 @@ int sdl_initciolib(int mode)
 		fprintf(stderr,"SDL Video Initialization Failed\n");
 		return(-1);
 	}
-	sdl_key_pending=sdl.SDL_CreateSemaphore(0);
-	sdl_ufunc_ret=sdl.SDL_CreateSemaphore(0);
-	sdl_ufunc_rec=sdl.SDL_CreateSemaphore(0);
-	sdl_ufunc_mtx=sdl.SDL_CreateMutex();
-	sdl_headlock=sdl.SDL_CreateMutex();
-	win_mutex=sdl.SDL_CreateMutex();
-	sdl_keylock=sdl.SDL_CreateMutex();
+	sem_init(&sdl_key_pending, 0, 0);
+	sem_init(&sdl_ufunc_ret, 0, 0);
+	sem_init(&sdl_ufunc_rec, 0, 0);
+	pthread_mutex_init(&sdl_ufunc_mtx, NULL);
+	pthread_mutex_init(&sdl_headlock, NULL);
+	pthread_mutex_init(&win_mutex, NULL);
+	pthread_mutex_init(&sdl_keylock, NULL);
 	return(sdl_init(mode));
 }
 

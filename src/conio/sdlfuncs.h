@@ -2,7 +2,6 @@
 #define _SDLFUNCS_H_
 
 #include "SDL.h"
-#include "SDL_thread.h"
 #include "SDL_syswm.h"
 
 #ifdef _WIN32
@@ -14,21 +13,13 @@
 struct sdlfuncs {
 	int	(HACK_HACK_HACK *Init)	(Uint32 flags);
 	void	(HACK_HACK_HACK *Quit)	(void);
-	int	(HACK_HACK_HACK *LockMutex)	(SDL_mutex *mutex);
-	int	(HACK_HACK_HACK *UnlockMutex)	(SDL_mutex *mutex);
 	int	(HACK_HACK_HACK *PeepEvents)	(SDL_Event *events, int numevents,
 					SDL_eventaction action, Uint32 minType, Uint32 maxType);
 	char	*(HACK_HACK_HACK *GetCurrentVideoDriver)	(void);
-	int	(HACK_HACK_HACK *SemWait)	(SDL_sem *sem);
-	int	(HACK_HACK_HACK *SemWaitTimeout)(SDL_sem *sem, Uint32 timeout);
-	int	(HACK_HACK_HACK *SemPost)	(SDL_sem *sem);
 	Uint8	(HACK_HACK_HACK *EventState)	(Uint32 type, int state);
 	SDL_Surface *(HACK_HACK_HACK *CreateRGBSurfaceFrom)(void *pixels, int width, int height, int depth, int pitch,
 							Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);
 	void	(HACK_HACK_HACK *RenderPresent)	(SDL_Renderer *renderer);
-	SDL_sem *(HACK_HACK_HACK *SDL_CreateSemaphore)	(Uint32 initial_value);
-	void (HACK_HACK_HACK *SDL_DestroySemaphore)	(SDL_sem *semaphore);
-	SDL_mutex	*(HACK_HACK_HACK *SDL_CreateMutex)	(void);
 	int	(HACK_HACK_HACK *WaitEventTimeout)	(SDL_Event *event, int timeout);
 	int (HACK_HACK_HACK *CreateWindowAndRenderer)	(int w, int h, Uint32 flags, SDL_Window **win, SDL_Renderer **ren);
 	void	(HACK_HACK_HACK *FreeSurface)	(SDL_Surface *surface);
@@ -71,7 +62,7 @@ struct sdlfuncs {
 
 /* Defined in SDL_win32_main.c for Win32 */
 extern struct sdlfuncs	sdl;
-extern SDL_sem *sdl_exit_sem;
+extern sem_t *sdl_exit_sem;
 
 #ifdef __cplusplus
 extern "C" {

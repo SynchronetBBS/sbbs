@@ -41,31 +41,11 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
-	if((sdlf->LockMutex=xp_dlsym(sdl_dll, SDL_LockMutex))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->UnlockMutex=xp_dlsym(sdl_dll, SDL_UnlockMutex))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
 	if((sdlf->PeepEvents=xp_dlsym(sdl_dll, SDL_PeepEvents))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
 	if((sdlf->GetCurrentVideoDriver=xp_dlsym(sdl_dll, SDL_GetCurrentVideoDriver))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->SemWait=xp_dlsym(sdl_dll, SDL_SemWait))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->SemWaitTimeout=xp_dlsym(sdl_dll, SDL_SemWaitTimeout))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->SemPost=xp_dlsym(sdl_dll, SDL_SemPost))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
@@ -78,18 +58,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->RenderPresent=xp_dlsym(sdl_dll, SDL_RenderPresent))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->SDL_CreateSemaphore=xp_dlsym(sdl_dll, SDL_CreateSemaphore))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->SDL_DestroySemaphore=xp_dlsym(sdl_dll, SDL_DestroySemaphore))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->SDL_CreateMutex=xp_dlsym(sdl_dll, SDL_CreateMutex))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
