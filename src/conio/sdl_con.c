@@ -827,11 +827,11 @@ void sdl_video_event_thread(void *data)
 							break;
 						}
 					}
-					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 128) {
+					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 					}
 					else if (!isprint(ev.key.keysym.sym)) {
-						if (ev.key.keysym.sym < 127)
+						if (ev.key.keysym.sym < 128)
 							sdl_add_key(ev.key.keysym.sym);
 					}
 					break;
