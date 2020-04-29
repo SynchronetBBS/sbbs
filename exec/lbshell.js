@@ -27,6 +27,7 @@ load("nodedefs.js");
 load("lightbar.js");
 load("graphic.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
+load("text.js");
 load("str_cmds.js");
 var str;
 var size=file_size(system.text_dir+"lbshell_bg.bin");
