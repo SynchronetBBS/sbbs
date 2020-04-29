@@ -410,7 +410,6 @@ var tests = [
 		return true;
 	}},
 	{'name':'CHT', 'func':function() {
-		// TODO: Saw a failure...
 		console.gotoxy(1,1);
 		console.write("\t");
 		var pos1 = fast_getxy();
@@ -431,7 +430,6 @@ var tests = [
 		return true;
 	}},
 	{'name':'ED', 'func':function() {
-		// TODO: Saw a failure...
 		console.clear();
 		console.gotoxy(1, 1);
 		console.write("This is a string that should be erased... except-for-this-bit.");
@@ -907,7 +905,7 @@ var tests = [
 		console.gotoxy(1, 5);
 		console.write("\x1b[0;36mCyan Foreground     \x1b[0;37mWhite Foreground    \x1b[0;40mBlack Background    \x1b[0;41mRed Background      ");
 		console.gotoxy(1, 6);
-		console.write("\x1b[0;42mGreen Background    \x1b[0;43mYellow Background   \x1b[0;44MBlue Background     \x1b[0;45mMagenta Background  ");
+		console.write("\x1b[0;42mGreen Background    \x1b[0;43mYellow Background   \x1b[0;44mBlue Background     \x1b[0;45mMagenta Background  ");
 		console.gotoxy(1, 7);
 		console.write("\x1b[0;46mCyan Background     \x1b[0;30;47mWhite Background    \x1b[39;49mDefault Attribute");
 		console.gotoxy(1, 9);
@@ -1011,7 +1009,6 @@ var tests = [
 		if ((system.timer - start) < 0.8)
 			return false;
 		return true;
-		// TODO: Interactive
 	}},
 	{'name':'CTSMS', 'func':function() {
 		// TODO: Depends on other extensions...
@@ -1077,8 +1074,20 @@ var tests = [
 		return check_xy(2,2);
 	}},
 	{'name':'CT24BC', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		if (!interactive)
+			return null;
+		var i;
+		console.clear();
+		for (i = 0; i < console.screen_columns; i++) {
+			console.gotoxy(1+i, 1)
+			console.write("\x1b[0;"+Math.floor((255/console.screen_columns)*i)+";0;0t\x1b[1;"+(255-Math.floor((255/console.screen_columns)*i))+";0;0t=");
+			console.gotoxy(1+i, 2)
+			console.write("\x1b[0;0;"+Math.floor((255/console.screen_columns)*i)+";0t\x1b[1;0;"+(255-Math.floor((255/console.screen_columns)*i))+";0t=");
+			console.gotoxy(1+i, 3)
+			console.write("\x1b[0;0;0;"+Math.floor((255/console.screen_columns)*i)+"t\x1b[1;0;0;"+(255-Math.floor((255/console.screen_columns)*i))+"t=");
+		}
+		console.gotoxy(1, 5);
+		return console.yesno("Do you see red, green, and blue gradients above");
 	}},
 	{'name':'CTRMS', 'func':function() {
 		// TODO: Depends on other extensions...
@@ -1139,11 +1148,32 @@ var tests = [
 		return false;
 	}},
 	{'name':'DECINVM', 'func':function() {
-		return null;
-		// TODO: Macros!
+		console.write("\x1bP1;0;1!z1B5B313B3148\x1b\\");
+		console.gotoxy(2, 2);
+		console.write("\x1b[1*z");
+		return check_xy(1, 1);
 	}},
 	{'name':'CTOSF', 'func':function() {
-		return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("This is in this font...\r\n");
+		var oldcs = get_cs(1, 1, 23, 1);
+		if (oldcs == null)
+			return null;
+		var i;
+		console.write("\x1b[=255;0{"+(Array(4097).join("\x10")));
+		console.write("\x1b[=255;1{"+(Array(3585).join("\x10")));
+		console.write("\x1b[=255;2{"+(Array(2049).join("\x10")));
+		console.write("\x1b[0;255 D");
+		console.gotoxy(1, 2);
+		console.write("This is in this font...\r\n");
+		var newcs = get_cs(1, 2, 23, 2);
+		console.write("\x1b[0;0 D");
+		if (newcs == null)
+			return null;
+		if (oldcs == newcs)
+			return false;
+		return true;
 		// TODO: Interactive...
 	}},
 ];
