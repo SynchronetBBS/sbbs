@@ -1551,6 +1551,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height)
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
 		vstat.vmem->vmem[i].ch = 0;
 		vstat.vmem->vmem[i].legacy_attr = vstat.currattr;
+		vstat.vmem->vmem[i].font = default_font;
 		bitmap_attr2palette_locked(vstat.currattr, &vstat.vmem->vmem[i].fg, &vstat.vmem->vmem[i].bg);
 	}
 
