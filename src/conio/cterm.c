@@ -822,7 +822,7 @@ delete_tabstop(struct cterminal *cterm, int pos)
 
 	for (i = 0; i < cterm->tab_count && cterm->tabs[i] <= pos; i++) {
 		if (cterm->tabs[i] == pos) {
-			memcpy(&cterm->tabs[i], &cterm->tabs[i+1], (cterm->tab_count - i - 1) * sizeof(cterm->tabs[0]));
+			memmove(&cterm->tabs[i], &cterm->tabs[i+1], (cterm->tab_count - i - 1) * sizeof(cterm->tabs[0]));
 			cterm->tab_count--;
 			return;
 		}
