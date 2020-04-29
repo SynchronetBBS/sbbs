@@ -31,9 +31,14 @@ function read_ansi_seq(timeout)
 		if (seq.search(/[@-~]$/) > 1)
 			return seq;
 	}
-	mswait(timeout);
-	while(console.inkey());
+	while(console.inkey(100));
 	return null;
+}
+
+function get_cs(sx, sy, ex, ey)
+{
+	console.write("\x1b[1;1;"+sy+";"+sx+";"+ey+";"+ex+"*y");
+	return read_ansi_string(500);
 }
 
 function interactive_or_string(str, x, y)
@@ -42,12 +47,10 @@ function interactive_or_string(str, x, y)
 	var newcs;
 
 	if (has_cksum) {
-		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length - 1)+"*y");
-		oldcs = read_ansi_string(500);
+		oldcs = get_cs(x, y, x + str.length - 1, y);
 		console.gotoxy(x, y);
 		console.write(str);
-		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length - 1)+"*y");
-		newcs = read_ansi_string(500);
+		newcs = get_cs(x, y, x + str.length - 1, y);
 		if (newcs === oldcs)
 			return true;
 		// Check if spaces are actually erased...
@@ -59,8 +62,7 @@ function interactive_or_string(str, x, y)
 			else
 				console.write(ch);
 		});
-		console.write("\x1b[1;1;"+y+";"+x+";"+y+";"+(x + str.length - 1)+"*y");
-		newcs = read_ansi_string(500);
+		newcs = get_cs(x, y, x + str.length - 1, y);
 		if (newcs === oldcs)
 			return true;
 		return false;
@@ -320,8 +322,22 @@ var tests = [
 		return true;
 	}},
 	{'name':'FNT', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("This is in this font...\r\n");
+		var oldcs = get_cs(1, 1, 23, 1);
+		if (oldcs == null)
+			return null;
+		console.write("\x1b[0;1 D");
+		console.gotoxy(1, 2);
+		console.write("This is in this font...\r\n");
+		var newcs = get_cs(1, 2, 23, 2);
+		console.write("\x1b[0;0 D");
+		if (newcs == null)
+			return null;
+		if (oldcs == newcs)
+			return false;
+		return true;
 	}},
 	{'name':'CNL', 'func':function() {
 		console.gotoxy(20, 1);
@@ -394,6 +410,7 @@ var tests = [
 		return true;
 	}},
 	{'name':'CHT', 'func':function() {
+		// TODO: Saw a failure...
 		console.gotoxy(1,1);
 		console.write("\t");
 		var pos1 = fast_getxy();
@@ -414,6 +431,7 @@ var tests = [
 		return true;
 	}},
 	{'name':'ED', 'func':function() {
+		// TODO: Saw a failure...
 		console.clear();
 		console.gotoxy(1, 1);
 		console.write("This is a string that should be erased... except-for-this-bit.");
@@ -516,13 +534,27 @@ var tests = [
 		ret = interactive_or_string("Fourth Line", 1, 4);
 		return ret;
 	}},
-	{'name':'CTAM', 'func':function() {
-		return null;
-		// TODO: Interactive...
+	{'name':'CTSAM', 'func':function() {
+		if (!interactive)
+			return null;
+		console.write("\x1b[=0M");
+		console.write("\x1b[MFCDEFG\x0e\x0f");
+		var ret = console.yesno("Did you hear an ascending set of five notes");
+		if (ret)
+			return false;
+		console.write("\x1b[=2M");
+		console.write("\x1b[MFCDEFG\x0e\x0f");
+		var ret = console.yesno("Did you hear an ascending set of five notes");
+		if (!ret)
+			return false;
+		console.write("\x1b[=1M");
+		return true;
 	}},
 	{'name':'BCAM', 'func':function() {
-		return null;
-		// TODO: Interactive...
+		if (!interactive)
+			return null;
+		console.write("\x1b[NCDEFG\x0e\x0f");
+		return ret = console.yesno("Did you hear an ascending set of five notes");
 	}},
 	{'name':'DCH', 'func':function() {
 		console.gotoxy(1, 1);
@@ -557,7 +589,7 @@ var tests = [
 		return ret;
 	}},
 	{'name':'XTSRGA', 'func':function() {
-		// TODO: XTerm, even with "-ti vt340" fails this test (never a response)
+		// TODO: XTerm, requires the second ; despite docs...
 		console.write("\x1b[?2;1;S");
 		var seq = read_ansi_seq(500);
 		console.clear();
@@ -785,11 +817,36 @@ var tests = [
 		return true;
 	}},
 	{'name':'BCDM', 'func':function() {
-		return null;
-		// TODO: Doorway mode...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[=255h\x00\x1b[1;1H\x1b[=255l");
+		return check_xy(7, 1);
 	}},
 	{'name':'DECSET', 'func':function() {
-		return null;
+		if (!interactive)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[?9h");
+		console.write("Click the mouse anywhere on the screen (if that doesn't testing, press space)");
+		var seq = read_ansi_seq(30000);
+		console.gotoxy(1, 1);
+		console.cleartoeol();
+		console.write("\x1b[?9l");
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[M$/) === -1)
+			return false;
+		seq = console.inkey(500);
+		if (seq.match(/^[ !"]$/) === -1)
+			return false;
+		seq = console.inkey(500);
+		if (seq.match(/^[ -\xff]$/) === -1)
+			return false;
+		seq = console.inkey(500);
+		if (seq.match(/^[ -\xff]$/) === -1)
+			return false;
+		return true;
 		// TODO: Lots of stuff in here...
 	}},
 	{'name':'HPB', 'func':function() {
@@ -819,16 +876,43 @@ var tests = [
 		return true;
 	}},
 	{'name':'BCRST', 'func':function() {
-		return null;
-		// TODO: Doorway mode...
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[=255h\x00\x1b[1;1H\x1b[=255l\x00\x1b[2;2H");
+		return check_xy(2, 2);
 	}},
 	{'name':'DECRST', 'func':function() {
-		return null;
+		console.gotoxy(console.screen_columns, 1);
+		console.write("\x1b[?7l");
+		console.write("This is all garbage here! ");
+		console.write("\x1b[?7h");
+		var ret = check_xy(console.screen_columns, 1);
+		if (!ret)
+			return false;
+		return true;
 		// TODO: Lots of stuff in here...
 	}},
 	{'name':'SGR', 'func':function() {
-		return null;
-		// TODO: Interactive
+		if (!interactive)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[mDefault Attribute   \x1b[0mDefault Attribute   \x1b[0;1mBright              \x1b[0;2mDim                 ");
+		console.gotoxy(1, 2);
+		console.write("\x1b[0;5mSlow Blink          \x1b[0;6mFast Blink          \x1b[0;7mNegative Image      \x1b[0;8mConcealed           ");
+		console.gotoxy(1, 3);
+		console.write("\x1b[0;1;22mNormal Intensity    \x1b[0;5;25mNot Blinking        \x1b[0;47;30mBlack Foreground    \x1b[0;31mRed Foreground      ");
+		console.gotoxy(1, 4);
+		console.write("\x1b[0;32mGreen Foreground    \x1b[0;33mYellow Foreground   \x1b[0;34mBlue Foreground     \x1b[0;35mMagenta Foreground  ");
+		console.gotoxy(1, 5);
+		console.write("\x1b[0;36mCyan Foreground     \x1b[0;37mWhite Foreground    \x1b[0;40mBlack Background    \x1b[0;41mRed Background      ");
+		console.gotoxy(1, 6);
+		console.write("\x1b[0;42mGreen Background    \x1b[0;43mYellow Background   \x1b[0;44MBlue Background     \x1b[0;45mMagenta Background  ");
+		console.gotoxy(1, 7);
+		console.write("\x1b[0;46mCyan Background     \x1b[0;30;47mWhite Background    \x1b[39;49mDefault Attribute");
+		console.gotoxy(1, 9);
+		return console.yesno("Does the above look as described (fourth item in second row is concealed)");
+		// TODO: Palette and direct-color selection
 	}},
 	{'name':'DSR', 'func':function() {
 		console.write("\x1b[5n");
@@ -920,12 +1004,47 @@ var tests = [
 		return true;
 	}},
 	{'name':'DECSCS', 'func':function() {
-		return null;
+		var start = system.timer;
+		console.write("\x1b[0;1*r\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1b[0;0*r\x1b[6n");
+		if (read_ansi_seq(2500) === null)
+			return false;
+		if ((system.timer - start) < 0.8)
+			return false;
+		return true;
 		// TODO: Interactive
 	}},
 	{'name':'CTSMS', 'func':function() {
-		return null;
-		// TODO: Interactive
+		// TODO: Depends on other extensions...
+		console.write("\x1bc\x1b[=2n");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return null;
+		var m = seq.match(/^\x1b\[=2;([0-9]+)[0-9;]*n$/);
+		if (m === null)
+			return null;
+		console.write("\x1b[?s");
+		console.write("\x1b[?"+m[1]+"l");
+		console.write("\x1b[=2n");
+		var seq2 = read_ansi_seq(500);
+		if (seq2 === null) {
+			console.write("\x1b[?"+m[1]+"h");
+			return null;
+		}
+		if (seq2 === seq) {
+			console.write("\x1b[?"+m[1]+"h");
+			return null;
+		}
+		console.write("\x1b[?u");
+		console.write("\x1b[=2n");
+		console.write("\x1b[?"+m[1]+"h");
+		seq2 = read_ansi_seq(500);
+		if (seq2 === null) {
+			console.write("\x1b[?"+m[1]+"h");
+			return null;
+		}
+		if (seq2 === seq)
+			return true;
+		return false;
 	}},
 	{'name':'DECSLRM', 'func':function() {
 		console.write("\x1b[?69h");
@@ -962,8 +1081,38 @@ var tests = [
 		// TODO: Interactive...
 	}},
 	{'name':'CTRMS', 'func':function() {
-		return null;
-		// TODO: Lots of stuff in here...
+		// TODO: Depends on other extensions...
+		// TODO: Copy of CTSMS
+		console.write("\x1bc\x1b[=2n");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return null;
+		var m = seq.match(/^\x1b\[=2;([0-9]+)[0-9;]*n$/);
+		if (m === null)
+			return null;
+		console.write("\x1b[?s");
+		console.write("\x1b[?"+m[1]+"l");
+		console.write("\x1b[=2n");
+		var seq2 = read_ansi_seq(500);
+		if (seq2 === null) {
+			console.write("\x1b[?"+m[1]+"h");
+			return null;
+		}
+		if (seq2 === seq) {
+			console.write("\x1b[?"+m[1]+"h");
+			return null;
+		}
+		console.write("\x1b[?u");
+		console.write("\x1b[=2n");
+		console.write("\x1b[?"+m[1]+"h");
+		seq2 = read_ansi_seq(500);
+		if (seq2 === null) {
+			console.write("\x1b[?"+m[1]+"h");
+			return null;
+		}
+		if (seq2 === seq)
+			return true;
+		return false;
 	}},
 	{'name':'SCORC', 'func':function() {
 		console.gotoxy(2,2);
