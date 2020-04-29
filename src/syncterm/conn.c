@@ -55,41 +55,6 @@ short unsigned int conn_ports[]={0,513,513,23,0,22,0,0
 struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
 
-#ifndef NDEBUG
-
-static int dbg_pthread_mutex_lock(pthread_mutex_t *lptr, unsigned line)
-{
-	int ret = pthread_mutex_lock(lptr);
-
-	if (ret)
-		fprintf(stderr, "pthread_mutex_lock() returned %d at %u\n", ret, line);
-	return ret;
-}
-
-static int dbg_pthread_mutex_unlock(pthread_mutex_t *lptr, unsigned line)
-{
-	int ret = pthread_mutex_unlock(lptr);
-
-	if (ret)
-		fprintf(stderr, "pthread_mutex_lock() returned %d at %u\n", ret, line);
-	return ret;
-}
-
-static int dbg_pthread_mutex_trylock(pthread_mutex_t *lptr, unsigned line)
-{
-	int ret = pthread_mutex_trylock(lptr);
-
-	if (ret)
-		fprintf(stderr, "pthread_mutex_lock() returned %d at %u\n", ret, line);
-	return ret;
-}
-
-#define pthread_mutex_lock(a)		dbg_pthread_mutex_lock(a, __LINE__)
-#define pthread_mutex_unlock(a)		dbg_pthread_mutex_unlock(a, __LINE__)
-#define pthread_mutex_trylock(a)	dbg_pthread_trymutex_lock(a, __LINE__)
-
-#endif
-
 /* Buffer functions */
 struct conn_buffer *create_conn_buf(struct conn_buffer *buf, size_t size)
 {
