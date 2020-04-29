@@ -1,0 +1,11 @@
+--- session/ssh2_crypt.c.orig	2020-04-29 14:08:11.580413000 -0400
++++ session/ssh2_crypt.c	2020-04-29 14:08:27.391588000 -0400
+@@ -265,7 +265,7 @@
+ 	/* Load the appropriate static ECDH key parameters */
+ 	status = krnlSendMessage( iECDHContext, IMESSAGE_SETATTRIBUTE, 
+ 							  ( MESSAGE_CAST ) &eccKeySize, 
+-							  CRYPT_IATTRIBUTE_KEY_DLPPARAM );
++							  CRYPT_IATTRIBUTE_KEY_ECCPARAM );
+ 	if( cryptStatusError( status ) )
+ 		{
+ 		krnlSendNotifier( iECDHContext, IMESSAGE_DECREFCOUNT );
