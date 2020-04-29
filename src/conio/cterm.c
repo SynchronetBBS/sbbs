@@ -4402,6 +4402,7 @@ advance_char(struct cterminal *cterm, int *x, int *y, int move)
 	int bm = cterm->bottom_margin;
 
 	if((*x == rm || *x == CURR_MAXX) && (!(cterm->extattr & CTERM_EXTATTR_AUTOWRAP))) {
+		GOTOXY(*x, *y);
 		return;
 	}
 	else {
