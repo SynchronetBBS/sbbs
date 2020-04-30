@@ -1574,8 +1574,10 @@ int main(int argc, char **argv)
 		return(1);
 	ciolib_reaper=FALSE;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
-	setscaling(settings.scaling_factor);
-	setwinsize(settings.window_width, settings.window_height);
+	if (settings.scaling_factor)
+		setscaling(settings.scaling_factor);
+	if (settings.window_width && settings.window_height)
+		setwinsize(settings.window_width, settings.window_height);
 	textmode(text_mode);
 
     gettextinfo(&txtinfo);
