@@ -4752,22 +4752,6 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							else {
 								if (cterm->strbuf) {
 									cterm->strbuf[cterm->strbuflen++] = ch[0];
-									switch(cterm->sixel) {
-										case SIXEL_STARTED:
-											parse_sixel_string(cterm, false);
-											break;
-										case SIXEL_POSSIBLE:
-											parse_sixel_intro(cterm);
-											break;
-									}
-									switch(cterm->macro) {
-										case MACRO_STARTED:
-											parse_macro_string(cterm, false);
-											break;
-										case MACRO_POSSIBLE:
-											parse_macro_intro(cterm);
-											break;
-									}
 									if (cterm->strbuflen == cterm->strbufsize) {
 										char *p;
 
@@ -4785,6 +4769,23 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 											else
 												cterm->strbuf = p;
 										}
+									}
+									cterm->strbuf[cterm->strbuflen] = 0;
+									switch(cterm->sixel) {
+										case SIXEL_STARTED:
+											parse_sixel_string(cterm, false);
+											break;
+										case SIXEL_POSSIBLE:
+											parse_sixel_intro(cterm);
+											break;
+									}
+									switch(cterm->macro) {
+										case MACRO_STARTED:
+											parse_macro_string(cterm, false);
+											break;
+										case MACRO_POSSIBLE:
+											parse_macro_intro(cterm);
+											break;
 									}
 								}
 							}
@@ -4830,6 +4831,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 												cterm->strbuf = p;
 										}
 									}
+									cterm->strbuf[cterm->strbuflen] = 0;
 								}
 							}
 							break;
