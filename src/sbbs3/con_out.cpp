@@ -1372,7 +1372,9 @@ struct savedline {
 bool sbbs_t::saveline(void)
 {
 	struct savedline line;
-	lprintf(LOG_DEBUG, "Saving %d chars, cursor at col %d: '%.*s'", lbuflen, column, lbuflen, lbuf);
+#ifdef _DEBUG
+	lprintf(LOG_DEBUG, "Saving %d chars, cursor at col %ld: '%.*s'", lbuflen, column, lbuflen, lbuf);
+#endif
 	line.beg_attr = latr;
 	line.end_attr = curatr;
 	line.column = column;
@@ -1387,7 +1389,9 @@ bool sbbs_t::restoreline(void)
 	struct savedline* line = (struct savedline*)listPopNode(&savedlines);
 	if(line == NULL)
 		return false;
-	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %d: '%s'", strlen(line->buf), line->column, line->buf);
+#ifdef _DEBUG
+	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %ld: '%s'", strlen(line->buf), line->column, line->buf);
+#endif
 	lbuflen=0;
 	attr(line->beg_attr);
 	rputs(line->buf);
