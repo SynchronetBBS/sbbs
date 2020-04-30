@@ -87,6 +87,8 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	long	pmode = 0;
 	const char *cp;
 
+	if(*instr != '@')
+		return 0;
 	SAFECOPY(str,instr);
 	tp=strchr(str+1,'@');
 	if(!tp)                 /* no terminating @ */
