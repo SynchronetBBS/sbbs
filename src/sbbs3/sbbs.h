@@ -304,7 +304,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "text.h"
 
 /* Synchronet Node Instance class definition */
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(JAVASCRIPT)
 class sbbs_t
 {
 
@@ -389,8 +389,6 @@ public:
     bool	input_thread_running;
 	bool	terminate_output_thread;
 
-#ifdef JAVASCRIPT
-
 	JSRuntime*		js_runtime;
 	JSContext*		js_cx;
 	JSObject*		js_glob;
@@ -402,8 +400,6 @@ public:
 	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
 	void			js_cleanup(void);
 	bool			js_create_user_objects(JSContext*, JSObject* glob);
-
-#endif
 
 	char	syspage_semfile[MAX_PATH+1];	/* Sysop page semaphore file */
 	char 	menu_dir[128];	/* Over-ride default menu dir */
