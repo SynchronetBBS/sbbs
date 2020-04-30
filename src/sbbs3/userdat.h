@@ -39,6 +39,7 @@
 #include "scfgdefs.h"   /* scfg_t */
 #include "dat_rec.h"	/* getrec/putrec prototypes */
 #include "client.h"		/* client_t */
+#include "link_list.h"
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT
