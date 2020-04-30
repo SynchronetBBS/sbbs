@@ -749,6 +749,10 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 	if(handle_type==SOUND_DEVICE_WIN32)
 		need_copy = 1;
 #endif
+#ifdef WITH_SDL_AUDIO
+	if(handle_type==SOUND_DEVICE_SDL)
+		need_copy = 1;
+#endif
 
 	if (freed)
 		*freed = need_copy;
