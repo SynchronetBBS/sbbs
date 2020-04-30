@@ -1390,7 +1390,7 @@ bool sbbs_t::restoreline(void)
 	if(line == NULL)
 		return false;
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %ld: '%s'", strlen(line->buf), line->column, line->buf);
+	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %ld: '%s'", (int)strlen(line->buf), line->column, line->buf);
 #endif
 	lbuflen=0;
 	attr(line->beg_attr);
