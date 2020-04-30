@@ -49,7 +49,7 @@
 /* the attributes prior to displaying the message are always restored.      */
 /* Stops parsing/displaying upon CTRL-Z (only in P_CPM_EOF mode).           */
 /****************************************************************************/
-char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
+char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 {
 	uint 	tmpatr;
 	char 	tmp2[256],tmp3[128];
@@ -366,7 +366,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols)
 					continue;
 				}
 				bool was_tos = tos;
- 				i=show_atcode((char *)str+l);	/* returns 0 if not valid @ code */
+ 				i=show_atcode((char *)str+l, obj);	/* returns 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
 				if(tos && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;				/* Clear the abort flag (keep displaying the msg/file) */

@@ -656,7 +656,7 @@ public:
 				,const char *to, const char* from, const char** editor=NULL, const char** charset=NULL);
 	char*	quotes_fname(int xedit, char* buf, size_t len);
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
-	char	putmsg(const char *str, long mode, long org_cols = 0);
+	char	putmsg(const char *str, long mode, long org_cols = 0, JSObject* obj = NULL);
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
@@ -801,9 +801,9 @@ public:
 	char	handle_ctrlkey(char ch, long mode=0);
 
 	/* prntfile.cpp */
-	bool	printfile(const char* fname, long mode, long org_cols = 0);
-	bool	printtail(const char* fname, int lines, long mode, long org_cols = 0);
-	bool	menu(const char *code, long mode = 0);
+	bool	printfile(const char* fname, long mode, long org_cols = 0, JSObject* obj = NULL);
+	bool	printtail(const char* fname, int lines, long mode, long org_cols = 0, JSObject* obj = NULL);
+	bool	menu(const char *code, long mode = 0, JSObject* obj = NULL);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
@@ -814,8 +814,8 @@ public:
 	void	redrwstr(char *strin, int i, int l, long mode);
 
 	/* atcodes.cpp */
-	int		show_atcode(const char *code);
-	const char*	atcode(char* sp, char* str, size_t maxlen, long* pmode = NULL, bool centered = false);
+	int		show_atcode(const char *code, JSObject* obj = NULL);
+	const char*	atcode(char* sp, char* str, size_t maxlen, long* pmode = NULL, bool centered = false, JSObject* obj = NULL);
 
 	/* getnode.cpp */
 	int		getsmsg(int usernumber, bool clearline = false);

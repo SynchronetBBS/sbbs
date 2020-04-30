@@ -71,7 +71,7 @@ static char* separate_thousands(const char* src, char *dest, size_t maxlen, char
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/
-int sbbs_t::show_atcode(const char *instr)
+int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 {
 	char	str[128],str2[128],*tp,*sp,*p;
     int     len;
@@ -144,7 +144,7 @@ int sbbs_t::show_atcode(const char *instr)
 		*p=0;
 	}
 
-	cp = atcode(sp, str2, sizeof(str2), &pmode, centered);
+	cp = atcode(sp, str2, sizeof(str2), &pmode, centered, obj);
 	if(cp==NULL)
 		return(0);
 
@@ -210,7 +210,7 @@ static const char* getpath(scfg_t* cfg, const char* path)
 	return path;
 }
 
-const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool centered)
+const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool centered, JSObject* obj)
 {
 	char*	tp = NULL;
 	uint	i;
@@ -1090,6 +1090,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 					return main_csi.str_var[i];
 		}
 		return nulstr;
+	}
+
+	if(strncmp(sp, "JS:", 3) == 0) {
+		jsval val;
+		if(JS_GetProperty(js_cx, obj == NULL ? js_glob : obj, sp + 3, &val))
+			JSVALUE_TO_STRBUF(js_cx, val, str, maxlen, NULL);
+		return str;
 	}
 
 	if(!strncmp(sp,"EXEC:",5)) {

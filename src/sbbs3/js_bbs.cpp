@@ -1170,6 +1170,8 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
  	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	char		*menu;
+	int32		mode = P_NONE;
+	JSObject*	obj = JS_GetScopeChain(cx);
 
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
@@ -1181,11 +1183,23 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
  	if (!str)
  		return(JS_FALSE);
 
+	uintN argn = 1;
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn], &mode))
+			return JS_FALSE;
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_OBJECT(argv[argn])) {
+		if((obj = JSVAL_TO_OBJECT(argv[argn])) == NULL)
+			return JS_FALSE;
+		argn++;
+	}
+
 	JSSTRING_TO_MSTRING(cx, str, menu, NULL);
 	if(!menu)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->menu(menu);
+	bool result = sbbs->menu(menu, mode, obj);
 	free(menu);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -4425,8 +4439,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,314
 	},
 	/* menuing */
-	{"menu",			js_menu,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
-	,JSDOCSTR("display a menu file from the text/menu directory")
+	{"menu",			js_menu,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename [,mode=<tt>P_NONE</tt>] [,object scope]")
+	,JSDOCSTR("display a menu file from the text/menu directory.<br>"
+	"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
+	"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
 	,310
 	},
 	{"menu_exists",		js_menu_exists,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
@@ -4453,7 +4469,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	/* xtrn programs/modules */
 	{"exec",			js_exec,			2,	JSTYPE_NUMBER,	JSDOCSTR("cmdline [,mode=<tt>EX_NONE</tt>] [,startup_dir]")
 	,JSDOCSTR("execute a program, optionally changing current directory to <i>startup_dir</i> "
-	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
+	"(see <tt>EX_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
 	,310
 	},
 	{"exec_xtrn",		js_exec_xtrn,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("xtrn_number_or_code")
@@ -4466,11 +4482,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,mode=<tt>TG_NONE</tt>]")
-	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
+	,JSDOCSTR("external Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
 	,310
 	},
 	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_VOID,	JSDOCSTR("address [,client-user-name=<tt>user.alias</tt>, server-user-name=<tt>user.name</tt>, terminal=<tt>console.terminal</tt>] [,mode=<tt>TG_NONE</tt>]")
-	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> bits)")
+	,JSDOCSTR("external RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags.)")
 	,316
 	},
 	/* security */

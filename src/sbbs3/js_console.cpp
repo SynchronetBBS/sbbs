@@ -1216,6 +1216,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_putmsg(JSContext *cx, uintN argc, jsval *arglist)
 {
+	uintN		argn;
 	jsval *argv=JS_ARGV(cx, arglist);
 	int32		mode=0;
 	int32		columns=0;
@@ -1223,6 +1224,7 @@ js_putmsg(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
 	char*		cstr;
 	jsrefcount	rc;
+	JSObject*	obj = JS_GetScopeChain(cx);
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
@@ -1233,20 +1235,28 @@ js_putmsg(JSContext *cx, uintN argc, jsval *arglist)
 	if (!str)
 		return(JS_FALSE);
 
-	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],&mode))
+	argn = 1;
+	if(argc>argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn],&mode))
 			return JS_FALSE;
+		argn++;
 	}
-	if(argc>2 && JSVAL_IS_NUMBER(argv[2])) {
-		if(!JS_ValueToInt32(cx,argv[2],&columns))
+	if(argc>argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn],&columns))
 			return JS_FALSE;
+		argn++;
+	}
+	if(argc>argn && JSVAL_IS_OBJECT(argv[argn])) {
+		if((obj = JSVAL_TO_OBJECT(argv[argn])) == NULL)
+			return JS_FALSE;
+		argn++;
 	}
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
 	if(cstr==NULL)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->putmsg(cstr, mode, columns);
+	sbbs->putmsg(cstr, mode, columns, obj);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
@@ -1262,6 +1272,7 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
 	char*		cstr;
 	jsrefcount	rc;
+	JSObject*	obj = JS_GetScopeChain(cx);
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
@@ -1270,20 +1281,28 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 	if (!str)
 		return(JS_FALSE);
 
-	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx,argv[1],&mode))
+	uintN argn = 1;
+	if(argc>argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn],&mode))
 			return JS_FALSE;
+		argn++;
 	}
-	if(argc>2 && JSVAL_IS_NUMBER(argv[2])) {
-		if(!JS_ValueToInt32(cx,argv[2],&columns))
+	if(argc>argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn],&columns))
 			return JS_FALSE;
+		argn++;
+	}
+	if(argc>argn && JSVAL_IS_OBJECT(argv[argn])) {
+		if((obj = JSVAL_TO_OBJECT(argv[argn])) == NULL)
+			return JS_FALSE;
+		argn++;
 	}
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
 	if(cstr==NULL)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->printfile(cstr,mode,columns);
+	bool result = sbbs->printfile(cstr,mode,columns, obj);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1304,6 +1323,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
     JSString*	js_str=NULL;
 	char*		cstr;
 	jsrefcount	rc;
+	JSObject*	obj = JS_GetScopeChain(cx);
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
@@ -1322,8 +1342,12 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 				if(!JS_ValueToInt32(cx,argv[i],&columns))
 					return JS_FALSE;
 			}
-		} else if(JSVAL_IS_STRING(argv[i]))
+		} else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
+		} else if(JSVAL_IS_OBJECT(argv[i])) {
+			if((obj = JSVAL_TO_OBJECT(argv[i])) == NULL)
+				return JS_FALSE;
+		}
 	}
 
 	if(js_str==NULL)
@@ -1336,7 +1360,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 	if(cstr==NULL)
 		return JS_FALSE;
 	rc=JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->printtail(cstr,lines,mode,columns);
+	bool result = sbbs->printtail(cstr,lines,mode,columns,obj);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1951,19 +1975,19 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
-	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait), "
-		"returns an empty string if there is no input (e.g. timeout occurs), "
-		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
+	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
+		"Returns an empty string if there is no input (e.g. timeout occurs).<br>"
+		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.")
 	,311
 	},
 	{"getkey",			js_getkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>]")
-	,JSDOCSTR("get a single key, with wait, "
-		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits")
+	,JSDOCSTR("get a single key, with wait.<br>"
+		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.")
 	,310
 	},
 	{"getstr",			js_getstr,			0, JSTYPE_STRING,	JSDOCSTR("[string] [,maxlen=<tt>128</tt>] [,mode=<tt>K_NONE</tt>] [,history[]]")
-	,JSDOCSTR("get a text string from the user, "
-		"see <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits.<br>"
+	,JSDOCSTR("get a text string from the user.<br>"
+		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
 		"<i>history[]</i>, added in v3.17, allows a command history (string array) to be recalled using the up/down arrow keys."
 		)
 	,310
@@ -2042,10 +2066,11 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("display one or more values as raw strings followed by a single carriage-return/line-feed pair (new-line)")
 	,315
 	},
-	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("text [,mode=<tt>P_NONE</tt>] [,orig_columns=0]")
-	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc), "
-		"see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> bits.<br>"
-		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known")
+	{"putmsg",			js_putmsg,			1, JSTYPE_VOID,		JSDOCSTR("text [,mode=<tt>P_NONE</tt>] [,orig_columns=0] [,object scope]")
+	,JSDOCSTR("display message text (Ctrl-A codes, @-codes, pipe codes, etc.).<br> "
+		"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
+		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known.<br>"
+		"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
 	,310
 	},
 	{"center",			js_center,			1, JSTYPE_VOID,		JSDOCSTR("text [,width]")
@@ -2060,13 +2085,14 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("returns the printed-length (number of columns) of the specified <i>text</i>, accounting for Ctrl-A codes")
 	,310
 	},
-	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,mode=<tt>P_NONE</tt>] [,orig_columns=0")
+	{"printfile",		js_printfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename [,mode=<tt>P_NONE</tt>] [,orig_columns=0] [,object scope]")
 	,JSDOCSTR("print a message text file with optional mode.<br>"
-		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known")
+		"When <tt>P_WORDWRAP</tt> mode flag is specified, <i>orig_columns</i> specifies the original text column width, if known.<br>"
+		"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
 	,310
 	},
-	{"printtail",		js_printtail,		2, JSTYPE_BOOLEAN,		JSDOCSTR("filename, lines [,mode=<tt>P_NONE</tt>] [,orig_columns=0]")
-	,JSDOCSTR("print last x lines of file with optional mode")
+	{"printtail",		js_printtail,		2, JSTYPE_BOOLEAN,		JSDOCSTR("filename, lines [,mode=<tt>P_NONE</tt>] [,orig_columns=0] [,object scope]")
+	,JSDOCSTR("print the last <i>n</i> lines of file with optional mode, original column width, and scope.")
 	,310
 	},
 	{"editfile",		js_editfile,		1, JSTYPE_BOOLEAN,		JSDOCSTR("filename")

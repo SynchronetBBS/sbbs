@@ -48,7 +48,7 @@
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
 /* Called from functions menu and text_sec                                  */
 /****************************************************************************/
-bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
+bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* obj)
 {
 	char* buf;
 	char fpath[MAX_PATH+1];
@@ -119,7 +119,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 			buf[l]=0;
 			if((mode&P_UTF8) && !term_supports(UTF8))
 				utf8_normalize_str(buf);
-			putmsg(buf,mode,org_cols);
+			putmsg(buf,mode,org_cols, obj);
 		}
 		free(buf);
 	} else {	// Line-at-a-time mode
@@ -138,7 +138,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 				break;
 			if((mode&P_UTF8) && !term_supports(UTF8))
 				utf8_normalize_str(buf);
-			if(putmsg(buf, mode|P_SAVEATR, org_cols) != '\0') // early-EOF?
+			if(putmsg(buf, mode|P_SAVEATR, org_cols, obj) != '\0') // early-EOF?
 				break;
 		}
 		free(buf);
@@ -157,7 +157,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols)
 	return true;
 }
 
-bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols)
+bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, JSObject* obj)
 {
 	char*	buf;
 	char	fpath[MAX_PATH+1];
@@ -215,7 +215,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols)
 			}
 			p--; 
 		}
-		putmsg(p,mode,org_cols);
+		putmsg(p,mode,org_cols, obj);
 	}
 	if(mode&P_NOABORT && online==ON_REMOTE) {
 		SYNC;
@@ -228,7 +228,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols)
 /****************************************************************************/
 /* Displays a menu file (e.g. from the text/menu directory)                 */
 /****************************************************************************/
-bool sbbs_t::menu(const char *code, long mode)
+bool sbbs_t::menu(const char *code, long mode, JSObject* obj)
 {
     char path[MAX_PATH+1];
 	const char *next= "msg";
@@ -261,7 +261,7 @@ bool sbbs_t::menu(const char *code, long mode)
 	mode |= P_OPENCLOSE | P_CPM_EOF;
 	if(column == 0)
 		mode |= P_NOCRLF;
-	return printfile(path, mode);
+	return printfile(path, mode, /* org_cols: */0, obj);
 }
 
 bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
