@@ -172,9 +172,13 @@ int chat_write_byte(unsigned char ch)
 
 int chat_close(void)
 {
-	if(in != -1)
+	if(in != -1) {
 		close(in);
-	if(out != -1)
+		in = -1;
+	}
+	if(out != -1) {
 		close(out);
+		out = -1;
+	}
 	return(togglechat(FALSE));
 }

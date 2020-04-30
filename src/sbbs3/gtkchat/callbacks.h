@@ -2,7 +2,7 @@
 
 
 void
-on_MainWindow_destroy                  (GtkObject       *object,
+on_MainWindow_destroy                  (GObject       *object,
                                         gpointer         user_data);
 
 gboolean
