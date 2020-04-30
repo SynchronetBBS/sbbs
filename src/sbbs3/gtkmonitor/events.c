@@ -705,8 +705,8 @@ char *select_filename(GtkWidget *wiggy, char *title, char *name, char *in_patter
 	chooser=gtk_file_chooser_dialog_new(title
 			,GTK_WINDOW(gtk_widget_get_toplevel(wiggy))
 			,GTK_FILE_CHOOSER_ACTION_OPEN
-			,GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL
-			,GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT
+			,"_Cancel", GTK_RESPONSE_CANCEL
+			,"_Open", GTK_RESPONSE_ACCEPT
 			,NULL);
 	gtk_file_chooser_set_local_only(GTK_FILE_CHOOSER(chooser), TRUE);
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(chooser) ,dir);
