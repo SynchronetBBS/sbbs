@@ -95,7 +95,7 @@ static void write_event(struct x11_local_event *ev)
 
 void x_beep(void)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_BEEP;
 	write_event(&ev);
@@ -103,7 +103,7 @@ void x_beep(void)
 
 void x_textmode(int mode)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETMODE;
 	ev.data.mode = mode;
@@ -113,7 +113,7 @@ void x_textmode(int mode)
 
 void x_setname(const char *name)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETNAME;
 	SAFECOPY(ev.data.name, name);
@@ -122,7 +122,7 @@ void x_setname(const char *name)
 
 void x_settitle(const char *title)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETTITLE;
 	SAFECOPY(ev.data.title, title);
@@ -132,7 +132,7 @@ void x_settitle(const char *title)
 void x_seticon(const void *icon, unsigned long size)
 {
 	const uint32_t *icon32 = icon;
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 	int i;
 
 	ev.data.icon_data = malloc((size*size + 2)*sizeof(ev.data.icon_data[0]));
@@ -148,7 +148,7 @@ void x_seticon(const void *icon, unsigned long size)
 
 void x_copytext(const char *text, size_t buflen)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	pthread_mutex_lock(&copybuf_mutex);
 	FREE_AND_NULL(copybuf);
@@ -166,7 +166,7 @@ void x_copytext(const char *text, size_t buflen)
 char *x_getcliptext(void)
 {
 	char *ret=NULL;
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_PASTE;
 	write_event(&ev);
@@ -500,7 +500,7 @@ int x_init(void)
 
 void x11_drawrect(struct rectlist *data)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_DRAWRECT;
 	if(x11_initialized) {
@@ -511,7 +511,7 @@ void x11_drawrect(struct rectlist *data)
 
 void x11_flush(void)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_FLUSH;
 	if(x11_initialized)
@@ -520,6 +520,8 @@ void x11_flush(void)
 
 void x_setscaling(int newval)
 {
+	if (newval < 1)
+		newval = 1;
 	pthread_mutex_lock(&vstatlock);
 	x_cvstat.scaling = vstat.scaling = newval;
 	pthread_mutex_unlock(&vstatlock);
