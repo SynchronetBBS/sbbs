@@ -3253,9 +3253,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 {
 	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
 	char	msg_id[256],str[128],*p;
-	bool	done,esc,cr;
+	bool	done,cr;
 	int 	i;
-	uint	col;
 	ushort	xlat=XLAT_NONE,net;
 	ulong	l,m,length,bodylen,taillen;
 	ulong	save;
@@ -3328,7 +3327,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		return IMPORT_FAILURE;
 	}
 
-	for(col=0,l=0,esc=0,done=0,bodylen=0,taillen=0,cr=1;l<length;l++) {
+	for(l=0,done=0,bodylen=0,taillen=0,cr=1;l<length;l++) {
 
 		if(!l && !strncmp((char *)fbuf,"AREA:",5)) {
 			save=l;
@@ -3350,8 +3349,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		ch=fbuf[l];
 		if(ch==CTRL_A && !cr)
 			ch = '@';
-
-		if(ch==CTRL_A) {	/* kludge line */
+		else if(ch==CTRL_A) {	/* kludge line */
 
 			if(!strncmp((char *)fbuf+l+1,"TOPT ",5))
 				destaddr.point=atoi((char *)fbuf+l+6);
@@ -3494,13 +3492,20 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 			while(l<length && fbuf[l]!='\r') l++;
 			continue;
 		}
-
 		if(ch == '\n')
 			continue;
 		if(cr && (!strncmp((char *)fbuf+l,"--- ",4)
 			|| !strncmp((char *)fbuf+l,"---\r",4)))
 			done=1; 			/* tear line and down go into tail */
-		if(done && cr && !strncmp((char *)fbuf+l,"SEEN-BY:",8)) {
+		else if(cr && !strncmp((char *)fbuf+l," * Origin: ",11)) {
+			p=(char*)fbuf+l+11;
+			while(*p && *p!='\r') p++;	 /* Find CR */
+			while(p && *p!='(') p--;     /* rewind to '(' */
+			if(p)
+				origaddr=atofaddr(p+1); 	/* get orig address */
+			done=1;
+		}
+		else if(done && cr && !strncmp((char *)fbuf+l,"SEEN-BY:",8)) {
 			l+=8;
 			while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 			m=l;
@@ -3517,10 +3522,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		}
 		else
 			sbody[bodylen++]=ch;
-		col++;
 		if(ch=='\r') {
 			cr=1;
-			col=0;
 			if(done) {
 				if(taillen<MAX_TAILLEN)
 					stail[taillen++]='\n';
@@ -3528,31 +3531,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 			else
 				sbody[bodylen++]='\n';
 		}
-		else {
+		else
 			cr=0;
-			if(col==1 && !strncmp((char *)fbuf+l," * Origin: ",11)) {
-				p=(char*)fbuf+l+11;
-				while(*p && *p!='\r') p++;	 /* Find CR */
-				while(p && *p!='(') p--;     /* rewind to '(' */
-				if(p)
-					origaddr=atofaddr(p+1); 	/* get orig address */
-				done=1;
-			}
-			if(done)
-				continue;
-
-			if(ch==ESC) esc=1;		/* ANSI codes */
-			if(ch==' ' && col>40 && !esc) {	/* word wrap */
-				for(m=l+1;m<length;m++) 	/* find next space */
-					if(fbuf[m]<=' ' && fbuf[m]>=0)
-						break;
-				if(m<length && m-l>80-col) {  /* if it's beyond the eol */
-					sbody[bodylen++]='\r';
-					sbody[bodylen++]='\n';
-					col=0;
-				}
-			}
-		}
 	}
 
 	if(bodylen>=2 && sbody[bodylen-2]=='\r' && sbody[bodylen-1]=='\n')
