@@ -35,7 +35,7 @@
 
 //---------------------------------------------------------------------------
 
-#include "sbbs.h"		// filter_ip
+#include "userdat.h"		// filter_ip
 #include <vcl.h>
 #pragma hdrstop
 
