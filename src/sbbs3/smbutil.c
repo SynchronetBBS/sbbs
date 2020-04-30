@@ -64,6 +64,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include <string.h>		/* strrchr */
 #include <ctype.h>		/* toupper */
 
+#include "utf8.h"
 #include "sbbs.h"
 #include "conwrap.h"
 
@@ -207,6 +208,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	char		buf[1024];
 	uchar*		msgtxt=NULL;
 	uchar*		newtxt;
+	const char* charset = NULL;
 	long		msgtxtlen;
 	int 		i;
 	ushort		agent=AGENT_SMBUTIL;
@@ -240,6 +242,13 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		msgtxtlen=lf_expand(msgtxt, newtxt);
 		free(msgtxt);
 		msgtxt=newtxt;
+
+		if(!str_is_ascii(msgtxt) && utf8_str_is_valid(msgtxt))
+			charset = FIDO_CHARSET_UTF8;
+		else if(str_is_ascii(msgtxt))
+			charset = FIDO_CHARSET_ASCII;
+		else
+			charset = FIDO_CHARSET_CP437;
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
@@ -292,7 +301,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 					,beep,RECIPIENTNETADDR,i,smb.last_error);
 				bail(1); 
 			}
-		} 
+		}
 	}
 
 	if(from==NULL) {
@@ -351,6 +360,13 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 
 	smb_hfield_str(&msg, RFC822MSGID, gen_msgid(&smb, &msg, str, sizeof(str)-1));
+	if(charset != NULL)
+		smb_hfield_str(&msg, FIDOCHARSET, charset);
+
+	if((msg.to != NULL && !str_is_ascii(msg.to) && utf8_str_is_valid(msg.to))
+		|| (msg.from != NULL && !str_is_ascii(msg.from) && utf8_str_is_valid(msg.from))
+		|| (msg.subj != NULL && !str_is_ascii(msg.subj) && utf8_str_is_valid(msg.subj)))
+		msg.hdr.auxattr |= MSG_HFIELDS_UTF8;
 
 	if(mode&NOCRC || smb.status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
