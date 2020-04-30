@@ -2,19 +2,11 @@
 #include <stdio.h>	/* NULL */
 
 #include <SDL.h>
-#ifndef main
- #define USE_REAL_MAIN
-#endif
 #include "gen_defs.h"
 #include "threadwrap.h"
-#ifdef USE_REAL_MAIN
- #undef main
-#endif
 #include "sdlfuncs.h"
 
-#ifndef _WIN32
-struct sdlfuncs sdl;
-#endif
+struct sdlfuncs xpbeep_sdl;
 
 /* Make xp_dl do static linking */
 #ifdef STATIC_SDL
@@ -26,7 +18,7 @@ static int sdl_funcs_loaded=0;
 static int sdl_initialized=0;
 static int sdl_audio_initialized=0;
 
-int load_sdl_funcs(struct sdlfuncs *sdlf)
+int xpbeep_load_sdl_funcs(struct sdlfuncs *sdlf)
 {
 	dll_handle	sdl_dll;
 	const char *libnames[]={"SDL", "SDL-1.2", "SDL-1.1", NULL};
@@ -100,18 +92,18 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 int init_sdl_audio(void)
 {
 	if (!sdl_funcs_loaded) {
-		if (load_sdl_funcs(&sdl) != 0)
+		if (xpbeep_load_sdl_funcs(&xpbeep_sdl) != 0)
 			return -1;
 	}
 	if(!sdl_initialized) {
-		if(sdl.Init(0)==0)
+		if(xpbeep_sdl.Init(0)==0)
 			sdl_initialized=TRUE;
 		else
 			return(-1);
 	}
 	if(sdl_audio_initialized)
 		return(0);
-	if(sdl.InitSubSystem(SDL_INIT_AUDIO)==0) {
+	if(xpbeep_sdl.InitSubSystem(SDL_INIT_AUDIO)==0) {
 		sdl_audio_initialized=TRUE;
 		return(0);
 	}

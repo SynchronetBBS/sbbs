@@ -157,9 +157,7 @@ endif
 
 ifdef NO_X
  ifndef WITH_SDL
-  ifndef WITH_SDL_AUDIO
-   CIOLIB-MT_CFLAGS		+=	-DNO_FONTS
-   CIOLIB_CFLAGS			+=	-DNO_FONTS
-  endif
+  CIOLIB-MT_CFLAGS		+=	-DNO_FONTS
+  CIOLIB_CFLAGS			+=	-DNO_FONTS
  endif
 endif

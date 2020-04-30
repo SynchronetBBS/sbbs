@@ -50,7 +50,7 @@
 #define CIOLIB_NO_MACROS
 #include "ciolib.h"
 
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
  #include "sdl_con.h"
  #include "sdlfuncs.h"
 #endif
@@ -141,13 +141,13 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_setwinsize(int width, int height);
 CIOLIBEXPORT void CIOLIBCALL ciolib_setwinposition(int x, int y);
 CIOLIBEXPORT enum ciolib_codepage CIOLIBCALL ciolib_getcodepage(void);
 
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 int sdl_video_initialized = 0;
 #endif
 
 #define CIOLIB_INIT()		{ if(initialized != 1) initciolib(CIOLIB_MODE_AUTO); }
 
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 static int try_sdl_init(int mode)
 {
 	if(!sdl_initciolib(mode)) {
@@ -201,10 +201,9 @@ static int try_sdl_init(int mode)
  #ifndef NO_X
 static int try_x_init(int mode)
 {
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
-		sdl_video_initialized = FALSE;
 	}
 #endif
 
@@ -256,10 +255,9 @@ static int try_x_init(int mode)
 
 static int try_curses_init(int mode)
 {
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
-		sdl_video_initialized = FALSE;
 	}
 #endif
 
@@ -293,10 +291,9 @@ static int try_curses_init(int mode)
 
 static int try_ansi_init(int mode)
 {
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
-		sdl_video_initialized = FALSE;
 	}
 #endif
 
@@ -324,10 +321,9 @@ static int try_ansi_init(int mode)
 #endif
 static int try_conio_init(int mode)
 {
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 	if (sdl_video_initialized) {
 		sdl.QuitSubSystem(SDL_INIT_VIDEO);
-		sdl_video_initialized = FALSE;
 	}
 #endif
 
@@ -389,7 +385,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 			if(!try_sdl_init(CIOLIB_MODE_SDL))
 #endif
 #ifdef _WIN32
@@ -424,7 +420,7 @@ CIOLIBEXPORT int CIOLIBCALL initciolib(int mode)
 			try_ansi_init(mode);
 			break;
 
-#if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
+#if defined(WITH_SDL)
 		case CIOLIB_MODE_SDL:
 		case CIOLIB_MODE_SDL_FULLSCREEN:
 			try_sdl_init(mode);

@@ -19,8 +19,6 @@ struct sdlfuncs sdl;
 #include "ciolib.h"
 
 static int sdl_funcs_loaded=0;
-static int sdl_initialized=0;
-static int sdl_audio_initialized=0;
 
 static void QuitWrap(void);
 
@@ -106,30 +104,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->QuitSubSystem=xp_dlsym(sdl_dll, SDL_QuitSubSystem))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->OpenAudio=xp_dlsym(sdl_dll, SDL_OpenAudio))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->CloseAudio=xp_dlsym(sdl_dll, SDL_CloseAudio))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->PauseAudio=xp_dlsym(sdl_dll, SDL_PauseAudio))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->LockAudio=xp_dlsym(sdl_dll, SDL_LockAudio))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->UnlockAudio=xp_dlsym(sdl_dll, SDL_UnlockAudio))==NULL) {
-		xp_dlclose(sdl_dll);
-		return(-1);
-	}
-	if((sdlf->GetAudioStatus=xp_dlsym(sdl_dll, SDL_GetAudioStatus))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
@@ -226,10 +200,6 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 int init_sdl_video(void)
 {
 	char	*drivername;
-	int		use_sdl_video=FALSE;
-#ifdef _WIN32
-	char		*driver_env=NULL;
-#endif
 
 	if(sdl_video_initialized)
 		return(0);
@@ -239,19 +209,12 @@ int init_sdl_video(void)
 	if (!sdl.gotfuncs)
 		return -1;
 
-	use_sdl_video=TRUE;
-
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2" );
 	sdl.SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1" );
 #ifdef _WIN32
 	/* Fail to windib (ie: No mouse attached) */
-	if(sdl.Init(SDL_INIT_VIDEO)) {
-		if(sdl.Init(0)==0)
-			sdl_initialized=TRUE;
-	}
-	else {
+	if(sdl.Init(SDL_INIT_VIDEO) == 0) {
 		sdl_video_initialized=TRUE;
-		sdl_initialized=TRUE;
 	}
 #else
 	/*
@@ -262,31 +225,17 @@ int init_sdl_video(void)
 	 * This ugly hack attempts to prevent this... of course, remote X11
 	 * connections must still be allowed.
 	 */
-	if((!use_sdl_video) || ((getenv("REMOTEHOST")!=NULL || getenv("SSH_CLIENT")!=NULL) && getenv("DISPLAY")==NULL)) {
-		/* Sure ,we can't use video, but audio is still valid! */
-		if(sdl.Init(0)==0)
-			sdl_initialized=TRUE;
-	}
-	else {
+	if(getenv("DISPLAY") != NULL || (getenv("REMOTEHOST") == NULL && getenv("SSH_CLIENT") == NULL)) {
 		if(sdl.Init(SDL_INIT_VIDEO)==0) {
-			sdl_initialized=TRUE;
 			sdl_video_initialized=TRUE;
-		}
-		else {
-			/* Sure ,we can't use video, but audio is still valid! */
-			if(sdl.Init(0)==0)
-				sdl_initialized=TRUE;
 		}
 	}
 #endif
 	if(sdl_video_initialized && (drivername = sdl.GetCurrentVideoDriver())!=NULL) {
 		/* Unacceptable drivers */
 		if((!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
-			sdl.QuitSubSystem(SDL_INIT_VIDEO);
+			sdl.Quit();
 			sdl_video_initialized=FALSE;
-		}
-		else {
-			sdl_video_initialized=TRUE;
 		}
 	}
 
@@ -298,22 +247,9 @@ int init_sdl_video(void)
 	return(-1);
 }
 
-int init_sdl_audio(void)
-{
-	if(!sdl_initialized)
-		return(-1);
-	if(sdl_audio_initialized)
-		return(0);
-	if(sdl.InitSubSystem(SDL_INIT_AUDIO)==0) {
-		sdl_audio_initialized=TRUE;
-		return(0);
-	}
-	return(-1);
-}
-
 static void QuitWrap(void)
 {
-	if (sdl_initialized) {
+	if (sdl_video_initialized) {
 #if !defined(__DARWIN__)
 		exit_sdl_con();
 #endif

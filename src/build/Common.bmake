@@ -168,9 +168,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # SDL ciolib enabled by default for the moment.
 !ifndef WITHOUT_SDL
-!ifndef USE_SDL_AUDIO
 USE_SDL	=	1
-!endif
 !endif
 
 # Pull in lib-specific flags

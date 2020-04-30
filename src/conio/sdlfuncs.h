@@ -32,12 +32,6 @@ struct sdlfuncs {
 	const char	*(HACK_HACK_HACK *GetError)	(void);
 	int (HACK_HACK_HACK *InitSubSystem)(Uint32 flags);
 	void (HACK_HACK_HACK *QuitSubSystem)(Uint32 flags);
-	int (HACK_HACK_HACK *OpenAudio)(SDL_AudioSpec *desired, SDL_AudioSpec *obtained);
-	void (HACK_HACK_HACK *CloseAudio)(void);
-	void (HACK_HACK_HACK *LockAudio)(void);
-	void (HACK_HACK_HACK *UnlockAudio)(void);
-	void (HACK_HACK_HACK *PauseAudio)(int pause_on);
-	SDL_AudioStatus (HACK_HACK_HACK *GetAudioStatus)(void);
 	SDL_Texture* (HACK_HACK_HACK *CreateTexture)	(SDL_Renderer *renderer, Uint32 format, int access, int w, int h);
 	int (HACK_HACK_HACK *UpdateTexture)	(SDL_Texture *texture, const SDL_Rect * rect, const void *pixels, int pitch);
 	int (HACK_HACK_HACK *RenderClear)	(SDL_Renderer *renderer);

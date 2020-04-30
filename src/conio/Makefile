@@ -20,15 +20,11 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 !include ..\build\Common.bmake	# defines clean and output directory rules
 
-!ifdef USE_SDL_AUDIO
-OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
-!else
 !ifdef USE_SDL
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)SDL_win32_main$(OFILE)
 OBJS		= $(OBJS) $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 NEED_BITMAP	= 1
-!endif
 !endif
 
 !ifdef NEED_BITMAP

@@ -23,8 +23,7 @@ struct sdlfuncs {
 	int	gotfuncs;
 };
 
-/* Defined in SDL_win32_main.c for Win32 */
-extern struct sdlfuncs	sdl;
+extern struct sdlfuncs	xpbeep_sdl;
 extern SDL_sem *sdl_exit_sem;
 
 #ifdef __cplusplus

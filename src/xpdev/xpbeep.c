@@ -335,7 +335,7 @@ void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 		sdl_audio_buf_pos+=copylen;
 		/* If we're done, post the semaphore */
 		if(sdl_audio_buf_pos>=sdl_audio_buf_len) {
-			sdl.SemPost(sdlToneDone);
+			xpbeep_sdl.SemPost(sdlToneDone);
 			sdl_audio_buf_len=0;
 			sdl_audio_buf_pos=0;
 			free((void *)swave);
@@ -447,14 +447,14 @@ DLLCALL xptone_open_locked(void)
 			spec.size=256;
 			spec.callback=sdl_fillbuf;
 			spec.userdata=NULL;
-			if(sdl.OpenAudio(&spec, NULL)==-1) {
+			if(xpbeep_sdl.OpenAudio(&spec, NULL)==-1) {
 				sdl_device_open_failed=TRUE;
 			}
 			else {
-				sdlToneDone=sdl.SDL_CreateSemaphore(0);
+				sdlToneDone=xpbeep_sdl.SDL_CreateSemaphore(0);
 				sdl_audio_buf_len=0;
 				sdl_audio_buf_pos=0;
-				sdl.PauseAudio(FALSE);
+				xpbeep_sdl.PauseAudio(FALSE);
 				handle_type=SOUND_DEVICE_SDL;
 				handle_rc++;
 				return(TRUE);
@@ -611,7 +611,7 @@ xptone_complete_locked(void)
 
 #ifdef WITH_SDL_AUDIO
 	else if(handle_type==SOUND_DEVICE_SDL) {
-		while(sdl.GetAudioStatus()==SDL_AUDIO_PLAYING)
+		while(xpbeep_sdl.GetAudioStatus()==SDL_AUDIO_PLAYING)
 			SLEEP(1);
 	}
 #endif
@@ -676,8 +676,8 @@ BOOL DLLCALL xptone_close_locked(void)
 
 #ifdef WITH_SDL_AUDIO
 	if(handle_type==SOUND_DEVICE_SDL) {
-		sdl.CloseAudio();
-		sdl.SDL_DestroySemaphore(sdlToneDone);
+		xpbeep_sdl.CloseAudio();
+		xpbeep_sdl.SDL_DestroySemaphore(sdlToneDone);
 	}
 #endif
 
@@ -786,14 +786,14 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 
 #ifdef WITH_SDL_AUDIO
 	if(handle_type==SOUND_DEVICE_SDL) {
-		sdl.LockAudio();
+		xpbeep_sdl.LockAudio();
 		swave=samp;
 		sdl_audio_buf_pos=0;
 		sdl_audio_buf_len=sz;
-		sdl.UnlockAudio();
-		sdl.PauseAudio(FALSE);
-		sdl.SemWait(sdlToneDone);
-		sdl.PauseAudio(TRUE);
+		xpbeep_sdl.UnlockAudio();
+		xpbeep_sdl.PauseAudio(FALSE);
+		xpbeep_sdl.SemWait(sdlToneDone);
+		xpbeep_sdl.PauseAudio(TRUE);
 		return TRUE;
 	}
 #endif

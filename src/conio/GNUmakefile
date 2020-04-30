@@ -19,16 +19,10 @@ else
  NEED_BITMAP := 1
 endif
 
-ifdef WITH_SDL_AUDIO
+ifdef WITH_SDL
+ NEED_BITMAP := 1
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
  OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
- NEED_BITMAP := 1
-else
- ifdef WITH_SDL
-  NEED_BITMAP := 1
-  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
-  OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
- endif
 endif
 
 ifeq ($(os),netbsd)
