@@ -47,7 +47,7 @@ void display_message(char *title, char *message, char *icon)
 	dialog=gtk_dialog_new_with_buttons(title
 			,GTK_WINDOW(gtk_builder_get_object(builder, "UserListWindow"))
 			,GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT
-			,GTK_STOCK_OK
+			,"_OK"
 			,GTK_RESPONSE_NONE
 			,NULL);
 	if(icon==NULL)
@@ -59,7 +59,7 @@ void display_message(char *title, char *message, char *icon)
 			,"response"
 			,G_CALLBACK(gtk_widget_destroy)
             ,dialog);
-	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->vbox),
+	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)),
 			label);
 	gtk_widget_show_all (dialog);
 	gtk_dialog_run(GTK_DIALOG(dialog));
