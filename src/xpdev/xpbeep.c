@@ -633,10 +633,8 @@ xptone_complete_locked(void)
 
 #ifdef USE_ALSA_SOUND
 	if(handle_type==SOUND_DEVICE_ALSA) {
-		if(!alsa_device_open_failed) {
-			while(alsa_api->snd_pcm_drain(playback_handle))
-				SLEEP(1);
-		}
+		if(!alsa_device_open_failed)
+			alsa_api->snd_pcm_drain(playback_handle);
 	}
 #endif
 
@@ -825,6 +823,7 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 		int ret;
 		int written=0;
 
+		alsa_api->snd_pcm_prepare(playback_handle);
 		while(written < sz) {
 			ret=alsa_api->snd_pcm_writei(playback_handle, samp+written, sz-written);
 			if(ret < 0) {
