@@ -76,14 +76,18 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	char	str[128],str2[128],*tp,*sp,*p;
     int     len;
 	int		disp_len;
-	bool	padded_left=false;
-	bool	padded_right=false;
-	bool	centered=false;
+	enum {
+		none,
+		left,
+		right,
+		center
+	} align = none;
 	bool	zero_padded=false;
 	bool	truncated = true;
 	bool	doubled = false;
 	bool	thousep = false;	// thousands-separated
 	bool	uppercase = false;
+	bool	width_specified = false;
 	long	pmode = 0;
 	const char *cp;
 
@@ -107,11 +111,11 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		if(strchr(p, 'U') != NULL)
 			uppercase = true;
 		if(strchr(p, 'L') != NULL)
-			padded_left = true;
+			align = left;
 		else if(strchr(p, 'R') != NULL)
-			padded_right = true;
+			align = right;
 		else if(strchr(p, 'C') != NULL)
-			centered = true;
+			align = center;
 		else if(strchr(p, 'W') != NULL)
 			doubled = true;
 		else if(strchr(p, 'Z') != NULL)
@@ -122,11 +126,11 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	else if(strchr(sp, ':') != NULL)
 		p = NULL;
 	else if((p=strstr(sp,"-L"))!=NULL)
-		padded_left=true;
+		align = left;
 	else if((p=strstr(sp,"-R"))!=NULL)
-		padded_right=true;
+		align = right;
 	else if((p=strstr(sp,"-C"))!=NULL)
-		centered=true;
+		align = center;
 	else if((p=strstr(sp,"-W"))!=NULL)	/* wide */
 		doubled=true;
 	else if((p=strstr(sp,"-Z"))!=NULL)
@@ -139,14 +143,21 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		truncated = false;
 	if(p!=NULL) {
 		char* lp = p;
+		lp++;	// skip the '|' or '-'
+		while(*lp == '>'|| isalpha((uchar)*lp))
+			lp++;
+		if(*lp)
+			width_specified = true;
 		while(*lp && !isdigit((uchar)*lp))
 			lp++;
-		if(*lp && isdigit((uchar)*lp))
+		if(*lp && isdigit((uchar)*lp)) {
 			disp_len=atoi(lp);
+			width_specified = true;
+		}
 		*p=0;
 	}
 
-	cp = atcode(sp, str2, sizeof(str2), &pmode, centered, obj);
+	cp = atcode(sp, str2, sizeof(str2), &pmode, align == center, obj);
 	if(cp==NULL)
 		return(0);
 
@@ -161,8 +172,11 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		cp = upper;
 	}
 
-	if(p==NULL || truncated == false)
+	if(p==NULL || truncated == false || (width_specified == false && align == none))
 		disp_len = strlen(cp);
+
+	if(uppercase && align == none)
+		align = left;
 
 	if(truncated) {
 		if(column + disp_len > cols - 1) {
@@ -178,11 +192,11 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		else
 			disp_len += strlen(cp) - utf8_str_count_width(cp, /* min: */1, /* max: */2);
 	}
-	if(padded_left)
+	if(align == left)
 		bprintf(pmode, "%-*.*s",disp_len,disp_len,cp);
-	else if(padded_right)
+	else if(align == right)
 		bprintf(pmode, "%*.*s",disp_len,disp_len,cp);
-	else if(centered) {
+	else if(align == center) {
 		int vlen = strlen(cp);
 		if(vlen < disp_len) {
 			int left = (disp_len - vlen) / 2;
