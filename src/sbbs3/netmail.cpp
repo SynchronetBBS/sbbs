@@ -1106,6 +1106,10 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
+	msg.hdr.netattr |= MSG_LOCAL;
+	if(cfg.inetmail_misc&NMAIL_KILL)
+		msg.hdr.netattr |= MSG_KILLSENT;
+
 	if(rcpt_count > 1)
 		smb_hfield_str(&msg, RECIPIENTLIST, to_list);
 
