@@ -25,13 +25,18 @@ ifeq ($(os),win32)
 endif
 
 ifneq ($(os),win32)
- ifdef USE_SYSTEM_CURSES
-  CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
+ ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
+  CIOLIB-MT_LIBS += `pkg-config ncursesw --libs`
+  CIOLIB-MT_CFLAGS += `pkg-config ncursesw --cflags`
  else
-  ifeq ($(os),darwin)
-   CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF) $(UL_PRE)tinfow$(UL_SUF)
+  ifdef USE_SYSTEM_CURSES
+   CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)
   else
-   CIOLIB-MT_LIBS		+=	$(UL_PRE)ncursesw$(UL_SUF) $(UL_PRE)tinfow$(UL_SUF)
+   ifeq ($(os),darwin)
+    CIOLIB-MT_LIBS		+=	$(UL_PRE)ncurses$(UL_SUF)
+   else
+    CIOLIB-MT_LIBS		+=	$(UL_PRE)ncursesw$(UL_SUF)
+   endif
   endif
  endif
  ifndef NO_X
