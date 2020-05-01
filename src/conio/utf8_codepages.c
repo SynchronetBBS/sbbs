@@ -1592,7 +1592,7 @@ cpoint_from_cptable_ext(uint8_t ch, const struct codepage_def *cpdef)
 {
 	if (ch < 32)
 		return cpdef->cp_ext_unicode_table[ch];
-	return cpoint_from_cptable(ch, cpdef);
+	return ciolib_cp[cpdef->cp].from_cpchar(ch, cpdef);
 }
 
 static uint32_t
@@ -1878,6 +1878,7 @@ error:
 }
 
 const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
+	// 0
 	{"CP437", CIOLIB_CP437, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		cp437_table, sizeof(cp437_table) / sizeof(cp437_table[0]),
 		cp437_unicode_table, cp437_ext_table},
@@ -1893,6 +1894,7 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	{"ISO-8859-4", CIOLIB_ISO_8859_4, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		iso8859_4_table, sizeof(iso8859_4_table) / sizeof(iso8859_4_table[0]),
 		iso8859_4_unicode_table, empty_ext_table},
+	// 5
 	{"CP866M", CIOLIB_CP866M, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		cp866m_table, sizeof(cp866m_table) / sizeof(cp866m_table[0]),
 		cp866m_unicode_table, cp437_ext_table},
@@ -1908,6 +1910,7 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	{"ISO-8859-15", CIOLIB_ISO_8859_15, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		iso8859_15_table, sizeof(iso8859_15_table) / sizeof(iso8859_15_table[0]),
 		iso8859_15_unicode_table, empty_ext_table},
+	// 10
 	{"ISO-8859-5", CIOLIB_ISO_8859_5, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		iso8859_5_table, sizeof(iso8859_5_table) / sizeof(iso8859_5_table[0]),
 		iso8859_5_unicode_table, empty_ext_table},
@@ -1923,6 +1926,7 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	{"ISO-8859-1", CIOLIB_ISO_8859_1, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		iso8859_1_table, sizeof(iso8859_1_table) / sizeof(iso8859_1_table[0]),
 		iso8859_1_unicode_table, empty_ext_table},
+	// 15
 	{"CP866M2", CIOLIB_CP866M2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		cp866m2_table, sizeof(cp866m2_table) / sizeof(cp866m2_table[0]),
 		cp866m2_unicode_table, cp437_ext_table},
@@ -1938,6 +1942,7 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	{"HAIK8", CIOLIB_HAIK8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
 		haik8_table, sizeof(haik8_table) / sizeof(haik8_table[0]),
 		haik8_unicode_table, cp437_ext_table},
+	// 20
 	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext, 
 		atascii_table, sizeof(atascii_table) / sizeof(atascii_table[0]),
 		atascii_unicode_table, atascii_ext_table},
