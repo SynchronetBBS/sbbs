@@ -1,3 +1,5 @@
+// $Id$
+
 function mouse_getkey(mode, timeout, enabled)
 {
 	var key;
@@ -8,12 +10,23 @@ function mouse_getkey(mode, timeout, enabled)
 	var motion;
 	var mods;
 	var press;
+	var ansiterm = bbs.mods.ansiterm_lib;
+	if(!ansiterm)
+		ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
 
 	// TODO: Fake these modes...
 	var safe_mode = mode & ~(K_UPPER|K_UPRLWR|K_NUMBER|K_ALPHA|K_NOEXASC);
 
-	if (mode & (K_UPPER|K_UPRLWR|K_NUMBER|K_ALPHA|K_NOEXASC)) {
+	if (safe_mode != mode) {
 		throw("Invalid mode "+mode+" for mouse_getkey()");
+	}
+	
+	function mouse_enable(enable)
+	{
+		if(console.term_supports(USER_ANSI)) {
+			ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
+			ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
+		}
 	}
 
 	function restuff()
@@ -26,7 +39,7 @@ function mouse_getkey(mode, timeout, enabled)
 		enabled = false;
 
 	if (!enabled) {
-		console.write("\x1b[?1006;9h");
+		mouse_enable(true);
 	}
 	do {
 		if(timeout !== undefined)
@@ -34,7 +47,7 @@ function mouse_getkey(mode, timeout, enabled)
 		else
 			key=console.getkey(mode);
 		if (!enabled)
-			console.write("\x1b[?9l");
+			mouse_enable(false);
 
 		if (key === '' || key === undefined || key === null) {
 			ansi += key;
