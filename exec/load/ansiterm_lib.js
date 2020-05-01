@@ -22,6 +22,14 @@ const defs = {
 		blink_alt_charset:		34,
 		no_blink:				35,
 	},
+	
+	mouse_reporting: {
+		x10_compatible:			9,
+		normal_tracking:		1000,
+		button_events:			1002,
+		any_events:				1003,
+		extended_coord:			1006,	// modifies the above modes
+	},
 
 	// SyncTerm emulation speed map
 	speed_map: {
@@ -160,7 +168,11 @@ var ext_mode = {
 	restore: function(mode) { return format("\x1b[?%uu", defs.ext_mode[mode]); },
 	save_all:		function()	{ return "\x1b[?s"; },
 	restore_all:	function()	{ return "\x1b[?u"; }
+}
 
+var mouse = {
+	set: 	function(mode)	{ return format("\x1b[?%uh", defs.ext_mode['mouse_reporting']); },
+	clear: 	function(mode)	{ return format("\x1b[?%ul", defs.ext_mode['mouse_reporting']); }
 }
 
 var speed = {
