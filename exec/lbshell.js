@@ -29,6 +29,10 @@ load("graphic.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
 load("text.js");
 load("str_cmds.js");
+var ansiterm = bbs.mods.ansiterm_lib;
+if(!ansiterm)
+	ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
+
 var str;
 var size=file_size(system.text_dir+"lbshell_bg.bin");
 size/=2;	// Divide by two for attr/char pairs
@@ -858,14 +862,22 @@ function todo_getfiles(lib, dir)
 	return(file_size(path)/22);	/* F_IXBSIZE */
 }
 
+function mouse_enable(enable)
+{
+	if(console.term_supports(USER_ANSI)) {
+		ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
+		ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
+	}
+}
+
 function start_mouse()
 {
-	console.write("\x1b[?1006;9h");
+	mouse_enable(true);
 }
 
 function stop_mouse()
 {
-	console.write("\x1b[?9l");
+	mouse_enable(false);
 }
 
 function clear_screen()
