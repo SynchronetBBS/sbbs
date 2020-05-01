@@ -769,7 +769,7 @@ void net_cfg()
 						}
 						break;
 					case 6:
-						i=0;q
+						i=0;
 						uifc.helpbuf=
 							"`Kill Internet E-mail After it is Sent:`\n"
 							"\n"
