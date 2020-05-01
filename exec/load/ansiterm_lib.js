@@ -171,8 +171,8 @@ var ext_mode = {
 }
 
 var mouse = {
-	set: 	function(mode)	{ return format("\x1b[?%uh", defs.ext_mode['mouse_reporting']); },
-	clear: 	function(mode)	{ return format("\x1b[?%ul", defs.ext_mode['mouse_reporting']); }
+	set: 	function(mode)	{ return format("\x1b[?%uh", defs.mouse_reporting[mode]); },
+	clear: 	function(mode)	{ return format("\x1b[?%ul", defs.mouse_reporting[mode]); }
 }
 
 var speed = {
@@ -215,7 +215,7 @@ function set_attributes(a)
 
 function send(a,b,c,d)
 {
-	log(LOG_DEBUG, "ansterm.sending: " + this[a][b](c,d));
+	log(LOG_DEBUG, "ansiterm.sending: " + this[a][b](c,d));
 	console.write(this[a][b](c,d));
 }
 
