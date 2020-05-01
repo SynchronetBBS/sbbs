@@ -84,6 +84,16 @@ var best = null;
 
 log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 
+var ansi = load({}, 'ansiterm_lib.js');
+
+function mouse_enable(enable)
+{
+	if(console.term_supports(USER_ANSI)) {
+		ansi.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
+		ansi.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
+	}
+}
+
 function show_image(filename, fx, delay)
 {
 	var dir = directory(filename);
@@ -921,7 +931,7 @@ function play()
 	init_game(difficulty);
 	draw_board(true);
 	var full_redraw = false;
-	console.write("\x1b[?1006;9h");
+	mouse_enable(true);
 	while(bbs.online) {
 		if(!gameover && game.start
 			&& Date.now() - (game.start * 1000) >= options.timelimit * 60 * 1000) {
@@ -1069,7 +1079,7 @@ function play()
 				break;
 			case 'N':
 			{
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				console.home();
 				console.down(top + 1);
 				if(game.start && !gameover) {
@@ -1085,11 +1095,11 @@ function play()
 				if(new_difficulty > 0)
 					difficulty = init_game(new_difficulty);
 				full_redraw = true;
-				console.write("\x1b[?1006;9h");
+				mouse_enable(true);
 				break;
 			}
 			case 'W':
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				console.home();
 				console.down(top + 1);
 				var level = get_difficulty(true);
@@ -1101,29 +1111,29 @@ function play()
 					console.aborted = false;
 					full_redraw = true;
 				}
-				console.write("\x1b[?1006;9h");
+				mouse_enable(true);
 				break
 			case 'T':
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				show_winners();
 				console.pause();
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
-				console.write("\x1b[?1006;9h");
+				mouse_enable(true);
 				break;
 			case 'L':
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				console.line_counter = 0;
 				show_log();
 				console.pause();
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
-				console.write("\x1b[?1006;9h");
+				mouse_enable(true);
 				break
 			case 'B':
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				if(!best)
 					break;
 				console.line_counter = 0;
@@ -1132,18 +1142,18 @@ function play()
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
-				console.write("\x1b[?1006;9h");
+				mouse_enable(true);
 				break;
 			case '?':
 			case 'H':
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				console.line_counter = 0;
 				console.clear();
 				console.printfile(help_file);
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
-				console.write("\x1b[?1006;9h");
+				mouse_enable(true);
 				break;
 			case '\t':
 				highlight = !highlight;
@@ -1156,7 +1166,7 @@ function play()
 				selector++;
 				break;
 			case 'Q':
-				console.write("\x1b[?1006;9l");
+				mouse_enable(false);
 				if(game.start && !gameover) {
 					console.home();
 					console.down(top + 1);
@@ -1166,7 +1176,7 @@ function play()
 					console.right((console.screen_columns - 16) / 2);
 					console.print("Quit Game (Y/N) ?");
 					if(console.getkey(K_UPPER) != 'Y') {
-						console.write("\x1b[?1006;9h");
+						mouse_enable(true);
 						break;
 					}
 				}
