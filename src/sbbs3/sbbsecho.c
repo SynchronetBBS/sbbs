@@ -5287,7 +5287,7 @@ int export_netmail(void)
 
 		msg.hdr.netattr |= MSG_SENT;
 		msg.hdr.netattr &= ~MSG_INTRANSIT;
-		if(cfg.delete_netmail || (msg.hdr.netattr&MSG_KILLSENT)) {
+		if(cfg.delete_netmail || (msg.hdr.netattr&MSG_KILLSENT) || msg.from_ext == NULL) {
 			/* Delete exported netmail */
 			msg.hdr.attr |= MSG_DELETE;
 			if((i = smb_updatemsg(email, &msg)) != SMB_SUCCESS)
