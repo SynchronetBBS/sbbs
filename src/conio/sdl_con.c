@@ -705,7 +705,9 @@ sdl_add_keys(uint8_t *utf8s)
 	char *chars;
 	char *p;
 
+fprintf(stderr, "Got key: %c (%u)\n", utf8s[0], utf8s[0]);
 	chars = utf8_to_cp(getcodepage(), utf8s, '\x00', strlen((char *)utf8s), NULL);
+fprintf(stderr, "Xlat key: %c (%u)\n", (unsigned char)chars[0], (unsigned char)chars[0]);
 	if (chars) {
 		for (p = chars; *p; p++) {
 			sdl_add_key(*((uint8_t *)p));
