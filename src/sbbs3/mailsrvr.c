@@ -1648,7 +1648,7 @@ static void pop3_thread(void* arg)
 				smb_unlocksmbhdr(&smb);
 				smb_freemsgmem(&msg);
 				if(i!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) marking message as read"
+					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) marking message for deletion"
 						, socket, client.protocol, user.alias, i, smb.last_error);
 					sockprintf(socket,client.protocol,session,"-ERR %d marking message for deletion",i);
 					continue;
@@ -3811,6 +3811,8 @@ static void smtp_thread(void* arg)
 				i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf, /* remsg: */NULL);
 				if(smb_countattachments(&smb, &msg, msgbuf) > 0)
 					msg.hdr.auxattr |= MSG_MIMEATTACH;
+				if(scfg.inetmail_misc&NMAIL_KILL)
+					msg.hdr.netattr |= MSG_KILLSENT;
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
@@ -3878,6 +3880,8 @@ static void smtp_thread(void* arg)
 
 					if(nettype == NET_FIDO) {
 						newmsg.hdr.netattr |= MSG_LOCAL;
+						if(scfg.netmail_misc&NMAIL_KILL)
+							msg.hdr.netattr |= MSG_KILLSENT;
 						char* tp = strchr(rcpt_name, '@');
 						if(tp != NULL)
 							*tp = 0;
@@ -5787,7 +5791,8 @@ static void sendmail_thread(void* arg)
 			lprintf(LOG_INFO,"%04d %s message transfer complete (%lu bytes, %lu lines)", sock, prot, bytes, lines);
 
 			/* Now lets mark this message for deletion without corrupting the index */
-			msg.hdr.attr|=MSG_DELETE;
+			if((msg.hdr.netattr & MSG_KILLSENT) || msg.from_ext == NULL)
+				msg.hdr.attr|=MSG_DELETE;
 			msg.hdr.netattr|=MSG_SENT;
 			msg.hdr.netattr&=~MSG_INTRANSIT;
 			if((i=smb_updatemsg(&smb,&msg))!=SMB_SUCCESS)
