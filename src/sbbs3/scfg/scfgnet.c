@@ -659,6 +659,9 @@ void net_cfg()
 				sprintf(opt[i++],"%-27.27s%s"
 					,"Send E-mail Using Alias"
 					,cfg.inetmail_misc&NMAIL_ALIAS ? "Yes":"No");
+				sprintf(opt[i++],"%-27.27s%s"
+					,"Kill E-mail After Sent"
+					,cfg.inetmail_misc&NMAIL_KILL ? "Yes":"No");
 				sprintf(opt[i++],"%-27.27s%"PRIu32
 					,"Cost to Send E-mail",cfg.inetmail_cost);
 				opt[i][0]=0;
@@ -766,6 +769,25 @@ void net_cfg()
 						}
 						break;
 					case 6:
+						i=0;q
+						uifc.helpbuf=
+							"`Kill Internet E-mail After it is Sent:`\n"
+							"\n"
+							"If you want Internet E-mail messages to be deleted after they are\n"
+							"successfully sent, set this option to `Yes`.\n"
+						;
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+							,"Kill Internet E-mail After it is Sent",uifcYesNoOpts);
+						if(!i && !(cfg.inetmail_misc&NMAIL_KILL)) {
+							uifc.changes=1;
+							cfg.inetmail_misc|=NMAIL_KILL; 
+						}
+						else if(i==1 && cfg.inetmail_misc&NMAIL_KILL) {
+							uifc.changes=1;
+							cfg.inetmail_misc&=~NMAIL_KILL;
+						}
+						break;
+					case 7:
 						ultoa(cfg.inetmail_cost,str,10);
 						uifc.helpbuf=
 							"`Cost in Credits to Send Internet E-mail:`\n"
