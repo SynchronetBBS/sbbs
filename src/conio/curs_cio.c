@@ -62,6 +62,9 @@ static int suspended = 0;
 static int mpress = 0;
 void curs_resume(void);
 
+static int default_font=0;
+static int current_font[4]={0, 0, 0, 0};
+
 static short curses_color(short color)
 {
 	switch(color)
@@ -102,11 +105,11 @@ static short curses_color(short color)
 	return(0);
 }
 
-static int _putch(unsigned char ch, BOOL refresh_now)
+static int _putch(unsigned char ch, BOOL refresh_now, int cp)
 {
 	int	ret;
 	cchar_t	cha;
-	wchar_t wch[2] = {};
+	wchar_t wch[2] = {0};
 	attr_t	attr = 0;
 	short	cpair;
 
@@ -312,7 +315,7 @@ static int _putch(unsigned char ch, BOOL refresh_now)
 			wch[0]=ch;
 			break;
 		case CIOLIB_MODE_CURSES:
-			wch[0] = cpoint_from_cpchar_ext(getcodepage(), ch);
+			wch[0] = cpoint_from_cpchar_ext(cp, ch);
 			break;
 	}
 
@@ -340,6 +343,50 @@ static int _putch(unsigned char ch, BOOL refresh_now)
 	return(ret);
 }
 
+int curs_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+{
+	int x,y;
+	int fillpos=0;
+	unsigned char attr;
+	unsigned char fill_char;
+	unsigned char orig_attr;
+	int oldx, oldy;
+
+	if(		   sx < 1
+			|| sy < 1
+			|| ex < 1
+			|| ey < 1
+			|| sx > cio_textinfo.screenwidth
+			|| sy > cio_textinfo.screenheight
+			|| sx > ex
+			|| sy > ey
+			|| ex > cio_textinfo.screenwidth
+			|| ey > cio_textinfo.screenheight
+			|| fill==NULL)
+		return(0);
+
+	curs_resume();
+	getyx(stdscr,oldy,oldx);
+	orig_attr=lastattr;
+	for(y=sy-1;y<ey;y++)
+	{
+		for(x=sx-1;x<ex;x++)
+		{
+			fill_char=fill[fillpos].ch;
+			attr=fill[fillpos].legacy_attr;
+			textattr(attr);
+			move(y, x);
+			_putch(fill_char,FALSE,conio_fontdata[fill[fillpos].font].cp);
+			fillpos++;
+		}
+	}
+	textattr(orig_attr);
+	move(oldy, oldx);
+	if(!hold_update)
+		refresh();
+	return(1);
+}
+
 int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 {
 	int x,y;
@@ -350,7 +397,7 @@ int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 	int oldx, oldy;
 	unsigned char *fill;
 
-	fill=fillbuf;
+	fill = fillbuf;
 
 	if(		   sx < 1
 			|| sy < 1
@@ -376,7 +423,7 @@ int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 			attr=fill[fillpos++];
 			textattr(attr);
 			move(y, x);
-			_putch(fill_char,FALSE);
+			_putch(fill_char,FALSE,getcodepage());
 		}
 	}
 	textattr(orig_attr);
@@ -386,7 +433,7 @@ int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf)
 	return(1);
 }
 
-int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
+int curs_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	int x,y;
 	int fillpos=0;
@@ -396,11 +443,12 @@ int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
 	unsigned char thischar;
 	int	ext_char;
 	struct text_info	ti;
-	unsigned char *fill;
 	attr_t attr;
 	cchar_t cchar;
+	int fnt = current_font[0];
+	int cp;
+	fd_set cp_checked;
 
-	fill=fillbuf;
 	curs_resume();
 	gettextinfo(&ti);
 
@@ -616,6 +664,7 @@ int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
 								thischar=216;
 							}
 						}
+						fnt = 0;
 						break;
 					case CIOLIB_MODE_CURSES_IBM:
 						if (ext_char == (ACS_UARROW & A_CHARTEXT))
@@ -626,13 +675,30 @@ int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
 						{
 							thischar=31;
 						}
+						fnt = 0;
 						break;
 					case CIOLIB_MODE_CURSES:
-						thischar = cpchar_from_unicode_cpoint(CIOLIB_CP437, ext_char, '?');
+						thischar = cpchar_from_unicode_cpoint(getcodepage(), ext_char, 0);
+						if (thischar == 0 && ext_char != 0) {
+							FD_ZERO(&cp_checked);
+							for (fnt = 0; fnt < 256; fnt++) {
+								cp = conio_fontdata[fnt].cp;
+								if (!FD_ISSET(cp, &cp_checked)) {
+									FD_SET(cp, &cp_checked);
+									thischar = cpchar_from_unicode_cpoint(cp, ext_char, 0);
+									if (thischar)
+										break;
+								}
+							}
+							if (fnt == 256) {
+								fnt = current_font[0];
+								thischar = '?';
+							}
+						}
 						break;
 				}
 			}
-			fill[fillpos++]=(unsigned char)(thischar);
+			fill[fillpos].ch=(unsigned char)(thischar);
 			attrib=0;
 			if (attr & WA_BOLD) {
 				if (thischar == ' ')
@@ -649,7 +715,10 @@ int curs_gettext(int sx, int sy, int ex, int ey, void *fillbuf)
 				colour=colour&0x7f;
 			else
 				colour=((colour&56)<<1)|(colour&7);
-			fill[fillpos++]=colour|attrib;
+			fill[fillpos].legacy_attr = colour|attrib;
+			attr2palette(attrib, &fill[fillpos].fg, &fill[fillpos].bg);
+			fill[fillpos].font = fnt;
+			fillpos++;
 		}
 	}
 	move(oldy, oldx);
@@ -836,6 +905,8 @@ int curs_initciolib(long inmode)
 
 	if (COLORS >= 16)
 		cio_api.options = CONIO_OPT_BRIGHT_BACKGROUND;
+	if (can_change_color())
+		cio_api.options |= CONIO_OPT_PALETTE_SETTING;
 	curs_textmode(0);
 	return(1);
 }
@@ -1078,16 +1149,80 @@ int curs_getch(void)
 #endif
 
 			default:
-				// TODO: May not be right for wide...
-				ch = cpchar_from_unicode_cpoint(getcodepage(), ch, 0);
+				// Don't translate CTRL-x "keys"...
+				if (ch >= 32)
+					ch = cpchar_from_unicode_cpoint(getcodepage(), ch, 0);
 				break;
 		}
 	}
 	return(ch);
 }
 
+static int
+scale_integer_up(int from)
+{
+	int ret = from * 1000 / 256;
+
+	if (ret < 0)
+		ret = 0;
+	if (ret > 1000)
+		ret = 1000;
+	return ret;
+}
+
+static int
+scale_integer_down(int from)
+{
+	int ret = from * 256 / 1000;
+
+	if (ret < 0)
+		ret = 0;
+	if (ret > 255)
+		ret = 255;
+	return ret;
+}
+
+int curs_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
+{
+	if (!can_change_color())
+		return 0;
+	init_color(entry, scale_integer_up(r>>8), scale_integer_up(g>>8), scale_integer_up(b>>8));
+	return 1;
+}
+
+int curs_set_modepalette(uint32_t p[16])
+{
+	int i;
+
+	if (!can_change_color())
+		return 0;
+	for (i = 0; i < 16; i++) {
+		init_color(i, scale_integer_up((p[i] >> 16) & 0xff), scale_integer_up((p[i] >> 8) & 0xff), scale_integer_up((p[i]) & 0xff));
+	}
+	return 1;
+}
+
+int curs_get_modepalette(uint32_t p[16])
+{
+	int i;
+	short r, g, b;
+
+	if (!can_change_color())
+		return 0;
+	for (i = 0; i < 16; i++) {
+		color_content(i, &r, &g, &b);
+		r = scale_integer_down(r);
+		g = scale_integer_down(g);
+		b = scale_integer_down(b);
+		p[i] = (r<<16) | (g<<8) | b;
+	}
+	return 1;
+}
+
 void curs_textmode(int mode)
 {
+	int vm;
+
 	curs_resume();
 	getmaxyx(stdscr, cio_textinfo.screenheight, cio_textinfo.screenwidth);
 	if(has_colors())
@@ -1103,6 +1238,10 @@ void curs_textmode(int mode)
 	cio_textinfo.normattr=7;
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;
+
+	if(can_change_color() && (vm = find_vmode(mode)) != -1) {
+		curs_set_modepalette(palettes[vparams[vm].palette]);
+	}
 
 	return;
 }
@@ -1149,4 +1288,43 @@ void curs_setvideoflags(int flags)
 	if (COLORS < 16)
 		flags &= ~CIOLIB_VIDEO_BGBRIGHT;
 	vflags = flags;
+}
+
+int curs_setfont(int font, int force, int font_num)
+{
+	if (mode != CIOLIB_MODE_CURSES)
+		return 0;
+
+	if(font < 0 || font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2))
+		return(0);
+
+	switch(font_num) {
+		case 0:
+			default_font=font;
+			/* Fall-through */
+		case 1:
+			current_font[0]=font;
+			break;
+		case 2:
+		case 3:
+		case 4:
+			current_font[font_num-1]=font;
+			break;
+	}
+
+	return(1);
+}
+
+int curs_getfont(int font_num)
+{
+	int ret;
+
+	if (font_num == 0)
+		ret = default_font;
+	else if (font_num > 4)
+		ret = -1;
+	else
+		ret = current_font[font_num - 1];
+
+	return ret;
 }

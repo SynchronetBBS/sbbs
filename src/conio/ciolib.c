@@ -266,7 +266,8 @@ static int try_curses_init(int mode)
 			mode=CIOLIB_MODE_CURSES;
 		cio_api.mode=mode;
 		cio_api.puttext=curs_puttext;
-		cio_api.gettext=curs_gettext;
+		cio_api.vmem_puttext=curs_vmem_puttext;
+		cio_api.vmem_gettext=curs_vmem_gettext;
 		cio_api.textattr=curs_textattr;
 		cio_api.kbhit=curs_kbhit;
 		cio_api.gotoxy=curs_gotoxy;
@@ -283,6 +284,11 @@ static int try_curses_init(int mode)
 #if defined(NCURSES_VERSION_MAJOR) || defined (__NetBSD__)
 		cio_api.ESCDELAY=&ESCDELAY;
 #endif
+		cio_api.setfont = curs_setfont;
+		cio_api.getfont = curs_getfont;
+		cio_api.setpalette = curs_setpalette;
+		cio_api.get_modepalette = curs_get_modepalette;
+		cio_api.set_modepalette = curs_set_modepalette;
 		return(1);
 	}
 	return(0);
