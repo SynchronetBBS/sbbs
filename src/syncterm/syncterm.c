@@ -1238,6 +1238,7 @@ void load_settings(struct syncterm_settings *set)
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
 	set->window_width=iniReadInteger(inifile,"SyncTERM","WindowWidth",0);
 	set->window_height=iniReadInteger(inifile,"SyncTERM","WindowHeight",0);
+	set->left_just=iniReadBool(inifile,"SyncTERM","LeftJustify",FALSE);
 
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string);

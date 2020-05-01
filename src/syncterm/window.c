@@ -14,7 +14,7 @@ int drawwin(void)
 	char	str[32];
 	int		x,y,c;
 
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 
 	strcpy(str,"         ");
 
@@ -33,15 +33,17 @@ int drawwin(void)
 		term.height=24;
 		term.nostatus=1;
 	}
-	term.x=(txtinfo.screenwidth-term.width)/2+2;
+	if (settings.left_just)
+		term.x = 2;
+	else
+		term.x=(txtinfo.screenwidth-term.width)/2+2;
 	term.y=(txtinfo.screenheight-term.height)/2+2;
 	if((winbuf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2))==NULL) {
 		uifcmsg("Cannot allocate memory for terminal buffer",	"`Memory error`\n\n"
-																"Either your system is dangerously low on resources or your\n"
-																"window is farking huge!");
+		    "Either your system is dangerously low on resources or your\n"
+		    "window is farking huge!");
 		return(-1);
 	}
-
 	c=0;
 	for(y=0;y<txtinfo.screenheight;y++) {
 		p=str;
@@ -54,7 +56,10 @@ int drawwin(void)
 			winbuf[c++]=*(p++);
 			if(!*p)
 				p=str;
-			winbuf[c++]=YELLOW|(BLUE<<4);
+			if (settings.left_just)
+				winbuf[c++]=0;
+			else
+				winbuf[c++]=YELLOW|(BLUE<<4);
 		}
 	}
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,winbuf);

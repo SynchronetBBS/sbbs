@@ -64,6 +64,7 @@ struct syncterm_settings {
 	int		custom_fontheight;
 	int		window_width;
 	int		window_height;
+	int		left_just;
 };
 
 extern char *inpath;
