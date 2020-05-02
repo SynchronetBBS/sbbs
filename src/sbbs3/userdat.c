@@ -2356,7 +2356,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 			ultoac(mod,tmp);
 			char username[64];
 			if(client != NULL && uploader.level >= SYSOP_LEVEL) {
-				if(client->host != NULL && strcmp(client->host, STR_NO_HOSTNAME) != 0)
+				if(client->host[0] != '\0' && strcmp(client->host, STR_NO_HOSTNAME) != 0)
 					SAFEPRINTF2(username,"%s [%s]", user->alias, client->host);
 				else
 					SAFEPRINTF2(username,"%s [%s]", user->alias, client->addr);
