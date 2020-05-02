@@ -4684,18 +4684,19 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	struct vmem_cell tmpvc[1];
 	int orig_fonts[4];
 	char lastch = 0;
+ 	int palette_offset = 0;
 
 	if(!cterm->started)
 		cterm_start(cterm);
 
 	/* Now rejigger the current modes palette... */
-	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
-		mpalette = get_modepalette(palette);
-		if (mpalette) {
-			for (i=0; i < 16; i++)
-				palette[i] += 16;
-			set_modepalette(palette);
-		}
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
+		palette_offset = 0;
+	mpalette = get_modepalette(palette);
+	if (mpalette) {
+		for (i=0; i < 16; i++)
+			palette[i] += palette_offset;
+		set_modepalette(palette);
 	}
 	
 	/* Deedle up the fonts */
@@ -5425,12 +5426,10 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	SETCURSORTYPE(cterm->cursor);
 
 	/* Now rejigger the current modes palette... */
-	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
-		if (mpalette) {
-			for (i=0; i < 16; i++)
-				palette[i] -= 16;
-			set_modepalette(palette);
-		}
+	if (mpalette) {
+		for (i=0; i < 16; i++)
+			palette[i] -= palette_offset;
+		set_modepalette(palette);
 	}
 
 	/* De-doodle the fonts */

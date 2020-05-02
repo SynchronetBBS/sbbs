@@ -289,6 +289,7 @@ static int try_curses_init(int mode)
 		cio_api.setpalette = curs_setpalette;
 		cio_api.get_modepalette = curs_get_modepalette;
 		cio_api.set_modepalette = curs_set_modepalette;
+		cio_api.attr2palette = curs_attr2palette;
 		return(1);
 	}
 	return(0);

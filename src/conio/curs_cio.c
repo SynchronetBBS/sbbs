@@ -1170,15 +1170,33 @@ scale_integer_up(int from)
 	return ret;
 }
 
+uint32_t palette[16];
+int curs_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
+{
+	uint32_t fg = attr & 0x0f;
+	uint32_t bg = (attr >> 4) & 0x0f;
+
+	if (!(vflags & CIOLIB_VIDEO_BGBRIGHT))
+		bg &= 0x07;
+	if (vflags & CIOLIB_VIDEO_NOBRIGHT)
+		fg &= 0x07;
+
+	if (fgp)
+		*fgp = palette[fg];
+	if (bgp)
+		*bgp = palette[bg];
+
+	return 1;
+}
+
 int curs_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 {
 	if (!can_change_color())
 		return 0;
-	init_color(entry, scale_integer_up(r>>8), scale_integer_up(g>>8), scale_integer_up(b>>8));
+	init_color(curses_color(entry), scale_integer_up(r>>8), scale_integer_up(g>>8), scale_integer_up(b>>8));
 	return 1;
 }
 
-uint32_t palette[16];
 int curs_set_modepalette(uint32_t p[16])
 {
 	int i;
@@ -1189,7 +1207,7 @@ int curs_set_modepalette(uint32_t p[16])
 	for (i = 0; i < 16; i++) {
 		struct dac_colors *c;
 		c = &dac_default[p[i]];
-		init_color(curses_color(i), scale_integer_up(c->red), scale_integer_up(c->green), scale_integer_up(c->blue));
+		curs_setpalette(i, c->red<<8 | c->red, c->green<<8 | c->green, c->blue<<8 | c->blue);
 	}
 	return 1;
 }
