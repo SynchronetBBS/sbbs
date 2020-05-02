@@ -16,6 +16,7 @@
 #include "conn.h"
 #include "uifcinit.h"
 #include "conn_telnet.h"
+#include "term.h"
 
 #define TELNET_TERM_MAXLEN	40
 
@@ -219,7 +220,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct
 						int rows, cols;
 						BYTE buf[32];
 
-						get_term_size(bbs, &cols, &rows);
+						get_cterm_size(&cols, &rows);
 						buf[0]=TELNET_IAC;
 						buf[1]=TELNET_SB;
 						buf[2]=TELNET_NEGOTIATE_WINDOW_SIZE;
