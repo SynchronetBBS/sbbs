@@ -121,7 +121,7 @@ function str_cmds(str)
 		if(word=="LIST" || word=="TYPE" || word=="CAT") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				console.printfile(get_filename(str), P_CPM_EOF);
+				console.printfile(get_filename(str), word == "CAT" ? P_NOATCODES : P_CPM_EOF);
 				return;
 			}
 		}
@@ -855,8 +855,12 @@ function get_arg(str, parm, history)
 		write(format("%s: ", parm));
 		str=console.getstr(128, K_MSG, history);
 	}
-	if(str && history.indexOf(str) < 0)
+	if(str) {
+		var i = history.indexOf(str);
+		if(i >= 0)
+			history.splice(i, 1);
 		history.unshift(str);
+	}
 
 	return(str);
 }
