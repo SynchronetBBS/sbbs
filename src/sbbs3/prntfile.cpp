@@ -40,10 +40,10 @@
 #include "utf8.h"
 
 #ifndef PRINTFILE_MAX_LINE_LEN
-#define PRINTFILE_MAX_LINE_LEN (1024*1024)
+#define PRINTFILE_MAX_LINE_LEN (8*1024)
 #endif
 #ifndef PRINTFILE_MAX_FILE_LEN
-#define PRINTFILE_MAX_FILE_LEN (1024*1024*2)
+#define PRINTFILE_MAX_FILE_LEN (2*1024*1024)
 #endif
 
 /****************************************************************************/
@@ -165,6 +165,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	char*	buf;
 	char	fpath[MAX_PATH+1];
 	char*	p;
+	FILE*	fp;
 	int		file,cur=0;
 	long	length,l;
 
@@ -180,7 +181,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	if(!tos) {
 		CRLF; 
 	}
-	if((file=nopen(fpath,O_RDONLY|O_DENYNONE))==-1) {
+	if((fp=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
 			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
 				,errno,strerror(errno),fpath);
@@ -192,17 +193,21 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	}
 	length=(long)filelength(file);
 	if(length<0) {
-		close(file);
+		fclose(fp);
 		errormsg(WHERE,ERR_CHK,fpath,length);
 		return false;
 	}
+	if(length > lines * PRINTFILE_MAX_LINE_LEN) {
+		length = lines * PRINTFILE_MAX_LINE_LEN; 
+		fseek(fp, -length, SEEK_END);
+	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
-		close(file);
+		fclose(fp);
 		errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
 		return false; 
 	}
-	l=lread(file,buf,length);
-	close(file);
+	l=fread(buf, sizeof(char), length, fp);
+	fclose(fp);
 	if(l!=length)
 		errormsg(WHERE,ERR_READ,fpath,length);
 	else {
