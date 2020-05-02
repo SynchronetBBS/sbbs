@@ -6,33 +6,44 @@
 #include "term.h"
 #include "syncterm.h"
 
-int drawwin(void)
+void
+get_term_win_size(int *width, int *height, int *nostatus)
 {
 	struct	text_info txtinfo;
+
+	gettextinfo(&txtinfo);
+
+	if(txtinfo.screenwidth < 80)
+		*width=40;
+	else {
+		if(txtinfo.screenwidth <132)
+			*width=80;
+		else
+			*width=132;
+	}
+	*height=txtinfo.screenheight;
+	if(!nostatus)
+		(*height)--;
+	if(*height<24) {
+		*height=24;
+		*nostatus=1;
+	}
+}
+
+int drawwin(void)
+{
 	char	*winbuf;
 	char	*p;
 	char	str[32];
 	int		x,y,c;
+	struct	text_info txtinfo;
 
 	gettextinfo(&txtinfo);
 
 	strcpy(str,"         ");
 
-	if(txtinfo.screenwidth < 80)
-		term.width=40;
-	else {
-		if(txtinfo.screenwidth <132)
-			term.width=80;
-		else
-			term.width=132;
-	}
-	term.height=txtinfo.screenheight;
-	if(!term.nostatus)
-		term.height--;
-	if(term.height<24) {
-		term.height=24;
-		term.nostatus=1;
-	}
+	get_term_win_size(&term.width, &term.height, &term.nostatus);
+
 	if (settings.left_just)
 		term.x = 2;
 	else

@@ -400,7 +400,7 @@ int pty_connect(struct bbslist *bbs)
 	memcpy(ts.c_cc,ttydefchars,sizeof(ts.c_cc));
 	cfsetspeed(&ts, 115200);
 
-	get_term_size(bbs, &cols, &rows);
+	get_term_win_size(&cols, &rows, &bbs->nostatus);
 	ws.ws_col = cols;
 	ws.ws_row = rows;
 

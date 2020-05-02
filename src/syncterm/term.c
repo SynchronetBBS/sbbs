@@ -60,6 +60,10 @@ void get_cterm_size(int* cols, int* rows)
 		*cols = cterm->width;
 		*rows = cterm->height;
 	}
+	else {
+		int ns;
+		get_term_win_size(cols, rows, &ns);
+	}
 }
 
 enum mouse_modes {
