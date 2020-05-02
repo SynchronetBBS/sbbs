@@ -1598,6 +1598,10 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 	int vmode;
 	int pos;
 	struct text_info ti;
+ 	int palette_offset = 0;
+
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
+		palette_offset = 16;
 
 	if (cterm->strbuflen == 0) {
 		if (finish)
@@ -1719,7 +1723,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 					p++;
 					if (!*p)
 						continue;
-					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE + 16;
+					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE + palette_offset;
 					/* Do we want to redefine it while we're here? */
 					if (*p == ';') {
 						unsigned long t,r,g,b;
@@ -2063,6 +2067,10 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 	struct sub_params sub = {0};
 	uint32_t nc;
 	uint32_t *co;
+ 	int palette_offset = 0;
+
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
+		palette_offset = 16;
 
 	if (seq == NULL || cterm == NULL || i == NULL)
 		return;
@@ -2110,7 +2118,7 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 	}
 	else if ((*i)+2 < seq->param_count && seq->param_int[(*i)+1] == 5) {
 		// CSI 38 ; 5 ; X m variant
-		*co = seq->param_int[(*i)+2] + 16;
+		*co = seq->param_int[(*i)+2] + palette_offset;
 		save_extended_colour_seq(cterm, fg, seq, *i, 3);
 		*i+=2;
 	}
@@ -2281,7 +2289,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 	uint32_t oldfg, oldbg;
 	bool updfg, updbg;
 	struct vmem_cell *vc;
+	int palette_offset = 0;
 
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
+		palette_offset = 16;
 	seq = parse_sequence(cterm->escbuf);
 	if (seq != NULL) {
 		switch(seq->c1_byte) {
@@ -4108,7 +4119,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											ccount++;
 										}
 										if (ccount == 3 && !broken)
-											setpalette(index+16, rgb[0], rgb[1], rgb[2]);
+											setpalette(index + palette_offset, rgb[0], rgb[1], rgb[2]);
 										index = ULONG_MAX;
 									}
 								}
@@ -4117,7 +4128,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								if (strlen(cterm->strbuf) == 3) {
 									// Reset all colours
 									for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-										setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+										setpalette(i + palette_offset, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
 								}
 								else if(cterm->strbuf[3] == ';') {
 									char *seqlast;
@@ -4128,7 +4139,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										p2=NULL;
 										pi = strtoull(p, NULL, 10);
 										if (pi < sizeof(dac_default)/sizeof(struct dac_colors))
-											setpalette(pi+16, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
+											setpalette(pi + palette_offset, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
 									}
 								}
 							}
@@ -4277,7 +4288,7 @@ cterm_reset(struct cterminal *cterm)
 	/* Set up a shadow palette */
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
 		for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-			setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+			setpalette(i + 16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
 	}
 
 	/* Reset mouse state */
