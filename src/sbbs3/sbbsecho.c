@@ -4308,7 +4308,7 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbo
 		}
 		const uint16_t remove_attrs = FIDO_CRASH | FIDO_LOCAL | FIDO_HOLD;
 		if(hdr->attr&remove_attrs) {
-			lprintf(LOG_DEBUG, "%s Removing attributes: %04hX", info, hdr->attr&remove_attrs);
+			lprintf(LOG_DEBUG, "%s Removing attributes: %04hX", info, (uint16_t)(hdr->attr&remove_attrs));
 			hdr->attr &= ~remove_attrs;
 		}
 		(void)write(file,hdr,sizeof(fmsghdr_t));
