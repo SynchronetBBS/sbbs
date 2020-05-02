@@ -42,6 +42,9 @@
 #ifndef PRINTFILE_MAX_LINE_LEN
 #define PRINTFILE_MAX_LINE_LEN (1024*1024)
 #endif
+#ifndef PRINTFILE_MAX_FILE_LEN
+#define PRINTFILE_MAX_FILE_LEN (1024*1024*2)
+#endif
 
 /****************************************************************************/
 /* Prints a file remotely and locally, interpreting ^A sequences, checks    */
@@ -105,7 +108,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		return true;
 	}
 
-	if(mode&P_OPENCLOSE) {
+	if((mode&P_OPENCLOSE) && length <= PRINTFILE_MAX_FILE_LEN) {
 		if((buf=(char*)malloc(length+1L))==NULL) {
 			fclose(stream);
 			errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
