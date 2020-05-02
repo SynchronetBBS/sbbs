@@ -18,6 +18,7 @@
 #include "conn.h"
 #include "syncterm.h"
 #include "term.h"
+#include "window.h"
 #include "uifcinit.h"
 #include "filepick.h"
 #include "menu.h"

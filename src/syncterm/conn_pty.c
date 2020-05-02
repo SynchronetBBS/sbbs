@@ -140,6 +140,7 @@
 #include "ciolib.h"
 #include "syncterm.h"
 #include "fonts.h"
+#include "window.h"
 extern int default_font;
 
 #ifdef NEEDS_CFMAKERAW
