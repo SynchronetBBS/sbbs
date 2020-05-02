@@ -4691,7 +4691,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 
 	/* Now rejigger the current modes palette... */
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
-		palette_offset = 0;
+		palette_offset = 16;
 	mpalette = get_modepalette(palette);
 	if (mpalette) {
 		for (i=0; i < 16; i++)
