@@ -1190,14 +1190,18 @@ int curs_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 	return 1;
 }
 
+uint32_t palette[16];
 int curs_set_modepalette(uint32_t p[16])
 {
 	int i;
 
 	if (!can_change_color())
 		return 0;
+	memcpy(palette, p, sizeof(palette));
 	for (i = 0; i < 16; i++) {
-		init_color(i, scale_integer_up((p[i] >> 16) & 0xff), scale_integer_up((p[i] >> 8) & 0xff), scale_integer_up((p[i]) & 0xff));
+		struct dac_colors *c;
+		c = &dac_default[p[i]];
+		init_color(curses_color(i), scale_integer_up(c->red), scale_integer_up(c->green), scale_integer_up(c->blue));
 	}
 	return 1;
 }
@@ -1205,17 +1209,10 @@ int curs_set_modepalette(uint32_t p[16])
 int curs_get_modepalette(uint32_t p[16])
 {
 	int i;
-	short r, g, b;
 
 	if (!can_change_color())
 		return 0;
-	for (i = 0; i < 16; i++) {
-		color_content(i, &r, &g, &b);
-		r = scale_integer_down(r);
-		g = scale_integer_down(g);
-		b = scale_integer_down(b);
-		p[i] = (r<<16) | (g<<8) | b;
-	}
+	memcpy(p, palette, sizeof(palette));
 	return 1;
 }
 
