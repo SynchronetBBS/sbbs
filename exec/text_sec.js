@@ -131,7 +131,7 @@ while(bbs.online) {
 				var desc = console.getstr(file_getname(path), 70, K_EDIT|K_LINE);
 				if(!desc || console.aborted)
 					break;
-				list.splice(i, 0, { name: file_getname(path), desc: desc });
+				list.splice(i, 0, { name: file_getname(path), desc: desc, path: path });
 				write_list(usrsec[cursec], list);
 				break;
 			}
