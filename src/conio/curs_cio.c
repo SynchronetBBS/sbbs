@@ -1242,6 +1242,8 @@ void curs_textmode(int mode)
 
 	if(can_change_color() && (vm = find_vmode(mode)) != -1) {
 		curs_set_modepalette(palettes[vparams[vm].palette]);
+		cio_textinfo.currmode = mode;
+		cio_textinfo.normattr=cio_textinfo.attribute=vparams[vm].default_attr;
 	}
 
 	return;
