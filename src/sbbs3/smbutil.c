@@ -206,8 +206,8 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 {
 	char		str[128];
 	char		buf[1024];
-	uchar*		msgtxt=NULL;
-	uchar*		newtxt;
+	char*		msgtxt=NULL;
+	char*		newtxt;
 	const char* charset = NULL;
 	long		msgtxtlen;
 	int 		i;
@@ -221,7 +221,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		i=fread(buf,1,sizeof(buf),fp);
 		if(i<1)
 			break;
-		if((msgtxt=(uchar*)realloc(msgtxt,msgtxtlen+i+1))==NULL) {
+		if((msgtxt = realloc(msgtxt,msgtxtlen+i+1))==NULL) {
 			fprintf(errfp,"\n%s!realloc(%ld) failure\n",beep,msgtxtlen+i+1);
 			bail(1);
 		}
@@ -233,13 +233,13 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 		msgtxt[msgtxtlen]=0;	/* Must be NULL-terminated */
 
-		if((newtxt=(uchar*)malloc((msgtxtlen*2)+1))==NULL) {
+		if((newtxt = malloc((msgtxtlen*2)+1))==NULL) {
 			fprintf(errfp,"\n%s!malloc(%ld) failure\n",beep,(msgtxtlen*2)+1);
 			bail(1);
 		}
 
 		/* Expand LFs to CRLFs */
-		msgtxtlen=lf_expand(msgtxt, newtxt);
+		msgtxtlen=lf_expand((uchar*)msgtxt, (uchar*)newtxt);
 		free(msgtxt);
 		msgtxt=newtxt;
 
@@ -372,7 +372,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
 	if((i=smb_addmsg(&smb,&msg,smb.status.attr&SMB_HYPERALLOC
-		,dupechk_hashes,xlat,msgtxt,NULL))!=SMB_SUCCESS) {
+		,dupechk_hashes,xlat,(uchar*)msgtxt,NULL))!=SMB_SUCCESS) {
 		fprintf(errfp,"\n%s!smb_addmsg returned %d: %s\n"
 			,beep,i,smb.last_error);
 		bail(1); 
@@ -1827,7 +1827,8 @@ int main(int argc, char **argv)
 							idxrec_t idx;
 							if((i=smb_getlastidx(&smb, &idx)) != SMB_SUCCESS) {
 								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
-								return i;
+								if(!smb.continue_on_error)
+									return i;
 							}
 							smb.status.last_msg = idx.number;
 							if(stricmp(getfname(smb.file), "mail") == 0)
