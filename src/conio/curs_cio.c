@@ -1170,18 +1170,6 @@ scale_integer_up(int from)
 	return ret;
 }
 
-static int
-scale_integer_down(int from)
-{
-	int ret = from * 256 / 1000;
-
-	if (ret < 0)
-		ret = 0;
-	if (ret > 255)
-		ret = 255;
-	return ret;
-}
-
 int curs_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 {
 	if (!can_change_color())
@@ -1208,8 +1196,6 @@ int curs_set_modepalette(uint32_t p[16])
 
 int curs_get_modepalette(uint32_t p[16])
 {
-	int i;
-
 	if (!can_change_color())
 		return 0;
 	memcpy(p, palette, sizeof(palette));

@@ -4275,8 +4275,10 @@ cterm_reset(struct cterminal *cterm)
 	}
 
 	/* Set up a shadow palette */
-	for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-		setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
+		for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
+			setpalette(i+16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+	}
 
 	/* Reset mouse state */
 	if (cterm->mouse_state_change) {
@@ -4676,13 +4678,15 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 		cterm_start(cterm);
 
 	/* Now rejigger the current modes palette... */
-	mpalette = get_modepalette(palette);
-	if (mpalette) {
-		for (i=0; i < 16; i++)
-			palette[i] += 16;
-		set_modepalette(palette);
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
+		mpalette = get_modepalette(palette);
+		if (mpalette) {
+			for (i=0; i < 16; i++)
+				palette[i] += 16;
+			set_modepalette(palette);
+		}
 	}
-
+	
 	/* Deedle up the fonts */
 	orig_fonts[0] = getfont(1);
 	orig_fonts[1] = getfont(2);
@@ -5410,10 +5414,12 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 	SETCURSORTYPE(cterm->cursor);
 
 	/* Now rejigger the current modes palette... */
-	if (mpalette) {
-		for (i=0; i < 16; i++)
-			palette[i] -= 16;
-		set_modepalette(palette);
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
+		if (mpalette) {
+			for (i=0; i < 16; i++)
+				palette[i] -= 16;
+			set_modepalette(palette);
+		}
 	}
 
 	/* De-doodle the fonts */
