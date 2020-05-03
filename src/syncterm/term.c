@@ -2677,9 +2677,9 @@ BOOL doterm(struct bbslist *bbs)
 								if(p!=NULL) {
 									p2 = p;
 									oldfont = getfont(1);
-									setfont(1, FALSE, cterm->altfont[0]);
+									setfont(cterm->altfont[0], FALSE, 1);
 									p = (unsigned char *)utf8_to_cp(getcodepage(), p, '\x00', strlen((char *)p), NULL);
-									setfont(1, FALSE, oldfont);
+									setfont(oldfont, FALSE, 1);
 									free(p2);
 									if (p != NULL) {
 										for(p2=p; *p2; p2++) {
