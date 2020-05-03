@@ -44,8 +44,45 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 		ch=sbbs->keybuf[sbbs->keybufbot++]; 
 		if(sbbs->keybufbot==KEY_BUFSIZE) 
 			sbbs->keybufbot=0; 
-	} else 
+	} else {
 		ch=sbbs->incom(timeout);
+		long term = sbbs->term_supports();
+		if(term&PETSCII) {
+			switch(ch) {
+				case PETSCII_HOME:
+					return TERM_KEY_HOME;
+				case PETSCII_CLEAR:
+					return TERM_KEY_END;
+				case PETSCII_INSERT:
+					return TERM_KEY_INSERT;
+				case PETSCII_DELETE:
+					return '\b';
+				case PETSCII_LEFT:
+					return TERM_KEY_LEFT;
+				case PETSCII_RIGHT:
+					return TERM_KEY_RIGHT;
+				case PETSCII_UP:
+					return TERM_KEY_UP;
+				case PETSCII_DOWN:
+					return TERM_KEY_DOWN;
+			}
+			if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
+				ch = 0x60 | (ch&0x1f);
+			if(isalpha((unsigned char)ch))
+				ch ^= 0x20;	/* Swap upper/lower case */
+		}
+
+		if(term&SWAP_DELETE) {
+			switch(ch) {
+				case TERM_KEY_DELETE:
+					ch = '\b';
+					break;
+				case '\b':
+					ch = TERM_KEY_DELETE;
+					break;
+			}
+		}
+	}
 
 	return ch;
 }
@@ -71,42 +108,6 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 		ch&=0x7f; 
 
 	this->timeout=time(NULL);
-	long term = term_supports();
-	if(term&PETSCII) {
-		switch(ch) {
-			case PETSCII_HOME:
-				return TERM_KEY_HOME;
-			case PETSCII_CLEAR:
-				return TERM_KEY_END;
-			case PETSCII_INSERT:
-				return TERM_KEY_INSERT;
-			case PETSCII_DELETE:
-				return '\b';
-			case PETSCII_LEFT:
-				return TERM_KEY_LEFT;
-			case PETSCII_RIGHT:
-				return TERM_KEY_RIGHT;
-			case PETSCII_UP:
-				return TERM_KEY_UP;
-			case PETSCII_DOWN:
-				return TERM_KEY_DOWN;
-		}
-		if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
-			ch = 0x60 | (ch&0x1f);
-		if(isalpha((unsigned char)ch))
-			ch ^= 0x20;	/* Swap upper/lower case */
-	}
-
-	if(term&SWAP_DELETE) {
-		switch(ch) {
-			case TERM_KEY_DELETE:
-				ch = '\b';
-				break;
-			case '\b':
-				ch = TERM_KEY_DELETE;
-				break;
-		}
-	}
 
 	/* Is this a control key */
 	if(ch<' ') {
