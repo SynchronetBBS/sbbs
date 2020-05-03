@@ -310,11 +310,13 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			}
 			i=j=0;
 			autoterm|=ANSI; 			/* <ESC>[x means they have ANSI */
+#if 0 // this seems like a "bad idea" {tm}
 			if(sys_status&SS_USERON && useron.misc&AUTOTERM && !(useron.misc&ANSI)
 				&& useron.number) {
 				useron.misc|=ANSI;
 				putuserrec(&cfg,useron.number,U_MISC,8,ultoa(useron.misc,str,16)); 
 			}
+#endif
 			while(i<10 && j<30) {		/* up to 3 seconds */
 				ch=kbincom(this, 100);
 				if(ch==(NOINP&0xff)) {
