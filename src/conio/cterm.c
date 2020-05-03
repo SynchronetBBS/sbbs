@@ -5119,7 +5119,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							case 158:	/* Yellow */
 							case 159:	/* Cyan */
 								cterm->attr &= 0xf0;
-								if (ti.currmode == C64_40X25) {
+								if (ti.currmode == C64_40X25 || ti.currmode == C128_40X25) {
 									switch(buf[j]) {
 										case 5:		/* White/Bright White */
 											cterm->attr |= 1;
@@ -5172,7 +5172,7 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									}
 								}
 								else {
-									// C128
+									// C128 80-column
 									switch(buf[j]) {
 										case 5:		/* White/Bright White */
 											cterm->attr |= 15;
