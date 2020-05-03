@@ -1648,13 +1648,11 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
-	if (bbs) {
-		bbs->hidepopups = default_hidepopups;
-		bbs->nostatus = default_nostatus;
-	}
 
 	load_font_files();
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
+		bbs->hidepopups = default_hidepopups;
+		bbs->nostatus = default_nostatus;
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
 		uifcbail();
