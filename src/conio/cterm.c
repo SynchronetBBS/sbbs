@@ -5313,21 +5313,21 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 							case 14:	/* Lower case font */
 								if(ti.currmode == C64_40X25) {
 									SETFONT(33,FALSE,1);
-									cterm->altfont[1] = 33;
+									cterm->altfont[0] = 33;
 								}
 								else {	/* Assume C128 */
 									SETFONT(35,FALSE,1);
-									cterm->altfont[1] = 35;
+									cterm->altfont[0] = 35;
 								}
 								break;
 							case 142:	/* Upper case font */
 								if(ti.currmode == C64_40X25) {
 									SETFONT(32,FALSE,1);
-									cterm->altfont[1] = 32;
+									cterm->altfont[0] = 32;
 								}
 								else {	/* Assume C128 */
 									SETFONT(34,FALSE,1);
-									cterm->altfont[1] = 34;
+									cterm->altfont[0] = 34;
 								}
 								break;
 							case 18:	/* Reverse mode on */
@@ -5347,7 +5347,10 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 									#endif
 								}
 								break;
-
+							// 0x0f - Flashing on (C128 80-column only)
+							// 0x8f - Flashing off (C128 80-column only)
+							// 0x02 - Flashing on (C128 80-column only)
+							// 0x82 - Flashing off (C128 80-column only)
 							default:
 								k=buf[j];
 								if(k<32 || (k > 127 && k < 160)) {
