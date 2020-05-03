@@ -259,7 +259,7 @@ void viewofflinescroll(void)
 	if(scrollback_buf==NULL)
 		return;
 	uifcbail();
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 
 	textmode(scrollback_mode);
 	switch(ciolib_to_screen(scrollback_mode)) {
@@ -275,11 +275,21 @@ void viewofflinescroll(void)
 			setfont(36,TRUE,1);
 			break;
 	}
+	/* Set up a shadow palette */
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
+		for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
+			setpalette(i + 16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+	}
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	drawwin();
+	set_modepalette(palettes[COLOUR_PALETTE]);
 	top=scrollback_lines;
 	gotoxy(1,1);
 	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
-    gettextinfo(&sbtxtinfo);
+	gettextinfo(&sbtxtinfo);
 
 	for(i=0;!i && !quitting;) {
 		if(top<1)
