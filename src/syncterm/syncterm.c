@@ -1648,8 +1648,10 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
-	bbs->hidepopups = default_hidepopups;
-	bbs->nostatus = default_nostatus;
+	if (bbs) {
+		bbs->hidepopups = default_hidepopups;
+		bbs->nostatus = default_nostatus;
+	}
 
 	load_font_files();
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
