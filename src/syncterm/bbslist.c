@@ -165,6 +165,12 @@ struct sort_order_info sort_order[] = {
 		,sizeof(((struct bbslist *)NULL)->font)
 	}
 	,{
+		 "Hide Popups"
+		,0
+		,offsetof(struct bbslist, hidepopups)
+		,sizeof(((struct bbslist *)NULL)->hidepopups)
+	}
+	,{
 		 NULL
 		,0
 		,0
@@ -230,7 +236,8 @@ char *conn_type_help=			"`Connection Type`\n\n"
 								"`SSH`..............: Connect using the Secure Shell (SSH-2) protocol\n"
 								"`Modem`............: Connect using a dial-up modem\n"
 								"`Serial`...........: Connect directly to a serial communications port\n"
-								"`Shell`............: Connect to a local PTY (*nix only)\n";
+								"`Shell`............: Connect to a local PTY (*nix only)\n"
+								"`MBBS GHost`.......: Communicate using the Major BBS 'GHost' protocol\n";
 								;
 
 ini_style_t ini_style = {
@@ -619,6 +626,7 @@ void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id
 		entry->conn_type=CONN_TYPE_RAW;
 	entry->screen_mode=iniGetEnum(section,NULL,"ScreenMode",screen_modes_enum,SCREEN_MODE_CURRENT);
 	entry->nostatus=iniGetBool(section,NULL,"NoStatus",FALSE);
+	entry->hidepopups=iniGetBool(section,NULL,"HidePopups",FALSE);
 	iniGetString(section,NULL,"DownloadPath",home,entry->dldir);
 	iniGetString(section,NULL,"UploadPath",home,entry->uldir);
 
@@ -717,7 +725,7 @@ void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, 
 
 int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isdefault)
 {
-	char	opt[20][80];	/* <- Beware of magic number! */
+	char	opt[21][80];	/* 21=Holds number of menu items, 80=Number of columns */
 	char	*opts[(sizeof(opt)/sizeof(opt[0]))+1];
 	int		changed=0;
 	int		copt=0,i,j;
@@ -792,6 +800,7 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 		sprintf(opt[i++], "ANSI Music        %s",music_names[item->music]);
 		sprintf(opt[i++], "Address Family    %s",address_family_names[item->address_family]);
 		sprintf(opt[i++], "Font              %s",item->font);
+		sprintf(opt[i++], "Hide Popups       %s",item->hidepopups?"Yes":"No");
 		opt[i][0]=0;
 		uifc.changes=0;
 
@@ -836,6 +845,8 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 						"        IPv4 or IPv6\n\n"
 						"~ Font ~\n"
 						"        Select font to use for the entry\n\n"
+						"~ Hide Popups ~\n"
+						"        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
 						;
 		i=uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&copt,&bar
 			,isdefault ? "Edit Default Connection":"Edit Directory Entry"
@@ -1143,6 +1154,11 @@ int edit_list(struct bbslist **list, struct bbslist *item,char *listpath,int isd
 					}
 				}
 				break;
+			case 19:
+				item->hidepopups=!item->hidepopups;
+				changed=1;
+				iniSetBool(&inifile,itemname,"HidePopups",item->hidepopups,&ini_style);
+				break;
 		}
 		if(uifc.changes)
 			changed=1;
@@ -1190,6 +1206,7 @@ void add_bbs(char *listpath, struct bbslist *bbs)
 	iniSetInteger(&inifile,bbs->name,"ANSIMusic",bbs->music,&ini_style);
 	iniSetEnum(&inifile, bbs->name, "AddressFamily", address_families, bbs->address_family, &ini_style);
 	iniSetString(&inifile,bbs->name,"Font",bbs->font,&ini_style);
+	iniSetBool(&inifile,bbs->name,"HidePopups",bbs->hidepopups,&ini_style);
 	if((listfile=fopen(listpath,"w"))!=NULL) {
 		iniWriteFile(listfile,inifile);
 		fclose(listfile);

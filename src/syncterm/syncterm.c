@@ -85,6 +85,8 @@ char	*usage =
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
 		"-v  =  when the ONLY argument, dumps the version info to stdout and exits\n"
+		"-c  =  Hide the status line\n"
+		"-q  =  Quiet mode (Hide various popups such as this during a connect)\n"
 		"\n"
 		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
 		"raw:// URLs MUST include a port.\n"
@@ -835,6 +837,11 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+6;
 	}
+	else if(!strnicmp("ghost://",url,8)) {
+		bbs->conn_type=CONN_TYPE_MBBS_GHOST;
+		bbs->port=conn_ports[bbs->conn_type];
+		p1=url+8;
+	}
 	/* ToDo: RFC2806 */
 	p3=strchr(p1,'@');
 	if(p3!=NULL) {
@@ -859,6 +866,11 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		else
 			p2 = p1;
 	}
+	p3=strrchr(p1,'/');
+	if(p3!=NULL) {
+		*p3=0;
+		SAFECOPY(bbs->ghost_program,p3+1);
+	}
 	SAFECOPY(bbs->name,p1);
 	p2=strrchr(p2,':');
 	if(p2!=NULL) {
@@ -866,10 +878,6 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		p2++;
 		bbs->port=atoi(p2);
 	}
-	/* Remove trailing / (Win32 adds one 'cause it hates me) */
-	p2=strrchr(p1,'/');
-	if(p2!=NULL && *(p2+1)==0)
-		*p2=0;
 	SAFECOPY(bbs->addr,p1);
 
 	/* Find BBS listing in users phone book */
@@ -1286,6 +1294,8 @@ int main(int argc, char **argv)
 	char	*p, *lp;
 	int	cvmode;
 	int	ww, wh, sf;
+	int default_hidepopups=0;
+	int default_nostatus=0;
 	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM,\n"
 				// cwin maybe?  Or just left/right and top/bottom margins?
@@ -1436,7 +1446,7 @@ int main(int argc, char **argv)
 #endif
 
 	/* UIFC initialization */
-    memset(&uifc,0,sizeof(uifc));
+	memset(&uifc,0,sizeof(uifc));
 	uifc.mode=UIFC_NOCTRL|UIFC_NHM;
 	uifc.size=sizeof(uifc);
 	uifc.esc_delay=25;
@@ -1565,6 +1575,12 @@ int main(int argc, char **argv)
 				case 'S':
 					safe_mode=1;
 					break;
+				case 'Q':
+					default_hidepopups=1;
+					break;
+				case 'C':
+					default_nostatus=1;
+					break;
                 default:
 					goto USAGE;
            }
@@ -1632,13 +1648,17 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
+	bbs->hidepopups = default_hidepopups;
+	bbs->nostatus = default_nostatus;
+
 	load_font_files();
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
 		uifcbail();
 		textmode(screen_to_ciolib(bbs->screen_mode));
-		init_uifc(TRUE, TRUE);
+		if (!bbs->hidepopups)
+			init_uifc(TRUE, TRUE);
 		load_font_files();
 		setfont(find_font_id(bbs->font),TRUE,1);
 		if(conn_connect(bbs)) {
@@ -1710,14 +1730,16 @@ int main(int argc, char **argv)
 						/* Started from the command-line with a URL */
 						init_uifc(TRUE, TRUE);
 						i=1;
-						switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this directory entry?",YesNo)) {
-							case 0:	/* Yes */
-								edit_list(NULL, bbs,settings.list_path,FALSE);
-								add_bbs(settings.list_path,bbs);
-								last_bbs=strdup(bbs->name);
-								break;
-							default: /* ESC/No */
-								break;
+						if (!bbs->hidepopups) {
+							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this directory entry?",YesNo)) {
+								case 0:	/* Yes */
+									edit_list(NULL, bbs,settings.list_path,FALSE);
+									add_bbs(settings.list_path,bbs);
+									last_bbs=strdup(bbs->name);
+									break;
+								default: /* ESC/No */
+									break;
+							}
 						}
 					}
 				}

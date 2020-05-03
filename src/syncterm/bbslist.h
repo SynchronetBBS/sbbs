@@ -91,6 +91,8 @@ struct bbslist {
 	int				music;
 	int				address_family;
 	char			font[80];
+	int				hidepopups;
+	char			ghost_program[9]; /* GHost program can only be 8 chars max. */
 };
 
 extern char *music_names[];

@@ -2463,7 +2463,9 @@ BOOL doterm(struct bbslist *bbs)
 						if(!is_connected(NULL)) {
 							WRITE_OUTBUF();
 							hold_update=oldmc;
-							uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+							if (!bbs->hidepopups) {
+								uifcmsg("Disconnected","`Disconnected`\n\nRemote host dropped connection");
+							}
 							check_exit(FALSE);
 							cterm_clearscreen(cterm, cterm->attr);	/* Clear screen into scrollback */
 							scrollback_lines=cterm->backpos;
@@ -2822,6 +2824,9 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					/* FALLTHROUGH for curses/ansi modes */
 				case 0x2c00:		/* ALT-Z */
+					if (bbs->hidepopups) {
+						break;
+					}
 					i=wherex();
 					j=wherey();
 					switch(syncmenu(bbs, &speed)) {

@@ -117,7 +117,8 @@ int rlogin_connect(struct bbslist *bbs)
 	char	*ruser;
 	char	*passwd;
 
-	init_uifc(TRUE, TRUE);
+	if (!bbs->hidepopups)
+		init_uifc(TRUE, TRUE);
 
 	ruser=bbs->user;
 	passwd=bbs->password;
@@ -168,10 +169,82 @@ int rlogin_connect(struct bbslist *bbs)
 		}
 	}
 
+	/* Negotiate with GHost and bail if there's apparently no GHost listening. */
+	if(bbs->conn_type == CONN_TYPE_MBBS_GHOST) {
+		char	sbuf[80];
+		char	rbuf[10];
+		struct timeval tv;
+		int		idx, ret;
+		fd_set	rds;
+
+		FD_ZERO(&rds);
+		FD_SET(sock, &rds);
+
+		tv.tv_sec=1;
+		tv.tv_usec=0;
+
+		/* Check to make sure GHost is actually listening */
+		sendsocket(sock, "\r\nMBBS: PING\r\n", 14);
+
+		idx = 0;
+		while ((ret = select(sock+1, &rds, NULL, NULL, &tv))==1) {
+			recv(sock, rbuf+idx, 1, 0);
+			rbuf[++idx] = 0;
+
+			/* It says ERROR, but this is a good response to PING. */
+			// TODO: Should there be a \r\n after "ERROR"?
+			if (strstr(rbuf,"ERROR")) {
+				break;
+			}
+
+			/* We didn't receive the desired response in time, so bail. */
+			if (idx >= sizeof(rbuf)) {
+				return(-1);
+			}
+		}
+
+		if (ret < 1) {
+			return(-1);
+		}
+
+		sprintf(sbuf, "MBBS: %s %d '%s' %d %s\r\n",
+			bbs->ghost_program, /* Program name */
+			2, /* GHost protocol version */
+			bbs->user, /* User's full name */
+			999, /* Time remaining */
+			"GR" /* GR = ANSI, NG = ASCII */
+		);
+		sendsocket(sock, sbuf, strlen(sbuf));
+
+		idx = 0;
+		while ((ret = select(sock+1, &rds, NULL, NULL, &tv))==1) {
+			recv(sock, rbuf+idx, 1, 0);
+			rbuf[++idx] = 0;
+
+			/* GHost says it's launching the program, so pass terminal to user. */
+			// TODO: Should there be a \r\n after "OK"?
+			if (strstr(rbuf,"OK")) {
+				break;
+			}
+
+			/* We didn't receive the desired response in time, so bail. */
+			if (idx >= sizeof(rbuf)) {
+				return(-1);
+			}
+		}
+
+		if (ret < 1) {
+			return(-1);
+		}
+
+	}
+
 	_beginthread(rlogin_output_thread, 0, NULL);
 	_beginthread(rlogin_input_thread, 0, NULL);
 
-	uifc.pop(NULL);
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+	}
 
 	return(0);
 }
