@@ -22,7 +22,7 @@ get_term_win_size(int *width, int *height, int *nostatus)
 			*width=132;
 	}
 	*height=txtinfo.screenheight;
-	if(!nostatus)
+	if(!*nostatus)
 		(*height)--;
 	if(*height<24) {
 		*height=24;

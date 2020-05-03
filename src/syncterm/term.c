@@ -290,7 +290,7 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	lastupd=now;
 	oldspeed=speed;
 	timeon=now - bbs->connected;
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	oldscroll=_wscroll;
 	hold_update=TRUE;
 	textattr(YELLOW|(BLUE<<4));
