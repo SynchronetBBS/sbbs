@@ -5311,16 +5311,24 @@ CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal * cterm, const void *
 
 							/* Font change... whee! */
 							case 14:	/* Lower case font */
-								if(ti.currmode == C64_40X25)
+								if(ti.currmode == C64_40X25) {
 									SETFONT(33,FALSE,1);
-								else	/* Assume C128 */
+									cterm->altfont[1] = 33;
+								}
+								else {	/* Assume C128 */
 									SETFONT(35,FALSE,1);
+									cterm->altfont[1] = 35;
+								}
 								break;
 							case 142:	/* Upper case font */
-								if(ti.currmode == C64_40X25)
+								if(ti.currmode == C64_40X25) {
 									SETFONT(32,FALSE,1);
-								else	/* Assume C128 */
+									cterm->altfont[1] = 32;
+								}
+								else {	/* Assume C128 */
 									SETFONT(34,FALSE,1);
+									cterm->altfont[1] = 34;
+								}
 								break;
 							case 18:	/* Reverse mode on */
 								c64_set_reverse(cterm, 1);
