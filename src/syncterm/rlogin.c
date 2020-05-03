@@ -192,8 +192,7 @@ int rlogin_connect(struct bbslist *bbs)
 			rbuf[++idx] = 0;
 
 			/* It says ERROR, but this is a good response to PING. */
-			// TODO: Should there be a \r\n after "ERROR"?
-			if (strstr(rbuf,"ERROR")) {
+			if (strstr(rbuf,"ERROR\r\n")) {
 				break;
 			}
 
@@ -222,8 +221,7 @@ int rlogin_connect(struct bbslist *bbs)
 			rbuf[++idx] = 0;
 
 			/* GHost says it's launching the program, so pass terminal to user. */
-			// TODO: Should there be a \r\n after "OK"?
-			if (strstr(rbuf,"OK")) {
+			if (strstr(rbuf,"OK\r\n")) {
 				break;
 			}
 
