@@ -150,22 +150,25 @@ int ssh_connect(struct bbslist *bbs)
 	int	rows,cols;
 	const char *term;
 
-	init_uifc(TRUE, TRUE);
+	if (!bbs->hidepopups)
+		init_uifc(TRUE, TRUE);
 	pthread_mutex_init(&ssh_mutex, NULL);
 
 	if(!crypt_loaded) {
-		uifcmsg("Cannot load cryptlib - SSH inoperative",	"`Cannot load cryptlib`\n\n"
-					"Cannot load the file "
+		if (!bbs->hidepopups) {
+			uifcmsg("Cannot load cryptlib - SSH inoperative",	"`Cannot load cryptlib`\n\n"
+						"Cannot load the file "
 #ifdef _WIN32
-					"cl32.dll"
+						"cl32.dll"
 #else
-					"libcl.so"
+						"libcl.so"
 #endif
-					"\nThis file is required for SSH functionality.\n\n"
-					"The newest version is always available from:\n"
-					"http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
-					);
-		return(conn_api.terminate=-1);
+						"\nThis file is required for SSH functionality.\n\n"
+						"The newest version is always available from:\n"
+						"http://www.cs.auckland.ac.nz/~pgut001/cryptlib/"
+						);
+			return(conn_api.terminate=-1);
+		}
 	}
 
 	sock=conn_socket_connect(bbs);
@@ -174,14 +177,17 @@ int ssh_connect(struct bbslist *bbs)
 
 	ssh_active=FALSE;
 
-	uifc.pop("Creating Session");
+	if (!bbs->hidepopups)
+		uifc.pop("Creating Session");
 	status=cl.CreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
 	if(cryptStatusError(status)) {
 		char	str[1024];
 		sprintf(str,"Error %d creating session",status);
-		uifcmsg("Error creating session",str);
+		if (!bbs->hidepopups)
+			uifcmsg("Error creating session",str);
 		conn_api.terminate=1;
-		uifc.pop(NULL);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
 		return(-1);
 	}
 
@@ -191,95 +197,131 @@ int ssh_connect(struct bbslist *bbs)
 	SAFECOPY(password,bbs->password);
 	SAFECOPY(username,bbs->user);
 
-	uifc.pop(NULL);
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
 
-	if(!username[0])
+	if(!username[0]) {
+		if (bbs->hidepopups)
+			init_uifc(FALSE, FALSE);
 		uifcinput("UserID",MAX_USER_LEN,username,0,"No stored UserID.");
+		if (bbs->hidepopups)
+			uifcbail();
+	}
 
-	uifc.pop("Setting Username");
+	if (!bbs->hidepopups)
+		uifc.pop("Setting Username");
 	/* Add username/password */
 	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
 	if(cryptStatusError(status)) {
 		char	str[1024];
 		sprintf(str,"Error %d setting username",status);
-		uifcmsg("Error setting username",str);
+		if (!bbs->hidepopups)
+			uifcmsg("Error setting username",str);
 		conn_api.terminate=1;
-		uifc.pop(NULL);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
 		return(-1);
 	}
 
-	uifc.pop(NULL);
-	if(!password[0])
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
+	if(!password[0]) {
+		if (bbs->hidepopups)
+			init_uifc(FALSE, FALSE);
 		uifcinput("Password",MAX_PASSWD_LEN,password,K_PASSWORD,"Incorrect password.  Try again.");
+		if (bbs->hidepopups)
+			uifcbail();
+	}
 
-	uifc.pop("Setting Password");
+	if (!bbs->hidepopups)
+		uifc.pop("Setting Password");
 	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
 	if(cryptStatusError(status)) {
 		char	str[1024];
 		sprintf(str,"Error %d setting password",status);
-		uifcmsg("Error setting password",str);
+		if (!bbs->hidepopups)
+			uifcmsg("Error setting password",str);
 		conn_api.terminate=1;
-		uifc.pop(NULL);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
 		return(-1);
 	}
 
-	uifc.pop(NULL);
-	uifc.pop("Setting Username");
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Setting Username");
+	}
 	/* Pass socket to cryptlib */
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, sock);
 	if(cryptStatusError(status)) {
 		char	str[1024];
 		sprintf(str,"Error %d passing socket",status);
-		uifcmsg("Error passing socket",str);
+		if (!bbs->hidepopups)
+			uifcmsg("Error passing socket",str);
 		conn_api.terminate=1;
-		uifc.pop(NULL);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
 		return(-1);
 	}
 
-	uifc.pop(NULL);
-	uifc.pop("Setting Terminal Type");
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Setting Terminal Type");
+	}
 	term = get_emulation_str(get_emulation(bbs));
 	status=cl.SetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_TERMINAL, term, strlen(term));
 
 	get_term_win_size(&cols, &rows, &bbs->nostatus);
 
-	uifc.pop(NULL);
-	uifc.pop("Setting Terminal Width");
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Setting Terminal Width");
+	}
 	/* Pass socket to cryptlib */
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_WIDTH, cols);
 
-	uifc.pop(NULL);
-	uifc.pop("Setting Terminal Height");
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Setting Terminal Height");
+	}
 	/* Pass socket to cryptlib */
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_SSH_HEIGHT, rows);
 
 	cl.SetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 
 	/* Activate the session */
-	uifc.pop(NULL);
-	uifc.pop("Activating Session");
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Activating Session");
+	}
 	status=cl.SetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 	if(cryptStatusError(status)) {
-		cryptlib_error_message(status, "activating session");
+		if (!bbs->hidepopups)
+			cryptlib_error_message(status, "activating session");
 		conn_api.terminate=1;
-		uifc.pop(NULL);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
 		return(-1);
 	}
 
 	ssh_active=TRUE;
-	uifc.pop(NULL);
-
-	/* Clear ownership */
-	uifc.pop(NULL);
-	uifc.pop("Clearing Ownership");
+	if (!bbs->hidepopups) {
+		/* Clear ownership */
+		uifc.pop(NULL);	// TODO: Why is this called twice?
+		uifc.pop(NULL);
+		uifc.pop("Clearing Ownership");
+	}
 	status=cl.SetAttribute(ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
 	if(cryptStatusError(status)) {
-		cryptlib_error_message(status, "clearing session ownership");
+		if (!bbs->hidepopups)
+			cryptlib_error_message(status, "clearing session ownership");
 		conn_api.terminate=1;
-		uifc.pop(NULL);
+		if (!bbs->hidepopups)
+			uifc.pop(NULL);
 		return(-1);
 	}
-	uifc.pop(NULL);
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
 
 	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
 	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
@@ -291,7 +333,8 @@ int ssh_connect(struct bbslist *bbs)
 	_beginthread(ssh_output_thread, 0, NULL);
 	_beginthread(ssh_input_thread, 0, NULL);
 
-	uifc.pop(NULL);
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);	// TODO: Why is this called twice?
 
 	return(0);
 }

@@ -139,27 +139,31 @@ int modem_connect(struct bbslist *bbs)
 	int		ret;
 	char	respbuf[1024];
 
-	init_uifc(TRUE, TRUE);
+	if (!bbs->hidepopups)
+		init_uifc(TRUE, TRUE);
 
 	if(bbs->conn_type == CONN_TYPE_SERIAL) {
 		if((com=comOpen(bbs->addr)) == COM_HANDLE_INVALID) {
-			uifcmsg("Cannot Open Port",	"`Cannot Open Port`\n\n"
-							"Cannot open the specified serial device.\n");
+			if (!bbs->hidepopups)
+				uifcmsg("Cannot Open Port",	"`Cannot Open Port`\n\n"
+				    "Cannot open the specified serial device.\n");
 			conn_api.terminate=-1;
 			return(-1);
 		}
 		if(bbs->bpsrate) {
 			if(!comSetBaudRate(com, bbs->bpsrate)) {
-				uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
-								"Cannot open the specified serial device.\n");
+				if (!bbs->hidepopups)
+					uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
+					    "Cannot open the specified serial device.\n");
 				conn_api.terminate=-1;
 				comClose(com);
 				return(-1);
 			}
 		}
 		if(!comRaiseDTR(com)) {
-			uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
-							"comRaiseDTR() returned an error.\n");
+			if (!bbs->hidepopups)
+				uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
+				    "comRaiseDTR() returned an error.\n");
 			conn_api.terminate=-1;
 			comClose(com);
 			return(-1);
@@ -167,23 +171,26 @@ int modem_connect(struct bbslist *bbs)
 	}
 	else {
 		if((com=comOpen(settings.mdm.device_name)) == COM_HANDLE_INVALID) {
-			uifcmsg("Cannot Open Modem",	"`Cannot Open Modem`\n\n"
-							"Cannot open the specified modem device.\n");
+			if (!bbs->hidepopups)
+				uifcmsg("Cannot Open Modem",	"`Cannot Open Modem`\n\n"
+				    "Cannot open the specified modem device.\n");
 			conn_api.terminate=-1;
 			return(-1);
 		}
 		if(settings.mdm.com_rate) {
 			if(!comSetBaudRate(com, settings.mdm.com_rate)) {
-				uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
-								"Cannot open the specified modem device.\n");
+				if (!bbs->hidepopups)
+					uifcmsg("Cannot Set Baud Rate",	"`Cannot Set Baud Rate`\n\n"
+					    "Cannot open the specified modem device.\n");
 				conn_api.terminate=-1;
 				comClose(com);
 				return(-1);
 			}
 		}
 		if(!comRaiseDTR(com)) {
-			uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
-							"comRaiseDTR() returned an error.\n");
+			if (!bbs->hidepopups)
+				uifcmsg("Cannot Raise DTR",	"`Cannot Raise DTR`\n\n"
+				    "comRaiseDTR() returned an error.\n");
 			conn_api.terminate=-1;
 			comClose(com);
 			return(-1);
@@ -193,7 +200,8 @@ int modem_connect(struct bbslist *bbs)
 		while(kbhit())
 			getch();
 
-		uifc.pop("Initializing...");
+		if (!bbs->hidepopups)
+			uifc.pop("Initializing...");
 
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
@@ -202,11 +210,13 @@ int modem_connect(struct bbslist *bbs)
 		while(1) {
 			if((ret=modem_response(respbuf, sizeof(respbuf), 5))!=0) {
 				modem_close();
-				uifc.pop(NULL);
-				if(ret<0)
-					uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
-								"The modem did not respond to the initializtion string\n"
-								"Check your init string and phone number.\n");
+				if (!bbs->hidepopups) {
+					uifc.pop(NULL);
+					if(ret<0)
+						uifcmsg("Modem Not Responding",	"`Modem Not Responding`\n\n"
+						    "The modem did not respond to the initializtion string\n"
+						    "Check your init string and phone number.\n");
+				}
 				conn_api.terminate=-1;
 				return(-1);
 			}
@@ -217,15 +227,19 @@ int modem_connect(struct bbslist *bbs)
 
 		if(!strstr(respbuf, "OK")) {
 			modem_close();
-			uifc.pop(NULL);
-			uifcmsg(respbuf,	"`Initialization Error`\n\n"
-							"The modem did not respond favorably to your initialization string.\n");
+			if (!bbs->hidepopups) {
+				uifc.pop(NULL);
+				uifcmsg(respbuf,	"`Initialization Error`\n\n"
+				    "The modem did not respond favorably to your initialization string.\n");
+			}
 			conn_api.terminate=-1;
 			return(-1);
 		}
 
-		uifc.pop(NULL);
-		uifc.pop("Dialing...");
+		if (!bbs->hidepopups) {
+			uifc.pop(NULL);
+			uifc.pop("Dialing...");
+		}
 		comWriteString(com, settings.mdm.dial_string);
 		comWriteString(com, bbs->addr);
 		comWriteString(com, "\r");
@@ -234,10 +248,12 @@ int modem_connect(struct bbslist *bbs)
 		while(1) {
 			if((ret=modem_response(respbuf, sizeof(respbuf), 60))!=0) {
 				modem_close();
-				uifc.pop(NULL);
-				if(ret<0)
-					uifcmsg(respbuf,	"`No Answer`\n\n"
-								"The modem did not connect within 60 seconds.\n");
+				if (!bbs->hidepopups) {
+					uifc.pop(NULL);
+					if(ret<0)
+						uifcmsg(respbuf,	"`No Answer`\n\n"
+						    "The modem did not connect within 60 seconds.\n");
+				}
 				conn_api.terminate=-1;
 				return(-1);
 			}
@@ -248,17 +264,21 @@ int modem_connect(struct bbslist *bbs)
 
 		if(!strstr(respbuf, "CONNECT")) {
 			modem_close();
-			uifc.pop(NULL);
-			uifcmsg(respbuf,	"`Connection Failed`\n\n"
-							"SyncTERM was unable to establish a connection.\n");
+			if (!bbs->hidepopups) {
+				uifc.pop(NULL);
+				uifcmsg(respbuf,	"`Connection Failed`\n\n"
+				    "SyncTERM was unable to establish a connection.\n");
+			}
 			conn_api.terminate=-1;
 			return(-1);
 		}
 
-		uifc.pop(NULL);
-		uifc.pop(respbuf);
-		SLEEP(1000);
-		uifc.pop(NULL);
+		if (!bbs->hidepopups) {
+			uifc.pop(NULL);
+			uifc.pop(respbuf);
+			SLEEP(1000);
+			uifc.pop(NULL);
+		}
 	}
 
 	if(!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
@@ -295,7 +315,8 @@ int modem_connect(struct bbslist *bbs)
 		_beginthread(modem_input_thread, 0, NULL);
 	}
 
-	uifc.pop(NULL);
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
 
 	return(0);
 }

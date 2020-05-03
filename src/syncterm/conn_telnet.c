@@ -130,7 +130,8 @@ void telnet_output_thread(void *args)
 
 int telnet_connect(struct bbslist *bbs)
 {
-	init_uifc(TRUE, TRUE);
+	if (!bbs->hidepopups)
+		init_uifc(TRUE, TRUE);
 
 	telnet_log_level = bbs->telnet_loglevel;
 
@@ -166,7 +167,8 @@ int telnet_connect(struct bbslist *bbs)
 	_beginthread(telnet_output_thread, 0, NULL);
 	_beginthread(telnet_input_thread, 0, bbs);
 
-	uifc.pop(NULL);
+	if (!bbs->hidepopups)
+		uifc.pop(NULL);
 
 	return(0);
 }
