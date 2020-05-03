@@ -108,6 +108,7 @@ function handle_command(hdr, cmd)
 {
 	var me = hdr.to_net_addr;
 	var you = hdr.from_net_addr;
+	cmd = cmd.trimRight();
 	switch(cmd.toLowerCase()) {
 		case "%help":
 			return help_text;
