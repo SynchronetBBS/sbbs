@@ -1838,7 +1838,7 @@ void music_control(struct bbslist *bbs)
 	freescreen(savscrn);
 }
 
-void font_control(struct bbslist *bbs)
+void font_control(struct bbslist *bbs, struct cterminal *cterm)
 {
 	struct ciolib_screen *savscrn;
 	struct	text_info txtinfo;
@@ -1857,7 +1857,7 @@ void font_control(struct bbslist *bbs)
 	switch(cio_api.mode) {
 		case CIOLIB_MODE_CONIO:
 		case CIOLIB_MODE_CONIO_FULLSCREEN:
-		case CIOLIB_MODE_CURSES:
+		case CIOLIB_MODE_CURSES_ASCII:
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
 			uifcmsg("Not supported in this video output mode."
@@ -1865,7 +1865,7 @@ void font_control(struct bbslist *bbs)
 			check_exit(FALSE);
 			break;
 		default:
-			i=j=getfont(1);
+			i=j=cterm->altfont[0];
 			uifc.helpbuf="`Font Setup`\n\n"
 						"Change the current font.  Font must support the current video mode:\n\n"
 						"`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
@@ -1884,6 +1884,7 @@ void font_control(struct bbslist *bbs)
 				}
 				else {
 					setfont(i,FALSE,1);
+					cterm->altfont[0] = i;
 				}
 			}
 			else
@@ -2406,6 +2407,7 @@ BOOL doterm(struct bbslist *bbs)
 	recv_byte_buffer_len=recv_byte_buffer_pos=0;
 	struct mouse_state ms = {};
 	int speedwatch = 0;
+	int oldfont;
 
 	gettextinfo(&txtinfo);
 	if(bbs->conn_type == CONN_TYPE_SERIAL)
@@ -2673,16 +2675,24 @@ BOOL doterm(struct bbslist *bbs)
 							else {
 								p=(unsigned char *)getcliptext();
 								if(p!=NULL) {
-									for(p2=p; *p2; p2++) {
-										if(*p2=='\n') {
-											/* If previous char was not \r, send a \r */
-											if(p2==p || *(p2-1)!='\r')
-												conn_send("\r",1,0);
+									p2 = p;
+									oldfont = getfont(1);
+									setfont(1, FALSE, cterm->altfont[0]);
+									p = (unsigned char *)utf8_to_cp(getcodepage(), p, '\x00', strlen((char *)p), NULL);
+									setfont(1, FALSE, oldfont);
+									free(p2);
+									if (p != NULL) {
+										for(p2=p; *p2; p2++) {
+											if(*p2=='\n') {
+												/* If previous char was not \r, send a \r */
+												if(p2==p || *(p2-1)!='\r')
+													conn_send("\r",1,0);
+											}
+											else
+												conn_send(p2,1,0);
 										}
-										else
-											conn_send(p2,1,0);
+										free(p);
 									}
-									free(p);
 								}
 							}
 							break;
@@ -2736,7 +2746,7 @@ BOOL doterm(struct bbslist *bbs)
 					}
 					break;
 				case 0x2100:	/* ALT-F */
-					font_control(bbs);
+					font_control(bbs, cterm);
 					setup_mouse_events(&ms);
 					showmouse();
 					key = 0;
@@ -2852,7 +2862,7 @@ BOOL doterm(struct bbslist *bbs)
 							music_control(bbs);
 							break;
 						case 9:
-							font_control(bbs);
+							font_control(bbs, cterm);
 							break;
 						case 10:
 							cterm->doorway_mode=!cterm->doorway_mode;
