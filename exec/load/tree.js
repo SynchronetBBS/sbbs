@@ -340,45 +340,69 @@ Tree.prototype.getcmd = function(cmd) {
 	/* initialize return value */
 	var retval=this.__values__.NOT_HANDLED;
 
+    if (typeof cmd == 'string') cmd = { key: cmd, mouse: null };
+
 	if(!(this.__properties__.status&this.__flags__.CLOSED)) {
 		/* if the current tree item is a subtree, pass control to the next subtree */
 		if(this.current instanceof Tree)
-			retval=this.current.getcmd(cmd);
+			retval=this.current.getcmd(cmd.key);
 
 		/* if the submenu did not handle it, let this menu handle the command */
 		if(retval === this.__values__.NOT_HANDLED) {
-			switch(cmd) {
-			case this.__commands__.DOWN:
-				retval = this.down();
-				break;
-			case this.__commands__.UP:
-				retval = this.up();
-				break;
-			case this.__commands__.HOME:
-				retval = this.home();
-				break;
-			case this.__commands__.END:
-				retval = this.end();
-				break;
-			case this.__commands__.PGUP:
-				retval = this.pageUp(0,this.frame.height);
-				break;
-			case this.__commands__.PGDN:
-				retval = this.pageDown(0,this.frame.height);
-				break;
-			case this.__commands__.DELETE:
-				retval = this.deleteItem();
-				break;
-			case this.__commands__.SELECT:
-				if(this.__properties__.index >= 0)
-					retval = this.current.action();
-				else
-					retval = this.close();
-				break;
-			default:
-				retval=this.__matchHotkey__(cmd);
-				break;
-			}
+            if (cmd.mouse !== null && cmd.mouse.x >= this.frame.x && cmd.mouse.x < this.frame.x + this.frame.width && cmd.mouse.y >= this.frame.y && cmd.mouse.y < this.frame.y + this.frame.height) {
+                var my = cmd.mouse.y - this.frame.y;
+                log(JSON.stringify(cmd) + ',' + my + ',' + this.offset + ',' + this.index);
+                switch (cmd.mouse.button) {
+                    case 0: // left click
+                        while (this.offset + my > this.index && this.down() == this.__values__.HANDLED) {
+                        }
+                        while (this.offset + my < this.index && this.up() == this.__values__.HANDLED) {
+                        }
+                        retval = this.getcmd(this.__commands__.SELECT);
+                        break;
+                    case 64: // scroll up
+                        retval = this.up();
+                        break;
+                    case 65: // scroll down
+                        retval = this.down();
+                        break;
+                    default:
+                        break;
+                }
+            } else {
+                switch(cmd.key) {
+                case this.__commands__.DOWN:
+                    retval = this.down();
+                    break;
+                case this.__commands__.UP:
+                    retval = this.up();
+                    break;
+                case this.__commands__.HOME:
+                    retval = this.home();
+                    break;
+                case this.__commands__.END:
+                    retval = this.end();
+                    break;
+                case this.__commands__.PGUP:
+                    retval = this.pageUp(0,this.frame.height);
+                    break;
+                case this.__commands__.PGDN:
+                    retval = this.pageDown(0,this.frame.height);
+                    break;
+                case this.__commands__.DELETE:
+                    retval = this.deleteItem();
+                    break;
+                case this.__commands__.SELECT:
+                    if(this.__properties__.index >= 0)
+                        retval = this.current.action();
+                    else
+                        retval = this.close();
+                    break;
+                default:
+                    retval=this.__matchHotkey__(cmd.key);
+                    break;
+                }
+            }
 
 			/* update the tree on an item being handled */
 			if(retval !== this.__values__.NOT_HANDLED) {
@@ -389,7 +413,7 @@ Tree.prototype.getcmd = function(cmd) {
 		/* handle any residual movement from pageup or pagedown
 		on a subtree */
 		else {
-			switch(cmd) {
+			switch(cmd.key) {
 			case this.__commands__.PGUP:
 				retval = this.pageUp(retval,this.frame.height-1);
 				break;
@@ -411,7 +435,7 @@ Tree.prototype.getcmd = function(cmd) {
 		}
 	}
 	else {
-		switch(cmd) {
+		switch(cmd.key) {
 		case "\r":
 			if(this.__properties__.status&this.__flags__.CLOSED)
 				retval = this.open();
