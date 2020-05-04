@@ -56,19 +56,6 @@ var lastmessage_type=0;
 var orig_passthru=console.ctrlkey_passthru;
 var hangup_now=false;
 
-/*
- * TODO: This mangles the ANSI sequence so it will pass through inkey()
- * properly... inkey re-inserts ESC back into the stream using ungetkey()
- * which changes the order of if the string, putting sequence arguments
- * at the end.
- */
-function mangle_mouse_seq(seq)
-{
-	var len = seq.length;
-
-	return '' + seq[0] + seq[len - 1] + seq.substr(1,len - 2);
-}
-
 function handle_a_ctrlkey(key)
 {
 	var i;
@@ -667,7 +654,7 @@ while(bbs.online) {
 				}
 				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b') {
 					if (xtrnsec.mouse_miss_str !== undefined) {
-						console.ungetstr(mangle_mouse_seq(xtrnsec.mouse_miss_str));
+						console.ungetstr(xtrnsec.mouse_miss_str);
 						delete xtrnsec.mouse_miss_str;
 					}
 					break;
@@ -695,7 +682,7 @@ while(bbs.online) {
 					if(x_prog==KEY_RIGHT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') {
 						this_xtrnsec.erase();
 						if (this_xtrnsec.mouse_miss_str !== undefined) {
-							console.ungetstr(mangle_mouse_seq(this_xtrnsec.mouse_miss_str));
+							console.ungetstr(this_xtrnsec.mouse_miss_str);
 							delete this_xtrnsec.mouse_miss_str;
 						}
 						break;
@@ -795,7 +782,7 @@ while(bbs.online) {
 								case KEY_RIGHT:
 								case '\b':
 									if (userlists.mouse_miss_str !== undefined) {
-										console.ungetstr(mangle_mouse_seq(userlists.mouse_miss_str));
+										console.ungetstr(userlists.mouse_miss_str);
 										delete userlists.mouse_miss_str;
 									}
 								case '\x7f':
@@ -835,7 +822,7 @@ while(bbs.online) {
 						break infoloop;
 					case '\b':
 						if (infomenu.mouse_miss_str !== undefined) {
-							console.ungetstr(mangle_mouse_seq(infomenu.mouse_miss_str));
+							console.ungetstr(infomenu.mouse_miss_str);
 							delete infomenu.mouse_miss_str;
 						}
 					case '\x7f':
@@ -986,7 +973,7 @@ function show_filemenu()
 				return;
 			case '\b':
 				if (filemenu.mouse_miss_str !== undefined) {
-					console.ungetstr(mangle_mouse_seq(filemenu.mouse_miss_str));
+					console.ungetstr(filemenu.mouse_miss_str);
 					delete filemenu.mouse_miss_str;
 				}
 			case '\x7f':
@@ -1132,7 +1119,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1198,7 +1185,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1267,7 +1254,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1324,7 +1311,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1395,7 +1382,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1564,7 +1551,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1618,7 +1605,7 @@ function show_filemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1673,7 +1660,7 @@ function show_messagemenu()
 				return;
 			case '\b':
 				if (messagemenu.mouse_miss_str !== undefined) {
-					console.ungetstr(mangle_mouse_seq(messagemenu.mouse_miss_str));
+					console.ungetstr(messagemenu.mouse_miss_str);
 					delete messagemenu.mouse_miss_str;
 				}
 			case '\x7f':
@@ -1844,7 +1831,7 @@ function show_messagemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -1917,7 +1904,7 @@ function show_messagemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -2012,7 +1999,7 @@ function show_messagemenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -2088,7 +2075,7 @@ function show_emailmenu()
 				return;
 			case '\b':
 				if (emailmenu.mouse_miss_str !== undefined) {
-					console.ungetstr(mangle_mouse_seq(emailmenu.mouse_miss_str));
+					console.ungetstr(emailmenu.mouse_miss_str);
 					delete emailmenu.mouse_miss_str;
 				}
 			case '\x7f':
@@ -2186,7 +2173,7 @@ function show_emailmenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough XXXX
@@ -2251,7 +2238,7 @@ function show_chatmenu()
 				return;
 			case '\b':
 				if (chatmenu.mouse_miss_str !== undefined) {
-					console.ungetstr(mangle_mouse_seq(chatmenu.mouse_miss_str));
+					console.ungetstr(chatmenu.mouse_miss_str);
 					delete chatmenu.mouse_miss_str;
 				}
 			case '\x7f':
@@ -2354,7 +2341,7 @@ function show_chatmenu()
 							return;
 						case '\b':
 							if (typemenu.mouse_miss_str !== undefined) {
-								console.ungetstr(mangle_mouse_seq(typemenu.mouse_miss_str));
+								console.ungetstr(typemenu.mouse_miss_str);
 								delete typemenu.mouse_miss_str;
 							}
 							// Fallthrough
@@ -2416,7 +2403,7 @@ function show_settingsmenu()
 				return;
 			case '\b':
 				if (settingsmenu.mouse_miss_str !== undefined) {
-					console.ungetstr(mangle_mouse_seq(settingsmenu.mouse_miss_str));
+					console.ungetstr(settingsmenu.mouse_miss_str);
 					delete settingsmenu.mouse_miss_str;
 				}
 			case '\x7f':
