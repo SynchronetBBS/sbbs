@@ -351,7 +351,6 @@ Tree.prototype.getcmd = function(cmd) {
 		if(retval === this.__values__.NOT_HANDLED) {
             if (cmd.mouse !== null && cmd.mouse.x >= this.frame.x && cmd.mouse.x < this.frame.x + this.frame.width && cmd.mouse.y >= this.frame.y && cmd.mouse.y < this.frame.y + this.frame.height) {
                 var my = cmd.mouse.y - this.frame.y;
-                log(JSON.stringify(cmd) + ',' + my + ',' + this.offset + ',' + this.index);
                 switch (cmd.mouse.button) {
                     case 0: // left click
                         while (this.offset + my > this.index && this.down() == this.__values__.HANDLED) {
