@@ -258,15 +258,17 @@ function hatch_file(file, area, origin)
 		tf.printf('Crc %08lX\r\n', file_crc(file.path));
 		for (i=0; i<tic.path.length; i++)
 			tf.write('Path '+tic.path[i]+'\r\n');
-		for (i=0; i<tic.seenby.length; i++)
-			tf.write('Seenby '+tic.seenby[i]+'\r\n');
+		for (i=0; i<tic.seenby.length; i++) {
+			if(tic.seenby[i] != link)
+				tf.write('Seenby '+tic.seenby[i]+'\r\n');
+		}
 		tf.write('Pw '+pw+'\r\n');
 		tf.close();
 
 		// Create bsy file...
 		flobase = outb+format("%04x%04x", addr.net, addr.node);
 		bf = new File(flobase+'.bsy');
-		while (!bf.open('web+')) {
+		while (!bf.open('wxb+')) {
 			// TODO: This waits forever...
 			log(LOG_WARNING, "Waiting for BSY file '"+bf.name+"'...");
 			mswait(1000);
