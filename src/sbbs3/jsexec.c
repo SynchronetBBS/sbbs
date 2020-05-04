@@ -1195,15 +1195,17 @@ int main(int argc, char **argv, char** env)
 	if(!winsock_startup())
 		return(do_bail(2));
 
-	SAFECOPY(ini_fname, argv[0]);
-	if((p = getfext(ini_fname)) != NULL)
-		*p = 0;
-	SAFECAT(ini_fname, ".ini");
+#ifndef JSDOOR
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
+	iniFileName(ini_fname, sizeof(ini_fname), scfg.ctrl_dir, "jsexec.ini");
 	if((fp = iniOpenFile(ini_fname, /* create: */FALSE)) != NULL) {
 		ini = iniReadFile(fp);
 		iniCloseFile(fp);
+	} else {
+		fprintf(stderr, "Error %d (%s) opening %s\n", errno, strerror(errno), ini_fname);
 	}
 	get_ini_values(ini, /* section (global): */NULL, &cb);
+#endif
 
 	getcwd(orig_cwd, sizeof(orig_cwd));
 	backslash(orig_cwd);
@@ -1361,12 +1363,6 @@ int main(int argc, char **argv, char** env)
 			*p = 0;
 		get_ini_values(ini, ini_section, &cb);
 	}
-
-#ifndef JSDOOR
-	if(scfg.ctrl_dir[0]==0) {
-		SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
-	}	
-#endif
 
 	if(umask_val >= 0)
 		umask(umask_val);
