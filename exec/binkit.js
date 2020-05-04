@@ -200,7 +200,7 @@ function add_outbound_files(addrs, bp)
 	addrs.forEach(function(addr) {
 		var lock_files;
 
-		log(LOG_DEBUG, "Adding outbound files for "+addr);
+		log(LOG_DEBUG, "Adding outbound files for "+addr + " (" + typeof(addr) + ")");
 		// Find all possible flow files for the remote.
 		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
