@@ -76,6 +76,7 @@ while(bbs.online) {
 		break;
 	cursec--;
 	while(bbs.online) {
+		var prev;
 		var list = read_list(usrsec[cursec]);
 		var menu = "text" + (cursec + 1);
 		if(bbs.menu_exists(menu))
@@ -93,7 +94,7 @@ while(bbs.online) {
 		} else
 			console.mnemonics(bbs.text(WhichTextFile));
 		var cmd = console.getkeys(keys, list.length);
-		if(cmd == 'Q' || !cmd)
+		if(cmd == 'Q' || (!cmd && !prev))
 			break;
 		switch(cmd) {
 			case 'D':
@@ -104,7 +105,7 @@ while(bbs.online) {
 				var i = 0;
 				if(list.length) {
 					console.print(bbs.text(AddTextFileBeforeWhich));
-					i = console.getnum(list.length + 1);
+					i = console.getnum(list.length + 1, list.length + 2);
 					if(i < 1)
 						break;
 					i--;
@@ -123,12 +124,16 @@ while(bbs.online) {
 					}
 				}
 				console.print(format(bbs.text(AddTextFilePath)
-					,system.data_dir, usrsec[cursec].code));
-				var path = console.getstr(path, 128, K_EDIT|K_LINE);
+					,system.data_dir, usrsec[cursec].code.toLowerCase()));
+				var path = console.getstr(path, 128, K_EDIT|K_LINE|K_TRIM);
 				if(!path || console.aborted)
 					break;
+				if(!file_exists(path))
+					path = backslash(txtsec_data(usrsec[cursec])) + path;
+				console.printfile(path);
+				console.crlf();
 				console.print(bbs.text(AddTextFileDesc));
-				var desc = console.getstr(file_getname(path), 70, K_EDIT|K_LINE);
+				var desc = console.getstr(file_getname(path), 70, K_EDIT|K_LINE|K_TRIM|K_AUTODEL);
 				if(!desc || console.aborted)
 					break;
 				list.splice(i, 0, { name: file_getname(path), desc: desc, path: path });
@@ -156,16 +161,21 @@ while(bbs.online) {
 				i--;
 				console.print("Desc: ");
 				{
-					var str = console.getstr(list[i].desc, 75, K_EDIT|K_LINE);
-					if(str && !console.aborted)
+					var str = console.getstr(list[i].desc, 75, K_EDIT|K_LINE|K_AUTODEL|K_TRIM);
+					if(str && !console.aborted) {
 						list[i].desc = str;
+						write_list(usrsec[cursec], list);
+					}
 				}
 				if(!console.aborted
 					&& !console.noyes("Edit " + file_getname(list[i].path)))
 					console.editfile(list[i].path);
 				break;
 			default:
-				if(typeof(cmd) == "number") {
+				if(!cmd && typeof(prev) == "number")
+					cmd = prev + 1;
+				if(typeof(cmd) == "number" && cmd <= list.length) {
+					prev = cmd;
 					cmd--;
 					console.attributes = LIGHTGRAY;
 					if(!bbs.compare_ars(list[cmd].ars)) {
@@ -175,6 +185,8 @@ while(bbs.online) {
 					var mode = P_OPENCLOSE | P_CPM_EOF;
 					if(list[cmd].mode !== undefined)
 						mode = eval(list[cmd].mode);
+					if(list[cmd].petscii_graphics)
+						console.putbyte(142);
 					if(list[cmd].tail)
 						console.printtail(list[cmd].path, list[cmd].tail, mode);
 					else
