@@ -975,21 +975,21 @@ var Level = function (l, n) {
 			if (userInput.mouse.y >= frames.statusBar.y && userInput.mouse.y <= frames.statusBar.y + 1) {
 				if (userInput.mouse.x < frames.labels[KEY_BOMB].x) {
 					if (userInput.mouse.y == frames.statusBar.y) {
-						if (quotas[KEY_BASH] > 0) currentSkill = KEY_BASH;
+						return this.getcmd({ key: KEY_BASH, mouse: null });
 					} else {
-						if (quotas[KEY_BLOCK] > 0) currentSkill = KEY_BLOCK;
+						return this.getcmd({ key: KEY_BLOCK, mouse: null });
 					}
 				} else if (userInput.mouse.x < frames.labels[KEY_CLIMB].x) {
 					if (userInput.mouse.y == frames.statusBar.y) {
-						if (quotas[KEY_BOMB] > 0) currentSkill = KEY_BOMB;
+						return this.getcmd({ key: KEY_BOMB, mouse: null });
 					} else {
-						if (quotas[KEY_BUILD] > 0) currentSkill = KEY_BUILD;
+						return this.getcmd({ key: KEY_DIG, mouse: null });
 					}
 				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 5) {
 					if (userInput.mouse.y == frames.statusBar.y) {
-						if (quotas[KEY_CLIMB] > 0) currentSkill = KEY_CLIMB;
+						return this.getcmd({ key: KEY_CLIMB, mouse: null });
 					} else {
-						if (quotas[KEY_DIG] > 0) currentSkill = KEY_DIG;
+						return this.getcmd({ key: KEY_BUILD, mouse: null });
 					}
 				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 13) {
 					if (userInput.mouse.y == frames.statusBar.y) {
