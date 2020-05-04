@@ -681,6 +681,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 			continue;
 		SAFEPRINTF(section, "robot:%s", bot->name);
 		iniSetString(&ini, section, "SemFile", bot->semfile, style);
+		iniSetHexInt(&ini, section, "attr", bot->attr, style);
 	}
 
 	iniWriteFile(fp, ini);
