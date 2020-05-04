@@ -894,13 +894,19 @@ int curs_initciolib(long inmode)
 	}
 	mode = inmode;
 #ifdef NCURSES_VERSION_MAJOR
-		if(mousemask(BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION,NULL)==(BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION)) {
+	{
+		mmask_t msk = BUTTON1_PRESSED|BUTTON1_RELEASED|BUTTON2_PRESSED|BUTTON2_RELEASED|BUTTON3_PRESSED|BUTTON3_RELEASED|REPORT_MOUSE_POSITION;
+#ifdef BUTTON5_PRESSED
+		msk |= BUTTON4_PRESSED|BUTTON5_PRESSED;
+#endif
+		if (mousemask(msk, NULL) == msk) {
 			mouseinterval(0);
 			cio_api.mouse=1;
 		}
 		else {
 			mousemask(0,NULL);
 		}
+	}
 #endif
 
 	if (COLORS >= 16)
@@ -1139,6 +1145,14 @@ int curs_getch(void)
 						case BUTTON3_RELEASED:
 							evnt=CIOLIB_BUTTON_3_RELEASE;
 							break;
+#ifdef BUTTON5_PRESSED
+						case BUTTON4_PRESSED:
+							evnt=CIOLIB_BUTTON_4_PRESS;
+							break;
+						case BUTTON5_PRESSED:
+							evnt=CIOLIB_BUTTON_5_PRESS;
+							break;
+#endif
 						case REPORT_MOUSE_POSITION:
 							evnt=CIOLIB_MOUSE_MOVE;
 							break;

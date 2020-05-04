@@ -568,11 +568,13 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 #define CIOLIB_BUTTON_1	1
 #define CIOLIB_BUTTON_2	2
 #define CIOLIB_BUTTON_3	4
+#define CIOLIB_BUTTON_4	8
+#define CIOLIB_BUTTON_5	16
 
 #define CIOLIB_BUTTON(x)	(1<<(x-1))
 
 enum {
-	 CIOLIB_MOUSE_MOVE				/* 0 */
+	 CIOLIB_MOUSE_MOVE			/* 0 */
 	,CIOLIB_BUTTON_1_PRESS
 	,CIOLIB_BUTTON_1_RELEASE
 	,CIOLIB_BUTTON_1_CLICK
@@ -599,7 +601,25 @@ enum {
 	,CIOLIB_BUTTON_3_QUAD_CLICK
 	,CIOLIB_BUTTON_3_DRAG_START
 	,CIOLIB_BUTTON_3_DRAG_MOVE
-	,CIOLIB_BUTTON_3_DRAG_END		/* 27 */
+	,CIOLIB_BUTTON_3_DRAG_END
+	,CIOLIB_BUTTON_4_PRESS
+	,CIOLIB_BUTTON_4_RELEASE
+	,CIOLIB_BUTTON_4_CLICK			/* 30 */
+	,CIOLIB_BUTTON_4_DBL_CLICK
+	,CIOLIB_BUTTON_4_TRPL_CLICK
+	,CIOLIB_BUTTON_4_QUAD_CLICK
+	,CIOLIB_BUTTON_4_DRAG_START
+	,CIOLIB_BUTTON_4_DRAG_MOVE
+	,CIOLIB_BUTTON_4_DRAG_END
+	,CIOLIB_BUTTON_5_PRESS
+	,CIOLIB_BUTTON_5_RELEASE
+	,CIOLIB_BUTTON_5_CLICK
+	,CIOLIB_BUTTON_5_DBL_CLICK		/* 40 */
+	,CIOLIB_BUTTON_5_TRPL_CLICK
+	,CIOLIB_BUTTON_5_QUAD_CLICK
+	,CIOLIB_BUTTON_5_DRAG_START
+	,CIOLIB_BUTTON_5_DRAG_MOVE
+	,CIOLIB_BUTTON_5_DRAG_END		/* 45 */
 };
 
 #define CIOLIB_BUTTON_PRESS(x)		((x-1)*9+1)
@@ -628,11 +648,11 @@ CIOLIBEXPORT int CIOLIBCALL mouse_pending(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_getmouse(struct mouse_event *mevent);
 CIOLIBEXPORT int CIOLIBCALL ciolib_ungetmouse(struct mouse_event *mevent);
 CIOLIBEXPORT void ciolib_mouse_thread(void *data);
-CIOLIBEXPORT int CIOLIBCALL ciomouse_setevents(int events);
-CIOLIBEXPORT int CIOLIBCALL ciomouse_addevents(int events);
-CIOLIBEXPORT int CIOLIBCALL ciomouse_delevents(int events);
-CIOLIBEXPORT int CIOLIBCALL ciomouse_addevent(int event);
-CIOLIBEXPORT int CIOLIBCALL ciomouse_delevent(int event);
+CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_setevents(uint64_t events);
+CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_addevents(uint64_t events);
+CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_delevents(uint64_t events);
+CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_addevent(uint64_t event);
+CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_delevent(uint64_t event);
 #ifdef __cplusplus
 }
 #endif

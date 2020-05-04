@@ -80,10 +80,10 @@ struct mouse_state {
 	int	knownbuttonstatemask;	/* Mask of buttons that have done something since
 								 * We started watching... the rest are actually in
 								 * an unknown state */
-	int	button_state[3];		/* Expanded state of each button */
-	int	button_x[3];			/* Start X/Y position of the current state */
-	int	button_y[3];
-	clock_t	timeout[3];	/* Button event timeouts (timespecs ie: time of expiry) */
+	int	button_state[5];		/* Expanded state of each button */
+	int	button_x[5];			/* Start X/Y position of the current state */
+	int	button_y[5];
+	clock_t	timeout[5];	/* Button event timeouts (timespecs ie: time of expiry) */
 	int	curx;					/* Current X position */
 	int	cury;					/* Current Y position */
 	int	events;					/* Currently enabled events */
@@ -95,7 +95,7 @@ struct mouse_state {
 };
 
 struct mouse_state state;
-int mouse_events=0;
+uint64_t mouse_events=0;
 int ciolib_mouse_initialized=0;
 static int ungot=0;
 pthread_mutex_t unget_mutex;
@@ -111,33 +111,33 @@ void CIOLIBCALL init_mouse(void)
 	ciolib_mouse_initialized=1;
 }
 
-int CIOLIBCALL ciomouse_setevents(int events)
+uint64_t CIOLIBCALL ciomouse_setevents(uint64_t events)
 {
 	mouse_events=events;
 	return mouse_events;
 }
 
-int CIOLIBCALL ciomouse_addevents(int events)
+uint64_t CIOLIBCALL ciomouse_addevents(uint64_t events)
 {
 	mouse_events |= events;
 	return mouse_events;
 }
 
-int CIOLIBCALL ciomouse_delevents(int events)
+uint64_t CIOLIBCALL ciomouse_delevents(uint64_t events)
 {
 	mouse_events &= ~events;
 	return mouse_events;
 }
 
-int CIOLIBCALL ciomouse_addevent(int event)
+uint64_t CIOLIBCALL ciomouse_addevent(uint64_t event)
 {
-	mouse_events |= (1<<event);
+	mouse_events |= (UINT64_C(1)<<event);
 	return mouse_events;
 }
 
-int CIOLIBCALL ciomouse_delevent(int event)
+uint64_t CIOLIBCALL ciomouse_delevent(uint64_t event)
 {
-	mouse_events &= ~(1<<event);
+	mouse_events &= ~(UINT64_C(1)<<event);
 	return mouse_events;
 }
 
@@ -164,7 +164,7 @@ void CIOLIBCALL add_outevent(int event, int x, int y)
 	struct out_mouse_event *ome;
 	int	but;
 
-	if(!(mouse_events & 1<<event))
+	if(!(mouse_events & UINT64_C(1)<<event))
 		return;
 	ome=(struct out_mouse_event *)malloc(sizeof(struct out_mouse_event));
 
@@ -187,19 +187,19 @@ int CIOLIBCALL more_multies(int button, int clicks)
 {
 	switch(clicks) {
 		case 0:
-			if(mouse_events & (1<<CIOLIB_BUTTON_CLICK(button)))
+			if(mouse_events & (UINT64_C(1)<<CIOLIB_BUTTON_CLICK(button)))
 				return(1);
 			/* Fall-through */
 		case 1:
-			if(mouse_events & (1<<CIOLIB_BUTTON_DBL_CLICK(button)))
+			if(mouse_events & (UINT64_C(1)<<CIOLIB_BUTTON_DBL_CLICK(button)))
 				return(1);
 			/* Fall-through */
 		case 2:
-			if(mouse_events & (1<<CIOLIB_BUTTON_TRPL_CLICK(button)))
+			if(mouse_events & (UINT64_C(1)<<CIOLIB_BUTTON_TRPL_CLICK(button)))
 				return(1);
 			/* Fall-through */
 		case 3:
-			if(mouse_events & (1<<CIOLIB_BUTTON_QUAD_CLICK(button)))
+			if(mouse_events & (UINT64_C(1)<<CIOLIB_BUTTON_QUAD_CLICK(button)))
 				return(1);
 			/* Fall-through */
 	}
@@ -280,13 +280,18 @@ void ciolib_mouse_thread(void *data)
 				continue;
 			}
 			but=CIOLIB_BUTTON_NUMBER(in->event);
+			if (in->x < 0)
+				in->x = state.curx;
+			if (in->y < 0)
+				in->y = state.curx;
+
 			switch(CIOLIB_BUTTON_BASE(in->event)) {
 				case CIOLIB_MOUSE_MOVE:
 					if(in->x==state.curx
 							&& in->y==state.cury)
 						break;
 					add_outevent(CIOLIB_MOUSE_MOVE,in->x,in->y);
-					for(but=1;but<=3;but++) {
+					for(but=1;but<=5;but++) {
 						switch(state.button_state[but-1]) {
 							case MOUSE_NOSTATE:
 								if(state.buttonstate & CIOLIB_BUTTON(but)) {
@@ -354,6 +359,9 @@ void ciolib_mouse_thread(void *data)
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								state.timeout[but-1]=0;
 							}
+							// Scroll "buttons"...
+							if (but > 3)
+								state.button_state[but-1] = MOUSE_NOSTATE;
 							break;
 						case MOUSE_CLICKED:
 							state.button_state[but-1]=MOUSE_DOUBLEPRESSED;
@@ -427,13 +435,13 @@ void ciolib_mouse_thread(void *data)
 		}
 
 		timeout_button=0;
-		for(but=1;but<=3;but++) {
+		for(but=1;but<=5;but++) {
 			if(state.button_state[but-1]==MOUSE_DRAGSTARTED &&
-			    (mouse_events & ((1<<CIOLIB_BUTTON_DRAG_START(but)) | (1<<CIOLIB_BUTTON_DRAG_MOVE(but)) | (1<<CIOLIB_BUTTON_DRAG_END(but)))) == 0)
+			    (mouse_events & ((UINT64_C(1)<<CIOLIB_BUTTON_DRAG_START(but)) | (UINT64_C(1)<<CIOLIB_BUTTON_DRAG_MOVE(but)) | (UINT64_C(1)<<CIOLIB_BUTTON_DRAG_END(but)))) == 0)
 				state.button_state[but-1] = MOUSE_NOSTATE;
 		}
 
-		for(but=1;but<=3;but++) {
+		for(but=1;but<=5;but++) {
 			if(state.button_state[but-1]!=MOUSE_NOSTATE 
 					&& state.button_state[but-1]!=MOUSE_DRAGSTARTED 
 					&& state.timeout[but-1]!=0

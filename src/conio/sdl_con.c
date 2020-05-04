@@ -863,6 +863,18 @@ void sdl_video_event_thread(void *data)
 							break;
 					}
 					break;
+				case SDL_MOUSEWHEEL:
+					if (!ciolib_mouse_initialized)
+						break;
+					if (ev.wheel.y) {
+						if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+							ev.wheel.y = 0 - ev.wheel.y;
+						if (ev.wheel.y > 0)
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1);
+						if (ev.wheel.y < 0)
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1);
+					}
+					break;
 				case SDL_MOUSEBUTTONUP:
 					if(!ciolib_mouse_initialized)
 						break;

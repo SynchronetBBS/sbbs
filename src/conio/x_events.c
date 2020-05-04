@@ -818,7 +818,7 @@ static int x11_event(XEvent *ev)
 					be->x=x_cvstat.cols;
 				if(be->y>x_cvstat.rows+1)
 					be->y=x_cvstat.rows+1;
-				if (be->button <= 3) {
+				if (be->button <= 5) {
 					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y);
 				}
 	    	}
