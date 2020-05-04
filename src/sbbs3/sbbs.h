@@ -784,7 +784,7 @@ public:
 	/* getkey.cpp */
 	char	getkey(long mode); 		/* Waits for a key hit local or remote  */
 	long	getkeys(const char *str, ulong max, long mode = K_UPPER);
-	void	ungetkey(char ch);		/* Places 'ch' into the input buffer    */
+	void	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
 	char	question[MAX_TEXTDAT_ITEM_LEN+1];
 	bool	yesno(const char *str, long mode = 0);
 	bool	noyes(const char *str, long mode = 0);

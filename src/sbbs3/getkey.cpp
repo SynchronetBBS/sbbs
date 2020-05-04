@@ -562,13 +562,21 @@ void sbbs_t::pause()
 /****************************************************************************/
 /* Puts a character into the input buffer                                   */
 /****************************************************************************/
-void sbbs_t::ungetkey(char ch)
+void sbbs_t::ungetkey(char ch, bool insert)
 {
 #if 0	/* this way breaks ansi_getxy() */
 	RingBufWrite(&inbuf,(uchar*)&ch,sizeof(uchar));
 #else
-	keybuf[keybuftop++]=ch;   
-	if(keybuftop==KEY_BUFSIZE)   
-		keybuftop=0; 
+	if(insert) {
+		if(keybufbot == 0)
+			keybufbot = KEY_BUFSIZE - 1;
+		else
+			keybufbot--;
+		keybuf[keybufbot] = ch;
+	} else {
+		keybuf[keybuftop++]=ch;
+		if(keybuftop==KEY_BUFSIZE)
+			keybuftop=0;
+	}
 #endif
 }

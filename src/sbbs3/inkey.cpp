@@ -306,7 +306,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				return(ESC);
 			ch=i;
 			if(ch!='[') {
-				ungetkey(ch);
+				ungetkey(ch, /* insert: */true);
 				return(ESC); 
 			}
 			i=j=0;
@@ -363,10 +363,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							}
 							break;
 					}
-					ungetkey('[');
-					for(j=0;j<i;j++)
-						ungetkey(str[j]);
-					ungetkey(ch);
+					ungetkey(ch, /* insert: */true);
+					for(j = i; j > 0; j--)
+						ungetkey(str[j - 1], /* insert: */true);
+					ungetkey('[', /* insert: */true);
 					return(ESC); 
 				}
 				if(ch=='R') {       /* cursor position report */
@@ -386,9 +386,9 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 				str[i++]=ch; 
 			}
 
-			ungetkey('[');
-			for(j=0;j<i;j++)
-				ungetkey(str[j]);
+			for(j = i; j > 0; j--)
+				ungetkey(str[j - 1], /* insert: */true);
+			ungetkey('[', /* insert: */true);
 			return(ESC); 
 	}
 	return(ch);
