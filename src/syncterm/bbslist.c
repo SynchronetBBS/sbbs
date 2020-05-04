@@ -1844,7 +1844,16 @@ struct bbslist *show_bbslist(char *current, int connected)
 									"~ CTRL-E ~ to edit the selected entry\n"
 									"~ CTRL-S ~ to modify the sort order\n"
 									"~ " ALT_KEY_NAMEP "-B ~ View scrollback of last session\n"
-									"~ ENTER ~ to connect to the selected entry";
+									"~ ENTER ~ to connect to the selected entry\n\n"
+							"`Conio Keys` (may not work in some modes)\n\n"
+									"~ " ALT_KEY_NAMEP "-Left ~ Snap window size to next smaller horizontal size\n"
+									"~ " ALT_KEY_NAMEP "-Right ~ Snap window size to next larger horizontal size\n"
+									"~ " ALT_KEY_NAMEP "-Up ~ Snap window size to next smaller vertical size\n"
+									"~ " ALT_KEY_NAMEP "-Down ~ Snap window size to next larger vertical size\n"
+									"~ " ALT_KEY_NAMEP "-Enter ~ Toggle fullscreen mode when available\n\n"
+							"`UIFC List Keys`\n\n"
+									"~ CTRL-F ~ find text in current menu options\n"
+									"~ CTRL-G ~ repeat last search\n";
 				if(opt != oldopt) {
 					if(list[opt]!=NULL && list[opt]->name[0]) {
 						sprintf(title, "%s - %s (%d calls / Last: %s", syncterm_version, (char *)(list[opt]), list[opt]->calls, list[opt]->connected?ctime(&list[opt]->connected):"Never\n");
