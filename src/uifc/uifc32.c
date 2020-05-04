@@ -175,6 +175,8 @@ void uifc_mouse_enable(void)
 	ciomouse_addevent(CIOLIB_BUTTON_1_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
+	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 	showmouse();
 }
 
@@ -502,6 +504,10 @@ static int uifc_getmouse(struct mouse_event *mevent)
 				return(CIO_KEY_F(1));
 			}
 		}
+		if (mevent->event == CIOLIB_BUTTON_4_PRESS)
+			return(CIO_KEY_UP);
+		if (mevent->event == CIOLIB_BUTTON_5_PRESS)
+			return(CIO_KEY_DOWN);
 		return(0);
 	}
 	return(-1);
@@ -2884,6 +2890,16 @@ void showbuf(int mode, int left, int top, int width, int height, char *title, ch
 						}
 						if(mevnt.startx == SCROLL_DN_BUTTON_X && mevnt.starty == SCROLL_DN_BUTTON_Y
 							&& mevnt.event==CIOLIB_BUTTON_1_CLICK) {
+							p += ((width-2-pad-pad));
+							continue;
+						}
+						/* Scroll up */
+						if (mevnt.event == CIOLIB_BUTTON_4_PRESS) {
+							p = p-((width-2-pad-pad));
+							continue;
+						}
+						/* Scroll down */
+						if (mevnt.event == CIOLIB_BUTTON_5_PRESS) {
 							p += ((width-2-pad-pad));
 							continue;
 						}
