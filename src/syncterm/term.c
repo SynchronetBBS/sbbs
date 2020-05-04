@@ -104,6 +104,8 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_2_RELEASE);
 				ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
+				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 				return;
 			case MM_BUTTON_EVENT_TRACKING:
 				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
@@ -112,6 +114,8 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_2_RELEASE);
 				ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
+				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 				ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 				return;
 			case MM_ANY_EVENT_TRACKING:
@@ -121,6 +125,8 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_2_RELEASE);
 				ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
+				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 				ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 				return;
 			default:
@@ -132,6 +138,8 @@ void setup_mouse_events(struct mouse_state *ms)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
+	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 }
 
 #if defined(__BORLANDC__)
@@ -2336,12 +2344,13 @@ static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct m
 	}
 	if (button < 0)
 		return 0;
-	if (button > 11)
+	if (button >= 11)
 		return 0;
-	if (button > 7)
-		button += 128;
-	else if (button > 3)
-		button += 64;
+	if (button >= 7)
+		button += 121;
+	else if (button >= 3) {
+		button += 61;
+	}
 	if (me->event == CIOLIB_MOUSE_MOVE)
 		button += 32;
 	if ((ms->flags & MS_FLAGS_SGR) == 0) {
@@ -2641,31 +2650,19 @@ BOOL doterm(struct bbslist *bbs)
 					getmouse(&mevent);
 					switch(mevent.event) {
 						case CIOLIB_BUTTON_1_PRESS:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
 						case CIOLIB_BUTTON_1_RELEASE:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
 						case CIOLIB_BUTTON_2_PRESS:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
 						case CIOLIB_BUTTON_2_RELEASE:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
 						case CIOLIB_BUTTON_3_PRESS:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
 						case CIOLIB_BUTTON_3_RELEASE:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							break;
+						case CIOLIB_BUTTON_4_PRESS:
+						case CIOLIB_BUTTON_5_PRESS:
 						case CIOLIB_MOUSE_MOVE:
+						case CIOLIB_BUTTON_1_CLICK:
 							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
 							break;
 						case CIOLIB_BUTTON_1_DRAG_START:
 							mousedrag(scrollback_buf);
-							break;
-						case CIOLIB_BUTTON_1_CLICK:
-							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
