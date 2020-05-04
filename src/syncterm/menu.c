@@ -138,7 +138,7 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Change Log Level"
 						,"Capture Control ("ALT_KEY_NAMEP"-C)"
 						,"ANSI Music Control ("ALT_KEY_NAMEP"-M)"
-						,"Font Control ("ALT_KEY_NAMEP"-F)"
+						,"Font Setup ("ALT_KEY_NAMEP"-F)"
 						,"Toggle Doorway Mode"
 #ifndef WITHOUT_OOII
 						,"Toggle Operation Overkill ][ Mode"
