@@ -973,31 +973,26 @@ var Level = function (l, n) {
 			if (userInput.mouse.button != 0) return ret;
 			// If they clicked inside the statusbar region ...
 			if (userInput.mouse.y >= frames.statusBar.y && userInput.mouse.y <= frames.statusBar.y + 1) {
-				if (userInput.mouse.x < frames.statusBar.x + 12) {
+				if (userInput.mouse.x < frames.labels[KEY_BOMB].x) {
 					if (userInput.mouse.y == frames.statusBar.y) {
-						// Bash
 						if (quotas[KEY_BASH] > 0) currentSkill = KEY_BASH;
 					} else {
-						// Block
 						if (quotas[KEY_BLOCK] > 0) currentSkill = KEY_BLOCK;
 					}
-				} else if (userInput.mouse.x <= frames.statusBar.x + 26) {
+				} else if (userInput.mouse.x < frames.labels[KEY_CLIMB].x) {
 					if (userInput.mouse.y == frames.statusBar.y) {
-						// Bomb
 						if (quotas[KEY_BOMB] > 0) currentSkill = KEY_BOMB;
 					} else {
-						// Build
 						if (quotas[KEY_BUILD] > 0) currentSkill = KEY_BUILD;
 					}
-				} else if (userInput.mouse.x <= frames.statusBar.x + 40) {
+				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 5) {
 					if (userInput.mouse.y == frames.statusBar.y) {
 						if (quotas[KEY_CLIMB] > 0) currentSkill = KEY_CLIMB;
 					} else {
 						if (quotas[KEY_DIG] > 0) currentSkill = KEY_DIG;
 					}
-				} else if (userInput.mouse.x <= frames.statusBar.x + 48) {
+				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 13) {
 					if (userInput.mouse.y == frames.statusBar.y) {
-						// Sure, let's just paste some crap
 						for (var s = 0; s < Sprite.profiles.length; s++) {
 							if (Sprite.profiles[s].ini.type != "lemon" || !Sprite.profiles[s].open) continue;
 							nuke(Sprite.profiles[s]);
@@ -1006,7 +1001,7 @@ var Level = function (l, n) {
 					} else {
 						state = STATE_PAUSE;
 					}
-				} else if (userInput.mouse.x <= frames.statusBar.x + 48) {
+				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 24) {
 					if (userInput.mouse.y == frames.statusBar.y) {
 						state = STATE_HELP;
 					} else {
