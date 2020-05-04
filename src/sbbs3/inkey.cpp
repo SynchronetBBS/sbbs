@@ -204,7 +204,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 
 	switch(ch) {
 		case CTRL_O:	/* Ctrl-O toggles pause temporarily */
-			useron.misc^=UPAUSE;
+			console^=CON_PAUSEOFF;
 			return(0); 
 		case CTRL_P:	/* Ctrl-P Private node-node comm */
 			if(!(sys_status&SS_USERON))

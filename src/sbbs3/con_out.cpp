@@ -714,7 +714,7 @@ int sbbs_t::outchar(char ch)
 	if(outchar_esc==3)
 		outchar_esc=0;
 
-	if(lncntr==rows-1 && ((useron.misc&UPAUSE) || sys_status&SS_PAUSEON)
+	if(lncntr==rows-1 && ((useron.misc&(UPAUSE^(console&CON_PAUSEOFF))) || sys_status&SS_PAUSEON)
 		&& !(sys_status&(SS_PAUSEOFF|SS_ABORT))) {
 		lncntr=0;
 		pause();
