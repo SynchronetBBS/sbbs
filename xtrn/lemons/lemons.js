@@ -140,7 +140,7 @@ function main() {
 		switch (state) {
 			case STATE_MENU:
 				if (!menu) menu = new Menu();
-				menu.getcmd(userInput.key);
+				menu.getcmd(userInput);
 				if (state != STATE_MENU) {
 					menu.close();
 					menu = false;
