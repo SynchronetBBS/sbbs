@@ -614,7 +614,7 @@ function callout(addr, scfg, locks, bicfg)
 	bp.crypt_support = bicfg.crypt_support;
 	bp.cb_data = {
 		binkitcfg:bicfg,
-		binkit_to_addr:addr,
+		binkit_to_addr:FIDO.parse_addr(addr, myaddr.zone, myaddr.domain),
 		binkit_scfg:scfg,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
