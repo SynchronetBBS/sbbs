@@ -246,7 +246,8 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 	char*		qwkbuf;
 	char		str[256],col=0,lastch=0,*p;
 	char		from[128];
-	uint 		i,k;
+	int 		i;
+	uint		k;
 	long		bodylen,taillen;
 	bool		success=false;
 	uint16_t	net_type;
