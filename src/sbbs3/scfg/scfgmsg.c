@@ -295,7 +295,7 @@ long import_msg_areas(enum import_list_type type, FILE* stream, unsigned grpnum
 			else {
 				char* p=str;
 				SKIP_WHITESPACE(p);
-				if(!*p || *p==';')
+				if(!*p || !isalnum(*p))
 					continue;
 				if(type == IMPORT_LIST_TYPE_GENERIC_AREAS_BBS) {		/* AREAS.BBS Generic/.MSG */
 					p=str;
