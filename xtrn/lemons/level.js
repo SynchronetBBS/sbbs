@@ -970,7 +970,7 @@ var Level = function (l, n) {
 
 		if (userInput.mouse !== null) {
 			// If it wasn't a left-click
-			if (userInput.mouse.button != 0) return ret;
+			if (userInput.mouse.button != 0 && !userInput.mouse.press) return ret;
 			// If they clicked inside the statusbar region ...
 			if (userInput.mouse.y >= frames.statusBar.y && userInput.mouse.y <= frames.statusBar.y + 1) {
 				if (userInput.mouse.x < frames.labels[KEY_BOMB].x) {
