@@ -386,6 +386,25 @@ Frame.prototype.setData = function(x,y,ch,attr,use_offset) {
 	if(this.__properties__.open)
 		this.__properties__.display.updateChar(this,x,y);
 }
+Frame.prototype.getWord = function(x,y) {
+	var word = []
+	var nx = x-this.x;
+	var ny = y-this.y;
+	var cell = this.getData(nx,ny,false);
+	while(nx >= 0 && cell != undefined && cell.ch != undefined && cell.ch.match(/[0-9a-zA-Z]/)) {
+		word.unshift(cell.ch);
+		nx--;
+		cell = this.getData(nx,ny,false);
+	}
+	nx = x-this.x+1;
+	cell = this.getData(nx,ny,false);
+	while(nx < this.width && cell != undefined && cell.ch != undefined && cell.ch.match(/[0-9a-zA-Z]/)) {
+		word.push(cell.ch);
+		nx++;
+		cell = this.getData(nx,ny,false);
+	}
+	return word.join("");
+}
 Frame.prototype.clearData = function(x,y,use_offset) {
 	var px = x;
 	var py = y;
