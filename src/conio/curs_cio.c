@@ -1237,9 +1237,16 @@ int curs_get_modepalette(uint32_t p[16])
 void curs_textmode(int mode)
 {
 	int vm;
+	int maxx, maxy;
 
 	curs_resume();
-	getmaxyx(stdscr, cio_textinfo.screenheight, cio_textinfo.screenwidth);
+	getmaxyx(stdscr, maxy, maxx);
+	if (maxy > 255)
+		maxy = 255;
+	if (maxx > 255)
+		maxx = 255;
+	cio_textinfo.screenheight = maxy;
+	cio_textinfo.screenwidth = maxx;
 	if(has_colors())
 		cio_textinfo.currmode=COLOR_MODE;
 	else
