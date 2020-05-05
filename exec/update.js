@@ -141,6 +141,14 @@ if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
 print("Updating [General] Text File Section indexes");
 print(update_gfile_indexes() + " indexes updated.");
 
+var src = system.exec_dir + "jsexec.ini";
+var dst = system.ctrl_dir + "jsexec.ini";
+if(file_exists(src) && !file_exists(dst)) {
+	print("Moving " + src + " to " + dst);
+	if(!file_rename(src, dst))
+		alert("Could not move '" + src + "' to '" + dst + "'");
+}
+
 print("Updating (compiling) Baja modules");
 var src_files = directory(system.exec_dir + "*.src");
 for(var i in src_files) {
