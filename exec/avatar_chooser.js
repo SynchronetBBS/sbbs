@@ -270,6 +270,8 @@ function CollectionBrowser(filename, parent_frame) {
 					highlight();
 				}
 			}
+		} else if (clicked_quit(cmd, frames.parent)) {
+			ret = -1;
 		} else {
 			switch (cmd.key.toLowerCase()) {
 				case KEY_LEFT:
@@ -481,7 +483,7 @@ function CollectionLister(dir, parent_frame) {
 				state.collection = null;
 			}
 		} else {
-			if (cmd.key.toLowerCase() == 'q') {
+			if (cmd.key.toLowerCase() == 'q' || clicked_quit(cmd, frames.parent)) {
 				return false;
 			} else if (cmd.key == KEY_LEFT) {
 				var num_avatars = Math.floor(state.tree.currentItem.sauce.filesize / avatar_lib.size);
@@ -806,7 +808,7 @@ function MainMenu(parent_frame) {
                     state.opt_out_item.hide();
                 }
 			}
-		} else if (cmd.key.toLowerCase() == 'q') {
+		} else if (cmd.key.toLowerCase() == 'q' || clicked_quit(cmd, frames.parent)) {
 			return false;
 		} else {
 			state.tree.getcmd(cmd);
@@ -830,6 +832,17 @@ function MainMenu(parent_frame) {
 		frames.container.delete();
 	}
 
+}
+
+function clicked_quit(i, frame) {
+	if (i.mouse === null) return false;
+	if (!i.mouse.press) return false;
+	if (i.mouse.button != 0) return false;
+	if (i.mouse.y != frame.y + frame.height - 1) return false;
+	var sx = frame.x + frame.width - 20;
+	var ex = frame.x + frame.width - 4;
+	if (i.mouse.x < sx || i.mouse.x > ex) return false;
+	return true;
 }
 
 var sys_status, console_attr;
@@ -866,7 +879,7 @@ function main() {
 	menu.open();
 	while (true) {
 		var i = mouse_getkey(K_NONE, 5, true); //console.inkey(K_NONE);
-		if (!menu.getcmd(i)) break;
+		if ((i.key != '' || (i.mouse && i.mouse.press)) && !menu.getcmd(i)) break;
 		menu.cycle();
 		if (frame.cycle()) bury_cursor();
 	}
