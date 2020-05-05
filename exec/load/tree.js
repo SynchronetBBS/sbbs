@@ -349,7 +349,7 @@ Tree.prototype.getcmd = function(cmd) {
 
 		/* if the submenu did not handle it, let this menu handle the command */
 		if(retval === this.__values__.NOT_HANDLED) {
-            if (cmd.mouse !== null && cmd.mouse.x >= this.frame.x && cmd.mouse.x < this.frame.x + this.frame.width && cmd.mouse.y >= this.frame.y && cmd.mouse.y < this.frame.y + this.frame.height) {
+            if (cmd.mouse !== null && cmd.mouse.press && cmd.mouse.x >= this.frame.x && cmd.mouse.x < this.frame.x + this.frame.width && cmd.mouse.y >= this.frame.y && cmd.mouse.y < this.frame.y + this.frame.height) {
                 var my = cmd.mouse.y - this.frame.y;
                 switch (cmd.mouse.button) {
                     case 0: // left click
