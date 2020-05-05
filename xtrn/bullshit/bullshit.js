@@ -3,12 +3,12 @@ load('frame.js');
 load('tree.js');
 load('scrollbar.js');
 load('funclib.js');
+require("mouse_getkey.js", "mouse_getkey");
+const ansiterm = load({}, 'ansiterm_lib.js');
 const lib = load({}, js.exec_dir + 'bullshit-lib.js');
 
 js.branch_limit = 0;
 js.time_limit = 0;
-
-var settings, frame, tree, treeScroll, viewer, list;
 
 Frame.prototype.drawBorder = function (color, title) {
 	this.pushxy();
@@ -54,7 +54,19 @@ Frame.prototype.drawBorder = function (color, title) {
 	this.popxy();
 }
 
-function Viewer(item) {
+function mouse_enable(enable) {
+	if (!console.term_supports(USER_ANSI)) return;
+	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
+}
+
+function clicked_quit(i, f) {
+	if (i.mouse && i.mouse.press && i.mouse.button == 0 && i.mouse.y == f.y + 1 && i.mouse.x > f.x + 1 && i.mouse.x < f.x + 11) {
+		return true;
+	}
+	return false;
+}
+
+function Viewer(item, disp, settings) {
 
 	const frames = {
 		top: null,
@@ -63,12 +75,12 @@ function Viewer(item) {
 	};
 
 	frames.top = new Frame(
-		frame.x,
-		frame.y + 3,
-		frame.width,
-		frame.height - 6,
+		disp.frame.x,
+		disp.frame.y + 3,
+		disp.frame.width,
+		disp.frame.height - 6,
 		WHITE,
-		frame
+		disp.frame
 	);
 	frames.top.drawBorder(settings.colors.border);
 
@@ -135,8 +147,14 @@ function Viewer(item) {
 
 	this.getcmd = function (cmd) {
 
+		if (cmd.mouse && cmd.mouse.press) {
+			if (clicked_quit(cmd, disp.footerFrame)) return this.getcmd({ key: 'Q' });
+			if (cmd.mouse.button == 64) return this.getcmd({ key: KEY_UP });
+			if (cmd.mouse.button == 65) return this.getcmd({ key: KEY_DOWN });
+		}
+
 		var ret = true;
-		switch (cmd.toUpperCase()) {
+		switch (cmd.key.toUpperCase()) {
 			case '\x1B':
 			case 'Q':
 				ret = false;
@@ -186,58 +204,21 @@ function Viewer(item) {
 
 }
 
-function displayList() {
+function displayList(list, tree) {
     list.forEach(function (e) {
         tree.addItem(e.str, e.key);
     });
     tree.open();
 }
 
-function initDisplay() {
+function initDisplay(settings, list) {
 
-	frame = new Frame(
-		1,
-		1,
-		console.screen_columns,
-		console.screen_rows,
-		WHITE
-	);
+	const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, WHITE);
 
-	var titleFrame = new Frame(
-		frame.x,
-		frame.y,
-		frame.width,
-		3,
-		WHITE,
-		frame
-	);
-
-	var footerFrame = new Frame(
-		frame.x,
-		frame.y + frame.height - 3,
-		frame.width,
-		3,
-		WHITE,
-		frame
-	);
-
-	var treeFrame = new Frame(
-		frame.x,
-		titleFrame.y + titleFrame.height,
-		frame.width,
-		frame.height - titleFrame.height - footerFrame.height,
-		WHITE,
-		frame
-	);
-
-	var treeSubFrame = new Frame(
-		treeFrame.x + 1,
-		treeFrame.y + 2,
-		treeFrame.width - 2,
-		treeFrame.height - 3,
-		WHITE,
-		treeFrame
-	);
+	const titleFrame = new Frame(frame.x, frame.y, frame.width, 3, WHITE, frame);
+	const footerFrame = new Frame(frame.x, frame.y + frame.height - 3, frame.width, 3, WHITE, frame);
+	const treeFrame = new Frame(frame.x, titleFrame.y + titleFrame.height, frame.width, frame.height - titleFrame.height - footerFrame.height, WHITE, frame);
+	const treeSubFrame = new Frame(treeFrame.x + 1, treeFrame.y + 2, treeFrame.width - 2, treeFrame.height - 3, WHITE, treeFrame);
 
 	titleFrame.drawBorder(settings.colors.border);
 	treeFrame.drawBorder(settings.colors.border);
@@ -254,63 +235,74 @@ function initDisplay() {
 	treeFrame.putmsg('Date', settings.colors.heading);
 
 	footerFrame.gotoxy(3, 2);
-	footerFrame.putmsg(
-		'Q to quit, Up/Down arrows to scroll', settings.colors.footer
-	);
+	footerFrame.putmsg('Q to quit, Up/Down arrows to scroll', settings.colors.footer);
 
-	tree = new Tree(treeSubFrame);
+	const tree = new Tree(treeSubFrame);
 	tree.colors.lfg = settings.colors.lightbarForeground;
 	tree.colors.lbg = settings.colors.lightbarBackground;
 	tree.colors.fg = settings.colors.listForeground;
 
-	treeScroll = new ScrollBar(tree, { autohide: true });
+	const treeScroll = new ScrollBar(tree, { autohide: true });
 
 	console.clear(LIGHTGRAY);
 	frame.open();
 
+	return {
+		frame: frame,
+		titleFrame: titleFrame,
+		treeFrame: treeFrame,
+		treeSubFrame: treeSubFrame,
+		footerFrame: footerFrame,
+		tree: tree,
+		treeScroll: treeScroll,
+	};
+
 }
 
 function init() {
-	settings = lib.loadSettings();
-    list = lib.loadList(settings);
+	js.on_exit('bbs.sys_status = ' + bbs.sys_status + ';');
+	js.on_exit('console.attributes = ' + console.attributes + ';');
+	js.on_exit('console.clear();');
+	js.on_exit('console.clearkeybuffer();');
+	bbs.sys_status|=SS_MOFF;
+	mouse_enable(true);
 }
 
 function main() {
+	const settings = lib.loadSettings();
+	const list = lib.loadList(settings);
 	if (!list.length && settings.newOnly) return;
-    initDisplay();
-    displayList();
+    const disp = initDisplay(settings, list);
+	displayList(list, disp.tree);
+	var ret;
+	var viewer;
+	var userInput;
 	while (!js.terminated) {
-		var userInput = console.inkey(K_NONE, 5);
+		userInput = mouse_getkey(K_NONE, 5, true);
 		if (typeof viewer !== 'undefined') {
-			var ret = viewer.getcmd(userInput);
+			ret = viewer.getcmd(userInput);
 			viewer.cycle();
 			if (!ret) viewer = undefined;
 		} else {
-			if (userInput.toUpperCase() === 'Q' || userInput == '\x1B') {
+			if (clicked_quit(userInput, disp.footerFrame) || userInput.key.toUpperCase() === 'Q' || userInput.key == '\x1B') {
 				break;
 			} else {
-				var ret = tree.getcmd(userInput);
-				treeScroll.cycle();
+				ret = disp.tree.getcmd(userInput);
+				disp.treeScroll.cycle();
 				if (typeof ret == 'number' || typeof ret == 'string') {
                     lib.setBulletinRead(ret);
-					viewer = new Viewer(ret);
+					viewer = new Viewer(ret, disp, settings);
 				}
 		    }
 		}
-		if (frame.cycle()) {
-			console.gotoxy(console.screen_columns, console.screen_rows);
-		}
+		if (disp.frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
 	}
-}
-
-function cleanUp() {
-	if (frame) frame.close();
+	disp.frame.close();
 }
 
 try {
 	init();
 	main();
-	cleanUp();
 } catch (err) {
 	log(LOG_ERR, err);
 }
