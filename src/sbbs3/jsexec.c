@@ -1201,7 +1201,7 @@ int main(int argc, char **argv, char** env)
 	if((fp = iniOpenFile(ini_fname, /* create: */FALSE)) != NULL) {
 		ini = iniReadFile(fp);
 		iniCloseFile(fp);
-	} else {
+	} else if(fexist(ini_fname)) {
 		fprintf(stderr, "Error %d (%s) opening %s\n", errno, strerror(errno), ini_fname);
 	}
 	get_ini_values(ini, /* section (global): */NULL, &cb);
