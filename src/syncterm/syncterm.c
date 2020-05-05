@@ -1294,8 +1294,8 @@ int main(int argc, char **argv)
 	char	*p, *lp;
 	int	cvmode;
 	int	ww, wh, sf;
-	int default_hidepopups=0;
-	int default_nostatus=0;
+	int default_hidepopups=-1;
+	int default_nostatus=-1;
 	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM,\n"
 				// cwin maybe?  Or just left/right and top/bottom margins?
@@ -1651,8 +1651,10 @@ int main(int argc, char **argv)
 
 	load_font_files();
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
-		bbs->hidepopups = default_hidepopups;
-		bbs->nostatus = default_nostatus;
+		if (default_hidepopups >= 0)
+			bbs->hidepopups = default_hidepopups;
+		if (default_nostatus >= 0)
+			bbs->nostatus = default_nostatus;
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
 		uifcbail();
