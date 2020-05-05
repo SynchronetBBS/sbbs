@@ -260,6 +260,7 @@ function initDisplay(settings, list) {
 }
 
 function init() {
+	js.on_exit('mouse_enable(false);');
 	js.on_exit('bbs.sys_status = ' + bbs.sys_status + ';');
 	js.on_exit('console.attributes = ' + console.attributes + ';');
 	js.on_exit('console.clear();');
