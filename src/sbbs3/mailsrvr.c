@@ -5521,7 +5521,7 @@ static void sendmail_thread(void* arg)
 					,i, smb.last_error, __LINE__, msg.idx.number);
 				continue; 
 			}
-			if(msg.hdr.attr&MSG_DELETE || msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) {
+			if(msg.hdr.attr&(MSG_SENT|MSG_DELETE) || msg.to_net.type!=NET_INTERNET || msg.to_net.addr==NULL) {
 				smb_unlockmsghdr(&smb,&msg);
 				continue;
 			}
