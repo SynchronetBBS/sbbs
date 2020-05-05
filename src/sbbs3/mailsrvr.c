@@ -3811,8 +3811,7 @@ static void smtp_thread(void* arg)
 				i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf, /* remsg: */NULL);
 				if(smb_countattachments(&smb, &msg, msgbuf) > 0)
 					msg.hdr.auxattr |= MSG_MIMEATTACH;
-				if(scfg.inetmail_misc&NMAIL_KILL)
-					msg.hdr.netattr |= MSG_KILLSENT;
+				msg.hdr.netattr |= MSG_KILLSENT;
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
@@ -3879,9 +3878,7 @@ static void smtp_thread(void* arg)
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
 					if(nettype == NET_FIDO) {
-						newmsg.hdr.netattr |= MSG_LOCAL;
-						if(scfg.netmail_misc&NMAIL_KILL)
-							msg.hdr.netattr |= MSG_KILLSENT;
+						newmsg.hdr.netattr |= MSG_LOCAL | MSG_KILLSENT;
 						char* tp = strchr(rcpt_name, '@');
 						if(tp != NULL)
 							*tp = 0;
