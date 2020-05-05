@@ -408,6 +408,19 @@ static bool new_domain(unsigned new_domnum)
 	return true;
 }
 
+static bool new_robot(unsigned new_botnum)
+{
+	struct robot* new_list = realloc(cfg.robot_list, sizeof(struct robot) * (cfg.robot_count + 1));
+	if(new_list == NULL)
+		return false;
+	cfg.robot_list = new_list;
+	for(unsigned i = cfg.robot_count; i > new_botnum; i--)
+		memcpy(&cfg.robot_list[i], &cfg.robot_list[i-1], sizeof(struct robot));
+	cfg.robot_count++;
+	memset(&cfg.robot_list[new_botnum], 0, sizeof(struct robot));
+	return true;
+}
+
 static char* int_list(int* list, unsigned count)
 {
 	static char str[128];
@@ -594,6 +607,7 @@ int main(int argc, char **argv)
 	nodecfg_t savnodecfg;
 	arcdef_t savarcdef;
 	struct fido_domain savedomain;
+	struct robot saverobot;
 	BOOL door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	unsigned int u;
@@ -760,6 +774,8 @@ int main(int argc, char **argv)
 	int echolist_bar = 0;
 	int domain_opt = 0;
 	int domain_bar = 0;
+	int robot_opt = 0;
+	int robot_bar = 0;
 	dflt=0;
 	while(1) {
 		if(memcmp(&cfg, &orig_cfg, sizeof(cfg)) != 0)
@@ -795,6 +811,9 @@ int main(int argc, char **argv)
 	"The `Paths and Filenames` sub-menu is where you configure your system's\n"
 	"directory and file paths used by SBBSecho.\n"
 	"\n"
+	"The `Robots` sub-menu is where NetMail Robots (e.g. TickFix) are\n"
+	"configured.\n"
+	"\n"
 	"The `Domains` sub-menu is where FidoNet-style domains (the '@domain'\n"
 	"of 5D FTN address) are mapped to zone numbers, DNS suffixes, NodeLists\n"
 	"and BSO root directories for use by the BinkIT mailer.\n"
@@ -811,6 +830,7 @@ int main(int argc, char **argv)
 		sprintf(opt[i++],"NetMail Settings...");
 		sprintf(opt[i++],"EchoMail Settings...");
 		sprintf(opt[i++],"Paths and Filenames...");
+		sprintf(opt[i++],"Robots...");
 		sprintf(opt[i++],"Domains...");
 		sprintf(opt[i++],"EchoLists...");
 		if(uifc.changes && !cfg.used_include)
@@ -2193,8 +2213,112 @@ int main(int argc, char **argv)
 					}
 				}
 				break;
-
 			case 6:
+				uifc.helpbuf=
+					"~ Robots ~\n\n"
+					"The `Robots` sub-menu is where NetMail Robots are configured.\n"
+					"\n"
+					"When a NetMail message is received addressed to one of the configured\n"
+					"Robot `Names`, it will be stored in the `mail` message base and the\n"
+					"associated `Semaphore File` (if non-blank) will be touched.\n"
+					"\n"
+					"If the NetMail message has the `In-Transit` attribute flag set, it\n"
+					"will not be exported by SBBSecho back into a stored message (*.msg)\n"
+					"file. Therefore, it is recommended to include the In-Transit attribute\n"
+					"flag (0x20) in the Robot's `Attributes` value if the Robot (e.g. script)\n"
+					"is going to expect the message to be in the mail base.\n"
+				;
+				i=0;
+				while(1) {
+					for(u=0; u < cfg.robot_count; u++)
+						snprintf(opt[u], MAX_OPLN-1, "%-*s  %s"
+							,FIDO_DOMAIN_LEN, cfg.robot_list[u].name, cfg.robot_list[u].semfile);
+					opt[u][0]=0;
+					int mode = WIN_SAV | WIN_INS | WIN_DEL | WIN_ACT
+						| WIN_INSACT | WIN_DELACT | WIN_XTR;
+					if(cfg.robot_count)
+						mode |= WIN_COPY | WIN_CUT;
+					if(saverobot.name[0])
+						mode |= WIN_PASTE | WIN_PASTEXTR;
+					i=uifc.list(mode,0,0,0,&robot_opt,&robot_bar,"Robots",opt);
+					if(i==-1)
+						break;
+					int msk = i&MSK_ON;
+					i &= MSK_OFF;
+					if (msk == MSK_INS) {
+						str[0]=0;
+						if(uifc.input(WIN_MID|WIN_SAV,0,0
+							,"NetMail Robot Name", str, FIDO_DOMAIN_LEN, K_EDIT)<1)
+							continue;
+						if(!new_robot(i)) {
+							printf("\nMemory Allocation Error\n");
+							exit(1);
+						}
+						SAFECOPY(cfg.robot_list[i].name, str);
+						continue;
+					}
+
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if(msk == MSK_CUT)
+							memcpy(&saverobot, &cfg.robot_list[i], sizeof(saverobot));
+						cfg.robot_count--;
+						if(cfg.robot_count <= 0) {
+							cfg.robot_count = 0;
+							continue;
+						}
+						for(u=i; u < cfg.robot_count; u++)
+							memcpy(&cfg.robot_list[u], &cfg.robot_list[u+1], sizeof(struct robot));
+						continue;
+					}
+					if (msk == MSK_COPY) {
+						memcpy(&saverobot, &cfg.robot_list[i], sizeof(saverobot));
+						continue;
+					}
+					if (msk == MSK_PASTE) {
+						if(!new_robot(i))
+							continue;
+						memcpy(&cfg.robot_list[i], &saverobot, sizeof(saverobot));
+						continue;
+					}
+					if (msk != 0)
+						continue;
+					while(1) {
+						j=0;
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Name"
+							,cfg.robot_list[i].name);
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","Semaphore File"
+							,cfg.robot_list[i].semfile);
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s 0x%04hX","Attributes"
+							,cfg.robot_list[i].attr);
+						opt[j][0]=0;
+						SAFEPRINTF(str, "Robot - %s", cfg.robot_list[i].name);
+						k=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&listop,0,str,opt);
+						if(k==-1)
+							break;
+						switch(k) {
+							case 0:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Robot Name"
+									,cfg.robot_list[i].name,sizeof(cfg.robot_list[i].name)-1
+									,K_EDIT);
+								break;
+							case 1:
+								uifc.input(WIN_MID|WIN_SAV,0,0
+									,"Semaphore Path/Filename"
+									,cfg.robot_list[i].semfile,sizeof(cfg.robot_list[i].semfile)-1
+									,K_EDIT);
+								break;
+							case 2:
+								sprintf(str, "%04hX", cfg.robot_list[i].attr);
+								if(uifc.input(WIN_MID|WIN_SAV,0,0
+									,"NetMail Attributes (in hexadecimal)"
+									,str, sizeof(str), K_EDIT) > 0)
+									cfg.robot_list[i].attr = (uint16_t)strtoul(str, NULL, 16);
+								break;
+						}
+					}
+				}
+			case 7:
 				uifc.helpbuf=
 					"~ Domains ~\n\n"
 					"The `Domains` sub-menu is where FidoNet-style domains (the '@domain'\n"
@@ -2312,7 +2436,7 @@ int main(int argc, char **argv)
 				}
 				break;
 
-			case 7:
+			case 8:
 	uifc.helpbuf=
 	"~ EchoLists ~\n\n"
 	"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\n"
@@ -2483,7 +2607,7 @@ int main(int argc, char **argv)
 				}
 				break;
 
-			case 8:
+			case 9:
 				uifc.pop("Writing config ...");
 				bool success = sbbsecho_write_ini(&cfg);
 				uifc.pop(NULL);
