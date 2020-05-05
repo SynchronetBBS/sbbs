@@ -24,6 +24,6 @@
 #DEFAULT (echo ""; id; echo %s; date; cat) >> $CVSROOT/CVSROOT/commitlog
 # or
 #DEFAULT (echo ""; id; echo %{sVv}; date; cat) >> $CVSROOT/CVSROOT/commitlog
-export SBSBCTRL=/sbbs/ctrl
+export SBBSCTRL=/sbbs/ctrl
 ALL (echo %p %{sVv}; cat) | /sbbs/exec/smbutil -o -i "-tCVS commit" "-s%p/%s" -f$USER i /sbbs/data/subs/syncprog;sync
 ALL export SDL_VIDEODRIVER=dummy; /sbbs/exec/jsexec -c /sbbs/ctrl ircmsg -s vert.synchro.net -p 6667 -c \#synchronet -n cvs_$USER -x "^In directory cvs" -x "^Modified Files:\$" -x "^Log Message:\$"
