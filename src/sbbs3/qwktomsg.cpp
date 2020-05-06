@@ -489,9 +489,9 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 
 	if(msg->ftn_charset == NULL) {
 		if(!(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
-			&& (msg->to != NULL && !str_is_ascii(msg->to) && utf8_str_is_valid(msg->to))
+			&& ((msg->to != NULL && !str_is_ascii(msg->to) && utf8_str_is_valid(msg->to))
 				|| (msg->from != NULL && !str_is_ascii(msg->from) && utf8_str_is_valid(msg->from))
-				|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj)))
+				|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj))))
 			msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
 		if(!(msg->hdr.auxattr & MSG_HFIELDS_UTF8) && !str_is_ascii(body) && utf8_str_is_valid(body))
 			msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
