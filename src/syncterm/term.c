@@ -138,8 +138,6 @@ void setup_mouse_events(struct mouse_state *ms)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
-	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
-	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 }
 
 #if defined(__BORLANDC__)
