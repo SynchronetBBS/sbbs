@@ -241,18 +241,9 @@ else
 var KEY_ESC = ascii(27);
 var KEY_ENTER = "\x0d";
 // PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
-// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
-// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
-// in this script so that this script will work with Synchronet systems before
-// and after the update containing those key definitions.
-var KEY_PAGE_UP = "\x10"; // Ctrl-P
-var KEY_PAGE_DOWN = "\x0e"; // Ctrl-N
-// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
-// for KEY_PAGEUP and KEY_PAGEDN in case they change
-if (typeof(KEY_PAGEUP) === "string")
-	KEY_PAGE_UP = KEY_PAGEUP;
-if (typeof(KEY_PAGEDN) === "string")
-	KEY_PAGE_DOWN = KEY_PAGEDN;
+// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  key_defs.js
+// defines them as KEY_PAGEUP and KEY_PAGEDN (key_defs.js is loaded by
+// sbbsdefs.js).
 
 // Box-drawing/border characters: Single-line
 var UPPER_LEFT_SINGLE = "\xDA";
@@ -390,6 +381,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.Draw = DDLightbarMenu_Draw;
 	this.DrawBorder = DDLightbarMenu_DrawBorder;
 	this.WriteItem = DDLightbarMenu_WriteItem;
+	this.GetItemText = DDLightbarMenu_GetItemText;
 	this.Erase = DDLightbarMenu_Erase;
 	this.SetItemHotkey = DDLightbarMenu_SetItemHotkey;
 	this.AddItemHotkey = DDLightbarMenu_AddItemHotkey;
@@ -765,6 +757,37 @@ function DDLightbarMenu_DrawBorder()
 //  pScreenY: Optional - The vertical screen coordinate of the start of the item
 function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreenX, pScreenY)
 {
+	var itemText = this.GetItemText(pIdx, pItemLen, pHighlight, pSelected);
+	// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
+	// then create a string that is shortened from itemText from those start & end
+	// indexes, and add color to it.
+	// Otherwise, just print the full item text.
+	if ((this.nextDrawOnlyItemSubstr != null) && (typeof(this.nextDrawOnlyItemSubstr) == "object") && this.nextDrawOnlyItemSubstr.hasOwnProperty("start") && this.nextDrawOnlyItemSubstr.hasOwnProperty("end") && (typeof(pScreenX) == "number") && (typeof(pScreenY) == "number"))
+	{
+		var len = this.nextDrawOnlyItemSubstr.end - this.nextDrawOnlyItemSubstr.start;
+		var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
+		console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
+		console.print(shortenedText + "\1n");
+	}
+	else
+		console.print(itemText + "\1n");
+}
+
+// Gets the text of a menu item with colors applied
+//
+// Parameters:
+//  pIdx: The index of the item to get
+//  pItemLen: Optional - Calculated length of the item (in case the scrollbar is showing).
+//            If this is not given, then this will be calculated.
+//  pHighlight: Optional - Whether or not to highlight the item.  If this is not given,
+//              the item will be highlighted based on whether the current selected item
+//              matches the given index, pIdx.
+//  pSelected: Optional - Whether or not this item is selected (mainly intended for multi-select
+//             mode).  Defaults to false.  If true, then a mark character will be displayed
+//             at the end of the item's text.
+function DDLightbarMenu_GetItemText(pIdx, pItemLen, pHighlight, pSelected)
+{
+	var itemText = "";
 	var numItems = this.NumItems();
 	if ((pIdx >= 0) && (pIdx < numItems))
 	{
@@ -815,7 +838,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		// Use strip_ctrl to ensure there are no attribute codes, since we will
 		// apply our own.  This might be only a temporary item returned by a
 		// replaced GetItem(), so we just have to strip_ctrl() it here.
-		var itemText = strip_ctrl(menuItem.text);
+		itemText = strip_ctrl(menuItem.text);
 		if (itemTextDisplayableLen(itemText, this.ampersandHotkeysInItems) > itemLen)
 			itemText = itemText.substr(0, itemLen);
 		// Add the item color to the item text
@@ -866,20 +889,8 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		// If in numbered mode, add the item number to the front of the item text.
 		if (this.numberedMode)
 			itemText = format("\1n%" + this.itemNumLen + "d ", pIdx+1) + itemText;
-		// If this.nextDrawOnlyItemSubstr is an object with start & end properties,
-		// then create a string that is shortened from itemText from those start & end
-		// indexes, and add color to it.
-		// Otherwise, just print the full item text.
-		if ((this.nextDrawOnlyItemSubstr != null) && (typeof(this.nextDrawOnlyItemSubstr) == "object") && this.nextDrawOnlyItemSubstr.hasOwnProperty("start") && this.nextDrawOnlyItemSubstr.hasOwnProperty("end") && (typeof(pScreenX) == "number") && (typeof(pScreenY) == "number"))
-		{
-			var len = this.nextDrawOnlyItemSubstr.end - this.nextDrawOnlyItemSubstr.start;
-			var shortenedText = substrWithAttrCodes(itemText, this.nextDrawOnlyItemSubstr.start, len);
-			console.gotoxy(pScreenX+this.nextDrawOnlyItemSubstr.start, pScreenY);
-			console.print(shortenedText + "\1n");
-		}
-		else
-			console.print(itemText + "\1n");
 	}
+	return itemText;
 }
 
 // Erases the menu - Draws black (normal color) where the menu was
@@ -983,7 +994,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 			this.UpdateScrollbarWithHighlightedItem();
 
-		this.lastUserInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF);
+		this.lastUserInput = console.getkey(K_NOECHO|K_NOSPIN|K_NOCRLF);
 		if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
 		{
 			continueOn = false;
@@ -1117,7 +1128,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
-		else if (this.lastUserInput == KEY_PAGE_UP)
+		else if (this.lastUserInput == KEY_PAGEUP)
 		{
 			// Only do this if we're not already at the top of the list
 			if (this.topItemIdx > 0)
@@ -1153,7 +1164,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 		}
-		else if (this.lastUserInput == KEY_PAGE_DOWN)
+		else if (this.lastUserInput == KEY_PAGEDN)
 		{
 			var numItemsPerPage = (this.borderEnabled ? this.size.height - 2 : this.size.height);
 			// Only do the pageDown if we're not showing the last item already
@@ -1313,21 +1324,21 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				console.gotoxy(XPos, YPos);
 				if (added)
 				{
-					var itemColor = this.GetColorForItem(this.selectedItemIdx);
 					// If the item color is an array, then default to a color string here
+					var itemColor = this.GetColorForItem(this.selectedItemIdx, true);
 					if (Array.isArray(itemColor))
-						itemColor = "\1n\1h\1g";
+					{
+						var bkgColor = getBackgroundAttrAtIdx(itemColor, this.size.width-1);
+						itemColor = "\1n\1h\1g" + bkgColor;
+					}
 					console.print(itemColor + " " + this.multiSelectItemChar + "\1n");
 				}
 				else
 				{
-					// If any of the item text is right at the end, then display it.  Otherwise,
-					// display 2 spaces.
-					var textToPrint = "  ";
-					var theItem = this.GetItem(this.selectedItemIdx);
-					if (theItem.text.length >= this.size.width)
-						textToPrint = theItem.text.substr(this.size.width-2, 2);
-					console.print(this.colors.selectedItemColor + textToPrint + "\1n");
+					// Display the last 2 characters of the regular item text
+					var itemText = this.GetItemText(this.selectedItemIdx, null, true, false);
+					var textToPrint = substrWithAttrCodes(itemText, console.strlen(itemText)-2, 2);
+					console.print(textToPrint + "\1n");
 				}
 			}
 		}
@@ -1846,14 +1857,19 @@ function DDLightbarMenu_ItemUsesAltColors(pItemIndex)
 //
 // Parameters:
 //  pItemIndex: The index of the item
+//  pSelected: Whether or not to use selected item colors.  Defaults to false.
 //
 // Return value: Either colors.itemColor or colors.altItemColor
-function DDLightbarMenu_GetColorForItem(pItemIndex)
+function DDLightbarMenu_GetColorForItem(pItemIndex, pSelected)
 {
 	if ((pItemIndex < 0) || (pItemIndex >= this.NumItems()))
 		return "";
 
-	return (this.GetItem(pItemIndex).useAltColors ? this.colors.altItemColor : this.colors.itemColor);
+	var selected = (typeof(pSelected) == "boolean" ? pSelected : false);
+	if (selected)
+		return (this.GetItem(pItemIndex).useAltColors ? this.colors.altSelectedItemColor : this.colors.selectedItemColor);
+	else
+		return (this.GetItem(pItemIndex).useAltColors ? this.colors.altItemColor : this.colors.itemColor);
 }
 
 // Returns either the selected or alternate selected color for an item
@@ -1900,65 +1916,6 @@ function DDLightbarMenu_CalcScrollbarBlocks()
 
 //////////////////////////////////////////////////////////
 // Helper functions, not part of the DDLightbarMenu class
-
-// Inputs a keypress from the user and handles some ESC-based
-// characters such as PageUp, PageDown, and ESC.  If PageUp
-// or PageDown are pressed, this function will return the
-// string "\1PgUp" (KEY_PAGE_UP) or "\1Pgdn" (KEY_PAGE_DOWN),
-// respectively.  Also, F1-F5 will be returned as "\1F1"
-// through "\1F5", respectively.
-// Thanks goes to Psi-Jack for the original impementation
-// of this function.
-//
-// Parameters:
-//  pGetKeyMode: Optional - The mode bits for console.getkey().
-//               If not specified, K_NONE will be used.
-//
-// Return value: The user's keypress
-function getKeyWithESCChars(pGetKeyMode)
-{
-   var getKeyMode = K_NONE;
-   if (typeof(pGetKeyMode) == "number")
-      getKeyMode = pGetKeyMode;
-
-   var userInput = console.getkey(getKeyMode);
-   if (userInput == KEY_ESC) {
-      switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-         case '[':
-            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-               case 'V':
-                  userInput = KEY_PAGE_UP;
-                  break;
-               case 'U':
-                  userInput = KEY_PAGE_DOWN;
-                  break;
-           }
-           break;
-         case 'O':
-           switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-              case 'P':
-                 userInput = "\1F1";
-                 break;
-              case 'Q':
-                 userInput = "\1F2";
-                 break;
-              case 'R':
-                 userInput = "\1F3";
-                 break;
-              case 'S':
-                 userInput = "\1F4";
-                 break;
-              case 't':
-                 userInput = "\1F5";
-                 break;
-           }
-         default:
-           break;
-      }
-   }
-
-   return userInput;
-}
 
 // Returns the length of an item's text, not counting non-displayable
 // characters (such as Synchronet color attributes and an ampersand
@@ -2043,6 +2000,32 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 	return strCopy;
 }
 
+// Returns whether or not all string attribute objects in an array have the
+// expected properties, and that the property types are correct, for menu item
+// string color definitions.
+//
+// Parameters:
+//  pAttrsArray: An array of objects which are expected to containg the
+//               following properties: start, end, attrs
+//
+// Return value: Boolean - Whether or not all elements in the array
+//               have all the expected properties
+function attrsArrayElementsHaveAllCorrectProps(pAttrsArray)
+{
+	var allElementsHaveCorrectProps = true;
+	for (var i = 0; (i < pAttrsArray.length) && allElementsHaveCorrectProps; ++i)
+	{
+		allElementsHaveCorrectProps = ((typeof(pAttrsArray[i]) == "object") &&
+		                               pAttrsArray[i].hasOwnProperty("start") &&
+		                               pAttrsArray[i].hasOwnProperty("end") &&
+		                               pAttrsArray[i].hasOwnProperty("attrs") &&
+		                               (typeof(pAttrsArray[i].start) == "number") &&
+		                               (typeof(pAttrsArray[i].end) == "number") &&
+		                               (typeof(pAttrsArray[i].attrs) == "string"));
+	}
+	return allElementsHaveCorrectProps;
+}
+
 // Adds color/attribute codes to a string.
 //
 // Parameters:
@@ -2067,23 +2050,10 @@ function addAttrsToString(pStr, pAttrs)
 	var str;
 	if (Array.isArray(pAttrs))
 	{
-		if (pAttrs.length > 0)
+		// To use the attributes array, the array must have some objects and
+		// each element of the array must have start, end, and attrs properties
+		if ((pAttrs.length > 0) && attrsArrayElementsHaveAllCorrectProps(pAttrs))
 		{
-			// Ensure each element of the array has start, end, and attrs properties
-			var allElementsHaveCorrectProps = true;
-			for (var i = 0; (i < pAttrs.length) && allElementsHaveCorrectProps; ++i)
-			{
-				allElementsHaveCorrectProps = ((typeof(pAttrs[i]) == "object") &&
-				                               pAttrs[i].hasOwnProperty("start") &&
-				                               pAttrs[i].hasOwnProperty("end") &&
-				                               pAttrs[i].hasOwnProperty("attrs") &&
-				                               (typeof(pAttrs[i].start) == "number") &&
-				                               (typeof(pAttrs[i].end) == "number") &&
-				                               (typeof(pAttrs[i].attrs) == "string"));
-			}
-			if (!allElementsHaveCorrectProps)
-				return pStr;
-
 			// Colorize the string with the object in pAttrs.
 			// Don't do the last object in this loop, because for the last object,
 			// we'll want to check if its end index is valid.
@@ -2123,6 +2093,74 @@ function addAttrsToString(pStr, pAttrs)
 	else
 		str = pStr;
 	return str;
+}
+
+function getBackgroundAttrAtIdx(pAttrs, pIdx)
+{
+	if (typeof(pIdx) != "number")
+		return "";
+	if (pIdx < 0)
+		return "";
+
+	// Synchronet background color codes:
+	// Black: 0
+	// Red: 1
+	// Green: 2
+	// Yellow/brown: 3
+	// Blue: 4
+	// Magenta: 5
+	// Cyan: 6
+	// White/grey: 7
+	var syncBkgAttrRegex = /\1[01234567]/;
+	var bkgAttr = "";
+	if (Array.isArray(pAttrs))
+	{
+		if ((pAttrs.length > 0) && attrsArrayElementsHaveAllCorrectProps(pAttrs))
+		{
+			// Go through the array, and if a start & end is found where pIdx
+			// falls between, check that objects attrs property for its last
+			// background attribute, if there is one
+			for (var i = 0; i < pAttrs.length; ++i)
+			{
+				if ((pIdx >= pAttrs[i].start) && ((pIdx < pAttrs[i].end) || (pAttrs[i].end == 0)))
+				{
+					// Check the attrs for the last background attribute, starting
+					// from the end
+					if (pAttrs[i].attrs.length >= 2)
+					{
+						for (var attrIdx = pAttrs[i].attrs.length - 2; attrIdx >= 0; attrIdx -= 2)
+						{
+							var currentTwo = pAttrs[i].attrs.substr(attrIdx, 2);
+							if (syncBkgAttrRegex.test(currentTwo))
+							{
+								bkgAttr = currentTwo;
+								break;
+							}
+						}
+					}
+					break;
+				}
+			}
+		}
+	}
+	else if (typeof(pAttrs) == "string")
+	{
+		if ((pIdx >= 0) || (pIdx < pAttrs.length))
+		{
+			// Starting from pIdx, go backwards through pAttrs, and if a Synchronet
+			// background attribute code is found, then use it.
+			for (var i = pIdx - 2; i >= 0; i -= 2)
+			{
+				var currentTwo = pAttrs.substr(i, 2);
+				if (syncBkgAttrRegex.test(currentTwo))
+				{
+					bkgAttr = currentTwo;
+					break;
+				}
+			}
+		}
+	}
+	return bkgAttr;
 }
 
 // Returns a default item object for a DDLightbarMenu
