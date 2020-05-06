@@ -7,7 +7,8 @@ function ScrollBox(opts) {
     this.scrollbar = opts.scrollbar;
     this.width = this.scrollbar ? console.screen_columns - 2 : console.screen_columns;
     this.height = opts.y2 - opts.y1;
-    this.wrap_map = [];
+    this.wrap_map = []; // Maps a line from the source document to a line in the display
+    this.line_map = []; // Maps a display line to a line/item from the source document
     this.ss = bbs.sys_status;
     this.putmsg_mode = opts.putmsg_mode ? opts.putmsg_mode : P_NONE;
 }
@@ -49,6 +50,7 @@ ScrollBox.prototype.reset = function () {
     this.y = 0;
     this._text = [];
     this.wrap_map = [];
+    this.line_map = [];
     console.gotoxy(1, this.y1);
 }
 
@@ -68,10 +70,14 @@ ScrollBox.prototype.load_array = function (arr) {
     var index = 0;
     const self = this;
     this.wrap_map = [];
+    this.line_map = [];
     this._text = arr.reduce(function (a, c, i) {
         const split = truncsp(word_wrap(c, self.width)).split(/\r*\n/);
         a = a.concat(split);
         self.wrap_map[i] = { index: index, rows: split.length };
+        for (var n = 0; n < split.length; n++) {
+            self.line_map[index + n] = i;
+        }
         index += split.length;
         return a;
     }, []);
@@ -156,8 +162,16 @@ ScrollBox.prototype.transform = function (n, transform) {
     }
 }
 
+// If this returns a number, it's the line/item from the original document that was clicked
 ScrollBox.prototype.getcmd = function (c) {
-    if (c == KEY_UP) {
+    if (typeof c == 'string') c = { key: c, mouse: null };
+    if (c.mouse && c.mouse.press && c.mouse.y >= this.y1 && c.mouse.y <= this.y2) {
+        if (c.mouse.button == 64) return this.getcmd({ key: KEY_UP, mouse: null });
+        if (c.mouse.button == 65) return this.getcmd({ key: KEY_DOWN, mouse: null });
+        if (c.mouse.button == 0) return this.line_map[c.mouse.y + this.y - this.y1];
+        return true;
+    }
+    if (c.key == KEY_UP) {
         if (this.y > 0) {
             console.write('\x1b[1T');
             this.y--;
@@ -167,7 +181,7 @@ ScrollBox.prototype.getcmd = function (c) {
         }
         return true;
     }
-    if (c == KEY_DOWN) {
+    if (c.key == KEY_DOWN) {
         if (this.y + this.height < this._text.length - 1) {
             console.write('\x1b[1S');
             this.y++;
@@ -177,21 +191,21 @@ ScrollBox.prototype.getcmd = function (c) {
         }
         return true;
     }
-    if (c == KEY_HOME) {
+    if (c.key == KEY_HOME) {
         this.scroll_to(0);
         return true;
     }
-    if (c == KEY_END) {
+    if (c.key == KEY_END) {
         this.y = this._text.length - 1 - this.height;
         this._load();
         return true;
     }
-    if (c == KEY_PAGEUP) {
+    if (c.key == KEY_PAGEUP) {
         this.y = Math.max(0, this.y - this.height);
         this._load();
         return true;
     }
-    if (c == KEY_PAGEDN) {
+    if (c.key == KEY_PAGEDN) {
         this.y = Math.min(this._text.length - 1 - this.height, this.y + this.height);
         this._load();
         return true;
