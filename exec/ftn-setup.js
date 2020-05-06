@@ -4,11 +4,20 @@ load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
 const fidoaddr = load({}, 'fidoaddr.js');
+require("mouse_getkey.js", "mouse_getkey");
+const ansiterm = load({}, 'ansiterm_lib.js');
+
+function mouse_enable(enable) {
+	if (!console.term_supports(USER_ANSI)) return;
+	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
+}
 
 js.on_exit('console.attributes = ' + console.attributes);
 js.on_exit('bbs.sys_status = ' + bbs.sys_status);
+js.on_exit('mouse_enable(false);');
 
 bbs.sys_status|=SS_MOFF;
+mouse_enable(true);
 
 const addrs = {};
 system.fido_addr_list.forEach(function (e) {
@@ -60,34 +69,36 @@ frame.open();
 tree.open();
 frame.cycle();
 
+var t;
 var key;
 var zone;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
-    key = console.getkey();
-    if (key.toLowerCase() == 'q') break;
-    tree.getcmd(key);
-    if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
+    key = mouse_getkey(K_NONE, undefined, true);
+    //key = console.getkey();
+    if (key.key.toLowerCase() == 'q') break;
+    t = tree.getcmd(key);
+    if ((key.mouse && t) || key.key == KEY_UP || key.key == KEY_DOWN || key.key == KEY_HOME || key.key == KEY_END) {
         zone = tree.currentItem.__ftn_setup;
         info_frame.erase(' ');
         info_frame.putmsg('\1h\1w' + zone.name + '\r\n');
         if (zone.desc) {
-		info_frame.putmsg('\1n\1w' + zone.desc + '\r\n\r\n');
-	}
+            info_frame.putmsg('\1n\1w' + zone.desc + '\r\n\r\n');
+        }
         if (zone.info) {
-		info_frame.putmsg('\1h\1cInformation\1w:\r\n');
-		info_frame.putmsg('\1n' + zone.info + '\r\n\r\n');
-	}
+            info_frame.putmsg('\1h\1cInformation\1w:\r\n');
+            info_frame.putmsg('\1n' + zone.info + '\r\n\r\n');
+        }
         if (zone.coord) {
-		info_frame.putmsg('\1h\1cCoordinator\1w:\r\n');
-		info_frame.putmsg('\1n' + zone.coord + '\r\n\r\n');
-	}
+            info_frame.putmsg('\1h\1cCoordinator\1w:\r\n');
+            info_frame.putmsg('\1n' + zone.coord + '\r\n\r\n');
+        }
         if (zone.email) {
-		info_frame.putmsg('\1h\1cEmail\1w:\r\n');
-		info_frame.putmsg('\1n' + zone.email + '\r\n\r\n');
-	}
+            info_frame.putmsg('\1h\1cEmail\1w:\r\n');
+            info_frame.putmsg('\1n' + zone.email + '\r\n\r\n');
+        }
         if (addrs[zone._zone_number]) {
-		info_frame.putmsg('\1h\1rExisting address found: ' + addrs[zone._zone_number] + '\r\n');
+            info_frame.putmsg('\1h\1rExisting address found: ' + addrs[zone._zone_number] + '\r\n');
         }
     }
     if (frame.cycle()) console.gotoxy(console.screen_columns, console.screen_rows);
