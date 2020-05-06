@@ -591,7 +591,7 @@ function postPoll(sub, subject, votes, results, answers, comments) {
         from_ext : user.number,
         to : 'All',
         field_list : [],
-        auxattr : (results<<POLL_RESULTS_SHIFT),
+        auxattr : (results<<POLL_RESULTS_SHIFT) | MGS_HFIELDS_UTF8,
         votes : votes
     };
 
