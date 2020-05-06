@@ -487,6 +487,24 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 	body[bodylen]=0;
 	tail[taillen]=0;
 
+	if(msg->ftn_charset == NULL) {
+		if(!(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
+			&& (msg->to != NULL && !str_is_ascii(msg->to) && utf8_str_is_valid(msg->to))
+				|| (msg->from != NULL && !str_is_ascii(msg->from) && utf8_str_is_valid(msg->from))
+				|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj)))
+			msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
+		if(!(msg->hdr.auxattr & MSG_HFIELDS_UTF8) && !str_is_ascii(body) && utf8_str_is_valid(body))
+			msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
+		if(!(msg->hdr.auxattr & MSG_HFIELDS_UTF8) && !str_is_ascii(tail) && utf8_str_is_valid(tail))
+			msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
+		const char* charset = FIDO_CHARSET_CP437;
+		if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
+			charset = FIDO_CHARSET_UTF8;
+		else if(str_is_ascii(body) && str_is_ascii(tail))
+			charset = FIDO_CHARSET_ASCII;
+		smb_hfield_str(msg, FIDOCHARSET, charset);
+	}
+
 	if(online==ON_REMOTE)
 		bputs(text[WritingIndx]);
 
