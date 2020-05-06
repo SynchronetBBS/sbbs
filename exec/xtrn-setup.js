@@ -5,10 +5,20 @@ load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
 
+require("mouse_getkey.js", "mouse_getkey");
+const ansiterm = load({}, 'ansiterm_lib.js');
+
+function mouse_enable(enable) {
+	if (!console.term_supports(USER_ANSI)) return;
+	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
+}
+
 js.on_exit('console.attributes = ' + console.attributes);
 js.on_exit('bbs.sys_status = ' + bbs.sys_status);
+js.on_exit('mouse_enable(false);');
 
 bbs.sys_status|=SS_MOFF;
+mouse_enable(true);
 
 const frame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLUE|WHITE);
 const main_frame = new Frame(1, 2, frame.width, frame.height - 2, BG_BLACK|LIGHTGRAY, frame);
@@ -61,14 +71,15 @@ frame.open();
 tree.open();
 frame.cycle();
 
+var t;
 var key;
 var xtrn;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
-    key = console.getkey();
-    if (key.toLowerCase() == 'q') break;
-    tree.getcmd(key);
-    if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
+    key = mouse_getkey(K_NONE, undefined, true);//console.getkey();
+    if (key.key.toLowerCase() == 'q') break;
+    t = tree.getcmd(key);
+    if ((key.mouse && t) || key.key == KEY_UP || key.key == KEY_DOWN || key.key == KEY_HOME || key.key == KEY_END) {
         xtrn = tree.currentItem.__xtrn_setup;
         info_frame.erase(' ');
         info_frame.putmsg('\x01h\x01w' + xtrn.Name + '\r\n');
