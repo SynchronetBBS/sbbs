@@ -1,6 +1,8 @@
 load('sbbsdefs.js');
 load('scrollbox.js');
 load('typeahead.js');
+require("mouse_getkey.js", "mouse_getkey");
+const ansiterm = load({}, 'ansiterm_lib.js');
 
 /* To do
  * - Config file
@@ -57,6 +59,11 @@ const state = {
     selector: '',
     fn: ''
 };
+
+function mouse_enable(enable) {
+	if (!console.term_supports(USER_ANSI)) return;
+	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
+}
 
 function is_link(str) {
     return str.search(/[0-9\+gIT]/) > -1;
@@ -387,14 +394,34 @@ function print_document(auto_highlight) {
 }
 
 function main() {
+    js.on_exit('mouse_enable(false);');
+    js.on_exit('bbs.sys_status = ' + bbs.sys_status + ';');
+    js.on_exit('console.attributes = ' + console.attributes + ';');
     scrollbox.init();
     reset_display();
+    mouse_enable(true);
     go_get(state.host, state.port, state.selector, state.item_type);
     console.gotoxy(console.screen_columns, console.screen_rows);
+    var actioned = true;
     do {
+        state.input = mouse_getkey(K_NONE, undefined, true);
         if (!state.input) continue;
-        var actioned = true;
-        switch (state.input) {
+        if (state.input.mouse && state.input.mouse.press) {
+            var mret = scrollbox.getcmd(state.input);
+            if (typeof mret != 'number') {
+                console.gotoxy(console.screen_columns, console.screen_rows);
+                continue;
+            }
+            if (mret < state.doc.length && is_link(state.doc[mret].type)) {
+                lowlight(state.doc[state.item], state.item);
+                state.item = mret;
+                state.history[state.history_idx].item = mret;
+                highlight(state.doc[state.item], state.item);
+                state.input.key = '\r';
+            }
+        }
+        state.input.key = state.input.key.toLowerCase();
+        switch (state.input.key) {
             // Highlight next link
             case '\t':
                 if (state.item_type == '1' || state.item_type == '7') {
@@ -484,7 +511,7 @@ function main() {
                 break;
         }
         if (actioned) console.gotoxy(console.screen_columns, console.screen_rows);
-    } while ((state.input = console.getkey()).toLowerCase() != 'q');
+    } while (state.input.key != 'q');
     scrollbox.close();
 }
 
