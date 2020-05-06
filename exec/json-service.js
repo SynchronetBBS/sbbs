@@ -594,7 +594,7 @@ engine = new (function() {
 	function Module(name, dir, read, write) {
 		this.online = true;
 		this.name = name;
-		this.dir = backslash(dir);
+		this.dir = backslash(fullpath(dir));
 		this.queue = undefined;
 		this.commands = {};
 		this.read = read;
