@@ -168,7 +168,9 @@ ScrollBox.prototype.getcmd = function (c) {
     if (c.mouse && c.mouse.press && c.mouse.y >= this.y1 && c.mouse.y <= this.y2) {
         if (c.mouse.button == 64) return this.getcmd({ key: KEY_UP, mouse: null });
         if (c.mouse.button == 65) return this.getcmd({ key: KEY_DOWN, mouse: null });
-        if (c.mouse.button == 0) return this.line_map[c.mouse.y + this.y - this.y1];
+        if (c.mouse.button == 0) {
+            return { line: this.line_map[c.mouse.y + this.y - this.y1] };
+        }
         return true;
     }
     if (c.key == KEY_UP) {
