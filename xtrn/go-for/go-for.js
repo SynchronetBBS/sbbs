@@ -408,14 +408,14 @@ function main() {
         if (!state.input) continue;
         if (state.input.mouse && state.input.mouse.press) {
             var mret = scrollbox.getcmd(state.input);
-            if (typeof mret != 'number') {
+            if (typeof mret != 'object') {
                 console.gotoxy(console.screen_columns, console.screen_rows);
                 continue;
             }
-            if (mret < state.doc.length && is_link(state.doc[mret].type)) {
+            if (mret.line < state.doc.length && is_link(state.doc[mret.line].type)) {
                 lowlight(state.doc[state.item], state.item);
-                state.item = mret;
-                state.history[state.history_idx].item = mret;
+                state.item = mret.line;
+                state.history[state.history_idx].item = mret.line;
                 highlight(state.doc[state.item], state.item);
                 state.input.key = '\r';
             }
