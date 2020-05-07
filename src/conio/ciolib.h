@@ -86,6 +86,11 @@ enum {
 	,CIOLIB_MODE_SDL_FULLSCREEN
 };
 
+enum ciolib_mouse_ptr {
+	 CIOLIB_MOUSEPTR_ARROW
+	,CIOLIB_MOUSEPTR_BAR
+};
+
 #if defined(_WIN32)	/* presumably, Win32 */
 
 	#include <io.h>			/* isatty */
@@ -340,6 +345,7 @@ typedef struct {
 	int		(*ungetmouse)	(struct mouse_event *mevent);
 	int		(*hidemouse)	(void);
 	int		(*showmouse)	(void);
+	int		(*mousepointer)	(enum ciolib_mouse_ptr);
 	void	(*settitle)		(const char *);
 	void	(*setname)		(const char *);
 	void	(*seticon)		(const void *, unsigned long);
@@ -427,6 +433,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_setname(const char *title);
 CIOLIBEXPORT void CIOLIBCALL ciolib_seticon(const void *icon,unsigned long size);
 CIOLIBEXPORT int CIOLIBCALL ciolib_showmouse(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_hidemouse(void);
+CIOLIBEXPORT int CIOLIBCALL ciolib_mousepointeer(enum ciolib_mouse_ptr);
 CIOLIBEXPORT void CIOLIBCALL ciolib_copytext(const char *text, size_t buflen);
 CIOLIBEXPORT char * CIOLIBCALL ciolib_getcliptext(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setfont(int font, int force, int font_num);
@@ -508,6 +515,7 @@ CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable);
 	#define ungetmouse(a)			ciolib_ungetmouse(a)
 	#define	hidemouse()				ciolib_hidemouse()
 	#define showmouse()				ciolib_showmouse()
+	#define mousepointer(a)				ciolib_mousepointer(a)
 	#define setname(a)				ciolib_setname(a)
 	#define seticon(a,b)			ciolib_seticon(a,b)
 	#define settitle(a)				ciolib_settitle(a)
@@ -653,6 +661,7 @@ CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_addevents(uint64_t events);
 CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_delevents(uint64_t events);
 CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_addevent(uint64_t event);
 CIOLIBEXPORT uint64_t CIOLIBCALL ciomouse_delevent(uint64_t event);
+CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_mousepointer(enum ciolib_mouse_ptr type);
 #ifdef __cplusplus
 }
 #endif

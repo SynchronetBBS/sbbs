@@ -17,6 +17,7 @@ enum x11_local_events {
 	,X11_LOCAL_FLUSH
 	,X11_LOCAL_BEEP
 	,X11_LOCAL_SETICON
+	,X11_LOCAL_MOUSEPOINTER
 };
 
 struct x11_local_event {
@@ -27,6 +28,7 @@ struct x11_local_event {
 		char	title[81];
 		struct	rectlist *rect;
 		unsigned long	*icon_data;
+		enum ciolib_mouse_ptr ptr;
 	} data;
 };
 
@@ -91,6 +93,9 @@ struct x11 {
 	int (*XwcLookupString)(XIC ic, XKeyPressedEvent *event, wchar_t *buffer_return, int wchars_buffer, KeySym *keysym_return, Status *status_return);
 	void (*XSetICFocus)(XIC ic);
 	Bool (*XFilterEvent)(XEvent *event, Window w);
+	Cursor (*XCreateFontCursor)(Display *display, unsigned int shape);
+	int (*XDefineCursor)(Display *display, Window w, Cursor cursor);
+	int (*XFreeCursor)(Display *display, Cursor cursor);
 	Atom utf8;
 	Atom targets;
 };

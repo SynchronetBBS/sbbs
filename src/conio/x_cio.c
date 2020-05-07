@@ -447,6 +447,18 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XCreateFontCursor=xp_dlsym(dl,XCreateFontCursor))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XDefineCursor=xp_dlsym(dl,XDefineCursor))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFreeCursor=xp_dlsym(dl,XFreeCursor))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 	setlocale(LC_ALL, "");
 	x11.XSetLocaleModifiers("@im=none");
 
@@ -530,4 +542,17 @@ void x_setscaling(int newval)
 int x_getscaling(void)
 {
 	return x_cvstat.scaling;
+}
+
+int x_mousepointer(enum ciolib_mouse_ptr type)
+{
+	struct x11_local_event ev = {0};
+
+	ev.type=X11_LOCAL_MOUSEPOINTER;
+	if(x11_initialized) {
+		ev.data.ptr=type;
+		write_event(&ev);
+		return 1;
+	}
+	return 0;
 }

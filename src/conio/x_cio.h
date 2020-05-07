@@ -76,6 +76,7 @@ void x11_flush(void);
 void x_setscaling(int newval);
 int x_getscaling(void);
 void x_seticon(const void *icon, unsigned long size);
+int x_mousepointer(enum ciolib_mouse_ptr type);
 #ifdef __cplusplus
 }
 #endif

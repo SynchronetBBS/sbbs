@@ -15,6 +15,7 @@
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
+#include <X11/cursorfont.h>
 
 #include <threadwrap.h>
 #include <genwrap.h>
@@ -66,6 +67,7 @@ static Atom WM_DELETE_WINDOW=0;
 
 static Display *dpy=NULL;
 static Window win;
+static Cursor curs = None;
 static Visual visual;
 static XImage *xim;
 static XIM im;
@@ -1197,6 +1199,27 @@ void x11_event_thread(void *args)
 								x11.XFlush(dpy);
 							}
 							free(lev.data.icon_data);
+							break;
+						}
+						case X11_LOCAL_MOUSEPOINTER: {
+							unsigned shape = UINT_MAX;
+							Cursor oc = curs;
+							switch (lev.data.ptr) {
+								case CIOLIB_MOUSEPTR_ARROW:
+									// Use default
+									break;
+								case CIOLIB_MOUSEPTR_BAR:
+									shape = XC_xterm;
+									break;
+							}
+							if (shape == UINT_MAX)
+								x11.XDefineCursor(dpy, win, None);
+							else {
+								curs = x11.XCreateFontCursor(dpy, shape);
+								x11.XDefineCursor(dpy, win, curs);
+							}
+							if (oc != None && oc != curs)
+								x11.XFreeCursor(dpy, oc);
 							break;
 						}
 					}

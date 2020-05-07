@@ -247,6 +247,7 @@ static int try_x_init(int mode)
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
+		cio_api.mousepointer=x_mousepointer;
 		return(1);
 	}
 	return(0);
@@ -1923,3 +1924,13 @@ int main(int argc, char **argv)
 	return ma.ret;
 }
 #endif
+
+/* Returns non-zero on success */
+CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_mousepointer(enum ciolib_mouse_ptr type)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.mousepointer)
+		return cio_api.mousepointer(type);
+	return 0;
+}
