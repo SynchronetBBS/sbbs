@@ -260,7 +260,7 @@ static BOOL parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	}
 	free(cp);
 
-	if(nettype!=NET_UNKNOWN && nettype!=NET_NONE) {
+	if(nettype!=NET_UNKNOWN) {
 		if((p != NULL) && (p->smb.status.attr&SMB_EMAIL)) {
 			if(nettype==NET_QWK && msg->idx.to==0) {
 				char fulladdr[128];
@@ -425,7 +425,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		}
 	}
 
-	if(nettype!=NET_UNKNOWN && nettype!=NET_NONE) {
+	if(nettype!=NET_UNKNOWN) {
 		if((p != NULL) && (p->smb.status.attr&SMB_EMAIL))
 			msg->idx.from=0;
 		if((smb_result = smb_hfield_bin(msg, SENDERNETTYPE, nettype))!=SMB_SUCCESS) {
@@ -592,7 +592,7 @@ static BOOL parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			goto err;
 		}
 	}
-	if(nettype!=NET_UNKNOWN && nettype!=NET_NONE) {
+	if(nettype!=NET_UNKNOWN) {
 		if((smb_result = smb_hfield_bin(msg, REPLYTONETTYPE, nettype))!=SMB_SUCCESS) {
 			JS_ReportError(cx, "Error %d adding REPLYTONETTYPE field to message header", smb_result);
 			goto err;
