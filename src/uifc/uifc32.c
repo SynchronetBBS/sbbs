@@ -177,6 +177,7 @@ void uifc_mouse_enable(void)
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
+	mousepointer(CIOLIB_MOUSEPTR_BAR);
 	showmouse();
 }
 
