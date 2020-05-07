@@ -55,7 +55,6 @@ else
 endif
 
 INSTALL	?=	CLASSIC		# Can be CLASSIC or UNIX
-CVSTAG	?=	HEAD		# CVS tag to pull... HEAD means current.
 
 SBBSUSER	?= $(USER)
 SBBSGROUP	?= $(GROUP)
@@ -257,7 +256,10 @@ endif
 endif
 
 # CVS checkout command-line
-CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co -r $(CVSTAG)
+CVS_CO = @cd $(SBBSDIR); cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs co
+ifdef CVSTAG
+	CVS_CO += -r $(CVSTAG)
+endif
 
 src: 
 ifndef NOCVS
