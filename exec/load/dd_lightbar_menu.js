@@ -232,9 +232,15 @@ lbMenu.GetItem = function(pItemIndex) {
 */
 
 if (typeof(require) === "function")
+{
 	require("sbbsdefs.js", "K_UPPER");
+	require("mouse_getkey.js", "mouse_getkey");
+}
 else
+{
 	load("sbbsdefs.js");
+	load("mouse_getkey.js");
+}
 
 
 // Keyboard keys
@@ -367,7 +373,11 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// codes, it would have ^ and $ around it, as in
 	// /^\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]$/i
 	this.syncAttrRegex = /\1[krgybmcw01234567hinpq,;\.dtl<>\[\]asz]/i;
-	
+
+	// Things for mouse support
+	this.mouseTimeout = 0; // Timeout in ms.  Currently using 0 for no timeout.
+	this.mouseEnabled = false; // To pass to mouse_getkey
+
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
 	this.Remove = DDLightbarMenu_Remove;
@@ -381,6 +391,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.Draw = DDLightbarMenu_Draw;
 	this.DrawBorder = DDLightbarMenu_DrawBorder;
 	this.WriteItem = DDLightbarMenu_WriteItem;
+	this.WriteItemAtItsLocation = DDLightbarMenu_WriteItemAtItsLocation;
 	this.GetItemText = DDLightbarMenu_GetItemText;
 	this.Erase = DDLightbarMenu_Erase;
 	this.SetItemHotkey = DDLightbarMenu_SetItemHotkey;
@@ -388,6 +399,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.RemoveItemHotkey = DDLightbarMenu_RemoveItemHotkey;
 	this.RemoveItemHotkeys = DDLightbarMenu_RemoveItemHotkeys;
 	this.RemoveAllItemHotkeys = DDLightbarMenu_RemoveAllItemHotkeys;
+	this.GetMouseClickRegion = DDLightbarMenu_GetMouseClickRegion;
 	this.GetVal = DDLightbarMenu_GetVal;
 	this.SetBorderChars = DDLightbarMenu_SetBorderChars;
 	this.SetColors = DDLightbarMenu_SetColors;
@@ -773,6 +785,22 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 		console.print(itemText + "\1n");
 }
 
+// Writes a menu item at its location on the menu.  This should only be called
+// if the item is on the current page.
+//
+// Parameters:
+//  pIdx: The index of the item to write
+//  pHighlight: Whether or not the item should be highlighted
+//  pSelected: Whether or not the item is selected
+function DDLightbarMenu_WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
+{
+	if (this.borderEnabled)
+		console.gotoxy(this.pos.x+1, this.pos.y+pIdx-this.topItemIdx+1);
+	else
+		console.gotoxy(this.pos.x, this.pos.y+pIdx-this.topItemIdx);
+	this.WriteItem(pIdx, null, pHighlight, pSelected);
+}
+
 // Gets the text of a menu item with colors applied
 //
 // Parameters:
@@ -964,6 +992,26 @@ function DDLightbarMenu_RemoveAllItemHotkeys()
 		this.items[i].hotkeys = "";
 }
 
+// Returns an object specifying the mouse valid click region for the menu,
+// with properties left, right, top, and bottom.
+function DDLightbarMenu_GetMouseClickRegion()
+{
+	var clickRegion = {
+		left: this.pos.x,
+		right: this.pos.x + this.size.width - 1,
+		top: this.pos.y,
+		bottom: this.pos.y + this.size.height - 1
+	};
+	if (this.borderEnabled)
+	{
+		++clickRegion.left;
+		++clickRegion.top;
+		--clickRegion.right;
+		--clickRegion.bottom;
+	}
+	return clickRegion;
+}
+
 // Waits for user input, optionally drawing the menu first.
 //
 // Parameters:
@@ -994,26 +1042,108 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 			this.UpdateScrollbarWithHighlightedItem();
 
-		this.lastUserInput = console.getkey(K_NOECHO|K_NOSPIN|K_NOCRLF);
+		//this.lastUserInput = console.getkey(K_NOECHO|K_NOSPIN|K_NOCRLF);
+		// TODO: With mouse_getkey(), it seems you need to press ESC twice
+		// to get the ESC key and exit the menu
+		var mk = mouse_getkey(K_NOECHO|K_NOSPIN|K_NOCRLF, this.mouseTimeout > 1 ? this.mouseTimeout : undefined, this.mouseEnabled);
+		var mouseNoAction = false;
+		if (mk.mouse !== null)
+		{
+			// See if the user clicked anywhere in the region where items are
+			// listed or the scrollbar
+			var clickRegion = this.GetMouseClickRegion();
+			// Button 0 is the left/main mouse button
+			if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
+			    (mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
+			    (mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
+			{
+				// If the scrollbar is enabled, then see if the mouse click was
+				// in the scrollbar region.  If below the scrollbar bright blocks,
+				// then we'll want to do a PageDown.  If above the scrollbar bright
+				// blocks, then we'll want to do a PageUp.
+				var scrollbarX = this.pos.x + this.size.width - 1;
+				if (this.borderEnabled)
+					--scrollbarX;
+				if ((mk.mouse.x == scrollbarX) && this.scrollbarEnabled)
+				{
+					var scrollbarSolidBlockEndRow = this.scrollbarInfo.solidBlockLastStartRow + this.scrollbarInfo.numSolidScrollBlocks - 1;
+					if (mk.mouse.y < this.scrollbarInfo.solidBlockLastStartRow)
+						this.lastUserInput = KEY_PAGEUP;
+					else if (mk.mouse.y > scrollbarSolidBlockEndRow)
+						this.lastUserInput = KEY_PAGEDN;
+					else
+					{
+						// Mouse click no-action
+						// TODO: Can we detect if they're holding the mouse down
+						// and scroll while the user holds the mouse & scrolls on
+						// the scrollbar?
+						this.lastUserInput = "";
+						mouseNoAction = true;
+					}
+				}
+				else
+				{
+					// The user didn't click on the scrollbar or the scrollbar
+					// isn't enabled.  Make the clicked-on item the currently
+					// highlighted item.
+					// TODO: Can we detect a fast double-click and select the
+					// item for multi-select in that case? (If multi-select is
+					// enabled)
+					// Only select the item if the index is valid
+					var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
+					var distFromTopY = mk.mouse.y - topItemY;
+					var itemIdx = this.topItemIdx + distFromTopY;
+					if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+					{
+						this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+						this.selectedItemIdx = itemIdx;
+						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					}
+					// Don't have the later code do anything
+					this.lastUserInput = "";
+					mouseNoAction = true;
+				}
+			}
+			else
+			{
+				// The mouse click is outside the click region.  Set the appropriate
+				// variables for mouse no-action.
+				// TODO: Perhaps this may also need to be done in some places above
+				// where no action needs to be taken
+				this.lastUserInput = "";
+				mouseNoAction = true;
+			}
+		}
+		else
+		{
+			// mouse is null, so a keybaord key must have been pressed
+			this.lastUserInput = mk.key;
+		}
+
+		// Take the appropriate action based on the user's last input/keypress
 		if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
 		{
-			continueOn = false;
-			// Ensure any returned choice objects are null/empty to signal
-			// that the user aborted
-			userChoices = null; // For multi-select mode
-			selectedItemIndexes = { }; // For multi-select mode
-			retVal = null; // For single-choice mode
+			// Only exit if there was not a no-action mouse click
+			// TODO: Is this logic good and clean?
+			var goAheadAndExit = true;
+			if (mk.mouse !== null)
+				goAheadAndExit = !mouseNoAction;
+			if (goAheadAndExit)
+			{
+				continueOn = false;
+				// Ensure any returned choice objects are null/empty to signal
+				// that the user aborted
+				userChoices = null; // For multi-select mode
+				selectedItemIndexes = { }; // For multi-select mode
+				retVal = null; // For single-choice mode
+			}
 		}
 		else if ((this.lastUserInput == KEY_UP) || (this.lastUserInput == KEY_LEFT))
 		{
 			if (this.selectedItemIdx > 0)
 			{
 				// Draw the current item in regular colors
-				if (this.borderEnabled)
-					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-				else
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				--this.selectedItemIdx;
 				// Draw the new current item in selected colors
 				// If the selected item is above the top of the menu, then we'll need to
@@ -1027,11 +1157,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				{
 					// The selected item is not above the top of the menu, so we can
 					// just draw the selected item highlighted.
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
 			}
 			else
@@ -1041,11 +1167,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				if (this.wrapNavigation)
 				{
 					// Draw the current item in regular colors
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					//this.WriteItemAtItsLocation(pIdx, pHighlight, pSelected)
+					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					// Go to the last item and scroll to the bottom if necessary
 					this.selectedItemIdx = numItems - 1;
 					var oldTopItemIdx = this.topItemIdx;
@@ -1058,11 +1181,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					else
 					{
 						// Draw the new current item in selected colors
-						if (this.borderEnabled)
-							console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-						else
-							console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-						this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					}
 				}
 			}
@@ -1072,11 +1191,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			if (this.selectedItemIdx < numItems-1)
 			{
 				// Draw the current item in regular colors
-				if (this.borderEnabled)
-					console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-				else
-					console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-				this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				++this.selectedItemIdx;
 				// Draw the new current item in selected colors
 				// If the selected item is below the bottom of the menu, then we'll need to
@@ -1091,11 +1206,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				{
 					// The selected item is not below the bottom of the menu, so we can
 					// just draw the selected item highlighted.
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
 			}
 			else
@@ -1105,11 +1216,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				if (this.wrapNavigation)
 				{
 					// Draw the current item in regular colors
-					if (this.borderEnabled)
-						console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-					else
-						console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-					this.WriteItem(this.selectedItemIdx, null, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					// Go to the first item and scroll to the top if necessary
 					this.selectedItemIdx = 0;
 					var oldTopItemIdx = this.topItemIdx;
@@ -1119,11 +1226,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					else
 					{
 						// Draw the new current item in selected colors
-						if (this.borderEnabled)
-							console.gotoxy(this.pos.x+1, this.pos.y+this.selectedItemIdx-this.topItemIdx+1);
-						else
-							console.gotoxy(this.pos.x, this.pos.y+this.selectedItemIdx-this.topItemIdx);
-						this.WriteItem(this.selectedItemIdx, null, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 					}
 				}
 			}
@@ -1163,6 +1266,18 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					}
 				}
 			}
+			else
+			{
+				// We're already showing the first page of items.
+				// If the currently selected item is not the first
+				// item, then make it so.
+				if (this.selectedItemIdx > 0)
+				{
+					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.selectedItemIdx = 0;
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+				}
+			}
 		}
 		else if (this.lastUserInput == KEY_PAGEDN)
 		{
@@ -1198,6 +1313,18 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						this.selectedItemIdx = 0;
 					}
 					this.Draw(selectedItemIndexes);
+				}
+			}
+			else
+			{
+				// We're already showing the last page of items.
+				// If the currently selected item is not the last
+				// item, then make it so.
+				if (this.selectedItemIdx < lastItemIdx)
+				{
+					this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+					this.selectedItemIdx = lastItemIdx;
+					this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
 				}
 			}
 		}
