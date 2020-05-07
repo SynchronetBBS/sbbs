@@ -96,6 +96,7 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 				ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 				ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
+				mousepointer(CIOLIB_MOUSEPTR_ARROW);
 				return;
 			case MM_NORMAL_TRACKING:
 				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
@@ -106,6 +107,7 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
 				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
+				mousepointer(CIOLIB_MOUSEPTR_ARROW);
 				return;
 			case MM_BUTTON_EVENT_TRACKING:
 				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
@@ -117,6 +119,7 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 				ciomouse_addevent(CIOLIB_MOUSE_MOVE);
+				mousepointer(CIOLIB_MOUSEPTR_ARROW);
 				return;
 			case MM_ANY_EVENT_TRACKING:
 				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
@@ -128,6 +131,7 @@ void setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 				ciomouse_addevent(CIOLIB_MOUSE_MOVE);
+				mousepointer(CIOLIB_MOUSEPTR_ARROW);
 				return;
 			default:
 				break;
@@ -139,6 +143,7 @@ void setup_mouse_events(struct mouse_state *ms)
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+	mousepointer(CIOLIB_MOUSEPTR_BAR);
 }
 
 #if defined(__BORLANDC__)
