@@ -138,6 +138,7 @@ void setup_mouse_events(struct mouse_state *ms)
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
+	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 }
 
 #if defined(__BORLANDC__)
@@ -2653,11 +2654,18 @@ BOOL doterm(struct bbslist *bbs)
 						case CIOLIB_BUTTON_2_RELEASE:
 						case CIOLIB_BUTTON_3_PRESS:
 						case CIOLIB_BUTTON_3_RELEASE:
-						case CIOLIB_BUTTON_4_PRESS:
-						case CIOLIB_BUTTON_5_PRESS:
 						case CIOLIB_MOUSE_MOVE:
 						case CIOLIB_BUTTON_1_CLICK:
 							conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
+							break;
+						case CIOLIB_BUTTON_4_PRESS:
+						case CIOLIB_BUTTON_5_PRESS:
+							if (ms.mode != 9 && ms.mode != 0) {
+								conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
+								break;
+							}
+							viewscroll();
+							setup_mouse_events(&ms);
 							break;
 						case CIOLIB_BUTTON_1_DRAG_START:
 							mousedrag(scrollback_buf);
