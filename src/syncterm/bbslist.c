@@ -292,6 +292,7 @@ void viewofflinescroll(void)
 	gettextinfo(&sbtxtinfo);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
+	showmouse();
 
 	for(i=0;!i && !quitting;) {
 		if(top<1)
