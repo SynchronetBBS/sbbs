@@ -39,6 +39,7 @@ unsigned char		sdl_keynext=0;			/* Index into keybuf for next free position */
 int sdl_exitcode=0;
 
 SDL_Window	*win=NULL;
+SDL_Cursor	*curs=NULL;
 SDL_Renderer	*renderer=NULL;
 SDL_Texture	*texture=NULL;
 pthread_mutex_t win_mutex;
@@ -84,6 +85,7 @@ enum {
 	,SDL_USEREVENT_INIT
 	,SDL_USEREVENT_QUIT
 	,SDL_USEREVENT_GETWINPOS
+	,SDL_USEREVENT_MOUSEPOINTER
 };
 
 const struct sdl_keyvals sdl_keyval[] =
@@ -213,6 +215,9 @@ static void sdl_user_func(int func, ...)
 					va_end(argptr);
 					return;
 				}
+				break;
+			case SDL_USEREVENT_MOUSEPOINTER:
+				ev.user.data1 = (void *)(intptr_t)va_arg(argptr, int);
 				break;
 			case SDL_USEREVENT_SHOWMOUSE:
 			case SDL_USEREVENT_HIDEMOUSE:
@@ -1047,6 +1052,33 @@ void sdl_video_event_thread(void *data)
 						case SDL_USEREVENT_GETWINPOS:
 							sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
 							sem_post(&sdl_ufunc_ret);
+							break;
+						case SDL_USEREVENT_MOUSEPOINTER:
+						{
+							int cid = INT_MIN;
+							SDL_Cursor *oc = curs;
+							switch((intptr_t)ev.user.data1) {
+								case CIOLIB_MOUSEPTR_ARROW:
+									break;	// Default
+								case CIOLIB_MOUSEPTR_BAR:
+									cid = SDL_SYSTEM_CURSOR_IBEAM;
+									break;
+							}
+							if (cid == INT_MIN) {
+								sdl.SetCursor(sdl.GetDefaultCursor());
+								curs = NULL;
+							}
+							else {
+								curs = sdl.CreateSystemCursor(cid);
+								if (curs == NULL)
+									sdl.SetCursor(sdl.GetDefaultCursor());
+								else
+									sdl.SetCursor(curs);
+							}
+							if (oc)
+								sdl.FreeCursor(oc);
+							break;
+						}
 					}
 					break;
 				}
@@ -1096,4 +1128,11 @@ sdl_beep(void)
 		wave[2205] = 1;
 	}
         xp_play_sample(wave, 2205, TRUE);
+}
+
+/* Called from main thread only (Passes Event) */
+int sdl_mousepointer(enum ciolib_mouse_ptr type)
+{
+	sdl_user_func(SDL_USEREVENT_MOUSEPOINTER,type);
+	return(0);
 }

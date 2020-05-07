@@ -50,6 +50,10 @@ struct sdlfuncs {
 	void (HACK_HACK_HACK *SetWindowMinimumSize)	(SDL_Window *window, int w, int y);
 	void (HACK_HACK_HACK *SetClipboardText)	(const char *);
 	char *(HACK_HACK_HACK *GetClipboardText)	(void);
+	SDL_Cursor *(HACK_HACK_HACK *CreateSystemCursor)	(SDL_SystemCursor id);
+	SDL_Cursor *(HACK_HACK_HACK *GetDefaultCursor)	(void);
+	void (HACK_HACK_HACK *SetCursor)	(SDL_Cursor *curs);
+	void (HACK_HACK_HACK *FreeCursor)	(SDL_Cursor *curs);
 	void(HACK_HACK_HACK *free)	(void *);
 	int	gotfuncs;
 };

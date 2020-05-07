@@ -4,6 +4,7 @@
 #include "gen_defs.h"
 #include "threadwrap.h"
 #include <SDL.h>
+#include "ciolib.h"
 #include "sdlfuncs.h"
 #include "sdl_con.h"
 extern int sdl_video_initialized;
@@ -15,8 +16,6 @@ struct sdlfuncs sdl;
 #define STATIC_LINK
 #endif
 #include <xp_dl.h>
-
-#include "ciolib.h"
 
 static int sdl_funcs_loaded=0;
 
@@ -176,6 +175,22 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		return(-1);
 	}
 	if((sdlf->GetClipboardText=xp_dlsym(sdl_dll, SDL_GetClipboardText))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->CreateSystemCursor=xp_dlsym(sdl_dll, SDL_CreateSystemCursor))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->GetDefaultCursor=xp_dlsym(sdl_dll, SDL_GetDefaultCursor))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->FreeCursor=xp_dlsym(sdl_dll, SDL_FreeCursor))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
+	if((sdlf->SetCursor=xp_dlsym(sdl_dll, SDL_SetCursor))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}

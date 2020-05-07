@@ -191,6 +191,7 @@ static int try_sdl_init(int mode)
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
 		cio_api.beep = sdl_beep;
+		cio_api.mousepointer=sdl_mousepointer;
 		return(1);
 	}
 	return(0);
