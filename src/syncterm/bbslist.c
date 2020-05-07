@@ -290,6 +290,8 @@ void viewofflinescroll(void)
 	gotoxy(1,1);
 	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
 	gettextinfo(&sbtxtinfo);
+	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 
 	for(i=0;!i && !quitting;) {
 		if(top<1)
@@ -319,6 +321,12 @@ void viewofflinescroll(void)
 						switch(mevent.event) {
 							case CIOLIB_BUTTON_1_DRAG_START:
 								mousedrag(scrollback_buf);
+								break;
+							case CIOLIB_BUTTON_4_PRESS:
+								top--;
+								break;
+							case CIOLIB_BUTTON_5_PRESS:
+								top++;
 								break;
 						}
 						break;
