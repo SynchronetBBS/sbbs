@@ -453,6 +453,8 @@ public:
 	char 	dszlog[127];	/* DSZLOG enviornment variable */
     int     keybuftop,keybufbot;    /* Keyboard input buffer pointers (for ungetkey) */
 	char    keybuf[KEY_BUFSIZE];    /* Keyboard input buffer */
+	size_t	keybuf_space(void);
+	size_t	keybuf_level(void);
 
 	ushort	node_connection;
 	char	connection[LEN_MODEM+1];	/* Connection Description */

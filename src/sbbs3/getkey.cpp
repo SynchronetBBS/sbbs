@@ -571,16 +571,18 @@ void sbbs_t::ungetkey(char ch, bool insert)
 #if 0	/* this way breaks ansi_getxy() */
 	RingBufWrite(&inbuf,(uchar*)&ch,sizeof(uchar));
 #else
-	if(insert) {
-		if(keybufbot == 0)
-			keybufbot = KEY_BUFSIZE - 1;
-		else
-			keybufbot--;
-		keybuf[keybufbot] = ch;
-	} else {
-		keybuf[keybuftop++]=ch;
-		if(keybuftop==KEY_BUFSIZE)
-			keybuftop=0;
+	if(keybuf_space()) {
+		if(insert) {
+			if(keybufbot == 0)
+				keybufbot = KEY_BUFSIZE - 1;
+			else
+				keybufbot--;
+			keybuf[keybufbot] = ch;
+		} else {
+			keybuf[keybuftop++]=ch;
+			if(keybuftop==KEY_BUFSIZE)
+				keybuftop=0;
+		}
 	}
 #endif
 }
@@ -594,4 +596,16 @@ void sbbs_t::ungetstr(const char* str, bool insert)
 
 	for(i = 0; str[i] != '\0'; i++)
 		ungetkey(str[i], insert);
+}
+
+size_t sbbs_t::keybuf_space(void)
+{
+	return sizeof(keybuf) - (keybuf_level() + 1);
+}
+
+size_t sbbs_t::keybuf_level(void)
+{
+	if(keybufbot > keybuftop)
+		return (sizeof(keybuf) - keybufbot) + keybuftop;
+	return keybuftop - keybufbot;
 }

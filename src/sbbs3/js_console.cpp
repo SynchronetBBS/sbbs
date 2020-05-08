@@ -75,6 +75,8 @@ enum {
 	,CON_PROP_INBUF_SPACE
 	,CON_PROP_OUTBUF_LEVEL
 	,CON_PROP_OUTBUF_SPACE
+	,CON_PROP_KEYBUF_LEVEL
+	,CON_PROP_KEYBUF_SPACE
 
 	,CON_PROP_OUTPUT_RATE
 };
@@ -198,6 +200,12 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_OUTPUT_RATE:
 			val = sbbs->cur_output_rate;
+			break;
+		case CON_PROP_KEYBUF_LEVEL:
+			val = sbbs->keybuf_level();
+			break;
+		case CON_PROP_KEYBUF_SPACE:
+			val = sbbs->keybuf_space();
 			break;
 
 		default:
@@ -379,6 +387,8 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{	"output_buffer_level",CON_PROP_OUTBUF_LEVEL		,JSPROP_ENUMERATE|JSPROP_READONLY, 312},
 	{	"output_buffer_space",CON_PROP_OUTBUF_SPACE		,JSPROP_ENUMERATE|JSPROP_READONLY, 312},
 	{	"output_rate"		,CON_PROP_OUTPUT_RATE		,JSPROP_ENUMERATE, 31702},
+	{	"keyboard_buffer_level",CON_PROP_KEYBUF_LEVEL	,JSPROP_ENUMERATE|JSPROP_READONLY, 31800},
+	{	"keyboard_buffer_space",CON_PROP_KEYBUF_SPACE	,JSPROP_ENUMERATE|JSPROP_READONLY, 31800},
 	{0}
 };
 
@@ -424,6 +434,8 @@ static const char* con_prop_desc[] = {
 	,"number of bytes currently in the output buffer (from the local server) - <small>READ ONLY</small>"
 	,"number of bytes available in the output buffer - <small>READ ONLY</small>"
 	,"emulated serial data output rate, in bits-per-second (0 = unlimited)"
+	,"number of characters current in the keyboard input buffer (from <tt>ungetstr</tt>) - <small>READ ONLY</small>"
+	,"number of characters spaces available in the keyboard input buffer - <small>READ ONLY</small>"
 	,NULL
 };
 #endif
