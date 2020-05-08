@@ -3,17 +3,18 @@
 Cі HYChat Menu N4Kі
 CАKДДДДДДДДДДДЩ
 0BЫЫЫЫЫЫЫЫЫЫЫЫЫ4 HWJoin a Chat NBЫЫЫЫЫЫЫЫЫЫЫЫЫ
-Ы HYJ NGJoin/initiate multinode chat…BЫ
-Ы HYP NGJoin/start private node/node chat BЫ
-Ы HYC NGChat with the sysopЋBЫ
-Ы HYT NGTalk with The Guru (AI)ЉBЫ
-Ы HYF NGFinger (Query) remote user/system BЫ
-Ы HYR NGInternet Relay ChatЋBЫ
-Ы HYI NGInter-BBS Instant Messaging†BЫ
+Ы HY@~J@ NGJoin/initiate multinode chatW…BЫ
+Ы HY@~P@ NGJoin/start private node/node chat BЫ
+Ы HY@~C@ NGChat with @SYSOP-L##############@ BЫ
+Ы HY@~T@ NGTalk with The Guru (AI)WЉBЫ
+Ы HY@~F@ NGFingerW G(query) remote user/systemW BЫ
+Ы HY@~R@ NGInternet Relay ChatW G(IRC)W€BЫ
+Ы HY@~I@ NGInterBBS Instant MessagingW‡BЫ
 ЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫ4 HWToggles NBЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫ
-Ы HYD NGAllow paging off/onЋBЫ
-Ы HYA NGActivity alerts off/on‹BЫ
-Ы HYS NGSplit screen private chat€BЫ
-ЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫЫ
-Ы HYQ NGQuit chat menu“BЫ
+Ы HY@~D@ NGChatHY NGavailabilityW…Gstate:HW Y@PAGER-L3@W NBЫ
+Ы HY@~A@ NGNode activity alertsW‚Gstate:HW Y@ALERTS-L3@NG BЫ
+Ы HY@~S@ NGSplit-screen chatW…Gstate: HY@SPLITP-L3@N BЫ
+ЫДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДЫ
+Ы HY@~Q@ NGQuit chat menuW“BЫ
 4K C HYAnytime: C^UN4Csers online  H^PN4Crivate msgH 
+Z
