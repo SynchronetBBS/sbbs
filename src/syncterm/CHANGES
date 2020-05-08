@@ -60,6 +60,7 @@ Add support for DEC style macros
 Fix X11 handing of non-multiple window sizes
 Allow "control characters" in Atari mode
 Built-in fonts now have a unicode mapping for copy/paste
+Added scrollwheel support
 
 Version 1.0
 -----------
