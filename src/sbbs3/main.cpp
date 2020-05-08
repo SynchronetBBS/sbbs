@@ -3400,6 +3400,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	tabstop=8;
 	lastlinelen=0;
 	curatr=LIGHTGRAY;
+	hot_attr = 0;
 	attr_sp=0;	/* attribute stack pointer */
 	errorlevel=0;
 	logcol=1;

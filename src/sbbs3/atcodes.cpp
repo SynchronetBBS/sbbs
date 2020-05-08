@@ -253,6 +253,11 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return sp;
 	}
 
+	if(strncmp(sp, "HOT:", 4) == 0) {	// Auto-mouse hot-spot attribute
+		hot_attr = attrstr(sp + 4);
+		return nulstr;
+	}
+
 	if(strncmp(sp, "U+", 2) == 0) {	// UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
 		if(tp == NULL || *tp == 0)

@@ -464,6 +464,7 @@ public:
 	time_t 	timeout;		/* User inactivity timeout reference */
 	ulong 	timeleft_warn;	/* low timeleft warning flag */
 	uint	curatr; 		/* Current Text Attributes Always */
+	uint	hot_attr;		/* Auto-Mouse hot-spot attribute (when non-zero) */
 	uint	attr_stack[64];	/* Saved attributes (stack) */
 	int 	attr_sp;		/* Attribute stack pointer */
 	long 	lncntr; 		/* Line Counter - for PAUSE */

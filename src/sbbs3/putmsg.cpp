@@ -61,7 +61,9 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 	ulong	l=0,sys_status_sav=sys_status;
 	uint	lines_printed = 0;
 	enum output_rate output_rate = cur_output_rate;
+	struct mouse_hotspot hot_spot = {0};
 
+	hot_attr = 0;
 	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
 	if(!(mode&P_SAVEATR))
@@ -375,6 +377,18 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			}
 			if(mode&P_CPM_EOF && str[l]==CTRL_Z)
 				break;
+			if(hot_attr) {
+				if(curatr == hot_attr && str[l] > ' ') {
+					hot_spot.y = row;
+					if(!hot_spot.minx)
+						hot_spot.minx = column;
+					hot_spot.maxx = column;
+					hot_spot.cmd[strlen(hot_spot.cmd)] = str[l];
+				} else if(hot_spot.cmd[0]) {
+					add_hotspot(&hot_spot);
+					memset(&hot_spot, 0, sizeof(hot_spot));
+				}
+			}
 			size_t skip = sizeof(char);
 			if(mode&P_PETSCII) {
 				if(term&PETSCII)
