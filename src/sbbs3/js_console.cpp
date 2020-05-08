@@ -614,7 +614,6 @@ static JSBool js_scroll_hotspots(JSContext *cx, uintN argc, jsval *arglist)
 
 static JSBool js_clear_hotspots(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
