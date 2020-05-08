@@ -104,6 +104,21 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	(*tp)=0;
 	sp=(str+1);
 
+	if(*sp == '~' && *(sp + 1)) {	// Mouse hot-spot
+		sp++;
+		tp = strchr(sp + 1, '~');
+		if(tp == NULL)
+			tp = sp;
+		else {
+			*tp = 0;
+			tp++;
+		}
+		c_unescape_str(tp);
+		add_hotspot(tp, column, column + strlen(sp) - 1, row);
+		bputs(sp);
+		return len;
+	}
+
 	disp_len=len;
 	if((p = strchr(sp, '|')) != NULL) {
 		if(strchr(p, 'T') != NULL)
@@ -239,22 +254,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	str[0]=0;
 
-	if(*sp == '~' && *(sp + 1)) {
-		sp++;
-		tp = strchr(sp + 1, '~');
-		if(tp == NULL)
-			tp = sp;
-		else {
-			*tp = 0;
-			tp++;
-		}
-		c_unescape_str(tp);
-		add_hotspot(tp, column, column + strlen(sp) - 1, row);
-		return sp;
+	if(strcmp(sp, "HOT") == 0) { // Auto-mouse hot-spot attribute
+		hot_attr = curatr;
+		return nulstr;
 	}
-
 	if(strncmp(sp, "HOT:", 4) == 0) {	// Auto-mouse hot-spot attribute
-		hot_attr = attrstr(sp + 4);
+		sp += 4;
+		if(stricmp(sp, "off") == 0)
+			hot_attr = 0;
+		else
+			hot_attr = attrstr(sp);
 		return nulstr;
 	}
 
