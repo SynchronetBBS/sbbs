@@ -75,7 +75,7 @@ BOOL sbbs_t::newuser()
 		c=0;
 		while(++c<4) {
 			bputs(text[NewUserPasswordPrompt]);
-			getstr(str,40,K_UPPER);
+			getstr(str,40,K_UPPER|K_TRIM);
 			if(!strcmp(str,cfg.new_pass))
 				break;
 			SAFEPRINTF(tmp,"NUP Attempted: '%s'",str);
@@ -236,7 +236,7 @@ BOOL sbbs_t::newuser()
 		}
 		else if(cfg.uq&UQ_COMPANY && text[EnterYourCompany][0]) {
 				bputs(text[EnterYourCompany]);
-				getstr(useron.name,LEN_NAME,(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL); 
+				getstr(useron.name,LEN_NAME,kmode); 
 		}
 		if(!useron.alias[0]) {
 			errormsg(WHERE, ERR_CHK, "alias", 0);
@@ -250,7 +250,7 @@ BOOL sbbs_t::newuser()
 		while((cfg.uq&UQ_HANDLE) && online && text[EnterYourHandle][0]) {
 			bputs(text[EnterYourHandle]);
 			if(!getstr(useron.handle,LEN_HANDLE
-				,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
+				,K_LINE|K_EDIT|K_AUTODEL|K_TRIM|(cfg.uq&UQ_NOEXASC))
 				|| strchr(useron.handle,0xff)
 				|| ((cfg.uq&UQ_DUPHAND)
 					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle))
@@ -281,7 +281,7 @@ BOOL sbbs_t::newuser()
 			while(online && text[EnterYourZipCode][0]) {
 				bputs(text[EnterYourZipCode]);
 				if(getstr(useron.zipcode,LEN_ZIPCODE
-					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL))
+					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL|K_TRIM))
 					break; 
 			}
 		if(!online) return(FALSE);
@@ -294,7 +294,7 @@ BOOL sbbs_t::newuser()
 				bputs(text[EnterYourPhoneNumber]);
 				if(!usa) {
 					if(getstr(useron.phone,LEN_PHONE
-						,K_UPPER|K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL)<5)
+						,K_UPPER|K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL|K_TRIM)<5)
 						continue; 
 				}
 				else {
@@ -320,7 +320,7 @@ BOOL sbbs_t::newuser()
 		if(!online) return(FALSE);
 		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
 			bputs(text[EnterNetMailAddress]);
-			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
+			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM)
 				&& !trashcan(useron.netmail,"email"))
 				break;
 		}
@@ -383,7 +383,7 @@ BOOL sbbs_t::newuser()
 		if(cfg.sys_misc&SM_PWEDIT && text[NewPasswordQ][0] && yesno(text[NewPasswordQ]))
 			while(online) {
 				bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
-				getstr(str,LEN_PASS,K_UPPER|K_LINE);
+				getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 				truncsp(str);
 				if(chkpass(str,&useron,true)) {
 					SAFECOPY(useron.pass,str);
@@ -422,7 +422,7 @@ BOOL sbbs_t::newuser()
 	if(cfg.new_magic[0] && text[MagicWordPrompt][0]) {
 		bputs(text[MagicWordPrompt]);
 		str[0]=0;
-		getstr(str,50,K_UPPER);
+		getstr(str,50,K_UPPER|K_TRIM);
 		if(strcmp(str,cfg.new_magic)) {
 			bputs(text[FailedMagicWord]);
 			SAFEPRINTF(tmp,"failed magic word: '%s'",str);

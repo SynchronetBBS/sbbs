@@ -56,6 +56,7 @@ void sbbs_t::useredit(int usernumber)
 	uint	i,j,k;
 	float	f;
 	long	l;
+	long	kmode = K_LINE|K_EDIT|K_AUTODEL|K_TRIM;
 	user_t	user;
 	struct	tm tm;
 
@@ -173,14 +174,14 @@ void sbbs_t::useredit(int usernumber)
 		switch(l) {
 			case 'A':
 				bputs(text[EnterYourAlias]);
-				getstr(user.alias,LEN_ALIAS,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.alias,LEN_ALIAS,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_ALIAS,LEN_ALIAS,user.alias);
 				if(!(user.misc&DELETED))
 					putusername(&cfg,user.number,user.alias);
 				bputs(text[EnterYourHandle]);
-				getstr(user.handle,LEN_HANDLE,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.handle,LEN_HANDLE,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
@@ -188,14 +189,14 @@ void sbbs_t::useredit(int usernumber)
 			case 'B':
 				bprintf(text[EnterYourBirthday]
 					,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
-				gettmplt(user.birth,"nn/nn/nn",K_LINE|K_EDIT|K_AUTODEL);
+				gettmplt(user.birth,"nn/nn/nn",kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
 				break;
 			case 'C':
 				bputs(text[EnterYourComputer]);
-				getstr(user.comp,LEN_COMP,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.comp,LEN_COMP,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_COMP,LEN_COMP,user.comp);
@@ -399,12 +400,12 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'L':
 				bputs(text[EnterYourAddress]);
-				getstr(user.address,LEN_ADDRESS,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.address,LEN_ADDRESS,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_ADDRESS,LEN_ADDRESS,user.address);
 				bputs(text[EnterYourCityState]);
-				getstr(user.location,LEN_LOCATION,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.location,LEN_LOCATION,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_LOCATION,LEN_LOCATION,user.location);
@@ -430,14 +431,14 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'O':
 				bputs(text[UeditComment]);
-				getstr(user.comment,60,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.comment,60,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_COMMENT,60,user.comment);
 				break;
 			case 'P':
 				bputs(text[EnterYourPhoneNumber]);
-				getstr(user.phone,LEN_PHONE,K_UPPER|K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.phone,LEN_PHONE,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_PHONE,LEN_PHONE,user.phone);
@@ -450,7 +451,7 @@ void sbbs_t::useredit(int usernumber)
 				return;
 			case 'R':
 				bputs(text[EnterYourRealName]);
-				getstr(user.name,LEN_NAME,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.name,LEN_NAME,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_NAME,LEN_NAME,user.name);
@@ -523,7 +524,7 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'W':
 				bputs(text[UeditPassword]);
-				getstr(user.pass,LEN_PASS,K_UPPER|K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.pass,LEN_PASS,K_UPPER|kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_PASS,LEN_PASS,user.pass);
@@ -1063,7 +1064,7 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'M':   /* NetMail address */
 				bputs(text[EnterNetMailAddress]);
-				getstr(user->netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE);
+				getstr(user->netmail,LEN_NETMAIL,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
@@ -1091,16 +1092,16 @@ void sbbs_t::maindflts(user_t* user)
 					bputs(text[CurrentPassword]);
 					console|=CON_R_ECHOX;
 					ch=(char)getstr(str,LEN_PASS,K_UPPER);
+					console&=~(CON_R_ECHOX|CON_L_ECHOX);
 					if(sys_status&SS_ABORT)
 						break;
-					console&=~(CON_R_ECHOX|CON_L_ECHOX);
 					if(stricmp(str,user->pass)) {
 						bputs(text[WrongPassword]);
 						pause();
 						break; 
 					}
 					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
-					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE))
+					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM))
 						break;
 					truncsp(str);
 					if(!chkpass(str,user,false)) {

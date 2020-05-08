@@ -8,7 +8,7 @@
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -243,7 +243,7 @@ bool sbbs_t::logon()
 			if(cfg.sys_misc&SM_PWEDIT && yesno(text[NewPasswordQ]))
 				while(online) {
 					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
-					getstr(str,LEN_PASS,K_UPPER|K_LINE);
+					getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 					truncsp(str);
 					if(chkpass(str,&useron,true))
 						break;
@@ -289,7 +289,7 @@ bool sbbs_t::logon()
 			hangup();
 			return(false); 
 		}
-		kmode=(cfg.uq&UQ_NOEXASC);
+		kmode=(cfg.uq&UQ_NOEXASC)|K_TRIM;
 		if(!(cfg.uq&UQ_NOUPRLWR))
 			kmode|=K_UPRLWR;
 
@@ -321,7 +321,7 @@ bool sbbs_t::logon()
 				while(online) {
 					bputs(text[EnterYourHandle]);
 					if(!getstr(useron.handle,LEN_HANDLE
-						,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
+						,K_LINE|K_EDIT|K_AUTODEL|kmode)
 						|| strchr(useron.handle,0xff)
 						|| (cfg.uq&UQ_DUPHAND
 							&& userdatdupe(useron.number,U_HANDLE,LEN_HANDLE
@@ -347,7 +347,7 @@ bool sbbs_t::logon()
 			if(cfg.uq&UQ_ADDRESS && !useron.zipcode[0])
 				while(online) {
 					bputs(text[EnterYourZipCode]);
-					if(getstr(useron.zipcode,LEN_ZIPCODE,K_UPPER|(cfg.uq&UQ_NOEXASC)))
+					if(getstr(useron.zipcode,LEN_ZIPCODE,K_UPPER|kmode))
 						break; 
 				}
 			if(cfg.uq&UQ_PHONE && !useron.phone[0]) {
@@ -363,7 +363,7 @@ bool sbbs_t::logon()
 							 continue; 
 					} else {
 						if(getstr(useron.phone,LEN_PHONE
-							,K_UPPER|(cfg.uq&UQ_NOEXASC))<5)
+							,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_TRIM)<5)
 							continue; 
 					}
 					if(!trashcan(useron.phone,"phone"))
@@ -373,7 +373,7 @@ bool sbbs_t::logon()
 			if(!(cfg.uq&UQ_NONETMAIL) && !useron.netmail[0]) {
 				while(online) {
 					bputs(text[EnterNetMailAddress]);
-					if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
+					if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM)
 						&& !trashcan(useron.netmail,"email"))
 						break;
 				}
