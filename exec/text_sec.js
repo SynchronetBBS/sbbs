@@ -66,6 +66,7 @@ while(bbs.online) {
 		console.print(bbs.text(TextSectionLstHdr));
 		for(var i = 0; i < usrsec.length; i++) {
 			if(i<9) console.print(' ');
+			console.add_hotspot(i + 1);
 			console.print(format(bbs.text(TextSectionLstFmt), i + 1, usrsec[i].name));
 		}
 	}
@@ -83,8 +84,10 @@ while(bbs.online) {
 			bbs.menu(menu);
 		else {
 			console.print(format(bbs.text(TextFilesLstHdr), usrsec[cursec].name));
-			for(var i = 0; i < list.length; i++)
+			for(var i = 0; i < list.length; i++) {
+				console.add_hotspot(i + 1);
 				console.print(format(bbs.text(TextFilesLstFmt), i + 1, list[i].desc + "\r\n"));
+			}
 		}
 		bbs.nodesync();
 		var keys = "Q?";

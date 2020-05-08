@@ -158,6 +158,7 @@ function external_program_menu(xsec)
 				n=prog_list.length;
 
 			for(i=0;i<n && !console.aborted;i++) {
+				console.add_hotspot(i+1);
 				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
 					,i+1
 					,prog_list[i].name
