@@ -1026,6 +1026,9 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	if (numItems == 0)
 		return null;
 
+	if (typeof(this.lastMouseClickTime) == "undefined")
+		this.lastMouseClickTime = -1;
+
 	var draw = (typeof(pDraw) == "boolean" ? pDraw : true);
 	if (draw)
 		this.Draw(pSelectedItemIndexes);
@@ -1036,13 +1039,18 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	if (typeof(pSelectedItemIndexes) == "object")
 		selectedItemIndexes = pSelectedItemIndexes;
 	var retVal = null; // For single-choice mode
+	// mouseInputOnly_continue specifies whether to continue to the
+	// next iteration if the mouse was clicked & there's no need to
+	// process user input further
+	var mouseInputOnly_continue = false;
 	var continueOn = true;
 	while (continueOn)
 	{
 		if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
 			this.UpdateScrollbarWithHighlightedItem();
 
-		//this.lastUserInput = console.getkey(K_NOECHO|K_NOSPIN|K_NOCRLF);
+		mouseInputOnly_continue = false;
+
 		// TODO: With mouse_getkey(), it seems you need to press ESC twice
 		// to get the ESC key and exit the menu
 		var mk = mouse_getkey(K_NOECHO|K_NOSPIN|K_NOCRLF, this.mouseTimeout > 1 ? this.mouseTimeout : undefined, this.mouseEnabled);
@@ -1057,6 +1065,8 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			    (mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
 			    (mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
 			{
+				var isDoubleClick = ((this.lastMouseClickTime > -1) && (system.timer - this.lastMouseClickTime <= 0.4));
+
 				// If the scrollbar is enabled, then see if the mouse click was
 				// in the scrollbar region.  If below the scrollbar bright blocks,
 				// then we'll want to do a PageDown.  If above the scrollbar bright
@@ -1079,30 +1089,48 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 						// the scrollbar?
 						this.lastUserInput = "";
 						mouseNoAction = true;
+						mouseInputOnly_continue = true;
 					}
 				}
 				else
 				{
 					// The user didn't click on the scrollbar or the scrollbar
-					// isn't enabled.  Make the clicked-on item the currently
-					// highlighted item.
-					// TODO: Can we detect a fast double-click and select the
-					// item for multi-select in that case? (If multi-select is
-					// enabled)
-					// Only select the item if the index is valid
-					var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
-					var distFromTopY = mk.mouse.y - topItemY;
-					var itemIdx = this.topItemIdx + distFromTopY;
-					if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+					// isn't enabled.
+					// For a double-click, if multi-select is enabled, set the
+					// last user input to a space to select/de-select the item.
+					if (isDoubleClick)
 					{
-						this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
-						this.selectedItemIdx = itemIdx;
-						this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+						if (this.multiSelect)
+							this.lastUserInput = " ";
+						else
+						{
+							// No mouse action
+							this.lastUserInput = "";
+							mouseNoAction = true;
+							mouseInputOnly_continue = true;
+						}
 					}
-					// Don't have the later code do anything
-					this.lastUserInput = "";
-					mouseNoAction = true;
+					else
+					{
+						// Make the clicked-on item the currently highlighted
+						// item.  Only select the item if the index is valid.
+						var topItemY = (this.borderEnabled ? this.pos.y + 1 : this.pos.y);
+						var distFromTopY = mk.mouse.y - topItemY;
+						var itemIdx = this.topItemIdx + distFromTopY;
+						if ((itemIdx >= 0) && (itemIdx < this.NumItems()))
+						{
+							this.WriteItemAtItsLocation(this.selectedItemIdx, false, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+							this.selectedItemIdx = itemIdx;
+							this.WriteItemAtItsLocation(this.selectedItemIdx, true, selectedItemIndexes.hasOwnProperty(this.selectedItemIdx));
+						}
+						// Don't have the later code do anything
+						this.lastUserInput = "";
+						mouseNoAction = true;
+						mouseInputOnly_continue = true;
+					}
 				}
+
+				this.lastMouseClickTime = system.timer;
 			}
 			else
 			{
@@ -1112,6 +1140,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				// where no action needs to be taken
 				this.lastUserInput = "";
 				mouseNoAction = true;
+				mouseInputOnly_continue = true;
 			}
 		}
 		else
@@ -1120,6 +1149,11 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			this.lastUserInput = mk.key;
 		}
 
+		// If no further input processing needs to be done due to a mouse click
+		// action, then continue to the next loop iteration.
+		if (mouseInputOnly_continue)
+			continue;
+
 		// Take the appropriate action based on the user's last input/keypress
 		if ((this.lastUserInput == KEY_ESC) || (this.QuitKeysIncludes(this.lastUserInput)))
 		{
@@ -1127,7 +1161,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			// TODO: Is this logic good and clean?
 			var goAheadAndExit = true;
 			if (mk.mouse !== null)
-				goAheadAndExit = !mouseNoAction;
+				goAheadAndExit = !mouseNoAction; // Only really needed with an input timer?
 			if (goAheadAndExit)
 			{
 				continueOn = false;
