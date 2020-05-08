@@ -35,6 +35,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "utf8.h"
 
 /****************************************************************************/
 /* Redraws str using i as current cursor position and l as length           */
@@ -42,14 +43,22 @@
 /****************************************************************************/
 void sbbs_t::redrwstr(char *strin, int i, int l, long mode)
 {
-	cursor_left(i);
+	if(i <= 0)
+		i = 0;
+	else
+		cursor_left(i);
+	if(l < 0)
+		l = 0;
 	if(mode)
 		bprintf(mode, "%-*.*s",l,l,strin);
 	else
 		column+=rprintf("%-*.*s",l,l,strin);
 	cleartoeol();
-	if(i<l)
-		cursor_left(l-i); 
+	if(i<l) {
+		if(mode&P_UTF8)
+			l = utf8_str_total_width(strin);
+		cursor_left(l-i);
+	}
 }
 
 int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const uchar *ar)
@@ -67,6 +76,7 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 		if(!uselect_total)
 			bprintf(text[SelectItemHdr],title);
 		uselect_num[uselect_total++]=n;
+		add_hotspot((ulong)uselect_total);
 		bprintf(text[SelectItemFmt],uselect_total,item);
 		return(0); 
 	}

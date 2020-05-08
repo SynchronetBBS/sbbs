@@ -277,6 +277,8 @@ bool sbbs_t::ansi_gotoxy(int x, int y)
 		comprintf("\x1b[%d;%dH",y,x);
 		if(x>0)
 			column=x-1;
+		if(y>0)
+			row = y - 1;
 		lncntr=0;
 		return true;
 	}
@@ -299,4 +301,11 @@ bool sbbs_t::ansi_restore(void)
 		return true;
 	}
 	return false;
+}
+
+int sbbs_t::ansi_mouse(enum ansi_mouse_mode mode, bool enable)
+{
+	char str[32] = "";
+	SAFEPRINTF2(str, "\x1b[?%u%c", mode, enable ? 'h' : 'l');
+	return putcom(str);
 }

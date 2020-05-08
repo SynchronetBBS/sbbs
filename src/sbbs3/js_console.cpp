@@ -50,6 +50,7 @@ enum {
 	,CON_PROP_LASTLINELEN
 	,CON_PROP_ATTR
 	,CON_PROP_TOS
+	,CON_PROP_ROW
 	,CON_PROP_ROWS
 	,CON_PROP_COLUMNS
 	,CON_PROP_TABSTOP
@@ -110,7 +111,10 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=sbbs->curatr;
 			break;
 		case CON_PROP_TOS:
-			val=sbbs->tos;
+			val=sbbs->row == 0;
+			break;
+		case CON_PROP_ROW:
+			val=sbbs->row;
 			break;
 		case CON_PROP_ROWS:
 			val=sbbs->rows;
@@ -251,8 +255,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			sbbs->attr(val);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
-		case CON_PROP_TOS:
-			sbbs->tos = val ? true : false;
+		case CON_PROP_ROW:
+			if(val >= 0 && val < TERM_ROWS_MAX)
+				sbbs->row = val;
 			break;
 		case CON_PROP_ROWS:
 			if(val >= TERM_ROWS_MIN && val <= TERM_ROWS_MAX)
@@ -345,10 +350,11 @@ static jsSyncPropertySpec js_console_properties[] = {
 
 	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,310},
 	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,310},
+	{	"current_row"		,CON_PROP_ROW				,CON_PROP_FLAGS ,31800},
 	{	"current_column"	,CON_PROP_COLUMN			,CON_PROP_FLAGS ,315},
 	{	"last_line_length"	,CON_PROP_LASTLINELEN		,CON_PROP_FLAGS	,317},
 	{	"attributes"		,CON_PROP_ATTR				,CON_PROP_FLAGS	,310},
-	{	"top_of_screen"		,CON_PROP_TOS				,CON_PROP_FLAGS	,310},
+	{	"top_of_screen"		,CON_PROP_TOS				,JSPROP_ENUMERATE|JSPROP_READONLY	,310},
 	{	"screen_rows"		,CON_PROP_ROWS				,CON_PROP_FLAGS	,310},
 	{	"screen_columns"	,CON_PROP_COLUMNS			,CON_PROP_FLAGS	,311},
 	{	"tabstop"			,CON_PROP_TABSTOP			,CON_PROP_FLAGS	,31700},
@@ -380,10 +386,11 @@ static jsSyncPropertySpec js_console_properties[] = {
 static const char* con_prop_desc[] = {
 	 "status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"current 0-based line counter (used for automatic screen pause)"
+	,"current 0-based row counter"
 	,"current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
 	,"length of last line sent to terminal (before a carriage-return or line-wrap)"
 	,"current display attributes (set with number or string value)"
-	,"set to <i>true</i> if the terminal cursor is already at the top of the screen"
+	,"set to <i>true</i> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"
 	,"number of remote terminal screen rows (in lines)"
 	,"number of remote terminal screen columns (in character cells)"
 	,"current tab stop interval (tab size), in columns"
@@ -541,6 +548,83 @@ js_putbyte(JSContext *cx, uintN argc, jsval *arglist)
     return JS_TRUE ;
 }
 
+static JSBool
+js_add_hotspot(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	if(argc < 1) {
+		JS_ReportError(cx, "Invalid number of arguments to function");
+		return JS_FALSE;
+	}
+
+	JSString*	js_str = JS_ValueToString(cx, argv[0]);
+	if(js_str == NULL)
+		return JS_FALSE;
+	int32 min_x = -1;
+	int32 max_x = -1;
+	int32 y = -1;
+	uintN argn = 1;
+	if(argc > argn) {
+		if(!JS_ValueToInt32(cx,argv[argn], &min_x))
+			return JS_FALSE;
+		argn++;
+	}
+	if(argc > argn) {
+		if(!JS_ValueToInt32(cx,argv[argn], &max_x))
+			return JS_FALSE;
+		argn++;
+	}
+	if(argc > argn) {
+		if(!JS_ValueToInt32(cx,argv[argn], &y))
+			return JS_FALSE;
+		argn++;
+	}
+	char* p = NULL;
+	JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
+	if(p == NULL)
+		return JS_FALSE;
+	sbbs->add_hotspot(p, min_x, max_x, y);
+	free(p);
+    return JS_TRUE;
+}
+
+static JSBool js_scroll_hotspots(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	int32 rows = 1;
+	if(argc > 0 && !JS_ValueToInt32(cx,argv[0], &rows))
+		return JS_FALSE;
+	sbbs->scroll_hotspots(rows);
+    return JS_TRUE;
+}
+
+static JSBool js_clear_hotspots(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	sbbs->clear_hotspots();
+    return JS_TRUE;
+}
 
 static JSBool
 js_handle_ctrlkey(JSContext *cx, uintN argc, jsval *arglist)
@@ -972,7 +1056,7 @@ js_clear(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->CLS;
+	sbbs->clearscreen(sbbs->term_supports());
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -2210,6 +2294,18 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("sends an unprocessed byte value to the remote terminal")
 	,31700
 	},
+	{"add_hotspot",		js_add_hotspot,		1,	JSTYPE_VOID,	JSDOCSTR("cmd [,min_x] [,max_x] [,y]")
+		,JSDOCSTR("adds a mouse hot-spot (a clickable screen area that generates keyboard input)")
+		,31800
+		},
+	{"clear_hotspots",	js_clear_hotspots,		0,	JSTYPE_VOID,	JSDOCSTR("")
+		,JSDOCSTR("clear all current mouse hot-spots")
+		,31800
+		},
+	{"scroll_hotspots",	js_scroll_hotspots,		0,	JSTYPE_VOID,	JSDOCSTR("[rows=1]")
+		,JSDOCSTR("scroll all current mouse hot-spots by the specific number of rows")
+		,31800
+		},
 	{0}
 };
 

@@ -180,13 +180,13 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 		current_msg_to = to;
 
 	attr(LIGHTGRAY);
-	if(!tos) {
+	if(row != 0) {
 		if(useron.misc&CLRSCRN)
 			outchar(FF);
 		else
 			CRLF;
 	}
-	msghdr_tos = tos;
+	msghdr_tos = (row == 0);
 	if(!menu("msghdr", P_NOERROR)) {
 		bprintf(pmode, msghdr_text(msg, MsgSubj), current_msg_subj);
 		if(msg->tags && *msg->tags)

@@ -244,8 +244,8 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			return((int32_t *)&dte_rate);
 		case 0x7fbf958e:
 			return((int32_t *)&lncntr);
-		case 0x5c1c1500:
-			return((int32_t *)&tos);
+//		case 0x5c1c1500:
+//			return((int32_t *)&tos);
 		case 0x613b690e:
 			return((int32_t *)&rows);
 		case 0x205ace36:

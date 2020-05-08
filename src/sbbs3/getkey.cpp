@@ -321,6 +321,7 @@ void sbbs_t::mnemonics(const char *str)
 	}
 	l=0L;
 	long term = term_supports();
+
 	while(str[l]) {
 		if(str[l]=='~' && str[l+1]!=0) {
 			if(!(term&(ANSI|PETSCII)))
@@ -328,6 +329,7 @@ void sbbs_t::mnemonics(const char *str)
 			l++;
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnehigh]);
+			add_hotspot(str[l], column, column);
 			outchar(str[l]);
 			l++;
 			if(!(term&(ANSI|PETSCII)))
@@ -537,8 +539,9 @@ void sbbs_t::pause()
 	long	l=K_UPPER;
 	size_t	len;
 
- 	if(sys_status&SS_ABORT)
+ 	if((sys_status&SS_ABORT) || pause_inside)
 		return;
+	pause_inside = true;
 	lncntr=0;
 	if(online==ON_REMOTE)
 		rioctl(IOFI);
@@ -557,6 +560,7 @@ void sbbs_t::pause()
 	getnodedat(cfg.node_num,&thisnode,0);
 	nodesync();
 	attr(tempattrs);
+	pause_inside = false;
 }
 
 /****************************************************************************/
@@ -579,4 +583,15 @@ void sbbs_t::ungetkey(char ch, bool insert)
 			keybuftop=0;
 	}
 #endif
+}
+
+/****************************************************************************/
+/* Puts a string into the input buffer										*/
+/****************************************************************************/
+void sbbs_t::ungetstr(const char* str, bool insert)
+{
+	size_t i;
+
+	for(i = 0; str[i] != '\0'; i++)
+		ungetkey(str[i], insert);
 }

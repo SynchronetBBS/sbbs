@@ -324,6 +324,42 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					j++;
 					continue;
 				}
+				if(i == 0 && ch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
+					int button = kbincom(this, 100);
+					ch = kbincom(this, 100);
+					if(ch < '!') {
+						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
+							, button, ch);
+						continue;
+					}
+					int x = ch - '!';
+					ch = kbincom(this, 100);
+					if(ch < '!') {
+						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
+							, button, ch);
+						continue;
+					}
+					int y = ch - '!';
+					lprintf(LOG_DEBUG, "Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
+					if(button == 0x22)  // Right-click
+						return handle_ctrlkey(TERM_KEY_ABORT, mode);
+					if(button != 0x20) // Left-click
+						continue;
+					for(list_node_t* node = mouse_hotspots.first; node != NULL; node = node->next) {
+						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+						if(spot->y != y)
+							continue;
+						if(x < spot->minx || x > spot->maxx)
+							continue;
+						ungetstr(spot->cmd);
+						if(pause_inside)
+							return handle_ctrlkey(TERM_KEY_ABORT, mode);
+						return 0;
+					}
+					if(pause_inside)
+						return '\r';
+					return 0;
+				}
 				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
 					str[i]=0;
 					switch(ch) {
@@ -392,4 +428,96 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 			return(ESC); 
 	}
 	return(ch);
+}
+
+void sbbs_t::set_mouse(long flags)
+{
+	if(term_supports(ANSI)) {
+		long mode = mouse_mode & ~flags;
+		if(mode & MOUSE_MODE_X10)	ansi_mouse(ANSI_MOUSE_X10, false);
+		if(mode & MOUSE_MODE_NORM)	ansi_mouse(ANSI_MOUSE_NORM, false);
+		if(mode & MOUSE_MODE_BTN)	ansi_mouse(ANSI_MOUSE_BTN, false);
+		if(mode & MOUSE_MODE_ANY)	ansi_mouse(ANSI_MOUSE_ANY, false);
+		if(mode & MOUSE_MODE_EXT)	ansi_mouse(ANSI_MOUSE_EXT, false);
+
+		mode = flags & ~mouse_mode;
+		if(mode & MOUSE_MODE_X10)	ansi_mouse(ANSI_MOUSE_X10, true);
+		if(mode & MOUSE_MODE_NORM)	ansi_mouse(ANSI_MOUSE_NORM, true);
+		if(mode & MOUSE_MODE_BTN)	ansi_mouse(ANSI_MOUSE_BTN, true);
+		if(mode & MOUSE_MODE_ANY)	ansi_mouse(ANSI_MOUSE_ANY, true);
+		if(mode & MOUSE_MODE_EXT)	ansi_mouse(ANSI_MOUSE_EXT, true);
+
+		mouse_mode = flags;
+	}
+}
+
+void sbbs_t::add_hotspot(struct mouse_hotspot* spot)
+{
+	if(spot->y < 0)
+		spot->y = row;
+	if(spot->minx < 0)
+		spot->minx = 0;
+	if(spot->maxx < 0)
+		spot->maxx = cols - 1;
+#ifdef _DEBUG
+	lprintf(LOG_DEBUG, "Adding mouse hot spot %u-%u x %u = '%s'"
+		,spot->minx, spot->maxx, spot->y, spot->cmd);
+#endif
+	listPushNodeData(&mouse_hotspots, spot, sizeof(*spot));
+	set_mouse(MOUSE_MODE_X10);
+}
+
+void sbbs_t::clear_hotspots(void)
+{
+#ifdef _DEBUG
+	long spots = listCountNodes(&mouse_hotspots);
+	if(spots)
+		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
+#endif
+	set_mouse(MOUSE_MODE_OFF);
+	listFreeNodes(&mouse_hotspots);
+}
+
+void sbbs_t::scroll_hotspots(long count)
+{
+	long spots = 0;
+	for(list_node_t* node = mouse_hotspots.first; node != NULL; node = node->next) {
+		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+		spot->y -= count;
+		spots++;
+	}
+#ifdef _DEBUG
+	if(spots)
+		lprintf(LOG_DEBUG, "Scrolled %ld mouse hot-spots %ld rows", spots, count);
+#endif
+}
+
+void sbbs_t::add_hotspot(char cmd, long minx, long maxx, long y)
+{
+	struct mouse_hotspot spot = {0};
+	spot.cmd[0] = cmd;
+	spot.minx = minx;
+	spot.maxx = maxx;
+	spot.y = y;
+	add_hotspot(&spot);
+}
+
+void sbbs_t::add_hotspot(ulong num, long minx, long maxx, long y)
+{
+	struct mouse_hotspot spot = {0};
+	SAFEPRINTF(spot.cmd, "%lu", num);
+	spot.minx = minx;
+	spot.maxx = maxx;
+	spot.y = y;
+	add_hotspot(&spot);
+}
+
+void sbbs_t::add_hotspot(const char* cmd, long minx, long maxx, long y)
+{
+	struct mouse_hotspot spot = {0};
+	SAFECOPY(spot.cmd, cmd);
+	spot.minx = minx;
+	spot.maxx = maxx;
+	spot.y = y;
+	add_hotspot(&spot);
 }

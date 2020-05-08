@@ -305,7 +305,7 @@ bool sbbs_t::answer()
 				"\r"		/* Move cursor left (in case previous char printed) */
 				);
 		i=l=0;
-		tos=1;
+		row=0;
 		lncntr=0;
 		center(str);
 

@@ -3361,6 +3361,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 
 	rio_abortable=false;
 
+	mouse_mode = MOUSE_MODE_OFF;
 	console = 0;
 	online = 0;
 	outchar_esc = 0;
@@ -3373,6 +3374,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	readmail_inside = false;
 	scanposts_inside = false;
 	scansubs_inside = false;
+	pause_inside = false;
 	timeleft = 60*10;	/* just incase this is being used for calling gettimeleft() */
 	last_sysop_auth = 0;
 	uselect_total = 0;
@@ -3391,9 +3393,9 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 
 	listInit(&savedlines, /* flags: */0);
 	sys_status=lncntr=criterrs=0L;
-	tos = false;
 	msghdr_tos = false;
 	listInit(&smb_list, /* flags: */0);
+	listInit(&mouse_hotspots, /* flags: */0);
 	column=0;
 	tabstop=8;
 	lastlinelen=0;
@@ -3903,6 +3905,7 @@ sbbs_t::~sbbs_t()
 
 	listFree(&savedlines);
 	listFree(&smb_list);
+	listFree(&mouse_hotspots);
 
 #ifdef USE_CRYPTLIB
 	while(ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex)==EBUSY)
@@ -4292,6 +4295,7 @@ void sbbs_t::reset_logon_vars(void)
     question[0]=0;
     menu_dir[0]=0;
     menu_file[0]=0;
+	row = 0;
     rows = TERM_ROWS_DEFAULT;
 	cols = TERM_COLS_DEFAULT;
     lncntr=0;

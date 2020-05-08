@@ -146,9 +146,9 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			else if(str[l+1] == 'Z')	/* Ctrl-AZ==EOF (uppercase 'Z' only) */
 				break;
 			else {
-				bool was_tos = tos;
+				bool was_tos = (row == 0);
 				ctrl_a(str[l+1]);
-				if(tos && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if(row == 0 && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;				/* Clear the abort flag (keep displaying the msg/file) */
 				l+=2;
 			}
@@ -365,10 +365,10 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 					mode |= P_NOABORT;
 					continue;
 				}
-				bool was_tos = tos;
+				bool was_tos = (row == 0);
  				i=show_atcode((char *)str+l, obj);	/* returns 0 if not valid @ code */
 				l+=i;					/* i is length of code string */
-				if(tos && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if(row > 0 && !was_tos && (sys_status&SS_ABORT) && !lines_printed)	/* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;				/* Clear the abort flag (keep displaying the msg/file) */
 				if(i)					/* if valid string, go to top */
 					continue;
@@ -392,7 +392,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 		}
 	}
 	if(!(mode&P_SAVEATR)) {
-		console=orgcon;
+ 		console=orgcon;
 		attr(tmpatr);
 	}
 	if(!(mode&P_NOATCODES) && cur_output_rate != output_rate)

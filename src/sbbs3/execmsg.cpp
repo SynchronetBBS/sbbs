@@ -59,6 +59,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 							else outchar(' ');
 							if(i<9) outchar(' ');
 							if(i<99) outchar(' ');
+							add_hotspot(i+1);
 							bprintf(text[CfgGrpLstFmt]
 								,i+1, cfg.grp[usrgrp[i]]->lname); } 
 					}
@@ -70,7 +71,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					if(!j)
 						j=curgrp;
 					else
-						j--; 
+						j--;
 				}
 				sprintf(str,"subs%u",usrgrp[j]+1);
 				if(!menu(str, P_NOERROR)) {
@@ -84,6 +85,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 							,getposts(&cfg,usrsub[j][i]));
 						if(i<9) outchar(' ');
 						if(i<99) outchar(' ');
+						add_hotspot(i+1);
 						bputs(str); } 
 				}
 				sprintf(str,text[JoinWhichSub],cursub[j]+1);
@@ -211,6 +213,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					outchar('*');
 				else outchar(' ');
 				if(i<9) outchar(' ');
+				add_hotspot(i+1);
 				bprintf(text[GrpLstFmt],i+1
 					,cfg.grp[usrgrp[i]]->lname,nulstr,usrsubs[i]); 
 			}
@@ -232,6 +235,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					,getposts(&cfg,usrsub[curgrp][i]));
 				if(i<9) outchar(' ');
 				if(i<99) outchar(' ');
+				add_hotspot(i+1);
 				bputs(str); 
 			}
 			return(0);

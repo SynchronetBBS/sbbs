@@ -465,8 +465,8 @@ public:
 	uint	attr_stack[64];	/* Saved attributes (stack) */
 	int 	attr_sp;		/* Attribute stack pointer */
 	long 	lncntr; 		/* Line Counter - for PAUSE */
-	bool 	tos;			/* Cursor is currently at the Top of Screen */
 	bool	msghdr_tos;		/* Message header was displayed at Top of Screen */
+	long	row;			/* Current row */
 	long 	rows;			/* Current number of Rows for User */
 	long	cols;			/* Current number of Columns for User */
 	long	column;			/* Current column counter (for line counter) */
@@ -565,6 +565,7 @@ public:
 	bool	ansi_save(void);
 	bool	ansi_restore(void);
 	void	ansi_getlines(void);
+	int		ansi_mouse(enum ansi_mouse_mode, bool enable);
 
 			/* Command Shell Methods */
 	int		exec(csi_t *csi);
@@ -732,9 +733,11 @@ public:
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	int		outchar(enum unicode_codepoint, char cp437_fallback);
 	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
+	void	inc_row(int count);
 	void	inc_column(int count);
 	void	center(char *str, unsigned int columns = 0);
 	void	wide(const char*);
+	void	clearscreen(long term);
 	void	clearline(void);
 	void	cleartoeol(void);
 	void	cleartoeos(void);
@@ -785,9 +788,11 @@ public:
 	char	getkey(long mode); 		/* Waits for a key hit local or remote  */
 	long	getkeys(const char *str, ulong max, long mode = K_UPPER);
 	void	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
+	void	ungetstr(const char* str, bool insert = false);
 	char	question[MAX_TEXTDAT_ITEM_LEN+1];
 	bool	yesno(const char *str, long mode = 0);
 	bool	noyes(const char *str, long mode = 0);
+	bool	pause_inside;
 	void	pause(void);
 	const char *	mnestr;
 	void	mnemonics(const char *str);
@@ -795,6 +800,15 @@ public:
 	/* inkey.cpp */
 	char	inkey(long mode, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
+	long	mouse_mode;			// Mouse reporting mode flags
+	link_list_t mouse_hotspots;	// Mouse hot-spots
+	void	add_hotspot(struct mouse_hotspot*);
+	void	clear_hotspots(void);
+	void	scroll_hotspots(long count);
+	void	add_hotspot(char cmd, long minx = -1, long maxx = -1, long y = -1);
+	void	add_hotspot(ulong num, long minx = -1, long maxx = -1, long y = -1);
+	void	add_hotspot(const char* cmd, long minx = -1, long maxx = -1, long y = -1);
+	void	set_mouse(long mode);
 
 	/* prntfile.cpp */
 	bool	printfile(const char* fname, long mode, long org_cols = 0, JSObject* obj = NULL);

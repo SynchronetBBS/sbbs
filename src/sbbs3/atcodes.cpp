@@ -239,6 +239,19 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	str[0]=0;
 
+	if(*sp == '~' && *(sp + 1)) {
+		sp++;
+		tp = strchr(sp + 1, '~');
+		if(tp == NULL)
+			tp = sp;
+		else {
+			*tp = 0;
+			tp++;
+		}
+		add_hotspot(tp, column, column + strlen(sp) - 1, row);
+		return sp;
+	}
+
 	if(strncmp(sp, "U+", 2) == 0) {	// UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
 		if(tp == NULL || *tp == 0)

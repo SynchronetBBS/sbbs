@@ -616,7 +616,7 @@ int sbbs_t::outchar(char ch)
 		}
 	}
 
-	if(ch==FF && lncntr > 0 && !tos) {
+	if(ch==FF && lncntr > 0 && row > 0) {
 		lncntr=0;
 		newline();
 		if(!(sys_status&SS_PAUSEOFF)) {
@@ -633,14 +633,8 @@ int sbbs_t::outchar(char ch)
 		ch=text[YNQP][3];
 		if(text[YNQP][2]==0 || ch==0) ch='X';
 	}
-	if(ch==FF) {
-		if(term&ANSI)
-			putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
-		else if(term&PETSCII)
-			outcom(PETSCII_CLEAR);
-		else
-			outcom(FF);
-	}
+	if(ch==FF)
+		clearscreen(term);
 	else if(ch == '\t') {
 		outcom(' ');
 		column++;
@@ -687,16 +681,16 @@ int sbbs_t::outchar(char ch)
 				}
 				break;
 			case '\n':	// 10
+				inc_row(1);
 				if(lncntr || lastlinelen)
 					lncntr++;
 				lbuflen=0;
-				tos=0;
 				column=0;
 				break;
 			case FF:	// 12
 				lncntr=0;
 				lbuflen=0;
-				tos=1;
+				row=0;
 				column=0;
 			case '\r':	// 13
 				lastlinelen = column;
@@ -750,9 +744,18 @@ void sbbs_t::inc_column(int count)
 	if(column >= cols) {	// assume terminal has/will auto-line-wrap
 		lncntr++;
 		lbuflen = 0;
-		tos = 0;
 		lastlinelen = column;
 		column = 0;
+		inc_row(1);
+	}
+}
+
+void sbbs_t::inc_row(int count)
+{
+	row += count;
+	if(row >= rows) {
+		scroll_hotspots((row - rows) + 1);
+		row = rows - 1;
 	}
 }
 
@@ -826,6 +829,17 @@ void sbbs_t::newline(int count)
 	}
 }
 
+void sbbs_t::clearscreen(long term)
+{
+	clear_hotspots();
+	if(term&ANSI)
+		putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
+	else if(term&PETSCII)
+		outcom(PETSCII_CLEAR);
+	else
+		outcom(FF);
+}
+
 void sbbs_t::clearline(void)
 {
 	carriage_return();
@@ -841,7 +855,7 @@ void sbbs_t::cursor_home(void)
 		outcom(PETSCII_HOME);
 	else
 		outchar(FF);	/* this will clear some terminals, do nothing with others */
-	tos=1;
+	row=0;
 	column=0;
 }
 

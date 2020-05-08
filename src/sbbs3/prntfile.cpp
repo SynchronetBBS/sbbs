@@ -83,8 +83,8 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		sys_status&=~SS_ABORT; 
 	}
 
-	if(!(mode&P_NOCRLF) && !tos && !rip) {
-		CRLF;
+	if(!(mode&P_NOCRLF) && row > 0 && !rip) {
+		newline();
 	}
 
 	if((stream=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
@@ -178,8 +178,8 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 		}
 		sys_status&=~SS_ABORT; 
 	}
-	if(!tos) {
-		CRLF; 
+	if(!(mode&P_NOCRLF) && row > 0) {
+		newline();
 	}
 	if((fp=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
