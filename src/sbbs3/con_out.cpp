@@ -838,6 +838,8 @@ void sbbs_t::clearscreen(long term)
 		outcom(PETSCII_CLEAR);
 	else
 		outcom(FF);
+	row=0;
+	column=0;
 }
 
 void sbbs_t::clearline(void)
