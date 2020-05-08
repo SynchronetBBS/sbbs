@@ -460,7 +460,7 @@ void sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 	if(spot->maxx < 0)
 		spot->maxx = cols - 1;
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG, "Adding mouse hot spot %u-%u x %u = '%s'"
+	lprintf(LOG_DEBUG, "Adding mouse hot spot %ld-%ld x %ld = '%s'"
 		,spot->minx, spot->maxx, spot->y, spot->cmd);
 #endif
 	listPushNodeData(&mouse_hotspots, spot, sizeof(*spot));
