@@ -694,7 +694,7 @@ long sbbs_t::getnum(ulong max, ulong dflt)
 			n++;
 			i+=ch&0xf;
 			outchar(ch);
-			if(i*10UL>max && !(useron.misc&COLDKEYS)) {
+			if(i*10UL>max && !(useron.misc&COLDKEYS) && keybuf_level() < 1) {
 				CRLF;
 				lncntr=0;
 				return(i); 

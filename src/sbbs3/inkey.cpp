@@ -351,6 +351,13 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							continue;
 						if(x < spot->minx || x > spot->maxx)
 							continue;
+#ifdef _DEBUG
+						{
+							char dbg[128];
+							c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */true);
+							lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
+						}
+#endif
 						ungetstr(spot->cmd);
 						if(pause_inside)
 							return handle_ctrlkey(TERM_KEY_ABORT, mode);
@@ -463,7 +470,7 @@ void sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 	lprintf(LOG_DEBUG, "Adding mouse hot spot %ld-%ld x %ld = '%s'"
 		,spot->minx, spot->maxx, spot->y, spot->cmd);
 #endif
-	listPushNodeData(&mouse_hotspots, spot, sizeof(*spot));
+	listInsertNodeData(&mouse_hotspots, spot, sizeof(*spot));
 	set_mouse(MOUSE_MODE_X10);
 }
 
@@ -481,15 +488,20 @@ void sbbs_t::clear_hotspots(void)
 void sbbs_t::scroll_hotspots(long count)
 {
 	long spots = 0;
+	long remain = 0;
 	for(list_node_t* node = mouse_hotspots.first; node != NULL; node = node->next) {
 		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
 		spot->y -= count;
 		spots++;
+		if(spot->y >= 0)
+			remain++;
 	}
 #ifdef _DEBUG
 	if(spots)
-		lprintf(LOG_DEBUG, "Scrolled %ld mouse hot-spots %ld rows", spots, count);
+		lprintf(LOG_DEBUG, "Scrolled %ld mouse hot-spots %ld rows (%ld remain)", spots, count, remain);
 #endif
+	if(remain < 1)
+		clear_hotspots();
 }
 
 void sbbs_t::add_hotspot(char cmd, long minx, long maxx, long y)
@@ -505,7 +517,7 @@ void sbbs_t::add_hotspot(char cmd, long minx, long maxx, long y)
 void sbbs_t::add_hotspot(ulong num, long minx, long maxx, long y)
 {
 	struct mouse_hotspot spot = {0};
-	SAFEPRINTF(spot.cmd, "%lu", num);
+	SAFEPRINTF(spot.cmd, "%lu\r", num);
 	spot.minx = minx;
 	spot.maxx = maxx;
 	spot.y = y;

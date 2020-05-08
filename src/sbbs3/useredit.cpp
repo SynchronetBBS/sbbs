@@ -813,50 +813,73 @@ void sbbs_t::maindflts(user_t* user)
 							,term_type(term)
 							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
 							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
+		add_hotspot('T');
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
 		if(user->rows)
 			ultoa(user->rows,tmp,10);
 		else
 			SAFEPRINTF2(tmp,"%s%ld", text[TerminalAutoDetect], rows);
+		add_hotspot('L');
 		bprintf(text[UserDefaultsRows], tmp, text[TerminalRows]);
-		if(cfg.total_shells>1)
+		if(cfg.total_shells>1) {
+			add_hotspot('K');
 			bprintf(text[UserDefaultsCommandSet]
 				,cfg.shell[user->shell]->name);
-		if(cfg.total_xedits)
+		}
+		if(cfg.total_xedits) {
+			add_hotspot('E');
 			bprintf(text[UserDefaultsXeditor]
 				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
+		}
+		add_hotspot('A');
 		bprintf(text[UserDefaultsArcType]
 			,user->tmpext);
+		add_hotspot('X');
 		bprintf(text[UserDefaultsMenuMode]
 			,user->misc&EXPERT ? text[On] : text[Off]);
+		add_hotspot('P');
 		bprintf(text[UserDefaultsPause]
 			,user->misc&UPAUSE ? text[On] : text[Off]);
+		add_hotspot('H');
 		bprintf(text[UserDefaultsHotKey]
 			,user->misc&COLDKEYS ? text[Off] : text[On]);
+		add_hotspot('S');
 		bprintf(text[UserDefaultsCursor]
 			,user->misc&SPIN ? text[On] : user->misc&NOPAUSESPIN ? text[Off] : "Pause Prompt Only");
+		add_hotspot('C');
 		bprintf(text[UserDefaultsCLS]
 			,user->misc&CLRSCRN ? text[On] : text[Off]);
+		add_hotspot('N');
 		bprintf(text[UserDefaultsAskNScan]
 			,user->misc&ASK_NSCAN ? text[On] : text[Off]);
+		add_hotspot('Y');
 		bprintf(text[UserDefaultsAskSScan]
 			,user->misc&ASK_SSCAN ? text[On] : text[Off]);
+		add_hotspot('F');
 		bprintf(text[UserDefaultsANFS]
 			,user->misc&ANFSCAN ? text[On] : text[Off]);
+		add_hotspot('R');
 		bprintf(text[UserDefaultsRemember]
 			,user->misc&CURSUB ? text[On] : text[Off]);
+		add_hotspot('B');
 		bprintf(text[UserDefaultsBatFlag]
 			,user->misc&BATCHFLAG ? text[On] : text[Off]);
-		if(cfg.sys_misc&SM_FWDTONET)
+		if(cfg.sys_misc&SM_FWDTONET) {
+			add_hotspot('M');
 			bprintf(text[UserDefaultsNetMail]
 				,user->misc&NETMAIL ? text[On] : text[Off]
 				,user->netmail);
-		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V'))
+		}
+		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V')) {
+			add_hotspot('I');
 			bprintf(text[UserDefaultsAutoLogon]
 			,user->misc&AUTOLOGON ? text[On] : text[Off]);
-		if(user->exempt&FLAG('Q') || user->misc&QUIET)
+		}
+		if(user->exempt&FLAG('Q') || user->misc&QUIET) {
+			add_hotspot('D');
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
+		}
 		SAFECOPY(str,"None");
 		for(i=0;i<cfg.total_prots;i++) {
 			if(user->prot==cfg.prot[i]->mnemonic) {
@@ -864,8 +887,10 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			}
 		}
+		add_hotspot('Z');
 		bprintf(text[UserDefaultsProtocol],str
 			,user->misc&AUTOHANG ? "(Auto-Hangup)":nulstr);
+		add_hotspot('W');
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			bputs(text[UserDefaultsPassword]);
 
@@ -885,6 +910,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(cfg.total_shells>1)
 			strcat(str,"K");
 
+		add_hotspot('Q');
 		ch=(char)getkeys(str,0);
 		switch(ch) {
 			case 'T':

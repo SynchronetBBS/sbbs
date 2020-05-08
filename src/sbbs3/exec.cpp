@@ -1917,7 +1917,7 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_UNGETKEY:
-			ungetkey(csi->cmd&0x7f);
+			ungetkey(csi->cmd&0x7f, /* insert: */true);
 			return(0);
 		case CS_UNGETSTR:
 			j=strlen(csi->str);

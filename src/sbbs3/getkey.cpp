@@ -516,7 +516,7 @@ long sbbs_t::getkeys(const char *keys, ulong max, long mode)
 			i+=ch&0xf;
 			if(!(mode&K_NOECHO))	
 				outchar(ch);
-			if(i*10>max && !(useron.misc&COLDKEYS)) {
+			if(i*10>max && !(useron.misc&COLDKEYS) && keybuf_level() < 1) {
 				if(!(mode&(K_NOECHO|K_NOCRLF))) {
 					attr(LIGHTGRAY);
 					CRLF;

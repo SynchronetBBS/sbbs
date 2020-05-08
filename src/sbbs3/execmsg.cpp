@@ -151,6 +151,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 				}
 				if(i<=usrsubs[curgrp])
 					cursub[curgrp]=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((uint)(ch&0xf)<=usrsubs[curgrp] && (ch&0xf) && usrgrps)
@@ -185,10 +187,14 @@ int sbbs_t::exec_msg(csi_t *csi)
 				i+=ch&0xf;
 				if(i<=usrgrps)
 					curgrp=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((uint)(ch&0xf)<=usrgrps && (ch&0xf))
 				curgrp=(ch&0xf)-1;
+			if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+				ungetkey(ch, /* insert: */true);
 			return(0);
 
 		case CS_MSG_SET_GROUP:

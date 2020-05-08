@@ -42,7 +42,7 @@ int sbbs_t::exec_file(csi_t *csi)
 {
 	char	str[256],ch;
 	int		s;
-	uint 	i,j,x,y;
+	ulong 	i,j,x,y;
 	file_t	f;
 
 	switch(*(csi->ip++)) {
@@ -61,6 +61,7 @@ int sbbs_t::exec_file(csi_t *csi)
 							else outchar(' ');
 							if(i<9) outchar(' ');
 							if(i<99) outchar(' ');
+							add_hotspot(i+1);
 							bprintf(text[CfgLibLstFmt]
 								,i+1,cfg.lib[usrlib[i]]->lname); 
 						} 
@@ -87,6 +88,7 @@ int sbbs_t::exec_file(csi_t *csi)
 							,getfiles(&cfg,usrdir[j][i]));
 						if(i<9) outchar(' ');
 						if(i<99) outchar(' ');
+						add_hotspot(i+1);
 						bputs(str); 
 					} 
 				}
@@ -153,6 +155,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				}
 				if(i<=usrdirs[curlib])
 					curdir[curlib]=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((ch&0xf)<=(int)usrdirs[curlib] && (ch&0xf) && usrlibs)
@@ -187,10 +191,14 @@ int sbbs_t::exec_file(csi_t *csi)
 				i+=ch&0xf;
 				if(i<=usrlibs)
 					curlib=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((ch&0xf)<=(int)usrlibs && (ch&0xf))
 				curlib=(ch&0xf)-1;
+			if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+				ungetkey(ch, /* insert: */true);
 			return(0);
 
 		case CS_FILE_SHOW_LIBRARIES:
@@ -204,6 +212,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					outchar('*');
 				else outchar(' ');
 				if(i<9) outchar(' ');
+				add_hotspot(i+1);
 				bprintf(text[LibLstFmt],i+1
 					,cfg.lib[usrlib[i]]->lname,nulstr,usrdirs[i]); 
 			}
@@ -225,6 +234,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					,getfiles(&cfg,usrdir[curlib][i]));
 				if(i<9) outchar(' ');
 				if(i<99) outchar(' ');
+				add_hotspot(i+1);
 				bputs(str); 
 			}
 			return(0);

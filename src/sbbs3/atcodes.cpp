@@ -248,6 +248,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			*tp = 0;
 			tp++;
 		}
+		c_unescape_str(tp);
 		add_hotspot(tp, column, column + strlen(sp) - 1, row);
 		return sp;
 	}
