@@ -464,7 +464,6 @@ public:
 	time_t 	timeout;		/* User inactivity timeout reference */
 	ulong 	timeleft_warn;	/* low timeleft warning flag */
 	uint	curatr; 		/* Current Text Attributes Always */
-	uint	hot_attr;		/* Auto-Mouse hot-spot attribute (when non-zero) */
 	uint	attr_stack[64];	/* Saved attributes (stack) */
 	int 	attr_sp;		/* Attribute stack pointer */
 	long 	lncntr; 		/* Line Counter - for PAUSE */
@@ -804,13 +803,15 @@ public:
 	char	inkey(long mode, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
 	long	mouse_mode;			// Mouse reporting mode flags
+	uint	hot_attr;			// Auto-Mouse hot-spot attribute (when non-zero)
+	bool	liberal_hotspots;
 	link_list_t mouse_hotspots;	// Mouse hot-spots
-	void	add_hotspot(struct mouse_hotspot*);
+	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
+	struct mouse_hotspot* add_hotspot(char cmd, long minx = -1, long maxx = -1, long y = -1);
+	struct mouse_hotspot* add_hotspot(ulong num, long minx = -1, long maxx = -1, long y = -1);
+	struct mouse_hotspot* add_hotspot(const char* cmd, long minx = -1, long maxx = -1, long y = -1);
 	void	clear_hotspots(void);
 	void	scroll_hotspots(long count);
-	void	add_hotspot(char cmd, long minx = -1, long maxx = -1, long y = -1);
-	void	add_hotspot(ulong num, long minx = -1, long maxx = -1, long y = -1);
-	void	add_hotspot(const char* cmd, long minx = -1, long maxx = -1, long y = -1);
 	void	set_mouse(long mode);
 
 	/* prntfile.cpp */
