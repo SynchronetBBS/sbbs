@@ -581,6 +581,7 @@ void sbbs_t::qwk_sec()
 				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
 			}
 			delfiles(cfg.temp_dir,ALLFILES);
+			clear_hotspots();
 			continue;
 		}
 
