@@ -607,7 +607,7 @@ js_add_hotspot(JSContext *cx, uintN argc, jsval *arglist)
 	JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
 	if(p == NULL)
 		return JS_FALSE;
-	sbbs->add_hotspot(p, min_x, max_x, y);
+	sbbs->add_hotspot(p, hungry, min_x, max_x, y);
 	free(p);
     return JS_TRUE;
 }
