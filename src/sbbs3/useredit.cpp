@@ -1160,6 +1160,7 @@ void sbbs_t::maindflts(user_t* user)
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			default:
+				clear_hotspots();
 				return; 
 		} 
 	}
