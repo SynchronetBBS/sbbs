@@ -148,11 +148,11 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			}
 			else if(str[l+1] == 'Z')	/* Ctrl-AZ==EOF (uppercase 'Z' only) */
 				break;
-			else if(str[l + 1] == '~' && str[l + 2] != '\0') {
+			else if(str[l + 1] == '~' && str[l + 2] >= ' ') {
 				add_hotspot(str[l + 2], /* hungry: */true);
 				l += 2;
 			}
-			else if(str[l + 1] == '`' && str[l + 2] != '\0') {
+			else if(str[l + 1] == '`' && str[l + 2] >= ' ') {
 				add_hotspot(str[l + 2], /* hungry: */false);
 				l += 2;
 			}
