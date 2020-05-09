@@ -3362,7 +3362,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	rio_abortable=false;
 
 	mouse_mode = MOUSE_MODE_OFF;
-	liberal_hotspots = true;
+	hungry_hotspots = true;
 	console = 0;
 	online = 0;
 	outchar_esc = 0;

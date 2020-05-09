@@ -305,6 +305,15 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 /* Synchronet Node Instance class definition */
 #if defined(__cplusplus) && defined(JAVASCRIPT)
+
+struct mouse_hotspot {		// Mouse hot-spot
+	char	cmd[128];
+	long	y;
+	long	minx;
+	long	maxx;
+	bool	hungry;
+};
+
 class sbbs_t
 {
 
@@ -567,6 +576,13 @@ public:
 	bool	ansi_save(void);
 	bool	ansi_restore(void);
 	void	ansi_getlines(void);
+	enum ansi_mouse_mode {
+		ANSI_MOUSE_X10	= 9,
+		ANSI_MOUSE_NORM	= 1000,
+		ANSI_MOUSE_BTN	= 1002,
+		ANSI_MOUSE_ANY	= 1003,
+		ANSI_MOUSE_EXT	= 1006
+	};
 	int		ansi_mouse(enum ansi_mouse_mode, bool enable);
 
 			/* Command Shell Methods */
@@ -802,14 +818,23 @@ public:
 	/* inkey.cpp */
 	char	inkey(long mode, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
+
+									// Terminal mouse reporting mode (mouse_mode)
+#define MOUSE_MODE_OFF		0		// No terminal mouse reporting enabled/expected
+#define MOUSE_MODE_X10		(1<<0)	// X10 compatible mouse reporting enabled
+#define MOUSE_MODE_NORM		(1<<1)	// Normal tracking mode mouse reporting
+#define MOUSE_MODE_BTN		(1<<2)	// Button-event tracking mode mouse reporting
+#define MOUSE_MODE_ANY		(1<<3)	// Any-event tracking mode mouse reporting
+#define MOUSE_MODE_EXT		(1<<4)	// SGR-encoded extended coordinate mouse reporting
+
 	long	mouse_mode;			// Mouse reporting mode flags
 	uint	hot_attr;			// Auto-Mouse hot-spot attribute (when non-zero)
-	bool	liberal_hotspots;
+	bool	hungry_hotspots;
 	link_list_t mouse_hotspots;	// Mouse hot-spots
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
-	struct mouse_hotspot* add_hotspot(char cmd, long minx = -1, long maxx = -1, long y = -1);
-	struct mouse_hotspot* add_hotspot(ulong num, long minx = -1, long maxx = -1, long y = -1);
-	struct mouse_hotspot* add_hotspot(const char* cmd, long minx = -1, long maxx = -1, long y = -1);
+	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
+	struct mouse_hotspot* add_hotspot(ulong num, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
+	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
 	void	clear_hotspots(void);
 	void	scroll_hotspots(long count);
 	void	set_mouse(long mode);

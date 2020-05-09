@@ -351,17 +351,17 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						if(spot->y == y && x >= spot->minx && x <= spot->maxx)
 							break;
 					}
-					if(node == NULL && liberal_hotspots) {
+					if(node == NULL) {
 						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
 							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if(spot->y == y && x >= spot->minx)
+							if(spot->hungry && spot->y == y && x >= spot->minx)
 								break;
 						}
 					}
-					if(node == NULL && liberal_hotspots) {
+					if(node == NULL) {
 						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
 							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if(spot->y == y)
+							if(spot->hungry && spot->y == y)
 								break;
 						}
 					}
@@ -523,32 +523,35 @@ void sbbs_t::scroll_hotspots(long count)
 		clear_hotspots();
 }
 
-struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, long minx, long maxx, long y)
+struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, long minx, long maxx, long y)
 {
 	struct mouse_hotspot spot = {0};
 	spot.cmd[0] = cmd;
 	spot.minx = minx;
 	spot.maxx = maxx;
 	spot.y = y;
+	spot.hungry = hungry;
 	return add_hotspot(&spot);
 }
 
-struct mouse_hotspot* sbbs_t::add_hotspot(ulong num, long minx, long maxx, long y)
+struct mouse_hotspot* sbbs_t::add_hotspot(ulong num, bool hungry, long minx, long maxx, long y)
 {
 	struct mouse_hotspot spot = {0};
 	SAFEPRINTF(spot.cmd, "%lu\r", num);
 	spot.minx = minx;
 	spot.maxx = maxx;
 	spot.y = y;
+	spot.hungry = hungry;
 	return add_hotspot(&spot);
 }
 
-struct mouse_hotspot* sbbs_t::add_hotspot(const char* cmd, long minx, long maxx, long y)
+struct mouse_hotspot* sbbs_t::add_hotspot(const char* cmd, bool hungry, long minx, long maxx, long y)
 {
 	struct mouse_hotspot spot = {0};
 	SAFECOPY(spot.cmd, cmd);
 	spot.minx = minx;
 	spot.maxx = maxx;
 	spot.y = y;
+	spot.hungry = hungry;
 	return add_hotspot(&spot);
 }

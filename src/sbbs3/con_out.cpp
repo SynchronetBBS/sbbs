@@ -92,9 +92,14 @@ int sbbs_t::bputs(const char *str, long mode)
 			l++;
 			if(str[l] == 'Z')	/* EOF (uppercase 'Z' only) */
 				break;
-			if(str[l] == '~' && str[l + 1] != '\0') {
+			if(str[l] == '~' && str[l + 1] != '\0') { // Mouse hot-spot (hungry)
 				l++;
-				add_hotspot(str[l]);
+				add_hotspot(str[l], /* hungry */true);
+				continue;
+			}
+			if(str[l] == '`' && str[l + 1] != '\0') { // Mouse hot-spot (strict)
+				l++;
+				add_hotspot(str[l], /* hungry */false);
 				continue;
 			}
 			ctrl_a(str[l++]);
@@ -1127,7 +1132,8 @@ void sbbs_t::ctrl_a(char x)
 		case 'L':	/* CLS (form feed) */
 			CLS;
 			break;
-		case '`':	/* Home cursor */
+		case '\'':	/* Home cursor */
+		case '`':	// usurped by strict hot-spot
 			cursor_home();
 			break;
 		case '>':   /* CLREOL */

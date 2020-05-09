@@ -142,8 +142,8 @@ int main(int argc, char **argv)
 					ANSI;	
 					fprintf(out,"2J");	/* clear screen */
 					/* fall-through */
-				case '`':
-					ANSI;	
+				case '\'':
+					ANSI;
 					fprintf(out,"H");	/* home cursor */
 					break;
 				case '-':

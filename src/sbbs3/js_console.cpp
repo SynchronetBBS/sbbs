@@ -579,10 +579,15 @@ js_add_hotspot(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_str = JS_ValueToString(cx, argv[0]);
 	if(js_str == NULL)
 		return JS_FALSE;
+	bool hungry = true;
 	int32 min_x = -1;
 	int32 max_x = -1;
 	int32 y = -1;
 	uintN argn = 1;
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		hungry = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 	if(argc > argn) {
 		if(!JS_ValueToInt32(cx,argv[argn], &min_x))
 			return JS_FALSE;
@@ -2305,7 +2310,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("sends an unprocessed byte value to the remote terminal")
 	,31700
 	},
-	{"add_hotspot",		js_add_hotspot,		1,	JSTYPE_VOID,	JSDOCSTR("cmd [,min_x] [,max_x] [,y]")
+	{"add_hotspot",		js_add_hotspot,		1,	JSTYPE_VOID,	JSDOCSTR("cmd [,bool hungry=<tt>true</tt>] [,min_x] [,max_x] [,y]")
 		,JSDOCSTR("adds a mouse hot-spot (a clickable screen area that generates keyboard input)")
 		,31800
 		},

@@ -494,22 +494,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_HBLINK_FONT	(1<<21)	/* Alt high-blink attribute font activated	*/
 #define CON_CR_CLREOL	(1<<31)	// outchar('\r') clears to end-of-line first
 
-								// Terminal mouse reporting mode (mouse_mode)
-#define MOUSE_MODE_X10	(1<<0)	// X10 compatible mouse reporting enabled
-#define MOUSE_MODE_NORM	(1<<1)	// Normal tracking mode mouse reporting
-#define MOUSE_MODE_BTN	(1<<2)	// Button-event tracking mode mouse reporting
-#define MOUSE_MODE_ANY	(1<<3)	// Any-event tracking mode mouse reporting
-#define MOUSE_MODE_EXT	(1<<4)	// SGR-encoded extended coordinate mouse reporting
-#define MOUSE_MODE_OFF	0
-
-enum ansi_mouse_mode {
-	ANSI_MOUSE_X10	= 9,
-	ANSI_MOUSE_NORM	= 1000,
-	ANSI_MOUSE_BTN	= 1002,
-	ANSI_MOUSE_ANY	= 1003,
-	ANSI_MOUSE_EXT	= 1006
-};
-
 							/* Number of milliseconds						*/
 #define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
 
@@ -1121,12 +1105,5 @@ typedef struct {						/* Sub-board scan information */
 	uint32_t	sav_ptr;					/* Saved New-message pointer */
 	uint32_t	sav_last;					/* Saved Last read message number */
 } subscan_t;
-
-struct mouse_hotspot {						// Mouse hot-spot
-	char	cmd[128];
-	long	y;
-	long	minx;
-	long	maxx;
-};
 
 #endif /* Don't add anything after this #endif statement */

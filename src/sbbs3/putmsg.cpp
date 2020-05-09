@@ -64,6 +64,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 	struct mouse_hotspot hot_spot = {0};
 
 	hot_attr = 0;
+	hungry_hotspots = true;
 	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
 	if(!(mode&P_SAVEATR))
@@ -148,7 +149,11 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			else if(str[l+1] == 'Z')	/* Ctrl-AZ==EOF (uppercase 'Z' only) */
 				break;
 			else if(str[l + 1] == '~' && str[l + 2] != '\0') {
-				add_hotspot(str[l + 2]);
+				add_hotspot(str[l + 2], /* hungry: */true);
+				l += 2;
+			}
+			else if(str[l + 1] == '`' && str[l + 2] != '\0') {
+				add_hotspot(str[l + 2], /* hungry: */false);
 				l += 2;
 			}
 			else {
@@ -389,6 +394,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 					hot_spot.maxx = column;
 					hot_spot.cmd[strlen(hot_spot.cmd)] = str[l];
 				} else if(hot_spot.cmd[0]) {
+					hot_spot.hungry = hungry_hotspots;
 					add_hotspot(&hot_spot);
 					memset(&hot_spot, 0, sizeof(hot_spot));
 				}

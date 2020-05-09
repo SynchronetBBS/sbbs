@@ -329,11 +329,25 @@ void sbbs_t::mnemonics(const char *str)
 			l++;
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnehigh]);
-			add_hotspot(str[l], column, column);
+			add_hotspot(str[l], /* hungry: */true, column, column);
 			outchar(str[l]);
 			l++;
 			if(!(term&(ANSI|PETSCII)))
 				outchar(')');
+			if(!ctrl_a_codes)
+				attr(cfg.color[clr_mnelow]); 
+		}
+		else if(str[l]=='`' && str[l+1]!=0) {
+			if(!(term&(ANSI|PETSCII)))
+				outchar('[');
+			l++;
+			if(!ctrl_a_codes)
+				attr(cfg.color[clr_mnehigh]);
+			add_hotspot(str[l], /* hungry: */false, column, column);
+			outchar(str[l]);
+			l++;
+			if(!(term&(ANSI|PETSCII)))
+				outchar(']');
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnelow]); 
 		}
