@@ -147,6 +147,10 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			}
 			else if(str[l+1] == 'Z')	/* Ctrl-AZ==EOF (uppercase 'Z' only) */
 				break;
+			else if(str[l + 1] == '~' && str[l + 2] != '\0') {
+				add_hotspot(str[l + 2]);
+				l += 2;
+			}
 			else {
 				bool was_tos = (row == 0);
 				ctrl_a(str[l+1]);

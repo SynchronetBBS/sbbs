@@ -92,6 +92,11 @@ int sbbs_t::bputs(const char *str, long mode)
 			l++;
 			if(str[l] == 'Z')	/* EOF (uppercase 'Z' only) */
 				break;
+			if(str[l] == '~' && str[l + 1] != '\0') {
+				l++;
+				add_hotspot(str[l]);
+				continue;
+			}
 			ctrl_a(str[l++]);
 			continue;
 		}
