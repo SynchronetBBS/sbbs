@@ -168,12 +168,12 @@ function external_program_menu(xsec)
 					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
 					if(j<prog_list.length) {
 						write(options.multicolumn_separator);
+						console.add_hotspot(j+1);
 						printf(options.multicolumn_fmt, j+1
 							,prog_list[j].name
 							,prog_list[j].cost);
 					}
 				}
-
 				console.crlf();
 			}
 			bbs.node_sync();
