@@ -1,20 +1,20 @@
-N@CLEAR@
+NHC@HOT@N@CLEAR@
 4CÚÄÄÄÄÄÄÄÄÄÄÄK¿
 C³ HYChat Menu N4K³
-CÀKÄÄÄÄÄÄÄÄÄÄÄÙ
-0BÛÛÛÛÛÛÛÛÛÛÛÛÛ4 HWJoin a Chat NBÛÛÛÛÛÛÛÛÛÛÛÛÛ
-Û HY@~J@ NGJoin/initiate multinode chatW…BÛ
-Û HY@~P@ NGJoin/start private node/node chat BÛ
-Û HY@~C@ NGChat with @SYSOP-L##############@ BÛ
-Û HY@~T@ NGTalk with The Guru (AI)WŠBÛ
-Û HY@~F@ NGFingerW G(query) remote user/systemW BÛ
-Û HY@~R@ NGInternet Relay ChatW G(IRC)WˆBÛ
-Û HY@~I@ NGInterBBS Instant MessagingW‡BÛ
-ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ4 HWToggles NBÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ
-Û HY@~D@ NGChatHY NGavailabilityW…Gstate:HW Y@PAGER-L3@W NBÛ
-Û HY@~A@ NGNode activity alertsW‚Gstate:HW Y@ALERTS-L3@NG BÛ
-Û HY@~S@ NGSplit-screen chatW…Gstate: HY@SPLITP-L3@N BÛ
-ÛÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÛ
-Û HY@~Q@ NGQuit chat menuW“BÛ
+CÀKÄÄÄÄÄÄÄÄÄÄÄÙ0BÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+Ûß‰ß4 HWJoin a Chat NBß‰ßÛ
+Û HCJY NCJoin/initiate multinode chatW…BÛ
+Û HCPNC Join/start private node/node chatG BÛ
+Û HCCY NCChat with @SYSOP-L##############@G BÛ
+Û HCTY NCTalk with The Guru (AI)WŠBÛ
+Û HCFY NCFinger (query) remote user/systemW BÛ
+Û HCRY NCInternet Relay Chat (IRC)WˆBÛ
+Û HCIY NCInterBBS Instant MessagingWB‡Û
+Û²ÄÄÄÄÄÄÄÄÄÄÄÄß4 HWToggles NBßÄÄÄÄÄÄÄÄÄÄÄÄ²Û
+Û HCD NCChat availability…state: HY@PAGER-L3@W NBÛ
+Û HCA NCNode activity alerts‚state: HY@ALERTS-L3@NG BÛ
+ÛHC SY NCSplit-screen chat…state:G HY@SPLITP-L3@N BÛ
+Û²ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ²Û
+Û HCQY NCQuit chat menuW“BÛ
 4K C HYAnytime: C^UN4Csers online  H^PN4Crivate msgH 
 Z
