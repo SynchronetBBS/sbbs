@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 					case 'f':
 					case 'H':
 						if(n[0]<=1 && n[1]<=1)			/* home cursor */
-							fputs("\1`", out);
+							fputs("\1'", out);
 						column = 0;
 						break;
 					case 'J':
