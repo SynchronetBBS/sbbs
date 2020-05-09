@@ -7,6 +7,8 @@
 
 // $Id$
 
+"use strict";
+
 load("sbbsdefs.js");
 
 /* text.dat entries */
