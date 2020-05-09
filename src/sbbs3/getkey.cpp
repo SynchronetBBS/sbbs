@@ -329,7 +329,7 @@ void sbbs_t::mnemonics(const char *str)
 			l++;
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnehigh]);
-			add_hotspot(str[l], /* hungry: */true, column, column);
+			add_hotspot(str[l], /* hungry: */true);
 			outchar(str[l]);
 			l++;
 			if(!(term&(ANSI|PETSCII)))
@@ -343,7 +343,7 @@ void sbbs_t::mnemonics(const char *str)
 			l++;
 			if(!ctrl_a_codes)
 				attr(cfg.color[clr_mnehigh]);
-			add_hotspot(str[l], /* hungry: */false, column, column);
+			add_hotspot(str[l], /* hungry: */false);
 			outchar(str[l]);
 			l++;
 			if(!(term&(ANSI|PETSCII)))

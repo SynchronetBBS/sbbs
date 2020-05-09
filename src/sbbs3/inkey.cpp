@@ -527,8 +527,8 @@ struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, long minx, long
 {
 	struct mouse_hotspot spot = {0};
 	spot.cmd[0] = cmd;
-	spot.minx = minx;
-	spot.maxx = maxx;
+	spot.minx = minx < 0 ? column : minx;
+	spot.maxx = maxx < 0 ? column : maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
