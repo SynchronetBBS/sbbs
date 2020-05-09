@@ -400,8 +400,12 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 					outcom(str[l]);
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
-			} else
+			} else {
+				uint atr = curatr;
 				outchar(str[l]);
+				if(curatr != atr)	// We assume the attributes are retained between lines
+					attr(atr);
+			}
 			l += skip;
 		}
 	}
