@@ -289,6 +289,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			hot_attr = attrstr(sp);
 		return nulstr;
 	}
+	if(strcmp(sp, "CLEAR_HOT") == 0) {
+		clear_hotspots();
+		return nulstr;
+	}
 
 	if(strncmp(sp, "U+", 2) == 0) {	// UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
