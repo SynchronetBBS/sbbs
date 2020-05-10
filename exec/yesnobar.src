@@ -26,9 +26,9 @@ print "\x01n\x01b\x01h[\x01c@CHECKMARK@\x01b] \x01y@QUESTION->@? "
 :top
 compare_str "Y"
 if_equal
-	print "\x01h\x014\x01w\x01e[Yes]\x01n\x01b\x01h No "
+	print "\x01h\x014\x01w\x01e[\x01~Yes]\x01n\x01b\x01h \x01~No "
 else
-	print "\x01n\x01b\x01h Yes \x014\x01w\x01e[No]"
+	print "\x01n\x01b\x01h \x01~Yes \x014\x01w\x01e[\x01~No]"
 	end_if
 int aborted
 copy aborted _sys_status
