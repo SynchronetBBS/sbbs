@@ -359,9 +359,9 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						}
 					}
 					if(node == NULL) {
-						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
+						for(node = mouse_hotspots.last; node != NULL; node = node->prev) {
 							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if(spot->hungry && spot->y == y)
+							if(spot->hungry && spot->y == y && x <= spot->minx)
 								break;
 						}
 					}
