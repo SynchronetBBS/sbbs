@@ -945,7 +945,7 @@ void sbbs_t::maindflts(user_t* user)
 				if(term&(AUTOTERM|ANSI) && !(term&PETSCII)) {
 					user->misc |= COLOR;
 					user->misc &= ~ICE_COLOR;
-					if(yesno(text[ColorTerminalQ])) {
+					if((user->misc&AUTOTERM) || yesno(text[ColorTerminalQ])) {
 						if(!(console&(CON_BLINK_FONT|CON_HBLINK_FONT))
 							&& !noyes(text[IceColorTerminalQ]))
 							user->misc |= ICE_COLOR;
