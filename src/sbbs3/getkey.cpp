@@ -323,7 +323,11 @@ void sbbs_t::mnemonics(const char *str)
 	long term = term_supports();
 
 	while(str[l]) {
-		if(str[l]=='~' && str[l+1]!=0) {
+		if(str[l]=='~' && str[l+1] < ' ') {
+			add_hotspot('\r', /* hungry: */true);
+			l+=2;
+		}
+		else if(str[l]=='~') {
 			if(!(term&(ANSI|PETSCII)))
 				outchar('(');
 			l++;
