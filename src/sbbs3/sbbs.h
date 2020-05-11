@@ -980,7 +980,7 @@ public:
 	int		listfiles(uint dirnum, const char *filespec, int tofile, long mode);
 	int		listfileinfo(uint dirnum, char *filespec, long mode);
 	void	listfiletofile(char *fname, char *buf, uint dirnum, int file);
-	int		batchflagprompt(uint dirnum, file_t bf[], uint total, long totalfiles);
+	int		batchflagprompt(uint dirnum, file_t bf[], ulong row[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);

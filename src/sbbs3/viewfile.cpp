@@ -57,7 +57,7 @@ int sbbs_t::viewfile(file_t* f, int ext)
 		ASYNC;
 		sprintf(str,text[FileInfoPrompt],unpadfname(f->name,tmp));
 		mnemonics(str);
-		ch=(char)getkeys("BEVQ\r",0);
+		ch=(char)getkeys("BEVQN\r",0);
 		if(ch=='Q' || sys_status&SS_ABORT)
 			return(0);
 		switch(ch) {
@@ -71,6 +71,7 @@ int sbbs_t::viewfile(file_t* f, int ext)
 			case 'V':
 				ext=0;
 				continue;
+			case 'N':
 			case CR:
 				return(1); 
 		} 

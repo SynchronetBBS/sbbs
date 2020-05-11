@@ -59,6 +59,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 	int		file,found=0,lastbat=0,disp;
 	long	m=0,n,anchor=0,next,datbuflen;
 	int32_t	l;
+	ulong	file_row[26];
 	file_t	f,bf[26];	/* bf is batch flagged files */
 
 	if(mode&FL_ULTIME) {
@@ -131,7 +132,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 				&& !(mode&(FL_EXFIND|FL_VIEW))) {
 				flagprompt=0;
 				lncntr=0;
-				if((i=batchflagprompt(dirnum,bf,letter-'A',l/F_IXBSIZE))==2) {
+				if((i=batchflagprompt(dirnum,bf,file_row,letter-'A',l/F_IXBSIZE))==2) {
 					m=anchor;
 					found-=letter-'A';
 					letter='A'; 
@@ -308,6 +309,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 				} 
 			} 
 		}
+		long currow = row;
 		next=m;
 		disp=1;
 		if(mode&(FL_EXFIND|FL_VIEW)) {
@@ -368,7 +370,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 				bf[letter-'A'].dateuled=ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)
 					|((long)ixbbuf[m+5]<<16)|((long)ixbbuf[m+6]<<24);
 				bf[letter-'A'].datedled=ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)
-					|((long)ixbbuf[m+9]<<16)|((long)ixbbuf[m+10]<<24); 
+					|((long)ixbbuf[m+9]<<16)|((long)ixbbuf[m+10]<<24);
+				file_row[letter-'A'] = currow;
 			}
 			m+=11;
 			if(flagprompt || letter=='Z' || !disp ||
@@ -379,7 +382,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 				flagprompt=0;
 				lncntr=0;
 				lastbat=found;
-				if((int)(i=batchflagprompt(dirnum,bf,letter-'A'+1,l/F_IXBSIZE))<1) {
+				if((int)(i=batchflagprompt(dirnum,bf,file_row,letter-'A'+1,l/F_IXBSIZE))<1) {
 					free((char *)ixbbuf);
 					free((char *)datbuf);
 					if((int)i==-1)
@@ -667,7 +670,7 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 /* Returns -1 if 'Q' or Ctrl-C, 0 if skip, 1 if [Enter], 2 otherwise        */
 /* or 3, backwards. 														*/
 /****************************************************************************/
-int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
+int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, ulong* row, uint total
 							,long totalfiles)
 {
 	char	ch,str[256],fname[128],*p,remcdt=0,remfile=0;
@@ -690,7 +693,7 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 			,cfg.lib[cfg.dir[dirnum]->lib]->sname
 			,udir+1
 			,cfg.dir[dirnum]->sname
-			,totalfiles);
+			,total, totalfiles);
 		ch=getkey(K_UPPER);
 		clearline();
 		if(ch=='?') {
@@ -722,8 +725,14 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 				CRLF;
 				return(2); 
 			}
+			link_list_t saved_hotspots = mouse_hotspots;
+			ZERO_VAR(mouse_hotspots);
+			for(i=0; i < total; i++)
+				add_hotspot((char)('A' + i), /* hungry: */true, -1, -1, row[i]);
 			bputs(text[BatchDlFlags]);
 			d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF);
+			clear_hotspots();
+			mouse_hotspots = saved_hotspots;
 			lncntr=0;
 			if(sys_status&SS_ABORT)
 				return(-1);
@@ -788,8 +797,14 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 					return(-1);
 				return(2); 
 			}
+			link_list_t saved_hotspots = mouse_hotspots;
+			ZERO_VAR(mouse_hotspots);
+			for(i=0; i < total; i++)
+				add_hotspot((char)('A' + i), /* hungry: */true, -1, -1, row[i]);
 			bputs(text[BatchDlFlags]);
 			d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF);
+			clear_hotspots();
+			mouse_hotspots = saved_hotspots;
 			lncntr=0;
 			if(sys_status&SS_ABORT)
 				return(-1);
@@ -843,8 +858,14 @@ int sbbs_t::batchflagprompt(uint dirnum, file_t* bf, uint total
 				d=1; 
 			}
 			else {
+				link_list_t saved_hotspots = mouse_hotspots;
+				ZERO_VAR(mouse_hotspots);
+				for(i=0; i < total; i++)
+					add_hotspot((char)('A' + i), /* hungry: */true, -1, -1, row[i]);
 				bputs(text[BatchDlFlags]);
-				d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF); 
+				d=getstr(str,BF_MAX,K_UPPER|K_LOWPRIO|K_NOCRLF);
+				clear_hotspots();
+				mouse_hotspots = saved_hotspots;
 			}
 			lncntr=0;
 			if(sys_status&SS_ABORT)
@@ -1109,19 +1130,19 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			CRLF;
 			if(f.opencount) {
 				mnemonics(text[QuitOrNext]);
-				strcpy(str,"Q\r"); 
+				strcpy(str,"QN\r"); 
 			}
 			else if(dir_op(dirnum)) {
 				mnemonics(text[SysopRemoveFilePrompt]);
-				strcpy(str,"VEFMCQR\r"); 
+				strcpy(str,"VEFMCQRN\r"); 
 			}
 			else if(useron.exempt&FLAG('R')) {
 				mnemonics(text[RExemptRemoveFilePrompt]);
-				strcpy(str,"VEMQR\r"); 
+				strcpy(str,"VEMQRN\r"); 
 			}
 			else {
 				mnemonics(text[UserRemoveFilePrompt]);
-				strcpy(str,"VEQR\r"); 
+				strcpy(str,"VEQRN\r"); 
 			}
 			switch(getkeys(str,0)) {
 				case 'V':
@@ -1367,7 +1388,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			openfile(&f);
 			SYNC;
 			mnemonics(text[ProtocolBatchQuitOrNext]);
-			sprintf(str,"B%c\r",text[YNQP][2]);
+			sprintf(str,"B%cN\r",text[YNQP][2]);
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->dlcmd[0]
 					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
@@ -1385,7 +1406,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					closefile(&f);
 					break; } 
 			}
-			else if(ch!=CR) {
+			else if(ch!=CR && ch!='N') {
 				for(i=0;i<cfg.total_prots;i++)
 					if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
 						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
