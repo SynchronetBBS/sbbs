@@ -375,7 +375,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						}
 #endif
 						ungetstr(spot->cmd);
-						if(pause_inside)
+						if(pause_inside && pause_hotspot == NULL)
 							return handle_ctrlkey(TERM_KEY_ABORT, mode);
 						return 0;
 					}

@@ -831,6 +831,7 @@ public:
 	uint	hot_attr;			// Auto-Mouse hot-spot attribute (when non-zero)
 	bool	hungry_hotspots;
 	link_list_t mouse_hotspots;	// Mouse hot-spots
+	struct mouse_hotspot* pause_hotspot;
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
 	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);
 	struct mouse_hotspot* add_hotspot(ulong num, bool hungry = true, long minx = -1, long maxx = -1, long y = -1);

@@ -552,7 +552,6 @@ void sbbs_t::pause()
 	uint	tempattrs=curatr; /* was lclatr(-1) */
 	long	l=K_UPPER;
 	size_t	len;
-	struct mouse_hotspot* hotspot_added = NULL;
 
  	if((sys_status&SS_ABORT) || pause_inside)
 		return;
@@ -561,15 +560,17 @@ void sbbs_t::pause()
 	if(online==ON_REMOTE)
 		rioctl(IOFI);
 	if(mouse_hotspots.first == NULL)
-		hotspot_added = add_hotspot('\r');
+		pause_hotspot = add_hotspot('\r');
 	bputs(text[Pause]);
 	len = bstrlen(text[Pause]);
 	if(sys_status&SS_USERON && !(useron.misc&(HTML|WIP|NOPAUSESPIN))
 		&& !(cfg.node_misc&NM_NOPAUSESPIN))
 		l|=K_SPIN;
 	ch=getkey(l);
-	if(hotspot_added)
+	if(pause_hotspot) {
 		clear_hotspots();
+		pause_hotspot = NULL;
+	}
 	if(ch==text[YNQP][1] || ch==text[YNQP][2])
 		sys_status|=SS_ABORT;
 	else if(ch==LF)	// down arrow == display one more line
