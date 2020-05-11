@@ -790,7 +790,12 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		if(sub_op(subnum))
 			strcat(str,"O");
 		do_find=true;
+		struct mouse_hotspot* hotspot_added = NULL;
+		if(mouse_hotspots.first == NULL)
+			hotspot_added = add_hotspot('\r');
 		l=getkeys(str,smb.msgs);
+		if(hotspot_added)
+			clear_hotspots();
 		if(l&0x80000000L) {
 			if((long)l==-1) { /* ctrl-c */
 				quit=1;

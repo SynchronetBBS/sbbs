@@ -312,7 +312,12 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			strcat(str,"E");	// edit msg
 		if(which != MAIL_SENT)
 			strcat(str,"V");	// View SPAM toggle
+		struct mouse_hotspot* hotspot_added = NULL;
+		if(mouse_hotspots.first == NULL)
+			hotspot_added = add_hotspot('\r');
 		l=getkeys(str,smb.msgs);
+		if(hotspot_added)
+			clear_hotspots();
 		if(l&0x80000000L) {
 			if(l==-1)	/* ctrl-c */
 				break;
