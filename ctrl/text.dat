@@ -60,8 +60,8 @@
 "\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
 "\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %s\r\n"              047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
-"\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w?\1b=Menu)"\  049 ReadingMail
-	" (\1w%u\1b of \1w%u\1b): \1n"
+"\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
+	" (\1w%u\1b of \1w%u\1b): \1n\1~"
 "\1n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
 "  \1h\1bRe\1n\1b: \1h\1c%s\1n\r\n\r\n"                        051 Regarding
 "  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\				   052 RegardingByOn
@@ -78,7 +78,7 @@
 "\r\n\1q\1g\1hMail that you've sent still pending (%s first):"\ 060 MailSentLstHdr
 	"\r\n\r\n\1n"
 "\1n\r\n\1cþ \1h\1bReading Sent E-mail \1n\1cþ \1h\1b"\		061 ReadingSentMail
-	"(\1w?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n"
+	"(\1w\1`?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n\1~"
 "\1h\1?\1mInternet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
 	"            From: \1w%s\r\n"
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
@@ -93,7 +93,7 @@
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\n\1n\1cPost : [\1h%u\1n\1c][\1h%u\1n\1c] \1h%u\1n\1c/\1h%u"   070 ZScanPostHdr
 "\1n\r\n\1cþ \1h\1bReading \1n\1cþ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
-	" %4u\b\b\b\b\1h%s \1n\1c(\1h?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n"
+	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\1?Delete message #%u '%s'"                          073 DeletePostQ
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
@@ -211,7 +211,7 @@
 "\r\n\r\nThis directory is full.\r\n"                   172 DirFull
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
-"\1_\r\n\r\n\1y\1hFilespec: \1n"                            175 FileSpec
+"\1_\r\n\r\n\1y\1hFilespec: \1n\1~"                     175 FileSpec
 "SY: "                                                  176 SystemPassword
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
@@ -223,7 +223,7 @@
 "\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             182 LibLstFmt
 "\1n\r\nInvalid NetMail address: \1h%s\1n\r\n"                183 InvalidNetMailAddr
 "\1_\r\n\1g\1h%s \1n\1gTransfer Policy\r\n\r\n\1n"            184 TransferPolicyHdr
-"\1n\1h[\1y%c\1w] \1b%-25s  "                           185 TransferProtLstFmt
+"\1n\1h[\1y\1~%c\1w] \1b%-25s  "                        185 TransferProtLstFmt
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
 "All downloads are rewarded with %d%% of the "\         187 TpDownload
@@ -237,7 +237,7 @@
 "\1n\1cFiles     : %u\1y\1h"                               194 BoxHdrFiles
 "\1n\1c(\1h%u\1n\1c) %s "                                    195 ShortHdrLib
 "\1n\1c(\1h%u\1n\1c) %s"                                     196 ShortHdrDir
-"\1r\1hFilenames, specs, or flags [None]: \1m\1h"           197 BatchDlFlags
+"\1r\1hFilenames, specs, or flags [None]: \1m\1h\1~"        197 BatchDlFlags
 "\r\n\7\1r\1h\1iBatch download queue is full.\1n\r\n"       198 BatchDlQueueIsFull
 "\1_\r\n\1y\1hFilespec [\1wAll Files\1y]: \1n"              199 FileSpecStarDotStar
 "\r\n\r\n\1r\1h\1iNot enough free disk space.\1n\r\n"\      200 LowDiskSpace
@@ -282,9 +282,9 @@
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
-	"\1w~Q\1yuit or [Next]: \1w"
-"\r\n~Quit or [Next]: "                                 233 QuitOrNext
-"~Remove, ~Move, ~Edit, ~View, ~Quit, or [Next]: "      234 RExemptRemoveFilePrompt
+	"\1w~Q\1yuit or [~Next]: \1w"
+"\r\n~Quit or [~Next]: "                                233 QuitOrNext
+"~Remove, ~Move, ~Edit, ~View, ~Quit, or [~Next]: "      234 RExemptRemoveFilePrompt
 "\1n(%d) %s\r\n"                                         235 MoveToLibLstFmt
 "\1_\r\n\1y\1hLibrary [%d]: \1n"                            236 MoveToLibPrompt
 "\1n(%d) %s\r\n"                                         237 MoveToDirLstFmt
@@ -292,8 +292,8 @@
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
 "~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
-	"~View, ~Quit, or [Next]: "
-"~Remove, ~Edit, ~View, ~Quit, or [Next]: "             242 UserRemoveFilePrompt
+	"~View, ~Quit, or [~Next]: "
+"~Remove, ~Edit, ~View, ~Quit, or [~Next]: "            242 UserRemoveFilePrompt
 "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
 "\7\r\n\1r\1h\1iCouldn't remove '%s'.\1n\r\n"               244 CouldntRemoveFile
 "Delete file"                                           245 DeleteFileQ
@@ -316,7 +316,7 @@
 "\r\n\1w\1hYou only have %s credits.\r\n"                 261 YouOnlyHaveNCredits
 "\r\nYou don't have enough credits.\r\n"                262 NotEnoughCredits
 "\r\n\1w\1hNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
-"\r\nProtocol, ~Batch, ~Quit, or [Next]: "              264 ProtocolBatchQuitOrNext
+"\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
 	"(Enter '-' for description to skip file):\r\n"
 "\1_\1y\1h%s\1w%7uk\1b:"                                     266 BulkUploadDescPrompt
@@ -544,7 +544,7 @@
 "\1n\1cFlags #1  : \1h%-26s   \1n\1cFlags #3  : \1h%s\r\n"\   439 UeditFlags
 	"\1n\1cFlags #2  : \1h%-26s   \1n\1cFlags #4  : \1h%s\r\n"
 "\1n\1cExemption : \1h%-26s   \1n\1cRestricts : \1h%s\r\n"    440 UeditExempts
-"\1_\1y\1hUser edit (\1w?\1y=Menu) "\                    441 UeditPrompt
+"\1_\1y\1hUser edit (\1w\1`?\1y=Menu) "\                    441 UeditPrompt
 	"(\1w%u\1y of \1w%u\1y): \1n"
 "Restore User"                                          442 UeditRestoreQ
 "Activate User"                                         443 UeditActivateQ
@@ -807,10 +807,10 @@
 "\1l\1_\1g\1hFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
 "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
-	"(\1h%u\1n\1c) %s (\1h?\1n\1c=Menu) (\1h%u\1n\1c Files\1n\1c): \1n"
-"\1n\1>\1q\1l\x014 \1h\1y[\1wD\1y]ownload  \1h\1y[\1wB\1y]atch  "\                   661 FileListBatchCommands
-	"[\1wV\1y]iew Content  [\1wE\1y]xtended Info  "\
-	"[\1wP\1y]revious Page  [\1wQ\1y]uit\1>\1n\r\n"
+	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c Files\1n\1c): \1n\1~"
+"\1n\1>\1q\1l\x014 \1h\1y[\1w\1~D\1y]ownload  \1h\1y[\1w\1~B\1y]atch  "\ 661 FileListBatchCommands
+	"[\1w\1~V\1y]iew Content  [\1w\1~E\1y]xtended Info  "\
+	"[\1w\1~P\1y]revious Page  [\1w\1~Q\1y]uit\1>\1n\r\n"
 "\1\?Download attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
 "\r\n\r\n\1nTime left : %13u\r\n"                        663 FreeMinLeft
 "\1b\1h\r\nTime left to deposit in minute bank "\         664 FreeMinToDeposit
