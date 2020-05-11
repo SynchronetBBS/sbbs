@@ -92,9 +92,12 @@ int sbbs_t::bputs(const char *str, long mode)
 			l++;
 			if(str[l] == 'Z')	/* EOF (uppercase 'Z' only) */
 				break;
-			if(str[l] == '~' && str[l + 1] >= ' ') { // Mouse hot-spot (hungry)
+			if(str[l] == '~') { // Mouse hot-spot (hungry)
 				l++;
-				add_hotspot(str[l], /* hungry */true);
+				if(str[l] >= ' ')
+					add_hotspot(str[l], /* hungry */true);
+				else
+					add_hotspot('\r', /* hungry */true);
 				continue;
 			}
 			if(str[l] == '`' && str[l + 1] >= ' ') { // Mouse hot-spot (strict)
