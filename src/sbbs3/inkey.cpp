@@ -325,13 +325,20 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					continue;
 				}
 				if(i == 0 && ch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
+					str[i++] = ch;
 					int button = kbincom(this, 100);
+					if(button == NOINP) {
+						lprintf(LOG_DEBUG, "Timeout waiting for mouse button value");
+						continue;
+					}
+					str[i++] = button;
 					ch = kbincom(this, 100);
 					if(ch < '!') {
 						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
 							, button, ch);
 						continue;
 					}
+					str[i++] = ch;
 					int x = ch - '!';
 					ch = kbincom(this, 100);
 					if(ch < '!') {
@@ -339,48 +346,125 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							, button, ch);
 						continue;
 					}
+					str[i++] = ch;
 					int y = ch - '!';
-					lprintf(LOG_DEBUG, "Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
-					if(button == 0x22)  // Right-click
-						return handle_ctrlkey(TERM_KEY_ABORT, mode);
-					if(button != 0x20) // Left-click
-						continue;
-					list_node_t* node;
-					for(node = mouse_hotspots.first; node != NULL; node = node->next) {
-						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-						if(spot->y == y && x >= spot->minx && x <= spot->maxx)
-							break;
-					}
-					if(node == NULL) {
+					lprintf(LOG_DEBUG, "X10 Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
+					if(button == 0x20) { // Left-click
+						list_node_t* node;
 						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
 							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if(spot->hungry && spot->y == y && x >= spot->minx)
+							if(spot->y == y && x >= spot->minx && x <= spot->maxx)
 								break;
 						}
-					}
-					if(node == NULL) {
-						for(node = mouse_hotspots.last; node != NULL; node = node->prev) {
+						if(node == NULL) {
+							for(node = mouse_hotspots.first; node != NULL; node = node->next) {
+								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+								if(spot->hungry && spot->y == y && x >= spot->minx)
+									break;
+							}
+						}
+						if(node == NULL) {
+							for(node = mouse_hotspots.last; node != NULL; node = node->prev) {
+								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+								if(spot->hungry && spot->y == y && x <= spot->minx)
+									break;
+							}
+						}
+						if(node != NULL) {
 							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if(spot->hungry && spot->y == y && x <= spot->minx)
-								break;
+	#ifdef _DEBUG
+							{
+								char dbg[128];
+								c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */true);
+								lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
+							}
+	#endif
+							ungetstr(spot->cmd);
+							if(pause_inside && pause_hotspot == NULL)
+								return handle_ctrlkey(TERM_KEY_ABORT, mode);
+							return 0;
 						}
+						if(pause_inside)
+							return '\r';
 					}
-					if(node != NULL) {
-						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-#ifdef _DEBUG
-						{
-							char dbg[128];
-							c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */true);
-							lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
+					if(console&CON_MOUSE_PASSTHRU) {
+						for(j = i; j > 0; j--)
+							ungetkey(str[j - 1], /* insert: */true);
+						ungetkey('[', /* insert: */true);
+						return(ESC); 
+					}
+					if(button == 0x22)  // Right-click
+						return handle_ctrlkey(TERM_KEY_ABORT, mode);
+					return 0;
+				}
+				if(i == 0 && ch == '<' && mouse_mode != MOUSE_MODE_OFF) {
+					while(i < sizeof(str) - 1) {
+						int byte = kbincom(this, 100);
+						if(byte == NOINP) {
+							lprintf(LOG_DEBUG, "Timeout waiting for mouse report character (%d)", i);
+							return 0;
 						}
-#endif
-						ungetstr(spot->cmd);
-						if(pause_inside && pause_hotspot == NULL)
-							return handle_ctrlkey(TERM_KEY_ABORT, mode);
+						str[i++] = byte;
+						if(isalpha(byte))
+							break;
+					}
+					str[i] = 0;
+					int button = -1, x = 0, y = 0;
+					if(sscanf(str, "%d;%d;%d%c", &button, &x, &y, &ch) != 4
+						|| button < 0 || x < 1 || y < 1 || toupper(ch) != 'M') {
+						lprintf(LOG_DEBUG, "Invalid SGR mouse report sequence: '%s'", str);
 						return 0;
 					}
-					if(pause_inside)
-						return '\r';
+					--x;
+					--y;
+					lprintf(LOG_DEBUG, "SGR Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
+					if(button == 0 && ch == 'M') { // Left-button press
+						list_node_t* node;
+						for(node = mouse_hotspots.first; node != NULL; node = node->next) {
+							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+							if(spot->y == y && x >= spot->minx && x <= spot->maxx)
+								break;
+						}
+						if(node == NULL) {
+							for(node = mouse_hotspots.first; node != NULL; node = node->next) {
+								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+								if(spot->hungry && spot->y == y && x >= spot->minx)
+									break;
+							}
+						}
+						if(node == NULL) {
+							for(node = mouse_hotspots.last; node != NULL; node = node->prev) {
+								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+								if(spot->hungry && spot->y == y && x <= spot->minx)
+									break;
+							}
+						}
+						if(node != NULL) {
+							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+	#ifdef _DEBUG
+							{
+								char dbg[128];
+								c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */true);
+								lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
+							}
+	#endif
+							ungetstr(spot->cmd);
+							if(pause_inside && pause_hotspot == NULL)
+								return handle_ctrlkey(TERM_KEY_ABORT, mode);
+							return 0;
+						}
+						if(pause_inside)
+							return '\r';
+					}
+					if(console&CON_MOUSE_PASSTHRU) {
+						for(j = i; j > 0; j--)
+							ungetkey(str[j - 1], /* insert: */true);
+						ungetkey('<', /* insert: */true);
+						ungetkey('[', /* insert: */true);
+						return(ESC); 
+					}
+					if(button == 2)  // Right-click
+						return handle_ctrlkey(TERM_KEY_ABORT, mode);
 					return 0;
 				}
 				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
@@ -489,7 +573,7 @@ struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 	list_node_t* node = listInsertNodeData(&mouse_hotspots, spot, sizeof(*spot));
 	if(node == NULL)
 		return NULL;
-	set_mouse(MOUSE_MODE_X10);
+	set_mouse(MOUSE_MODE_X10 | MOUSE_MODE_EXT);
 	return (struct mouse_hotspot*)node->data;
 }
 
