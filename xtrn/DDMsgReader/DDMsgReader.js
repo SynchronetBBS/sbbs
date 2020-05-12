@@ -51,6 +51,10 @@
  *                              for the scan_ptr being 0xffffffff).  This had
  *                              been fixed in a couple places previously, but
  *                              apparently not this particular case.
+ * 2020-05-11 Eric Oulashin     Version 1.34
+ *                              The message list mode now honors anonymous posts,
+ *                              showing the 'from' name as "Anonymous" (for non-sysops).
+ *                              The sysop can still see the real name of the poster.
  */
 
 
@@ -160,8 +164,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.33";
-var READER_DATE = "2020-04-21";
+var READER_VERSION = "1.34";
+var READER_DATE = "2020-05-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4027,10 +4031,15 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 			msgIndicatorChar = "\1n\1r\1h\1i" + this.colors.msgListHighlightBkgColor + "*\1n";
 		else if (this.MessageIsSelected(this.subBoardCode, msgNum-1))
 			msgIndicatorChar = "\1n" + this.colors.selectedMsgMarkColor + this.colors.msgListHighlightBkgColor + CHECK_CHAR + "\1n";
+		var fromName = pMsgHeader.from;
+		// If the message was posted anonymously and the logged-in user is
+		// not the sysop, then show "Anonymous" for the 'from' name.
+		if (!gIsSysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+			fromName = "Anonymous";
 		if (this.showScoresInMsgList)
 		{
 			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
-			       pMsgHeader.from.substr(0, this.FROM_LEN),
+			       fromName.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN),
 			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 			       msgVoteInfo.voteScore, sDate, sTime);
@@ -4038,7 +4047,7 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 		else
 		{
 			msgHdrStr += format(this.sMsgInfoFormatHighlightStr, msgNum, msgIndicatorChar,
-			       pMsgHeader.from.substr(0, this.FROM_LEN),
+			       fromName.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN),
 			       pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 			       sDate, sTime);
@@ -4062,15 +4071,20 @@ function DigDistMsgReader_PrintMessageInfo(pMsgHeader, pHighlight, pMsgNum, pRet
 			formatStr = this.sMsgInfoFormatStr;
 		else
 			formatStr = (msgToUser ? this.sMsgInfoToUserFormatStr : (msgIsFromUser ? this.sMsgInfoFromUserFormatStr : this.sMsgInfoFormatStr));
+		var fromName = pMsgHeader.from;
+		// If the message was posted anonymously and the logged-in user is
+		// not the sysop, then show "Anonymous" for the 'from' name.
+		if (!gIsSysop && ((pMsgHeader.attr & MSG_ANONYMOUS) == MSG_ANONYMOUS))
+			fromName = "Anonymous";
 		if (this.showScoresInMsgList)
 		{
-			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 			       msgVoteInfo.voteScore, sDate, sTime);
 		}
 		else
 		{
-			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, pMsgHeader.from.substr(0, this.FROM_LEN),
+			msgHdrStr += format(formatStr, msgNum, msgIndicatorChar, fromName.substr(0, this.FROM_LEN),
 			       pMsgHeader.to.substr(0, this.TO_LEN), pMsgHeader.subject.substr(0, this.SUBJ_LEN),
 			       sDate, sTime);
 		}

@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.34     2020-05-11   The message list mode now honors anonymous posts, showing
+                      the 'from' name as "Anonymous" (for non-sysops).  The
+                      sysop can still see the real name of the poster.  The
+                      reader mode already honored the 'anonymous' flag.
 1.33     2020-04-21   Fixed: A new user starting to read messages in a sub-board
                       no longer causes an error (it checks for the scan_ptr
                       being 0xffffffff).  This had been fixed in a couple places
