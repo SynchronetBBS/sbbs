@@ -1059,6 +1059,7 @@ js_clear(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
+	bool		autopause = true;
 	jsrefcount	rc;
 
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
@@ -1066,13 +1067,21 @@ js_clear(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc) {
-		if(!js_set_attr(cx, sbbs, argv[0]))
+	uintN argn = 0;
+	if(argc > argn && !JSVAL_IS_BOOLEAN(argv[argn])) {
+		if(!js_set_attr(cx, sbbs, argv[argn]))
 			return JS_FALSE;
+		argn++;
 	}
-
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		autopause = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->clearscreen(sbbs->term_supports());
+	if(autopause)
+		sbbs->CLS;
+	else
+		sbbs->clearscreen(sbbs->term_supports());
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -2121,7 +2130,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("print a mnemonics string, command keys highlighted with tilde (~) characters")
 	,310
 	},
-	{"clear",           js_clear,			0, JSTYPE_VOID,		JSDOCSTR("[attribute]")
+	{"clear",           js_clear,			0, JSTYPE_VOID,		JSDOCSTR("[attribute] [,autopause=<tt>true</tt>]")
 	,JSDOCSTR("clear screen and home cursor, "
 		"optionally (in v3.13b+) setting current attribute first")
 	,310
