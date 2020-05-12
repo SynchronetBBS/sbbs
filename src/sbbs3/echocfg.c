@@ -2318,6 +2318,8 @@ int main(int argc, char **argv)
 						}
 					}
 				}
+				break;
+
 			case 7:
 				uifc.helpbuf=
 					"~ Domains ~\n\n"
