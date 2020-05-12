@@ -23,6 +23,7 @@
 "use strict";
 
 const REVISION = "$Revision$".split(' ')[1];
+require('sbbsdefs.js', 'SUB_NAME');
 var netname;
 var netdns;
 var netzone = parseInt(argv[0], 10);
