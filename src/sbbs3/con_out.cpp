@@ -830,6 +830,7 @@ void sbbs_t::line_feed(int count)
 		else 
 			outcom('\n');
 	}
+	inc_row(count);
 }
 
 void sbbs_t::newline(int count)
@@ -901,6 +902,7 @@ void sbbs_t::cursor_down(int count)
 			comprintf("\x1b[%dB",count);
 		else
 			putcom("\x1b[B");
+		inc_row(count);
 	} else {
 		for(int i=0;i<count;i++)
 			line_feed();
