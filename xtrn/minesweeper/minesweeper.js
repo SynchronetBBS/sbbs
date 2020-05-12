@@ -84,13 +84,15 @@ var best = null;
 
 log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 
-var ansi = load({}, 'ansiterm_lib.js');
+var ansiterm = bbs.mods.ansiterm_lib;
+if(!ansiterm)
+	ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
 
 function mouse_enable(enable)
 {
 	if(console.term_supports(USER_ANSI)) {
-		ansi.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
-		ansi.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
+		ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
+		ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
 	}
 }
 
@@ -641,28 +643,29 @@ function draw_board(full)
 	var cmds = "";
 	if(gameover) {
 		if(!gamewon)
-			cmds += "\x01n\x01hD\x01nisplay  ";
+			cmds += "\x01n\x01h\x01~D\x01nisplay  ";
 	} else {
 		if(!board[selected.y][selected.x].covered) {
 			if(can_chord(selected.x, selected.y))
-				cmds += "\x01h\x01kDig  \x01n\x01hC\x01nhord  ";
+				cmds += "\x01h\x01k\x01~Dig  \x01n\x01h\x01~C\x01nhord  ";
 			else
-				cmds += "\x01h\x01kDig  Flag  ";
+				cmds += "\x01h\x01k\x01~Dig  Flag  ";
 		}
 		else 
-			cmds += "\x01hD\x01nig  \x01hF\x01nlag  ";
+			cmds += "\x01h\x01~D\x01nig  \x01h\x01~F\x01nlag  ";
 	}
-	cmds += "\x01n\x01hN\x01new  \x01hQ\x01nuit";
+	cmds += "\x01n\x01h\x01~N\x01new  \x01h\x01~Q\x01nuit";
 	if(full || cmds !== cmds_shown) {
+		console.clear_hotspots();
 		draw_border();
 		console.attributes = LIGHTGRAY;		
 		console_center(cmds);
 		cmds_shown = cmds;
 		draw_border();
-		cmds = "\x01hW\x01ninners  \x01hL\x01nog  ";
+		cmds = "\x01h\x01~W\x01ninners  \x01h\x01~L\x01nog  ";
 		if(best)
-			cmds += "\x01hB\x01nest  ";
-		cmds += "\x01hH\x01nelp"
+			cmds += "\x01h\x01~B\x01nest  ";
+		cmds += "\x01h\x01~H\x01nelp"
 		console_center(cmds);
 	} else if(!console.term_supports(USER_ANSI)) {
 		console.creturn();
@@ -800,9 +803,13 @@ function get_difficulty(all)
 	console.cleartoeol();
 	draw_border();
 	console.attributes = WHITE;
+	console.clear_hotspots();
+	var lvls = "";
+	for(var i = 1; i <= max_difficulty; i++)
+		lvls += "\x01~" + i;
 	if(all) {
 		console.right((console.screen_columns - 20) / 2);
-		console.print(format("Level (1-%u) [All]: ", max_difficulty));
+		console.print(format("Level (%s) [\x01~All]: ", lvls));
 		var key = console.getkeys("QA", max_difficulty);
 		if(key == 'A')
 			return 0;
@@ -811,7 +818,7 @@ function get_difficulty(all)
 		return key;
 	}
 	console.right((console.screen_columns - 24) / 2);
-	console.print(format("Difficulty Level (1-%u): ", max_difficulty));
+	console.print(format("Difficulty Level (%s): ", lvls));
 	return console.getnum(max_difficulty);
 }
 
@@ -1079,26 +1086,29 @@ function play()
 				break;
 			case 'N':
 			{
-				mouse_enable(false);
 				console.home();
 				console.down(top + 1);
+				full_redraw = true;
 				if(game.start && !gameover) {
 					console.cleartoeol();
 					draw_border();
 					console.attributes = LIGHTRED;
 					console.right((console.screen_columns - 15) / 2);
-					console.print("New Game (Y/N) ?");
-					if(console.getkey(K_UPPER) != 'Y')
+					mouse_enable(false);
+					console.clear_hotspots();
+					console.print("New Game (\x01~Y/\x01~N) ?");
+					var key = console.getkey(K_UPPER);
+					mouse_enable(true);
+					if(key != 'Y')
 						break;
 				}
 				var new_difficulty = get_difficulty();
 				if(new_difficulty > 0)
 					difficulty = init_game(new_difficulty);
-				full_redraw = true;
-				mouse_enable(true);
 				break;
 			}
 			case 'W':
+				full_redraw = true;
 				mouse_enable(false);
 				console.home();
 				console.down(top + 1);
@@ -1109,7 +1119,6 @@ function play()
 					console.pause();
 					console.clear();
 					console.aborted = false;
-					full_redraw = true;
 				}
 				mouse_enable(true);
 				break
@@ -1133,10 +1142,10 @@ function play()
 				mouse_enable(true);
 				break
 			case 'B':
-				mouse_enable(false);
 				if(!best)
 					break;
 				console.line_counter = 0;
+				mouse_enable(false);
 				show_best();
 				console.pause();
 				console.clear();
@@ -1150,6 +1159,7 @@ function play()
 				console.line_counter = 0;
 				console.clear();
 				console.printfile(help_file);
+				console.pause();
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
@@ -1166,19 +1176,21 @@ function play()
 				selector++;
 				break;
 			case 'Q':
-				mouse_enable(false);
 				if(game.start && !gameover) {
+					full_redraw = true;
 					console.home();
 					console.down(top + 1);
 					console.cleartoeol();
 					draw_border();
 					console.attributes = LIGHTRED;
 					console.right((console.screen_columns - 16) / 2);
-					console.print("Quit Game (Y/N) ?");
-					if(console.getkey(K_UPPER) != 'Y') {
-						mouse_enable(true);
+					mouse_enable(false);
+					console.clear_hotspots();
+					console.print("Quit Game (\x01~Y/\x01~N) ?");
+					var key = console.getkey(K_UPPER);
+					mouse_enable(true);
+					if(key != 'Y')
 						break;
-					}
 				}
 				return;
 		}
@@ -1211,6 +1223,8 @@ try {
 	}
 
 	js.on_exit("console.line_counter = 0");
+	js.on_exit("console.status = " + console.status);
+	console.status |= CON_MOUSE_PASSTHRU;
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru = "KOPTUZ";
 
