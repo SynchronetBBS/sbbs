@@ -407,9 +407,10 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 #endif
 		p=strchr(fname,' ');
 		if(p) *p=0;
+#if 0 // allow import of bare filename list
 		else				   /* no space after filename? */
 			continue;
-
+#endif
 		if(!isalnum(*fname)) {	// filename doesn't begin with an alpha-numeric char?
 			continue;
 		}
