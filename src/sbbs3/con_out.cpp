@@ -854,6 +854,7 @@ void sbbs_t::clearscreen(long term)
 		outcom(FF);
 	row=0;
 	column=0;
+	lncntr=0;
 }
 
 void sbbs_t::clearline(void)
