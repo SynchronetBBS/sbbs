@@ -642,6 +642,8 @@ void sbbs_t::batch_upload()
 		SAFEPRINTF2(tmp,"%s%s",cfg.temp_dir,dirent->d_name);
 		if(isdir(tmp))
 			continue;
+		memset(&f,0,sizeof(file_t));
+		f.dir=cfg.upload_dir;
 		SAFEPRINTF2(path,"%s%s",cfg.dir[f.dir]->path,dirent->d_name);
 		if(fexistcase(path)) {
 			bprintf(text[FileAlreadyOnline], dirent->d_name);
@@ -649,8 +651,6 @@ void sbbs_t::batch_upload()
 		}
 		if(mv(tmp, path, /* copy: */false))
 			continue;
-		memset(&f,0,sizeof(file_t));
-		f.dir=cfg.upload_dir;
 
 #ifdef _WIN32
 		GetShortPathName(path, tmp, sizeof(tmp));
