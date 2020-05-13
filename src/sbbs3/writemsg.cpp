@@ -93,7 +93,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 	quotes_fname(useron_xedit,fname,sizeof(fname));
 	removecase(fname);
 
-	if((fp=fopen(fname,"w"))==NULL) {
+	if((fp=fopen(fname,"wb"))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,0);
 		return false; 
 	}
