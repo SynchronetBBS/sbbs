@@ -639,17 +639,23 @@ void sbbs_t::batch_upload()
 		return;
 	dir=opendir(cfg.temp_dir);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-		SAFEPRINTF2(str1,"%s%s",cfg.temp_dir,dirent->d_name);
-		if(isdir(str1))
+		SAFEPRINTF2(tmp,"%s%s",cfg.temp_dir,dirent->d_name);
+		if(isdir(tmp))
+			continue;
+		SAFEPRINTF2(path,"%s%s",cfg.dir[f.dir]->path,dirent->d_name);
+		if(fexistcase(path)) {
+			bprintf(text[FileAlreadyOnline], dirent->d_name);
+			continue;
+		}
+		if(mv(tmp, path, /* copy: */false))
 			continue;
 		memset(&f,0,sizeof(file_t));
 		f.dir=cfg.upload_dir;
 
-		SAFECOPY(path,str1);
 #ifdef _WIN32
-		GetShortPathName(str1, path, sizeof(path));
+		GetShortPathName(path, tmp, sizeof(tmp));
 #endif
-		padfname(getfname(path),f.name);
+		padfname(getfname(tmp),f.name);
 
 		for(x=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
@@ -659,12 +665,9 @@ void sbbs_t::batch_upload()
 			if(y<usrdirs[x])
 				break; 
 		}
-		SAFEPRINTF2(str2,"%s%s",cfg.dir[f.dir]->path,dirent->d_name);
-		if(x<usrlibs || fexistcase(str2)) {
+		if(x<usrlibs) {
 			bprintf(text[FileAlreadyOnline],f.name);
-			remove(str1); 
 		} else {
-			mv(str1,str2,0);
 			uploadfile(&f); 
 		}
 	}
