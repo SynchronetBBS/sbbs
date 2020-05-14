@@ -360,13 +360,13 @@ function Player_drawscreen(month)
 	dk.console.clear();
 	dk.console.println("");
 	if(this.isplayer) {
-		dk.console.aprint("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\r\n");
+		dk.console.aprint("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\1n\r\n");
 		dk.console.println("");
 		dk.console.attr='G';
 	}
 	else {
 		var mstr=format("%-27s", "*  Month # "+month+"  *");
-		dk.console.aprint("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\r\n");
+		dk.console.aprint("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\1n\r\n");
 		dk.console.println("");
 		dk.console.attr='C';
 	}
