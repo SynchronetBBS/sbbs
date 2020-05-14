@@ -408,6 +408,7 @@ DLLCALL xptone_open_locked(void)
 		}
 		if(pu_api != NULL) {
 			if(!pulseaudio_initialized) {
+#if 0
 				pa_sample_spec ss;
 				ss.format = PA_SAMPLE_U8;
 				ss.rate = 22050;
@@ -416,6 +417,9 @@ DLLCALL xptone_open_locked(void)
 					pulseaudio_device_open_failed=TRUE;
 				else
 					pulseaudio_initialized=TRUE;
+				pu_api->simple_free(pu_handle);
+				pu_handle = NULL;
+#endif
 			}
 			if(pulseaudio_initialized) {
 				handle_type=SOUND_DEVICE_PULSEAUDIO;
@@ -851,7 +855,18 @@ printf("Handle: %d\n", handle_type);
 #ifdef WITH_PULSEAUDIO
 	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
 		int err;
-		pu_api->simple_write(pu_handle, sampo, sz, &err);
+		pa_sample_spec ss;
+		ss.format = PA_SAMPLE_U8;
+		ss.rate = 22050;
+		ss.channels = 1;
+		if (pu_handle == NULL) {
+			if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL)
+				pulseaudio_device_open_failed=TRUE;
+			else
+				pulseaudio_initialized=TRUE;
+		}
+		if (pulseaudio_initialized)
+			pu_api->simple_write(pu_handle, sampo, sz, &err);
 	}
 #endif
 
