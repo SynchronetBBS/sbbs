@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.35     2020-05-13   Fixed some logic in determining how to address a personal
+                      email when replying (either to a local user or via their
+                      network address).
 1.34     2020-05-11   The message list mode now honors anonymous posts, showing
                       the 'from' name as "Anonymous" (for non-sysops).  The
                       sysop can still see the real name of the poster.  The

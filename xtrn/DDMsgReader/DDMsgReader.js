@@ -55,6 +55,10 @@
  *                              The message list mode now honors anonymous posts,
  *                              showing the 'from' name as "Anonymous" (for non-sysops).
  *                              The sysop can still see the real name of the poster.
+ * 2020-05-13 Eric Oulashin     Version 1.35
+ *                              Fixed some logic in determining how to address
+ *                              a personal email when replying (either to a local
+ *                              user or via their network address).
  */
 
 
@@ -164,8 +168,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.34";
-var READER_DATE = "2020-05-11";
+var READER_VERSION = "1.35";
+var READER_DATE = "2020-05-13";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -9150,12 +9154,17 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	if (typeof(pReplyMode) == "number")
 		replyMode |= pReplyMode;
 
-	// If the message is not local, the send the reply as a network message.
-	// Otherwise, send the reply as a local email.
-	if (pMsgHdr.from_net_type != NET_NONE)
+	// If the message is a networked message, then try to address the message
+	// to the network address.  Otherwise, try to look up the user to reply
+	// locally.
+	var replyLocally = true;
+	var wasNetMailOrigin = false;
+	if ((typeof(pMsgHdr.from_net_type) != "undefined") && (pMsgHdr.from_net_type != NET_NONE))
 	{
+		wasNetMailOrigin = true;
 		if ((typeof(pMsgHdr.from_net_addr) == "string") && (pMsgHdr.from_net_addr.length > 0))
 		{
+			replyLocally = false;
 			// Build the email address to reply to.  If the original message is
 			// internet email, then simply use the from_net_addr field from the
 			// message header.  Otherwise (i.e., on a networked sub-board), use
@@ -9183,16 +9192,8 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 				console.pause();
 			}
 		}
-		else
-		{
-			retObj.sendSucceeded = false;
-			console.crlf();
-			console.print("\1n\1h\1yThere is no network address for this message\1n");
-			console.crlf();
-			console.pause();
-		}
 	}
-	else
+	if (replyLocally)
 	{
 		// Replying to a local user
 		replyMode |= WM_EMAIL;
@@ -9212,7 +9213,11 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		{
 			retObj.sendSucceeded = false;
 			console.crlf();
-			console.print("\1n\1h\1yThe recipient (\1w" + pMsgHdr.from + "\1y) was not found\1n");
+			console.print();
+			var errorMsg = "\1n\1h\1yThe recipient (\1w" + pMsgHdr.from + "\1y) was not found";
+			if (wasNetMailOrigin)
+				errorMsg += " and no network address was found for this message";
+			errorMsg += "\1n";
 			console.crlf();
 			console.pause();
 		}
