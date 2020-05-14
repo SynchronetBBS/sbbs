@@ -9,9 +9,9 @@ ifneq ($(os),win32)
 endif
 
 ifndef NO_PULSEAUDIO
- ifeq ($(shell command -v pkg-config > /dev/null && pkg-config --exists libpulse && echo 'YES'),YES)
-  CFLAGS += -DWITH_PULSEAUDIO `pkg-config libpulse --cflags`
-  MT_CFLAGS += -DWITH_PULSEAUDIO `pkg-config libpulse --cflags`
+ ifeq ($(shell command -v pkg-config > /dev/null && pkg-config --exists libpulse-simple && echo 'YES'),YES)
+  CFLAGS += -DWITH_PULSEAUDIO `pkg-config libpulse-simple --cflags`
+  MT_CFLAGS += -DWITH_PULSEAUDIO `pkg-config libpulse-simple --cflags`
  endif
 endif
 

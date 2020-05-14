@@ -389,7 +389,7 @@ DLLCALL xptone_open_locked(void)
 	if(!pulseaudio_device_open_failed) {
 		if(pu_api==NULL) {
 			dll_handle dl=NULL;
-			const char *libnames[]={"pulse",NULL};
+			const char *libnames[]={"pulse-simple",NULL};
 			if(((pu_api=(struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct)))==NULL)
 					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
 					|| ((pu_api->simple_new=xp_dlsym(dl,pa_simple_new))==NULL)
@@ -418,7 +418,7 @@ DLLCALL xptone_open_locked(void)
 					pulseaudio_initialized=TRUE;
 			}
 			if(pulseaudio_initialized) {
-				handle_type=SOUND_DEVICE_PORTAUDIO;
+				handle_type=SOUND_DEVICE_PULSEAUDIO;
 				handle_rc++;
 				return(TRUE);
 			}
@@ -815,6 +815,7 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 	int	i;
 #endif
 
+printf("Handle: %d\n", handle_type);
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		if(pa_api->ver < 1899)
