@@ -667,16 +667,18 @@ CIOLIBEXPORT uint32_t CIOLIBCALL ciolib_mousepointer(enum ciolib_mouse_ptr type)
 #endif
 
 #define CIO_KEY_HOME      (0x47 << 8)
-#define CIO_KEY_UP        (72   << 8)
+#define CIO_KEY_UP        (0x48 << 8)
 #define CIO_KEY_END       (0x4f << 8)
-#define CIO_KEY_DOWN      (80   << 8)
+#define CIO_KEY_DOWN      (0x50 << 8)
 #define CIO_KEY_F(x)      ((x<11)?((0x3a+x) << 8):((0x7a+x) << 8))
 #define CIO_KEY_IC        (0x52 << 8)
 #define CIO_KEY_DC        (0x53 << 8)
-#define CIO_KEY_SHIFT_IC  (0x30 << 8)	/* Shift-Insert */
-#define CIO_KEY_SHIFT_DC  (0x2e << 8)	/* Shift-Delete */
-#define CIO_KEY_CTRL_IC   (0x92 << 8)	/* Ctrl-Insert */
-#define CIO_KEY_CTRL_DC   (0x93 << 8)	/* Ctrl-Delete */
+#define CIO_KEY_SHIFT_IC  (0x05 << 8)	/* Shift-Insert */
+#define CIO_KEY_SHIFT_DC  (0x07 << 8)	/* Shift-Delete */
+#define CIO_KEY_CTRL_IC   (0x04 << 8)	/* Ctrl-Insert */
+#define CIO_KEY_CTRL_DC   (0x06 << 8)	/* Ctrl-Delete */
+#define CIO_KEY_ALT_IC    (0xA2 << 8)	/* Alt-Insert */
+#define CIO_KEY_ALT_DC    (0xA3 << 8)	/* Alt-Delete */
 #define CIO_KEY_LEFT      (0x4b << 8)
 #define CIO_KEY_RIGHT     (0x4d << 8)
 #define CIO_KEY_PPAGE     (0x49 << 8)

@@ -196,8 +196,8 @@ static struct {
     {	0x4f00, 0x4f31, 0x7500, 0xffff }, /* key 79 - end */
     {	0x5000, 0x5032, 0x9100, 0xa000 }, /* key 80 - cursor down */
     {	0x5100, 0x5133, 0x7600, 0xffff }, /* key 81 - page down */
-    {	0x5200, 0x5230, 0xffff, 0xffff }, /* key 82 - insert */
-    {	0x5300, 0x532e, 0xffff, 0xffff }, /* key 83 - delete */
+    {	CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC}, /* key 82 - insert */
+    {	CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_ALT_IC}, /* key 83 - delete */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 84 - sys key */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 85 */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 86 */
