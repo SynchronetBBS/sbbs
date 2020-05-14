@@ -105,9 +105,7 @@ ifdef SBBSEXEC
 install: all
 	install $(EXEODIR)/* $(SBBSEXEC)
 	install $(LIBODIR)/* $(SBBSEXEC)
-	install scfg/$(EXEODIR)/* $(SBBSEXEC)
-	install uedit/$(EXEODIR)/* $(SBBSEXEC)
-	install umonitor/$(EXEODIR)/* $(SBBSEXEC)
+	install */$(EXEODIR)/* $(SBBSEXEC)
 
 .PHONY: symlinks
 symlinks: all
