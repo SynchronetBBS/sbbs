@@ -53,6 +53,10 @@
 #include <portaudio.h>
 #endif
 
+#ifdef WITH_PULSEAUDIO
+#include <pulse/simple.h>
+#endif
+
 #ifdef WITH_SDL_AUDIO
 #include "sdlfuncs.h"
 #endif
@@ -86,6 +90,9 @@ static BOOL sdl_device_open_failed=FALSE;
 #ifdef WITH_PORTAUDIO
 static BOOL portaudio_device_open_failed=FALSE;
 #endif
+#ifdef WITH_PULSEAUDIO
+static BOOL pulseaudio_device_open_failed=FALSE;
+#endif
 
 enum {
 	 SOUND_DEVICE_CLOSED
@@ -94,10 +101,22 @@ enum {
 	,SOUND_DEVICE_OSS
 	,SOUND_DEVICE_SDL
 	,SOUND_DEVICE_PORTAUDIO
+	,SOUND_DEVICE_PULSEAUDIO
 };
 
 static int handle_type=SOUND_DEVICE_CLOSED;
 static int handle_rc;
+
+#ifdef WITH_PULSEAUDIO
+struct pulseaudio_api_struct {
+	pa_simple* (*simple_new)(const char * server, const char * name, pa_stream_direction_t dir, const char * dev, const char * stream_name, const pa_sample_spec * ss, const pa_channel_map * map, const pa_buffer_attr * attr, int * error);
+	int (*simple_write)(simple * s, const void * data, size_t bytes, int * error);
+	int (*simple_drain)(pa_simple * s, int * error);
+	void (*simple_free)(pa_simple * s);
+};
+struct pulseaudio_api_struct pu_api = NULL;
+static pa_simple *pu_handle;
+#endif
 
 #ifdef WITH_PORTAUDIO
 static PaStream			*portaudio_stream;
@@ -365,6 +384,47 @@ DLLCALL xptone_open_locked(void)
 		return(TRUE);
 	}
 
+#ifdef WITH_PULSEAUDIO
+	if(!pulseaudio_device_open_failed) {
+		if(pu_api==NULL) {
+			dll_handle dl=NULL;
+			const char *libnames[]={"pulse",NULL};
+			if(((pu_api=(struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct)))==NULL)
+					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
+					|| ((pu_api->simple_new=xp_dlsym(dl,pa_simple_new))==NULL)
+					|| ((pu_api->simple_write=xp_dlsym(dl,pa_simple_write))==NULL)
+					|| ((pu_api->simple_drain=xp_dlsym(dl,pa_simple_drain))==NULL)
+					|| ((pu_api->simple_fre=xp_dlsym(dl,pa_simple_free))==NULL)
+					) {
+				if(dl)
+					xp_dlclose(dl);
+				free(pu_api);
+				pu_api=NULL;
+			}
+			if(pu_api==NULL) {
+				pulseaudio_device_open_failed=TRUE;
+			}
+		}
+		if(pu_api != NULL) {
+			if(!pulseaudio_initialized) {
+				pa_sample_spec ss;
+				ss.format = PA_SAMPLE_U8;
+				ss.rate = 22050;
+				ss.channels = 1;
+				if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL)
+					pulseaudio_device_open_failed=TRUE;
+				else
+					pulseaudio_initialized=TRUE;
+			}
+			if(pulseaudio_initialized) {
+				handle_type=SOUND_DEVICE_PORTAUDIO;
+				handle_rc++;
+				return(TRUE);
+			}
+		}
+	}
+#endif
+
 #ifdef WITH_PORTAUDIO
 	if(!portaudio_device_open_failed) {
 		if(pa_api==NULL) {
@@ -599,6 +659,14 @@ xptone_complete_locked(void)
 	if(handle_type==SOUND_DEVICE_CLOSED) {
 		return;
 	}
+
+#ifdef WITH_PULSEAUDIO
+	else if (handle->type == SOUND_DEVICE_PULSEAUDIO) {
+		int err;
+		pu_api.simple_drain(pu_handle, &err);
+	}
+#endif
+
 #ifdef WITH_PORTAUDIO
 	else if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		pa_api->stop(portaudio_stream);
@@ -672,6 +740,12 @@ BOOL DLLCALL xptone_close_locked(void)
 	}
 #endif
 
+#ifdef WITH_PULSEAUDIO
+	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
+		pu_api->simple_free(pu_handle);
+	}
+#endif
+
 #ifdef WITH_SDL_AUDIO
 	if(handle_type==SOUND_DEVICE_SDL) {
 		xpbeep_sdl.CloseAudio();
@@ -707,6 +781,9 @@ BOOL DLLCALL xptone_close_locked(void)
 #endif
 #ifdef WITH_PORTAUDIO
 	portaudio_device_open_failed=FALSE;
+#endif
+#ifdef WITH_PULSEAUDIO
+	pulseaudio_device_open_failed = FALSE;
 #endif
 
 	return(TRUE);
@@ -768,6 +845,13 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 	else {
 		samp = sampo;
 	}
+
+#ifdef WITH_PULSEAUDIO
+	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
+		int err;
+		pu_api->simple_write(pu_handle, sampo, sz, &err);
+	}
+#endif
 
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
