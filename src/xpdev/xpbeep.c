@@ -819,7 +819,6 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 	int	i;
 #endif
 
-printf("Handle: %d\n", handle_type);
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		if(pa_api->ver < 1899)
