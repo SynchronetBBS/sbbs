@@ -833,6 +833,9 @@ void sdl_video_event_thread(void *data)
 						}
 					}
 					if (block_text || ev.key.keysym.sym < 0 || ev.key.keysym.sym > 127) {
+						// NUMLOCK makes 
+						if ((ev.key.keysym.mod & KMOD_NUM) && ((ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0) || ev.key.keysym.sym == SDLK_KP_PERIOD))
+							break;
 						sdl_add_key(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod));
 					}
 					else if (!isprint(ev.key.keysym.sym)) {
