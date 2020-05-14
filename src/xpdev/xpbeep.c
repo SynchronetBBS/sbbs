@@ -110,12 +110,13 @@ static int handle_rc;
 #ifdef WITH_PULSEAUDIO
 struct pulseaudio_api_struct {
 	pa_simple* (*simple_new)(const char * server, const char * name, pa_stream_direction_t dir, const char * dev, const char * stream_name, const pa_sample_spec * ss, const pa_channel_map * map, const pa_buffer_attr * attr, int * error);
-	int (*simple_write)(simple * s, const void * data, size_t bytes, int * error);
+	int (*simple_write)(pa_simple * s, const void * data, size_t bytes, int * error);
 	int (*simple_drain)(pa_simple * s, int * error);
 	void (*simple_free)(pa_simple * s);
 };
-struct pulseaudio_api_struct pu_api = NULL;
+struct pulseaudio_api_struct *pu_api = NULL;
 static pa_simple *pu_handle;
+static int				pulseaudio_initialized=FALSE;
 #endif
 
 #ifdef WITH_PORTAUDIO
@@ -394,7 +395,7 @@ DLLCALL xptone_open_locked(void)
 					|| ((pu_api->simple_new=xp_dlsym(dl,pa_simple_new))==NULL)
 					|| ((pu_api->simple_write=xp_dlsym(dl,pa_simple_write))==NULL)
 					|| ((pu_api->simple_drain=xp_dlsym(dl,pa_simple_drain))==NULL)
-					|| ((pu_api->simple_fre=xp_dlsym(dl,pa_simple_free))==NULL)
+					|| ((pu_api->simple_free=xp_dlsym(dl,pa_simple_free))==NULL)
 					) {
 				if(dl)
 					xp_dlclose(dl);
@@ -661,9 +662,9 @@ xptone_complete_locked(void)
 	}
 
 #ifdef WITH_PULSEAUDIO
-	else if (handle->type == SOUND_DEVICE_PULSEAUDIO) {
+	else if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
 		int err;
-		pu_api.simple_drain(pu_handle, &err);
+		pu_api->simple_drain(pu_handle, &err);
 	}
 #endif
 

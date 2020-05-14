@@ -124,13 +124,6 @@ ifdef USE_SDL_AUDIO
  endif
 endif
 
-ifndef NO_PULSEAUDIO
- ifeq ($(shell command -v pkg-config > /dev/null && pkg-config --exists libpulse && echo 'YES' ; fi),YES)
-  XPDEV_CFLAGS += -DWITH_PULSEAUDIO
-  XPDEV_MT_CFLAGS += -DWITH_PULSEAUDIO
- endif
-endif
-
 ifdef STATIC
  STATIC_SDL := true
 endif
