@@ -668,7 +668,8 @@ xptone_complete_locked(void)
 #ifdef WITH_PULSEAUDIO
 	else if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
 		int err;
-		pu_api->simple_drain(pu_handle, &err);
+		if (pu_handle)
+			pu_api->simple_drain(pu_handle, &err);
 	}
 #endif
 
@@ -819,6 +820,7 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 	int	i;
 #endif
 
+printf("Handle: %d\n");
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		if(pa_api->ver < 1899)
@@ -859,8 +861,12 @@ do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
 		ss.rate = 22050;
 		ss.channels = 1;
 		if (pu_handle == NULL) {
-			if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL)
+			if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL) {
 				pulseaudio_device_open_failed=TRUE;
+				pulseaudio_initialized=FALSE;
+				xptone_close_locked();
+				xptone_open_locked();
+			}
 			else
 				pulseaudio_initialized=TRUE;
 		}
