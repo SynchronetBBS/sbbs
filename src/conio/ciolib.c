@@ -82,6 +82,8 @@ CIOLIBEXPORT int hold_update=0;
 CIOLIBEXPORT int puttext_can_move=0;
 CIOLIBEXPORT int ciolib_reaper=TRUE;
 CIOLIBEXPORT char *ciolib_appname=NULL;
+CIOLIBEXPORT int ciolib_initial_window_height = -1;
+CIOLIBEXPORT int ciolib_initial_window_width = -1;
 static int initialized=0;
 
 CIOLIBEXPORT int CIOLIBCALL ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);

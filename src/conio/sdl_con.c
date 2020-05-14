@@ -340,6 +340,14 @@ static int sdl_init_mode(int mode)
 	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.cols * cvstat.charwidth)) * (vstat.cols * vstat.charwidth);
 	vstat.winheight = ((double)cvstat.winheight / (cvstat.rows * cvstat.charheight * cvstat.vmultiplier)) * (vstat.rows * vstat.charheight * vstat.vmultiplier);
 	if (oldcols != vstat.cols) {
+		if (oldcols == 0) {
+			if (ciolib_initial_window_width > 0)
+				vstat.winwidth = ciolib_initial_window_width;
+			if (ciolib_initial_window_height > 0)
+				vstat.winheight = ciolib_initial_window_height;
+			if (vstat.cols == 40)
+				oldcols = 40;
+		}
 		if (oldcols == 40) {
 			vstat.winwidth /= 2;
 			vstat.winheight /= 2;
@@ -569,7 +577,8 @@ static void setup_surfaces_locked(void)
 	else {
 		sdl.SetWindowMinimumSize(win, cvstat.charwidth * cvstat.cols, cvstat.charheight * cvstat.rows);
 		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
-		if (texture) 
+		sdl.RenderClear(renderer);
+		if (texture)
 			sdl.DestroyTexture(texture);
 		texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
 	}
@@ -928,6 +937,7 @@ void sdl_video_event_thread(void *data)
 									sdl.GetWindowSize(win, &cvstat.winwidth, &cvstat.winheight);
 								if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
 									sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
+									sdl.RenderClear(renderer);
 									sdl.DestroyTexture(texture);
 									texture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.charwidth*cvstat.cols, cvstat.charheight*cvstat.rows);
 									bitmap_drv_request_pixels();
