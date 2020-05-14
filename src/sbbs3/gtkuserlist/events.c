@@ -227,7 +227,7 @@ G_MODULE_EXPORT void apply_ars_filter(GtkWidget *wiggy, gpointer data)
 	GtkWidget	*w;
 
 	w=GTK_WIDGET(gtk_builder_get_object(builder, "eArsFilter"));
-	arbuf=arstr(NULL, (char *)gtk_entry_get_text(GTK_ENTRY(w)), &cfg);
+	arbuf=arstr(NULL, (char *)gtk_entry_get_text(GTK_ENTRY(w)), &cfg, arbuf);
 	update_userlist_callback(wiggy, data);
 }
 
