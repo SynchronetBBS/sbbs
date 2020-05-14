@@ -550,7 +550,7 @@ typedef struct
 	uint16_t		max_qwkmsgage;	/* Maximum age (in days) of QWK messages to be imported */
 	uint16_t		max_spamage;	/* Maximum age (in days) of SPAM-tagged messages */
 	char			preqwk_arstr[LEN_ARSTR+1]; /* pre pack QWK */
-	uchar*			preqwk_ar;
+	uchar			preqwk_ar[LEN_ARSTR+1];
 	uint16_t		cdt_min_value;	/* Minutes per 100k credits */
 	uint32_t		cdt_per_dollar; /* Credits per dollar */
 	uint16_t		cdt_up_pct; 	/* Pct of credits credited on uploads */
