@@ -2389,6 +2389,36 @@ static int fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct m
 	}
 }
 
+void
+do_paste(void)
+{
+	uint8_t *p;
+	uint8_t *p2;
+	int oldfont;
+
+	p=(unsigned char *)getcliptext();
+	if(p!=NULL) {
+		p2 = p;
+		oldfont = getfont(1);
+		setfont(cterm->altfont[0], FALSE, 1);
+		p = (unsigned char *)utf8_to_cp(getcodepage(), p, '\x00', strlen((char *)p), NULL);
+		setfont(oldfont, FALSE, 1);
+		free(p2);
+		if (p != NULL) {
+			for(p2=p; *p2; p2++) {
+				if(*p2=='\n') {
+					/* If previous char was not \r, send a \r */
+					if(p2==p || *(p2-1)!='\r')
+						conn_send("\r",1,0);
+				}
+				else
+					conn_send(p2,1,0);
+			}
+			free(p);
+		}
+	}
+}
+
 BOOL doterm(struct bbslist *bbs)
 {
 	unsigned char ch[2];
@@ -2397,7 +2427,6 @@ BOOL doterm(struct bbslist *bbs)
 	size_t outbuf_size=0;
 	int	key;
 	int i,j;
-	unsigned char *p,*p2;
 	struct vmem_cell *vc;
 	BYTE zrqinit[] = { ZDLE, ZHEX, '0', '0', 0 };	/* for Zmodem auto-downloads */
 	BYTE zrinit[] = { ZDLE, ZHEX, '0', '1', 0 };	/* for Zmodem auto-uploads */
@@ -2421,7 +2450,6 @@ BOOL doterm(struct bbslist *bbs)
 	recv_byte_buffer_len=recv_byte_buffer_pos=0;
 	struct mouse_state ms = {};
 	int speedwatch = 0;
-	int oldfont;
 
 	gettextinfo(&txtinfo);
 	if(bbs->conn_type == CONN_TYPE_SERIAL)
@@ -2682,32 +2710,15 @@ BOOL doterm(struct bbslist *bbs)
 								conn_send(mouse_buf, fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
 							}
 							else {
-								p=(unsigned char *)getcliptext();
-								if(p!=NULL) {
-									p2 = p;
-									oldfont = getfont(1);
-									setfont(cterm->altfont[0], FALSE, 1);
-									p = (unsigned char *)utf8_to_cp(getcodepage(), p, '\x00', strlen((char *)p), NULL);
-									setfont(oldfont, FALSE, 1);
-									free(p2);
-									if (p != NULL) {
-										for(p2=p; *p2; p2++) {
-											if(*p2=='\n') {
-												/* If previous char was not \r, send a \r */
-												if(p2==p || *(p2-1)!='\r')
-													conn_send("\r",1,0);
-											}
-											else
-												conn_send(p2,1,0);
-										}
-										free(p);
-									}
-								}
+								do_paste();
 							}
 							break;
 					}
 
 					key = 0;
+					break;
+				case CIO_KEY_SHIFT_IC:	/* Shift-Insert - Paste */
+					do_paste();
 					break;
 				case 0x3000:	/* ALT-B - Scrollback */
 					setup_mouse_events(NULL);
