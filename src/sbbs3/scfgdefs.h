@@ -55,11 +55,11 @@ typedef struct {							/* Message sub board info */
 				post_sem[LEN_DIR+1],		/* Semaphore file for this sub */
 				tagline[81],				/* Optional QWK net tag line */
 				newsgroup[LEN_DIR+1];		/* Newsgroup name */
-	uchar		*ar,
-				*read_ar,
-				*post_ar,
-				*op_ar,
-				*mod_ar;
+	uchar		ar[LEN_ARSTR+1],
+				read_ar[LEN_ARSTR+1],
+				post_ar[LEN_ARSTR+1],
+				op_ar[LEN_ARSTR+1],
+				mod_ar[LEN_ARSTR+1];
 	uint16_t	grp,						/* Which group this sub belongs to */
 				ptridx, 					/* Index into pointer file */
 				qwkconf,					/* QWK conference number */
@@ -79,7 +79,7 @@ typedef struct {							/* Message group info */
 				sname[LEN_GSNAME+1],		/* Short name */
 				arstr[LEN_ARSTR+1],			/* Access requirements */
 				code_prefix[LEN_CODE+1];	/* Prefix for internal code */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	enum area_sort sort;
 
 } grp_t;
@@ -98,11 +98,11 @@ typedef struct {							/* Transfer Directory Info */
 				exts[41],   		        /* Extensions allowed */
 				upload_sem[LEN_DIR+1],		/* Upload semaphore file */
 				data_dir[LEN_DIR+1];		/* Directory where data is stored */
-	uchar		*ar,
-				*ul_ar,
-				*dl_ar,
-				*ex_ar,
-				*op_ar,
+	uchar		ar[LEN_ARSTR+1],
+				ul_ar[LEN_ARSTR+1],
+				dl_ar[LEN_ARSTR+1],
+				ex_ar[LEN_ARSTR+1],
+				op_ar[LEN_ARSTR+1],
 				seqdev, 					/* Sequential access device number */
 				sort;						/* Sort type */
 	uint16_t	maxfiles,					/* Max number of files allowed */
@@ -121,7 +121,7 @@ typedef struct {							/* Transfer Library Information */
 				arstr[LEN_ARSTR+1],			/* Access Requirements */
 				code_prefix[LEN_CODE+1],	/* Prefix for internal code */
 				parent_path[48];			/* Parent for dir paths */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	uint32_t	offline_dir;				/* Offline file directory */
 	uint32_t	misc;						/* Miscellaneous bits */
 	enum area_sort sort;
@@ -132,7 +132,7 @@ typedef struct {							/* Gfile Section Information */
 	char		code[LEN_CODE+1];			/* Eight character code */
 	char		name[41],					/* Name of section */
 				arstr[LEN_ARSTR+1];			/* Access requirements */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } txtsec_t;
 
@@ -140,7 +140,7 @@ typedef struct {							/* External Section Information */
 	char		code[LEN_CODE+1];			/* Eight character code	*/
 	char		name[41],					/* Name of section */
 				arstr[LEN_ARSTR+1];			/* Access requirements */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } xtrnsec_t;
 
@@ -163,8 +163,8 @@ typedef struct {							/* External Program Information */
 				cmd[LEN_CMD+1], 			/* Command line */
 				clean[LEN_CMD+1],			/* Clean-up command line */
 				path[LEN_DIR+1];			/* Start-up path */
-	uchar		*ar,
-				*run_ar;
+	uchar		ar[LEN_ARSTR+1],
+				run_ar[LEN_ARSTR+1];
 	uchar		type,						/* What type of external program */
 				event,                      /* Execute upon what event */
 				textra, 					/* Extra time while in this program */
@@ -178,7 +178,7 @@ typedef struct {							/* External Program Information */
 typedef struct {							/* External Page program info */
 	char		cmd[LEN_CMD+1], 			/* Command line */
 				arstr[LEN_ARSTR+1];			/* ARS for this chat page */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	uint32_t	misc;						/* Intercept I/O */
 
 } page_t;
@@ -200,7 +200,7 @@ typedef struct {							/* Gurus */
 	char		code[LEN_CODE+1];
 	char		name[26],
 				arstr[LEN_ARSTR+1];
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } guru_t;
 
@@ -208,7 +208,7 @@ typedef struct {							/* Chat Channel Information */
 	char		code[LEN_CODE+1];
 	char		name[26];					/* Channel description */
 	char		arstr[LEN_ARSTR+1];			/* Access requirements */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	uint16_t	actset, 					/* Set of actions used in this chan */
 				guru;						/* Guru file number */
 	uint32_t	cost,						/* Cost to join */
@@ -234,7 +234,7 @@ typedef struct {							/* Transfer Protocol information */
 				batdlcmd[LEN_CMD+1],		/* Batch download command line */
 				blindcmd[LEN_CMD+1],		/* Blind upload command line */
 				bicmd[LEN_CMD+1];			/* Bidirectional command line */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	uint32_t	misc;						/* Miscellaneous bits */
 
 } prot_t;
@@ -243,7 +243,7 @@ typedef struct {	                        /* Extractable file types */
 	char		ext[4]; 					/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } fextr_t;
 
@@ -251,7 +251,7 @@ typedef struct {							/* Compressable file types */
 	char		ext[4]; 					/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } fcomp_t;
 
@@ -259,7 +259,7 @@ typedef struct {							/* Viewable file types */
 	char		ext[4]; 					/* Extension */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } fview_t;
 
@@ -268,7 +268,7 @@ typedef struct {							/* Testable file types */
 	char		arstr[LEN_ARSTR+1],			/* Access requirement */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } ftest_t;
 
@@ -277,7 +277,7 @@ typedef struct {							/* Download events */
 	char		arstr[LEN_ARSTR+1],			/* Access requirement */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 
 } dlevent_t;
 
@@ -294,7 +294,7 @@ typedef struct {							/* External Editors */
 				arstr[LEN_ARSTR+1],			/* Access Requirement */
 				lcmd[LEN_CMD+1],			/* Local command line */
 				rcmd[LEN_CMD+1];			/* Remote command line */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	uint32_t	misc;						/* Misc. bits */
 	uchar		type;						/* Drop file type */
 	uint16_t	quotewrap_cols;				/* When word-wrapping quoted text, use this width (if non-zero */
@@ -352,7 +352,7 @@ typedef struct {							/* Command Shells */
 	char		code[LEN_CODE+1];
 	char		name[41],					/* Name (description) */
 				arstr[LEN_ARSTR+1];			/* Access Requirement */
-	uchar		*ar;
+	uchar		ar[LEN_ARSTR+1];
 	uint32_t	misc;
 
 } shell_t;
@@ -467,7 +467,7 @@ typedef struct
 	uint16_t		sys_lastnode;		/* Last displayable node number */
 	uint16_t		sys_autonode;		/* First node number for autonode */
 	char			sys_chat_arstr[LEN_ARSTR+1];	/* chat override */
-	uchar *			sys_chat_ar;
+	uchar			sys_chat_ar[LEN_ARSTR+1];
 
 	int32_t			msg_misc;			/* Global Message-Related Settings (upper 16-bits default to on) */
 	int32_t 		file_misc;			/* File Misc Settings */
@@ -489,7 +489,7 @@ typedef struct
 	char			node_phone[13], 	/* Phone number of this node */
 					node_name[41];     	/* Name of this node */
 	char			node_arstr[LEN_ARSTR+1]; /* Node minimum requirements */
-	uchar			*node_ar;
+	uchar			node_ar[LEN_ARSTR+1];
 	uint32_t		node_cost;			/* Node cost to call - in credits */
 	uchar			node_dollars_per_call;	/* Billing Node Dollars Per Call */
 	uint16_t		node_sem_check; 	/* Seconds between semaphore checks */

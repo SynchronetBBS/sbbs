@@ -97,7 +97,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->fextr[i]->ext,instream);
 		get_str(cfg->fextr[i]->cmd,instream);
 		get_str(cfg->fextr[i]->arstr,instream);
-		cfg->fextr[i]->ar=ARSTR(cfg->fextr[i]->arstr,cfg);
+		arstr(NULL, cfg->fextr[i]->arstr, cfg, cfg->fextr[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -125,7 +125,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->fcomp[i]->ext,instream);
 		get_str(cfg->fcomp[i]->cmd,instream);
 		get_str(cfg->fcomp[i]->arstr,instream);
-		cfg->fcomp[i]->ar=ARSTR(cfg->fcomp[i]->arstr,cfg);
+		arstr(NULL, cfg->fcomp[i]->arstr, cfg, cfg->fcomp[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -152,7 +152,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->fview[i]->ext,instream);
 		get_str(cfg->fview[i]->cmd,instream);
 		get_str(cfg->fview[i]->arstr,instream);
-		cfg->fview[i]->ar=ARSTR(cfg->fview[i]->arstr,cfg);
+		arstr(NULL, cfg->fview[i]->arstr, cfg, cfg->fview[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -180,7 +180,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->ftest[i]->cmd,instream);
 		get_str(cfg->ftest[i]->workstr,instream);
 		get_str(cfg->ftest[i]->arstr,instream);
-		cfg->ftest[i]->ar=ARSTR(cfg->ftest[i]->arstr,cfg);
+		arstr(NULL, cfg->ftest[i]->arstr, cfg, cfg->ftest[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -209,7 +209,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->dlevent[i]->cmd,instream);
 		get_str(cfg->dlevent[i]->workstr,instream);
 		get_str(cfg->dlevent[i]->arstr,instream);
-		cfg->dlevent[i]->ar=ARSTR(cfg->dlevent[i]->arstr,cfg);
+		arstr(NULL, cfg->dlevent[i]->arstr, cfg, cfg->dlevent[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -245,7 +245,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->prot[i]->bicmd,instream);
 		get_int(cfg->prot[i]->misc,instream);
 		get_str(cfg->prot[i]->arstr,instream);
-		cfg->prot[i]->ar=ARSTR(cfg->prot[i]->arstr,cfg);
+		arstr(NULL, cfg->prot[i]->arstr, cfg, cfg->prot[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -304,7 +304,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->lib[i]->sname,instream);
 
 		get_str(cfg->lib[i]->arstr,instream);
-		cfg->lib[i]->ar=ARSTR(cfg->lib[i]->arstr,cfg);
+		arstr(NULL, cfg->lib[i]->arstr, cfg, cfg->lib[i]->ar);
 
 		get_str(cfg->lib[i]->parent_path,instream);
 
@@ -366,10 +366,10 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->dir[i]->dl_arstr,instream);
 		get_str(cfg->dir[i]->op_arstr,instream);
 
-		cfg->dir[i]->ar=ARSTR(cfg->dir[i]->arstr,cfg);
-		cfg->dir[i]->ul_ar=ARSTR(cfg->dir[i]->ul_arstr,cfg);
-		cfg->dir[i]->dl_ar=ARSTR(cfg->dir[i]->dl_arstr,cfg);
-		cfg->dir[i]->op_ar=ARSTR(cfg->dir[i]->op_arstr,cfg);
+		arstr(NULL, cfg->dir[i]->arstr ,cfg, cfg->dir[i]->ar);
+		arstr(NULL, cfg->dir[i]->ul_arstr, cfg, cfg->dir[i]->ul_ar);
+		arstr(NULL, cfg->dir[i]->dl_arstr, cfg, cfg->dir[i]->dl_ar);
+		arstr(NULL, cfg->dir[i]->op_arstr, cfg, cfg->dir[i]->op_ar);
 
 		get_str(cfg->dir[i]->path,instream);
 
@@ -383,7 +383,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->dir[i]->seqdev,instream);
 		get_int(cfg->dir[i]->sort,instream);
 		get_str(cfg->dir[i]->ex_arstr,instream);
-		cfg->dir[i]->ex_ar=ARSTR(cfg->dir[i]->ex_arstr,cfg);
+		arstr(NULL, cfg->dir[i]->ex_arstr, cfg, cfg->dir[i]->ex_ar);
 
 		get_int(cfg->dir[i]->maxage,instream);
 		get_int(cfg->dir[i]->up_pct,instream);
@@ -417,7 +417,7 @@ BOOL read_file_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->txtsec[i]->name,instream);
 		get_str(cfg->txtsec[i]->code,instream);
 		get_str(cfg->txtsec[i]->arstr,instream);
-		cfg->txtsec[i]->ar=ARSTR(cfg->txtsec[i]->arstr,cfg);
+		arstr(NULL, cfg->txtsec[i]->arstr, cfg, cfg->txtsec[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -491,7 +491,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 
 		get_int(cfg->xedit[i]->misc,instream);
 		get_str(cfg->xedit[i]->arstr,instream);
-		cfg->xedit[i]->ar=ARSTR(cfg->xedit[i]->arstr,cfg);
+		arstr(NULL, cfg->xedit[i]->arstr, cfg, cfg->xedit[i]->ar);
 
 		get_int(cfg->xedit[i]->type,instream);
 		get_int(c,instream);
@@ -527,7 +527,7 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->xtrnsec[i]->name,instream);
 		get_str(cfg->xtrnsec[i]->code,instream);
 		get_str(cfg->xtrnsec[i]->arstr,instream);
-		cfg->xtrnsec[i]->ar=ARSTR(cfg->xtrnsec[i]->arstr,cfg);
+		arstr(NULL, cfg->xtrnsec[i]->arstr, cfg, cfg->xtrnsec[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -558,8 +558,8 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->xtrn[i]->code,instream);
 		get_str(cfg->xtrn[i]->arstr,instream);
 		get_str(cfg->xtrn[i]->run_arstr,instream);
-		cfg->xtrn[i]->ar=ARSTR(cfg->xtrn[i]->arstr,cfg);
-		cfg->xtrn[i]->run_ar=ARSTR(cfg->xtrn[i]->run_arstr,cfg);
+		arstr(NULL, cfg->xtrn[i]->arstr, cfg, cfg->xtrn[i]->ar);
+		arstr(NULL, cfg->xtrn[i]->run_arstr, cfg, cfg->xtrn[i]->run_ar);
 
 		get_int(cfg->xtrn[i]->type,instream);
 		get_int(cfg->xtrn[i]->misc,instream);
@@ -714,7 +714,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->guru[i]->code,instream);
 
 		get_str(cfg->guru[i]->arstr,instream);
-		cfg->guru[i]->ar=ARSTR(cfg->guru[i]->arstr,cfg);
+		arstr(NULL, cfg->guru[i]->arstr, cfg, cfg->guru[i]->ar);
 
 		for(j=0;j<8;j++)
 			get_int(n,instream);
@@ -796,7 +796,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->chan[i]->code,instream);
 
 		get_str(cfg->chan[i]->arstr,instream);
-		cfg->chan[i]->ar=ARSTR(cfg->chan[i]->arstr,cfg);
+		arstr(NULL, cfg->chan[i]->arstr, cfg, cfg->chan[i]->ar);
 
 		get_int(cfg->chan[i]->cost,instream);
 		get_int(cfg->chan[i]->guru,instream);
@@ -828,7 +828,7 @@ BOOL read_chat_cfg(scfg_t* cfg, char* error)
 		get_str(cfg->page[i]->cmd,instream);
 
 		get_str(cfg->page[i]->arstr,instream);
-		cfg->page[i]->ar=ARSTR(cfg->page[i]->arstr,cfg);
+		arstr(NULL, cfg->page[i]->arstr, cfg, cfg->page[i]->ar);
 
 		get_int(cfg->page[i]->misc,instream);
 		for(j=0;j<8;j++)
@@ -973,7 +973,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->fextr!=NULL) {
 		for(i=0;i<cfg->total_fextrs;i++) {
-			FREE_AR(cfg->fextr[i]->ar);
 			FREE_AND_NULL(cfg->fextr[i]);
 		}
 		FREE_AND_NULL(cfg->fextr);
@@ -982,7 +981,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->fcomp!=NULL) {
 		for(i=0;i<cfg->total_fcomps;i++) {
-			FREE_AR(cfg->fcomp[i]->ar);
 			FREE_AND_NULL(cfg->fcomp[i]);
 		}
 		FREE_AND_NULL(cfg->fcomp);
@@ -991,7 +989,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->fview!=NULL) {
 		for(i=0;i<cfg->total_fviews;i++) {
-			FREE_AR(cfg->fview[i]->ar);
 			FREE_AND_NULL(cfg->fview[i]);
 		}
 		FREE_AND_NULL(cfg->fview);
@@ -1000,7 +997,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->ftest!=NULL) {
 		for(i=0;i<cfg->total_ftests;i++) {
-			FREE_AR(cfg->ftest[i]->ar);
 			FREE_AND_NULL(cfg->ftest[i]);
 		}
 		FREE_AND_NULL(cfg->ftest);
@@ -1009,7 +1005,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->dlevent!=NULL) {
 		for(i=0;i<cfg->total_dlevents;i++) {
-			FREE_AR(cfg->dlevent[i]->ar);
 			FREE_AND_NULL(cfg->dlevent[i]);
 		}
 		FREE_AND_NULL(cfg->dlevent);
@@ -1018,7 +1013,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->prot!=NULL) {
 		for(i=0;i<cfg->total_prots;i++) {
-			FREE_AR(cfg->prot[i]->ar);
 			FREE_AND_NULL(cfg->prot[i]);
 		}
 		FREE_AND_NULL(cfg->prot);
@@ -1034,7 +1028,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->lib!=NULL) {
 		for(i=0;i<cfg->total_libs;i++) {
-			FREE_AR(cfg->lib[i]->ar);
 			FREE_AND_NULL(cfg->lib[i]);
 		}
 		FREE_AND_NULL(cfg->lib);
@@ -1043,15 +1036,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->dir!=NULL) {
 		for(i=0;i<cfg->total_dirs;i++) {
-#if 0 /*ndef SCFG */
-			if(cfg->dir[i]->data_dir!=cfg->data_dir_dirs) 
-				FREE_AND_NULL(cfg->dir[i]->data_dir);
-#endif
-			FREE_AR(cfg->dir[i]->ar);
-			FREE_AR(cfg->dir[i]->ul_ar);
-			FREE_AR(cfg->dir[i]->dl_ar);
-			FREE_AR(cfg->dir[i]->op_ar);
-			FREE_AR(cfg->dir[i]->ex_ar);
 			FREE_AND_NULL(cfg->dir[i]);
 		}
 		FREE_AND_NULL(cfg->dir);
@@ -1060,7 +1044,6 @@ void free_file_cfg(scfg_t* cfg)
 
 	if(cfg->txtsec!=NULL) {
 		for(i=0;i<cfg->total_txtsecs;i++) {
-			FREE_AR(cfg->txtsec[i]->ar);
 			FREE_AND_NULL(cfg->txtsec[i]);
 		}
 		FREE_AND_NULL(cfg->txtsec);
@@ -1090,7 +1073,6 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->chan!=NULL) {
 		for(i=0;i<cfg->total_chans;i++) {
-			FREE_AR(cfg->chan[i]->ar);
 			FREE_AND_NULL(cfg->chan[i]);
 		}
 		FREE_AND_NULL(cfg->chan);
@@ -1099,7 +1081,6 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->guru!=NULL) {
 		for(i=0;i<cfg->total_gurus;i++) {
-			FREE_AR(cfg->guru[i]->ar);
 			FREE_AND_NULL(cfg->guru[i]);
 		}
 		FREE_AND_NULL(cfg->guru);
@@ -1108,7 +1089,6 @@ void free_chat_cfg(scfg_t* cfg)
 
 	if(cfg->page!=NULL) {
 		for(i=0;i<cfg->total_pages;i++) {
-			FREE_AR(cfg->page[i]->ar);
 			FREE_AND_NULL(cfg->page[i]);
 		}
 		FREE_AND_NULL(cfg->page);
@@ -1131,7 +1111,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xedit!=NULL) {
 		for(i=0;i<cfg->total_xedits;i++) {
-			FREE_AR(cfg->xedit[i]->ar);
 			FREE_AND_NULL(cfg->xedit[i]);
 		}
 		FREE_AND_NULL(cfg->xedit);
@@ -1140,7 +1119,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xtrnsec!=NULL) {
 		for(i=0;i<cfg->total_xtrnsecs;i++) {
-			FREE_AR(cfg->xtrnsec[i]->ar);
 			FREE_AND_NULL(cfg->xtrnsec[i]);
 		}
 		FREE_AND_NULL(cfg->xtrnsec);
@@ -1149,8 +1127,6 @@ void free_xtrn_cfg(scfg_t* cfg)
 
 	if(cfg->xtrn!=NULL) {
 		for(i=0;i<cfg->total_xtrns;i++) {
-			FREE_AR(cfg->xtrn[i]->ar);
-			FREE_AR(cfg->xtrn[i]->run_ar);
 			FREE_AND_NULL(cfg->xtrn[i]);
 		}
 		FREE_AND_NULL(cfg->xtrn);

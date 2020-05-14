@@ -1869,10 +1869,9 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 			(*ptrptr)++;
 			cp=strchr(str,']');
 			if(cp) *cp=0;
-			ar=arstr(NULL,str,&cfg);
+			ar=arstr(NULL,str,&cfg,NULL);
 			c=chk_ar(ar,&useron,&client);
-			if(ar[0]!=AR_NULL)
-				free(ar);
+			free(ar);
 			if(!c && _and) {
 				result=false;
 				break; 

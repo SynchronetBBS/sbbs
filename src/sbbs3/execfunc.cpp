@@ -217,12 +217,11 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 		case CS_MAIL_SEND_BULK:
 			if(csi->str[0])
-				p=arstr(NULL,csi->str, &cfg);
+				p=arstr(NULL,csi->str, &cfg,NULL);
 			else
-				p=(uchar *)nulstr;
+				p=NULL;
 			bulkmail(p);
-			if(p && p[0])
-				free(p);
+			free(p);
 			return(0);
 
 		case CS_INC_MAIN_CMDS:

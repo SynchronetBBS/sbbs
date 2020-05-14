@@ -127,7 +127,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 
 	j=lastuser(&cfg);
 
-	if(*ar)
+	if(ar && *ar)
 		for(i=1;i<=j;i++) {
 			user.number=i;
 			if(getuserdat(&cfg, &user)!=0)

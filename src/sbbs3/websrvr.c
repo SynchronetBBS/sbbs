@@ -1991,9 +1991,9 @@ static BOOL check_ars(http_session_t * session)
 		session->req.ld->user=strdup(session->req.auth.username);
 	}
 
-	ar = arstr(NULL,session->req.ars,&scfg);
+	ar = arstr(NULL,session->req.ars,&scfg,NULL);
 	authorized=chk_ar(&scfg,ar,&session->user,&session->client);
-	if(ar!=NULL && ar!=nular)
+	if(ar!=NULL)
 		FREE_AND_NULL(ar);
 
 	if(authorized)  {

@@ -2805,7 +2805,7 @@ static JSBool
 js_bulkmail(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	uchar*		ar=(uchar*)"";
+	uchar*		ar = NULL;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 	char		*p;
@@ -2819,13 +2819,12 @@ js_bulkmail(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
 		if(p==NULL)
 			return(JS_FALSE);
-		ar=arstr(NULL, p, &sbbs->cfg);
+		ar=arstr(NULL, p, &sbbs->cfg, NULL);
 		free(p);
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	sbbs->bulkmail(ar);
-	if(ar && ar[0])
-		free(ar);
+	free(ar);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -4128,12 +4127,12 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ar = arstr(NULL,p,&sbbs->cfg);
+	ar = arstr(NULL,p,&sbbs->cfg,NULL);
 	free(p);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->chk_ar(ar,&sbbs->useron,&sbbs->client)));
 
-	if(ar!=NULL && ar!=nular)
+	if(ar!=NULL)
 		free(ar);
 	JS_RESUMEREQUEST(cx, rc);
 

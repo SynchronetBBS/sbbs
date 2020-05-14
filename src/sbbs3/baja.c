@@ -591,9 +591,12 @@ void compile(char *src)
 		if(!stricmp(p,"COMPARE_ARS")) {
 			if(!(*arg)) break;
 			strupr(arg);
-			ar=arstr(&i,arg,NULL);
-			fprintf(out,"%c%c",CS_COMPARE_ARS,(uchar)i);
-			fwrite(ar,i,1,out);
+			ar=arstr(&i,arg,NULL,NULL);
+			if(ar != NULL) {
+				fprintf(out,"%c%c",CS_COMPARE_ARS,(uchar)i);
+				fwrite(ar,i,1,out);
+				free(ar);
+			}
 			continue; }
 
 		if(!stricmp(p,"CHKSYSPASS")) {

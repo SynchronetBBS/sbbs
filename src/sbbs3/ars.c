@@ -37,8 +37,6 @@
 
 #include "sbbs.h"
 
-const uchar* nular=(uchar*)"";	/* AR_NULL */
-
 static BOOL ar_string_arg(int artype)
 {
 	switch(artype) {
@@ -58,12 +56,12 @@ static BOOL ar_string_arg(int artype)
 #ifdef __BORLANDC__	/* Eliminate warning when buildling Baja */
 #pragma argsused
 #endif
-uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
+uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 {
 	const char*	p;
 	const char*	np;
 	char	ch;
-	uchar	ar[1024],*ar_buf;
+	uchar	ar[1024];
 	int		artype=AR_INVALID;
 	uint	i,j,n,not=0,equal=0;
 	uint	maxlen;
@@ -721,22 +719,14 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
 				break;
 		} 
 	}
-	if(!j) {
-		if(count)
-			(*count)=0;
-		return((uchar*)nular);	/* Save memory */
-	}
 
 	ar[j++]=AR_NULL;
-	/** DEBUG stuff
-	for(i=0;i<j;i++)
-		lprintf(LOG_DEBUG,"%02X ",(uint)ar[i]);
-	lputs("\r\n");
-	***/
-	if((ar_buf=(uchar *)calloc(j+4,1))==NULL) {	/* Padded for ushort dereferencing */
-		if(count)
-			(*count)=0;
-		return(NULL);
+	if(ar_buf == NULL) {
+		if((ar_buf=(uchar *)calloc(j+4,1))==NULL) {	/* Padded for ushort dereferencing */
+			if(count)
+				(*count)=0;
+			return(NULL);
+		}
 	}
 	memcpy(ar_buf,ar,j);
 	if(count)

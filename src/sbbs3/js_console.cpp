@@ -1514,7 +1514,6 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 	int32		num=0;
 	char*		title=NULL;
 	char*		item=NULL;
-	char*		ar_str=NULL;
 	uchar*		ar=NULL;
 	sbbs_t*		sbbs;
     JSString*	js_str;
@@ -1558,24 +1557,24 @@ js_uselect(JSContext *cx, uintN argc, jsval *arglist)
 				return JS_FALSE;
 			}
 		}
-		else if(ar_str==NULL) {
+		else if(ar==NULL) {
+			char* ar_str=NULL;
 			JSSTRING_TO_MSTRING(cx, js_str, ar_str, NULL);
 			if(ar_str==NULL) {
 				free(item);
 				free(title);
 				return JS_FALSE;
 			}
-			ar=arstr(NULL,ar_str,&sbbs->cfg);
+			ar=arstr(NULL,ar_str,&sbbs->cfg,NULL);
 			free(ar_str);
 		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->uselect(1, num, title, item, ar)));
-	if(title)
-		free(title);
-	if(item)
-		free(item);
+	free(title);
+	free(item);
+	free(ar);
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }

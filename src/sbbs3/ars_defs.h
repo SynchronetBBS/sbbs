@@ -54,7 +54,7 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-uchar *arstr(ushort* count, const char* str, scfg_t* cfg);
+uchar *arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf);
 
 #define AR_INVALID	-1				/* Unspecified keyword */
 

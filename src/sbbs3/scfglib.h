@@ -50,18 +50,6 @@
 extern "C" {
 #endif
 
-extern const char*	scfgnulstr;
-
-#if defined(SCFG)	/* Don't compile AR strings for SCFG */
-	#define ARSTR(str,cfg)	NULL
-    #define FREE_AR(x)
-#else
-	extern const uchar* nular;
-	#define ARSTR(str,cfg)	arstr(NULL,str,cfg)
-	/* allocated with arstr() */
-	#define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); x=NULL; }
-#endif
-
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
 BOOL	allocerr(FILE*, char* error, long offset, char *fname, uint size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);

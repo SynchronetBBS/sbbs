@@ -5857,7 +5857,7 @@ static void cleanup(int code)
 
 	if(mailproc_list!=NULL) {
 		for(i=0;i<mailproc_count;i++) {
-			if(mailproc_list[i].ar!=NULL && mailproc_list[i].ar!=nular)
+			if(mailproc_list[i].ar!=NULL)
 				free(mailproc_list[i].ar);
 			strListFree(&mailproc_list[i].to);
 			strListFree(&mailproc_list[i].from);
@@ -6108,7 +6108,7 @@ void DLLCALL mail_server(void* arg)
 					mailproc_list[i].process_dnsbl =
 						iniReadBool(fp,sec_list[i],"ProcessDNSBL",TRUE);
 					mailproc_list[i].ar = 
-						arstr(NULL,iniReadString(fp,sec_list[i],"AccessRequirements","",buf),&scfg);
+						arstr(NULL,iniReadString(fp,sec_list[i],"AccessRequirements","",buf),&scfg,NULL);
 				}
 			}
 			iniFreeStringList(sec_list);

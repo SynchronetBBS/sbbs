@@ -990,14 +990,14 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ar = arstr(NULL,ars,scfg);
+	ar = arstr(NULL,ars,scfg,NULL);
 	free(ars);
 
 	js_getuserdat(scfg,p);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(chk_ar(scfg,ar,p->user,p->client)));
 
-	if(ar!=NULL && ar!=nular)
+	if(ar!=NULL)
 		free(ar);
 	JS_RESUMEREQUEST(cx, rc);
 

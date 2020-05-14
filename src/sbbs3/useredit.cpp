@@ -447,7 +447,7 @@ void sbbs_t::useredit(int usernumber)
 				lncntr = 0;
 				CLS;
 				sys_status&=~SS_INUEDIT;
-				FREE_AR(ar);	/* assertion here */
+				free(ar);	/* assertion here */
 				return;
 			case 'R':
 				bputs(text[EnterYourRealName]);
@@ -615,8 +615,7 @@ void sbbs_t::useredit(int usernumber)
 				bputs(text[SearchStringPrompt]);
 				if(getstr(artxt,40,K_UPPER|K_LINE))
 					stype=SEARCH_ARS;
-				FREE_AR(ar);
-				ar=arstr(NULL,artxt,&cfg);
+				ar=arstr(NULL,artxt,&cfg,NULL);
 				break;
 			case '{':
 				if(stype==SEARCH_TXT)
@@ -670,7 +669,6 @@ void sbbs_t::useredit(int usernumber)
 		} /* switch */
 	} /* while */
 	sys_status&=~SS_INUEDIT;
-	FREE_AR(ar);
 }
 
 /****************************************************************************/
