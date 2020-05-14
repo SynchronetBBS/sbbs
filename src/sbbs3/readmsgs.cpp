@@ -1617,7 +1617,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			postmsg(subnum,0,0); 
 	}
 	if(!(org_mode&(SCAN_CONST|SCAN_TOYOU|SCAN_FIND))
-		&& !(subscan[subnum].cfg&SUB_CFG_NSCAN) && text[AddSubToNewScanQ][0] && yesno(text[AddSubToNewScanQ]))
+		&& !(subscan[subnum].cfg&SUB_CFG_NSCAN) && !noyes(text[AddSubToNewScanQ]))
 		subscan[subnum].cfg|=SUB_CFG_NSCAN;
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
