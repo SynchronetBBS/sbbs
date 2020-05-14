@@ -113,9 +113,7 @@ install: all
 symlinks: all
 	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
 	ln -sfr $(LIBODIR)/* $(SBBSEXEC)
-	ln -sfr scfg/$(EXEODIR)/* $(SBBSEXEC)
-	ln -sfr uedit/$(EXEODIR)/* $(SBBSEXEC)
-	ln -sfr umonitor/$(EXEODIR)/* $(SBBSEXEC)
+	ln -sfr */$(EXEODIR)/* $(SBBSEXEC)
 endif
 
 ifeq ($(os),linux)
