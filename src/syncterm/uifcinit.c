@@ -61,7 +61,6 @@ init_uifc(BOOL scrn, BOOL bottom) {
 		sprintf(top, "%.40s - %.30s", syncterm_version, output_descrs[cio_api.mode]);
 		if(uifc.scrn(top)) {
 			printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
-			uifc_initialized=0;
 			uifc.bail();
 		}
 		uifc_initialized |= (WITH_SCRN|WITH_BOT);
