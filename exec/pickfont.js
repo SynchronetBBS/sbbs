@@ -74,8 +74,11 @@ function pickfont()
 	}
 
 	var slot=0;
-	if(argc>0)
+	if(argc>0) {
 		slot=parseInt(argv[0]);
+		if (isNaN(slot)
+			slot = 0;
+	}
 
 	write("\x1b[0;"+slot+" D");
 }
