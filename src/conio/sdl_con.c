@@ -884,8 +884,10 @@ void sdl_video_event_thread(void *data)
 					if (!ciolib_mouse_initialized)
 						break;
 					if (ev.wheel.y) {
+#if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL > 3)
 						if (ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 							ev.wheel.y = 0 - ev.wheel.y;
+#endif
 						if (ev.wheel.y > 0)
 							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1);
 						if (ev.wheel.y < 0)
