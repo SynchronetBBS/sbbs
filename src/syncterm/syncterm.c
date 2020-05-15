@@ -1306,7 +1306,7 @@ int main(int argc, char **argv)
 				// Numeric:
 				"	it#8,colors#8,pairs#64,\n"        
 				// Strings:
-				"	acsc=}\\234|\\330{\\322+\\020,\\021l\\332m\\300k\\277j\\331u\\264t\\303v\\301w\\302q\\304x\\263n\\305`^Da\\260f\\370g\\361~\\371.^Y-^Xh\\261i^U0\\333y\\363z\\362,\n"
+				"	acsc=}\\234|\\330{\\322+\\020\\,\\021l\\332m\\300k\\277j\\331u\\264t\\303v\\301w\\302q\\304x\\263n\\305`^Da\\260f\\370g\\361~\\371.^Y-^Xh\\261i^U0\\333y\\363z\\362,\n"
 				"	cbt=\\E[Z,bel=^G,cr=^M,csr=\\E[%i%p1%d;%p2%dr,tbc=\\E[3g,\n"
 				"	mgc=\\E[69h\\E[s\\e[69l,clear=\\E[2J,csr=\\E[%i%p1%d;%p2%dr,el1=\\E[1K,\n"
 				"	el=\\E[K,ed=\\E[J,hpa=\\E[%i%p1%dG,cup=\\E[%i%p1%d;%p2%dH,cud1=^J,home=\\E[H,\n"
