@@ -1667,7 +1667,9 @@ int main(int argc, char **argv)
 		setfont(find_font_id(bbs->font),TRUE,1);
 		if(conn_connect(bbs)) {
 			load_font_files();
+			uifcbail();
 			textmode(txtinfo.currmode);
+			init_uifc(TRUE, TRUE);
 			settitle("SyncTERM");
 		} else {
 			/* ToDo: Update the entry with new lastconnected */
