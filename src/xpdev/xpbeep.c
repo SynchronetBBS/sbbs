@@ -210,7 +210,9 @@ struct alsa_api_struct {
 struct alsa_api_struct *alsa_api=NULL;
 #endif
 
+#ifdef XPDEV_THREAD_SAFE
 static void init_sample(void);
+#endif
 
 /********************************************************************************/
 /* Calculate and generate a sound wave pattern (thanks to Deuce!)				*/
@@ -366,7 +368,9 @@ void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 }
 #endif
 
+#ifdef XPDEV_THREAD_SAFE
 pthread_once_t sample_initialized_pto = PTHREAD_ONCE_INIT;
+#endif
 static BOOL
 DLLCALL xptone_open_locked(void)
 {
