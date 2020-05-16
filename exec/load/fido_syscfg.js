@@ -32,6 +32,8 @@ function SBBSEchoCfg ()
 	this.packer = {};
 	this.inbox = {};
 	this.outbox = {};
+	this.status = {};
+	this.direct = {};
 	this.is_flo = false;
 	this.outbound = undefined;
 	var packer = undefined;
@@ -59,6 +61,12 @@ function SBBSEchoCfg ()
 	}, this);
 	ecfg.iniGetSections('node:').forEach(function(section) {
 		this.outbox[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'outbox');
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.status[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'status', '').toLowerCase();
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.direct[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'direct', false);
 	}, this);
 	ecfg.iniGetSections('archive:').forEach(function(packer) {
 		this.packer[packer] = {};
