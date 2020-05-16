@@ -488,8 +488,15 @@ function forward_tic(tic)
 			mswait(1000);
 		}
 
+		var fext = 'flo'; // normal
+		if(sbbsecho.status[link] == 'crash')
+			fext = 'clo';
+		else if(sbbsecho.status[link] == 'hold')
+			fext = 'hlo';
+		else if(sbbsecho.direct[link] == true)
+			fext = 'dlo';
 		// Append to FLO file...
-		ff = new File(flobase+'.flo');
+		ff = new File(flobase + '.' + fext);
 		if (!ff.open('ab+')) {
 			log(LOG_ERROR, "Unable to append to '"+ff.name+"' for "+link+".  They will not get file '"+tic.file+"'!");
 			bf.close();
