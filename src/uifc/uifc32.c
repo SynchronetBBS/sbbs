@@ -2149,9 +2149,15 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					if(i>j)
 						i=j;
 					pb=(uint8_t *)getcliptext();
-					pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
-					free(pb);
-					pb=(unsigned char *)pastebuf;
+					if (pb) {
+						pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
+						free(pb);
+						pb=(unsigned char *)pastebuf;
+					}
+					else {
+						free(pastebuf);
+						pastebuf = NULL;
+					}
 					f=0;
 				}
 			}
@@ -2230,9 +2236,15 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						if(i>j)
 							i=j;
 						pb=(uint8_t *)getcliptext();
-						pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
-						free(pb);
-						pb=(unsigned char *)pastebuf;
+						if (pb) {
+							pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
+							free(pb);
+							pb=(unsigned char *)pastebuf;
+						}
+						else {
+							free(pastebuf);
+							pastebuf = NULL;
+						}
 						ch=0;
 					}
 				}
@@ -2276,9 +2288,15 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 				case CTRL_V:
 				case CIO_KEY_SHIFT_IC:	/* Shift-Insert: Paste */
 					pb=(uint8_t *)getcliptext();
-					pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
-					free(pb);
-					pb=(unsigned char *)pastebuf;
+					if (pb) {
+						pastebuf = utf8_to_cp(CIOLIB_CP437, pb, '?', strlen((char *)pb), NULL);
+						free(pb);
+						pb=(unsigned char *)pastebuf;
+					}
+					else {
+						free(pastebuf);
+						pastebuf = NULL;
+					}
 					continue;
 				case CIO_KEY_IC:	/* insert */
 					api->insert_mode = !api->insert_mode;
@@ -2322,8 +2340,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					{
 						cursor=_NOCURSOR;
 						_setcursortype(cursor);
-						if(pastebuf!=NULL)
+						if(pastebuf!=NULL) {
 							free(pastebuf);
+							pastebuf = NULL;
+						}
 						return(-1);
 					}
 				case CR:
