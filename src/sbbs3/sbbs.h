@@ -1010,6 +1010,7 @@ public:
 	/* xtrn.cpp */
 	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);
 	long	xtrn_mode;
+	char	term_env[256];
 
 	/* xtrn_sec.cpp */
 	int		xtrn_sec(const char* section = "");	/* The external program section  */
