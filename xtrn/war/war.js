@@ -2415,8 +2415,8 @@ function main(argc, argv)
 	var line;
 	var offset;
 	var confirmed;
-	var fp=new File();
-	var pp=new File();
+	var fp;
+	var pp;
 	var filename='';
 	var inbuf='';
 	var name='';
