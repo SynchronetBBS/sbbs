@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 1.07
-                           Release date: 2020-04-04
+                                 Version 1.08
+                           Release date: 2020-05-18
 
                                      by
 

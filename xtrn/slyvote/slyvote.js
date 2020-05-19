@@ -160,6 +160,8 @@
  *                              let the menu use a differnet list of items, to avoid
  *                              adding/copying a bunch of items via DDLightbarMenu's Add()
  *                              function.
+ * 2020-05-18 Eric Oulashin     Version 1.08
+ *                              Fixed a typo when calling GetKeyWithESCChars()
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -229,8 +231,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.07";
-var SLYVOTE_DATE = "2020-04-04";
+var SLYVOTE_VERSION = "1.08";
+var SLYVOTE_DATE = "2020-05-18";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -3258,7 +3260,7 @@ function ScrollFrame(pFrame, pScrollbar, pTopLineIdx, pTxtAttrib, pWriteTxtLines
 
 		// Get a keypress from the user and take action based on it
 		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		retObj.lastKeypress = GetKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
 		switch (retObj.lastKeypress)
 		{
 			case KEY_UP:
