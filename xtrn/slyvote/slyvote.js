@@ -162,6 +162,10 @@
  *                              function.
  * 2020-05-18 Eric Oulashin     Version 1.08
  *                              Fixed a typo when calling GetKeyWithESCChars()
+ * 2020-05-19 Eric Oulashin     Verison 1.09
+ *                              Now saves the user's last sub-board to the user config
+ *                              file for SlyVote so SlyVote will start in that sub-board
+ *                              the next time the user runs SlyVote.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -231,8 +235,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.08";
-var SLYVOTE_DATE = "2020-05-18";
+var SLYVOTE_VERSION = "1.09";
+var SLYVOTE_DATE = "2020-05-19";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -362,7 +366,6 @@ var gReaderKeys = {
 if (gUserIsSysop)
 	gReaderKeys.validateMsg = "A";
 
-
 var gSlyVoteCfg = ReadConfigFile();
 if (gSlyVoteCfg.cfgReadError.length > 0)
 {
@@ -404,9 +407,13 @@ if (!subBoardsConfigured)
 var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".slyvote.cfg";
 var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename);
 
-// Determine which sub-board to use - If there is more than one, let the user choose.
+// Determine which sub-board to use - Prioritize the last sub-board in the user
+// config file if there is one.  For the SlyVote config, if there is more than
+// one, let the user choose.
 var gSubBoardCode = "";
-if (gSlyVoteCfg.numSubBoards == 1)
+if (gUserSettings.lastSubCode.length > 0)
+	gSubBoardCode = gUserSettings.lastSubCode;
+else if (gSlyVoteCfg.numSubBoards == 1)
 {
 	for (var grpIdx in gSlyVoteCfg.msgGroups)
 	{
@@ -417,10 +424,14 @@ if (gSlyVoteCfg.numSubBoards == 1)
 else
 {
 	// If the startup sub-board code is set, then automatically start
-	// in that sub-board.  Otherwise, let the user choose a sub-board.
+	// in that sub-board.
 	if (gSlyVoteCfg.startupSubBoardCode.length > 0)
 		gSubBoardCode = gSlyVoteCfg.startupSubBoardCode;
-	else
+	// If the last sub-board from the user's last run of SlyVote is not blank,
+	// then use it.
+	else if (gUserSettings.lastSubCode.length > 0)
+		gSubBoardCode = gUserSettings.lastSubCode;
+	else // Let the user choose a sub-board
 	{
 		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.msgGroups);
 		gSubBoardCode = chooseSubRetObj.subBoardChoice;
@@ -431,6 +442,13 @@ else
 			console.gotoxy(1, chooseSubRetObj.menuPos.y + chooseSubRetObj.menuSize.height + 1);
 	}
 }
+// Output a "loading..." text, in case it takes a while to count the polls in
+// the current sub-board
+console.print("\1n");
+console.crlf();
+var subBoardName = msg_area.sub[gSubBoardCode].grp_name + ": " + msg_area.sub[gSubBoardCode].description;
+console.print("\1gLoading SlyVote (counting polls in \1c" + subBoardName + "\1g)...\1n");
+console.line_counter = 0;
 var gSubBoardPollCountObj = CountPollsInSubBoard(gSubBoardCode);
 
 // Program states
@@ -571,12 +589,12 @@ function ChooseVotingSubBoard(pMsgGrps)
 			continueChoosingSubBoard = false;
 	}
 
-	// Create the return object
-	var retObj = new Object();
-	retObj.subBoardChoice = chosenSubBoard;
-	retObj.menuPos = ChooseVotingSubBoard.grpMenu.pos;
-	retObj.menuSize = ChooseVotingSubBoard.grpMenu.size;
-	return retObj;
+	// Return an object with useful values
+	return {
+		subBoardChoice: chosenSubBoard,
+		menuPos: ChooseVotingSubBoard.grpMenu.pos,
+		menuSize: ChooseVotingSubBoard.grpMenu.size
+	};
 }
 // Helper for ChooseVotingSubBoard().  Creates the message group menu.
 //
@@ -1295,10 +1313,12 @@ function ReadConfigFile()
 //
 // Return value: An object with the following properties:
 //  lastRead: An object specifying last-read message numbers, indexed by sub-board code
+//  lastSubCode: The internal code of the sub-board the user was in last time, or blank if none
 function ReadUserSettingsFile(pFilename)
 {
 	var userSettingsObj = {
-		lastRead: { }
+		lastRead: { },
+		lastSubCode: ""
 	};
 
 	var userCfgFile = new File(pFilename);
@@ -1342,11 +1362,17 @@ function ReadUserSettingsFile(pFilename)
 				settingUpper = setting.toUpperCase();
 				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
 
+				if (settingUpper == "LAST_SUB_CODE")
+				{
+					var subCodeLower = value.toLowerCase();
+					if ((subCodeLower.length > 0) && subBoardCodeIsValid(subCodeLower))
+						userSettingsObj.lastSubCode = subCodeLower;
+				}
 				// Last-read message numbers.  Lines starting with lastread_
 				// should have a sub-board code after the "lastread_".  Add
 				// the message number to userSettingsObj.lastRead if the value
 				// is all digits and there is a sub-board code specified.
-				if ((settingUpper.indexOf("LASTREAD_") == 0) && /^[0-9]+$/.test(value))
+				else if ((settingUpper.indexOf("LASTREAD_") == 0) && /^[0-9]+$/.test(value))
 				{
 					var subBoardCode = setting.substr(9).toLowerCase();
 					if (subBoardCode.length > 0)
@@ -1372,15 +1398,43 @@ function WriteUserSettingsFile(pUserCfg, pFilename)
 	var userCfgFile = new File(pFilename);
 	if (userCfgFile.open("w"))
 	{
-		for (var subBoardCode in pUserCfg.lastRead)
+		writeSucceeded = userCfgFile.writeln("last_sub_code=" + gSubBoardCode);
+		if (writeSucceeded)
 		{
-			writeSucceeded = userCfgFile.writeln("lastread_" + subBoardCode + "=" + pUserCfg.lastRead[subBoardCode]);
-			if (!writeSucceeded)
-				break;
+			for (var subBoardCode in pUserCfg.lastRead)
+			{
+				writeSucceeded = userCfgFile.writeln("lastread_" + subBoardCode + "=" + pUserCfg.lastRead[subBoardCode]);
+				if (!writeSucceeded)
+					break;
+			}
 		}
 		userCfgFile.close();
 	}
 	return writeSucceeded;
+}
+
+// Returns whether or not a string is a valid sub-board code
+//
+// Parameters:
+//  pSubCode: A sub-board code
+//
+// Return value: Boolean - Whether or not pSubCode is a valid sub-board code
+function subBoardCodeIsValid(pSubCode)
+{
+	if ((typeof(pSubCode) != "string") || (pSubCode.length == 0))
+		return false;
+
+	var subCodeLower = pSubCode.toLowerCase();
+	var subCodeValid = false;
+	for (var subCode in msg_area.sub)
+	{
+		if (subCode.toLowerCase() == subCodeLower)
+		{
+			subCodeValid = true;
+			break;
+		}
+	}
+	return subCodeValid;
 }
 
 // Checks to see whether a user has voted on a message.
