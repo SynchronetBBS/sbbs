@@ -1912,6 +1912,10 @@ bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
 	}
 	strupr(echotag);
 
+	for(unsigned u=0; u < cfg.areas; u++) {
+		if(stricmp(cfg.area[u].tag, echotag) == 0)
+			return false;
+	}
 	lprintf(LOG_INFO, "Adding sub-board (%-*s) to Area %s with uplink %s, tag: %s"
 		,LEN_EXTCODE, sub->code, cfg.auto_add_to_areafile ? "File" : "List", smb_faddrtoa(&uplink, NULL), echotag);
 
