@@ -111,8 +111,8 @@ function Viewer(item, disp, settings) {
 		msgBase.close();
 
 		frames.title.putmsg(format(
-			'%-' + (frame.width - 29) + 's%s',
-			header.subject.substr(0, frame.width - 30),
+			'%-' + (disp.frame.width - 29) + 's%s',
+			header.subject.substr(0, disp.frame.width - 30),
 			system.timestr(header.when_written_time)
 		), settings.colors.title);
 		frames.content.putmsg(word_wrap(body, frames.content.width - 1));
@@ -120,8 +120,8 @@ function Viewer(item, disp, settings) {
 	} else {
 
 		frames.title.putmsg(format(
-			'%-' + (frame.width - 29) + 's%s',
-			item.substr(0, frame.width - 30),
+			'%-' + (disp.frame.width - 29) + 's%s',
+			item.substr(0, disp.frame.width - 30),
 			system.timestr(file_date(settings.files[item]))
 		), settings.colors.title);
 
@@ -305,5 +305,5 @@ try {
 	init();
 	main();
 } catch (err) {
-	log(LOG_ERR, err);
+	log(LOG_ERR, JSON.stringify(err));
 }
