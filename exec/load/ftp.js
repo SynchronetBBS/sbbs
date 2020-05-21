@@ -340,10 +340,10 @@ FTP.prototype.cmd = function(cmd, needresp)
 			start = time();
 			log(LOG_ERROR, "Error: Unexpected data on control connection: "+this.socket.recvline(this.maxline, this.timeout - (time() - start)));
 		}
-		cmdline = cmd + '\r\n';
-		log(LOG_DEBUG, "CMD: '"+cmd.replace(/\xff/g, "\xff\xff")+"'");
+		cmdline = cmd.replace(/\xff/g, "\xff\xff") + '\r\n';
+		log(LOG_DEBUG, "CMD: '"+cmd+"'");
 		if (this.socket.send(cmdline) != cmdline.length)
-			throw("Error " + this.socket.error + " sending command");
+			throw("Error " + this.socket.error + " sending command: '" + cmd + "'");
 	}
 
 	if (needresp === true) {
@@ -372,7 +372,10 @@ FTP.prototype.cmd = function(cmd, needresp)
 					continue;
 			}
 			else {
-				throw("recvline timeout");
+				if(cmd)
+					throw("recvline timeout waiting for response to command: '" + cmd + "'");
+				else
+					throw("recvline timeout waiting for additional response");
 			}
 		} while(this.socket.is_connected && !done);
 		return ret;
