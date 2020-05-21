@@ -951,7 +951,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				while(!js.terminated && list[current]
 					&& (key = view_msg(msgbase, list[current]
 						,get_msg_lines(msgbase, list[current], view_hdr, view_source, view_hex, view_wrapped)
-						,list.length
+						,orglist.length
 						,grp_name, sub_name
 						)) != 'Q') {
 					switch(key) {
@@ -1274,13 +1274,14 @@ function msg_attributes(msg, msgbase, short)
 	if(msg.attr&MSG_PERMANENT)						result.push(options.attr_perm ||"Perm"), str += 'P';
 	if(msg.attr&MSG_ANONYMOUS)						result.push(options.attr_anon || "Anon"), str += 'A';
 	if(msg.attr&MSG_LOCKED)							result.push(options.attr_locked || "Lck"), str += 'L';
-	if(msg.attr&MSG_KILLREAD)						result.push(options.attr_kill || "Kill"), str += 'K';
+	if(msg.attr&MSG_KILLREAD)						result.push(options.attr_kill || "KR"), str += 'K';
 	if(msg.attr&MSG_NOREPLY)						result.push(options.attr_noreply || "NoRe"), str += 'n';
 	if(msg.attr&MSG_MODERATED)						result.push(options.attr_mod || "Mod"), str += 'M';
 	if(msg.attr&MSG_VALIDATED)						result.push(options.attr_valid || "Valid"), str += 'V';
 	if(msg.attr&MSG_PRIVATE)						result.push(options.attr_private || "Priv"), str += 'p';
 	if(msg.attr&MSG_POLL)							result.push(options.attr_poll || "Poll"), str += '?';
 	if(msg.netattr&MSG_SENT)						result.push(options.attr_sent || "Sent"), str += 's';
+	if(msg.netattr&MSG_KILLSENT)					result.push(options.attr_sent || "KS"), str += 'k';
 	if(msg.netattr&MSG_INTRANSIT)					result.push(options.attr_intransit || "InTransit"), str += 'T';
 	/*
 	if(sub_op(subnum) && msg->hdr.attr&MSG_ANONYMOUS)	return 'A';
