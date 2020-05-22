@@ -5,24 +5,24 @@
 //    Possible due to the load/ftp.js library developed by Deuce
 //****************************************************************************
 
-// Usage: ?qnet-ftp <hub-id> <address> <password> [port]
+// Usage: ?qnet-ftp <hub-id> [address] [password] [port]
 // Example: ?qnet-ftp VERT vert.synchro.net YOURPASS 21
 
 const REVISION = "$Revision$".split(' ')[1];
 
 require('ftp.js', 'FTP');
 
-var username = system.qwk_id;
 var hubid = argv[0];
-var addr = argv[1];
-var password = argv[2];
-var port = argv[3] || 21;
-
 var options = load({}, "modopts.js", "qnet-ftp:"+hubid);
 if(!options)
 	options = load({}, "modopts.js", "qnet-ftp");
 if(!options)
 	options = {};
+
+var username = options.username || system.qwk_id;
+var addr = options.address || argv[1];
+var password = options.password || argv[2];
+var port = options.port || argv[3] || 21;
 
 var rep = system.data_dir + hubid + ".rep";
 var qwk = hubid + ".qwk";
