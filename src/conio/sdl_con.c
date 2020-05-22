@@ -1003,8 +1003,12 @@ void sdl_video_event_thread(void *data)
 												pixels = (void *)((char*)pixels + pitch);
 											}
 										}
-										else
-											memcpy(pixels, list->data, list->rect.width * list->rect.height * sizeof(list->data[0]));
+										else {
+											int ch = list->rect.height;
+											if (ch > th)
+												ch = th;
+											memcpy(pixels, list->data, list->rect.width * ch * sizeof(list->data[0]));
+										}
 										sdl.UnlockTexture(texture);
 										sdl.RenderCopy(renderer, texture, &src, NULL);
 									}
