@@ -1600,7 +1600,7 @@ int main(int argc, char **argv)
 		setwinsize(settings.window_width, settings.window_height);
 	textmode(text_mode);
 
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
 		fputs("Window too small, must be at least 80x24\n",stderr);
 		return(1);
