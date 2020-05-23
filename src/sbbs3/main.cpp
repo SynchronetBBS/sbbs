@@ -4839,7 +4839,9 @@ void sbbs_t::daily_maint(void)
 	if(cfg.sys_daily[0]) {
 		lputs(LOG_INFO, "DAILY: Running system event");
 		const char* cmd = cmdstr(cfg.sys_daily,nulstr,nulstr,NULL);
+		online = ON_LOCAL;
 		int result = external(cmd, EX_OFFLINE);
+		online = FALSE;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
 	}
 	status(STATUS_WFC);
