@@ -5,6 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.36     2020-05-23   Added a command-line parameter, -onlyNewPersonalEmail,
+                      which specifies to list/read only new/unread personal
+                      email to the user.  And for integration with Synchronet
+                      via the "Read Email" loadable module, this is to be used
+                      together with the updated DDReadPersonalEmail.js.  This
+                      is intended to support the "read your unread mail only"
+                      option in the email menu.
 1.35     2020-05-13   Fixed some logic in determining how to address a personal
                       email when replying (either to a local user or via their
                       network address).

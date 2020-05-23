@@ -59,6 +59,12 @@
  *                              Fixed some logic in determining how to address
  *                              a personal email when replying (either to a local
  *                              user or via their network address).
+ * 2020-05-23 Eric Oulashin     Version 1.36
+ *                              Added a command-line parameter, -onlyNewPersonalEmail,
+ *                              which specifies to list/read only new/unread personal
+ *                              email to the user.  And for integration with Synchronet
+ *                              via the "Read Email" loadable module, this is to
+ *                              be used together with the updated DDReadPersonalEmail.js.
  */
 
 
@@ -15447,13 +15453,20 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
 						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr);
+						
 					}
 				}
 				else
 				{
+					// We're reading mail to the user
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number));
-						return gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr);
+						var msgMatchesCriteria = (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr));
+						// If only new/unread personal email is to be displayed, then check
+						// that the message has not been read.
+						if (gCmdLineArgVals.onlynewpersonalemail)
+							msgMatchesCriteria = (msgMatchesCriteria && ((pMsgHdr.attr & MSG_READ) == 0));
+						return msgMatchesCriteria;
 					}
 				}
 			}
@@ -17002,6 +17015,7 @@ function parseArgs(pArgArr)
 	var argVals = {
 		chooseareafirst: false,
 		personalemail: false,
+		onlynewpersonalemail: false,
 		personalemailsent: false,
 		verboselogging: false,
 		suppresssearchtypetext: false
@@ -17051,7 +17065,8 @@ function parseArgs(pArgArr)
 			argName = pArgArr[i].substr(1).toLowerCase();
 			if ((argName == "chooseareafirst") || (argName == "personalemail") ||
 			    (argName == "personalemailsent") || (argName == "allpersonalemail") ||
-				(argName == "verboselogging") || (argName == "suppresssearchtypetext"))
+			    (argName == "verboselogging") || (argName == "suppresssearchtypetext") ||
+			    (argName == "onlynewpersonalemail"))
 			{
 				argVals[argName] = true;
 			}
@@ -17110,25 +17125,25 @@ function parseArgs(pArgArr)
 // Return value: A string describing all of the message attributes
 function makeAllMsgAttrStr(pMsgHdr)
 {
-   if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
-      return "";
+	if ((pMsgHdr == null) || (typeof(pMsgHdr) != "object"))
+		return "";
 
-   var msgAttrStr = makeMainMsgAttrStr(pMsgHdr.attr);
-   var auxAttrStr = makeAuxMsgAttrStr(pMsgHdr.auxattr);
-   if (auxAttrStr.length > 0)
-   {
-      if (msgAttrStr.length > 0)
-         msgAttrStr += ", ";
-      msgAttrStr += auxAttrStr;
-   }
-   var netAttrStr = makeNetMsgAttrStr(pMsgHdr.netattr);
-   if (netAttrStr.length > 0)
-   {
-      if (msgAttrStr.length > 0)
-         msgAttrStr += ", ";
-      msgAttrStr += netAttrStr;
-   }
-   return msgAttrStr;
+	var msgAttrStr = makeMainMsgAttrStr(pMsgHdr.attr);
+	var auxAttrStr = makeAuxMsgAttrStr(pMsgHdr.auxattr);
+	if (auxAttrStr.length > 0)
+	{
+		if (msgAttrStr.length > 0)
+			msgAttrStr += ", ";
+		msgAttrStr += auxAttrStr;
+	}
+	var netAttrStr = makeNetMsgAttrStr(pMsgHdr.netattr);
+	if (netAttrStr.length > 0)
+	{
+		if (msgAttrStr.length > 0)
+			msgAttrStr += ", ";
+		msgAttrStr += netAttrStr;
+	}
+	return msgAttrStr;
 }
 
 // Returns a string describing the main message attributes.  Makes use of the
