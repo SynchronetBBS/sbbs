@@ -166,6 +166,11 @@
  *                              Now saves the user's last sub-board to the user config
  *                              file for SlyVote so SlyVote will start in that sub-board
  *                              the next time the user runs SlyVote.
+ * 2020-05-22 Eric Oulashin     Version 1.10
+ *                              Fixed a bug introduced in 1.07 where the
+ *                              useAllAvailableSubBoards 'false' setting was being
+ *                              ignored when it was set to false when changing
+ *                              to another sub-board.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -235,8 +240,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.09";
-var SLYVOTE_DATE = "2020-05-19";
+var SLYVOTE_VERSION = "1.10";
+var SLYVOTE_DATE = "2020-05-22";
 
 // Determine the script's startup directory.
 // This code is a trick that was created by Deuce, suggested by Rob Swindell
@@ -405,7 +410,7 @@ if (!subBoardsConfigured)
 // Read the user settings file
 // The name of the user's settings file for SlyVote
 var gUserSettingsFilename = backslash(system.data_dir + "user") + format("%04d", user.number) + ".slyvote.cfg";
-var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename);
+var gUserSettings = ReadUserSettingsFile(gUserSettingsFilename, gSlyVoteCfg);
 
 // Determine which sub-board to use - Prioritize the last sub-board in the user
 // config file if there is one.  For the SlyVote config, if there is more than
@@ -611,18 +616,39 @@ function CreateMsgGrpMenu(pListTopRow, pDrawColRetObj, pMsgGrps)
 	grpMenu.ampersandHotkeysInItems = false;
 	grpMenu.scrollbarEnabled = true;
 	grpMenu.AddAdditionalQuitKeys("qQ");
-	grpMenu.NumItems = function() {
-		return msg_area.grp_list.length;
-	};
-	grpMenu.GetItem = function(pItemIndex) {
-		var menuItemObj = this.MakeItemWithRetval(-1);
-		if ((pItemIndex >= 0) && (pItemIndex < msg_area.grp_list.length))
+	if (gSlyVoteCfg.useAllAvailableSubBoards)
+	{
+		grpMenu.NumItems = function() {
+			return msg_area.grp_list.length;
+		};
+		grpMenu.GetItem = function(pItemIndex) {
+			var menuItemObj = this.MakeItemWithRetval(-1);
+			if ((pItemIndex >= 0) && (pItemIndex < msg_area.grp_list.length))
+			{
+				menuItemObj.text = msg_area.grp_list[pItemIndex].name;
+				menuItemObj.retval = pItemIndex;
+			}
+			return menuItemObj;
+		};
+	}
+	else
+	{
+		var grpNameLen = pDrawColRetObj.textLen - 2;
+		// Count the number of groups.  If it's more than the number per page in
+		// the menu, then subtract 1 from grpNameLen to account for the scrollbar.
+		var numGrps = 0;
+		for (var grpIdx in pMsgGrps)
+			++numGrps;
+		if (numGrps > grpMenu.GetNumItemsPerPage())
+			--grpNameLen;
+		// Add the groups to the menu
+		for (var grpIdx in pMsgGrps)
 		{
-			menuItemObj.text = msg_area.grp_list[pItemIndex].name;
-			menuItemObj.retval = pItemIndex;
+			var grpName = msg_area.grp_list[grpIdx].name;
+			var itemText = format("%-" + grpNameLen + "s", grpName.substr(0, grpNameLen));
+			grpMenu.Add(itemText, grpIdx);
 		}
-		return menuItemObj;
-	};
+	}
 	return grpMenu;
 }
 // Helper for ChooseVotingSubBoard().  Creates a sub-board menu.
@@ -651,25 +677,47 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 	subBoardMenu.subBoardCode = pMsgGrps[pGrpIdx][i];
 	subBoardMenu.subBoardHasPolls = subBoardHasPolls;
 	subBoardMenu.subBoardPollCounts = {};
-	subBoardMenu.NumItems = function() {
-		return this.numSubBoardsInChosenMsgGrp;
-	};
-	subBoardMenu.GetItem = function(pItemIndex) {
-		var subCode = this.msgGrp[pItemIndex];
-		var pollCount = 0;
-		if (this.subBoardPollCounts.hasOwnProperty(subCode))
-			pollCount = this.subBoardPollCounts[subCode];
-		else
+	if (gSlyVoteCfg.useAllAvailableSubBoards)
+	{
+		subBoardMenu.NumItems = function() {
+			return this.numSubBoardsInChosenMsgGrp;
+		};
+		subBoardMenu.GetItem = function(pItemIndex) {
+			var subCode = this.msgGrp[pItemIndex];
+			var pollCount = 0;
+			if (this.subBoardPollCounts.hasOwnProperty(subCode))
+				pollCount = this.subBoardPollCounts[subCode];
+			else
+			{
+				pollCount = this.subBoardHasPolls(subCode);
+				this.subBoardPollCounts[subCode] = pollCount;
+			}
+			var menuItemObj = this.MakeItemWithRetval(-1);
+			var hasPollsChar = (pollCount ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+			menuItemObj.text = format("%-" + this.areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, this.areaNameLen), hasPollsChar);
+			menuItemObj.retval = subCode;
+			return menuItemObj;
+		};
+	}
+	else
+	{
+		var areaNameLen = pDrawColRetObj.textLen - 2;
+		if (pMsgGrps[pGrpIdx].length > subBoardMenu.GetNumItemsPerPage())
+			--areaNameLen;
+		for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 		{
-			pollCount = this.subBoardHasPolls(subCode);
-			this.subBoardPollCounts[subCode] = pollCount;
+			var subCode = pMsgGrps[pGrpIdx][i];
+			var hasPollsChar = (subBoardHasPolls(subCode) ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
+			var itemText = format("%-" + areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, areaNameLen), hasPollsChar);
+			subBoardMenu.Add(itemText, subCode);
+			if (subCode == gSubBoardCode)
+			{
+				topItemIndex = i;
+				selectedItemIndex = i;
+			}
 		}
-		var menuItemObj = this.MakeItemWithRetval(-1);
-		var hasPollsChar = (pollCount ? "\1y\1h" + CHECK_CHAR + "\1n" : " ");
-		menuItemObj.text = format("%-" + this.areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, this.areaNameLen), hasPollsChar);
-		menuItemObj.retval = subCode;
-		return menuItemObj;
-	};
+	}
+
 	for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 	{
 		var subCode = pMsgGrps[pGrpIdx][i];
@@ -702,7 +750,7 @@ function DoMainMenu()
 	var createPollOpt = 2;
 	var viewResultsOpt = 3;
 	var viewStatsOpt = 4;
-	var changeVotingAreaOpt = 5;
+	var changeSubBoardOpt = 5;
 	var quitToBBSOpt = 6;
 
 	// Display the SlyVote screen and menu of choices
@@ -722,7 +770,7 @@ function DoMainMenu()
 		gMainMenu.Add("View &Stats", viewStatsOpt, "5");
 		if (gSlyVoteCfg.numSubBoards > 1)
 		{
-			gMainMenu.Add("Change Sub-Board", changeVotingAreaOpt, "6");
+			gMainMenu.Add("Change Sub-Board", changeSubBoardOpt, "6");
 			gMainMenu.Add("&Quit To BBS", quitToBBSOpt, "7");
 		}
 		else
@@ -786,7 +834,7 @@ function DoMainMenu()
 		ViewStats(gSubBoardCode);
 		nextProgramState = MAIN_MENU;
 	}
-	else if (userChoice == changeVotingAreaOpt)
+	else if (userChoice == changeSubBoardOpt)
 	{
 		var chooseSubRetObj = ChooseVotingSubBoard(gSlyVoteCfg.msgGroups);
 		var chosenSubBoardCode = chooseSubRetObj.subBoardChoice;
@@ -1310,11 +1358,13 @@ function ReadConfigFile()
 //
 // Parameters:
 //  pFilename: The name of the file to read
+//  pSlyVoteCfg: The SlyVote configuration object.  For validation of values in
+//               the user settings file.
 //
 // Return value: An object with the following properties:
 //  lastRead: An object specifying last-read message numbers, indexed by sub-board code
 //  lastSubCode: The internal code of the sub-board the user was in last time, or blank if none
-function ReadUserSettingsFile(pFilename)
+function ReadUserSettingsFile(pFilename, pSlyVoteCfg)
 {
 	var userSettingsObj = {
 		lastRead: { },
@@ -1382,6 +1432,23 @@ function ReadUserSettingsFile(pFilename)
 		}
 
 		userCfgFile.close();
+	}
+
+	// Validate the user's lastSubCode value.  If not using all available sub-boards
+	// and lastSubCode is not in the list of available sub-boards, then set it
+	// to a blank string so that the default initial sub-board will be used.
+	if ((userSettingsObj.lastSubCode.length > 0) && !pSlyVoteCfg.useAllAvailableSubBoards)
+	{
+		var lastSubCodeLower = userSettingsObj.lastSubCode.toLowerCase();
+		var lastSubCodeIsValid = false;
+		for (var grpIdx = 0; (grpIdx < pSlyVoteCfg.msgGroups.length) && !lastSubCodeIsValid; ++grpIdx)
+		{
+			for (var subIdx = 0; (subIdx < pSlyVoteCfg.msgGroups[grpIdx].length) && !lastSubCodeIsValid; ++subIdx)
+				lastSubCodeIsValid = (lastSubCodeLower == pSlyVoteCfg.msgGroups[grpIdx][subIdx]);
+		}
+
+		if (!lastSubCodeIsValid)
+			userSettingsObj.lastSubCode = "";
 	}
 
 	return userSettingsObj;
