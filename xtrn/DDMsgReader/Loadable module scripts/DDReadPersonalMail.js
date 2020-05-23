@@ -41,7 +41,7 @@ if (argv.length >= 3)
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
-var msgReaderPath = "../xtrn/DigDist/MsgReader";
+var msgReaderPath = "../xtrn/DDMsgReader";
 
 // The readerStartMode variable, below, controls whether the reader
 // is to start in reader mode or message list mode.  Set it to "list"
