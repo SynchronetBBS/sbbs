@@ -1,3 +1,5 @@
+// $Id$
+
 // This script is to be executed for the 'Scan Subs' loadable module, configured
 // in SCFG in System > Loadable Modules.
 //
