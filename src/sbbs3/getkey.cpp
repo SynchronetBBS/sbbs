@@ -596,6 +596,12 @@ void sbbs_t::ungetkey(char ch, bool insert)
 	RingBufWrite(&inbuf,(uchar*)&ch,sizeof(uchar));
 #else
 	if(keybuf_space()) {
+		char* p = c_escape_char(ch);
+		if(p == NULL) {
+			char dbg[2] = { ch, 0 };
+			p = dbg;
+		}
+		lprintf(LOG_DEBUG, "%s key into keybuf: %02X (%s)", insert ? "insert" : "append", ch, p);
 		if(insert) {
 			if(keybufbot == 0)
 				keybufbot = KEY_BUFSIZE - 1;
@@ -607,7 +613,8 @@ void sbbs_t::ungetkey(char ch, bool insert)
 			if(keybuftop==KEY_BUFSIZE)
 				keybuftop=0;
 		}
-	}
+	} else
+		lprintf(LOG_WARNING, "No space in keyboard input buffer");
 #endif
 }
 
