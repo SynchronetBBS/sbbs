@@ -1071,8 +1071,11 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				}    
 				if(i>=lines || i<0)
 					bputs(text[InvalidLineNumber]);
-				else
-					getstr(str[i], cols-1 ,j);
+				else {
+					SAFECOPY(strin, str[i]);
+					getstr(strin, cols-1 ,j);
+					strListReplace(str, i, strin);
+				}
 				continue; 
 			}
 			else if(!stricmp(strin,"/CLR")) {
