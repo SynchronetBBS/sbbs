@@ -66,6 +66,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					sprintf(str,text[JoinWhichGrp],curgrp+1);
 					mnemonics(str);
 					j=getnum(usrgrps);
+					clear_hotspots();
 					if((int)j==-1)
 						return(0);
 					if(!j)
@@ -91,6 +92,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 				sprintf(str,text[JoinWhichSub],cursub[j]+1);
 				mnemonics(str);
 				i=getnum(usrsubs[j]);
+				clear_hotspots();
 				if((int)i==-1) {
 					if(usrgrps==1)
 						return(0);

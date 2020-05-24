@@ -94,6 +94,7 @@ int sbbs_t::uselect(int add, uint n, const char *title, const char *item, const 
 	i=getnum(uselect_total);
 	t=uselect_total;
 	uselect_total=0;
+	clear_hotspots();
 	if(i<0)
 		return(-1);
 	if(!i) {					/* User hit ENTER, use default */

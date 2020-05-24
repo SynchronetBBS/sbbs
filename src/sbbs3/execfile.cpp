@@ -69,6 +69,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					sprintf(str,text[JoinWhichLib],curlib+1);
 					mnemonics(str);
 					j=getnum(usrlibs);
+					clear_hotspots();
 					if((int)j==-1)
 						return(0);
 					if(!j)
@@ -95,6 +96,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				sprintf(str,text[JoinWhichDir],curdir[j]+1);
 				mnemonics(str);
 				i=getnum(usrdirs[j]);
+				clear_hotspots();
 				if((int)i==-1) {
 					if(usrlibs==1)
 						return(0);
