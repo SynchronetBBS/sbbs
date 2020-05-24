@@ -765,6 +765,7 @@ public:
 	void	cursor_left(int count=1);
 	void	cursor_right(int count=1);
 	bool	cursor_xy(int x, int y);
+	bool	cursor_getxy(int* x, int* y);
 	void	carriage_return(int count=1);
 	void	line_feed(int count=1);
 	void	newline(int count=1);

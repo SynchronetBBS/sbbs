@@ -969,6 +969,15 @@ bool sbbs_t::cursor_xy(int x, int y)
 	return false;
 }
 
+bool sbbs_t::cursor_getxy(int* x, int* y)
+{
+	if(term_supports(ANSI))
+		return ansi_getxy(x, y);
+	*x = column + 1;
+	*y = row + 1;
+	return true;
+}
+
 void sbbs_t::cleartoeol(void)
 {
 	int i,j;
