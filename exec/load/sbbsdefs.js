@@ -157,10 +157,10 @@ var CON_NORM_FONT	=(1<<18);	/* Alt normal font activated				*/
 var CON_HIGH_FONT	=(1<<19);	/* Alt high-intensity font activated		*/
 var CON_BLINK_FONT	=(1<<20);	/* Alt blink font activated					*/
 var CON_HBLINK_FONT	=(1<<21);	/* Alt high-blink font activated			*/
-var CON_MOUSE_PASSTHRU	=(1<<24); // Pass-through unhandled mouse reports
-var CON_MOUSE_REPORT	=(1<<25); // Mouse-reports enabled for non-hotspots (e.g. scroll-wheel)
-var CON_CR_CLREOL		=(1<<31); // Sending '\r', clears to end-of-line first
-					    		/********************************************/
+var CON_MOUSE_CLK_PASSTHRU	=(1<<24); // Pass-through unhandled mouse button-click reports
+var CON_MOUSE_REL_PASSTHRU	=(1<<25); // Pass-through unhandled mouse button-release reports
+var CON_MOUSE_SCROLL		=(1<<26); // Enable mouse scroll-wheel to arrow key translations
+var CON_CR_CLREOL			=(1<<31); // Sending '\r', clears to end-of-line first
 								
 								// Terminal mouse reporting mode (console.mouse_mode)
 var MOUSE_MODE_OFF	= 0;		// No terminal mouse reporting enabled/expected
