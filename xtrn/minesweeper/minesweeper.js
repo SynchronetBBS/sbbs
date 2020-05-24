@@ -1224,7 +1224,7 @@ try {
 
 	js.on_exit("console.line_counter = 0");
 	js.on_exit("console.status = " + console.status);
-	console.status |= CON_MOUSE_PASSTHRU;
+	console.status |= CON_MOUSE_CLK_PASSTHRU;
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru = "KOPTUZ";
 
