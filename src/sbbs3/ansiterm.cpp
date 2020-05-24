@@ -221,6 +221,7 @@ void sbbs_t::ansi_getlines()
 bool sbbs_t::ansi_getxy(int* x, int* y)
 {
 	int 	rsp=0, ch;
+	char	str[128];
 
     *x=0;
     *y=0;
@@ -229,8 +230,9 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 
     time_t start=time(NULL);
     sys_status&=~SS_ABORT;
-    while(online && !(sys_status&SS_ABORT)) {
+    while(online && !(sys_status&SS_ABORT) && rsp < sizeof(str)) {
 		if((ch=incom(1000))!=NOINP) {
+			str[rsp] = ch;
 			if(ch==ESC && rsp==0) {
             	rsp++;
 				start=time(NULL);
@@ -259,11 +261,19 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             }
             else if(ch=='R' && rsp)
             	break;
-			else
-				ungetkey(ch);
+			else {
+				str[rsp + 1] = 0;
+#ifdef _DEBUG
+				char dbg[128];
+				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */true);
+				lprintf(LOG_DEBUG, "Unexpected ansi_getxy response: '%s'", dbg);
+#endif
+				ungetstr(str, /* insert */false);
+				rsp = 0;
+			}
         }
     	if(time(NULL)-start>TIMEOUT_ANSI_GETXY) {
-        	lprintf(LOG_NOTICE,"Node %d !TIMEOUT in ansi_getxy", cfg.node_num);
+        	lprintf(LOG_NOTICE, "!TIMEOUT in ansi_getxy");
             return(false);
         }
     }
