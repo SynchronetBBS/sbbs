@@ -392,12 +392,13 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						}
 						if(pause_inside)
 							return '\r';
-					} else if(button == '`') {
+					} else if(button == '`' && console&CON_MOUSE_SCROLL) {
 						return TERM_KEY_UP;
-					} else if(button == 'a') {
+					} else if(button == 'a' && console&CON_MOUSE_SCROLL) {
 						return TERM_KEY_DOWN;
 					}
-					if(console&CON_MOUSE_PASSTHRU) {
+					if((button != 0x23 && console&CON_MOUSE_CLK_PASSTHRU)
+						|| (button == 0x23 && console&CON_MOUSE_REL_PASSTHRU)) {
 						for(j = i; j > 0; j--)
 							ungetkey(str[j - 1], /* insert: */true);
 						ungetkey('[', /* insert: */true);
@@ -465,12 +466,13 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						}
 						if(pause_inside)
 							return '\r';
-					} else if(button == 0x40) {
+					} else if(button == 0x40 && console&CON_MOUSE_SCROLL) {
 						return TERM_KEY_UP;
-					} else if(button == 0x41) {
+					} else if(button == 0x41 && console&CON_MOUSE_SCROLL) {
 						return TERM_KEY_DOWN;
 					}
-					if(console&CON_MOUSE_PASSTHRU) {
+					if((ch == 'M' && console&CON_MOUSE_CLK_PASSTHRU)
+						|| (ch == 'm' && console&CON_MOUSE_REL_PASSTHRU)) {
 						lprintf(LOG_DEBUG, "Passing-through SGR mouse report: 'ESC[<%s'", str);
 						for(j = i; j > 0; j--)
 							ungetkey(str[j - 1], /* insert: */true);
@@ -478,7 +480,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						ungetkey('[', /* insert: */true);
 						return(ESC); 
 					}
-					if(button == 2)  // Right-click
+					if(ch == 'M' && button == 2)  // Right-click
 						return handle_ctrlkey(TERM_KEY_ABORT, mode);
 	#ifdef _DEBUG
 					lprintf(LOG_DEBUG, "Eating SGR mouse report: 'ESC[<%s'", str);
@@ -604,7 +606,7 @@ void sbbs_t::clear_hotspots(void)
 		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
 #endif
 		listFreeNodes(&mouse_hotspots);
-		if(!(console&CON_MOUSE_REPORT))
+		if(!(console&CON_MOUSE_SCROLL))
 			set_mouse(MOUSE_MODE_OFF);
 	}
 }

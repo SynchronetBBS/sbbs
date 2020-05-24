@@ -492,9 +492,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_HIGH_FONT	(1<<19)	/* Alt high-intensity font activated		*/
 #define CON_BLINK_FONT	(1<<20)	/* Alt blink attribute font activated		*/
 #define CON_HBLINK_FONT	(1<<21)	/* Alt high-blink attribute font activated	*/
-#define CON_MOUSE_PASSTHRU	(1<<24)	// Pass-through unhandled mouse reports
-#define CON_MOUSE_REPORT	(1<<25)	// Mouse-reports enabled for non-hotspots (e.g. scroll-wheel)
-#define CON_CR_CLREOL		(1<<31)	// outchar('\r') clears to end-of-line first
+#define CON_MOUSE_CLK_PASSTHRU	(1<<24)	// Pass-through unhandled mouse button-click reports
+#define CON_MOUSE_REL_PASSTHRU	(1<<25)	// Pass-through unhandled mouse button-release reports
+#define CON_MOUSE_SCROLL		(1<<26)	// Mouse-reports enabled for non-hotspots (e.g. scroll-wheel)
+#define CON_CR_CLREOL			(1<<31)	// outchar('\r') clears to end-of-line first
 
 							/* Number of milliseconds						*/
 #define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
