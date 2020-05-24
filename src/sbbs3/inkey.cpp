@@ -43,7 +43,13 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 	if(sbbs->keybuftop!=sbbs->keybufbot) { 
 		ch=sbbs->keybuf[sbbs->keybufbot++]; 
 		if(sbbs->keybufbot==KEY_BUFSIZE) 
-			sbbs->keybufbot=0; 
+			sbbs->keybufbot=0;
+#if 0
+		char* p = c_escape_char(ch);
+		if(p == NULL)
+			p = (char*)&ch;
+		lprintf(LOG_DEBUG, "kbincom read %02X '%s'", ch, p);
+#endif
 	} else {
 		ch=sbbs->incom(timeout);
 		long term = sbbs->term_supports();
@@ -386,6 +392,10 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						}
 						if(pause_inside)
 							return '\r';
+					} else if(button == '`') {
+						return TERM_KEY_UP;
+					} else if(button == 'a') {
+						return TERM_KEY_DOWN;
 					}
 					if(console&CON_MOUSE_PASSTHRU) {
 						for(j = i; j > 0; j--)
@@ -455,8 +465,13 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						}
 						if(pause_inside)
 							return '\r';
+					} else if(button == 0x40) {
+						return TERM_KEY_UP;
+					} else if(button == 0x41) {
+						return TERM_KEY_DOWN;
 					}
 					if(console&CON_MOUSE_PASSTHRU) {
+						lprintf(LOG_DEBUG, "Passing-through SGR mouse report: 'ESC[<%s'", str);
 						for(j = i; j > 0; j--)
 							ungetkey(str[j - 1], /* insert: */true);
 						ungetkey('<', /* insert: */true);
@@ -465,6 +480,9 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					}
 					if(button == 2)  // Right-click
 						return handle_ctrlkey(TERM_KEY_ABORT, mode);
+	#ifdef _DEBUG
+					lprintf(LOG_DEBUG, "Eating SGR mouse report: 'ESC[<%s'", str);
+	#endif
 					return 0;
 				}
 				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
@@ -517,8 +535,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 						int	x,y;
 						str[i]=0;
 						if(sscanf(str,"%u;%u",&y,&x)==2) {
-							lprintf(LOG_DEBUG,"Node %d received ANSI cursor position report: %ux%u"
-								,cfg.node_num, x, y);
+							lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u"
+								,x, y);
 							/* Sanity check the coordinates in the response: */
 							if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
 							if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
@@ -567,25 +585,28 @@ struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
 	if(spot->maxx < 0)
 		spot->maxx = cols - 1;
 #ifdef _DEBUG
+	char dbg[128];
 	lprintf(LOG_DEBUG, "Adding mouse hot spot %ld-%ld x %ld = '%s'"
-		,spot->minx, spot->maxx, spot->y, spot->cmd);
+		,spot->minx, spot->maxx, spot->y, c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */true));
 #endif
 	list_node_t* node = listInsertNodeData(&mouse_hotspots, spot, sizeof(*spot));
 	if(node == NULL)
 		return NULL;
-	set_mouse(MOUSE_MODE_X10 | MOUSE_MODE_EXT);
+	set_mouse(MOUSE_MODE_NORM | MOUSE_MODE_EXT);
 	return (struct mouse_hotspot*)node->data;
 }
 
 void sbbs_t::clear_hotspots(void)
 {
-#ifdef _DEBUG
 	long spots = listCountNodes(&mouse_hotspots);
-	if(spots)
+	if(spots) {
+#ifdef _DEBUG
 		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
 #endif
-	set_mouse(MOUSE_MODE_OFF);
-	listFreeNodes(&mouse_hotspots);
+		listFreeNodes(&mouse_hotspots);
+		if(!(console&CON_MOUSE_REPORT))
+			set_mouse(MOUSE_MODE_OFF);
+	}
 }
 
 void sbbs_t::scroll_hotspots(long count)
