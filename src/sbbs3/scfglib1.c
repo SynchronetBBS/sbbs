@@ -36,8 +36,6 @@
 #include "sbbs.h"
 #include "scfglib.h"
 
-const char *scfgnulstr="";
-
 /***********************************************************/
 /* These functions are called from here and must be linked */
 /***********************************************************/
