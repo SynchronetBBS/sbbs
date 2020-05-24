@@ -471,7 +471,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name)
 				line_num += pagesize;
 				break;
 			/* TODO: support F5? */
-			case ascii(ctrl('R')):	/* refresh */
+			case CTRL_R:	/* refresh */
 				show_hdr = true;
 				break;
 			default:
@@ -741,6 +741,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						,grp_name, sub_name);
 
 	console.line_counter = 0;
+	console.status |= CON_MOUSE_SCROLL;
 	while(!js.terminated) {
 		if(!last_msg)
 			last_msg = msgbase.last_msg;
@@ -749,6 +750,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 		var pagesize = console.screen_rows - 3;
 		if(preview)
 			pagesize = Math.floor(pagesize / 2);
+		console.clear_hotspots();
 		console.home();
 		console.current_column = 0;
 		console.print(area_name);
@@ -783,8 +785,11 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			exclude_heading.push("spam");
 		
 		/* Column headings */
-		printf("%-*s %-*s ", digits, "#", LEN_ALIAS, sort=="from" ? "FROM" : "From");
-		for(var i in list_formats[list_format]) {
+		console.add_hotspot(CTRL_S);
+		printf("%-*s ", digits, "#");
+		console.add_hotspot(CTRL_T);
+		printf("%-*s ", LEN_ALIAS, sort=="from" ? "FROM" : "From");
+		for(var i = 0; i < list_formats[list_format].length; i++) {
 			var prop = list_formats[list_format][i];
 			if(exclude_heading.indexOf(prop) >= 0)
 				continue;
@@ -804,6 +809,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				len = Math.min(max_len(prop), cols_remain);
 				len = Math.max(heading.length, len);
 			}
+			console.add_hotspot(ascii(ascii(CTRL_U) + i));
+//			console.add_hotspot(CTRL_U);
 			printf(fmt
 				,len
 				,len
@@ -825,6 +832,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			console.line_counter = 0;
 			console.attributes = LIGHTGRAY;
 			if(list[i] !== undefined && list[i] !== null) {
+				console.add_hotspot(CTRL_G + list[i].num + '\r');
 				list_msg(list[i], digits, i == current, sort, msg_ctrl, exclude_heading);
 			}
 			console.cleartoeol();
@@ -913,13 +921,14 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 		var fmt = ", fmt:0-%u"
 		if(console.term_supports(USER_ANSI))
 			fmt += ", Hm/End/\x18\x19/PgUpDn";
-		fmt += ", ~Quit or [View] ~?";
+		fmt += ", ~Quit or [~View] ~?";
 		console.mnemonics(cmds.join(", ") + format(fmt, list_formats.length-1));
 		console.cleartoeol();
 		bbs.nodesync(/* clearline: */false);
+//		console.mouse_mode = 1<<1;
 		var key = console.getkey();
 		switch(key.toUpperCase()) {
-			case ctrl('A'):
+			case CTRL_A:
 				var flagged = true;
 				if(list[0] && list[0].flagged)
 					flagged = false;
@@ -944,6 +953,18 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 					current++;
 				}
 				break;
+			case CTRL_G:
+				var num = console.getstr(digits,K_LINE|K_NUMBER|K_NOCRLF|K_NOECHO);
+				if(num) {
+					for(var i = 0; i < list.length; i++) {
+						if(list[i].num == num) {
+							top = current = i;
+							break;
+						}
+					}
+				} else
+					break;
+				// fall-through
 			case 'V':
 			case '\r':
 				console.clear();
@@ -1099,7 +1120,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			case 'Q':
 				console.clear();
 				return false;
-			case ctrl('R'):				
+			case CTRL_R:				
 				return true;
 			case KEY_HOME:
 				if(msg_ctrl)
@@ -1226,6 +1247,16 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 					list.sort(sort_compare);
 				}
 				break;
+			case CTRL_S:
+				if(sort_property != 'num') {
+					list = orglist.slice();
+					sort_property = 'num';
+					sort = undefined;
+				} else {
+					list.reverse();
+					reversed = !reversed;
+				}
+				break;
 			case 'T':
 				list = orglist.slice();
 				spam_visible = !spam_visible;
@@ -1254,8 +1285,24 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			default:
 				if(key>='0' && key <='9')
 					list_format = parseInt(key);
+				
+				else if(key >= CTRL_T && key < ' ') {
+					var sort = "from";
+					if(key !== CTRL_T)
+						sort = list_formats[list_format][ascii(key) - ascii(CTRL_U)];
+					if(sort == sort_property) {
+						list.reverse();
+						reversed = !reversed;
+						break;
+					}
+					sort_reversed = false;
+					sort_property = sort;
+					write("\x01[\x01iSorting...\x01n\x01>");
+					list.sort(sort_compare);
+				}
 				break;
 		}
+			
 	}
 }
 
@@ -1526,6 +1573,8 @@ js.on_exit("console.status = " + console.status);
 //console.status |= CON_CR_CLREOL;
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru |= (1<<16);      // Disable Ctrl-P handling in sbbs
+console.ctrlkey_passthru |= (1<<20);      // Disable Ctrl-T handling in sbbs
+console.ctrlkey_passthru |= (1<<21);      // Disable Ctrl-U handling in sbbs
 console.ctrlkey_passthru |= (1<<26);      // Disable Ctrl-Z handling in sbbs
 js.on_exit("bbs.sys_status &= ~SS_MOFF");
 bbs.sys_status |= SS_MOFF; // Disable automatic messages
