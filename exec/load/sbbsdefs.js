@@ -158,8 +158,17 @@ var CON_HIGH_FONT	=(1<<19);	/* Alt high-intensity font activated		*/
 var CON_BLINK_FONT	=(1<<20);	/* Alt blink font activated					*/
 var CON_HBLINK_FONT	=(1<<21);	/* Alt high-blink font activated			*/
 var CON_MOUSE_PASSTHRU	=(1<<24); // Pass-through unhandled mouse reports
+var CON_MOUSE_REPORT	=(1<<25); // Mouse-reports enabled for non-hotspots (e.g. scroll-wheel)
 var CON_CR_CLREOL		=(1<<31); // Sending '\r', clears to end-of-line first
 					    		/********************************************/
+								
+								// Terminal mouse reporting mode (console.mouse_mode)
+var MOUSE_MODE_OFF	= 0;		// No terminal mouse reporting enabled/expected
+var MOUSE_MODE_X10	= (1<<0);	// X10 compatible mouse reporting enabled
+var MOUSE_MODE_NORM	= (1<<1);	// Normal tracking mode mouse reporting
+var MOUSE_MODE_BTN	= (1<<2);	// Button-event tracking mode mouse reporting
+var MOUSE_MODE_ANY	= (1<<3);	// Any-event tracking mode mouse reporting
+var MOUSE_MODE_EXT	= (1<<4);	// SGR-encoded extended coordinate mouse reporting
 
 						    	/********************************************/
     							/* Bits in 'mode' for getkey and getstr     */
