@@ -220,7 +220,8 @@ void sbbs_t::ansi_getlines()
 
 bool sbbs_t::ansi_getxy(int* x, int* y)
 {
-	int 	rsp=0, ch;
+	size_t	rsp=0;
+	int		ch;
 	char	str[128];
 
     *x=0;
