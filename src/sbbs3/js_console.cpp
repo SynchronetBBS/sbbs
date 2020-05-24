@@ -45,6 +45,7 @@
 /*****************************/
 enum {
 	 CON_PROP_STATUS
+	,CON_PROP_MOUSE_MODE
 	,CON_PROP_LNCNTR
 	,CON_PROP_COLUMN
 	,CON_PROP_LASTLINELEN
@@ -99,6 +100,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	switch(tiny) {
 		case CON_PROP_STATUS:
 			val=sbbs->console;
+			break;
+		case CON_PROP_MOUSE_MODE:
+			val=sbbs->mouse_mode;
 			break;
 		case CON_PROP_LNCNTR:
 			val=sbbs->lncntr;
@@ -242,6 +246,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_STATUS:
 			sbbs->console=val;
 			break;
+		case CON_PROP_MOUSE_MODE:
+			sbbs->set_mouse(val);
+			break;
 		case CON_PROP_LNCNTR:
 			sbbs->lncntr=val;
 			break;
@@ -357,6 +364,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 /*		 name				,tinyid						,flags			,ver	*/
 
 	{	"status"			,CON_PROP_STATUS			,CON_PROP_FLAGS	,310},
+	{	"mouse_mode"		,CON_PROP_MOUSE_MODE		,CON_PROP_FLAGS, 31800},
 	{	"line_counter"		,CON_PROP_LNCNTR 			,CON_PROP_FLAGS	,310},
 	{	"current_row"		,CON_PROP_ROW				,CON_PROP_FLAGS ,31800},
 	{	"current_column"	,CON_PROP_COLUMN			,CON_PROP_FLAGS ,315},
@@ -395,6 +403,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 #ifdef BUILD_JSDOCS
 static const char* con_prop_desc[] = {
 	 "status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	,"mouse mode bit-field (see <tt>MOUSE_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"current 0-based line counter (used for automatic screen pause)"
 	,"current 0-based row counter"
 	,"current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
@@ -1782,21 +1791,23 @@ js_getxy(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, obj, &js_console_class))==NULL)
  		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->ansi_getxy(&x,&y);
+	bool result = sbbs->cursor_getxy(&x,&y);
 	JS_RESUMEREQUEST(cx, rc);
 
-	if((screen=JS_NewObject(cx,NULL,NULL,obj))==NULL)
-		return(JS_TRUE);
+	if(result == true) {
+		if((screen=JS_NewObject(cx,NULL,NULL,obj))==NULL)
+			return(JS_TRUE);
 
-	JS_DefineProperty(cx, screen, "x", INT_TO_JSVAL(x)
-		,NULL,NULL,JSPROP_ENUMERATE);
-	JS_DefineProperty(cx, screen, "y", INT_TO_JSVAL(y)
-		,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, screen, "x", INT_TO_JSVAL(x)
+			,NULL,NULL,JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, screen, "y", INT_TO_JSVAL(y)
+			,NULL,NULL,JSPROP_ENUMERATE);
 
-	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(screen));
+		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(screen));
+	}
     return(JS_TRUE);
 }
 
@@ -2273,7 +2284,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	{"ansi_getxy",		js_getxy,			0, JSTYPE_ALIAS },
 	{"getxy",			js_getxy,			0, JSTYPE_OBJECT,	JSDOCSTR("")
 	,JSDOCSTR("query the current cursor position on the remote (ANSI) terminal "
-		"and returns the coordinates as an object (with x and y properties)")
+		"and returns the coordinates as an object (with <tt>x</tt> and <tt>y</tt> properties) or <tt>false</tt> on failure")
 	,311
 	},
 	{"lock_input",		js_lock_input,		1, JSTYPE_VOID,		JSDOCSTR("[lock=<tt>true</tt>]")
