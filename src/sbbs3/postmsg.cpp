@@ -87,6 +87,13 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	FILE*	fp;
 	smbmsg_t msg;
 	uint	reason;
+	str_list_t names = NULL;
+
+	/* Security checks */
+	if(!can_user_post(&cfg,subnum,&useron,&client,&reason)) {
+		bputs(text[reason]);
+		return false;
+	}
 
 	if(remsg) {
 		SAFECOPY(title, msghdr_field(remsg, remsg->subj, NULL, term_supports(UTF8)));
@@ -101,6 +108,8 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 			SAFECOPY(touser, msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8)));
 		else
 			SAFECOPY(touser,from);
+		if(remsg->to != NULL)
+			strListPush(&names, remsg->to);
 		msgattr=(ushort)(remsg->hdr.attr&MSG_PRIVATE);
 		sprintf(top,text[RegardingByToOn]
 			,title
@@ -112,12 +121,6 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 			SAFECOPY(tags, remsg->tags);
 	}
 
-	/* Security checks */
-	if(!can_user_post(&cfg,subnum,&useron,&client,&reason)) {
-		bputs(text[reason]);
-		return false;
-	}
-
 	bprintf(text[Posting],cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	action=NODE_PMSG;
 	nodesync();
@@ -126,8 +129,10 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		|| (cfg.sub[subnum]->misc&SUB_PRIV && !noyes(text[PrivatePostQ]))))
 		msgattr|=MSG_PRIVATE;
 
-	if(sys_status&SS_ABORT)
+	if(sys_status&SS_ABORT) {
+		strListFree(&names);
 		return(false);
+	}
 
 	if(
 #if 0	/* we *do* support internet posts to specific people July-11-2002 */
@@ -144,24 +149,30 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 			i=FIDO_NAME_LEN-1;
 		if(cfg.sub[subnum]->misc&(SUB_PNET|SUB_INET))
 			i=60;
-		getstr(touser,i,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
+		getstr(touser,i,K_LINE|K_EDIT|K_AUTODEL|K_TRIM,names);
 		if(stricmp(touser,"ALL")
-		&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
+			&& !(cfg.sub[subnum]->misc&(SUB_PNET|SUB_FIDO|SUB_QNET|SUB_INET|SUB_ANON))) {
 			if(cfg.sub[subnum]->misc&SUB_NAME) {
 				if(!userdatdupe(useron.number,U_NAME,LEN_NAME,touser)) {
 					bputs(text[UnknownUser]);
+					strListFree(&names);
 					return(false); 
 				} 
 			}
 			else {
-				if((i=finduser(touser))==0)
+				if((i=finduser(touser))==0) {
+					strListFree(&names);
 					return(false);
+				}
 				username(&cfg,i,touser); 
 			} 
 		}
-		if(sys_status&SS_ABORT)
-			return(false); 
+		if(sys_status&SS_ABORT) {
+			strListFree(&names);
+			return(false);
+		}
 	}
+	strListFree(&names);
 
 	if(!touser[0])
 		SAFECOPY(touser,"All");       // Default to ALL
