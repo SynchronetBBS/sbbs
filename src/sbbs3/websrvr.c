@@ -150,7 +150,7 @@ struct log_data {
 	char	*agent;
 	char	*vhost;
 	int		status;
-	unsigned int	size;
+	off_t	size;
 	struct tm completed;
 };
 
@@ -1446,11 +1446,11 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	return (ret);
 }
 
-static int sock_sendfile(http_session_t *session,char *path,unsigned long start, unsigned long end)
+static off_t sock_sendfile(http_session_t *session,char *path,unsigned long start, unsigned long end)
 {
 	int		file;
-	int		ret=0;
-	int		i;
+	off_t	ret=0;
+	ssize_t	i;
 	char	buf[2048];		/* Input buffer */
 	unsigned long		remain;
 
@@ -1531,7 +1531,7 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 			if(js_setup(session)) {
 				sent_ssjs=exec_ssjs(session,sbuf);
 				if(sent_ssjs) {
-					int	snt=0;
+					off_t snt=0;
 
 					lprintf(LOG_INFO,"%04d Sending generated error page",session->socket);
 					snt=sock_sendfile(session,session->req.physical_path,0,0);
@@ -1558,7 +1558,7 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 		session->req.mime_type=get_mime_type(strrchr(session->req.physical_path,'.'));
 		send_headers(session,message,FALSE);
 		if(!stat(session->req.physical_path,&sb)) {
-			int	snt=0;
+			off_t snt=0;
 			snt=sock_sendfile(session,session->req.physical_path,0,0);
 			if(snt<0)
 				snt=0;
@@ -6058,7 +6058,7 @@ static void respond(http_session_t * session)
 		}
 	}
 	if(session->req.send_content)  {
-		int snt=0;
+		off_t snt=0;
 		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIuOFF" bytes)"
 			,session->socket, session->req.physical_path, flength(session->req.physical_path));
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
@@ -6068,7 +6068,7 @@ static void respond(http_session_t * session)
 			session->req.ld->size=snt;
 		}
 		if(snt>0)
-			lprintf(LOG_INFO,"%04d Sent file: %s (%d bytes)"
+			lprintf(LOG_INFO,"%04d Sent file: %s (%"PRIuOFF" bytes)"
 				,session->socket, session->req.physical_path, snt);
 	}
 	session->req.finished=TRUE;
@@ -6840,7 +6840,7 @@ void http_logging_thread(void* arg)
 		}
 		if(logfile!=NULL) {
 			if(ld->status) {
-				sprintf(sizestr,"%d",ld->size);
+				sprintf(sizestr,"%"PRIuOFF,ld->size);
 				strftime(timestr,sizeof(timestr),"%d/%b/%Y:%H:%M:%S %z",&ld->completed);
 				/*
 				 * In case of a termination, do no block for a lock... just discard
