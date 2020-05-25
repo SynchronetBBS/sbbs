@@ -1083,7 +1083,7 @@ char* DLLCALL backslash(char* path)
 }
 
 /****************************************************************************/
-/* Returns true if the specified filename an aboslute pathname				*/
+/* Returns true if the specified filename an absolute pathname				*/
 /****************************************************************************/
 BOOL DLLCALL isabspath(const char *filename)
 {
