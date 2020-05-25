@@ -172,6 +172,9 @@ typedef ulong   uint32_t;
 #endif
 
 #if !defined(__MSDOS__)
+#if defined(_MSC_VER) // when and where will Microsoft typedef ssize_t (correctly) in the future?
+typedef SSIZE_T ssize_t;
+#endif
 #if defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__)
 typedef signed __int64 int64_t;
 typedef unsigned __int64 uint64_t;
