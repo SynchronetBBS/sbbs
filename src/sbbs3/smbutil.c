@@ -627,7 +627,7 @@ void viewmsgs(ulong start, ulong count, BOOL verbose)
 		}
 
 		printf("--------------------\n");
-		printf("%-20.20s %ld\n"		,"index record",ftell(smb.sid_fp)/sizeof(idxrec_t));
+		printf("%-16.16s %ld\n"		,"index record",ftell(smb.sid_fp)/sizeof(idxrec_t));
 		smb_dump_msghdr(stdout,&msg);
 		if(verbose) {
 			for(i=0; i<msg.total_hfields; i++) {
