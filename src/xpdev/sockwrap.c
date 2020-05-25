@@ -170,14 +170,14 @@ socket_option_t* getSocketOptionList(void)
 	return(socket_options);
 }
 
-int sendfilesocket(int sock, int file, off_t *offset, off_t count)
+off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	char		buf[1024*16];
 	off_t		len;
-	int			rd;
-	int			wr=0;
-	int			total=0;
-	int			i;
+	ssize_t		rd;
+	ssize_t		wr=0;
+	off_t		total=0;
+	ssize_t		i;
 
 /* sendfile() on Linux may or may not work with non-blocking sockets ToDo */
 	len=filelength(file);
@@ -196,7 +196,7 @@ int sendfilesocket(int sock, int file, off_t *offset, off_t count)
 		SLEEP(1);
 	}
 	if(i==0)
-		return((int)count);
+		return(count);
 #endif
 
 	if(count<0) {
@@ -232,7 +232,7 @@ int sendfilesocket(int sock, int file, off_t *offset, off_t count)
 	return(total);
 }
 
-int recvfilesocket(int sock, int file, off_t *offset, off_t count)
+off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	/* Writes a file from a socket -
 	 *
@@ -250,8 +250,8 @@ int recvfilesocket(int sock, int file, off_t *offset, off_t count)
 	 */
 	 
 	char*	buf;
-	int		rd;
-	int		wr;
+	ssize_t	rd;
+	ssize_t	wr;
 
 	if(count<1) {
 		errno=ERANGE;
