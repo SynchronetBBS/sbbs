@@ -64,6 +64,7 @@ static char *binstr(uchar *buf, uint16_t length)
 
 str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 {
+	char tmp[128];
 	int i;
 	time_t	tt;
 	str_list_t list = strListInit();
@@ -124,9 +125,9 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 		,smb_zonestr(msg->hdr.when_imported.zone,NULL));
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"type"				,msg->hdr.type);
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"version"			,msg->hdr.version);
-	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"attr"				,msg->hdr.attr);
-	strListAppendFormat(&list, HFIELD_NAME_FMT "%08"PRIX32"h"	,"auxattr"			,msg->hdr.auxattr);
-	strListAppendFormat(&list, HFIELD_NAME_FMT "%08"PRIX32"h"	,"netattr"			,msg->hdr.netattr);
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh (%s)"			,"attr"			,msg->hdr.attr, smb_msgattrstr(msg->hdr.attr, tmp, sizeof(tmp)));
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%08"PRIX32"h (%s)"	,"auxattr"		,msg->hdr.auxattr, smb_auxattrstr(msg->hdr.auxattr, tmp, sizeof(tmp)));
+	strListAppendFormat(&list, HFIELD_NAME_FMT "%08"PRIX32"h (%s)"	,"netattr"		,msg->hdr.netattr, smb_netattrstr(msg->hdr.netattr, tmp, sizeof(tmp)));
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%06"PRIX32"h"	,"header_offset"	,msg->idx.offset);
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%hu"            ,"header_fields"    ,msg->total_hfields);
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%u (calc: %lu)"	,"header_length"	,msg->hdr.length, smb_getmsghdrlen(msg));

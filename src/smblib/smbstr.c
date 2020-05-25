@@ -445,3 +445,59 @@ char* SMBCALL smb_nettype(enum smb_net_type type)
 		default:			return "Unsupported net type";
 	}
 }
+
+#define MSG_ATTR_CHECK(a, f) if(a&MSG_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+
+char* smb_msgattrstr(int16_t attr, char* outstr, size_t maxlen)
+{
+	char str[128] = "";
+	MSG_ATTR_CHECK(attr, PRIVATE);
+	MSG_ATTR_CHECK(attr, READ);
+	MSG_ATTR_CHECK(attr, PERMANENT);
+	MSG_ATTR_CHECK(attr, LOCKED);
+	MSG_ATTR_CHECK(attr, DELETE);
+	MSG_ATTR_CHECK(attr, ANONYMOUS);
+	MSG_ATTR_CHECK(attr, KILLREAD);
+	MSG_ATTR_CHECK(attr, MODERATED);
+	MSG_ATTR_CHECK(attr, VALIDATED);
+	MSG_ATTR_CHECK(attr, REPLIED);
+	MSG_ATTR_CHECK(attr, NOREPLY);
+	MSG_ATTR_CHECK(attr, UPVOTE);
+	MSG_ATTR_CHECK(attr, DOWNVOTE);
+	MSG_ATTR_CHECK(attr, POLL);
+	MSG_ATTR_CHECK(attr, SPAM);
+	strlcpy(outstr, str, maxlen);
+	return outstr;
+}
+
+char* smb_auxattrstr(int32_t attr, char* outstr, size_t maxlen)
+{
+	char str[128] = "";
+	MSG_ATTR_CHECK(attr, FILEREQUEST);
+	MSG_ATTR_CHECK(attr, FILEATTACH);
+	MSG_ATTR_CHECK(attr, MIMEATTACH);
+	MSG_ATTR_CHECK(attr, KILLFILE);
+	MSG_ATTR_CHECK(attr, RECEIPTREQ);
+	MSG_ATTR_CHECK(attr, CONFIRMREQ);
+	MSG_ATTR_CHECK(attr, NODISP);
+	MSG_ATTR_CHECK(attr, HFIELDS_UTF8);
+	if(attr&POLL_CLOSED)
+		sprintf(str + strlen(str), "%sPOLL-CLOSED", str[0] == 0 ? "" : ", ");
+	strlcpy(outstr, str, maxlen);
+	return outstr;
+}
+
+char* smb_netattrstr(int32_t attr, char* outstr, size_t maxlen)
+{
+	char str[128] = "";
+	MSG_ATTR_CHECK(attr, LOCAL);
+	MSG_ATTR_CHECK(attr, INTRANSIT);
+	MSG_ATTR_CHECK(attr, SENT);
+	MSG_ATTR_CHECK(attr, KILLSENT);
+	MSG_ATTR_CHECK(attr, HOLD);
+	MSG_ATTR_CHECK(attr, CRASH);
+	MSG_ATTR_CHECK(attr, IMMEDIATE);
+	MSG_ATTR_CHECK(attr, DIRECT);
+	strlcpy(outstr, str, maxlen);
+	return outstr;
+}
