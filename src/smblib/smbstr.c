@@ -466,7 +466,7 @@ char* smb_msgattrstr(int16_t attr, char* outstr, size_t maxlen)
 	MSG_ATTR_CHECK(attr, DOWNVOTE);
 	MSG_ATTR_CHECK(attr, POLL);
 	MSG_ATTR_CHECK(attr, SPAM);
-	strlcpy(outstr, str, maxlen);
+	strncpy(outstr, str, maxlen);
 	return outstr;
 }
 
@@ -483,7 +483,7 @@ char* smb_auxattrstr(int32_t attr, char* outstr, size_t maxlen)
 	MSG_ATTR_CHECK(attr, HFIELDS_UTF8);
 	if(attr&POLL_CLOSED)
 		sprintf(str + strlen(str), "%sPOLL-CLOSED", str[0] == 0 ? "" : ", ");
-	strlcpy(outstr, str, maxlen);
+	strncpy(outstr, str, maxlen);
 	return outstr;
 }
 
@@ -498,6 +498,6 @@ char* smb_netattrstr(int32_t attr, char* outstr, size_t maxlen)
 	MSG_ATTR_CHECK(attr, CRASH);
 	MSG_ATTR_CHECK(attr, IMMEDIATE);
 	MSG_ATTR_CHECK(attr, DIRECT);
-	strlcpy(outstr, str, maxlen);
+	strncpy(outstr, str, maxlen);
 	return outstr;
 }
