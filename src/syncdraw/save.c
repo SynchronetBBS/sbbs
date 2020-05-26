@@ -1,3 +1,5 @@
+// $Id$
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +29,7 @@ AvatarColor(int col)
 char           *
 PCBoardColor(int col)
 {
-	static char           a[4];
+	static char           a[5];
 	if (col == oldColor)
 		return NULL;
 	sprintf(a, "@X%02x", col);
