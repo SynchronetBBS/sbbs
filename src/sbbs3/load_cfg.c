@@ -53,7 +53,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 #ifdef SBBS
 	long	line=0L;
 	FILE 	*instream;
-	char	str[256],fname[13];
+	char	str[256];
 #endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
@@ -99,8 +99,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		/* Free existing text if allocated */
 		free_text(text);
 
-		strcpy(fname,"text.dat");
-		sprintf(str,"%s%s",cfg->ctrl_dir,fname);
+		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
 		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 			sprintf(error,"%d opening %s",errno,str);
 			return(FALSE); 
@@ -113,9 +112,9 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		fclose(instream);
 
 		if(i<TOTAL_TEXT) {
-			sprintf(error,"line %d in %s: Less than TOTAL_TEXT (%u) strings defined in %s."
-				,i,fname
-				,TOTAL_TEXT,fname);
+			sprintf(error,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
+				,i
+				,TOTAL_TEXT,str);
 			return(FALSE); 
 		}
 		cfg->text = text;
@@ -160,7 +159,7 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_subs;i++) {
 
 		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
-			sprintf(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
+			SAFEPRINTF(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir, sizeof(cfg->sub[i]->data_dir));
 
 		/* default QWKnet tagline */
@@ -189,7 +188,7 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_dirs;i++) {
 
 		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
-			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
+			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
 
 		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
@@ -361,12 +360,11 @@ BOOL md(char *inpath)
 BOOL read_attr_cfg(scfg_t* cfg, char* error)
 {
 	uint*	clr;
-    char    str[256],fname[13];
+    char    str[256];
 	long	offset=0;
     FILE    *instream;
 
-	strcpy(fname,"attr.cfg");
-	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
+	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		sprintf(error,"%d opening %s",errno,str);
 		return(FALSE); 
@@ -419,9 +417,9 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 	if(path[0]!='\\' && path[0]!='/' && path[1]!=':') {	/* Relative directory */
 		ch=*lastchar(base);
 		if(ch=='\\' || ch=='/')
-			sprintf(str,"%s%s",base,path);
+			SAFEPRINTF2(str,"%s%s",base,path);
 		else
-			sprintf(str,"%s%c%s",base,PATH_DELIM,path);
+			SAFEPRINTF3(str,"%s%c%s",base,PATH_DELIM,path);
 	} else
 		strcpy(str,path);
 
@@ -436,7 +434,7 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 	FULLPATH(abspath,str,buflen);	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
 	backslash(abspath);
 
-	sprintf(path,"%.*s",(int)(buflen-1),abspath);
+	strncpy(path, abspath, buflen);
 	return(path);
 }
 
