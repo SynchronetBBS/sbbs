@@ -104,7 +104,7 @@ static int len_503 = 0;
 										   (Including terminator )*/
 #define MAX_REDIR_LOOPS			20		/* Max. times to follow internal redirects for a single request */
 #define MAX_POST_LEN			(4*1048576)	/* Max size of body for POSTS */
-#define	OUTBUF_LEN				20480	/* Size of output thread ring buffer */
+#define	OUTBUF_LEN				(256*1024)	/* Size of output thread ring buffer */
 
 enum {
 	 CLEANUP_SSJS_TMP_FILE
@@ -1451,7 +1451,7 @@ static off_t sock_sendfile(http_session_t *session,char *path,unsigned long star
 	int		file;
 	off_t	ret=0;
 	ssize_t	i;
-	char	buf[2048];		/* Input buffer */
+	char	buf[OUTBUF_LEN];		/* Input buffer */
 	unsigned long		remain;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
@@ -6059,6 +6059,7 @@ static void respond(http_session_t * session)
 	}
 	if(session->req.send_content)  {
 		off_t snt=0;
+		time_t start = time(NULL);
 		lprintf(LOG_INFO,"%04d Sending file: %s (%"PRIuOFF" bytes)"
 			,session->socket, session->req.physical_path, flength(session->req.physical_path));
 		snt=sock_sendfile(session,session->req.physical_path,session->req.range_start,session->req.range_end);
@@ -6067,9 +6068,13 @@ static void respond(http_session_t * session)
 				snt=0;
 			session->req.ld->size=snt;
 		}
-		if(snt>0)
-			lprintf(LOG_INFO,"%04d Sent file: %s (%"PRIuOFF" bytes)"
-				,session->socket, session->req.physical_path, snt);
+		if(snt>0) {
+			time_t e = time(NULL) - start;
+			if(e < 1)
+				e = 1;
+			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIuOFF" bytes, %d cps)"
+				,session->socket, session->req.physical_path, snt, snt / e);
+		}
 	}
 	session->req.finished=TRUE;
 }
