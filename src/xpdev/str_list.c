@@ -808,10 +808,12 @@ int strListDedupe(str_list_t* list, BOOL case_sensitive)
 		return 0;
 
 	for(i = 0; (*list)[i] != NULL; i++) {
-		for(j = i + 1; (*list)[j] != NULL; j++) {
+		for(j = i + 1; (*list)[j] != NULL; ) {
 			if((case_sensitive && strcmp((*list)[i], (*list)[j]) == 0)
 				|| (!case_sensitive && stricmp((*list)[i], (*list)[j]) == 0))
 				strListDelete(list, j);
+			else
+				j++;
 		}
 	}
 	return i;
