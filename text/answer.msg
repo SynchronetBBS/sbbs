@@ -1,4 +1,4 @@
-@WORDWRAP@@CONDMENU:../banner@
+@WORDWRAP@@MENU:../banner*@
 nhCLIENT ncCONN: h@CONN@
 nh       ncADDR: h@HOST@ [@IP@]
 nh       ncTERM: h@COLS@x@ROWS@ @TERM@ 
