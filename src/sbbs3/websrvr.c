@@ -6072,8 +6072,8 @@ static void respond(http_session_t * session)
 			time_t e = time(NULL) - start;
 			if(e < 1)
 				e = 1;
-			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIuOFF" bytes, %d cps)"
-				,session->socket, session->req.physical_path, snt, snt / e);
+			lprintf(LOG_INFO, "%04d Sent file: %s (%"PRIuOFF" bytes, %ld cps)"
+				,session->socket, session->req.physical_path, snt, (long)(snt / e));
 		}
 	}
 	session->req.finished=TRUE;
