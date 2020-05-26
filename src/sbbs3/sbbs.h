@@ -845,6 +845,7 @@ public:
 	bool	printfile(const char* fname, long mode, long org_cols = 0, JSObject* obj = NULL);
 	bool	printtail(const char* fname, int lines, long mode, long org_cols = 0, JSObject* obj = NULL);
 	bool	menu(const char *code, long mode = 0, JSObject* obj = NULL);
+	bool	random_menu(const char *code, long mode = 0, JSObject* obj = NULL);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);

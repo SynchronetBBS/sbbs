@@ -301,3 +301,34 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 	safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
 	return fexistcase(path) ? true : false;
 }
+
+/****************************************************************************/
+/* Displays a random menu file (e.g. from the text/menu directory)          */
+/****************************************************************************/
+bool sbbs_t::random_menu(const char *name, long mode, JSObject* obj)
+{
+	char path[MAX_PATH + 1];
+	glob_t g = {0};
+	str_list_t names = NULL;
+
+	SAFEPRINTF2(path, "%smenu/%s", cfg.text_dir, name);
+	if(glob(path, GLOB_NOESCAPE|GLOB_MARK, NULL, &g) != 0) {
+		return false;
+	}
+	for(size_t i = 0; i < g.gl_pathc; i++) {
+		char* ext = getfext(g.gl_pathv[i]);
+		if(ext == NULL)
+			continue;
+		*ext = 0;
+		strListPush(&names, g.gl_pathv[i]);
+	}
+	globfree(&g);
+	strListDedupe(&names, /* case_sensitive: */true);
+	bool result = false;
+	size_t i = sbbs_random(strListCount(names));
+	if(menu_exists(names[i], NULL, path)) {
+		result = menu(names[i], mode, obj);
+	}
+	strListFree(&names);
+	return result;
+}
