@@ -235,12 +235,17 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 
 /****************************************************************************/
 /* Displays a menu file (e.g. from the text/menu directory)                 */
+/* Pass a code including wildcards (* or ?) to display a randomly-chosen	*/
+/* file matching the pattern in 'code'										*/
 /****************************************************************************/
 bool sbbs_t::menu(const char *code, long mode, JSObject* obj)
 {
     char path[MAX_PATH+1];
 	const char *next= "msg";
 	const char *last = "asc";
+
+	if(strcspn(code, "*?") != strlen(code))
+		return random_menu(code, mode, obj);
 
 	sys_status&=~SS_ABORT;
 	if(menu_file[0])

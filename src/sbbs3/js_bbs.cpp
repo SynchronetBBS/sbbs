@@ -1209,53 +1209,6 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_random_menu(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval *argv=JS_ARGV(cx, arglist);
-    JSString*	str;
- 	sbbs_t*		sbbs;
-	jsrefcount	rc;
-	char		*menu;
-	int32		mode = P_NONE;
-	JSObject*	obj = JS_GetScopeChain(cx);
-
- 	if(!js_argc(cx, argc, 1))
-		return(JS_FALSE);
-
-	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
-		return(JS_FALSE);
-
- 	str = JS_ValueToString(cx, argv[0]);
- 	if (!str)
- 		return(JS_FALSE);
-
-	uintN argn = 1;
-	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx,argv[argn], &mode))
-			return JS_FALSE;
-		argn++;
-	}
-	if(argc > argn && JSVAL_IS_OBJECT(argv[argn])) {
-		if((obj = JSVAL_TO_OBJECT(argv[argn])) == NULL)
-			return JS_FALSE;
-		argn++;
-	}
-
-	JSSTRING_TO_MSTRING(cx, str, menu, NULL);
-	if(!menu)
-		return JS_FALSE;
-	rc=JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->random_menu(menu, mode, obj);
-	free(menu);
-	JS_RESUMEREQUEST(cx, rc);
-
-	JS_SET_RVAL(cx, arglist, result ? JSVAL_TRUE : JSVAL_FALSE);
-
-    return(JS_TRUE);
-}
-
-
-static JSBool
 js_menu_exists(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4488,14 +4441,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"menu",			js_menu,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename [,mode=<tt>P_NONE</tt>] [,object scope]")
 	,JSDOCSTR("display a menu file from the text/menu directory.<br>"
 	"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
-	"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
+	"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.<br>"
+	"To display a randomly-chosen menu file, including wild-card (* or ?) characters in the <tt>base_filename</tt>.")
 	,310
-	},
-	{"random_menu",		js_random_menu,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filepattern [,mode=<tt>P_NONE</tt>] [,object scope]")
-	,JSDOCSTR("display a randomly-chosen menu file from the text/menu directory.<br>"
-	"See <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.<br>"
-	"When <i>scope</i> is specified, <tt>@JS:property@</tt> codes will expand the referenced property names.")
-	,31800
 	},
 	{"menu_exists",		js_menu_exists,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
 	,JSDOCSTR("returns true if the referenced menu file exists (i.e. in the text/menu directory)")
