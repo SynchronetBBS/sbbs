@@ -142,9 +142,7 @@ if(options.fast_logon !== true || !(bbs.sys_status&SS_FASTLOGON)
 
 	// Print one of text/menu/random*.*, picked at random
 	// e.g. random1.asc, random2.asc, random3.asc, etc.
-	var random_list = directory(system.text_dir + "menu/random*.*");
-	if(random_list.length)
-		bbs.menu(file_getname(random_list[random(random_list.length)]).slice(0,-4));
+	bbs.menu("random*");
 
 	console.clear(LIGHTGRAY);
 	bbs.user_event(EVENT_LOGON);
