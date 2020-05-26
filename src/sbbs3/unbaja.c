@@ -1957,7 +1957,7 @@ void decompile(FILE *bin, FILE *srcfile)
 					case FIO_GET_POS:
 						VARVAR("FGET_POS");
 					case FIO_SEEK:
-						WRITE_NAME("FSEEK");
+						WRITE_NAME("FSET_POS");
 						write_var(bin,src);
 						write_lng(bin,src);
 						fread(&ush,2,1,bin);
@@ -1970,7 +1970,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						eol(src);
 						break;
 					case FIO_SEEK_VAR:
-						WRITE_NAME("FSEEK");
+						WRITE_NAME("FSET_POS");
 						write_var(bin,src);
 						write_var(bin,src);
 						fread(&ush,2,1,bin);
