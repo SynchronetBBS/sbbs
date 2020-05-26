@@ -27,6 +27,8 @@
 
 !include sbbsdefs.inc
 
+str last_str_cmd
+
 # Set return point for main menu commands (via end_cmd)
 cmd_home
 
@@ -166,7 +168,15 @@ cmdkey ;
 	else
 		getstr 40
 		end_if
+    compare_str !
+    if_equal
+        copy str last_str_cmd
+        end_if
 	exec_bin "str_cmds %s"
+    compare_str ""
+    if_not_equal
+        copy last_str_cmd str
+        end_if
 	end_cmd
 
 cmdkey T
@@ -645,7 +655,15 @@ cmdkey ;
 	else
         getstr 40
 		end_if
+    compare_str !
+    if_equal
+        copy str last_str_cmd
+        end_if
 	exec_bin "str_cmds %s"
+    compare_str ""
+    if_not_equal
+        copy last_str_cmd str
+        end_if
 	end_cmd
 
 cmdkey Q
