@@ -48,6 +48,8 @@ bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long mi
 	/* ToDo: Define these defaults somewhere else: */
 	new_subboard->misc = (SUB_NSDEF | SUB_SSDEF | SUB_QUOTE | SUB_TOUSER | SUB_FAST);
 	new_subboard->misc |= misc;
+	if(new_subboard->misc&(SUB_FIDO | SUB_INET))
+		new_subboard->misc |= SUB_NOVOTING;
 	new_subboard->maxmsgs = 500;
 
 	/* Use last sub in group (if exists) as a template for new subs */
