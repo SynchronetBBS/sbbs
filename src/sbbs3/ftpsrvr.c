@@ -3135,10 +3135,7 @@ static void ctrl_thread(void* arg)
 #endif
 		if(rd<1) {
 			if(transfer_inprogress==TRUE) {
-				if(user.number)
-					lprintf(LOG_WARNING,"%04d <%s> !Aborting transfer due to CTRL socket receive error", sock, user.alias);
-				else
-					lprintf(LOG_WARNING,"%04d !Aborting transfer due to CTRL socket receive error", sock);
+				lprintf(LOG_WARNING,"%04d <%s> !Aborting transfer due to CTRL socket receive error", sock, user.number ? user.alias : host_ip);
 				transfer_aborted=TRUE;
 			}
 			break;
@@ -3148,17 +3145,17 @@ static void ctrl_thread(void* arg)
 		cmd=buf;
 		while(((BYTE)*cmd)==TELNET_IAC) {
 			cmd++;
-			lprintf(LOG_DEBUG,"%04d RX%s: Telnet cmd: %s",sock,sess == -1 ? "" : "S", telnet_cmd_desc(*cmd));
+			lprintf(LOG_DEBUG,"%04d <%s> RX%s: Telnet cmd: %s", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", telnet_cmd_desc(*cmd));
 			cmd++;
 		}
 		while(*cmd && *cmd<' ') {
-			lprintf(LOG_DEBUG,"%04d RX%s: %d (0x%02X)",sock,sess == -1 ? "" : "S", (BYTE)*cmd,(BYTE)*cmd);
+			lprintf(LOG_DEBUG,"%04d <%s> RX%s: %d (0x%02X)",sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", (BYTE)*cmd,(BYTE)*cmd);
 			cmd++;
 		}
 		if(!(*cmd))
 			continue;
 		if(startup->options&FTP_OPT_DEBUG_RX)
-			lprintf(LOG_DEBUG,"%04d RX%s: %s", sock, sess == -1 ? "" : "S", cmd);
+			lprintf(LOG_DEBUG,"%04d <%s> RX%s: %s", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", cmd);
 		if(!stricmp(cmd, "NOOP")) {
 			sockprintf(sock,sess,"200 NOOP command successful.");
 			continue;
@@ -3335,7 +3332,7 @@ static void ctrl_thread(void* arg)
 						break;
 					continue;
 				}
-				lprintf(LOG_INFO,"%04d %s: <%s>",sock,user.alias,password);
+				lprintf(LOG_INFO,"%04d <%s> identity: %s",sock,user.alias,password);
 				putuserrec(&scfg,user.number,U_NETMAIL,LEN_NETMAIL,password);
 			}
 			else if(user.level>=SYSOP_LEVEL && !stricmp(password,sys_pass)) {
