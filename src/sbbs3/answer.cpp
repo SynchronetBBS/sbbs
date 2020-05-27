@@ -485,7 +485,7 @@ bool sbbs_t::answer()
 		return(false); 
 
 	if(!(sys_status&SS_USERON)) {
-		errormsg(WHERE,ERR_CHK,"User not logged on",0);
+		errormsg(WHERE,ERR_CHK,"User not logged on",sys_status);
 		hangup();
 		return(false); 
 	}
