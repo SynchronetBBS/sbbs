@@ -76,6 +76,10 @@ void ssh_input_thread(void *args)
 		status=cl.PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 		pthread_mutex_unlock(&ssh_mutex);
 
+		// Handle case where there was socket activity without readable data (ie: rekey)
+		if (status == CRYPT_ERROR_TIMEOUT)
+			continue;
+
 		if(cryptStatusError(status)) {
 			if(status==CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) {	/* connection closed */
 				ssh_active=FALSE;
