@@ -5147,7 +5147,7 @@ void get_dns_server(char* dns_server, size_t len)
 	str_list_t	list;
 	size_t		count;
 
-	sprintf(dns_server,"%.*s",(int)len,startup->dns_server);
+	sprintf(dns_server,"%.*s",(int)len-1,startup->dns_server);
 	if(!isalnum(dns_server[0])) {
 		if((list=getNameServerList())!=NULL) {
 			if((count=strListCount(list))>0) {
@@ -5401,7 +5401,7 @@ static void sendmail_thread(void* arg)
 	uchar		digest[MD5_DIGEST_SIZE];
 	char		numeric_ip[16];
 	char		domain_list[MAX_PATH+1];
-	char		dns_server[16];
+	char		dns_server[128];
 	char*		server;
 	char*		msgtxt=NULL;
 	char*		p;
