@@ -236,7 +236,8 @@ var Typeahead = function (options) {
         'lastKey' : system.timer,
         'suggested' : false,
         'attr' : console.attributes,
-        'focus' : true
+        'focus' : true,
+        'maxResults': 0,
     };
 
     var display = {
@@ -366,14 +367,14 @@ var Typeahead = function (options) {
         display.tree.colors.lbg = properties.hsbg;
 
         display.tree.addItem('');
-        suggestions.forEach(function (suggestion) {
-            if (typeof suggestion === 'object' && typeof suggestion.text === 'string') {
-                var item = display.tree.addItem(suggestion.text);
-                item.suggestion = suggestion;
-            } else if (typeof suggestion === 'string') {
-                display.tree.addItem(suggestion);
+        for (var n = 0; n < (properties.maxResults || suggestions.length); n++) {
+            if (typeof suggestions[n] === 'object' && typeof suggestions[n].text === 'string') {
+                var item = display.tree.addItem(suggestions[n].text);
+                item.suggestion = suggestions[n];
+            } else if (typeof suggestions[n] === 'string') {
+                display.tree.addItem(suggestions[n]);
             }
-        });
+        }
 
         display.tree.open();
 
