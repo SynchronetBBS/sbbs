@@ -99,11 +99,17 @@ function init_servers(config) {
 		var lib=new Array();
 		if(lib_list) {
 			lib_list=lib_list.split(",");
-			for(var l in lib_list) lib.push(removeSpaces(lib_list[l]));
+			for(var l in lib_list) {
+				lib.push(removeSpaces(lib_list[l]));
+			}
+		}
+		
+		var load_list=directory(dir+"*.js");
+		for(var l in load_list) {
+			lib.push(load_list[l]);
 		}
 		
 		var dir=backslash(config.iniGetValue(mysec,"dir"));
-		var load_list=directory(dir+"*.js");
 		var global=config.iniGetValue(mysec,"global");
 		var channels=parse_channel_list(config.iniGetValue(mysec, "channels"));
 		for(var c in channels) {
@@ -115,7 +121,6 @@ function init_servers(config) {
 		Modules[module_name.toUpperCase()]=new Bot_Module(
 			module_name,
 			dir,
-			load_list,
 			global,
 			channels,
 			lib
@@ -178,9 +183,6 @@ function init_modules() {
 	for(var m in Modules) {
 		for(var l in Modules[m].lib) {
 			if(Modules[m].lib[l]) load(Modules[m],Modules[m].lib[l]);
-		}
-		for(var l in Modules[m].load) {
-			if(Modules[m].load[l]) load(Modules[m],Modules[m].load[l]);
 		}
 	}
 }
@@ -411,10 +413,9 @@ function Bot_IRC_Channel(name,key) {
 	// Functions.
 }
 
-function Bot_Module(name,dir,load,global,channels,lib) {
+function Bot_Module(name,dir,global,channels,lib) {
 	this.name=name;
 	this.dir=dir;
-	this.load=load;
 	this.global=global;
 	this.channels=channels;
 	this.lib=lib;
