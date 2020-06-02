@@ -5607,7 +5607,7 @@ static void sendmail_thread(void* arg)
 				} else {
 					server=p;
 					tp=strrchr(p,':');	/* non-standard SMTP port */
-					if(tp!=NULL && tp == strchr(p, ':')) { // Only one colon, not an IPv6 address
+					if(tp!=NULL) {
 						*tp=0;
 						port=atoi(tp+1);
 					}
