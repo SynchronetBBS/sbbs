@@ -7,9 +7,16 @@ load("funclib.js");
 load("sbbsdefs.js");
 load(root + "mazegen.js");
 
+var server_file = new File(file_cfgname(root, "server.ini"));
+server_file.open('r',true);
+var serverAddr=server_file.iniGetValue(null,"host","localhost");
+var serverPort=server_file.iniGetValue(null,"port",10088);
+server_file.close();
+
+
 var game_id = "mazerace";
 var timer = new Timer();
-var client = new JSONClient("localhost",10088);
+var client = new JSONClient(serverAddr,serverPort);
 
 var data = { 
 	games:client.read(game_id,"games",1),
