@@ -1,10 +1,9 @@
-/* $Id$ */
-
-load("json-client.js");
+load("json-client.js");
 
 var gameNumber=argv[0];
 var root=argv[1];
 var client,game,map;
+var log = function() {};
 
 initClient();
 load(root+"diceobj.js");
@@ -398,9 +397,7 @@ function open() {
 	log(LOG_DEBUG,"Dicewarz II AI thread loaded");
 }
 function initClient() {
-	
-	var server_file = new File(file_cfgname(root, "server.ini"));
-	server_file.open('r',true);
+	var server_file = new File(file_cfgname(root, "server.ini"));	server_file.open('r',true);
 	var serverAddr=server_file.iniGetValue(null,"host","localhost");
 	var serverPort=server_file.iniGetValue(null,"port",10088);
 	server_file.close();

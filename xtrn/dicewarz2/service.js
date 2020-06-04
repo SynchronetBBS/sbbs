@@ -1,15 +1,11 @@
 var root = argv[0];
-if(!file_exists(root + "server.ini")) {
-	throw("server initialization file missing");
-}
 /* load server connection information from server.ini */
-var server_file = new File(root + "server.ini");
+var server_file = new File(file_cfgname(root, "server.ini"));
 server_file.open('r',true);
-var serverAddr=server_file.iniGetValue(null,"host");
-var serverPort=server_file.iniGetValue(null,"port");
+var serverAddr=server_file.iniGetValue(null,"host","localhost");
+var serverPort=server_file.iniGetValue(null,"port",10088);
 server_file.close();
 
-load("backgroundlog.js");
 load("json-client.js");
 load("event-timer.js");
 load("funclib.js");
@@ -61,17 +57,7 @@ function loadAI(filename) {
 /* check initial status of all games (may have activity after crash or reboot) */
 function updateGames() {
 	for each(var g in data.games) {
-		try {
-			updateStatus(g.gameNumber);
-		}
-		catch(e) {
-			log(LOG_ERROR,"error updating game");
-			var gstring = "games: ";
-			for(var g in data.games) {
-				gstring += g + " ";
-			}
-			log(LOG_ERROR,gstring);
-		}
+		updateStatus(g.gameNumber);
 	}
 }
 
@@ -129,79 +115,105 @@ function processUpdate(update) {
 
 /* monitor game status? */
 function updateStatus(gameNumber) {
-	var game = loadGame(gameNumber);
-	if(!game)
-		return false;
-	
-	if(game.status == status.PLAYING) {
-		log(LOG_DEBUG,"updating turn info for game: " + game.gameNumber);
-		updateTurn(game);
-	}
-	else if(game.status == status.NEW) {
-		aiTakingTurns[gameNumber] = false;
-		var pcount=0;
-		for(var p in game.players) {
-			if(game.players[p])
-				pcount++;
+	try {
+		var game = loadGame(gameNumber);
+		if(!game) {
+			return false;
 		}
-		if(pcount == 0) {
-			deleteGame(gameNumber);
+		
+		if(game.status == status.PLAYING) {
+			log(LOG_DEBUG,"updating turn info for game: " + game.gameNumber);
+			updateTurn(game);
+		}
+		else if(game.status == status.NEW) {
+			aiTakingTurns[gameNumber] = false;
+			var pcount=0;
+			for(var p in game.players) {
+				if(game.players[p])
+					pcount++;
+			}
+			if(pcount == 0) {
+				deleteGame(gameNumber);
+			}
+		}
+		else if(game.status == status.FINISHED) {
+			aiTakingTurns[gameNumber] = false;
+			var online = client.who(game_id,"maps." + gameNumber);
+			if(online.length == 0)
+				deleteGame(gameNumber);
 		}
 	}
-	else if(game.status == status.FINISHED) {
-		aiTakingTurns[gameNumber] = false;
-		var online = client.who(game_id,"maps." + gameNumber);
-		if(online.length == 0)
-			deleteGame(gameNumber);
+	catch(e) {
+		log(LOG_ERROR,e);
 	}
 }
 
 /* handle turn update, possibly launch AI background thread */
 function updateTurn(game) {
-	// log(LOG_WARNING,
-		// "game: " + game.gameNumber + 
-		// " turn: " + game.turn + 
-		// " name: " + game.players[game.turn].name + 
-		// " ai: " + game.players[game.turn].AI);
-	if(game.players[game.turn].AI) {
-		/* if we have already launched the background thread, abort */
-		if(aiTakingTurns[game.gameNumber]) {
-			log(LOG_DEBUG,"ai already loaded.. ignoring turn update");
-			return;
+	try {
+		// log(LOG_WARNING,
+			// "game: " + game.gameNumber + 
+			// " turn: " + game.turn + 
+			// " name: " + game.players[game.turn].name + 
+			// " ai: " + game.players[game.turn].AI);
+		if(game.players[game.turn].AI) {
+			/* if we have already launched the background thread, abort */
+			if(aiTakingTurns[game.gameNumber]) {
+				log(LOG_DEBUG,"ai already loaded.. ignoring turn update");
+				return;
+			}
+			/* disable this function until it is a human player's turn 
+			(to avoid launching multiple background threads) */
+			aiTakingTurns[game.gameNumber] = true;
+			
+			/* launch ai player background client */
+			load(true,root + "ai.js",game.gameNumber,root);
 		}
-		/* disable this function until it is a human player's turn 
-		(to avoid launching multiple background threads) */
-		aiTakingTurns[game.gameNumber] = true;
-		
-		/* launch ai player background client */
-		load(true,root + "ai.js",game.gameNumber,root);
+		else {
+			/* reset this function if we have reached a human player */
+			aiTakingTurns[game.gameNumber] = false;
+		}
 	}
-	else {
-		/* reset this function if we have reached a human player */
-		aiTakingTurns[game.gameNumber] = false;
+	catch(e) {
+		log(LOG_ERROR,e);
 	}
 }
 
 /* delete a game */
 function deleteGame(gameNumber) {
-	log(LOG_DEBUG,"removing game #" + gameNumber);
-	client.remove(game_id,"games." + gameNumber,2);
-	client.remove(game_id,"maps." + gameNumber,2);
-	client.remove(game_id,"metadata." + gameNumber,2);
-	delete data.games[gameNumber];
+	try {
+		log(LOG_DEBUG,"removing game #" + gameNumber);
+		client.remove(game_id,"games." + gameNumber,2);
+		client.remove(game_id,"maps." + gameNumber,2);
+		client.remove(game_id,"metadata." + gameNumber,2);
+		delete data.games[gameNumber];
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* load game data from database */
 function loadGame(gameNumber) {
-	data.games[gameNumber] = client.read(game_id,"games." + gameNumber,1);
-	return data.games[gameNumber];
+	try {
+		data.games[gameNumber] = client.read(game_id,"games." + gameNumber,1);
+		return data.games[gameNumber];
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* delete a player */
 function deletePlayer(gameNumber,playerName) {
-	log(LOG_DEBUG,"removing player from game " + gameNumber);
-	client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
-	delete data.games[gameNumber].players[playerName];
+	try {
+		log(LOG_DEBUG,"removing player from game " + gameNumber);
+		client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
+		delete data.games[gameNumber].players[playerName];
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* scan games for inactivity */
@@ -219,17 +231,19 @@ function scanInactivity() {
 					log(LOG_DEBUG,"inactive game deleted");
 				}
 				else if(game.status == status.PLAYING) {
-					player.name += " AI";
-					player.AI = {
-						sort:"random",
-						check:"random",
-						qty:"single",
-						turns:0,
-						moves:0
+					if(!player.AI) {
+						player.name += " AI";
+						player.AI = {
+							sort:"random",
+							check:"random",
+							qty:"single",
+							turns:0,
+							moves:0
+						}
+						client.write(game_id,"games." + game.gameNumber + ".players." + game.turn,player,2)
+						updateTurn(game);
+						log(LOG_DEBUG,"inactive player changed to AI");
 					}
-					client.write(game_id,"games." + game.gameNumber + ".players." + game.turn,player,2)
-					updateTurn(game);
-					log(LOG_DEBUG,"inactive player changed to AI");
 				}
 			}
 		}
@@ -237,12 +251,12 @@ function scanInactivity() {
 			log(LOG_ERROR,"error scanning game for inactivity: " + g);
 			deleteGame(g);
 		}
-
 	}
 }
 
 /* forfeit points */
 function scoreForfeit(player) {
+	try {
 		client.lock(game_id,"scores." + player.name,2);
 		
 		var score=client.read(game_id,"scores." + player.name);
@@ -256,32 +270,46 @@ function scoreForfeit(player) {
 		
 		client.write(game_id,"scores." + player.name,score);
 		client.unlock(game_id,"scores." + player.name);
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* initialize service */
 function open() {
-	js.branch_limit=0;
-	client.subscribe(game_id,"games");
-	client.subscribe(game_id,"players");
-	client.write(game_id,"settings",settings,2);
-	client.write(game_id,"ai",ai,2);
-	client.callback = processUpdate;
-	if(!data.games)
-		data.games = {};
-	if(!data.players)
-		data.players = {};
-	
-	updateGames();
-	scanInactivity();
-	timer.addEvent(43200000,true,scanInactivity);	
-	log(LOG_INFO,"Dicewarz II background service initialized");
+	try {
+		js.branch_limit=0;
+		client.subscribe(game_id,"games");
+		client.subscribe(game_id,"players");
+		client.write(game_id,"settings",settings,2);
+		client.write(game_id,"ai",ai,2);
+		client.callback = processUpdate;
+		if(!data.games)
+			data.games = {};
+		if(!data.players)
+			data.players = {};
+		
+		updateGames();
+		scanInactivity();
+		timer.addEvent(43200000,true,scanInactivity);	
+		log(LOG_INFO,"Dicewarz II background service initialized");
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* shutdown service */
 function close() {
-	client.unsubscribe(game_id,"games");
-	client.unsubscribe(game_id,"players");
-	log(LOG_INFO,"terminating dicewarz2 background service");
+	try {
+		client.unsubscribe(game_id,"games");
+		client.unsubscribe(game_id,"players");
+		log(LOG_INFO,"terminating dicewarz2 background service");
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* main loop */
