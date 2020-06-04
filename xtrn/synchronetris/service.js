@@ -9,7 +9,6 @@ var serverAddr=server_file.iniGetValue(null,"host");
 var serverPort=server_file.iniGetValue(null,"port");
 server_file.close();
 
-load("backgroundlog.js");
 load("json-client.js");
 load("event-timer.js");
 load("funclib.js");
@@ -36,124 +35,165 @@ var status={
 
 /* process inbound updates */
 function processUpdate(update) {
-	var playerName = undefined;
-	var gameNumber = undefined;
-	var p=update.location.split(".");
-	
-	var obj=data;
-	while(p.length > 1) {
-		var child=p.shift();
-		obj=obj[child];
-		switch(child.toUpperCase()) {
-		case "PLAYERS":
-			playerName = p[0];
+	try {
+		var playerName = undefined;
+		var gameNumber = undefined;
+		var p=update.location.split(".");
+		
+		var obj=data;
+		while(p.length > 1) {
+			var child=p.shift();
+			obj=obj[child];
+			switch(child.toUpperCase()) {
+			case "PLAYERS":
+				playerName = p[0];
+				break;
+			case "GAMES":
+			case "METADATA":
+				gameNumber = p[0];
+				break;
+			}
+		}
+		
+		switch(update.oper.toUpperCase()) {
+		case "SUBSCRIBE":
+			if(gameNumber) {
+				updatePlayers(gameNumber,update.data);
+			}
 			break;
-		case "GAMES":
-		case "METADATA":
-			gameNumber = p[0];
+		case "UNSUBSCRIBE":
+			handleDisco(update.data);
+			break;
+		case "WRITE":
+			var child = p.shift();
+			if(update.data == undefined)
+				delete obj[child];
+			else
+				obj[child] = update.data;
+			if(child.toUpperCase() == "STATUS")
+				updateStatus(update,gameNumber);
+			else if(playerName !== undefined && gameNumber !== undefined) 
+				updateGame(gameNumber,playerName);
 			break;
 		}
+		
 	}
-	
-	switch(update.oper.toUpperCase()) {
-	case "SUBSCRIBE":
-		if(gameNumber)
-			updatePlayers(gameNumber,update.data);
-		break;
-	case "UNSUBSCRIBE":
-		handleDisco(update.data);
-		break;
-	case "WRITE":
-		var child = p.shift();
-		if(update.data == undefined)
-			delete obj[child];
-		else
-			obj[child] = update.data;
-		if(child.toUpperCase() == "STATUS")
-			updateStatus(update,gameNumber);
-		else if(playerName !== undefined && gameNumber !== undefined) 
-			updateGame(gameNumber,playerName);
-		break;
+	catch(e) {
+		log(LOG_ERROR,e);
 	}
 }
 
 /* handle a player disconnection */
 function handleDisco(subscription) {
-	for each(var game in data.games) {
-		if(!game.players) {
-			deleteGame(game.gameNumber);
-			continue;
-		}
-		var pcount = countMembers(game.players);
-		if(pcount == 0) 
-			deleteGame(game.gameNumber);
-		else if(game.players[subscription.nick]) {
-			if(pcount == 1)
+	try {
+		log(LOG_DEBUG, subscription.nick + " unsubscribed");
+		for each(var game in data.games) {
+			if(!game.players) {
 				deleteGame(game.gameNumber);
-			else 
-				deletePlayer(game.gameNumber,subscription.nick);
+				continue;
+			}
+			var pcount = countMembers(game.players);
+			if(pcount == 0) 
+				deleteGame(game.gameNumber);
+			else if(game.players[subscription.nick]) {
+				if(pcount == 1)
+					deleteGame(game.gameNumber);
+				else 
+					deletePlayer(game.gameNumber,subscription.nick);
+			}
 		}
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
 	}
 }
 
 /* delete a game */
 function deleteGame(gameNumber) {
-	log(LOG_DEBUG,"removing empty game #" + gameNumber);
-	client.remove(game_id,"games." + gameNumber,2);
-	if(data.timers[gameNumber])
-		data.timers[gameNumber].abort = true;
-	delete data.games[gameNumber];
+	try {
+		log(LOG_DEBUG,"removing empty game #" + gameNumber);
+		client.remove(game_id,"games." + gameNumber,2);
+		if(data.timers[gameNumber]) {
+			data.timers[gameNumber].abort = true;
+		}
+		delete data.games[gameNumber];
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* delete a player */
 function deletePlayer(gameNumber,playerName) {
-	log(LOG_DEBUG,"removing player from game " + gameNumber);
-	client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
-	delete data.games[gameNumber].players[playerName];
+	try {
+		log(LOG_DEBUG,"removing player from game " + gameNumber);
+		client.remove(game_id,"games." + gameNumber + ".players." + playerName,2)
+		delete data.games[gameNumber].players[playerName];
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
 }
 
 /* ensure there arent too few or too many players in a game */
 function updateGame(gameNumber,playerName) {
-	var game = data.games[gameNumber];
-	if(!game.players) {
-		deleteGame(gameNumber);
-		return;
+	try {
+		var game = data.games[gameNumber];
+		if(!game.players) {
+			deleteGame(gameNumber);
+			return;
+		}
+		var pcount = countMembers(game.players);
+		if(pcount == 0) 
+			deleteGame(gameNumber);
+		else if(pcount > settings.max_players)
+			deletePlayer(gameNumber,playerName);
+		else if(pcount >= settings.min_players) {
+			var ready = getReady(game);
+			if(ready && (game.status == status.WAITING || game.status == status.FINISHED))
+				startTimer(game);
+			else if(!ready && game.status == status.STARTING) 
+				stopTimer(game);
+		}
 	}
-	var pcount = countMembers(game.players);
-	if(pcount == 0) 
-		deleteGame(gameNumber);
-	else if(pcount > settings.max_players)
-		deletePlayer(gameNumber,playerName);
-	else if(pcount >= settings.min_players) {
-		var ready = getReady(game);
-		if(ready && (game.status == status.WAITING || game.status == status.FINISHED))
-			startTimer(game);
-		else if(!ready && game.status == status.STARTING) 
-			stopTimer(game);
+	catch(e) {
+		log(LOG_ERROR,e);
 	}
 }
 
 /* handle game status update */
 function updateStatus(update,gameNumber) {
-	var game = data.games[gameNumber];
-	switch(update.data) {
-	case status.FINISHED:
-		resetPlayers(game);
-		break;
+	try {
+		var game = data.games[gameNumber];
+		switch(update.data) {
+		case status.FINISHED:
+			resetPlayers(game);
+			break;
+		}
+	}
+	catch(e) {
+		log(LOG_ERROR,e);
 	}
 }
 
 /* monitor player subscriptions to games */
 function updatePlayers(gameNumber,subscription) {
-	var game = data.games[gameNumber];
-	if(game.status !== status.PLAYING) {
-		game.players[subscription.nick].synced = true;
-		for each(var p in game.players) {
-			if(!p.synced)
-				return;
-		}
-		startGame(game);
+	try {
+		log(LOG_DEBUG, subscription.nick + " subscribed to game " + gameNumber);
+		var game = data.games[gameNumber];
+		if(game.status !== status.PLAYING) {
+			game.players[subscription.nick].synced = true;
+			for each(var p in game.players) {
+				if(!p.synced)
+					return;
+			}
+			startGame(game);
+		}	
 	}
+	catch(e) {
+		log(LOG_ERROR,e);
+	}
+
 }
 	
 /* reset all players to "not ready" */
