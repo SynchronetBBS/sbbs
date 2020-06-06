@@ -274,7 +274,7 @@ function supports_sixel()
 function activate_font(style, slot)
 {
 	if(style == undefined) {
-		LOG(LOG_WARNING, "CTerm activate_font: style is undefined");
+		log(LOG_WARNING, "CTerm activate_font: style is undefined");
 		return false;
 	}
 	log(LOG_DEBUG, format("CTerm activate_font: %u %u", style, slot));
