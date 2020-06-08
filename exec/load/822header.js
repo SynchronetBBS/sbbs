@@ -83,6 +83,8 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 			this.rfc822 += "X-FTN-MSGID: "+this.ftn_msgid+"\r\n";
 		if(this.ftn_reply != undefined)
 			this.rfc822 += "X-FTN-REPLY: "+this.ftn_reply+"\r\n";
+		if(this.ftn_charset != undefined)
+			this.rfc822 += "X-FTN-CHRS: "+this.ftn_charset+"\r\n";
 		
 		// Other RFC822 headers
 		if(this.field_list!=undefined) {

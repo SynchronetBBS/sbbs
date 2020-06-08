@@ -46,6 +46,8 @@ function write_news_header(hdr,writeln)
 		writeln("X-FTN-MSGID: " + hdr.ftn_msgid);
 	if(hdr.ftn_reply!=undefined)
 		writeln("X-FTN-REPLY: " + hdr.ftn_reply);
+	if(hdr.ftn_charset!=undefined)
+		writeln("X-FTN-CHRS: " + hdr.ftn_charset);
 
 	var content_type;
 
@@ -161,6 +163,9 @@ function parse_news_header(hdr, line)
 			break;
 		case "x-ftn-reply":
 			hdr.ftn_reply=data;
+			break;
+		case "x-ftn-chrs":
+			hdr.ftn_charset=data;
 			break;
 
 		/* NNTP control messages */
