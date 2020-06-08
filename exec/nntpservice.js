@@ -53,7 +53,6 @@ var impose_limit = true;
 var sysop_login = false;
 var add_tag = true;
 var ex_ascii = true;
-var include_votes_in_list = true;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -69,8 +68,6 @@ for(i=0;i<argc;i++) {
 		impose_limit = false;
 	else if(argv[i].toLowerCase()=="-notag")
 		add_tag = false;
-	else if(argv[i].toLowerCase()=="-novotes")
-		include_votes_in_list = false;
 	else if(argv[i].toLowerCase()=="-ascii")
 		ex_ascii = false;
 	else if(argv[i].toLowerCase()=="-auto") {
@@ -125,12 +122,12 @@ function xref(hdr)
 // This excludes vote messages, but can be "slow"
 function count_msgs(msgbase)
 {
-	var total_msgs = msgbase.total_msgs;
 	var count = 0;
 	var last = 0;
 	var first = 0;
-	for(var i=0;i<total_msgs;i++) {
-		var idx=msgbase.get_msg_index(/* by_offset */true,i);
+	var index = msgbase.get_index();
+	for(var i=0; index && i<index.length; i++) {
+		var idx=index[i];
 		if(idx==null)
 			continue;
 		if(idx.attr&MSG_DELETE)	/* marked for deletion */
@@ -310,11 +307,7 @@ while(client.socket.is_connected && !quit) {
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 						if(msgbase.open!=undefined && msgbase.open()==false)
 							continue;
-						var count;
-						if(include_votes_in_list)
-							count = { total: msgbase.total_msgs, first: msgbase.first_msg, last: msgbase.last_msg };
-						else
-							count = count_msgs(msgbase);
+						var count = count_msgs(msgbase);
 						writeln(format("%s %u %u %s"
 							,msg_area.grp_list[g].sub_list[s].newsgroup
 							,count.last
