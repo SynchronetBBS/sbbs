@@ -132,6 +132,8 @@ function count_msgs(msgbase)
 			continue;
 		if(idx.attr&MSG_DELETE)	/* marked for deletion */
 			continue;
+		if(idx.attr&MSG_VOTE)
+			continue;
 		if(first == 0)
 			first = idx.number;
 		last = idx.number;
@@ -500,6 +502,8 @@ while(client.socket.is_connected && !quit) {
 						continue;
 					if(idx.attr&MSG_DELETE)	/* marked for deletion */
 						continue;
+					if(idx.attr&MSG_VOTE)
+						continue;
 					writeln(idx.number);
 				}
 				writeln(".");
@@ -533,6 +537,8 @@ while(client.socket.is_connected && !quit) {
 				if(hdr==null)
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
+					continue;
+				if(hdr.attr&MSG_VOTE)
 					continue;
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
 					,i
@@ -576,6 +582,8 @@ while(client.socket.is_connected && !quit) {
 				if(hdr==null)
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
+					continue;
+				if(hdr.attr&MSG_VOTE)
 					continue;
 				var field="";
 				switch(cmd[1].toLowerCase()) {	/* header */
