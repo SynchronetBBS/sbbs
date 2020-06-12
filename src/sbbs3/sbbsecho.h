@@ -242,8 +242,8 @@ typedef struct {
 
 extern ini_style_t sbbsecho_ini_style;
 
-char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];
-char* mailStatusStringList[4];
+extern char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];
+extern char* mailStatusStringList[4];
 
 /***********************/
 /* Function prototypes */
