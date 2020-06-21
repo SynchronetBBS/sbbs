@@ -64,7 +64,7 @@ function print(hdr, num, days_ago)
 	var list = bbs.mods.logonlist_lib.get(num, days_ago);
 	if(typeof list != 'object' || !list.length)
 		return false;
-	console.print(hdr);
+	console.putmsg(hdr);
 	for(var i in list) {
 		var record = list[i];
 		var date = new Date(record.time * 1000);
