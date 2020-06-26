@@ -112,23 +112,24 @@ BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return SetCommState(handle, &dcb);
 }
 
-enum COM_FLOW_CONTROL comGetTxFlowControl(COM_HANDLE handle)
+int comGetFlowControl(COM_HANDLE handle)
 {
 	DCB dcb;
+	int result = 0;
 
 	if(GetCommState(handle, &dcb) != TRUE)
 		return COM_ERROR;
 
 	if(dcb.fOutxCtsFlow)
-		return COM_FLOW_CONTROL_RTS_CTS;
+		result |= COM_FLOW_CONTROL_RTS_CTS;
 	if(dcb.fOutxDsrFlow)
-		return COM_FLOW_CONTROL_DTR_DSR;
-	if(dcb.fOutX)
-		return COM_FLOW_CONTROL_XON_OFF;
-	return COM_FLOW_CONTROL_NONE;
+		result |= COM_FLOW_CONTROL_DTR_DSR;
+	if(dcb.fInX && dcb.fOutX)
+		result |= COM_FLOW_CONTROL_XON_OFF;
+	return result;
 }
 
-BOOL comSetTxFlowControl(COM_HANDLE handle, enum COM_FLOW_CONTROL type)
+BOOL comSetFlowControl(COM_HANDLE handle, int type)
 {
 	DCB dcb;
 
@@ -136,20 +137,23 @@ BOOL comSetTxFlowControl(COM_HANDLE handle, enum COM_FLOW_CONTROL type)
 		return FALSE;
 
 	dcb.fOutxCtsFlow = 0;
+	dcb.fRtsControl = RTS_CONTROL_DISABLE; // This is questionable
 	dcb.fOutxDsrFlow = 0;
+	dcb.fDsrSensitivity = 0;
+	dcb.fInX = 0;
 	dcb.fOutX = 0;
-	switch(type) {
-		case COM_FLOW_CONTROL_RTS_CTS:
-			dcb.fOutxCtsFlow = 1;
-			break;
-		case COM_FLOW_CONTROL_DTR_DSR:
-			dcb.fOutxDsrFlow = 1;
-			break;
-		case COM_FLOW_CONTROL_XON_OFF:
-			dcb.fOutX = 1;
-			break;
+	if(type&COM_FLOW_CONTROL_RTS_CTS) {
+		dcb.fOutxCtsFlow = 1;
+		dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
 	}
-
+	if(type&COM_FLOW_CONTROL_DTR_DSR) {
+		dcb.fOutxDsrFlow = 1;
+		dcb.fDsrSensitivity = 1;
+	}
+	if(type&COM_FLOW_CONTROL_XON_OFF) {
+		dcb.fInX = 1;
+		dcb.fOutX = 1;
+	}
 	return SetCommState(handle, &dcb);
 }
 
