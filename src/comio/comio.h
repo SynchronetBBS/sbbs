@@ -98,6 +98,13 @@
 
 #endif
 
+enum COM_FLOW_CONTROL {
+	COM_FLOW_CONTROL_NONE,
+	COM_FLOW_CONTROL_RTS_CTS,
+	COM_FLOW_CONTROL_DTR_DSR,
+	COM_FLOW_CONTROL_XON_OFF
+};
+
 /**************/
 /* Prototypes */
 /**************/
@@ -111,8 +118,9 @@ COMIOEXPORT COM_HANDLE	comOpen(const char* device);
 COMIOEXPORT BOOL		comClose(COM_HANDLE);
 COMIOEXPORT long		comGetBaudRate(COM_HANDLE);
 COMIOEXPORT BOOL		comSetBaudRate(COM_HANDLE, ulong rate);
-COMIOEXPORT BOOL		comGetTxFlowControl(COM_HANDLE);
-COMIOEXPORT BOOL		comSetTxFlowControl(COM_HANDLE, BOOL enable);
+COMIOEXPORT enum COM_FLOW_CONTROL
+						comGetTxFlowControl(COM_HANDLE);
+COMIOEXPORT BOOL		comSetTxFlowControl(COM_HANDLE, enum COM_FLOW_CONTROL);
 COMIOEXPORT int			comGetModemStatus(COM_HANDLE);
 COMIOEXPORT int			comRaiseDTR(COM_HANDLE);
 COMIOEXPORT int			comLowerDTR(COM_HANDLE);

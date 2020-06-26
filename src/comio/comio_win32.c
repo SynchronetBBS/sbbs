@@ -112,24 +112,43 @@ BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return SetCommState(handle, &dcb);
 }
 
-BOOL comGetTxFlowControl(COM_HANDLE handle)
+enum COM_FLOW_CONTROL comGetTxFlowControl(COM_HANDLE handle)
 {
 	DCB dcb;
 
 	if(GetCommState(handle, &dcb) != TRUE)
 		return COM_ERROR;
 
-	return dcb.fOutxCtsFlow;
+	if(dcb.fOutxCtsFlow)
+		return COM_FLOW_CONTROL_RTS_CTS;
+	if(dcb.fOutxDsrFlow)
+		return COM_FLOW_CONTROL_DTR_DSR;
+	if(dcb.fOutX)
+		return COM_FLOW_CONTROL_XON_OFF;
+	return COM_FLOW_CONTROL_NONE;
 }
 
-BOOL comSetTxFlowControl(COM_HANDLE handle, BOOL enable)
+BOOL comSetTxFlowControl(COM_HANDLE handle, enum COM_FLOW_CONTROL type)
 {
 	DCB dcb;
 
 	if(GetCommState(handle, &dcb) != TRUE)
 		return FALSE;
 
-	dcb.fOutxCtsFlow = enable;
+	dcb.fOutxCtsFlow = 0;
+	dcb.fOutxDsrFlow = 0;
+	dcb.fOutX = 0;
+	switch(type) {
+		case COM_FLOW_CONTROL_RTS_CTS:
+			dcb.fOutxCtsFlow = 1;
+			break;
+		case COM_FLOW_CONTROL_DTR_DSR:
+			dcb.fOutxDsrFlow = 1;
+			break;
+		case COM_FLOW_CONTROL_XON_OFF:
+			dcb.fOutX = 1;
+			break;
+	}
 
 	return SetCommState(handle, &dcb);
 }
