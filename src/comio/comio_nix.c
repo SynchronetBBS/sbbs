@@ -304,18 +304,32 @@ int COMIOCALL comGetModemStatus(COM_HANDLE handle)
 	return status;
 }
 
+static BOOL comSetFlags(COM_HANDLE handle, int flags, BOOL set)
+{
+	int cmd = set ? TIOCMBIS : TIOCMBIC;
+
+	return ioctl(handle, cmd, &flags);
+}
+
 BOOL COMIOCALL comRaiseDTR(COM_HANDLE handle)
 {
-	int flags = TIOCM_DTR;
-	return(ioctl(handle, TIOCMBIS, &flags)==0);
+	return comSetFlags(handle, TIOCM_DTR, TRUE);
 }
 
 BOOL COMIOCALL comLowerDTR(COM_HANDLE handle)
 {
-	int flags = TIOCM_DTR;
-	return(ioctl(handle, TIOCMBIC, &flags)==0);
+	return comSetFlags(handle, TIOCM_DTR, FALSE);
 }
 
+BOOL COMIOCALL comRaiseRTS(COM_HANDLE handle)
+{
+	return comSetFlags(handle, TIOCM_RTS, TRUE);
+}
+
+BOOL COMIOCALL comLowerRTS(COM_HANDLE handle)
+{
+	return comSetFlags(handle, TIOCM_RTS, FALSE);
+}
 BOOL COMIOCALL comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	return(write(handle, &ch, 1)==1);
