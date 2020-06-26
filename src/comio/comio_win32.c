@@ -132,6 +132,16 @@ BOOL COMIOCALL comLowerDTR(COM_HANDLE handle)
 	return EscapeCommFunction(handle, CLRDTR);
 }
 
+BOOL COMIOCALL comRaiseRTS(COM_HANDLE handle)
+{
+	return EscapeCommFunction(handle, SETRTS);
+}
+
+BOOL COMIOCALL comLowerRTS(COM_HANDLE handle)
+{
+	return EscapeCommFunction(handle, CLRRTS);
+}
+
 BOOL COMIOCALL comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	DWORD wr=0;
