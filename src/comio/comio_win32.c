@@ -112,6 +112,28 @@ BOOL COMIOCALL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return SetCommState(handle, &dcb);
 }
 
+BOOL COMIOCALL comGetTxFlowControl(COM_HANDLE handle)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb) != TRUE)
+		return COM_ERROR;
+
+	return dcb.fOutxCtsFlow;
+}
+
+BOOL COMIOCALL comSetTxFlowControl(COM_HANDLE handle, BOOL enable)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb) != TRUE)
+		return FALSE;
+
+	dcb.fOutxCtsFlow = enable;
+
+	return SetCommState(handle, &dcb);
+}
+
 int COMIOCALL comGetModemStatus(COM_HANDLE handle)
 {
 	DWORD status=0;
