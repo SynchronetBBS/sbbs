@@ -294,6 +294,70 @@ BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return TRUE;
 }
 
+BOOL comGetTxFlowControl(COM_HANDLE handle)
+{
+	BOOL ret = FALSE;
+	struct termios t;
+
+	if(tcgetattr(handle, &t)==-1)
+		return FALSE;
+
+	ret = (t.c_cflag & (0
+/* The next two are pretty much never used */
+#ifdef CCTX_OFLOW
+				| CCTS_OFLOW  /* CTS flow control of output */
+#endif
+#ifdef CRTSCTS
+				| CRTSCTS     /* same as CCTS_OFLOW */
+#endif
+#ifdef CRTS_IFLOW
+				| CRTS_IFLOW  /* RTS flow control of input */
+#endif
+				)) ? TRUE : FALSE;
+
+	return ret;
+}
+
+BOOL comSetTxFlowControl(COM_HANDLE handle, BOOL enable)
+{
+	struct termios t;
+
+	if(tcgetattr(handle, &t)==-1)
+		return FALSE;
+
+	if (enable) {
+		t.c_cflag |= (0
+/* The next two are pretty much never used */
+#ifdef CCTX_OFLOW
+				| CCTS_OFLOW  /* CTS flow control of output */
+#endif
+#ifdef CRTSCTS
+				| CRTSCTS     /* same as CCTS_OFLOW */
+#endif
+#ifdef CRTS_IFLOW
+				| CRTS_IFLOW  /* RTS flow control of input */
+#endif
+				);
+	}
+	else {
+		t.c_cflag &= ~(0
+/* The next two are pretty much never used */
+#ifdef CCTX_OFLOW
+				| CCTS_OFLOW  /* CTS flow control of output */
+#endif
+#ifdef CRTSCTS
+				| CRTSCTS     /* same as CCTS_OFLOW */
+#endif
+#ifdef CRTS_IFLOW
+				| CRTS_IFLOW  /* RTS flow control of input */
+#endif
+				);
+	}
+	if(tcsetattr(handle, TCSANOW, &t)==-1)
+		return FALSE;
+	return TRUE;
+}
+
 int comGetModemStatus(COM_HANDLE handle)
 {
 	int status;
