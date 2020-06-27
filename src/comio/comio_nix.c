@@ -352,7 +352,7 @@ static BOOL comSetFlags(COM_HANDLE handle, int flags, BOOL set)
 {
     int cmd = set ? TIOCMBIS : TIOCMBIC;
 
-    return ioctl(handle, cmd, &flags);
+    return (ioctl(handle, cmd, &flags) == 0);
 }
 
 BOOL comRaiseDTR(COM_HANDLE handle)
