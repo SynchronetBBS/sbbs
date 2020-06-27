@@ -207,7 +207,7 @@ int rlogin_connect(struct bbslist *bbs)
 		}
 
 		sprintf(sbuf, "MBBS: %s %d '%s' %d %s\r\n",
-			bbs->ghost_program, /* Program name */
+			(bbs->ghost_program[0]) ? bbs->ghost_program : bbs->password, /* Program name */
 			2, /* GHost protocol version */
 			bbs->user, /* User's full name */
 			999, /* Time remaining */

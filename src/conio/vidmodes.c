@@ -8,112 +8,115 @@
 
 #include "vidmodes.h"
 
+// TODO: Pretty much all the 1:1 aspect ratios are wrong...
 struct video_params vparams[] = {
 	/* BW 40x25 */
-	{BW40, GREYSCALE_PALETTE, 40, 25, 14, 15, 16, 8, 1, 7, 0},
+	{BW40, GREYSCALE_PALETTE, 40, 25, 14, 15, 16, 8, 1, 7, 0, 1, 1, 320, 200},
 	/* CO 40x25 */
-	{C40, COLOUR_PALETTE, 40, 25, 14, 15, 16, 8, 1, 7, 0},
+	{C40, COLOUR_PALETTE, 40, 25, 14, 15, 16, 8, 1, 7, 0, 1, 1, 320, 200},
 	/* BW 80x25 */
-	{BW80, GREYSCALE_PALETTE, 80, 25, 14, 15, 16, 8, 1, 7, 0},
+	{BW80, GREYSCALE_PALETTE, 80, 25, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* CO 80x25 */
-	{C80, COLOUR_PALETTE, 80, 25, 14, 15, 16, 8, 1, 7, 0},
+	{C80, COLOUR_PALETTE, 80, 25, 14, 15, 16, 8, 1, 7, 0, 833, 1000, 640, 400},
 	/* MONO */
-	{MONO, 0, 80, 25, 14, 15, 16, 8, 1, 7, 0},
+	{MONO, 0, 80, 25, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* CO 40x14 */
-	{C40X14, COLOUR_PALETTE, 40, 14, 14, 15, 16, 8, 1, 7, 0},
+	{C40X14, COLOUR_PALETTE, 40, 14, 14, 15, 16, 8, 1, 7, 0, 1, 1, 320, 224},
 	/* CO 40x21 */
-	{C40X21, COLOUR_PALETTE, 40, 21, 14, 15, 16, 8, 1, 7, 0},
+	{C40X21, COLOUR_PALETTE, 40, 21, 14, 15, 16, 8, 1, 7, 0, 1, 1, 320, 336},
 	/* CO 40x28 */
-	{C40X28, COLOUR_PALETTE, 40, 28, 12, 13, 14, 8, 1, 7, 0},
+	{C40X28, COLOUR_PALETTE, 40, 28, 12, 13, 14, 8, 1, 7, 0, 1, 1, 320, 392},
 	/* CO 40x43 */
-	{C40X43, COLOUR_PALETTE, 40, 43, 7, 7, 8, 8, 1, 7, 0},
+	{C40X43, COLOUR_PALETTE, 40, 43, 7, 7, 8, 8, 1, 7, 0, 1, 1, 320, 774},
 	/* CO 40x50 */
-	{C40X50, COLOUR_PALETTE, 40, 50, 7, 7, 8, 8, 1, 7, 0},
+	{C40X50, COLOUR_PALETTE, 40, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 320, 400},
 	/* CO 40x60 */
-	{C40X60, COLOUR_PALETTE, 40, 60, 7, 7, 8, 8, 1, 7, 0},
+	{C40X60, COLOUR_PALETTE, 40, 60, 7, 7, 8, 8, 1, 7, 0, 1, 1, 320, 480},
 	/* CO 80x14 */
-	{C80X14, COLOUR_PALETTE, 80, 14, 14, 15, 16, 8, 1, 7, 0},
+	{C80X14, COLOUR_PALETTE, 80, 14, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 224},
 	/* CO 80x21 */
-	{C80X21, COLOUR_PALETTE, 80, 21, 14, 15, 16, 8, 1, 7, 0},
+	{C80X21, COLOUR_PALETTE, 80, 21, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 336},
 	/* CO 80x28 */
-	{C80X28, COLOUR_PALETTE, 80, 28, 12, 13, 14, 8, 1, 7, 0},
+	{C80X28, COLOUR_PALETTE, 80, 28, 12, 13, 14, 8, 1, 7, 0, 1, 1, 640, 392},
 	/* CO 80x30 */
-	{C80X30, COLOUR_PALETTE, 80, 30, 14, 15, 16, 8, 1, 7, 0},
+	{C80X30, COLOUR_PALETTE, 80, 30, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 480},
 	/* CO 80x43 */
-	{C80X43, COLOUR_PALETTE, 80, 43, 7, 7, 8, 8, 1, 7, 0},
+	{C80X43, COLOUR_PALETTE, 80, 43, 7, 7, 8, 8, 1, 7, 0, 729, 1000, 640, 350},
+	/* EGA 80x25 */
+	{EGA80X25, COLOUR_PALETTE, 80, 25, 12, 13, 14, 8, 1, 7, 0, 729, 1000, 640, 350},
 	/* CO 80x50 */
-	{C80X50, COLOUR_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0},
+	{C80X50, COLOUR_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* CO 80x60 */
-	{C80X60, COLOUR_PALETTE, 80, 60, 7, 7, 8, 8, 1, 7, 0},
+	{C80X60, COLOUR_PALETTE, 80, 60, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 480},
 	/* B 40x14 */
-	{BW40X14, GREYSCALE_PALETTE, 40, 14, 14, 15, 16, 8, 1, 7, 0},
+	{BW40X14, GREYSCALE_PALETTE, 40, 14, 14, 15, 16, 8, 1, 7, 0, 1, 1, 320, 224},
 	/* BW 40x21 */
-	{BW40X21, GREYSCALE_PALETTE, 40, 21, 14, 15, 16, 8, 1, 7, 0},
+	{BW40X21, GREYSCALE_PALETTE, 40, 21, 14, 15, 16, 8, 1, 7, 0, 1, 1, 320, 336},
 	/* BW 40x28 */
-	{BW40X28, GREYSCALE_PALETTE, 40, 28, 12, 13, 14, 8, 1, 7, 0},
+	{BW40X28, GREYSCALE_PALETTE, 40, 28, 12, 13, 14, 8, 1, 7, 0, 1, 1, 320, 392},
 	/* BW 40x43 */
-	{BW40X43, GREYSCALE_PALETTE, 40, 43, 7, 7, 8, 8, 1, 7, 0},
+	{BW40X43, GREYSCALE_PALETTE, 40, 43, 7, 7, 14, 8, 1, 7, 0, 1, 1, 320, 350},
 	/* BW 40x50 */
-	{BW40X50, GREYSCALE_PALETTE, 40, 50, 7, 7, 8, 8, 1, 7, 0},
+	{BW40X50, GREYSCALE_PALETTE, 40, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 320, 400},
 	/* BW 40x60 */
-	{BW40X60, GREYSCALE_PALETTE, 40, 60, 7, 7, 8, 8, 1, 7, 0},
+	{BW40X60, GREYSCALE_PALETTE, 40, 60, 7, 7, 8, 8, 1, 7, 0, 1, 1, 320, 480},
 	/* BW 80x14 */
-	{BW80X14, GREYSCALE_PALETTE, 80, 14, 14, 15, 16, 8, 1, 7, 0},
+	{BW80X14, GREYSCALE_PALETTE, 80, 14, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 224},
 	/* BW 80x21 */
-	{BW80X21, GREYSCALE_PALETTE, 80, 21, 14, 15, 16, 8, 1, 7, 0},
+	{BW80X21, GREYSCALE_PALETTE, 80, 21, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 336},
 	/* BW 80x28 */
-	{BW80X28, GREYSCALE_PALETTE, 80, 28, 12, 13, 14, 8, 1, 7, 0},
+	{BW80X28, GREYSCALE_PALETTE, 80, 28, 12, 13, 14, 8, 1, 7, 0, 1, 1, 640, 392},
 	/* BW 80x43 */
-	{BW80X43, GREYSCALE_PALETTE, 80, 43, 7, 7, 8, 8, 1, 7, 0},
+	{BW80X43, GREYSCALE_PALETTE, 80, 43, 7, 7, 14, 8, 1, 7, 0, 1, 1, 640, 350},
 	/* BW 80x50 */
-	{BW80X50, GREYSCALE_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0},
+	{BW80X50, GREYSCALE_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* BW 80x60 */
-	{BW80X60, GREYSCALE_PALETTE, 80, 60, 7, 7, 8, 8, 1, 7, 0},
+	{BW80X60, GREYSCALE_PALETTE, 80, 60, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 480},
 	/* MONO 80x14 */
-	{MONO14, MONO_PALETTE, 80, 14, 14, 15, 16, 8, 1, 7, 0},
+	{MONO14, MONO_PALETTE, 80, 14, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 224},
 	/* MONO 80x21 */
-	{MONO21, MONO_PALETTE, 80, 21, 14, 15, 16, 8, 1, 7, 0},
+	{MONO21, MONO_PALETTE, 80, 21, 14, 15, 16, 8, 1, 7, 0, 1, 1, 640, 336},
 	/* MONO 80x28 */
-	{MONO28, MONO_PALETTE, 80, 28, 12, 13, 14, 8, 1, 7, 0},
+	{MONO28, MONO_PALETTE, 80, 28, 12, 13, 14, 8, 1, 7, 0, 1, 1, 640, 392},
 	/* MONO 80x43 */
-	{MONO43, MONO_PALETTE, 80, 43, 7, 7, 8, 8, 1, 7, 0},
+	{MONO43, MONO_PALETTE, 80, 43, 7, 7, 14, 8, 1, 7, 0, 1, 1, 640, 350},
 	/* MONO 80x50 */
-	{MONO50, MONO_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0},
+	{MONO50, MONO_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* MONO 80x60 */
-	{MONO60, MONO_PALETTE, 80, 60, 7, 7, 8, 8, 1, 7, 0},
+	{MONO60, MONO_PALETTE, 80, 60, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 480},
 	/* Magical C4350 Mode */
-	{C4350, COLOUR_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0},
+	{C4350, COLOUR_PALETTE, 80, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* Commodore 64 40x25 mode */
-	{C64_40X25, C64_PALETTE, 40, 25, 0, 7, 8, 8, 1, 0x6e, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK},
+	{C64_40X25, C64_PALETTE, 40, 25, 0, 7, 8, 8, 1, 0x6e, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 1, 1, 320, 200},
 	/* Commodore 128 40x25 mode */
-	{C128_40X25, C64_PALETTE, 40, 25, 0, 7, 8, 8, 1, 0xbd, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK},
+	{C128_40X25, C64_PALETTE, 40, 25, 0, 7, 8, 8, 1, 0xbd, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 1, 1, 320, 200},
 	/* Commodore 128 80x25 mode */
-	{C128_80X25, COLOUR_PALETTE, 80, 25, 0, 7, 8, 8, 2, 7, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK},
+	{C128_80X25, COLOUR_PALETTE, 80, 25, 0, 7, 8, 8, 2, 7, CIOLIB_VIDEO_BGBRIGHT|CIOLIB_VIDEO_NOBLINK, 1, 1, 640, 200},
 	/* Atari 800 40x24 mode */
-	{ATARI_40X24, ATARI_PALETTE, 40, 24, 0, 7, 8, 8, 1, 7, 0},
+	{ATARI_40X24, ATARI_PALETTE, 40, 24, 0, 7, 8, 8, 1, 7, 0, 1, 1, 320, 192},
 	/* Atari 800 XEP80 80x25 mode */
-	{ATARI_80X25, GREYSCALE_PALETTE, 80, 25, 0, 15, 16, 8, 1, 7, 0},
+	{ATARI_80X25, GREYSCALE_PALETTE, 80, 25, 0, 15, 16, 8, 1, 7, 0, 1, 1, 640, 400},
 	/* VESA 21x132 mode */
-	{VESA_132X21, COLOUR_PALETTE, 132, 21, 14, 15, 16, 8, 1, 7, 0},
+	{VESA_132X21, COLOUR_PALETTE, 132, 21, 14, 15, 16, 8, 1, 7, 0, 1, 1, 1056, 336},
 	/* VESA 25x132 mode */
-	{VESA_132X25, COLOUR_PALETTE, 132, 25, 14, 15, 16, 8, 1, 7, 0},
+	{VESA_132X25, COLOUR_PALETTE, 132, 25, 14, 15, 16, 8, 1, 7, 0, 1, 1, 1056, 400},
 	/* VESA 28x132 mode */
-	{VESA_132X28, COLOUR_PALETTE, 132, 28, 12, 13, 14, 8, 1, 7, 0},
+	{VESA_132X28, COLOUR_PALETTE, 132, 28, 12, 13, 14, 8, 1, 7, 0, 1, 1, 1056, 392},
 	/* VESA 30x132 mode */
-	{VESA_132X30, COLOUR_PALETTE, 132, 30, 14, 15, 16, 8, 1, 7, 0},
+	{VESA_132X30, COLOUR_PALETTE, 132, 30, 14, 15, 16, 8, 1, 7, 0, 1, 1, 1056, 480},
 	/* VESA 34x132 mode */
-	{VESA_132X34, COLOUR_PALETTE, 132, 34, 12, 13, 14, 8, 1, 7, 0},
+	{VESA_132X34, COLOUR_PALETTE, 132, 34, 12, 13, 14, 8, 1, 7, 0, 1, 1, 1056, 476},
 	/* VESA 43x132 mode */
-	{VESA_132X43, COLOUR_PALETTE, 132, 43, 7, 7, 8, 8, 1, 7, 0},
+	{VESA_132X43, COLOUR_PALETTE, 132, 43, 7, 7, 14, 8, 1, 7, 0, 1, 1, 1056, 350},
 	/* VESA 50x132 mode */
-	{VESA_132X50, COLOUR_PALETTE, 132, 50, 7, 7, 8, 8, 1, 7, 0},
+	{VESA_132X50, COLOUR_PALETTE, 132, 50, 7, 7, 8, 8, 1, 7, 0, 1, 1, 1056, 400},
 	/* VESA 60x132 mode */
-	{VESA_132X60, COLOUR_PALETTE, 132, 60, 7, 7, 8, 8, 1, 7, 0},
+	{VESA_132X60, COLOUR_PALETTE, 132, 60, 7, 7, 8, 8, 1, 7, 0, 1, 1, 1056, 480},
 	/* Awesome modes */
-	{ST132X37_16_9, COLOUR_PALETTE, 132, 37, 14, 15, 16, 8, 1, 7, 0},
-	{ST132X52_5_4, COLOUR_PALETTE, 132, 52, 14, 15, 16, 8, 1, 7, 0},
+	{ST132X37_16_9, COLOUR_PALETTE, 132, 37, 14, 15, 16, 8, 1, 7, 0, 1, 1, 1056, 600},
+	{ST132X52_5_4, COLOUR_PALETTE, 132, 52, 14, 15, 16, 8, 1, 7, 0, 1, 1, 1056},
 	/* Custom mode */
-	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE, 80, 25, 14, 15, 16, 8, 1, 7, 0},
+	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE, 80, 25, 14, 15, 16, 8, 1, 7, 0, 1, 1, -1, -1},
 };
 
 uint32_t palettes[5][16] = {
@@ -329,5 +332,16 @@ int load_vmode(struct video_stats *vs, int mode)
 	vs->mode=mode;
 	vs->vmultiplier=vparams[i].vmultiplier;
 	vs->currattr = vparams[i].default_attr;
+	vs->scale_numerator = vparams[i].scale_numerator;
+	vs->scale_denominator = vparams[i].scale_denominator;
+	if (vparams[i].xres > 0)
+		vs->scrnwidth = vparams[i].xres;
+	else
+		vs->scrnwidth = vs->charwidth * vs->cols;
+	if (vparams[i].yres > 0)
+		vs->scrnheight = vparams[i].yres;
+	else
+		vs->scrnheight = vs->charheight * vs->rows;
+	vs->forced_font = NULL;
 	return(0);
 }

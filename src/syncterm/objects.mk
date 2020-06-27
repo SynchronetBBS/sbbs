@@ -3,6 +3,7 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)uifcinit$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)filepick$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)ripper$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)rlogin$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn_telnet$(OFILE) \

@@ -56,6 +56,7 @@ enum {
 	,SCREEN_MODE_ATARI
 	,SCREEN_MODE_ATARI_XEP80
 	,SCREEN_MODE_CUSTOM
+	,SCREEN_MODE_EGA_80X25
 	,SCREEN_MODE_TERMINATOR
 };
 
@@ -93,6 +94,7 @@ struct bbslist {
 	char			font[80];
 	int				hidepopups;
 	char			ghost_program[9]; /* GHost program can only be 8 chars max. */
+	int			rip;
 };
 
 extern char *music_names[];

@@ -64,6 +64,10 @@ struct  video_params {
 	int	vmultiplier;
 	int	default_attr;
 	int	flags;
+	int	scale_numerator;
+	int	scale_denominator;
+	int	xres;
+	int	yres;
 };
 
 struct vstat_vmem {
@@ -94,13 +98,18 @@ struct video_stats {
 	int blink_altcharset;
 	int currattr;
 	int scaling;
-	int	vmultiplier;
+	int vmultiplier;
+	int scrnwidth;
+	int scrnheight;
 	int winwidth;
 	int winheight;
+	int scale_numerator;
+	int scale_denominator;
 	uint32_t flags;
 #define VIDMODES_FLAG_PALETTE_VMEM	1
 	uint32_t palette[16];
 	struct vstat_vmem *vmem;
+	uint8_t *forced_font;
 };
 
 enum {
@@ -111,7 +120,7 @@ enum {
 	,ATARI_PALETTE
 };
 
-extern struct video_params vparams[53];
+extern struct video_params vparams[54];
 #define NUMMODES      (sizeof(vparams) / sizeof(struct video_params))
 extern uint32_t palettes[5][16];
 extern struct dac_colors dac_default[TOTAL_DAC_SIZE];

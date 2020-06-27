@@ -758,12 +758,17 @@ static int x11_event(XEvent *ev)
 		case MotionNotify:
 			{
 				XMotionEvent *me = (XMotionEvent *)ev;
+				int x_res = me->x;
+				int y_res = me->y;
 
-				me->x/=x_cvstat.scaling;
-				me->x/=x_cvstat.charwidth;
-				me->y/=x_cvstat.scaling;
-				me->y/=x_cvstat.vmultiplier;
-				me->y/=x_cvstat.charheight;
+				x_res /= x_cvstat.scaling;
+				y_res /= x_cvstat.scaling;
+				y_res /= x_cvstat.vmultiplier;
+				me->x /= x_cvstat.scaling;
+				me->x /= x_cvstat.charwidth;
+				me->y /= x_cvstat.scaling;
+				me->y /= x_cvstat.vmultiplier;
+				me->y /= x_cvstat.charheight;
 				me->x++;
 				me->y++;
 				if(me->x<1)
@@ -774,13 +779,18 @@ static int x11_event(XEvent *ev)
 					me->x=x_cvstat.cols;
 				if(me->y>x_cvstat.rows+1)
 					me->y=x_cvstat.rows+1;
-				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,me->x,me->y);
+				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,me->x,me->y, x_res, y_res);
 	    	}
 			break;
 		case ButtonRelease:
 			{
 				XButtonEvent *be = (XButtonEvent *)ev;
+				int x_res = be->x;
+				int y_res = be->y;
 
+				x_res /= x_cvstat.scaling;
+				y_res /= x_cvstat.scaling;
+				y_res /= x_cvstat.vmultiplier;
 				be->x/=x_cvstat.scaling;
 				be->x/=x_cvstat.charwidth;
 				be->y/=x_cvstat.scaling;
@@ -797,14 +807,19 @@ static int x11_event(XEvent *ev)
 				if(be->y>x_cvstat.rows+1)
 					be->y=x_cvstat.rows+1;
 				if (be->button <= 3) {
-					ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(be->button),be->x,be->y);
+					ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(be->button),be->x,be->y, x_res, y_res);
 				}
 	    	}
 			break;
 		case ButtonPress:
 			{
 				XButtonEvent *be = (XButtonEvent *)ev;
+				int x_res = be->x;
+				int y_res = be->y;
 
+				x_res /= x_cvstat.scaling;
+				y_res /= x_cvstat.scaling;
+				y_res /= x_cvstat.vmultiplier;
 				be->x/=x_cvstat.scaling;
 				be->x/=x_cvstat.charwidth;
 				be->y/=x_cvstat.scaling;
@@ -821,7 +836,7 @@ static int x11_event(XEvent *ev)
 				if(be->y>x_cvstat.rows+1)
 					be->y=x_cvstat.rows+1;
 				if (be->button <= 5) {
-					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y);
+					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y, x_res, y_res);
 				}
 	    	}
 			break;

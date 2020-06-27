@@ -128,7 +128,7 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_getscaling(void);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 CIOLIBEXPORT int CIOLIBCALL ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
-CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
+CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
 CIOLIBEXPORT int CIOLIBCALL ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *pixels, void *mask);
 CIOLIBEXPORT void CIOLIBCALL ciolib_freepixels(struct ciolib_pixels *pixels);
 CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void);
@@ -873,8 +873,9 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_window(int sx, int sy, int ex, int ey)
 			|| sx > ex
 			|| sy > ey
 			|| ex > cio_textinfo.screenwidth
-			|| ey > cio_textinfo.screenheight)
+			|| ey > cio_textinfo.screenheight) {
 		return;
+	}
 	cio_textinfo.winleft=sx;
 	cio_textinfo.wintop=sy;
 	cio_textinfo.winright=ex;
@@ -1623,12 +1624,12 @@ CIOLIBEXPORT int CIOLIBCALL ciolib_setpixel(uint32_t x, uint32_t y, uint32_t col
 }
 
 /* Returns NULL on failure */
-CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey)
+CIOLIBEXPORT struct ciolib_pixels * CIOLIBCALL ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force)
 {
 	CIOLIB_INIT();
 
 	if (cio_api.getpixels)
-		return cio_api.getpixels(sx, sy, ex, ey);
+		return cio_api.getpixels(sx, sy, ex, ey, force);
 	return NULL;
 }
 
@@ -1648,6 +1649,7 @@ CIOLIBEXPORT void CIOLIBCALL ciolib_freepixels(struct ciolib_pixels *pixels)
 		return;
 
 	FREE_AND_NULL(pixels->pixels);
+	FREE_AND_NULL(pixels->pixelsb);
 	FREE_AND_NULL(pixels);
 }
 
@@ -1673,7 +1675,7 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
 	}
 
 	if (vmode != -1) {
-		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1);
+		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, true);
 	}
 	ciolib_vmem_gettext(1, 1, ret->text_info.screenwidth, ret->text_info.screenheight, ret->vmem);
 	ret->fg_colour = ciolib_fg;

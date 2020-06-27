@@ -302,9 +302,9 @@ int conn_peek(void *vbuffer, size_t buflen)
 	return(found);
 }
 
-int conn_send(void *vbuffer, size_t buflen, unsigned int timeout)
+int conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 {
-	char *buffer = (char *)vbuffer;
+	const char *buffer = vbuffer;
 	size_t found;
 
 	pthread_mutex_lock(&(conn_outbuf.mutex));

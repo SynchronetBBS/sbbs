@@ -61,7 +61,7 @@ struct conn_buffer {
 int conn_recv_upto(void *buffer, size_t buflen, unsigned int timeout);
 int conn_recv(void *buffer, size_t buflen, unsigned int timeout);
 int conn_peek(void *buffer, size_t buflen);
-int conn_send(void *buffer, size_t buflen, unsigned int timeout);
+int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_connect(struct bbslist *bbs);
 int conn_close(void);
 BOOL conn_connected(void);

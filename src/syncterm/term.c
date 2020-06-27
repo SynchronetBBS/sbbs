@@ -34,6 +34,7 @@
 #endif
 #include "base64.h"
 #include "md5.h"
+#include "ripper.h"
 
 #define	ANSI_REPLY_BUFSIZE	2048
 static char ansi_replybuf[2048];
@@ -69,6 +70,7 @@ void get_cterm_size(int* cols, int* rows)
 
 enum mouse_modes {
 	MM_OFF,
+	MM_RIP = 1,
 	MM_X10 = 9,
 	MM_NORMAL_TRACKING = 1000,
 	MM_HIGHLIGHT_TRACKING = 1001,
@@ -88,6 +90,16 @@ void setup_mouse_events(struct mouse_state *ms)
 	ciomouse_setevents(0);
 	if (ms) {
 		switch(ms->mode) {
+			case MM_RIP:
+				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
+				ciomouse_addevent(CIOLIB_BUTTON_1_RELEASE);
+				ciomouse_addevent(CIOLIB_BUTTON_2_PRESS);
+				ciomouse_addevent(CIOLIB_BUTTON_2_RELEASE);
+				ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
+				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
+				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+				mousepointer(CIOLIB_MOUSEPTR_ARROW);
+				return;
 			case MM_X10:
 				ciomouse_addevent(CIOLIB_BUTTON_1_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_1_CLICK);
@@ -273,6 +285,9 @@ void update_status(struct bbslist *bbs, int speed, int ooii_mode)
 	char sep;
 	int oldfont_norm;
 	int oldfont_bright;
+
+	if (term.nostatus)
+		return;
 
 	oldfont_norm=getfont(1);
 	oldfont_bright=getfont(2);
@@ -623,8 +638,14 @@ unsigned recv_byte_buffer_pos=0;
 
 static void recv_bytes(unsigned timeout /* Milliseconds */)
 {
-	if(recv_byte_buffer_len == 0)
-		recv_byte_buffer_len=conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer), timeout);
+	if(recv_byte_buffer_len == 0) {
+		recv_byte_buffer_len = parse_rip(recv_byte_buffer, 0, sizeof(recv_byte_buffer));
+		if (recv_byte_buffer_len == 0) {
+			recv_byte_buffer_len = conn_recv_upto(recv_byte_buffer, sizeof(recv_byte_buffer)-3, timeout);
+			if (recv_byte_buffer_len)
+				recv_byte_buffer_len = parse_rip(recv_byte_buffer, recv_byte_buffer_len, sizeof(recv_byte_buffer));
+		}
+	}
 }
 
 static int recv_byte(void* unused, unsigned timeout /* seconds */)
@@ -2275,6 +2296,8 @@ void mouse_state_change(int type, int action, void *pms)
 {
 	struct mouse_state *ms = (struct mouse_state *)pms;
 
+	if (ms->mode == MM_RIP)
+		return;
 	if (!action) {
 		if (type == ms->mode) {
 			ms->mode = MM_OFF;
@@ -2458,7 +2481,6 @@ BOOL doterm(struct bbslist *bbs)
 		speed = bbs->bpsrate;
 	log_level = bbs->xfer_loglevel;
 	conn_api.log_level = bbs->telnet_loglevel;
-	setup_mouse_events(NULL);
 	vc=realloc(scrollback_buf, term.width*sizeof(*vc)*settings.backlines);
 	if(vc != NULL) {
 		scrollback_buf=vc;
@@ -2468,7 +2490,7 @@ BOOL doterm(struct bbslist *bbs)
 		FREE_AND_NULL(scrollback_buf);
 	scrollback_lines=0;
 	scrollback_mode=txtinfo.currmode;
-	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,scrollback_buf, get_emulation(bbs));
+	cterm=cterm_init(term.height,term.width,term.x-1,term.y-1,settings.backlines,term.width,scrollback_buf, get_emulation(bbs));
 	if(!cterm) {
 		return FALSE;
 	}
@@ -2489,6 +2511,10 @@ BOOL doterm(struct bbslist *bbs)
 	/* Main input loop */
 	oldmc=hold_update;
 	showmouse();
+	init_rip(bbs->rip);
+	if (bbs->rip)
+		ms.mode = MM_RIP;
+	setup_mouse_events(&ms);
 	for(;!quitting;) {
 		hold_update=TRUE;
 		sleep=TRUE;
@@ -2656,7 +2682,7 @@ BOOL doterm(struct bbslist *bbs)
 		hold_update=oldmc;
 
 		/* Get local input */
-		while(quitting || kbhit()) {
+		while(quitting || rip_kbhit()) {
 			struct mouse_event mevent;
 
 			updated=TRUE;
@@ -2664,9 +2690,10 @@ BOOL doterm(struct bbslist *bbs)
 			if (quitting)
 				key = CIO_KEY_QUIT;
 			else {
-				key=getch();
-				if(key==0 || key==0xe0) {
-					key|=getch()<<8;
+				key = rip_getch();
+				if (key == -1)
+					continue;
+				if (key > 0xff) {
 					if(cterm->doorway_mode && ((key & 0xff) == 0) && key != 0x2c00 /* ALT-Z */) {
 						ch[0]=0;
 						ch[1]=key>>8;

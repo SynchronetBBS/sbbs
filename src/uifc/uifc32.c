@@ -391,7 +391,8 @@ void docopy(void)
 	attr2palette(0x60, NULL, &bg6);
 	screen=ciolib_savescreen();
 	sbuffer=ciolib_savescreen();
-	FREE_AND_NULL(sbuffer->pixels);
+	freepixels(sbuffer->pixels);
+	sbuffer->pixels = NULL;
 	sbufsize=screen->text_info.screenwidth * screen->text_info.screenheight * sizeof(screen->vmem[0]);
 	while(1) {
 		key=getch();

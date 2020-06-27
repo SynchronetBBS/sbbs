@@ -86,6 +86,7 @@ struct cterminal {
 	int					quiet;			// No sounds are made
 	struct vmem_cell	*scrollback;
 	int					backlines;		// Number of lines in scrollback
+	int					backwidth;		// Number of columns in scrollback
 	char				DA[1024];		// Device Attributes
 #define	CTERM_SAVEMODE_AUTOWRAP			0x001
 #define CTERM_SAVEMODE_CURSOR			0x002
@@ -214,6 +215,10 @@ struct cterminal {
 #define MACRO_ENCODING_ASCII	0
 #define MACRO_ENCODING_HEX	1
 
+	/* Alternate font renderer */
+	void (*font_render)(char *str);
+	int skypix;
+
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
 	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
@@ -268,13 +273,17 @@ struct cterminal {
 extern "C" {
 #endif
 
-CIOLIBEXPORT struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, struct vmem_cell *scrollback, int emulation);
+CIOLIBEXPORT struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation);
 CIOLIBEXPORT char* CIOLIBCALL cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
 CIOLIBEXPORT int CIOLIBCALL cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
 CIOLIBEXPORT void CIOLIBCALL cterm_closelog(struct cterminal *cterm);
 CIOLIBEXPORT void CIOLIBCALL cterm_end(struct cterminal *cterm);
 CIOLIBEXPORT void CIOLIBCALL cterm_clearscreen(struct cterminal *cterm, char attr);
 CIOLIBEXPORT void CIOLIBCALL cterm_start(struct cterminal *cterm);
+void cterm_gotoxy(struct cterminal *cterm, int x, int y);
+void setwindow(struct cterminal *cterm);
+void cterm_clreol(struct cterminal *cterm);
+
 #ifdef __cplusplus
 }
 #endif

@@ -60,6 +60,8 @@ struct in_mouse_event {
 	int	event;
 	int	x;
 	int	y;
+	int	x_res;
+	int	y_res;
 	clock_t	ts;
 	void	*nextevent;
 };
@@ -72,6 +74,10 @@ struct out_mouse_event {
 	int starty;
 	int endx;
 	int endy;
+	int startx_res;
+	int starty_res;
+	int endx_res;
+	int endy_res;
 	void *nextevent;
 };
 
@@ -83,9 +89,13 @@ struct mouse_state {
 	int	button_state[5];		/* Expanded state of each button */
 	int	button_x[5];			/* Start X/Y position of the current state */
 	int	button_y[5];
+	int	button_x_res[5];			/* Start X/Y position of the current state */
+	int	button_y_res[5];
 	clock_t	timeout[5];	/* Button event timeouts (timespecs ie: time of expiry) */
 	int	curx;					/* Current X position */
 	int	cury;					/* Current Y position */
+	int	curx_res;					/* Current X position */
+	int	cury_res;					/* Current Y position */
 	int	events;					/* Currently enabled events */
 	int	click_timeout;			/* Timeout between press and release events for a click (ms) */
 	int	multi_timeout;			/* Timeout after a click for detection of multi clicks (ms) */
@@ -109,6 +119,42 @@ void CIOLIBCALL init_mouse(void)
 	listInit(&state.output,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 	pthread_mutex_init(&unget_mutex, NULL);
 	ciolib_mouse_initialized=1;
+}
+
+void CIOLIBCALL mousestate(int *x, int *y, uint8_t *buttons)
+{
+	if (!ciolib_mouse_initialized) {
+		if (x)
+			*x = -1;
+		if (y)
+			*y = -1;
+		return;
+	}
+	if (x)
+		*x = state.curx;
+	if (y)
+		*y = state.cury;
+	if (buttons)
+		*buttons = (state.buttonstate & 0xff);
+	return;
+}
+
+void CIOLIBCALL mousestate_res(int *x, int *y, uint8_t *buttons)
+{
+	if (!ciolib_mouse_initialized) {
+		if (x)
+			*x = -1;
+		if (y)
+			*y = -1;
+		return;
+	}
+	if (x)
+		*x = state.curx_res;
+	if (y)
+		*y = state.cury_res;
+	if (buttons)
+		*buttons = (state.buttonstate & 0xff);
+	return;
 }
 
 uint64_t CIOLIBCALL ciomouse_setevents(uint64_t events)
@@ -141,7 +187,7 @@ uint64_t CIOLIBCALL ciomouse_delevent(uint64_t event)
 	return mouse_events;
 }
 
-void CIOLIBCALL ciomouse_gotevent(int event, int x, int y)
+void CIOLIBCALL ciomouse_gotevent(int event, int x, int y, int x_res, int y_res)
 {
 	struct in_mouse_event *ime;
 
@@ -153,13 +199,15 @@ void CIOLIBCALL ciomouse_gotevent(int event, int x, int y)
 		ime->event=event;
 		ime->x=x;
 		ime->y=y;
+		ime->x_res=x_res;
+		ime->y_res=y_res;
 		ime->nextevent=NULL;
 
 		listPushNode(&state.input,ime);
 	}
 }
 
-void CIOLIBCALL add_outevent(int event, int x, int y)
+void CIOLIBCALL add_outevent(int event, int x, int y, int xres, int yres)
 {
 	struct out_mouse_event *ome;
 	int	but;
@@ -177,6 +225,11 @@ void CIOLIBCALL add_outevent(int event, int x, int y)
 		ome->starty=but?state.button_y[but-1]:state.cury;
 		ome->endx=x;
 		ome->endy=y;
+		ome->startx_res=but ? state.button_x_res[but-1] : state.curx_res;
+		ome->starty_res=but ? state.button_y_res[but-1] : state.cury_res;
+		ome->endx_res=xres;
+		ome->endy_res=yres;
+
 		ome->nextevent=(struct out_mouse_event *)NULL;
 
 		listPushNode(&state.output,ome);
@@ -235,37 +288,37 @@ void ciolib_mouse_thread(void *data)
 			switch(state.button_state[timeout_button-1]) {
 				case MOUSE_SINGLEPRESSED:
 					/* Press event */
-					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_CLICKED:
 					/* Click Event */
-					add_outevent(CIOLIB_BUTTON_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_DOUBLEPRESSED:
 					/* Click event, then press event */
-					add_outevent(CIOLIB_BUTTON_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
-					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_DOUBLECLICKED:
 					/* Double-click event */
-					add_outevent(CIOLIB_BUTTON_DBL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_DBL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_TRIPLEPRESSED:
 					/* Double-click event, then press event */
-					add_outevent(CIOLIB_BUTTON_DBL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
-					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_DBL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_TRIPLECLICKED:
 					/* Triple-click event */
-					add_outevent(CIOLIB_BUTTON_TRPL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_TRPL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_QUADPRESSED:
 					/* Triple-click evetn then press event */
-					add_outevent(CIOLIB_BUTTON_TRPL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
-					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_TRPL_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_PRESS(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					break;
 				case MOUSE_QUADCLICKED:
-					add_outevent(CIOLIB_BUTTON_QUAD_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1]);
+					add_outevent(CIOLIB_BUTTON_QUAD_CLICK(timeout_button),state.button_x[timeout_button-1],state.button_y[timeout_button-1],state.button_x_res[timeout_button-1],state.button_y_res[timeout_button-1]);
 					/* Quad click event (This doesn't need a timeout does it? */
 					break;
 			}
@@ -283,60 +336,64 @@ void ciolib_mouse_thread(void *data)
 			if (in->x < 0)
 				in->x = state.curx;
 			if (in->y < 0)
-				in->y = state.curx;
+				in->y = state.cury;
+			if (in->x_res < 0)
+				in->x_res = state.curx_res;
+			if (in->y_res < 0)
+				in->y_res = state.cury_res;
 
 			switch(CIOLIB_BUTTON_BASE(in->event)) {
 				case CIOLIB_MOUSE_MOVE:
-					if(in->x==state.curx
-							&& in->y==state.cury)
+					if(in->x==state.curx && in->y==state.cury &&
+					    in->x_res==state.curx_res && in->y_res==state.cury_res)
 						break;
-					add_outevent(CIOLIB_MOUSE_MOVE,in->x,in->y);
+					add_outevent(CIOLIB_MOUSE_MOVE,in->x,in->y,in->x_res, in->y_res);
 					for(but=1;but<=5;but++) {
 						switch(state.button_state[but-1]) {
 							case MOUSE_NOSTATE:
 								if(state.buttonstate & CIOLIB_BUTTON(but)) {
-									add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1]);
-									add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y);
+									add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+									add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 									state.button_state[but-1]=MOUSE_DRAGSTARTED;
 								}
 								break;
 							case MOUSE_SINGLEPRESSED:
-								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y);
+								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 								state.button_state[but-1]=MOUSE_DRAGSTARTED;
 								break;
 							case MOUSE_CLICKED:
-								add_outevent(CIOLIB_BUTTON_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
+								add_outevent(CIOLIB_BUTTON_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								break;
 							case MOUSE_DOUBLEPRESSED:
-								add_outevent(CIOLIB_BUTTON_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y);
+								add_outevent(CIOLIB_BUTTON_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 								state.button_state[but-1]=MOUSE_DRAGSTARTED;
 								break;
 							case MOUSE_DOUBLECLICKED:
-								add_outevent(CIOLIB_BUTTON_DBL_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
+								add_outevent(CIOLIB_BUTTON_DBL_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								break;
 							case MOUSE_TRIPLEPRESSED:
-								add_outevent(CIOLIB_BUTTON_DBL_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y);
+								add_outevent(CIOLIB_BUTTON_DBL_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 								state.button_state[but-1]=MOUSE_DRAGSTARTED;
 								break;
 							case MOUSE_TRIPLECLICKED:
-								add_outevent(CIOLIB_BUTTON_TRPL_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
+								add_outevent(CIOLIB_BUTTON_TRPL_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								break;
 							case MOUSE_QUADPRESSED:
-								add_outevent(CIOLIB_BUTTON_TRPL_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1]);
-								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y);
+								add_outevent(CIOLIB_BUTTON_TRPL_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
+								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 								state.button_state[but-1]=MOUSE_DRAGSTARTED;
 								break;
 							case MOUSE_DRAGSTARTED:
-								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y);
+								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 								break;
 						}
 					}
@@ -349,13 +406,15 @@ void ciolib_mouse_thread(void *data)
 							state.button_state[but-1]=MOUSE_SINGLEPRESSED;
 							state.button_x[but-1]=in->x;
 							state.button_y[but-1]=in->y;
+							state.button_x_res[but-1]=in->x_res;
+							state.button_y_res[but-1]=in->y_res;
 							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
 							if(state.timeout[but-1]==0)
 								state.timeout[but-1]=1;
 							if(state.click_timeout==0)
 								state.timeout[but-1]=0;
 							if(!more_multies(but,0)) {
-								add_outevent(CIOLIB_BUTTON_PRESS(but),state.button_x[but-1],state.button_y[but-1]);
+								add_outevent(CIOLIB_BUTTON_PRESS(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								state.timeout[but-1]=0;
 							}
@@ -396,7 +455,9 @@ void ciolib_mouse_thread(void *data)
 						case MOUSE_NOSTATE:
 							state.button_x[but-1]=in->x;
 							state.button_y[but-1]=in->y;
-							add_outevent(CIOLIB_BUTTON_RELEASE(but),state.button_x[but-1],state.button_y[but-1]);
+							state.button_x_res[but-1]=in->x_res;
+							state.button_y_res[but-1]=in->y_res;
+							add_outevent(CIOLIB_BUTTON_RELEASE(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 							break;
 						case MOUSE_SINGLEPRESSED:
 							state.button_state[but-1]=MOUSE_CLICKED;
@@ -418,18 +479,20 @@ void ciolib_mouse_thread(void *data)
 							break;
 						case MOUSE_QUADPRESSED:
 							state.button_state[but-1]=MOUSE_NOSTATE;
-							add_outevent(CIOLIB_BUTTON_QUAD_CLICK(but),state.button_x[but-1],state.button_y[but-1]);
+							add_outevent(CIOLIB_BUTTON_QUAD_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 							state.timeout[but-1]=0;
 							if(state.timeout[but-1]==0)
 								state.timeout[but-1]=1;
 							break;
 						case MOUSE_DRAGSTARTED:
-							add_outevent(CIOLIB_BUTTON_DRAG_END(but),in->x,in->y);
+							add_outevent(CIOLIB_BUTTON_DRAG_END(but),in->x,in->y, in->x_res, in->y_res);
 							state.button_state[but-1]=0;
 					}
 			}
 			state.curx=in->x;
 			state.cury=in->y;
+			state.curx_res=in->x_res;
+			state.cury_res=in->y_res;
 
 			free(in);
 		}
@@ -515,6 +578,10 @@ int CIOLIBCALL ciolib_getmouse(struct mouse_event *mevent)
 			mevent->starty=out->starty;
 			mevent->endx=out->endx;
 			mevent->endy=out->endy;
+			mevent->startx_res=out->startx_res;
+			mevent->starty_res=out->starty_res;
+			mevent->endx_res=out->endx_res;
+			mevent->endy_res=out->endy_res;
 		}
 		free(out);
 	}

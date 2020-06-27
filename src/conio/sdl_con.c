@@ -337,8 +337,8 @@ static int sdl_init_mode(int mode)
 	pthread_mutex_lock(&vstatlock);
 	oldcols = cvstat.cols;
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height);
-	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.cols * cvstat.charwidth)) * (vstat.cols * vstat.charwidth);
-	vstat.winheight = ((double)cvstat.winheight / (cvstat.rows * cvstat.charheight * cvstat.vmultiplier)) * (vstat.rows * vstat.charheight * vstat.vmultiplier);
+	vstat.winwidth = ((double)cvstat.winwidth / (cvstat.scrnwidth)) * (vstat.scrnwidth);
+	vstat.winheight = ((double)cvstat.winheight / (cvstat.scrnheight * cvstat.vmultiplier)) * (vstat.scrnheight * vstat.vmultiplier);
 	if (oldcols != vstat.cols) {
 		if (oldcols == 0) {
 			if (ciolib_initial_window_width > 0)
@@ -357,10 +357,10 @@ static int sdl_init_mode(int mode)
 			vstat.winheight *= 2;
 		}
 	}
-	if (vstat.winwidth < vstat.charwidth * vstat.cols)
-		vstat.winwidth = vstat.charwidth * vstat.cols;
-	if (vstat.winheight < vstat.charheight * vstat.rows)
-		vstat.winheight = vstat.charheight * vstat.rows;
+	if (vstat.winwidth < vstat.scrnwidth)
+		vstat.winwidth = vstat.scrnwidth;
+	if (vstat.winheight < vstat.scrnheight)
+		vstat.winheight = vstat.scrnheight;
 	if(vstat.vmultiplier < 1)
 		vstat.vmultiplier = 1;
 
@@ -409,10 +409,10 @@ void sdl_setwinsize_locked(int w, int h)
 		w = 16384;
 	if (h > 16384)
 		h = 16384;
-	if (w < cvstat.charwidth * cvstat.cols)
-		w = cvstat.charwidth * cvstat.cols;
-	if (h < cvstat.charheight * cvstat.rows)
-		h = cvstat.charheight * cvstat.rows;
+	if (w < cvstat.scrnwidth)
+		w = cvstat.scrnwidth;
+	if (h < cvstat.scrnheight)
+		h = cvstat.scrnheight;
 	cvstat.winwidth = vstat.winwidth = w;
 	cvstat.winheight = vstat.winheight = h;
 }
@@ -566,7 +566,7 @@ static void setup_surfaces_locked(void)
 		// SDL2: This is slow sometimes... not sure why.
 		if (sdl.CreateWindowAndRenderer(cvstat.winwidth, cvstat.winheight, flags, &win, &renderer) == 0) {
 			sdl.RenderClear(renderer);
-			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
+			newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 
 			if (texture) 
 				sdl.DestroyTexture(texture);
@@ -578,15 +578,15 @@ static void setup_surfaces_locked(void)
 		}
 	}
 	else {
-		sdl.SetWindowMinimumSize(win, cvstat.charwidth * cvstat.cols, cvstat.charheight * cvstat.rows);
+		sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, cvstat.scrnheight);
 		sdl.SetWindowSize(win, cvstat.winwidth, cvstat.winheight);
-		newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, charwidth*cols, charheight*rows);
+		newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 		sdl.RenderClear(renderer);
 		if (texture)
 			sdl.DestroyTexture(texture);
 		texture = newtexture;
 	}
-	sdl.SetWindowMinimumSize(win, cvstat.charwidth * cvstat.cols, cvstat.charheight * cvstat.rows);
+	sdl.SetWindowMinimumSize(win, cvstat.scrnwidth, cvstat.scrnheight);
 
 	if(win!=NULL) {
 		bitmap_drv_request_pixels();
@@ -770,6 +770,26 @@ static int win_to_text_ypos(int winpos)
 	return ret;
 }
 
+static int win_to_res_xpos(int winpos)
+{
+	int ret;
+
+	pthread_mutex_lock(&vstatlock);
+	ret = winpos * (cvstat.scrnwidth) / cvstat.winwidth;
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
+}
+
+static int win_to_res_ypos(int winpos)
+{
+	int ret;
+
+	pthread_mutex_lock(&vstatlock);
+	ret = winpos * (cvstat.scrnheight) / cvstat.winheight;
+	pthread_mutex_unlock(&vstatlock);
+	return ret;
+}
+
 void sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
@@ -809,30 +829,39 @@ void sdl_video_event_thread(void *data)
 							h = cvstat.winheight;
 							switch(ev.key.keysym.sym) {
 								case SDLK_LEFT:
-									if (w % (cvstat.charwidth * cvstat.cols)) {
-										w = w - w % (cvstat.charwidth * cvstat.cols);
+									if (w % (cvstat.scrnwidth)) {
+										w = w - w % cvstat.scrnwidth;
 									}
 									else {
-										w -= (cvstat.charwidth * cvstat.cols);
-										if (w < (cvstat.charwidth * cvstat.cols))
-											w = cvstat.charwidth * cvstat.cols;
+										w -= cvstat.scrnwidth;
+										if (w < cvstat.scrnwidth)
+											w = cvstat.scrnwidth;
 									}
 									break;
 								case SDLK_RIGHT:
-									w = (w - w % (cvstat.charwidth * cvstat.cols)) + (cvstat.charwidth * cvstat.cols);
+									w = (w - w % cvstat.scrnwidth) + cvstat.scrnwidth;
 									break;
 								case SDLK_UP:
-									if (h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) {
-										h = h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
+									if (h % (cvstat.scrnheight * cvstat.vmultiplier)) {
+										h = h - h % (cvstat.scrnheight * cvstat.vmultiplier);
 									}
 									else {
-										h -= (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
-										if (h < (cvstat.charheight * cvstat.rows * cvstat.vmultiplier))
-											h = cvstat.charheight * cvstat.rows * cvstat.vmultiplier;
+										h -= (cvstat.scrnheight * cvstat.vmultiplier);
+										if (h < (cvstat.scrnheight * cvstat.vmultiplier))
+											h = cvstat.scrnheight * cvstat.vmultiplier;
 									}
 									break;
 								case SDLK_DOWN:
-									h = (h - h % (cvstat.charheight * cvstat.rows * cvstat.vmultiplier)) + (cvstat.charheight * cvstat.rows * cvstat.vmultiplier);
+									if (cvstat.scale_denominator != cvstat.scale_numerator) {
+										if (h % (cvstat.scrnheight * cvstat.vmultiplier) == 0) {
+											h = h * cvstat.scale_denominator / cvstat.scale_numerator;
+										}
+										else {
+											h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
+										}
+									}
+									else
+										h = (h - h % (cvstat.scrnheight * cvstat.vmultiplier)) + (cvstat.scrnheight * cvstat.vmultiplier);
 									break;
 							}
 							if (w > 16384 || h > 16384)
@@ -867,20 +896,20 @@ void sdl_video_event_thread(void *data)
 				case SDL_MOUSEMOTION:
 					if(!ciolib_mouse_initialized)
 						break;
-					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x),win_to_text_ypos(ev.motion.y));
+					ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x),win_to_text_ypos(ev.motion.y), win_to_res_xpos(ev.motion.x), win_to_res_ypos(ev.motion.y));
 					break;
 				case SDL_MOUSEBUTTONDOWN:
 					if(!ciolib_mouse_initialized)
 						break;
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
 							break;
 						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
 							break;
 						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
 							break;
 					}
 					break;
@@ -893,9 +922,9 @@ void sdl_video_event_thread(void *data)
 							ev.wheel.y = 0 - ev.wheel.y;
 #endif
 						if (ev.wheel.y > 0)
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1);
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1, -1, -1);
 						if (ev.wheel.y < 0)
-							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1);
+							ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1, -1, -1);
 					}
 					break;
 				case SDL_MOUSEBUTTONUP:
@@ -903,13 +932,13 @@ void sdl_video_event_thread(void *data)
 						break;
 					switch(ev.button.button) {
 						case SDL_BUTTON_LEFT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
 							break;
 						case SDL_BUTTON_MIDDLE:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
 							break;
 						case SDL_BUTTON_RIGHT:
-							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y));
+							ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x),win_to_text_ypos(ev.button.y), win_to_res_xpos(ev.button.x), win_to_res_ypos(ev.button.y));
 							break;
 					}
 					break;
@@ -934,7 +963,7 @@ void sdl_video_event_thread(void *data)
 								const char *newh;
 
 								pthread_mutex_lock(&vstatlock);
-								if ((ev.window.data1 % (cvstat.charwidth * cvstat.cols)) || (ev.window.data2 % (cvstat.charheight * cvstat.rows)))
+								if ((ev.window.data1 % cvstat.scrnwidth) || (ev.window.data2 % cvstat.scrnheight))
 									newh = "2";
 								else
 									newh = "0";
@@ -944,7 +973,7 @@ void sdl_video_event_thread(void *data)
 								if (strcmp(newh, sdl.GetHint(SDL_HINT_RENDER_SCALE_QUALITY))) {
 									SDL_Texture *newtexture;
 									sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, newh);
-									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.charwidth*cvstat.cols, cvstat.charheight*cvstat.rows);
+									newtexture = sdl.CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, cvstat.scrnwidth, cvstat.scrnheight);
 									sdl.RenderClear(renderer);
 									if (texture)
 										sdl.DestroyTexture(texture);
