@@ -103,13 +103,13 @@ function init_servers(config) {
 				lib.push(removeSpaces(lib_list[l]));
 			}
 		}
-		
+
+		var dir=backslash(config.iniGetValue(mysec,"dir"));
 		var load_list=directory(dir+"*.js");
 		for(var l in load_list) {
 			lib.push(load_list[l]);
 		}
 		
-		var dir=backslash(config.iniGetValue(mysec,"dir"));
 		var global=config.iniGetValue(mysec,"global");
 		var channels=parse_channel_list(config.iniGetValue(mysec, "channels"));
 		for(var c in channels) {
