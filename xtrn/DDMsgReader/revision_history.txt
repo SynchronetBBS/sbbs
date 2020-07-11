@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.37     2020-07-11   Added mouse support to the scrollable reader interface.
+                      The integrated area changer functionality doesn't have
+                      mouse support yet.
 1.36     2020-05-23   Added a command-line parameter, -onlyNewPersonalEmail,
                       which specifies to list/read only new/unread personal
                       email to the user.  And for integration with Synchronet

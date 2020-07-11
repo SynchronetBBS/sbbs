@@ -65,6 +65,10 @@
  *                              email to the user.  And for integration with Synchronet
  *                              via the "Read Email" loadable module, this is to
  *                              be used together with the updated DDReadPersonalEmail.js.
+ * 2020-07-11 Eric Oulashin     Version 1.37
+ *                              Added mouse support to the scrollable reader interface.
+ *                              The integrated area changer functionality doesn't have mouse
+ *                              support yet.
  */
 
 
@@ -148,6 +152,7 @@ if (requireFnExists)
 	require("utf8_cp437.js", "utf8_cp437");
 	require("userdefs.js", "USER_UTF8");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("mouse_getkey.js", "mouse_getkey");
 }
 else
 {
@@ -156,6 +161,7 @@ else
 	load("utf8_cp437.js");
 	load("userdefs.js");
 	load("dd_lightbar_menu.js");
+	load("mouse_getkey.js");
 }
 
 // This script requires Synchronet version 3.15 or higher.
@@ -174,8 +180,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.35";
-var READER_DATE = "2020-05-13";
+var READER_VERSION = "1.37";
+var READER_DATE = "2020-07-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -729,6 +735,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.WriteMsgListScreenTopHeader = DigDistMsgReader_WriteMsgListScreenTopHeader;
 	this.ReadMessageEnhanced = DigDistMsgReader_ReadMessageEnhanced;
 	this.ReadMessageEnhanced_Scrollable = DigDistMsgReader_ReadMessageEnhanced_Scrollable;
+	this.ScrollReaderDetermineClickCoordAction = DigDistMsgReader_ScrollReaderDetermineClickCoordAction;
 	this.ReadMessageEnhanced_Traditional = DigDistMsgReader_ReadMessageEnhanced_Traditional;
 	this.EnhReaderPrepLast2LinesForPrompt = DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt;
 	this.LookForNextOrPriorNonDeletedMsg = DigDistMsgReader_LookForNextOrPriorNonDeletedMsg;
@@ -916,6 +923,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// The number of spaces to use for tab characters - Used in the
 	// extended read mode
 	this.numTabSpaces = 3;
+
+	// Things for mouse support
+	this.mouseTimeout = 0; // Timeout in ms.  Currently using 0 for no timeout.
+	this.mouseEnabled = false; // To pass to mouse_getkey
 
 	// this.text is an object containing text used for various prompts & functions.
 	this.text = {
@@ -1114,6 +1125,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Enhanced reader help line (will be set up in
 	// DigDistMsgReader_SetEnhancedReaderHelpLine())
 	this.enhReadHelpLine = "";
+	// This array will store object with x and y coordinates for mouse click locations
+	// for the enhanced reader help line, as well as a string describing the action.
+	this.enhReadHelpLineClickCoords = [];
 
 	// Read the enhanced message header file and populate this.enhMsgHeaderLines,
 	// the header text for enhanced reader mode.  The enhanced reader header file
@@ -4465,11 +4479,25 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		}
 		else
 		{
+			var scrollbarInfoObj = {
+				solidBlockLastStartRow: 0,
+				numSolidScrollBlocks: 0
+			};
+			scrollbarInfoObj.solidBlockLastStartRow = solidBlockLastStartRow;
+			scrollbarInfoObj.numSolidScrollBlocks = numSolidScrollBlocks;
 			scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
-										   this.colors["msgBodyColor"], writeMessage,
+										   this.colors.msgBodyColor, writeMessage,
 										   this.msgAreaLeft, this.msgAreaTop, this.msgAreaWidth,
 										   msgAreaHeight, 1, console.screen_rows,
-										   msgScrollbarUpdateFn);
+										   msgScrollbarUpdateFn, scrollbarInfoObj,
+										   this.enhReadHelpLineClickCoords);
+			if (scrollRetObj.mouse != null)
+			{
+				// See if there was a click in one of the reader help line click coordinates
+				var clickCoordRetObj = this.ScrollReaderDetermineClickCoordAction(scrollRetObj, this.enhReadHelpLineClickCoords);
+				if (clickCoordRetObj.actionStr.length > 0)
+					scrollRetObj.lastKeypress = clickCoordRetObj.actionStr; // A bit of a kludge
+			}
 		}
 		topMsgLineIdx = scrollRetObj.topLineIdx;
 		retObj.lastKeypress = scrollRetObj.lastKeypress;
@@ -5414,6 +5442,67 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		}
 	}
 
+	return retObj;
+}
+// Helper method for ReadMessageEnhanced() - Determines the next keypress for a click
+// coordinate outside the scroll area.
+//
+// Parameters:
+//  pScrollRetObj: The return object of the message scroll function
+//  pEnhReadHelpLineClickCoords: An array of click coordinates & action strings
+//
+// Return value: An object containing the following properties:
+//               actionStr: A string containing the next action for the enhanced reader,
+//                          or an empty string if there was no valid action found.
+function DigDistMsgReader_ScrollReaderDetermineClickCoordAction(pScrollRetObj, pEnhReadHelpLineClickCoords)
+{
+	var retObj = {
+		actionStr: ""
+	};
+
+	for (var coordIdx = 0; coordIdx < pEnhReadHelpLineClickCoords.length; ++coordIdx)
+	{
+		if ((pScrollRetObj.mouse.x == pEnhReadHelpLineClickCoords[coordIdx].x) && (pScrollRetObj.mouse.y == pEnhReadHelpLineClickCoords[coordIdx].y))
+		{
+			// The up arrow, down arrow, PageUp, PageDown, Home, and End aren't handled
+			// here - Those are handled in scrollTextlines().
+			if (pEnhReadHelpLineClickCoords[coordIdx].actionStr == LEFT_ARROW)
+				retObj.actionStr = this.enhReaderKeys.previousMsg;
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr == RIGHT_ARROW)
+				retObj.actionStr = this.enhReaderKeys.nextMsg;
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("DEL") == 0)
+				retObj.actionStr = this.enhReaderKeys.deleteMessage;
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("E)") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.editMsg;
+			}
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("F") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.firstMsg;
+			}
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("L") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.lastMsg;
+			}
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("R") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.reply;
+			}
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("C") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.chgMsgArea;
+			}
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("Q") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.quit;
+			}
+			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("?") == 0)
+			{
+				retObj.actionStr = this.enhReaderKeys.showHelp;
+			}
+			break;
+		}
+	}
 	return retObj;
 }
 // Helper method for ReadMessageEnhanced() - Does the traditional (non-scrollable) reader interface
@@ -7324,6 +7413,47 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 		for (var i = 0; i < numCharsRemaining; ++i)
 		this.enhReadHelpLineWithoutChgArea += " ";
 	}
+
+	// Set up this.enhReadHelpLineClickCoords as an array of objects containing X and Y
+	// coordinates for mouse click coordinates
+	this.enhReadHelpLineClickCoords = [];
+	var helpLineNoAttrs = stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(this.enhReadHelpLine);
+	var clickX = 0;
+	var toSearch = [UP_ARROW, DOWN_ARROW, LEFT_ARROW, RIGHT_ARROW, "PgUp", "Dn,", "HOME", "END", "DEL",
+	                "E)", "F)", "L)", "R)", "C)", "Q)", "?"];
+	for (var i = 0; i < toSearch.length; ++i)
+	{
+		var helpLineIdx = helpLineNoAttrs.indexOf(toSearch[i]);
+		if (helpLineIdx > -1)
+		{
+			// TODO: We don't really need to include the ) on the ones with the ).  That is
+			// just to ensure we find the right ones.
+			for (strI = 0; strI < toSearch[i].length; ++strI)
+			{
+				var clickInfoObj = { x: helpLineIdx+strI+1,
+				                     y: console.screen_rows,
+				                     actionStr: toSearch[i]
+								   };
+				this.enhReadHelpLineClickCoords.push(clickInfoObj);
+			}
+		}
+	}
+}
+function stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(pHelpLine)
+{
+	var helpLineNoAttrs = strip_ctrl(pHelpLine);
+	var charsToPutBack = [UP_ARROW, DOWN_ARROW, LEFT_ARROW, RIGHT_ARROW];
+	var helpLineIdx = -1;
+	for (var i = 0; i < charsToPutBack.length; ++i)
+	{
+		helpLineIdx = helpLineNoAttrs.indexOf(",", helpLineIdx+1);
+		if (helpLineIdx > -1)
+		{
+			helpLineNoAttrs = helpLineNoAttrs.substr(0, helpLineIdx) + charsToPutBack[i] + helpLineNoAttrs.substr(helpLineIdx);
+			++helpLineIdx;
+		}
+	}
+	return helpLineNoAttrs;
 }
 // For the DigDistMsgReader class: Reads the configuration file (by default,
 // DDMsgReader.cfg) and sets the object properties
@@ -14942,8 +15072,14 @@ function userHandleAliasNameMatch(pName)
 // Return value: An object with the following properties:
 //               lastKeypress: The last key pressed by the user (a string)
 //               topLineIdx: The new top line index of the text lines, in case of scrolling
+//               mouse: An object containing mouse event information, or null
+//                      if the user didn't use the mouse on the last user input
+// TODO: Use the parameter pOutsideMouseEventCoords for X & Y coordinates of mouse click
+// coordinates outside the scrollable region so that calling code can respond to those
+// mouse events
 function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTopLeftX, pTopLeftY,
-                         pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pScrollUpdateFn)
+                         pWidth, pHeight, pPostWriteCurX, pPostWriteCurY, pScrollUpdateFn,
+                         pScrollbarInfo, pOutsideMouseEventCoords)
 {
 	// Variables for the top line index for the last page, scrolling, etc.
 	var topLineIdxForLastPage = pTxtLines.length - pHeight;
@@ -14958,7 +15094,8 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 
 	var retObj = {
 		lastKeypress: "",
-		topLineIdx: pTopLineIdx
+		topLineIdx: pTopLineIdx,
+		mouse: null
 	};
 
 	// Create an array of color/attribute codes for each line of
@@ -14975,8 +15112,11 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 
 	var writeTxtLines = pWriteTxtLines;
 	var continueOn = true;
+	var mouseInputOnly_continue = false;
 	while (continueOn)
 	{
+		mouseInputOnly_continue = false;
+
 		// If we are to write the text lines, then write each of them and also
 		// clear out the rest of the row on the screen
 		if (writeTxtLines)
@@ -15011,7 +15151,136 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 
 		// Get a keypress from the user and take action based on it
 		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		//retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		var mk = mouse_getkey(K_NOCRLF|K_NOECHO|K_NOSPIN, this.mouseTimeout > 1 ? this.mouseTimeout : undefined, this.mouseEnabled);
+		retObj.mouse = mk.mouse;
+		var mouseNoAction = false;
+		if (mk.mouse !== null)
+		{
+			// See if the user clicked anywhere in the scrollable window area
+			var clickRegion = {
+				left: pTopLeftX,
+				//right: pTopLeftX + pWidth - 1,
+				right: pTopLeftX + pWidth,
+				top: pTopLeftY,
+				bottom: pTopLeftY + pHeight - 1
+			};
+			// Button 0 is the left/main mouse button
+			if (mk.mouse.press && (mk.mouse.button == 0) && (mk.mouse.motion == 0) &&
+			    (mk.mouse.x >= clickRegion.left) && (mk.mouse.x <= clickRegion.right) &&
+			    (mk.mouse.y >= clickRegion.top) && (mk.mouse.y <= clickRegion.bottom))
+			{
+				// If the scrollbar is enabled, then see if the mouse click was
+				// in the scrollbar region.  If below the scrollbar bright blocks,
+				// then we'll want to do a PageDown.  If above the scrollbar bright
+				// blocks, then we'll want to do a PageUp.
+				var scrollbarX = console.screen_columns;
+				if (mk.mouse.x == scrollbarX)
+				{
+					// If scrollbar information is available, then we can check to see if
+					// the mouse was clicked in the empty regions of the scrollbar.
+					if ((typeof(pScrollbarInfo) == "object") && pScrollbarInfo.hasOwnProperty("solidBlockLastStartRow") && pScrollbarInfo.hasOwnProperty("numSolidScrollBlocks"))
+					{
+						var scrollbarSolidBlockEndRow = pScrollbarInfo.solidBlockLastStartRow + pScrollbarInfo.numSolidScrollBlocks - 1;
+						if (mk.mouse.y < pScrollbarInfo.solidBlockLastStartRow)
+							retObj.lastKeypress = KEY_PAGE_UP;
+						else if (mk.mouse.y > scrollbarSolidBlockEndRow)
+							retObj.lastKeypress = KEY_PAGE_DOWN;
+						else
+						{
+							// Mouse click no-action
+							// TODO: Can we detect if they're holding the mouse down
+							// and scroll while the user holds the mouse & scrolls on
+							// the scrollbar?
+							retObj.lastKeypress = "";
+							mouseNoAction = true;
+							mouseInputOnly_continue = true;
+						}
+					}
+					else
+					{
+						// No mouse action
+						retObj.lastKeypress = "";
+						mouseNoAction = true;
+						mouseInputOnly_continue = true;
+					}
+				}
+			}
+			// If pOutsideMouseEventCoords is an array, then look through it
+			// for any coordinates outside of clickRegion, and if found,
+			// we'll want to exit the input loop and return.
+			else if((typeof(pOutsideMouseEventCoords) == "object") && (pOutsideMouseEventCoords.length > 0))
+			{
+				var foundOutsideCoord = false;
+				var coordActionStr = "";
+				for (var coordsIdx = 0; (coordsIdx < pOutsideMouseEventCoords.length) && !foundOutsideCoord; ++coordsIdx)
+				{
+					// If the current element has x & y properties, then
+					// if either the x & y coordinate is outside the scrollable
+					// region and the mouse click x & y coordinates match the current
+					// element's coordinates, then we've found an ousdide coordinate.
+					if (pOutsideMouseEventCoords[coordsIdx].hasOwnProperty("x") && pOutsideMouseEventCoords[coordsIdx].hasOwnProperty("y"))
+					{
+						var xCoordOutsideClickRegion = ((pOutsideMouseEventCoords[coordsIdx].x < clickRegion.left) || (pOutsideMouseEventCoords[coordsIdx].x > clickRegion.right));
+						var yCoordOutsideClickRegion = ((pOutsideMouseEventCoords[coordsIdx].y < clickRegion.top) || (pOutsideMouseEventCoords[coordsIdx].y > clickRegion.bottom));
+						if (xCoordOutsideClickRegion || yCoordOutsideClickRegion)
+						{
+							foundOutsideCoord = ((mk.mouse.x == pOutsideMouseEventCoords[coordsIdx].x) && (mk.mouse.y == pOutsideMouseEventCoords[coordsIdx].y));
+							if (foundOutsideCoord)
+								coordActionStr = pOutsideMouseEventCoords[coordsIdx].actionStr;
+						}
+					}
+				}
+				// If we found an outside coordinate, check to see if it's for a
+				// scroll navigation action.  If not, then we went to exit the input loop.
+				if (foundOutsideCoord)
+				{
+					if (coordActionStr == UP_ARROW)
+						retObj.lastKeypress = KEY_UP;
+					else if (coordActionStr == DOWN_ARROW)
+						retObj.lastKeypress = KEY_DOWN;
+					else if (coordActionStr.indexOf("PgUp") == 0)
+						retObj.lastKeypress = KEY_PAGE_UP;
+					else if (coordActionStr.indexOf("Dn") == 0)
+						retObj.lastKeypress = KEY_PAGE_DOWN;
+					else if (coordActionStr.indexOf("HOME") == 0)
+						retObj.lastKeypress = KEY_HOME;
+					else if (coordActionStr.indexOf("END") == 0)
+						retObj.lastKeypress = KEY_END;
+					else
+					{
+						// The click coordinate is not for a scroll action, so
+						// we should exit the input loop to let the calling code
+						// handle it.
+						retObj.lastKeypress = "";
+						mouseNoAction = true;
+						mouseInputOnly_continue = false;
+						continueOn = false;
+						break;
+					}
+				}
+			}
+			else
+			{
+				// The mouse click is outside the click region.  Set the appropriate
+				// variables for mouse no-action.
+				// TODO: Perhaps this may also need to be done in some places above
+				// where no action needs to be taken
+				retObj.lastKeypress = "";
+				mouseNoAction = true;
+				mouseInputOnly_continue = true;
+			}
+		}
+		else
+		{
+			// mouse is null, so a keybaord key must have been pressed
+			retObj.lastKeypress = mk.key.toUpperCase();
+		}
+		if (mouseInputOnly_continue)
+			continue;
+		if (!continueOn)
+			break;
+
 		switch (retObj.lastKeypress)
 		{
 			case KEY_UP:
@@ -15028,21 +15297,21 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 					writeTxtLines = true;
 				}
 				break;
-			case KEY_PAGE_DOWN: // Next page
-				if (retObj.topLineIdx < topLineIdxForLastPage)
-				{
-					retObj.topLineIdx += pHeight;
-					if (retObj.topLineIdx > topLineIdxForLastPage)
-						retObj.topLineIdx = topLineIdxForLastPage;
-					writeTxtLines = true;
-				}
-				break;
 			case KEY_PAGE_UP: // Previous page
 				if (retObj.topLineIdx > 0)
 				{
 					retObj.topLineIdx -= pHeight;
 					if (retObj.topLineIdx < 0)
 						retObj.topLineIdx = 0;
+					writeTxtLines = true;
+				}
+				break;
+			case KEY_PAGE_DOWN: // Next page
+				if (retObj.topLineIdx < topLineIdxForLastPage)
+				{
+					retObj.topLineIdx += pHeight;
+					if (retObj.topLineIdx > topLineIdxForLastPage)
+						retObj.topLineIdx = topLineIdxForLastPage;
 					writeTxtLines = true;
 				}
 				break;
