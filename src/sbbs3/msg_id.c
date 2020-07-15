@@ -176,10 +176,22 @@ BOOL DLLCALL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg
 		msg->hdr.number = get_new_msg_number(smb);
 
  	/* Generate FidoNet (FTS-9) MSGID (for messages posted to FTN sub-boards only) */
- 	if(msg->ftn_msgid == NULL && smb->subnum != INVALID_SUB && (cfg->sub[smb->subnum]->misc&SUB_FIDO)) {
- 		if(ftn_msgid(cfg->sub[smb->subnum], msg, msg_id, sizeof(msg_id)) != NULL) {
- 			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
+ 	if(msg->ftn_msgid == NULL) {
+		if(smb->subnum == INVALID_SUB && msg->to_net.type == NET_FIDO) {
+			safe_snprintf(msg_id, sizeof(msg_id)
+				,"%lu@%s %08lx"
+				,msg_number(msg)
+				,smb_faddrtoa(&cfg->faddr[nearest_sysfaddr(cfg, msg->to_net.addr)], NULL)
+				,msgid_serialno(msg)
+				);
+			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
 				return FALSE;
+		}
+		else if(smb->subnum != INVALID_SUB && cfg->sub[smb->subnum]->misc&SUB_FIDO) {
+			if(ftn_msgid(cfg->sub[smb->subnum], msg, msg_id, sizeof(msg_id)) != NULL) {
+				if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
+					return FALSE;
+			}
 		}
  	}
 
