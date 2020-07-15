@@ -131,15 +131,15 @@ faddr_t atofaddr(scfg_t* cfg, char *str)
 	return(addr);
 }
 
-uint sbbs_t::sysfaddr(faddr_t dest_addr)
+uint nearest_sysfaddr(scfg_t* cfg, faddr_t* dest_addr)
 {
 	uint i;
 
-	for(i=0; i<cfg.total_faddrs; i++)
-		if(dest_addr.zone == cfg.faddr[i].zone && dest_addr.net == cfg.faddr[i].net)
+	for(i=0; i<cfg->total_faddrs; i++)
+		if(dest_addr->zone == cfg->faddr[i].zone && dest_addr->net == cfg->faddr[i].net)
 			return i;
-	for(i=0; i<cfg.total_faddrs; i++)
-		if(dest_addr.zone == cfg.faddr[i].zone)
+	for(i=0; i<cfg->total_faddrs; i++)
+		if(dest_addr->zone == cfg->faddr[i].zone)
 			return i;
 	return 0;
 }

@@ -1081,7 +1081,6 @@ public:
 
 	bool	inetmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
 	bool	qnetmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	uint	sysfaddr(faddr_t dest_addr);
 
 	/* useredit.cpp */
 	void	useredit(int usernumber);
@@ -1232,6 +1231,9 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
 	DLLEXPORT BOOL		DLLCALL add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
 	DLLEXPORT char*		DLLCALL msg_program_id(char* pid, size_t);
+
+	/* fido.cpp */
+	DLLEXPORT uint		nearest_sysfaddr(scfg_t*, faddr_t* dest_addr);
 
 	/* date_str.c */
 	DLLEXPORT char *	DLLCALL zonestr(short zone);
