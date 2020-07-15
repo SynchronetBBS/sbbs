@@ -1081,6 +1081,7 @@ public:
 
 	bool	inetmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL, str_list_t cc = NULL);
 	bool	qnetmail(const char *into, const char *subj = NULL, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
+	uint	sysfaddr(faddr_t dest_addr);
 
 	/* useredit.cpp */
 	void	useredit(int usernumber);
