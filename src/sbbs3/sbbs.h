@@ -1231,8 +1231,6 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
 	DLLEXPORT BOOL		DLLCALL add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
 	DLLEXPORT char*		DLLCALL msg_program_id(char* pid, size_t);
-
-	/* fido.cpp */
 	DLLEXPORT uint		nearest_sysfaddr(scfg_t*, faddr_t* dest_addr);
 
 	/* date_str.c */
