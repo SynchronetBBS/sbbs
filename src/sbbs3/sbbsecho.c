@@ -1233,6 +1233,10 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 			fprintf(fp,"\r");
 		}
 	} else {
+		if(msg->ftn_msgid != NULL)
+			fprintf(fp, "\1MSGID: %.256s\r", msg->ftn_msgid);
+		if(msg->ftn_reply != NULL)
+			fprintf(fp, "\1REPLY: %.256s\r", msg->ftn_reply);
 		if(msg->ftn_flags != NULL)
 			fprintf(fp, "\1FLAGS %s\r", msg->ftn_flags);
 		else if(msg->hdr.auxattr&MSG_KILLFILE)
