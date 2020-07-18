@@ -15,7 +15,7 @@ var i;
 
 for(i in argv) {
 	if(filename=='') {
-		switch(argv) {
+		switch(argv[i]) {
 			case '-noatcodes':
 				mode |= P_NOATCODES;
 				break;
