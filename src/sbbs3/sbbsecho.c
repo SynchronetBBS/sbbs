@@ -2822,7 +2822,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 		return(0);
 //	lprintf(LOG_DEBUG, "%s file from %s to %s", copy ? "Copying":"Moving", src, dest);
 	if(!fexistcase(src)) {
-		lprintf(LOG_WARNING,"MV ERROR: Source doesn't exist '%s'",src);
+		lprintf(LOG_WARNING,"MV ERROR: Source file doesn't exist '%s'",src);
 		return(-1);
 	}
 	if(isdir(dest)) {
@@ -2830,7 +2830,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 		strcat(dest, getfname(src));
 	}
 	if(!copy && fexistcase(dest)) {
-		lprintf(LOG_WARNING,"MV ERROR: Destination already exists '%s'",dest);
+		lprintf(LOG_WARNING,"MV ERROR: Destination file already exists '%s'",dest);
 		return(-1);
 	}
 	if(!copy
@@ -2844,24 +2844,24 @@ int mv(const char *insrc, const char *indest, bool copy)
 		/* rename failed, so attempt copy */
 	}
 	if((ind=nopen(src,O_RDONLY))==-1) {
-		lprintf(LOG_ERR,"MV ERROR %u (%s) opening %s",errno,strerror(errno),src);
+		lprintf(LOG_ERR,"MV ERROR %u (%s) opening '%s'",errno,strerror(errno),src);
 		return(-1);
 	}
 	if((inp=fdopen(ind,"rb"))==NULL) {
 		close(ind);
-		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening %s",errno,strerror(errno),str);
+		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening '%s'",errno,strerror(errno),str);
 		return(-1);
 	}
 	setvbuf(inp,NULL,_IOFBF,8*1024);
 	if((outd=nopen(dest,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 		fclose(inp);
-		lprintf(LOG_ERR,"MV ERROR %u (%s) opening %s",errno,strerror(errno),dest);
+		lprintf(LOG_ERR,"MV ERROR %u (%s) opening '%s'",errno,strerror(errno),dest);
 		return(-1);
 	}
 	if((outp=fdopen(outd,"wb"))==NULL) {
 		close(outd);
 		fclose(inp);
-		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening %s",errno,strerror(errno),str);
+		lprintf(LOG_ERR,"MV ERROR %u (%s) fdopening '%s'",errno,strerror(errno),str);
 		return(-1);
 	}
 	setvbuf(outp,NULL,_IOFBF,8*1024);
@@ -4354,14 +4354,14 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 	if(match<scfg.total_faddrs && (cfg.fuzzy_zone && !got_zones))
 		hdr.origzone=hdr.destzone=scfg.faddr[match].zone;
 	if(hdr.origpoint)
-		sprintf(tmp,".%hu",hdr.origpoint);
+		SAFEPRINTF(tmp,".%hu",hdr.origpoint);
 	else
 		tmp[0]=0;
 	if(hdr.destpoint)
-		sprintf(str,".%hu",hdr.destpoint);
+		SAFEPRINTF(str,".%hu",hdr.destpoint);
 	else
 		str[0]=0;
-	sprintf(info,"%s%s%s (%hu:%hu/%hu%s) To: %s (%hu:%hu/%hu%s)"
+	safe_snprintf(info, sizeof(info), "%s%s%s (%hu:%hu/%hu%s) To: %s (%hu:%hu/%hu%s)"
 		,path,path[0] ? " ":""
 		,hdr.from,hdr.origzone,hdr.orignet,hdr.orignode,tmp
 		,hdr.to,hdr.destzone,hdr.destnet,hdr.destnode,str);
@@ -4407,7 +4407,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 	}
 
 	if(email->shd_fp==NULL) {
-		sprintf(email->file,"%smail",scfg.data_dir);
+		SAFEPRINTF(email->file,"%smail",scfg.data_dir);
 		email->retry_time=scfg.smb_retry_time;
 		if((i=smb_open(email))!=SMB_SUCCESS) {
 			lprintf(LOG_ERR,"ERROR %d (%s) line %d opening %s",i,email->last_error,__LINE__,email->file);
@@ -4511,7 +4511,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 							hdr.origzone=hdr.orignet=hdr.orignode=hdr.origpoint=0;
 							hdr.time[0] = 0;	/* Generate a new timestamp */
 							if(fmsgtosmsg(p, &hdr, notify, INVALID_SUB) == IMPORT_SUCCESS) {
-								sprintf(str,"\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
+								SAFECOPY(str,"\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
 								putsmsg(&scfg,notify,str);
 							}
 						} else
@@ -4573,7 +4573,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 		addr.net=hdr.orignet;
 		addr.node=hdr.orignode;
 		addr.point=hdr.origpoint;
-		sprintf(str,"\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail%s from \1h%s\1n\r\n"
+		safe_snprintf(str, sizeof(str), "\7\1n\1hSBBSecho: \1m%.*s \1n\1msent you NetMail%s from \1h%s\1n\r\n"
 			,FIDO_NAME_LEN-1
 			,hdr.from
 			,hdr.attr&FIDO_FILE ? " with attachment" : ""
@@ -4589,10 +4589,10 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 			sp=strrchr(tp,'/');              /* sp is slash pointer */
 			if(!sp) sp=strrchr(tp,'\\');
 			if(sp) tp=sp+1;
-			lprintf(LOG_INFO, "Processing attached file: '%s'", tp);
+			lprintf(LOG_INFO, "Processing attached file: %s", tp);
 			SAFEPRINTF2(str,"%s%s", inbound, tp);
 			if(!fexistcase(str)) {
-				lprintf(LOG_WARNING, "Attached file not found in expected inbound: '%s'", str);
+				lprintf(LOG_WARNING, "Attached file not found in expected inbound: %s", str);
 				if(inbound == cfg.inbound)
 					inbound = cfg.secure_inbound;
 				else
@@ -4602,9 +4602,10 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 			SAFEPRINTF2(tmp,"%sfile/%04u.in",scfg.data_dir,usernumber);
 			mkpath(tmp);
 			backslash(tmp);
-			strcat(tmp,tp);
-			lprintf(LOG_DEBUG, "Moving attachment from '%s' to '%s'", str, tmp);
-			mv(str,tmp,0);
+			SAFECAT(tmp,tp);
+			lprintf(LOG_DEBUG, "Moving attachment from %s to %s", str, tmp);
+			if((i = mv(str,tmp,0)) != 0)
+				lprintf(LOG_ERR, "ERROR %d moving attached file from %s to %s for NetMail %s", i, str, tmp, info);
 			if(!p)
 				break;
 			tp=p+1;
