@@ -2822,7 +2822,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 		return(0);
 //	lprintf(LOG_DEBUG, "%s file from %s to %s", copy ? "Copying":"Moving", src, dest);
 	if(!fexistcase(src)) {
-		lprintf(LOG_WARNING,"MV ERROR: Source doesn't exist '%s",src);
+		lprintf(LOG_WARNING,"MV ERROR: Source doesn't exist '%s'",src);
 		return(-1);
 	}
 	if(isdir(dest)) {
@@ -4589,8 +4589,10 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 			sp=strrchr(tp,'/');              /* sp is slash pointer */
 			if(!sp) sp=strrchr(tp,'\\');
 			if(sp) tp=sp+1;
+			lprintf(LOG_INFO, "Processing attached file: '%s'", tp);
 			SAFEPRINTF2(str,"%s%s", inbound, tp);
 			if(!fexistcase(str)) {
+				lprintf(LOG_WARNING, "Attached file not found in expected inbound: '%s'", str);
 				if(inbound == cfg.inbound)
 					inbound = cfg.secure_inbound;
 				else
@@ -4601,6 +4603,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 			mkpath(tmp);
 			backslash(tmp);
 			strcat(tmp,tp);
+			lprintf(LOG_DEBUG, "Moving attachment from '%s' to '%s'", str, tmp);
 			mv(str,tmp,0);
 			if(!p)
 				break;
