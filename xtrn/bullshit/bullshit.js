@@ -270,7 +270,7 @@ function init() {
 }
 
 function main() {
-	const settings = lib.loadSettings();
+	const settings = lib.loadSettings(argv[0]);
 	const list = lib.loadList(settings);
 	if (!list.length && settings.newOnly) return;
     const disp = initDisplay(settings, list);
