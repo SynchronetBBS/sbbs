@@ -83,7 +83,6 @@
             var a = $(li).find('a')[0];
             $(a).text(xx.n);
             $(a).click(function (evt) {
-                evt.preventDefault();
                 launchXtrn(xx.c);
             });
             $(ul).append(li);
