@@ -3905,6 +3905,7 @@ static void smtp_thread(void* arg)
 					if(agent!=newmsg.to_agent)
 						smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(agent), &agent);
 
+					add_msg_ids(&scfg, &smb, &newmsg, /* remsg: */NULL);
 					i=smb_addmsghdr(&smb,&newmsg,smb_storage_mode(&scfg, &smb));
 					smb_freemsgmem(&newmsg);
 					if(i!=SMB_SUCCESS) {
