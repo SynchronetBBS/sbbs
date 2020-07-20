@@ -587,11 +587,11 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     var header = {
         attr : MSG_POLL,
         subject : subject.substr(0, LEN_TITLE),
-        from : msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias,
+        from : msg_area.sub[sub].settings&SUB_AONLY ? "Anonymous" : (msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias),
         from_ext : user.number,
         to : 'All',
         field_list : [],
-        auxattr : (results<<POLL_RESULTS_SHIFT),
+        auxattr : (results<<POLL_RESULTS_SHIFT) | MGS_HFIELDS_UTF8,
         votes : votes
     };
 
@@ -952,7 +952,7 @@ function getMessageThreads(sub, max) {
             attr : header.attr,
             auxattr : header.auxattr,
             number : header.number,
-            from : header.is_utf8 ? header.from : utf8_encode(header.from),
+            from : (header.attr&MSG_ANONYMOUS) ? "Anonymous" : (header.is_utf8 ? header.from : utf8_encode(header.from)),
             from_ext : header.from_ext,
             from_net_addr : header.from_net_addr,
             to : header.is_utf8 ? header.to : utf8_encode(header.to),
