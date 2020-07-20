@@ -1243,7 +1243,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	rc=JS_SUSPENDREQUEST(cx);
 	sbbs->lprintf(log_level, "!JavaScript %s%s%s: %s",warning,file,line,message);
 	if(sbbs->online==ON_REMOTE)
-		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,file,line,message);
+		sbbs->bprintf("!JavaScript %s%s%s: %s\r\n",warning,getfname(file),line,message);
 	JS_RESUMEREQUEST(cx, rc);
 }
 
