@@ -24,7 +24,8 @@ function HTTPRequest(username,password,extra_headers)
 	this.username=username;
 	this.password=password;
 	this.user_agent='SYNXv0.1';
-	
+	this.follow_redirects = false;
+
 	this.status = { ok: 200, created: 201, accepted: 202, no_content: 204 };
 }
 
@@ -213,6 +214,13 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 	this.BasicAuth();
 	this.SendRequest();
 	this.ReadResponse();
+	if ([301, 302, 307, 308].indexOf(this.response_code) > -1
+		&& this.follow_redirects
+		&& this.response_headers_parsed.Location
+		&& this.response_headers_parsed.Location.length
+	) {
+		return this.Get(this.response_headers_parsed.Location[0], url); // To-do: be less tired and think about referer,base
+	}
 	return(this.body);
 };
 
