@@ -127,9 +127,9 @@ var toLocal = function(xmlObject) {
 	}
 }
 
-var Feed = function(url) {
+var Feed = function (url, follow_redirects) {
 
-	var Item = function(xmlObject) {
+	var Item = function Item(xmlObject) {
 
 		this.id = "";
 		this.title = "";
@@ -142,30 +142,43 @@ var Feed = function(url) {
 		this.extra = {};
 
 		for each(var element in xmlObject) {
-			if(element.name() == "guid" || element.name() == "id")
-				this.id = element;
-			else if(element.name() == "title")
-				this.title = element;
-			else if(element.name() == "pubDate" || element.name() == "updated")
-				this.date = element;
-			else if(element.name() == "author")
-				this.author = element.text(); // To do: deal with Atom-style <author>
-			else if(element.name() == "description" || element.name() == "summary")
-				this.body = element;
-			else if(element.name() == "link")
-				this.link = element.text(); // To do: deal with multiple links
-			else if(element.name() == "encoded") // content:encoded
-				this.content = element;
-			else if(element.name() == "enclosure")
-				this.enclosures.push({'type':element.attribute('type'),'url':element.attribute("url"),'length':parseInt(element.attribute('length'))});
-			else
-				this.extra[element.name()] = element;
-
+			switch (element.name()) {
+				case 'guid':
+				case 'id':
+					this.id = element;
+					break;
+				case 'pubDate':
+				case 'updated':
+					this.date = element;
+					break;
+				case 'author':
+					this.author = element.text();
+					break;
+				case 'description':
+				case 'summary':
+					this.body = element;
+					break;
+				case 'link':
+					this.link = skipsp(truncsp(element.text()));
+					break;
+				case 'encoded':
+					this.content = element;
+					break;
+				case 'enclosure':
+					this.enclosures.push({
+						type: element.attribute('type'),
+						url: element.attribute("url"),
+						length: parseInt(element.attribute('length'), 10),
+					});
+					break;
+				default:
+					this.extra[element.name()] = element;
+			}
 		}
 
 	}
 
-	var Channel = function(xmlObject) {
+	var Channel = function (xmlObject) {
 
 		this.title = "a";
 		this.description = "";
@@ -173,22 +186,22 @@ var Feed = function(url) {
 		this.updated = "";
 		this.items = [];
 
-		if(typeof xmlObject.title != "undefined")
-			this.title = xmlObject.title;
+		if (typeof xmlObject.title != "undefined") this.title = xmlObject.title;
 
-		if(typeof xmlObject.description != "undefined")
+		if (typeof xmlObject.description != "undefined") {
 			this.description = xmlObject.description;
-		else if(typeof xmlObject.subtitle != "undefined")
+		} else if (typeof xmlObject.subtitle != "undefined") {
 			this.description = xmlObject.subtitle;
+		}
 
 		// To do: deal with multiple links
-		if(typeof xmlObject.link != "undefined")
-			this.link = xmlObject.link.text();
+		if (typeof xmlObject.link != "undefined") this.link = skipsp(truncsp(xmlObject.link.text()));
 
-		if(typeof xmlObject.lastBuildDate != "undefined")
+		if (typeof xmlObject.lastBuildDate != "undefined") {
 			this.updated = xmlObject.lastBuildDate;
-		else if(typeof xmlObject.updated != "undefined")
+		} else if (typeof xmlObject.updated != "undefined") {
 			this.updated = xmlObject.updated;
+		}
 
 		var items = xmlObject.elements("item");
 		for each(var item in items) {
@@ -204,19 +217,19 @@ var Feed = function(url) {
 
 	this.channels = [];
 
-	this.load = function() {
+	this.load = function () {
 		var httpRequest = new HTTPRequest();
+		httpRequest.follow_redirects = follow_redirects || 0;
 		var response = httpRequest.Get(url);
-		if(typeof response == "undefined" || response == "")
-			throw "Empty response from server.";
-
+		if (typeof response == "undefined" || response == "") throw "Empty response from server.";
 		var feed = new XML(response.replace(/^<\?xml.*\?>/g, ""));
 		toLocal(feed); // This is shitty
-		switch(feed.localName()) {
+		switch (feed.localName()) {
 			case "rss":
 				var channels = feed.elements("channel");
-				for each(var element in channels)
+				for each(var element in channels) {
 					this.channels.push(new Channel(element));
+				}
 				break;
 			case "feed":
 				this.channels.push(new Channel(feed));
