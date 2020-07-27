@@ -605,16 +605,18 @@ function colorPicker(x, y, frame, attr) {
 	
 	var fgmask = (1<<0)|(1<<1)|(1<<2)|(1<<3);
 	var bgmask = (1<<4)|(1<<5)|(1<<6);
+	var blkmask = (1<<7);
 	if(frame === undefined)
 		var frame = new Frame(x, y, 36, 6, BG_BLACK|LIGHTGRAY);
 	if(attr === undefined)
 		attr = frame.attr;
 	var fgColour = attr&fgmask;
 	var bgColour = ((attr&bgmask)>>4);
+	var blink = ((attr&blkmask)>>7) ? blkmask : 0;
 	
 	var palette = new Frame(x, y, 36, 6, BG_BLUE|WHITE, frame);
 	var subPalette = new Frame(palette.x + 2, palette.y + 1, palette.width - 4, palette.height - 2, BG_BLACK, palette);
-	var pfgCursor = new Frame(x, y, 2, 1, BG_BLACK|WHITE, subPalette);
+	var pfgCursor = new Frame(x, y, 2, 1, BG_BLACK|WHITE|blink, subPalette);
 	var pbgCursor = new Frame(x, y, 2, 1, BG_BLACK|WHITE, subPalette);
 	palette.open();
 
@@ -634,7 +636,7 @@ function colorPicker(x, y, frame, attr) {
 	palette.top();
 	pfgCursor.top();
 	pbgCursor.top();
-	palette.center("Foreground: Left / Right");
+	palette.center("Foreground: Left / Right [B-Blink]");
 	palette.gotoxy(1, 6);
 	palette.center("Background: Up / Down");
 	pfgCursor.putmsg("FG");
@@ -684,10 +686,14 @@ function colorPicker(x, y, frame, attr) {
 					bgColour = 0;
 				}
 				break;
+			case 'B':
+				blink ^= blkmask;
+				pfgCursor.putmsg('FG',BG_BLACK|WHITE|blink);
+				break;
 			default:
 				break;
 		}
-		attr = fgColours[fgColour]|bgColours[bgColour];
+		attr = fgColours[fgColour]|bgColours[bgColour]|blink;
 		if(palette.cycle())
 			console.gotoxy(80, 24);
 		if(ascii(userInput) == 27 || ascii(userInput) == 13 || ascii(userInput) == 9)
