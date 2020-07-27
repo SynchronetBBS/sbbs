@@ -194,6 +194,9 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 						case 1:
 							hi = obj.defs.HIGH;
 							break;
+						case 5:
+							bnk = obj.defs.BLINK;
+							break;
 						case 40:
 							bg = 0;
 							break;
