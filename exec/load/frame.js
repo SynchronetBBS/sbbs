@@ -1084,7 +1084,6 @@ Frame.prototype.putmsg = function(str,attr) {
 				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0xf8)|LIGHTGRAY;
 				break;
 			case '0':	/* Black */
-				this.__properties__.curr_attr=(this.__properties__.curr_attr)&0x8f;
 				break;
 			case '1':	/* Red */
 				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0x8f)|(RED<<4);
