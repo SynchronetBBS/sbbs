@@ -85,39 +85,41 @@ function loadList(settings) {
         }
 	});
 
-	const msgBase = new MsgBase(settings.messageBase);
-	msgBase.open();
-	var shown = 0;
-	for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
-		try {
-			var h = msgBase.get_msg_header(m);
-		} catch (err) {
-			continue;
-		}
-		if (h === null) continue;
-        if (settings.newOnly && history.messages.indexOf(m) >= 0) continue;
-        if (h.attr&MSG_DELETE) continue;
-        if (js.global.console) {
-            list.push({
-                str: format(
-                    '%-' + (console.screen_columns - 29) + 's%s',
-                    h.subject.substr(0, console.screen_columns - 30),
-                    system.timestr(h.when_written_time)
-                ),
-                key: m
-            });
-        } else {
-            list.push({
-                title: h.subject,
-                type: 'message',
-                date: system.timestr(h.when_written_time),
-                num: h.number
-            });
+    if (settings.msgBase) {
+        const msgBase = new MsgBase(settings.messageBase);
+        msgBase.open();
+        var shown = 0;
+        for (var m = msgBase.last_msg; m >= msgBase.first_msg; m = m - 1) {
+            try {
+                var h = msgBase.get_msg_header(m);
+            } catch (err) {
+                continue;
+            }
+            if (h === null) continue;
+            if (settings.newOnly && history.messages.indexOf(m) >= 0) continue;
+            if (h.attr&MSG_DELETE) continue;
+            if (js.global.console) {
+                list.push({
+                    str: format(
+                        '%-' + (console.screen_columns - 29) + 's%s',
+                        h.subject.substr(0, console.screen_columns - 30),
+                        system.timestr(h.when_written_time)
+                    ),
+                    key: m
+                });
+            } else {
+                list.push({
+                    title: h.subject,
+                    type: 'message',
+                    date: system.timestr(h.when_written_time),
+                    num: h.number
+                });
+            }
+            shown++;
+            if (settings.maxMessages > 0 && shown >= settings.maxMessages) break;
         }
-		shown++;
-		if (settings.maxMessages > 0 && shown >= settings.maxMessages) break;
-	}
-	msgBase.close();
+        msgBase.close();
+    }
 
     return list;
 }
