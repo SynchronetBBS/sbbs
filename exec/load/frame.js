@@ -1084,6 +1084,7 @@ Frame.prototype.putmsg = function(str,attr) {
 				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0xf8)|LIGHTGRAY;
 				break;
 			case '0':	/* Black */
+				this.__properties__.curr_attr=(this.__properties__.curr_attr)&0x8f;
 				break;
 			case '1':	/* Red */
 				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0x8f)|(RED<<4);
@@ -1115,6 +1116,7 @@ Frame.prototype.putmsg = function(str,attr) {
 			case 'N': 	/* Normal */
 				this.__properties__.curr_attr&=~HIGH;
 				this.__properties__.curr_attr&=~BLINK;
+				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0x8f)|LIGHTGRAY;
 				break;
       case '+':
         this.__properties__.attr_stack.push(this.__properties__.curr_attr);
