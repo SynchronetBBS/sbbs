@@ -840,6 +840,7 @@ enum {
 	,QWKSettingsUtf8
 	,MsgPostedToYouVia
 	,Unlimited
+	,NodeConnectionRaw
 
 	,TOTAL_TEXT
 };

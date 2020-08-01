@@ -232,6 +232,9 @@ static char* node_connection_desc(ushort conn, char* str)
 		case NODE_CONNECTION_SSH:
 			strcpy(str,"via ssh");
 			break;
+		case NODE_CONNECTION_RAW:
+			strcpy(str,"via raw");
+			break;
 		default:
 			sprintf(str,"at %ubps",conn);
 			break;

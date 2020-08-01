@@ -411,45 +411,54 @@ bool sbbs_t::answer()
 		/* Stop the input thread from writing to the telnet_* vars */
 		pthread_mutex_lock(&input_thread_mutex);
 
-		if(stricmp(telnet_terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
-			SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
-			logline("@S",str);
-			node_connection = (ushort)cur_rate;
-			SAFEPRINTF(connection,"%lu",cur_rate);
-			SAFECOPY(cid,"Unknown");
-			SAFECOPY(client_name,"Unknown");
-			if(telnet_location[0]) {			/* Caller-ID info provided */
-				SAFEPRINTF(str, "CID: %s", telnet_location);
-				logline("@*",str);
-				SAFECOPY(cid,telnet_location);
-				truncstr(cid," ");				/* Only include phone number in CID */
-				char* p=telnet_location;
-				FIND_WHITESPACE(p);
-				SKIP_WHITESPACE(p);
-				if(*p) {
-					SAFECOPY(client_name,p);	/* CID name, if provided (maybe 'P' or 'O' if private or out-of-area) */
+		if(telnet_cmds_received) {
+			if(stricmp(telnet_terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
+				SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
+				logline("@S",str);
+				node_connection = (ushort)cur_rate;
+				SAFEPRINTF(connection,"%lu",cur_rate);
+				SAFECOPY(cid,"Unknown");
+				SAFECOPY(client_name,"Unknown");
+				if(telnet_location[0]) {			/* Caller-ID info provided */
+					SAFEPRINTF(str, "CID: %s", telnet_location);
+					logline("@*",str);
+					SAFECOPY(cid,telnet_location);
+					truncstr(cid," ");				/* Only include phone number in CID */
+					char* p=telnet_location;
+					FIND_WHITESPACE(p);
+					SKIP_WHITESPACE(p);
+					if(*p) {
+						SAFECOPY(client_name,p);	/* CID name, if provided (maybe 'P' or 'O' if private or out-of-area) */
+					}
+				}
+				SAFECOPY(client.addr,cid);
+				SAFECOPY(client.host,client_name);
+				client_on(client_socket,&client,TRUE /* update */);
+			} else {
+				if(telnet_location[0]) {			/* Telnet Location info provided */
+					lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
+					SAFECOPY(cid, telnet_location);
 				}
 			}
-			SAFECOPY(client.addr,cid);
-			SAFECOPY(client.host,client_name);
-			client_on(client_socket,&client,TRUE /* update */);
-		} else {
-			if(telnet_location[0]) {			/* Telnet Location info provided */
-				lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
-				SAFECOPY(cid, telnet_location);
+			if(telnet_speed) {
+				lprintf(LOG_INFO, "Telnet Speed: %lu bps", telnet_speed);
+				cur_rate = telnet_speed;
+				cur_cps = telnet_speed/10;
 			}
+			if(telnet_terminal[0])
+				SAFECOPY(terminal, telnet_terminal);
+			if(telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
+				cols = telnet_cols;
+			if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
+				rows = telnet_rows;
+		} else {
+			lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw/TCP mode);
+			telnet_mode |= TELNET_MODE_OFF;
+			client.protocol = "Raw";
+			client_on(client_socket, &client,/* update: */true);
+			SAFECOPY(connection, client.protocol);
+			node_connection = NODE_CONNECTION_RAW;
 		}
-		if(telnet_speed) {
-			lprintf(LOG_INFO, "Telnet Speed: %lu bps", telnet_speed);
-			cur_rate = telnet_speed;
-			cur_cps = telnet_speed/10;
-		}
-		if(telnet_terminal[0])
-			SAFECOPY(terminal, telnet_terminal);
-		if(telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
-			cols = telnet_cols;
-		if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
-			rows = telnet_rows;
 		pthread_mutex_unlock(&input_thread_mutex);
 	}
 	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);

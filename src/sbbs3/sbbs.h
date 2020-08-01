@@ -377,8 +377,9 @@ public:
 	void	send_telnet_cmd(uchar cmd, uchar opt);
 	bool	request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack=0);
 
-    uchar	telnet_cmd[64];
-    uint	telnet_cmdlen;
+	uchar	telnet_cmd[64];
+	uint	telnet_cmdlen;
+	ulong	telnet_cmds_received;
 	ulong	telnet_mode;
 	/* 	input_thread() writes to these variables: */
 	uchar	telnet_last_rxch;

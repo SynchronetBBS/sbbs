@@ -1551,7 +1551,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 			else if(sbbs->telnet_cmdlen>=2 && command==TELNET_SB) {
 				if(inbuf[i]==TELNET_SE
 					&& sbbs->telnet_cmd[sbbs->telnet_cmdlen-2]==TELNET_IAC) {
-
+					sbbs->telnet_cmds_received++;
 					if(startup->options&BBS_OPT_DEBUG_TELNET)
 						lprintf(LOG_DEBUG,"Node %d %s telnet sub-negotiation command: %s (%u bytes)"
 	                		,sbbs->cfg.node_num
@@ -1655,6 +1655,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 				}
 			} // Sub-negotiation command
             else if(sbbs->telnet_cmdlen==2 && inbuf[i]<TELNET_WILL) {
+				sbbs->telnet_cmds_received++;
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
             		lprintf(LOG_DEBUG,"Node %d %s telnet cmd: %s"
 	                	,sbbs->cfg.node_num
@@ -1663,7 +1664,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
                 sbbs->telnet_cmdlen=0;
             }
             else if(sbbs->telnet_cmdlen>=3) {	/* telnet option negotiation */
-
+				sbbs->telnet_cmds_received++;
 				if(startup->options&BBS_OPT_DEBUG_TELNET)
 					lprintf(LOG_DEBUG,"Node %d %s telnet cmd: %s %s"
 						,sbbs->cfg.node_num
@@ -3347,6 +3348,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	telnet_cols=0;
 	telnet_rows=0;
 	telnet_speed=0;
+	telnet_cmds_received = 0;
 	rlogin_name[0]=0;
 	rlogin_pass[0]=0;
 	rlogin_term[0]=0;
