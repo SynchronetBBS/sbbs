@@ -151,18 +151,21 @@ var NODE_CONNECTION_LOCAL   = 0;
 var NODE_CONNECTION_TELNET  = 0xffff;
 var NODE_CONNECTION_RLOGIN  = 0xfffe;
 var NODE_CONNECTION_SSH     = 0xfffd;
+var NODE_CONNECTION_RAW     = 0xfffc;
 
 var NodeConnection = {
 	'0':      "local",
 	'65535': "telnet",
 	'65534': "rlogin",
-	'65533': "ssh"
+	'65533': "ssh",
+	'65532': "raw",
 };
 
 var NodeConnectionProper = {
 	'0':      "Local",
 	'65535': "Telnet",
 	'65534': "RLogin",
-	'65533': "SSH"
+	'65533': "SSH",
+	'65532': "Raw"
 };
 

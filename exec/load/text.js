@@ -838,7 +838,8 @@ var LoggingOn=826;
 var QWKSettingsUtf8=827;
 var MsgPostedToYouVia=828;
 var Unlimited=829;
+var NodeConnectionRaw=830;
 
-var TOTAL_TEXT=830;
+var TOTAL_TEXT=831;
 
 this;

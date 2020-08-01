@@ -34,6 +34,9 @@ function node_connection_desc(node)
 			case NODE_CONNECTION_SSH:
 				return bbs.text(NodeConnectionSSH);
 				break;
+			case NODE_CONNECTION_RAW:
+				return bbs.text(NodeConnectionRaw);
+				break;
 			default:
 				return format(bbs.text(NodeConnectionModem), node.connection);
 				break;
