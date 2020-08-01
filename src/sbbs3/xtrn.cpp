@@ -263,9 +263,9 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 	if(cmdline[0]=='*')		/* Baja module or JavaScript */	\
 		return(exec_bin(cmdline+1,&main_csi,startup_dir))
 #ifdef JAVASCRIPT
-	#define XTRN_LOADABLE_JS_MODULE(cmdline,startup_dir)	\
+	#define XTRN_LOADABLE_JS_MODULE(cmdline,mode,startup_dir)	\
 	if(cmdline[0]=='?') 	/* JavaScript */				\
-		return(js_execfile(cmdline+1,startup_dir))
+		return(js_execmodule(cmdline+1,mode,startup_dir))
 #else
 	#define XTRN_LOADABLE_JS_MODULE
 #endif
@@ -367,7 +367,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	}
 
 	XTRN_LOADABLE_MODULE(cmdline,startup_dir);
-	XTRN_LOADABLE_JS_MODULE(cmdline,startup_dir);
+	XTRN_LOADABLE_JS_MODULE(cmdline,mode,startup_dir);
 
 	attr(cfg.color[clr_external]);		/* setup default attributes */
 
@@ -1095,7 +1095,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		startup_dir=nulstr;
 
 	XTRN_LOADABLE_MODULE(cmdline,startup_dir);
-	XTRN_LOADABLE_JS_MODULE(cmdline,startup_dir);
+	XTRN_LOADABLE_JS_MODULE(cmdline,mode,startup_dir);
 
 	attr(cfg.color[clr_external]);  /* setup default attributes */
 

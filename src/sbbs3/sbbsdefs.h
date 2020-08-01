@@ -415,6 +415,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QUOTEWRAP		(1<<21)		/* Word-wrap quoted message text		*/
 #define SAVECOLUMNS		(1<<22)		/* Save/share current terminal width	*/
 #define XTRN_UTF8		(1<<23)		/* External program supports UTF-8		*/
+#define XTRN_JS_CX		(1<<24)		/* New JavaScript Context				*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in cfg.xtrn_misc				*/
@@ -843,6 +844,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_CHKTIME	XTRN_CHKTIME	/* Check time left						*/
 #define EX_NOECHO	XTRN_NOECHO		/* Don't echo stdin to stdout 			*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)
+#define EX_JS_CX	(1<<24)		/* New JavaScript context */
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 

@@ -1598,7 +1598,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		mode|=EX_STDIO;
 	else if(cfg.xtrn[xtrnnum]->misc&XTRN_CONIO)
 		mode|=EX_CONIO;
-	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|WWIVCOLOR));
+	mode|=(cfg.xtrn[xtrnnum]->misc&(XTRN_CHKTIME|XTRN_NATIVE|XTRN_NOECHO|WWIVCOLOR|XTRN_JS_CX));
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) {		/* Delete MODUSER.DAT */
 		SAFEPRINTF(str,"%sMODUSER.DAT",dropdir);	/* if for some weird  */
 		removecase(str);							/* reason it's there  */

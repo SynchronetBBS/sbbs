@@ -406,6 +406,7 @@ public:
 	JSObject*		js_hotkey_glob;
 	js_callback_t	js_callback;
 	long			js_execfile(const char *fname, const char* startup_dir, JSObject* scope = NULL, JSContext* cx = NULL);
+	long			js_execmodule(const char *fname, long mode, const char* startup_dir);
 	JSContext*		js_init(JSRuntime**, JSObject**, const char* desc);
 	void			js_cleanup(void);
 	bool			js_create_user_objects(JSContext*, JSObject* glob);

@@ -39,6 +39,7 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "js_request.h"
+#include "js_rtpool.h"
 
 char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 {
@@ -688,9 +689,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 #else
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
 #endif
-
-		js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	}
+	js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	sys_status &=~ SS_ABORT;
 
@@ -727,6 +727,27 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	JS_GC(js_cx);
 
 	return(result);
+}
+
+// Execute a JS Module in its own runtime and context
+// Experimental and currently broken
+long sbbs_t::js_execmodule(const char *cmd, long mode, const char* startup_dir)
+{
+	if(!(mode&EX_JS_CX))
+		return js_execfile(cmd, startup_dir);
+
+	JSRuntime* js_runtime;
+	JSObject* js_glob;
+	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
+	js_create_user_objects(js_cx, js_glob);
+	long result = js_execfile(cmd, startup_dir, js_glob, js_cx);
+	JS_BEGINREQUEST(js_cx);
+	JS_RemoveObjectRoot(js_cx, &js_glob);
+	JS_ENDREQUEST(js_cx);
+	JS_DestroyContext(js_cx);
+	lprintf(LOG_DEBUG,"JavaScript: Destroying runtime");
+	jsrt_Release(js_runtime);
+	return result;
 }
 #endif
 
