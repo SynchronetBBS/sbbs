@@ -1009,3 +1009,4 @@
 "\1n\1m\1h%s\1n\1m%.0s posted to you "\                                     828 MsgPostedToYouVia
     "on \1h%s \1n\1m%s\r\n" 
 "unlimited"                                               829 Unlimited
+" via raw"						                          830 NodeConnectionRaw
