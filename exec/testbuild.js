@@ -56,7 +56,7 @@ var builds
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
 	/* Requires Visual C++ 2019 */
-	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release"'
+	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release" "/p:WarningLevel=0"'
 																,"> " + build_output]);
 	/* Requires C++Builder */
 	builds.push(["src/xpdev"			,"make"
@@ -70,7 +70,7 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/useredit"	,"build.bat"
 																,"> " + build_output]);
 } else {	/* Unix */
-	builds.push(["src/sbbs3"			,"gmake RELEASE=1"		,"2> " + build_output]);
+	builds.push(["src/sbbs3"			,"make RELEASE=1"		,"2> " + build_output]);
 }
 
 var win32_dist
