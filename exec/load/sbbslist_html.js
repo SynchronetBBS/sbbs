@@ -97,6 +97,8 @@ function encode_text(str)
 
 function bbs_service(service)
 {
+	if(!service.address || !service.protocol)
+		return "";
     var uri = service.address;
 	if(uri.length==0)
 		return "";
@@ -207,7 +209,7 @@ function bbs_table_entry(num, bbs)
         writeln(encode_text(bbs.name).link(encodeURI(uri)));
     } else
         writeln(encode_text(bbs.name));
-    writeln('<tr><td>' + encode_text(bbs.description.join("\r\n")));
+    writeln('<tr><td>' + encode_text(bbs.description.join(" ")));
     writeln('</table>');
 
     /* Since: */
@@ -320,7 +322,8 @@ writeln('<p>');
 writeln('</caption>');
 writeln('<thead>');
 writeln('<tr>');
-writeln('<th style="width:25%;">BBS Name and Description</th>');
+//writeln('<th style="width:25%;">BBS Name and Description</th>');
+writeln('<th>BBS</th>');
 writeln('<th>Since</th>');
 writeln('<th>Operators</th>');
 writeln('<th>Location</th>');
