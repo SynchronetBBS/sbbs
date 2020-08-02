@@ -1138,26 +1138,28 @@ int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
 int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 {
 	int retval;
+	smbstatus_t smb_status = {0};
 
 	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
 		return SMB_FAILURE;
 	memset(smb, 0, sizeof(smb_t));
 	if(subnum == INVALID_SUB) {
 		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
-		smb->status.max_crcs	= cfg->mail_maxcrcs;
-		smb->status.max_msgs	= 0;
-		smb->status.max_age		= cfg->mail_maxage;
-		smb->status.attr		= SMB_EMAIL;
+		smb_status.max_crcs	= cfg->mail_maxcrcs;
+		smb_status.max_msgs	= 0;
+		smb_status.max_age	= cfg->mail_maxage;
+		smb_status.attr		= SMB_EMAIL;
 	} else {
 		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
-		smb->status.max_crcs	= cfg->sub[subnum]->maxcrcs;
-		smb->status.max_msgs	= cfg->sub[subnum]->maxmsgs;
-		smb->status.max_age		= cfg->sub[subnum]->maxage;
-		smb->status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+		smb_status.max_crcs	= cfg->sub[subnum]->maxcrcs;
+		smb_status.max_msgs	= cfg->sub[subnum]->maxmsgs;
+		smb_status.max_age	= cfg->sub[subnum]->maxage;
+		smb_status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
 	}
 	smb->retry_time = cfg->smb_retry_time;
 	if((retval = smb_open(smb)) == SMB_SUCCESS) {
 		if(smb_fgetlength(smb->shd_fp) < sizeof(smbhdr_t) + sizeof(smb->status)) {
+			smb->status = smb_status;
 			if((retval = smb_create(smb)) != SMB_SUCCESS)
 				smb_close(smb);
 		}
