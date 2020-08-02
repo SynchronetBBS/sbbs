@@ -1832,7 +1832,7 @@ const char* quoted_string(const char* str, char* buf, size_t maxlen)
 	((isalpha(ch) && isupper(ch)) ? str : quoted_string(str,buf,maxlen))
 
 /*****************************************************************************/
-/* Returns command line generated from instr with %c replacments             */
+/* Returns command line generated from instr with %c replacements            */
 /*****************************************************************************/
 char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr)
 {
@@ -1982,6 +1982,9 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 #endif
 					strlwr(str);
 					strncat(cmd,str, avail);
+					break;
+				case '^':	/* Architecture */
+					strncat(cmd, ARCHITECTURE_DESC, avail);
 					break;
                 default:    /* unknown specification */
                     if(isdigit(instr[i])) {
@@ -2147,6 +2150,9 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 #endif
 					strlwr(str);
 					strncat(cmd,str, avail);
+					break;
+				case '^':	/* Architecture */
+					strncat(cmd, ARCHITECTURE_DESC, avail);
 					break;
                 default:    /* unknown specification */
                     if(isdigit(instr[i]) && user!=NULL) {
