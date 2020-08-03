@@ -201,6 +201,14 @@ extern "C" {
 	#define ARCHITECTURE_DESC "x86"
 #elif defined(__mips__)
 	#define ARCHITECTURE_DESC "mips"
+#elif _M_ARM == 5
+	#define ARCHITECTURE_DESC "arm5"
+#elif _M_ARM == 6
+	#define ARCHITECTURE_DESC "arm6"
+#elif _M_ARM == 7
+	#define ARCHITECTURE_DESC "arm7"
+#elif defined(__aarch64__)
+	#define ARCHITECTURE_DESC "arm64"
 #elif defined(__arm__)
 	#define ARCHITECTURE_DESC "arm"
 #elif defined(_M_PPC) || defined(__ppc__)
