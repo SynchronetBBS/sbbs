@@ -1405,8 +1405,8 @@ int main(int argc, char** argv)
 #elif defined(_WIN32)
 	CreateMutex(NULL, FALSE, "sbbs_running");	/* For use by Inno Setup */
 #endif
-	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
-		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
+	printf("\nSynchronet Console for %s-%s  Version %s%c  %s\n\n"
+		,PLATFORM_DESC,ARCHITECTURE_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	SetThreadName("sbbs");
 	listInit(&client_list, LINK_LIST_MUTEX);
