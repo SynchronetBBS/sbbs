@@ -201,12 +201,14 @@ extern "C" {
 	#define ARCHITECTURE_DESC "x86"
 #elif defined(__mips__)
 	#define ARCHITECTURE_DESC "mips"
-#elif _M_ARM == 5
+#elif __ARM_ARCH == 5 || _M_ARM == 5
 	#define ARCHITECTURE_DESC "armv5"
-#elif _M_ARM == 6
+#elif __ARM_ARCH == 6 || _M_ARM == 6
 	#define ARCHITECTURE_DESC "armv6"
-#elif _M_ARM == 7
+#elif __ARM_ARCH == 7 || _M_ARM == 7
 	#define ARCHITECTURE_DESC "armv7"
+#elif __ARM_ARCH == 8 || _M_ARM == 8 
+	#define ARCHITECTURE_DESC "armv8"
 #elif defined(__aarch64__)
 	#define ARCHITECTURE_DESC "arm64"
 #elif defined(__arm__)
