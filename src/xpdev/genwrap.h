@@ -202,11 +202,11 @@ extern "C" {
 #elif defined(__mips__)
 	#define ARCHITECTURE_DESC "mips"
 #elif _M_ARM == 5
-	#define ARCHITECTURE_DESC "arm5"
+	#define ARCHITECTURE_DESC "armv5"
 #elif _M_ARM == 6
-	#define ARCHITECTURE_DESC "arm6"
+	#define ARCHITECTURE_DESC "armv6"
 #elif _M_ARM == 7
-	#define ARCHITECTURE_DESC "arm7"
+	#define ARCHITECTURE_DESC "armv7"
 #elif defined(__aarch64__)
 	#define ARCHITECTURE_DESC "arm64"
 #elif defined(__arm__)
