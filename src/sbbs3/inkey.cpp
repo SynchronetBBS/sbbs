@@ -559,7 +559,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 
 void sbbs_t::set_mouse(long flags)
 {
-	if(term_supports(ANSI|MOUSE)) {
+	long term = term_supports();
+	if((term&ANSI) && ((term&MOUSE) || flags == MOUSE_MODE_OFF)) {
 		long mode = mouse_mode & ~flags;
 		if(mode & MOUSE_MODE_X10)	ansi_mouse(ANSI_MOUSE_X10, false);
 		if(mode & MOUSE_MODE_NORM)	ansi_mouse(ANSI_MOUSE_NORM, false);
