@@ -32,6 +32,7 @@ const USER_PETSCII      = (1<<26);	// Commodore PET (e.g. C64) terminal
 const USER_SWAP_DELETE  = (1<<27);	// Swap the DEL and backspace keys			
 const USER_ICE_COLOR    = (1<<28);	// Bright background color support
 const USER_UTF8 		= (1<<29);	// UTF-8 terminal
+const USER_MOUSE		= (1<<31);	// Terminal supports mouse reporting
 
 //**********************************************************************
 // user.qwk_settings 						
