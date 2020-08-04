@@ -90,7 +90,7 @@ if(!ansiterm)
 
 function mouse_enable(enable)
 {
-	if(console.term_supports(USER_ANSI)) {
+	if(console.term_supports(USER_ANSI|USER_MOUSE)) {
 		ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
 		ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
 	}
