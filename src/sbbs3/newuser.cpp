@@ -165,6 +165,10 @@ BOOL sbbs_t::newuser()
 				useron.misc|=COLOR; 
 			else
 				useron.misc&=~COLOR;
+			if(text[MouseTerminalQ][0] && yesno(text[MouseTerminalQ]))
+				useron.misc |= MOUSE;
+			else
+				useron.misc &= ~MOUSE;
 		}
 		else
 			useron.rows = TERM_ROWS_DEFAULT;

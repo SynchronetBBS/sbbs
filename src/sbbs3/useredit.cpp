@@ -806,11 +806,12 @@ void sbbs_t::maindflts(user_t* user)
 							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
 							,cols, text[TerminalColumns]);
 		else
-			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s"
+			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s%s"
 							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
 							,term_charset(term)
 							,term_type(term)
 							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
+							,term&MOUSE ? text[TerminalMouse] : ""
 							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
 		add_hotspot('T');
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
@@ -949,6 +950,14 @@ void sbbs_t::maindflts(user_t* user)
 							user->misc |= ICE_COLOR;
 					} else
 						user->misc &= ~COLOR;
+				}
+				if(sys_status&SS_ABORT)
+					break;
+				if(term&ANSI) {
+					if(text[MouseTerminalQ][0] && yesno(text[MouseTerminalQ]))
+						user->misc |= MOUSE;
+					else
+						user->misc &= ~MOUSE;
 				}
 				if(sys_status&SS_ABORT)
 					break;

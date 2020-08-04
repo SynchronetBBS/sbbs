@@ -80,10 +80,12 @@ bool sbbs_t::logon()
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
 		useron.rows=0;
-		useron.misc&=~(ANSI|RIP|NO_EXASCII|COLOR|PETSCII);
+		useron.misc &= ~TERM_FLAGS;
 		useron.misc|=autoterm;
 		if(!(useron.misc&(ANSI|PETSCII)) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
 			useron.misc|=ANSI;
+		if((useron.misc&ANSI) && text[MouseTerminalQ][0] && yesno(text[MouseTerminalQ]))
+			useron.misc|=MOUSE;
 		if((useron.misc&RIP) || !(cfg.uq&UQ_COLORTERM)
 			|| (useron.misc&(ANSI|PETSCII) && yesno(text[ColorTerminalQ])))
 			useron.misc|=COLOR;

@@ -841,6 +841,8 @@ enum {
 	,MsgPostedToYouVia
 	,Unlimited
 	,NodeConnectionRaw
+	,MouseTerminalQ
+	,TerminalMouse
 
 	,TOTAL_TEXT
 };

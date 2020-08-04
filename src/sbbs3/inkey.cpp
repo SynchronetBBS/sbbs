@@ -390,7 +390,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 								return handle_ctrlkey(TERM_KEY_ABORT, mode);
 							return 0;
 						}
-						if(pause_inside)
+						if(pause_inside && y == rows - 1)
 							return '\r';
 					} else if(button == '`' && console&CON_MOUSE_SCROLL) {
 						return TERM_KEY_UP;
@@ -464,7 +464,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 								return handle_ctrlkey(TERM_KEY_ABORT, mode);
 							return 0;
 						}
-						if(pause_inside)
+						if(pause_inside && y == rows - 1)
 							return '\r';
 					} else if(button == 0x40 && console&CON_MOUSE_SCROLL) {
 						return TERM_KEY_UP;
@@ -559,7 +559,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 
 void sbbs_t::set_mouse(long flags)
 {
-	if(term_supports(ANSI)) {
+	if(term_supports(ANSI|MOUSE)) {
 		long mode = mouse_mode & ~flags;
 		if(mode & MOUSE_MODE_X10)	ansi_mouse(ANSI_MOUSE_X10, false);
 		if(mode & MOUSE_MODE_NORM)	ansi_mouse(ANSI_MOUSE_NORM, false);

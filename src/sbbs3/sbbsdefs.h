@@ -668,8 +668,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SWAP_DELETE	(1L<<27)		/* Swap Delete and Backspace keys		*/
 #define ICE_COLOR	(1L<<28)		/* Bright background color support		*/
 #define UTF8		(1L<<29)		/* UTF-8 terminal						*/
+#define MOUSE		(1L<<31)		/* Mouse supported terminal				*/
 
-#define TERM_FLAGS		(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|PETSCII|SWAP_DELETE|ICE_COLOR|UTF8)
+#define TERM_FLAGS		(ANSI|COLOR|RIP|WIP|HTML|SWAP_DELETE|ICE_COLOR|MOUSE|CHARSET_FLAGS)
 #define CHARSET_FLAGS	(NO_EXASCII|PETSCII|UTF8)
 #define CHARSET_ASCII	NO_EXASCII	// US-ASCII
 #define CHARSET_PETSCII	PETSCII		// CBM-ASCII
