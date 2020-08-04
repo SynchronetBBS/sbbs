@@ -465,6 +465,7 @@ function handle_command(tag, prefix, command, message)  {
 			message.shift();		// Client
 			message.shift();		// Symbol
 			tmp_str=message.shift().toUpperCase();	// Channel
+			message = message[0].split(' ');
 			for(i=0;i<message.length;i++) {
 				switch(message[i][0]) {
 					case '~':	// Founder
