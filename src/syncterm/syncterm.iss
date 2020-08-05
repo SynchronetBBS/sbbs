@@ -38,7 +38,6 @@ Source: "c:\bin\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\bin\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "c:\bin\fonts\*"; DestDir: "{app}\fonts"; Flags: ignoreversion
 Source: "e:\src\syncterm\syncterm.ini"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion confirmoverwrite
-;Source: "e:\src\syncterm\getlist.ftp"; DestDir: "{app}"; Flags: ignoreversion
 Source: "s:\xfer\sbbs\syncterm.lst"; DestDir: "{commonappdata}\{#MyAppName}"; Tasks: systemlist; Flags: ignoreversion confirmoverwrite
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
@@ -81,7 +80,7 @@ Filename: "{userappdata}\{#MyAppName}\syncterm.ini"; Section: "Font:Swiss (8x16)
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-;Name: "{group}\Get Synchronet BBS List"; Filename: "ftp"; Parameters: "-A ""-s:{app}\getlist.ftp"""; WorkingDir: "{commonappdata}\{#MyAppName}";  IconFilename: "{app}\{#MyAppExeName}"; Comment: "Get the latest Synchronet BBS List from Vertrauen";
+Name: "{group}\Get Synchronet BBS List"; Filename: "{sys}\curl.exe"; Parameters: "http://synchro.net/syncterm.lst -o {commonappdata}\{#MyAppName}\syncterm.lst"; IconFilename: "{app}\{#MyAppExeName}"; Comment: "Get the latest Synchronet BBS List from Vertrauen";
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 Name: "{group}\Check for updates"; Filename: "http://sourceforge.net/projects/syncterm/"; Comment: "Check for new SyncTERM versions";
 
