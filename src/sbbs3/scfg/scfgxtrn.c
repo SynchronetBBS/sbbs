@@ -515,7 +515,8 @@ void tevents_cfg()
 				,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Always Run After Init/Re-init"
 				,cfg.event[i]->misc&EVENT_INIT ? "Yes":"No");
-
+			if(!(cfg.event[i]->misc&EX_BG))
+				sprintf(opt[k++],"%-32.32s%s","Error Log Level", iniLogLevelStringList()[cfg.event[i]->errlevel]);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Timed Event:`\n"
@@ -577,12 +578,12 @@ void tevents_cfg()
 				case 3:
 					k=(cfg.event[i]->misc&EVENT_DISABLED) ? 1:0;
 					uifc.helpbuf=
-						"`Event Enabled:`\n"
+						"`Timed Event Enabled:`\n"
 						"\n"
 						"If you want disable this event from executing, set this option to ~No~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Enabled",uifcYesNoOpts);
+						,"Event Enabled",uifcYesNoOpts);
 					if((k==0 && cfg.event[i]->misc&EVENT_DISABLED) 
 						|| (k==1 && !(cfg.event[i]->misc&EVENT_DISABLED))) {
 						cfg.event[i]->misc^=EVENT_DISABLED;
@@ -592,15 +593,16 @@ void tevents_cfg()
 
 				case 4:
 					uifc.helpbuf=
-						"`Timed Event Node:`\n"
+						"`Timed Event Execution Node:`\n"
 						"\n"
-						"This is the node number to execute the timed event (or `Any`).\n"
+						"The Execution Node Number specifies the instance of Synchronet that\n"
+						"will run this timed event (or `Any`).\n"
 					;
 					if(cfg.event[i]->node == NODE_ANY)
 						SAFECOPY(str, "Any");
 					else
 						SAFEPRINTF(str, "%u", cfg.event[i]->node);
-					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number"
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Execution Node Number (or Any)"
 						,str,3,K_EDIT) > 0) {
 						if(isdigit(*str))
 							cfg.event[i]->node=atoi(str);
@@ -612,8 +614,8 @@ void tevents_cfg()
 					uifc.helpbuf=
 						"`Months to Execute Event:`\n"
 						"\n"
-						"Specifies the months (`Jan`-`Dec`, separated by spaces) on which \n"
-						"to execute this event, or `Any` to execute event for any/all months.\n"
+						"Specifies the months (`Jan`-`Dec`, separated by spaces) on which to\n"
+						"execute this event, or `Any` to execute event in any/all months.\n"
 					;
 					SAFECOPY(str,monthstr(cfg.event[i]->months));
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Months to Execute Event (or Any)"
@@ -779,11 +781,11 @@ void tevents_cfg()
 					uifc.helpbuf=
 						"`Native Executable:`\n"
 						"\n"
-						"If this event program is a native (e.g. non-DOS) executable,\n"
-						"set this option to `Yes`.\n"
+						"If this event program is a native (e.g. non-DOS) executable, set this\n"
+						"option to `Yes`.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native",uifcYesNoOpts);
+						,"Native Executable",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
 						cfg.event[i]->misc|=EX_NATIVE;
 						uifc.changes=TRUE;
@@ -799,7 +801,7 @@ void tevents_cfg()
 					uifc.helpbuf=
 						"`Use Shell to Execute Command:`\n"
 						"\n"
-						"If this command-line requires the system command shell to execute, (Unix \n"
+						"If this command-line requires the system command shell to execute (Unix\n"
 						"shell script or DOS/Windows batch/command file), set this option to ~Yes~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
@@ -837,13 +839,13 @@ void tevents_cfg()
 				case 14:
 					k=(cfg.event[i]->misc&EVENT_INIT) ? 0:1;
 					uifc.helpbuf=
-						"`Always Run After Initialization or Re-initialization:`\n"
+						"`Always Run After (re-)Initialization:`\n"
 						"\n"
 						"If you want this event to always run after the BBS is initialized or\n"
 						"re-initialized, set this option to ~Yes~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Always Run After Initialization or Re-initialization",uifcYesNoOpts);
+						,"Always Run After (re-)Initialization",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EVENT_INIT)) {
 						cfg.event[i]->misc|=EVENT_INIT;
 						uifc.changes=1; 
@@ -851,6 +853,21 @@ void tevents_cfg()
 					else if(k==1 && (cfg.event[i]->misc&EVENT_INIT)) {
 						cfg.event[i]->misc&=~EVENT_INIT;
 						uifc.changes=1; 
+					}
+					break;
+
+				case 15:
+					uifc.helpbuf=
+						"`Error Log Level:`\n"
+						"\n"
+						"Specify the log level used when reporting an error executing this event.\n"
+					;
+					k = cfg.event[i]->errlevel;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Error Log Level",iniLogLevelStringList());
+					if(k > 0 && cfg.event[i]->errlevel != k) {
+						cfg.event[i]->errlevel = k;
+						uifc.changes = true;
 					}
 					break;
 			} 
