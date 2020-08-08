@@ -513,6 +513,7 @@ DLLEXPORT const char* socket_strerror(int error_number)
 		msg,
 		sizeof(msg),
 		NULL);
+	truncsp(msg);
 	return msg;
 }
 #endif
