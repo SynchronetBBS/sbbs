@@ -604,13 +604,16 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error)
 		get_int(cfg->event[i]->freq,instream);
 		get_int(cfg->event[i]->mdays,instream);
 		get_int(cfg->event[i]->months,instream);
-
-		for(j=0;j<4;j++)
+		get_int(cfg->event[i]->errlevel,instream);
+		get_int(c,instream);
+		for(j=0;j<3;j++)
 			get_int(n,instream);
 
 		// You can't require exclusion *and* not specify which node/instance will execute the event
 		if(cfg->event[i]->node == NODE_ANY)
 			cfg->event[i]->misc &= ~EVENT_EXCL;
+		if(cfg->event[i]->errlevel == 0)
+			cfg->event[i]->errlevel = LOG_ERR;
 	}
 	cfg->total_events=i;
 

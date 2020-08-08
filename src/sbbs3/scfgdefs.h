@@ -315,6 +315,7 @@ typedef struct {							/* Generic Timed Event */
 					mdays;					/* Days of month (if non-zero) to run event */
 	uint16_t		months;					/* Months (if non-zero) to run event */
 	time32_t		last;					/* Last time event ran */
+	uchar			errlevel;				/* Log level to use upon execution error */
 
 } event_t;
 

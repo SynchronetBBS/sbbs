@@ -3237,7 +3237,7 @@ void event_thread(void* arg)
 								,ex_mode
 								,sbbs->cfg.event[i]->dir);
 						if(!(ex_mode&EX_BG))
-							sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Timed event: %s returned %d", event_code, result);
+							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: %s returned %d", event_code, result);
 					}
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=FALSE;
