@@ -278,6 +278,9 @@ DLLEXPORT char*		DLLCALL truncnl(char* str);
 	#define STRERROR(x)		truncsp(strerror(x))
 #endif
 
+/* Re-entrant version of strerror() */
+DLLEXPORT char*		DLLCALL safe_strerror(int errnum, char* buf, size_t buflen);
+
 /*********************/
 /* Utility Functions */
 /*********************/

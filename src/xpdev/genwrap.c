@@ -866,3 +866,18 @@ BOOL DLLCALL terminate_pid(pid_t pid)
 #endif
 }
 
+/****************************************************************************/
+/* Re-entrant (thread-safe) version of strerror()							*/
+/* GNU (not POSIX) inspired API											*/
+/****************************************************************************/
+char* safe_strerror(int errnum, char *buf, size_t buflen)
+{
+	strlcpy(buf, "Unknown error", buflen);
+
+#if defined(_WIN32)
+	strerror_s(buf, buflen, errnum);
+#else
+	strerror_r(errnum, buf, buflen);
+#endif
+	return buf;
+}
