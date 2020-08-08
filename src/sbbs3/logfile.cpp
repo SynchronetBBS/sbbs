@@ -136,7 +136,7 @@ extern "C" int DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const 
 		,log_line_ending
 		);
 	fclose(fp);
-	if(cfg->node_erruser && level >= cfg->node_errlevel) {
+	if(cfg->node_erruser && level <= cfg->node_errlevel) {
 		char subject[128];
 		SAFEPRINTF2(subject, "%s %sERROR occurred", host == NULL ? "" : host, level <= LOG_CRIT ? "CRITICAL " : "");
 		notify(cfg, cfg->node_erruser, subject, text);
