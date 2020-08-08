@@ -506,7 +506,7 @@ DLLEXPORT const char* socket_strerror(int error_number)
 {
 	static char msg[256];
 
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,	// dwFlags
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId
