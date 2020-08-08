@@ -33,6 +33,10 @@
  
 #include "scfg.h"
 
+/* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
+static char* errLevelStringList[]
+	= {"Emergency", "Alert", "Critical", "Error", NULL};
+
 void node_menu()
 {
 	char	str[81],savnode=0;
@@ -367,6 +371,10 @@ void node_cfg()
 					i=0;
 					sprintf(opt[i++],"%-27.27s%s","Validation User"
 						,cfg.node_valuser ? ultoa(cfg.node_valuser,tmp,10) : "Nobody");
+					sprintf(opt[i++],"%-27.27s%s","Notification User"
+						,cfg.node_erruser ? ultoa(cfg.node_erruser,tmp,10) : "Nobody");
+					sprintf(opt[i++],"%-27.27s%s","Notification Error Level"
+						,errLevelStringList[cfg.node_errlevel]);
 					sprintf(opt[i++],"%-27.27s%u seconds","Semaphore Frequency"
 						,cfg.node_sem_check);
 					sprintf(opt[i++],"%-27.27s%u seconds","Statistics Frequency"
@@ -390,7 +398,7 @@ void node_cfg()
 						case -1:
 							done=1;
 							break;
-						case 0:
+						case __COUNTER__:
 							ultoa(cfg.node_valuser,str,10);
 							uifc.helpbuf=
 								"`Validation User Number:`\n"
@@ -407,7 +415,37 @@ void node_cfg()
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.node_valuser=atoi(str);
 							break;
-						case 1:
+						case __COUNTER__:
+							ultoa(cfg.node_erruser,str,10);
+							uifc.helpbuf=
+								"`Notification User Number:`\n"
+								"\n"
+								"When an error has occurred, a notification message can be sent to a\n"
+								"configured user number (i.e. a sysop). This feature can be disabled by\n"
+								"setting this value to `0`. The normal value of this option is `1` for\n"
+								"user number one.\n"
+								"\n"
+								"Note: error messages are always logged as well (e.g. to `data/error.log`)."
+							;
+							uifc.input(WIN_MID,0,13,"Notification User Number (0=Nobody)"
+								,str,4,K_NUMBER|K_EDIT);
+							cfg.node_erruser=atoi(str);
+							break;
+						case __COUNTER__:
+							uifc.helpbuf=
+								"~ Notification Error Level ~\n"
+								"\n"
+								"Select the minimum severity of error messages that should be forwarded\n"
+								"to the Notification User. The normal setting would be `Critical`.";
+							int i = cfg.node_errlevel;
+							i = uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Notification Error Level",errLevelStringList);
+							if(i>=0 && i<=LOG_ERR) {
+								if(cfg.node_errlevel != i)
+									uifc.changes = TRUE;
+								cfg.node_errlevel=i;
+							}
+							break;
+						case __COUNTER__:
 							ultoa(cfg.node_sem_check,str,10);
 							uifc.helpbuf=
 								"`Semaphore Check Frequency While Waiting for Call (in seconds):`\n"
@@ -420,7 +458,7 @@ void node_cfg()
 								,str,3,K_NUMBER|K_EDIT);
 							cfg.node_sem_check=atoi(str);
 							break;
-						case 2:
+						case __COUNTER__:
 							ultoa(cfg.node_stat_check,str,10);
 							uifc.helpbuf=
 								"`Statistics Check Frequency While Waiting for Call (in seconds):`\n"
@@ -433,7 +471,7 @@ void node_cfg()
 								,str,3,K_NUMBER|K_EDIT);
 							cfg.node_stat_check=atoi(str);
 							break;
-						case 3:
+						case __COUNTER__:
 							ultoa(cfg.sec_warn,str,10);
 							uifc.helpbuf=
 								"`Seconds Before Inactivity Warning:`\n"
@@ -446,7 +484,7 @@ void node_cfg()
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.sec_warn=atoi(str);
 							break;
-						case 4:
+						case __COUNTER__:
 							ultoa(cfg.sec_hangup,str,10);
 							uifc.helpbuf=
 								"`Seconds Before Inactivity Disconnection:`\n"
@@ -459,7 +497,7 @@ void node_cfg()
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.sec_hangup=atoi(str);
 							break;
-						case 5:
+						case __COUNTER__:
 							uifc.helpbuf=
 								"`Daily Event:`\n"
 								"\n"
@@ -475,7 +513,7 @@ void node_cfg()
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 								,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
 							break;
-						case 6:
+						case __COUNTER__:
 							uifc.helpbuf=
 								"`Text Directory:`\n"
 								"\n"
