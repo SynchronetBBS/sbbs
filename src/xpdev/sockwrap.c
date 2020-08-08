@@ -352,6 +352,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			   ,int (*lprintf)(int level, const char *fmt, ...))
 {
 	char	port_str[128];
+	char	err[128];
 	int		result=-1;
 	uint	i;
 
@@ -364,7 +365,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			break;
 		if(lprintf!=NULL)
 			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d (%s) binding %s socket%s", s, ERROR_VALUE, socket_strerror(socket_errno), prot, port_str);
+				,"%04d !ERROR %d (%s) binding %s socket%s", s, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), prot, port_str);
 		if(i<retries) {
 			if(lprintf!=NULL)
 				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
@@ -500,20 +501,21 @@ BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 	return FALSE;
 }
 
-#if defined(_WINSOCKAPI_)
 /* Return the current socket error description (for Windows), like strerror() does for errno */
-DLLEXPORT const char* socket_strerror(int error_number)
+DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 {
-	static char msg[256];
-
+#if defined(_WINSOCKAPI_)
+	strlcpy(buf, "Unknown error", buflen);
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId
-		msg,
-		sizeof(msg),
+		buf,
+		buflen,
 		NULL);
-	truncsp(msg);
-	return msg;
-}
+	truncsp(buf);
+	return buf;
+#else
+	return safe_strerror(error_number, buf, buflen);
 #endif
+}

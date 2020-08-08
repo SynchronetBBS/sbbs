@@ -75,6 +75,7 @@ BOOL DLLCALL js_argc(JSContext *cx, uintN argc, uintN min)
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
+	char		err[128];
     jsint       tiny;
 	JSString*	js_str;
 
@@ -86,7 +87,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp=DOUBLE_TO_JSVAL(ERROR_VALUE);
 			break;
 		case GLOB_PROP_SOCKET_ERRNO_STR:
-			if((js_str=JS_NewStringCopyZ(cx, socket_strerror(socket_errno)))==NULL)
+			if((js_str=JS_NewStringCopyZ(cx, socket_strerror(socket_errno, err, sizeof(err))))==NULL)
 				return(JS_FALSE);
 	        *vp = STRING_TO_JSVAL(js_str);
 			break;
