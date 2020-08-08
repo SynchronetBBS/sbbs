@@ -157,7 +157,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF(errmsg, "ftp  %s", sbuf);
-		errorlog(&scfg, startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}

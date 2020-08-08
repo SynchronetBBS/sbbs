@@ -139,7 +139,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF(errmsg, "srvc %s", sbuf);
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -2037,7 +2037,7 @@ void DLLCALL services_thread(void* arg)
 							,&client_addr.addr, &client_addr_len);
 						if(udp_len<1) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) recvfrom failed"
+							lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) recvfrom failed"
 								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno));
 							continue;
 						}

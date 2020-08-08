@@ -588,3 +588,50 @@ extern "C" int DLLCALL postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 
 	return smb_addpoll(smb, msg, smb_storage_mode(cfg, smb));
 }
+
+// Send an email and a short-message to a local user about something important (e.g. a system error)
+extern "C" int DLLCALL notify(scfg_t* cfg, uint usernumber, const char* subject, const char* text)
+{
+	int			i;
+	smb_t		smb = {0};
+	uint16_t	xlat;
+	int			storage;
+	long		dupechk_hashes;
+	uint16_t	agent = AGENT_PROCESS;
+	uint16_t	nettype = NET_UNKNOWN;
+	smbmsg_t	msg = {0};
+	user_t		user = {0};
+	char		str[128];
+
+	user.number = usernumber;
+	if((i = getuserdat(cfg, &user)) != 0)
+		return i;
+
+	msg.hdr.when_imported.time = time32(NULL);
+	msg.hdr.when_imported.zone = sys_timezone(cfg);
+	msg.hdr.when_written = msg.hdr.when_imported;
+	smb_hfield(&msg, SENDERAGENT, sizeof(agent), &agent);
+	smb_hfield_str(&msg, SENDER, cfg->sys_name);
+	smb_hfield_str(&msg, RECIPIENT, user.alias);
+	if(cfg->sys_misc&SM_FWDTONET && user.misc&NETMAIL && user.netmail[0]) {
+		smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
+		smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
+	} else {
+		SAFEPRINTF(str, "%u", usernumber);
+		smb_hfield_str(&msg, RECIPIENTEXT, str);
+	}
+	smb_hfield_str(&msg, SUBJECT, subject);
+	add_msg_ids(cfg, &smb, &msg, /* remsg: */NULL);
+	if(msgbase_open(cfg, &smb, INVALID_SUB, &storage, &dupechk_hashes, &xlat) == SMB_SUCCESS) {
+		smb_addmsg(&smb, &msg, storage, dupechk_hashes, xlat, (uchar*)text, /* tail: */NULL);
+		smb_close(&smb);
+	}
+	smb_freemsgmem(&msg);
+
+	char smsg[1024];
+	safe_snprintf(smsg, sizeof(smsg),"\1n\1h%s \1r%s:\r\n%s\1n\r\n"
+		,timestr(cfg, msg.hdr.when_imported.time, str)
+		,subject
+		,text);
+	return putsmsg(cfg, usernumber, smsg);
+}

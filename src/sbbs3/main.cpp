@@ -207,7 +207,7 @@ int lputs(int level, const char* str)
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
 		SAFEPRINTF(errmsg, "term %s", str);
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -231,7 +231,7 @@ int eputs(int level, const char *str)
 	if(level <= LOG_ERR) {
 		char errmsg[1024];
 		SAFEPRINTF(errmsg, "evnt %s", str);
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata, level, errmsg);
 	}

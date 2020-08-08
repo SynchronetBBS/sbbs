@@ -82,7 +82,6 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 {
 	char	str[MAX_PATH+1];
 	int 	i,file;
-	uint16_t	n;
 	FILE	*stream;
 
 	if(cfg->prepped)
@@ -136,33 +135,8 @@ BOOL DLLCALL write_node_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->scfg_cmd,stream);
 	put_int(cfg->sec_warn,stream);
 	put_int(cfg->sec_hangup,stream);
-	n=0;
-	for(i=0;i<188;i++)					/* unused init to NULL */
-		fwrite(&n,1,2,stream);
-	n=0xffff;						/* unused init to 0xff */
-	for(i=0;i<256;i++)
-		fwrite(&n,1,2,stream);
-	put_int(cfg->com_port,stream);
-	put_int(cfg->com_irq,stream);
-	put_int(cfg->com_base,stream);
-	put_int(cfg->com_rate,stream);
-	put_int(cfg->mdm_misc,stream);
-	put_str(cfg->mdm_init,stream);
-	put_str(cfg->mdm_spec,stream);
-	put_str(cfg->mdm_term,stream);
-	put_str(cfg->mdm_dial,stream);
-	put_str(cfg->mdm_offh,stream);
-	put_str(cfg->mdm_answ,stream);
-	put_int(cfg->mdm_reinit,stream);
-	put_int(cfg->mdm_ansdelay,stream);
-	put_int(cfg->mdm_rings,stream);
-	put_int(cfg->mdm_results,stream);
-	for(i=0;i<cfg->mdm_results;i++) {
-		put_int(cfg->mdm_result[i].code,stream);
-		put_int(cfg->mdm_result[i].rate,stream);
-		put_int(cfg->mdm_result[i].cps,stream);
-		put_str(cfg->mdm_result[i].str,stream); 
-	}
+	put_int(cfg->node_erruser,stream);
+	put_int(cfg->node_errlevel,stream);
 	fclose(stream);
 
 	return(TRUE);

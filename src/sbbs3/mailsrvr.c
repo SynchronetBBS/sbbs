@@ -181,7 +181,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF(errmsg, "mail %s", sbuf);
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name,errmsg), stats.errors++;
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -5787,7 +5787,9 @@ static void sendmail_thread(void* arg)
 					continue;
 				}
 			}
-			lprintf(LOG_INFO,"%04d %s message transfer complete (%lu bytes, %lu lines)", sock, prot, bytes, lines);
+			lprintf(LOG_INFO, "%04d %s Successfully sent message #%u (%lu bytes, %lu lines) from %s%s %s to %s [%s]"
+				,sock, prot, msg.hdr.number, bytes, lines, msg.from, fromext, fromaddr
+				,msg.to, toaddr);
 
 			/* Now lets mark this message for deletion without corrupting the index */
 			if((msg.hdr.netattr & MSG_KILLSENT) || msg.from_ext == NULL)
@@ -5800,13 +5802,13 @@ static void sendmail_thread(void* arg)
 			if(msg.hdr.auxattr&MSG_FILEATTACH)
 				delfattach(&scfg,&msg);
 
-			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
-				exempt_email_addr("SEND Auto-exempting",msg.from,fromext,fromaddr,toaddr);
-
 			/* QUIT */
 			sockprintf(sock,prot,session,"QUIT");
 			sockgetrsp(sock,prot,session,"221", buf, sizeof(buf));
 			mail_close_socket(&sock, &session);
+
+			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
+				exempt_email_addr("SEND Auto-exempting",msg.from,fromext,fromaddr,toaddr);
 		}
 		status(STATUS_WFC);
 		/* Free up resources here */

@@ -59,7 +59,6 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 {
 	char	c,str[MAX_PATH+1],fname[13];
 	int 	i;
-	int16_t	n;
 	long	offset=0;
 	FILE	*instream;
 
@@ -124,49 +123,9 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->sec_hangup,instream);
 	if(!cfg->sec_hangup)
 		cfg->sec_hangup=300;
-	for(i=0;i<188;i++) {				/* Unused - initialized to NULL */
-		fread(&n,1,2,instream);
-		offset+=2; }
-	for(i=0;i<256;i++) {				/* Unused - initialized to 0xff */
-		fread(&n,1,2,instream);
-		offset+=2; }
+	get_int(cfg->node_erruser, instream);
+	get_int(cfg->node_errlevel, instream);
 
-	/***************/
-	/* Modem Stuff */
-	/***************/
-
-	get_int(cfg->com_port,instream);
-	get_int(cfg->com_irq,instream);
-	get_int(cfg->com_base,instream);
-	get_int(cfg->com_rate,instream);
-	get_int(cfg->mdm_misc,instream);
-	get_str(cfg->mdm_init,instream);
-	get_str(cfg->mdm_spec,instream);
-	get_str(cfg->mdm_term,instream);
-	get_str(cfg->mdm_dial,instream);
-	get_str(cfg->mdm_offh,instream);
-	get_str(cfg->mdm_answ,instream);
-	get_int(cfg->mdm_reinit,instream);
-	get_int(cfg->mdm_ansdelay,instream);
-	get_int(cfg->mdm_rings,instream);
-
-	get_int(cfg->mdm_results,instream);
-
-	if(cfg->mdm_results) {
-		if((cfg->mdm_result=(mdm_result_t *)malloc(sizeof(mdm_result_t)*cfg->mdm_results))
-			==NULL)
-		return allocerr(instream,error,offset,fname,sizeof(mdm_result_t *)*cfg->mdm_results);
-	} else
-		cfg->mdm_result=NULL;
-
-	for(i=0;i<cfg->mdm_results;i++) {
-		if(feof(instream)) break;
-		get_int(cfg->mdm_result[i].code,instream);
-		get_int(cfg->mdm_result[i].rate,instream);
-		get_int(cfg->mdm_result[i].cps,instream);
-		get_str(cfg->mdm_result[i].str,instream); 
-	}
-	cfg->mdm_results=i;
 	fclose(instream);
 	return(TRUE);
 }

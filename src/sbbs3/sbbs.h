@@ -1175,6 +1175,7 @@ extern "C" {
 	DLLEXPORT int		DLLCALL closepoll(scfg_t*, smb_t*, uint32_t msgnum, const char* username);
 	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t*, uint subnum);
 	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t*, client_t*);
+	DLLEXPORT int		DLLCALL notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
 	/* filedat.c */
 	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);
@@ -1269,7 +1270,7 @@ extern "C" {
 	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 
 	/* logfile.cpp */
-	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text);
+	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text);
 
 	DLLEXPORT BOOL		DLLCALL hacklog(scfg_t* cfg, const char* prot, const char* user, const char* text
 										,const char* host, union xp_sockaddr* addr);

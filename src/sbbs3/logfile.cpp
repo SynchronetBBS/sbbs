@@ -117,7 +117,7 @@ extern "C" BOOL DLLCALL spamlog(scfg_t* cfg, char* prot, char* action
 	return true;
 }
 
-extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text)
+extern "C" int DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text)
 {
 	FILE*	fp;
 	char	buf[128];
@@ -136,6 +136,11 @@ extern "C" int DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text)
 		,log_line_ending
 		);
 	fclose(fp);
+	if(cfg->node_erruser && level >= cfg->node_errlevel) {
+		char subject[128];
+		SAFEPRINTF2(subject, "%s %sERROR occurred", host == NULL ? "" : host, level <= LOG_CRIT ? "CRITICAL " : "");
+		notify(cfg, cfg->node_erruser, subject, text);
+	}
 	return 0;
 }
 

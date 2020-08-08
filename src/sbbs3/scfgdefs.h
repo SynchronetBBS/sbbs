@@ -481,6 +481,8 @@ typedef struct
 	uchar			node_scrnblank; 	/* Min of inactivity for blank screen */
 	uint32_t		node_misc;			/* Misc bits for node setup */
 	uint16_t		node_valuser;		/* User validation mail goes to */
+	uint16_t		node_erruser;		/* User error messages goes to */
+	uchar			node_errlevel;		/* Log level threshold to notify user (node_erruser) */
 	uint16_t		node_ivt;			/* Time-slice APIs */
 	uchar			node_swap;			/* Swap types allowed */
 	char			node_swapdir[LEN_DIR+1];	/* Swap directory */
