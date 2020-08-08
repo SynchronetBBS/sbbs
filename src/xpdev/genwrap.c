@@ -872,7 +872,8 @@ BOOL DLLCALL terminate_pid(pid_t pid)
 /****************************************************************************/
 char* safe_strerror(int errnum, char *buf, size_t buflen)
 {
-	strlcpy(buf, "Unknown error", buflen);
+	strncpy(buf, "Unknown error", buflen);
+	buf[buflen - 1] = 0;
 
 #if defined(_WIN32)
 	strerror_s(buf, buflen, errnum);

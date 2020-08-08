@@ -505,7 +505,8 @@ BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 {
 #if defined(_WINSOCKAPI_)
-	strlcpy(buf, "Unknown error", buflen);
+	strncpy(buf, "Unknown error", buflen);
+	buf[buflen - 1] = 0;
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
