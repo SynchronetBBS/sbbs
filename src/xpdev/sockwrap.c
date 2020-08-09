@@ -507,6 +507,8 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 #if defined(_WINSOCKAPI_)
 	strncpy(buf, "Unknown error", buflen);
 	buf[buflen - 1] = 0;
+	if(error_number > 0 && error_number < WSABASEERR)
+		error_number += WSABASEERR;
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
