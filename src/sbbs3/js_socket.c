@@ -773,7 +773,8 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	/* always set to nonblocking here */
 	val=1;
 	ioctlsocket(p->sock,FIONBIO,&val);
-	for(cur=res,result=1; result && cur; cur=cur->ai_next) {
+	result = SOCKET_ERROR;
+	for(cur=res; cur != NULL; cur=cur->ai_next) {
 		tv.tv_sec = 10;	/* default time-out */
 
 		if(argc>2)	/* time-out value specified */
@@ -783,20 +784,25 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(FALSE, p, "connecting to %s on port %u at %s", ip_str, port, p->hostname);
 		inet_setaddrport((void *)cur->ai_addr, port);
 
-		result=connect(p->sock, cur->ai_addr, cur->ai_addrlen);
+		result = connect(p->sock, cur->ai_addr, cur->ai_addrlen);
 
-		if(result==SOCKET_ERROR
-				&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
-			FD_ZERO(&socket_set);
-			FD_SET(p->sock,&socket_set);
-			if(select(p->sock+1,NULL,&socket_set,NULL,&tv)==1) {
-				int so_error = -1;
-				socklen_t optlen = sizeof(so_error);
-				if(getsockopt(p->sock, SOL_SOCKET, SO_ERROR, (void*)&so_error, &optlen) == 0 && so_error == 0)
-					result=0;	/* success */
+		if(result == SOCKET_ERROR) {
+			result = ERROR_VALUE;
+			if(result == EWOULDBLOCK || result == EINPROGRESS) {
+				FD_ZERO(&socket_set);
+				FD_SET(p->sock,&socket_set);
+				result = ETIMEDOUT;
+				if(select(p->sock+1,NULL,&socket_set,NULL,&tv)==1) {
+					int so_error = -1;
+					socklen_t optlen = sizeof(so_error);
+					if(getsockopt(p->sock, SOL_SOCKET, SO_ERROR, (void*)&so_error, &optlen) == 0 && so_error == 0)
+						result = 0;	/* success */
+					else
+						result = so_error;
+				}
 			}
 		}
-		if(result==0)
+		if(result == 0)
 			break;
 	}
 	/* Restore original setting here */
@@ -804,8 +810,8 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(result!=0) {
 		freeaddrinfo(res);
-		p->last_error=ERROR_VALUE;
-		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
+		p->last_error = result;
+		dbprintf(TRUE, p, "connect failed with error %d", result);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
@@ -1710,7 +1716,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 
-/* Socket Object Properites */
+/* Socket Object Properties */
 enum {
 	 SOCK_PROP_LAST_ERROR
 	,SOCK_PROP_ERROR_STR
