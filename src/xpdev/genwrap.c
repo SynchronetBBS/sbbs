@@ -877,6 +877,8 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 
 #if defined(_WIN32)
 	strerror_s(buf, buflen, errnum);
+#elif defined(_GNU_SOURCE)
+	buf = strerror_r(errnum, buf, buflen);
 #else
 	strerror_r(errnum, buf, buflen);
 #endif
