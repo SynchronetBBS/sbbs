@@ -1713,6 +1713,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 /* Socket Object Properites */
 enum {
 	 SOCK_PROP_LAST_ERROR
+	,SOCK_PROP_ERROR_STR
 	,SOCK_PROP_IS_CONNECTED
 	,SOCK_PROP_IS_WRITEABLE
 	,SOCK_PROP_DATA_WAITING
@@ -1738,6 +1739,7 @@ static char* socket_prop_desc[] = {
 	 "array of socket option names supported by the current platform"
 	/* Regular properties */
 	,"error status for the last socket operation that failed - <small>READ ONLY</small>"
+	,"error description for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
 	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
 	,"alias for is_writeable"
@@ -1929,6 +1931,11 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SOCK_PROP_LAST_ERROR:
 			*vp = INT_TO_JSVAL(p->last_error);
 			break;
+		case SOCK_PROP_ERROR_STR:
+			if((js_str=JS_NewStringCopyZ(cx, socket_strerror(p->last_error, str, sizeof(str))))==NULL)
+				return JS_FALSE;
+			*vp = STRING_TO_JSVAL(js_str);
+			break;
 		case SOCK_PROP_IS_CONNECTED:
 			if(!p->is_connected)
 				*vp = JSVAL_FALSE;
@@ -2063,6 +2070,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 
 	{	"error"				,SOCK_PROP_LAST_ERROR	,SOCK_PROP_FLAGS,	311 },
 	{	"last_error"		,SOCK_PROP_LAST_ERROR	,JSPROP_READONLY,	310 },	/* alias */
+	{	"error_str"			,SOCK_PROP_ERROR_STR	,SOCK_PROP_FLAGS,	318 },
 	{	"is_connected"		,SOCK_PROP_IS_CONNECTED	,SOCK_PROP_FLAGS,	310 },
 	{	"is_writeable"		,SOCK_PROP_IS_WRITEABLE	,JSPROP_ENUMERATE,	311 },
 	{	"is_writable"		,SOCK_PROP_IS_WRITEABLE	,JSPROP_ENUMERATE,	312 },	/* alias */
@@ -2076,7 +2084,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	310 },
 	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	310 },
 	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	310 },
-	{	"family"				,SOCK_PROP_FAMILY			,SOCK_PROP_FAMILY,	318 },
+	{	"family"			,SOCK_PROP_FAMILY		,SOCK_PROP_FAMILY,	318 },
 	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311 },
 	{	"ssl_session"		,SOCK_PROP_SSL_SESSION	,JSPROP_ENUMERATE,	316	},
 	{	"ssl_server"		,SOCK_PROP_SSL_SERVER	,JSPROP_ENUMERATE,	316	},
