@@ -106,12 +106,12 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 #define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY|JSPROP_SHARED
 
 static jsSyncPropertySpec js_global_properties[] = {
-/*		 name,				tinyid,					flags,			ver */
+/*		 name,				tinyid,						flags,			ver */
 
-	{	"errno"				,GLOB_PROP_ERRNO		,GLOBOBJ_FLAGS, 310 },
-	{	"errno_str"			,GLOB_PROP_ERRNO_STR	,GLOBOBJ_FLAGS, 310 },
-	{	"socket_errno"		,GLOB_PROP_SOCKET_ERRNO	,GLOBOBJ_FLAGS, 310 },
-	{	"socket_errno_str"	,GLOB_PROP_SOCKET_ERRNO	,GLOBOBJ_FLAGS, 31800 },
+	{	"errno"				,GLOB_PROP_ERRNO			,GLOBOBJ_FLAGS, 310 },
+	{	"errno_str"			,GLOB_PROP_ERRNO_STR		,GLOBOBJ_FLAGS, 310 },
+	{	"socket_errno"		,GLOB_PROP_SOCKET_ERRNO		,GLOBOBJ_FLAGS, 310 },
+	{	"socket_errno_str"	,GLOB_PROP_SOCKET_ERRNO_STR	,GLOBOBJ_FLAGS, 31800 },
 	{0}
 };
 
