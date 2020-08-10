@@ -875,8 +875,11 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 	strncpy(buf, "Unknown error", buflen);
 	buf[buflen - 1] = 0;
 
-#if defined(_WIN32)
+#if defined(_MSC_VER)
 	strerror_s(buf, buflen, errnum);
+#elif defined(__BORLANDC__)
+	strncpy(buf, strerror(errnum), buflen);
+	buf[buflen - 1] = 0;
 #elif defined(_GNU_SOURCE)
 	buf = strerror_r(errnum, buf, buflen);
 #else
