@@ -79,7 +79,6 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 	str_list_t	subject_can=NULL;
 	str_list_t	twit_list=NULL;
 	link_list_t user_list={0};
-	const char* hostname;
 
 	memset(&msg,0,sizeof(msg));
 
@@ -159,6 +158,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		n=(uint)block[123]|(((uint)block[124])<<8);  /* conference number */
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
+				if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can, twit_list))
+					continue;
 				if(!qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, n, hubnum)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %lu in %s", l, packet);
 					errors++;
@@ -177,35 +178,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			continue;
 		}
 
-		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
-			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
-			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
-				,msg.from
-				,(unsigned int)(now-msg.hdr.when_written.time)/(24*60*60)); 
+		if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can))
 			continue;
-		}
-
-		if(findstr_in_list(msg.from_ip,ip_can)) {
-			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
-				,msg.from
-				,msg.from_ip); 
-			continue;
-		}
-
-		hostname=getHostNameByAddr(msg.from_host);
-		if(findstr_in_list(hostname,host_can)) {
-			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
-				,msg.from
-				,hostname); 
-			continue;
-		}
-
-		if(findstr_in_list(msg.subj,subject_can)) {
-			lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
-				,msg.from
-				,msg.subj); 
-			continue;
-		}
 
 		if(!n) {		/* NETMAIL */
 			lprintf(LOG_INFO,"QWK NetMail from %s to %s", cfg.qhub[hubnum]->id, msg.to);
@@ -301,13 +275,8 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		}
 
 		/* TWIT FILTER */
-		if(findstr_in_list(msg.from,twit_list) || findstr_in_list(msg.to,twit_list)) {
-			lprintf(LOG_NOTICE,"!Filtering QWK post from '%s' to '%s' on %s %s"
-				,msg.from
-				,msg.to
-				,cfg.grp[cfg.sub[j]->grp]->sname,cfg.sub[j]->lname); 
+		if(qwk_msg_filtered(&msg, /* ip_can: */NULL, /* host_can: */NULL, /* subject_can: */NULL, twit_list))
 			continue; 
-		}
 
 		if(j!=lastsub) {
 

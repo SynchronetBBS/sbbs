@@ -1259,3 +1259,46 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	smb_freemsgmem(&msg);
 	return result == SMB_SUCCESS;
 }
+
+bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_can, str_list_t subject_can, str_list_t twit_list)
+{
+	uint32_t now = time32(NULL);
+
+	if(cfg.max_qwkmsgage && msg->hdr.when_written.time < now
+		&& (now-msg->hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
+			,msg->from
+			,(unsigned int)(now-msg->hdr.when_written.time)/(24*60*60)); 
+		return true;
+	}
+
+	if(findstr_in_list(msg->from_ip,ip_can)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
+			,msg->from
+			,msg->from_ip); 
+		return true;
+	}
+
+	const char* hostname=getHostNameByAddr(msg->from_host);
+	if(findstr_in_list(hostname,host_can)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
+			,msg->from
+			,hostname); 
+		return true;
+	}
+
+	if(findstr_in_list(msg->subj,subject_can)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
+			,msg->from
+			,msg->subj); 
+		return true;
+	}
+
+	if(findstr_in_list(msg->from,twit_list) || findstr_in_list(msg->to,twit_list)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
+			,msg->from
+			,msg->to);
+		return true;
+	}
+	return false;
+}

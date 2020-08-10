@@ -70,7 +70,6 @@ bool sbbs_t::unpack_rep(char* repfile)
 	str_list_t	subject_can=NULL;
 	str_list_t	twit_list=NULL;
 	link_list_t user_list={0};
-	const char* hostname;
 	const char* AttemptedToUploadREPpacket="Attempted to upload REP packet";
 
 	memset(&msg,0,sizeof(msg));
@@ -197,6 +196,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 		long confnum = atol((char *)block+1);
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
+				if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can, twit_list))
+					continue;
 				if(!qwk_voting(&voting, l, (useron.rest&FLAG('Q')) ? NET_QWK : NET_NONE, /* QWKnet ID : */useron.alias, confnum)) {
 					lprintf(LOG_WARNING, "QWK vote failure, offset %ld of %s", l, getfname(msg_fname));
 					errors++;
@@ -217,39 +218,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 			continue;
 		}
 
-		if(cfg.max_qwkmsgage && msg.hdr.when_written.time < (uint32_t)now
-			&& (now-msg.hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
-			SAFEPRINTF2(str,"!Filtering QWK message from %s due to age: %" PRIu64 " days"
-				,msg.from
-				,(uint64_t)((now-msg.hdr.when_written.time)/(24*60*60))); 
-			logline(LOG_NOTICE,"P!",str);
+		if(qwk_msg_filtered(&msg, ip_can, host_can, subject_can))
 			continue;
-		}
-
-		if(findstr_in_list(msg.from_ip,ip_can)) {
-			SAFEPRINTF2(str,"!Filtering QWK message from %s due to blocked IP: %s"
-				,msg.from
-				,msg.from_ip); 
-			logline(LOG_NOTICE,"P!",str);
-			continue;
-		}
-
-		hostname = getHostNameByAddr(msg.from_host);
-		if(findstr_in_list(hostname,host_can)) {
-			SAFEPRINTF2(str,"!Filtering QWK message from %s due to blocked hostname: %s"
-				,msg.from
-				,hostname); 
-			logline(LOG_NOTICE,"P!",str);
-			continue;
-		}
-
-		if(findstr_in_list(msg.subj,subject_can)) {
-			SAFEPRINTF2(str,"!Filtering QWK message from %s due to filtered subject: %s"
-				,msg.from
-				,msg.subj); 
-			logline(LOG_NOTICE,"P!",str);
-			continue;
-		}
 
 		if(confnum == 0) {						/* E-mail */
 			if(msg.from == NULL)
@@ -491,14 +461,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 #endif
 
 			/* TWIT FILTER */
-			if(findstr_in_list(msg.from,twit_list) || findstr_in_list(msg.to,twit_list)) {
-				SAFEPRINTF4(str,"!Filtering QWK post from %s to %s on %s %s"
-					,msg.from
-					,msg.to
-					,cfg.grp[cfg.sub[n]->grp]->sname,cfg.sub[n]->lname);
-				logline(LOG_NOTICE,"P!",str);
-				continue; 
-			}
+			if(qwk_msg_filtered(&msg, /* ip_can: */NULL, /* host_can: */NULL, /* subject_can: */NULL, twit_list))
+				continue;
 
 			if(n!=lastsub) {
 				if(lastsub!=INVALID_SUB)
