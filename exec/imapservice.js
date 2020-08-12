@@ -2014,7 +2014,8 @@ function do_search(args, uid)
 		return([type,search]);
 	}
 
-	if(args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
+	if(typeof(args[0]) == 'string'
+		&& args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
 		offsets=parse_seq_set(args.shift(), false);
 	}
 
