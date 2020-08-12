@@ -8,7 +8,7 @@
  * $Id$
  */
 
-load("sbbsdefs.js");
+load("smbdefs.js");
 load("822header.js");
 load("mime.js");
 
@@ -877,6 +877,7 @@ var unauthenticated_command_handlers = {
 				line=client.socket.recvline(10240, 1800);
 				args=base64_decode(line).split(/\x00/);
 				if(!login(args[1],args[2])) {
+//					log(LOG_INFO, format("Attempted login: '%s', pw: '%s'", args[1], args[2]));
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
@@ -1859,7 +1860,7 @@ function do_search(args, uid)
 				break;
 			case 'FLAGGED':
 				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_VERIFIED) return true; return false; });
+				search=(function(idx) { if(idx.attr & MSG_VALIDATED) return true; return false; });
 				break;
 			case 'FROM':
 				type="hdr";
@@ -1911,7 +1912,7 @@ function do_search(args, uid)
 				break;
 			case 'UNFLAGGED':
 				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_VERIFIED) return false; return true; });
+				search=(function(idx) { if(idx.attr & MSG_VALIDATED) return false; return true; });
 				break;
 			case 'UNKEYWORD':
 				type="hdr";
