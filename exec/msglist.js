@@ -322,7 +322,7 @@ function help()
 	console.pause();
 }
 
-function list_msg(msg, digits, selected, sort, msg_ctrl, exclude)
+function list_msg(msg, digits, selected, sort, msg_ctrl, exclude, is_operator)
 {
 	var color = color_cfg.column[0];
 	var color_mask = msg_ctrl ? 7 : 0xff;
@@ -336,7 +336,7 @@ function list_msg(msg, digits, selected, sort, msg_ctrl, exclude)
 		color |= color_cfg.sorted;
 	color &= color_mask;
 	console_color(color++, selected);
-	printf("%-*.*s%c", LEN_ALIAS, LEN_ALIAS, property_value(msg, 'from', msg_area.sub[msgbase.cfg.code].is_operator), selected ? '<' : ' ');
+	printf("%-*.*s%c", LEN_ALIAS, LEN_ALIAS, property_value(msg, 'from', is_operator), selected ? '<' : ' ');
 		
 	if(!js.global.console || console.screen_columns >= 80) {
 		for(var i = 0; i < list_formats[list_format].length; i++) {
@@ -390,7 +390,7 @@ function msg_pmode(msgbase, msg)
 	return pmode;
 }
 
-function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name)
+function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operator)
 {
 	var show_hdr = true;
 	var line_num = 0;
@@ -404,7 +404,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name)
 			console.status |= CON_CR_CLREOL;
 			bbs.show_msg_header(msg
 				, property_value(msg, 'subject')
-				, property_value(msg, 'from', msg_area.sub[msgbase.cfg.code].is_operator)
+				, property_value(msg, 'from', is_operator)
 				, msg.forward_path || msg.to_list || msg.to);
 			console.status &= ~CON_CR_CLREOL;
 			hdr_len = console.line_counter;
@@ -741,6 +741,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 	var last_msg;
 	var area_name = format(options.area_name_fmt || "\x01n\x01k\x017%s / %s\x01h"
 						,grp_name, sub_name);
+	var is_operator = user.is_sysop || (msgbase.cfg && msg_area.sub[msgbase.cfg.code].is_operator);
 
 	console.line_counter = 0;
 	console.status |= CON_MOUSE_SCROLL;
@@ -835,7 +836,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			console.attributes = LIGHTGRAY;
 			if(list[i] !== undefined && list[i] !== null) {
 				console.add_hotspot(CTRL_G + list[i].num + '\r');
-				list_msg(list[i], digits, i == current, sort, msg_ctrl, exclude_heading);
+				list_msg(list[i], digits, i == current, sort, msg_ctrl, exclude_heading, is_operator);
 			}
 			console.cleartoeol();
 			console.crlf();
@@ -976,6 +977,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						,get_msg_lines(msgbase, list[current], view_hdr, view_source, view_hex, view_wrapped)
 						,orglist.length
 						,grp_name, sub_name
+						,is_operator
 						)) != 'Q') {
 					switch(key) {
 						case '?':
@@ -1054,7 +1056,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							list[current].text = null;
 							break;
 						case 'O':
-							if(!(user.is_sysop || (msgbase.cfg && msg_area.sub[msgbase.cfg.code].is_operator)))
+							if(!is_operator)
 								break;
 							while(bbs.online) {
 								if(!(user.settings & USER_EXPERT)) {
