@@ -195,7 +195,7 @@ function cp437(msg, prop)
 	return msg[xlatprop];
 }
 
-function property_value(msg, prop)
+function property_value(msg, prop, is_operator)
 {
 	var val;
 	
@@ -231,6 +231,8 @@ function property_value(msg, prop)
 		case 'size':
 			return file_size_str(msg.data_length);
 		case 'from':
+			if((msg.attr&MSG_ANONYMOUS) && !is_operator)
+				return bbs.text(Anonymous);
 		case 'subject':
 			return cp437(msg, prop);
 		default:
@@ -334,7 +336,7 @@ function list_msg(msg, digits, selected, sort, msg_ctrl, exclude)
 		color |= color_cfg.sorted;
 	color &= color_mask;
 	console_color(color++, selected);
-	printf("%-*.*s%c", LEN_ALIAS, LEN_ALIAS, property_value(msg, 'from'), selected ? '<' : ' ');
+	printf("%-*.*s%c", LEN_ALIAS, LEN_ALIAS, property_value(msg, 'from', msg_area.sub[msgbase.cfg.code].is_operator), selected ? '<' : ' ');
 		
 	if(!js.global.console || console.screen_columns >= 80) {
 		for(var i = 0; i < list_formats[list_format].length; i++) {
@@ -402,7 +404,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name)
 			console.status |= CON_CR_CLREOL;
 			bbs.show_msg_header(msg
 				, property_value(msg, 'subject')
-				, property_value(msg, 'from')
+				, property_value(msg, 'from', msg_area.sub[msgbase.cfg.code].is_operator)
 				, msg.forward_path || msg.to_list || msg.to);
 			console.status &= ~CON_CR_CLREOL;
 			hdr_len = console.line_counter;
