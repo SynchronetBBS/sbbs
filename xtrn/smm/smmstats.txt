@@ -1,6 +1,0 @@
-Synchronet Match Maker Statistics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Total                             : 0
-Photos                            : 0
-Networked                         : 0

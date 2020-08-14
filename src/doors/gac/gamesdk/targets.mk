@@ -1,6 +1,0 @@
-ENCRYPT	=	$(EXEODIR)$(DIRSEP)encrypt$(EXEFILE)
-
-all: xpdev $(OBJODIR) $(EXEODIR) $(ENCRYPT)
-
-$(ENCRYPT):	$(XPDEV-LIB)
-

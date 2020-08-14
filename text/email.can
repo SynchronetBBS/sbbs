@@ -1,6 +1,0 @@
-; Enter disallowed (source or destination) e-mail addresses in this file
-; Wildcard characters (*, ^, ~) are allowed and ! negates the match
-; Rejection message file: text/bademail.msg
-
-; Prevent Google's FTP-crawler by uncommenting the following line:
-; googlebot@google.com

@@ -1,1 +1,0 @@
-load('sbbslist.js', 'randomize', 'list=12', '-quiet', '-format=1', '-filter=software=="Synchronet" && name!="' + system.name + '"');
