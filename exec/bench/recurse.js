@@ -1,2 +1,0 @@
-function me() { me(); }
-me();

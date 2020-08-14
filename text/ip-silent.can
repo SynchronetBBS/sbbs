@@ -1,3 +1,0 @@
-; Enter silently filtered (disallowed) IP addresses in this file
-; Wildcard characters (*, ^, ~) are allowed and ! negates the match
-; IPv4 CIDR notation (e.g. 192.168.1.0/30) is also supported
