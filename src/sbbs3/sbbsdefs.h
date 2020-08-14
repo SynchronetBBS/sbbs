@@ -693,7 +693,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define TERM_COLS_MIN		40
 #define TERM_COLS_MAX		255
 #define TERM_COLS_DEFAULT	80
-#define TERM_ROWS_MIN		10
+#define TERM_ROWS_MIN		8	// Amstrad NC100 has an 8-line display
 #define TERM_ROWS_MAX		255
 #define TERM_ROWS_DEFAULT	24
 
