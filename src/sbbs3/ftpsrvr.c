@@ -620,7 +620,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_c
 
 BOOL js_add_file(JSContext* js_cx, JSObject* array, 
 				 char* name, char* desc, char* ext_desc,
-				 ulong size, ulong credits, 
+				 off_t size, ulong credits, 
 				 time_t time, time_t uploaded, time_t last_downloaded, 
 				 ulong times_downloaded, ulong misc, 
 				 char* uploader, char* link)
@@ -1321,7 +1321,7 @@ typedef struct {
 	BOOL		tmpfile;
 	BOOL		credits;
 	BOOL		append;
-	long		filepos;
+	off_t		filepos;
 	char		filename[MAX_PATH+1];
 	time_t*		lastactive;
 	user_t*		user;
@@ -1343,11 +1343,11 @@ static void send_thread(void* arg)
 	int			wr;
 	long		mod;
 	ulong		l;
-	ulong		total=0;
-	ulong		last_total=0;
+	off_t		total=0;
+	off_t		last_total=0;
 	ulong		dur;
 	ulong		cps;
-	ulong		length;
+	off_t		length;
 	BOOL		error=FALSE;
 	FILE*		fp;
 	file_t		f;
@@ -1370,6 +1370,18 @@ static void send_thread(void* arg)
 
 	length=flength(xfer.filename);
 
+	if(length < 1) {
+		lprintf(LOG_WARNING, "%04d <%s> !DATA cannot send file (%s) with size of %"PRIdOFF" bytes"
+			,xfer.ctrl_sock, xfer.user->alias, xfer.filename, length);
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 Invalid file size: %"PRIdOFF, length);
+		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
+			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
+		*xfer.inprogress=FALSE;
+		thread_down();
+		return;
+	}
+
 	if((fp=fnopen(NULL,xfer.filename,O_RDONLY|O_BINARY))==NULL	/* non-shareable open failed */
 		&& (fp=fopen(xfer.filename,"rb"))==NULL) {				/* shareable open failed */
 		lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%s) line %d opening %s"
@@ -1388,8 +1400,10 @@ static void send_thread(void* arg)
 #endif
 
 	*xfer.aborted=FALSE;
+	if(xfer.filepos < 0)
+		xfer.filepos = 0;
 	if(startup->options&FTP_OPT_DEBUG_DATA || xfer.filepos)
-		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d sending %s from offset %lu"
+		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d sending %s from offset %"PRIdOFF
 			,xfer.ctrl_sock, xfer.user->alias, *xfer.data_sock,xfer.filename,xfer.filepos);
 
 	fseek(fp,xfer.filepos,SEEK_SET);
@@ -1401,10 +1415,10 @@ static void send_thread(void* arg)
 		/* Periodic progress report */
 		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
 			if(xfer.filepos)
-				sprintf(str," from offset %lu",xfer.filepos);
+				sprintf(str," from offset %"PRIdOFF,xfer.filepos);
 			else
 				str[0]=0;
-			lprintf(LOG_INFO,"%04d <%s> DATA Sent %lu bytes (%lu total) of %s (%lu cps)%s"
+			lprintf(LOG_INFO,"%04d <%s> DATA Sent %"PRIdOFF" bytes (%"PRIdOFF" total) of %s (%lu cps)%s"
 				,xfer.ctrl_sock, xfer.user->alias, total,length,xfer.filename
 				,(ulong)((total-last_total)/(now-last_report))
 				,str);
@@ -1520,7 +1534,7 @@ static void send_thread(void* arg)
 	if(!error) {
 		dur=(long)(time(NULL)-start);
 		cps=dur ? total/dur : total*2;
-		lprintf(LOG_INFO,"%04d <%s> DATA Transfer successful: %lu bytes sent in %lu seconds (%lu cps)"
+		lprintf(LOG_INFO,"%04d <%s> DATA Transfer successful: %"PRIdOFF" bytes sent in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
 			,xfer.user->alias
 			,total,dur,cps);
@@ -1625,8 +1639,8 @@ static void receive_thread(void* arg)
 	int			i;
 	int			rd;
 	int			file;
-	ulong		total=0;
-	ulong		last_total=0;
+	off_t		total=0;
+	off_t		last_total=0;
 	ulong		dur;
 	ulong		cps;
 	BOOL		error=FALSE;
@@ -1661,9 +1675,12 @@ static void receive_thread(void* arg)
 	if(xfer.append)
 		xfer.filepos=filelength(fileno(fp));
 
+	if(xfer.filepos < 0)
+		xfer.filepos = 0;
+
 	*xfer.aborted=FALSE;
 	if(xfer.filepos || startup->options&FTP_OPT_DEBUG_DATA)
-		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d receiving %s from offset %lu"
+		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d receiving %s from offset %"PRIdOFF
 			,xfer.ctrl_sock,xfer.user->alias, *xfer.data_sock,xfer.filename,xfer.filepos);
 
 	fseek(fp,xfer.filepos,SEEK_SET);
@@ -1675,10 +1692,10 @@ static void receive_thread(void* arg)
 		/* Periodic progress report */
 		if(total && now>=last_report+XFER_REPORT_INTERVAL) {
 			if(xfer.filepos)
-				sprintf(str," from offset %lu",xfer.filepos);
+				sprintf(str," from offset %"PRIdOFF,xfer.filepos);
 			else
 				str[0]=0;
-			lprintf(LOG_INFO,"%04d <%s> DATA Received %lu bytes of %s (%lu cps)%s"
+			lprintf(LOG_INFO,"%04d <%s> DATA Received %"PRIdOFF" bytes of %s (%lu cps)%s"
 				,xfer.ctrl_sock
 				,xfer.user->alias
 				,total,xfer.filename
@@ -1688,7 +1705,7 @@ static void receive_thread(void* arg)
 			last_report=now;
 		}
 		if(startup->max_fsize && (xfer.filepos+total) > startup->max_fsize) {
-			lprintf(LOG_WARNING,"%04d <%s> !DATA received %lu bytes of %s exceeds maximum allowed (%"PRIu64" bytes)"
+			lprintf(LOG_WARNING,"%04d <%s> !DATA received %"PRIdOFF" bytes of %s exceeds maximum allowed (%"PRIu64" bytes)"
 				,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->max_fsize);
 			sockprintf(xfer.ctrl_sock,sess,"552 File size exceeds maximum allowed (%"PRIu64" bytes)", startup->max_fsize);
 			error=TRUE;
@@ -1791,7 +1808,7 @@ static void receive_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d closed",xfer.ctrl_sock, xfer.user->alias,*xfer.data_sock);
 	
 	if(xfer.filepos+total < startup->min_fsize) {
-		lprintf(LOG_WARNING,"%04d <%s> DATA received %lu bytes for %s, less than minimum required (%"PRIu64" bytes)"
+		lprintf(LOG_WARNING,"%04d <%s> DATA received %"PRIdOFF" bytes for %s, less than minimum required (%"PRIu64" bytes)"
 			,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->min_fsize);
 		sockprintf(xfer.ctrl_sock,sess,"550 File size less than minimum required (%"PRIu64" bytes)"
 			,startup->min_fsize);
@@ -1803,7 +1820,7 @@ static void receive_thread(void* arg)
 	} else {
 		dur=(long)(time(NULL)-start);
 		cps=dur ? total/dur : total*2;
-		lprintf(LOG_INFO,"%04d <%s> DATA Transfer successful: %lu bytes received in %lu seconds (%lu cps)"
+		lprintf(LOG_INFO,"%04d <%s> DATA Transfer successful: %"PRIdOFF" bytes received in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
 			,xfer.user->alias
 			,total,dur,cps);
@@ -1995,7 +2012,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 }
 
 static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ctrl_sess, SOCKET pasv_sock, CRYPT_SESSION pasv_sess, SOCKET* data_sock
-					,CRYPT_SESSION *data_sess, char* filename, long filepos, BOOL* inprogress, BOOL* aborted
+					,CRYPT_SESSION *data_sess, char* filename, off_t filepos, BOOL* inprogress, BOOL* aborted
 					,BOOL delfile, BOOL tmpfile
 					,time_t* lastactive
 					,user_t* user
@@ -2986,6 +3003,7 @@ static void ctrl_thread(void* arg)
 	time_t		logintime=0;
 	time_t		lastactive;
 	time_t		file_date;
+	off_t		file_size;
 	file_t		f;
 	glob_t		g;
 	node_t		node;
@@ -3889,7 +3907,7 @@ static void ctrl_thread(void* arg)
 				filepos=atol(p);
 			else
 				filepos=0;
-			sockprintf(sock,sess,"350 Restarting at %lu. Send STORE or RETRIEVE to initiate transfer."
+			sockprintf(sock,sess,"350 Restarting at %"PRIdOFF". Send STORE or RETRIEVE to initiate transfer."
 				,filepos);
 			continue;
 		}
@@ -4025,7 +4043,7 @@ static void ctrl_thread(void* arg)
 								*lastchar(fpath) = 0;
 							write_local_mlsx(fp, INVALID_SOCKET, -1, mlsx_feats, fpath, FALSE);
 						}
-						lprintf(LOG_INFO, "%04d <%s> %s-listing (%lu bytes) of local %s (%lu files) created in %ld seconds"
+						lprintf(LOG_INFO, "%04d <%s> %s-listing (%ld bytes) of local %s (%lu files) created in %ld seconds"
 							,sock, user.alias, cmd, ftell(fp), path
 							,(ulong)g.gl_pathc, (long)time(NULL) - start);
 						globfree(&g);
@@ -4105,7 +4123,7 @@ static void ctrl_thread(void* arg)
 					} else
 						fprintf(fp,"%s\r\n", getfname(fpath));
 				}
-				lprintf(LOG_INFO, "%04d <%s> %slisting (%lu bytes) of local %s (%lu files) created in %ld seconds"
+				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of local %s (%lu files) created in %ld seconds"
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), path
 					,(ulong)g.gl_pathc, (long)time(NULL) - start);
 				globfree(&g);
@@ -4629,7 +4647,7 @@ static void ctrl_thread(void* arg)
 						l++;
 					}
 					if (cmd[3] == 'D') {
-						lprintf(LOG_INFO, "%04d <%s> %s listing (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
+						lprintf(LOG_INFO, "%04d <%s> %s listing (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 						    ,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
 						    ,(ulong)g.gl_pathc, (long)time(NULL) - start);
 					}
@@ -4952,7 +4970,7 @@ static void ctrl_thread(void* arg)
 					} else
 						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
-				lprintf(LOG_INFO, "%04d <%s> %slisting (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
+				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
 					,(ulong)g.gl_pathc, (long)time(NULL) - start);
 				globfree(&g);
@@ -4977,6 +4995,7 @@ static void ctrl_thread(void* arg)
 			getsize=FALSE;
 			delecmd=FALSE;
 			file_date=0;
+			file_size=-1;
 			if(!strnicmp(cmd,"SIZE ",5))
 				getsize=TRUE;
 			else if(!strnicmp(cmd,"MDTM ",5))
@@ -5068,6 +5087,8 @@ static void ctrl_thread(void* arg)
 						mswait(1000);
 					}
 					if(!socket_check(sock,NULL,NULL,0)) {
+						lprintf(LOG_NOTICE,"%04d <%s> disconnected while waiting for QWK packet creation"
+							,sock, user.alias);
 						ftp_remove(sock, __LINE__, str, user.alias);
 						continue;
 					}
@@ -5086,12 +5107,20 @@ static void ctrl_thread(void* arg)
 					}
 				}
 				SAFECOPY(fname,qwkfile);
+				file_size = flength(fname);
+				if(file_size < 1) {
+					lprintf(LOG_WARNING, "%04d <%s> Invalid QWK packet file size (%"PRIuOFF" bytes): %s"
+						,sock, user.alias, file_size, fname);
+					sockprintf(sock,sess,"550 Invalid QWK packet file size: %"PRIuOFF" bytes", file_size);
+					filepos=0;
+					continue;
+				}
 				success=TRUE;
 				delfile=TRUE;
 				credits=FALSE;
 				if(!getsize && !getdate)
 					lprintf(LOG_INFO,"%04d <%s> downloading QWK packet (%"PRIuOFF" bytes) in %s mode"
-						,sock,user.alias,flength(fname)
+						,sock,user.alias,file_size
 						,mode);
 			/* ASCII Index File */
 			} else if(startup->options&FTP_OPT_INDEX_FILE 
@@ -5208,7 +5237,7 @@ static void ctrl_thread(void* arg)
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
 								,getfname(g.gl_pathv[i]),f.desc);
 						}
-						lprintf(LOG_INFO, "%04d <%s> index (%lu bytes) of /%s/%s (%lu files) created in %ld seconds"
+						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 							,sock, user.alias, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
 							,(ulong)g.gl_pathc, (long)time(NULL) - start);
 						globfree(&g);
