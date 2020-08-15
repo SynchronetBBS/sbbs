@@ -4,7 +4,7 @@
 	load(settings.web_lib + 'request.js');
 	load(settings.web_lib + 'files.js');
     locale.section = 'page_files';
-	if (Request.has_param('dir')) {
+	if (Request.has_param('dir') && file_area.dir[Request.get_param('dir')]) {
 ?>
 	<ol class="breadcrumb">
 		<li>
@@ -57,7 +57,7 @@
 	<?xjs listFiles(Request.get_param('dir')).forEach(writeFileDetails); ?>
 	</div>
 
-<?xjs } else if (Request.has_param('library')) { ?>
+<?xjs } else if (Request.has_param('library') && file_area.lib_list[Request.get_param('library')]) { ?>
 
 	<ol class="breadcrumb">
 		<li>
