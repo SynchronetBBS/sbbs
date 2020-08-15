@@ -629,9 +629,14 @@ extern "C" int DLLCALL notify(scfg_t* cfg, uint usernumber, const char* subject,
 	smb_freemsgmem(&msg);
 
 	char smsg[1024];
-	safe_snprintf(smsg, sizeof(smsg),"\1n\1h%s \1r%s:\r\n%s\1n\r\n"
-		,timestr(cfg, msg.hdr.when_imported.time, str)
-		,subject
-		,text);
+	if(text != NULL)
+		safe_snprintf(smsg, sizeof(smsg),"\1n\1h%s \1r%s:\r\n%s\1n\r\n"
+			,timestr(cfg, msg.hdr.when_imported.time, str)
+			,subject
+			,text);
+	else
+		safe_snprintf(smsg, sizeof(smsg),"\1n\1h%s \1r%s\1n\r\n"
+			,timestr(cfg, msg.hdr.when_imported.time, str)
+			,subject);
 	return putsmsg(cfg, usernumber, smsg);
 }
