@@ -259,8 +259,8 @@ typedef int32_t         time32_t;
 #    define PRIdOFF     PRId64
 #    define PRIuOFF     PRIu64
 #  else
-#    define PRIdOFF     PRId32
-#    define PRIuOFF     PRIu32
+#    define PRIdOFF     "ld"
+#    define PRIuOFF     "lu"
 #  endif
 #else
 #  define PRIdOFF       PRId64
