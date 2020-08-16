@@ -1,0 +1,6 @@
+**/CVS
+.#*
+*.debug
+*.release
+*.obj.*
+3rdp/src
