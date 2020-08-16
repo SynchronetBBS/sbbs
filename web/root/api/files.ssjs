@@ -16,6 +16,8 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 		case 'download-file':
 			if (typeof http_request.query.dir !== 'undefined' &&
 				typeof file_area.dir[http_request.query.dir[0]] !== 'undefined'	&&
+                file_area.dir[http_request.query.dir[0]].lib_index >= 0 &&
+                file_area.dir[http_request.query.dir[0]].index >= 0 &&
 				file_area.dir[http_request.query.dir[0]].can_download &&
 				typeof http_request.query.file !== 'undefined'
 			) {
