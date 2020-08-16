@@ -1,7 +1,7 @@
 Synchronet NewsLink Installation/Configuration
 ==============================================
 
-$Id$
+$Id: newslink.txt,v 1.6 2012/07/18 14:52:35 deuce Exp $
 
 Background
 ----------

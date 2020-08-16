@@ -3,7 +3,7 @@
 // Generates and parses USENET news headers 
 // for use with newslink.js and nntpservice.js
 
-// $Id$
+// $Id: newsutil.js,v 1.34 2020/06/08 03:20:37 rswindell Exp $
 
 require("mailutil.js", 'mail_get_name');
 require("smbdefs.js", 'RFC822HEADER');

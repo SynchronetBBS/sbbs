@@ -61,7 +61,7 @@
 
 /* Khronos platform-specific types and definitions.
 *
-* $Revision$ on $Date$
+* $Revision: 1.1 $ on $Date: 2020/03/31 20:13:42 $
 *
 * Adopters may modify this file to suit their platform. Adopters are
 * encouraged to submit platform specific modifications to the Khronos
@@ -344,7 +344,7 @@ typedef enum {
 */
 
 /* Platform-specific types and definitions for egl.h
-* $Revision$ on $Date$
+* $Revision: 1.1 $ on $Date: 2020/03/31 20:13:42 $
 *
 * Adopters may modify khrplatform.h and this file to suit their platform.
 * You are encouraged to submit all modifications to the Khronos group so that
@@ -516,7 +516,7 @@ extern "C" {
 ** used to make the header, and the header can be found at
 **   http://www.opengl.org/registry/
 **
-** Khronos $Revision$ on $Date$
+** Khronos $Revision: 1.1 $ on $Date: 2020/03/31 20:13:42 $
 */
 
 /*#include <EGL/eglplatform.h>*/
@@ -820,7 +820,7 @@ extern "C" {
 ** used to make the header, and the header can be found at
 **   http://www.opengl.org/registry/
 **
-** Khronos $Revision$ on $Date$
+** Khronos $Revision: 1.1 $ on $Date: 2020/03/31 20:13:42 $
 */
 
 /*#include <EGL/eglplatform.h>*/

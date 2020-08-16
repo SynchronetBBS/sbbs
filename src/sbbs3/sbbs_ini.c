@@ -1,6 +1,6 @@
 /* Synchronet initialization (.ini) file routines */
 
-/* $Id$ */
+/* $Id: sbbs_ini.c,v 1.170 2019/07/24 04:41:49 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

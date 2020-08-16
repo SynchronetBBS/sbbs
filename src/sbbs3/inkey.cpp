@@ -1,6 +1,6 @@
 /* Synchronet single key input function (no wait) */
 
-/* $Id$ */
+/* $Id: inkey.cpp,v 1.80 2020/08/04 04:56:37 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

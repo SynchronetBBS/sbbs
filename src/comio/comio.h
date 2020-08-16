@@ -2,7 +2,7 @@
 
 /* Synchronet Serial Communications (COM) I/O Library */
 
-/* $Id$ */
+/* $Id: comio.h,v 1.15 2020/06/26 19:56:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

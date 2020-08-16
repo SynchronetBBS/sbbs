@@ -2,7 +2,7 @@
 
 /* Synchronet Menu Editor		 										*/
 
-/* $Id$ */
+/* $Id: menuedit.c,v 1.6 2018/07/24 01:12:16 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 	glob_t	g;
 	size_t	gi;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.6 $", "%*s %s", revision);
 
     printf("\r\nSynchronet Menu Editor (%s)  %s  Copyright "
         "Rob Swindell\r\n",PLATFORM_DESC,revision);

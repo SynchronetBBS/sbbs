@@ -1,7 +1,7 @@
 /* Synchronet user create/post public message routine */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: postmsg.cpp,v 1.135 2020/08/15 21:58:14 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

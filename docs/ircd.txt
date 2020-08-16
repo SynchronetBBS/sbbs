@@ -1,4 +1,4 @@
-$Id$
+$Id: ircd.txt,v 1.6 2006/08/14 14:23:48 cyan Exp $
 
 		** ircd.js : The Synchronet IRCd Service **
 		     by: Randy Sommerfeld <cyan@rrx.ca>

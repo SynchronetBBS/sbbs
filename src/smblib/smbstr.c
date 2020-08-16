@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) library routines returning strings */
 
-/* $Id$ */
+/* $Id: smbstr.c,v 1.38 2020/05/25 19:17:06 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

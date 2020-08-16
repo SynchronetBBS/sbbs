@@ -1,6 +1,6 @@
 /* Synchronet user data access routines (exported) */
 
-/* $Id$ */
+/* $Id: userdat.h,v 1.77 2020/04/30 18:25:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

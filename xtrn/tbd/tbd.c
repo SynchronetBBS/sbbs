@@ -17,7 +17,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* $Id$ */
+/* $Id: tbd.c,v 1.24 2006/06/21 07:34:28 rswindell Exp $ */
 
 /******************************************************************************
         The Beast's Domain  Copyright (c) 1993-2000 Domain Entertainment
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     uchar uch;
 	char revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.24 $", "%*s %s", revision);
 
     xp_randomize();
     if(getenv("SBBSNODE")!=NULL) {

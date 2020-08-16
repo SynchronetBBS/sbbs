@@ -6,7 +6,7 @@
 # @format.tab-size 4, @format.use-tabs true								#
 #########################################################################
 
-# $Id$
+# $Id: Makefile,v 1.6 2007/06/30 03:57:11 rswindell Exp $
 
 XSDK		=	..\sdk
 !ifndef SRC_ROOT

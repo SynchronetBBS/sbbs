@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: frame.js,v 1.91 2020/08/01 19:32:23 rswindell Exp $ */
 
 /**
  	Javascript Frame Library

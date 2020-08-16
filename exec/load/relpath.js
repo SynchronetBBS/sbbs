@@ -1,4 +1,4 @@
-// $Id$
+// $Id: relpath.js,v 1.1 2020/04/26 04:41:58 rswindell Exp $
 
 // Given 2 absolute directories: a working directory (cwd) and a target (dir),
 // return the relative path to reach the target directory.

@@ -1,6 +1,6 @@
 /* Synchronet Services */
 
-/* $Id$ */
+/* $Id: services.c,v 1.336 2020/08/08 23:27:23 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -1672,7 +1672,7 @@ const char* DLLCALL services_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.336 $", "%*s %s", revision);
 
 	sprintf(ver,"Synchronet Services %s%s  "
 		"Compiled %s %s with %s"

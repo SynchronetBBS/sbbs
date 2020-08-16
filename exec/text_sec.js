@@ -1,4 +1,4 @@
-// $Id$
+// $Id: text_sec.js,v 1.9 2020/05/08 17:27:47 rswindell Exp $
 
 // [General] Text File Section ("G-Files")
 // Replacement for Baja TEXT_FILE_SECTION and JS bbs.text_sec() functions

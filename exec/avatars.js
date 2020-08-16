@@ -1,6 +1,6 @@
-// $Id$
+// $Id: avatars.js,v 1.39 2019/08/19 03:01:58 rswindell Exp $
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.39 $".split(' ')[1];
 
 load('sbbsdefs.js');
 load("lz-string.js");

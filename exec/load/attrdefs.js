@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: attrdefs.js,v 1.1 2019/01/08 05:33:37 rswindell Exp $ */
 
 // Index values for console.color_list[]
 

@@ -1,6 +1,6 @@
 /* Synchronet class (sbbs_t) definition and exported function prototypes */
 // vi: tabstop=4
-/* $Id$ */
+/* $Id: sbbs.h,v 1.582 2020/08/10 00:43:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

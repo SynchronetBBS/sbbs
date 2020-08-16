@@ -1,4 +1,4 @@
-// $Id$
+// $Id: cterm_lib.js,v 1.24 2020/06/06 08:37:50 rswindell Exp $
 
 // Library for dealing with CTerm/SyncTERM enhanced features (e.g. fonts)
 

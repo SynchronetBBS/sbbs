@@ -1,6 +1,6 @@
 /* Synchronet BBS Windows NT Service Names */
 
-/* $Id$ */
+/* $Id: ntsvcs.h,v 1.7 2018/03/20 03:36:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

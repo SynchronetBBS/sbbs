@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "COM" Object */
 
-/* $Id$ */
+/* $Id: js_com.c,v 1.33 2020/04/20 01:47:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

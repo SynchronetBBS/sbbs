@@ -2,7 +2,7 @@
 
 /* Synchronet telnet command/option functions */
 
-/* $Id$ */
+/* $Id: telnet.c,v 1.10 2019/08/24 19:37:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

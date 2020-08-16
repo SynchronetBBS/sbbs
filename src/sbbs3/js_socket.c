@@ -1,7 +1,7 @@
 /* Synchronet JavaScript "Socket" Object */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: js_socket.c,v 1.247 2020/08/09 02:29:52 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

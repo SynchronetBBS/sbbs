@@ -2,7 +2,7 @@
 
 /* Synchronet node information writing routines */
 
-/* $Id$ */
+/* $Id: putnode.cpp,v 1.22 2018/07/26 06:24:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

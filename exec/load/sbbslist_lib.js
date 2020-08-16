@@ -1,4 +1,4 @@
-// $Id$
+// $Id: sbbslist_lib.js,v 1.24 2020/04/22 00:54:58 rswindell Exp $
 // @format.tab-size 4
 
 // Synchronet BBS List (SBL) v4 Library

@@ -1,6 +1,6 @@
 /* Synchronet JavaScript "global" object properties/methods for all servers */
 
-/* $Id$ */
+/* $Id: js_global.c,v 1.409 2020/08/09 01:53:52 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

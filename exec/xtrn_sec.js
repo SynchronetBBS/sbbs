@@ -5,7 +5,7 @@
 
 // To jump straight to a specific xtrn section, pass the section code as an argument
 
-// $Id$
+// $Id: xtrn_sec.js,v 1.29 2020/05/09 10:11:23 rswindell Exp $
 
 "use strict";
 

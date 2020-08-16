@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: text.js,v 1.33 2020/08/01 22:06:51 rswindell Exp $ */
 
 /* Synchronet static text string constants */
 

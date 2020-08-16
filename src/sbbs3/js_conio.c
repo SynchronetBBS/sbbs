@@ -2,7 +2,7 @@
 
 /* Synchronet "conio" (console IO) object */
 
-/* $Id$ */
+/* $Id: js_conio.c,v 1.38 2020/04/12 20:30:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: footer.inc,v 1.2 2018/03/14 02:19:55 deuce Exp $ -->
 
 <!-- Begin footer -->
 

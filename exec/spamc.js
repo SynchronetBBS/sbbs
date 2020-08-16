@@ -3,7 +3,7 @@
 // SpamAssasin client for Synchronet
 // For use as mailproc.ini script to check messages against a running/listening spamd
 
-// $Id$
+// $Id: spamc.js,v 1.22 2015/08/15 09:42:36 rswindell Exp $
 
 // ---------------------------------------------------------------------------
 // Example mailproc.ini entries:

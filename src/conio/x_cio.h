@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: x_cio.h,v 1.27 2020/05/07 20:26:51 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

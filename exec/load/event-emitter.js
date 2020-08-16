@@ -1,5 +1,5 @@
 /**
- * $Id$
+ * $Id: event-emitter.js,v 1.1 2019/07/20 04:37:01 echicken Exp $
  * 
  * Same API as the node.js events.EventEmitter except:
  * - Has no concept of MaxListeners

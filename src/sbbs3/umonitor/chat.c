@@ -2,7 +2,7 @@
 
 /* Synchronet for *nix sysop chat routines */
 
-/* $Id$ */
+/* $Id: chat.c,v 1.21 2019/08/31 22:33:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

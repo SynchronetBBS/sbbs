@@ -2,7 +2,7 @@
 
 /* Synchronet Serial Communications I/O Library Common Functions */
 
-/* $Id$ */
+/* $Id: comio.c,v 1.4 2020/06/26 19:33:08 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: ftelnet.ssjs,v 1.6 2018/03/18 20:30:47 ree Exp $ */
 
 load("../web/lib/template.ssjs");
 

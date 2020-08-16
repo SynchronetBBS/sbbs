@@ -1,6 +1,6 @@
 /* FatFish
  *
- * $Id$
+ * $Id: fatfish.js,v 1.12 2014/01/12 03:29:31 echicken Exp $
  *
  * WEBSITE:
  *  http://art.poorcoding.com/fatfish

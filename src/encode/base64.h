@@ -1,6 +1,6 @@
 /* Base64 encoding/decoding exported function prototypes */
 
-/* $Id$ */
+/* $Id: base64.h,v 1.8 2019/03/22 21:29:12 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

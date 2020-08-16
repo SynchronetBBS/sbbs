@@ -1,4 +1,4 @@
-// $Id$
+// $Id: portdefs.js,v 1.7 2019/01/11 01:11:17 rswindell Exp $
 // vi: tabstop=4
 
 // Standard Unix service TCP and UDP port numbers

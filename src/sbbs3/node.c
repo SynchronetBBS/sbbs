@@ -1,7 +1,7 @@
 /* Synchronet BBS Node control program */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: node.c,v 1.34 2020/08/01 22:04:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -461,7 +461,7 @@ int main(int argc, char **argv)
 
 	char		revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.34 $", "%*s %s", revision);
 
 	printf("\nSynchronet Node Display/Control Utility v%s\n\n", revision);
 

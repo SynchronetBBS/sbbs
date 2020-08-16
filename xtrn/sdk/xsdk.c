@@ -2,7 +2,7 @@
 
 /* Synchronet External Program Software Development Kit	*/
 
-/* $Id$ */
+/* $Id: xsdk.c,v 1.41 2016/08/13 18:57:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

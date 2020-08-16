@@ -1,4 +1,4 @@
-// $Id$
+// $Id: xtrn-setup.js,v 1.10 2020/05/09 03:37:35 echicken Exp $
 // vi: tabstop=4
 
 load('sbbsdefs.js');

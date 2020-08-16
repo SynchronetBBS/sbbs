@@ -1,6 +1,6 @@
 // Support functions for cold/hot keys in JS shells.
 
-// $Id$
+// $Id: coldfuncs.js,v 1.10 2016/04/24 00:55:44 deuce Exp $
 
 require("sbbsdefs.js", 'SYS_CLOSED');
 var coldfuncs_last_hotkey='';

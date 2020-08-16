@@ -2,7 +2,7 @@
 
 /* Synchronet for *nix node spy */
 
-/* $Id$ */
+/* $Id: spyon.c,v 1.16 2020/06/30 18:30:40 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

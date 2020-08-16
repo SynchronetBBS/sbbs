@@ -1,4 +1,4 @@
-// $Id$
+// $Id: avatar_chooser.js,v 1.34 2020/05/05 05:17:00 echicken Exp $
 
 load('sbbsdefs.js');
 load('frame.js');

@@ -3,7 +3,7 @@
 
 /* Synchronet version display */
 
-/* $Id$ */
+/* $Id: ver.cpp,v 1.31 2019/10/08 02:07:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

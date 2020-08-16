@@ -1,7 +1,7 @@
 /* Synchronet configuration structure (scfg_t) definition */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: scfgdefs.h,v 1.62 2020/08/08 20:17:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

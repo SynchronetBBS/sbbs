@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Sephen Hurd */
 
-/* $Id$ */
+/* $Id: uifcinit.c,v 1.44 2020/05/15 11:05:40 deuce Exp $ */
 
 #include <gen_defs.h>
 #include <stdio.h>

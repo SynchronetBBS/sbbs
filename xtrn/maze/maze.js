@@ -1,4 +1,4 @@
-//$Id$
+//$Id: maze.js,v 1.10 2020/06/04 16:57:53 mcmlxxix Exp $
 /*
 	SYNCHRONET MAZE RACE 
 	A Javascript remake 

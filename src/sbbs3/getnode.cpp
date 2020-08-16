@@ -2,7 +2,7 @@
 
 /* Synchronet node information retrieval functions */
 
-/* $Id$ */
+/* $Id: getnode.cpp,v 1.56 2020/08/01 22:04:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

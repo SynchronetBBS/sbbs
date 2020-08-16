@@ -1,4 +1,4 @@
-// $Id$
+// $Id: key_defs.js,v 1.2 2019/09/23 08:39:57 rswindell Exp $
 // Terminal keyboard definitions (string varants)
 
 							/********************************************/

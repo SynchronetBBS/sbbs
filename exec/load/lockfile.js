@@ -2,7 +2,7 @@
 
 // File locking library for JS
 
-// $Id$
+// $Id: lockfile.js,v 1.10 2018/05/02 21:47:37 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

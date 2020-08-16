@@ -1,6 +1,6 @@
 /* Synchronet QWK-related structures, constants, and prototypes */ 
 
-/* $Id$ */
+/* $Id: qwk.h,v 1.10 2019/08/17 02:21:01 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

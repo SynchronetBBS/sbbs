@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: subinfo.inc,v 1.5 2006/01/31 23:14:21 runemaster Exp $ -->
 
 <!-- Main Content -->  
     

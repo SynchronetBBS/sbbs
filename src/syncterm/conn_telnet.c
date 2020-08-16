@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: conn_telnet.c,v 1.18 2020/05/03 20:12:42 deuce Exp $ */
 
 #include <stdlib.h>
 

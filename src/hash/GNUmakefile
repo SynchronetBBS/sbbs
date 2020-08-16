@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GNUmakefile,v 1.2 2019/07/10 22:24:28 deuce Exp $
 
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mrc-session.js,v 1.2 2019/05/04 04:59:06 echicken Exp $ */
 
 // Passes traffic between an mrc-connector.js server and a client application
 // See mrc-client.js for a bad example.

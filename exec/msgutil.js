@@ -1,4 +1,4 @@
-// $Id$
+// $Id: msgutil.js,v 1.2 2020/04/25 00:49:32 rswindell Exp $
 
 "use strict";
 

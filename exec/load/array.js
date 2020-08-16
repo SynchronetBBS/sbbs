@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: array.js,v 1.1 2019/07/22 20:51:52 echicken Exp $ */
 /**
  * Polyfills for newer Array methods
  * Lifted from MDN https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array

@@ -11,7 +11,7 @@
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.248 2020/04/03 19:54:31 rswindell Exp $
 
 PWD	:=	$(shell pwd)
 SRC_ROOT	?=	${PWD}/..

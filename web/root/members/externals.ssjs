@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: externals.ssjs,v 1.8 2018/03/18 20:30:49 ree Exp $ */
 
 load("../web/lib/template.ssjs");
 

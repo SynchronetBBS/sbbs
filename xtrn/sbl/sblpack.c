@@ -2,7 +2,7 @@
 
 /* Synchronet BBS List Database Packer */
 
-/* $Id$ */
+/* $Id: sblpack.c,v 1.5 2004/07/16 18:02:41 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -54,7 +54,7 @@ int main(void)
 	ulong	deleted=0;
 	char	revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.5 $", "%*s %s", revision);
 
 	printf("\nSBLPACK %s-%s  Copyright 2003 Rob Swindell\n\n"
 		,revision,PLATFORM_DESC);

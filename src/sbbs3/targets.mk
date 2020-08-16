@@ -2,7 +2,7 @@
 
 # Make 'include file' defining targets for Synchronet project
 
-# $Id$
+# $Id: targets.mk,v 1.54 2020/05/14 20:32:04 rswindell Exp $
 
 # LIBODIR, EXEODIR, DIRSEP, LIBFILE, EXEFILE, and DELETE must be pre-defined
 

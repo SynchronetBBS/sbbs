@@ -5,7 +5,7 @@
 */
 
 CVS = new (function () {
-	this.VERSION = "$Revision$".split(' ')[1];
+	this.VERSION = "$Revision: 1.18 $".split(' ')[1];
 	this.socket = undefined;
 	
 ////////////////////////////////// SETTINGS

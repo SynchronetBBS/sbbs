@@ -3,7 +3,7 @@
 
 /* Synchronet external program support routines */
 
-/* $Id$ */
+/* $Id: xtrn.cpp,v 1.263 2020/08/02 20:23:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

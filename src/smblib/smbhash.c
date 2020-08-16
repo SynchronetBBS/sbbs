@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) hash-related functions */
 
-/* $Id$ */
+/* $Id: smbhash.c,v 1.36 2019/04/11 01:00:30 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

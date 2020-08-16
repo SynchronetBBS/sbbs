@@ -1,6 +1,6 @@
 /* Synchronet QWK packet-related functions */
 
-/* $Id$ */
+/* $Id: qwk.cpp,v 1.97 2020/08/10 00:43:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

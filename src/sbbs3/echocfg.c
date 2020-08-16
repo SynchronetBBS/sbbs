@@ -1,6 +1,6 @@
 /* FidoNet configuration utility 											*/
 
-/* $Id$ */
+/* $Id: echocfg.c,v 3.57 2020/05/12 00:21:02 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

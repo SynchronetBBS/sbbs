@@ -1,7 +1,7 @@
 /* Synchronet public message reading function */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: readmsgs.cpp,v 1.133 2020/05/14 03:04:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

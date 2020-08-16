@@ -1,6 +1,6 @@
 /* FidoNet constants, macros, and structure definitions */
 
-/* $Id$ */
+/* $Id: fidodefs.h,v 1.24 2020/03/24 00:50:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

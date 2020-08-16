@@ -1,4 +1,4 @@
-// $Id$
+// $Id: SlyEdit_Misc.js,v 1.59 2020/03/04 20:59:50 nightfox Exp $
 
 /* This file declares some general helper functions and variables
  * that are used by SlyEdit.

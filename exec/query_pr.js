@@ -1,4 +1,4 @@
-// $Id$
+// $Id: query_pr.js,v 1.20 2005/08/05 21:26:02 deuce Exp $
 
 load("sbbsdefs.js");
 load("sockdefs.js");

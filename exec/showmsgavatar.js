@@ -1,4 +1,4 @@
-// $Id$
+// $Id: showmsgavatar.js,v 1.9 2019/06/15 01:23:30 rswindell Exp $
 
 // This can be loaded from text/menu/msghdr.asc via @EXEC:SHOWMSGAVATAR@
 // Don't forget to include or exclude the blank line after if you do

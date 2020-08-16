@@ -2,7 +2,7 @@
 
 /* Synchronet file database-related exported functions */
 
-/* $Id$ */
+/* $Id: filedat.c,v 1.40 2019/01/12 08:11:13 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

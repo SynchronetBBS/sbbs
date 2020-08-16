@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: ansi_cio.c,v 1.86 2020/04/13 18:36:21 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,8 +1,8 @@
-/* $Id$ */
+/* $Id: update.js,v 1.10 2020/05/05 01:09:27 rswindell Exp $ */
 
 /* Synchronet v3.15 update script (to be executed with jsexec) */
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.10 $".split(' ')[1];
 
 var test = argv.indexOf("-test") >= 0;
 

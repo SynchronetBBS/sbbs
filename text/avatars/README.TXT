@@ -1,6 +1,6 @@
 Avatar Collections
 ==================
-$Id$
+$Id: README.TXT,v 1.1 2018/01/14 19:22:52 rswindell Exp $
 
 This directory (text/avatars) is used to store collections of avatars which may
 be used by the users of this BBS as the source of their personal user avatar.

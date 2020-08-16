@@ -1,4 +1,4 @@
-// $Id$
+// $Id: qnet-http.js,v 1.3 2019/05/27 02:05:26 rswindell Exp $
 
 // QWK network HTTP[S] client
 
@@ -6,7 +6,7 @@
 //
 //                  ?qnet-http %s dove.synchro.net YOURPASS
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.3 $".split(' ')[1];
 log(LOG_INFO, "QNET-HTTP " + REVISION + " invoked with options: " + argv.join(' '));
 
 load("http.js");

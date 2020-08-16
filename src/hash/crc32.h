@@ -2,7 +2,7 @@
 
 /* 32-bit CRC table and calculation macro */
 
-/* $Id$ */
+/* $Id: crc32.h,v 1.18 2019/03/22 21:29:12 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 /* Synchronet configuration load routines (exported) */
 
-/* $Id$ */
+/* $Id: load_cfg.c,v 1.82 2020/05/26 01:49:22 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

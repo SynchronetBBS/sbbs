@@ -1,4 +1,4 @@
-// $Id$
+// $Id: makeuser.js,v 1.6 2018/09/25 00:15:50 rswindell Exp $
 
 writeln("\nMAKEUSER v2.0 - Adds User to Synchronet User Database\n");
 

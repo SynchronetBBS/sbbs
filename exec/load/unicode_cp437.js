@@ -1,4 +1,4 @@
-// $Id$
+// $Id: unicode_cp437.js,v 1.3 2019/07/25 11:13:25 rswindell Exp $
 
 function unicode_cp437(uc)
 {

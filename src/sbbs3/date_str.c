@@ -2,7 +2,7 @@
 
 /* Synchronet date/time string conversion routines */
 
-/* $Id$ */
+/* $Id: date_str.c,v 1.29 2016/05/27 07:44:46 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

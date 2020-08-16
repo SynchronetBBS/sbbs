@@ -1,7 +1,7 @@
 /**
  * TextLabel -- A module to display a Label on the applet.
  * --
- * $Id$
+ * $Id: TextLabel.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Wed Jul  9 17:37:28 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -45,7 +45,7 @@ import java.awt.Font;
  *   <DD><PRE>&lt;PARAM NAME=label#<I>number</I> VALUE=&quot;<B><I>text</I></B>&quot;&gt;</PRE>
  *   <DT>The labels are enumerated and displayed in rows and columns.
  * </DL>
- * @version $Id$
+ * @version $Id: TextLabel.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  * @see modules.Module
  */

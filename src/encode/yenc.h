@@ -2,7 +2,7 @@
 
 /* yEnc encoding/decoding exported function prototypes */
 
-/* $Id$ */
+/* $Id: yenc.h,v 1.2 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

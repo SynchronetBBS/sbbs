@@ -2,7 +2,7 @@
 
 // Synchronet Newsgroup Link/Gateway Module
 
-// $Id$
+// $Id: newslink.js,v 1.113 2020/04/29 18:59:24 rswindell Exp $
 
 // Configuration file (in ctrl/newslink.cfg) format:
 
@@ -26,7 +26,7 @@
 // s		no subject filtering
 // m		Moderate imported messages
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.113 $".split(' ')[1];
 
 printf("Synchronet NewsLink %s session started\r\n", REVISION);
 

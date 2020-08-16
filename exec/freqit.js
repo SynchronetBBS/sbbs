@@ -1,4 +1,4 @@
-// $Id$
+// $Id: freqit.js,v 1.6 2016/01/19 06:58:36 deuce Exp $
 /*
  * Intentionally simple FREQ processor.
  * Configure in binkd with the line:

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: bitmap_con.c,v 1.148 2020/06/27 00:04:44 deuce Exp $ */
 
 #include <stdarg.h>
 #include <stdio.h>		/* NULL */

@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GNUmakefile,v 1.63 2020/05/02 08:24:08 deuce Exp $
 
 SRC_ROOT = ../../src
 # Cross platform/compiler definitions

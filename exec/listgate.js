@@ -6,7 +6,7 @@
 // and export any new messages to the mail database to be sent to one or more
 // list-server e-mail addresses.
 
-// $Id$
+// $Id: listgate.js,v 1.4 2016/10/14 23:11:24 rswindell Exp $
 
 // Configuration file (in ctrl/listgate.ini) format:
 
@@ -14,7 +14,7 @@
 // from = <fromaddr> 
 // to = <toaddr> [toaddr] [...]
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.4 $".split(' ')[1];
 
 log(LOG_INFO,format("Synchronet Mailing List Gateway %s session started\r\n", REVISION));
 

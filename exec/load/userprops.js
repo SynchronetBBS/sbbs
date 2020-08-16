@@ -1,4 +1,4 @@
-// $Id$
+// $Id: userprops.js,v 1.7 2020/04/02 07:30:26 rswindell Exp $
 
 require("userdefs.js", 'UFLAG_G');
 

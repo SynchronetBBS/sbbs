@@ -2,7 +2,7 @@
 
 // A sample user listing script for Synchronet v3.1+
 
-// $Id$
+// $Id: userlist.js,v 1.6 2019/01/11 09:37:25 rswindell Exp $
 
 "use strict";
 

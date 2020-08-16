@@ -1,6 +1,6 @@
 /* Synchronet FTP server */
 
-/* $Id$ */
+/* $Id: ftpsrvr.c,v 1.501 2020/08/15 19:15:39 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -5973,7 +5973,7 @@ const char* DLLCALL ftp_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.501 $", "%*s %s", revision);
 
 	sprintf(ver,"%s %s%s  "
 		"Compiled %s %s with %s"

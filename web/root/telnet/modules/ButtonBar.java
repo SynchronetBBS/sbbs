@@ -1,7 +1,7 @@
 /**
  * ButtonBar -- a programmable button bar
  * --
- * $Id$
+ * $Id: ButtonBar.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Mon Aug  4 14:12:21 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -141,7 +141,7 @@ import java.awt.Frame;
  *      </PRE>
  *      <P>
  * </DL>
- * @version $Id$
+ * @version $Id: ButtonBar.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  * @see modules.Module
  */

@@ -1,6 +1,6 @@
 /* Synchronet FidoNet EchoMail Scanning/Tossing and NetMail Tossing Utility */
 
-/* $Id$ */
+/* $Id: rechocfg.c,v 3.48 2020/05/04 03:14:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

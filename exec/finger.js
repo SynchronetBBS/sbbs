@@ -1,4 +1,4 @@
-// $Id$
+// $Id: finger.js,v 1.8 2019/01/12 01:47:34 rswindell Exp $
 
 // A simple finger/systat (who) client suitable for running via the BBS or JSexec
 

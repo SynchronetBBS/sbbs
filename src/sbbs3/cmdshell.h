@@ -3,7 +3,7 @@
 
 /* Synchronet command shell/module constants and structure definitions */
 
-/* $Id$ */
+/* $Id: cmdshell.h,v 1.16 2020/04/16 07:39:46 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

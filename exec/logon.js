@@ -2,7 +2,7 @@
 
 // Synchronet v3.1 Default Logon Module
 
-// $Id$
+// $Id: logon.js,v 1.55 2020/05/26 04:21:18 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

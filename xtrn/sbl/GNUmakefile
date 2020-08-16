@@ -10,7 +10,7 @@
 # FreeBSD: make -f Makefile.gnu os=freebsd								#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.28 2019/08/06 17:06:32 deuce Exp $
 
 # Macros
 XSDK		=	../sdk

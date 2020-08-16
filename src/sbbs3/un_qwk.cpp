@@ -1,6 +1,6 @@
 /* Synchronet QWK unpacking routine */
 
-/* $Id$ */
+/* $Id: un_qwk.cpp,v 1.66 2020/08/10 00:43:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

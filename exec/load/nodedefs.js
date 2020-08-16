@@ -2,7 +2,7 @@
 
 /* Synchronet node.dab file constants definitions - (mostly bit-fields) */
 
-/* $Id$ */
+/* $Id: nodedefs.js,v 1.13 2020/08/01 22:06:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

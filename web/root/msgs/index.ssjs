@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: index.ssjs,v 1.10 2006/02/25 21:41:08 runemaster Exp $ */
 
 load("../web/lib/msgslib.ssjs");
 

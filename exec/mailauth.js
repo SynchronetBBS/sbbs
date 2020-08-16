@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mailauth.js,v 1.6 2019/07/07 21:07:44 rswindell Exp $ */
 
 // This script is an external mail processor that verifies that mail received
 // from sender's claiming to be <anyone>@<yourdomains> are SMTP-authenticated

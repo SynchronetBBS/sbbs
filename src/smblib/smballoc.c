@@ -1,7 +1,7 @@
 /* Synchronet message base (SMB) alloc/free routines */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: smballoc.c,v 1.14 2019/04/11 01:00:29 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

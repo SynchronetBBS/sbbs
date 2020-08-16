@@ -2,7 +2,7 @@
 
 // Global String Command Module for Synchronet
 
-// $Id$
+// $Id: str_cmds.js,v 1.57 2020/05/02 08:09:26 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

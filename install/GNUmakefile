@@ -1,4 +1,4 @@
-# $Id$
+# $Id: GNUmakefile,v 1.79 2020/05/07 22:17:44 rswindell Exp $
 # Global GNU makefile for Synchronet
 #
 # Usage:

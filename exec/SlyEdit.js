@@ -1,4 +1,4 @@
-// $Id$
+// $Id: SlyEdit.js,v 1.74 2020/04/05 21:03:43 nightfox Exp $
 
 /* This is a text editor for Synchronet designed to mimic the look & feel of
  * DCTEdit and IceEdit, since neither of those editors have been developed

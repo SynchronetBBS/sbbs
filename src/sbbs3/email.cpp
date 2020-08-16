@@ -2,7 +2,7 @@
 
 /* Synchronet email function - for sending private e-mail */
 
-/* $Id$ */
+/* $Id: email.cpp,v 1.79 2020/04/15 02:27:10 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

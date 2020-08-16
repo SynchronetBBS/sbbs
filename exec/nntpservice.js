@@ -2,7 +2,7 @@
 
 // Synchronet Service for the Network News Transfer Protocol (RFC 977)
 
-// $Id$
+// $Id: nntpservice.js,v 1.133 2020/06/08 06:00:18 rswindell Exp $
 
 // Example configuration (in ctrl/services.ini):
 
@@ -29,7 +29,7 @@
 //					Xnews 5.04.25
 //					Mozilla 1.1 (Requires -auto, and a prior login via other method)
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.133 $".split(' ')[1];
 
 var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);

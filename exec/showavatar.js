@@ -1,4 +1,4 @@
-// $Id$
+// $Id: showavatar.js,v 1.2 2019/06/15 01:23:30 rswindell Exp $
 
 var usernum = user.number;
 var draw = false;

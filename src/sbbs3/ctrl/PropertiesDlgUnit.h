@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: PropertiesDlgUnit.h,v 1.20 2018/07/24 01:11:29 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: telnet_proxy_service.js,v 1.1 2012/09/11 17:30:21 ree Exp $
 
 // telnet_proxy_service.js
 

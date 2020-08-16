@@ -1,6 +1,6 @@
 /* Synchronet terminal server thread and related functions */
 
-/* $Id$ */
+/* $Id: main.cpp,v 1.794 2020/08/08 20:17:02 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

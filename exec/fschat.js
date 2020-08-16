@@ -12,7 +12,7 @@
 
 (function() {
 
-	const VERSION = "$Revision$".split(' ')[1];
+	const VERSION = "$Revision: 1.5 $".split(' ')[1];
 	load("sbbsdefs.js");
 	bbs.command_str='';
 	load("str_cmds.js");

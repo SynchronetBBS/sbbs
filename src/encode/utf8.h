@@ -1,6 +1,6 @@
 /* Synchronet UTF-8 translation functions */
 
-/* $Id$ */
+/* $Id: utf8.h,v 1.6 2019/08/03 08:05:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

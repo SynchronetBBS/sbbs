@@ -3,7 +3,7 @@
 // Bulletins written in Baja by Rob Swindell
 // Translated to JS by Stehen Hurd
 
-// $Id$
+// $Id: bullseye.js,v 1.7 2018/10/26 02:12:50 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

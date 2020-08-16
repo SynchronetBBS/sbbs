@@ -1,4 +1,4 @@
-// $Id$
+// $Id: irclib.js,v 1.23 2019/08/06 13:38:11 deuce Exp $
 //
 // irclib.js
 //
@@ -22,7 +22,7 @@
 // Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
-const IRCLIB_REVISION = "$Revision$".split(' ')[1];
+const IRCLIB_REVISION = "$Revision: 1.23 $".split(' ')[1];
 const IRCLIB_VERSION = "irclib.js-" + IRCLIB_REVISION;
 
 // Connect to a server as a client.

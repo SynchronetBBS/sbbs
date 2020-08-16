@@ -2,7 +2,7 @@
 
 /* Convert ANSI messages to Synchronet .asc (Ctrl-A code) format */
 
-/* $Id$ */
+/* $Id: ans2asc.c,v 1.16 2020/05/09 23:17:43 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -48,7 +48,7 @@ static void print_usage(const char* prog)
 {
 	char revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.16 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nSynchronet ANSI-Terminal-Sequence to Ctrl-A-Code Conversion Utility v%s\n",revision);
 	fprintf(stderr,"\nusage: %s infile.ans [outfile.asc | outfile.msg] [[option] [...]]\n",prog);

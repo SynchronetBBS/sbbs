@@ -1,7 +1,7 @@
 /* Synchronet real-time chat functions */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: chat.cpp,v 1.84 2020/08/15 21:58:14 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

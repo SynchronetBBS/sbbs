@@ -1,4 +1,4 @@
-// $Id$
+// $Id: websocketservice.js,v 1.14 2019/08/11 19:20:20 echicken Exp $
 
 // websocketservice.js 
 

@@ -1,6 +1,6 @@
 /* Synchronet (oh, so old) data access routines */
 
-/* $Id$ */
+/* $Id: data.cpp,v 1.32 2020/04/27 07:42:23 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

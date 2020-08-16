@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: sbbsdefs.js,v 1.103 2020/05/24 10:23:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

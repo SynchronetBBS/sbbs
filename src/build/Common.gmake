@@ -3,7 +3,7 @@
 #
 # Global build system setup file (for GNU Make and gcc)
 #
-# $Id$
+# $Id: Common.gmake,v 1.112 2020/05/02 01:30:46 rswindell Exp $
 #
 #############################################################################
 # @format.tab-size 4		(Plain Text/Source Code File Header)			#

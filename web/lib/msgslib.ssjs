@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: msgslib.ssjs,v 1.62 2018/12/21 02:32:03 rswindell Exp $ */
 
 load("sbbsdefs.js");
 load('../web/lib/template.ssjs');

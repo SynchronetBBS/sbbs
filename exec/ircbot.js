@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircbot.js,v 1.38 2020/06/29 18:36:04 echicken Exp $
 /*
 
  This program is free software; you can redistribute it and/or modify

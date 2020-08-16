@@ -2,7 +2,7 @@
 
 // Login module for Synchronet BBS v3.1
 
-// $Id$
+// $Id: login.js,v 1.21 2020/01/23 18:48:11 rswindell Exp $
 
 load("sbbsdefs.js");
 

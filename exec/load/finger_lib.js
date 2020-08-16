@@ -1,4 +1,4 @@
-// $Id$
+// $Id: finger_lib.js,v 1.1 2019/01/12 01:46:42 rswindell Exp $
 
 // A Finger/SYSTAT client library
 

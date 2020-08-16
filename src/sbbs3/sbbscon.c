@@ -1,6 +1,6 @@
 /* Synchronet vanilla/console-mode "front-end" */
 
-/* $Id$ */
+/* $Id: sbbscon.c,v 1.281 2020/08/03 03:30:26 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -1571,7 +1571,7 @@ int main(int argc, char** argv)
 		}
 		if(stricmp(arg, "version") == 0) {
 			char revision[16];
-			sscanf("$Revision$", "%*s %s", revision);
+			sscanf("$Revision: 1.281 $", "%*s %s", revision);
 			char compiler[32];
 			DESCRIBE_COMPILER(compiler);
 			printf("%s\n", bbs_ver());

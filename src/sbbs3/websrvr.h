@@ -1,6 +1,6 @@
 /* Synchronet Web Server */
 
-/* $Id$ */
+/* $Id: websrvr.h,v 1.57 2020/03/07 00:18:50 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

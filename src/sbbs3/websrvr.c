@@ -1,6 +1,6 @@
 /* Synchronet Web Server */
 
-/* $Id$ */
+/* $Id: websrvr.c,v 1.720 2020/08/08 19:04:57 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -6769,7 +6769,7 @@ const char* DLLCALL web_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.720 $", "%*s %s", revision);
 
 	sprintf(ver,"%s %s%s  "
 		"Compiled %s %s with %s"

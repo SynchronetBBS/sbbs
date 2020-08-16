@@ -1,9 +1,9 @@
 /* ToDo: At what point should trailing whitespace be removed? */
-/* $Id$ */
+/* $Id: fseditor.js,v 1.104 2020/04/26 08:20:59 rswindell Exp $ */
 
 load("sbbsdefs.js");
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.104 $".split(' ')[1];
 require("text.js", 'FileNotReceived');
 
 if(!bbs.mods.userprops)

@@ -1,6 +1,6 @@
 /* Synchronet for *nix user editor */
 
-/* $Id$ */
+/* $Id: uedit.c,v 1.64 2020/04/12 20:24:43 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -1912,7 +1912,7 @@ int main(int argc, char** argv)  {
 	FILE*				fp;
 	bbs_startup_t		bbs_startup;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.64 $", "%*s %s", revision);
 
     printf("\nSynchronet User Editor %s-%s  Copyright %s "
         "Rob Swindell\n",revision,PLATFORM_DESC,&__DATE__[7]);

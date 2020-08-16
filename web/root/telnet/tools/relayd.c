@@ -1,7 +1,7 @@
 /**
  * relayd.c -- a relay daemon (using one targethost/port)
  * --
- * $Id$
+ * $Id: relayd.c,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

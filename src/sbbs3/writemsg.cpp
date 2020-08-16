@@ -1,7 +1,7 @@
 /* Synchronet message creation routines */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: writemsg.cpp,v 1.175 2020/05/24 19:34:02 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -522,7 +522,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	if(console&CON_RAW_IN) {
 
 		if(editor != NULL)
-			*editor = "Synchronet writemsg $Revision$";
+			*editor = "Synchronet writemsg $Revision: 1.175 $";
 
 		bprintf(text[EnterMsgNowRaw]
 			,(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
@@ -659,7 +659,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	else {
 
 		if(editor != NULL)
-			*editor = "Synchronet msgeditor $Revision$";
+			*editor = "Synchronet msgeditor $Revision: 1.175 $";
 
 		buf[0]=0;
 		if(linesquoted || draft_restored) {

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: badpasswords.js,v 1.3 2019/01/11 09:38:12 rswindell Exp $
 
 "use strict";
 require("sbbsdefs.js", 'USER_DELETED');

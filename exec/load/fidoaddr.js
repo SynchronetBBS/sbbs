@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fidoaddr.js,v 1.3 2020/03/15 02:13:18 rswindell Exp $
 
 // Validate a numeric component of an FTN address
 // FSP-1028: Zone/Net/Node/Point must be int 0 - 32767

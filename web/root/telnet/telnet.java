@@ -1,7 +1,7 @@
 /**
  * telnet -- implements a simple telnet
  * --
- * $Id$
+ * $Id: telnet.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Mon Aug  4 13:11:14 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -45,7 +45,7 @@ import modules.Module;
 
 /**
  * A telnet implementation that supports different terminal emulations.
- * @version $Id$
+ * @version $Id: telnet.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  */
 public class telnet extends Applet implements Runnable, TerminalHost, StatusPeer
@@ -124,7 +124,7 @@ public class telnet extends Applet implements Runnable, TerminalHost, StatusPeer
    */
   public String getAppletInfo()
   {
-    String info = "The Java(tm) Telnet Applet\n$Id$\n";
+    String info = "The Java(tm) Telnet Applet\n$Id: telnet.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $\n";
     info += "Terminal emulation: "+term.getTerminalType()+
       " ["+term.toString()+"]\n";
     info += "Terminal IO version: "+tio.toString()+"\n";

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mrc-client.js,v 1.5 2019/05/05 04:52:40 echicken Exp $ */
 
 /**
  * Multi Relay Chat Client Module

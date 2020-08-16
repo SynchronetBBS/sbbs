@@ -2,7 +2,7 @@
 
 /* Synchronet ZMODEM Functions */
 
-/* $Id$ */
+/* $Id: zmodem.c,v 1.124 2019/08/25 03:05:34 rswindell Exp $ */
 
 /******************************************************************************/
 /* Project : Unite!       File : zmodem general        Version : 1.02         */
@@ -2305,7 +2305,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	sscanf("$Revision$", "%*s %s", buf);
+	sscanf("$Revision: 1.124 $", "%*s %s", buf);
 
 	return(buf);
 }

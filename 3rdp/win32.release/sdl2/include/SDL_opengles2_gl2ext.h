@@ -1,7 +1,7 @@
 #ifndef __gl2ext_h_
 #define __gl2ext_h_
 
-/* $Revision$ on $Date$ */
+/* $Revision: 1.1 $ on $Date: 2020/03/31 20:13:45 $ */
 
 #ifdef __cplusplus
 extern "C" {

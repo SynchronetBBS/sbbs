@@ -1,4 +1,4 @@
-// $Id$
+// $Id: termcapture_lib.js,v 1.7 2019/03/22 14:23:53 rswindell Exp $
 
 // Currently, only supports Telnet and RLogin
 

@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) message text library routines */
 
-/* $Id$ */
+/* $Id: smbtxt.c,v 1.49 2019/11/19 22:04:55 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

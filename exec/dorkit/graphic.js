@@ -1,4 +1,4 @@
-// $Id$
+// $Id: graphic.js,v 1.13 2019/09/03 05:26:50 deuce Exp $
 
 /*
  * "Graphic" object

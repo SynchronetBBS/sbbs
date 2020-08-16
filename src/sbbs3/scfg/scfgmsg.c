@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: scfgmsg.c,v 1.73 2020/05/05 20:28:51 rswindell Exp $ */
 
 /* Configuring Message Options and Message Groups (but not sub-boards) */
 

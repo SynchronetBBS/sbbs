@@ -1,6 +1,6 @@
 /* Synchronet MIME functions, originally written/submitted by Marc Lanctot */
 
-/* $Id$ */
+/* $Id: mime.c,v 1.12 2018/07/20 01:34:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

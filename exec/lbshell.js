@@ -2,7 +2,7 @@
 
 // Lightbar Command Shell for Synchronet Version 4.00a+
 
-// $Id$
+// $Id: lbshell.js,v 1.133 2020/05/04 06:12:43 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

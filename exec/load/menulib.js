@@ -1,4 +1,4 @@
-// $Id$
+// $Id: menulib.js,v 1.1 2005/11/19 03:25:41 rswindell Exp $
 
 function read_menu(fname)
 {

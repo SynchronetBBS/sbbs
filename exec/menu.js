@@ -1,6 +1,6 @@
 // menu.js
 
-// $Id$
+// $Id: menu.js,v 1.5 2005/11/19 05:46:44 rswindell Exp $
 
 // Execute a Synchronet menu (.menu) file
 

@@ -6,7 +6,7 @@
 
 load("sbbsdefs.js");
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.6 $".split(' ')[1];
 
 print("Synchronet BulkMailer " + REVISION);
 

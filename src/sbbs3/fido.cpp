@@ -1,6 +1,6 @@
 /* Synchronet FidoNet-related routines */
 
-/* $Id$ */
+/* $Id: fido.cpp,v 1.82 2020/07/15 06:12:56 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 /* modopts.js */
 
-/* $Id$ */
+/* $Id: modopts.js,v 1.4 2019/01/11 09:26:34 rswindell Exp $ */
 
 /* Load Synchronet JS Module Control/Enable options from ctrl/modopts.ini */
 /* Parse a single .ini section using the argument (to load) as the section name */

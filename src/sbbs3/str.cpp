@@ -1,6 +1,6 @@
 /* Synchronet high-level string i/o routines */
 
-/* $Id$ */
+/* $Id: str.cpp,v 1.88 2020/04/23 02:40:19 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

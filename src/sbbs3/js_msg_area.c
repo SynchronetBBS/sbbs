@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "Message Area" Object */
 
-/* $Id$ */
+/* $Id: js_msg_area.c,v 1.75 2020/08/16 01:01:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

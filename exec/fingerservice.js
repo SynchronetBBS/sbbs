@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fingerservice.js,v 1.48 2020/01/12 00:46:45 rswindell Exp $
 // vi: tabstop=4
 
 // Synchronet Service for the Finger protocol (RFC 1288)
@@ -44,7 +44,7 @@
 // disable those elements.
 
 "use strict";
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.48 $".split(' ')[1];
 
 var active_users = false;	// Active-Users/SYSTAT protocol mode (Finger when false)
 var options = load({}, 'modopts.js', 'fingerservice');

@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for SMBLIB
 
-# $Id$
+# $Id: objects.mk,v 1.6 2019/06/29 01:22:50 rswindell Exp $
 
 # OBJODIR, DIRSEP, and OFILE must be pre-defined
 

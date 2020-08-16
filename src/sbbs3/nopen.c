@@ -2,7 +2,7 @@
 
 /* Network open functions (nopen and fnopen) and friends */
 
-/* $Id$ */
+/* $Id: nopen.c,v 1.30 2018/11/23 17:08:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

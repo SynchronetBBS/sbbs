@@ -3,7 +3,7 @@
 /* Synchronet temp directory file transfer routines */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: tmp_xfer.cpp,v 1.51 2020/05/14 07:50:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

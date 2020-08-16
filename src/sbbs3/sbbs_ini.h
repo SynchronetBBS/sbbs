@@ -1,6 +1,6 @@
 /* Synchronet initialization (.ini) file routines */
 
-/* $Id$ */
+/* $Id: sbbs_ini.h,v 1.13 2019/07/24 04:41:49 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

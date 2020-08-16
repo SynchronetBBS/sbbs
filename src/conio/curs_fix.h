@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: curs_fix.h,v 1.6 2020/04/25 03:12:53 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

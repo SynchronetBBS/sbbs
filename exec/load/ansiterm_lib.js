@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ansiterm_lib.js,v 1.10 2020/05/01 19:35:05 rswindell Exp $
 // vi: tabstop=4
 
 /* Example usage:

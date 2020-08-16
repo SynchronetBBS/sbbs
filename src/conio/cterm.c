@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: cterm.c,v 1.313 2020/06/27 00:04:45 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -4372,7 +4372,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* CIOLIBCALL cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision$";
+	char	*revision="$Revision: 1.313 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;

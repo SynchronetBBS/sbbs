@@ -3,7 +3,7 @@
 
 /* Set socket options based on contents of ctrl/sockopts.ini */
 
-/* $Id$ */
+/* $Id: sockopts.c,v 1.26 2019/01/12 22:44:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

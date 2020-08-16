@@ -1,4 +1,4 @@
-// $Id$
+// $Id: inputline.js,v 1.24 2020/03/26 07:37:27 rswindell Exp $
 
 if(js.global.getColor == undefined)
 	js.global.load(js.global,"funclib.js");

@@ -1,7 +1,7 @@
 /**
  * CharDisplayTest
  * --
- * $Id$
+ * $Id: CharDisplayTest.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Mon Feb 17 20:11:20 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -37,7 +37,7 @@ import display.CharDisplay;
 /**
  * CharDisplayTest -- a test applet to show the display/CharDisplay features
  * --
- * @version	$Id$
+ * @version	$Id: CharDisplayTest.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author	Matthias L. Jugel, Marcus Meiﬂner
  */
 public class CharDisplayTest extends Applet

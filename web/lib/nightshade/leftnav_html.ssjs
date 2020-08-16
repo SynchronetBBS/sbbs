@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: leftnav_html.ssjs,v 1.3 2011/07/02 18:28:35 ree Exp $ */
 
 /* FTP link */
 

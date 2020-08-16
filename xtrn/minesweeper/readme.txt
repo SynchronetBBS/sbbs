@@ -136,4 +136,4 @@ rename the data/minesweeper.jsonl to xtrn/minesweeper/winners.jsonl. If you
 don't care, the game will run fine and new winners will be added to the
 new/correct filename.
 
-$Id$
+$Id: readme.txt,v 2.1 2019/10/07 20:53:14 rswindell Exp $

@@ -1,6 +1,6 @@
 /* Synchronet pack QWK packet routine */
 
-/* $Id$ */
+/* $Id: pack_qwk.cpp,v 1.85 2020/04/11 04:01:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

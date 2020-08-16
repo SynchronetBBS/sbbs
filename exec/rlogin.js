@@ -2,7 +2,7 @@
 
 // Telnet Gateway using RLogin protocol - Requires v3.00c
 
-// $Id$
+// $Id: rlogin.js,v 1.4 2017/10/25 08:59:15 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

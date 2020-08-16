@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "External Program Area" Object */
 
-/* $Id$ */
+/* $Id: js_xtrn_area.c,v 1.31 2019/01/05 06:33:39 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

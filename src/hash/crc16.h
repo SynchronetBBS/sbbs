@@ -2,7 +2,7 @@
 
 /* CCITT 16-bit CRC table and calculation macro */
 
-/* $Id$ */
+/* $Id: crc16.h,v 1.7 2018/07/24 01:12:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

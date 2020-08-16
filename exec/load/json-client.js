@@ -66,7 +66,7 @@ load("json-sock.js");
 */
 
 function JSONClient(serverAddr,serverPort) {
-	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
+	this.VERSION = "$Revision: 1.29 $".replace(/\$/g,'').split(' ')[1];
 	this.serverAddr=serverAddr;
     if(this.serverAddr==undefined) 
 		throw("no host specified");

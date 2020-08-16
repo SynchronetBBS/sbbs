@@ -1,6 +1,6 @@
 /* ircmsg.js */
 
-/* $Id$ */
+/* $Id: ircwho.js,v 1.4 2016/05/13 01:33:20 deuce Exp $ */
 
 if(this.IRCLIB_REVISION==undefined)
 	load("irclib.js");	// Thanks Cyan!

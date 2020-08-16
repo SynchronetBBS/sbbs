@@ -1,6 +1,6 @@
 /* Synchronet Mail (SMTP/POP3/SendMail) server */
 
-/* $Id$ */
+/* $Id: mailsrvr.h,v 1.88 2019/03/22 21:28:27 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

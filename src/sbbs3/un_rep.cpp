@@ -1,7 +1,7 @@
 /* Synchronet QWK replay (REP) packet unpacking routine */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: un_rep.cpp,v 1.80 2020/08/10 00:43:43 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

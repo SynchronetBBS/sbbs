@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) index re-generator */
 
-/* $Id$ */
+/* $Id: fixsmb.c,v 1.46 2018/04/30 06:05:12 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -332,7 +332,7 @@ int main(int argc, char **argv)
 	str_list_t	list;
 	int			retval = EXIT_SUCCESS;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.46 $", "%*s %s", revision);
 
 	printf("\nFIXSMB v2.10-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
 		,PLATFORM_DESC,revision,smb_lib_ver());

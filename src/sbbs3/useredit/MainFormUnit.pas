@@ -1,6 +1,6 @@
 { Synchronet User Editor (Delphi 5 for Win32 project) }
 
-{ $Id$ }
+{ $Id: MainFormUnit.pas,v 1.12 2020/03/31 02:06:20 rswindell Exp $ }
 
 {****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

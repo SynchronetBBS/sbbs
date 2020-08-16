@@ -2,7 +2,7 @@
 
 /* Synchronet file contents display routines */
 
-/* $Id$ */
+/* $Id: viewfile.cpp,v 1.12 2020/05/11 08:57:19 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) FILE stream I/O routines */
 
-/* $Id$ */
+/* $Id: smbfile.c,v 1.17 2020/04/14 07:08:50 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

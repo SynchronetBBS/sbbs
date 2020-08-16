@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: kingdom.js,v 1.1 2009/11/28 05:57:14 cyan Exp $
 
    Kingdom Gold - Ported to JavaScript by Randolph E. Sommerfeld <sysop@rrx.ca>
 

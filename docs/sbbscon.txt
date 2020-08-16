@@ -1,7 +1,7 @@
 Synchronet Console Documentation
 ================================
 
-$Id$
+$Id: sbbscon.txt,v 1.31 2006/05/16 19:14:17 deuce Exp $
 
 1. Introduction
 ---------------

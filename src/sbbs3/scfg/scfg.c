@@ -1,6 +1,6 @@
 /* Synchronet configuration utility 										*/
 
-/* $Id$ */
+/* $Id: scfg.c,v 1.117 2020/04/12 18:28:36 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

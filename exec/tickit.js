@@ -1,6 +1,6 @@
 /*
  * An intentionally simple TIC handler for Synchronet.
- * $Id$
+ * $Id: tickit.js,v 1.56 2020/05/16 20:11:37 rswindell Exp $
  *
  * How to set up... add a timed event:
  * Internal Code                   TICKIT
@@ -32,7 +32,7 @@ var tickit = new TickITCfg();
 var files_bbs={};
 var force_replace = false;
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.56 $".split(' ')[1];
 
 var tickitVersion = "TickIT "+REVISION;
 // emit tickitVersion to the log for general purposes - wk42

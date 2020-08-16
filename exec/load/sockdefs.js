@@ -5,7 +5,7 @@
  * Per RFC 790, September 1981, taken from the BSD file netinet/in.h.
  */
 
-/* $Id$ */
+/* $Id: sockdefs.js,v 1.8 2020/04/09 19:16:46 deuce Exp $ */
 
 /*
  * Protocols

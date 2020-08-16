@@ -1,4 +1,4 @@
-// $Id$
+// $Id: smbdefs.js,v 1.11 2019/08/26 08:57:14 rswindell Exp $
 // Synchronet Message Base constant definitions (from smbdefs.h and smblib.h)								
 								
 /* Values for MsgBase.status (SMBLIB function return values) */

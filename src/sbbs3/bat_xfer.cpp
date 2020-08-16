@@ -2,7 +2,7 @@
 
 /* Synchronet batch file transfer functions */
 
-/* $Id$ */
+/* $Id: bat_xfer.cpp,v 1.41 2020/05/13 23:56:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

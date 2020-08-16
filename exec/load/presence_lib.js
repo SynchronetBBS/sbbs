@@ -1,4 +1,4 @@
-// $Id$
+// $Id: presence_lib.js,v 1.14 2020/08/01 22:06:51 rswindell Exp $
 
 // Library for reporting user presence (e.g. BBS node listings, who's online)
 // Much of the code was derived from src/sbbs3/getnode.cpp: nodelist(), whos_online(), printnodedat()

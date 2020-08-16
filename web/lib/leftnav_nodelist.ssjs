@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: leftnav_nodelist.ssjs,v 1.4 2006/01/31 23:19:29 runemaster Exp $ */
 
 var start=new Date();
 

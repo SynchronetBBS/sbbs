@@ -1,4 +1,4 @@
-// $Id$
+// $Id: telnet_lib.js,v 1.1 2015/08/31 20:12:41 rswindell Exp $
 
 const IAC	=255	/* 0xff - Interpret as command */
 const DONT	=254	/* 0xfe - Don't do option */

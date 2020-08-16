@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dpoker.c,v 1.17 2019/08/13 20:09:01 rswindell Exp $ */
 
 /******************************************************************************
   DPOKER.EXE: Domain Poker online multi-player poker BBS door game for
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
         long points;
     } player_stuff;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.17 $", "%*s %s", revision);
 	DESCRIBE_COMPILER(compiler);
 
     memset(node,'\0',MAX_NODES);

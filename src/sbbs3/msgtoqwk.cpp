@@ -1,6 +1,6 @@
 /* Synchronet message to QWK format conversion routine */
 
-/* $Id$ */
+/* $Id: msgtoqwk.cpp,v 1.67 2019/09/10 05:48:56 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

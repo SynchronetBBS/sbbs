@@ -16,7 +16,7 @@
 # the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 #
-# $Id$
+# $Id: Makefile,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
 
 OPT	= 
 DEBUG	= -g -deprecation

@@ -2,7 +2,7 @@
 
 /* Synchronet user logon routines */
 
-/* $Id$ */
+/* $Id: logon.cpp,v 1.81 2020/08/04 04:26:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,7 +1,7 @@
 /* Synchronet string input routines */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: getstr.cpp,v 1.40 2020/05/08 08:25:49 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

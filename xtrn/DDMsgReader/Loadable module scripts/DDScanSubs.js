@@ -1,4 +1,4 @@
-// $Id$
+// $Id: DDScanSubs.js,v 1.6 2020/05/23 23:26:55 nightfox Exp $
 
 // This script is to be executed for the 'Scan Subs' loadable module, configured
 // in SCFG in System > Loadable Modules.

@@ -2,7 +2,7 @@
 
 /* Synchronet BBS List Door */
 
-/* $Id$ */
+/* $Id: sbl.c,v 1.25 2013/09/15 19:10:46 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

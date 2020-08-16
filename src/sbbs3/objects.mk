@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for SBBS.DLL
 
-# $Id$(DIRSEP)09$(DIRSEP)08 07:23:54 deuce Exp $
+# $Id: objects.mk,v 1.76 2020/04/03 19:54:31 rswindell Exp $(DIRSEP)09$(DIRSEP)08 07:23:54 deuce Exp $
 
 # OBJODIR, SLASH, and OFILE must be pre-defined
 

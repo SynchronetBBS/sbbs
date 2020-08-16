@@ -1,4 +1,4 @@
-// $Id$
+// $Id: xbimage.js,v 1.6 2020/04/19 19:52:31 rswindell Exp $
 
 // Utility module for creating and displaying XBin image files.
 

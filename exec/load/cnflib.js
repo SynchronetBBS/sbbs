@@ -1,5 +1,5 @@
 /* CNF data structure definitions (see scfglib2.c, scfgdefs.h) 
-	$Id$
+	$Id: cnflib.js,v 1.15 2020/03/15 08:47:52 rswindell Exp $
 */
 
 js.global.load(js.global,"cnfdefs.js");

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: mouse_getkey.js,v 1.5 2020/05/01 19:42:31 rswindell Exp $
 
 function mouse_getkey(mode, timeout, enabled)
 {

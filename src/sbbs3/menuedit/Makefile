@@ -6,7 +6,7 @@
 # @format.tab-size 4													#
 #########################################################################
 
-# $Id$
+# $Id: Makefile,v 1.1.1.1 2004/07/20 02:09:21 rswindell Exp $
 
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version

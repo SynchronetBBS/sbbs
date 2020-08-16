@@ -1,6 +1,6 @@
 /* SBJ.C */
 
-/* $Id$ */
+/* $Id: sbj.c,v 1.14 2003/08/29 21:51:52 rswindell Exp $ */
 
 /************************/
 /* Synchronet Blackjack */

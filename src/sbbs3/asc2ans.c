@@ -2,7 +2,7 @@
 
 /* Converts Synchronet Ctrl-A codes into ANSI escape sequences */
 
-/* $Id$ */
+/* $Id: asc2ans.c,v 1.12 2020/05/09 23:06:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -53,7 +53,7 @@ static void print_usage(const char* prog)
 {
 	char revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.12 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nSynchronet Ctrl-A-Code to ANSI-Terminal-Sequence Conversion Utility v%s\n",revision);
 	fprintf(stderr,"\nusage: %s infile.asc [outfile.ans] [[option] [...]]\n",prog);

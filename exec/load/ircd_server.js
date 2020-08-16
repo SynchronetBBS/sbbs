@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_server.js,v 1.60 2020/04/03 22:21:51 deuce Exp $
 //
 // ircd_channel.js                
 //
@@ -21,7 +21,7 @@
 //
 
 ////////// Constants / Defines //////////
-const SERVER_REVISION = "$Revision$".split(' ')[1];
+const SERVER_REVISION = "$Revision: 1.60 $".split(' ')[1];
 
 // Various N:Line permission bits
 const NLINE_CHECK_QWKPASSWD		=(1<<0);	// q

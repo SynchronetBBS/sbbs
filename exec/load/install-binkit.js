@@ -1,4 +1,4 @@
-// $Id$	
+// $Id: install-binkit.js,v 1.2 2020/03/26 06:18:33 rswindell Exp $	
 
 // Installs BinkIT (BinkP FidoNet Mailer) timed events and service
 // Enables SBBSecho timed events (FIDOIN and FIDOOUT)

@@ -1,6 +1,6 @@
 /* Synchronet main/telnet server thread startup structure */
 
-/* $Id$ */
+/* $Id: startup.h,v 1.84 2019/03/22 21:28:27 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

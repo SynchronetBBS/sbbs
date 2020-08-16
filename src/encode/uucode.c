@@ -2,7 +2,7 @@
 
 /* Unix-to-unix encoding/decoding routines */
 
-/* $Id$ */
+/* $Id: uucode.c,v 1.6 2019/07/18 03:10:54 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

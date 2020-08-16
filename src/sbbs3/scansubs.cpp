@@ -1,6 +1,6 @@
 /* Synchronet message database scanning routines */
 
-/* $Id$ */
+/* $Id: scansubs.cpp,v 1.30 2019/05/02 19:37:04 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 // E-mail Section
 
-// $Id$
+// $Id: email_sec.js,v 1.10 2020/04/24 08:05:39 rswindell Exp $
 
 // Note: this module replaces the old ### E-mail section ### Baja code in exec/*.src
 // replace "call E-mail" with "exec_bin email_sec"

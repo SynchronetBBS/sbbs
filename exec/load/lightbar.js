@@ -1,6 +1,6 @@
 /*
  * Generic lightbar interface.
- * $Id$
+ * $Id: lightbar.js,v 1.48 2020/04/09 04:44:11 deuce Exp $
  */
 
 /* ToDo: Support multiple columns */

@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: conn.h,v 1.27 2020/06/27 00:04:49 deuce Exp $ */
 
 #ifndef _CONN_H_
 #define _CONN_H_

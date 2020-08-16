@@ -1,10 +1,6 @@
 /* General(ly useful) constant, macro, and type definitions */
 
-<<<<<<< gen_defs.h
-/* $Id$ */
-=======
 /* $Id: gen_defs.h,v 1.85 2020/08/15 19:57:51 rswindell Exp $ */
->>>>>>> 1.85
 // vi: tabstop=4
 																			
 /****************************************************************************

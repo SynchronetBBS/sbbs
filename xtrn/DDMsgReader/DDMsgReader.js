@@ -1,4 +1,4 @@
-// $Id$
+// $Id: DDMsgReader.js,v 1.144 2020/07/11 23:07:46 nightfox Exp $
 
 /* This is a message reader/lister door for Synchronet.  Features include:
  * - Listing messages in the user's current message area with the ability to

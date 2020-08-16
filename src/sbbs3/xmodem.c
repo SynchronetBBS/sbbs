@@ -2,7 +2,7 @@
 
 /* Synchronet X/YMODEM Functions */
 
-/* $Id$ */
+/* $Id: xmodem.c,v 1.52 2019/08/31 22:39:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -622,7 +622,7 @@ const char* xmodem_source(void)
 
 char* xmodem_ver(char *buf)
 {
-	sscanf("$Revision$", "%*s %s", buf);
+	sscanf("$Revision: 1.52 $", "%*s %s", buf);
 
 	return(buf);
 }

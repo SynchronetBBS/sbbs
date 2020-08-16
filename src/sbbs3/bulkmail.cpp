@@ -2,7 +2,7 @@
 
 /* Synchronet bulk e-mail functions */
 
-/* $Id$ */
+/* $Id: bulkmail.cpp,v 1.45 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

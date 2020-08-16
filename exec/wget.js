@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: wget.js,v 1.5 2020/04/05 23:38:55 rswindell Exp $ */
 
 require("http.js", 'HTTPRequest');
 require("ftp.js", 'FTP');

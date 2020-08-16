@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) utility */
 
-/* $Id$ */
+/* $Id: smbutil.c,v 1.136 2020/05/25 00:40:34 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -1583,7 +1583,7 @@ int main(int argc, char **argv)
 	else	/* if redirected, don't send status messages to stderr */
 		statfp=nulfp;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.136 $", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 

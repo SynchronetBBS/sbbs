@@ -1,4 +1,4 @@
-// $Id$
+// $Id: nodelist_options.js,v 1.1 2019/01/29 22:49:08 rswindell Exp $
 
 var options = bbs.mods.nodelist_options;
 if(!options) {

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_unreg.js,v 1.53 2020/04/04 03:34:03 deuce Exp $
 //
 // ircd_unreg.js
 //
@@ -20,7 +20,7 @@
 // ** Handle unregistered clients.
 //
 
-const UNREG_REVISION = "$Revision$".split(' ')[1];
+const UNREG_REVISION = "$Revision: 1.53 $".split(' ')[1];
 
 ////////// Objects //////////
 function Unregistered_Client(id,socket) {

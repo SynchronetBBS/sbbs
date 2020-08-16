@@ -2,7 +2,7 @@
 
 /* Execute a BBS JavaScript module from the command-line */
 
-/* $Id$ */
+/* $Id: jsdoor.c,v 1.8 2019/08/20 23:14:30 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

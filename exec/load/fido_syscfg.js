@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fido_syscfg.js,v 1.24 2020/05/16 20:10:19 rswindell Exp $
 /*
  * Parse as much as needed from the SBBSecho configuration.
  * v3+ uses sbbsecho.ini.

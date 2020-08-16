@@ -2,7 +2,7 @@
 
 // Utility functions for Synchronet external mail processors
 
-// $Id$
+// $Id: mailproc_util.js,v 1.13 2019/05/02 21:23:04 rswindell Exp $
 
 require("sbbsdefs.js", 'NET_INTERNET');
 require("smbdefs.js", 'RFC822HEADER');

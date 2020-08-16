@@ -2,7 +2,7 @@
 
 /* Synchronet external program/door section and drop file routines */
 
-/* $Id$ */
+/* $Id: xtrn_sec.cpp,v 1.91 2020/08/01 18:34:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

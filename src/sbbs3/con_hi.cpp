@@ -1,7 +1,7 @@
 /* Synchronet hi-level console routines */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: con_hi.cpp,v 1.30 2020/05/24 08:11:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

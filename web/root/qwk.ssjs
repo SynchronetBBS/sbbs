@@ -1,4 +1,4 @@
-// $Id$
+// $Id: qwk.ssjs,v 1.2 2019/06/02 04:55:14 rswindell Exp $
 // vi: tabstop=4
 
 // Handle QWK packet transfers (uploads of REP packets and downloads of QWK packets)
@@ -20,7 +20,7 @@
 // $ wget --auth-no-challenge --http-user=<username> --http-password=<password>
 //        --post-data= <hub-hostname>/qwk.ssjs?received=<QWK-file-length>
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.2 $".split(' ')[1];
 log(LOG_INFO, "QWK Packet Handler (qwk.ssjs) " + REVISION);
 
 const pack_timeout = 60;	// seconds

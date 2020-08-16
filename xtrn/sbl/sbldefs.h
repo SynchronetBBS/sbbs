@@ -2,7 +2,7 @@
 
 /* Synchronet BBS List Macros, constants, and type definitions */
 
-/* $Id$ */
+/* $Id: sbldefs.h,v 1.11 2013/09/15 09:16:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

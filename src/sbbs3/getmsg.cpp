@@ -1,6 +1,6 @@
 /* Synchronet message retrieval functions */
 
-/* $Id$ */
+/* $Id: getmsg.cpp,v 1.102 2020/05/08 05:19:29 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: twint500.js,v 1.13 2020/04/17 05:05:00 rswindell Exp $
 // #!/synchronet/src/src/sbbs3/gcc.freebsd.exe.stephen.hurd.local/jsexec
 
 var startup_path='.';

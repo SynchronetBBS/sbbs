@@ -1,4 +1,4 @@
-// $Id$
+// $Id: chat_sec.js,v 1.15 2020/01/05 23:50:35 rswindell Exp $
 
 // Chat Section for any/all Synchronet command shells
 

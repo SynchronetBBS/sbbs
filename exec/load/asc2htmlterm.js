@@ -1,4 +1,4 @@
-// $Id$
+// $Id: asc2htmlterm.js,v 1.5 2016/04/24 00:55:44 deuce Exp $
 
 // Converts a ^A/@-code text to HTML for htmlterm usage.
 

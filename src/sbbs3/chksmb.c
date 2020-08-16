@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) validity checker */
 
-/* $Id$ */
+/* $Id: chksmb.c,v 1.72 2020/04/04 20:36:38 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 	char		revision[16];
 	time_t		now=time(NULL);
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.72 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nCHKSMB v2.30-%s (rev %s) SMBLIB %s - Check Synchronet Message Base\n"
 		,PLATFORM_DESC,revision,smb_lib_ver());

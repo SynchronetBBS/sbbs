@@ -1,6 +1,6 @@
 /* Synchronet configuration file save routines */
 
-/* $Id$ */
+/* $Id: scfgsave.c,v 1.98 2020/08/08 20:17:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

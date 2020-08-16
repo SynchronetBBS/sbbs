@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: inline.ssjs,v 1.8 2011/11/09 09:38:00 deuce Exp $ */
 
 /* 
  * Inline attachment FS emulator

@@ -1,7 +1,7 @@
 ############################################
 # Makefile for Synchronet SBBSECHO Utility
 # For use with Watcom C/C++
-# $Id$                                  
+# $Id: sbbsecho.wmk,v 1.4 2005/11/01 00:26:06 rswindell Exp $                                  
 ############################################
 
 !ifndef OS

@@ -1,6 +1,6 @@
 /* Synchronet Message-ID generation routines */
 
-/* $Id$ */
+/* $Id: msg_id.c,v 1.16 2020/07/15 06:12:56 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

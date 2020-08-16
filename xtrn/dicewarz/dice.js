@@ -1,7 +1,7 @@
 /*
 	***************BBS DICE WARZ***************
-	$Id$
-	$Revision$
+	$Id: dice.js,v 1.55 2014/01/07 16:31:27 mcmlxxix Exp $
+	$Revision: 1.55 $
 	for use with Synchronet v3.14+
 	by Matt Johnson (2008)  
 	*******************************************

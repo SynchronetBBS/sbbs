@@ -1,6 +1,6 @@
 /* Synchronet QWK reply (REP) packet creation routine */
 
-/* $Id$ */
+/* $Id: pack_rep.cpp,v 1.51 2020/04/11 04:01:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

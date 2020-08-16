@@ -1,4 +1,4 @@
-// $Id$
+// $Id: logonlist_lib.js,v 1.2 2019/08/16 03:57:28 rswindell Exp $
 
 // Library for dealing with the "logon list" (data/logon.jsonl)
 

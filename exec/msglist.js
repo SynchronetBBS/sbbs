@@ -1,4 +1,4 @@
-// $Id$
+// $Id: msglist.js,v 1.14 2020/08/13 20:05:23 rswindell Exp $
 // vi: tabstop=4
 
 // Message Listing Module

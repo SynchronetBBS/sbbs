@@ -1,7 +1,7 @@
 /**
  * Status peer interface.
  * --
- * $Id$
+ * $Id: StatusPeer.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Wed Mar  5 13:40:54 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -29,7 +29,7 @@ import java.util.Vector;
 /**
  * StatusPeer -- interface for status messages
  * --
- * @version	$Id$
+ * @version	$Id: StatusPeer.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author	Matthias L. Jugel, Marcus Meiﬂner
  */
 

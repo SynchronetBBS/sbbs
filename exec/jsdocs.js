@@ -3,7 +3,7 @@
 // This script generates HTML documentation of the Synchronet JavaScript object model
 // Requires a Debug build of the Synchronet executable(s)
 
-// $Id$
+// $Id: jsdocs.js,v 1.40 2020/04/20 06:31:15 rswindell Exp $
 
 const table_tag = "<table border=1 width=100%>";
 

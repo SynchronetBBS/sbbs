@@ -1,4 +1,4 @@
-// $Id$
+// $Id: gnatslib.js,v 1.29 2016/04/24 00:55:44 deuce Exp $
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('mailutil.js', 'mail_get_name');

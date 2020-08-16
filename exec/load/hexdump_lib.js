@@ -1,4 +1,4 @@
-// $Id$
+// $Id: hexdump_lib.js,v 1.5 2019/05/09 22:21:25 rswindell Exp $
 
 function num_digits(n)
 {

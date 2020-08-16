@@ -2,7 +2,7 @@
 
 /* Synchronet ANSI terminal functions */
 
-/* $Id$ */
+/* $Id: ansiterm.cpp,v 1.27 2020/05/24 08:26:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

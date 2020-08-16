@@ -1,7 +1,7 @@
 /* Synchronet JavaScript "system" Object */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: js_system.c,v 1.179 2020/03/31 18:32:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

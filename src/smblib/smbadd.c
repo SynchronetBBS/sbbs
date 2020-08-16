@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) high-level "add message" function */
 
-/* $Id$ */
+/* $Id: smbadd.c,v 1.46 2020/04/12 06:09:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

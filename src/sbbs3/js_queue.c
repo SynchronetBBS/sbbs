@@ -1,6 +1,6 @@
 /* Synchronet JavaScript "Queue" Object */
 
-/* $Id$ */
+/* $Id: js_queue.c,v 1.57 2019/08/22 01:41:23 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

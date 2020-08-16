@@ -11,7 +11,7 @@
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.17 2019/08/24 19:52:01 rswindell Exp $
 
 SRC_ROOT	=	../..
 include $(SRC_ROOT)/build/Common.gmake

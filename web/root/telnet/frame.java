@@ -1,7 +1,7 @@
 /**
  * frame -- a frame subclass for handling frame events
  * --
- * $Id$
+ * $Id: frame.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Tue Jul  8 10:02:36 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".

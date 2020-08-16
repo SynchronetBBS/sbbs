@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for ENCODE LIB
 
-# $Id$
+# $Id: objects.mk,v 1.6 2019/07/10 00:22:10 rswindell Exp $
 
 # OBJODIR, DIRSEP, and OFILE must be pre-defined
 

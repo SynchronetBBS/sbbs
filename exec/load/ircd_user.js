@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_user.js,v 1.53 2020/04/03 23:27:54 deuce Exp $
 //
 // ircd_unreg.js
 //
@@ -21,7 +21,7 @@
 //
 
 ////////// Constants / Defines //////////
-const USER_REVISION = "$Revision$".split(' ')[1];
+const USER_REVISION = "$Revision: 1.53 $".split(' ')[1];
 
 const USERMODE_NONE			=(1<<0); // NONE
 const USERMODE_OPER			=(1<<1); // o

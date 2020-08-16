@@ -1,7 +1,7 @@
 #ifndef __gl2_h_
 #define __gl2_h_
 
-/* $Revision$ on $Date$ */
+/* $Revision: 1.1 $ on $Date: 2020/03/31 20:13:44 $ */
 
 /*#include <GLES2/gl2platform.h>*/
 

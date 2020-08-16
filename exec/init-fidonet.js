@@ -1,4 +1,4 @@
-// $Id$
+// $Id: init-fidonet.js,v 1.29 2020/05/12 17:23:30 rswindell Exp $
 
 // Initial FidoNet setup script - interactive, run via JSexec or ;exec
 
@@ -22,7 +22,7 @@
 
 "use strict";
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.29 $".split(' ')[1];
 require('sbbsdefs.js', 'SUB_NAME');
 var netname;
 var netdns;

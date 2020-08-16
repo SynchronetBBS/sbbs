@@ -2,7 +2,7 @@
 
 /* IEEE 802.3 32-bit CRC table and convenience functions */
 
-/* $Id$ */
+/* $Id: crc32.c,v 1.12 2018/07/24 01:12:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

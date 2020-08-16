@@ -1,6 +1,6 @@
 /* Synchronet JavaScript "MsgBase" Object */
 
-/* $Id$ */
+/* $Id: js_msgbase.c,v 1.262 2020/05/07 21:58:37 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

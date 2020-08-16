@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dpconfig.c,v 1.6 2008/01/07 04:00:03 rswindell Exp $ */
 
 #include "ini_file.h"
 #include "ciolib.h"		/* Redefinition of main() */

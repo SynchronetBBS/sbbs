@@ -2,7 +2,7 @@
 
 /* Synchronet ARS checking routine */
 
-/* $Id$ */
+/* $Id: chk_ar.cpp,v 1.32 2020/03/19 18:50:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

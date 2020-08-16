@@ -3,7 +3,7 @@
 
 /* Synchronet file print/display routines */
 
-/* $Id$ */
+/* $Id: prntfile.cpp,v 1.47 2020/05/26 03:07:05 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

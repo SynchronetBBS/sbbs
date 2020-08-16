@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fido.js,v 1.36 2020/03/23 18:17:07 rswindell Exp $
 require('fido_syscfg.js', 'FTNDomains');
 
 /*

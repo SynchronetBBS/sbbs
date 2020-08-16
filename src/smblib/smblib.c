@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) library routines */
 
-/* $Id$ */
+/* $Id: smblib.c,v 1.209 2020/05/07 19:30:22 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

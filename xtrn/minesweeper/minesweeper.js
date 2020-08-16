@@ -1,4 +1,4 @@
-// $Id$
+// $Id: minesweeper.js,v 2.14 2020/08/04 05:11:26 rswindell Exp $
 
 // Minesweeper, the game
 
@@ -8,7 +8,7 @@
 
 const title = "Synchronet Minesweeper";
 const ini_section = "minesweeper";
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 2.14 $".split(' ')[1];
 const author = "Digital Man";
 const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";

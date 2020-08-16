@@ -2,7 +2,7 @@
 
 // Synchronet inter-bbs instant message library
 
-// $Id$
+// $Id: sbbsimsg_lib.js,v 1.6 2019/06/15 03:07:56 rswindell Exp $
 
 require("sockdefs.js", 'SOCK_DGRAM');
 

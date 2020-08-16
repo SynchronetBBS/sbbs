@@ -1,4 +1,4 @@
-// $Id$
+// $Id: admin_commands.js,v 1.18 2019/05/15 14:53:35 mcmlxxix Exp $
 /*
 
  This program is free software; you can redistribute it and/or modify

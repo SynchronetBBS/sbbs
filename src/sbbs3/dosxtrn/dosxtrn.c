@@ -2,7 +2,7 @@
 
 /* Synchronet External DOS Program Launcher (16-bit MSVC 1.52c project) */
 
-/* $Id$ */
+/* $Id: dosxtrn.c,v 1.25 2020/04/15 08:22:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 	WORD	buf_seg;
 	WORD	w;
 
-	sscanf("$Revision$", "%*s 1.%u", &revision);
+	sscanf("$Revision: 1.25 $", "%*s 1.%u", &revision);
 
 	sprintf(id_string,"Synchronet FOSSIL Driver (DOSXTRN) revision %u", revision);
 	if(argc<2) {

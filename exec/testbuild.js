@@ -2,7 +2,7 @@
 
 /* JSexec script for nightly Synchronet test builds */
 
-/* $Id$ */
+/* $Id: testbuild.js,v 1.34 2020/08/01 22:09:03 rswindell Exp $ */
 
 require("smbdefs.js", 'SMB_PRIORITY_HIGHEST');
 

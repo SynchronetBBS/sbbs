@@ -1,6 +1,6 @@
 /* Synchronet DLL-exported mail-related routines */
 
-/* $Id$ */
+/* $Id: getmail.c,v 1.20 2018/12/30 04:33:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

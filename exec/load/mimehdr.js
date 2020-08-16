@@ -1,4 +1,4 @@
-// $Id$
+// $Id: mimehdr.js,v 1.7 2019/07/24 22:07:17 rswindell Exp $
 
 // Support for RFC2047:
 //

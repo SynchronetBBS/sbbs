@@ -2,7 +2,7 @@
 
 /* Synchronet file download routines */
 
-/* $Id$ */
+/* $Id: download.cpp,v 1.58 2019/08/31 22:40:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

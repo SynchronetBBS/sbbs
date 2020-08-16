@@ -3,7 +3,7 @@
 	For Synchronet v3.15+
 	Matt Johnson(2009)
 */
-//$Id$
+//$Id: tetris.js,v 1.11 2012/12/24 11:45:59 rswindell Exp $
 load("json-client.js");
 var root = js.exec_dir;
 

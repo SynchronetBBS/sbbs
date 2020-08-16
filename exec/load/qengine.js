@@ -3,7 +3,7 @@
 	USING  FILE I/O FOR USER PRESENCE DETECTION & NAMED QUEUES FOR REAL-TIME MULTIPLAYER DATA
 */
 
-// $Id$
+// $Id: qengine.js,v 1.13 2010/11/17 01:33:34 rswindell Exp $
 
 if(!js.global || js.global.SYS_CLOSED==undefined)
 	load("sbbsdefs.js");

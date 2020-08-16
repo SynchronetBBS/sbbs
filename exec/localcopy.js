@@ -1,4 +1,4 @@
-// $Id$
+// $Id: localcopy.js,v 1.3 2020/05/14 01:25:32 rswindell Exp $
 
 // A simple script that just copies a file on the local/server side
 

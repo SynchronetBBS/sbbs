@@ -1,4 +1,4 @@
-// $Id$
+// $Id: msgutils.js,v 1.28 2016/04/24 00:55:45 deuce Exp $
 
 require('sbbsdefs.js', 'HIGH');
 

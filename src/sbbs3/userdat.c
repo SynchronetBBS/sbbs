@@ -1,7 +1,7 @@
 /* Synchronet user data-related routines (exported) */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: userdat.c,v 1.230 2020/08/16 00:47:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

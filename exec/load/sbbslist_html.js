@@ -1,7 +1,7 @@
-/* $Id$ */
+/* $Id: sbbslist_html.js,v 1.12 2020/08/01 22:07:25 rswindell Exp $ */
 // vi: tabstop=4
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.12 $".split(' ')[1];
 
 var start=time();
 

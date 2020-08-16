@@ -1,4 +1,4 @@
-// $Id$
+// $Id: slyvote.js,v 1.16 2020/05/23 03:37:09 nightfox Exp $
 
 /* This is a voting door for Synchronet.  It requires Synchronet 3.17 or higher, since
  * it makes use of the new voting features added to the message bases in Synchronet

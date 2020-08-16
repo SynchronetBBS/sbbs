@@ -1,6 +1,6 @@
 // mailproc_example.js
 
-// $Id$
+// $Id: mailproc_example.js,v 1.5 2017/11/16 09:53:20 rswindell Exp $
 
 // Example SMTP "Mail Processor" module
 // Requires Synchronet Mail Server 1.298 or later

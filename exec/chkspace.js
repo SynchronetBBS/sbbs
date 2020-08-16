@@ -2,7 +2,7 @@
 
 // Requires minimum free disk space (in megabytes) as first argument
 
-// $Id$
+// $Id: chkspace.js,v 1.8 2004/11/18 21:28:45 rswindell Exp $
 
 // Example: "?chkspace [dir1] [dir2] [minfreespace]"
 

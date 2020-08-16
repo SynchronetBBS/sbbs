@@ -1,6 +1,6 @@
 /* Synchronet string utility routines */
 
-/* $Id$ */
+/* $Id: str_util.c,v 1.67 2020/01/03 20:34:56 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

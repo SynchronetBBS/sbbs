@@ -2,7 +2,7 @@
 
 /* Helper functions to get values from sbbs.ini/services.ini for fTelnet */
 
-/* $Id$ */
+/* $Id: ftelnethelper.js,v 1.11 2019/08/11 16:43:05 echicken Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

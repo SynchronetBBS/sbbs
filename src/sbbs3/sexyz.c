@@ -2,7 +2,7 @@
 
 /* Synchronet External X/Y/ZMODEM Transfer Protocols */
 
-/* $Id$ */
+/* $Id: sexyz.c,v 2.10 2020/03/31 07:14:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1541,7 +1541,7 @@ int main(int argc, char **argv)
 	statfp=stdout;
 #endif
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 2.10 $", "%*s %s", revision);
 
 	fprintf(statfp,"\nSynchronet External X/Y/ZMODEM  v%s-%s"
 		"  Copyright %s Rob Swindell\n\n"

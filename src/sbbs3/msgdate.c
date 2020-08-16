@@ -2,7 +2,7 @@
 
 /* Synchronet RFC822 message date/time string conversion routines */
 
-/* $Id$ */
+/* $Id: msgdate.c,v 1.7 2018/07/24 11:37:38 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,7 +1,7 @@
 /* Synchronet answer "caller" function */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: answer.cpp,v 1.116 2020/08/02 03:37:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

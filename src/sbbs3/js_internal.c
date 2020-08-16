@@ -2,7 +2,7 @@
 
 /* Synchronet "js" object, for internal JavaScript callback and GC control */
 
-/* $Id$ */
+/* $Id: js_internal.c,v 1.99 2020/03/29 23:40:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

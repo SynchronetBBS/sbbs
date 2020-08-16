@@ -1,6 +1,6 @@
 /* Synchronet single-key console functions */
 
-/* $Id$ */
+/* $Id: getkey.cpp,v 1.69 2020/05/24 08:19:18 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: ftelnet_external.inc,v 1.5 2018/03/18 20:30:45 ree Exp $ -->
 
 <div id="contentcontainer">
 	<div id="content2">

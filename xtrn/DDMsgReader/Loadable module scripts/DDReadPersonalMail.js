@@ -1,4 +1,4 @@
-// $Id$
+// $Id: DDReadPersonalMail.js,v 1.5 2020/05/23 23:35:48 nightfox Exp $
 
 // This script is to be executed for the 'Read mail' loadable module, configured
 // in SCFG in System > Loadable Modules.

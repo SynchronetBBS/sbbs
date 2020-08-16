@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_channel.js,v 1.34 2019/08/06 20:44:39 deuce Exp $
 //
 // ircd_channel.js                
 //
@@ -21,7 +21,7 @@
 //
 
 ////////// Constants / Defines //////////
-const CHANNEL_REVISION = "$Revision$".split(' ')[1];
+const CHANNEL_REVISION = "$Revision: 1.34 $".split(' ')[1];
 
 const CHANMODE_NONE		=(1<<0); // NONE
 const CHANMODE_BAN		=(1<<1); // b

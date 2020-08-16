@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "[s]printf" implementation */
 
-/* $Id$ */
+/* $Id: js_sprintf.c,v 1.14 2018/02/20 11:32:32 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

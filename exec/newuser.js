@@ -2,7 +2,7 @@
 
 // New user login module
 
-// $Id$
+// $Id: newuser.js,v 1.30 2019/04/28 23:25:44 rswindell Exp $
 
 // @format.tab-size 8, @format.use-tabs true
 

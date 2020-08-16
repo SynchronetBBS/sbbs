@@ -1,4 +1,4 @@
-// $Id$
+// $Id: install-xtrn.js,v 1.14 2020/04/26 06:58:46 rswindell Exp $
 
 // Installer for Synchronet External Programs
 
@@ -87,7 +87,7 @@
 
 "use strict";
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.14 $".split(' ')[1];
 const ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");

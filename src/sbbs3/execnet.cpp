@@ -2,7 +2,7 @@
 
 /* Synchronet command shell/module TCP/IP Network functions */
 
-/* $Id$ */
+/* $Id: execnet.cpp,v 1.34 2019/08/04 17:49:51 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

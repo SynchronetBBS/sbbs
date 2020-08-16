@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: fmsgdump.c,v 3.6 2020/04/26 21:01:55 rswindell Exp $ */
 // vi: tabstop=4
 
 #include "gen_defs.h"
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 	int		i;
 	char	revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 3.6 $", "%*s %s", revision);
 
 	fprintf(stderr,"fmsgdump rev %s - Dump FidoNet Stored Messages\n\n"
 		,revision

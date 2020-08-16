@@ -2,7 +2,7 @@
 
 /* Synchronet XSDK system-call wrappers (compiler & platform portability) */
 
-/* $Id$ */
+/* $Id: xsdkwrap.c,v 1.21 2007/06/29 21:01:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

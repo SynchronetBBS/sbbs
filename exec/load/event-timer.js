@@ -45,7 +45,7 @@
 		}
 */
 function Timer() {
-	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
+	this.VERSION = "$Revision: 1.8 $".replace(/\$/g,'').split(' ')[1];
 	this.events = [];
 	
 	/* called by parent script, generally in a loop, and generally with a pause or timeout to minimize cpu usage */

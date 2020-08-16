@@ -2,7 +2,7 @@
 
 /* Synchronet XSDK constants, macros, and type definitions */
 
-/* $Id$ */
+/* $Id: xsdkdefs.h,v 1.10 2009/01/01 12:45:59 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

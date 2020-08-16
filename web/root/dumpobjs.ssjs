@@ -1,6 +1,6 @@
 // dumpobjs.ssjs
 
-// $Id$
+// $Id: dumpobjs.ssjs,v 1.3 2005/02/17 01:30:02 rswindell Exp $
 
 // Used for debugging (and possibly documenting) the Synchronet web server's JS objects
 

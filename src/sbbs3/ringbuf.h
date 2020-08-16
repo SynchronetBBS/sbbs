@@ -2,7 +2,7 @@
 
 /* Synchronet ring buffer routines */
 
-/* $Id$ */
+/* $Id: ringbuf.h,v 1.14 2018/07/24 01:11:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

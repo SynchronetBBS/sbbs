@@ -1,8 +1,8 @@
-// $Id$
+// $Id: xbimage_lib.js,v 1.3 2018/02/06 09:08:30 rswindell Exp $
 
 // Library for creating or reading XBin "image" (xbimage) files
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.3 $".split(' ')[1];
 var sauce_lib = load({}, 'sauce_lib.js');
 var xbin = load({}, 'xbin_lib.js');
 var cga = load({}, 'cga_defs.js');

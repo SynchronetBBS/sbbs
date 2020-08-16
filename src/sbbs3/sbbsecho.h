@@ -1,6 +1,6 @@
 /* Synchronet FidoNet EchoMail tosser/scanner/areafix program */
 
-/* $Id$ */
+/* $Id: sbbsecho.h,v 3.42 2020/06/12 13:00:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

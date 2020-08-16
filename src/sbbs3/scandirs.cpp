@@ -1,6 +1,6 @@
 /* Synchronet file database scanning routines */
 
-/* $Id$ */
+/* $Id: scandirs.cpp,v 1.8 2018/10/22 04:18:06 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

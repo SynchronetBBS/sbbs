@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: ftp.js,v 1.23 2020/05/21 01:56:45 rswindell Exp $ */
 
 require('sockdefs.js', 'SOCK_STREAM');
 
@@ -9,7 +9,7 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	if (host === undefined)
 		throw("No hostname specified");
 	
-	this.revision = "JSFTP v" + "$Revision$".split(' ')[1];
+	this.revision = "JSFTP v" + "$Revision: 1.23 $".split(' ')[1];
 
 	if (port === undefined)
 		port = 21;

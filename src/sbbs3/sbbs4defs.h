@@ -2,7 +2,7 @@
 
 /* Synchronet v4 constants, macros, and structure definitions */
 
-/* $Id$ */
+/* $Id: sbbs4defs.h,v 1.6 2018/07/24 01:11:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

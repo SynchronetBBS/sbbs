@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: curs_cio.c,v 1.60 2020/06/27 00:04:45 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

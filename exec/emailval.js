@@ -1,4 +1,4 @@
-// $Id$
+// $Id: emailval.js,v 1.7 2019/07/15 04:41:35 rswindell Exp $
 /*******************************************************************************
 Originally based on:
 FILE: emailval.js v0.2

@@ -1,4 +1,4 @@
-/* $Id$ */ 
+/* $Id: choosegroup.ssjs,v 1.4 2006/02/25 21:41:08 runemaster Exp $ */ 
 
 load("../web/lib/msgslib.ssjs");
 

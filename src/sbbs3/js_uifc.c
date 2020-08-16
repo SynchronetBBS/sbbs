@@ -2,7 +2,7 @@
 
 /* Synchronet "uifc" (user interface) object */
 
-/* $Id$ */
+/* $Id: js_uifc.c,v 1.46 2020/04/12 20:30:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

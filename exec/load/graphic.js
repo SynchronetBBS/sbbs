@@ -1,4 +1,4 @@
-// $Id$
+// $Id: graphic.js,v 1.84 2020/07/27 02:37:17 rswindell Exp $
 
 /*
  * "Graphic" object
@@ -48,7 +48,7 @@ function Graphic(w,h,attr,ch, dw)
 	this.ansi_crlf=true;
 	this.illegal_characters = [0, 7, 8, 9, 10, 12, 13, 27];
 	this.autowrap=true;
-	this.revision="$Revision$".split(' ')[1];
+	this.revision="$Revision: 1.84 $".split(' ')[1];
 
 	this.data=new Array(this.width);
 	for(var y=0; y<this.height; y++) {

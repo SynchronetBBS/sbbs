@@ -1,6 +1,6 @@
 /* Program to add files to a Synchronet file database */
 
-/* $Id$ */
+/* $Id: addfiles.c,v 1.62 2020/05/12 05:28:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -715,7 +715,7 @@ int main(int argc, char **argv)
 	long l;
 	file_t	f;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.62 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nADDFILES v%s-%s (rev %s) - Adds Files to Synchronet "
 		"Filebase\n"

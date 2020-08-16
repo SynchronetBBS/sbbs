@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "Client" Object */
 
-/* $Id$ */
+/* $Id: js_client.c,v 1.29 2020/03/19 06:08:27 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

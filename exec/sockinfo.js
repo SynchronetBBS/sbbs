@@ -1,4 +1,4 @@
-// $Id$
+// $Id: sockinfo.js,v 1.4 2005/10/14 07:52:39 rswindell Exp $
 
 load("sockdefs.js");
 

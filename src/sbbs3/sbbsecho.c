@@ -1,6 +1,6 @@
 /* Synchronet FidoNet EchoMail Scanning/Tossing and NetMail Tossing Utility */
 
-/* $Id$ */
+/* $Id: sbbsecho.c,v 3.176 2020/07/19 18:50:39 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -6110,7 +6110,7 @@ int main(int argc, char **argv)
 		memset(&smb[i],0,sizeof(smb_t));
 	memset(&cfg,0,sizeof(cfg));
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 3.176 $", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 

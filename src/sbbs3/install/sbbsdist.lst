@@ -29,7 +29,7 @@
 
  Lines that start with anything but a C, T, f, t, D or s are ignored.
 
-R $Revision$
+R $Revision: 1.15 $
 
  T Current Source Tarball (v3.11A beta)
  m NOCVS=1

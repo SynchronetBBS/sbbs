@@ -2,7 +2,7 @@
 
 /* Synchronet message base (SMB) message header dumper */
 
-/* $Id$ */
+/* $Id: smbdump.c,v 1.19 2020/05/25 00:39:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 /* Synchronet message base constant and structure definitions */
 
-/* $Id$ */
+/* $Id: smbdefs.h,v 1.119 2019/07/30 10:20:20 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

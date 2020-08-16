@@ -1,7 +1,7 @@
 /* Synchronet message/menu display routine */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: putmsg.cpp,v 1.68 2020/05/11 05:03:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

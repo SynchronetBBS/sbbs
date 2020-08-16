@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: infomenu.inc,v 1.9 2006/01/31 23:13:43 runemaster Exp $ -->
 
 <!-- Main Content -->  
 

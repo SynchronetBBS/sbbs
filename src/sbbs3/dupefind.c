@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dupefind.c,v 1.7 2020/01/03 20:34:55 rswindell Exp $ */
 // vi: tabstop=4
 
 #include "sbbs.h"

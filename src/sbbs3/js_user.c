@@ -1,7 +1,7 @@
 /* Synchronet JavaScript "User" Object */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: js_user.c,v 1.119 2020/08/11 03:54:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

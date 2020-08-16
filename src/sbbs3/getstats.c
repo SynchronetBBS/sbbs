@@ -2,7 +2,7 @@
 
 /* Synchronet C-export statistics retrieval functions */
 
-/* $Id$ */
+/* $Id: getstats.c,v 1.5 2020/04/11 04:01:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -3,8 +3,8 @@
 		by mcmlxxix - March 4, 2015 
 		www.thebrokenbubble.com
 		
-		$Id$
-		$Revision$
+		$Id: gwarlib.js,v 1.5 2015/03/05 22:19:10 mcmlxxix Exp $
+		$Revision: 1.5 $
 */
 
 /********************** API usage example**************************

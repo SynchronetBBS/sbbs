@@ -1,4 +1,4 @@
-// $Id$
+// $Id: automsg.js,v 1.3 2020/04/19 03:15:35 rswindell Exp $
 // vi: tabstop=4
 
 "use strict";

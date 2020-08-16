@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: http.js,v 1.47 2020/07/22 04:31:48 echicken Exp $ */
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('url.js', 'URL');

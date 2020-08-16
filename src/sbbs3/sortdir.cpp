@@ -2,7 +2,7 @@
 
 /* Synchronet file database sorting routines */
 
-/* $Id$ */
+/* $Id: sortdir.cpp,v 1.8 2018/02/20 05:21:04 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

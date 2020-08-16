@@ -2,7 +2,7 @@
 
 /* Synchronet command shell/module compiler */
 
-/* $Id$ */
+/* $Id: baja.c,v 1.52 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -3418,7 +3418,7 @@ int main(int argc, char **argv)
 	int		show_banner=TRUE;
 	char	revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.52 $", "%*s %s", revision);
 
 	p = getenv("BAJAINCLUDE");
 	if(p != NULL) {

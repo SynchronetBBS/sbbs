@@ -2,7 +2,7 @@
 
 /* Synchronet file upload-related routines */
 
-/* $Id$ */
+/* $Id: upload.cpp,v 1.63 2019/08/02 10:36:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

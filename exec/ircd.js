@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd.js,v 1.193 2020/04/04 08:32:04 deuce Exp $
 //
 // ircd.js
 //
@@ -32,7 +32,7 @@ load("ircd_channel.js");
 load("ircd_server.js");
 
 // CVS revision
-const MAIN_REVISION = "$Revision$".split(' ')[1];
+const MAIN_REVISION = "$Revision: 1.193 $".split(' ')[1];
 
 // Please don't play with this, unless you're making custom hacks.
 // IF you're making a custom version, it'd be appreciated if you left the

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mrc-connector.js,v 1.3 2019/05/06 03:31:08 echicken Exp $ */
 
 /**
  * Multi Relay Chat connector (multiplexer) service

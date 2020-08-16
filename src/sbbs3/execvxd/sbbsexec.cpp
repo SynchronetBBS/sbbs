@@ -2,7 +2,7 @@
 
 /* Synchronet Windows 9X FOSSIL driver (requires VtoolsD C++ framework) */
 
-/* $Id$ */
+/* $Id: sbbsexec.cpp,v 1.3 2018/07/24 01:11:52 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

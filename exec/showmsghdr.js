@@ -1,4 +1,4 @@
-// $Id$
+// $Id: showmsghdr.js,v 1.6 2019/06/15 01:28:28 rswindell Exp $
 
 // This can be loaded from text/menu/msghdr.asc via @EXEC:SHOWMSGHDR@
 // Don't forget to include or exclude the blank line after if do

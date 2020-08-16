@@ -2,7 +2,7 @@
 
 /* Clean-up program for Synchronet Blackjack Online External Program */
 
-/* $Id$ */
+/* $Id: sbjclean.c,v 1.4 2003/02/28 11:31:15 rswindell Exp $ */
 
 #define SBJCLEAN
 

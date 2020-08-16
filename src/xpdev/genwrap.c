@@ -1,10 +1,6 @@
 /* General cross-platform development wrappers */
 
-<<<<<<< genwrap.c
-/* $Id$ */
-=======
 /* $Id: genwrap.c,v 1.118 2020/08/10 04:11:44 rswindell Exp $ */
->>>>>>> 1.118
 // vi: tabstop=4
 
 /****************************************************************************

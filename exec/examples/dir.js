@@ -2,7 +2,7 @@
 
 // Example use of global directory() method.
 
-// $Id$
+// $Id: dir.js,v 1.2 2005/10/12 08:49:13 rswindell Exp $
 
 // @format.tab-size 8, @format.use-tabs true
 

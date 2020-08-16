@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: unbaja.c,v 1.48 2020/05/26 19:14:37 rswindell Exp $ */
 
 #include <stdio.h>
 #include <string.h>
@@ -2329,7 +2329,7 @@ int main(int argc, char **argv)
 	char	cache_line[1024];
 	char	*crc,*good,*str;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.48 $", "%*s %s", revision);
 
 	printf("\nUNBAJA v%s-%s - Synchronet Baja Shell/Module De-compiler\n"
 		,revision, PLATFORM_DESC);

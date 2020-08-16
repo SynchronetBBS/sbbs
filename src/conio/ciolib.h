@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: ciolib.h,v 1.125 2020/06/27 00:04:44 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

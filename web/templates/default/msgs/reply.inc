@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: reply.inc,v 1.7 2006/01/31 23:14:21 runemaster Exp $ -->
 
 <!-- Main Content -->  
     

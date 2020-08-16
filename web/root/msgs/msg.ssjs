@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: msg.ssjs,v 1.55 2019/07/24 09:30:23 rswindell Exp $ */
 
 load("../web/lib/msgslib.ssjs");
 load("../web/lib/mime_decode.ssjs");

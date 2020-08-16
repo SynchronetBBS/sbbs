@@ -1,4 +1,4 @@
-// $Id$
+// $Id: logonlist.js,v 1.9 2020/06/21 21:15:09 rswindell Exp $
 
 // Logon List module (replaces old hard-coded logon.lst)
 

@@ -1,6 +1,6 @@
 /* Synchronet general text file (g-file) section */
 
-/* $Id$ */
+/* $Id: text_sec.cpp,v 1.18 2020/03/31 07:06:49 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

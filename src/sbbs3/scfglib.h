@@ -1,6 +1,6 @@
 /* Synchronet configuration library routine prototypes */
 
-/* $Id$ */
+/* $Id: scfglib.h,v 1.25 2020/05/14 07:50:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 /* Synchronet file transfer-related functions */
 
-/* $Id$ */
+/* $Id: file.cpp,v 1.36 2019/08/12 06:24:08 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

@@ -1,6 +1,6 @@
 /* Synchronet constants, macros, and structure definitions */
 
-/* $Id$ */
+/* $Id: sbbsdefs.h,v 1.267 2020/08/14 02:00:47 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

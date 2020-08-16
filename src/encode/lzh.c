@@ -2,7 +2,7 @@
 
 /* Synchronet LZH compression library */
 
-/* $Id$ */
+/* $Id: lzh.c,v 1.16 2020/04/17 14:08:11 deuce Exp $ */
 
 /**************************************************************************** 
  * @format.tab-size 4		(Plain Text/Source Code File Header)			* 

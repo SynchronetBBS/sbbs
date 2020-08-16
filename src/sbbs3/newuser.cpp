@@ -2,7 +2,7 @@
 
 /* Synchronet new user routine */
 
-/* $Id$ */
+/* $Id: newuser.cpp,v 1.89 2020/08/04 04:26:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

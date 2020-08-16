@@ -2,7 +2,7 @@
 
 /* Synchronet network mail-related functions */
 
-/* $Id$ */
+/* $Id: netmail.cpp,v 1.69 2020/05/01 00:10:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

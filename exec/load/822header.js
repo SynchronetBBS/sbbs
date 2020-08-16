@@ -1,4 +1,4 @@
-// $Id$
+// $Id: 822header.js,v 1.15 2020/06/08 00:34:30 rswindell Exp $
 
 require("utf8_ascii.js", 'utf8_ascii');
 require("smbdefs.js", 'RFC822HEADER');

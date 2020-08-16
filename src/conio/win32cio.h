@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: win32cio.h,v 1.15 2018/07/24 01:10:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

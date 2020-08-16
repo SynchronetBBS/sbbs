@@ -1,4 +1,4 @@
-// $Id$
+// $Id: cga_defs.js,v 1.5 2019/09/21 22:48:28 rswindell Exp $
 // CGA (IBM Color Graphics Adapter) definitions
 
 								/********************************************/

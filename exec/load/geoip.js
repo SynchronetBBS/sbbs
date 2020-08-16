@@ -1,4 +1,4 @@
-// $Id$
+// $Id: geoip.js,v 1.13 2019/08/24 04:28:30 echicken Exp $
 
 require('http.js', 'HTTPRequest');
 var settings = load('modopts.js', 'geoip');

@@ -2,7 +2,7 @@
 
 /* Synchronet Serial Communications I/O Library Functions for *nix */
 
-/* $Id$ */
+/* $Id: comio_nix.c,v 1.19 2020/06/27 08:23:39 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4       (Plain Text/Source Code File Header)            *
@@ -213,7 +213,7 @@ char* comVersion(char* str, size_t len)
 {
     char revision[16];
 
-    sscanf("$Revision$", "%*s %s", revision);
+    sscanf("$Revision: 1.19 $", "%*s %s", revision);
 
     safe_snprintf(str,len,"Synchronet Communications I/O Library for "PLATFORM_DESC" v%s", revision);
     return str;

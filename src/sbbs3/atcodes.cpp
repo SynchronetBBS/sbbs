@@ -1,7 +1,7 @@
 /* Synchronet "@code" functions */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: atcodes.cpp,v 1.142 2020/05/10 20:12:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,7 +1,7 @@
 Synchronet NT Services
 ======================
 
-$Id$
+$Id: sbbsNTsvcs.txt,v 1.5 2005/09/11 00:07:40 rswindell Exp $
 
 If you're running Synchronet on a Microsoft Windows NT based operating system
 (e.g. Windows NT, Windows 2000, Windows XP, or Windows 2003), you can run

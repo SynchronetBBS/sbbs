@@ -2,7 +2,7 @@
 
 /* Synchronet DNS MX-record lookup routines */
 
-/* $Id$ */
+/* $Id: mxlookup.c,v 1.29 2018/03/19 16:36:33 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

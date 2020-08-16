@@ -1,6 +1,6 @@
 /* Upgrade Synchronet files from v3 to v4 */
 
-/* $Id$ */
+/* $Id: v4upgrade.c,v 1.16 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1125,7 +1125,7 @@ int main(int argc, char** argv)
 	char*	p;
 	int		first_arg=1;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.16 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nV4upgrade v%s-%s - Upgrade Synchronet files from v3 to v4\n"
 		,revision

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: sbbslist.js,v 1.66 2020/04/19 19:57:15 rswindell Exp $
 
 // Synchronet BBS List
 
@@ -10,7 +10,7 @@
 
 // TODO: Daily maintenance, warning local creators and purging old unverified entries
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.66 $".split(' ')[1];
 var version_notice = "Synchronet BBS List v4(" + REVISION + ")";
 
 load("sbbsdefs.js");

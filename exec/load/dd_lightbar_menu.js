@@ -1,4 +1,4 @@
-// $Id$
+// $Id: dd_lightbar_menu.js,v 1.24 2020/05/08 04:49:10 nightfox Exp $
 
 /* Digital Distortion Lightbar Menu library
  * Author: Eric Oulashin (AKA Nightfox)

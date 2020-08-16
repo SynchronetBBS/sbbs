@@ -3,7 +3,7 @@
 * (ChangeLog since v3.00c for Win32 Dec 31, 2000) *
 ***************************************************
 
-$Id$
+$Id: v310_new.txt,v 1.12 2003/02/28 10:24:45 rswindell Exp $
 
 Highlights
 ~~~~~~~~~~
