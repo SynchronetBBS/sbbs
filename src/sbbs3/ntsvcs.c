@@ -1196,7 +1196,7 @@ int main(int argc, char** argv)
 
 	loginAttemptListInit(&login_attempt_list);
 
-	ctrl_dir = get_ctrl_dir();
+	ctrl_dir = get_ctrl_dir(/* warn: */true);
 
 	sbbs_get_ini_fname(ini_file, ctrl_dir, NULL /* auto-host_name */);
 

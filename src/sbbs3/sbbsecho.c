@@ -6215,7 +6215,7 @@ int main(int argc, char **argv)
 	if(!opt_import_echomail && !opt_import_netmail)
 		opt_import_packets = false;
 
-	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */true));
 
 	backslash(scfg.ctrl_dir);
 

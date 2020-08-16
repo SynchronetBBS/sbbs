@@ -59,7 +59,7 @@ main(int argc, char **argv)
 	if (argc > 1) {
 		SAFECOPY(path, argv[1]);
 	} else {
-		SAFECOPY(path, get_ctrl_dir());
+		SAFECOPY(path, get_ctrl_dir(/* warn: */TRUE));
 	}
 	backslash(path);
 

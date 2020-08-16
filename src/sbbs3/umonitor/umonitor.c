@@ -834,7 +834,7 @@ int main(int argc, char** argv)  {
 	printf("\nSynchronet UNIX Monitor %s-%s  Copyright %s "
 		"Rob Swindell\n",revision,PLATFORM_DESC,&__DATE__[7]);
 
-	SAFECOPY(ctrl_dir, get_ctrl_dir());
+	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 	backslash(ctrl_dir);
 
 	gethostname(str,sizeof(str)-1);

@@ -708,7 +708,7 @@ int main(int argc, char **argv)
 			SAFECOPY(str,argv[i]);
 	}
 	if(str[0]==0) {
-		SAFECOPY(cfg.cfgfile, get_ctrl_dir());
+		SAFECOPY(cfg.cfgfile, get_ctrl_dir(/* warn: */true));
 		backslash(cfg.cfgfile);
 		SAFECAT(cfg.cfgfile, "sbbsecho.ini");
 	} else {

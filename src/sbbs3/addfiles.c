@@ -729,7 +729,7 @@ int main(int argc, char **argv)
 		return(1);
 	}
 
-	p = get_ctrl_dir();
+	p = get_ctrl_dir(/* warn: */true);
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);

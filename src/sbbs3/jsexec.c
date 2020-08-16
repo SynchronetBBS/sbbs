@@ -1196,7 +1196,7 @@ int main(int argc, char **argv, char** env)
 		return(do_bail(2));
 
 #ifndef JSDOOR
-	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */FALSE));
 	iniFileName(ini_fname, sizeof(ini_fname), scfg.ctrl_dir, "jsexec.ini");
 	if((fp = iniOpenFile(ini_fname, /* create: */FALSE)) != NULL) {
 		ini = iniReadFile(fp);

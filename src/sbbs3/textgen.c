@@ -167,7 +167,7 @@ int main(int argc, char **argv)
 	FILE			*text_js;
 	FILE			*text_defaults_c;
 
-	p = get_ctrl_dir();
+	p = get_ctrl_dir(/* warn: */TRUE);
 	SAFEPRINTF(path,"%s/text.dat",p);
 	if((text_dat=fopen(path,"r"))==NULL) {
 		perror(path);

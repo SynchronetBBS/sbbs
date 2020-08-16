@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
-	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir());
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);

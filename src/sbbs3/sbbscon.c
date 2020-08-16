@@ -1413,7 +1413,7 @@ int main(int argc, char** argv)
 	loginAttemptListInit(&login_attempt_list);
 	atexit(cleanup);
 
-	ctrl_dir = get_ctrl_dir();
+	ctrl_dir = get_ctrl_dir(/* warn: */true);
 
 	if(!winsock_startup())
 		return(-1);
