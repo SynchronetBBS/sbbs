@@ -1,4 +1,4 @@
-/* Curses implementation of UIFC (user interface) library based on uifc.c */
+/* Modern implementation of UIFC (user interface) library based on uifc.c */
 // vi: tabstop=4
 
 /* $Id$ */
