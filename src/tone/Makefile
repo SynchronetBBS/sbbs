@@ -1,6 +1,6 @@
 # tone/Makefile
 #
-# $Id$
+# $Id: Makefile,v 1.5 2006/05/30 22:51:55 rswindell Exp $
 #
 #############################################################################
 # @format.tab-size 4		(Plain Text/Source Code File Header)			#
