@@ -2352,7 +2352,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 			l=0;
 		ulong mod=(ulong)(l*(cfg->dir[f.dir]->dn_pct/100.0));
 		adjustuserrec(cfg, uploader.number, U_CDT, 10, mod);
-		if(cfg->text != NULL) {
+		if(cfg->text != NULL && !(cfg->dir[f.dir]->misc&DIR_QUIET)) {
 			char str[256];
 			char tmp[128];
 			char prefix[128]="";
