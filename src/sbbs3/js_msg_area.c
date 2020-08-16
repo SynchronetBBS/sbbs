@@ -54,6 +54,7 @@ static char* msg_grp_prop_desc[] = {
 	,"group name"
 	,"group description"
 	,"group access requirements"
+	,"user has sufficient access to list this group's sub-boards <i>(introduced in v3.18)</i>"
 	,NULL
 };
 
@@ -86,9 +87,10 @@ static char* msg_sub_prop_desc[] = {
 	,"additional print mode flags to use when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"print mode flags to <i>negate</i> when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	/* Insert here */
-	,"user has sufficient access to read messages"
-	,"user has sufficient access to post messages"
-	,"user has operator access to this message area"
+	,"user has sufficient access to see this sub-board"
+	,"user has sufficient access to read messages in this sub-board"
+	,"user has sufficient access to post messages in this sub-board"
+	,"user has operator access to this sub-board"
 	,"user's posts are moderated"
 	,"user's current new message scan pointer (highest-read message number)"
 	,"user's message scan configuration (bitfield) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
@@ -352,8 +354,8 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	JSObject*	sub_list;
 	JSString*	js_str;
 	jsval		val;
-	jsuint		grp_index;
-	jsuint		sub_index;
+	jsint		grp_index;
+	jsint		sub_index;
 	uint		l,d;
 	char*		name=NULL;
 	struct js_msg_area_priv *p;
@@ -483,6 +485,10 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 				return JS_FALSE;
 
+			val = BOOLEAN_TO_JSVAL(grp_index >= 0);
+			if(!JS_SetProperty(cx, grpobj, "can_access", &val))
+				return JS_FALSE;
+
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx,grpobj,"Message Groups (current user has access to)",310);
 #endif
@@ -554,7 +560,11 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 				if(!js_CreateMsgAreaProperties(cx, p->cfg, subobj, d))
 					return JS_FALSE;
-			
+
+				val = BOOLEAN_TO_JSVAL(grp_index >= 0 && sub_index >= 0);
+				if(!JS_SetProperty(cx, subobj, "can_access", &val))
+					return JS_FALSE;
+
 				if(p->user==NULL)
 					val=BOOLEAN_TO_JSVAL(JS_TRUE);
 				else
