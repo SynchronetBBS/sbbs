@@ -8,7 +8,7 @@
 # usage: make															#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.15 2020/08/16 20:37:07 rswindell Exp $
 
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version

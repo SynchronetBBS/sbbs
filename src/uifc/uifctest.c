@@ -2,7 +2,7 @@
 
 /* Synchronet for *nix user editor */
 
-/* $Id$ */
+/* $Id: uifctest.c,v 1.9 2020/08/16 20:37:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -69,7 +69,7 @@ int main(int argc, char** argv)  {
 	char	ini_file[MAX_PATH+1];
 	FILE*				fp;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.9 $", "%*s %s", revision);
 
     printf("\nSynchronet UIFC Test Suite Copyright "
         "Rob Swindell\n");

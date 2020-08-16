@@ -1,7 +1,7 @@
 /* Modern implementation of UIFC (user interface) library based on uifc.c */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: uifc32.c,v 1.268 2020/08/16 20:37:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
