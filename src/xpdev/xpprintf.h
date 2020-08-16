@@ -2,7 +2,7 @@
 
 /* Deuce's vs[n]printf() replacement */
 
-/* $Id$ */
+/* $Id: xpprintf.h,v 1.17 2019/07/24 04:12:54 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

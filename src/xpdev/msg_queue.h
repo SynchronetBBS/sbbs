@@ -2,7 +2,7 @@
 
 /* Uni or Bi-directional FIFO message queue */
 
-/* $Id$ */
+/* $Id: msg_queue.h,v 1.9 2019/08/22 01:40:21 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

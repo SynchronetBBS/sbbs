@@ -1,7 +1,7 @@
 /* Directory system-call wrappers */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: dirwrap.h,v 1.55 2019/09/20 08:59:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

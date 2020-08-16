@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for xpdev "wrappers"
 
-# $Id$
+# $Id: objects.mk,v 1.19 2019/07/10 00:25:24 rswindell Exp $
 
 # OBJODIR, SLASH, and OFILE must be pre-defined
 

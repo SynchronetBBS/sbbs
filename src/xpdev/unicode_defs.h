@@ -1,6 +1,6 @@
 /* Synchronet Unicode definitions */
 
-/* $Id$ */
+/* $Id: unicode_defs.h,v 1.10 2019/08/30 10:48:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

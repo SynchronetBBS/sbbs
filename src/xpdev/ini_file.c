@@ -1,6 +1,6 @@
 /* Functions to create and parse .ini files */
 
-/* $Id$ */
+/* $Id: ini_file.c,v 1.175 2020/08/08 23:26:38 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

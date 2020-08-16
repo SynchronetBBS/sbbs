@@ -2,7 +2,7 @@
 
 /* Network related wrapper functions */
 
-/* $Id$ */
+/* $Id: netwrap.c,v 1.8 2019/07/24 04:21:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

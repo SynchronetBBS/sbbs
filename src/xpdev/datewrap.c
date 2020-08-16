@@ -2,7 +2,7 @@
 
 /* Wrappers for non-standard date and time functions */
 
-/* $Id$ */
+/* $Id: datewrap.c,v 1.34 2015/08/29 10:40:15 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

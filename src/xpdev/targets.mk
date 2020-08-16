@@ -2,7 +2,7 @@
 
 # Make 'include file' defining targets for xpdel wrappers
 
-# $Id$
+# $Id: targets.mk,v 1.13 2008/02/23 10:59:48 rswindell Exp $
 
 # ODIR, DIRSEP, LIBFILE, EXEFILE, and DELETE must be pre-defined
 

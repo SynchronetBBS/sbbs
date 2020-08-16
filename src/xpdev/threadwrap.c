@@ -2,7 +2,7 @@
 
 /* Thread-related cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: threadwrap.c,v 1.37 2019/02/18 04:04:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -2,7 +2,7 @@
 
 /* Functions to deal with NULL-terminated string lists */
 
-/* $Id$ */
+/* $Id: str_list.h,v 1.32 2020/04/24 07:02:17 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,6 +1,6 @@
 /* Synchronet Unicode encode/decode/translate functions */
 
-/* $Id$ */
+/* $Id: unicode.c,v 1.15 2019/08/30 11:04:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

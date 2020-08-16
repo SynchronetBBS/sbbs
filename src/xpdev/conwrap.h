@@ -2,7 +2,7 @@
 
 /* Cross-platform local console I/O wrapppers */
 
-/* $Id$ */
+/* $Id: conwrap.h,v 1.6 2018/07/24 01:13:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

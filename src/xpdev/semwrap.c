@@ -2,7 +2,7 @@
 
 /* Semaphore-related cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: semwrap.c,v 1.15 2018/07/24 01:13:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

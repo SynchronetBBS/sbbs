@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: petdefs.h,v 1.4 2019/07/09 23:54:43 rswindell Exp $ */
 
 /* Commodore/PET definitions */
 

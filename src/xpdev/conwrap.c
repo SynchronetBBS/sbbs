@@ -2,7 +2,7 @@
 
 /* DOS's kbhit and getch functions for Unix - Casey Martin 2000 */
 
-/* $Id$ */
+/* $Id: conwrap.c,v 1.15 2018/07/24 01:13:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

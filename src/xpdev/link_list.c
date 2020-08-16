@@ -1,6 +1,6 @@
 /* Double-Linked-list library */
 
-/* $Id$ */
+/* $Id: link_list.c,v 1.64 2019/08/04 19:38:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

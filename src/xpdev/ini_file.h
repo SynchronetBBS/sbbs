@@ -1,6 +1,6 @@
 /* Functions to parse ini (initialization / configuration) files */
 
-/* $Id$ */
+/* $Id: ini_file.h,v 1.60 2020/04/03 18:41:45 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************

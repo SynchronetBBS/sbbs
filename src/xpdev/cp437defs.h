@@ -1,6 +1,6 @@
 /* Synchronet IBM Code Page 437 (CP437) definitions */
 
-/* $Id$ */
+/* $Id: cp437defs.h,v 1.5 2019/08/30 10:47:41 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
