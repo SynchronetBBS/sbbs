@@ -77,7 +77,7 @@ int main(int argc,char **argv)
 	fprintf(stderr,"\nDUPEFIND Version %s (%s) - Synchronet Duplicate File "
 		"Finder\n", DUPEFIND_VER, PLATFORM_DESC);
 
-    p = get_ctrl_dir();
+    p = get_ctrl_dir(/* warn: */TRUE);
 
 	if(argc>1 && (!stricmp(argv[1],"/?") || !stricmp(argv[1],"?") || !stricmp(argv[1],"-?"))) {
 		fprintf(stderr,"\n");

@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 		return(0); 
 	}
 
-	p = get_ctrl_dir();
+	p = get_ctrl_dir(/* warn: */TRUE);
 
 	memset(&cfg, 0, sizeof(cfg));
 	cfg.size=sizeof(cfg);

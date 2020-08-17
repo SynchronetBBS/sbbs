@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 	if(strcspn(argv[first_arg],"/\\")!=strlen(argv[first_arg]))
 		p=argv[first_arg++];
 	else
-		p = get_ctrl_dir();
+		p = get_ctrl_dir(/* warn: */TRUE);
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
