@@ -1,6 +1,6 @@
 /* Synchronet BBS as a set of Windows NT Services */
 
-/* $Id: ntsvcs.c,v 1.52 2020/08/17 00:48:28 rswindell Exp $ */
+/* $Id: ntsvcs.c,v 1.53 2020/08/17 18:21:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1196,7 +1196,7 @@ int main(int argc, char** argv)
 
 	loginAttemptListInit(&login_attempt_list);
 
-	ctrl_dir = get_ctrl_dir(/* warn: */true);
+	ctrl_dir = get_ctrl_dir(/* warn: */TRUE);
 
 	sbbs_get_ini_fname(ini_file, ctrl_dir, NULL /* auto-host_name */);
 
