@@ -2,7 +2,7 @@
 
 /* Program to delete expired files from a Synchronet file database */
 
-/* $Id: delfiles.c,v 1.13 2020/01/03 20:34:55 rswindell Exp $ */
+/* $Id: delfiles.c,v 1.14 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,4 +1,4 @@
-/* $Id: qwknodes.c,v 1.24 2020/01/03 20:34:55 rswindell Exp $ */
+/* $Id: qwknodes.c,v 1.25 2020/08/17 00:48:28 rswindell Exp $ */
 
 /* Synchronet QWKnet node list or route.dat file generator */
 
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 	smbmsg_t	msg;
 	char		revision[16];
 
-	sscanf("$Revision: 1.24 $", "%*s %s", revision);
+	sscanf("$Revision: 1.25 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nSynchronet QWKnet Node/Route/User List Generator v%s-%s\n"
 		,revision, PLATFORM_DESC);

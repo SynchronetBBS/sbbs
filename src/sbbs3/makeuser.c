@@ -2,7 +2,7 @@
 
 /* Program to add a user to a Synchronet user database */
 
-/* $Id: makeuser.c,v 1.11 2020/01/03 20:34:55 rswindell Exp $ */
+/* $Id: makeuser.c,v 1.12 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 	time_t	now;
 	user_t	user;
 
-	sscanf("$Revision: 1.11 $", "%*s %s", revision);
+	sscanf("$Revision: 1.12 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nMAKEUSER v%s-%s - Adds User to Synchronet User Database\n"
 		,revision

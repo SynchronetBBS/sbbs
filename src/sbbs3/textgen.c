@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 		perror(path);
 		return(1);
 	}
-	fputs("/* $Id: textgen.c,v 1.15 2020/01/04 22:58:14 rswindell Exp $ */\n",text_js);
+	fputs("/* $Id: textgen.c,v 1.16 2020/08/17 00:48:29 rswindell Exp $ */\n",text_js);
 	fputs("\n",text_js);
 	fputs("/* Synchronet static text string constants */\n",text_js);
 	fputs("\n",text_js);
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"Can't open text_defaults.c!\n");
 		return(1);
 	}
-	fputs("/* $Id: textgen.c,v 1.15 2020/01/04 22:58:14 rswindell Exp $ */\n",text_defaults_c);
+	fputs("/* $Id: textgen.c,v 1.16 2020/08/17 00:48:29 rswindell Exp $ */\n",text_defaults_c);
 	fputs("\n",text_defaults_c);
 	fputs("/* Synchronet default text strings */\n",text_defaults_c);
 	fputs("\n",text_defaults_c);

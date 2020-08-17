@@ -1,6 +1,6 @@
 /* Execute a Synchronet JavaScript module from the command-line */
 
-/* $Id: jsexec.c,v 1.216 2020/05/05 04:09:11 rswindell Exp $ */
+/* $Id: jsexec.c,v 1.217 2020/08/17 00:48:28 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -1186,7 +1186,7 @@ int main(int argc, char **argv, char** env)
 	cb.gc_interval=JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate=TRUE;
 
-	sscanf("$Revision: 1.216 $", "%*s %s", revision);
+	sscanf("$Revision: 1.217 $", "%*s %s", revision);
 	DESCRIBE_COMPILER(compiler);
 
 	memset(&scfg,0,sizeof(scfg));
