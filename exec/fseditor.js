@@ -289,6 +289,11 @@ function unwrap_line(l)
 				if(line[l+1].text.length==0) {
 					line[l].kludged=false;
 					line[l].hardcr=line[l+1].hardcr;
+					/*
+					 * TODO: If we splice out the next line,
+					 *       line[l+1] != undefined is not longer
+					 *       guaranteed...
+					 */
 					line.splice(l+1,1);
 				}
 				if(words[1].search(/\s/)!=-1)
@@ -309,15 +314,17 @@ function unwrap_line(l)
 		if(words != null) {
 			line[l].text+=words[1];
 			line[l].attr+=line[l+1].attr.substr(0,words[1].length);
-			line[l+1].text=line[l+1].text.substr(words[1].length);
-			line[l+1].attr=line[l+1].attr.substr(words[1].length);
+			if (line[l+1] !== undefined) {
+				line[l+1].text=line[l+1].text.substr(words[1].length);
+				line[l+1].attr=line[l+1].attr.substr(words[1].length);
+			}
 			if(first) {
 				if(ret==-1)
 					ret=words[1].length;
 				else
 					ret+=words[1].length;
 			}
-			if(line[l+1].text.length==0) {
+			if(line[l+1] !== undefined && line[l+1].text.length==0) {
 				line[l].hardcr=line[l+1].hardcr;
 				line.splice(l+1,1);
 			}
@@ -327,7 +334,8 @@ function unwrap_line(l)
 			/* Nothing on the next line... can't be kludged */
 			if(line[l].kludged)
 				line[l].kludged=false;
-			if(line[l+1].text.length==0) {
+			// Make sure we didn't splice() the next line out...
+			if(line[l+1] !== undefined && line[l+1].text.length==0) {
 				line[l].hardcr=line[l+1].hardcr;
 				line.splice(l+1,1);
 				/* 
