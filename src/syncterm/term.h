@@ -22,6 +22,6 @@ extern int log_level;
 
 BOOL doterm(struct bbslist *);
 void mousedrag(struct vmem_cell *scrollback);
-void get_cterm_size(int *cols, int *rows);
+void get_cterm_size(int *cols, int *rows, int ns);
 
 #endif

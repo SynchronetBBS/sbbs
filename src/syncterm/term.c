@@ -54,7 +54,7 @@ static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT +
 static struct text_info	trans_ti;
 static struct text_info	log_ti;
 
-void get_cterm_size(int* cols, int* rows)
+void get_cterm_size(int* cols, int* rows, int ns)
 {
 	*cols = 80;
 	*rows = 24;
@@ -63,7 +63,6 @@ void get_cterm_size(int* cols, int* rows)
 		*rows = cterm->height;
 	}
 	else {
-		int ns;
 		get_term_win_size(cols, rows, &ns);
 	}
 }
