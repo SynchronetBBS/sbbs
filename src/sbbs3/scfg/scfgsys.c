@@ -1,4 +1,4 @@
-/* $Id: scfgsys.c,v 1.62 2020/04/23 02:40:59 rswindell Exp $ */
+/* $Id: scfgsys.c,v 1.63 2020/08/18 06:03:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1784,12 +1784,12 @@ void sys_cfg(void)
 						"security level from 0 to 99. The available options for each level are:\n"
 						"\n"
 						"    Time Per Day           Maximum online time per day\n"
-						"    Time Per Call          Maximum online time per call\n"
-						"    Calls Per Day          Maximum number of calls per day\n"
-						"    Email Per Day          Maximum number of email per day\n"
-						"    Posts Per Day          Maximum number of posts per day\n"
+						"    Time Per Call          Maximum online time per call (logon)\n"
+						"    Calls Per Day          Maximum number of calls (logons) per day\n"
+						"    Email Per Day          Maximum number of email sent per day\n"
+						"    Posts Per Day          Maximum number of posted messages per day\n"
 						"    Lines Per Message      Maximum number of lines per message\n"
-						"    Free Credits Per Day   Number of free credits per day\n"
+						"    Free Credits Per Day   Number of free credits awarded per day\n"
 						"    Expire To              Level or validation set to Expire to\n"
 					;
 					i=uifc.list(WIN_RHT|WIN_ACT,0,3,0,&dflt,&bar
@@ -1828,7 +1828,7 @@ void sys_cfg(void)
 						switch(j) {
 							case 0:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Total Time Allowed Per Day"
+									,"Total Time Allowed Per Day (in minutes)"
 									,ultoa(cfg.level_timeperday[i],tmp,10),4
 									,K_NUMBER|K_EDIT);
 								cfg.level_timeperday[i]=atoi(tmp);
@@ -1837,7 +1837,7 @@ void sys_cfg(void)
 								break;
 							case 1:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Time Allowed Per Call"
+									,"Time Allowed Per Call (in minutes)"
 									,ultoa(cfg.level_timepercall[i],tmp,10),4
 									,K_NUMBER|K_EDIT);
 								cfg.level_timepercall[i]=atoi(tmp);
@@ -1846,21 +1846,21 @@ void sys_cfg(void)
 								break;
 							case 2:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Calls Allowed Per Day"
+									,"Calls (Logons) Allowed Per Day"
 									,ultoa(cfg.level_callsperday[i],tmp,10),4
 									,K_NUMBER|K_EDIT);
 								cfg.level_callsperday[i]=atoi(tmp);
 								break;
 							case 3:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Email Allowed Per Day"
+									,"Email (Sent) Allowed Per Day"
 									,ultoa(cfg.level_emailperday[i],tmp,10),4
 									,K_NUMBER|K_EDIT);
 								cfg.level_emailperday[i]=atoi(tmp);
 								break;
 							case 4:
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Posts Allowed Per Day"
+									,"Posted Messages Allowed Per Day"
 									,ultoa(cfg.level_postsperday[i],tmp,10),4
 									,K_NUMBER|K_EDIT);
 								cfg.level_postsperday[i]=atoi(tmp);
@@ -1875,7 +1875,7 @@ void sys_cfg(void)
 							case 6:
 								byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 								if(uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Free Credits Per Day"
+									,"Free Credits Awarded Per Day"
 									,tmp,10
 									,K_EDIT|K_UPPER) > 0)
 									cfg.level_freecdtperday[i] = (int32_t)parse_byte_count(tmp, 1);

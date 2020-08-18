@@ -1,4 +1,4 @@
-/* $Id: scfgmsg.c,v 1.73 2020/05/05 20:28:51 rswindell Exp $ */
+/* $Id: scfgmsg.c,v 1.74 2020/08/18 06:03:09 rswindell Exp $ */
 
 /* Configuring Message Options and Message Groups (but not sub-boards) */
 
@@ -824,12 +824,26 @@ void msgs_cfg()
 						sprintf(str,"backbone.na");
 					else if(k==3)
 						sprintf(str,"newsgroup.lst");
-					if(k==1)
-						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Uplinks"
+					if(k==1) {
+						uifc.helpbuf=
+							"`Links:`\n"
+							"\n"
+							"Enter a space-separated list of FidoNet node addresses that the exported\n"
+							"areas should be linked with.\n"
+							"\n"
+							"At the least, your uplink (hub) address should be included in the list."
+							;
+						if(uifc.input(WIN_MID|WIN_SAV,0,0,"Links"
 							,str2,sizeof(str2)-1,0)<=0) {
 							uifc.changes=q;
 							break; 
 						}
+					}
+					uifc.helpbuf=
+						"`Filename:`\n"
+						"\n"
+						"Enter the path/filename of the file you wish to export to.\n"
+						;
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename"
 						,str,sizeof(str)-1,K_EDIT)<=0) {
 						uifc.changes=q;
