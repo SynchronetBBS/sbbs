@@ -496,6 +496,8 @@ function find(msgbase, search_list, text)
 		var msgtxt = msg.text;
 		if(msgtxt === undefined)
 			msgtxt = msgbase.get_msg_body(msg);
+		if(!msgtxt)
+			continue;
 		if(msgtxt.toUpperCase().indexOf(text) >= 0)
 			new_list.push(msg);
 		else {
