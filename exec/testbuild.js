@@ -72,7 +72,7 @@ if(platform=="win32") {
 	cleanup="rmdir /s /q ";
 } else {
 	archive="sbbs_src.tgz";
-	archive_cmd="tar --exclude=*output.txt -exclude=" + exclude_dirs.join(" --exclude=") +
+	archive_cmd="tar --exclude=*output.txt --exclude=" + exclude_dirs.join(" --exclude=") +
 		" --exclude=3rdp/win32.release" +
 		" --exclude-vcs" +
 		" --exclude-vcs-ignores" +
