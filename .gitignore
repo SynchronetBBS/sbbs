@@ -1,5 +1,8 @@
 **/CVS
 **/.vs
+**/Debug
+**/Release
+**/*.vcxproj.user
 .#*
 clang.*
 gcc.*
