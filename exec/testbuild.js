@@ -12,45 +12,68 @@ for(i=0;i<argc;i++)
 	if(argv[i]=="-k")
 		keep=true;
 
-var date_str = strftime("%b-%d-%y");	/* mmm-dd-yy */
+var date_str = strftime("%b-%d-%Y");	/* mmm-dd-yyyy */
 
 var temp_dir = backslash(system.temp_path) + "sbbs-" + date_str;
 
-if(!file_isdir(temp_dir) && !mkdir(temp_dir)) {
-	log(LOG_ERR,"!Failed to create temp directory: " + temp_dir);
-	exit(1);
-}
 log(LOG_INFO,"Using temp directory: " + temp_dir);
 
-putenv("CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs");
+var build_output = "build_output.txt";
+var repo = "git@gitlab.synchro.net:/sbbs/sbbs";
+var cmd_line = "git clone " + repo + " " + temp_dir + " 2> " + build_output;
+
+log(LOG_INFO, "Executing: " + cmd_line);
+var retval=system.exec(cmd_line);
+log(LOG_INFO, "Done: " + cmd_line);
+if(retval) {
+	print("errno: " + errno);
+	send_email(subject,
+		log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line)
+			+ "\n\n" + file_contents(build_output)
+		,SMB_PRIORITY_HIGHEST);
+	bail(1);
+}
 
 var platform = system.platform.toLowerCase();
 if(system.architecture=="x64")
 	platform += "-x64";
 var make = (platform=="win32" ? "make":"gmake");
-var build_output = "build_output.txt";
 var archive;
 var archive_cmd;
-var lib_alias="lib";
 var cleanup;
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
 	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
 	cleanup="rmdir /s /q ";
-	lib_alias="lib-win32";
 } else {
 	archive="sbbs_src.tgz";
-	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
+	archive_cmd="tar --exclude=*output.txt" +
+		" --exclude=node1" +
+		" --exclude=ctrl" +
+		" --exclude=docs" +
+		" --exclude=exec" +
+		" --exclude=install" +
+		" --exclude=text" +
+		" --exclude=web" +
+		" --exclude=xtrn" +
+		" --exclude=3rdp/win32.release" +
+		" --exclude=src/crt" +
+		" --exclude=src/doors" +
+		" --exclude=src/odoors" +
+		" --exclude=src/sbbs2" +
+		" --exclude=src/sbbs3/ctrl" +
+		" --exclude=src/syncterm" +
+		" --exclude=src/ZuulTerm" +
+		" --exclude-vcs" +
+		" --exclude-vcs-ignores" +
+		" -czvf " + archive + " *";
 	cleanup="rm -r -f "
 }
 
 var builds
-	=	[/* sub-dir */		/* cmd-line */						/* redirect */
-		[""					,"cvs co src-sbbs3"					,"2> " + build_output],
-		[""					,"cvs co "+lib_alias				,"2> " + build_output],
-		[""					,archive_cmd						,"2> " + build_output],
-//		["3rdp"				,lib_cmd							,"2> " + build_output],
+	=	[/* sub-dir */		/* cmd-line */							/* redirect */
+		[""					,archive_cmd							,"2> " + build_output],
 	];
 
 /* Platform-specific (or non-ported) projects */
@@ -135,16 +158,17 @@ if(file.open("wt")) {
 
 var start = time();
 if(1) {
-for(i = 0; i < builds.length; i++) {
+for(var i = 0; i < builds.length; i++) {
 	var sub_dir = builds[i][0];
 	var build_dir = temp_dir + "/" + sub_dir;
 	var subject = system.platform + " build failure in " + sub_dir;
 
-	log(LOG_DEBUG,"Build " + i+1 + " of " + builds.length);
+	log(LOG_DEBUG,"Build " + (i+1) + " of " + builds.length);
 	if(sub_dir.length)
 		log(LOG_INFO, "Build sub-directory: " + sub_dir);
 	if(!chdir(build_dir)) {
-		semd_email(subject, log(LOG_ERR,"!FAILED to chdir to: " + build_dir));
+		print("errno: " + errno);
+		send_email(subject, log(LOG_ERR,"!FAILED to chdir to: " + build_dir), SMB_PRIORITY_HIGHEST);
 		bail(1);
 	}
 
@@ -157,6 +181,7 @@ for(i = 0; i < builds.length; i++) {
 	var retval=system.exec(cmd_line);
 	log(LOG_INFO, "Done: " + cmd_line);
 	if(retval) {
+		print("errno: " + errno);
 		send_email(subject,
 			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
 				+ "\n\n" + file_contents(build_output)
@@ -182,7 +207,8 @@ send_email(system.platform + " builds successful in " + elapsed_time(time() - st
 
 chdir(temp_dir);
 
-system.exec("cvs -d:pserver:testbuild@cvs.synchro.net:/cvsroot/sbbs tag -RF goodbuild_" + platform);
+system.exec("git tag -m 'Successful build' -a goodbuild_" + platform + "_" + date_str);
+system.exec("git push --tags");
 
 var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
@@ -220,10 +246,10 @@ var cmd_line;
 if(platform=="win32") {
 	archive = "sbbs_dev.zip";
 	cmd_line = "pkzip25 -add " + archive 
-		+ " -exclude=makehelp.exe -exclude=v4upgrade.exe " + win32_dist.join(" ");
+		+ " -exclude=v4upgrade.exe " + win32_dist.join(" ");
 } else {
 	archive = "sbbs_dev.tgz";
-	cmd_line = "pax -s :.*/makehelp.*::p -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
+	cmd_line = "pax -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
 }
 
 log(LOG_INFO, "Executing: " + cmd_line);
