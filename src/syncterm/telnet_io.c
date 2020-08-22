@@ -220,7 +220,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct
 						int rows, cols;
 						BYTE buf[32];
 
-						get_cterm_size(&cols, &rows, bbs.nostatus);
+						get_cterm_size(&cols, &rows, bbs->nostatus);
 						buf[0]=TELNET_IAC;
 						buf[1]=TELNET_SB;
 						buf[2]=TELNET_NEGOTIATE_WINDOW_SIZE;
