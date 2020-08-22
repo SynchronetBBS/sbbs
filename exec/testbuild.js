@@ -147,7 +147,7 @@ if(file.open("wt")) {
 			file.writeln(format("%-20s %s", builds[i][0], builds[i][1]));
 	}
 	file.writeln();
-	file.writeln("Builds verified on " + system.timestr());
+	file.writeln("Builds verified on " + system.timestr() + " " + system.zonestr());
 	file.writeln(system_description);
 	file.writeln();
 	file.writeln("For more details, see http://wiki.synchro.net/dev:source");
@@ -219,7 +219,8 @@ send_email(system.platform + " builds successful in " + elapsed_time(time() - st
 
 chdir(temp_dir);
 
-system.exec("git tag -m 'Successful build' -a goodbuild_" + platform + "_" + date_str);
+var comment = "Successful build on " + system_description;
+system.exec("git tag -m \"" + comment + "\" -a goodbuild_" + platform + "_" + date_str);
 system.exec("git push --tags");
 
 var dest = file_area.dir["sbbs"].path+archive;
@@ -233,7 +234,7 @@ if(file.open("wt")) {
 		,system.platform,system.architecture, date_str));
 	file.writeln(format("This archive contains a snap-shot of Synchronet-%s executable files"
 		,system.platform));
-	file.writeln("created on " + system.timestr());
+	file.writeln("created on " + new Date().toUTCString());
 	file.writeln();
 	file.writeln("The files in this archive are not necessarily well-tested, DO NOT");
 	file.writeln("constitute an official Synchronet release, and are NOT SUPPORTED!");
