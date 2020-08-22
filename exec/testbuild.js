@@ -41,30 +41,39 @@ var make = (platform=="win32" ? "make":"gmake");
 var archive;
 var archive_cmd;
 var cleanup;
+var exclude_dirs = [
+	"node1",
+	"ctrl",
+	"docs",
+	"exec",
+	"install",
+	"text",
+	"web",
+	"xtrn",
+	"src/crt",
+	"src/doors",
+	"src/odoors",
+	"src/sbbs2",
+	"src/syncterm",
+	"src/ZuulTerm"
+	];
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
-	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
+	archive_cmd="pkzip25 -exclude=*output.txt " +
+		" -exclude=.gitignore" +
+		" -exclude=" + exclude_dirs.join(" -exclude=") +
+		" -exclude=" + exclude_dirs.join("/* -exclude=") + "/*" +
+		" -exclude=3rdp/build" +
+		" -exclude=3rdp/build/*" +
+		" -exclude=3rdp/dist" +
+		" -exclude=3rdp/dist/*" +
+		" -add -dir -max " + archive;
 	cleanup="rmdir /s /q ";
 } else {
 	archive="sbbs_src.tgz";
-	archive_cmd="tar --exclude=*output.txt" +
-		" --exclude=node1" +
-		" --exclude=ctrl" +
-		" --exclude=docs" +
-		" --exclude=exec" +
-		" --exclude=install" +
-		" --exclude=text" +
-		" --exclude=web" +
-		" --exclude=xtrn" +
+	archive_cmd="tar --exclude=*output.txt -exclude=" + exclude_dirs.join(" --exclude=") +
 		" --exclude=3rdp/win32.release" +
-		" --exclude=src/crt" +
-		" --exclude=src/doors" +
-		" --exclude=src/odoors" +
-		" --exclude=src/sbbs2" +
-		" --exclude=src/sbbs3/ctrl" +
-		" --exclude=src/syncterm" +
-		" --exclude=src/ZuulTerm" +
 		" --exclude-vcs" +
 		" --exclude-vcs-ignores" +
 		" -czvf " + archive + " *";
@@ -126,11 +135,11 @@ var system_description=system.local_host_name + " - " + system.os_version;
 var file = new File("README.TXT");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s C/C++ Source Code Archive (%s)\n"
-		,system.platform, system.datestr()));
+		,system.platform, date_str));
 	file.writeln("This archive contains a snap-shot of all the source code and library files");
 	file.writeln("necessary for a successful " + system.platform 
 		+ " build of the following Synchronet projects");
-	file.writeln("as of " + system.datestr() + ":");
+	file.writeln("as of " + new Date().toUTCString() + ":");
 	file.writeln();
 	file.writeln(format("%-20s %s", "Project Directory", "Build Command"));
 	for(i in builds) {
@@ -143,13 +152,16 @@ if(file.open("wt")) {
 	file.writeln();
 	file.writeln("For more details, see http://wiki.synchro.net/dev:source");
 	file.writeln("and http://wiki.synchro.net/install:dev");
+	file.writeln();
+	file.write("git commit: " );
 	file.close();
+	system.exec("git rev-parse HEAD >> " + file.name);
 }
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s (%s) BBS Software",system.platform, system.architecture));
-	file.writeln(format("C/C++ source code archive (%s)",system.datestr()));
+	file.writeln(format("C/C++ source code archive (%s)", date_str));
 	if(platform=="win32")
 		file.writeln("Unzip *with* directories!");
 	file.writeln("http://www.synchro.net");
@@ -218,7 +230,7 @@ if(!file_copy(archive,dest))
 var file = new File("README.TXT");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s (%s) Version 3 Development Executable Archive (%s)\n"
-		,system.platform,system.architecture,system.datestr()));
+		,system.platform,system.architecture, date_str));
 	file.writeln(format("This archive contains a snap-shot of Synchronet-%s executable files"
 		,system.platform));
 	file.writeln("created on " + system.timestr());
@@ -236,7 +248,7 @@ if(file.open("wt")) {
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s BBS Software",system.platform));
-	file.writeln(format("Development Executable Archive (%s)",system.datestr()));
+	file.writeln(format("Development Executable Archive (%s)", date_str));
 	file.writeln("Snapshot for experimental purposes only!");
 	file.writeln("http://www.synchro.net");
 	file.close();
