@@ -37,7 +37,6 @@ if(retval) {
 var platform = system.platform.toLowerCase();
 if(system.architecture=="x64")
 	platform += "-x64";
-var make = (platform=="win32" ? "make":"gmake");
 var archive;
 var archive_cmd;
 var cleanup;
@@ -169,7 +168,7 @@ if(file.open("wt")) {
 }
 
 var start = time();
-if(1) {
+
 for(var i = 0; i < builds.length; i++) {
 	var sub_dir = builds[i][0];
 	var build_dir = temp_dir + "/" + sub_dir;
@@ -243,18 +242,21 @@ if(file.open("wt")) {
 	file.writeln();
 	file.writeln("BACKUP YOUR WORKING EXECUTABLE FILES");
 	file.writeln("BEFORE over-writing them with the files in this archive!");
+	file.writeln();
+	file.write("git commit: " );
 	file.close();
+	system.exec("git rev-parse HEAD >> " + file.name);
 }
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
-	file.writeln(format("Synchronet-%s BBS Software",system.platform));
+	file.writeln(format("Synchronet-%s (%s) BBS Software",system.platform, system.architecture));
 	file.writeln(format("Development Executable Archive (%s)", date_str));
 	file.writeln("Snapshot for experimental purposes only!");
 	file.writeln("http://www.synchro.net");
 	file.close();
 }
-}
+
 var cmd_line;
 if(platform=="win32") {
 	archive = "sbbs_dev.zip";
