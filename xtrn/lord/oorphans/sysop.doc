@@ -1,0 +1,23 @@
+Olodrin's Orphanage is an IGM for Lord 5.00 JS by Underminer
+
+About:
+------
+Olodrin's Orphanage is simple in scope - it allows players to Adopt(Buy), or Give Up for Adoption(Sell) children.
+There is also the option to try and catch feral children in the wild, but bad things can happen if you miss.
+Finally, there is an option to trade children for a Horse.
+
+All costs scale with a player's level in order to try to avoid abuse by high level players.
+
+Install:
+--------
+* ensure the contained files have been unzipped to a directory name oorphans in your LoRD directory
+* Run ?lord.js +IGM oorphans/oorphans.js
+
+Uninstall:
+----------
+To Uninstall use -IGM
+
+Support:
+--------
+This IGM is provided to use at your own risk, but I may be found on DOVE-net, or at The Undermine BBS
+Undermine BBS: telnet://bbs.undermine.ca:423
