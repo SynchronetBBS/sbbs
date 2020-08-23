@@ -62,7 +62,7 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"node.cnf");
+	SAFECOPY(fname,"node.cnf");
 	sprintf(str,"%s%s",cfg->node_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		sprintf(error,"%d (%s) opening %s",errno,STRERROR(errno),str);
@@ -101,11 +101,13 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->node_scrnblank,instream);
 	get_str(cfg->text_dir,instream); 				/* ctrl directory */
 	get_str(cfg->text_dir,instream); 				/* text directory */
+	if(!cfg->text_dir[0])
+		SAFECOPY(cfg->text_dir, "../text/");
 	get_str(cfg->temp_dir,instream); 				/* temp directory */
 #if 0 /* removed Sep-9-2003, always use nodex/temp (rrs) */
 	if(!cfg->temp_dir[0])
 #endif
-		strcpy(cfg->temp_dir,"temp");
+		SAFECOPY(cfg->temp_dir,"temp");
 
 	for(i=0;i<10;i++)  						/* WFC 0-9 DOS commands */
 		get_str(cfg->wfc_cmd[i],instream); 
@@ -141,8 +143,8 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"main.cnf");
-	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
+	SAFECOPY(fname,"main.cnf");
+	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		sprintf(error,"%d (%s) opening %s",errno,STRERROR(errno),str);
 		return(FALSE); 
@@ -206,7 +208,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->new_sif,instream);
 	get_str(cfg->new_sof,instream);
 	if(!cfg->new_sof[0])		/* if output not specified, use input file */
-		strcpy(cfg->new_sof,cfg->new_sif);
+		SAFECOPY(cfg->new_sof,cfg->new_sif);
 
 	/*********************/
 	/* New User Settings */
@@ -393,7 +395,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 	long	offset=0;
 	FILE	*instream;
 
-	strcpy(fname,"msgs.cnf");
+	SAFECOPY(fname,"msgs.cnf");
 	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		sprintf(error,"%d (%s) opening %s",errno,STRERROR(errno),str);
