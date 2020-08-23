@@ -252,6 +252,7 @@ src: $(WORKDIR)
 
 run: $(WORKDIR)
 	cp -r $(WORKDIR)/ctrl $(SBBSDIR)
+	cp -r $(WORKDIR)/docs $(SBBSDIR)
 	cp -r $(WORKDIR)/exec $(SBBSDIR)
 	cp -r $(WORKDIR)/node1 $(SBBSDIR)
 	cp -r $(WORKDIR)/text $(SBBSDIR)
