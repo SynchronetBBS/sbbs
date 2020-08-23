@@ -155,7 +155,7 @@ function IRC_quit(server,reason) {
 	/* wait up to 5 seconds for server to disconnect */
 	var start=time();
 	while(server.is_connected && time()-start<5) {
-		if (server.poll(500))
+		if (server.poll(0.5))
 			server.recvline();
 	}
 }
