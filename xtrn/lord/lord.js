@@ -1475,7 +1475,7 @@ function psock_put(leave_locked)
 	json = JSON.stringify(this, whitelist);
 	psock.write('PutPlayer '+this.Record+' '+json.length+'\r\n'+json+'\r\n');
 	if (psock.readln() !== 'OK') {
-		throw('Out of sync with server after PutPlayer');
+		throw new Error('Out of sync with server after PutPlayer');
 	}
 }
 
@@ -1560,17 +1560,17 @@ function pfile_init()
 		if (settings.remote_game !== undefined && settings.remote_game.length > 0) {
 			m = settings.remote_game.match(/^(.*)\.([0-9]+)$/);
 			if (m === null) {
-				throw('Unable to parse remote address: '+settings.remote_game);
+				throw new Error('Unable to parse remote address: '+settings.remote_game);
 			}
 			psock = new ConnectedSocket(m[1], m[2]);
 			psock.ssl_session = true;
 			psock.nonblocking = false;
 			if (psock === undefined) {
-				throw('Unable to connect to remote server: '+settings.remote_game);
+				throw new Error('Unable to connect to remote server: '+settings.remote_game);
 			}
 			psock.writeln('Auth '+settings.game_user+' '+settings.game_pass);
 			if (psock.readln() !== 'OK') {
-				throw('Unable to authenticate!');
+				throw new Error('Unable to authenticate!');
 			}
 			Player_Def.forEach(function(o) {
 				whitelist.push(o.prop);
@@ -1612,15 +1612,15 @@ function player_new(leave_locked)
 		resp = psock.readln();
 		m = resp.match(/^PlayerRecord ([0-9]+)$/);
 		if (m === null) {
-			throw('Invalid NewPlayer server response: '+resp);
+			throw new Error('Invalid NewPlayer server response: '+resp);
 		}
 		len = parseInt(m[1], 10);
 		json = psock.read(len);
 		if (json.length !== len) {
-			throw('Short read of '+json.length+' bytes');
+			throw new Error('Short read of '+json.length+' bytes');
 		}
 		if (psock.read(2) !== '\r\n') {
-			throw('No terminating newline after NewPlayer response');
+			throw new Error('No terminating newline after NewPlayer response');
 		}
 		ret = JSON.parse(json);
 		ret.put = psock_put;
@@ -1653,15 +1653,15 @@ function player_get(rec, leave_locked)
 		resp = psock.readln();
 		m = resp.match(/^PlayerRecord ([0-9]+)$/);
 		if (m === null) {
-			throw('Invalid server response to GetPlayer: '+resp);
+			throw new Error('Invalid server response to GetPlayer: '+resp);
 		}
 		len = parseInt(m[1], 10);
 		json = psock.read(len);
 		if (json.length !== len) {
-			throw('Short read of '+json.length+' bytes');
+			throw new Error('Short read of '+json.length+' bytes');
 		}
 		if (psock.read(2) !== '\r\n') {
-			throw('No terminating newline after GetPlayer response');
+			throw new Error('No terminating newline after GetPlayer response');
 		}
 		ret = JSON.parse(json);
 		ret.put = psock_put;
@@ -1686,7 +1686,7 @@ function player_length()
 		psock.writeln('RecordCount');
 		ret = psock.readln();
 		if (ret === undefined || ret.search(/^[0-9]+$/) !== 0) {
-			throw('Invalid response from server');
+			throw new Error('Invalid response from server');
 		}
 		return parseInt(ret, 10);
 	}
@@ -1721,15 +1721,15 @@ function all_players()
 			resp = psock.readln();
 			m = resp.match(/^PlayerRecord ([0-9]+)$/);
 			if (m === null) {
-				throw('Invalid server response to GetPlayer: '+resp);
+				throw new Error('Invalid server response to GetPlayer: '+resp);
 			}
 			jslen = parseInt(m[1], 10);
 			json = psock.read(jslen);
 			if (json.length !== jslen) {
-				throw('Short read of '+json.length+' bytes');
+				throw new Error('Short read of '+json.length+' bytes');
 			}
 			if (psock.read(2) !== '\r\n') {
-				throw('No terminating newline after GetPlayer response');
+				throw new Error('No terminating newline after GetPlayer response');
 			}
 			p = JSON.parse(json);
 			p.put = psock_put;
@@ -1766,14 +1766,14 @@ function fmutex(fname, str)
 	if (str === undefined) {
 		while(!file_mutex(fname)) {
 			if (time() > end)
-				throw("Unable to create "+fname+" please notify Sysop");
+				throw new Error("Unable to create "+fname+" please notify Sysop");
 			mswait(1);
 		}
 	}
 	else {
 		while(!file_mutex(fname, str)) {
 			if (time() > end)
-				throw("Unable to create "+fname+" please notify Sysop");
+				throw new Error("Unable to create "+fname+" please notify Sysop");
 			mswait(1);
 		}
 	}
@@ -1788,7 +1788,7 @@ function rfmutex(fname)
 	fname += '.lock';
 	idx = cleanup_files.indexOf(fname);
 	if (idx === -1) {
-		throw('Removing unknown fmutex '+fname);
+		throw new Error('Removing unknown fmutex '+fname);
 	}
 	file_remove(fname);
 	cleanup_files.splice(idx, 1);
@@ -1984,7 +1984,7 @@ function display_file(fname, canskip, more)
 	}
 
 	if (!f.open('r')) {
-		throw('Unable to open '+fname);
+		throw new Error('Unable to open '+fname);
 	}
 
 	morechk = false;
@@ -2163,7 +2163,7 @@ function looks(sex, charm)
 	var f = new File(game_or_exec(sex === 'M' ? 'mlooks.txt' : 'flooks.txt'));
 
 	if (!f.open('r')) {
-		throw('Unable to open '+f.name);
+		throw new Error('Unable to open '+f.name);
 	}
 	if (charm === undefined || charm < 1) {
 		charm = 1;
@@ -2206,7 +2206,7 @@ function show_lord_file(fname, quote, mail)
 		}
 		if (quote) {
 			if (!qf.open('a')) {
-				throw('Unable to open '+qf.name);
+				throw new Error('Unable to open '+qf.name);
 			}
 			qf.writeln(ln);
 			qf.close();
@@ -2249,7 +2249,7 @@ function show_lord_buffer(buf, quote, mail)
 		ln = lines.shift();
 		if (quote) {
 			if (!qf.open('a')) {
-				throw('Unable to open '+qf.name);
+				throw new Error('Unable to open '+qf.name);
 			}
 			qf.writeln(ln);
 			qf.close();
@@ -2332,7 +2332,7 @@ function check_mail()
 				len = parseInt(m[1], 10);
 				resp = psock.read(len);
 				if (psock.read(2) !== '\r\n') {
-					throw('Out of sync with server after GetMail');
+					throw new Error('Out of sync with server after GetMail');
 				}
 				show_lord_buffer(resp, true, true);
 			}
@@ -2421,7 +2421,7 @@ function tournament_over()
 	if (psock !== undefined) {
 		psock.writeln('NewHero '+a[0].name);
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after NewHero');
+			throw new Error('Out of sync with server after NewHero');
 		}
 	}
 	state.won_by = a[0].Record;
@@ -2442,7 +2442,7 @@ function killmail(to)
 	else {
 		psock.writeln('KillMail '+to);
 		if (psock.readln() !== 'OK') {
-			throw('Unable to KillMail for '+to);
+			throw new Error('Unable to KillMail for '+to);
 		}
 	}
 }
@@ -2452,7 +2452,7 @@ function divorce_seth() {
 	if (psock !== undefined) {
 		psock.writeln('SethMarried -1');
 		if (['Yes','No'].indexOf(psock.readln()) === -1) {
-			throw('Out of sync with server after SethMarried -1');
+			throw new Error('Out of sync with server after SethMarried -1');
 		}
 	}
 }
@@ -2462,7 +2462,7 @@ function divorce_violet() {
 	if (psock !== undefined) {
 		psock.writeln('VioletMarried -1');
 		if (['Yes','No'].indexOf(psock.readln()) === -1) {
-			throw('Out of sync with server after VioletMarried -1');
+			throw new Error('Out of sync with server after VioletMarried -1');
 		}
 	}
 }
@@ -2762,7 +2762,7 @@ function daily_maint()
 			full = all.join('\n');
 			psock.write('AddToConversation bar '+full.length+'\r\n'+full+'\r\n');
 			if (psock.readln() !== 'OK') {
-				throw('Lost synchronization with server after AddToConversation');
+				throw new Error('Lost synchronization with server after AddToConversation');
 			}
 		}
 	}
@@ -2794,7 +2794,7 @@ function daily_maint()
 	if (psock !== undefined) {
 		psock.writeln('ClearPlayer');
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after ClearPlayer');
+			throw new Error('Out of sync with server after ClearPlayer');
 		}
 	}
 	// NPC talks to last person who chatted in the bar...
@@ -2839,7 +2839,7 @@ function daily_maint()
 						if (psock !== undefined) {
 							psock.writeln('SethMarried -1');
 							if (['Yes','No'].indexOf(psock.readln()) === -1) {
-								throw('Out of sync with server after SethMarried -1');
+								throw new Error('Out of sync with server after SethMarried -1');
 							}
 						}
 					}
@@ -2848,7 +2848,7 @@ function daily_maint()
 						if (psock !== undefined) {
 							psock.writeln('VioletMarried -1');
 							if (['Yes','No'].indexOf(psock.readln()) === -1) {
-								throw('Out of sync with server after VioletMarried -1');
+								throw new Error('Out of sync with server after VioletMarried -1');
 							}
 						}
 					}
@@ -2862,7 +2862,7 @@ function daily_maint()
 						if (psock !== undefined) {
 							psock.writeln('SethMarried -1');
 							if (['Yes','No'].indexOf(psock.readln()) === -1) {
-								throw('Out of sync with server after SethMarried -1');
+								throw new Error('Out of sync with server after SethMarried -1');
 							}
 						}
 					}
@@ -2871,7 +2871,7 @@ function daily_maint()
 						if (psock !== undefined) {
 							psock.writeln('VioletMarried -1');
 							if (['Yes','No'].indexOf(psock.readln()) === -1) {
-								throw('Out of sync with server after VioletMarried -1');
+								throw new Error('Out of sync with server after VioletMarried -1');
 							}
 						}
 					}
@@ -2885,7 +2885,7 @@ function daily_maint()
 						if (psock !== undefined) {
 							psock.writeln('SethMarried -1');
 							if (['Yes','No'].indexOf(psock.readln()) === -1) {
-								throw('Out of sync with server after SethMarried -1');
+								throw new Error('Out of sync with server after SethMarried -1');
 							}
 						}
 					}
@@ -2894,7 +2894,7 @@ function daily_maint()
 						if (psock !== undefined) {
 							psock.writeln('VioletMarried -1');
 							if (['Yes','No'].indexOf(psock.readln()) === -1) {
-								throw('Out of sync with server after VioletMarried -1');
+								throw new Error('Out of sync with server after VioletMarried -1');
 							}
 						}
 					}
@@ -2959,7 +2959,7 @@ function daily_maint()
 	if (psock !== undefined) {
 		psock.writeln('SetPlayer '+player.Record);
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after SetPlayer');
+			throw new Error('Out of sync with server after SetPlayer');
 		}
 	}
 	more();
@@ -2989,11 +2989,11 @@ function get_state(lock)
 		resp = psock.readln();
 		m = resp.match(/StateData ([0-9]+)$/);
 		if (m === null) {
-			throw('Invalid response to StateData request');
+			throw new Error('Invalid response to StateData request');
 		}
 		st = psock.read(parseInt(m[1], 10));
 		if (psock.read(2) !== '\r\n') {
-			throw('Out of sync with server after GetState');
+			throw new Error('Out of sync with server after GetState');
 		}
 		st = JSON.parse(st);
 		Object.keys(st).forEach(function(k) {
@@ -3043,7 +3043,7 @@ function create_log(havelock)
 		}
 		if (!f.open('a')) {
 			rfmutex(f.name);
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		}
 		f.writeln('`2  The Daily Happenings....');
 		f.writeln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-');
@@ -3080,7 +3080,7 @@ function log_line(text)
 			create_log(true);
 		}
 		if (!f.open('a')) {
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		}
 		f.writeln(text);
 		f.writeln('`.                                `2-`0=`2-`0=`2-`0=`2-');
@@ -3090,7 +3090,7 @@ function log_line(text)
 	else {
 		psock.write('LogEntry '+text.length+'\r\n'+text+'\r\n');
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after LogEntry');
+			throw new Error('Out of sync with server after LogEntry');
 		}
 	}
 }
@@ -3166,7 +3166,7 @@ function write_mail(to, quote)
 	sln('');
 	sln('  Enter message now..Blank line quits!');
 	if (!mf.open('w+')) {
-		throw('Unable to open '+mf.name);
+		throw new Error('Unable to open '+mf.name);
 	}
 	mf.writeln('`. ');
 	mf.writeln('`.  `0' + player.name + '`2 sent you this on '+format_date());
@@ -3234,7 +3234,7 @@ function write_mail(to, quote)
 		fmutex(mb.name);
 		if (!mb.open('a')) {
 			rfmutex(mb.name);
-			throw('Failed to open '+mb.name);
+			throw new Error('Failed to open '+mb.name);
 		}
 		while (true) {
 			l = mf.readln();
@@ -3254,7 +3254,7 @@ function write_mail(to, quote)
 		psock.sendfile(mf.name);
 		psock.write('\r\n');
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after WriteMail');
+			throw new Error('Out of sync with server after WriteMail');
 		}
 	}
 	if (to === player.Record) {
@@ -3273,7 +3273,7 @@ function mail_to(to, mail)
 		fmutex(mb.name);
 		if (!mb.open('a')) {
 			rfmutex(mb.name);
-			throw('Failed to open '+mb.name);
+			throw new Error('Failed to open '+mb.name);
 		}
 		mb.writeln(mail);
 		mb.close();
@@ -3282,7 +3282,7 @@ function mail_to(to, mail)
 	else {
 		psock.write('WriteMail '+to+' '+mail.length+'\r\n'+mail+'\r\n');
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after WriteMail');
+			throw new Error('Out of sync with server after WriteMail');
 		}
 	}
 }
@@ -3354,7 +3354,7 @@ function tournament_check()
 		if (psock !== undefined) {
 			psock.writeln('NewHero '+player.name);
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after NewHero');
+				throw new Error('Out of sync with server after NewHero');
 			}
 		}
 		state.latesthero = player.name;
@@ -3421,7 +3421,7 @@ function ob_send_resp(op, str) {
 	if (psock !== undefined) {
 		psock.writeln('SendBattleResponse '+str);
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after SendBattleResponse');
+			throw new Error('Out of sync with server after SendBattleResponse');
 		}
 	}
 	else {
@@ -3561,7 +3561,7 @@ function on_battle(op, first, action) {
 			if (psock !== undefined) {
 				psock.writeln('DoneOnlineBattle');
 				if (psock.readln() !== 'OK') {
-					throw('Out of sync with server after DoneOnlineBattle');
+					throw new Error('Out of sync with server after DoneOnlineBattle');
 				}
 			}
 			log_line('`.  `0'+op.name+' `2has killed `5'+player.name+' `2in an Online Duel!');
@@ -3674,7 +3674,7 @@ outer:
 						if (psock !== undefined) {
 							psock.writeln('DoneOnlineBattle');
 							if (psock.readln() !== 'OK') {
-								throw('Out of sync with server after DoneOnlineBattle');
+								throw new Error('Out of sync with server after DoneOnlineBattle');
 							}
 						}
 						player.put();
@@ -3697,7 +3697,7 @@ outer:
 						else {
 							psock.writeln('SendBattleResponse Yell: '+tmp);
 							if (psock.readln() !== 'OK') {
-								throw('Out of sync with server after SendBattleResponse Yell:');
+								throw new Error('Out of sync with server after SendBattleResponse Yell:');
 							}
 						}
 						sln('');
@@ -4039,7 +4039,7 @@ function lw(str, ext)
 			if (psock !== undefined) {
 				psock.writeln('Marry '+player.Record+' '+to);
 				if (['Yes','No'].indexOf(psock.readln()) === -1) {
-					throw('Out of sync with server after Marry');
+					throw new Error('Out of sync with server after Marry');
 				}
 			}
 			mop = mop.reLoad(true);
@@ -4463,7 +4463,7 @@ function lw(str, ext)
 										if (psock !== undefined) {
 											psock.writeln('DoneOnlineBattle');
 											if (psock.readln() !== 'OK') {
-												throw('Out of sync with server after DoneOnlineBattle');
+												throw new Error('Out of sync with server after DoneOnlineBattle');
 											}
 										}
 										ob_cleanup();
@@ -5288,7 +5288,7 @@ function check_marriage()
 		if (psock !== undefined) {
 			psock.writeln('Divorce '+player.Record+' '+op.Record);
 			if (['Yes', 'No'].indexOf(player.Record) === -1) {
-				throw('Out of sync with server after Divorce');
+				throw new Error('Out of sync with server after Divorce');
 			}
 		}
 		else {
@@ -5554,14 +5554,14 @@ function psock_igm_lines(who)
 	resp = psock.readln();
 	resp = resp.match(/^IGMData ([0-9]+)$/);
 	if (resp === null) {
-		throw('Invalid response to GetIGM');
+		throw new Error('Invalid response to GetIGM');
 	}
 	resp = psock.read(parseInt(resp[1], 10)).split(/\r?\n/);
 	if (resp.length !== 2) {
-		throw('Invalid response to GetIGM');
+		throw new Error('Invalid response to GetIGM');
 	}
 	if (psock.read(2) !== '\r\n') {
-		throw('Out of sync with server after GetIGM');
+		throw new Error('Out of sync with server after GetIGM');
 	}
 	return resp;
 }
@@ -5603,7 +5603,7 @@ function warriors_on_now(inhello)
 			fmutex(out.name);
 			if (file_exists(out.name)) {
 				if (!out.open('r')) {
-					throw('Unable to open '+out.name);
+					throw new Error('Unable to open '+out.name);
 				}
 				where = out.readln();
 				if (out.readln() === null) {
@@ -5665,12 +5665,12 @@ function show_log()
 			resp = psock.readln();
 			m = resp.match(/^LogData ([0-9]+)$/);
 			if (m === null) {
-				throw('Unable to get LogData length from '+resp);
+				throw new Error('Unable to get LogData length from '+resp);
 			}
 			len = parseInt(m[1], 10);
 			log = psock.read(len);
 			if (psock.read(2) !== '\r\n') {
-				throw('Out of sync after LogData');
+				throw new Error('Out of sync after LogData');
 			}
 			show_lord_buffer(log, false, false);
 		}
@@ -6088,7 +6088,7 @@ function new_player()
 		if (psock !== undefined) {
 			psock.writeln('SethMarried -1');
 			if (['Yes','No'].indexOf(psock.readln()) === -1) {
-				throw('Out of sync with server after SethMarried -1');
+				throw new Error('Out of sync with server after SethMarried -1');
 			}
 		}
 	}
@@ -6097,7 +6097,7 @@ function new_player()
 		if (psock !== undefined) {
 			psock.writeln('VioletMarried -1');
 			if (['Yes','No'].indexOf(psock.readln()) === -1) {
-				throw('Out of sync with server after VioletMarried -1');
+				throw new Error('Out of sync with server after VioletMarried -1');
 			}
 		}
 	}
@@ -6182,7 +6182,7 @@ function load_player(create)
 			i = psock.readln();
 			if (i !== 'No') {
 				if (i.search(/^[0-9]+$/) !== 0) {
-					throw('Out of sync with server after CheckBattle');
+					throw new Error('Out of sync with server after CheckBattle');
 				}
 				op = player_get(parseInt(i, 10));
 				lln('  `%'+op.name+'`2 is currently battling you');
@@ -6202,7 +6202,7 @@ function load_player(create)
 						break;
 					}
 					if (i.search(/^[0-9]+$/) !== 0) {
-						throw('Out of sync with server after CheckBattle');
+						throw new Error('Out of sync with server after CheckBattle');
 					}
 				} while (true);
 			}
@@ -6468,7 +6468,7 @@ function generate_rankings(fname, all, on, inn)
 	fmutex(f.name);
 	if (!f.open('wb')) {
 		rfmutex(f.name);
-		throw('Unable to open '+f.name);
+		throw new Error('Unable to open '+f.name);
 	}
 	f.writeln('');
 	f.writeln('');
@@ -7516,7 +7516,7 @@ function say(fname, enemy, type, header, force)
 	}
 	if (force === '') {
 		if (!f.open('r')) {
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		}
 		f.readln();
 		c = parseInt(f.readln(), 10);
@@ -7621,14 +7621,14 @@ function attack_player(op, inn)
 				more_nomail(op);
 				return;
 			default:
-				throw('Out of sync with server after BattleStart');
+				throw new Error('Out of sync with server after BattleStart');
 		}
 	}
 	else {
 		fmutex(out.name);
 		if (file_exists(out.name)) {
 			if (!out.open('r')) {
-				throw('Unable to open '+out.name);
+				throw new Error('Unable to open '+out.name);
 			}
 			where = out.readln();
 			out.close();
@@ -7670,7 +7670,7 @@ function attack_player(op, inn)
 		if (psock !== undefined) {
 			psock.writeln('WonBattle '+op.Record);
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after WonBattle');
+				throw new Error('Out of sync with server after WonBattle');
 			}
 		}
 		else {
@@ -7742,7 +7742,7 @@ function attack_player(op, inn)
 		if (psock !== undefined) {
 			psock.writeln('LostBattle '+op.Record);
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after LostBattle');
+				throw new Error('Out of sync with server after LostBattle');
 			}
 		}
 		else {
@@ -7803,7 +7803,7 @@ function attack_player(op, inn)
 	else if (psock !== undefined) {
 		psock.writeln('RanFromBattle '+op.Record);
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after RanFromBattle');
+			throw new Error('Out of sync with server after RanFromBattle');
 		}
 	}
 
@@ -8275,11 +8275,11 @@ function converse(darkhorse)
 		resp = psock.readln();
 		m = resp.match(/^Conversation ([0-9]+)/);
 		if (m === null) {
-			throw('Invalid response to GetConversation');
+			throw new Error('Invalid response to GetConversation');
 		}
 		all = psock.read(parseInt(m[1], 10));
 		if (psock.read(2) !== '\r\n') {
-			throw('Out of sync with server after GetConversation');
+			throw new Error('Out of sync with server after GetConversation');
 		}
 		all = all.split(/\r?\n/);
 		all.forEach(function(li) {
@@ -8290,7 +8290,7 @@ function converse(darkhorse)
 		fmutex(f.name);
 		if (!f.open('r+')) {
 			rfmutex(f.name);
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		}
 		while (true) {
 			l = f.readln();
@@ -8331,7 +8331,7 @@ function converse(darkhorse)
 			fmutex(f.name);
 			if (!f.open('r+')) {
 				rfmutex(f.name);
-				throw('Unable to open '+f.name);
+				throw new Error('Unable to open '+f.name);
 			}
 			all = f.readAll();
 			all.push('  `%'+player.name+':');
@@ -8348,7 +8348,7 @@ function converse(darkhorse)
 			all = '  `%'+player.name+':\n  `2'+l;
 			psock.write('AddToConversation '+(darkhorse ? 'darkbar' : 'bar') + ' ' + all.length + '\r\n' + all + '\r\n');
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after AddToConversation');
+				throw new Error('Out of sync with server after AddToConversation');
 			}
 		}
 
@@ -8697,7 +8697,7 @@ function single_seth()
 				psock.writeln('SethMarried '+player.Record);
 				tmp = psock.readln();
 				if (tmp !== 'Yes' && tmp !== 'No') {
-					throw('Out of sync with server after SethMarried');
+					throw new Error('Out of sync with server after SethMarried');
 				}
 			}
 			get_state(true);
@@ -9230,7 +9230,7 @@ function single_violet()
 		if (psock !== undefined) {
 			psock.writeln('VioletMarried '+player.Record);
 			if (['Yes','No'].indexOf(psock.readln()) === -1) {
-				throw('Out of sync with server after VioletMarried -1');
+				throw new Error('Out of sync with server after VioletMarried -1');
 			}
 		}
 		get_state(true);
@@ -11768,7 +11768,7 @@ function fight_dragon(cant_run) {
 		if (psock !== undefined) {
 			psock.writeln('NewHero '+player.name);
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after NewHero');
+				throw new Error('Out of sync with server after NewHero');
 			}
 		}
 		get_state(true);
@@ -12347,7 +12347,7 @@ function forest()
 				return b.cha - a.cha;
 			});
 			if (!f.open('w')) {
-				throw('Unable to open '+f.name);
+				throw new Error('Unable to open '+f.name);
 			}
 			f.writeln('');
 			f.writeln('');
@@ -12431,7 +12431,7 @@ function forest()
 			found = psock.readln();
 			m = found.match(/^ForestGold ([0-9]+)$/);
 			if (m === null) {
-				throw('Out of sync with server after GetForestGold');
+				throw new Error('Out of sync with server after GetForestGold');
 			}
 			found = parseInt(m[1], 10);
 		}
@@ -13391,7 +13391,7 @@ function forest()
 		if (psock !== undefined) {
 			psock.writeln('AddForestGold '+amt);
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after AddForestGold');
+				throw new Error('Out of sync with server after AddForestGold');
 			}
 		}
 		get_state(true);
@@ -13813,11 +13813,11 @@ function forest()
 				message = psock.readln();
 				gmat = message.match(/^Conversation ([0-9]+)$/);
 				if (gmat === null) {
-					throw('Invalid response to GetConversation');
+					throw new Error('Invalid response to GetConversation');
 				}
 				message = psock.read(parseInt(gmat[1], 10));
 				if (psock.read(2) !== '\r\n') {
-					throw('Out of sync with server after GetConversation');
+					throw new Error('Out of sync with server after GetConversation');
 				}
 				if (!settings.funky_flowers) {
 					message = clean_str(message);
@@ -13856,7 +13856,7 @@ function forest()
 					if (psock === undefined) {
 						fmutex(f.name);
 						if (!f.open('r+')) {
-							throw('Unable to open '+f.name);
+							throw new Error('Unable to open '+f.name);
 						}
 						f.position = 0;
 						lines = f.readAll();
@@ -13876,7 +13876,7 @@ function forest()
 						message = '  `0'+pname+'`%- "`0'+message+'`r0`%"';
 						psock.write('AddToConversation garden '+message.length+'\r\n'+message+'\r\n');
 						if (psock.readln() !== 'OK') {
-							throw('Out of sync with server after AddToConversation garden');
+							throw new Error('Out of sync with server after AddToConversation garden');
 						}
 					}
 					sln('');
@@ -14966,7 +14966,7 @@ function turgons()
 				return b.exp - a.exp;
 			});
 			if (!f.open('w')) {
-				throw('Unable to open '+f.name);
+				throw new Error('Unable to open '+f.name);
 			}
 			f.writeln('');
 			f.writeln('');
@@ -15655,7 +15655,7 @@ function slaughter_others()
 					if ((psock !== undefined && out[0].length > 0) || (pfile !== undefined && file_exists(out.name))) {
 						if (pfile !== undefined) {
 							if (!out.open('r')) {
-								throw('Unable to open '+out.name);
+								throw new Error('Unable to open '+out.name);
 							}
 							where = out.readln();
 							rfmutex(out.name);
@@ -15742,11 +15742,11 @@ function slaughter_others()
 					line = psock.readln();
 					lmat = line.match(/^Conversation ([0-9]+)$/);
 					if (lmat === null) {
-						throw('Invalid response to GetConversation dirt');
+						throw new Error('Invalid response to GetConversation dirt');
 					}
 					lines = psock.read(parseInt(lmat[1], 10));
 					if (psock.read(2) !== '\r\n')  {
-						throw('Out of sync with server after GetConversation dirt');
+						throw new Error('Out of sync with server after GetConversation dirt');
 					}
 					if (lines.length === 0) {
 						lln('  `2The dirt appears soft and malleable.');
@@ -15797,7 +15797,7 @@ function slaughter_others()
 						lines = lines.join('\n');
 						psock.write('AddToConversation dirt '+lines.length+'\r\n'+lines);
 						if (psock.readln() !== 'OK') {
-							throw('Out of sync with server after AddToConversation dirt');
+							throw new Error('Out of sync with server after AddToConversation dirt');
 						}
 					}
 				}
@@ -15913,14 +15913,14 @@ function handle_igm(place)
 	if (psock !== undefined) {
 		psock.write('IGMData '+(place.desc.length + 2)+'\r\n'+place.desc+'\r\n\r\n');
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after IGMData');
+			throw new Error('Out of sync with server after IGMData');
 		}
 		file_remove(out.name);
 	}
 	else {
 		fmutex(out.name);
 		if (!out.open('w')) {
-			throw('Unable to open '+out.name);
+			throw new Error('Unable to open '+out.name);
 		}
 		out.writeln(place.desc);
 		out.close();
@@ -15934,7 +15934,7 @@ function handle_igm(place)
 	fmutex(out.name);
 	if (file_exists(out.name)) {
 		if (!out.open('r')) {
-			throw('Unable to open '+out.name);
+			throw new Error('Unable to open '+out.name);
 		}
 		lns = out.readAll();
 	}
@@ -15948,7 +15948,7 @@ function handle_igm(place)
 			if (psock !== undefined) {
 				psock.write('IGMData 2'+'\r\n\r\n\r\n');
 				if (psock.readln() !== 'OK') {
-					throw('Out of sync with server after IGMData');
+					throw new Error('Out of sync with server after IGMData');
 				}
 			}
 		}
@@ -15956,7 +15956,7 @@ function handle_igm(place)
 			if (psock !== undefined) {
 				psock.write('IGMData '+(lns[0].length + lns[1].length + 2)+'\r\n'+lns[0]+'\r\n'+lns[1]+'\r\n');
 				if (psock.readln() !== 'OK') {
-					throw('Out of sync with server after IGMData');
+					throw new Error('Out of sync with server after IGMData');
 				}
 			}
 		}
@@ -15970,7 +15970,7 @@ function handle_igm(place)
 	if (psock !== undefined) {
 		psock.write('IGMData 2'+'\r\n\r\n\r\n');
 		if (psock.readln() !== 'OK') {
-			throw('Out of sync with server after IGMData');
+			throw new Error('Out of sync with server after IGMData');
 		}
 	}
 	rfmutex(out.name);
@@ -15997,7 +15997,7 @@ function create_other_places() {
 		}
 	}
 	if (!f.open('r')) {
-		throw('Unable to open '+f.name);
+		throw new Error('Unable to open '+f.name);
 	}
 	while (true) {
 		l = f.readln();
@@ -16531,7 +16531,7 @@ function start() {
 		if (psock !== undefined) {
 			psock.writeln('SetPlayer '+player.Record);
 			if (psock.readln() !== 'OK') {
-				throw('Out of sync with server after SetPlayer');
+				throw new Error('Out of sync with server after SetPlayer');
 			}
 		}
 		if (!player.dead && player.hp > 0) {
@@ -16550,7 +16550,7 @@ function start() {
 				fmutex(out.name);
 				if (file_exists(out.name)) {
 					if (!out.open('r')) {
-						throw('Unable to open '+out.name);
+						throw new Error('Unable to open '+out.name);
 					}
 					igm.desc = out.readln();
 					igm.cmdline = out.readln();
@@ -16626,7 +16626,7 @@ function cmdline()
 
 		Object.keys(settings).forEach(function(key) {
 			if (settingsmap[key] === undefined) {
-				throw('Unmapped setting "'+key+'"');
+				throw new Error('Unmapped setting "'+key+'"');
 			}
 			settings[key] = ini.iniGetValue(null, settingsmap[key], settings[key]);
 		});
@@ -16644,7 +16644,7 @@ function cmdline()
 				tournament_settings.winstat = tmp;
 			}
 			else if (tournament_settings_map[key] === undefined) {
-				throw('Unmapped setting "'+key+'"');
+				throw new Error('Unmapped setting "'+key+'"');
 			}
 			else {
 				settings[key] = ini.iniGetValue('Tournament', tournament_settings_map[key], tournament_settings[key]);

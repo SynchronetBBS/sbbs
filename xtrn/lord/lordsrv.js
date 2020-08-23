@@ -42,7 +42,7 @@ function validate_user(sock, usr, pass)
 	sha.encrypt(usr+pass);
 	sha = base64_encode(sha.hashvalue);
 	if (!f.open('r')) {
-		throw('Unable to open '+f.name);
+		throw new Error('Unable to open '+f.name);
 	}
 	while ((l = f.readln()) !== null) {
 		m = l.match(/^(.*):(.*?)$/);
@@ -1051,7 +1051,7 @@ function main() {
 	else
 		sock = new ListeningSocket(settings.hostnames, settings.port, 'LORD', {retry_count:settings.retry_count, retry_delay:settings.retry_delay});
 	if (sock === null)
-		throw('Unable to bind listening socket');
+		throw new Error('Unable to bind listening socket');
 	sock.LORD_rx_callback = function() {
 		var nsock;
 
@@ -1088,7 +1088,7 @@ function main() {
 		whitelist.push(Player_Def[idx].prop);
 	file_touch(lfile.name);
 	if (!lfile.open('a+'))
-		throw('Unable to open logfile '+lfile.name);
+		throw new Error('Unable to open logfile '+lfile.name);
 	lfile.position = 0;
 	// Calculate the oldest log entry we'll keep in memory.
 	oldest = new Date();
@@ -1097,7 +1097,7 @@ function main() {
 	while ((lline = lfile.readln()) !== null) {
 		lmatch = lline.match(/^([0-9]+):(.*)$/);
 		if (lmatch === null) {
-			throw('Invalid line in log: '+lline);
+			throw new Error('Invalid line in log: '+lline);
 		}
 
 		ldate = new Date(parseInt(lmatch[1], 10));
@@ -1109,7 +1109,7 @@ function main() {
 	else
 		sdata = sfile.get(0);
 	if (sdata === undefined) {
-		throw('Unable to access '+sfile.file.name+' len: '+sfile.length);
+		throw new Error('Unable to access '+sfile.file.name+' len: '+sfile.length);
 	}
 	for (idx = 0; idx < Server_State_Def.length; idx++)
 		swhitelist.push(Server_State_Def[idx].prop);
@@ -1118,7 +1118,7 @@ function main() {
 			file_copy(conversations[c].default_files[random(conversations[c].default_files.length)], conversations[c].file.name);
 		}
 		if (!conversations[c].file.open('a+'))
-			throw('Unable to open '+conversations[c].file.name);
+			throw new Error('Unable to open '+conversations[c].file.name);
 		conversations[c].file.position = 0;
 		conversations[c].lines = conversations[c].file.readAll();
 	});
@@ -1170,11 +1170,11 @@ function parse_settings()
 	f = new File(settings.file_prefix + 'lordsrv.ini');
 	if (file_exists(f.name)) {
 		if (!f.open('r')) {
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		}
 		Object.keys(settings).forEach(function(key) {
 			if (settingsmap[key] === undefined) {
-				throw('Unmapped setting "'+key+'"');
+				throw new Error('Unmapped setting "'+key+'"');
 			}
 			settings[key] = ini.iniGetValue(null, settingsmap[key], settings[key]);
 		});
