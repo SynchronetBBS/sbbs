@@ -21,7 +21,7 @@ if (scr === undefined && dk.console.local_screen !== undefined)
 if (scr === undefined && dk.console.remote_screen !== undefined)
 	scr = dk.console.remote_screen;
 if (scr === undefined)
-	throw('No usable screen!');
+	throw new Error('No usable screen!');
 require("recordfile.js", "RecordFile");
 
 var player;
@@ -529,7 +529,7 @@ function clamp_integer(v, s)
 {
 	var i = parseInt(v, 10);
 	if (isNaN(i))
-		throw('Invalid integer '+v);
+		throw new Error('Invalid integer (' + s + '): ' + v);
 
 	switch(s) {
 		case 's8':
@@ -569,7 +569,7 @@ function clamp_integer(v, s)
 				i = 0;
 			break;
 		default:
-			throw('Invalid clamp style '+s);
+			throw new Error('Invalid clamp style '+s);
 	}
 	return i;
 }
@@ -602,8 +602,8 @@ var vars = {
 	local:{type:'fn', get:function() { return (dk.system.mode === 'local' ? 5 : 0) } },
 	blockpassable:{type:'fn', get:function() { return (map.mapinfo[getpoffset()].terrain === 1 ? 1 : 0); } },
 	'&realname':{type:'const', val:dk.user.full_name},
-	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set date at '+fname+':'+line); } },
-	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw('Attempt to set nicedate at '+fname+':'+line); } },
+	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set date at '+fname+':'+line); } },
+	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set nicedate at '+fname+':'+line); } },
 	's&armour':{type:'fn', get:function() { if (player.armournumber === 0) return ''; return items[player.armournumber - 1].name; } },
 	's&arm_num':{type:'fn', get:function() { if (player.armournumber === 0) return 0; return items[player.armournumber - 1].defence; } },
 	's&weapon':{type:'fn', get:function() { if (player.weaponnumber === 0) return ''; return items[player.weaponnumber - 1].name; } },
@@ -621,7 +621,7 @@ var vars = {
 	'&lasty':{type:'fn', get:function() { return player.lasty }, set:function(bank) { player.lasty = clamp_integer(bank, 's8') } },
 	'&map':{type:'fn', get:function() { return player.map } },
 	'&lmap':{type:'fn', get:function() { return player.lastmap } },
-	'&time':{type:'fn', get:function() { return state.time }, set:function(x) { throw('attempt to set &time'); } },
+	'&time':{type:'fn', get:function() { return state.time }, set:function(x) { throw new Error('attempt to set &time'); } },
 	'&timeleft':{type:'fn', get:function() { return parseInt((dk.user.seconds_remaining + dk.user.seconds_remaining_from - time()) / 60, 10) } },
 	'&sex':{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
 	'&playernum':{type:'fn', get:function() { return player.Record + 1 } },
@@ -640,7 +640,7 @@ for (i = 0; i < 99; i++) {
 	vars[format('`p%02d', i+1)] = {type:'fn', get:eval('function() { return player.p['+i+'] }'), set:eval('function(val) { player.p['+i+'] = clamp_integer(val, "s32"); }')};
 	vars[format('`t%02d', i+1)] = {type:'fn', get:eval('function() { return player.t['+i+'] }'), set:eval('function(val) { player.t['+i+'] = clamp_integer(val, "8"); }')};
 	vars[format('`i%02d', i+1)] = {type:'fn', get:eval('function() { return player.i['+i+'] }'), set:eval('function(val) { player.i['+i+'] = clamp_integer(val, "s16"); }')};
-	vars[format('`+%02d', i+1)] = {type:'fn', get:eval('function() { return items['+i+'].name }'), set:eval('function(val) { throw("Attempt to set item '+i+' name"); }')};
+	vars[format('`+%02d', i+1)] = {type:'fn', get:eval('function() { return items['+i+'].name }'), set:eval('function(val) { throw new Error("Attempt to set item '+i+' name"); }')};
 }
 
 function getkeyw()
@@ -701,12 +701,12 @@ function setvar(name, val) {
 
 	name = name.toLowerCase();
 	if (vars[name] === undefined)
-		throw('Attempt to set invalid variable '+name);
+		throw new Error('Attempt to set invalid variable '+name);
 	switch(vars[name].type) {
 		case 'int':
 			t = parseInt(val);
 			if (isNaN(t))
-				throw('Invalid value '+val+' assigned to '+name);
+				throw new Error('Invalid value '+val+' assigned to '+name);
 			if (t > 2147483647)
 				t = 2147483648;
 			if (t < -2147483648)
@@ -717,7 +717,7 @@ function setvar(name, val) {
 			vars[name].val = val.toString();
 			break;
 		case 'const':
-			throw('Attempt to set const value '+name);
+			throw new Error('Attempt to set const value '+name);
 		case 'bool':
 			if (val)
 				vars[name].val = true;
@@ -728,7 +728,7 @@ function setvar(name, val) {
 			vars[name].set(val);
 			break;
 		default:
-			throw('Unhandled var type '+vars[name].type);
+			throw new Error('Unhandled var type '+vars[name].type);
 	}
 }
 
@@ -760,7 +760,7 @@ function getvar(name) {
 			ret = vars[name].get();
 			break;
 		default:
-			throw('Unhandled var type '+vars[name].type);
+			throw new Error('Unhandled var type '+vars[name].type);
 	}
 	if (uc || lc)
 		ret = ret.toString();
@@ -1299,7 +1299,7 @@ function update_bar(str, msg, timeout)
 
 	if (msg && str.indexOf(':') > -1) {
 		if (!lfile.open('ab'))
-			throw('Unable to open '+lfile.name);
+			throw new Error('Unable to open '+lfile.name);
 		lfile.write(str+'\r\n');
 		lfile.close();
 	}
@@ -1341,7 +1341,7 @@ function pretty_int(int)
 
 function tfile_append(str) {
 	if (!tfile.open('ab'))
-		throw('Unable to open '+tfile.name);
+		throw new Error('Unable to open '+tfile.name);
 	tfile.write(str+'\r\n');
 	tfile.close();
 	timeout_bar();
@@ -1357,7 +1357,7 @@ function timeout_bar()
 	if (bar_timeout === undefined || new Date().valueOf() > bar_timeout) {
 		if (file_size(tfile.name) > 0) {
 			if (!tfile.open('r+b'))
-				throw('Unable to open '+tfile.name);
+				throw new Error('Unable to open '+tfile.name);
 			al = tfile.readAll();
 			tl = al.shift();
 			tfile.position = 0;
@@ -1522,7 +1522,7 @@ function run_ref(sec, fname)
 				// TODO: Test alla this.
 				to = parseInt(to, 10);
 				if (isNaN(to))
-					throw('Invalid talk to at '+fname+':'+line);
+					throw new Error('Invalid talk to at '+fname+':'+line);
 				if (player.deleted === 1)
 					// TODO: Do we tell the player or something?
 					return;
@@ -1550,7 +1550,7 @@ function run_ref(sec, fname)
 			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
 			args[0] = replace_vars(args[0]).toLowerCase();
 			if (files[fname].section[args[0]] === undefined)
-				throw('Goto undefined label '+args[0]+' at '+fname+':'+line);
+				throw new Error('Goto undefined label '+args[0]+' at '+fname+':'+line);
 			line = files[fname].section[args[0]].line;
 		},
 		'move':function(args) {
@@ -1558,7 +1558,7 @@ function run_ref(sec, fname)
 				dk.console.gotoxy(clamp_integer(getvar(args[0]), '8') - 1, clamp_integer(getvar(args[1]), '8') - 1);
 				return;
 			}
-			throw('Invalid move at '+fname+':'+line);
+			throw new Error('Invalid move at '+fname+':'+line);
 		},
 		'readstring':function(args) {
 			var x = scr.pos.x;
@@ -1595,7 +1595,7 @@ function run_ref(sec, fname)
 			if (args.length > 0) {
 				val = parseInt(getvar(args[0]), 10);
 				if (isNaN(val))
-					throw('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
+					throw new Error('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
 			}
 			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true});
 			setvar('`v40', s);
@@ -1653,13 +1653,13 @@ function run_ref(sec, fname)
 		'saybar':function(args) {
 			line++;
 			if (line >= files[fname].lines.length)
-				throw('Trailing saybar at '+fname+':'+line);
+				throw new Error('Trailing saybar at '+fname+':'+line);
 			update_bar(files[fname].lines[line], true, 5);
 		},
 		'quebar':function(args) {
 			line++;
 			if (line >= files[fname].lines.length)
-				throw('Trailing quebar at '+fname+':'+line);
+				throw new Error('Trailing quebar at '+fname+':'+line);
 			tfile_append(files[fname].lines[line]);
 		},
 		'pad':function(args) {
@@ -1706,7 +1706,7 @@ function run_ref(sec, fname)
 			if (!file_exists(f.name))
 				return;
 			if (!f.open('r+b'))
-				throw('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			al = f.readAll();
 			while (al.length > len);
 				al.shift();
@@ -1732,10 +1732,10 @@ function run_ref(sec, fname)
 
 			if (args.length < 1 || args.length > 0 && args[0].toLowerCase() === 'do') {
 				if (line + 1 >= files[fname].lines.length)
-					throw('do at end of file');
+					throw new Error('do at end of file');
 				// Trailing do is not fatal... see jump.ref:21 in cnw
 				//if (files[fname].lines[line + 1].search(/^\s*@begin/i) === -1)
-				//	throw('trailing do at '+fname+':'+line);
+				//	throw new Error('trailing do at '+fname+':'+line);
 				line++;
 				return;
 			}
@@ -1792,13 +1792,13 @@ function run_ref(sec, fname)
 				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')));
 				return;
 			}
-			throw('Unhandled do at '+fname+':'+line);
+			throw new Error('Unhandled do at '+fname+':'+line);
 		},
 		'version':function(args) {
 			if (args.length < 1)
-				throw('Invalid version at '+fname+':'+line);
+				throw new Error('Invalid version at '+fname+':'+line);
 			if (parseInt(args[0] > vars.version.val))
-				throw('lord2.js version too old!');
+				throw new Error('lord2.js version too old!');
 		},
 		'if':function(args) {
 			var tmp;
@@ -1890,7 +1890,7 @@ function run_ref(sec, fname)
 						handlers.begin(args.slice(5));
 					break;
 				default:
-					throw('Unhandled condition '+args[1]+' at '+fname+':'+line);
+					throw new Error('Unhandled condition '+args[1]+' at '+fname+':'+line);
 			}
 		},
 		'begin':function(args) {
@@ -1898,11 +1898,11 @@ function run_ref(sec, fname)
 			// Don't do this, trailing whitespace... we now delete trailing WS so do it again.
 			// We *can't* delete trailing whitespace because of felicity.ref:779 (sigh)
 			//if (args.length > 0)
-			//	throw('Unexpected arguments to begin at '+fname+':'+line);
+			//	throw new Error('Unexpected arguments to begin at '+fname+':'+line);
 			while (depth > 0) {
 				line++;
 				if (files[fname].lines[line] === undefined)
-					throw('Ran off end of script at '+fname+':'+line);
+					throw new Error('Ran off end of script at '+fname+':'+line);
 				if (files[fname].lines[line].search(/^\s*@#/i) !== -1)
 					depth = 0;
 				if (files[fname].lines[line].search(/^\s*@begin/i) !== -1)
@@ -1921,7 +1921,7 @@ function run_ref(sec, fname)
 				run_ref(s, args[2]);
 				return;
 			}
-			throw('Unable to parse routine at '+fname+':'+line);
+			throw new Error('Unable to parse routine at '+fname+':'+line);
 		},
 		'run':function(args) {
 			var f = fname;
@@ -1933,7 +1933,7 @@ function run_ref(sec, fname)
 			if (files[f] === undefined)
 				load_ref(f);
 			if (files[f].section[s] === undefined)
-				throw('Unable to find run section '+sec+' in '+f+' at '+fname+':'+line);
+				throw new Error('Unable to find run section '+sec+' in '+f+' at '+fname+':'+line);
 			fname = f;
 			line = files[f].section[s].line;
 		},
@@ -2002,14 +2002,14 @@ function run_ref(sec, fname)
 				}
 			}
 			else
-				throw('Unsupported SHOW command at '+fname+':'+line);
+				throw new Error('Unsupported SHOW command at '+fname+':'+line);
 		},
 		'writefile':function(args) {
 			if (args.length < 1)
-				throw('No filename for writefile at '+fname+':'+line);
+				throw new Error('No filename for writefile at '+fname+':'+line);
 			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			if (!f.open('ab'))
-				throw('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
 				f.write(replace_vars(l)+'\r\n');
 			});
@@ -2042,14 +2042,14 @@ function run_ref(sec, fname)
 		'displayfile':function(args) {
 			var lines;
 			if (args.length < 1)
-				throw('No filename for displayfile at '+fname+':'+line);
+				throw new Error('No filename for displayfile at '+fname+':'+line);
 			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			if (!file_exists(f.name)) {
 				lln('`0File '+getvar(args[0])+' missing - please inform sysop');
 				return;
 			}
 			if (!f.open('r'))
-				throw('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			lines = f.readAll();
 			f.close();
 			lines.forEach(function(l) {
@@ -2099,7 +2099,7 @@ function run_ref(sec, fname)
 										return;
 									break;
 								default:
-									throw('Unhandled filter choice!');
+									throw new Error('Unhandled filter choice!');
 							}
 						}
 					} while (m != null);
@@ -2132,7 +2132,7 @@ function run_ref(sec, fname)
 						dk.console.gotoxy(0,23);
 						break;
 					default:
-						throw('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
+						throw new Error('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
 				}
 			}
 			else
@@ -2283,7 +2283,7 @@ function run_ref(sec, fname)
 			var v = clamp_integer(getvar(args[0]), '32');
 
 			if (s !== 0 && s !== 1)
-				throw('Setting bit to value other than zero or one');
+				throw new Error('Setting bit to value other than zero or one');
 			if ((!!(v & (1 << bit))) !== (!!s))
 				v ^= (1<<bit);
 			setvar(args[0], v);
@@ -2454,7 +2454,7 @@ rescan:
 				return;
 			}
 			if (!f.open('rb'))
-				throw('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			f.position = rec * 4;
 			val = f.readBin(4);
 			f.close();
@@ -2478,7 +2478,7 @@ rescan:
 				return;
 			}
 			if (!f.open('r+b'))
-				throw('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			f.position = rec * 4;
 			f.writeBin(val, 4);
 			f.close();
@@ -2497,7 +2497,7 @@ rescan:
 				return;
 			}
 			if (!f.open('r+b'))
-				throw('Unable to open '+f.name+' at '+fname+':'+line);
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			d = f.readBin(4);
 			if (d != state.time) {
 				f.position = 0;
@@ -2526,7 +2526,7 @@ rescan:
 				sclrscr();
 				return;
 			}
-			throw('Unknown clear type at '+fname+':'+line);
+			throw new Error('Unknown clear type at '+fname+':'+line);
 		},
 		'chooseplayer':function(args) {
 			var pl = chooseplayer();
@@ -2607,7 +2607,7 @@ rescan:
 		'display':function(args) {
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
 			}
-			throw('Unsupported display at '+fname+':'+line);
+			throw new Error('Unsupported display at '+fname+':'+line);
 		},
 		'rank':function(args) {
 			// TODO: No real clue what the filename is for...
@@ -2654,7 +2654,7 @@ rescan:
   	function handle(args)
 	{
 		if (handlers[args[0].toLowerCase()] === undefined)
-			throw('No handler for '+args[0]+' command at '+fname+':'+line);
+			throw new Error('No handler for '+args[0]+' command at '+fname+':'+line);
 		return handlers[args[0].toLowerCase()](args.slice(1));
 	}
 
@@ -2699,7 +2699,7 @@ rescan:
 				enc = true;
 		}
 		if (!f.open('r'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		if (enc) {
 			obj.lines = [];
 			while(1) {
@@ -2734,7 +2734,7 @@ rescan:
 				cs = m[1].toLowerCase();
 				// SIGH... duplicates are allowed... see Stonebridge.
 				//if (obj.section[cs] !== undefined)
-				//	throw('Duplicate section name '+cs+' in '+fname);
+				//	throw new Error('Duplicate section name '+cs+' in '+fname);
 				obj.section[cs] = {line:n};
 				return;
 			}
@@ -2743,7 +2743,7 @@ rescan:
 				var lab = m[1].toLowerCase();
 				// SIGH... duplicates are allowed... see Stonebridge.
 				//if (obj.section[lab] !== undefined)
-				//	throw('Duplicate label name '+lab+' in section '+cs+' in '+fname);
+				//	throw new Error('Duplicate label name '+lab+' in section '+cs+' in '+fname);
 				obj.section[lab] = {line:n};
 				return;
 			}
@@ -2755,7 +2755,7 @@ rescan:
 	if (files[fname] === undefined)
 		load_ref(fname);
 	if (files[fname].section[sec] === undefined)
-		throw('Unable to find section '+sec+' in '+fname);
+		throw new Error('Unable to find section '+sec+' in '+fname);
 	line = files[fname].section[sec].line;
 
 	while (1) {
@@ -2911,7 +2911,7 @@ function mail_check(messenger)
 	// We likely need a file mutex here.
 	file_rename(fn, f.name);
 	if (!f.open('r'))
-		throw('Unable to open '+f.name);
+		throw new Error('Unable to open '+f.name);
 	while(1) {
 		l = f.readln();
 		if (l === null)
@@ -2931,10 +2931,10 @@ function mail_check(messenger)
 				case 'REPLY':
 					op = parseInt(m[2], 10);
 					if (isNaN(op))
-						throw('Invalid REPLY ID');
+						throw new Error('Invalid REPLY ID');
 					op = pfile.get(op - 1);
 					if (op === null)
-						throw('Invalid record number '+op+' in REPLY');
+						throw new Error('Invalid record number '+op+' in REPLY');
 					lw('  `2Reply to `0'+op.name+'`2? [`0Y`2] : `%');
 					do {
 						ch = getkey().toUpperCase();
@@ -3007,7 +3007,7 @@ function chat(op)
 				case 'X':
 				case 'Q':
 					if (!chop.open('ab'))
-						throw('Unable to open '+chop.name);
+						throw new Error('Unable to open '+chop.name);
 					chop.write('EXIT\r\n');
 					chop.close();
 					update_update()
@@ -3019,7 +3019,7 @@ function chat(op)
 					sw('\r');
 					lln('  `0'+player.name+' `$: '+l+'`2');
 					if (!chop.open('ab'))
-						throw('Unable to open '+chop.name);
+						throw new Error('Unable to open '+chop.name);
 					chop.write('  `0'+player.name+' `2: '+l+'\r\n');
 					chop.close();
 					break;
@@ -3049,7 +3049,7 @@ function hailed(pl)
 		if (inn !== undefined) {
 			inf = new File(inn)
 			if (!inf.open('r'))
-				throw('Unable to open '+inf.name);
+				throw new Error('Unable to open '+inf.name);
 			inf.position = pos;
 			al = inf.readAll();
 			pos = inf.position;
@@ -3081,7 +3081,7 @@ function con_check()
 	if (file_pos.con === undefined)
 		file_pos.con = 0;
 	if (!cfile.open('r'))
-		throw('Unable to open '+cfile.name);
+		throw new Error('Unable to open '+cfile.name);
 	cfile.position = file_pos.con;
 	al = cfile.readAll();
 	file_pos.con = cfile.position;
@@ -3813,7 +3813,7 @@ function mail_to(pl, quotes)
 	var op = pfile.get(pl);
 
 	if (op === null || op.deleted)
-		throw('mail_to() illegal user');
+		throw new Error('mail_to() illegal user');
 
 	lln(space_pad('\r`r1                           `%COMPOSING YOUR MASTERPIECE', 78)+'`r0');
 	sln('');
@@ -3897,7 +3897,7 @@ function mail_to(pl, quotes)
 	msg.push('@REPLY '+(player.Record + 1));
 	f = new File(getfname(maildir + 'mail' + (pl + 1) + '.dat'));
 	if (!f.open('ab'))
-		throw('Unable to open file '+f.name);
+		throw new Error('Unable to open file '+f.name);
 	msg.forEach(function(l) {
 		f.write(l+'\r\n');
 	});
@@ -4255,13 +4255,13 @@ function hail()
 
 		f = new File(getfname(maildir+'tx'+(player.Record + 1)+'.tmp'))
 		if (!f.open('ab'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		f.write('*\r\n');
 		f.close();
 
 		f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'))
 		if (!f.open('ab'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		f.write('CONNECT|'+(player.Record + 1)+'\r\n');
 		f.close();
 
@@ -4321,7 +4321,7 @@ function hail()
 							player.i[inv[choice.cur] - 1] -= ch;
 							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'))
 							if (!f.open('ab'))
-								throw('Unable to open '+f.name);
+								throw new Error('Unable to open '+f.name);
 							f.write('ADDITEM|'+inv[choice.cur]+'|'+ch+'\r\n');
 							f.close();
 
@@ -4342,7 +4342,7 @@ function hail()
 					file_remove(fn);
 				f = new File(getfname(maildir + 'inf'+(op.Record + 1)+'.tmp'));
 				if (!f.open('ab'))
-					throw('Unable to open '+f.name);
+					throw new Error('Unable to open '+f.name);
 				
 				f.write('CHAT\r\n');
 				f.close();
@@ -4401,7 +4401,7 @@ function do_map()
 				break;
 			case 'B':
 				if (!lfile.open('r'))
-					throw('Unable to open '+lfile.name);
+					throw new Error('Unable to open '+lfile.name);
 				al = lfile.readAll();
 				lfile.close();
 				while (al.length > 19)
@@ -4433,7 +4433,7 @@ function do_map()
 				break;
 			case 'F':
 				if (!lfile.open('r'))
-					throw('Unable to open '+lfile.name);
+					throw new Error('Unable to open '+lfile.name);
 				al = lfile.readAll();
 				lfile.close();
 				while (al.length > 5)
@@ -4598,7 +4598,7 @@ function load_time()
 	}
 	else {
 		if (!f.open('r'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		sday = parseInt(f.readln(), 10);
 		if (sday !== tday)
 			newday = true;
@@ -4612,7 +4612,7 @@ function load_time()
 	}
 	else {
 		if (!f.open('r'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		state.time = parseInt(f.readln(), 10);
 		f.close();
 	}
@@ -4620,14 +4620,14 @@ function load_time()
 	if (newday || argv.indexOf('/MAINT') !== -1) {
 		f = new File(getfname('stime.dat'));
 		if (!f.open('r+b'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		f.truncate(0);
 		f.write(tday+'\r\n');
 		f.close;
 		state.time++;
 		f = new File(getfname('time.dat'));
 		if (!f.open('r+b'))
-			throw('Unable to open '+f.name);
+			throw new Error('Unable to open '+f.name);
 		f.truncate(0);
 		f.write(state.time+'\r\n');
 		f.close;
@@ -4704,7 +4704,7 @@ if (file_exists(getfname('FONTS/LORD2.FNT'))) {
 if (!file_isdir(maildir)) {
 	mkdir(maildir);
 	if (!file_isdir(maildir))
-		throw('Unable to create mail directory');
+		throw new Error('Unable to create mail directory');
 }
 maildir = backslash(maildir).replace(js.exec_dir, '');
 world = wfile.get(0);
@@ -4736,19 +4736,19 @@ js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_r
 
 var tfile = new File(getfname(maildir + 'talk'+(player.Record + 1)+'.tmp'));
 if (!tfile.open('w+b'))
-	throw('Unable to open '+tfile.name);
+	throw new Error('Unable to open '+tfile.name);
 killfiles.push(tfile);
 tfile.close();
 
 var lfile = new File(getfname(maildir + 'log'+(player.Record + 1)+'.tmp'));
 if (!lfile.open('w+b'))
-	throw('Unable to open '+lfile.name);
+	throw new Error('Unable to open '+lfile.name);
 killfiles.push(lfile);
 lfile.close();
 
 var cfile = new File(getfname(maildir + 'con'+(player.Record + 1)+'.tmp'));
 if (!cfile.open('w+b'))
-	throw('Unable to open '+cfile.name);
+	throw new Error('Unable to open '+cfile.name);
 killfiles.push(cfile);
 cfile.close();
 
