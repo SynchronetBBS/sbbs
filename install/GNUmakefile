@@ -58,7 +58,7 @@ SBBSCHOWN	:= $(SBBSUSER):$(SBBSGROUP)
 
 SBBSDIR	?=	$(shell pwd)
 export SBBSDIR
-WORKDIR		= $(SBBSDIR)/git
+WORKDIR		= $(SBBSDIR)/repo
 
 # Get OS
 ifndef os
