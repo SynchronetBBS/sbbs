@@ -444,7 +444,7 @@ int read_config(void)
 {
 	char	ctrl_dir[MAX_PATH+1];
 
-	SAFECOPY(ctrl_dir, get_ctrl_dir());
+	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 	prep_dir("",ctrl_dir,sizeof(ctrl_dir));
 	if(!isdir(ctrl_dir)) {
 		display_message("Environment Error","SBBSCTRL does not point to a directory","gtk-dialog-error");

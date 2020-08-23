@@ -28,7 +28,7 @@ main (int argc, char *argv[])
 
 /*  add_pixmap_directory (PACKAGE_DATA_DIR "/" PACKAGE "/pixmaps"); */
 
-  ctrl_dir = get_ctrl_dir();
+  ctrl_dir = get_ctrl_dir(/* warn: */TRUE);
 
   if(argc<2)
     return(1);
