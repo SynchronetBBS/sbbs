@@ -3581,7 +3581,7 @@ bool sbbs_t::init()
 		SAFEPRINTF(str,"%snode.log",cfg.node_dir);
 		if((logfile_fp=fopen(str,"a+b"))==NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			lprintf(LOG_ERR,"Perhaps this node is already running");
+			lprintf(LOG_NOTICE, "Perhaps this node is already running");
 			return(false);
 		}
 
