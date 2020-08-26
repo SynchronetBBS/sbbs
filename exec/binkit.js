@@ -514,7 +514,7 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	if (this.received_files.indexOf(fobj.name) != -1)
 		return this.file.REJECT;
 	// Reject or skip existing files.
-	if (file_exists(fobj.name)) {
+	if (file_size(fobj.name) > 0) {
 		log(LOG_WARNING, "Inbound file already exists: " + fobj.name);
 		// If the size and date are the same, reject it.
 		if (fsize == file_size(fobj.name) && fdate == file_date(fobj.name))
