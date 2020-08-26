@@ -75,6 +75,7 @@ if(platform=="win32") {
 		" --exclude=3rdp/win32.release" +
 		" --exclude-vcs" +
 		" --exclude-vcs-ignores" +
+		" --dereference" +
 		" -czvf " + archive + " *";
 	cleanup="rm -r -f "
 }
@@ -101,7 +102,8 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/useredit"	,"build.bat"
 																,"> " + build_output]);
 } else {	/* Unix */
-	builds.push(["src/sbbs3"			,"make RELEASE=1"		,"2> " + build_output]);
+	builds.push(["src/sbbs3"			,"make RELEASE=1 all"		,"2> " + build_output]);
+	builds.push(["src/sbbs3"			,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
 }
 
 var win32_dist
@@ -319,7 +321,7 @@ function send_email(subject, body, priority)
 
 	var hdr = { 
 		from: "Synchronet testbuild.js", 
-		subject: subject,
+		subject: subject || (system.platform + " build failure"),
 		priority: priority
 	};
 
