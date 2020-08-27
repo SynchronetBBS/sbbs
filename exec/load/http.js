@@ -61,7 +61,7 @@ HTTPRequest.prototype.SetupGet=function(url, referer, base) {
 	this.base=base;
 	this.url=new URL(url, this.base);
 	if(this.url.scheme!='http' && this.url.scheme!='https')
-		throw("Unknown scheme! '"+this.url.scheme+"'");
+		throw new Error("Unknown scheme! '"+this.url.scheme+"' in url:" + url);
 	if(this.url.path=='')
 		this.url.path='/';
 	this.request="GET "+this.url.request_path+" HTTP/1.0";
@@ -77,7 +77,7 @@ HTTPRequest.prototype.SetupPost=function(url, referer, base, data, content_type)
 	this.base=base;
 	this.url=new URL(url, this.base);
 	if(this.url.scheme!='http' && this.url.scheme!='https')
-		throw("Unknown scheme! '"+this.url.scheme+"'");
+		throw new Error("Unknown scheme! '"+this.url.scheme+"' in url: " + url);
 	if(this.url.path=='')
 		this.url.path='/';
 	this.request="POST "+this.url.request_path+" HTTP/1.0";
