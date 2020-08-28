@@ -4,7 +4,12 @@
 # see https://hub.docker.com/_/gcc/
 image: gcc
 
-build:
+# cache outputs to reduce the build time
+cache:
+    paths:
+        - "**/*.o"
+
+build-sbbs:
   stage: build
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
@@ -17,13 +22,38 @@ build:
     - make RELEASE=1 all
     - make RELEASE=1 gtkutils
   artifacts:
+    name: sbbs
     paths:
       - "src/sbbs3/*.release/*"
       - "src/sbbs3/*/*.release/*"
-      # depending on your build setup it's most likely a good idea to cache outputs to reduce the build time
-      # cache:
-      #   paths:
-      #     - "*.o"
+
+build-sexpots:
+  stage: build
+  # instead of calling g++ directly you can also use some build toolkit like make
+  # install the necessary build tools when needed
+  # before_script:
+  #   - apt update && apt -y install make autoconf
+  script:
+    - cd src/sexpots
+    - make RELEASE=1
+  artifacts:
+    name: sexpots
+    paths:
+      - "src/sexpots/*.release/*"
+
+build-syncterm:
+  stage: build
+  # instead of calling g++ directly you can also use some build toolkit like make
+  # install the necessary build tools when needed
+  # before_script:
+  #   - apt update && apt -y install make autoconf
+  script:
+    - cd src/syncterm
+    - make RELEASE=1
+  artifacts:
+    name: syncterm
+    paths:
+      - "src/syncterm/*.release/*"
 
 # run tests using the binary built before
 #test:
