@@ -243,7 +243,10 @@ endif
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 
 $(WORKDIR):
-	git clone https://gitlab.synchro.net/sbbs/sbbs.git $(WORKDIR)
+	git clone https://gitlab.com/synchronet/sbbs.git $(WORKDIR) \
+		|| git clone https://github.com/rswindell/sbbs.git $(WORKDIR) \
+		|| git clone https://gitlab.synchro.net/sbbs/sbbs.git $(WORKDIR)
+	git remote set-url origin https://gitlab.synchro.net/sbbs/sbbs.git
 ifdef TAG
 	git -C $(WORKDIR) checkout tags/$(TAG)
 endif
