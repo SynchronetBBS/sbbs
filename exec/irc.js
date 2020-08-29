@@ -3,14 +3,14 @@
 // Deuce's IRC client module for Synchronet
 // With the "Manny Mods".  :-)
 
-// $Id: irc.js,v 1.59 2020/08/04 01:02:01 rswindell Exp $
+// $Id: irc.js,v 1.60 2020/08/29 01:02:01 rswindell Exp $
 
 // disable auto-termination.
 var old_auto_terminate=js.auto_terminate;
 js.on_exit("js.auto_terminate=old_auto_terminate");
 js.auto_terminate=false;
 
-const REVISION = "$Revision: 1.59 $".split(' ')[1];
+const REVISION = "$Revision: 1.60 $".split(' ')[1];
 const SPACEx80 = "                                                                                ";
 const MAX_HIST = 50;
 
@@ -659,6 +659,20 @@ function send_command(command,param)  {
 	var got="";
 
 	switch(command)  {
+		case "HELP":
+			const fmt = "/%-25s %s";
+			screen.print_line(format(fmt, "help", "Display this list"));
+			screen.print_line(format(fmt, "q[uit]", "Leave IRC Module " + REVISION));
+			screen.print_line(format(fmt, "me <text>", "Send an action message"));
+			screen.print_line(format(fmt, "quote <text>", "Send a literal message"));
+			screen.print_line(format(fmt, "msg <nick>", "Send a private message"));
+			screen.print_line(format(fmt, "j[oin] <#channel>", "Join a channel"));
+			screen.print_line(format(fmt, "n[ext]", "Switch to next channel"));
+			screen.print_line(format(fmt, "p[revious]", "Switch to previous channel"));
+			screen.print_line(format(fmt, "part", "Leave current channel"));
+			screen.print_line(format(fmt, "topic [#channel] <text>", "Set channel topic"));
+			screen.print_line(format(fmt, "kick [nick]", "Kick a user from channel"));
+			break;
 		case "MSG":
 			params=param.split(" ");
 			send_to=params.shift();
@@ -1010,11 +1024,11 @@ function Screen()  {
 				if(channels.current != undefined)  {
 					var nick_chan="";
 					nick_char=format("\x01N\x014 Nick: %s   Channel: %s (%d)",nick,channels.current.display,channels.current.nick.length)+SPACEx80;
-					return nick_char.substr(0,68)+" /quit to exit \x01N\x010\x01W";
+					return nick_char.substr(0,67)+" /help for help \x01N\x010\x01W";
 				}
 			}
 		}
-		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel (0)"+SPACEx80.substr(0,79-48-nick.length)+" /quit to exit \x01N\x010\x01W";
+		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel (0)"+SPACEx80.substr(0,79-49-nick.length)+" /help for help \x01N\x010\x01W";
 	});
 	this.__defineGetter__("topicline", function() {
 		if(connected)  {
