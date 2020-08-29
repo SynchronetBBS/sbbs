@@ -53,35 +53,61 @@
 char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 {
 	uint 	tmpatr;
-	char 	tmp2[256],tmp3[128];
-	char	ret;
-	char*	str=(char*)buf;
 	uchar	exatr=0;
-	int 	orgcon=console,i;
-	ulong	l=0,sys_status_sav=sys_status;
-	uint	lines_printed = 0;
+	ulong 	orgcon=console;
+	ulong	sys_status_sav=sys_status;
 	enum output_rate output_rate = cur_output_rate;
-	struct mouse_hotspot hot_spot = {0};
 
-	hot_attr = 0;
-	hungry_hotspots = true;
 	attr_sp=0;	/* clear any saved attributes */
 	tmpatr=curatr;	/* was lclatr(-1) */
 	if(!(mode&P_SAVEATR))
 		attr(LIGHTGRAY);
 	if(mode&P_NOPAUSE)
 		sys_status|=SS_PAUSEOFF;
-	str = auto_utf8(str, &mode);
+	
+	char ret = putmsgfrag(buf, &mode, org_cols, obj);
+	if(!(mode&P_SAVEATR)) {
+ 		console=orgcon;
+		attr(tmpatr);
+	}
+	if(!(mode&P_NOATCODES) && cur_output_rate != output_rate)
+		set_output_rate(output_rate);
+
+	if(mode&P_PETSCII)
+		outcom(PETSCII_UPPERLOWER);
+
+	attr_sp=0;	/* clear any saved attributes */
+
+	/* Restore original settings of Forced Pause On/Off */
+	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
+	sys_status|=(sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
+	return(ret);
+}
+
+// Print a message fragment, doesn't save/restore any console states (e.g. attributes, auto-pause)
+char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* obj)
+{
+	char 	tmp2[256],tmp3[128];
+	char*	str=(char*)buf;
+	uchar	exatr=0;
+	int 	i;
+	ulong	l=0;
+	uint	lines_printed = 0;
+	struct mouse_hotspot hot_spot = {0};
+
+	hot_attr = 0;
+	hungry_hotspots = true;
+	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 
 	long term = term_supports();
-	if(!(mode&P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
-		mode &= ~P_WORDWRAP;
+	if(!((*mode)&P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
+		(*mode) &= ~P_WORDWRAP;
 		l += 9;
 	}
-	if(mode&P_WORDWRAP) {
+	if((*mode)&P_WORDWRAP) {
 		char* wrapoff = NULL;
-		if(!(mode&P_NOATCODES)) {
+		if(!((*mode)&P_NOATCODES)) {
 			wrapoff = strstr((char*)str+l, "@WRAPOFF@");
 			if(wrapoff != NULL)
 				*wrapoff = 0;
@@ -90,11 +116,12 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 		if(org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
 		if((wrapped=::wordwrap((char*)str+l, cols - 1, org_cols - 1, /* handle_quotes: */TRUE
-			,/* is_utf8: */INT_TO_BOOL(mode&P_UTF8))) == NULL)
+			,/* is_utf8: */INT_TO_BOOL((*mode)&P_UTF8))) == NULL)
 			errormsg(WHERE,ERR_ALLOC,"wordwrap buffer",0);
 		else {
 			truncsp_lines(wrapped);
-			putmsg(wrapped, mode&(~P_WORDWRAP));
+			(*mode) &= ~P_WORDWRAP;
+			putmsgfrag(wrapped, mode);
 			free(wrapped);
 			l=strlen(str);
 			if(wrapoff != NULL)
@@ -102,7 +129,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 		}
 	}
 
-	while(l < len && (mode&P_NOABORT || !msgabort()) && online) {
+	while(l < len && ((*mode)&P_NOABORT || !msgabort()) && online) {
 		switch(str[l]) {
 			case '\r':
 			case '\n':
@@ -116,10 +143,10 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 				}
 				// fallthrough
 			default: // printing char
-				if((mode&P_TRUNCATE) && column >= (cols - 1)) {
+				if(((*mode)&P_TRUNCATE) && column >= (cols - 1)) {
 					l++;
 					continue;
-				} else if(mode&P_WRAP) {
+				} else if((*mode)&P_WRAP) {
 					if(org_cols) {
 						if(column > (org_cols - 1)) {
 							CRLF;
@@ -133,7 +160,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 				break;
 		}
 		if(str[l]==CTRL_A && str[l+1]!=0) {
-			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF) && !(mode&P_NOATCODES)) {  /* Quote a file */
+			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF) && !((*mode)&P_NOATCODES)) {  /* Quote a file */
 				l+=2;
 				i=0;
 				while(i<(int)sizeof(tmp2)-1 && isprint((unsigned char)str[l]) && str[l]!='\\' && str[l]!='/')
@@ -171,7 +198,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			outchar(ESC); /* Convert `[ and ú[ to ESC[ */
 			l++;
 		}
-		else if(!(mode&P_NOXATTRS)
+		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_PCBOARD) && str[l]=='@' && str[l+1]=='X'
 			&& isxdigit((unsigned char)str[l+2]) && isxdigit((unsigned char)str[l+3])) {
 			sprintf(tmp2,"%.2s",str+l+2);
@@ -192,7 +219,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			exatr=1;
 			l+=4;
 		}
-		else if(!(mode&P_NOXATTRS)
+		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_WILDCAT) && str[l]=='@' && str[l+3]=='@'
 			&& isxdigit((unsigned char)str[l+1]) && isxdigit((unsigned char)str[l+2])) {
 			sprintf(tmp2,"%.2s",str+l+1);
@@ -200,7 +227,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			// exatr=1;
 			l+=4;
 		}
-		else if(!(mode&P_NOXATTRS)
+		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_RENEGADE) && str[l]=='|' && isdigit((unsigned char)str[l+1])
 			&& isdigit((unsigned char)str[l+2]) && !(useron.misc&RIP)) {
 			sprintf(tmp2,"%.2s",str+l+1);
@@ -216,7 +243,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			exatr=1;
 			l+=3;	/* Skip |xx */
 		}
-		else if(!(mode&P_NOXATTRS)
+		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_CELERITY) && str[l]=='|' && isalpha((unsigned char)str[l+1])
 			&& !(useron.misc&RIP)) {
 			switch(str[l+1]) {
@@ -275,7 +302,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			exatr=1;
 			l+=2;	/* Skip |x */
 		}  /* Skip second digit if it exists */
-		else if(!(mode&P_NOXATTRS)
+		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_WWIV) && str[l]==CTRL_C && isdigit((unsigned char)str[l+1])) {
 			exatr=1;
 			switch(str[l+1]) {
@@ -333,7 +360,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			}
 			if(str[l]=='!' && str[l+1]=='|' && useron.misc&RIP) /* RIP */
 				lncntr=0;				/* so defeat pause */
-			if(str[l]=='@' && !(mode&P_NOATCODES)) {
+			if(str[l]=='@' && !((*mode)&P_NOATCODES)) {
 				if(memcmp(str+l, "@EOF@", 5) == 0)
 					break;
 				if(memcmp(str+l, "@CLEAR@", 7) == 0) {
@@ -366,17 +393,17 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 				}
 				if(memcmp(str+l, "@WORDWRAP@", 10) == 0) {
 					l += 10;
-					putmsg(str+l, mode|P_WORDWRAP, org_cols);
-					break;
+					(*mode) |= P_WORDWRAP;
+					return putmsgfrag(str+l, mode, org_cols);
 				}
 				if(memcmp(str+l, "@QON@", 5) == 0) {	// Allow the file display to be aborted (PCBoard)
 					l += 5;
-					mode &= ~P_NOABORT;
+					(*mode) &= ~P_NOABORT;
 					continue;
 				}
 				if(memcmp(str+l, "@QOFF@", 6) == 0) {	// Do not allow the display of teh file to be aborted (PCBoard)
 					l += 6;
-					mode |= P_NOABORT;
+					(*mode) |= P_NOABORT;
 					continue;
 				}
 				bool was_tos = (row == 0);
@@ -387,7 +414,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 				if(i)					/* if valid string, go to top */
 					continue;
 			}
-			if(mode&P_CPM_EOF && str[l]==CTRL_Z)
+			if((*mode)&P_CPM_EOF && str[l]==CTRL_Z)
 				break;
 			if(hot_attr) {
 				if(curatr == hot_attr && str[l] > ' ') {
@@ -403,12 +430,12 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 				}
 			}
 			size_t skip = sizeof(char);
-			if(mode&P_PETSCII) {
+			if((*mode)&P_PETSCII) {
 				if(term&PETSCII)
 					outcom(str[l]);
 				else
 					petscii_to_ansibbs(str[l]);
-			} else if((str[l]&0x80) && (mode&P_UTF8)) {
+			} else if((str[l]&0x80) && ((*mode)&P_UTF8)) {
 				if(term&UTF8)
 					outcom(str[l]);
 				else
@@ -422,23 +449,6 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 			l += skip;
 		}
 	}
-	if(!(mode&P_SAVEATR)) {
- 		console=orgcon;
-		attr(tmpatr);
-	}
-	if(!(mode&P_NOATCODES) && cur_output_rate != output_rate)
-		set_output_rate(output_rate);
 
-	if(mode&P_PETSCII)
-		outcom(PETSCII_UPPERLOWER);
-
-	attr_sp=0;	/* clear any saved attributes */
-
-	ret=str[l];
-
-	/* Restore original settings of Forced Pause On/Off */
-	sys_status&=~(SS_PAUSEOFF|SS_PAUSEON);
-	sys_status|=(sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
-	return(ret);
+	return str[l];
 }
-

@@ -38,6 +38,7 @@
 
 #include "sbbs.h"
 #include "utf8.h"
+#include "petdefs.h"
 
 #ifndef PRINTFILE_MAX_LINE_LEN
 #define PRINTFILE_MAX_LINE_LEN (8*1024)
@@ -126,9 +127,15 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		}
 		free(buf);
 	} else {	// Line-at-a-time mode
+		ulong sys_status_sav = sys_status;
+		enum output_rate output_rate = cur_output_rate;
 		uint tmpatr = curatr;
+		ulong orgcon = console;
+		attr_sp = 0;	/* clear any saved attributes */
 		if(!(mode&P_SAVEATR))
 			attr(LIGHTGRAY);
+		if(mode&P_NOPAUSE)
+			sys_status |= SS_PAUSEOFF;
 		if(length > PRINTFILE_MAX_LINE_LEN)
 			length = PRINTFILE_MAX_LINE_LEN;
 		if((buf=(char*)malloc(length+1L))==NULL) {
@@ -141,13 +148,24 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 				break;
 			if((mode&P_UTF8) && !term_supports(UTF8))
 				utf8_normalize_str(buf);
-			if(putmsg(buf, mode|P_SAVEATR, org_cols, obj) != '\0') // early-EOF?
+			if(putmsgfrag(buf, &mode, org_cols, obj) != '\0') // early-EOF?
 				break;
 		}
 		free(buf);
 		fclose(stream);
-		if(!(mode&P_SAVEATR))
+		if(!(mode&P_SAVEATR)) {
+			console = orgcon;
 			attr(tmpatr);
+		}
+		if(!(mode&P_NOATCODES) && cur_output_rate != output_rate)
+			set_output_rate(output_rate);
+		if(mode&P_PETSCII)
+			outcom(PETSCII_UPPERLOWER);
+		attr_sp=0;	/* clear any saved attributes */
+
+		/* Restore original settings of Forced Pause On/Off */
+		sys_status &= ~(SS_PAUSEOFF|SS_PAUSEON);
+		sys_status |= (sys_status_sav&(SS_PAUSEOFF|SS_PAUSEON));
 	}
 
 	if((mode&P_NOABORT || rip) && online==ON_REMOTE) {
