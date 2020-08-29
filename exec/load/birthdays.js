@@ -18,7 +18,7 @@ load("birthdate.js");
 // Note: month is 0-based, day (of month) is optional and 1-based
 function birthdays(month, day)
 {
-	var u = new User(1);
+	var u = new User;
 	var lastuser = system.stats.total_users;
 	var list = [];
 	for(u.number = 1; u.number <= lastuser; u.number++) {

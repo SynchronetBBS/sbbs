@@ -1,0 +1,62 @@
+# This file is a template, and might need editing before it works on your project.
+# use the official gcc image, based on debian
+# can use verions as well, like gcc:5.2
+# see https://hub.docker.com/_/gcc/
+image: gcc
+
+# cache outputs to reduce the build time
+cache:
+    paths:
+        - "**/*.o"
+
+build-sbbs:
+  stage: build
+  # instead of calling g++ directly you can also use some build toolkit like make
+  # install the necessary build tools when needed
+  # before_script:
+  #   - apt update && apt -y install make autoconf
+  script:
+    - cd src/sbbs3
+    - make all
+    - make gtkutils
+    - make RELEASE=1 all
+    - make RELEASE=1 gtkutils
+  artifacts:
+    name: sbbs
+    paths:
+      - "src/sbbs3/*.release/*"
+      - "src/sbbs3/*/*.release/*"
+
+build-sexpots:
+  stage: build
+  # instead of calling g++ directly you can also use some build toolkit like make
+  # install the necessary build tools when needed
+  # before_script:
+  #   - apt update && apt -y install make autoconf
+  script:
+    - cd src/sexpots
+    - make RELEASE=1
+  artifacts:
+    name: sexpots
+    paths:
+      - "src/sexpots/*.release/*"
+
+build-syncterm:
+  stage: build
+  # instead of calling g++ directly you can also use some build toolkit like make
+  # install the necessary build tools when needed
+  # before_script:
+  #   - apt update && apt -y install make autoconf
+  script:
+    - cd src/syncterm
+    - make RELEASE=1
+  artifacts:
+    name: syncterm
+    paths:
+      - "src/syncterm/*.release/*"
+
+# run tests using the binary built before
+#test:
+#  stage: test
+#  script:
+#    - ./runmytests.sh

@@ -749,7 +749,14 @@ function syncterm_list(list, dir)
             f.writeln(format("\tConnectionType=%s", list[i].service[j].protocol));
             f.writeln(format("\tAddress=%s", list[i].service[j].address));
 			if(list[i].service[j].port)
-				f.writeln(format("\tPort=%s", list[i].service[j].port));	
+				f.writeln(format("\tPort=%s", list[i].service[j].port));
+			if(list[i].service[j].description
+				&& (list[i].service[j].description.toUpperCase().indexOf("PETSCII") == 0
+				|| list[i].service[j].description.toUpperCase().indexOf("COMMODORE") == 0)) {
+				f.writeln(format("\tScreenMode=%s"
+					,list[i].service[j].description.indexOf("80") >= 0 ? "C128-80col" : "C64"));
+				f.writeln("\tNoStatus=true");
+			}
             f.writeln();
         }
     }
