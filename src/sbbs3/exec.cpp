@@ -563,7 +563,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx)
+long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
 {
 	char*		p;
 	char*		args=NULL;
@@ -580,6 +580,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 
 	if(js_cx == NULL)
 		js_cx = this->js_cx;
+	if(js_glob == NULL)
+		js_glob = this->js_glob;
 
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
