@@ -11,7 +11,7 @@
 # RELEASE = Set to force a release build
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
 # SBBSDIR = Directory to do install to
-# WORKDIR = Directory where source files are cloned
+# REPODIR = Directory where source files are cloned
 # bcc = Set to use Borland compiler
 # os = Set to the OS name (Not required)
 # SBBSUSER = Owner for the installed files
@@ -58,7 +58,7 @@ SBBSCHOWN	:= $(SBBSUSER):$(SBBSGROUP)
 
 SBBSDIR	?=	$(shell pwd)
 export SBBSDIR
-WORKDIR		= $(SBBSDIR)/repo
+REPODIR		= $(SBBSDIR)/repo
 
 # Get OS
 ifndef os
@@ -140,7 +140,7 @@ endif
 all: localdefs binaries baja externals
 
 localdefs: src
-	echo $(MKFLAGS) | tr ' ' '\n' > $(WORKDIR)/src/build/localdefs.mk
+	echo $(MKFLAGS) | tr ' ' '\n' > $(REPODIR)/src/build/localdefs.mk
 
 binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 
@@ -148,120 +148,119 @@ externals:	sbj dpoker tbd
 
 sbbs3:	src
 ifeq ($(os),linux)
-	$(MAKE) -C $(WORKDIR)/src/sbbs3 $(MKFLAGS) setcap
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) setcap
 else
-	$(MAKE) -C $(WORKDIR)/src/sbbs3 $(MKFLAGS)
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS)
 endif
 
 sexpots:	src
-	$(MAKE) -C $(WORKDIR)/src/sexpots $(MKFLAGS)
+	$(MAKE) -C $(REPODIR)/src/sexpots $(MKFLAGS)
 
 baja:	run sbbs3
-	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
+	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
 
 sbj:	run
-	$(MAKE) -C $(WORKDIR)/xtrn/sbj $(MKFLAGS)
+	$(MAKE) -C $(REPODIR)/xtrn/sbj $(MKFLAGS)
 
 dpoker:	run
-	$(MAKE) -C $(WORKDIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 tbd:	run
-	$(MAKE) -C $(WORKDIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 gtkuseredit:	src
 ifdef USE_GLADE
-	$(MAKE) -C $(WORKDIR)/src/sbbs3/gtkuseredit $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkuseredit $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 endif
 
 gtkchat:	src
 ifdef USE_GLADE
-	$(MAKE) -C $(WORKDIR)/src/sbbs3/gtkchat $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkchat $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 endif
 
 gtkmonitor:	src
 ifdef USE_GLADE
-	$(MAKE) -C $(WORKDIR)/src/sbbs3/gtkmonitor $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkmonitor $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 endif
 
 gtkuserlist:	src
 ifdef USE_GLADE
-	$(MAKE) -C $(WORKDIR)/src/sbbs3/gtkuserlist $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkuserlist $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 endif
 
 syncview:
-	$(MAKE) -C $(WORKDIR)/src/sbbs3/syncview $(MKFLAGS) SBBS_SRC=$(WORKDIR)/src/sbbs3/ XPDEV=$(WORKDIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/src/sbbs3/syncview $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 install: all
 	@echo Installing to $(SBBSDIR)
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/showstat $(SBBSDIR)/exec/showstat
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/readsauce $(SBBSDIR)/exec/readsauce
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dstsedit $(SBBSDIR)/exec/dstsedit
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbactiv $(SBBSDIR)/exec/smbactiv
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dupefind $(SBBSDIR)/exec/dupefind
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/delfiles $(SBBSDIR)/exec/delfiles
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/allusers $(SBBSDIR)/exec/allusers
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/qwknodes $(SBBSDIR)/exec/qwknodes
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/asc2ans $(SBBSDIR)/exec/asc2ans
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/ans2asc $(SBBSDIR)/exec/ans2asc
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/jsexec $(SBBSDIR)/exec/jsexec
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja $(SBBSDIR)/exec/baja
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/unbaja $(SBBSDIR)/exec/unbaja
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/slog $(SBBSDIR)/exec/slog
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/node $(SBBSDIR)/exec/node
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/chksmb $(SBBSDIR)/exec/chksmb
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fixsmb $(SBBSDIR)/exec/fixsmb
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/addfiles $(SBBSDIR)/exec/addfiles
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/makeuser $(SBBSDIR)/exec/makeuser
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbutil $(SBBSDIR)/exec/smbutil
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbs $(SBBSDIR)/exec/sbbs
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbsecho $(SBBSDIR)/exec/sbbsecho
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexyz $(SBBSDIR)/exec/sexyz
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/echocfg $(SBBSDIR)/exec/echocfg
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/filelist $(SBBSDIR)/exec/filelist
-	$(INSBIN) $(WORKDIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfg $(SBBSDIR)/exec/scfg
-	$(INSBIN) $(WORKDIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/umonitor $(SBBSDIR)/exec/umonitor
-	$(INSBIN) $(WORKDIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(BUILDPATH)/uedit $(SBBSDIR)/exec/uedit
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libservices.so $(SBBSDIR)/exec/libservices.so
-	$(INSBIN) $(WORKDIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/showstat $(SBBSDIR)/exec/showstat
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/readsauce $(SBBSDIR)/exec/readsauce
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dstsedit $(SBBSDIR)/exec/dstsedit
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbactiv $(SBBSDIR)/exec/smbactiv
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dupefind $(SBBSDIR)/exec/dupefind
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/delfiles $(SBBSDIR)/exec/delfiles
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/allusers $(SBBSDIR)/exec/allusers
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/qwknodes $(SBBSDIR)/exec/qwknodes
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/asc2ans $(SBBSDIR)/exec/asc2ans
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/ans2asc $(SBBSDIR)/exec/ans2asc
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/jsexec $(SBBSDIR)/exec/jsexec
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja $(SBBSDIR)/exec/baja
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/unbaja $(SBBSDIR)/exec/unbaja
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/slog $(SBBSDIR)/exec/slog
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/node $(SBBSDIR)/exec/node
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/chksmb $(SBBSDIR)/exec/chksmb
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fixsmb $(SBBSDIR)/exec/fixsmb
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/addfiles $(SBBSDIR)/exec/addfiles
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/makeuser $(SBBSDIR)/exec/makeuser
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbutil $(SBBSDIR)/exec/smbutil
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbs $(SBBSDIR)/exec/sbbs
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbsecho $(SBBSDIR)/exec/sbbsecho
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexyz $(SBBSDIR)/exec/sexyz
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/echocfg $(SBBSDIR)/exec/echocfg
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/filelist $(SBBSDIR)/exec/filelist
+	$(INSBIN) $(REPODIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfg $(SBBSDIR)/exec/scfg
+	$(INSBIN) $(REPODIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/umonitor $(SBBSDIR)/exec/umonitor
+	$(INSBIN) $(REPODIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(BUILDPATH)/uedit $(SBBSDIR)/exec/uedit
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libservices.so $(SBBSDIR)/exec/libservices.so
+	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
 ifdef USE_GLADE
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkuseredit/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuseredit $(SBBSDIR)/exec/gtkuseredit
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkuseredit/gtkuseredit.glade $(SBBSDIR)/exec/gtkuseredit.glade
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkmonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkmonitor $(SBBSDIR)/exec/gtkmonitor
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkmonitor/gtkmonitor.glade $(SBBSDIR)/exec/gtkmonitor.glade
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkmonitor/pixmaps/stock_help-chat.png $(SBBSDIR)/exec/stock_help-chat.png
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkmonitor/pixmaps/stock_mail-send.png $(SBBSDIR)/exec/stock_mail-send.png
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkchat/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkchat $(SBBSDIR)/exec/gtkchat
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkuserlist/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuserlist $(SBBSDIR)/exec/gtkuserlist
-	$(INSBIN) $(WORKDIR)/src/sbbs3/gtkuserlist/gtkuserlist.glade $(SBBSDIR)/exec/gtkuserlist.glade
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuseredit/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuseredit $(SBBSDIR)/exec/gtkuseredit
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuseredit/gtkuseredit.glade $(SBBSDIR)/exec/gtkuseredit.glade
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkmonitor $(SBBSDIR)/exec/gtkmonitor
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/gtkmonitor.glade $(SBBSDIR)/exec/gtkmonitor.glade
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/pixmaps/stock_help-chat.png $(SBBSDIR)/exec/stock_help-chat.png
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/pixmaps/stock_mail-send.png $(SBBSDIR)/exec/stock_mail-send.png
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkchat/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkchat $(SBBSDIR)/exec/gtkchat
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuserlist/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuserlist $(SBBSDIR)/exec/gtkuserlist
+	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuserlist/gtkuserlist.glade $(SBBSDIR)/exec/gtkuserlist.glade
 endif
-	$(INSBIN) $(WORKDIR)/src/sbbs3/syncview/$(CCPRE).$(machine).exe.$(BUILDPATH)/syncview $(SBBSDIR)/exec/syncview
-	$(INSBIN) $(WORKDIR)/src/sexpots/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexpots $(SBBSDIR)/exec/sexpots
+	$(INSBIN) $(REPODIR)/src/sbbs3/syncview/$(CCPRE).$(machine).exe.$(BUILDPATH)/syncview $(SBBSDIR)/exec/syncview
+	$(INSBIN) $(REPODIR)/src/sexpots/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexpots $(SBBSDIR)/exec/sexpots
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 
-$(WORKDIR):
-	git clone https://gitlab.com/synchronet/sbbs.git $(WORKDIR) \
-		|| git clone https://github.com/rswindell/sbbs.git $(WORKDIR) \
-		|| git clone https://gitlab.synchro.net/sbbs/sbbs.git $(WORKDIR)
-	cd $(WORKDIR)
-	git remote set-url origin https://gitlab.synchro.net/sbbs/sbbs.git
+$(REPODIR):
+	git clone https://gitlab.com/synchronet/sbbs.git $(REPODIR) \
+		|| git clone https://github.com/rswindell/sbbs.git $(REPODIR) \
+		|| git clone https://gitlab.synchro.net/sbbs/sbbs.git $(REPODIR)
+	git -C $(REPODIR) remote set-url origin https://gitlab.synchro.net/sbbs/sbbs.git
 ifdef TAG
-	git -C $(WORKDIR) checkout tags/$(TAG)
+	git -C $(REPODIR) checkout tags/$(TAG)
 endif
 
-src: $(WORKDIR)
+src: $(REPODIR)
 
-run: $(WORKDIR)
-	cp -r $(WORKDIR)/ctrl $(SBBSDIR)
-	cp -r $(WORKDIR)/docs $(SBBSDIR)
-	cp -r $(WORKDIR)/exec $(SBBSDIR)
-	cp -r $(WORKDIR)/node1 $(SBBSDIR)
-	cp -r $(WORKDIR)/text $(SBBSDIR)
-	cp -r $(WORKDIR)/web $(SBBSDIR)
-	cp -r $(WORKDIR)/xtrn $(SBBSDIR)
+run: $(REPODIR)
+	cp -r $(REPODIR)/ctrl $(SBBSDIR)
+	cp -r $(REPODIR)/docs $(SBBSDIR)
+	cp -r $(REPODIR)/exec $(SBBSDIR)
+	cp -r $(REPODIR)/node1 $(SBBSDIR)
+	cp -r $(REPODIR)/text $(SBBSDIR)
+	cp -r $(REPODIR)/web $(SBBSDIR)
+	cp -r $(REPODIR)/xtrn $(SBBSDIR)
 
 $(SBBSDIR):
 	@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);
