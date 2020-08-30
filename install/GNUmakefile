@@ -253,13 +253,27 @@ endif
 
 src: $(REPODIR)
 
-run: $(REPODIR)
+run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/node1 $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/xtrn
+
+$(SBBSDIR)/ctrl: $(REPODIR)
 	cp -r $(REPODIR)/ctrl $(SBBSDIR)
+
+$(SBBSDIR)/docs: $(REPODIR)
 	cp -r $(REPODIR)/docs $(SBBSDIR)
+
+$(SBBSDIR)/exec: $(REPODIR)
 	cp -r $(REPODIR)/exec $(SBBSDIR)
+
+$(SBBSDIR)/node1: $(REPODIR)
 	cp -r $(REPODIR)/node1 $(SBBSDIR)
+
+$(SBBSDIR)/text: $(REPODIR)
 	cp -r $(REPODIR)/text $(SBBSDIR)
+
+$(SBBSDIR)/web: $(REPODIR)
 	cp -r $(REPODIR)/web $(SBBSDIR)
+
+$(SBBSDIR)/xtrn: $(REPODIR)
 	cp -r $(REPODIR)/xtrn $(SBBSDIR)
 
 $(SBBSDIR):
