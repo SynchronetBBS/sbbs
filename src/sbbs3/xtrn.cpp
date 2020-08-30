@@ -261,13 +261,13 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 
 #define XTRN_LOADABLE_MODULE(cmdline,startup_dir)			\
 	if(cmdline[0]=='*')		/* Baja module or JavaScript */	\
-		return(exec_bin(cmdline+1,&main_csi,startup_dir))
+		return(exec_bin(cmdline+1,&main_csi,startup_dir));
 #ifdef JAVASCRIPT
 	#define XTRN_LOADABLE_JS_MODULE(cmdline,mode,startup_dir)	\
 	if(cmdline[0]=='?' && (mode&EX_SH))						\
-		return(js_execxtrn(cmdline+1, startup_dir))			\
+		return(js_execxtrn(cmdline+1, startup_dir));		\
 	if(cmdline[0]=='?')										\
-		return(js_execfile(cmdline+1,startup_dir))
+		return(js_execfile(cmdline+1,startup_dir));
 #else
 	#define XTRN_LOADABLE_JS_MODULE
 #endif
