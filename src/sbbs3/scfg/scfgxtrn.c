@@ -40,6 +40,21 @@
 char *daystr(char days);
 static void hotkey_cfg(void);
 
+static char* use_shell_opt = "Use Shell / New Context";
+static char* use_shell_help =
+	"`Use System Shell or New JavaScript Context to Execute:`\n"
+	"\n"
+	"If this command-line requires the system command shell to execute\n"
+	"(e.g. uses pipes/redirection or invokes a Unix shell script or\n"
+	"DOS/Windows batch/command file), then set this option to ~Yes~.\n"
+	"\n"
+	"If this command-line is invoking a Synchronet JavaScript module\n"
+	"(e.g. it begins with a '`?`' character), then setting this option to ~Yes~\n"
+	"will enable the creation and initialization of a new JavaScript run-time\n"
+	"context for it to execute within, for every invocation."
+	;
+static char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
+
 #define CUT_XTRNSEC_NUM	USHRT_MAX
 
 static bool new_timed_event(unsigned new_event_num)
@@ -509,7 +524,7 @@ void tevents_cfg()
 				,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","Native Executable"
 				,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
+			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Background Execution"
 				,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
@@ -798,14 +813,9 @@ void tevents_cfg()
 
 				case 12:
 					k=(cfg.event[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf=
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute (Unix\n"
-						"shell script or DOS/Windows batch/command file), set this option to ~Yes~.\n"
-					;
+					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use System Command Shell",uifcYesNoOpts);
+						,use_shell_prompt, uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&XTRN_SH)) {
 						cfg.event[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE;
@@ -1006,7 +1016,7 @@ void xtrn_cfg(uint section)
 					==(XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : nulstr);
 			sprintf(opt[k++],"%-27.27s%s","Native Executable"
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
+			sprintf(opt[k++],"%-27.27s%s",use_shell_opt
 				,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
 			sprintf(opt[k++],"%-27.27s%s","Modify User Data"
 				,cfg.xtrn[i]->misc&MODUSERDAT ? "Yes" : "No");
@@ -1055,6 +1065,9 @@ void xtrn_cfg(uint section)
 				"`Online Program Configuration:`\n"
 				"\n"
 				"This menu is for configuring the selected online program.\n"
+				"\n"
+				"For detailed instructions for configuring BBS doors, see\n"
+				"`http://wiki.synchro.net/howto:door:index`"
 			;
 			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&opt_dflt,&sub_bar,cfg.xtrn[i]->name
 				,opt)) {
@@ -1266,14 +1279,9 @@ void xtrn_cfg(uint section)
 					break;
 				case 11:
 					k=(cfg.xtrn[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf=
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute, (Unix\n"
-						"shell script or DOS batch file), set this option to ~Yes~.\n"
-					;
+					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use Shell",uifcYesNoOpts);
+						,use_shell_prompt,uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_SH)) {
 						cfg.xtrn[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE; 
@@ -1667,7 +1675,7 @@ void xedit_cfg()
 					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr);
 			sprintf(opt[k++],"%-32.32s%s","Native Executable"
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
+			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Record Terminal Width"
 				,cfg.xedit[i]->misc&SAVECOLUMNS ? "Yes" : "No");
@@ -1852,14 +1860,9 @@ void xedit_cfg()
 					break;
 				case 6:
 					k=(cfg.xedit[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf=
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute, (Unix \n"
-						"shell script or DOS batch file), set this option to ~Yes~.\n"
-					;
+					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use Shell",uifcYesNoOpts);
+						,use_shell_prompt, uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_SH)) {
 						cfg.xedit[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE; 

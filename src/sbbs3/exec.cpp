@@ -732,13 +732,9 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	return(result);
 }
 
-// Execute a JS Module in its own runtime and context
-// Experimental and currently broken
-long sbbs_t::js_execmodule(const char *cmd, long mode, const char* startup_dir)
+// Execute a JS Module in its own temporary JS runtime and context
+long sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 {
-	if(!(mode&EX_JS_CX))
-		return js_execfile(cmd, startup_dir);
-
 	JSRuntime* js_runtime;
 	JSObject* js_glob;
 	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
@@ -748,7 +744,6 @@ long sbbs_t::js_execmodule(const char *cmd, long mode, const char* startup_dir)
 	JS_RemoveObjectRoot(js_cx, &js_glob);
 	JS_ENDREQUEST(js_cx);
 	JS_DestroyContext(js_cx);
-	lprintf(LOG_DEBUG,"JavaScript: Destroying runtime");
 	jsrt_Release(js_runtime);
 	return result;
 }
