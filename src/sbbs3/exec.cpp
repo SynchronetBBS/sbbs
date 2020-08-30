@@ -725,8 +725,9 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 		JS_RemoveValueRoot(js_cx, &old_js_argc);
 	}
 
-	JS_ENDREQUEST(js_cx);
 	JS_GC(js_cx);
+
+	JS_ENDREQUEST(js_cx);
 
 	return(result);
 }
@@ -742,7 +743,7 @@ long sbbs_t::js_execmodule(const char *cmd, long mode, const char* startup_dir)
 	JSObject* js_glob;
 	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
 	js_create_user_objects(js_cx, js_glob);
-	long result = js_execfile(cmd, startup_dir, js_glob, js_cx);
+	long result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
 	JS_BEGINREQUEST(js_cx);
 	JS_RemoveObjectRoot(js_cx, &js_glob);
 	JS_ENDREQUEST(js_cx);
