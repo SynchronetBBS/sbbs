@@ -168,7 +168,11 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 			}
 			msg->hdr.offset=offset;
 
-			smb_fseek(smb->sdt_fp,offset,SEEK_SET);
+			if(smb_fseek(smb->sdt_fp,offset,SEEK_SET) != 0) {
+				sprintf(smb->last_error, "%s seek error %d", __FUNCTION__, errno);
+				retval=SMB_ERR_SEEK;
+				break;
+			}
 
 			if(bodylen) {
 				if((retval=smb_dfield(msg,TEXT_BODY,bodylen))!=SMB_SUCCESS)
@@ -300,7 +304,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 		if(!(smb->status.attr&(SMB_EMAIL|SMB_NOHASH))
 			&& smb_addhashes(smb,hashes,/* skip_marked? */FALSE)==SMB_SUCCESS)
 			msg->flags|=MSG_FLAG_HASHED;
-		if(msg->to==NULL)	/* no recipient, don't add header (required for bulkmail) */
+		if(msg->hdr.type == SMB_MSG_TYPE_NORMAL && msg->to == NULL)	/* no recipient, don't add header (required for bulkmail) */
 			break;
 
 		retval=smb_addmsghdr(smb,msg,storage); /* calls smb_unlocksmbhdr() */
@@ -462,4 +466,11 @@ int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 	retval = smb_addmsghdr(smb, msg, storage);
 
 	return retval;
+}
+
+int SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const uchar* extdesc)
+{
+	file->hdr.type = SMB_MSG_TYPE_FILE;
+
+	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */extdesc, /* tail: */NULL);
 }

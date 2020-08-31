@@ -92,9 +92,10 @@
 #define SMB_FASTALLOC		1			/* Fast allocation */
 
 										/* status.attr bit flags: */
-#define SMB_EMAIL			1			/* User numbers stored in Indexes */
-#define SMB_HYPERALLOC		2			/* No allocation (also storage value for smb_addmsghdr) */
-#define SMB_NOHASH			4			/* Do not calculate or store hashes */
+#define SMB_EMAIL			(1<<0)		/* User numbers stored in Indexes */
+#define SMB_HYPERALLOC		(1<<1)		/* No allocation (also storage value for smb_addmsghdr) */
+#define SMB_NOHASH			(1<<2)		/* Do not calculate or store hashes */
+#define SMB_FILE_DIRECTORY	(1<<3)		/* Storage for a file area (for file transfers/downloads) */
 
 										/* Time zone macros for when_t.zone */
 #define DAYLIGHT			0x8000		/* Daylight savings is active */
@@ -236,6 +237,9 @@
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
 
+#define SMB_FILENAME		SUBJECT
+#define	SMB_FILEDESC		SMB_SUMMARY
+
 #define FILEATTACH			0x70
 #define DESTFILE			0x71
 #define FILEATTACHLIST		0x72
@@ -290,8 +294,8 @@
 
 #define SMB_POLL_ANSWER		0xe0		/* the subject is the question */
 
-#define UNKNOWN 			0xf1
-#define UNKNOWNASCII		0xf2
+#define UNKNOWN 			0xf1		/* specified as 0xf0 in smb.txt/html - oops */
+#define UNKNOWNASCII		0xf2		/* specified as 0xf1 in smb.txt/html - oops */
 #define UNUSED				0xff
 
 										/* Valid dfield_t.types */
@@ -439,14 +443,14 @@ typedef struct _PACK {		/* Time with time-zone */
 typedef struct _PACK {		/* Index record */
 
 	union {
-		struct _PACK {
-			uint16_t	to; 		/* 16-bit CRC of recipient name (lower case) or user # */
-			uint16_t	from;		/* 16-bit CRC of sender name (lower case) or user # */
-			uint16_t	subj;		/* 16-bit CRC of subject (lower case, w/o RE:) */
+		struct _PACK {			/* when msg.type != BALLOT */
+			uint16_t	to; 	/* 16-bit CRC of recipient name (lower case) or user # */
+			uint16_t	from;	/* 16-bit CRC of sender name (lower case) or user # */
+			uint16_t	subj;	/* 16-bit CRC of subject (lower case, w/o RE:) */
 		};
-		struct _PACK {
-			uint16_t	votes;		/* votes value */
-			uint32_t	remsg;		/* number of message this vote is in response to */
+		struct _PACK {			/* when msg.type == BALLOT */
+			uint16_t	votes;	/* votes value */
+			uint32_t	remsg;	/* number of message this vote is in response to */
 		};
 	};
 	uint16_t	attr;			/* attributes (read, permanent, etc.) */
@@ -456,6 +460,15 @@ typedef struct _PACK {		/* Index record */
 
 } idxrec_t;
 
+typedef struct _PACK {		/* File index record */
+	union {
+		struct {
+			idxrec_t	idx;
+			char		filename[64];
+		};
+		uint8_t	padding[128];
+	};
+} smbfileidxrec_t;
 										/* valid bits in hash_t.flags		*/
 #define SMB_HASH_CRC16			(1<<0)	/* CRC-16 hash is valid				*/
 #define SMB_HASH_CRC32			(1<<1)	/* CRC-32 hash is valid				*/
@@ -511,15 +524,24 @@ typedef struct _PACK {		/* Message base header (fixed portion) */
 
 } smbhdr_t;
 
-typedef struct _PACK {		/* Message base status header */
+typedef struct _PACK {		/* Message/File base status header */
 
-	uint32_t	last_msg;		/* last message number */
-	uint32_t	total_msgs; 	/* total messages */
+	union {
+		uint32_t	last_msg;	/* last message number */
+		uint32_t	last_file;	/* last file number */
+	};
+	union {
+		uint32_t	total_msgs; /* total messages */
+		uint32_t	total_files; /* total files */
+	};
 	uint32_t	header_offset;	/* byte offset to first header record */
 	uint32_t	max_crcs;		/* Maximum number of CRCs to keep in history */
-    uint32_t	max_msgs;       /* Maximum number of message to keep in sub */
-    uint16_t	max_age;        /* Maximum age of message to keep in sub (in days) */
-	uint16_t	attr;			/* Attributes for this message base (SMB_HYPER,etc) */
+	union {
+		uint32_t	max_msgs;	/* Maximum number of message to keep in sub */
+		uint32_t	max_files;	/* Maximum number of files to keep in dir */
+	};
+    uint16_t	max_age;        /* Maximum age of message/file to keep in sub (in days) */
+	uint16_t	attr;			/* Attributes for this message/file base (SMB_HYPER,etc) */
 
 } smbstatus_t;
 
@@ -528,9 +550,10 @@ enum smb_msg_type {
 	,SMB_MSG_TYPE_POLL			/* A poll question  */
 	,SMB_MSG_TYPE_BALLOT		/* Voter response to poll or normal message */
 	,SMB_MSG_TYPE_POLL_CLOSURE	/* Closure of an existing poll */
+	,SMB_MSG_TYPE_FILE			/* A file (e.g. for download) */
 };
 
-typedef struct _PACK {		/* Message header */
+typedef struct _PACK {		/* Message/File header */
 
 	/* 00 */ uchar		id[LEN_HEADER_ID];	/* SHD<^Z> */
     /* 04 */ uint16_t	type;				/* Message type (enum smb_msg_type) */
@@ -545,7 +568,10 @@ typedef struct _PACK {		/* Message header */
     /* 24 */ uint32_t	thread_back;		/* Message number for backwards threading (aka thread_orig) */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */
     /* 2c */ uint32_t	thread_first;		/* First reply to this message */
-	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter */
+	union {
+	/* 30 */ uint16_t	delivery_attempts;	/* Delivery attempt counter (for SMTP) */
+	/* 30 */ uint16_t	altpath;			/* Alternate file storage path (when non-zero) */
+	};
 	/* 32 */ int16_t	votes;				/* Votes value (response to poll) or maximum votes per ballot (poll) */
 	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
 	/* 38 */ uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
@@ -597,7 +623,7 @@ typedef struct {		/* Network (type and address) */
 								/* Valid bits in smbmsg_t.flags					*/
 #define MSG_FLAG_HASHED	(1<<0)	/* Message has been hashed with smb_hashmsg()	*/
 
-typedef struct {				/* Message */
+typedef struct {				/* Message or File */
 
 	idxrec_t	idx;			/* Index */
 	msghdr_t	hdr;			/* Header record (fixed portion) */
@@ -623,9 +649,18 @@ typedef struct {				/* Message */
 				*ftn_flags,		/* FTN FLAGS */
 				*ftn_msgid,		/* FTN MSGID */
 				*ftn_reply;		/* FTN REPLY */
-	char*		summary;		/* Summary  */
-	char*		subj;			/* Subject  */
-	char*		tags;			/* Message tags (space-delimited) */
+	union {
+		char*	summary;		/* Message Summary  */
+		char*	desc;			/* File description */
+	};
+	union {
+		char*	subj;			/* Subject  */
+		char*	filename;		/* Filename */
+	};
+	union {
+		uchar*	text;			/* Message body text (optional) */
+		uchar*	extdesc;		/* File extended description */
+	};
 	uint16_t	to_agent,		/* Type of agent message is to */
 				from_agent, 	/* Type of agent message is from */
 				replyto_agent;	/* Type of agent replies should be sent to */
@@ -646,10 +681,14 @@ typedef struct {				/* Message */
 	uint32_t	upvotes;		/* Vote tally for this message */
 	uint32_t	downvotes;		/* Vote tally for this message */
 	uint32_t	total_votes;	/* Total votes for this message or poll */
+								/* Not written to the database: */
+	uint32_t	dir;			/* Directory number */
+	off_t		size;			/* File size */
+	time_t		date;			/* File date/timestamp (current) */
 
-} smbmsg_t;
+} smbmsg_t, smbfile_t;
 
-typedef struct {				/* Message base */
+typedef struct {				/* Message/File base */
 
     char		file[128];      /* Path and base filename (no extension) */
     FILE*		sdt_fp;			/* File pointer for data (.sdt) file */
@@ -662,12 +701,18 @@ typedef struct {				/* Message base */
 	uint32_t	retry_delay;	/* Time-slice yield (milliseconds) while retrying */
 	smbstatus_t status; 		/* Status header record */
 	BOOL		locked;			/* SMB header is locked */
-	BOOL		continue_on_error;			/* Attempt recovery after some normaly fatal errors */
+	BOOL		continue_on_error;			/* Attempt recovery after some normally fatal errors */
 	char		last_error[MAX_PATH*2];		/* Last error message */
 
 	/* Private member variables (not initialized by or used by smblib) */
-	uint32_t	subnum;			/* Sub-board number */
-	uint32_t	msgs;			/* Number of messages loaded (for user) */
+	union {
+		uint32_t	subnum;		/* Sub-board number */
+		uint32_t	dirnum;		/* Directory number */
+	};
+	union {
+		uint32_t	msgs;		/* Number of messages loaded (for user) */
+		uint32_t	files;		/* Number of files loaded */
+	};
 	uint32_t	curmsg;			/* Current message number (for user, 0-based) */
 
 } smb_t;

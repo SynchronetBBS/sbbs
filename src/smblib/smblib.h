@@ -71,6 +71,7 @@
 #define SMB_SUCCESS			0			/* Successful result/return code */
 #define SMB_FAILURE			-1			/* Generic error (discouraged) */
 #define SMB_BAD_PARAMETER	-2			/* Invalid API function parameter value */
+
 										/* Standard smblib errors values */
 #define SMB_ERR_NOT_OPEN	-100		/* Message base not open */
 #define SMB_ERR_HDR_LEN		-101		/* Invalid message header length (>64k) */
@@ -193,6 +194,8 @@ SMBEXPORT uint32_t	SMBCALL smb_first_in_thread(smb_t*, smbmsg_t*, msghdr_t*);
 SMBEXPORT uint32_t	SMBCALL smb_next_in_thread(smb_t*, smbmsg_t*, msghdr_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_branch(smb_t*, smbmsg_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_thread(smb_t*, smbmsg_t*);
+SMBEXPORT size_t	SMBCALL smb_idxreclen(smb_t*);
+SMBEXPORT uint32_t	SMBCALL	smb_count_idx_records(smb_t*, uint16_t mask, uint16_t cmp);
 
 /* smbadd.c */
 SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
@@ -200,6 +203,7 @@ SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long d
 SMBEXPORT int		SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage);
+SMBEXPORT int		SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const uchar* extdesc);
 
 /* smballoc.c */
 SMBEXPORT long		SMBCALL smb_allochdr(smb_t* smb, ulong length);
