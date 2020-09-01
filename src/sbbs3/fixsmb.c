@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) index re-generator */
 
-/* $Id$ */
+/* $Id: fixsmb.c,v 1.46 2018/04/30 06:05:12 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -60,22 +60,23 @@ int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 void sort_index(smb_t* smb)
 {
 	ulong		l;
-	idxrec_t*	idx;
+	uint8_t*	idxbuf;
+	size_t		idxreclen = smb_idxreclen(smb);
 
 	printf("Sorting index... ");
-	if((idx=malloc(sizeof(idxrec_t)*smb->status.total_msgs))==NULL) {
+	if((idxbuf = malloc(idxreclen * smb->status.total_msgs))==NULL) {
 		perror("malloc");
 		return;
 	}
 
 	rewind(smb->sid_fp);
 	for(l=0;l<smb->status.total_msgs;l++)
-		if(fread(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
+		if(smb_fread(smb, idxbuf + (l * idxreclen), idxreclen, smb->sid_fp) != idxreclen) {
 			perror("reading index");
 			break;
 		}
 
-	qsort(idx,l,sizeof(idxrec_t)
+	qsort(idxbuf, l, idxreclen
 		,(int(*)(const void*, const void*))compare_index);
 
 	rewind(smb->sid_fp);
@@ -83,13 +84,13 @@ void sort_index(smb_t* smb)
 
 	printf("\nRe-writing index... \n");
 	smb->status.total_msgs=l;
-	for(l=0;l<smb->status.total_msgs;l++)
-		if(fwrite(&idx[l],sizeof(idxrec_t),1,smb->sid_fp)<1) {
+	for(l=0;l<smb->status.total_msgs;l++) {
+		if(smb_fwrite(smb, idxbuf + (l * idxreclen), idxreclen, smb->sid_fp) != idxreclen) {
 			perror("writing index");
 			break;
 		}
-
-	free(idx);
+	}
+	free(idxbuf);
 	printf("\n");
 }
 
@@ -205,7 +206,7 @@ int fixsmb(char* sub)
 	} else
 		length=filelength(fileno(smb.shd_fp));
 
-	n=0;	/* messsage offset */
+	n=0;	/* message offset */
 	for(l=smb.status.header_offset;l<length;l+=size) {
 		size=SHD_BLOCK_LEN;
 		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
@@ -332,7 +333,7 @@ int main(int argc, char **argv)
 	str_list_t	list;
 	int			retval = EXIT_SUCCESS;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.46 $", "%*s %s", revision);
 
 	printf("\nFIXSMB v2.10-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
 		,PLATFORM_DESC,revision,smb_lib_ver());

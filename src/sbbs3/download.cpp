@@ -2,7 +2,7 @@
 
 /* Synchronet file download routines */
 
-/* $Id$ */
+/* $Id: download.cpp,v 1.53 2018/08/03 06:18:55 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -39,29 +39,31 @@
 #include "telnet.h"
 
 /****************************************************************************/
+/* Call this function *AFTER* a file has been successfully downloaded		*/
 /* Updates downloader, uploader and downloaded file data                    */
 /* Must have offset, dir and name fields filled prior to call.              */
 /****************************************************************************/
-void sbbs_t::downloadfile(file_t* f)
+void sbbs_t::downloadedfile(smbfile_t* f)
 {
-    char		str[MAX_PATH+1],fname[13];
+    char		str[MAX_PATH+1];
 	char 		tmp[512];
-    int			i,file;
+    int			i;
 	long		mod;
 	long		length;
     ulong		l;
 	user_t		uploader;
 
-	getfiledat(&cfg,f); /* Get current data - right after download */
+//	getfiledat(&cfg,f); /* Get current data - right after download */
 	if((length=f->size)<0L)
 		length=0L;
 	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
 		logon_dlb+=length;  /* Update 'this call' stats */
 		logon_dls++;
 	}
-	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
-	sprintf(str,"downloaded %s from %s %s"
-		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
+	bprintf(text[FileNBytesSent],f->filename,ultoac(length,tmp));
+	sprintf(str,"%s downloaded %s from %s %s"
+		,useron.alias
+		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
 	/****************************/
@@ -69,16 +71,16 @@ void sbbs_t::downloadfile(file_t* f)
 	/****************************/
 	user_downloaded(&cfg, &useron, 1, length);
 	if(!is_download_free(&cfg,f->dir,&useron,&client))
-		subtract_cdt(&cfg,&useron,f->cdt);
+		subtract_cdt(&cfg,&useron,f->cost);
 	/**************************/
 	/* Update Uploader's Info */
 	/**************************/
-	i=matchuser(&cfg,f->uler,TRUE /*sysop_alias*/);
+	i=matchuser(&cfg,f->from,TRUE /*sysop_alias*/);
 	memset(&uploader, 0, sizeof(uploader));
 	uploader.number=i;
 	getuserdat(&cfg,&uploader);
-	if(i && i!=useron.number && uploader.firston<f->dateuled) {
-		l=f->cdt;
+	if(i && i!=useron.number && uploader.firston < (time32_t)f->hdr.when_imported.time) {
+		l=f->cost;
 		if(!(cfg.dir[f->dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
 			l=0;
 		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) { /* Give min instead of cdt */
@@ -92,12 +94,13 @@ void sbbs_t::downloadfile(file_t* f)
 		}
 		if(!(cfg.dir[f->dir]->misc&DIR_QUIET)) {
 			sprintf(str,text[DownloadUserMsg]
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->name
+				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->filename
 				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? text[Partially] : nulstr
 				,useron.alias,tmp); 
 			putsmsg(&cfg,i,str); 
 		}
 	}
+#if 0 // TODO
 	/*******************/
 	/* Update IXB File */
 	/*******************/
@@ -145,6 +148,7 @@ void sbbs_t::downloadfile(file_t* f)
 			removefiledat(&cfg,f); 
 		} 
 	}
+#endif
 
 	user_event(EVENT_DOWNLOAD);
 }
@@ -319,7 +323,7 @@ bool sbbs_t::checkdszlog(const char* fpath)
 
 	sprintf(path,"%sPROTOCOL.LOG",cfg.node_dir);
 	if((fp=fopen(path,"r"))==NULL)
-		return(false);
+		return false;
 
 	SAFECOPY(rpath, fpath);
 	fexistcase(rpath);
@@ -368,38 +372,46 @@ bool sbbs_t::checkdszlog(const char* fpath)
 
 /****************************************************************************/
 /* Checks dsz compatible log file for errors in transfer                    */
-/* Returns 1 if the file in the struct file_t was successfuly transfered    */
+/* Returns 1 if the file in the struct file_t was successfully transfered   */
 /****************************************************************************/
-bool sbbs_t::checkprotresult(prot_t* prot, int error, file_t* f)
+bool sbbs_t::checkprotresult(prot_t* prot, int error, const char* fpath)
 {
-	char str[512];
-	char tmp[128];
 	bool success;
-	char fpath[MAX_PATH+1];
 
-	getfilepath(&cfg,f,fpath);
 	if(prot->misc&PROT_DSZLOG)
 		success=checkdszlog(fpath);
 	else
 		success=(error==0);
 
-	if(!success) {
-		bprintf(text[FileNotSent],f->name);
+	if(!success)
+		bprintf(text[FileNotSent], getfname(fpath));
+
+	return success;
+}
+
+bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
+{
+	char str[512];
+	char tmp[128];
+	char fpath[MAX_PATH+1];
+
+	getfullfilepath(&cfg, f, fpath);
+	if(!checkprotresult(prot, error, fpath)) {
 		if(f->dir<cfg.total_dirs)
-			sprintf(str,"attempted to download %s (%s) from %s %s"
-				,f->name,ultoac(f->size,tmp)
+			sprintf(str,"%s attempted to download %s (%s) from %s %s"
+				,useron.alias
+				,f->filename,ultoac(f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			SAFECOPY(str,"attempted to download QWK packet");
 		else if(f->dir==cfg.total_dirs+1)
-			sprintf(str,"attempted to download attached file: %s"
-				,f->name);
+			sprintf(str,"%s attempted to download attached file: %s"
+				,useron.alias,f->filename);
 		logline(LOG_NOTICE,"D!",str);
-		return(false); 
+		return false; 
 	}
-	return(true);
+	return true;
 }
-
 
 
 /************************************************************************/
@@ -466,7 +478,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc)
 		ch=(char)getkeys(keys,0);
 
 		if(ch==text[YNQP][2] || sys_status&SS_ABORT)
-			return(false); 
+			return false; 
 	}
 	for(i=0;i<cfg.total_prots;i++)
 		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))

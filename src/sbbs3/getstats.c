@@ -1,8 +1,6 @@
-/* getstats.c */
-
 /* Synchronet C-export statistics retrieval functions */
 
-/* $Id$ */
+/* $Id: getstats.c,v 1.4 2018/07/24 01:11:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -64,14 +62,17 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 {
 	char str[256];
 	long l;
+	long files = 0;
 
 	if(dirnum>=cfg->total_dirs)	/* out of range */
 		return(0);
-	sprintf(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	if(cfg->dir[dirnum]->misc&DIR_FILES)
+		return getfilecount(cfg->dir[dirnum]->path, ALLFILES);
+	sprintf(str,"%s%s.sid",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	l=(long)flength(str);
 	if(l>0L)
-		return(l/F_IXBSIZE);
-	return(0);
+		files = l/sizeof(smbfileidxrec_t);
+	return files;
 }
 
 /****************************************************************************/

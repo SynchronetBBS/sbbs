@@ -1,6 +1,6 @@
 /* Synchronet configuration file save routines */
 
-/* $Id$ */
+/* $Id: scfgsave.c,v 1.76 2018/07/28 22:27:27 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1107,29 +1107,69 @@ int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
 	return SMB_SELFPACK;
 }
 
+BOOL DLLCALL smb_init_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
+{
+	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
+		return FALSE;
+	memset(smb, 0, sizeof(smb_t));
+	if(subnum == INVALID_SUB)
+		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
+	else
+		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
+	smb->retry_time = cfg->smb_retry_time;
+	return TRUE;
+}
+
 int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 {
 	int retval;
 
-	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
+	if(!smb_init_sub(cfg, smb, subnum))
 		return SMB_FAILURE;
-	memset(smb, 0, sizeof(smb_t));
-	if(subnum == INVALID_SUB) {
-		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
-		smb->status.max_crcs	= cfg->mail_maxcrcs;
-		smb->status.max_msgs	= 0;
-		smb->status.max_age		= cfg->mail_maxage;
-		smb->status.attr		= SMB_EMAIL;
-	} else {
-		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
-		smb->status.max_crcs	= cfg->sub[subnum]->maxcrcs;
-		smb->status.max_msgs	= cfg->sub[subnum]->maxmsgs;
-		smb->status.max_age		= cfg->sub[subnum]->maxage;
-		smb->status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+	if((retval = smb_open(smb)) != SMB_SUCCESS)
+		return retval;
+	smb->subnum = subnum;
+	if(filelength(fileno(smb->shd_fp)) < 1) {
+		if(subnum == INVALID_SUB) {
+			smb->status.max_crcs	= cfg->mail_maxcrcs;
+			smb->status.max_msgs	= 0;
+			smb->status.max_age		= cfg->mail_maxage;
+			smb->status.attr		= SMB_EMAIL;
+		} else {
+			smb->status.max_crcs	= cfg->sub[subnum]->maxcrcs;
+			smb->status.max_msgs	= cfg->sub[subnum]->maxmsgs;
+			smb->status.max_age		= cfg->sub[subnum]->maxage;
+			smb->status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+		}
+		smb_create(smb);
 	}
-	smb->retry_time = cfg->smb_retry_time;
-	if((retval = smb_open(smb)) == SMB_SUCCESS)
-		smb->subnum = subnum;
-	return retval;
+	return SMB_SUCCESS;
 }
 
+BOOL DLLCALL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+{
+	if(dirnum != INVALID_DIR && dirnum >= cfg->total_dirs)
+		return FALSE;
+	memset(smb, 0, sizeof(smb_t));
+	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	smb->retry_time = cfg->smb_retry_time;
+	return TRUE;
+}
+
+int DLLCALL smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+{
+	int retval;
+
+	if(!smb_init_dir(cfg, smb, dirnum))
+		return SMB_FAILURE;
+	if((retval = smb_open(smb)) != SMB_SUCCESS)
+		return retval;
+	smb->dirnum = dirnum;
+	if(filelength(fileno(smb->shd_fp)) < 1) {
+		smb->status.max_files	= cfg->dir[dirnum]->maxfiles;
+		smb->status.max_age		= cfg->dir[dirnum]->maxage;
+		smb->status.attr		= SMB_FILE_DIRECTORY|SMB_NOHASH;
+		smb_create(smb);
+	}
+	return SMB_SUCCESS;
+}

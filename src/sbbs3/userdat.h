@@ -1,6 +1,6 @@
 /* Synchronet user data access routines (exported) */
 
-/* $Id$ */
+/* $Id: userdat.h,v 1.68 2018/03/16 05:26:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -137,6 +137,13 @@ DLLEXPORT BOOL	DLLCALL putmsgptrs(scfg_t*, user_t*, subscan_t*);
 DLLEXPORT BOOL	DLLCALL fixmsgptrs(scfg_t*, subscan_t*);
 DLLEXPORT BOOL	DLLCALL initmsgptrs(scfg_t*, subscan_t*, unsigned days, void (*progress)(void*, int, int), void* cbdata);
 
+/* Batch file transfer queues */
+DLLEXPORT char*			DLLCALL batchdn_list_name(scfg_t* , uint usernumber, char* fname, size_t);
+DLLEXPORT char*			DLLCALL batchup_list_name(scfg_t* , uint usernumber, char* fname, size_t);
+DLLEXPORT FILE*			DLLCALL batchdn_list_open(scfg_t* , uint usernumber);
+DLLEXPORT FILE*			DLLCALL batchup_list_open(scfg_t* , uint usernumber);
+DLLEXPORT str_list_t	DLLCALL batchdn_list_read(scfg_t* , uint usernumber);
+DLLEXPORT str_list_t	DLLCALL batchup_list_read(scfg_t* , uint usernumber);
 
 /* New atomic numeric user field adjustment functions: */
 DLLEXPORT BOOL	DLLCALL user_posted_msg(scfg_t*, user_t*, int count);

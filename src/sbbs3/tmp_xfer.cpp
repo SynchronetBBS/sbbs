@@ -2,7 +2,7 @@
 
 /* Synchronet temp directory file transfer routines */
 
-/* $Id$ */
+/* $Id: tmp_xfer.cpp,v 1.49 2018/08/03 06:18:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -43,6 +43,7 @@
 /*****************************************************************************/
 void sbbs_t::temp_xfer()
 {
+#if 0	// TODO
     char	str[256],tmp2[256],done=0,ch;
 	char 	tmp[512];
 	int		error;
@@ -196,7 +197,7 @@ void sbbs_t::temp_xfer()
 					if(cfg.dir[temp_dirnum]->misc&DIR_TFREE)
 						starttime+=end-start;
 					if(checkprotresult(cfg.prot[i],error,&f))
-						downloadfile(&f);
+						downloadedfile(&f);
 					else
 						notdownloaded(f.size,start,end);
 					autohangup(); 
@@ -280,6 +281,7 @@ void sbbs_t::temp_xfer()
 	}
 	free(cfg.dir[dirnum]);
 	cfg.total_dirs--;
+#endif
 }
 
 /*****************************************************************************/
@@ -287,6 +289,7 @@ void sbbs_t::temp_xfer()
 /*****************************************************************************/
 void sbbs_t::extract(uint dirnum)
 {
+#if 0 // TODO
     char	fname[13],str[256],excmd[256],path[256],done
 				,tmp[256],intmp=0;
     uint	i,j;
@@ -426,6 +429,7 @@ void sbbs_t::extract(uint dirnum)
 				break; 
 		} 
 	}
+#endif
 }
 
 /****************************************************************************/

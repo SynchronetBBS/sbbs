@@ -1,6 +1,6 @@
 /* Synchronet public message reading function */
 
-/* $Id$ */
+/* $Id: readmsgs.cpp,v 1.107 2018/10/04 04:03:01 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -574,6 +574,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 		for(smb.curmsg=0;smb.curmsg<smb.msgs;smb.curmsg++)
 			if(subscan[subnum].ptr<post[smb.curmsg].idx.number)
 				break;
+		lncntr = 0;
 		bprintf(text[NScanStatusFmt]
 			,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,smb.msgs-smb.curmsg,msgs);
 		if(!smb.msgs) {		  /* no messages at all */
@@ -594,6 +595,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 	}
 	else {
 		cleartoeol();
+		lncntr = 0;
 		if(mode&SCAN_TOYOU)
 			bprintf(text[NScanStatusFmt]
 			   ,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname,smb.msgs,msgs);

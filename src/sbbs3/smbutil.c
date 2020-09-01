@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) utility */
 
-/* $Id$ */
+/* $Id: smbutil.c,v 1.129 2018/10/05 08:23:33 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -494,14 +494,15 @@ void listmsgs(ulong start, ulong count)
 	int i;
 	ulong l=0;
 	smbmsg_t msg;
+	size_t idxreclen = smb_idxreclen(&smb);
 
 	if(!start)
 		start=1;
 	if(!count)
 		count=~0;
-	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
 	while(l<count) {
-		if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
+		fseek(smb.sid_fp,((start-1L) + l)*idxreclen,SEEK_SET);
+		if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
 			break;
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
@@ -564,13 +565,14 @@ void dumpindex(ulong start, ulong count)
 {
 	ulong l=0;
 	idxrec_t idx;
+	size_t idxreclen = smb_idxreclen(&smb);
 
 	if(!start)
 		start=1;
 	if(!count)
 		count=~0;
-	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
 	while(l<count) {
+		fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
 		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
 			break;
 		printf("%10"PRIu32"  ", idx.number);
@@ -593,14 +595,15 @@ void viewmsgs(ulong start, ulong count, BOOL verbose)
 	int i,j;
 	ulong l=0;
 	smbmsg_t msg;
+	size_t idxreclen = smb_idxreclen(&smb);
 
 	if(!start)
 		start=1;
 	if(!count)
 		count=~0;
-	fseek(smb.sid_fp,(start-1L)*sizeof(idxrec_t),SEEK_SET);
 	while(l<count) {
-		if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
+		fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
+		if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
 			break;
 		i=smb_lockmsghdr(&smb,&msg);
 		if(i) {
@@ -617,7 +620,7 @@ void viewmsgs(ulong start, ulong count, BOOL verbose)
 		}
 
 		printf("--------------------\n");
-		printf("%-20.20s %ld\n"		,"index record",ftell(smb.sid_fp)/sizeof(idxrec_t));
+		printf("%-20.20s %ld\n"		,"index record",ftell(smb.sid_fp)/idxreclen);
 		smb_dump_msghdr(stdout,&msg);
 		if(verbose) {
 			for(i=0; i<msg.total_hfields; i++) {
@@ -679,6 +682,8 @@ void maint(void)
 	time_t now;
 	smbmsg_t msg;
 	idxrec_t *idx;
+	size_t idxreclen = smb_idxreclen(&smb);
+	uint8_t* idxbuf;
 
 	printf("Maintaining %s\r\n",smb.file);
 	now=time(NULL);
@@ -730,21 +735,22 @@ void maint(void)
 		return; 
 	}
 	printf("Loading index...\n");
-	if((idx=(idxrec_t *)malloc(sizeof(idxrec_t)*smb.status.total_msgs))
+	if((idxbuf = malloc(idxreclen * smb.status.total_msgs))
 		==NULL) {
 		smb_unlocksmbhdr(&smb);
 		fprintf(errfp,"\n%s!Error allocating %" XP_PRIsize_t "u bytes of memory\n"
-			,beep,sizeof(idxrec_t)*smb.status.total_msgs);
+			,beep,idxreclen * smb.status.total_msgs);
 		return; 
 	}
 	fseek(smb.sid_fp,0L,SEEK_SET);
-	l = fread(idx, sizeof(idxrec_t), smb.status.total_msgs, smb.sid_fp);
+	l = fread(idxbuf, idxreclen, smb.status.total_msgs, smb.sid_fp);
 
 	printf("\nDone.\n\n");
 	printf("Scanning for pre-flagged messages...\n");
 	for(m=0;m<l;m++) {
+		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
-		if(idx[m].attr&MSG_DELETE)
+		if(idx->attr&MSG_DELETE)
 			flagged++; 
 	}
 	printf("\r100%% (%lu pre-flagged for deletion)\n",flagged);
@@ -753,14 +759,15 @@ void maint(void)
 		printf("Scanning for messages more than %u days old...\n"
 			,smb.status.max_age);
 		for(m=f=0;m<l;m++) {
+			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 //			printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
-			if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
+			if(idx->attr&(MSG_PERMANENT|MSG_DELETE))
 				continue;
-			if((ulong)now>idx[m].time && (now-idx[m].time)/(24L*60L*60L)
+			if((ulong)now>idx->time && (now-idx->time)/(24L*60L*60L)
 				>smb.status.max_age) {
 				f++;
 				flagged++;
-				idx[m].attr|=MSG_DELETE; 
+				idx->attr|=MSG_DELETE; 
 			} 
 		}  /* mark for deletion */
 		printf("\r100%% (%lu flagged for deletion due to age)\n",f); 
@@ -768,13 +775,14 @@ void maint(void)
 
 	printf("Scanning for read messages to be killed...\n");
 	for(m=f=0;m<l;m++) {
+		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
-		if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
+		if(idx->attr&(MSG_PERMANENT|MSG_DELETE))
 			continue;
-		if((idx[m].attr&(MSG_READ|MSG_KILLREAD))==(MSG_READ|MSG_KILLREAD)) {
+		if((idx->attr&(MSG_READ|MSG_KILLREAD))==(MSG_READ|MSG_KILLREAD)) {
 			f++;
 			flagged++;
-			idx[m].attr|=MSG_DELETE; 
+			idx->attr|=MSG_DELETE; 
 		} 
 	}
 	printf("\r100%% (%lu flagged for deletion due to read status)\n",f);
@@ -782,17 +790,18 @@ void maint(void)
 	if(smb.status.max_msgs && l-flagged>smb.status.max_msgs) {
 		printf("Flagging excess messages for deletion...\n");
 		for(m=n=0,f=flagged;l-flagged>smb.status.max_msgs && m<l;m++) {
-			if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
+			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
+			if(idx->attr&(MSG_PERMANENT|MSG_DELETE))
 				continue;
 			printf("%lu of %lu\r",++n,(l-f)-smb.status.max_msgs);
 			flagged++;
-			idx[m].attr|=MSG_DELETE; 
+			idx->attr|=MSG_DELETE; 
 		}			/* mark for deletion */
 		printf("\nDone.\n\n"); 
 	}
 
 	if(!flagged) {				/* No messages to delete */
-		free(idx);
+		free(idxbuf);
 		smb_unlocksmbhdr(&smb);
 		return; 
 	}
@@ -818,9 +827,10 @@ void maint(void)
 		}
 
 		for(m=n=0;m<l;m++) {
-			if(idx[m].attr&MSG_DELETE) {
+			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
+			if(idx->attr&MSG_DELETE) {
 				printf("%lu of %lu\r",++n,flagged);
-				msg.idx=idx[m];
+				msg.idx=*idx;
 				msg.hdr.number=msg.idx.number;
 				if((i=smb_getmsgidx(&smb,&msg))!=0) {
 					fprintf(errfp,"\n%s!smb_getmsgidx returned %d: %s\n"
@@ -867,17 +877,18 @@ void maint(void)
 	printf("Re-writing index...\n");
 	rewind(smb.sid_fp);
 	for(m=n=0;m<l;m++) {
-		if(idx[m].attr&MSG_DELETE)
+		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
+		if(idx->attr&MSG_DELETE)
 			continue;
 		n++;
 		printf("%lu of %lu\r", n, l-flagged);
-		fwrite(&idx[m],sizeof(idxrec_t),1,smb.sid_fp); 
+		fwrite(idx, idxreclen ,1 ,smb.sid_fp); 
 	}
 	fflush(smb.sid_fp);
-	CHSIZE_FP(smb.sid_fp, n * sizeof(idxrec_t));
+	CHSIZE_FP(smb.sid_fp, n * idxreclen);
 	printf("\nDone.\n\n");
 
-	free(idx);
+	free(idxbuf);
 	smb.status.total_msgs-=flagged;
 	smb_putstatus(&smb);
 	smb_unlocksmbhdr(&smb);
@@ -903,6 +914,7 @@ void packmsgs(ulong packable)
 	smbmsg_t	msg;
 	datoffset_t *datoffset=NULL;
 	time_t		now;
+	size_t		idxreclen = smb_idxreclen(&smb);
 
 	now=time(NULL);
 	printf("Packing %s\n",smb.file);
@@ -1101,11 +1113,11 @@ void packmsgs(ulong packable)
 		fread(&ch,1,1,smb.shd_fp);			/* copy additional base header records */
 		fwrite(&ch,1,1,tmp_shd); 
 	}
-	fseek(smb.sid_fp,0L,SEEK_SET);
 	total=0;
 	for(l=0;l<smb.status.total_msgs;l++) {
+		fseek(smb.sid_fp, l * idxreclen,SEEK_SET);
 		printf("%lu of %"PRIu32"\r",l+1,smb.status.total_msgs);
-		if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
+		if(!fread(&msg.idx, 1, sizeof(msg.idx), smb.sid_fp))
 			break;
 		if(msg.idx.attr&MSG_DELETE) {
 			printf("\nDeleted index %lu: msg number %lu\n", l,(ulong) msg.idx.number);
@@ -1188,7 +1200,8 @@ void packmsgs(ulong packable)
 		else
 			msg.idx.offset=smb_fallochdr(&smb,length)+smb.status.header_offset;
 		smb_init_idx(&smb, &msg);
-		fwrite(&msg.idx,1,sizeof(idxrec_t),tmp_sid);
+		fseek(tmp_sid, l * idxreclen, SEEK_SET);
+		fwrite(&msg.idx, 1, sizeof(msg.idx), tmp_sid);
 
 		/* Write the new header entry */
 		fseek(tmp_shd,msg.idx.offset,SEEK_SET);
@@ -1372,6 +1385,7 @@ void readmsgs(ulong start)
 	char	*inbuf;
 	int 	i,done=0,domsg=1;
 	smbmsg_t msg;
+	size_t	idxreclen = smb_idxreclen(&smb);
 
 	if(start)
 		msg.offset=start-1;
@@ -1379,8 +1393,8 @@ void readmsgs(ulong start)
 		msg.offset=0;
 	while(!done) {
 		if(domsg) {
-			fseek(smb.sid_fp,msg.offset*sizeof(idxrec_t),SEEK_SET);
-			if(!fread(&msg.idx,1,sizeof(idxrec_t),smb.sid_fp))
+			fseek(smb.sid_fp,msg.offset*idxreclen,SEEK_SET);
+			if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
 				break;
 			i=smb_lockmsghdr(&smb,&msg);
 			if(i) {
@@ -1398,10 +1412,12 @@ void readmsgs(ulong start)
 
 			printf("\n#%"PRIu32" (%d)\n",msg.hdr.number,msg.offset+1);
 			printf("Subj : %s\n",msg.subj);
-			printf("Attr : %04hX\n", msg.hdr.attr);
-			printf("To   : %s",msg.to);
-			if(msg.to_net.type)
-				printf(" (%s)",smb_netaddr(&msg.to_net));
+			printf("Attr : %04hX", msg.hdr.attr);
+			if(*msg.to) {
+				printf("\nTo   : %s",msg.to);
+				if(msg.to_net.type)
+					printf(" (%s)",smb_netaddr(&msg.to_net));
+			}
 			printf("\nFrom : %s",msg.from);
 			if(msg.from_net.type)
 				printf(" (%s)",smb_netaddr(&msg.from_net));
@@ -1409,7 +1425,7 @@ void readmsgs(ulong start)
 				,my_timestr(msg.hdr.when_written.time)
 				,smb_zonestr(msg.hdr.when_written.zone,NULL));
 
-			printf("\n\n");
+			printf("\n%s\n", msg.summary ? msg.summary : "");
 
 			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL|GETMSGTXT_PLAIN))!=NULL) {
 				printf("%s",inbuf);
@@ -1572,7 +1588,7 @@ int main(int argc, char **argv)
 	else	/* if redirected, don't send status messages to stderr */
 		statfp=nulfp;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.129 $", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 
@@ -1809,7 +1825,7 @@ int main(int argc, char **argv)
 							}
 							memset(&smb.status, 0, sizeof(smb.status));
 							smb.status.header_offset = sizeof(smbhdr_t) + sizeof(smb.status);
-							smb.status.total_msgs = filelength(fileno(smb.sid_fp)) / sizeof(idxrec_t);
+							smb.status.total_msgs = filelength(fileno(smb.sid_fp)) / smb_idxreclen(&smb);
 							idxrec_t idx;
 							if((i=smb_getlastidx(&smb, &idx)) != SMB_SUCCESS) {
 								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);

@@ -1,6 +1,6 @@
 /* Synchronet constants, macros, and structure definitions */
 
-/* $Id$ */
+/* $Id: sbbsdefs.h,v 1.226 2018/10/22 04:18:06 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -310,11 +310,13 @@ typedef struct js_callback {
 #define ERR_IOCTL	"sending IOCTL"	/* IOCTL error */
 #define ERR_SEEK	"seeking"		/* SEEKing error */
 
-enum {                              /* Values for dir[x].sort */
-     SORT_NAME_A                    /* Sort by filename, ascending */
-    ,SORT_NAME_D                    /* Sort by filename, descending */
-    ,SORT_DATE_A                    /* Sort by upload date, ascending */
-    ,SORT_DATE_D                    /* Sort by upload date, descending */
+enum file_sort {                    /* Values for dir[x].sort */
+     SORT_NAME_A	= 0	            /* Sort by filename, ascending (case-insensitive) */
+    ,SORT_NAME_D    = 1             /* Sort by filename, descending (case-insensitive) */
+	,SORT_NAME_AC	= 4				/* Sort by filename, ascending (case-sensitive) */
+	,SORT_NAME_DC   = 5             /* Sort by filename, descending (case-sensitive) */
+    ,SORT_DATE_A    = 2             /* Sort by upload date, ascending */
+    ,SORT_DATE_D    = 3             /* Sort by upload date, descending */
     };
 
 /* Values for grp[x].sort */

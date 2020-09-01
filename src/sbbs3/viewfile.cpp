@@ -1,8 +1,6 @@
-/* viewfile.cpp */
-
 /* Synchronet file contents display routines */
 
-/* $Id$ */
+/* $Id: viewfile.cpp,v 1.11 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -43,10 +41,13 @@
 /* call with ext=1 for default to extended info, or 0 for file view         */
 /* Returns -1 for Batch, 1 for Next, or 0 for Quit                          */
 /****************************************************************************/
-int sbbs_t::viewfile(file_t* f, int ext)
+int sbbs_t::viewfile(smbfile_t* f, bool ext)
 {
 	char	ch,str[256];
 	char 	tmp[512];
+
+	char	fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
+	format_filename(f->filename, fname, sizeof(fname)-1, /* pad: */FALSE);
 
 	curdirnum=f->dir;	/* for ARS */
 	while(online) {
@@ -55,7 +56,7 @@ int sbbs_t::viewfile(file_t* f, int ext)
 		else
 			viewfilecontents(f);
 		ASYNC;
-		sprintf(str,text[FileInfoPrompt],unpadfname(f->name,tmp));
+		SAFEPRINTF(str, text[FileInfoPrompt], fname);
 		mnemonics(str);
 		ch=(char)getkeys("BEVQ\r",0);
 		if(ch=='Q' || sys_status&SS_ABORT)
@@ -84,8 +85,8 @@ int sbbs_t::viewfile(file_t* f, int ext)
 /*****************************************************************************/
 void sbbs_t::viewfiles(uint dirnum, char *fspec)
 {
+	char	tmp[512];
     char	viewcmd[256];
-	char 	tmp[512];
     int		i;
 
 	curdirnum=dirnum;	/* for ARS */
@@ -94,37 +95,41 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
 		bputs(text[FileNotFound]);
 		return; 
 	}
-	padfname(fspec,tmp);
-	truncsp(tmp);
+	char* file_ext = getfext(fspec);
+	if(file_ext == NULL) {
+		bprintf(text[NonviewableFile], fspec);
+		return; 
+	}
 	for(i=0;i<cfg.total_fviews;i++)
-		if(!stricmp(tmp+9,cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
+		if(!stricmp(file_ext + 1, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
 			strcpy(viewcmd,cfg.fview[i]->cmd);
 			break; 
 		}
 	if(i==cfg.total_fviews) {
-		bprintf(text[NonviewableFile],tmp+9);
+		bprintf(text[NonviewableFile], file_ext);
 		return; 
 	}
-	sprintf(tmp,"%s%s",cfg.dir[dirnum]->path,fspec);
+	SAFEPRINTF2(tmp, "%s%s", cfg.dir[dirnum]->path, fspec);
 	if((i=external(cmdstr(viewcmd,tmp,tmp,NULL),EX_STDIO|EX_SH))!=0)
 		errormsg(WHERE,ERR_EXEC,viewcmd,i);    /* must have EX_SH to ^C */
 }
 
 /****************************************************************************/
 /****************************************************************************/
-void sbbs_t::viewfilecontents(file_t* f)
+void sbbs_t::viewfilecontents(smbfile_t* f)
 {
 	char	cmd[128];
 	char	path[MAX_PATH+1];
 	char* 	ext;
 	int		i;
 
-	getfilepath(&cfg, f, path);
-
+	getfullfilepath(&cfg, f, path);
+#if 0
 	if(f->size<=0L) {
 		bprintf(text[FileDoesNotExist],path);
 		return; 
 	}
+#endif
 	if((ext=getfext(path))!=NULL) {
 		ext++;
 		for(i=0;i<cfg.total_fviews;i++) {

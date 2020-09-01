@@ -1,7 +1,7 @@
 /* Synchronet JavaScript "User" Object */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: js_user.c,v 1.107 2018/08/07 02:16:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -956,9 +956,12 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 {
 	private_t* p = (private_t*)JS_GetPrivate(cx,obj);
 
+	printf("js_user_finalize\n");
 	if(p!=NULL) {
-		if(p->file > 0)
+		if(p->file > 0) {
+			printf("Closing user file\n");
 			closeuserdat(p->file);
+		}
 		free(p);
 	}
 
@@ -1545,6 +1548,7 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	private_t*	p;
 	jsval		val;
 
+	printf("%s\n", __FUNCTION__);
 	if(name==NULL)
 	    userobj = JS_NewObject(cx, &js_user_class, NULL, parent);
 	else if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)

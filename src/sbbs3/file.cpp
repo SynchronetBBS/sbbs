@@ -1,6 +1,6 @@
 /* Synchronet file transfer-related functions */
 
-/* $Id$ */
+/* $Id: file.cpp,v 1.35 2018/07/23 23:05:50 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -39,14 +39,12 @@
 /****************************************************************************/
 /* Prints all information of file in file_t structure 'f'					*/
 /****************************************************************************/
-void sbbs_t::fileinfo(file_t* f)
+void sbbs_t::fileinfo(smbfile_t* f)
 {
 	char	ext[513];
 	char 	tmp[512];
 	char	tmp2[64];
 	char	path[MAX_PATH+1];
-	char	fname[MAX_PATH+1];
-	char*	real_fname;
 	uint	i,j;
 
 	current_file = f;
@@ -57,50 +55,50 @@ void sbbs_t::fileinfo(file_t* f)
 		if(usrdir[i][j]==f->dir)
 			break;
 
-	getfilepath(&cfg,f,path);
-	real_fname = getfname(path);
-	unpadfname(f->name, fname);
+	getfullfilepath(&cfg, f, path);
 	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
 	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
-	bprintf(text[FiFilename],fname);
-	if(strcmp(real_fname, fname) && strcmp(f->desc, real_fname))	/* Different "actual" filename */
-		bprintf(text[FiFilename], real_fname);
+	bprintf(text[FiFilename],f->filename);
 
-	if(f->size!=-1L)
-		bprintf(text[FiFileSize],ultoac(f->size,tmp)
+
+	if(getfilesize(&cfg, f) >= 0)
+		bprintf(text[FiFileSize], ultoac((ulong)f->size,tmp)
 			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
+
 	bprintf(text[FiCredits]
-		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cdt) ? "FREE" : ultoac(f->cdt,tmp));
+		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac(f->cost,tmp));
 	bprintf(text[FiDescription],f->desc);
-	bprintf(text[FiUploadedBy],f->misc&FM_ANON ? text[UNKNOWN_USER] : f->uler);
-	if(f->date)
+	bprintf(text[FiUploadedBy],f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from);
+	if(getfiledate(&cfg, f) > 0)
 		bprintf(text[FiFileDate],timestr(f->date));
-	bprintf(text[FiDateUled],timestr(f->dateuled));
-	bprintf(text[FiDateDled],f->datedled ? timestr(f->datedled) : "Never");
-	bprintf(text[FiTimesDled],f->timesdled);
-	if(f->size>0 && f->timetodl>0)
-		bprintf(text[FiTransferTime],sectostr(f->timetodl,tmp));
-	if(f->altpath) {
-		if(f->altpath<=cfg.altpaths) {
+	bprintf(text[FiDateUled],timestr(f->hdr.when_imported.time));
+	bprintf(text[FiDateDled],f->hdr.last_downloaded ? timestr(f->hdr.last_downloaded) : "Never");
+	bprintf(text[FiTimesDled],f->hdr.times_downloaded);
+	ulong timetodl = gettimetodl(&cfg, f, cur_cps);
+	if(timetodl > 0)
+		bprintf(text[FiTransferTime],sectostr(timetodl,tmp));
+	if(f->hdr.altpath) {
+		if(f->hdr.altpath<=cfg.altpaths) {
 			if(SYSOP)
-				bprintf(text[FiAlternatePath],cfg.altpath[f->altpath-1]); 
+				bprintf(text[FiAlternatePath],cfg.altpath[f->hdr.altpath-1]); 
 		}
 		else
-			bprintf(text[InvalidAlternatePathN],f->altpath); 
+			bprintf(text[InvalidAlternatePathN],f->hdr.altpath); 
 	}
 	bputs(text[FileHdrDescSeparator]);
-	if(f->misc&FM_EXTDESC) {
-		getextdesc(&cfg,f->dir,f->datoffset,ext);
-		putmsg(ext,P_NOATCODES);
+	if(f->extdesc != NULL && *f->extdesc) {
+		putmsg((char*)f->extdesc,P_NOATCODES);
 		CRLF; 
 	}
 	if(f->size==-1L) {
-		bprintf(text[FileIsNotOnline],f->name);
+		bprintf(text[FileIsNotOnline],f->filename);
 		if(SYSOP)
 			bprintf("%s\r\n",path);
 	}
+#if 0
 	if(f->opencount)
 		bprintf(text[FileIsOpen],f->opencount,f->opencount>1 ? "s" : nulstr);
+#endif
 	current_file = NULL;
 }
 

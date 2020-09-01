@@ -2,7 +2,7 @@
 
 /* Synchronet private mail reading function */
 
-/* $Id$ */
+/* $Id: readmail.cpp,v 1.81 2018/10/23 02:49:50 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -291,7 +291,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					found = false;
 				smb_freemsgtxt(txt);
 			}
-
+#if 0
 			if(msg.hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
 				smb_getmsgidx(&smb,&msg);
 				SAFECOPY(str, msg.subj);					/* filenames (multiple?) in title */
@@ -364,6 +364,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				sprintf(str,"%sfile/%04u.in",cfg.data_dir,usernumber);
 				rmdir(str); 
 			}
+#endif
 			if(which==MAIL_YOUR && !(msg.hdr.attr&MSG_READ)) {
 				mail[smb.curmsg].attr|=MSG_READ;
 				if(thisnode.status==NODE_INUSE)

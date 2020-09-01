@@ -1,7 +1,7 @@
 /* Synchronet user data-related routines (exported) */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: userdat.c,v 1.208 2018/11/07 03:55:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -2749,6 +2749,51 @@ BOOL DLLCALL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* 
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));
 }
 
+char* DLLCALL batchdn_list_name(scfg_t* cfg, uint usernumber, char* fname, size_t size)
+{
+	snprintf(fname, size, "%suser/%04u.dload", cfg->data_dir, usernumber);
+	return fname;
+}
+
+char* DLLCALL batchup_list_name(scfg_t* cfg, uint usernumber, char* fname, size_t size)
+{
+	snprintf(fname, size, "%suser/%04u.uload", cfg->data_dir, usernumber);
+	return fname;
+}
+
+FILE* DLLCALL batchdn_list_open(scfg_t* cfg, uint usernumber)
+{
+	char path[MAX_PATH + 1];
+	return iniOpenFile(batchdn_list_name(cfg, usernumber, path, sizeof(path)), /* create: */FALSE);
+}
+
+FILE* DLLCALL batchup_list_open(scfg_t* cfg, uint usernumber)
+{
+	char path[MAX_PATH + 1];
+	return iniOpenFile(batchup_list_name(cfg, usernumber, path, sizeof(path)), /* create: */FALSE);
+}
+
+str_list_t DLLCALL batchdn_list_read(scfg_t* cfg, uint usernumber)
+{
+	FILE* fp = batchdn_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return NULL;
+	str_list_t ini = iniReadFile(fp);
+	iniCloseFile(fp);
+	return ini;
+}
+
+str_list_t DLLCALL batchup_list_read(scfg_t* cfg, uint usernumber)
+{
+	FILE* fp = batchup_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return NULL;
+	str_list_t ini = iniReadFile(fp);
+	iniCloseFile(fp);
+	return ini;
+}
+
+
 BOOL DLLCALL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 {
 	char	exempt[MAX_PATH+1];
@@ -3277,14 +3322,17 @@ static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, BOOL create)
 	return iniOpenFile(path, create);
 }
 
-BOOL DLLCALL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value)
+BOOL DLLCALL user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen)
 {
 	FILE* fp;
+	char buf[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* create: */FALSE);
 	if(fp == NULL)
 		return FALSE;
-	char* result = iniReadValue(fp, section, key, NULL, value);
+	char* result = iniReadValue(fp, section, key, NULL, buf);
+	if(result != NULL)
+		safe_snprintf(value, maxlen, "%s", result);
 	iniCloseFile(fp);
 	return result != NULL;
 }

@@ -1,6 +1,6 @@
 /* Synchronet QWK packet-related functions */
 
-/* $Id$ */
+/* $Id: qwk.cpp,v 1.86 2018/09/06 02:21:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -393,14 +393,10 @@ void sbbs_t::qwk_sec()
 	int		error;
 	int 	s;
 	uint	i,k;
-	ulong	l;
 	ulong	msgcnt;
 	ulong	*sav_ptr;
-	file_t	fd;
 
-	memset(&fd,0,sizeof(fd));
 	getusrdirs();
-	fd.dir=cfg.total_dirs;
 	if((sav_ptr=(ulong *)malloc(sizeof(ulong)*cfg.total_subs))==NULL) {
 		errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ulong)*cfg.total_subs);
 		return;
@@ -607,12 +603,11 @@ void sbbs_t::qwk_sec()
 				}
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
-				padfname(tmp2,fd.name);
 				sprintf(str,"%sBATCHDN.LST",cfg.node_dir);
 				sprintf(tmp2,"%sBATCHUP.LST",cfg.node_dir);
 				error=protocol(cfg.prot[i],XFER_BIDIR,str,tmp2,true);
 				batdn_total=batup_total=0;
-				if(!checkprotresult(cfg.prot[i],error,&fd)) {
+				if(!checkprotresult(cfg.prot[i],error, tmp2)) {
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
 						subscan[i].ptr=sav_ptr[i]; /* re-load saved pointers */
@@ -647,10 +642,11 @@ void sbbs_t::qwk_sec()
 				continue;
 			}
 
-			l=(long)flength(str);
-			bprintf(text[FiFilename],getfname(str));
-			bprintf(text[FiFileSize],ultoac(l,tmp)
+			off_t l=flength(str);
+			bprintf(text[FiFilename], getfname(str));
+			bprintf(text[FiFileSize], ultoac(l,tmp)
 				, byte_estimate_to_str(l, tmp2, sizeof(tmp), /* units: */1024, /* precision: */1));
+
 			if(l>0L && cur_cps)
 				i=l/(ulong)cur_cps;
 			else
@@ -687,9 +683,8 @@ void sbbs_t::qwk_sec()
 			if(i<cfg.total_prots) {
 				sprintf(str,"%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				sprintf(tmp2,"%s.qwk",cfg.sys_id);
-				padfname(tmp2,fd.name);
 				error=protocol(cfg.prot[i],XFER_DOWNLOAD,str,nulstr,false);
-				if(!checkprotresult(cfg.prot[i],error,&fd)) {
+				if(!checkprotresult(cfg.prot[i], error, tmp2)) {
 					last_ns_time=ns_time;
 					for(i=0;i<cfg.total_subs;i++)
 						subscan[i].ptr=sav_ptr[i]; /* re-load saved pointers */
@@ -972,6 +967,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 			bputs(text[FileNotFound]);
 		}
 		else {
+#if 0 // TODO
 			f.dir=usrdir[x][y];
 			getfileixb(&cfg,&f);
 			f.size=0;
@@ -980,6 +976,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 				bprintf(text[FileIsNotOnline],f.name);
 			else
 				addtobatdl(&f);
+#endif
 		}
 
 	}

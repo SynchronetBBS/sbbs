@@ -1,6 +1,6 @@
 /* Synchronet class (sbbs_t) definition and exported function prototypes */
 // vi: tabstop=4
-/* $Id$ */
+/* $Id: sbbs.h,v 1.492 2018/10/25 09:32:10 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -536,7 +536,7 @@ public:
 	csi_t	main_csi;		/* Main Command Shell Image */
 
 	smbmsg_t*	current_msg;	/* For message header @-codes */
-	file_t*		current_file;
+	smbfile_t*	current_file;	
 
 			/* Global command shell variables */
 	uint	global_str_vars;
@@ -746,8 +746,8 @@ public:
 	/* prntfile.cpp */
 	void	printfile(char *str, long mode);
 	void	printtail(char *str, int lines, long mode);
-	void	menu(const char *code);
-	bool	menu_exists(const char *code);
+	void	menu(const char *code, long mode = 0);
+	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(int add, uint n, const char *title, const char *item, const uchar *ar);
 	uint	uselect_total, uselect_num[500];
@@ -854,35 +854,39 @@ public:
 	bool	bulkupload(uint dirnum);
 
 	/* download.cpp */
-	void	downloadfile(file_t* f);
+	void	downloadedfile(smbfile_t* f);
 	void	notdownloaded(ulong size, time_t start, time_t end);
 	int		protocol(prot_t* prot, enum XFER_TYPE, char *fpath, char *fspec, bool cd);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
 	bool	checkdszlog(const char*);
-	bool	checkprotresult(prot_t*, int error, file_t*);
+	bool	checkprotresult(prot_t*, int error, const char* fpath);
+	bool	checkprotresult(prot_t*, int error, smbfile_t*);
 	bool	sendfile(char* fname, char prot=0, const char* description = NULL);
 	bool	recvfile(char* fname, char prot=0);
 
 	/* file.cpp */
-	void	fileinfo(file_t* f);
-	void	openfile(file_t* f);
-	void	closefile(file_t* f);
-	bool	removefcdt(file_t* f);
-	bool	removefile(file_t* f);
-	bool	movefile(file_t* f, int newdir);
+	void	fileinfo(smbfile_t*);
+	void	openfile(file_t*);
+	void	closefile(file_t*);
+	bool	removefcdt(file_t*);
+	bool	removefcdt(smb_t*, smbfile_t*);
+	bool	removefile(file_t*);
+	bool	removefile(smb_t*, smbfile_t*);
+	bool	movefile(file_t*, int newdir);
+	bool	movefile(smb_t*, smbfile_t*, int newdir);
 	char *	getfilespec(char *str);
 	bool	checkfname(char *fname);
-	bool	addtobatdl(file_t* f);
+	bool	addtobatdl(smbfile_t*);
+	bool	clearbatdl(void);
 
 	/* listfile.cpp */
-	bool	listfile(const char *fname, const char *buf, uint dirnum
-				,const char *search, const char letter, ulong datoffset);
+	bool	listfile(smbfile_t*, uint dirnum, const char *search, const char letter);
 	int		listfiles(uint dirnum, const char *filespec, int tofile, long mode);
 	int		listfileinfo(uint dirnum, char *filespec, long mode);
-	void	listfiletofile(char *fname, char *buf, uint dirnum, int file);
-	int		batchflagprompt(uint dirnum, file_t bf[], uint total, long totalfiles);
+	void	listfiletofile(smbfile_t*, uint dirnum, int file);
+	int		batchflagprompt(smb_t*, smbfile_t bf[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
@@ -902,9 +906,9 @@ public:
 	ulong	create_filelist(const char *name, long mode);
 
 	/* viewfile.cpp */
-	int		viewfile(file_t* f, int ext);
+	int		viewfile(smbfile_t* f, bool extdesc);
 	void	viewfiles(uint dirnum, char *fspec);
-	void	viewfilecontents(file_t* f);
+	void	viewfilecontents(smbfile_t* f);
 
 	/* sortdir.cpp */
 	void	resort(uint dirnum);
@@ -1080,6 +1084,9 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL putfiledat(scfg_t* cfg, file_t* f);
 	DLLEXPORT void		DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
 	DLLEXPORT void		DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT void		DLLCALL fgetextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext, int file);
+	DLLEXPORT int		DLLCALL openextdesc(scfg_t* cfg, uint dirnum);
+	DLLEXPORT void		DLLCALL closeextdesc(int file);
 	DLLEXPORT char*		DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path);
 
 	DLLEXPORT BOOL		DLLCALL removefiledat(scfg_t* cfg, file_t* f);
@@ -1090,6 +1097,26 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
 
 	DLLEXPORT int		DLLCALL update_uldate(scfg_t* cfg, file_t* f);
+
+	/* New file base API: */
+	DLLEXPORT BOOL		 DLLCALL newfiles(smb_t*, time_t);
+	DLLEXPORT smbfile_t* DLLCALL loadfiles(smb_t*, const char* filespec, time_t, size_t* count);
+	DLLEXPORT void		 DLLCALL sortfiles(smbfile_t*, size_t count, enum file_sort);
+	DLLEXPORT void		 DLLCALL freefile(smbfile_t*);
+	DLLEXPORT void		 DLLCALL freefiles(smbfile_t*, size_t count);
+	DLLEXPORT BOOL		 DLLCALL findfileidx(smb_t*, const char* filename, idxrec_t*);
+	DLLEXPORT BOOL		 DLLCALL loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
+	DLLEXPORT BOOL		 DLLCALL file_exists(smb_t*, const char* filename);
+	DLLEXPORT BOOL		 DLLCALL file_exists_in_dir(scfg_t*, uint dirnum, const char* filename);
+	DLLEXPORT BOOL		 DLLCALL renewfile(smb_t*, smbfile_t*);
+	DLLEXPORT BOOL		 DLLCALL removefile(smb_t*, smbfile_t*);
+	DLLEXPORT char*		 DLLCALL getfullfilepath(scfg_t*, smbfile_t*, char* path);
+	DLLEXPORT off_t		 DLLCALL getfilesize(scfg_t*, smbfile_t*);
+	DLLEXPORT time_t	 DLLCALL getfiledate(scfg_t*, smbfile_t*);
+	DLLEXPORT ulong		 DLLCALL gettimetodl(scfg_t*, smbfile_t*, uint rate_cps);
+	DLLEXPORT BOOL		 DLLCALL addfile(smb_t*, smbfile_t*);
+	DLLEXPORT BOOL		 DLLCALL addfile_to_dir(scfg_t*, uint dirnum, smbfile_t*);
+	DLLEXPORT char*		 DLLCALL format_filename(const char* fname, char* buf, size_t, BOOL pad);
 
 	/* str_util.c */
 	DLLEXPORT char *	DLLCALL remove_ctrl_a(const char* instr, char* outstr);
@@ -1141,6 +1168,11 @@ extern "C" {
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
 	DLLEXPORT ushort	DLLCALL sys_timezone(scfg_t* cfg);
 	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
+	DLLEXPORT int		DLLCALL smb_storage_mode(scfg_t*, smb_t*);
+	DLLEXPORT BOOL		DLLCALL smb_init_sub(scfg_t*, smb_t*, unsigned int dirnum);
+	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
+	DLLEXPORT BOOL		DLLCALL smb_init_dir(scfg_t*, smb_t*, unsigned int dirnum);
+	DLLEXPORT int		DLLCALL smb_open_dir(scfg_t*, smb_t*, unsigned int dirnum);
 
 	/* scfgsave.c */
 	DLLEXPORT BOOL		DLLCALL save_cfg(scfg_t* cfg, int backup_level);
@@ -1151,8 +1183,6 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
 	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
-	DLLEXPORT int		DLLCALL smb_storage_mode(scfg_t*, smb_t*);
-	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 
 	/* logfile.cpp */
 	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, const char* host, const char* text);

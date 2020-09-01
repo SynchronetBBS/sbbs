@@ -2,7 +2,7 @@
 
 /* Synchronet batch file transfer functions */
 
-/* $Id$ */
+/* $Id: bat_xfer.cpp,v 1.38 2018/03/10 03:19:01 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -680,7 +680,7 @@ void sbbs_t::batch_download(int xfrprot)
 {
     uint	i,j;
     file_t	f;
-
+#if 0 // TODO
 	for(i=0;i<batdn_total;) {
 		lncntr=0;                               /* defeat pause */
 		f.dir=curdirnum=batdn_dir[i];
@@ -691,7 +691,7 @@ void sbbs_t::batch_download(int xfrprot)
 		if(xfrprot==-1 || checkprotresult(cfg.prot[xfrprot],0,&f)) {
 			if(cfg.dir[f.dir]->misc&DIR_TFREE && cur_cps)
 				starttime+=f.size/(ulong)cur_cps;
-			downloadfile(&f);
+			downloadedfile(&f);
 			closefile(&f);
 			batdn_total--;
 			for(j=i;j<batdn_total;j++) {
@@ -705,6 +705,7 @@ void sbbs_t::batch_download(int xfrprot)
 		}
 		else i++; 
 	}
+#endif
 }
 
 /****************************************************************************/
@@ -717,7 +718,7 @@ void sbbs_t::batch_add_list(char *list)
 	uint	i,j,k;
     FILE *	stream;
 	file_t	f;
-
+#if 0 // TODO
 	if((stream=fnopen(&file,list,O_RDONLY))!=NULL) {
 		bputs(text[SearchingAllLibs]);
 		while(!feof(stream)) {
@@ -755,6 +756,7 @@ void sbbs_t::batch_add_list(char *list)
 		remove(list);
 		CRLF; 
 	}
+#endif
 }
 /****************************************************************************/
 void sbbs_t::batch_create_list()
@@ -776,62 +778,77 @@ void sbbs_t::batch_create_list()
 /**************************************************************************/
 /* Add file 'f' to batch download queue. Return 1 if successful, 0 if not */
 /**************************************************************************/
-bool sbbs_t::addtobatdl(file_t* f)
+bool sbbs_t::addtobatdl(smbfile_t* f)
 {
     char	str[256],tmp2[256];
 	char 	tmp[512];
     uint	i;
-	ulong	totalcdt, totalsize, totaltime;
+	off_t	totalcost, totalsize;
+	ulong	totaltime;
 
 	if(useron.rest&FLAG('D')) {
 		bputs(text[R_Download]);
-		return(false); 
-	}
-	for(i=0;i<batdn_total;i++) {
-		if(!strcmp(batdn_name[i],f->name) && f->dir==batdn_dir[i]) {
-			bprintf(text[FileAlreadyInQueue],f->name);
-			return(false); 
-		} 
-	}
-	if(f->size<=0 /* !fexist(str) */) {
-		bprintf(text[CantAddToQueue],f->name);
-		bprintf(text[FileIsNotOnline],f->name);
-		return(false); 
-	}
-	if(batdn_total>=cfg.max_batdn) {
-		bprintf(text[CantAddToQueue],f->name);
-		bputs(text[BatchDlQueueIsFull]);
-		return(false); 
-	}
-	for(i=0,totalcdt=0;i<batdn_total;i++)
-		if(!is_download_free(&cfg,batdn_dir[i],&useron,&client))
-			totalcdt+=batdn_cdt[i];
-	if(cfg.dir[f->dir]->misc&DIR_FREE) f->cdt=0L;
-	if(!is_download_free(&cfg,f->dir,&useron,&client))
-		totalcdt+=f->cdt;
-	if(totalcdt>useron.cdt+useron.freecdt) {
-		bprintf(text[CantAddToQueue],f->name);
-		bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt+useron.freecdt,tmp));
-		return(false); 
+		return false;
 	}
 	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
-		bprintf(text[CantAddToQueue],f->name);
+		bprintf(text[CantAddToQueue],f->filename);
 		bputs(text[CantDownloadFromDir]);
-		return(false); 
+		return false;
 	}
-	for(i=0,totalsize=totaltime=0;i<batdn_total;i++) {
-		totalsize+=batdn_size[i];
-		if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-			totaltime+=batdn_size[i]/(ulong)cur_cps; 
+	if(getfilesize(&cfg, f) < 1) {
+		bprintf(text[CantAddToQueue], f->filename);
+		bprintf(text[FileIsNotOnline], f->filename);
+		return false;
 	}
-	totalsize+=f->size;
+
+	str_list_t ini = batchdn_list_read(&cfg, useron.number);
+	if(iniSectionExists(ini, f->filename)) {
+		bprintf(text[FileAlreadyInQueue], f->filename);
+		iniFreeStringList(ini);
+		return false;
+	}
+	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
+	if(strListCount(filenames) >= cfg.max_batdn) {
+		bprintf(text[CantAddToQueue] ,f->filename);
+		bputs(text[BatchDlQueueIsFull]);
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+		return false;
+	}
+	totalcost = 0;
+	totaltime = 0;
+	totalsize = 0;
+	for(i=0; filenames[i] != NULL; i++) {
+		uint dirnum = iniGetInteger(ini, filenames[i], "dir", 0);
+		if(!is_download_free(&cfg, dirnum, &useron, &client))
+			totalcost += iniGetLongInt(ini, filenames[i], "cost", 0);
+		int64_t fsize = iniGetBytes(ini, filenames[i], "size", 1, 0);
+		totalsize += fsize;
+		if(!(cfg.dir[dirnum]->misc&DIR_TFREE) && cur_cps)
+			totaltime += fsize/(ulong)cur_cps; 
+	}
+	if(cfg.dir[f->dir]->misc&DIR_FREE)
+		f->cost=0L;
+	if(!is_download_free(&cfg,f->dir,&useron,&client))
+		totalcost += f->cost;
+	if(totalcost > useron.cdt+useron.freecdt) {
+		bprintf(text[CantAddToQueue],f->filename);
+		bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt+useron.freecdt,tmp));
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+		return false; 
+	}
+	totalsize += f->size;
 	if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && cur_cps)
-		totaltime+=f->size/(ulong)cur_cps;
-	if(!(useron.exempt&FLAG('T')) && totaltime>timeleft) {
-		bprintf(text[CantAddToQueue],f->name);
+		totaltime += f->size/(ulong)cur_cps;
+	if(!(useron.exempt&FLAG('T')) && totaltime > timeleft) {
+		bprintf(text[CantAddToQueue],f->filename);
 		bputs(text[NotEnoughTimeToDl]);
-		return(false); 
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+		return false; 
 	}
+#if 0
 	strcpy(batdn_name[batdn_total],f->name);
 	batdn_dir[batdn_total]=f->dir;
 	batdn_cdt[batdn_total]=f->cdt;
@@ -840,9 +857,16 @@ bool sbbs_t::addtobatdl(file_t* f)
 	batdn_alt[batdn_total]=f->altpath;
 	batdn_total++;
 	openfile(f);
+#endif
 	bprintf(text[FileAddedToBatDlQueue]
-		,f->name,batdn_total,cfg.max_batdn,ultoac(totalcdt,tmp)
+		,f->filename,batdn_total,cfg.max_batdn,ultoac(totalcost,tmp)
 		,ultoac(totalsize,tmp2)
 		,sectostr(totalsize/(ulong)cur_cps,str));
 	return(true);
+}
+
+bool sbbs_t::clearbatdl(void)
+{
+	// TODO
+	return false;
 }

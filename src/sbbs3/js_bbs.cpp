@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "bbs" Object */
 
-/* $Id$ */
+/* $Id: js_bbs.cpp,v 1.172 2018/10/22 04:18:05 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -690,7 +690,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_file->name;
+				p=sbbs->current_file->filename;
 			break;
 		case BBS_PROP_FILE_DESC:
 			if(sbbs->current_file==NULL)
@@ -702,43 +702,43 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_file->uler;
+				p=sbbs->current_file->from;
 			break;
 		case BBS_PROP_FILE_DATE:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->date;
+				val=(uint32)sbbs->current_file->date;
 			break;
 		case BBS_PROP_FILE_DATE_ULED:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->dateuled;
+				val=sbbs->current_file->hdr.when_imported.time;
 			break;
 		case BBS_PROP_FILE_DATE_DLED:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->datedled;
+				val=sbbs->current_file->hdr.last_downloaded;
 			break;
 		case BBS_PROP_FILE_TIMES_DLED:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->timesdled;
+				val=sbbs->current_file->hdr.times_downloaded;
 			break;
 		case BBS_PROP_FILE_SIZE:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
-			else
-				val=sbbs->current_file->size;
+			else // TODO: fix for 64-bit file sizes
+				val=(uint32)sbbs->current_file->size;
 			break;
 		case BBS_PROP_FILE_CREDITS:
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->cdt;
+				val=sbbs->current_file->cost;
 			break;
 		case BBS_PROP_FILE_DIR:
 			if(sbbs->current_file==NULL)
@@ -750,7 +750,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=sbbs->current_file->misc;
+				val=sbbs->current_file->hdr.attr;
 			break;
 
 		case BBS_PROP_BATCH_UPLOAD_TOTAL:

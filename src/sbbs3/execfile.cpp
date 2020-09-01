@@ -1,8 +1,6 @@
-/* execfile.cpp */
-
 /* Synchronet file transfer-related command shell/module routines */
 
-/* $Id$ */
+/* $Id: execfile.cpp,v 1.14 2018/01/07 23:00:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -43,7 +41,7 @@ int sbbs_t::exec_file(csi_t *csi)
 	char	str[256],ch;
 	int		s;
 	uint 	i,j,x,y;
-	file_t	f;
+	smbfile_t	f;
 
 	switch(*(csi->ip++)) {
 
@@ -314,9 +312,9 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[R_Download]);
 				return(0); 
 			}
-			padfname(csi->str,str);
-			strupr(str);
-			if(!listfileinfo(usrdir[curlib][curdir[curlib]],str,FI_DOWNLOAD)) {
+//			padfname(csi->str,str);
+//			strupr(str);
+			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_DOWNLOAD)) {
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++)
 					if(i!=curdir[curlib] &&
@@ -364,45 +362,27 @@ int sbbs_t::exec_file(csi_t *csi)
 			csi->logic=LOGIC_FALSE;
 			if(!csi->str[0])
 				return(0);
-			padfname(csi->str,f.name);
 			for(x=y=0;x<usrlibs;x++) {
 				for(y=0;y<usrdirs[x];y++)
-					if(findfile(&cfg,usrdir[x][y],f.name))
-						break;
-				if(y<usrdirs[x])
-					break; 
+					if(loadfile(&cfg, usrdir[x][y], csi->str, &f)) {
+						addtobatdl(&f);
+						freefile(&f);
+						csi->logic=LOGIC_TRUE;
+						return 0;
+					}
 			}
-			if(x>=usrlibs)
-				return(0);
-			f.dir=usrdir[x][y];
-			getfileixb(&cfg,&f);
-			f.size=0;
-			getfiledat(&cfg,&f);
-			addtobatdl(&f);
-			csi->logic=LOGIC_TRUE;
 			return(0);
+
 		case CS_FILE_BATCH_CLEAR:
-			if(!batdn_total) {
-				csi->logic=LOGIC_FALSE;
-				return(0); 
-			}
-			csi->logic=LOGIC_TRUE;
-			for(i=0;i<batdn_total;i++) {
-				f.dir=batdn_dir[i];
-				f.datoffset=batdn_offset[i];
-				f.size=batdn_size[i];
-				strcpy(f.name,batdn_name[i]);
-				closefile(&f); 
-			}
-			batdn_total=0;
-			return(0);
+			csi->logic = clearbatdl() ? LOGIC_TRUE : LOGIC_FALSE;
+			return 0; 
 
 		case CS_FILE_VIEW:
 			if(!usrlibs) return(0);
-			padfname(csi->str,str);
-			strupr(str);
+//			padfname(csi->str,str);
+//			strupr(str);
 			csi->logic=LOGIC_TRUE;
-			if(listfiles(usrdir[curlib][curdir[curlib]],str,0,FL_VIEW))
+			if(listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, FL_VIEW))
 				return(0);
 			bputs(text[SearchingAllDirs]);
 			for(i=0;i<usrdirs[curlib];i++) {
@@ -429,9 +409,9 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[EmptyDir]);
 				return(0); 
 			}
-			padfname(csi->str,str);
-			strupr(str);
-			s=listfiles(usrdir[curlib][curdir[curlib]],str,0,0);
+//			padfname(csi->str,str);
+//			strupr(str);
+			s=listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, 0);
 			if(s>1) {
 				bprintf(text[NFilesListed],s); 
 			}
@@ -439,9 +419,9 @@ int sbbs_t::exec_file(csi_t *csi)
 			return(0);
 		case CS_FILE_LIST_EXTENDED: /* Extended Information on files */
 			if(!usrlibs) return(0);
-			padfname(csi->str,str);
-			strupr(str);
-			if(!listfileinfo(usrdir[curlib][curdir[curlib]],str,FI_INFO)) {
+//			padfname(csi->str,str);
+//			strupr(str);
+			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_INFO)) {
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++)
 					if(i!=curdir[curlib] && (s=listfileinfo(usrdir[curlib][i]
@@ -491,9 +471,9 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[R_RemoveFiles]);
 				return(0); 
 			}
-			padfname(csi->str,str);
-			strupr(str);
-			if(!listfileinfo(usrdir[curlib][curdir[curlib]],str,FI_REMOVE)) {
+//			padfname(csi->str,str);
+//			strupr(str);
+			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_REMOVE)) {
 				if(cfg.user_dir!=INVALID_DIR
 					&& cfg.user_dir!=usrdir[curlib][curdir[curlib]])
 					if((s=listfileinfo(cfg.user_dir,str,FI_REMOVE))!=0)

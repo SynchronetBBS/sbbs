@@ -1,8 +1,6 @@
-/* filedat.c */
-
 /* Synchronet file database-related exported functions */
 
-/* $Id$ */
+/* $Id: filedat.c,v 1.39 2018/03/17 02:23:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -643,18 +641,36 @@ BOOL DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname)
 	return(TRUE);
 }
 
-void DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
+int DLLCALL openextdesc(scfg_t* cfg, uint dirnum)
 {
 	char str[MAX_PATH+1];
+	SAFEPRINTF2(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
+	return nopen(str,O_RDONLY);
+}
+
+void DLLCALL closeextdesc(int file)
+{
+	if(file >= 0)
+		close(file);
+}
+
+void DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
+{
 	int file;
 
 	memset(ext,0,F_EXBSIZE+1);
-	SAFEPRINTF2(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
-	if((file=nopen(str,O_RDONLY))==-1)
+	if((file=openextdesc(cfg, dirnum))==-1)
 		return;
 	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
 	read(file,ext,F_EXBSIZE);
 	close(file);
+}
+
+// fast (operates on open .exb file)
+void DLLCALL fgetextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext, int file)
+{
+	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
+	read(file,ext,F_EXBSIZE);
 }
 
 void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
@@ -740,3 +756,296 @@ char* DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path)
 	fexistcase(path);
 	return(path);
 }
+
+// This function called without opening the filebase (for fast new-scans)
+BOOL DLLCALL newfiles(smb_t* smb, time_t t)
+{
+	char str[MAX_PATH + 1];
+	SAFEPRINTF(str, "%s.sid", smb->file);
+	return fdate(str) > t;
+}
+
+smbfile_t* DLLCALL loadfiles(smb_t* smb, const char* filespec, time_t t, size_t* count)
+{
+	*count = 0;
+
+	long start = 0;	
+	if(t) {
+		idxrec_t idx;
+		start = smb_getmsgidx_by_time(smb, &idx, t);
+		if(start < 0)
+			return NULL;
+	}
+
+	smbfile_t* file_list = malloc(smb->status.total_files * sizeof(smbfile_t));
+	if(file_list == NULL)
+		return NULL;
+	memset(file_list, 0, smb->status.total_files * sizeof(smbfile_t));
+
+	fseek(smb->sid_fp, start * sizeof(smbfileidxrec_t), SEEK_SET);
+	while(!feof(smb->sid_fp)) {
+		smbfileidxrec_t fidx;
+		char filename[sizeof(fidx.filename) + 1];
+
+		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
+			break;
+
+		if(fidx.idx.number==0)	/* invalid message number, ignore */
+			continue;
+
+		if(filespec != NULL) {
+			SAFECOPY(filename, fidx.filename);
+			if(!wildmatchi(filename, filespec, /* path: */FALSE))
+				continue;
+		}
+		smbfile_t file = { .idx = fidx.idx };
+		int result = smb_getmsghdr(smb, &file);
+		if(result != SMB_SUCCESS)
+			break;
+		file.extdesc = smb_getmsgtxt(smb, &file, GETMSGTXT_ALL);
+		file.dir = smb->dirnum;
+		file_list[*count] = file;
+		(*count)++;
+	}
+
+	return file_list;
+}
+
+static int filename_compare_a(const void* v1, const void* v2)
+{
+	smbfile_t* f1 = (smbfile_t*)v1;
+	smbfile_t* f2 = (smbfile_t*)v2;
+
+	return stricmp(f1->filename, f2->filename);
+}
+
+static int filename_compare_ac(const void* v1, const void* v2)
+{
+	smbfile_t* f1 = (smbfile_t*)v1;
+	smbfile_t* f2 = (smbfile_t*)v2;
+
+	return strcmp(f1->filename, f2->filename);
+}
+
+static int filename_compare_d(const void* v1, const void* v2)
+{
+	smbfile_t* f1 = (smbfile_t*)v1;
+	smbfile_t* f2 = (smbfile_t*)v2;
+
+	return stricmp(f2->filename, f1->filename);
+}
+
+static int filename_compare_dc(const void* v1, const void* v2)
+{
+	smbfile_t* f1 = (smbfile_t*)v1;
+	smbfile_t* f2 = (smbfile_t*)v2;
+
+	return strcmp(f2->filename, f1->filename);
+}
+
+static int filedate_compare_a(const void* v1, const void* v2)
+{
+	smbfile_t* f1 = (smbfile_t*)v1;
+	smbfile_t* f2 = (smbfile_t*)v2;
+
+	return f1->hdr.when_imported.time - f2->hdr.when_imported.time;
+}
+
+static int filedate_compare_d(const void* v1, const void* v2)
+{
+	smbfile_t* f1 = (smbfile_t*)v1;
+	smbfile_t* f2 = (smbfile_t*)v2;
+
+	return f2->hdr.when_imported.time - f1->hdr.when_imported.time;
+}
+
+void DLLCALL sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
+{
+	switch(order) {
+		case SORT_NAME_A:
+			qsort(filelist, count, sizeof(*filelist), filename_compare_a);
+			break;
+		case SORT_NAME_D:
+			qsort(filelist, count, sizeof(*filelist), filename_compare_d);
+			break;
+		case SORT_NAME_AC:
+			qsort(filelist, count, sizeof(*filelist), filename_compare_ac);
+			break;
+		case SORT_NAME_DC:
+			qsort(filelist, count, sizeof(*filelist), filename_compare_dc);
+			break;
+		case SORT_DATE_A:
+			qsort(filelist, count, sizeof(*filelist), filedate_compare_a);
+			break;
+		case SORT_DATE_D:
+			qsort(filelist, count, sizeof(*filelist), filedate_compare_d);
+			break; 
+	}
+}
+
+void DLLCALL freefile(smbfile_t* file)
+{
+	smb_freemsgmem(file);
+}
+
+
+void DLLCALL freefiles(smbfile_t* filelist, size_t count)
+{
+	for(size_t i = 0; i < count; i++)
+		freefile(&filelist[i]);
+	free(filelist);
+}
+
+BOOL DLLCALL findfileidx(smb_t* smb, const char* filename, idxrec_t* idx)
+{
+	rewind(smb->sid_fp);
+	while(!feof(smb->sid_fp)) {
+		smbfileidxrec_t fidx;
+
+		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
+			break;
+
+		if(strnicmp(fidx.filename, filename, sizeof(fidx.filename)) == 0) {
+			if(idx != NULL)
+				*idx = fidx.idx;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL DLLCALL file_exists(smb_t* smb, const char* filename)
+{
+	return findfileidx(smb, filename, NULL);
+}
+
+BOOL DLLCALL file_exists_in_dir(scfg_t* cfg, uint dirnum, const char* filename)
+{
+	smb_t smb;
+
+	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+		return FALSE;
+
+	BOOL result = file_exists(&smb, filename);
+	smb_close(&smb);
+	return result;
+}
+
+BOOL DLLCALL loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file)
+{
+	smb_t smb;
+
+	int result = smb_open_dir(cfg, &smb, dirnum);
+	if(result != SMB_SUCCESS)
+		return FALSE;
+
+	if(!findfileidx(&smb, filename, &file->idx)) {
+		smb_close(&smb);
+		return FALSE;
+	}
+	result = smb_getmsghdr(&smb, file);
+	if(result != SMB_SUCCESS) {
+		smb_close(&smb);
+		return FALSE;
+	}
+		
+	file->extdesc = smb_getmsgtxt(&smb, file, GETMSGTXT_ALL);
+	file->dir = dirnum;
+	smb_close(&smb);
+	return TRUE;
+}
+
+BOOL DLLCALL removefile(smb_t* smb, smbfile_t* file)
+{
+	file->hdr.attr |= MSG_DELETE;
+	return smb_updatemsg(smb, file) == SMB_SUCCESS;
+}
+
+/****************************************************************************/
+/* Returns full (case-corrected) path to specified file						*/
+/****************************************************************************/
+char* DLLCALL getfullfilepath(scfg_t* cfg, smbfile_t* f, char* path)
+{
+	if(f->dir >= cfg->total_dirs)
+		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, f->filename);
+	else
+		safe_snprintf(path, MAX_PATH, "%s%s", f->hdr.altpath > 0 && f->hdr.altpath <= cfg->altpaths 
+			? cfg->altpath[f->hdr.altpath-1] : cfg->dir[f->dir]->path
+			,f->filename);
+	fexistcase(path);
+	return path;
+}
+
+off_t DLLCALL getfilesize(scfg_t* cfg, smbfile_t* f)
+{
+	char fpath[MAX_PATH + 1];
+	if(f->size > 0)
+		return f->size;
+	f->size = flength(getfullfilepath(cfg, f, fpath));
+	return f->size;
+}
+
+time_t DLLCALL getfiledate(scfg_t* cfg, smbfile_t* f)
+{
+	char fpath[MAX_PATH + 1];
+	if(f->date > 0)
+		return f->date;
+	f->date = fdate(getfullfilepath(cfg, f, fpath));
+	return f->date;
+}
+
+ulong DLLCALL gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
+{
+	if(getfilesize(cfg, f) < 1)
+		return 0;
+	if(f->size <= (off_t)rate_cps)
+		return 1;
+	return f->size / rate_cps;
+}
+
+BOOL addfile(smb_t* smb, smbfile_t* f)
+{
+	return smb_addfile(smb, f, SMB_SELFPACK, f->extdesc) == SMB_SUCCESS;
+}
+
+BOOL renewfile(smb_t* smb, smbfile_t* f)
+{
+	if(!removefile(smb, f))
+		return FALSE;
+	f->hdr.when_imported.time = time32(NULL);
+	return addfile(smb, f) == SMB_SUCCESS;
+}
+
+BOOL DLLCALL addfile_to_dir(scfg_t* cfg, uint dirnum, smbfile_t* file)
+{
+	smb_t smb;
+
+	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+		return FALSE;
+
+	BOOL result = addfile(&smb, file);
+	smb_close(&smb);
+
+	return result;
+}
+
+/* 'size' does not include the NUL-terminator */
+char* DLLCALL format_filename(const char* fname, char* buf, size_t size, BOOL pad)
+{
+	size_t fnlen = strlen(fname);
+	char* ext = getfext(fname);
+	if(ext != NULL) {
+		size_t extlen = strlen(ext);
+		if(extlen >= size)
+			safe_snprintf(buf, size + 1, "%s", fname);
+		else {
+			fnlen -= extlen;
+			if(fnlen > size - extlen)
+				fnlen = size - extlen;
+			safe_snprintf(buf, size + 1, "%-*.*s%s", pad ? (size - extlen) : 0, fnlen, fname, ext);
+		}
+	} else	/* no extension */
+		snprintf(buf, size + 1, "%s", fname);
+	return buf;
+}
+

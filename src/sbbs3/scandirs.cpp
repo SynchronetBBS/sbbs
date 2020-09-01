@@ -1,6 +1,6 @@
 /* Synchronet file database scanning routines */
 
-/* $Id$ */
+/* $Id: scandirs.cpp,v 1.8 2018/10/22 04:18:06 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -58,9 +58,9 @@ void sbbs_t::scandirs(long mode)
 			str[0]=0; 
 		}
 		else if(mode==FL_NO_HDR) {		/* Search for a string */
-			if(!getfilespec(tmp))
+			if(!getfilespec(str))
 				return;
-			padfname(tmp,str); 
+//			padfname(tmp,str); 
 		}
 		else if(mode==FL_FINDDESC) {	/* Find text in description */
 			if(text[SearchExtendedQ][0] && !noyes(text[SearchExtendedQ]))
@@ -127,9 +127,9 @@ void sbbs_t::scanalldirs(long mode)
 		str[0]=0; 
 	}
 	else if(mode==FL_NO_HDR) {		/* Search for a string */
-		if(!getfilespec(tmp))
+		if(!getfilespec(str))
 			return;
-		padfname(tmp,str); 
+//		padfname(tmp,str); 
 	}
 	else if(mode==FL_FINDDESC) {	/* Find text in description */
 		if(text[SearchExtendedQ][0] && !noyes(text[SearchExtendedQ]))

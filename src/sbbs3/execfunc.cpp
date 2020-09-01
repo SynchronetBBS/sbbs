@@ -2,7 +2,7 @@
 
 /* Hi-level command shell/module routines (functions) */
 
-/* $Id$ */
+/* $Id: execfunc.cpp,v 1.44 2018/07/29 05:33:46 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -404,9 +404,9 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_FILE_FIND_OFFLINE:
 		case CS_FILE_FIND_OLD_UPLOADS:
 			if(!usrlibs) return(0);
-			if(!getfilespec(tmp))
+			if(!getfilespec(str))
 				return(0);
-			padfname(tmp,str);
+//			padfname(tmp,str);
 			k=0;
 			bputs("\r\nSearching ");
 			if(!stricmp(csi->str,"ALL"))

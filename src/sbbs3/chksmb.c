@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) validity checker */
 
-/* $Id$ */
+/* $Id: chksmb.c,v 1.64 2018/10/05 08:24:46 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 	char		revision[16];
 	time_t		now=time(NULL);
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.64 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nCHKSMB v2.30-%s (rev %s) SMBLIB %s - Check Synchronet Message Base\n"
 		,PLATFORM_DESC,revision,smb_lib_ver());
@@ -287,11 +287,11 @@ int main(int argc, char **argv)
 		continue; 
 	}
 
-	if((shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong)) {
-		if((number=malloc(((shd_hdrs/SHD_BLOCK_LEN)+2)*sizeof(ulong)))
+	if((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)) {
+		if((number=malloc(((shd_hdrs/SHD_BLOCK_LEN)+2)*sizeof(uint32_t)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
-				,(shd_hdrs/SHD_BLOCK_LEN)*sizeof(ulong));
+				,(shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t));
 			return(++errors); 
 		} 
 	}
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
 			hdrlenerr++; 
 		}
 
-		if(chk_msgids && msg.from_net.type == NET_NONE && msg.id == NULL) {
+		if(msg.hdr.type == SMB_MSG_TYPE_NORMAL && chk_msgids && msg.from_net.type == NET_NONE && msg.id == NULL) {
 			fprintf(stderr,"%sNo Message-ID\n",beep);
 			msgerr=TRUE;
 			if(extinfo)
@@ -432,7 +432,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if(!(smb.status.attr&SMB_EMAIL) && chkhash) {
+		if(!(smb.status.attr&(SMB_EMAIL|SMB_NOHASH)) && chkhash) {
 			/* Look-up the message hashes */
 			hashes=smb_msghashes(&msg,(uchar*)body,SMB_HASH_SOURCE_DUPE);
 			if(hashes!=NULL 
@@ -534,7 +534,7 @@ int main(int argc, char **argv)
 							,smb_subject_crc(msg.subj),msg.idx.subj);
 					subjcrc++; 
 				}
-				if(smb.status.attr&SMB_EMAIL 
+				if(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY)
 					&& (msg.from_ext!=NULL || msg.idx.from) 
 					&& (msg.from_ext==NULL || msg.idx.from!=atoi(msg.from_ext))) {
 					fprintf(stderr,"%sFrom extension mismatch\n",beep);
@@ -545,7 +545,7 @@ int main(int argc, char **argv)
 							,msg.from_ext,msg.idx.from);
 					fromcrc++; 
 				}
-				if(!(smb.status.attr&SMB_EMAIL) 
+				if(!(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY))
 					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.idx.from!=smb_name_crc(msg.from)) {
 					fprintf(stderr,"%sFrom CRC mismatch\n",beep);
@@ -556,7 +556,7 @@ int main(int argc, char **argv)
 							,smb_name_crc(msg.from),msg.idx.from);
 					fromcrc++; 
 				}
-				if(smb.status.attr&SMB_EMAIL 
+				if(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY)
 					&& (msg.to_ext!=NULL || msg.idx.to) 
 					&& (msg.to_ext==NULL || msg.idx.to!=atoi(msg.to_ext))) {
 					fprintf(stderr,"%sTo extension mismatch\n",beep);
@@ -567,7 +567,7 @@ int main(int argc, char **argv)
 							,msg.to_ext,msg.idx.to);
 					tocrc++; 
 				}
-				if(!(smb.status.attr&SMB_EMAIL) 
+				if(!(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY)) 
 					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
 					&& msg.to_ext==NULL && msg.idx.to!=smb_name_crc(msg.to)) {
 					fprintf(stderr,"%sTo CRC mismatch\n",beep);
@@ -760,7 +760,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"\r%79s\r100%%\n",""); 
 	}
 
-	total=filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
+	total=filelength(fileno(smb.sid_fp))/smb_idxreclen(&smb);
 
 	dupenum=dupeoff=misnumbered=idxzeronum=idxnumerr=idxofferr=idxerr=delidx=0;
 
@@ -768,19 +768,19 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"\nChecking %s Index\n\n",smb.file);
 
-	if((offset=(ulong *)malloc(total*sizeof(ulong)))==NULL) {
-		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
+	if((offset=(uint32_t *)malloc(total*sizeof(uint32_t)))==NULL) {
+		printf("Error allocating %lu bytes of memory\n",total*sizeof(uint32_t));
 		return(++errors); 
 	}
-	if((number=(ulong *)malloc(total*sizeof(ulong)))==NULL) {
-		printf("Error allocating %lu bytes of memory\n",total*sizeof(ulong));
+	if((number=(uint32_t *)malloc(total*sizeof(uint32_t)))==NULL) {
+		printf("Error allocating %lu bytes of memory\n",total*sizeof(uint32_t));
 		return(++errors); 
 	}
-	fseek(smb.sid_fp,0L,SEEK_SET);
 
 	for(l=0;l<total;l++) {
+		fseek(smb.sid_fp, l * smb_idxreclen(&smb), SEEK_SET);
 		fprintf(stderr,"\r%2lu%%  %5lu ",l ? (long)(100.0/((float)total/l)) : 0,l);
-		if(!fread(&idx,sizeof(idxrec_t),1,smb.sid_fp))
+		if(!fread(&idx,sizeof(idx),1,smb.sid_fp))
 			break;
 		fprintf(stderr,"#%-5"PRIu32" (%06"PRIX32") 1st Pass ",idx.number,idx.offset);
 		if(idx.attr&MSG_DELETE) {
@@ -991,11 +991,11 @@ int main(int argc, char **argv)
 			,subjcrc);
 	if(fromcrc)
 		printf("%-35.35s (!): %lu\n"
-			,smb.status.attr&SMB_EMAIL ? INDXERR "From Ext" : INDXERR "From CRCs"
+			,smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY) ? INDXERR "From Ext" : INDXERR "From CRCs"
 			,fromcrc);
 	if(tocrc)
 		printf("%-35.35s (!): %lu\n"
-			,smb.status.attr&SMB_EMAIL ? INDXERR "To Ext" : INDXERR "To CRCs"
+			,smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY) ? INDXERR "To Ext" : INDXERR "To CRCs"
 			,tocrc);
 	if(intransit)
 		printf("%-35.35s (?): %lu\n"
