@@ -1,0 +1,1194 @@
+@#ABDUL
+`.
+`.
+                    `8L.O.R.D. `!Athenas `2Armour Shoppe
+                  `%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-
+`.  `2You stroll into the shop and a pretty young woman is waiting 
+`.  `2behind the counter. The woman says...
+`.  `0"`2Welcome to `!Athenas `2Armour Shoppe!`0"
+`.  `0"`2What can we help you with?`0"
+`.  
+`.
+`.
+`.              `@(`%B`@)`9uy new armour
+`.              `@(`%S`@)`9ell old armour
+`.              `@(`%Y`@)`9our stats
+`.              `@(`%R`@)`9eturn to town
+
+@#ACCESSD
+`C`r0`7      `8˛
+        €`7‹`8‹     `4l `@e g e n d  `4o `@f  `4t `@h e  `4r `@e d  `4d `@r a g o n  `8‹`7‹`8‹
+       ‹ ﬂ‹`7ﬂ`r7`8‹ﬂ`r0‹                                               ﬂ`r7‹`r0`%ﬂ`r7`8‹ﬂ`r0`%‹`7‹`8‹
+       €   `4‹  `8ﬂ ˛          ‹`r7ﬂ‹`r0`7ﬂﬂﬂ`r7`%ﬂ€€`r0    `8€ﬂ`7ﬂﬂ`8ﬂ`r7‹`%‹`8ﬂ`r0ﬂ`7ﬂﬂ`8ﬂ‹     ‹`7‹`%‹‹‹`7‹`r7`8±`r4`@‹`r0`4€ `8ﬂ`r7‹`r0€±
+       € ± `r7`@ﬂ`r4‹`r0`8€            €ﬂ `4‹ `8‹`r7‹`r0ﬂ `r7`%±`r0  `8± `r7±`r0 `r4`@‹‹`r7`8ﬂ`r0 ﬂ`7ﬂ`r7`8ﬂ`r0`4ﬂ`r4`@ﬂ‹`r0`4‹   `r7`8ﬂ‹`r0ﬂ ‹`r7ﬂ`r0`7ﬂ`8ﬂ`r7  `@ﬂ`r0
+       `8€ € `r7`@≤≤`8±`r0 ±   ˛     `r7±`r0 `r4`@‹`r0`4ﬂ `8‹   ±`r7‹`r0  €€`r7 `r0 `r7  `%±`r0 `8± ±`r7ﬂ`r0 `r7`@≤`r4€`r0`8± ±ﬂ`4‹ﬂ`8‹ﬂ   `r7`%±  `r0 `8±
+       ≤ `r7±`r0 `r4`@±±`r7 `r0 `8€‹ﬂ   ‹`r7ﬂ`r0‹`r7ﬂ `r4`@‹`r7≤`r0 `8€±   € `4‹`r4`@‹`r7`8±`r0 `r7`%€`r0 `r7`@±±`%€`r0 `8€  `r7`%€`r0 `r4`@±±`r0`8€ €`r4`@‹`r7ﬂ`r0 `r7`8±`r0  ± `r7`%€`@±±`r0 `8€
+       ± `r7 `r0 `r4`@∞∞`r7`%±`r0   `8‹‹`r7ﬂ`r0ﬂﬂ `r7 `r0ﬂ`r7`%±`r4`@€€`r0 `r7`8±`r0  ∞ `r7±`r0 `r7`@ﬂ `r0`7€`8ﬂ`r7`%€`r0 `r4`@€€`r7`%€`r0 `8€  `r7`%€`r0 `4€€`r7`8±`r0 `r7±  `r0 `r7 `r0  € `r7`%€`r4`@€€`r0 `r7`8±`r0
+       ∞ `r7`%±`r0 `4€€`r7`%€`r0  `8ﬂﬂﬂ‹ `r4`@‹`r0 `r7`%±`r0`8€`r7`%€`r4`@±±`r0 `r7 `r0  `8± `r7 `r0 `r7`@±±`%±`r0 `r7€`r0 `r4`@±±`r7`%€`r0 `8€  `r7`%€`r0 `4±±`r7`%‹`r0 `r7‹`@±±`r0 `r7`%±`r0  `8€ `r7`%€`r4`@±±`r0 `r7 `r0
+         `r7`%€`r0 `4±±`r7`%€`r0  `8‹ € `4‹`r7`@≤`r0 `r7`%€`r0`8‹`r7`%€`r0`4€€ `r7 `r0  `8≤ `r7`%±`r0 `r4`@€€`r7`%€`r0 `r7€`r0 `4€€`r7`%€`r0 `8€  `r7`%ﬂ`r0   `r7ﬂ`r0 `r7€`r4`@€€`r0 `r7`%€`r0  `8€ `r7`%€`r0`4€€ `r7`%±`r0       `4˛
+         `r7`%€`r0   `r7€`r0`8± ± `r7±`r0 `r4`@±±`r0 `r7`%€`r0 `r7€`r0`4±± `r7 `r0  `8€ `r7`%€`r0 `r4`@±±`r7`%€`r0 `r7€`r0 `4±±`r7`%€`r0 `8ﬂ  `r7±`r0`7‹‹‹`r7`8±`r0 `r7`%±`r4`@±±`r0 `r7`%€`r0  `8€ `r7`%€`r0`4±± `r7`%€`r0     `4‹
+  ∞∞     `r7`%€`r0   `r7`8‹ﬂ`r0   `r7`%‹`r0 `4±± `r7`%€`r0 `r7€`r0   `r7 `r0  `8€ `r7`%€`r0 `4€€`r7`%€`r0 `r7€`r0   `r7±`r0 `8ﬂ ∞≤`r7≤≤≤`r0≤∞`r7‹`r0`4€€ `r7`%±`r0  `8€ `r7`%€`r0   `r7€`r0 `4‹‹€€
+  `r4 `@‹`r0`4‹  `r4`@‹`r0 `r7`%€`r0   `8±`r7`%ﬂ`8ﬂ`r0‹‹`r7`%ﬂ`r0   `8‹`r7‹`r0 `r7`%ﬂ`r0   `r7 `r0`8± ﬂ `r7‹`r0 `4±±`r7`%€`r0 `r7€`r0   `r7 `r0   `8∞∞∞∞∞∞∞±`4±± `r7`8‹`r0± € `r7`%€`r0   `r7€`r0 `4€€€€€‹‹ﬂ
+  ± ﬂ  `r4`@±`r0 `r7`%€`r0 `4∞∞  `8ﬂ`r7‹`%‹`r0`8ﬂ‹`7‹`r7`8€`r0ﬂ  ﬂ`r7ﬂ`r0‹ ﬂ€`r7ﬂ`r0‹‹ ‹  `r7`%€`r0`8‹`r7`%±`r0   `r7`8±`r0           ‹   ﬂ‹ﬂ `r7`%€`r0   `r7‹`r0 `4€`r4`@±±`r0`4€ﬂ‹€‹
+   €  ±ﬂ `r7`%ﬂ`r0  `8‹`7‹`8€`7ﬂﬂﬂﬂ`8ﬂ  `4‹€‹  `7ﬂﬂ`r7`8ﬂ`r0`7‹`8€`r7 `%€€ `r0`7‹‹`r7`%ﬂ`r0 `r7`8‹`r0‹‹ €    `4±±±     `8ﬂ€‹‹ﬂ`r7‹ﬂ`%ﬂ`r0`4∞∞ `r7`8‹`r0± `4€`r4`@€`r0`4€€€ﬂ€
+  ﬂ   € `r7`8€‹`r0`7ﬂ`8ﬂ   `4‹‹‹‹€€`r4`@‹`r0`4€  ﬂ€‹‹‹‹                   €€€        `8ﬂ`7ﬂﬂ`8ﬂ€`7‹‹`8‹€ `4€`r7`@€`r4‹`r0`4‹  €
+     `r4`@‹`r0 `8‹    `4€ﬂﬂ  ±`r4`@‹€ﬂ `r0`4€`r4`@‹`r0`4‹  ﬂ`@∞∞`4ﬂ  ‹€ﬂ€`r4`@€`r0`4€   ﬂ€`r4`@ﬂ‹‹`r0`4‹‹`r4 `r0±±±€ ±  ˛ ‹‹‹‹‹‹   `7ﬂ`8ﬂ‹ `r4`@ﬂ`r7€`r4‹`r0 `4±
+   ‹`r4`@‹`r0`4ﬂ     €  ‹`r4`@‹€`r0`4ﬂ`r4`@ﬂ`r0`4‹ ˛ ﬂ`r4`@ﬂ‹`r0`4‹    ‹€ﬂ  ‹`r4`@ﬂ€‹`r0`4‹   ›`r4`@€€± `r0   `4‹€€€ `8‹    `4ﬂﬂ‹‹‹€ﬂﬂ‹‹  `r4`@ﬂ`r7€`r4‹`r0
+  `r4‹€ﬂ`r0`4‹ﬂ   `r4 `r0‹`r4 `r0ﬂ€‹ﬂﬂ  `8‹‹  `4‹ﬂ`r4`@ﬂ‹`r0`4‹‹€ﬂ `8‹`r2ﬂ`r0‹ `4ﬂ‹`r4`@ﬂ€€‹‹€€ﬂ `r0  `4‹€€‹€  `r2`8±`r0`2€`r2`8ﬂ`r0`2‹‹`8‹    `4ﬂﬂﬂ€‹`@∞∞`4‹`r4`@ﬂ`r7€`r4‹`r0
+  `4ﬂﬂ  `8‹`2∞`8± `4ﬂ  ﬂ  `8‹‹`r2ﬂ`0‹ `r0`8€±  `4ﬂ‹`r4`@€`r0`4‹ﬂ `8±€`r2±`0±‹`8ﬂ`r0‹ `4ﬂ€ﬂ`r4`@ﬂﬂﬂ `r0`4€‹`@∞∞∞`4ﬂ€ﬂ  `8±`r2‹ `0ﬂ€`r0€`r2‹‹ `8±`r0€±     `4ﬂﬂﬂ`r4`@ﬂﬂ`r0
+                           `4ﬂ`r4`@ﬂ`r0`4±           ˛   ﬂﬂﬂﬂ  ﬂ
+
+         `7(`%c`7) Copyright `%2006 Gameport`7, developed by `%Michael Preslar
+                          `8ansi by: access denied
+@#ARTHUR
+`.
+`.
+                     `8L.O.R.D. `4King Kongs `@Weapon Shoppe
+                    `%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-`8=`%-
+`.                 
+`.   `2You slip into the shop and `4King Kong `2puts a woman down and  
+`.   `2walks up to you. `2"`4What `2do you want? I was very busy and now 
+`.   `2you interupt me! Buy something or I will make crab bait out of you! 
+`.   `5Well..."
+`.
+`.
+`.              `@(`%B`@)`9uy a new weapon
+`.              `@(`%S`@)`9ell old weapon
+`.              `@(`%Y`@)`9our stats
+`.              `@(`%R`@)`9eturn to town
+
+@#BANK
+`.
+                       `8L.O.R.D. `4Nottingham `@National Bank                                              `%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-`$=`%-
+  `2Entering the bank you notice a huge hole in the side of the bank vault.
+  `2Wondering if it's still safe to keep your money here you ask `9Twiggy@ `2if
+  `2you can:
+`.
+  `@(`%D`@)`9eposit Gold
+  `@(`%W`@)`9ithdraw Gold
+  `@(`%T`@)`9ransfer Gold to another player
+  `@(`%R`@)`9eturn to Town
+
+@#BARD
+`c`.                        `8L.O.R.D. `4Fire Dog `@the bard
+                      `4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-
+
+`.  `4Fire Dog `2eyes you as you sit down next to him.
+
+`.  `@(`%A`@)`9sk `4Fire Dog `9to sing you a song
+`.  `@(`%R`@)`9eturn to Bar
+@#BARDF
+`c`.                        `8L.O.R.D. `4Fire Dog `@the bard
+                      `4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-
+
+`.  `4Fire Dog `2eyes you as you sit down next to him.  You can't help
+`.  but notice that `4Fire Dog `2is a very handsome, very well built
+`.  individual.  You notice `%many `2other women watching him also.
+`. 
+`.  `@(`%A`@)`9sk `4Fire Dog `9to sing you a song
+`.  `@(`%F`@)`9lirt with `4Fire Dog
+`.  `@(`%R`@)`9eturn to Bar         
+`.
+@#BJTABLE
+`C`r2`7
+
+
+
+
+
+
+
+
+
+`r0`9’ÕÕÕÕÕÕÕÕÕÕÕÕ∏`r2                                                    `r0’ÕÕÕÕÕÕÕÕÕÕÕÕ∏`n≥            ≥`r2                                                    `r0≥            ≥`n≥            ≥`r2                                                    `r0≥            ≥`n≥            ≥`r2                                                    `r0≥            ≥`n≥            ≥`r2                                                    `r0≥            ≥`n≥            ≥`r2                                                  
+  `r0≥            ≥`n≥            ≥`r2                                                    `r0≥            ≥`n≥            ≥`r2                  `^’ÕÕÕÕÕÕÕÕÕÕÕÕÕ∏                   `r0`9≥            ≥`n≥            ≥`r2                  `^≥Bet:         ≥                   `r0`9≥            ≥`n≥            ≥`r2                  `^‘ÕÕÕÕÕÕÕÕÕÕÕÕÕæ                   `r0`9≥            ≥`n‘ÕÕÕÕÕÕÕÕÕÕÕÕæ`r2                                                    `r0‘ÕÕÕÕÕÕÕÕÕÕÕÕæ`n
+@#BT
+`c
+`.
+                         `8L.O.R.D. `3Morbius `@the bartender
+                     `1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-
+  `3Morbius `2escorts you into a back room. 
+  `0"I have heard yer name before kid..." 
+  `2"You are the one that will kill `4The Red Dragon `2right?
+  `2What can I do for you?"
+
+  `@(`%V`@)`5iolet
+  `@(`%G`@)`9ems
+  `@(`%B`@)`9ribe
+  `@(`%C`@)`9hange your name
+  `@(`%R`@)`9eturn to Bar
+
+@#BT1
+`c
+`.
+`.                       `8L.O.R.D. `3Morbius `@the bartender
+                     `1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-`9=`1-
+  `3Morbius `2escorts you into a back room. 
+  `0"I have heard your name before, my only advice is: Avoid Mayo at all
+  `0costs! `2I have heard `4The Red Dragon `2lives there."
+  `2"What do you need help with sire?"
+
+  `@(`%V`@)`5iolet
+  `@(`%G`@)`9ems
+  `@(`%B`@)`9ribe
+  `@(`%C`@)`9hange your name
+  `@(`%R`@)`9eturn to Bar
+  `@(`4D`@)`4ragon
+
+@#BT1F
+`.
+`.                       `8L.O.R.D. `3Morbius `9The Bartender
+`.                      `%<<<<<<<<<<<<<<<`1*`%>>>>>>>>>>>>>>>>
+`.
+  `3Morbius `2escorts you into a back room. 
+  `0"I have heard yer name before kid..." 
+  `2"You are the one that will kill `4The Red Dragon `2right?
+  `2What can I do for you?"
+`.
+`.  `@(`%S`@)`9ee `4Fire Dog `9The Bard
+`.  `@(`%G`@)`9ems
+`.  `@(`%B`@)`9ribe
+`.  `@(`%C`@)`9hange your name
+`.  `@(`%R`@)`9eturn to Bar
+`.  `@(`4D`@)`4ragon
+@#BTF
+
+                          `8L.O.R.D. `3Morbius `9The Bartender
+                         `%<<<<<<<<<<<<<<<`1*`%>>>>>>>>>>>>>>>>
+
+  `3Morbius `2escorts you into a back room. 
+  `0"I have heard yer name before kid..." 
+  `2"You are the one that will kill `4The Red Dragon `2right?
+  `2What can I do for you?"
+
+  `@(`%S`@)`9ee `4Fire Dog `9The Bard
+  `@(`%G`@)`9ems
+  `@(`%B`@)`9ribe
+  `@(`%C`@)`9hange your name
+  `@(`%R`@)`9eturn to Bar
+@#BUYARM
+`r0`7            `$‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹`6‹`$‹‹‹`6‹`$‹`6‹‹`$‹`6‹`$‹‹‹‹‹‹‹‹‹‹‹
+            `r7≤`r0ﬂ  `%The Legend of the Red Dragon - `$Armour List  ‹`r7≤`r0
+            `r7≤€`r0ﬂﬂﬂﬂﬂﬂﬂ`6ﬂ`$ﬂﬂﬂﬂ`6ﬂ`$ﬂﬂﬂ`6ﬂ`$ﬂﬂ`6ﬂ`$ﬂ`6ﬂﬂ`$ﬂ`6ﬂ`$ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`r7≤≤`r0
+            `r6€`r0    Armour                         Price        €
+            `r6€`r0  `61. Coat`8...................................`$200 €
+            `r6€`r0  `62. Heavy Coat`8...........................`$1,000 €
+            `r6€`r0  `63. Leather Vest`8.........................`$3,000 `r6≤`r0
+            `r6≤`r0  `64. Bronze Armour`8.......................`$10,000 `r6±`r0
+            `r6±`r0  `65. Iron Armour`8.........................`$30,000 `r6∞`r0
+            `6ﬂ  6. Graphite Armour`8....................`$100,000 `6ﬂ
+            ∞  7. Erdrick's Armour`8...................`$150,000 `6∞
+            ±  8. Armour of Death`8....................`$200,000 `6±
+            ≤  9. Able's Armour`8......................`$400,000 `6≤
+            € 10. Full Body Armour`8.................`$1,000,000 `6€
+            ﬂ 11. Blood Armour`8.....................`$4,000,000 `6€
+            € 12. Magic Protection`8................`$10,000,000 `6‹
+            € 13. Belar's Mail`8....................`$40,000,000 `6€
+            € 14. Golden Armour`8..................`$100,000,000 `6€
+            € 15. Armour Of Lore`8.................`$400,000,000 `r6∞`r0
+            `r6∞`r0`6€‹‹‹‹‹‹≤‹‹‹∞‹‹≤‹ ‹‹‹‹≤‹‹‹ ‹‹›‹‹‹‹≤‹‹∞ ‹‹‹‹≤‹‹‹‹€`r6`$∞`r0
+@#BUYWEP
+`r0`7              `9‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹`1‹`9‹‹‹‹`1‹`9‹`1‹‹`9‹`1‹`9‹‹‹‹‹‹‹‹‹‹
+              `r3≤`r0ﬂ  `%The Legend of the Red Dragon - `9Weapons List ‹`r3≤`r0
+              `r3≤`r1€`r0ﬂﬂﬂﬂ`1ﬂ`9ﬂﬂﬂ`1ﬂ`9ﬂﬂ`1ﬂ`9ﬂ`1ﬂﬂ`9ﬂ`1ﬂ`9ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`r3≤≤`r0
+              `r3€`r0  `3Weapons                           Price       `r1`9€`r0
+              `r1€`r0  1. Stick`1..................................`3200 `r1`9€`r0
+              `r1€`r0  2. Dagger`1...............................`31,000 `r1`9€`r0
+              `r1≤`r0  3. Short Sword`1..........................`33,000 `r1`9≤`r0
+              `r1±`r0  4. Long Sword`1..........................`310,000 `r1`9±`r0
+              `r1∞`r0  5. Huge Axe`1............................`330,000 `r1`9∞`r0
+              `1ﬂ  `96. Bone Cruncher`1......................`3100,000 `1ﬂ
+              ∞  `97. Twin Swords`1........................`3150,000 `1∞
+              ±  `98. Power Axe`1..........................`3200,000 `1±
+              ≤  `99. Able's Sword`1.......................`3400,000 `1≤
+              € `910. Wan's Weapon`1.....................`31,000,000 `1€
+              ﬂ `911. Spear Of Gold`1....................`34,000,000 `1€
+              € `912. Crystal Shard`1...................`310,000,000 `1‹
+              € `913. Niras's Teeth`1...................`340,000,000 `1€
+              € `914. Blood Sword`1....................`3100,000,000 `1€
+              € `915. Death Sword`1....................`3400,000,000 `r1`9∞`r0
+              `r1∞`r0`1€‹‹‹‹‹≤ ‹‹‹‹‹‹‹‹‹‹‹‹‹≤ ‹‹‹ ‹‹ ‹∞ ‹ ‹‹‹‹≤‹‹‹‹∞‹‹€`r1`9∞`r0
+@#CHANCE
+`c`%                           Talking To `0The Wizard
+                         `0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-`2=`0-
+`2  You seat yourself next to the `0The Wizard,
+`2  for some reason you like him.          
+`2 
+`2  `@(`%C`@)`9hange Profession
+`2  `@(`%L`@)`9earn About Your Enemies
+`2  `@(`%T`@)`9alk About Colors
+`2  `@(`%P`@)`9ractice The Art Of Color
+`2  `@(`%R`@)`9eturn 
+`2
+@#CLOAK
+`c`.                          `8L.O.R.D `%The `4Dark Lair `%Tavern       
+                         `4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-
+`. `2As you enter this place a chill runs down your back.
+`. `2You notice that this place has evil in it! It is totally isolated
+`. `2from the outside. You think you had better watch your back...
+`. `2You notice someone has etched something in the table you are sitting at.
+`. `2You decide to:
+`.
+`.  `@(`%C`@)`9onverse With The Warriors         `@(`%D`@)`9aily News
+`.  `@(`%E`@)`9xamine Etchings In Table          `@(`%Y`@)`9our Stats           
+`.  `@(`%T`@)`9alk With `0The Wizard               `@(`%G`@)`9amble With The Locals
+`.  `@(`%R`@)`9eturn To Forest
+`.
+`.
+  
+@#CREEPY
+`r0`7
+
+`8‹`r7≤`r0‹˛ `2‹`r2`0∞`r0`2‹‹ﬂﬂﬂ€ﬂﬂﬂﬂﬂﬂ€≤ﬂ‹‹‹‹‹`8ﬂﬂ≤ﬂﬂﬂ`r7≤≤`r0€≤≤ﬂ∞˛ﬂ`r7≤`r0€ﬂ‹ﬂ`2‹`r2`^±`r0`2‹ﬂ€ﬂ‹€‹`8ﬂ`r7≤≤`r0€≤ﬂ∞ﬂ `2‹‹`r2`^±±≤`r0`2ﬂ‹‹‹`8∞ﬂ≤ﬂ
+‹ﬂ∞`2‹`r2`0∞`r0`2ﬂ≤ﬂ `8€ﬂ  ‹ﬂ€ﬂ   `2±  `8‹ `2≤ ﬂﬂﬂﬂ≤ﬂ‹‹‹≤‹  €‹≤‹‹‹`r2`^∞±`r0`2ﬂﬂ  ‹ ﬂﬂ€‹`8ﬂﬂ‹≤ `2‹`r2`^∞`r0`2ﬂ   ∞   ≤ﬂ‹ `8‹`r7≤`r0‹`n›`2‹`r2`0≤±`r0       `%Legend of the Red Dragon `8- `%CREEPY EVENT        `r2`0∞`r0`2‹‹‹ﬂ ±        ﬁ  € `8ﬂ‹`n›`r2`0±±`r0  `8‹ﬂ‹≤ﬂ  ∞   ﬂﬂ˛  ∞  `2‹‹‹‹‹`8± `2‹˛ ‹‹ﬂﬂ≤ﬂﬂ  ∞  ﬂﬂ ≤ﬂﬂ  ﬂﬂ≤ ∞ ﬂﬂﬂﬂ ﬂﬂ≤ ˛‹‹ ﬁ  ›€`8∞˛`n `r2`0∞`r0 `2€≤‹ ‹‹‹‹ﬂ ﬂﬂ≤ﬂﬂﬂ˛                                                    ﬂﬂ≤‹‹€
+`r2`0±∞`r0`2‹ﬂﬂ   ≤   Your quest is interrupted by a strange wailing noise.          ﬂ€›
+`r2`0≤`r0`2›                                                                           ›≤
+`r2`0≤`r0           `2Closer inspection reveals the errie howl seems to be coming      ›±
+`r2`0∞`r0`2€          from a nearby cave.
+`r2`0∞`r0`2€                                                                            ≤
+›€‹                                  `0<`2MORE`0>                                 `2‹≤≤`8∞`n`2›€ ﬂﬂ‹‹‹                                       ‹‹‹‹‹‹‹                  ‹ ‹ﬂ ﬁ€
+`8∞`r2`0∞`r0 `8≤ﬂ∞`2≤ ﬂﬂﬂﬂﬂ˛`8‹  `2‹‹˛    ‹‹‹        ‹‹‹‹‹‹‹≤`r2`0∞`r0`2ﬂﬂﬂﬂﬂ≤€ﬂﬂ`r2`^∞∞±±`r0`2‹‹  ‹`r2`0±∞`r0`2‹‹‹‹‹ﬂﬂﬂ≤  ∞ €
+ﬂﬂ`r2`0∞`r0`2‹                       ﬂ€‹‹‹‹`r2`0∞`r0`2ﬂﬂﬂ`8‹‹‹‹`2ﬂ± `8ﬂ€≤ﬂ˛ ‹‹`r7≤`r0‹ `2ﬂ`r2`^±≤`r0`2ﬂ‹`r2`0∞`r0 `2≤ﬂﬂ`8‹ `r2`^∞`r0`2€‹  ±    `r2`^∞`r0
+`r7`8≤`r0‹`2ﬂ€€‹‹‹ `8ﬂ  `2€ `8€≤‹ ﬂ  `2‹‹‹‹ﬂﬂ≤ﬂ`8‹‹‹‹‹‹∞ﬂﬂ`r7≤`r0€≤ `2ﬂ`8‹‹∞‹`r7≤`r0‹ﬂﬂ€≤≤ﬂ∞`r2`^≤`r0   `2ﬂ`8‹∞ €`r7≤`r0 `2± ﬂ`r2`^±≤`r0`2‹  ‹`r2`^±∞`r0
+`8€€‹∞‹ `2ﬂ≤ﬂﬂﬂ€≤ﬂ‹‹‹ﬂ≤ﬂﬂ‹ﬂ `8‹`r7≤`r0€‹€`r7≤≤`r0€€€≤≤±‹  ‹€`r7≤≤`r0€≤‹ﬂ‹≤±‹ ‹≤ `2∞ `8≤‹ﬂ`r7≤`r0ﬂ ‹  `2›  ∞ﬂﬂ`r2`^≤≤±`r0`2ﬂ`8‹`r7≤`r0
+@#DEMON
+`r0`7                          ‹‹‹‹‹
+                      ‹‹€€€€`r7`%∞±≤`r0€€‹‹
+  `@L`4EGEND             `7€€`r7`^o`r0`7€`r7`%∞∞±±≤`r0€€€€€€
+  `@O`4F THE            `7€€`r7`^O`r0`7€€`r7`%∞±±≤`r0€€€€€€€€                 `7‹‹‹`%‹‹
+  `@R`4ED               `7€`r7`^o`r0`7€€`r7`%∞∞±≤`r0€€€€€€€€€                   `7ﬂ€`r7`%∞€€€`r0‹‹ `4‹
+  `@D`4RAGON v3.26a      `7ﬂ€€`r7`%∞±±≤€`r0€€€€€€€€ﬂ                     `7€`r7`%€€`r0ﬂﬂ`4‹`r4`@∞ `r0`4‹
+  by                 `7ﬂ`r7`%∞±±≤≤`r0€€€€€€€€ﬂ        ‹        ‹       `4‹‹`r4`@∞≤  ∞ `r0`4‹‹
+  Seth Robinson `7ﬁ       ﬂﬂ`r7`%≤`r0€€€€ﬂﬂ        `7‹`r7`%‹`r0ﬂ    `7‹‹`r7`%‹`r0ﬂﬂ   `7ﬂ€‹`%‹  `4ﬂ`r4`@∞±≤  `r0`4ﬂ`r4  `@∞ `r0`4‹
+                `7€                      ‹`r7`%‹`r0ﬂ   `7‹`r7`%‹‹€`r0ﬂ        `7ﬂ`r7`%∞€`r0‹  `4ﬂ`r4`@±≤  `r0 `r4∞ ∞ ∞`r0`4‹
+               `7€`r7`8∞`r0`7›                   ‹`r7`%±∞`r0ﬂ `7‹`r7`%‹‹€`r0ﬂ            `7ﬂ`r7`%±€€`r0‹ `4ﬂ`r4`@±∞≤ `r0`4‹ﬂ`r4`@∞≤∞∞±±`r0
+               `7€€                   `r7`%∞±€`r0ﬂ `7ﬂ`%ﬂ`r4ﬂ`r0`4‹‹‹‹`r4 `r0≤±∞   ‹‹‹‹ﬂ‹`r4`@∞`r0`4‹`r4`@±`r0`4‹`r4 `r0 ﬂ`r4`@±≤ €`r0 `r4≤≤∞±±€`r0
+              `7€`r7`8∞`r0                   `7€ﬂ`%ﬂ`4‹‹`r4 `r0ﬂﬂﬂ   ‹‹`r4 `r0ﬂ‹`r4 `r0ﬂﬂﬂ  ∞∞ `r4`@∞ ≤≤€`r0`4‹ ﬂ`r4`@±∞ `r0 `r4∞≤∞±±€`r0
+              `7€`r7`8∞`r0                  `7€ `4‹`r4 `r0ﬂ   ‹‹‹`r4 `r0≤±∞      ≤±±ﬂ   `r4`@∞ ±≤€ `r0`4‹ ﬂ`r4`@±€`r0`4‹ﬂ`r4`@≤ ±≤`r0
+               `r7`8∞`r0`7€                € `4‹`r4 `r0 ‹`r4      `r0≤±∞    ‹`r4 `r0ﬂﬂ        `r4`@∞ ≤±€€`r0 `r4∞±≤`r0 `4‹‹ﬂ`r4`@≤`r0
+               `r7`8∞`r0`7€`r7`8∞`r0              `4‹‹`r4   `r0‹`r4   `r0€≤≤±∞ﬂ ‹‹  ﬂ            `r4`@∞ ±≤€`r0  `r4±≤€`r0 `r4∞≤≤`r0
+                `7€€€         `4‹`r4     `r0›`r4     `r0≤ﬂﬂﬂ ‹‹`r4 `r0ﬂﬂ`r4   `r0‹ ‹‹`r4  `r0≤≤±ﬂ   `r4`@∞ ±€€`r0 `r4∞± `r0`4‹`r4`@∞≤≤`r0
+                `7ﬁ`r7`8∞±`r0`7›       `4‹`r4 `@∞  `r0`4ﬂ  `r4    `r0‹‹‹`r4       `r0‹‹ ﬂﬂ‹ ﬂ`r4 `r0≤≤≤      `r4`@∞ ≤€`r0 `4ﬂ`r4`@∞±≤`r0 `r4∞≤`r0
+               `7ﬁ`r7`8∞±`r0`7€       `4‹`r4 `@∞`r0`4ﬂﬂ    `r4                  `r0‹ﬁ`r4 `r0‹‹ ﬂ≤       `r4`@∞±≤€`r0 `r4∞± ≤`r0 `r4∞`r0
+               `7€`r7`8±`r0`7€      `4ﬁ€`r4`@∞∞`r0`4› `B0‹‹ﬂ  `r4     `r0`4≤`r4        `r0ﬂﬂ`r4   `r0‹ﬁ`r4   `r0‹    ‹‹‹‹ﬂ`r4`@∞±≤`r0`4‹ `r4`@∞± `r0 `r4∞`r0
+              `7€`r7`8∞`r0`7€      `4ﬁ`r4 `@∞ `r0  `B0€€ﬂ  `4ﬁ`r4               `r0≤‹ﬁ`r4  `r0‹ﬁ€`r4  `r0 `r4    `r0≤ﬂ  ﬂ`r4`@∞±€`r0 `r4∞±€≤`r0
+             `7ﬁ`r7`8∞±`r0`7€     `4ﬁ`r4 `@≤∞`r0  `B0ﬂ  `4‹‹‹`r4     `r0≤`r4          `r0ﬂ  `r4   `r0‹ﬁ€`r4 `r0‹ ﬂ`r4 `r0≤ﬂ    ﬂ`r4`@∞€`r0 `r4 `4±€≤`r0
+              `7€`r7`8∞`r0`7›    `4ﬁ`r4 `@±∞`r0`4›‹`r4                   `@∞`r0`4ﬂﬂ   ﬁ`r4    `r0‹ﬁ`r4 `@∞∞`r0`4‹‹       `r4`@∞±`r0 `r4 `4∞±€≤`r0
+               `7€`r7`8±`r0   `4‹‹ﬂ`r4         `r0∞ﬁ`r4          `r0ﬂ      ‹`r4`@∞     `r0`4‹ﬁ`r4 `@±±∞ `r0 `4‹    `r4`@∞€`r0 `r4  `4± €`r0
+                `7€› `r4    `r0 `r4      `r0`4±±∞≤`r4         `@∞`r0   `4‹`r4   `@±∞∞     `r0`4ﬁ`r4  `@≤±∞`r0`4‹ `r4 `r0≤‹‹ `r4`@≤`r0`4‹ `r4  `@±€`r0
+           `%‹    `7ﬂ `r4 `r0`4ﬂ `r4      `r0€≤≤±∞∞±`r4        `@∞`r0   `r4    `4≤±±∞     `r0‹ﬁ`r4  `@≤±∞`r0 `4ﬂ≤   `r4`@±€`r0 `r4 `4∞∞≤`r0
+           `7ﬂ`%€‹   `r4 `4±≤∞∞  `r0ﬂﬂﬂﬂﬂﬂ`r4 `r0€∞≤`r4        `@∞`r0  `4ﬁ`r4   `@€≤≤±∞      `r0 `r4  `4€≤±∞`r0 ﬂ   `r4`@∞`r0`4ﬂ `r4 `@∞±€`r0
+            `7ﬂ`r7`%ﬂ`r0€ﬂ`4‹`r4`@≤∞∞ `r0`4ﬂ  `r7`%ﬁ`r0›ﬂ‹ `4± ﬂ`r4 `r0›`r4       `@∞`r0`4ﬂ ‹`r4    `@€≤≤±∞       `r0`4‹ﬂ`r4 `@€≤±∞ `r0`4ﬂ  `r4`@∞`r0 `r4 `4∞ ±€`r0
+              `7ﬂ`4ﬁ`r4`@±∞  `r0`4ﬂ `r7`%ﬁ`r0› `r7ﬁ`r0›  `4≤± ﬂ`r4        `@∞`r0 `6‹ `4ﬂ`r4    `@€≤±∞∞       `r0`4‹ﬂ`r4 `@≤±∞ `r0 `r4 `r0`4‹ﬂ `r4 `@∞∞ ≤`r0
+                `r4 `4∞∞`r0 `7‹`%€`7ﬂ`%€› ﬂ    ﬂ‹ `r4   `r0`4ﬂ‹`r4  `r0ﬂ `6€€ `4ﬂ`r4    `@€≤±∞         `r0 `r4 `4≤±∞`r0‹ `r4`@∞`r0  `r4 `4∞± €`r0
+                  `7‹`%€ €› ﬂ   ‹ ﬂ‹ `4‹`r4  `r0ﬂ‹`r4  `r0ﬂ `r6`$±∞`r0`6€€ `4ﬂ`r4    `@€≤±∞        `r0`4€‹ﬁ`r4`@€±∞`r0`4‹`r4`@∞`r0 `4‹`r4 `@∞ ≤€`r0
+                   `7ﬂ`%‹ ﬂ  ‹ﬂ‹ ﬂ ﬂ`4‹`r4 `r0ﬂﬂ‹`r4  `r0ﬂ `$ﬂ`r6€€`r0ﬂ`6‹€ `r4    `@€≤±∞          `r0`4ﬁ`r4 `@±±∞`r0`4ﬂ `r4 `@∞±≤  `r0
+                       `%‹ `4‹‹‹‹‹`r4   `r0‹‹`r4  `r0ﬂ     `r6`$±∞`r0`6€€‹ `r4    `@€≤±∞         `r0`4‹ﬁ`r4 `@∞∞`r0 `r4  `4∞±≤ €`r0
+                       `^Ÿ`4ﬁ`r4  `@±±∞∞  `r0`4ﬂﬂ        `$ﬂ`r6€`r0`6ﬂﬂﬂ‹ `r4    `@€≤±∞         `r0`4‹ﬁﬂ ‹`r4 `@±∞  € `r0
+                         `4ﬂﬂﬂﬂﬂﬂﬂ            `$‹‹`r6∞`r0`6€€ `r4    `@€≤±∞         `r0 `4‹`r4`@∞±≤∞∞  €`r0
+                                            `r6`$€≤±∞`r0`6€ `4ﬂ`r4    `@€≤±∞        `r0`4‹ ﬂ`r4`@∞±±  `r0`4ﬂ
+                                            `r6`$€≤`r0ﬂ`6ﬂﬂ‹‹ `r4   `@€≤±±∞         `r0`4‹ ﬂ`r4`@±±`r0  `r4   `r0
+                                            `$‹‹`r6€≤±∞`r0`6€‹ `r4   `@€≤±±∞          `r0 `4ﬂ`r4  `r0 `r4   `r0
+                                           `$‹`r6€`r0ﬂﬂﬂ`6ﬂ‹‹‹ `r4     `@≤±∞`r0`4ﬂﬂﬂﬂ`r4       `r0‹ `r4 `r0‹ ﬂ`r4 `r0
+                                           `$‹‹`r6€€≤±∞`r0`6€€ `4ﬂﬂ ‹‹‹‹‹`r4   `r0‹ `r4       `r0‹ `r4  `r0‹‹
+                                           `r6`$€€`r0ﬂﬂﬂ`6ﬂﬂ`4‹‹`r4   `@∞≤± ∞     `r0`4‹ `r4       `r0 ﬂ`r4   `r0
+                                           `$‹`r6≤`r0`6‹€ﬂ `r4     `@∞≤±±∞∞∞     `r0`4‹ ﬂ`r4      `r0 `r4   `r0
+                                          `r6`$≤±∞`r0`6ﬂﬂ `r4     `@∞≤≤ ± ∞∞       `r0 `r4      `r0 `4ﬂ`r4  `r0
+                                         `$‹‹`6‹‹ﬂ `r4    `@∞€≤≤±±∞ ∞ ∞∞     `r0`4‹ `r4      `r0 `r4  `r0
+            `@[`B4Press A Key`@]               `$ﬂﬂﬂ`6ﬂ  `r4  `@Shatterstar [W/X]     `r0 `r4      `r0 `r4 `r0
+
+                   `7Dark Lair L.O.R.D. is currently running
+@#DRAG
+`r0`7
+
+                  `1‹‹‹‹‹‹‹‹  `4‹‹‹‹‹  `2‹‹‹‹‹‹‹‹‹‹  `1‹‹‹‹‹‹‹‹‹‹
+                  €`r1`9≤≤€€€≤`^±`r0 `r4±`@≤ﬂﬂﬂ∞`r0`4ﬂ `r2`0∞≤€≤ﬂﬂ≤€€≤∞`r0 `r1`^∞`9±€€ﬂﬂﬂ€≤‹`r0`1€
+                   ﬂ`r1`9ﬂﬂ€€≤`^∞`r0 `r4∞`@€`r0`4€ €`r4`@‹`r0`4€ `r2 `0€€€`^∞`r0 `r2∞`0€ﬂ`r0`2ﬂ‹ `r1`^∞`9≤€€`r0`1€ `r1`^∞`9€€€`r0`1€
+                  €`r1`9‹`r0`1‹‹ﬂ`r1`9ﬂ€`r0`1€ `4‹`r4`@‹`^∞`r0 `r4∞`r7`@≤`r0`4€ `r2`^∞`0€€€`r0`2€ `r2`^±`0€€‹`r0`2€ `r1`^±`9€€€`r0`1€ `r1`^±`9€`r7≤€`r0`1€
+                  €`r1`9€€€‹€€`r0`1€ `4€`r4`@≤`^∞`r0 `4€`r4`@€`r0`4€ `r2`^∞`0€€≤‹‹‹≤ﬂﬂ`r0`2ﬂ `r1`^±`9€€€∞`r0 `1€`r1`9€€€`r0`1€
+                  €`r1`9≤€€`r7≤`r1€`r7€`r0`1€ `r4`^∞`@ﬂ`r0`4€‹€`r4`@≤∞`r0 `2€`r2`0≤€€`r7≤€€`r2‹`r0`2‹‹  `1€`r1`9€`r7≤`r1€`^∞`r0 `1€`r1`9≤€€`r0`1€
+                  €`r1`9±€€€€≤`^∞`r0 `4ﬂ‹ `r4 `^∞`r0`4ﬂﬂ `2€`r2`0€≤€€ﬂ€€€≤`^∞`r0 `1€`r1`9€€€`^±`r0 `1€`r1`9€€‹`r0`1‹
+                  €`r1`9∞€≤€€ﬂ`^±`r0`1‹‹‹‹‹‹‹‹ `r2`^∞`0ﬂ`r0`2ﬂ`r2`0ﬂ∞`r0 `r2`^∞`0≤€€`^∞`r0 `1€`r1`9≤ﬂ€`^∞`r0 `1€`r1`9€€≤`^∞`r0
+                  `1€ €`r1`9ﬂ`r0`1ﬂﬂ‹`r1`9‹≤ﬂ`r0`1ﬂ`r1`9ﬂ≤€≤`^∞`r0 `r2±`r0`2€ €`r2`^∞`r0 `2€`r2`0ﬂﬂ≤`^±`r0 `1€ﬂ €`r1`9‹`r0`1‹€`r1`9ﬂ`r0`1ﬂﬂ€
+                  `r1`^∞`r0`1‹ﬂ `r1`^±∞`9ﬂﬂﬂ`r0`1ﬂ‹€`r1`9ﬂﬂ±`^±`r0 `r2≤`r0 `r2‹ ±`r0 `2€`r2`0∞`r0 `2€`r2`^≤`r0 `1€€ €`r1`9∞`^∞`r0`1ﬂ‹`r1`^∞`r0`1€ﬂ
+
+                          `0L`2egend `0O`2f the `0R`2ed `0D`2ragon
+
+                                   <`0more`2>
+@#DRAGON3
+`r0`7                                                   ‹‹‹
+                        `^‹                         `7ﬂ`r7≤`r0€€`r7≤`r0‹
+                    `r7≤`r0    `^€‹ ‹     ‹      ‹     ‹   `7€€€`r7±`r0    `^ﬂ
+                  `7‹€`r7±`r0  `^‹       ﬂ‹  ﬂ  €‹   ﬂ≤  ‹≤  `7€€`r7∞`r0  `^‹
+                `7‹€€€`r7∞`r0   `^≤‹  ‹≤‹ ﬂﬂ ‹≤  ‹≤  `7‹  `8‹ﬂﬂﬂ `%€€`r7 `r0    `8ﬂ≤  ‹‹
+                  `%€€`r7 `r0  `8≤€€ﬂ€€ﬂ`%‹‹`r7€`r0ﬂ`r7≤`r0‹ €€ `8ﬂ`%‹`r7€‹`r0`7‹`8ﬂ`%‹€`r7ﬂﬂ`r0‹€`r7 `r0 `8€‹€‹
+              ‹    `%€€`r7 `r0 `8€`r7≤`r0 `r7`%≤`r0`7‹ `%€`r7€∞`r0  €€`r7±`r0 €`r7≤`r0ﬂ`8‹ `r7`%≤€±`r0`7‹ﬂ`8‹ `%€€`r7 `r0 `r7`8≤`r0€≤‹  ﬂ≤  ‹
+           ‹€ﬂ  ‹≤€ `%€`r7 `r0 `r7`8≤≤`r0 `%€`r7‹∞`r0`7‹ﬂ`8‹€ `r7`%≤`r0€€`r7∞`r0 `r7±`r0 `8€`r7≤`r0 `%€`r7≤`r0`7ﬂ‹`8ﬂ `r7`%≤`r0€`r7 `r0 `r7`8±≤`r0€≤‹€
+                 ﬂ€`r7≤`r0 `%€`r7 `r0 `r7`8≤±`r0 `%€€`r7€`r0`7ﬂ`8‹`r7≤`r0 `r7`%≤`r0€`r7€ `r0 €`r7∞`r0 `8€‹`%ﬂ‹€`r7≤`r0  `r7≤`r0€€`r7∞`r0 `r7`8≤`r0€≤  ‹‹ ‹
+                ‹≤ﬂ€`r7≤`r0 `%€`r7‹`r0`7‹‹`%€`r7ﬂ`r0ﬂ‹`r7≤`r0 `8ﬂ`%‹€`r7€ `r0 €€€`7€ `8€ `%€€`r7±`r0  €€€`r7±`r0 `r7`8≤`r0ﬂ€ﬂ ﬂ
+           ﬂ €‹  ﬂ ﬂ€‹ `%€€ﬂ`8‹‹€‹`%ﬂ‹€`r7≤ﬂ`r0`7ﬂ`8‹`%ﬂ€€€ﬂ`7ﬂ`8‹€‹`%ﬂ€`r7‹`r0‹€`7ﬂ`%€`r7≤`r0 `8€≤‹ ≤ﬂ
+              ‹  ﬂ€ ﬂ  `%ﬂ `8‹≤ﬂ ≤€‹‹‹‹€ ≤‹‹ ﬂ‹‹€≤ﬂ  ‹‹≤‹  ﬂﬂ     ﬂ
+                 ‹    €‹  ﬂ    ﬂ≤ﬂ     ﬂ€ﬂ    ‹≤     ≤   ‹ ‹
+                   ﬂ   ‹   ﬂ‹    ‹≤    ‹‹    ‹    ﬂ ﬂ ‹    ﬂ
+                             ‹    ‹    ﬂ  ﬂ
+                                      ﬂ
+                          `%L`7egend `%O`7f the `%R`7ed `%D`7ragon
+
+                                  `8<`7more`8>
+
+
+                   `7Dark Lair L.O.R.D. is currently running
+@#FAIRY
+`C`r0`7                              `6‹‹‹€€€€€€‹                ‹‹ ‹€‹
+            ‹‹‹      ‹€€€€€€ﬂﬂﬂ      ﬂ€€€€ﬂ€‹‹   ‹€€€€ﬂﬂﬂﬂ ﬂ€‹
+          ‹€ﬂﬂﬂ€€€€€€ﬂ                      ﬂﬂ€€€ﬂ           ﬂ€‹
+         ﬁ€ ﬂ‹                                                 €›
+         €›   €      `2‹‹€€€€€‹       `%EXTRA SPECIAL EVENT!       `6ﬁ€     ‹ﬂﬂ‹‹
+         ﬁ€ ‹ﬂ    ‹`2‹ﬂﬂﬂ`0‹‹‹‹`2ﬂ€€‹    `0-=-=-=-=-=-=-=-=-=-=-=-      `6€›  ‹ﬂ     ﬂ‹
+        ‹ﬂ› €  ‹ﬂﬂ  `0ﬂ€€€€€€€‹`2ﬂ€€                               `6ﬁ€ﬂ‹ﬂ         ›
+      ‹ﬂ ﬁ€  ﬂﬂ       `0ﬂﬂﬂ€€€€€‹`2ﬂ›                              `6€›  €        ﬁ
+   ‹ﬂ‹€   €›                `0ﬂﬂﬂﬂ€                              `6ﬁ€   ﬂ‹      ›
+  €    €  ﬁ€   `0Your journey is interupted by the sound of many  `6€›    €    `0‹`2ﬁ
+ `0‹€`2ﬁ‹   `6€ €›   `0tiny voices squealing in delight.  It seems      `6ﬁ€    ﬁ›  `0€€`2ﬁ€€
+`0ﬁ€€›`2€€ `6€  ﬁ€‹  `0you've come across a group of fairies bathing.   `6‹€›    € `0€€€›`2€€›`n`0€€€›`2€€› `6€`0‹‹`6ﬂ€›                         ‹‹‹                     ﬁ€ﬂ   ‹ﬂ `0ﬁ€€€€`2ﬁ€€`n`0ﬁ€€`2ﬁ€€ €€`0ﬁ€€‹   `2‹                   `6‹ﬂﬂ   ﬂ‹                    €›   €   `0ﬂ€€€`2ﬁ€›`n `0ﬂ€‹`2ﬂ›ﬁ€€›`0€€€€‹ﬂ`2›                `6‹ﬂﬂ       €                   ﬁ€     ﬂ`0‹  ﬂ€›`2€€
+    `0ﬂ`2ﬂ €€€‹`0ﬂﬂ`2‹‹ﬂ             `6‹‹ﬂﬂ`2‹‹€€€ﬂ`0‹ `6‹ﬂ                    €›    `2‹€‹`0ﬂ€‹ ›`2€
+        ﬂ€€€€ﬂ         `6‹‹  ‹ﬂ  `2‹€€€ﬂ`0‹‹€€ﬂ                      `6ﬁ€   `2ﬁ€€€€ `0€› `2ﬂ
+           `6€›    ‹‹‹‹€€ﬂﬂ€€‹ `2‹€€€ﬂ`0‹€€€€ﬂ                       `6€›   `2ﬁ€€€€`0ﬁ€€
+           `6ﬁ€ ‹‹€ﬂﬂﬂ      ﬂﬂ`2€€€ﬂ`0‹€€€€ﬂ`6€€€€€‹     ‹€€€€€‹‹    ‹€ﬂ     `2ﬂ€€›`0€€€›
+            `6ﬂﬂﬂ            `2ﬁ€ﬂ`0‹€€€ﬂ`6€ﬂ      ﬂ€€€€€ﬂ      ﬂ€‹‹€ﬂ        `2ﬂ€€`0ﬁ€€
+                            `2€`0ﬁ€ﬂ                          `6ﬂﬂ            `2ﬂ`0€ﬂ
+                             ﬂ
+@#FOOT
+`r0`7
+                    ‹                                          ‹‹‹‹
+                 ‹‹`r7`%∞ﬂ`r0`7ﬂ                                       ‹`r7`%‹€ﬂ∞`r0`7€€
+             ‹‹`r7`%‹‹ﬂ`r0`7€                                           €`r7`%≤`r0`7€€€€
+        ﬂ‹‹`r7`%‹‹€ﬂ≤`r0`7€€`r7`%∞`r0`7€                            ‹‹‹            €`r7 `r0€`r7`^≤ `r0
+           `7€`r7`%€∞`r0`7€€€€€€         ‹‹`r7`%‹≤∞`r0`7€€€‹‹ ‹`r7`%‹≤`r0`7‹ ‹`r7`%‹∞`r0`7ﬂﬂ€`r7`%‹`r0`7€‹ ‹‹`r7`%≤‹`r0`7€`r7`%∞`r0`7€‹€€€`r7`^€`r0`7€
+            €`r7`%€`r0`7€€€€`r7`^∞`r0`7€       ‹€ﬂ`r7`%ﬂ∞`r0`7ﬂ  ﬂ€`r7`%≤`r0`7€€‹ﬂ`r7`%ﬂ `r0`7‹`r7`%‹ﬂ`r0`7ﬂ   €`r7`%€ `r0`7€ `r7`%ﬂ`r0`7€ﬂ  ﬂ€`r7`%≤`r0`7€€`r7`^€`r0`7€
+ `8€€€€€€≤≤±≤€ `7€`r7`%≤`r0`7€€€€`r7`^±`r0`7€ `8€€≤€ `7€ € € `8€€ `r7 `%€`r0`7€`r7`^∞`r0`7€ €€€€ﬂ`8‹ﬂ€ `7€`r7`%≤`r0`7€`r7`^∞`r0`7€ € `8€≤ `7€`r7`%€`r0`7€€`r7`^€`r0`7€ `8≤€€≤≤±±≤€€
+ €€≤€`r7±≤`r0€€≤€€`r7≤`r0 `7€`r7`%±`r0`7€€€`r7`^≤`r0`7€ `8€≤±ﬂﬂ`7‹€`r7`^∞`r0`7€ `8€€≤ `7€`r7`%€`r0`7€€`r7`^±`r0`7€ €€ `8ﬂ`7‹€‹€`r7`%ﬂ∞`r0`7€`r7`^±`r0`7€ € `8€€ `7€`r7`%€`r0`7€€`r7`^€`r0`7€ `8€€`r7≤`r0€€≤≤€`r7≤≤`r0
+ `r7≤`r0€≤€`r7≤€`r0€€€≤≤€ `7€`r7`%∞`r0`7€€€`r7`^€`r0`7€ `8ﬂ`7‹‹`r7`%‹€ﬂ∞`^±`r0`7€ `8€≤± `7€`r7`%≤`r0`7€€`r7`^≤`r0`7€ €`r7`^∞`r0  `r7∞‹  `r0`7€`r7`^‹≤`r0`7€ `r7`^€`r0`7€ `8€≤ `7€`r7`%€`r0`7€€`r7`^€`r0`7€ `8€`r7≤≤`r0€€€≤€€`r7€`r0
+ €€≤≤€€€€≤±±≤ `7€€€€`r7`^€`r0`7€ﬂ‹`r7`%‹ﬂﬂ`r0`7€€€€€`r7`^≤`r0`7€ `8±∞ `7€`r7`%± `r0`7€`r7`^€`r0`7€ €`r7`^±`r0 `8≤‹`7ﬂ`r7`^ﬂﬂﬂ`r0`7ﬂﬂ‹€`r7`^≤ `r0 `8≤± `7€`r7`%≤`r0`7€€`r7`^≤`r0`7€ `8≤€€€€€≤≤`r7€`r0€
+ €≤±±≤€€≤±∞∞ `7€`r7`^∞`r0`7€€€€`r7`^ﬂ`r0`7€`r7`%∞`r0`7€€€€€€€€`r7`^€`r0`7€ `8∞∞ `7€`r7`%∞`r0`7€`r7`^€ `r0 `7€€`r7`^≤`r0`7€ `8≤≤‹‹‹ `7€€€`r7`^±`r0`7€ `8±∞ `7€`r7`%±`r0`7€€`r7`^±`r0`7€ `8±≤€€≤≤±±≤≤
+           `7‹`r7`^‹±`r0`7€€€€€€€€€`r7`^ﬂ`r0`7€`r7`^ﬂﬂ‹‹‹€`r0`7€€  ‹€`r7`^∞‹ﬂ`r0`7ﬂ‹€€€`r7`^€‹`r0`7‹     ﬂ€€`r7 `^∞`r0`7‹  ‹€`r7`%∞`r0`7€€`r7`^∞`r0`7€
+        ‹€ﬂﬂﬂﬂﬂ           ﬂﬂﬂﬂﬂﬂ€ €€€ﬂﬂ‹€€€€ﬂﬂﬂﬂ€‹     ﬂﬂ€€€€€€ﬂ€`r7`^ﬂ`r0`7€ﬂ
+                                        ﬂ
+                           Legend of the Red Dragon
+
+                                    `8<`7MORE`8>
+
+                     `7Dark Lair L.O.R.D. is currently running
+@#FOREST
+`r0`7
+ `^‹ ‹‹ ‹‹‹ ‹‹‹‹‹‹≤‹‹‹‹‹‹‹‹‹‹≤‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ `7‹‹ `^‹‹ `2‹  ‹`r2`0±`r0`2ﬂ €`r2`^∞`r0`2‹ `8‹‹‹
+  `r7`^€`r0`7‹‹≤‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹`r7`^ﬂﬂﬂﬂﬂﬂﬂ`r0`7‹‹ `r7`%ﬁ`r0€`r7≤`r0≤  `r2`0±`r0`2ﬂ€ `r2`0∞`r0`2‹€`r2`0∞`r0`2€ﬂ`r2`^±`r0 `7‹ `8ﬂ≤
+  `r7`^≤±∞`r0`7€`r7`%Legend of the Red Dragon`r0`7€`r7`^- Forest   ∞±`r0`7‹`%ﬂ`7ﬂ‹ `r2`0∞`r0`2ﬂ‹`r2`^∞±`r0`2˛`6ﬁ`2ﬂ`6‹ﬂ`2ﬂ`7‹€€≤
+ ∞ `r7`^≤±∞`r0`7€€`r7   `r0ﬂ`r7`^∞       `r0`7≤`r7`^‹‹‹‹`r0`7ﬂﬂﬂﬂﬂ`r7`^‹‹‹‹‹‹‹‹‹‹‹‹‹‹`r0`7ﬂ`r7`^‹`r0 `2˛ﬂﬂﬂﬂﬂ`8ﬂﬂ `r6`^∞`r0`6ﬁ `7±≤€€≤ `8≤
+    `r7`^≤±∞`r0`7€€€‹ ‹`r7`^±`r0`7€€`r7`^ﬂ∞`r0`7€ﬂﬂ`r7`^€`r2∞                     ±`r7€`r0`7€`r7`^∞`r0`7ﬂ`r7`^±`r0 `r6 `r0`8›`7ﬁ≤ `r6`^∞±`r0 `7≤ﬂ`2‹‹`7ﬂ `8€
+    ‹  ‹ ‹‹ ‹‹‹ ‹‹‹‹`r7ﬂ`r0‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ ‹≤ `6‹`r6`$∞`8ﬁ`r0 `6‹`r6`^∞`r0`8‹`6ﬂ›‹`2ﬂ`r2`0∞`r0`2ﬂﬂ`8‹`r7≤`r0
+                                  ﬂ
+  `2The murky forest stands before you - a giant maw of gloomy darkness
+  ever beckoning.
+
+  (`0L`2)ook for something to kill
+  (`0H`2)ealers hut
+  (`0R`2)eturn to town
+  (`0B`2)eg the Vulture to take your money to the bank
+@#HEAL
+`.
+`.
+`.                            `8L.O.R.D. `2Healers Hut
+`.                           `#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-`5=`#-
+`.   `2As you enter the thatched healers hut you see pots with foul smelling
+`.   `2concoctions boiling everywhere. Ignoring your instincts you ask him
+`.   `2if he could:
+`.
+`.  `@(`%H`@)`9eal you now!
+`.  `@(`%C`@)`9ould he partially heal you?
+`.  `@(`%R`@)`9eturn you to `4Crofton?                 
+@#HINTS
+`.                     `%           Instructions
+`.`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`.  `2WELCOME TO THE ADVENTURE OF A LIFETIME!  
+`.
+`.  `0** `2Full Multi-Node Support.
+`.  `0** `2This game is FINISHABLE! (If the sysop chooses)
+`.  `0** `2Real Time Online Messages And Battles.
+`.  `0** `2Marrage And other 'Real Life' Options.
+`.  `0** `2RIP & In-Game Downloading Of Icons File Support. (Both are Auto Detect)
+`.  `0** `2Auto Reincarnation If A Player Is Dead For Two Days.
+`.  `0** `2Current setup is `4Dark Lair `8L.O.R.D `2by Richard Martin
+`.
+`.
+`.  `2This is multi player battle game, created for BBS's, it is the
+`.  type of game where you kill other players, get stronger and stronger
+`.  and your number one goal is to stay #1 in the player rankings!  Of
+`.  course, killing the Dreaded Red Dragon will make you a hero, and your
+`.  name will be immortalized in the Hall Of Honor.
+`.
+`.  Each day, you are given a certain amount of fights per day, once you
+`.  use them, you can no longer do battle that day, you must call back
+`.  the NEXT day to be 'refilled'.
+`.
+`.  Money in the Bank gets 10 % interest per day.
+`.
+`.  Stay at the Inn, and you will be safe from `0MOST`2 attackers...If they
+`.  want to kill you bad enough, they may find a way...However costly.
+`.
+`.  Be sure to buy better armour and weapons when possible, it really makes
+`.  a LARGE difference.   
+`.
+`.  Be sure to take advantage of the advanced mail writing functions
+`.  avaible, they are very fast and easy to use, and you will have LOADS
+`.  more fun when you get to `0KNOW`2 who you are killing!
+`.
+`.  Particapate in conversation at The Bar,  interacting with real people
+`.  is what makes BBS games so enjoyable, and this game is loaded with ways
+`.  to do that... From insulting people in the Daily Happenings, to 
+`.  slaughtering them in cold blood, then sending them mail gloating over
+`.  the victory, this game will let you have some fun!
+`.
+`.  The game is pretty self explanatory, so I will let you, the player, 
+`.  explore on your own.  Just hit '`0?`2' when you're not sure, and you will
+`.  get a menu.  For starters, try visiting the Inn.
+`. ``
+`.  If you are male, try your hand at Flirting with Violet...If you
+`.  are female, you can try your luck with The Bard.
+`.
+`.  If someone else attacks you and loses, you will get the experience
+`.  just as if you killed them yourself.  (You will be mailed on the
+`.  details of the battle)
+`.
+`.  Your sysop is running a revised version of Legend Of The Red Dragon.
+`.  Current revised name is `4Dark Lair `8L.O.R.D..  
+`.  However Richard Martin is `%NOT`2 the author of Legend Of The Red Dragon! 
+`.  LORD is copyrighted by Seth Able. Richard Martin just revised the screens
+`.  and enemies to change the look of the game. It still has the same options
+`.  as the original LORD 350 game!
+`.  The main objective of this game is to `4KILL `2all the other players!
+`.  You can send E-Mail to Richard Martin at: 
+`.  RMartin631@AOL.COM or Fidonet 1:261/1415 or call my BBS at 1-410-798-0362
+`.
+`.
+`.  `)** `%NOTE ABOUT RIPTERM 2.0 `)**
+`.   
+`.  `2To see the pictures in the correct palettes, you'll need to download
+`.  `0LORDRIP2.ZIP `2from either `%The Darkside`2, or bug your sysop into getting
+`.  it and putting it up.  It contains the BMPS only for RIPterm 2.0.
+`.
+`.  `2NOTE:  This game contains some mature subject matter.
+`.
+`.                  `0GOOD LUCK AND HAPPY GAMING!`2
+@#INTRO
+`r0`7
+            `3/≤
+           /`r3`1≥∞`r0                      `4THE LEGEND OF THE
+          `3/`r3`1≥≥∞`r0
+         `3/`r3`1⁄¥≥∞`r0                 `r4`4≥⁄ƒƒƒƒø`r0   `r4⁄ƒƒƒƒƒƒ `r0   `r4ƒ¬ƒƒƒƒø`r0
+        `3/`r3`1≥≥≥≥∞`r0                 `r4`4≥≥`r0    `r4≥`r0   `r4≥`r0          `r4≥≥`r0    `r4¿ø`r0
+       `3/`r3`1⁄¥≥≥≥∞`r0                 `r4`4≥≥ƒ¬ƒƒŸ`r0   `r4≥ƒ¬ƒƒƒ`r0     `r4≥≥`r0     `r4≥`r0
+       `r3`1≥≥≥≥≥≥∞`r0                 `r4`4≥≥`r0   `r4≥`r0    `r4≥`r0          `r4≥≥`r0    `r4⁄Ÿ`r0
+       `r3`1≥≥≥≥≥≥∞`r0                 `r4`4≥≥`r0   `r4¡ƒ`r0   `r4¿ƒ¡ƒƒƒƒƒ`r0   `r4¿ƒƒƒƒƒŸ`r0
+       `r3`1≥≥≥≥≥≥∞`r0
+       `r3≥≥≥≥≥≥∞`r0
+       `r3¿Ÿ¿Ÿ¿Ÿ∞`r0       `r4`4≥ƒƒƒƒø`r0   `r4ƒ¬ƒƒƒƒø`r0  `r4√ƒƒƒƒƒƒ¬`r0  `r4⁄ƒƒƒƒƒƒ`r0  `r4⁄¬ƒƒ¬¬ø≥`r0  `r4√ƒø`r0    `r4≥≥`r0
+   ∞±≤≤≤≤≤≤≤≤≤≤≤±∞   `r4≥≥`r0   `r4¿ø`r0  `r4≥≥`r0    `r4≥`r0  `r4≥≥`r0    `r4≥≥`r0  `r4≥≥`r0       `r4≥≥`r0    `r4¿¡`r0  `r4≥≥¿ø`r0   `r4≥≥`r0
+       ∞±≤≤±∞∞       `r4≥≥`r0    `r4≥`r0  `r4≥√ƒƒ¬ƒŸ`r0  `r4≥≥`r0    `r4≥≥`r0  `r4≥≥`r0       `r4≥≥`r0    `r4≥≥`r0  `r4≥≥`r0 `r4¿ø`r0  `r4≥≥`r0
+       ∞±≤≤±∞∞       `r4√≥`r0    `r4≥`r0  `r4≥≥`r0  `r4¿ø`r0   `r4≥√ƒƒ¬ƒ≥≥`r0  `r4ø≥`r0  `r4ƒƒƒ`r0  `r4⁄≥`r0    `r4≥≥`r0  `r4≥≥`r0  `r4¿ø`r0 `r4≥≥`r0
+       ∞±≤≤±∞∞       `r4≥≥`r0   `r4⁄Ÿ`r0  `r4≥≥`r0  `r4ƒ¥`r0   `r4≥≥`r0    `r4⁄ƒ`r0  `r4≥≥`r0   `r4⁄¿`r0  `r4≥≥`r0    `r4≥≥`r0  `r4≥≥`r0   `r4¿⁄Ÿ≥`r0
+       ∞±≤≤±∞∞       `r4≥¿ƒƒƒŸ`r0   `r4¿Ÿ`r0   `r4¿ƒ`r0  `r4≥≥`r0    `r4¿Ÿ`r0  `r4¿¡ƒƒƒ¡Ÿ`r0  `r4¿ƒƒƒƒƒƒŸ`r0  `r4≥≥`r0    `r4¿ƒŸ`r0
+       ∞±≤≤±∞∞
+       ∞±≤≤±∞∞                    `8±±±±±±               ±±±±±±
+       `4∞±≤≤±∞∞                    `8±±±±±±      `4By       `8±±±±±±
+       `4∞±≤≤±∞∞                    `8±±±±±±   `4Seth Able   `8±±±±±±
+      `4∞±≤€€≤±±∞                   `8±±±±±±  `4Press a key  `8±±±±±±
+
+                   `7Dark Lair L.O.R.D is currently running
+@#INTRO1
+`r4`7          `r0`4€‹ ﬂﬂ`r4     `r0ﬂ ‹`r4                                                        `r0
+`r4              `r0         ﬂﬂ€`r4          `^€   ﬁﬂﬂ ﬁﬂﬂ ﬁﬂﬂ €›ﬁ €ﬂ›    ﬁﬂ› ﬁﬂﬂ         `r0
+`r4               `r0`4‹        ‹`r4        `r0 `r4  `^€   €ﬂ  € € €ﬂ  €ﬁ€ € €    € € €ﬂ          `r0
+`r4              `r0`4ﬂ    ‹‹`r4          `r0ﬂ  `r4  `^ﬁ€€ ﬁ€€ ﬁ€› ﬁ€€ › € €€›    ﬁ€› €           `r0
+`r4             `r0  `4∞∞‹`r4       `r0ﬂﬂﬂ      `r4                                             `r0
+`r4            `r0  ∞∞`r4    `r0ﬂ             `r4      `^ﬂ€ﬂ › € ﬁﬂﬂ    €ﬂ› ﬁﬂﬂ €ﬂ›             `r0
+   `4ﬂﬂ`r4      `r0  ∞∞`r4  `r0ﬂ                `r4       `^€  €ﬂ€ €ﬂ     €‹€ €ﬂ  € €             `r0
+       `4ﬂ`r4  `r0  ∞∞∞ﬂ                  `r4       `^ﬁ  ﬁ € ﬁ€€    €ﬂ‹ ﬁ€€ €€€             `r0
+            `4∞∞∞            ∞      `r4                                             `r0
+            ∞∞∞         ∞∞∞±∞∞    `r4       `^€ﬂ› €ﬂ› ﬁﬂ› ﬁﬂﬂ ﬁﬂ› €›ﬁ               `r0
+`4∞∞         ±±∞       ∞∞∞±±±±±∞∞  `r4        `^€ € €‹€ €ﬂ€ € € € € €ﬁ€               `r0
+`4±±∞∞       ±±±    ∞∞∞±±±±±±±±±±∞ `r4        `^€€€ €ﬂ‹ › ﬁ ﬁ€› ﬁ€› › €            `@‹‹‹`r0
+`r4 `r0`4±±±∞      ±±±   ±±±±±±±±±±±±±±±∞`r4                                      `@‹‹€€€€€€`r0
+`r4   `r0`4±±     ±±±±    ±±±`r4   `r0±±±±±±±±`r4             `^S E T H  A B L E       `@‹€€€€€€€€€`r0ﬂ
+`r4    `r0      `4±±±±±    `r4       `r0±±±±±±`r4                                   `@€€€€€€`r0ﬂﬂﬂ`r4`^€€€`r0
+`r4∞∞∞∞`r0      `4±±±±±     `r4`^∞∞∞∞∞∞∞`r0`4±±±±`r4`^∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞`r0`@ﬂﬂ`r4`^€€€€€€€€€€€`r0
+  `4ﬂ`r4`^∞`r0      `4∞∞∞±±±    `r4`^∞∞∞∞∞∞∞∞`r0`4±±`r4`^∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞∞€€€€€€€€€€€€€€€€€€€`r0
+           `4∞∞∞∞∞∞    `r4`^±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±€€€€€€€€€€€€€€€€€€€€€€€€€€`r0
+`r4≤`r0          `4∞∞∞∞∞∞     `r4`^≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤≤€€€€€€€€€€€€`r0`4Press a key`r4`^€€€€€€€`r0
+                  `7Dark Lair L.O.R.D. is currently running
+@#INTRO2
+`r0`7               `4‹ﬂ€     ‹ﬂ€ﬂﬂﬂ›  ‹ﬂﬂﬂ‹  ‹ﬂ`r4 `r0ﬂﬂﬂﬂﬁﬂ€‹   ﬂ‹ ﬂ`r4 `r0ﬂﬂ‹
+               › `r4`@›`r0     `4› `r4`@›`r0     `r4›`r0 `4›     › `r4`@›`r0    `4≥ `r4`@›`r0 `r4›`r0   `r4›`r0  `r4›`r0   `r4›`r0
+                 `r4›`r0      `4‹`r4 `r0‹‹   `r4`@›`r0   `4‹‹ﬂ› ‹`r4 `r0‹‹    `r4`@›`r0  `r4›`r0  `r4›`r0  `r4›`r0   `r4›`r0
+                 `r4›`r0     `4ﬁ `r4`@›`r0  `4›  `r4`@›`r0 `4ﬁﬂ `r4`@›`r0  `4ﬁ `r4`@›`r0  `4›   `r4`@›`r0   `r4›`r0 `r4›`r0  `r4›`r0   `r4›`r0
+                `4‹ﬂ‹‹‹‹  ‹ﬂ‹‹‹‹ ﬂ‹‹‹‹ﬂ›  ‹ﬂ‹‹‹‹ ‹ﬂ›  ﬂ‹ﬂ ‹ﬂ‹‹‹ﬂ
+                ›     › › ﬁ   › ›       ›     ››     ﬁ  ›    ›
+
+                                                 `@OF       THE
+
+   `4ﬂ€ﬂﬂ‹  ‹ﬂ€ﬂﬂﬂ› ﬂ`r4 `r0ﬂﬂ‹         ﬂ`r4 `r0ﬂﬂ‹  ﬂ€ﬂﬂ‹ ﬁﬂ€ﬂﬂ‹   ‹ﬂﬂﬂ‹   ‹ﬂﬂﬂ‹ﬁﬂ€‹  ﬁﬂ‹
+    `r4`@›`r0   `r4›`r0 `4› `r4`@›`r0      `r4›`r0   `r4›`r0         `r4›`r0   `r4›`r0  `r4›`r0   `r4›`r0  `r4›`r0   `r4›`r0 `r4›`r0 `4›     `r4`@›`r0 `4›  `r4`@›`r0`4≥ `r4`@›`r0 `r4›`r0   `r4›`r0
+   `4ﬂ€ﬂ€ﬂ   ‹`r4 `r0‹‹    `r4`@›`r0   `r4›`r0         `r4›`r0   `r4›`r0 `4ﬂ€ﬂ€ﬂ  ﬂ€ﬂ€ﬂ€ `r4`@›`r0   `4‹‹ﬂ›`r4`@›`r0    `r4›`r0  `r4›`r0  `r4›`r0  `r4›`r0
+    `r4›`r0  `4ﬂ‹ ﬁ `r4`@›`r0  `4›   `r4`@›`r0   `r4›`r0         `r4›`r0   `r4›`r0  `r4›`r0  `4ﬂ‹  `r4`@›`r0 `4› `r4`@›`r0 `r4›`r0 `4ﬁﬂ `r4`@›`r0  `r4›`r0    `r4›`r0  `r4›`r0   `r4›`r0 `r4›`r0
+   `4€    €  ‹ﬂ‹‹‹‹ ‹ﬂ‹‹‹ﬂ        ‹ﬂ‹‹‹ﬂ €    € ‹ﬂ  ‹ﬂ ﬂ‹‹‹‹ﬂ› ﬂ‹‹‹‹ﬂ ‹ﬂ   ﬂ‹ﬂ
+   ›    ﬁ  › ﬁ   ››    ›        ›    › ›    ﬁ ﬁ   ›   ›      ﬁ    › ›     ﬁ
+
+
+                               BY`%:  `4S`@eth `4A`@ble
+                    Dark Lair L.O.R.D. is currently running
+@#LAIR
+`.  
+`.  `0The `4Red Dragons `0Lair
+`%-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`.`2  You find a hidden cave!  All of a sudden, you feel
+`.`2  a burst of heat come from the cave...Before you
+`.`2  can think, you are face to face with the Red Dragon!
+@#LAIRANS
+`r0`7 `4≤ﬂﬂ ﬂ ﬂ`6ﬂ`4ﬂ`6ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€ﬂ `4ﬂ ﬂ`6ﬂ `4ﬂ`6ﬂﬂ ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`r6`4ﬂ`r0`6ﬂ`4ﬂﬂ`6ﬂ`4ﬂ ﬂﬂ`r4`^∞`r0
+ `4‹ `r7`^±∞`r0`7€€ﬂ€`r7`%∞`r0`7€€€`r7`^±`r0`7€€€`r7`^∞`r0`7‹ ‹`r7`^∞∞`r0 `r6 `r0 `r4±∞`r0`4€ﬂ€`r4`^∞`r0`4‹   `6-Legend of the Red Dragon-      `4∞ ﬂ≤ ‹
+ `r4`6∞`r0 `r7`^∞`r0`7€`r7`^∞ﬂ`r0 `7‹€`r7`4∞`r0`7€`r7`^∞`r0 `7€€€€€`r7  `4±`r0`7€ `r6 `r0 `r4`^∞`6∞`r0`4€  €`r4`6∞`^±`r0                                     `4± `r6≤`r0
+ `r4`6±`r0 `r7`^∞`r0`7‹€`r7`%∞`r0`7€`r7`^∞`r0`7‹ﬂﬂ  ﬂﬂ ‹`r7`%±`r0`7€€`r7`4∞`r0`7€ `r6 `r0 `4€`r4`6±`r0`4€  €`r4`6±`^∞`r0 `4€‹ﬂ€`r4`^∞`r0`4‹ﬂﬂ€`r4`^∞`r0`4‹ `r4`^±`r0`4ﬂ€`r4 `^[`r0
+ `r4`6≤`r0 `7€`r7`4±`r0`7€€ € `8‹ﬂﬂ ﬂ  `7ﬂ`r7`%ﬂ∞`r0`7€ﬂ€ `r6 `r0 `4€`r4`6≤`r0`4€  €`r4`6≤`r0`4€ `r6±€`r0 €`r6‹`r0ﬂ‹€‹`r6±`r0€ `r4`^∞`r0 `4€`r6≤`r4`^∞`r0 `r4∞`r0 `4€[4
+ `6€ `7€`r7`4∞`%‹≤`r0`7€‹ `8≤ ± ∞   `7‹‹ﬂ€`r7`4∞`r0 `r6 `r0 `r4 `6€`r0`4€ ‹`r4`6‹ﬂ`r0`4ﬂ‹`r6∞€`r0  ‹`r6±`r0 ‹€`r6∞€`r0 € €`r6±`r0€ € €`r6±`r0€ `r6∞`r0€ `r6€∞`r0€[
+ `6€ `r7`8∞`r0`7‹ `r7`%± `^∞`r0 `8± ∞    `7€`r7`%€ﬂ±`r0`7€€ `r6 `r0 `4ﬂﬂﬂﬂﬂﬂ  ﬂﬂﬂ   ﬂﬂﬂ ﬂﬂ ﬂﬂ€`r6∞`r0€ ﬂﬂﬂﬂ ﬂﬂﬂ ﬂﬂﬂ  ﬂﬂﬂﬂ  `r6 `r0
+ `6€ `7€€€€ﬂ  `8∞       `r7`%∞`r0`7€ﬂ‹€ `r6`4∞`r0        `r4`^≤`r0`4€`r4`^∞`r0         `4€`r6ﬂ€`r0 €`r6 `r0€                   ∞ `6€
+ €‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹ ‹ `r6`4±`r0 ∞      `r4`^±`r6`4≤`r0€          ﬂﬂﬂﬂﬂ            ‹≤‹       `6€
+ €                      `r6`4≤`r0 ‹      `r4`^∞`r6`4±`r0€     ‹ﬂﬂﬂﬂ`r4`^∞`r0`4‹ ﬂﬂﬂ `r4`^±`r0`4€‹ﬂ€`r4`^∞`r0`4‹    ﬂ ∞      `6€
+ € `4[`6A`4]`6ttack the Dragon  `r6`4€`r0 ﬂ      €`r6∞`r0€     ‹`r4`^∞`r0`4€ﬂ€‹€ `r4`^∞`r6`4ﬂ`r0€ `r4`^∞`r6`4±`r0€ €`r6±`r0ﬂ           ﬂ `6€
+ € `4[`6R`4]`6un like a Baby    ‹ `4≤      €`r6 €`r0 ‹`r6ﬂﬂ`r0‹ﬂ`r4 `r0 ‹€`r6±`r0€ `r6€∞`r0€ €`r6∞`r0€               ≤ `6€
+ €                      € `4ﬂﬂ ﬂ   ﬂﬂﬂﬂﬂﬂﬂﬂ ﬂﬂﬂ ﬂﬂ ﬂﬂﬂ ﬂﬂﬂ            ﬂ ﬂﬂ `6€
+ € `4ﬂ ﬂﬂ`6ﬂ`4ﬂ`6ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`4ﬂ `6ﬂﬂ`4ﬂ `6ﬂ`4ﬂ ﬂ `6€
+ € You come to the entrance of the Dragons Lair.  It is a cave that has  €
+ € been engraved into the side of the mountian.  You see bits and pieces €
+ `r6`4∞`r0 `6of small children laying among the debry near the opening of the lair.`r4≤`r0
+ `r6`4±`r0 `6Right now you have two choices you can kill the dragon, and stop the  `r4±`r0
+ `r6`4≤`r0 `6slaughter of inecent people, or you can run like a frightened child.  `r4∞`r0
+ `4€ ‹ ‹`6‹ `4‹`6‹‹ `4‹`6‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹`4‹`6‹`4‹€
+@#LEVEL10FEMALE
+  `2"`0You are now level ten.. A true honor!
+  Do not stop now... You may be the one to rid the realm
+  of the Red Dragon yet...  Only two more levels to go
+  until you are the greatest warrior in the land.`2"
+@#LEVEL10MALE
+  `2"`0You are now level ten.. A true honor!
+  Do not stop now... You may be the one to rid the realm
+  of the Red Dragon yet...  Only two more levels to go
+  until you are the greatest warrior in the land.`2"
+@#LEVEL11FEMALE
+  `2"`0I am Turgon, daughter.  The greatest warrior in the realm.
+  You are a great warrior, and if you best me, you must
+  find and kill the Red Dragon.  I have every faith in you.`2"
+@#LEVEL11MALE
+  `2"`0I am Turgon, son.  The greatest warrior in the realm.
+  You are a great warrior, and if you best me, you must
+  find and kill the Red Dragon.  I have every faith in you.`2"
+@#LEVEL1FEMALE
+  `2"`0Hi there.  Although I may not look muscular, I ain't all
+  that weak.  You cannot advance to another Master until you
+  can best me in battle.  I don't really have any advice
+  except wear a groin cup at all times.  I learned the hard
+  way.`2"
+@#LEVEL1MALE
+  `2"`0Hi there.  Although I may not look muscular, I ain't all
+  that weak.  You cannot advance to another Master until you
+  can best me in battle.  I don't really have any advice
+  except wear a groin cup at all times.  I learned the hard
+  way.`2"
+@#LEVEL2FEMALE
+  `2"`0You are now level two and a respected warrior.
+  Try talking to the Bartender, he will see you now.  He
+  is a worthy asset... Remember, your ultimate goal is
+  to reach Ultimate Warrior status, which is level twelve.`2"
+@#LEVEL2MALE
+  `2"`0You are now level two and a respected warrior.
+  Try talking to the Bartender, he will see you now.  He
+  is a worthy asset... Remember, your ultimate goal is
+  to reach Ultimate Warrior status, which is level twelve.`2"
+@#LEVEL3FEMALE
+  `2"`0You are now level three, and you are actually becoming
+  well known in the realm.  I heard your name being mentioned
+  by Seth Able the Bard.... He might even like you....`2"
+@#LEVEL3MALE
+  `2"`0You are now level three, and you are actually becoming
+  well known in the realm.  I heard your name being mentioned
+  by Violet.... Ye Gods she's hot....`2"
+@#LEVEL4FEMALE
+  `2"`0You are now level four.  But don't get cocky - There
+  are many in the realm that could kick your...  Nevermind,
+  I'm just not good at being insperational.`2"
+@#LEVEL4MALE
+  `2"`0You are now level four.  But don't get cocky - There
+  are many in the realm that could kick your...  Nevermind,
+  I'm just not good at being insperational.`2"
+@#LEVEL5FEMALE
+  `2"`0You are now level five..Not bad...Not bad at all..
+  I am called Sandtiger - Because.. Actually I can't
+  remember why people call me that.  Oh - Don't pay attention
+  to that stupid bartender - I could make a much better one.`2"
+@#LEVEL5MALE
+  `2"`0You are now level five..Not bad...Not bad at all..
+  I am called Sandtiger - Because.. Actually I can't
+  remember why people call me that.  Oh - Don't pay attention
+  to that stupid bartender - I could make a much better one.`2"
+@#LEVEL6FEMALE
+  `2"`0You are level six!  Vengeance is yours!
+  You can now beat up on all those young punks that made
+  fun of you when you were level 1.  This patch?  Oh - I
+  lost my eye when I fell on my sword after tripping
+  over a gopher.  If you tell anyone this, I'll hunt you
+  down.`2"
+@#LEVEL6MALE
+  `2"`0You are level six!  Vengeance is yours!
+  You can now beat up on all those young punks that made
+  fun of you when you were level 1.  This patch?  Oh - I
+  lost my eye when I fell on my sword after tripping
+  over a gopher.  If you tell anyone this, I'll hunt you
+  down.`2"
+@#LEVEL7FEMALE
+  `2"`0You are growing powerful my daughter.
+  You are a woman to be reckoned with now.  Remember,
+  Trade your Gems with the bartender to further your
+  ability.`2"
+@#LEVEL7MALE
+  `2"`0Even in my country,  you would be considered a good
+  warrior.  But you have much to learn.  Remember to
+  always respect your teachers, for it is right.`2"
+@#LEVEL8FEMALE
+  `2"`0You are now level eight.  Remember, do not use your
+  great strength in bullying the other warriors.  Do not
+  be a braggart.  Be humble, and remember, honor is everything.`2"
+@#LEVEL8MALE
+  `2"`0You are now level eight.  Remember, do not use your
+  great strength in bullying the other warriors.  Do not
+  be a braggart.  Be humble, and remember, honor is everything.`2"
+@#LEVEL9FEMALE
+  `2"`0You are now level nine.  You have traveled far on the
+  road of hardships,  but what doesn't kill you, only
+  makes you stronger.  Never stop fighting.`2"
+@#LEVEL9MALE
+  `2"`0You are now level nine.  You have traveled far on the
+  road of hardships,  but what doesn't kill you, only
+  makes you stronger.  Never stop fighting.`2"
+@#LONGINTRO
+   `r7`8‹`r0 `r7€€€`r0€`r7€€€€`r0€`r7€`r0€€`r7€≤±±±≤≤≤≤≤€€€€€`r0€`r7€€€€€€€€€€€€€€€€€€€€€€≤±±≤€€€€€€€€€€€€€€€`r0 € `1€€
+`r7   `8∞`r0 `r7€€`r0        €`r7≤≤±±∞∞≤≤≤≤`r0€ﬂﬂ       ﬂﬂ`r3€≤≤`r7€`r0           ﬂﬂ€`r7≤≤≤`r0           ﬂﬂ€€ € `1€€
+`r7    `r0 `r7`8∞€`r0€  `7∞ ∞ `8€≤≤€`r7≤≤≤≤≤≤€`r0€    ‹ ‹‹‹    €`r3≤≤`r7€`r0 `7∞ `8€ €€€€€‹‹ ﬂ`r7€≤`r0€ `7∞ `8€ `r7≤`r0€‹‹    €`r7€`r0€ `1€€
+`r7 `r1`7≤`r7  `r0 `r7`8∞∞≤€`r0`7∞∞ ± `8€€€€€€€`r7≤≤€€`r0› `7∞∞ ∞ `r7`8±≤`r0€€   ﬁ`r7€€€`r0›`7± ∞ `8€€€€€€€€  `r7≤`r0€›`7± ∞ `r7`8±≤≤`r0€€ `7∞∞`8ﬁ`r7€`r0€ `1€€
+`r1`7≤≤`r7`8∞∞`r0 `r7±≤≤€`r0`7∞± ≤ `r7`8€`r0€`r7€`r0€€€€€`r7≤€€`r0 `7∞±± ∞ `r7`8≤€€`r0€€   `r7€€€`r0€`7≤ ± `r7`8€€€€€≤≤€`r0€ `r7€`r0€€`7≤ ± `r7`8±≤€`r0€€ `7±± `r7`8€`r0€≤`1€`r1`7∞`r0
+`r1±±`r7`8∞±`r0 `r7≤€€€`r0`7±± € `r7`8€`r0€`7∞`8ﬂ ﬂﬂﬂ€`r7€€`r0 `7±≤≤ ± `r7`8€€€`r0€€›  `r7€€€`r0€`r7`%∞`8≤`r0`7≤ `r7`8€€€€≤±±≤€`r0 `r7€`r0€€`7€`r7`8≤`r0`7≤ `r7`8€€€`r0€€ `7≤≤ `r7`8€`r0€±`r1`7∞∞`r0
+`r1∞∞`r7`8≤€`r0 `r3≤`r7€€`r0€`7≤`r7`%∞`8≤`r0`7€ `8€€€ `7∞≤€`8ﬁ€`r7€€`r0 `r7`%∞±∞`8≤`r0`7≤ `r7`8€`r0€€€€›`7∞ `r7`8€€€`r0€`r7`%±`8±`r0`7€ `r7`8€`r0€`r7€€≤≤€`r0ﬂ ﬁ`r7€`r0€€`7€`r7`8±`r0`7€ `8€`r7€€`r0€€ `r7`%∞∞`r0 `r7`8€`r0€∞`r1`7∞±`r0
+`r1  `r0`8≤`r7€`r0 `r3≤≤`r7€`r0€`7≤`r7`%±∞`r0`7€ `r7`8€€`r0€› `7≤€`8ﬁ`r7€€€`r0 `7≤`r7`%≤∞`8±`r0`7€ `8€€€€€ `7± `r7`8€€€`r0€`r7`%ﬂ`8∞`r0`7€ `r7`8€`r0€ ﬂﬂﬂ  ‹`r7€€`r0€€`7€`r7`8∞`r0`7€ `8€`r7€€`r0€› `r7`%±`r0`7€ `r7`8€`r0€`r7≤`r1`7±≤`r0
+`r1∞ `r0`8±`r7€`r0 `r3≤≤`r7€`r0›`r7`%∞≤∞`r0`7€ `8€€€€‹ `7ﬂ `8€`r7€€`r0› `r7`%∞∞`8∞`r0`7€ `8€€€€ﬂ`7‹≤`8ﬁ€€ﬂ`7ﬂﬂﬂﬂ `8€€€‹ `7ﬂ‹`8ﬂ€€`r7€`r0ﬂ`7ﬂﬂﬂﬂ `r7`8€€`r0€ﬂ `r7`%ﬂ`r0`7ﬂ `8ﬁ`r7€≤≤`r1`7∞±`r0
+`r1  `r0`8∞`r7€`r0 €€ﬂ`7‹`r7`%∞`r0`7€ﬂﬂﬂﬂ        `8€`r7€`r0€  `7ﬂ`r7`%∞`r0`7€‹‹‹‹‹€ﬂ `8€€€€≤≤≤≤ `r7€`r0€`r7€`r0€`r7€`r0‹`7ﬂ€‹`8ﬂ€€€€€€ `7≤≤  ﬂ  `8‹€ €`r7€`r1`7∞∞`r0
+`r1 `r0`1€ `r7`8€`r0 ﬂ   ‹‹‹€€€€€€€€€‹  ﬂ€€‹‹ `7ﬂﬂﬂﬂﬂ `8‹‹€€`r7€€€`r0€€€€ `r7€`r0€`r7€`r0€`r7€€€`r0‹`7ﬂ`r7`%‹`r0`7‹ `8ﬂﬂ€€‹‹‹‹‹‹‹`r3≤≤`r0€ €€`1€`r1 `r0
+`r1 `r0€ `r7`8€`r0 `r7€€€€`r0€€€≤€`7∞∞`8€€€€€€€€‹‹‹`r7€€€`r0≤≤≤≤≤≤≤≤≤≤≤≤≤≤€€€`r7€€€€€€€€€€`r0‹`7ﬂ`r7`%∞`r0`7≤≤‹‹`8ﬂﬂﬂ`r7€€€€€€€`r0 `r7€`r0 `1€`r1 `r0
+€€ `8€‹‹‹‹‹   ∞                                                `7ﬂﬂ≤≤€    `8‹‹‹‹‹€ `1€`r1 `r0
+€‹ ‹‹‹‹         `6Ansi superbym/plf Legend of the Red Dragon!              `1‹‹‹ ‹`r1 `r0
+≤≤€€€€€€‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹€€€`r1     `r0
+`r1`7∞∞∞∞∞∞∞∞∞∞∞`r0`1€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r1`7∞∞∞∞±±±∞∞∞`r0`1€€€€€€€€€€€€€€€€€`r1    `r0
+`r1`7≤≤±±±±±±±±∞∞∞∞∞∞∞ `r0`1€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7`8≤≤`r0
+`r7`%∞∞∞`r1`7≤≤≤≤≤≤≤≤≤≤≤≤±∞∞∞∞`r0`1€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7`8≤≤≤±±`r0
+`r7`%€€€≤≤±∞∞`8∞∞∞∞±`r1`7±±∞∞`r0`1€€€€€€€€€€ﬂﬂ`4‹‹‹‹‹‹`1ﬂﬂ€€€≤ﬂ        ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€`r7`8≤≤≤`r0
+`r7`%±±∞∞`r0`7€`r7`8∞∞∞∞±`r1`7±±∞∞∞`r0`1€€€€€€€€€ﬂﬂ`4‹€`r4`@∞∞∞∞∞`r0`4€≤≤≤`r7`^€`r0`1€€             €€€€€€€€€€€€€€€€€€€€€€€€€€
+`7€`r7`^‹‹‹`8±±`r1`7±±∞∞∞∞`r0`1€€€€€€€€€€€`r7`^€`r0`4‹`r4`@∞∞∞∞±±±∞∞∞`r0`4€ﬂ`r7`^€`r0`1≤`r7`^€`r0`6‹€€`@€`6‹        `1ﬂ€€€€€€€€€€€`r1`7∞∞∞∞`r0`1≤≤€€€€€€€€
+`7€€`r7`^ﬂ`r0 `1±±≤≤≤≤€€€€€€€€€€€€`r7`^€`r0`4€€€`r4`@∞∞±±±±∞∞`r0`4€≤`r7`^€`r6`@‹`r7`^€`r0`6€ﬂ`@€€€€€`6‹     ﬂﬂ‹`1ﬂ€€€€€€`r1`7∞∞±±`r7`8∞∞`r1`7±±∞∞`r0`1€€€€€≤≤
+`7€€€`r7`^ﬁ`r0`1≤≤≤€€€€€€€€€€€€€€€ `4≤€`r4`@∞∞±±∞∞∞∞∞`r0`4€ `6ﬁ`@€`r7`^€`r0`@€`7‹‹`@‹€€€€€    `6€€€›`1≤`r1 `r0€€€`r1`7∞±≤≤≤`r7`!∞∞`r0`7€`r1€`r0€`r1≤±∞`r0`1€€≤≤`r1`7∞`r0
+€ `r7`^‹`r0`1∞±≤€€€€€€€€€€€€≤≤≤`r7`^€`r0`4ﬁ€`r4`@∞∞∞∞∞`r0`4€€`r4`@∞∞`r0`4€  `@€€`6ﬁ`@≤`r7∞∞±≤`r0≤≤€  `r7`^€`r0`6ﬁ€€€`r6`@ﬂ`r0`6›`1≤€`r1`7∞∞±±±`r7`8±±∞∞∞`r1`7≤≤≤≤`r0`1€€€`r1`7∞∞∞∞`r0
+€€  `r7`^ﬂﬂﬂﬂ`r0`1ﬂﬂ€€€€≤≤≤≤≤`r1`7∞∞`r7`^€`r0`4€€`r4`@∞∞`r0`4≤€€≤€`r4`@∞`r0`4€›`r7`^€`r0`@€`r6€`r0`4±`6€`@≤€`r7≤≤`r0€€€›`r7`^€`r0   `6ﬂﬂﬂ `1€€€€€€€`r1`7∞∞∞∞∞∞±±±`r0`1€€`r1`7±±≤≤`r0€€
+`r7`^ﬂﬂ`r0`7€€`r7`!∞∞∞`r0`7€€€`1ﬂﬂ€€≤≤`r1`7∞∞∞∞±`r7`^€`r0`4€`r4`@∞∞∞`r0`4≤€€≤€€€›`r7`^€`r6`@ﬂ`r0`6ﬂ ﬂﬂ`r6`@ﬂﬂﬂ€€`r0€  `3∞∞`1‹‹‹€€€€€€€€€€€€€≤±±`r1`7∞∞±±≤≤`r7 `!∞∞`r0`7€
+€€`r7`!∞∞∞`%∞∞±±≤‹`r0`7€`r7`^€`r0`1€`r1`7∞∞∞±±±`r7`^ﬁ`r0`4€€`r4`@∞∞∞`r0`4≤≤`r4 `r0≤≤€€€        `6ﬂﬂ    `3∞ `1ﬂ€€€€≤≤€€€€€€€€€€`r1`7∞∞∞±±≤≤≤`r7`%∞∞∞∞`r0
+`r7`!∞∞∞`%∞∞±±≤≤€≤≤`r0`7€`r7`^€`r1`7±±≤≤≤`r0€`r7`^€`r0`4€`r4`@∞∞∞∞∞`r0`4€€≤≤€€€`r7`^€`r0`@€‹‹    ∞≤`6€€       `1ﬂﬂ€€€€€€€€€€`r1`7∞∞∞±±±±≤`r7`%∞∞∞≤≤∞`r0
+`r7∞∞`r0`7€`r7`%∞∞≤≤€€€≤∞ `^€`r1`7≤≤`r0€€€`r7`^€`r0`4‹€`r4`@∞∞∞∞∞`r0`4€€€`r4`@∞`r0`4€`@‹`r7`^€`r0`4ﬂ`@ﬁ`r7‹≤`r0€‹`r7`^€`r0 `@±≤≤  `6‹‹€`r6`@‹‹‹`r0`6€‹‹`1ﬂﬂ€€€≤€`r1`7∞∞∞∞±±±±±≤≤`r7`8∞`%∞∞∞∞`r0
+`r7 `r0`7€€€€€`r7`%∞∞∞`r0`7€€`r7`^‹€`r0`7€€€€`r7`^‹€`r0`4€€€`r4`@∞∞∞∞`r0`4€€€`r7`^€`r0`4ﬂ`@‹`r7≤`r6‹‹`r0‹ﬂ`r7€`r0€€`r7`^€`r0  `@‹‹`6€`r6`$∞`@±±≤≤≤≤€∞∞`r0`6€‹`1ﬂ`8‹`r7`^ﬂﬂ`r0`8‹`1ﬂﬂ≤`r1`7∞∞∞±±±±±±±`r7`8∞∞±`r0
+`r7`%∞∞`r0`7€`r7`%∞∞`r0`7€€`r7`^‹‹ﬂﬂ`r0`7€`r7`%∞∞∞∞ `^‹`r0`6‹‹`@‹`4ﬂ`@±±`4≤`r4`@∞`r0`4€€`r7`^€€`r6`@‹`r7±±≤`r0€€`r6‹`r7≤≤`r0€`r7`^€`r0 `@€≤`r6€≤±±≤`r0€`6ﬁ`r6`@∞€ﬂ `r7≤≤`r0€`r7`^€`r0`7€`r7`%±±±±`8ﬂ`r0‹`1ﬂ≤`r1`7∞∞∞∞∞∞±±±`r7`8±±`r0
+`r7`%≤≤∞`^ﬂ€ﬂﬂ`r0`7€€`r7`%∞∞±≤≤∞`r0`7€`r7`^€`r6 `r0`@±≤≤`r6‹‹  `r0`4€`r4`@∞`r7`^€`r6`@‹‹≤`r7≤≤`r0€€€€`r7≤≤≤`r0€‹ €`r6€`r7≤≤≤≤€`^€`r0`6€`r6`@∞`r0€`r7≤∞≤≤`r0`6€`r7`^€`r0`7€`r7`%€€≤±±`r0`8›`1€€ﬂ`r7`^ﬂﬂﬂ`r0`8ﬂﬂ€`r1`7±±`r7`8≤`r0
+`r7`%≤€€€‹`^ﬂ‹`%∞∞∞≤≤≤≤∞`^€`r0`6€`@≤≤≤€€€€`r6‹`r0€`4€€ `r6`@≤≤`r0€€€€›€€`r7±±≤`r0€€‹`6ﬂ`r7`@±±±≤`r0€€`r7`^€`r0`6€`r7`@≤≤±±≤`r0`6€›`r7`^€`r0`7€`r7`%€€∞`^‹ﬂﬂ`r0`7€€`r7`%∞∞∞`r0`7€€`r7`^ﬂ`r0`8ﬂ≤`r7≤`r0
+`r7`%∞≤≤≤€€‹`^€`r0`7€`r7`%∞±±±± `^€`r0`6€`@≤`r7≤≤`r6≤`r0≤≤`r6ﬂ`r0€€€≤`4›`@€€€€`r6≤∞`r0`6€`r7`^€`@≤≤≤≤`r0€`4€ﬂ`@‹`r7≤≤≤`r0€€€€`r7`^€`r0`6€`@€`r7≤≤≤`r0€`6€`r7`^€€  `!∞∞∞`%∞∞€€∞∞∞∞`r0`7€€`8ﬁ≤
+`7€`r7`%∞±±≤≤€`^ﬁ`r0`7€€`r7`%∞±∞`r0`7€`r7`^€`r0`6€`r7`@±±`r6≤≤∞`r0 `6≤`@≤€`r7≤≤`r0€€€€€€`r6∞≤∞`r0`6€‹`@ﬂﬂﬂﬂ  `6ﬂ`r6`@€€€ﬂ`r0ﬂﬂ≤∞ `6ﬂ€`@€€`r7≤`r0€`6€`r7`^€ `!∞∞`%∞€€€€€€€`r0`7€`r7`%∞∞`r0`7€€€
+€€`r7`%∞∞∞`^‹‹ﬂ`r0`7€€`r7`%∞∞ `r0`7€`r7`^€`@≤≤≤`r6≤`r0`6≤`r7`^€`r0`6ﬁ`@€€`r7≤≤±±`r0€€€€€ `r6≤`r0€`r6≤∞  `r0   ∞∞‹‹‹‹`r6≤≤`r0€€ `r7`^€`r0`6ﬁ€€`r7`@≤`r0€`6€`r7`^€€`r0`7€`r7`%€€€€€€ﬂﬂ`r0`7€`r7`^‹‹ﬂﬂﬂ‹`r0
+`r7 ‹‹ﬂﬂ`%∞∞±±±‹‹‹ `r0`6∞`r7`@≤≤`r6≤≤`r0`6∞`r7`^€€`r0`@‹ﬂ€ﬂ`r7±`r0`4€€`r7`@≤≤`r0ﬂ`r7`^€`r6`@‹`r0€`r7≤`r0€`r6≤≤±`r7`^€`r0  `6≤`@≤€`r7≤≤`r6€`r0€€€€   ﬁ`r4`%∞∞`r0`@€`6€ `7€€`r7`%€€€ﬂ`r0`7€€`r7`^‹ﬂﬂ`!∞∞∞`%∞∞∞`r0
+`7€€`r7`%∞∞‹‹€€€€€€€`r0`7›`6€`r4`%∞∞`r0`@€€`r7`^€`r0`7€`r7`^€`r0`@€ `6€ﬂ`@‹‹`4ﬂ`@ﬂ`6‹`r6`@∞≤≤`r7≤≤`r0€€`r6≤≤`r0`6€`r7`^€`r0 `6∞≤≤`r6`@ﬂﬂ`r0€€ﬂﬂ`6‹‹€€`r4`%∞∞`r0`@€€`6€›`r7 `r0`7€€€€€`r7`^‹ﬂ`!∞∞`%±≤≤≤±±∞`r0
+`7€€`r7`%‹€€€€€€€€€€`^€`r0`6€`r4`%∞`r7`@€`r0€`r7`^€`r0`7€`r7 `r0`@ﬁ€‹‹€€‹`r7`^€`r0`6€`r6`@∞≤`r7≤±±±≤`r0€€ﬂ`6ﬂ`r7`^€`r0  `6∞€€ﬂﬂ‹`@‹`r7ﬂﬂ∞∞≤`r0€€`6€€ﬂ `7€€€`r7`8‹‹`r0ﬂ`r7`^€‹`r0`7€€€`r7`%∞±±±±∞`r0
+`r7∞€€€€€€€€€€€`r0 `6€`@€€€`6€`r7`^€`r0`7€`r7`^€`r0`@€€€€€€€€‹`r6≤≤`r0€`r6≤`r7≤≤≤`r0€€`r7`^€`r0`@€‹‹  `6‹`@‹≤€`r7±∞≤≤`r6ﬂ`r0ﬂ`6ﬂ`r7`^ﬂﬂ`r0`7€€€`r7`^‹`r0`8ﬂ`r7`^ﬂ`r0`7‹`%‹`r7‹€€‹`^ﬂ`8‹∞∞∞`r0`7€`r7`%∞±∞`r0
+`r7≤€€€€€€€€€€`r0 `6€`@±€€`6€`r7`^€`r0`7€`r7`^€`r0`@€€€€€ﬂﬂﬂﬂ`6‹`r6`@∞`r4`%∞∞`r6`@≤`r0€`r7≤≤`r0€ﬂﬂ‹€`r7≤`r0≤≤≤€`r6ﬂﬂ`r0ﬂﬂﬂ`r7`^ﬂﬂ`r0`7€`r7`%∞∞`r0`7€€`r7`^‹ﬂ `r0`%≤`r7‹€`r0€`r7€€€€€‹`8€±±∞∞`r0`7€`r7`%∞`r0
+`r7ﬁ≤€€€€€€€€`r0`7≤`6≤€`r7`@≤≤`r0‹`r7`^€`%‹‹ `r0`@ﬂﬂ   `6∞∞ﬂﬂﬂ`r6`@∞∞±≤≤`r0€ `6‹`@‹€`r7≤±±≤`r6ﬂ`r0`6ﬂ`7‹‹‹€€€`r7`%∞∞∞∞`r0`7€`r7`^‹ﬂ`r0`7€`r7`%‹€€€€€€€€€€ﬂ`^ﬁ`8≤≤±±∞∞`r0
+`r7 `%ﬂ€€€€€€€ﬂ`r0 `6€`@€`r7‹ﬂ `%€€€€ﬂ`^‹`r0`6‹≤≤`r6`@‹`r0€`r7≤≤`r0‹  `6ﬂ`r6`@∞±±`r0`6‹`r7`^€`r0`6ﬂﬂﬂ∞‹ `7‹€€€€€€€€€€€€`r7`^›`r0`7€`r7`%ﬁ€€€€€€`r0€€€`r7ﬂ‹‹`r0€€`r7‹‹`8∞∞∞`r0
+`r7`%∞`r0`7€€`r7`%ﬂﬂ€€ﬂ`r0`7ﬂ`6‹€`@€€`r7`^€ `%€€€€ﬂ`^€`r0`6€`@±±±`r7≤±±±≤`r0€  `r7`^€`r6`@∞∞±∞`r0`6€±±€ﬂ`7‹€€€`r7`%∞∞∞∞€€€€‹‹`^ﬂﬂ‹`%ﬂ€€€€`r0€€€`r7 ‹`r0€€€€€€`r7›`8∞∞`r0
+`r7 `%‹‹    `^€`r0 `@€`r7`^‹‹‹ﬂﬂﬂ‹‹`r0`7€`r7`^€`r0`6±≤`@±`r6≤`r7≤≤≤≤`r0€€€  `6ﬂﬂﬂ`r6`@∞∞∞`r0`6≤ﬂ`7‹€€`r7`%∞∞∞±±€€€€€€€€€€€‹`^ﬂ‹`%€`r0€€€€€€€€`r7ﬂ`r0€€`r7ﬂ `r0`7€`r7`8∞`r0
+`%€€`r7ﬂ  `^ﬂﬂﬂ`r0`7‹`r7`^ﬂ`r0`%‹`r7‹`r0€`r7€€€‹‹`^ﬂﬂ`r0`6ﬂﬂ€`r6`@≤≤`r0€€`r7`^‹‹ﬂﬂﬂ`%∞∞∞`r0`7€`r7`^ﬂ`r0`6ﬂﬂ `7€`r7`%∞∞∞±±±≤≤≤€€€€€€€€€€€€`r0`7€`r7`^€`%€`r0€€€€€€€€`r7‹   `r0`7€€
+`r7      `%∞∞`r0≤`r7≤≤≤≤≤`r0€€€`r7€€€‹‹`^ﬂ`r0`6ﬂ`r7`^‹ﬂﬂ`r0`7€€`r7`%∞∞∞≤≤≤≤‹`r0`7€`r7`^ﬂ›`%∞±±±≤≤≤≤€€€€€€€€€€€€€€€`^ﬁ`%ﬁ€`r0€€€€€€€€€`r7‹ `r0`7€€
+`r7  `%‹≤≤≤≤≤≤≤`r0€€€€€€`r7€€`r0€€`r7≤≤≤∞`^ﬂ‹`r0`7€`r7`%∞∞≤≤≤€€€€€€`r0`7€`r7`9ﬂ`r0`7€`r7`%≤≤≤≤`r0€€€€€€€€€€€€€€€€€€`r7‹€`r0€€€€€€€€€€`r7ﬂ  `r0±
+`r7 `r0€€€€€€€€€€€€€€€€€€€€€`r7≤≤≤≤≤≤≤≤≤€€€€€≤≤±±≤≤`r0€€`r7€€€`r0€€€€€€€€€€€€€€€€€`r7›`r0€€€€€€`r7ﬂﬂ      `r0
+`r7ﬁ`r0€€‹ ﬂﬂ€€€€€€€€€€€€€€€€`r7ﬂ`r0€`r7≤≤`r0€€€€€€€€€€€`r7≤≤`r0€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂ  `r0€€`r7ﬂ          `r0
+`r7€`r0€€€€‹`4ﬂ ‹`%ﬂ€€€€€€€€€€€€€€`r7‹ﬂ€`r0€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7‹                `r0
+€€€€€€€€‹`4ﬂ‹‹`%ﬂ€€€€€€€€€€€€`r7› €`r0€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7‹‹           `r0
+`r7ﬁ`r0€€€€€€€€‹ `@ﬂ`4€‹`%ﬂ€€€€€`r7€`r0€€€€€`r7  ﬂ`r0€€€€€€€`r7ﬂﬂﬂ     ﬂ`r0€€€€€€€`r7ﬂﬂ‹‹ﬂ`r0€€€€€€€€€€€€€`r7‹       ‹`r0
+`r7 ﬂ€€€ﬂ‹`r0€€€€‹`@ﬂ€`4€‹`%ﬂ€€€€€€€€€`r7    ﬂﬂ              ﬂﬂﬂ  ‹‹`r0€€€€€€€€€€€€€€€€€€`r7›  ‹‹`r0€€€
+`r7    ‹`r0€€€€€€€›`@€€€`4€‹`%ﬂ€€€€€€`r7            ‹`r0€€`r7‹‹      ‹`r0€€€`r7€`r0€€€€€€€€€€€€€€€€€`r7ﬂ ‹`r0€€€€€€
+`r7  ‹€€`r0€€€€€€€€ `@€€€€`4€‹`%ﬂ€€`r7ﬂ           ‹`r0€€€€€`r7€€‹  ‹`r0€€€€€€€€€€€€€€€€€€€`r7ﬂ ‹‹`r0€`r7€`r0€€€€€€€
+`r7ﬁ`r0€€€€€€€€€€€€€ `@€€€€€`4€‹`7ﬂ`r7            `%ﬂ`r0€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€€€€€€€ `@€`r7≤≤≤≤`r0€€`4€‹`7ﬂ`r7           `%ﬂ`r0€€€€€`r7€€`r0€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€€€€€€› `@€`r7±±∞∞`r0`7€`r7`@∞`r0€€`4€‹`7ﬂ`r7          `%‹‹€€€`r0€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€€€€ﬂ `@‹`r7≤≤∞∞`r0`7€€€€`r7`@∞≤≤`r0€`4€‹`7ﬂ`r7    `%‹‹`r0€€€€€€€€€€€€€€€€€€€€€€€€€`r7€`r0€€€€€€€€€€€€€€€€€€
+€€€€€€‹ ﬂﬂ`@‹‹`r7≤≤∞∞  `r0`7€€€€€€`r7`@∞∞≤`r0€`4€‹`%ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7€`r0€€€€€€€€€€€`r7›`r0
+€`r7ﬂﬂ  ﬂﬂ`r0€‹`@ﬂ≤`r4ﬂ`r0ﬂﬂ€`r7‹‹`r0`7€€€€€€€€€`r7`@∞∞≤`r0€`4€‹`%ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7€€`r0€€€€€€€€€€€`r7ﬂ `r0
+`r7  `$∞∞     `r0`7›`@€€`r4‹‹`r0`4‹‹`@ﬂ€`r7‹‹`r0`7€€€€€€€€`r7`@∞∞≤`r0€`4€‹`%ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂﬂﬂ  `$∞`r0
+`r7∞∞∞∞∞     `r0 `r7`@ﬂﬂﬂ≤≤`r4‹`r0`4‹‹`@ﬂﬂ`r7‹‹‹`r0`7€€€€€€`r7`@∞∞≤≤`r0`4€ `%€€€€€€€€€€€€€€€€€€€€€€€€€€`r7€`r0€`r7€ﬂ`r0€€€`r7€ﬂ     `$∞∞∞`r0
+`r7∞∞ `%‹‹‹`r0€€€€ `@€`7€`r7`@∞∞∞ﬂﬂ`r0€`r4‹‹`r0`4‹‹`@ﬂ€`r7‹‹`r0`7€€€€€`r7`@∞≤≤`r0`4€ `%€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7€ ﬂﬂ         `$∞`r0
+`r7 `%‹`r0€€€€€≤ﬂ`@‹€`r7›∞`r0`7€€€`r7 `r0€`r7 `@≤ﬂ`r0€€`r4‹`r0`4‹‹`@ﬂ€`r7‹‹`r0`7€€`r7`@∞∞≤≤`r0`4€ `%€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7‹‹‹‹‹       `r0
+`r7ﬁ`r0€€€€‹ `@ﬂ€ﬂﬂ`7ﬂ€€€€`r7  `r0€€€€`r7 `@ﬂﬂ`r0€`r4‹`r0`4‹`@ﬂﬂ€`r7‹‹∞∞`r0€`r7≤`r0`4€ `%€€€€€€€€€€€€€€€€€€€€€ﬂﬂ`@‹`%ﬂ€€€€€€€€€€`r7‹    `r0
+`r7 ﬂ`r0€€€€€‹ `4ﬂ`r4`@‹‹`r0`4‹‹‹`7ﬂﬂﬂﬂ€€€€€€`r7  `@ﬂ`r4‹‹`r0`4‹‹`@ﬂ€`r7≤≤`r0€`4€€ `%€€€€€€€€€€€€€€€€€ﬂ`@‹‹€€ﬂ`%‹€€€€€€€€€€€€€`r7‹ `r0
+`r7    ﬂ`r0€€€≤ `@€`r7ﬂ`r0€€€`r4‹‹‹‹`r0`4‹‹‹‹`7ﬂﬂ`r7`@∞∞‹‹‹≤`r0€`r4‹`r0`4‹‹‹`@ﬂ€`4€€ `%€€€€€€€€€€€€ﬂﬂﬂ`@‹€€ﬂﬂﬂ `%€€€€€€€€€€€€€€€`r7›`r0
+`r7      ﬂ`r0€ﬂ`@‹`r7›    ﬂﬂﬂﬂﬂ`r0€€`r4‹‹`r0`4€€‹‹‹‹`@ﬂﬂﬂ€`r4‹∞∞`r0`4‹€€€ `%€€€€€€€ﬂﬂﬂ`@‹`r7≤€`r0€€ﬂ`4‹€€ `%€€€€€€€€€€€€€€€€€
+`r7  ‹‹`r0€€ﬂ`@‹€`r7ﬂ`r0`7€€€€€€€€€€€€€`r7`@ﬂﬂﬂﬂ`r0€€`r4‹‹ ∞≤`r0€`r4≤`r0`4€€ﬂﬂ`%‹‹‹€€ﬂﬂ`@‹‹ﬂ‹`r7ﬂ€€`r0€ﬂ`4‹€€€ `%€€€€€€€ﬂ ‹€€€€€€€€
+`r7‹`r0€€€‹ `@ﬂ€`r7∞∞`r0`7€€€€€€€€€€€€`r7 `r0€€€€€€€`@€€`r4≤€≤ `r0`4ﬂ`%‹€€€€‹ `@∞`4ﬂ`@ﬂ`%‹‹`@ﬁ`r7≤≤€`r0ﬂ`4‹€€€€ `%€€€€€€€ `r4 `r0ﬁ€€€€€€€€€
+`r7€€€€`r0€€€‹`@ﬂ`r7≤∞∞`r0`7€€€€€`r7 `r0€€€€€€€€€`r7  `@∞∞∞`r0€`r4≤∞`r0 `%€€€€€€€€€€€€€ `@€€ﬂ`4‹`r4  `r0€ﬂ`%‹€€€€€€€ `@€`r4 `r0 `%€€€€€€€€€
+`r7€€€€€€`r0€€€ `@€`r7≤∞`r0`7€€€€`r7  `r0€€€€€`r7`@∞∞∞∞±≤≤`r0€€`r4∞`r0 `%€€€€€€€€€€€€€ﬂ`4‹`@€€€`r4∞`r0`4ﬂ `%‹€€€€€€€€ `r4`@‹`r0€`r4›`r0 `%ﬁ€€€€€€€€
+`r7€€€€€€€`r0€€€ `@€€`r7≤`r0`7€€€`r7`$∞∞∞∞`@∞∞∞≤≤€€`r0€€€€€€`r4‹`r0`4‹`%ﬂ€€€€€€€€€ﬂ`4‹`r4`@‹€`r0€`r4≤›∞`r0 `%€€€€€€€€€ `r4`@‹`r0€€`r4€ `r0 `%€€€€€€€€
+`r7€€€€`r0€€€€€€€ `@€€`r7±±±±±±±≤≤≤`r0€€`r4≤≤`r0€`r4≤`r0€€€`r4€`r0€€`r4‹`r0`4‹`%ﬂ€€€ﬂﬂ`4‹`@‹€€€€€`r4≤ `r0`4€ `%€€€€€€€ﬂ`r4`@‹`r0€€€€`r7≤`r4›`r0 `%ﬁ€€€€€€€
+`r7€€€`r0€€€€€€€€€ `@€`r7≤≤≤`r0€€€€€€€`r4≤≤±±`r0ﬂﬂﬂ`r7≤≤`r0≤≤≤€`r4‹‹`r0`4‹‹`@‹`r4‹`r0€€≤≤`r4`%∞∞`r0`@€€`r4›`r0`4€€ `%€€€€€ﬂ`r4`@‹`r0€€€€`r7€`r0€€`r4›`r0`4€ `%€€€€€€€
+€€€€€€€€€€€€€ `@€€€€€€`r4≤≤`r0ﬂﬂ‹‹‹‹`r7≤≤≤≤≤≤`r0≤`r4≤≤`r0€€€€€€€€€€€€`r4€ﬂ`r0`4€€ `%€€€€ﬂ`4‹`r4`@‹`r0€€≤≤€€€€`r4›`r0 `%ﬁ€€€€€€€
+`r7€€€€€€`r0€€€€€€€€ `@€€€ﬂﬂ‹‹€≤≤`r7≤≤±±±±≤≤≤≤≤`r0€€€€€€€€€€€`r4€ﬂ`r0`4≤€ﬂ‹‹`%ﬂﬂﬂ`4‹`@€€€`r7≤≤`r0≤€€€€€`r4›`r0 `%€€€€€€€€
+`r7€€€€€€€€`r0€€€€€€€‹ `@≤≤≤€€€€`r7≤≤≤≤≤`r0€€€€€€€€€€€€€€€€`r4≤ﬂ`r0`4€€ﬂ‹≤`r4 `@∞∞≤≤`r0€€`r7≤±±`r0€€€€€€`r4€`r0`4€ `%€€€€€€€€
+`r7€€€€€€`r0€€€€€€€€€€€‹‹`@ﬂ€€€`r7≤≤`r0€€€ﬂﬂ  ‹€€€€€€€€€€€`r4ﬂ∞`r0`4€ﬂ‹`r4`@∞∞±±≤≤€`r0€€`r7≤≤≤`r0€€€€€€€`r4ﬂ`r0 `%€€€€€€€€`r7ﬂ`r0
+`r7€€€€€`r0€€€€€€€€€€€€€€€ `@€€€ﬂﬂﬂ‹`r4∞`r0`4‹‹`r7`@€`r0ﬂ ‹€€€€€€€`r4ﬂ`r3`4€€`r0 `@‹≤`r4±±≤≤€`r0€€€€€€€`r7≤`r0€€€€`r4€ﬂ`r0`4€ `%€€€€`r7ﬂﬂﬂﬂ  `r0
+`r7€€€€€`r0€€€€€€€€€€€€€€€ `@ﬂ‹‹≤≤`r4∞ `r0`4€€ﬂ `@‹€€`r4€€`r0€€€`r4ﬂ∞`r3`4€€`r0 `@€`r7≤≤≤≤`r0€€€€€€€€€€€€€€`r4ﬂ`r0`4€ﬂ`%‹€€€€€€`r7‹‹   `r0
+`r7€€€€€€`r0€€€€€€€€€€€€€€ﬂ`@‹`r4≤≤`r0`4≤≤≤ﬂ`@‹‹€€€€`r4€`r0€€`r4€ﬂ`r0`4€`r4`6∞`r0`4€ﬂ `r4`$±±`r7`@≤≤`r0€€€€€€€€€€€`r4€ﬂﬂ`r0`4ﬂﬂﬂ`%‹€€€€€€€€€€`r7›  `r0
+`r7€€€€€€€€€€€`r0€€€€€€€ﬂ `r3`4≤`r4`@∞∞`r0`4≤≤ﬂ`@‹€€€€€`r4≤≤€ﬂﬂ`r0`4€`r4`6∞∞`r0`4ﬂ`$‹`r4±±`r0`@€€€€€€€€`r4€`r0€€`r4ﬂﬂ`r0`4€€ﬂ`%‹‹€€€€€€€€€€€€€`r7ﬂ   `r0
+`r7€€€€€€€€€€€€€€`r0€€ﬂ`r7`@≤`r0€`4±€€`@‹‹€€`r7≤`r0€€€`r4≤≤ﬂ `r0`4€`r4`@∞`r0`4€ﬂ‹`@‹€€€€ﬂﬂ  `4‹`r4`6∞∞`r0`4≤≤`r4`6∞`r0`4€ﬂﬂ`%‹‹€€€€€€€€€€€€`r7ﬂﬂ      `r0
+`r7€€€€€€€€€€`r0€€€€ﬂ`7‹`r7`@±±≤`r0€‹€€`r7≤≤`r0€€`r4ﬂﬂ ∞∞`r0`4€€€€ﬂ‹`r3≤`r4`@ﬂ`r0€ﬂ‹‹`4€ﬂ`%‹`4ﬂﬂﬂﬂﬂ`%‹‹‹€€€€€€€€€€€€€€€€€`r7‹‹     `r0
+`r7€€€€€`r0€€€€€€€ﬂ`7‹`r7`@∞≤≤`r0€€`r7€€`r0€€€`r4ﬂ `r0`4€€€≤≤≤ﬂﬂ‹‹≤≤`r4 `r0 `@‹€`r4ﬂ`r3`4≤`r0ﬂ`%€€€€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂﬂ      `r0
+€€€€€€€€€€€ `7€`r7`@±≤≤`r0€€€€`r4€ﬂ`r0`4€€€€€€€ﬂ‹‹±ﬂﬂ`%‹‹‹ `r3`4±≤`r0ﬂ`%‹‹€€€€€€€€€€€€€€€€€€€€€€`r7ﬂﬂﬂ          `r0
+€€€€€€€€€€ `7€`r7`@‹`r4€`r7€`r4€€€ﬂ `r0`4€€€€ﬂﬂﬂ`%‹‹€‹‹‹€€€€ `@±`r3`4≤`r0ﬂ`%‹€€€€€€€€€€€€€€€€€€€€€€€€€€`r7‹‹       `$∞∞`r0
+`%€€€€€€€€€ `7€`r4`@€€€€ﬂﬂ`r0`4€€€ﬂ`%‹‹‹€€€€€€€€€€€€€€‹‹≤€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂ   `$∞∞∞∞∞`r0
+`%€€€€€€€€ `7€`r4`@€€ﬂ`r0`4€€€≤≤ `%‹€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂﬂ     `$∞∞±±∞∞`r0
+`%€€€€€€€ `7€`r7`@€`r4€`r0`4€€€≤≤≤ `%€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂﬂ        `$∞∞∞∞∞  `r0
+`%€€€€€€≤`7ﬁ`r7`@€`r4€`r0`4€€€€€≤≤ `%€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7‹‹‹‹‹‹‹         ‹‹`r0
+€€€€€€≤ﬁ`r7`@≤≤`r4€`r0`4€€€€€≤≤ `%€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7€`r0€€€€€€€€`r7‹ ‹‹`r0€€€€
+€€€€€€€‹`7ﬂ`r7`@∞≤≤`r4‹`r0`4€€€`r4 `r0€≤‹`%ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€‹ `7ﬂ`r7`@ﬂﬂ`r4€‹‹`r0`4€€€€€‹‹`%ﬂﬂﬂ€€€ﬂﬂ ‹‹≤€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€€€€‹‹`7ﬂ`%ﬂ`7ﬂ`r7`@ﬂﬂ`r4€€‹‹`r0`4€€€‹‹‹ `%ﬂﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€‹ﬂﬂ€€€€€€€€€€€€‹‹‹`7ﬂﬂ`@ﬂﬂﬂﬂﬂ`r4€‹‹`r0`4€€‹‹‹ `%ﬂﬂﬂ‹‹‹€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€ ‹ﬂ€€€€€€€€€€€€€€€€€€€€‹‹‹`7ﬂﬂﬂﬂ`r4`@‹‹`r0`4€€‹`%ﬂﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€`r7›ﬂ`r0€€€€€€€€€€€€€€€€€€€€‹ﬂ€‹‹`7ﬂﬂ`r4`@€‹‹`r0`4‹‹`%ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+€€€€€€€€€`r7  ﬂﬂ`r0€€€€€€€€€€€€€€€€€€€‹‹€€€‹‹`7ﬂ€`r4`$∞`r0`4ﬂ `%€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+ﬁ`r7€`r0€€€€€€€€`r7‹   ﬂ`r0€€€€€€€€€€€€€€€€€€€€ﬂﬂ`7‹`$‹`%€ﬂ`7ﬂ`%‹€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+ﬁ€€€€€€€€`r7ﬂ    ‹`r0€€€€€€€€€€€€€€€€€ﬂ`7‹‹`r7`$‹≤`r0ﬂ  `%ﬂﬂﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€
+ ﬁ`r7ﬂﬂﬂ      ‹‹`r0€€€€€€€€€€€€€€€€€€€‹‹‹‹`$ﬂﬂﬂﬂ`7ﬂﬂﬂ  `%ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬁ€`r7€`r0
+`2≤ `7€`%≤≤≤`r7   ﬂﬂﬂ`r0€€€€€€€€€€€`r7€€`r0€€€€€€€€€€€€€€€€€€‹‹  ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€`7€`r7`^€`r0`%€€
+`2≤›`r7             `%ﬂﬂﬂﬂ`r0€€€€€€€€€€€€€€€€€€€€€€ﬂ `7‹`%‹‹‹€€€€€€€€€€€€€€€€€€€€€€€€€€€`r7ﬂ`^ﬁ`r0`2‹`r7`^‹`r0`%›
+`r2`$∞ `r0`2‹`7ﬂ`r7 `r0≤`r7               `%ﬂﬂ`r0€€€€€€€€€€€€€€€€€€€‹ ﬂ€€€€€€€€€€€€€€€ﬂﬂ€€€€€€€€€€€`r7ﬂ`r0 `2€`r2`0∞ `r0
+`r2`$±∞ `r0`2€‹‹`r7`^‹`r0`7ﬂ`r7 `%‹‹`r0€€€€`r7`^ﬁ`r0`%€€€€ﬂ€€ﬂ€€ﬂ€€€€€€€€€€€€€€€€€€‹‹‹€€€€€€€€€€€‹€€‹ﬂ‹ﬂ€€€€€`r7`^‹`r0`%ﬂ `2€`r2`0±±∞ `r0
+`r2`$∞`r0`2€€`r7`^€€`%ﬂ€`r0€€€€€€€€`r7`^ﬁ€`r0`%€€€€‹‹ ‹‹€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ  `2ﬂ≤≤€`r2`0∞∞`r0`2€
+€€€€‹‹`r7`^€`%ﬂﬂ€€€€€›`^€€€`%€€€`r0€`r7€`r0€`r7€`r0€`r7€€€€€€€€€€€€€`r0€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€‹  `8‹`2‹€`r2`$∞`r0`2€
+€≤≤ﬂﬂﬂﬂ`r7`^€ﬂ‹‹`%ﬂ€›`^€€`r0`2∞`r7`^€€`%€`r0€`r7€€€€€€€€€€€€€€€€€€`r0€€€€€€€€€€€€€€€€€€€€€€€€€`r7€€€€`r0≤ﬂﬂ  `8‹ﬁ`r2`$∞∞∞`r0`2€
+`r2`0∞∞`r0`2€€‹ `r7`^€`r0`7€`r7`%€€€€ﬂ`^€€€`r0`2≤≤`r7`^€€`%€€€€€€€€`r0€€€€€€€€€`r7€€`r0€€€€€€€€€€€€€€€€€`r7€€`r0€€€€`r7ﬂﬂﬂﬂﬂ€€`r0`7€ `8‹`r2ﬂ`$∞∞∞∞`r0`!€`r2`0€`r0
+`r2∞∞∞`r0`2≤≤€‹ `7ﬂ`r7`%ﬂﬂ`^‹€€€`r0`2∞≤€ `r7`^€€`%ﬂ€€€€`r0€€€€€€€€€€€`r7€€`r0€€€€€€€€€€€€€€€€€`r7€`r0€€€`r7         `r0 `8ﬁ`r2 `$∞∞∞∞`0ﬂ`r0`!€€
+`2€`r2`0∞∞`$∞∞`r0`2≤€€‹`r7`^€€€€€€`r0`2≤`r2`0ﬁ`r0`2€›`r7`^€€`r0`7€`r7`^ﬂ‹`%ﬂ€`r0€€€€€€€€`r7€€€`r0€€€€€€€€€€€€€€€€€€€`r7€€`r0€`r7€€€‹‹   `r0∞`r7`^€`r0`8‹`2‹`r2`$∞±±±∞`r0`2€€`r2`0€`r0
+`2€€`r2`0∞`$∞`r0`2≤ﬂﬂ     `r7`^€€`r0`2∞≤`r2`0ﬁ€‹`r0`2‹`r7`^€€‹`%ﬂ€€`r0€€€€€€€`r7€€€€`r0€€€€€€`r7€`r0€€€€€`r7€€`r0€`r7€`r0€€€€`r7€`r0€€€`r7€€€`r0€ﬂ`r7`^‹`r0`8‹€`2€`r2`$∞∞±±∞`r0`2€€€€
+€€€€‹‹  `r7`^€€€€`r0`2∞∞±≤€`r2`0€€`r0`2€ﬂ`r7`^€€ﬂ‹‹`%ﬂ€`r0€€€€€`r7€`r0€›`r7€€€`r0€€€€`r7€`r0€€€€€ﬂ€ﬂﬂ€€€€€€€€€€€›`r7`^€`r0`2∞`8€€`r2 `r0`2€`r2`$∞∞∞∞`r0`2€`r2`0‹€€`r0
+`2€€€€€€ﬂ  `r7`^€€`r0`2∞±±≤€`r2`$∞`0ﬂ`r0`2€›`r7`^€  `%ﬂ€‹€€`r0€€€€`r7€€`r0€ ﬁ€€€€€€€€€€ﬂ‹‹‹ﬂ€€€€€€€€€€€€`r7€`r0‹`r7`^€€`r0`8ﬂ`r2‹`r0`2€€€€€`r2`0€`r0`!€€`r2`0€`r0
+`2€€€€€› `r7`^€€€`r0`2∞±≤≤€`r2`$∞∞∞`0≤`r0`2€‹`r7`^€‹`r0`7€`r7  `%ﬂﬂﬂﬂﬂ`r0€€`r7€`^ﬁ`r0`2ﬁ`r7`^€`r0`%€€€€€`r7€€`r0€€€€€`r7€€`r0€€€€€€€€€€€€€≤› `r7`^€`r0 `8∞€`r2 `r0`2€€`r2`0€ﬂ`r0`2›`r2`0€ﬂ`r0
+`2€€€ﬂﬂ`r7`^€€€`r0`2∞∞±≤€€€€€`r2`$∞`r0`2€`r2`0€‹`r0`2€‹‹ `7ﬂﬂ`r7  `r0`%€€€`r7€›`^€`r0`2€`r7`^€€`r0`%€`r7€€€€€`r0€€€€€€€`r7€`r0€€€€€€€€€€€€€€‹∞  `8ﬂ`r2€‹ `r0`2€ﬂ`r7`^€`r0`2ﬂ`8≤
+`2ﬂ  `r7`^€€€`r0`2∞∞±±≤≤≤≤≤€€€`r2`$∞`0ﬂ‹`r0`2€‹`r7`^€€`r0`7‹€€`r7`%€€€€ﬂ`^€`r0`2€`r2`0€‹`r0`2‹`r7`^€`r0`%ﬂ€€`r7€€`r0€€ﬂﬂ ﬂﬂ`r7€€`r0€`r7€€€€`r0€€€€€€€€€€€`r7`^€`r0`8∞∞∞  `r7`^€`r0`2‹›`r7`^€`r0
+  `2∞∞∞`r7`^€`r0`2∞±±±≤≤≤≤€€€€€€€`r2`0€€‹`r0`2‹‹`r7`^€‹‹`%ﬂﬂ`^‹€`r0`2€`r2`0€`r0`2€ﬂﬂ‹`%‹‹€€€€`r7€€`r0€ €€`r7€€€€€€€€€€€`r0€€€€€€ﬂﬂ   `2‹€`r2`0‹€€`r0
+`2€∞∞`r7`^€`r0`2±∞±±≤≤≤≤≤≤€€€€€`r2`0ﬂﬂ€€`r0`2€€€€‹‹`r7`^€`r0`2ﬂﬂ€`r2`0∞∞∞‹`r0`2‹`r7`^€€`r0`%ﬂ€€€€`r7€€€`r0€€`r7ﬂ€€€€€€€€€€€€`r0€€€€›     `8ﬂ€≤`r2`0ﬂ`r0`8€
+`2ﬂ`r7`^€€`r0`2≤≤±±≤≤≤≤`r2`8∞∞`r0`2€`r2`0∞∞`r0`2€€€€€`r2`0ﬂ€€`r0`2€      ‹‹€`!∞∞`2€€‹‹`r7`^€`r0`%ﬂﬂ€`r7€`r1≤≤≤`r0€`r7›`r0 `r7ﬁ€€€€€€€€€€€€€`r0`!›`%ﬂ›`2ﬁ∞     `8∞∞
+`r2∞∞∞∞`r0`2≤≤`r2 `r0≤≤`r2`8∞∞∞`0∞∞∞`r0`2€€€€€€€€`r2`0€€‹`r0`2‹ ﬂﬂ≤≤`8€`r2`0€`r0`2€`!∞`2ﬂ€‹ `r7`^‹`%∞`r0€€€`r7€€€€`r0`7€`2€ `r7`%ﬁ€€€€€`r0›`r7€€`r1≤≤`r7ﬂ`^‹`r0`8ﬁ›`r7`^€`r0`2ﬁ`r2`0€`r7`^€`r0   `2∞`8‹
+`r2±±∞∞∞∞∞∞∞`$∞`0∞∞∞∞∞`r0`2€€€€€€€`r2`0ﬂﬂ€€`r0`2€€‹   `8€€`2€`r7`^€€`r0`2ﬂﬂ∞  `%ﬂ€`r7€€€€`r0`!≤ `r2`0ﬁ`r0`2€ `r7`%ﬁ€€€€`r0  `r7ﬂ`r1ﬂ`r0`8ﬂ`r7`^€`8≤ﬂ`r0€`r7`^€`r2`0ﬁ€∞`r7`^€`r0 `2∞≤€‹ `6∞
+`r2`8≤≤±±∞∞∞`$∞∞`0∞∞∞   `r0`2€€€€€€€€`r2`0‹€`r0`2€`r2`0€€‹`r0`2€€‹‹`8ﬂ€`r7`^€€€€€€`r0`7ﬂﬂ`%ﬂ`7€€ﬂﬂ`2‹`r2`0‹€`r0`2€€`r7`^€`%ﬂ`r0€€›      `8€ﬂ`2‹`r2`0‹€≤∞∞`r0`2‹  ﬁﬂ `6∞
+`r2`8≤≤±± ±`$∞∞∞`0∞∞∞∞∞`r0`2€€€€€€€€€€€≤≤€ﬂﬂﬂﬂ`r7`^€€`r0`2€`8›`r7`^€€€€€€€€`r0   `2≤`!€`r2`0ﬂ€`r0`2€€€‹`7ﬂﬂ  `r7`^€`r0    `r7€`r0`2ﬂﬂﬂ`r2`0€`r0`2€€ﬂ€‹   `6∞∞
+`r2`8≤€ﬂ  `$∞∞∞∞`0∞`r0`2€€€€€€€€€€€€€€`r2`8∞∞∞`r0`2€€‹`8‹    ﬂ`r7`^€€€€€€€€€`r0`2‹€€ﬂ`r7`^€`r0`2€€›ﬂ€€‹`r7`^€€`r0      `r7€`r0`2‹`r2`0‹`r0`!€`r2`0€`r0`2€€‹`r7`^€`r0   `6±±
+`2€`r2       `$∞∞`r0`2€€€€€€€€€€€`r2  `8∞∞`r0`2€€€€`r2   `8ﬂ`r0`2‹‹‹`8‹`r7`^€`r0 `r7€€€€€`r0`8ﬂ`2ﬂ  ‹€`r2`0‹`r0`2€€€‹‹   ∞›   `r7`^€`r2`0‹≤`r0`!€€€`r2`0€€‹`r0`2ﬂﬂ  `6±±
+`2€`r2        `r0€€€€€€€€€€`r2  `r0€`r2 `8∞±  ∞ `r0`2€≤≤±±±±∞∞∞∞∞`r7`^€€`r0`2‹‹‹‹€`r2`0‹€`r0`2€≤≤€€€€‹ ∞€‹ ‹`r2`0∞±ﬂ`r0`2ﬂ`!€€`r2`0€∞`r0`2‹‹   `6∞∞
+`2€€≤`r2        `r0€€€€€€€€€`r2   `r0€`r2        `r0≤≤≤≤`r2`8≤≤≤`r0  `r7`^€€€`r0`2ﬂﬂ`r2`0€€€ﬂ`r0`2€≤≤≤`r7`^€`r0`2ﬂ€‹‹`r2`0∞∞`8∞`r0`2‹`r7`^€`r0`2‹‹ ‹`!€`r2`0€€€≤∞∞`r0`2€ `6∞∞
+`2≤≤≤`r2         `r0€€€€€€€€€€€€`r2`0∞∞∞`r0`2€`r2     `8∞∞∞∞±±±∞∞`r0`2€€‹ﬂﬂ€€€€€€‹‹  `8ﬂ`r2`0∞±±∞∞∞`r0`2ﬂ `r2`0∞≤€€€€∞±±`r0
+`2≤≤≤≤`r2         `r0€€`r2 `r0€€€›`r2`0∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€`r2  `8∞∞`r0`2€€€€€€€€€€€€€€€€€€`r2 `0∞∞`r0`2€`r2 `r0ﬂ‹`r2`0≤`r0`!€€`r2`0€€ﬂ`r0`2€€`r2`0€≤‹`r0`2‹‹
+±±≤≤≤`r2      `r0€€€€€€€€ ﬁ€€€`r2`0∞∞∞∞∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ‹`r2`0≤≤≤€€≤≤`r0`2€€€€`r2`0≤€€€‹‹`r0
+`2≤≤≤`r2    `r0€€€€€€€€€€€  ›€€€€€`r2 `0∞∞∞`r0`2€€€€€€€€€€`r2`8∞`r0`2€€€€€`r2 `r0€€€€€€€ﬂ‹€€‹‹‹‹€€€€€€€€€€€€`r2`0ﬂ≤€‹`r0`2€
+€€€€`r2    `r0€€€€€€€€€  ﬁ`r2`0∞`r0 `2€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ €€€€€€€€€€€€€€€€€€€€€`r2`0∞`r0`2€€≤
+€€€€€€€€€€€€€€€€ﬂ  `r2 `0≤`r0 `2€€€€€€€€€€€€€€€€€€€€€€‹ﬂ€€€ﬂﬂ ‹‹ ﬂﬂ€€€€€€€€€€€€€€€€€€€€≤≤
+€€`r2     `r0€€€€€€€ﬂ   ﬁ`r2`0ﬁ€`r0`2≤ €€€€€€€€€€€€€€€€€€€€€€€ ﬂ ‹ﬂ€€€€€`r2 `r0‹€€€€€€€€€€€€€€€€€€≤±±
+`r2     `r0€€€€€€ﬂﬂ    `r2  `0≤≤`r0`2€€‹≤€€€`r2  `0∞∞∞`r0`2€`r2`0∞∞`r0`2ﬂ€€€€€€€€ﬂ ‹€€€€€€€€€€€€€€€€€€€€€€€€€€€€€≤±
+ﬁ€`r2  `r0€€€€€€€€€ﬂ ‹€€€`r2`0±±∞`r0`2‹ﬂﬂ‹`8ﬂ`r2`0∞∞∞`r0`2€€€€€€€‹ ﬂﬂ€€ﬂ  ≤€€€€ﬂﬁ€€€€€€€€€€€€€€€`r2`0∞`r0`2€€€€ €€€€≤
+ €€€€€€€€€€ﬂ     ‹€`r2`0∞∞∞∞`r0`2‹‹`8ﬂ`r2`0∞∞±±±±±±`r0`2€€€€€‹     €€€€€ﬂ‹€€€€€€€€€€€€€€€`r2`0∞∞`r0`2€€€› €€€€€
+  ﬂ`r2 `r0€ﬂﬂ       ‹‹€€€€€€`r2`0∞`r0`2‹‹‹`8ﬂﬂ`r2`0±≤≤≤≤≤`r0`2€ﬂﬂﬂ€€ﬂ   €`r2`0∞`r0`2‹ﬂﬂ €€€€€€€€ﬁ€€€€€€€`r2`0∞∞∞∞∞`r0`2€ ∞ﬁ€€€€
+∞ ﬂﬂ€€€€€€€€∞    ‹‹€€€€€€ﬂ‹`0∞`r2≤≤≤`r0€€€€`2€€‹     `0∞`2€`r2`0∞∞∞`r0`2€ €ﬂﬂ‹‹€€› €€€€€€€`r2`0∞∞`r0`2€€ﬂ  ±∞ﬂﬂ€€
+   ﬂﬂ€€€€€ﬂﬂ        ‹‹≤≤€∞‹‹  `r7`^‹`r0`0€€€€ﬂ`2ﬂ        `r2`0∞±±`r0   `2‹€`r2`0∞∞`r0`2€€   ﬂ€€€€`r2`0∞±±`r0`2‹     ∞ﬂ€€€
+  ‹€€€€ﬂﬂ            €€≤€€€‹ﬂ `0‹ ﬂ€€€€`r2≤≤∞∞`r0`2€‹   €  `r2 `r0€`r2`0∞∞∞`r0`2€ﬂ   ∞∞ ﬂ€€€`r2`0∞∞`r0`2€ﬂ    ∞∞ﬂ€€
+   ﬂﬂ                ∞∞∞€€ﬂﬂ `r2`0€€`r0€€€€ﬂ  `2ﬂ`r2  `0∞∞`r0`2€     `r2 `0∞±±`r0`2ﬂﬂ     ∞ ﬂ€ﬂﬂ€ﬂ          ﬂ
+             ∞∞±       ∞∞±±   `0ﬂ€€ﬂ `2≤€€ ﬁ€`r2`0∞∞∞ `r0  `6± `2ﬁ`r2  `r0€€ﬂﬂ
+            ∞∞±±      €‹ ∞∞‹    `0ﬂ `2∞±±€€ €≤€ﬂﬂﬂ `6∞  `2ﬂﬂﬂ                  `7≤ `8‹‹`2∞≤`r2`8ﬂ`r0`2€
+             ∞∞      ∞±≤€‹ﬂ∞€€€‹  ∞∞≤≤≤ﬂﬂ  `8‹`r7ﬂ`r0‹    €ﬂ              ‹‹≤≤≤`r2`7∞`r0`2€€`r2`@∞∞∞∞∞`r0
+                      `2∞∞≤€€‹ ﬂﬂﬂﬂ   `6≤ `7‹≤`8€‹`r7≤≤`r0ﬁ`r7≤`r0    €ﬂ`r7ﬂ≤`r0‹   ‹‹‹‹`2‹‹≤≤≤€€€`r2`7±±`@∞∞∞±±±±`r0
+                        `2∞∞≤∞∞  `8‹‹`2±± `6∞ `r7`8≤≤±±`r0ﬂﬂ      `6‹‹`r7`^€€`r0`8∞∞±≤≤≤`r2≤±±∞∞`r0`2€€€≤ﬂ`r2`7≤`r0`2€≤€€€`r2`@∞±±`r0
+`4‹‹‹€€`r7`^€`r0`4€€‹‹                `2∞    `8ﬂ`2ﬂ`8ﬂﬂ `2∞∞∞`8‹‹€€`0∞∞ `6‹‹€≤€`r7`^€`r0`6€€‹‹‹‹`8ﬂﬂﬂ`2ﬂ≤≤€€ﬂﬂ`6‹`r6`7‹€`r0`2ﬂ±≤≤€€€`r2`@∞`r0
+`4≤€€€€`r7`^€`r0`4€€€€€€€€‹‹‹                 `2∞∞∞±±±±`8€ﬂ`6‹≤≤≤€€€`r7`^€`r0`6€€€€€€€€€€€‹‹‹‹€€`r6`7ﬁ€  `r0`6‹‹`2ﬂﬂ€≤±
+`4‹‹`r4 `r0€€€`r7`^€`r0`4€€‹‹ﬂﬂﬂ≤≤€€€€€‹‹‹‹     `2∞∞∞∞∞±±±±≤ﬂ`6‹€€€ﬂﬂ`r7`^€€€€€`r0`6ﬂﬂ€€€€€€€€€€€€€€€`r6`7ﬁ€`r0`6€ﬂﬂﬂﬂ`r7`^€€`r0`2∞
+`r4`7∞∞∞∞∞`r0`4€`r7`^€`r0`4€€€€≤≤≤≤≤≤≤€€€€€€`r4`@∞`r0`4€€€‹‹ `2∞∞∞±±±`r2`8∞`r0`3ﬂ`6‹≤≤ﬂﬂ`r7`^€`r0`8‹‹‹€`r7`^€`r0`7€`r7`%∞`r0`7€`r7`^ﬂﬂﬂ`r0`6ﬂﬂﬂﬂﬂﬂ`r7`^ﬂ`r0`%‹‹‹‹‹‹`r7 `r0`7‹`%‹€€`r7∞`^€`r0`2∞∞∞
+`r4`7∞∞∞`@∞∞`r0`4€`r7`^€`r0`4€`r4   `r0≤≤≤≤≤≤≤≤≤€€€€€`r4`@∞∞∞∞`r0`4€ﬂ `r7`^€`r0`2±±±`r2`@∞∞`r0`6ﬂﬂﬂ`8‹‹€€€€`r3≤`r0€`r7`^€`r0`7€`r7`%±±∞      ∞∞±≤≤`r0€€€€`r7›‹`r0€€€`r7∞`^€`r0`2±±∞
+`4€`r4`@∞±±±∞`r0`4€`r7`^€`r0`4€€‹‹ﬂﬂ€€≤≤≤≤≤≤€€`r4`@∞±±`r0`4€€`r7`^€`r0 `8€ `4∞`r2`8∞∞`@∞∞`r0`2≤`r7`^€`r0`8€`r3≤≤`r0€€€€€€∞`r7`%∞∞∞∞`r0`7€€€`r7`^‹‹`r0`7€€`r7`^€`r0`6‹`r7`%±±≤`r0€€ﬂ`r7`^€€‹`r0`%€€`r7∞`r0 `2±±±
+`4ﬂﬂ‹‹`r4`@∞∞`r0`4€`r7`^€`r0`4€‹ﬂ€€€‹‹ﬂﬂ€≤≤≤≤≤`r4`@∞`r0`4€€€`r7`^€`r0 `8€`6€`8€∞`4∞`2€€≤≤`r7`^€`r3`8≤≤`r0€ﬂ  ﬂ€€∞`7€`r7`^€`r0`$‹`6‹`r7`%∞`r0`7€`r6 `$±`r7`^€  `r0`6ﬂ`$ﬂ`r7`%∞∞`r0€€€`8ﬁ`r7  `^€`r0`%ﬂﬂ`r7`^‹€€`r0`2∞±
+`4€€`r4`@∞∞∞∞∞`r0`4€`r7`^€`r0`4€€‹ﬂﬂ€€€€‹‹ﬂﬂ€€≤€€`r7`^€`r0 `8€`6€€€`8€∞`r7`^€`r0`2€€€`r7`^€`r0`8€€`r7`^€`r0`8∞   ﬁ€∞`7€`r7`^€`r0`6ﬂ `7€€`r7`^€`r0`$ﬂ`r7`^ﬂ `r0`7€`r7`%∞∞±±`r0€€`r7`^‹`r0`8ﬁ`r7 `r0`%€`r7`^€€€€€€ﬂ€`r0
+`r4`@∞∞∞∞∞`r0`4€€€›€‹ﬂ€€‹ﬂ€€€€€€≤≤€€`r7`^€`r0 `8€`6€€€€€≤`8‹`r7`^€`r0`4∞`2€`r7`^€`r0`8€€`r7`^€`r0`8∞   ﬁ€∞`7€`r7`%±±±`r0`7€€€€€€`r7`^‹‹‹€€€€€`r0 `8ﬂ`r7`^€€€€€ﬂ`%∞∞`r0`7€
+`4ﬂﬂﬂ `6‹‹‹‹ `r7`^€`r0`4ﬂ€‹ﬂ€€‹ﬂ€≤≤≤≤≤€`r7`^€`r0 `8€`r6`7∞∞`r0`6€€€€€€`8€ `4≤`r7`^€`r0`8€€`r7`^€`r0`8±   ﬁ€∞`r7`%∞∞ `r0`7€`r7`^‹‹‹€€€€€€€€€€€€€€€€ﬂ`%∞∞≤≤`r0`7€
+`6€€€≤€€≤≤∞`r7`^€`r0`8€‹`4ﬂ€‹ﬂ€€‹ﬂ≤≤€€`r7`^€`r0 `8€`6€`r6`7∞∞∞`r0`6€€€€≤€`8‹ `4±`2∞∞     `8ﬁ€`r7`^€ ﬂ€€€€€€€€€€€€€€€€€`r0 `r7€ﬂ`%∞∞≤≤`r0€€€
+`r6`$∞∞`r0`6≤€€€€≤±`8ﬁ`r6≤`r0€€‹`4ﬂ€€€€€€€€`r7`^€`r0 `8€`6€`r6`7∞±±∞∞∞`r0`6€≤±≤€≤ `4∞`2±`6‹‹≤≤‹`2∞∞`r7`^€`r0`2‹‹›`8ﬁ`r3≤≤≤≤`r0€€‹‹‹‹‹‹‹‹‹`r7`^€`r0`7€`r7`%∞`r0`7ﬂﬂ`%ﬂﬂ`7‹‹‹
+`6±±±≤≤ﬂﬂﬂ `8ﬁ`r6±±≤`r0€€‹`4ﬂ€€€€€  `8€`r6`$∞∞`7±±±∞∞∞`r0`6€€≤€€€€‹`4∞`2≤`r7`^€`r0`6≤`r6`$±±`r7`^€`r0`2±±±`r2`@∞`r0`2›`8ﬁ`r3≤≤`r0€€€€€€`7∞∞∞∞∞`8€€`r7`^€`r0`7€`r7`!∞`r0 `7€`r7 `^INN`r0`7€
+ `2‹‹‹‹±±±∞∞`8ﬂ`r6±≤`r7`^€ﬂ`r0`8ﬂ€‹`4ﬂ€€≤ `8€`r6`$∞∞∞∞`7∞`r0`6€ﬂﬂﬂﬂﬂﬂﬂ≤≤‹`r7`^€`r0`2∞∞≤`r7`^€`r0`6≤`r6`$∞≤`r7`^€`r0`2≤≤`r2`@∞`r0`2›`r7`^€`r0`8€`r6€€`r0€€€€€€`7∞∞`8€€€€`r7`^€`r0`7€€ €€ﬂﬂ`%‹‹
+`2≤≤≤≤€`r2`$∞∞`r0`2≤≤±∞∞`8ﬂ `r7`%∞`r0`7€`r7`^€`r6`8≤≤`r0‹`4∞ `r7`^€`r0`8‹‹‹‹`6‹‹≤≤≤≤≤≤≤≤€€€`r7`^€`r0`2±±€€`r7`^€`r6`$≤≤`r0€`r7`^€`r2`@∞∞∞`r7`^€`r0`8€`r6≤≤`r0€  ﬂ€€€ `6‹`8ﬂ`r3≤≤`r0`3∞`r7 `%∞`r0‹‹‹€€€€
+`2±±€`r2`$∞±±±∞∞`r0`2€≤∞∞`6‹`r7`^‹`r0`7€`r7`^€`r6`8≤≤±±±`r0 `6€`r6`7∞`r0`6ﬂﬂﬂ≤€€  ∞`r6`7∞∞`r0`6€ ∞€`r7`^€`r0`2±±`r2`@∞∞`r0`2€`r7`^€`r6`$≤`r0€€`r7`^€`r0`2∞∞`r7`^€`r0`8€€€€`6∞∞∞ `8€≤`6ﬁ`r6`$ﬂ`r0`6›`9≤`r3`8≤`r0`3∞`7€`r7`!∞`%∞≤`r0€€€€€
+`2∞∞`r2`$∞∞∞∞`r0`2€≤≤ﬂ`$‹‹`r6∞∞`r0`6€ `r7`^€`r0`8€€`r6≤±±`r0`6∞≤`r6`7±`r0   `r6∞∞`r0`6€   €€€‹‹€`2∞€`r2`@∞±±±`r0`2€`r7`^€`r0`$€€€`2±±∞∞`8ﬂﬂﬂ`6≤≤∞ `8€€€€`r3≤≤≤`r7`^€`r0`7€`r7`!∞∞`%∞±±≤≤`r0€
+ `2∞∞±±ﬂ`$‹‹€€€`r6≤`r0`6ﬂﬂ`2‹±∞∞`8ﬂ€`r6≤±`r0 `r6`7∞±`r0`6‹‹‹`r6  `r0€€€€€≤≤€€€`2∞≤≤`r2`@∞∞∞∞`r7`^€`r0`$€€`r6€`r0€‹‹`2≤∞∞∞`$‹‹`6‹ `8€€€€€€`r3≤`r7`^€`r0`7€`r7`!∞∞`%∞∞∞`r0`7€€`r7`^‹`r0
+  `$‹‹`r6≤€`r0€€€ﬂﬂ`2‹‹`r2`0∞∞`r0`2€≤≤∞∞`8ﬂ€`r7`^€`r6`$∞∞∞`7∞∞`r0`6€€€≤≤≤`2∞∞‹‹‹‹≤≤≤€€€`r2`@∞`r7`^€`r6`$≤`r0€`r6€€€€€`r0€€€ﬂ`6ﬂ`2±±∞∞`8ﬂ`2∞`8€€€`r7`^€`r0`7€€`r7`%∞`r0`7€`r7`^‹‹`r0`2‹‹`r2`0∞`r0
+`$€€€`r6€`r0€€€ﬂ`2‹‹€`r2`0∞∞∞∞∞∞`r0`2€≤≤≤∞`r7`^€`r0`6ﬂ`2∞∞±±≤≤€€≤≤≤€€€€€€€€€€€`r7`^€`r6`$≤≤€≤€`r0ﬂ`2‹‹‹€€€€€≤≤≤±±∞∞`8ﬂ `r7`^‹‹`r0`2‹‹€`r2`0∞≤≤≤`r0
+`$≤≤€ﬂﬂ€€‹`2ﬂ€€`r2`0∞∞`r0`2€€€€€€€€€€€≤≤≤€€€€€€€€€€€€€€€€€€`$‹`r6≤≤€€€`r0 `2€€€€€€€`r2`0∞∞`r0`2€€€≤≤≤€€€€€`r2`0∞∞±±±±±`r0
+`$ﬂ `2∞∞∞`$ﬂ€`r6≤`r0€‹`2ﬂ€€€€€€€€€€€€€€€€€€€€€€€€€€€€€`r2`0∞`r0`2€€ﬂ`$‹€€`r6€€€`r0€ `2€€€€€`r2`0∞±±±∞∞`r0`2€€€€€`r2`0∞∞∞∞∞∞∞∞`$∞∞∞`r0
+`2∞∞∞±±≤`$ﬂ`r6±≤€`r0€‹`2ﬂﬂ€€€€€€€€€€€€€€€€€€`r2`0∞∞∞∞∞∞∞  `r0`2ﬂ`$‹€€€€€€€€€`r6≤`r0`2ﬂ€€€€`r2`0∞∞`r0`2€€€≤€€€€€€€€€€`r2`$∞∞∞±±`r0
+`2±±≤≤≤≤€‹`$ﬂﬂ`r6≤`r0€€€€‹‹`2ﬂﬂﬂﬂ€€€€€€€€€`r2`0∞∞∞±±±`r0`2€€ﬂ`$‹€€€≤≤ﬂﬂ`2‹‹`$ﬂ€€€`r6≤`r0‹`2ﬂ€€€€€€€€€€€€€€€€€€€€€`r2`$∞∞`r0
+`2≤≤≤≤€€€€€€‹ `$ﬂﬂ€€€€€€€€€€‹‹‹‹`2ﬂﬂﬂﬂﬂ`8ﬂﬂ`$‹‹‹€€€`r6≤`r0€ﬂ`2‹€€€€€‹`$ﬂ€€€€‹`2ﬂ€€€≤≤€€€€€€€€€€€€€€€€
+≤≤‹  `6∞∞∞            `$€`r6≤≤≤€`r0€€€€€€€€€€€€€€`r2€ﬂﬂ`r0`2≤≤≤≤≤€€€€€‹`$ﬂ€€€€‹`2ﬂﬂ€€€ﬂﬂ€`@‹`4‹`2‹€€€€≤±±±±
+€€€€‹  `7town square `2ﬁ‹‹‹‹‹‹`$ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`2≤≤≤≤≤≤≤≤≤≤≤≤€€€€‹`$ﬂ`r6≤≤`r0€€€‹`2ﬂﬂ€`0≤‹`4ﬂ`2€€€€€≤≤≤≤≤±
+≤€€€€€‹‹‹‹‹  ‹‹‹‹‹‹€€€€€€€€€≤≤≤≤≤≤≤≤≤≤≤€€€€€€€€€€€€€€€€€‹`$ﬂ`r6≤≤`r0€€€ `@‹`7‹`0ﬂﬂ`2‹€€€€€€€€≤≤
+≤≤€€€`r2`@∞∞ `8‹‹€`r0`6∞±`r2 `r0`2€`r2 `r0€€€€€€`r2`0∞∞∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€€€ﬂﬂﬂﬂ`r7`^€`r0`$ﬂ€ﬂﬂ `r7`@≤∞`r0`7›`2ﬂﬂﬂﬂﬂﬂ€€€€€‹
+±±≤`r2`@∞∞∞`r0`2€€€€≤‹`6ﬂ`r2`8‹ `r0`2€€`r2`0∞∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€€€€€€€€›`@€ `$€€‹`%‹ `2ﬂ€›  ﬁ‹
+±±±±±≤≤€€€€€≤≤`r2`0∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€ﬁ€€€€€€€€€€€‹ `$€`%ﬁ`$€`%ﬁ€€`2€`r2`0∞`r7`@≤`r0`7€`2ﬁ`r2`0∞`r0`2ﬁ€ `6∞∞∞∞∞∞∞∞
+`2±±`r7`^€`r0`2∞±±±±±±±≤≤≤≤€€€€€€€€€€€€€€€€€€€€€€≤≤≤€€`r7`^€`r0`2€€€€€€≤≤≤≤∞`8‹ `%≤ﬁ€ﬁ `6‹`@‹ ﬂﬂ`2ﬂﬂ`r2`0‹€`r0`2›`6∞∞∞∞∞∞∞∞
+`2± `r7`^€`r0`2±±±±±±±±±±±≤≤≤€€€€€€€€€€€€€`r2 `r0≤≤≤`r2`8∞∞∞∞∞`r0`2€€›`r7`^€`r0`2€€€€≤≤≤≤≤`8‹€`r6≤`r0€ `%ﬂﬂ€`$€ `6ﬂ`@ﬂ€`7€€‹`r2`0ﬂﬂ`r0`2›`6±±±±±±±±
+`r7`^€€€`r0`2±±±±±±±±±±±±±±≤€€€€€€`r2`8∞∞±±`r0`2≤≤≤`r2`8≤≤≤≤±±∞`r0`2≤`r2`8∞∞`r0`2› `r7`^€`r0`2€€€€€ﬂ`8‹€`r6≤≤`r0`6±±±±‹‹`8‹      `@ﬂ`7ﬂ`6‹€≤≤≤≤› ≤±
+`r7`^€€€`r0`2±≤€`r2`@∞∞`r0`2€≤≤±±±±±≤≤≤≤€€€€€€€€≤≤≤≤≤≤±±±±≤≤€ ﬁ `r7`^€`r0`2€€ﬂ`8‹`r6≤≤`r0`6≤≤≤≤≤≤≤≤‹`2‹€€‹     `6ﬁ€€€€≤ `8› `6€
+`r7`^€€€€`r0`2€`r2`@∞∞`r0`2€€€€€≤≤±≤≤€€€€€€€€`r2  `r0≤≤≤`r2`8∞∞∞∞`r0`2≤≤±±±±∞ ﬁ€≤`r7`^€`r0`8‹`r6≤≤∞`r0`6≤≤€€€€€ﬂ‹`r6`@‹`r0‹`2ﬂ€€ ‹`r2`0‹€`r0`2€`6ﬁ€€€≤∞ `8€ `6€
+ `2‹`r2`@∞`r0`2‹‹`8‹‹`2ﬂﬂ€€€€€≤≤€€€€€€€€€€€€€`r2`0∞∞∞∞∞`r0`2≤≤≤±±∞`r7`^€`r0`2‹€€≤≤‹`8ﬂ`6ﬂﬂﬂﬂﬂﬂﬂﬂ‹`r6`@‹≤€`r0ﬂﬂ`6∞‹ ‹`r7`@≤≤`r0`6‹ €€€› `8ﬂ`r2≤`r0 `7ﬁ
+ `r2`$∞±±∞∞`@∞±±`r0`2‹`8‹`2±ﬂ€€€€€€€€€€`r2   `0∞∞∞±±±±±∞`r0`2€≤≤ﬂ  ‹`r2`8∞`r0`2€`r2`0∞∞`r0`2€€ `4∞≤≤≤≤≤›`6€`r6`@∞`r0`6ﬂ `4‹`6ﬂﬂﬂ `r7`@≤≤±`r0›`6ﬂﬂﬂﬂ `8≤`r2≤≤`r0€
+  `2‹`r2`8±±∞`@∞∞∞`r0`2€`r2`@∞`r0`2€≤`8‹`2ﬂ€≤≤€€€€€€€€`r2  `r0€€`r2`0∞∞∞∞`r0`2€ﬂﬂ ‹‹€€€`r2`@∞∞`0∞∞`r0`2€€€‹‹`4ﬂ€€›`6≤`r6`@∞€`r0 `4€€€€›`6ﬁ`r7`@±∞`r0›`4€€ﬂ `8‹€`r2‹`r0ﬂ≤€
+ `r2≤≤±±±∞`@∞`8∞`r0‹`2ﬂﬂ`8ﬂﬂ`r7`^€`r0`2∞≤≤≤≤≤≤€€€€€€€€€€€`r2`0∞`r0      `2ﬁ€`r2`@∞`0±±≤≤∞`r0`2€ﬂ`4‹€€€€€ `6∞€`r6`@€`r0 `4€€€€`6ﬁ`7€€`4ﬁﬂ`8‹€€`r2≤`r0€€
+`r2€≤≤≤≤±±`@∞`8∞∞`r0›`r7`^€`r0 `r7€€`r0`2±±±±±≤≤≤`r2`8∞∞`r0`2€€€≤ﬂﬂ        ‹€`r2`@∞∞∞∞`0±±`r0`2€€  `4ﬂ€`6≤`4€€€ `6∞€∞ `4≤€ﬂ`7ﬂﬂ    `4‹ `8‹€ ∞
+`r2€≤≤≤≤±∞∞`r0`2≤≤≤€€€‹`8‹`r7`^€€`r0`2∞∞∞∞‹`r2`8ﬂ≤‹∞∞`r0`2€ﬂﬂ `r7`^€`r0     `2€€€€≤≤`r2`@∞`0∞∞`r0`2ﬂﬂﬂﬂﬂ `4ﬂ€€€€›  `7∞ `4€€`6±≤`4≤€≤≤ﬂ`8‹€  ∞
+`r2≤≤≤≤`r0ﬂﬂ    `2ﬂﬂ€€`8ﬂ`r7`^€€€€€`r0`2‹€€€≤‹‹         ‹€€€€€€€`r2`@∞`r0`2€€€  `4‹‹‹‹‹€€€≤€`8∞± `4€€`6∞±`4€€   `8∞   ﬁ
+`2∞∞  ‹‹€€€€≤‹ ﬂ ‹‹€€‹‹‹€€`r2`0‹€€‹`r0`2‹      ﬂﬂ€€ﬂ€€€€€€€`r2`8ﬂ€`r0`2‹ `4ﬂ€€€€€€€€‹‹€€  ﬂﬂ `8‹‹≤∞   ﬁ∞
+ `2‹€€€≤≤≤€€€€€€€€€€€`r2`0∞∞`r0`2€`r2`0‹€€ﬂﬂﬂﬂ›`r0`2€€`r2`8∞`r0`2‹     ‹€€`r2  `0∞∞∞∞∞∞∞`r0`2€‹‹`4ﬂﬂ≤€€€€€€€€‹‹‹`8ﬂﬂ ‹›  ‹€`r2≤`r0∞
+`2€€≤≤≤≤€€€€€`r2`@∞∞`r0`2€€€€€`r2`0∞±±∞∞`r0`2€€€€€€€€€€€€€‹     ﬁ`r2 `r0€`r2`0∞∞∞`r0`2€`r2 `r0€ﬂﬂﬂ  ‹‹‹‹‹`4ﬂ€€€ﬂﬂ  `r2`8ﬂ≤`r0€     ﬂ›
+`r2›`r0`2≤≤≤≤€€`r2`@∞∞∞∞∞`r0`2€€€€€`r2`0∞∞≤≤±±∞`r0`2≤≤≤≤≤≤€€€€€€€‹‹     ﬂ€€`r2 `r0ﬂﬂ ‹‹‹≤≤≤≤€€`r2`8‹‹`r0`2ﬂ   `8‹€€ﬂﬂ  ∞
+€`2≤≤≤≤€`r2`@∞∞∞`r0`2€€€€€€€`r2`0∞≤≤€€≤≤∞`r0`2€€≤≤≤≤≤≤≤€€€€€€›       ‹‹€€€€`r2`0∞∞∞∞∞ `8ﬂﬂ`r0`2‹‹‹        `8ﬁ≤∞
+€€`2≤≤≤≤≤€€€€€€€€€`r2 `0∞∞±±±±∞`r0`2€€€€≤≤≤≤≤≤€€€€ﬂ      ‹€€€€€`r2`0∞∞±±±∞∞∞`r0`2€€≤≤€€ﬂﬂ   `8‹‹€±
+€€€`r2‹`r0`2≤≤≤≤≤≤≤€€€€€`r2 `r0€€€€`r2`0∞∞`r0`2€€€€€€€≤≤€€€€€€€›  ‹‹€€€€€≤≤≤`r2`0∞∞∞  `r0`2€€€ﬂﬂ ∞
+`8€€€€€€`r2‹‹‹`r0`2€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€  ﬂ≤≤≤≤`r2`8∞∞`r0`2€€`r2`8∞`0∞`r0`2€€€`r2`0∞∞`8ﬂ`r0`2‹‹‹‹‹‹∞∞
+`8€€€€`r2€ﬂﬂ`r0`2€€€€€€`r2 `r0€€€€€€€€€€`r2`0∞∞∞`r0`2€€€€€€€€€€`r2`0∞∞`r0`2€€`8‹  `2≤≤≤≤`r2`8∞∞ﬁ‹`r0`2€€`r2`0∞∞∞±≤≤`r0`2€ﬂﬂ
+`8€€`r2€ﬂ`r0`2€€€€€€€`r2`0∞∞±‹`r0`2€€€€€€€`r2`0∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€`r2`0∞∞`r0`2€€`8‹  `2≤≤`r2`8±±≤`r0€€`r2›`r0`2€€€€≤≤∞  `8‹‹‹€€€
+€€`r2›`r0`2€€€€`r2`0∞∞`r0`2€`r2`0‹≤≤€€€ﬂ`r0`2€€€€€€€`r2`0∞∞∞∞∞`r0`2€€€€€€€€`r2`0∞∞∞`r0`2€€≤   `r2`8±±≤`r0€€€`r2ﬂ`r0`2€‹ﬂ      `8‹€
+`2±`r2`8ﬂﬂ`r0`2€€€€`r2`0‹≤€€€€ﬂ∞`r0`2€€€€€€€€€€€€€€€€€€€€€€€`r2`0∞`r0`2€€€€`8›  €€€€€`r2ﬂ`r0`2€€€€€€€`8‹       ∞∞∞
+`r2`0∞∞`r0`2€€€€`r2`0∞≤€€€≤∞`r0`2€€€€€€€`r2`0‹› `r0`2€€±±≤≤€€€€€€€€€€€€€`8ﬂ   €€€€`2€€€€€€€≤≤∞      `8∞∞∞
+`r2`0∞∞∞`r0`2€€€€€`r2`0ﬂ€€`r0`2€€€€€€`r2`0∞≤€ﬂ`r0`2€€≤≤±±±±≤≤≤≤≤≤±ﬂﬂ≤≤ﬂ`8ﬂ    €€€€`r2€‹‹`r0`2€€±±`8ﬂ  ∞∞∞∞∞∞∞
+`2≤€€€€€≤≤≤≤`r2`0ﬂ€‹`r0`2€€€€€€€€€≤≤≤≤`6±`r7`^€`r0`2±±±±±±±±∞  `8ﬂ    ‹€`r2ﬂ`r0`2≤≤`8€€€€ﬂﬂ    ∞∞∞∞∞∞
+`2±±≤≤≤€`8€ﬂﬂ`2‹€€€€€€€€€€≤≤≤≤`6≤≤±`2∞±±±∞∞∞∞∞∞     `8‹€€`2€€€€ﬂ`8ﬂ  `2∞∞
+±ﬂﬂ   `6∞∞`8ﬂ€€`2€€€€€€€≤≤≤≤≤`6≤±∞ `2∞∞∞∞       ‹∞∞ `8ﬂﬂ €`2€€ﬂ€€€€±±∞∞
+±±∞∞ `6€€€≤ `8ﬂ≤≤`2€€€€€€€ `6≤≤≤           `8‹`2≤€€≤≤∞∞  `8ﬂﬂ   `6∞`2∞ﬂ
+`6±`2±±±∞∞`6ﬂ€€≤≤  `8ﬂ€€`2€€ﬂ `6≤≤€       `2∞∞∞±±±≤≤€€€≤≤∞∞∞    `6∞±∞
+∞∞±±±`2±±∞`6ﬂﬂ€€€€‹‹`8ﬂ`6‹‹`r6`7∞∞`r0`6€     `2∞∞±±±≤≤≤≤≤`r2`8∞`r0`2≤`r2`@∞`r0`2€€‹‹≤≤ﬂ   `6∞≤      `8∞∞∞∞ `2∞
+∞`6ﬂﬂ€€€€€`2±±∞`6ﬂﬂ`r6`7∞∞∞`r0`6€€`r6`7∞∞`r0`6€    `2∞±±≤≤≤€€€€€`r2`@∞∞±`r0`2€€€€€€€≤`r2`8ﬂ`r0‹      ∞∞∞∞`2∞∞∞∞
+      `6ﬂﬂ€€`2±± `6ﬁ`r6`7±±∞`r0`6€`r6`7∞∞∞`r0 `8∞  `2±±≤≤€€€€€`r2   `r0€`r2`8‹›`@∞∞`r0`2€€€≤≤±±       ∞∞±±∞∞
+       ∞ `6ﬂﬂ€€ €`r6`7∞`r0`6€€`r6`7∞∞`r0`6› `8∞∞ `2≤€€`r2`@∞∞∞`r0`2€€€€`r2`8‹‹`r0  `2ﬂﬂﬂ€≤≤±±∞∞ `6∞∞ `2∞∞∞±±
+ ∞∞∞∞`8≤≤≤€€‹  `6ﬁ€≤≤≤€€›`8∞∞ `2ﬂﬂﬂﬂﬂﬂ  `8‹‹€€€€€€‹   `2∞∞∞∞∞ `6∞
+`2±±±±±±±`8≤≤€€‹ `6€€€≤≤≤€   `8‹‹‹‹‹€€€€€`r2`@∞∞∞`r0`8€€€‹‹                   ∞∞∞∞∞∞
+`2±±±±≤≤≤≤`8≤≤€€€ `6€€≤≤`r6`7∞`r0`6€   `8‹‹€€€€€`r2`@∞∞±±±±±∞∞∞`8ﬂ`r0€‹‹‹‹‹       ‹‹‹≤≤≤≤≤±±±±∞∞  `5‹`r5`#∞`r0`5€`r7`^€`r0    `2∞
+±±±`r2`@∞∞∞∞∞∞∞∞`r0`8€› `6€≤≤€`r6`7∞`r0`6‹ `8ﬂ≤≤€€`r2ﬂﬂﬂ       `@∞∞∞∞∞∞∞∞  `8ﬂﬂﬂ`r0€›‹€€≤≤≤≤≤≤≤≤≤≤≤€ﬂ`r7`^€€`r0`5‹‹ﬂ`r7`^€`r0   `7∞∞`2∞
+≤`r2`@∞∞±±±∞∞`r0`2€€€€›`6€≤€`r6  `7∞∞`r0`6›`8‹€€`r2ﬂ `r0ﬂ    ﬂ`2ﬂ`r2           `@∞∞     `8ﬂﬂ€€€€€€€€€€€€`r7`^€`r0`5‹∞ﬂﬂﬂ€`r5`#‹ `r7`^€`r0 `2≤≤€
+€€€€€€€€€€€≤≤ `6∞€€€`r6`7∞`r0`6€ `2≤€€≤ﬂ `r7`^€`r0     `r7€`r2          `8‹‹€€€€€€€€€€€€€€€≤≤≤≤`r7`^€`r0`6‹€€€€‹ `r5`#∞`r0`5≤`r7`^€`r0`2≤≤≤
+≤€≤`r2`4‹≤‹`r0`2€€`r2`0∞∞`r0`2€€≤  `6€€€`r6`7∞`r0`6› `2€€›`8ﬂ `r7`^€`r0  `6‹‹‹ `r7`^€`r0`8ﬂ`r2    ‹‹€€€€€€≤≤€€€€€€€€€≤≤≤±±±±`r0  `@‹€  `6ﬂ€`5ﬂ€∞`2±±±
+≤≤`r2`0∞∞`4ﬂ`0∞∞`r0`2€€€€€€ `6›€€ﬂ ﬂ `2€ﬂ     `6€`r6`$∞∞∞`r0`@€`r7`^€`r0`4€`r7`^€`r2        `8∞∞ﬂﬂ€€€€€€`r0€€≤≤`r2≤`r0ﬂﬂ   € `@€ ﬂ€‹€€`6€`r7`^€`r0`5ﬂ`2∞∞±
+±±±≤≤≤`r2`0∞∞∞`r0`2€€€€ `6›€€   `2∞‹›     `6€`r7`@≤≤`r0€ﬂ`r7`^€`r0`4€€`r7`^€`r0`8ﬂ`r2      `0∞∞∞∞  `8ﬂﬂﬂ€€€`r0ﬂ‹‹‹‹‹ﬂ€€‹`r6`@ﬂ`r0€ﬂ€€€`6€`r7`^€€`r0 `2∞±≤
+±±≤≤€€€€€€€ﬂ  `6€€€  `2≤≤≤   `r7`^€`r0   `@≤≤`4€ﬂ`r7`^€`r0`4€`r7`@ﬂ`r0›`r7`^€`r0`2≤≤≤≤≤€€`r2`0∞∞∞∞∞∞∞`r0`2€€€€‹`8ﬂ€`2≤≤≤`8€€€€‹`@ﬂﬂﬂﬂ`6ﬂ  `2∞∞±±≤
+±±±`8ﬂﬂ‹‹`2€€€   `6€€€ﬂ ‹‹≤±`8∞ `r7`^€`r0   `6≤‹`4ﬂ€€`@≤≤€ﬂ`2≤≤≤€€€€€€€€€`r2`0∞∞`r0`2€‹ﬂﬂ€€€≤≤ﬂﬂ`8ﬂ  ﬂﬂ€`2≤‹‹‹±∞ `8‹‹`2ﬂ`8≤
+`2∞∞`8‹`2€€€`r2`0∞∞∞`r0`2∞  `6∞≤€€`r7`^€`r0`6‹`r6`$∞∞`r0`6€€`8€€    ‹`6ﬂ`4‹€€€€`r7`^€`r0`2≤`r2                   `8ﬂﬂ`r0‹‹‹`2€€ﬂ`8ﬂ `2‹‹‹€`r2`0∞∞`r0`2≤ `8≤≤€€‹
+`2€`r2`0∞∞±±±±∞`r0`2∞∞ `6‹€€€›ﬁ`r6`7∞∞∞ `r0`6±ﬂ`8ﬂﬂ   ≤∞`4€`6≤`4€€ `2∞`r2      `9‹≤‹    `%‹ `r0`2≤≤≤≤`r2     `r0€€€€€≤≤≤≤≤±±±±∞∞∞`8ﬂﬂ
+`r2`0∞≤€€≤≤`r0`2€€€∞ `6ﬁ€≤ﬂ`8‹`r7`^€`r0`6€`r6`7∞∞`r0`6≤≤≤≤≤‹`r7`^€€`r0 `6≤≤ﬂ `4€`r7`^€`r0`2∞≤€€€€€€`r2`9ﬂ`r0`2€€€€`r2`%ﬂ≤ﬂ∞`r0`2€≤`8ﬂﬂ€`2€€€≤≤≤≤≤≤≤≤≤≤≤±±±±±±±±
+`r2`0∞∞∞∞`r0`2€€€€`8ﬂ ‹‹‹‹`r3≤≤`r7`^€`r0 `6ﬂﬂ€€€€€€€`8€€`6≤ﬂ`8∞ `4›`6∞`r7`^€`r0`2≤≤≤€€€€€€€€€€€`r2   `r0€≤≤€€€€€€≤≤≤≤≤≤≤≤≤≤≤±±±±±±
+≤≤≤≤≤≤ `8‹‹€‹€€`r3‹`r0€€`r3≤`r0 €‹‹‹  `6ﬂﬂﬂ`8ﬂ`6≤€`8∞∞`r7`^€`r0`4›`6± `2∞≤≤≤≤≤≤€€€€€€€€`r2  `r0€€`r2`%∞ ‹≤‹`r0`2€€€≤≤≤≤≤≤±±±±±±±±±±
+±±±±±`8‹€€€€€≤≤‹‹ﬂ€`r7`^€`r0`8≤€€≤≤€`r7≤≤≤≤`r0‹`r7`^€`r0`8±`4€`r7`^€`r0`4›`6±∞`r7`^€`r0`2±±≤≤€€€€€€€€€€€`r2`4‹`r0`2€€€€`r2 `%ﬂ∞∞∞`r0`2€€€€≤≤≤≤≤≤≤≤≤≤≤±±
+∞∞`8‹`r7≤`r0‹`2∞∞`8‹‹ﬂﬂ€`r3≤`r0`7€`8€€€`r7`^€`r0`8±≤≤≤≤≤`r7≤±±±≤≤`r0`4€`r7`^€`r0`4€€`6±±`8›`2∞≤≤€€€€€€€`r2`9‹`r0`2€€€`r2`4ﬂ≤ﬂ∞∞∞`r0`2€€€€€€`r2`%∞`r0`2€€€€€€€€€€€€€≤±
+`8€≤≤ﬂﬂ  `2‹‹‹€‹`7ﬂ`8ﬂﬂﬂﬂ ∞±±≤€€€`r7≤≤≤`r0€€`4€`r7`^€€`r0`4€`6≤≤`8€`r7`^€`r0`2≤€€€€€€€`r2`9≤≤ﬂ`r0`2€€€€€€€€€€`r2`4∞∞`r0`2€€€€€€€€€€€€≤≤≤≤≤≤
+∞∞∞≤≤≤≤≤≤€ﬂ€€€€€€ﬂ`8∞∞∞≤≤≤≤€€≤≤≤`r7`^€`r0`2€€`r7`^€`r0`4€`6ﬂﬂ`r7`^€`r0`2≤€€€€€€€€€€€€€€€€€ﬂﬂﬂﬂﬂ€€€€`r2`4ﬂ∞∞`r0`2€€`r2`0∞∞∞∞`r0`2€€≤±±
+≤≤≤€€≤ﬂﬂ€€`r2`%∞∞`r0`2€€€€`r7`^€`r0`8€ﬂ`6€€€€€€‹‹‹€`r7`^€`r0`2€€€‹`r7`^€`r0`4≤∞`r7`^€`r0`2€€€€€€€€€€€€€€€€  `r7`^€€€€`r0  `2ﬂ€€€€€€€€€`r2`0∞∞∞∞∞∞`r0`2≤
+€`r2`%∞∞∞∞∞∞`r0`2€€€€€€€€`r7`^€`r0`8€`6€€`r6`7∞∞∞`r0`6€€€€€€€€‹‹`2ﬂﬂ€`r7`^€`r0`4€`r7`^€`r0`2€€€€€€€€€€€€€€€€ `r7`^€`r0  `r7€€`r0  `r7€€`r0`2€€€`r2`4∞∞`r0`2€€€€€€€€≤≤
+`r2`%∞±±∞`r0`2€€€€€€€≤≤€`r7`^€`r0`8€`6€`r6`7∞±±∞`r0`6€€€`8€€`6€€€`r6`7∞∞∞∞∞`r0`6‹‹`2ﬂ€€`r7`^€€€`r0`2ﬂﬂ≤≤€€€€€€€≤`r7`^€€€€€€`r0    `2€€€€€€€€≤≤≤≤≤≤≤
+€€€€€€≤≤±±±±±`r7`^€`r0`6≤€€`r6`7∞∞`r0`6€€€€`8€ﬂ`r7`^€`r0`6≤≤€€€`r6`7±±∞∞`r0`6‹€‹`r7`^€`r0`2€‹`4ﬂ‹`r7`^€€`r0`2ﬂ€€€€€€€≤`r7`^€€€€€€€`r0 `r7€`r0 `2€€€€€€€€€€€€≤≤≤
+`r2`4≤‹`r0`2€€≤±±±±±±±∞`6∞`8€`6€`r6`7∞`r0`6€€€€`8€€`r7`^€`r0`2‹‹`8ﬂ€€`6€€€€€`r6`7∞∞`r0`6ﬂ`r7`^€€`r0`2€€€‹`4≤≤‹`r7`^€`r0`2ﬂ€€€€€€`r7`^€€€€€€€€€`r0`2€€€€€€€€€€€€€€≤≤
+€€€€€€≤±±±±±`r7`^€`r0`6≤€≤€€€€€€`r7`^€`r0`2€€€€€‹`8ﬂ€€`6€ﬂ`r7`^€`r0`8∞∞`r7≤`^€`r0`2€`r2  `r0€`4›`2‹`4∞`r4`@∞ `r7`^€`r0`2ﬂ€€€€€‹‹`r7`^€€€€€€€`r0`2ﬂﬂﬂ€€€€€€€€€€€€
+€€€€€≤±±±±±∞`r7`^€`r0`8€`6€€ﬂﬂ€€`8€`r7`^€`r0`2€€€€€€€€€ ‹ `8‹`r7≤`r0`7€`8›`2ﬁ€`r2  `r0€`4›`2€€`4∞ﬂ`r7`^€€€`r0`2ﬂﬂ€ﬂﬂ         `r7`^€€€`r0`2€€€€€€€€€€€
+`r2`8∞∞∞`r0`2≤±±±±±±± `8ﬂﬂ‹‹`r7≤`r0‹‹€`r7`^€€`r0`2€€€€€€€€€€‹`8€`r7≤±`%∞`^€`r2    `r0`2€`4›`2€€€€‹`r7`^€€€`r0                 `2€€€€€€€€€€
+€€€€€€€€€±±∞`r7`^€`r0`8€`r7≤∞∞≤≤`^€`r0`2ﬁ≤€€€€€€€€€€€`8ﬁ`r7≤∞`%≤`r0`2ﬁ`r2    `r0€`4›`2€`r2 `4‹‹‹‹`r7`^€€`r0                 `r7€`r0`2€€€€€€€€€
+€€€€€€€€€≤±±`r7`^€`r0`8€`r7≤`r0`7€`r7`%∞`8≤`r0›`r7`^€`r0`2∞±±€€€€€€€€€€`8ﬁ€`r7±`%∞`r0`2ﬁ`r2    `r0€`4ﬂ`2€`r2`4‹‹`r4  `r7`^€€€`r0                `8∞  `2€€€€€€€€
+€€€€€€€€€≤±±∞`8€`r7≤`%±± `r0`2∞≤±±±±±≤€€€€€€€`r7`8€`r0€`r7≤`^€`r0`2ﬁ`r2  `4‹‹‹`r4  `@∞∞`r2`4€`r0                    `7∞`8∞ `r7`^€`r0`2ﬁ€€€€€€
+€€€€€€€€€≤±±±`8ﬁ`r7∞`%±±`^ﬁ`r0`2≤€€€€≤±±±±≤€€€›`8≤€€`r7`^€`r0`2≤≤ﬂﬂ`r2   `4ﬂﬂ `r0   `r7`^€€`r0                   `r7€`r0`2ﬁ€€€€€€
+€€€€`r2`8∞∞∞`r0`2€€€±±±`8ﬁ`7€`r7`%∞≤`^€`r0`2€€€€€€€€≤±±±±≤›`8±≤€`r7`^€€€€€€`r2    `r7€`r0   `r7€€€€€€€`r0              `r7€`r0`2ﬂ€€€€€€
+€€`r2`8∞∞∞∞∞`r0`2€€€±±±`8ﬁ`r7`%∞±`^€€`r0`2€€€€€€€€€€€€±ﬂ `8∞ﬂ‹€ﬂ`r7`^€€`r0`4ﬂ≤≤‹`2ﬂ`r7`^€€€€€€`r0`2‹`r2  `r0‹`r7`^€€`r0              `r7€€€`r0`2€€€€€
+`r2`8∞∞±±±∞∞∞`r0`2€€≤≤∞`8∞`7€`r7`%∞`^€€`r0`2€€€€€€€ﬂﬂ‹‹‹€€`r7`^€€`r0`8€€`r7≤`^ﬂ`r0`4‹∞`r7`^€€`r0`4ﬂ›`r7`^€€€€€`r0`2‹€`r2  `r0€€›`r7`^€`r0              `r7€€€€`r0`2€€€€
+`r2`8∞∞ﬂ`r0`2‹‹`8ﬂ`2ﬂ`r2`8‹`r0`2€≤≤≤`8∞€`r7∞`r0`7€`r7`^€`r0`2€€€€€€€€€€€€€€€€‹‹`8ﬂﬂ`r7≤∞`r0`4≤`7€€`r7`^ﬂ€€€€`r0`2‹€€`r2`4‹‹‹`r4   `r7`^€`r0              `r7€€€€`r0`2€€€€
+€€€€€€€‹‹`8ﬂ`r2‹`r0`2€`8≤`r7≤∞ `r0 `2∞≤≤≤€€€€€€€€€€€€€€€€‹‹`4ﬁ`2€€€€€€€€€€€€≤≤`r2`4ﬂ`r0`2›`r7`^€`r0             `r7€€€€`r0`2€€€€`r2`0∞`r0
+`2€€€€€€€€€€€`8‹`r7≤∞  `^€€€`r0`8ﬂﬂ`2ﬂ€€€€€€€€€€€€€€€€€`4ﬁ`2≤€€€€€€€€€€€€€€`r7`^€€`r0      `r7€€€€€€€€`r0`2€€€€€€€€
+`r2`4≤≤‹`r0`2€€€€€€€`r7`^€    ‹`r0`2ﬁ€€€€‹‹‹€€€€€€€€€€€€€€€`4ﬁ`2€€€€€€€€€€€€€€ﬂ`r7`^€€€€€€€`r0 `r7€€€€€€€€`r0`2ﬁ€€€€€`r2`0∞∞`r0
+`2€`r2`4‹`r0`2€€€€€€≤`r7`^€›‹‹‹‹`r0`2≤≤≤€€€€€€€€€€€€€€€€€€€€€`4∞`2€€€€€€€€€€€€€€`r7`^€€€€€€€€€€€€€€€€`r0 `r7€`r0`2€€`r2`0∞∞±±±`r0
+`2€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€±±±≤≤€€€€€€€`r7`^€€€€€€€€€€€€€€€€€€€€`r0`2€€€€`r2`0∞∞`r0
+`2€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€≤±±±±±±±≤≤≤€≤`r7`^€€€€€€€€€€€`r0`2€`r7`^€€€€€€€€€`r2 `r0`2€€€€€
+€€€€€`r2`0∞∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€€€€€€≤±±±±±±±±±±±≤`r7`^€€€€€€€€€€`r0`2€€€`r7`^€€€€€€`r0 `r7€`r0`2≤≤€€€€
+€€`r2`0∞∞∞±±±±∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€€€€±≤€€≤±±±±±±±±±±∞`r7`^€€€€€€€€€€`r0`2€€€€`r7`^€€€€€€€€€`r0`2≤€€€€
+€`r2`0∞∞∞∞∞∞∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€`r2  `r0€€€€€≤±±±±±±±±±±±±∞`r7`^€€€€€€€€€€`r0`2€€€€€`r7`^€€€€€€€€€`r0`2≤€€€€
+€€€€€`r2`0∞∞`r0`2€€€€€€€€€€€€€€€€€€`r2    `r0€€€€€€€€≤±±±±±€±±±±∞ `r7`^€€€€€€€€€`r0`2±≤≤€€€€`r7`^€€€€€€€€`r0`2±€≤€€
+`r2`8∞∞∞∞`r0`2€€€€€€€€€€€€€€€`r2 `4∞∞        `r0`2€€€€€€€€≤≤≤€€€±±±±`r7`^€`r0`8∞`r7`^€€€`r0  `r7€€€`r0`2±±±±≤€€€`r7`^€€€€€€€€`r0`2∞€€€€
+`r2`8≤≤±±∞∞`r0`2€€€€€€€€€€€€`r2`4∞∞±±±∞∞∞ `r0`2€€€€€€€€€€€€€€€€€€≤± `8∞±        `2±±±±±±±±≤`r7`^€€€€€€`r0 `r7€`r0`2∞€€€
+`r2`8€€≤≤‹‹‹‹`r0`2€€`r2`8‹`r0`2€€`r2`4∞∞∞±±±±±∞∞∞`r0`2€€€€€€€€€€€€€€€€€€€€€≤ `8∞∞        `2≤±±±±±∞∞∞∞     `r7`^€€€`r0`2∞≤`8≤≤
+@#LORD
+`r0`7                                                   ‹‹‹
+                        `^‹                         `7ﬂ`r7≤`r0€€`r7≤`r0‹
+                    `r7≤`r0    `^€‹ ‹     ‹      ‹     ‹   `7€€€`r7±`r0    `^ﬂ
+                  `7‹€`r7±`r0  `^‹       ﬂ‹  ﬂ  €‹   ﬂ≤  ‹≤  `7€€`r7∞`r0  `^‹
+                `7‹€€€`r7∞`r0   `^≤‹  ‹≤‹ ﬂﬂ ‹≤  ‹≤  `7‹  `8‹ﬂﬂﬂ `%€€`r7 `r0    `8ﬂ≤  ‹‹
+                  `%€€`r7 `r0  `8≤€€ﬂ€€ﬂ`%‹‹`r7€`r0ﬂ`r7≤`r0‹ €€ `8ﬂ`%‹`r7€‹`r0`7‹`8ﬂ`%‹€`r7ﬂﬂ`r0‹€`r7 `r0 `8€‹€‹
+              ‹    `%€€`r7 `r0 `8€`r7≤`r0 `r7`%≤`r0`7‹ `%€`r7€∞`r0  €€`r7±`r0 €`r7≤`r0ﬂ`8‹ `r7`%≤€±`r0`7‹ﬂ`8‹ `%€€`r7 `r0 `r7`8≤`r0€≤‹  ﬂ≤  ‹
+           ‹€ﬂ  ‹≤€ `%€`r7 `r0 `r7`8≤≤`r0 `%€`r7‹∞`r0`7‹ﬂ`8‹€ `r7`%≤`r0€€`r7∞`r0 `r7±`r0 `8€`r7≤`r0 `%€`r7≤`r0`7ﬂ‹`8ﬂ `r7`%≤`r0€`r7 `r0 `r7`8±≤`r0€≤‹€
+                 ﬂ€`r7≤`r0 `%€`r7 `r0 `r7`8≤±`r0 `%€€`r7€`r0`7ﬂ`8‹`r7≤`r0 `r7`%≤`r0€`r7€ `r0 €`r7∞`r0 `8€‹`%ﬂ‹€`r7≤`r0  `r7≤`r0€€`r7∞`r0 `r7`8≤`r0€≤  ‹‹ ‹
+                ‹≤ﬂ€`r7≤`r0 `%€`r7‹`r0`7‹‹`%€`r7ﬂ`r0ﬂ‹`r7≤`r0 `8ﬂ`%‹€`r7€ `r0 €€€`7€ `8€ `%€€`r7±`r0  €€€`r7±`r0 `r7`8≤`r0ﬂ€ﬂ ﬂ
+           ﬂ €‹  ﬂ ﬂ€‹ `%€€ﬂ`8‹‹€‹`%ﬂ‹€`r7≤ﬂ`r0`7ﬂ`8‹`%ﬂ€€€ﬂ`7ﬂ`8‹€‹`%ﬂ€`r7‹`r0‹€`7ﬂ`%€`r7≤`r0 `8€≤‹ ≤ﬂ
+              ‹  ﬂ€ ﬂ  `%ﬂ `8‹≤ﬂ ≤€‹‹‹‹€ ≤‹‹ ﬂ‹‹€≤ﬂ  ‹‹≤‹  ﬂﬂ     ﬂ
+                 ‹    €‹  ﬂ    ﬂ≤ﬂ     ﬂ€ﬂ    ‹≤     ≤   ‹ ‹
+                   ﬂ   ‹   ﬂ‹    ‹≤    ‹‹    ‹    ﬂ ﬂ ‹    ﬂ
+                             ‹    ‹    ﬂ  ﬂ
+                                      ﬂ
+                          `%L`7egend `%O`7f the `%R`7ed `%D`7ragon
+
+                                  `8<`7more`8>
+
+
+                    `7Dark Lair L.O.R.D. is currently running
+@#MAIN
+`.
+`.                  `8L.O.R.D. `4Nottingham's Last Days as a towne!
+                `4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-
+`.   `2You glance around at what used to be `4Nottingham.
+`.   `2Most of the buildings are now just rubble.
+`.   `2It appears as if the people from `$Sussex `2have been here!
+`.
+`.
+`.   `@(`%F`@)`9ind Enemies In `4Nottingham         `@(`%S`@)`9laughter Other Players
+`.   `@(`%K`@)`4ing Kongs `9Weapons                 `@(`%A`@)`!thenas `9Armour Shoppe
+`.   `@(`%H`@)`9ealers Hut                        `@(`%V`@)`9iew Personal Info
+`.   `@(`%I`@)`9nn                                `@(`%T`@)`#rodon's `9Training Center
+`.   `@(`%Y`@)`9e Old Bank                        `@(`%L`@)`9ist Victims
+`.   `@(`%W`@)`9rite Mail                         `@(`%D`@)`9aily News
+`.   `@(`%C`@)`9onjugality List                   `@(`%O`@)`9ther Places
+`.   `@(`3X`@)`9pert Mode                         `@(`%M`@)`9ake Announcement 
+`.   `@(`%P`@)`9eople Online                      `@(`4Q`@)`9uit  
+`.
+`.                     `4Dark Lair `8L.O.R.D. `.menu set
+@#OLDMAN
+`c`. `%The Old Man
+`# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`.`2     You casually walk over to the old man sitting in the corner. He looks
+`.      up from the table he is scratching on, and says to you "Here in the
+`.         Tavern, I overhear a lot of people talking about themselves.."
+`.
+`.
+`.     (`5V`2) View someone else's description
+`.     (`5E`2) Edit your description
+`.     (`5R`2) Return
+@#OLIVIA
+`r0`7`c
+          `#‹`r5≤≤±∞∞±≤`r0‹       `7You sit next to the head to hear her story.
+       `r5`#±≤€€≤`@‹`r4`5ﬂ`r5`#∞∞±≤`r0›
+      ﬁ`r5±`r4`5ﬂ`@∞`#ﬂ`@€€€€`#ﬂ`r5∞±≤`r0       "I was once a beautiful young woman and I.."
+       ﬂ`r4`@∞`r7‹`r5‹`r4€≤`r7‹`r5‹`r4±∞`r5`#±≤`r0
+        `4ﬁ`r4`@≤€ﬂﬂ≤±∞`5‹`r5`#≤`r0›       `%"You sure ain't now." `7you interrupt rudely.
+        `#ﬁ`r4`5‹`@±≤≤∞`r0`4€`5≤`r5`#∞±`r0›
+        `r5±∞`@ﬁ`r4±∞`r0`4€≤`5∞`r5`#∞±≤`r0       "Thanks for the update.  Anyway, my name is
+        `r5∞`r0  `4ﬂ`%≥`4ﬂ  `r5`#±`r0          `%Olivia`#.  I was accused of a crime I didn't
+                           commit, and was beheaded unjustly!"
+
+
+`8<`7More`8>`7``
+
+  `%"I'll bet.  So why are you still alive?  Can I touch your stump?"
+
+  `7Olivia looks annoyed.  `#"I'm alive because I wasn't ready to die."
+
+  `%"Ahh.  Thanks for that in depth explanation," `7you smile.
+
+  You convince her how busy you are, and since you are still kind of
+  weirded out - you leave.
+
+`8<`7More`8>`7``
+@#RDI
+`c`.                         `8L.O.R.D. `%The `4Dark Lair `%Inn
+                        `1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-
+ `. `2 You enter the inn and immediately notice a foul stench in the air.
+ `. `2 It must be the warriors from `$Sussex`2. You notice there are broken 
+ `. `2 bottles and teeth everywhere from the many fights this room has 
+ `. `2 seen. You pull up a bar stool and flick a roach off the bar as the
+ `. `2 vuluptious Violet brushes against you walking by.. `3Morbius `2asks:
+ `.                           `2"Do you want to?"
+ `.
+ `.  `@(`%C`@)`9hat with the patrons              `@(`%D`@)`9aily News
+ `.  `@(`%F`@)`9lirt with `5Violet                  `@(`%T`@)`9alk to `3Morbius `9the Bartender
+ `.  `@(`%G`@)`9et a Room                         `@(`%V`@)`9iew Your Stats
+ `.  `@(`%H`@)`9ear `4Fire Dog `9The Bard             `@(`%M`@)`9ake Announcment
+ `.  `@(`%R`@)`9eturn To Town
+  
+@#RDIF
+`c`.                         `8L.O.R.D. `%The `4Dark Lair `%Inn
+                        `1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-`%=`1-
+ `. `2 You enter the inn and notice the warriors from `$Sussex `2are fighting 
+ `. `2 again... Just then you swiftly dodge a chair thrown at you. You stop,  
+ `. `2 pick up the chair and have a seat. `5Violet `2walks up and asks what
+ `. `2 you want. 
+ `.
+ `.  `@(`%C`@)`9hat With The Rowdy Group
+ `.  `@(`%D`@)`9aily News 
+ `.  `@(`%T`@)`9alk To `3Morbius `9The Bartender
+ `.  `@(`%G`@)`9et a Room
+ `.  `@(`%V`@)`9iew Your Stats
+ `.  `@(`%H`@)`9ear `4Fire Dog `9The Bard
+ `.  `@(`%M`@)`9ake Announcment
+ `.  `@(`%R`@)`9eturn To Town
+
+@#SETH
+`.  `@(`%N`@)`9ever Mind
+`.  `@(`%W`@)`9ink
+`.  `@(`%F`@)`9lutter Eyelashes
+`.  `@(`%D`@)`9rop Hanky
+`.  `@(`%A`@)`9sk `4Fire Dog `9The Bard to Buy You a Drink
+`.  `@(`%K`@)`9iss `4Fire Dog `9The Bard Soundly
+`.  `@(`%C`@)`9ompletly Seduce `4Fire Dog
+`.  `@(`%M`@)`9arry Him
+@#SM-LORD
+`r0`7                                                                `3˛‹
+         `9‹  ﬂ˛  `3‹ ‹`r3`^∞`r0  `3‹                 `9‹`r1≤`r0‹      ˛     ‹‹‹         `3‹
+       `9‹     `3˛ﬂ      ﬂ≤ﬂ                 `9ﬂ  `r1±`r0‹ ﬂ      `r7±`r3€€€`r1≤`r0‹ﬂﬂ˛     `3‹`r3`9∞`r0
+      ﬂﬂ        ‹`r7≤≤€`r0‹‹                            `7‹`%‹ `r7`9±`r3€€€€`r1±`r0 `7‹‹‹‹      `3‹
+     `9‹`r7≤`r0‹       `r7±€€€`r3€€€`r1≤`r0                  `%‹‹‹‹`r7ﬂﬂ`r0`7€`r7`%ﬂﬂ`r0`7€€ `r7`9≤`r3€€€`r1±`r0 `7€€€€€`r7`8∞`r0`7‹   `3ﬂ`r3`9±`r0ﬂ
+      ﬂ         `r7≤`r3€€€ﬂ€€`r1≤`r0       ‹‹‹  `%‹‹`r7ﬂ`r0ﬂﬂ`7€`r7`%ﬂ`r0`7€ﬂﬂﬂ€`r7`%∞`r0`7€€€ `r3`9€€€€`r1≤`r0 `7€€`r7  `r0€€`r7`8±`r0
+                 `r3`9€€€€ﬂ€`r1±`r0    ‹`r3€`r0ﬂﬂﬂ`r7≤`r0€€‹`7ﬂ`9‹€`r7≤`r0‹`7ﬂ`9‹ﬂ`r3€`r1≤`r0‹`7ﬂ`9‹‹‹`7ﬂ `r3`9€€`r1≤`r0 `7€€€€`r7`8≤‹`r0ﬂ
+                 `9ﬂ`r3‹ﬂ‹‹ﬂ`r0 `%‹‹ `r3`9‹ﬂ`r0 ˛ﬂﬂ‹`r3€‹ﬂﬂ`r0 `r3€€€€`r0  `r3€€ﬂ‹`r0 `r3€ﬂ€`r0 `r3€ﬂ€`r0 `8ﬂﬂﬂﬂ
+              `%‹‹`r7ﬂﬂ`r0 `3€`r3`9ﬂ∞`r0 `7€ﬂﬂ`3‹‹‹ `7€€€‹ `r3`9ﬂﬂ ‹`r0 `r3ﬂ‹€`r0 `r3€ﬂ ﬂﬂ`r0 `r3ﬂ‹‹ ‹ﬂ€`r0
+           `%‹`r7€ﬂ`r0`7€`r7`%±`r0`7€€ `r3`9ﬂ `r0 `3‹‹€€`r3`9ﬂ`r0`3€`r3`9€ﬂ`r0`3‹`7ﬂﬂ `3‹`r3`9ﬂ ‹ﬂ`r0 `r3ﬂ ‹`r0 `3ﬂ`r3 `9ﬂ`r0`3ﬂ‹ﬂﬂﬂ`r3`9ﬂ ‹‹ ‹`r0   ˛
+          `%ﬂ`r7≤±`r0`7€€`r7 `r0€ `r3`^∞`r0`3€€€€€€€€€€€`r3`^∞`r0 `r3∞∞`r0`3€`r3    `r0 `r3   `r0   ‹`r3`^∞`r0`3ﬂ    €€€€`r3`^∞`r0    `9ﬂ
+             `7ﬂﬂ`r7`%∞`8‹`r0‹`3ﬂ`r3`^±∞`r0`3ﬂ  ﬂ`r3`^∞∞`r0`3€`r3`^∞±€≤±±∞∞`r0`3€ﬂ‹`r3`^±∞∞`r0`3€›  ﬂ`r3`^±∞`r0`3‹  ‹€ﬂ`r3`^∞∞±±`r0   `9ﬂ`r1±`r0
+                  `3‹ﬂ      ﬂﬂﬂ ﬂﬂﬂﬂﬂ    ﬂﬂﬂ ›    ﬂﬂﬂﬂ   ﬂﬂﬂ ﬂ `9‹≤‹
+         `1˛       `3˛                        ﬂ                   `9ﬂ
+          `1ﬂ `9‹`1‹                  `3‹`r3`!±`r0`3‹
+             `9ﬂ ‹`r1≤`r0‹               `3ﬂ ‹`r3`!∞`r0 `3‹  ‹˛
+                `9ﬂ                     `3ﬂﬂ
+                          `%L`7egend `%O`7f the `%R`7ed `%D`7ragon
+
+
+                                  `8<`7more`8>
+
+
+                    `7Dark Lair L.O.R.D is currently running
+@#STORY
+  "HALLOWEEN" by Seth A. Robinson, '94
+
+  Billy was a kid who didn't fit in.  He couldn't talk and he was lame, poor
+  little Billy just wasn't the same.
+
+  He couldn't leave the house, because of his face.  
+  Last time he did, he met a can of mace.
+
+  But even Billy had his time, and it was Halloween.  It was his favorite day - 
+  A night to walk the earth unseen.  
+
+  Other children won't point, won't laugh, won't harm.
+  Little girls won't run away in alarm.
+
+  Tiny Goblin, Tiny ghost and visions of the dead.
+  Little witch with her stick and Jack Pumpkin head.
+
+  Billy knew he fit right in, he didn't have to ask.
+  The only difference was, he wasn't wearing a mask.
+
+@#TOWER
+`r1`%                                                                            `r0
+`r1                                                                            `r0
+`r1                     `8€ € € € € `7€ € € `%€ €                                    `r0
+`r1                     `8€€€€€€€`r6ﬂﬂ`7ﬂﬂﬂﬂ`%ﬂﬂﬂﬂﬂﬂ`1ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`^ﬂﬂ`r0
+`r1                      `8€€€€€€`r6`6€`r0 `!You reach the castle and fight your way up the `r6`6€`r0
+`r1         `r0`2≤€`r1            `8€€€€€`r6`6€`r0 `!tower!                                         `r6`6€`r0
+`r1 `r0`2∞€`r1     `r0∞±€€`r1 `r0€`r1         `8€`r0›`r1€€€`r6`6€`r0                                                `r6€`r0
+`2≤±±€`r1  `r0∞±±±±`r1 `r0∞±€`r1        `8€€€€€`r6`6€`r0 `!You blindly slash at any and all who stand in  `r6`6€`r0
+`2±∞±∞≤€`r1 `r0∞±∞±±€≤`r1         `8€€€€€`r6`6€`r0 `!your path - screaming to find the prisoner     `r6`6€`r0
+`2∞±±≤≤`r1 `r0∞±±≤≤`r1 `r0∞≤≤`r1        `8€€€€€`r6`6€`r0 `!you seek - and the jailer of your heart.       `r6`6€`r0
+`r1 `r0`2∞∞±`6∞`2±∞±`6≤`r1  `r0`2≤∞±∞≤`r1       `8€€€€€`r6`6€`r0                                                `r6€`r0
+`2∞±±±∞≤±`6∞±≤`2±±≤∞≤∞≤`r1      `8€€€€€`r6‹‹`7‹‹‹‹‹`%‹‹‹`1‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹`^‹‹`r0
+`r1  `r0`2±∞±∞∞`6∞±≤±±`2±≤±±`r1       `8€€`r0ﬁ`r1€€€€`7€€`r0›€`r1`%€`r0›`r1€€   `r6`6€`r0ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ`r6€`1€`r0
+`r1        `r0`6∞±≤`r1            `8€€€€€`7€€€`%€€€€€€€   `r6`6€`r0  `%You make it to the top and    `r6`6€`r1 `r0
+`r1        `r0∞±∞≤`r1           `8€€€€€€€`7€€`%€€€€€€   `r6`6€`r0    `%throw open the door...      `r6`6€`r1 `r0
+`r1        `r0∞≤±≤`r1         `r0`2±`r2`0≤€`r1`8€€€€€€€`7€€`%€€€€€   `r6`6€`r2`0±≤≤`r0`6‹‹‹‹‹‹‹‹`2≤`r2`0€€`r0`6‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹`r6€`r1 `r0
+`r1    `r0`2∞`r2`0∞`r0`2±`r2`0€€`r0`6∞±≤`r1        `r2`0≤€`r0`2∞≤`r2`0€`r0`2≤`r1`8€€€`7€€€`%€€€€€€  `r0`2±`r2`0∞`r0`2≤`r2`0≤`r0`2±`r2`0≤`r1    `r0`2±≤∞`r2`0≤`r0`2∞≤`r2`0€≤≤`r1  `r2∞±≤`r1            `r0
+`r2   `r0`2±∞`r2`0≤∞`r0`2∞`r2`0≤€`r0`2≤€`r2    `r0±±∞∞±`r2`0≤∞`r0`8€`2±±≤`r2`0€`r0`8€€`7€€€`%€€€`2±≤∞`r2`0∞`r0`2∞`r2`0€≤`r0`2∞`r2`0€€ ≤ `r0`2±∞∞`r2`0∞`r0`2±∞`r2`0∞`r0`2±`r2`0∞≤∞`r0`2≤`r2`0∞`r1              `r0
+`r2∞∞`r0`2±∞`r2`0∞∞≤€€≤≤∞∞  ∞∞`r0`2±∞±≤∞±`r2`0∞`r0`2∞`r2`0€`r0`2≤`r2`0€`r0`2±≤`r2`0∞`r0`2±`r2`0∞∞`r0`2±±`r2`0∞`r0`2±`r2`0∞`r0`2∞±±±`r2`0€∞`r0`2≤≤±∞≤`r2`0∞`r0`2±∞±≤≤`r2`0≤`r0`2±≤`r2`0±≤`r0`2±`r2`0∞`r1    `%<MORE>   `r0
+@#TURGON
+`.
+`.
+`.                        `8L.O.R.D. `#Trodon's `5Training Center
+`.                       `4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`@=`4-`4-`@=`4-`@=`4-`@=`4-`@=`4-
+`.    `2You enter the mighty Training Center.  Hundreds of warriors, young,
+`.    `2as well as old, are sparring.  Every few seconds you hear someone
+`.    `2shriek in pain.  Obviously `4King Kong `2is sharpening his weapons!
+`.
+`.
+`.    `@(`%Q`@)`9uestion Master's abilities
+`.    `@(`%A`@)`9ttack Master
+`.    `@(`%V`@)`9isit The Hall Of `%Honor
+`.    `@(`%R`@)`9eturn to Town
+`.
+
+@#VIOLET
+`.  `@(`%N`@)`9ever Mind
+`.  `@(`%W`@)`9ink
+`.  `@(`%K`@)`9iss Her Hand
+`.  `@(`%P`@)`9eck Her On The Lips
+`.  `@(`%S`@)`9it Her On Your Lap
+`.  `@(`%G`@)`9rab Her Backside
+`.  `@(`%C`@)`9arry Her Upstairs
+`.  `@(`%M`@)`9arry Her
+@#WAR
+`.
+`.
+`.                         `8L.O.R.D. `2Slaughter Victims
+`                         `9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-`2=`9-
+`.  `2Looking around you there is smoke and death everywhere. Wondering
+`.  `2who could be stupid enough to sleep out here you decide to:
+`.
+`.  `@(`%L`@)`9ist Warriors in field               `@(`%E`@)`9xamine Dirt
+`.  `@(`%S`@)`9laughter a warrior                  `@(`%W`@)`9rite in Dirt
+`.  `@(`%R`@)`9eturn to town
+@#WIN
+`C`r0`7                                                     `4‹€€€€‹           `7‹‹‹‹
+                                                    `4ﬁ€€ﬂ‹€€€‹          `7ﬂ€€€€‹
+     `3The threat of the `4Red Dragon `3has passed.  The   `4ﬂ€€‹ﬂ€€€€‹          `7€`r7    `r0
+     `3evil of the town has been vanquished.            `7‹`r7`4ﬂﬂﬂ`r0`7‹ `4ﬂ€€€     `6≤ `7‹€€€€€€›
+                                                    ‹€€€€€€€‹ `4ﬁ€›  `7‹€≤ﬂ€€€€€€€€
+                                                   ﬁ€ﬁﬁﬁﬁﬁﬁﬁ€› `4€  `7ﬂ  ≤‹€€€€€€€€
+     `!In cold winter nights like this, farmers and  `7ﬁ€ﬁﬁﬁﬁﬁﬁﬁ€› `4›     `6≤  `7ﬂ€€€€€›
+     `!warriors alike huddle together in the taverns `7ﬁ€€ﬁﬁﬁﬁﬁ€€›       `6≤    `7€€€€
+     `!of the realm, and share stories about   `7‹‹‹‹‹‹ ﬂ€€ﬁﬁﬁ€€ﬂ ‹‹‹‹‹‹ `6≤   `7‹€€ﬂ
+     `!a dark and mysterious knight.  An    `7‹€‹ €€€€€€€‹‹ﬂﬂﬂ‹‹€€€€€€€`8ﬁ`r7ﬂ`r0`6≤`7‹ ﬂ
+     `!incredible skilled fighter who only `7€€€€€ €€€€€€€€€ﬁ€€€€€€€€€`8ﬁ€`7€`6≤`7ﬁ€
+     `!did good.                           `7€ﬂﬂﬂﬂﬂ‹ﬂ€€€€€€€ﬁ€€€€€€€ﬂ`8ﬁ€`7€›`6≤`7ﬁ€
+                                      `8‹`r7ﬂﬂﬂﬂﬂ`^≥`8ﬂﬂﬂﬂﬂ`r0‹`7ﬂﬂﬂ€€ﬁ€€ﬂﬂﬂ`8‹‹ﬂ  `7€`8‹`6≤`8€‹`7›
+     `!A hero - who saved the town.    `r7`8€ `r0`7€€€€`r7`!A`^≥`!A`r0`7€€€€€`r7`8€ﬂ`r0€‹‹‹‹‹€`r7ﬂﬂ`r0`7€€   `8ﬁ`7‹ﬂ€‹`8€
+                                     `r7›`^ƒƒƒƒƒƒ≈ƒƒƒƒƒƒ`8ﬁ`r0`7ﬂﬂﬂﬂﬂﬂﬂﬂﬂ‹‹›   `8›`7€ﬂ‹€`8ﬁ›
+     `!Of course - nobody really knows `8ﬁ`7€€€€€€`r7`^≥`r0`7€€€€€€`8›`7€€€€€€€€€€€    `8ﬂ‹`7ﬂﬂ`8‹ﬂ
+     `!if these legends are true.       `r7`8›`r0`7€€€€€`r7`^≥`r0`7€€€€€`r7`8ﬁ`r0 €€€€€€€€€€›      `6≤`8ﬂ
+                                      ﬁ`7€€€€€`r7`^≥`r0`7€€€€€`8›ﬁ€€€€€€€€€`r7ﬂ`r0       `6≤
+                                       `8ﬂ`r7‹`r0`7€€€`r7`^≥`r0`7€€€`r7`8‹`r0ﬂ`7‹`8‹‹‹‹‹‹‹‹`7€€€›      `6≤
+                                         `8ﬂ`r7‹`r0`7€`r7`^≥`r0`7€`r7`8‹`r0ﬂ`7‹€€€`8€€€€€€`7€€€€€      `6≤
+                                           `8ﬂ`r7‹`r0ﬂ `7ﬁ€€€€€`8€€€€`7€€€€€€      `6≤

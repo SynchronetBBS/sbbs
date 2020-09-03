@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: url.js,v 1.6 2011/10/09 17:57:12 cyan Exp $ */
 
 function URL(url, base)
 {

@@ -1,11 +1,11 @@
-// $Id$
+// $Id: cga_defs.js,v 1.5 2019/09/21 22:48:28 rswindell Exp $
 // CGA (IBM Color Graphics Adapter) definitions
 
 								/********************************************/
 							    /* console.attributes, also used for ansi()	*/
 							    /********************************************/
 var   BLINK			=0x80;		/* blink bit */
-var   HIGH			=0x08;		/* high intensity foreground bit */
+var   HIGH			=0x08;		/* high intensity (bright) foreground bit */
 
 							    /* foreground colors */
 var   BLACK			=0;			/* dark colors (HIGH bit unset) */
@@ -47,6 +47,7 @@ var colors = [
 							    /* background colors */
 var   ANSI_NORMAL	=0x100;		/* special value for ansi() */
 var   BG_BLACK		=0x200;		/* special value for ansi() */
+var   BG_HIGH		=0x400;		/* not an ANSI.SYS compatible attribute */
 var   BG_BLUE		=(BLUE<<4);
 var   BG_GREEN		=(GREEN<<4);
 var   BG_CYAN		=(CYAN<<4);

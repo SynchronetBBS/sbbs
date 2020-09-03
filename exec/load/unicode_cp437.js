@@ -1,3 +1,5 @@
+// $Id: unicode_cp437.js,v 1.3 2019/07/25 11:13:25 rswindell Exp $
+
 function unicode_cp437(uc)
 {
 	switch(uc) {
@@ -224,6 +226,7 @@ function unicode_cp437(uc)
 		case 0x2020: return String.fromCharCode(0x002B);
 		case 0x2022: return String.fromCharCode(0x006F);
 		case 0x2024: return String.fromCharCode(0x002E);
+		case 0x2026: return "...";
 		case 0x2032: return String.fromCharCode(0x0027);
 		case 0x2039: return String.fromCharCode(0x003C);
 		case 0x203A: return String.fromCharCode(0x003E);
@@ -482,6 +485,6 @@ function unicode_cp437(uc)
 		case 0xFFEC: return String.fromCharCode(0x0056);
 		case 0xFFED: return String.fromCharCode(0x00FE);
 		default:
-			return '?';
+			return String.fromCharCode(0x00A8); // Inverted question mark
 	}
 }

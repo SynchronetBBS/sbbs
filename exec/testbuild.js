@@ -2,9 +2,9 @@
 
 /* JSexec script for nightly Synchronet test builds */
 
-/* $Id$ */
+/* $Id: testbuild.js,v 1.34 2020/08/01 22:09:03 rswindell Exp $ */
 
-load("sbbsdefs.js");
+require("smbdefs.js", 'SMB_PRIORITY_HIGHEST');
 
 var keep = false;
 
@@ -12,57 +12,83 @@ for(i=0;i<argc;i++)
 	if(argv[i]=="-k")
 		keep=true;
 
-var date_str = strftime("%b-%d-%y");	/* mmm-dd-yy */
+var date_str = strftime("%b-%d-%Y");	/* mmm-dd-yyyy */
 
 var temp_dir = backslash(system.temp_path) + "sbbs-" + date_str;
 
-if(!file_isdir(temp_dir) && !mkdir(temp_dir)) {
-	log(LOG_ERR,"!Failed to create temp directory: " + temp_dir);
-	exit(1);
-}
 log(LOG_INFO,"Using temp directory: " + temp_dir);
 
-putenv("CVSROOT=:pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs");
+var build_output = "build_output.txt";
+var repo = "git@gitlab.synchro.net:/sbbs/sbbs";
+var cmd_line = "git clone " + repo + " " + temp_dir + " 2> " + build_output;
+
+log(LOG_INFO, "Executing: " + cmd_line);
+var retval=system.exec(cmd_line);
+log(LOG_INFO, "Done: " + cmd_line);
+if(retval) {
+	print("errno: " + errno);
+	send_email(subject,
+		log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line)
+			+ "\n\n" + file_contents(build_output)
+		,SMB_PRIORITY_HIGHEST);
+	bail(1);
+}
 
 var platform = system.platform.toLowerCase();
 if(system.architecture=="x64")
 	platform += "-x64";
-var make = (platform=="win32" ? "make":"gmake");
-var build_output = "build_output.txt";
 var archive;
 var archive_cmd;
-var lib;
-var lib_cmd;
-var lib_alias="lib";
 var cleanup;
+var exclude_dirs = [
+	"node1",
+	"ctrl",
+	"docs",
+	"exec",
+	"install",
+	"text",
+	"web",
+	"xtrn",
+	"src/crt",
+	"src/doors",
+	"src/odoors",
+	"src/sbbs2",
+	"src/syncterm",
+	"src/ZuulTerm"
+	];
 
 if(platform=="win32") {
 	archive="sbbs_src.zip";
-	archive_cmd="pkzip25 -exclude=*output.txt -add -dir -max " + archive;
-	lib="lib-win32.zip";
-	lib_cmd="pkzip25 -exclude=*output.txt -add -dir -max ../" + lib;
+	archive_cmd="pkzip25 -exclude=*output.txt " +
+		" -exclude=.gitignore" +
+		" -exclude=" + exclude_dirs.join(" -exclude=") +
+		" -exclude=" + exclude_dirs.join("/* -exclude=") + "/*" +
+		" -exclude=3rdp/build" +
+		" -exclude=3rdp/build/*" +
+		" -exclude=3rdp/dist" +
+		" -exclude=3rdp/dist/*" +
+		" -add -dir -max " + archive;
 	cleanup="rmdir /s /q ";
-	lib_alias="lib-win32";
 } else {
 	archive="sbbs_src.tgz";
-	archive_cmd="tar --exclude=*output.txt -czvf " + archive + " *";
-	lib="lib-" + platform + ".tgz";
-	lib_cmd="tar --exclude=*output.txt -czvf ../" + lib + " *";
+	archive_cmd="tar --exclude=*output.txt --exclude=" + exclude_dirs.join(" --exclude=") +
+		" --exclude=3rdp/win32.release" +
+		" --exclude-vcs" +
+		" --exclude-vcs-ignores" +
+		" --dereference" +
+		" -czvf " + archive + " *";
 	cleanup="rm -r -f "
 }
 
 var builds
-	=	[/* sub-dir */		/* cmd-line */						/* redirect */
-		[""					,"cvs co src-sbbs3"					,"2> " + build_output],
-		[""					,"cvs co "+lib_alias				,"2> " + build_output],
-		[""					,archive_cmd						,"2> " + build_output],
-		["3rdp"				,lib_cmd							,"2> " + build_output],
+	=	[/* sub-dir */		/* cmd-line */							/* redirect */
+		[""					,archive_cmd							,"2> " + build_output],
 	];
 
 /* Platform-specific (or non-ported) projects */
 if(platform=="win32") {
-	/* Requires Visual C++ 2010 */
-	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release"'
+	/* Requires Visual C++ 2019 */
+	builds.push(["src/sbbs3"			,'build.bat /v:m "/p:Configuration=Release" "/p:WarningLevel=0"'
 																,"> " + build_output]);
 	/* Requires C++Builder */
 	builds.push(["src/xpdev"			,"make"
@@ -73,12 +99,11 @@ if(platform=="win32") {
 																,"> " + build_output]);
 	builds.push(["src/sbbs3/chat"		,"bpr2mak chat.bpr     & make -f chat.mak"
 																,"> " + build_output]);
+	builds.push(["src/sbbs3/useredit"	,"build.bat"
+																,"> " + build_output]);
 } else {	/* Unix */
-	builds.push(["src/sbbs3"			,"gmake RELEASE=1"		,"2> " + build_output]);
-	builds.push(["src/sbbs3/scfg"		,"gmake RELEASE=1"		,"2> " + build_output]);
-	builds.push(["src/sbbs3/install"	,"gmake"				,"2> " + build_output]);
-	builds.push(["src/sbbs3/umonitor"	,"gmake RELEASE=1"		,"2> " + build_output]);
-	builds.push(["src/sbbs3/uedit"		,"gmake RELEASE=1"		,"2> " + build_output]);
+	builds.push(["src/sbbs3"			,"make RELEASE=1 all"		,"2> " + build_output]);
+	builds.push(["src/sbbs3"			,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
 }
 
 var win32_dist
@@ -90,9 +115,11 @@ var win32_dist
 		"src/sbbs3/scfg/msvc.win32.exe.release/scfghelp.*",
 		"src/sbbs3/chat/chat.exe",
 		"src/sbbs3/ctrl/sbbsctrl.exe",
+		"src/sbbs3/useredit/useredit.exe",
 		"3rdp/win32.release/mozjs/bin/*.dll",
 		"3rdp/win32.release/nspr/bin/*.dll",
-		"3rdp/win32.release/cryptlib/bin/*.dll"
+		"3rdp/win32.release/cryptlib/bin/*.dll",
+		"s:/sbbs/exec/dosxtrn.exe"
 	];
 
 var nix_dist
@@ -109,11 +136,11 @@ var system_description=system.local_host_name + " - " + system.os_version;
 var file = new File("README.TXT");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s C/C++ Source Code Archive (%s)\n"
-		,system.platform, system.datestr()));
+		,system.platform, date_str));
 	file.writeln("This archive contains a snap-shot of all the source code and library files");
 	file.writeln("necessary for a successful " + system.platform 
 		+ " build of the following Synchronet projects");
-	file.writeln("as of " + system.datestr() + ":");
+	file.writeln("as of " + new Date().toUTCString() + ":");
 	file.writeln();
 	file.writeln(format("%-20s %s", "Project Directory", "Build Command"));
 	for(i in builds) {
@@ -121,19 +148,21 @@ if(file.open("wt")) {
 			file.writeln(format("%-20s %s", builds[i][0], builds[i][1]));
 	}
 	file.writeln();
-	file.writeln("Builds verified on " + system.timestr());
+	file.writeln("Builds verified on " + system.timestr() + " " + system.zonestr());
 	file.writeln(system_description);
 	file.writeln();
 	file.writeln("For more details, see http://wiki.synchro.net/dev:source");
-	if(platform!="win32")
-		file.writeln("and http://wiki.synchro.net/install:nix");
+	file.writeln("and http://wiki.synchro.net/install:dev");
+	file.writeln();
+	file.write("git commit: " );
 	file.close();
+	system.exec("git rev-parse HEAD >> " + file.name);
 }
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s (%s) BBS Software",system.platform, system.architecture));
-	file.writeln(format("C/C++ source code archive (%s)",system.datestr()));
+	file.writeln(format("C/C++ source code archive (%s)", date_str));
 	if(platform=="win32")
 		file.writeln("Unzip *with* directories!");
 	file.writeln("http://www.synchro.net");
@@ -141,17 +170,18 @@ if(file.open("wt")) {
 }
 
 var start = time();
-if(1) {
-for(i in builds) {
+
+for(var i = 0; i < builds.length; i++) {
 	var sub_dir = builds[i][0];
 	var build_dir = temp_dir + "/" + sub_dir;
 	var subject = system.platform + " build failure in " + sub_dir;
 
-	log(LOG_DEBUG,"Build " + i + " of " + builds.length);
+	log(LOG_DEBUG,"Build " + (i+1) + " of " + builds.length);
 	if(sub_dir.length)
 		log(LOG_INFO, "Build sub-directory: " + sub_dir);
 	if(!chdir(build_dir)) {
-		semd_email(subject, log(LOG_ERR,"!FAILED to chdir to: " + build_dir));
+		print("errno: " + errno);
+		send_email(subject, log(LOG_ERR,"!FAILED to chdir to: " + build_dir), SMB_PRIORITY_HIGHEST);
 		bail(1);
 	}
 
@@ -164,9 +194,11 @@ for(i in builds) {
 	var retval=system.exec(cmd_line);
 	log(LOG_INFO, "Done: " + cmd_line);
 	if(retval) {
-		send_email(subject, 
+		print("errno: " + errno);
+		send_email(subject,
 			log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line + "' in " + sub_dir) 
-			+ "\n\n" + file_contents(build_output));
+				+ "\n\n" + file_contents(build_output)
+			,SMB_PRIORITY_HIGHEST);
 		bail(1);
 	}
 
@@ -188,25 +220,22 @@ send_email(system.platform + " builds successful in " + elapsed_time(time() - st
 
 chdir(temp_dir);
 
-system.exec("cvs -d:pserver:testbuild@cvs.synchro.net:/cvsroot/sbbs tag -RF goodbuild_" + platform);
+var comment = "Successful build on " + system_description;
+system.exec("git tag -m \"" + comment + "\" -a goodbuild_" + platform + "_" + date_str);
+system.exec("git push --tags");
 
 var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));
 if(!file_copy(archive,dest))
 	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
 
-dest = file_area.dir["sbbs"].path+lib;
-log(LOG_INFO,format("Copying %s to %s",lib,dest));
-if(!file_copy(lib,dest))
-	log(LOG_ERR,format("!ERROR copying %s to %s",lib,dest));
-
 var file = new File("README.TXT");
 if(file.open("wt")) {
 	file.writeln(format("Synchronet-%s (%s) Version 3 Development Executable Archive (%s)\n"
-		,system.platform,system.architecture,system.datestr()));
+		,system.platform,system.architecture, date_str));
 	file.writeln(format("This archive contains a snap-shot of Synchronet-%s executable files"
 		,system.platform));
-	file.writeln("created on " + system.timestr());
+	file.writeln("created on " + new Date().toUTCString());
 	file.writeln();
 	file.writeln("The files in this archive are not necessarily well-tested, DO NOT");
 	file.writeln("constitute an official Synchronet release, and are NOT SUPPORTED!");
@@ -215,26 +244,29 @@ if(file.open("wt")) {
 	file.writeln();
 	file.writeln("BACKUP YOUR WORKING EXECUTABLE FILES");
 	file.writeln("BEFORE over-writing them with the files in this archive!");
+	file.writeln();
+	file.write("git commit: " );
 	file.close();
+	system.exec("git rev-parse HEAD >> " + file.name);
 }
 
 var file = new File("FILE_ID.DIZ");
 if(file.open("wt")) {
-	file.writeln(format("Synchronet-%s BBS Software",system.platform));
-	file.writeln(format("Development Executable Archive (%s)",system.datestr()));
+	file.writeln(format("Synchronet-%s (%s) BBS Software",system.platform, system.architecture));
+	file.writeln(format("Development Executable Archive (%s)", date_str));
 	file.writeln("Snapshot for experimental purposes only!");
 	file.writeln("http://www.synchro.net");
 	file.close();
 }
-}
+
 var cmd_line;
 if(platform=="win32") {
 	archive = "sbbs_dev.zip";
 	cmd_line = "pkzip25 -add " + archive 
-		+ " -exclude=makehelp.exe -exclude=v4upgrade.exe " + win32_dist.join(" ");
+		+ " -exclude=v4upgrade.exe " + win32_dist.join(" ");
 } else {
 	archive = "sbbs_dev.tgz";
-	cmd_line = "pax -s :.*/makehelp.*::p -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
+	cmd_line = "pax -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
 }
 
 log(LOG_INFO, "Executing: " + cmd_line);
@@ -279,7 +311,7 @@ function file_contents(fname)
 	return(msgtxt);
 }
 
-function send_email(subject, body)
+function send_email(subject, body, priority)
 {
 	var msgbase = new MsgBase("mail");
 	if(msgbase.open()==false) {
@@ -289,7 +321,8 @@ function send_email(subject, body)
 
 	var hdr = { 
 		from: "Synchronet testbuild.js", 
-		subject: subject
+		subject: subject || (system.platform + " build failure"),
+		priority: priority
 	};
 
 	var rcpt_list = [

@@ -4,7 +4,7 @@ How to add Kermit file transfer protocol support to Synchronet v3
 By: Rob Swindell (digital man)
 http://www.synchro.net
 
-$Id$
+$Id: kermit.txt,v 1.7 2004/11/16 17:48:06 deuce Exp $
 
 The information in this file is current as of the date above. The instructions
 in this file may change over time, so be sure to get the current version of

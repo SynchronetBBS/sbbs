@@ -1,6 +1,4 @@
-/* Synchronet Object Model constants definitions - (mostly bit-fields) */
-
-/* $Id$ */
+/* $Id: sbbsdefs.js,v 1.103 2020/05/24 10:23:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -33,9 +31,11 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-load('require.js', typeof(argv)=='undefined'?'undefined':argv, 'nodedefs.js', 'NODE_WFC');
-load('smbdefs.js');
-load('cga_defs.js');
+require('nodedefs.js', 'NODE_WFC');
+require('smbdefs.js', 'SMB_SUCCESS');
+require('userdefs.js', 'USER_DELETED');
+require('cga_defs.js', 'BLACK');
+require('key_defs.js', 'KEY_UP');
 
 /* Would rather use const than var, but end up with redeclaration errors.	*/
 
@@ -44,7 +44,6 @@ load('cga_defs.js');
 							    /********************************************/
 var   SYS_CLOSED	=(1<<0); 	/* System is closed to New Users		    */
 var   SYS_SYSSTAT	=(1<<1); 	/* Sysops activity included in statistics	*/
-var   SYS_NOBEEP	=(1<<2); 	/* No beep sound locally					*/
 var   SYS_NOSYSINFO	=(1<<2); 	/* Suppress system info display at logon	*/
 var   SYS_PWEDIT	=(1<<3); 	/* Allow users to change their passwords	*/
 var   SYS_RA_EMU	=(1<<4); 	/* Reverse R/A commands at msg read prompt	*/
@@ -56,8 +55,7 @@ var   SYS_WWIV 		=(1<<9); 	/* Expand WWIV color codes in messages		*/
 var   SYS_CELERITY	=(1<<10);	/* Expand Celerity color codes in messages	*/
 var   SYS_RENEGADE	=(1<<11);	/* Expand Renegade color codes in messages	*/
 var   SYS_ECHO_PW	=(1<<12);	/* Echo passwords locally					*/
-var   SYS_REQ_PW	=(1<<13);	/* Require passwords locally				*/
-var   SYS_L_SYSOP	=(1<<14);	/* Allow local sysop logon/commands 		*/
+var   SYS_AUTO_DST	=(1<<14);	/* Automatic Daylight Savings Toggle (US)	*/
 var   SYS_R_SYSOP	=(1<<15);	/* Allow remote sysop logon/commands		*/
 var   SYS_QUOTE_EM	=(1<<16);	/* Allow quoting of e-mail					*/
 var   SYS_EURODATE	=(1<<17);	/* European date format (DD/MM/YY)			*/
@@ -67,8 +65,7 @@ var   SYS_FILE_EM	=(1<<20);	/* Allow file attachments in E-mail 		*/
 var   SYS_SHRTPAGE	=(1<<21);	/* Short sysop page 						*/
 var   SYS_TIME_EXP	=(1<<22);	/* Set to expired values if out-of-time 	*/
 var   SYS_FASTMAIL	=(1<<23);	/* Fast e-mail storage mode 				*/
-var   SYS_QVALKEYS	=(1<<24);	/* Quick validation keys enabled			*/
-var   SYS_ERRALARM	=(1<<25);	/* Error beeps on							*/
+var   SYS_NONODELIST=(1<<24);	/* Suppress active node list during logon	*/
 var   SYS_FWDTONET	=(1<<26);	/* Allow forwarding of e-mail to netmail	*/
 var   SYS_DELREADM	=(1<<27);	/* Delete read mail automatically			*/
 var   SYS_NOCDTCVT	=(1<<28);	/* No credit to minute conversions allowed	*/
@@ -110,6 +107,8 @@ var   SS_RLOGIN		=(1<<26);	/* Current login via BSD RLogin				*/
 var   SS_FILEXFER	=(1<<27);	/* File transfer in progress, halt spy		*/
 var   SS_SSH		=(1<<28);	/* Current login via Secure Shell (SSH)     */
 var   SS_MOFF		=(1<<29);	/* Disable node/time messages				*/
+var   SS_QWKLOGON   =(1<<30);	/* QWK logon 								*/
+var   SS_FASTLOGON  =(1<<31);	/* Fast logon                               */
 					    		/********************************************/
 
 						    	/********************************************/
@@ -139,137 +138,37 @@ var   ON_REMOTE		=2;			/* Online remotely							*/
 							    /********************************************/
 							    /* console.status							*/
 							    /********************************************/
-var   CON_R_ECHO	=(1<<0);	/* Echo remotely							*/
-var   CON_R_ECHOX	=(1<<1);	/* Echo X's to remote user					*/
-var   CON_R_INPUT  	=(1<<2);	/* Accept input remotely					*/
-var   CON_L_ECHO	=(1<<3);	/* Echo locally              				*/
-var   CON_L_ECHOX	=(1<<4);	/* Echo X's locally							*/
-var   CON_L_INPUT  	=(1<<5);	/* Accept input locally						*/
-var   CON_RAW_IN   	=(1<<8);	/* Raw input mode - no editing capabilities */
-var   CON_ECHO_OFF 	=(1<<10);	/* Remote & Local echo disabled for ML/MF	*/
-var   CON_UPARROW  	=(1<<11);	/* Up arrow hit - move up one line			*/
-var   CON_DOWNARROW =(1<<12);	/* Down arrow hit - from getstr()			*/
-var   CON_NO_INACT  =(1<<13);	/* User inactivity detection disabled		*/
-var   CON_BACKSPACE =(1<<14);	/* Backspace key - from getstr(K_LEFTEXIT)	*/
-var   CON_LEFTARROW =(1<<15);	/* Left arrow hit - from getstr(K_LEFTEXIT)	*/
-var   CON_INSERT	=(1<<16);	/* Insert mode - for use with getstr()		*/
-var	  CON_DELETELINE=(1<<17);	/* Deleted line - from getstr(K_LEFTEXIT)	*/
-var   CON_NORM_FONT	=(1<<18);	/* Alt normal font activated				*/
-var   CON_HIGH_FONT	=(1<<19);	/* Alt high-intensity font activated		*/
-var   CON_BLINK_FONT=(1<<20);	/* Alt blink font activated					*/
-var   CON_HBLINK_FONT=(1<<21);	/* Alt high-blink font activated			*/
-					    		/********************************************/
-
-								/********************************************/
-								/* Special inkey()/getkey() return values	*/
-								/********************************************/
-var		KEY_UP		='\x1e';	/* ctrl-^ (up arrow)						*/
-var		KEY_DOWN	='\x0a';	/* ctrl-j (dn arrow)						*/
-var		KEY_RIGHT	='\x06';	/* ctrl-f (rt arrow)						*/
-var		KEY_LEFT	='\x1d';	/* ctrl-] (lf arrow)						*/
-var		KEY_HOME	='\x02';	/* ctrl-b (home)							*/
-var		KEY_END     ='\x05';	/* ctrl-e (end)								*/
-var		KEY_INSERT	='\x16';	/* ctrl-v (insert)							*/
-var		KEY_DEL     ='\x7f';    /* ctrl-BkSpc (DEL)							*/
-var		KEY_PAGEUP	='\x10';	/* ctrl-p (Page Up)							*/
-var		KEY_PAGEDN	='\x0e';	/* ctrl-n (Page Down)						*/
-								/********************************************/
-var		KEY_ABORT	='\x03';	/* ctrl-c (cancel/abort/break)				*/
-								/********************************************/
-					    
-					    		/********************************************/
-						    	/* user.settings							*/
-							    /********************************************/
-var   USER_DELETED  =(1<<0);	/* Deleted user slot						*/
-var   USER_ANSI		=(1<<1);	/* Supports ANSI terminal emulation			*/
-var   USER_COLOR	=(1<<2);	/* Send color codes 						*/
-var   USER_RIP 		=(1<<3);	/* Supports RIP terminal emulation			*/
-var   USER_PAUSE	=(1<<4);	/* Pause on every screen full				*/
-var   USER_SPIN		=(1<<5);	/* Spinning cursor - Same as K_SPIN			*/
-var   USER_INACTIVE	=(1<<6);	/* Inactive user slot						*/
-var   USER_EXPERT	=(1<<7);	/* Expert menu mode 						*/
-var   USER_ANFSCAN 	=(1<<8);	/* Auto New file scan						*/
-var   USER_CLRSCRN 	=(1<<9);	/* Clear screen before each message			*/
-var   USER_QUIET	=(1<<10);	/* Quiet mode upon logon					*/
-var   USER_BATCHFLAG=(1<<11);	/* File list allow batch dl flags			*/
-var   USER_NETMAIL 	=(1<<12);	/* Forward e-mail to fidonet addr			*/
-var   USER_CURSUB	=(1<<13);	/* Remember current sub-board/dir			*/
-var   USER_ASK_NSCAN=(1<<14);	/* Ask for newscanning upon logon			*/
-var   USER_NO_EXASCII=(1<<15);	/* Don't send extended ASCII				*/
-var   USER_ASK_SSCAN=(1<<16);	/* Ask for messages to you at logon			*/
-var   USER_AUTOTERM	=(1<<17);	/* Autodetect terminal type 				*/
-var   USER_COLDKEYS	=(1<<18);	/* No hot-keys								*/
-var   USER_EXTDESC 	=(1<<19);	/* Extended file descriptions				*/
-var   USER_AUTOHANG	=(1<<20);	/* Auto-hang-up after transfer				*/
-var   USER_WIP 		=(1<<21);	/* Supports WIP terminal emulation			*/
-var   USER_AUTOLOGON=(1<<22);	/* AutoLogon via IP							*/
-var	  USER_HTML		=(1<<23);	/* Using Deuce's HTML terminal (*cough*)	*/
-var	  USER_NOPAUSESPIN=(1<<24);	/* No spinning cursor at pause prompt		*/
-var   USER_PETSCII  = (1<<26);	/* Commodore PET (e.g. C64) terminal		*/
-					    		/********************************************/
-
-					    		/********************************************/
-								/* user.qwk_settings 						*/
-					    		/********************************************/
-var   QWK_FILES		=(1<<0);	/* Include new files list					*/
-var   QWK_EMAIL		=(1<<1);	/* Include unread e-mail					*/
-var   QWK_ALLMAIL	=(1<<2);	/* Include ALL e-mail						*/
-var   QWK_DELMAIL	=(1<<3);	/* Delete e-mail after download 			*/
-var   QWK_BYSELF	=(1<<4);	/* Include messages from self				*/
-var   QWK_UNUSED	=(1<<5);	/* Currently unused 						*/
-var   QWK_EXPCTLA	=(1<<6);	/* Expand ctrl-a codes to ascii 			*/
-var   QWK_RETCTLA	=(1<<7);	/* Retain ctrl-a codes						*/
-var   QWK_ATTACH	=(1<<8);	/* Include file attachments 				*/
-var   QWK_NOINDEX	=(1<<9);	/* Do not create index files in QWK			*/
-var   QWK_TZ		=(1<<10);	/* Include @TZ (time zone) in msgs			*/
-var   QWK_VIA 		=(1<<11);	/* Include @VIA (path) in msgs				*/
-var   QWK_NOCTRL	=(1<<12);	/* No extraneous control files				*/
-var   QWK_EXT		=(1<<13);	/* QWK Extended (QWKE) format				*/
-var   QWK_MSGID		=(1<<14);	/* Include @MSGID and @REPLY in msgs		*/
-var   QWK_HEADERS	=(1<<16);	/* Include HEADERS.DAT file					*/
-var   QWK_VOTING	=(1<<17);	/* Include VOTING.DAT						*/
-					    		/********************************************/
-
-					    		/********************************************/
-								/* user.chat_settings						*/
-					    		/********************************************/
-var   CHAT_ECHO		=(1<<0);	/* Multinode chat echo						*/
-var   CHAT_ACTION	=(1<<1);	/* Chat actions 							*/
-var   CHAT_NOPAGE	=(1<<2);	/* Can't be paged                           */
-var   CHAT_NOACT	=(1<<3);	/* No activity alerts						*/
-var   CHAT_SPLITP	=(1<<4);	/* Split screen private chat				*/
-					    		/********************************************/
-
-
-/************************************************************************/
-/* Valid flags for user.security.exempt/restrict/flags					*/
-/************************************************************************/
-var   UFLAG_A		=(1<<0);
-var   UFLAG_B		=(1<<1);
-var   UFLAG_C		=(1<<2);
-var   UFLAG_D		=(1<<3);
-var   UFLAG_E		=(1<<4);
-var   UFLAG_F		=(1<<5);
-var   UFLAG_G		=(1<<6);
-var   UFLAG_H		=(1<<7);
-var   UFLAG_I		=(1<<8);
-var   UFLAG_J		=(1<<9);
-var   UFLAG_K		=(1<<10);
-var   UFLAG_L		=(1<<11);
-var   UFLAG_M		=(1<<12);
-var   UFLAG_N		=(1<<13);
-var   UFLAG_O		=(1<<14);
-var   UFLAG_P		=(1<<15);
-var   UFLAG_Q		=(1<<16);
-var   UFLAG_R		=(1<<17);
-var   UFLAG_S		=(1<<18);
-var   UFLAG_T		=(1<<19);
-var   UFLAG_U		=(1<<20);
-var   UFLAG_V		=(1<<21);
-var   UFLAG_W		=(1<<22);
-var   UFLAG_X		=(1<<23);
-var   UFLAG_Y		=(1<<24);
-var   UFLAG_Z		=(1<<25);
+var CON_R_ECHO		=(1<<0);	/* Echo remotely							*/
+var CON_R_ECHOX		=(1<<1);	/* Echo X's to remote user					*/
+var CON_R_INPUT  	=(1<<2);	/* Accept input remotely					*/
+var CON_L_ECHO		=(1<<3);	/* Echo locally              				*/
+var CON_L_ECHOX		=(1<<4);	/* Echo X's locally							*/
+var CON_L_INPUT  	=(1<<5);	/* Accept input locally						*/
+var CON_RAW_IN   	=(1<<8);	/* Raw input mode - no editing capabilities */
+var CON_ECHO_OFF 	=(1<<10);	/* Remote & Local echo disabled for ML/MF	*/
+var CON_UPARROW  	=(1<<11);	/* Up arrow hit - move up one line			*/
+var CON_DOWNARROW 	=(1<<12);	/* Down arrow hit - from getstr()			*/
+var CON_NO_INACT 	=(1<<13);	/* User inactivity detection disabled		*/
+var CON_BACKSPACE 	=(1<<14);	/* Backspace key - from getstr(K_LEFTEXIT)	*/
+var CON_LEFTARROW 	=(1<<15);	/* Left arrow hit - from getstr(K_LEFTEXIT)	*/
+var CON_INSERT		=(1<<16);	/* Insert mode - for use with getstr()		*/
+var CON_DELETELINE	=(1<<17);	/* Deleted line - from getstr(K_LEFTEXIT)	*/
+var CON_NORM_FONT	=(1<<18);	/* Alt normal font activated				*/
+var CON_HIGH_FONT	=(1<<19);	/* Alt high-intensity font activated		*/
+var CON_BLINK_FONT	=(1<<20);	/* Alt blink font activated					*/
+var CON_HBLINK_FONT	=(1<<21);	/* Alt high-blink font activated			*/
+var CON_MOUSE_CLK_PASSTHRU	=(1<<24); // Pass-through unhandled mouse button-click reports
+var CON_MOUSE_REL_PASSTHRU	=(1<<25); // Pass-through unhandled mouse button-release reports
+var CON_MOUSE_SCROLL		=(1<<26); // Enable mouse scroll-wheel to arrow key translations
+var CON_CR_CLREOL			=(1<<31); // Sending '\r', clears to end-of-line first
+								
+								// Terminal mouse reporting mode (console.mouse_mode)
+var MOUSE_MODE_OFF	= 0;		// No terminal mouse reporting enabled/expected
+var MOUSE_MODE_X10	= (1<<0);	// X10 compatible mouse reporting enabled
+var MOUSE_MODE_NORM	= (1<<1);	// Normal tracking mode mouse reporting
+var MOUSE_MODE_BTN	= (1<<2);	// Button-event tracking mode mouse reporting
+var MOUSE_MODE_ANY	= (1<<3);	// Any-event tracking mode mouse reporting
+var MOUSE_MODE_EXT	= (1<<4);	// SGR-encoded extended coordinate mouse reporting
 
 						    	/********************************************/
     							/* Bits in 'mode' for getkey and getstr     */
@@ -316,6 +215,12 @@ var   P_NOCRLF		=(1<<6);	/* Don't prepend a CRLF	in printfile()		*/
 var   P_WORDWRAP	=(1<<7);	/* Word-wrap long lines for user's terminal	*/
 var   P_CPM_EOF		=(1<<8);	/* Treat Ctrl-Z as End-of-file				*/
 var   P_TRUNCATE    =(1<<9);    /* Truncate (don't display) long lines      */
+var   P_NOERROR     =(1<<10);   /* Don't report error if file doesn't exist */
+var   P_PETSCII     =(1<<11);   /* Message is native PETSCII                */
+var   P_WRAP        =(1<<12);   /* Wrap/split long-lines, ungracefully      */
+var   P_UTF8        =(1<<13);	/* Message is UTF-8 encoded                 */
+var   P_AUTO_UTF8	=(1<<14);	/* Message may be UTF-8, auto-detect		*/
+var   P_NOXATTRS	=(1<<15);	/* No "Extra Attribute Codes" supported		*/
 							    /********************************************/
 
     							/********************************************/
@@ -382,6 +287,8 @@ var   NMAIL_DIRECT	=(1<<6);	/* Default Fido netmail to direct			*/
 							    /* Bit values for sub[x].settings			*/
 							    /********************************************/
 var   SUB_NOVOTING	=(1<<0);	/* No voting allowed in this sub-board		*/
+var   SUB_TEMPLATE  =(1<<1);	/* Use this sub as template for new subs    */
+var   SUB_MSGTAGS   =(1<<2);    /* Allow messages to be tagged              */
 var   SUB_QNET		=(1<<3);	/* Sub-board is netted via QWK network		*/
 var   SUB_PNET		=(1<<4);	/* Sub-board is netted via PostLink			*/
 var   SUB_FIDO		=(1<<5);	/* Sub-board is netted via FidoNet			*/
@@ -493,19 +400,22 @@ var   FILE_ANON 	=(1<<1);	/* Anonymous upload							*/
 					    		/********************************************/
 var	  EX_NONE		=0;			/* No special behavior						*/
 var   EX_SH			=(1<<0);	/* Use system shell to load other process   */
-var   EX_OUTR		=(1<<1);	/* Copy DOS output to remote                */
-var   EX_OUTL 		=(1<<2);	/* Use _lputc() for local DOS output		*/
-var   EX_INR		=(1<<3);	/* Trap int 16h keyboard input requests     */
+var   EX_STDOUT		=(1<<1);	/* Copy DOS output to remote                */
+var   EX_STDIN		=(1<<3);	/* Trap int 16h keyboard input requests     */
 var   EX_WWIV 		=(1<<4);	/* Expand WWIV color codes to ANSI sequence */
-var   EX_SWAP 		=(1<<5);	/* Swap out for this external				*/
 var   EX_POPEN		=(1<<7);	/* Leave COM port open						*/
 var   EX_OFFLINE	=(1<<8);	/* Run this program offline					*/
 var   EX_BG			=(1<<10);	/* Back-ground/detached process				*/
 var   EX_BIN		=(1<<11);	/* Binary mode (no Unix LF to CR/LF)		*/
 var   EX_NATIVE		=(1<<14);	/* Native 32-bit application (XTRN_NATIVE)	*/
 var   EX_CHKTIME	=(1<<16);	/* Check time left (XTRN_CHKTIME)			*/
+var   EX_NOLOG      =(1<<30);	/* Don't log intercepted stdio              */
 					    		/********************************************/
 
+var   EX_STDIO      =(EX_STDIN|EX_STDOUT);
+// For backwards compatibility:
+var   EX_OUTR = EX_STDOUT;
+var   EX_INR = EX_STDIN;
 					    		/********************************************/
 								/* Values for bbs.user_event()				*/
 					    		/********************************************/
@@ -517,6 +427,15 @@ var   EVENT_POST	=5;			/* Execute after message posted				*/
 var   EVENT_UPLOAD	=6;			/* Execute after file uploaded				*/
 var   EVENT_DOWNLOAD=7;			/* Execute after file downloaded			*/
 					    		/********************************************/
+
+								/********************************************/
+								/* Bits for xtrn_area.event[].settings		*/
+								/********************************************/
+var EVENT_EXCL		=(1<<0);	/* Exclusive execution required				*/
+var EVENT_FORCE		=(1<<1);	/* Force users off-line for event			*/
+var EVENT_INIT		=(1<<2);	/* Always run event after BBS init/re-init	*/
+var EVENT_DISABLED	=(1<<3);	/* Disabled									*/
+								/********************************************/
 
 					    		/********************************************/
 								/* Bits in mode of bbs.telnet_gate()		*/
@@ -616,18 +535,18 @@ var FI_CLOSE 	  	=7;			/* Close any open records					*/
 					    		/********************************************/
 
 if(this.LOG_EMERG===undefined) {	/* temporary backward compatibility kludge	*/
-	                            /********************************************/   
-                                /* Log "levels" supported by log() function */   
-                                /********************************************/   
-var LOG_EMERG       =0;			/* system is unusable                       */   
-var LOG_ALERT       =1;			/* action must be taken immediately         */   
-var LOG_CRIT        =2;			/* critical conditions                      */   
-var LOG_ERR         =3;			/* error conditions                         */   
-var LOG_WARNING     =4;			/* warning conditions                       */   
-var LOG_NOTICE      =5;			/* normal but significant condition         */   
-var LOG_INFO        =6;			/* informational                            */   
-var LOG_DEBUG       =7;			/* debug-level messages                     */   
-                                /********************************************/ 
+	                            /********************************************/
+                                /* Log "levels" supported by log() function */
+                                /********************************************/
+var LOG_EMERG       =0;			/* system is unusable                       */
+var LOG_ALERT       =1;			/* action must be taken immediately         */
+var LOG_CRIT        =2;			/* critical conditions                      */
+var LOG_ERR         =3;			/* error conditions                         */
+var LOG_WARNING     =4;			/* warning conditions                       */
+var LOG_NOTICE      =5;			/* normal but significant condition         */
+var LOG_INFO        =6;			/* informational                            */
+var LOG_DEBUG       =7;			/* debug-level messages                     */
+                                /********************************************/
 }
 
 								/* "flags" bits for directory() */
@@ -639,10 +558,11 @@ var GLOB_PERIOD     =(1<<7); 	/* Leading `.' can be matched by metachars.  */
 var GLOB_ONLYDIR    =(1<<13);	/* Match only directories.  */
 
 								/* Bits in the lm_mode of bbs.read_mail()	*/
-var LM_UNREAD		=(1<<0)		/* Include un-read mail only				*/
-var LM_INCDEL		=(1<<1)		/* Include deleted mail		 				*/
-var LM_NOSPAM		=(1<<2)		/* Exclude SPAM								*/
-var LM_SPAMONLY		=(1<<3)		/* Load SPAM only							*/
+var LM_UNREAD		=(1<<0);	/* Include un-read mail only				*/
+var LM_INCDEL		=(1<<1);	/* Include deleted mail		 				*/
+var LM_NOSPAM		=(1<<2);	/* Exclude SPAM								*/
+var LM_SPAMONLY		=(1<<3);	/* Load SPAM only							*/
+var LM_REVERSE		=(1<<4);	/* Reverse the index order (newest-first)	*/
 
 								/********************************************/
 								/* Values for which in bbs.read_mail()		*/
@@ -669,6 +589,7 @@ var WM_PRIVATE		=(1<<8);	/* Private (for creating MSGINF file)		*/
 var WM_SUBJ_RO		=(1<<9);	/* Subject/title is read-only				*/
 var WM_EDIT			=(1<<10);	/* Editing existing message					*/
 var WM_FORCEFWD		=(1<<11);	/* Force "yes" to ForwardMailQ for email	*/
+var WM_NOFWD		=(1<<12);	/* Don't forward email to netmail			*/
 								/********************************************/
 
 								/************************************************/
@@ -681,7 +602,8 @@ var LEN_NOTE			=30;	/* User note									*/
 var LEN_COMP			=30;	/* User computer description					*/
 var LEN_COMMENT 		=60;	/* User comment 								*/
 var LEN_NETMAIL 		=60;	/* NetMail forwarding address					*/
-var LEN_PASS			=8;		/* User password								*/
+var LEN_OLDPASS			=8;		/* User password (old/short location)			*/
+var LEN_PASS			=40;	/* User password								*/
 var LEN_PHONE			=12;	/* User phone number							*/
 var LEN_BIRTH			=8;		/* Birthday in MM/DD/YY format					*/
 var LEN_ADDRESS 		=30;	/* User address 								*/
@@ -692,60 +614,59 @@ var LEN_FDESC			=58;	/* File description 							*/
 var LEN_FCDT			=9;		/* 9 digits for file credit values				*/
 var LEN_TITLE			=70;	/* Message title								*/
 var LEN_MAIN_CMD		=34;	/* Storage in user.dat for custom commands		*/
-var LEN_XFER_CMD		=40;													
-var LEN_SCAN_CMD		=35;													
-var LEN_IPADDR			=45;													
+var LEN_SCAN_CMD		=35;
+var LEN_IPADDR			=45;
 var LEN_CID 			=45;	/* Caller ID (phone number or IP address) 		*/
 var LEN_ARSTR			=40;	/* Max length of Access Requirement string		*/
 var LEN_CHATACTCMD		=9;		/* Chat action command							*/
 var LEN_CHATACTOUT		=65;	/* Chat action output string					*/
 								/************************************************/
-						
-								
+
+
 /********************************************/
 /* field values for system.matchuserdata()  */
 /********************************************/
-var U_ALIAS 		=0;					
+var U_ALIAS 		=0;
 var U_NAME			=U_ALIAS+LEN_ALIAS;
-var U_HANDLE		=U_NAME+LEN_NAME; 
+var U_HANDLE		=U_NAME+LEN_NAME;
 var U_NOTE			=U_HANDLE+LEN_HANDLE+2;
-var U_COMP			=U_NOTE+LEN_NOTE; 
-var U_COMMENT		=U_COMP+LEN_COMP+2; 
-var U_NETMAIL		=U_COMMENT+LEN_COMMENT+2; 
-var U_ADDRESS		=U_NETMAIL+LEN_NETMAIL+2; 
-var U_LOCATION		=U_ADDRESS+LEN_ADDRESS; 
-var U_ZIPCODE		=U_LOCATION+LEN_LOCATION; 
-var U_PASS			=U_ZIPCODE+LEN_ZIPCODE+2; 
-var U_PHONE  		=U_PASS+8; 			
-var U_BIRTH  		=U_PHONE+12; 		
-var U_MODEM     	=U_BIRTH+8; 
-var U_LASTON		=U_MODEM+8; 
-var U_FIRSTON		=U_LASTON+8; 
-var U_EXPIRE    	=U_FIRSTON+8; 
-var U_PWMOD     	=U_EXPIRE+8; 
-var U_LOGONS    	=U_PWMOD+8+2; 
-var U_LTODAY    	=U_LOGONS+5; 
+var U_COMP			=U_NOTE+LEN_NOTE;
+var U_COMMENT		=U_COMP+LEN_COMP+2;
+var U_NETMAIL		=U_COMMENT+LEN_COMMENT+2;
+var U_ADDRESS		=U_NETMAIL+LEN_NETMAIL+2;
+var U_LOCATION		=U_ADDRESS+LEN_ADDRESS;
+var U_ZIPCODE		=U_LOCATION+LEN_LOCATION;
+var U_OLDPASS		=U_ZIPCODE+LEN_ZIPCODE+2;
+var U_PHONE  		=U_PASS+LEN_OLDPASS;
+var U_BIRTH  		=U_PHONE+12;
+var U_MODEM     	=U_BIRTH+8;
+var U_LASTON		=U_MODEM+8;
+var U_FIRSTON		=U_LASTON+8;
+var U_EXPIRE    	=U_FIRSTON+8;
+var U_PWMOD     	=U_EXPIRE+8;
+var U_LOGONS    	=U_PWMOD+8+2;
+var U_LTODAY    	=U_LOGONS+5;
 var U_TIMEON    	=U_LTODAY+5;
-var U_TEXTRA  		=U_TIMEON+5; 
+var U_TEXTRA  		=U_TIMEON+5;
 var U_TTODAY    	=U_TEXTRA+5;
-var U_TLAST     	=U_TTODAY+5; 
-var U_POSTS     	=U_TLAST+5; 
-var U_EMAILS    	=U_POSTS+5; 
-var U_FBACKS    	=U_EMAILS+5; 
+var U_TLAST     	=U_TTODAY+5;
+var U_POSTS     	=U_TLAST+5;
+var U_EMAILS    	=U_POSTS+5;
+var U_FBACKS    	=U_EMAILS+5;
 var U_ETODAY		=U_FBACKS+5;
-var U_PTODAY		=U_ETODAY+5; 
-var U_ULB       	=U_PTODAY+5+2; 
-var U_ULS       	=U_ULB+10; 
-var U_DLB       	=U_ULS+5; 
-var U_DLS       	=U_DLB+10; 
-var U_CDT			=U_DLS+5; 
-var U_MIN			=U_CDT+10; 
+var U_PTODAY		=U_ETODAY+5;
+var U_ULB       	=U_PTODAY+5+2;
+var U_ULS       	=U_ULB+10;
+var U_DLB       	=U_ULS+5;
+var U_DLS       	=U_DLB+10;
+var U_CDT			=U_DLS+5;
+var U_MIN			=U_CDT+10;
 var U_LEVEL 		=U_MIN+10+2; 	/* Offset to Security Level    */
 var U_FLAGS1		=U_LEVEL+2;  	/* Offset to Flags */
 var U_TL			=U_FLAGS1+8; 	/* Offset to unused field */
-var U_FLAGS2		=U_TL+2; 
-var U_EXEMPT		=U_FLAGS2+8; 
-var U_REST			=U_EXEMPT+8; 
+var U_FLAGS2		=U_TL+2;
+var U_EXEMPT		=U_FLAGS2+8;
+var U_REST			=U_EXEMPT+8;
 var U_ROWS			=U_REST+8+2; 	/* Number of Rows on user's monitor */
 var U_SEX			=U_ROWS+2; 		/* Sex, Del, ANSI, color etc.		*/
 var U_MISC			=U_SEX+1; 		/* Miscellaneous flags in 8byte hex */
@@ -754,10 +675,10 @@ var U_LEECH 		=U_OLDXEDIT+2; 	/* two hex digits - leech attempt count */
 var U_CURSUB		=U_LEECH+2;  	/* Current sub (internal code)  */
 var U_CURXTRN		=U_CURSUB+16; 	/* Current xtrn (internal code) */
 var U_MAIN_CMD		=U_CURXTRN+8+2; /* unused */
-var U_XFER_CMD		=U_MAIN_CMD+LEN_MAIN_CMD; 		/* unused */
-var U_SCAN_CMD		=U_XFER_CMD+LEN_XFER_CMD+2;  	/* unused */
+var U_PASS			=U_MAIN_CMD+LEN_MAIN_CMD; 		/* unused */
+var U_SCAN_CMD		=U_PASS+LEN_PASS+2;  		/* unused */
 var U_IPADDR		=U_SCAN_CMD+LEN_SCAN_CMD; 		/* unused */
-var U_FREECDT		=U_IPADDR+LEN_IPADDR+2; 
+var U_FREECDT		=U_IPADDR+LEN_IPADDR+2;
 var U_FLAGS3		=U_FREECDT+10; 	/* Flag set #3 */
 var U_FLAGS4		=U_FLAGS3+8; 	/* Flag set #4 */
 var U_XEDIT 		=U_FLAGS4+8; 	/* External editor (code  */

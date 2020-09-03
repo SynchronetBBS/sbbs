@@ -2,7 +2,7 @@
 
 /* Synchronet Access Requirement Strings (ARS) constants */
 
-/* $Id$ */
+/* $Id: ars_defs.h,v 1.16 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -54,7 +54,7 @@
 #ifdef __cplusplus
 extern "C"
 #endif
-uchar *arstr(ushort* count, const char* str, scfg_t* cfg);
+uchar *arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf);
 
 #define AR_INVALID	-1				/* Unspecified keyword */
 
@@ -128,6 +128,9 @@ enum {                              /* Access requirement binaries */
 	,AR_COLS
 	,AR_ROWS
 	,AR_PETSCII
+	,AR_ASCII
+	,AR_UTF8
+	,AR_CP437
     };
 
 #endif		/* Don't add anything after this line */

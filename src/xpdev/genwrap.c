@@ -1,6 +1,6 @@
 /* General cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: genwrap.c,v 1.118 2020/08/10 04:11:44 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -78,23 +78,37 @@ int DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	return(numchars);
 }
 
-#ifdef _MSC_VER
+#ifdef NEEDS_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t size)
+{
+	size_t i;
+
+	if(size < 1)
+		return 0;
+
+	for(i = 0; src[i] != '\0'; i++) {
+		if(i < (size - 1))
+			*(dst++) = src[i];
+	}
+	*dst = 0;
+	return i;
+}
+#endif
+
+#ifdef _WIN32
 /****************************************************************************/
-/* Case insensitive version of strstr()										*/
+/* Case insensitive version of strstr()	- currently heavy-handed			*/
 /****************************************************************************/
 char* DLLCALL strcasestr(const char* haystack, const char* needle)
 {
-	char* h = strdup(haystack);
-	char* n = strdup(needle);
-	char* p = NULL;
-	if(h != NULL && n != NULL)
-		p = strstr(strupr(h), strupr(n));
-	int offset = p - h;
-	FREE_AND_NULL(h);
-	FREE_AND_NULL(n);
-	if(p == NULL)
-		return NULL;
-	return (char*)haystack + offset;
+	const char* p;
+	size_t len = strlen(needle);
+
+	for(p = haystack; *p != '\0'; p++) {
+		if(strnicmp(p, needle, len) == 0)
+			return (char*)p;
+	}
+	return NULL;
 }
 #endif
 
@@ -632,11 +646,11 @@ char* DLLCALL os_version(char *str)
 		}
 	}
 
-	sprintf(str,"Windows %sVersion %u.%u"
+	sprintf(str,"Windows %sVersion %lu.%lu"
 			,winflavor
 			,winver.dwMajorVersion, winver.dwMinorVersion);
 	if(winver.dwBuildNumber)
-		sprintf(str+strlen(str), " (Build %u)", winver.dwBuildNumber);
+		sprintf(str+strlen(str), " (Build %lu)", winver.dwBuildNumber);
 	if(winver.szCSDVersion[0])
 		sprintf(str+strlen(str), " %s", winver.szCSDVersion);
 
@@ -852,3 +866,24 @@ BOOL DLLCALL terminate_pid(pid_t pid)
 #endif
 }
 
+/****************************************************************************/
+/* Re-entrant (thread-safe) version of strerror()							*/
+/* GNU (not POSIX) inspired API											*/
+/****************************************************************************/
+char* safe_strerror(int errnum, char *buf, size_t buflen)
+{
+	strncpy(buf, "Unknown error", buflen);
+	buf[buflen - 1] = 0;
+
+#if defined(_MSC_VER)
+	strerror_s(buf, buflen, errnum);
+#elif defined(__BORLANDC__)
+	strncpy(buf, strerror(errnum), buflen);
+	buf[buflen - 1] = 0;
+#elif defined(_GNU_SOURCE)
+	buf = strerror_r(errnum, buf, buflen);
+#else
+	strerror_r(errnum, buf, buflen);
+#endif
+	return buf;
+}

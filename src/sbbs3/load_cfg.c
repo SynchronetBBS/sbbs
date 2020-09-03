@@ -1,6 +1,6 @@
 /* Synchronet configuration load routines (exported) */
 
-/* $Id: load_cfg.c,v 1.75 2018/10/18 21:28:23 rswindell Exp $ */
+/* $Id: load_cfg.c,v 1.82 2020/05/26 01:49:22 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -53,7 +53,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 #ifdef SBBS
 	long	line=0L;
 	FILE 	*instream;
-	char	str[256],fname[13];
+	char	str[256];
 #endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
@@ -99,8 +99,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		/* Free existing text if allocated */
 		free_text(text);
 
-		strcpy(fname,"text.dat");
-		sprintf(str,"%s%s",cfg->ctrl_dir,fname);
+		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
 		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 			sprintf(error,"%d opening %s",errno,str);
 			return(FALSE); 
@@ -113,11 +112,12 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		fclose(instream);
 
 		if(i<TOTAL_TEXT) {
-			sprintf(error,"line %d in %s: Less than TOTAL_TEXT (%u) strings defined in %s."
-				,i,fname
-				,TOTAL_TEXT,fname);
+			sprintf(error,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
+				,i
+				,TOTAL_TEXT,str);
 			return(FALSE); 
 		}
+		cfg->text = text;
 	}
 #endif
 
@@ -159,7 +159,7 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_subs;i++) {
 
 		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
-			sprintf(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
+			SAFEPRINTF(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir, sizeof(cfg->sub[i]->data_dir));
 
 		/* default QWKnet tagline */
@@ -188,7 +188,7 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_dirs;i++) {
 
 		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
-			sprintf(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
+			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
 
 		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
@@ -198,12 +198,12 @@ void prep_cfg(scfg_t* cfg)
 
 		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
 
-		if(!cfg->dir[i]->path[0])		/* no file storage path specified */
-            sprintf(cfg->dir[i]->path,"%s%s/",cfg->dir[i]->data_dir,cfg->dir[i]->code);
-		else if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+		if(!cfg->dir[i]->path[0])
+			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
+		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 		else
-			prep_dir(cfg->ctrl_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
+			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 
 		prep_path(cfg->dir[i]->upload_sem);
 	}
@@ -223,14 +223,26 @@ void prep_cfg(scfg_t* cfg)
 			char* tp = lastchar(p);
 			if(*tp != '/')
 				continue;
-			*tp = 0;
+			*tp = 0; // Remove trailing slash
+			char* dirname = getfname(p);
+			int j;
+			for(j = 0; j < cfg->total_dirs; j++) {
+				if(cfg->dir[j]->lib != i)
+					continue;
+				if(stricmp(cfg->dir[j]->code, dirname) == 0)
+					break;
+				if(stricmp(cfg->dir[j]->code_suffix, dirname) == 0)
+					break;
+			}
+			if(j < cfg->total_dirs)	// duplicate
+				continue;
 			dir_t dir;
 			memset(&dir, 0, sizeof(dir));
 			dir.lib = i;
 			dir.misc = DIR_FILES;
 			SAFECOPY(dir.path, p);
 			backslash(dir.path);
-			SAFECOPY(dir.lname, getfname(p));
+			SAFECOPY(dir.lname, dirname);
 			SAFECOPY(dir.sname, dir.lname);
 			char code_suffix[LEN_EXTCODE+1];
 			SAFECOPY(code_suffix, dir.lname);
@@ -294,6 +306,9 @@ void DLLCALL free_cfg(scfg_t* cfg)
 	free_chat_cfg(cfg);
 	free_xtrn_cfg(cfg);
 	free_attr_cfg(cfg);
+
+	if(cfg->text != NULL)
+		free_text(cfg->text);
 }
 
 void DLLCALL free_text(char* text[])
@@ -344,19 +359,18 @@ BOOL md(char *inpath)
 /****************************************************************************/
 BOOL read_attr_cfg(scfg_t* cfg, char* error)
 {
-	char*	p;
-    char    str[256],fname[13];
+	uint*	clr;
+    char    str[256];
 	long	offset=0;
     FILE    *instream;
 
-	strcpy(fname,"attr.cfg");
-	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
+	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
 		sprintf(error,"%d opening %s",errno,str);
 		return(FALSE); 
 	}
 	FREE_AND_NULL(cfg->color);
-	if((cfg->color=malloc(MIN_COLORS))==NULL) {
+	if((cfg->color=malloc(MIN_COLORS * sizeof(uint)))==NULL) {
 		sprintf(error,"Error allocating memory (%u bytes) for colors"
 			,MIN_COLORS);
 		fclose(instream);
@@ -370,9 +384,9 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 		if(readline(&offset,str,4,instream)==NULL)
 			break;
 		if(cfg->total_colors>=MIN_COLORS) {
-			if((p=realloc(cfg->color,cfg->total_colors+1))==NULL)
+			if((clr=realloc(cfg->color,(cfg->total_colors+1) * sizeof(uint)))==NULL)
 				break;
-			cfg->color=p;
+			cfg->color=clr;
 		}
 		cfg->color[cfg->total_colors]=attrstr(str); 
 	}
@@ -403,9 +417,9 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 	if(path[0]!='\\' && path[0]!='/' && path[1]!=':') {	/* Relative directory */
 		ch=*lastchar(base);
 		if(ch=='\\' || ch=='/')
-			sprintf(str,"%s%s",base,path);
+			SAFEPRINTF2(str,"%s%s",base,path);
 		else
-			sprintf(str,"%s%c%s",base,PATH_DELIM,path);
+			SAFEPRINTF3(str,"%s%c%s",base,PATH_DELIM,path);
 	} else
 		strcpy(str,path);
 
@@ -420,7 +434,7 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 	FULLPATH(abspath,str,buflen);	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
 	backslash(abspath);
 
-	sprintf(path,"%.*s",(int)(buflen-1),abspath);
+	strncpy(path, abspath, buflen);
 	return(path);
 }
 
@@ -485,4 +499,84 @@ ushort DLLCALL sys_timezone(scfg_t* cfg)
 	}
 
 	return(cfg->sys_timezone);
+}
+
+
+int DLLCALL smb_storage_mode(scfg_t* cfg, smb_t* smb)
+{
+	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
+		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
+	if(smb->subnum >= cfg->total_subs)
+		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
+	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
+		smb->status.attr |= SMB_HYPERALLOC;
+		return SMB_HYPERALLOC;
+	}
+	if(cfg->sub[smb->subnum]->misc&SUB_FAST)
+		return SMB_FASTALLOC;
+	return SMB_SELFPACK;
+}
+
+/* Open Synchronet Message Base and create, if necessary (e.g. first time opened) */
+/* If return value is not SMB_SUCCESS, sub-board is not left open */
+int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
+{
+	int retval;
+	smbstatus_t smb_status = {0};
+
+	if(subnum != INVALID_SUB && subnum >= cfg->total_subs)
+		return SMB_FAILURE;
+	memset(smb, 0, sizeof(smb_t));
+	if(subnum == INVALID_SUB) {
+		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
+		smb_status.max_crcs	= cfg->mail_maxcrcs;
+		smb_status.max_msgs	= 0;
+		smb_status.max_age	= cfg->mail_maxage;
+		smb_status.attr		= SMB_EMAIL;
+	} else {
+		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
+		smb_status.max_crcs	= cfg->sub[subnum]->maxcrcs;
+		smb_status.max_msgs	= cfg->sub[subnum]->maxmsgs;
+		smb_status.max_age	= cfg->sub[subnum]->maxage;
+		smb_status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+	}
+	smb->retry_time = cfg->smb_retry_time;
+	if((retval = smb_open(smb)) == SMB_SUCCESS) {
+		if(smb_fgetlength(smb->shd_fp) < sizeof(smbhdr_t) + sizeof(smb->status)) {
+			smb->status = smb_status;
+			if((retval = smb_create(smb)) != SMB_SUCCESS)
+				smb_close(smb);
+		}
+		if(retval == SMB_SUCCESS)
+			smb->subnum = subnum;
+	}
+	return retval;
+}
+
+BOOL DLLCALL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+{
+	if(dirnum != INVALID_DIR && dirnum >= cfg->total_dirs)
+		return FALSE;
+	memset(smb, 0, sizeof(smb_t));
+	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	smb->retry_time = cfg->smb_retry_time;
+	return TRUE;
+}
+
+int DLLCALL smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
+{
+	int retval;
+
+	if(!smb_init_dir(cfg, smb, dirnum))
+		return SMB_FAILURE;
+	if((retval = smb_open(smb)) != SMB_SUCCESS)
+		return retval;
+	smb->dirnum = dirnum;
+	if(filelength(fileno(smb->shd_fp)) < 1) {
+		smb->status.max_files	= cfg->dir[dirnum]->maxfiles;
+		smb->status.max_age		= cfg->dir[dirnum]->maxage;
+		smb->status.attr		= SMB_FILE_DIRECTORY|SMB_NOHASH;
+		smb_create(smb);
+	}
+	return SMB_SUCCESS;
 }

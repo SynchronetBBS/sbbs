@@ -1,0 +1,90 @@
+@CENTER@nyhe4 Synchronet Minesweeper Help n
+
+@CENTER@The classic game, recreated for this Synchronet BBS!
+@CENTER@http://www.minesweeper.info/
+
+@CENTER@hYou're in a mine field!n
+
+The object of the game is to uncover all the safe areas (blocks) in the mine
+field without uncovering (detonating) any mines (rhën), within the allowed time!
+It's a game of quick deduction, pattern-recognition, and a little bit o' luck!
+
+hControlsn:
+
+ù hcMoven the block selector h[i_nh]n around the game board using the arrow keys,
+  home/end/page-up/down or the numeric keypad (i.e. for diagonal movement).
+  
+ù hcDign a block (reveal its contents) using the 'hDn' key or the hspace-barn.
+  If you dig-up/detonate a mine (rhi*n), sorry, game over: you lose, try again!
+  
+  The first block you uncover is guaranteed to be empty (safe).
+  If you reveal an empty block, then all adjacent empty blocks will also be
+  uncovered (a depth-first search algorithm popular in coding interviews)!
+  Uncovered safe blocks with a mine in any surrounding/adjacent blocks will
+  have the total number of adjacent mines displayed (a digit, from c1n to c8n).
+  These digits are your clue where the next mine or empty block may be located.
+  When all empty blocks are uncovered, the game is won!
+
+ù hcFlagn a covered block as having a suspected mine with the 'hFn' key.
+  You can also remove a flag ('rhŸn') or change it to an uncertainty indicator
+  ('rh?n') with the 'F' key (it's a 3-way toggle).
+  If you lose, incorrectly-flagged safe blocks are indicated with a 'rh!n'.
+  
+@CENTER@hChordingn  
+  Once you have flagged one or more blocks as likely containing a mine, you may
+  have the option of automatically uncovering all blocks surrounding a
+  previously uncovered block if the number of surrounding mines matches the
+  number of flagged blocks. This time-saving operation is called a cChordn and is
+  invoked with the 'hCn' key, when appropriate. Note: if you have an incorrectly
+  placed flag ('rhŸn') in the area, a Chord operation will detonate a mine!
+
+ù hcDisplayn a list of top-ranked previous game-winners with the 'hWn' key.
+  You can view a log of all clocaln wins and losses with the 'hLn' key.
+
+ù hcStartn a new game with the the 'hNn' key. A new difficulty level may be chosen.
+  Larger user terminals can support larger game boards for greater challenges!
+
+ù hcQuitn the game with the 'hQn' key.
+
+ù hcRedrawn the game board with the hCtrl-Rn key combination.
+
+ù hcTogglen the affected-area highlight feature with the hTABn key.
+  Cycle through the available block-selector styles using hCtrl-Sn.
+
+hDifficulty Leveln:
+
+The difficulty level may be chosen when a new game is started (level 1 being
+the lowest / easiest). The density of mines is increased with each level and
+the game board is increased in dimensions, if possible (depending on terminal
+size, in columns and rows).
+          
+cLevel  Target Grid  Mines  Densityn
+  h1      10 x 10      10     10%  n
+  h2      15 x 15      28     12%  n
+  h3      20 x 20      60     15%  n
+  h4      25 x 25     109     17%  n
+  h5      30 x 30     180     20%  n
+
+If the target grid height cannot be achieved, a wider game board will be
+generated / used.  If the total target grid size (in blocks) cannot be
+generated, fewer mines will be deployed to maintain the indicated mine density
+(percentage) and the calculated difficulty level will be discounted
+accordingly.
+
+hAdditional Movement Optionsn:
+
+If some of the navigation keys (e.g. arrow keys, home, end) do not work for
+your terminal, you can try using these alternatives:
+
+  ù Up Arrow: Ctrl-^
+  ù Down Arrow: Ctrl-J
+  ù Left Arrow: Ctrl-]
+  ù Right Arrow: Ctrl-F
+  ù Home: Ctrl-B
+  ù End: Ctrl-E
+  ù Page-Up: Ctrl-P
+  ù Page-Down: Ctrl-N
+  
+... or use the numeric keypad.
+
+$Id: minesweeper.hlp,v 2.0 2019/09/27 03:01:45 rswindell Exp $

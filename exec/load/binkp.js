@@ -1,4 +1,4 @@
-// $Id$
+// $Id: binkp.js,v 1.123 2020/04/10 07:01:24 rswindell Exp $
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -15,6 +15,7 @@ require('fido.js', 'FIDO');
  * debug		   - If set, logs all sent/received frames via log(LOG_DEBUG)
  * require_md5	   - Require that the remote support CRAM-MD5 authentication
  * plain_auth_only - Use plain-text authentication always (no CRAM-MD5 auth, no encryption)
+ * crypt_support   - Encryption supported
  * timeout		   - Max timeout
  * addr_list       - list of addresses handled by this system.  Defaults to system.fido_addr_list
  * system_name	   - BBS name to send to remote defaults to system.name
@@ -55,7 +56,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	if (name_ver === undefined)
 		name_ver = 'UnknownScript/0.0';
 	this.name_ver = name_ver;
-	this.revision = "JSBinkP/" + "$Revision$".split(' ')[1];
+	this.revision = "JSBinkP/" + "$Revision: 1.123 $".split(' ')[1];
 	this.full_ver = name_ver + "," + this.revision + ',sbbs' + system.version + system.revision + '/' + system.platform;
 
 	if (inbound === undefined)
@@ -79,6 +80,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.ver1_1 = false;
 	this.require_md5 = true;
 	this.plain_auth_only = false;
+	this.crypt_support = true;
 	// IREX VER Internet Rex 2.29 Win32 (binkp/1.1) doesn't work with longer challenges
 	// TODO: Remove this knob
 	this.cram_challenge_length = 16;
@@ -96,6 +98,12 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	this.out_keys = undefined;
 	this.capabilities = '115200,TCP,BINKP';
 	this.remote_ver = undefined;
+	this.remote_operator = undefined;
+	this.remote_capabilities = undefined;
+	this.remote_info = {};
+	this.connect_host = undefined;
+	this.connect_port = undefined;
+	this.connect_error = undefined;
 
 	this.sent_files = [];
 	this.failed_sent_files = [];
@@ -394,7 +402,7 @@ BinkP.prototype.parseArgs = function(data)
  * parameter string send with the M_OK message... hopefully either "secure"
  * or "non-secure"
  */
-BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
+BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host, tls)
 {
 	var pkt;
 	var i;
@@ -407,7 +415,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 		throw("No address specified!");
 	addr = FIDO.parse_addr(addr, this.default_zone, this.default_domain);
 
-	if (password === undefined)
+	if (!password)
 		password = '-';
 	if (password === '-')
 		this.require_md5 = false;
@@ -416,19 +424,44 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	if (inet_host === undefined)
 		inet_host = addr.inet_host;
 
-	if (this.sock === undefined)
-		this.sock = new Socket(SOCK_STREAM, "binkp");
+	log(LOG_INFO, format("Connecting to %s at %s:%u", addr, inet_host, port));
+	this.connect_host = inet_host;
+	this.connect_port = port;
 
-	log(LOG_INFO, "Connecting to "+inet_host+":"+port);
-	if(!this.sock.connect(inet_host, port)) {
-		this.sock = undefined;
-		log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed.");
-		return false;
+	if (js.global.ConnectedSocket != undefined) {
+		if (this.sock !== undefined)
+			this.sock.close();
+		try {
+			this.sock = new ConnectedSocket(inet_host, port, {protocol:'binkp'});
+		}
+		catch(e) {
+			log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed ("+e+").");
+			this.connect_error = e;
+			this.sock = undefined;
+			return false;
+		}
 	}
+	else {
+		if (this.sock === undefined)
+			this.sock = new Socket(SOCK_STREAM, "binkp");
+
+		if(!this.sock.connect(inet_host, port)) {
+			this.connect_error = this.sock.error;
+			this.sock = undefined;
+			log(LOG_WARNING, "Connection to "+inet_host+":"+port+" failed.");
+			return false;
+		}
+	}
+
 	log(LOG_DEBUG, "Connection to "+inet_host+":"+port+" successful");
 
+	if(tls === true) {
+		log(LOG_INFO, "Negotiating TLS");
+		this.sock.ssl_session = true;
+	}
+
 	this.authenticated = undefined;
-	if (password !== '-')
+	if (this.crypt_support && !this.plain_auth_only && password !== '-')
 		this.sendCmd(this.command.M_NUL, "OPT CRYPT");
 	else {
 		/*
@@ -457,9 +490,12 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host)
 	}
 
 	if (this.authenticated === undefined) {
-		if (this.plain_auth_only || this.cram === undefined || this.cram.algo !== 'MD5') {
+		if (this.plain_auth_only) {
+			this.sendCmd(this.command.M_PWD, password);
+		}
+		else if (this.cram === undefined || this.cram.algo !== 'MD5') {
 			if (this.require_md5)
-				this.sendCmd(this.command.M_ERR, "MD5 Required");
+				this.sendCmd(this.command.M_ERR, "CRAM-MD5 authentication required");
 			else {
 				if (this.will_crypt)
 					this.sendCmd(this.command.M_ERR, "Encryption requires CRAM-MD5 auth");
@@ -560,6 +596,8 @@ BinkP.prototype.accept = function(sock, auth_cb)
 
 	this.cram = {algo:'MD5', challenge:challenge.replace(/[0-9a-fA-F]{2}/g, hex2ascii)};
 	this.authenticated = undefined;
+	if(!this.crypt_support || this.plain_auth_only)
+		this.wont_crypt = true;
 	if(!this.plain_auth_only)
 		this.sendCmd(this.command.M_NUL, "OPT CRAM-MD5-"+challenge+(this.wont_crypt?"":" CRYPT"));
 	pkt = this.recvFrame(this.timeout);
@@ -673,7 +711,7 @@ BinkP.prototype.session = function()
 						this.ack_file();
 						args = this.parseArgs(pkt.data);
 						if (args.length < 4) {
-							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"'");
+							log(LOG_ERROR, "Invalid M_FILE command args: '"+pkt.data+"' from: " + this.remote_addrs);
 							this.sendCmd(this.command.M_ERR, "Invalid M_FILE command args: '"+pkt.data+"'");
 						}
 						tmp = new File(this.inbound + file_getname(args[0]));
@@ -700,11 +738,11 @@ BinkP.prototype.session = function()
 								}
 								else {
 									if (parseInt(args[3], 10) > size) {
-										log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
+										log(LOG_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size + " from remote: " + this.remote_addrs);
 										this.sendCmd(this.command.M_ERR, "Invalid offset of "+args[3]+" into file '"+tmp.name+"' size "+size);
 									}
 									if (!tmp.open(tmp.exists ? "r+b" : "wb")) {
-										log(LOG_ERROR, "Unable to open file "+tmp.name);
+										log(LOG_ERROR, "Error " + tmp.error + " opening file "+tmp.name  + " from remote: " + this.remote_addrs );
 										this.sendCmd(this.command.M_SKIP, this.escapeFileName(args[0])+' '+args[1]+' '+args[2]);
 										break;
 									}
@@ -716,7 +754,7 @@ BinkP.prototype.session = function()
 								}
 								break;
 							default:
-								log(LOG_ERR, "Invalid return value from want_callback!");
+								log(LOG_ERR, "Invalid return value from want_callback from remote: " + this.remote_addrs);
 								this.sendCmd(this.command.M_ERR, "Implementation bug at my end, sorry.");
 						}
 						break;
@@ -806,7 +844,7 @@ BinkP.prototype.session = function()
 							tmp = this.command_name[pkt.command];
 						else
 							tmp = 'Unknown Command '+pkt.command;
-						log(LOG_ERROR, "Unhandled "+tmp+" command from remote. Aborting session.");
+						log(LOG_ERROR, "Unhandled "+tmp+" command from remote: " + this.remote_addrs);
 						this.sendCmd(this.command.M_ERR, "Unhandled command.");
 				}
 			}
@@ -1071,7 +1109,7 @@ BinkP.prototype.recvFrame = function(timeout)
 			return undefined;
 		}
 		else if (timeout) {
-			log(LOG_ERROR, "Timed out receiving packet data!");
+			log(LOG_WARNING, "Timed out receiving packet data from remote: " + this.remote_addrs);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
@@ -1106,12 +1144,12 @@ BinkP.prototype.recvFrame = function(timeout)
 				this.reset_eob(false);
 			switch(ret.command) {
 				case this.command.M_ERR:
-					log(LOG_ERROR, "BinkP got fatal error from remote: '"+ret.data+"'.");
+					log(LOG_ERROR, "BinkP got fatal error '"+ret.data+"' from remote: " + this.remote_addrs);
 					this.sock.close();
 					this.socket = undefined;
 					return undefined;
 				case this.command.M_BSY:
-					log(LOG_WARNING, "BinkP got non-fatal error from remote: '"+ret.data+"'.");
+					log(LOG_WARNING, "BinkP got non-fatal error '"+ret.data+"' from remote: " + this.remote_addrs);
 					this.sock.close();
 					this.socket = undefined;
 					return undefined;
@@ -1193,6 +1231,16 @@ BinkP.prototype.recvFrame = function(timeout)
 									}
 								}
 							}
+							break;
+						case 'ZYZ':
+							this.remote_operator = args.slice(1).join(' ');
+							break;
+						case 'NDL':
+							this.remote_capabilities = args.slice(1).join(' ');
+							break;
+						default:
+							this.remote_info[args[0]] = args.slice(1).join(' ');
+							break;
 					}
 			}
 		}
@@ -1211,7 +1259,7 @@ BinkP.prototype.addFile = function(path, sendas, waitget)
 	if (waitget === undefined)
 		waitget = true;
 	if (!file.open("rb", true)) {
-		log(LOG_WARNING, "Unable to open '"+file.name+"'.  Not sending.");
+		log(LOG_WARNING, "Error " + file.error + " opening '"+file.name+"'.  Not sending.");
 		return false;
 	}
 	if (this.debug)

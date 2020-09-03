@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: userstats.inc,v 1.8 2006/01/31 23:13:43 runemaster Exp $ -->
 
 <!-- Main Content -->  
   <td class="main" valign="top"><br />

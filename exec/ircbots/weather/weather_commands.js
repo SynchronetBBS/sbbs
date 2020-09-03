@@ -1,170 +1,103 @@
 Bot_Commands["WEATHER"] = new Bot_Command(0,false,false);
-Bot_Commands["WEATHER"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	var i;
-	var lstr;
-	var nick=onick;
+Bot_Commands["WEATHER"].command = function (target, onick, ouh, srv, lvl, cmd) {
 
-	// Remove empty cmd args
-	for(i=1; i<cmd.length; i++) {
-		if(cmd[i].search(/^\s*$/)==0) {
-			cmd.splice(i,1);
-			i--;
-		}
-	}
+    // Remove empty cmd args
+    for (var i = 1; i < cmd.length; i++) {
+        if (cmd[i].search(/^\s*$/) == 0) {
+            cmd.splice(i, 1);
+            i--;
+        }
+    }
+    cmd.shift();
 
-	cmd.shift();
-	if(cmd[0])
-		nick=cmd[0];
-	if(srv.users[nick.toUpperCase()] == undefined) {
-		srv.o(target, nick+', who the f^@% is '+nick+"?");
-	}
-	else {
-		lstr=get_nickcoords(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
-		if (!lstr) {
-			var usr = new User(system.matchuser(nick));
-			if (typeof(usr)=='object')
-				lstr = usr.location;
+    try {
+        const params = get_params(cmd, onick, srv);
+        if (!params) { 
+			throw("error parsing parameters");
 		}
-		if(!lstr && cmd[0])
-			lstr=cmd.join(' ');
-		var query = encodeURIComponent(lstr);
+		const res = owm.call_api('weather', params);
+		if(!res || res.cod != 200) {
+			throw(JSON.stringify(res));
+		}
+		var str = '\0010\1n\1rWeather for \1h\1c' + res.name + '\1n\1r: '
+			+ '\1h\1c' + res.weather[0].main + ' \1n\1r(\1c' + res.weather[0].description + '\1r), '
+			+ '\1h\1c' + res.clouds.all + '% cloudy\1n\1r, '
+			+ 'Current temp: \1h\1c' + temperature_str(res.main.temp) + '\1n\1r, '
+			+ 'Min temp: \1h\1c' + temperature_str(res.main.temp_min) + '\1n\1r, '
+			+ 'Max temp: \1h\1c' + temperature_str(res.main.temp_max) + '\1n\1r, '
+			+ 'Wind: \1h\1c' + res.wind.speed + ' KM/h ' + owm.wind_direction(res.wind.deg) + '\1n\1r, '
+			+ 'Humidity: \1h\1c' + res.main.humidity + '%\1n\1r, '
+			+ 'Pressure: \1h\1c' + res.main.pressure + ' hPa\1n\1r, '
+			+ 'Sunrise: \1h\1c' + system.timestr(res.sys.sunrise) + '\1n\1r, '
+			+ 'Sunset: \1h\1c' + system.timestr(res.sys.sunset)
+			+ ' \1n\1m(\1h\1mProvided by OpenWeatherMap.org\1n\1m)';
+		srv.o(target, ctrl_a_to_mirc(str));
+    } catch (err) {
+        log(LOG_DEBUG, 'Failed to display weather conditions: ' + err);
+        srv.o(target, 'Failed to fetch weather conditions: ' + err);
+    }
 
-		var weather_url = "http://api.wunderground.com/auto/wui/geo/WXCurrentObXML/index.xml?query=" + query;
-		var location_url = "http://api.wunderground.com/auto/wui/geo/GeoLookupXML/index.xml?query=" + query;
-		
-		try {
-			var Location = new XML((new HTTPRequest().Get(location_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
-		}
-		catch(e) {
-			srv.o(target, "Unable to resolve location "+lstr);
-			return true;
-		}
-	
-		switch(Location.location.length()) {
-			case 0:
-				if(Location.nearby_weather_stations.length()==0) {
-					srv.o(target, "Unable to locate "+lstr);
-					break;
-				}
-				// Fall-through
-			case 1:
-				var Weather = new XML((new HTTPRequest().Get(weather_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
-	
-				var str = Weather.display_location.full;
-				str += " - " + Weather.weather;
-				str += ", "+ Weather.temp_c+" degrees ("+(parseInt(Weather.temp_c)+273)+"K, "+Weather.temp_f+"F)";
-				str += " Wind "+Weather.wind_string;
-				str += " Relative Humidity: "+Weather.relative_humidity;
-				if(Weather.display_location.city != Weather.observation_location.city)
-					str += " (Observed at: " + Weather.observation_location.city + ")";
-				str += ' (Provided by Weather Underground, Inc.)';
-				srv.o(target, str);
-				break;
-			default:
-				srv.o(target, "Multiple matches for "+lstr);
-				if(Location.location.length() > 7)
-					srv.o(target, lstr+" matches "+Location.location.length()+" places... listing the first 7.");
-				var outstr = "";
-				var outcnt = 0;
-				for (i in Location.location) {
-					if (outcnt)
-						outstr += "; ";
-					outstr += Location.location[i].name;
-					outcnt++;
-					if (outcnt>=7)
-						break;
-				}
-				srv.o(target, lstr+': '+outstr+'.');
-				break;
-		}
-
-	}
-	return true;
+    return true;
 }
 
 Bot_Commands["FORECAST"] = new Bot_Command(0,false,false);
-Bot_Commands["FORECAST"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	var i;
-	var lstr;
-	var nick=onick;
+Bot_Commands["FORECAST"].command = function (target, onick, ouh, srv, lvl, cmd) {
 
-	// Remove empty cmd args
-	for(i=1; i<cmd.length; i++) {
-		if(cmd[i].search(/^\s*$/)==0) {
-			cmd.splice(i,1);
-			i--;
+    // Remove empty cmd args
+    for (var i = 1; i < cmd.length; i++) {
+        if (cmd[i].search(/^\s*$/) == 0) {
+            cmd.splice(i, 1);
+            i--;
+        }
+    }
+    cmd.shift();
+
+    try {
+        const params = get_params(cmd, onick, srv);
+        if (!params) { 
+			throw("error parsing parameters");
 		}
-	}
-	
-	cmd.shift();
-	if(cmd[0])
-		nick=cmd[0];
-	if(srv.users[nick.toUpperCase()])
-		lstr=get_nickcoords(srv.users[nick.toUpperCase()].uh, srv.users[nick.toUpperCase()].servername, nick);
-	if (!lstr) {
-		var usr = new User(system.matchuser(nick));
-		if (typeof(usr)=='object')
-			lstr = usr.location;
-	}
-	if(!lstr && cmd[0])
-		lstr=cmd.join(' ');
-	var query = encodeURIComponent(lstr);
-
-	var location_url = "http://api.wunderground.com/auto/wui/geo/GeoLookupXML/index.xml?query=" + query;
-	var forecast_url = "http://api.wunderground.com/auto/wui/geo/ForecastXML/index.xml?query=" + query;
-	
-	try {
-		var Location = new XML((new HTTPRequest().Get(location_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
-	}
-	catch(e) {
-		srv.o(target, "Unable to resolve location "+lstr);
-		return true;
-	}
-
-	switch(Location.location.length()) {
-		case 0:
-			if(Location.nearby_weather_stations.length()==0) {
-				srv.o(target, "Unable to locate "+lstr);
-				break;
+		const res = owm.call_api('forecast', params);
+		if(!res || res.cod != 200) {
+			throw(JSON.stringify(res));
+		}
+		
+		var output = [];
+		srv.o(target,ctrl_a_to_mirc('Forecast for \1h\1c' + res.city.name + ' \1n\1m(\1h\1mProvided by OpenWeatherMap.org\1n\1m)\1n\1r:'));
+		//output.push('\0010\1n\1rForecast for \1h\1c' + res.city.name + ' \1n\1m(\1h\1mProvided by OpenWeatherMap.org\1n\1m)\1n\1r:');
+		for(var d=0; d<res.list.length; d+=8) {
+			var day_forecast = res.list.slice(d,d+8);
+			if(day_forecast.length > 0) {
+				output.push(get_day_forecast_rows(day_forecast));
 			}
-			// Fall-through
-		case 1:
-			var Forecast = new XML((new HTTPRequest().Get(forecast_url)).replace(/<\?.*\?>[\r\n\s]*/,''));
-
-			var str = Location.city + ", " + Location.state + " -";
-			
-			for(fd in Forecast.txt_forecast.forecastday) {
-				var fcast=Forecast.txt_forecast.forecastday[fd];
-				str += " " + fcast.title + ": " + fcast.fcttext;
+			writeln(d + ": " + JSON.stringify(day_forecast));
+			// output.push(
+				// '\0010\1h\1c ' + days[forecast_date.getDay()] + '\1n\1r, \1h\1c' + months[forecast_date.getMonth()] + ' ' + forecast_date.getDate() + '\1n\1r: '
+				// + '\1h\1c' + day_forecast.weather[0].main + ' \1n\1r(\1c' + day_forecast.weather[0].description + '\1r), '
+				// + '\1h\1c' + day_forecast.clouds.all + '% cloudy\1n\1r, '
+				// + 'Min temp: \1h\1c' + temperature_str(day_forecast.main.temp_min) + '\1n\1r, '
+				// + 'Max temp: \1h\1c' + temperature_str(day_forecast.main.temp_max) + '\1n\1r, '
+				// + 'Wind: \1h\1c' + day_forecast.wind.speed + ' KM/h ' + owm.wind_direction(day_forecast.wind.deg) + '\1n\1r, '
+				// + 'Humidity: \1h\1c' + day_forecast.main.humidity + '%\1n\1r, '
+				// + 'Pressure: \1h\1c' + day_forecast.main.pressure + ' hPa'
+			// );
+		}
+		// while(output.length > 0) {
+			// srv.o(target, ctrl_a_to_mirc(output.shift()));
+		// }
+		for(var r=0;r<output[0].length;r++) {
+			var row_string = "";
+			for(var o=0;o<output.length;o++) {
+				row_string += ctrl_a_to_mirc('\0010' + output[o][r]);
 			}
-			str += ' (Provided by Weather Underground, Inc.)';
-			str = str.replace(/&deg;/g,'');
+			srv.o(target,row_string);
+		}
+		
+    } catch (err) {
+        log(LOG_DEBUG, 'Failed to display weather conditions: ' + err);
+        srv.o(target, 'Failed to fetch weather conditions: ' + err);
+    }
 
-			var m;
-			while(m=str.match(/^(.*?\. +)[^\.]+:/)) {
-				srv.o(target, m[1]);
-				str=str.substr(m[1].length);
-			}
-			srv.o(target, str);
-
-			break;
-		default:
-			srv.o(target, "Multiple matches for "+lstr);
-			if(Location.location.length() > 7)
-				srv.o(target, lstr+" matches "+Location.location.length()+" places... listing the first 7.");
-			var outstr = "";
-			var outcnt = 0;
-			for (i in Location.location) {
-				if (outcnt)
-					outstr += "; ";
-				outstr += Location.location[i].name;
-				outcnt++;
-				if (outcnt>=7)
-					break;
-			}
-			srv.o(target, lstr+': '+outstr+'.');
-			break;
-	}
-
-	return true;
+    return true;
 }
+

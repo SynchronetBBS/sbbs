@@ -2,7 +2,7 @@
 #
 # Global build targets for all make systems
 #
-# $Id$
+# $Id: rules.mk,v 1.6 2011/10/21 21:44:27 deuce Exp $
 
 $(OBJODIR):
 	$(QUIET)$(IFNOTEXIST) mkdir $(OBJODIR)

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: xpbeep.c,v 1.113 2020/05/15 01:12:10 deuce Exp $ */
 
 /* TODO: USE PORTAUDIO! */
 
@@ -53,6 +53,10 @@
 #include <portaudio.h>
 #endif
 
+#ifdef WITH_PULSEAUDIO
+#include <pulse/simple.h>
+#endif
+
 #ifdef WITH_SDL_AUDIO
 #include "sdlfuncs.h"
 #endif
@@ -68,10 +72,12 @@
 static BOOL sample_thread_running=FALSE;
 static sem_t sample_pending_sem;
 static sem_t sample_complete_sem;
-static BOOL sample_initialized=FALSE;
 static pthread_mutex_t sample_mutex;
+static pthread_mutex_t handle_mutex;
 static const unsigned char *sample_buffer;
+static int samples_posted;
 static size_t sample_size;
+
 #endif
 
 static BOOL sound_device_open_failed=FALSE;
@@ -84,6 +90,9 @@ static BOOL sdl_device_open_failed=FALSE;
 #ifdef WITH_PORTAUDIO
 static BOOL portaudio_device_open_failed=FALSE;
 #endif
+#ifdef WITH_PULSEAUDIO
+static BOOL pulseaudio_device_open_failed=FALSE;
+#endif
 
 enum {
 	 SOUND_DEVICE_CLOSED
@@ -92,9 +101,23 @@ enum {
 	,SOUND_DEVICE_OSS
 	,SOUND_DEVICE_SDL
 	,SOUND_DEVICE_PORTAUDIO
+	,SOUND_DEVICE_PULSEAUDIO
 };
 
 static int handle_type=SOUND_DEVICE_CLOSED;
+static int handle_rc;
+
+#ifdef WITH_PULSEAUDIO
+struct pulseaudio_api_struct {
+	pa_simple* (*simple_new)(const char * server, const char * name, pa_stream_direction_t dir, const char * dev, const char * stream_name, const pa_sample_spec * ss, const pa_channel_map * map, const pa_buffer_attr * attr, int * error);
+	int (*simple_write)(pa_simple * s, const void * data, size_t bytes, int * error);
+	int (*simple_drain)(pa_simple * s, int * error);
+	void (*simple_free)(pa_simple * s);
+};
+struct pulseaudio_api_struct *pu_api = NULL;
+static pa_simple *pu_handle;
+static int				pulseaudio_initialized=FALSE;
+#endif
 
 #ifdef WITH_PORTAUDIO
 static PaStream			*portaudio_stream;
@@ -132,7 +155,7 @@ struct portaudio_api_struct *pa_api=NULL;
 static SDL_AudioSpec	spec;
 static int				sdl_audio_buf_len=0;
 static int				sdl_audio_buf_pos=0;
-static unsigned char	*swave;
+static const unsigned char	*swave;
 static SDL_sem			*sdlToneDone;
 #endif
 
@@ -187,10 +210,14 @@ struct alsa_api_struct {
 struct alsa_api_struct *alsa_api=NULL;
 #endif
 
+#ifdef XPDEV_THREAD_SAFE
+static void init_sample(void);
+#endif
+
 /********************************************************************************/
 /* Calculate and generate a sound wave pattern (thanks to Deuce!)				*/
 /********************************************************************************/
-void DLLCALL makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
+void DLLCALL xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
 {
 	int	i;
 	int midpoint;
@@ -332,16 +359,20 @@ void DLLCALL sdl_fillbuf(void *userdata, Uint8 *stream, int len)
 		sdl_audio_buf_pos+=copylen;
 		/* If we're done, post the semaphore */
 		if(sdl_audio_buf_pos>=sdl_audio_buf_len) {
-			sdl.SemPost(sdlToneDone);
+			xpbeep_sdl.SemPost(sdlToneDone);
 			sdl_audio_buf_len=0;
 			sdl_audio_buf_pos=0;
-			free(swave);
+			free((void *)swave);
 		}
 	}
 }
 #endif
 
-BOOL DLLCALL xptone_open(void)
+#ifdef XPDEV_THREAD_SAFE
+pthread_once_t sample_initialized_pto = PTHREAD_ONCE_INIT;
+#endif
+static BOOL
+DLLCALL xptone_open_locked(void)
 {
 #ifdef _WIN32
 	WAVEFORMATEX	w;
@@ -355,8 +386,56 @@ BOOL DLLCALL xptone_open(void)
 #endif
 
 	/* Already open */
-	if(handle_type!=SOUND_DEVICE_CLOSED)
+
+	if(handle_type!=SOUND_DEVICE_CLOSED) {
+		handle_rc++;
 		return(TRUE);
+	}
+
+#ifdef WITH_PULSEAUDIO
+	if(!pulseaudio_device_open_failed) {
+		if(pu_api==NULL) {
+			dll_handle dl=NULL;
+			const char *libnames[]={"pulse-simple",NULL};
+			if(((pu_api=(struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct)))==NULL)
+					|| ((dl=xp_dlopen(libnames,RTLD_LAZY,0))==NULL)
+					|| ((pu_api->simple_new=xp_dlsym(dl,pa_simple_new))==NULL)
+					|| ((pu_api->simple_write=xp_dlsym(dl,pa_simple_write))==NULL)
+					|| ((pu_api->simple_drain=xp_dlsym(dl,pa_simple_drain))==NULL)
+					|| ((pu_api->simple_free=xp_dlsym(dl,pa_simple_free))==NULL)
+					) {
+				if(dl)
+					xp_dlclose(dl);
+				free(pu_api);
+				pu_api=NULL;
+			}
+			if(pu_api==NULL) {
+				pulseaudio_device_open_failed=TRUE;
+			}
+		}
+		if(pu_api != NULL) {
+			if(!pulseaudio_initialized) {
+#if 0
+				pa_sample_spec ss;
+				ss.format = PA_SAMPLE_U8;
+				ss.rate = 22050;
+				ss.channels = 1;
+				if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL)
+					pulseaudio_device_open_failed=TRUE;
+				else
+					pulseaudio_initialized=TRUE;
+				pu_api->simple_free(pu_handle);
+				pu_handle = NULL;
+#endif
+			}
+			if(pulseaudio_initialized) {
+				handle_type=SOUND_DEVICE_PULSEAUDIO;
+				handle_rc++;
+				return(TRUE);
+			}
+		}
+	}
+#endif
 
 #ifdef WITH_PORTAUDIO
 	if(!portaudio_device_open_failed) {
@@ -380,7 +459,7 @@ BOOL DLLCALL xptone_open(void)
 					xp_dlclose(dl);
 				free(pa_api);
 				pa_api=NULL;
-            }
+			}
 			else {
 				/* Get version and other optional pointers */
 				pa_api->ver=1800;
@@ -395,8 +474,8 @@ BOOL DLLCALL xptone_open(void)
 					}
 				}
 			}
-            if(pa_api==NULL) {
-                portaudio_device_open_failed=TRUE;
+			if(pa_api==NULL) {
+				portaudio_device_open_failed=TRUE;
 			}
 		}
 		if(pa_api != NULL) {
@@ -419,6 +498,7 @@ BOOL DLLCALL xptone_open(void)
 					portaudio_device_open_failed=TRUE;
 				else {
 					handle_type=SOUND_DEVICE_PORTAUDIO;
+					handle_rc++;
 					return(TRUE);
 				}
 			}
@@ -428,8 +508,9 @@ BOOL DLLCALL xptone_open(void)
 
 #ifdef WITH_SDL_AUDIO
 	if(!sdl_device_open_failed) {
-		if(init_sdl_audio()==-1)
+		if(init_sdl_audio()==-1) {
 			sdl_device_open_failed=TRUE;
+		}
 		else {
 			spec.freq=22050;
 			spec.format=AUDIO_U8;
@@ -438,15 +519,16 @@ BOOL DLLCALL xptone_open(void)
 			spec.size=256;
 			spec.callback=sdl_fillbuf;
 			spec.userdata=NULL;
-			if(sdl.OpenAudio(&spec, NULL)==-1) {
+			if(xpbeep_sdl.OpenAudio(&spec, NULL)==-1) {
 				sdl_device_open_failed=TRUE;
 			}
 			else {
-				sdlToneDone=sdl.SDL_CreateSemaphore(0);
+				sdlToneDone=xpbeep_sdl.SDL_CreateSemaphore(0);
 				sdl_audio_buf_len=0;
 				sdl_audio_buf_pos=0;
-				sdl.PauseAudio(FALSE);
+				xpbeep_sdl.PauseAudio(FALSE);
 				handle_type=SOUND_DEVICE_SDL;
+				handle_rc++;
 				return(TRUE);
 			}
 		}
@@ -470,8 +552,10 @@ BOOL DLLCALL xptone_open(void)
 		wh[0].dwBufferLength=S_RATE*15/2+1;
 		wh[1].dwBufferLength=S_RATE*15/2+1;
 		handle_type=SOUND_DEVICE_WIN32;
-		if(!sound_device_open_failed)
+		if(!sound_device_open_failed) {
+			handle_rc++;
 			return(TRUE);
+		}
 	}
 #endif
 
@@ -527,6 +611,7 @@ BOOL DLLCALL xptone_open(void)
 			else {
 				alsa_api->snd_pcm_hw_params_free(hw_params);
 				handle_type=SOUND_DEVICE_ALSA;
+				handle_rc++;
 				return(TRUE);
 			}
 		}
@@ -554,23 +639,50 @@ BOOL DLLCALL xptone_open(void)
 			}
 		}
 	}
-	if(sound_device_open_failed)
+	if(sound_device_open_failed) {
 		return(FALSE);
+	}
 	handle_type=SOUND_DEVICE_OSS;
-	if(!sound_device_open_failed)
+	if(!sound_device_open_failed) {
+		handle_rc++;
 		return(TRUE);
+	}
 #endif
 	return(FALSE);
 }
 
-void DLLCALL xptone_complete(void)
+BOOL
+DLLCALL xptone_open(void)
 {
-	if(handle_type==SOUND_DEVICE_CLOSED)
+	BOOL ret;
+#ifdef XPDEV_THREAD_SAFE
+	pthread_once(&sample_initialized_pto, init_sample);
+	pthread_mutex_lock(&handle_mutex);
+#endif
+	ret = xptone_open_locked();
+#ifdef XPDEV_THREAD_SAFE
+	pthread_mutex_unlock(&handle_mutex);
+#endif
+	return ret;
+}
+
+static void DLLCALL
+xptone_complete_locked(void)
+{
+	if(handle_type==SOUND_DEVICE_CLOSED) {
 		return;
+	}
+
+#ifdef WITH_PULSEAUDIO
+	else if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
+		int err;
+		if (pu_handle)
+			pu_api->simple_drain(pu_handle, &err);
+	}
+#endif
+
 #ifdef WITH_PORTAUDIO
 	else if(handle_type==SOUND_DEVICE_PORTAUDIO) {
-		while(pa_api->active(portaudio_stream))
-			SLEEP(1);
 		pa_api->stop(portaudio_stream);
 		if (pawave) {
 			free((void *)pawave);
@@ -581,7 +693,7 @@ void DLLCALL xptone_complete(void)
 
 #ifdef WITH_SDL_AUDIO
 	else if(handle_type==SOUND_DEVICE_SDL) {
-		while(sdl.GetAudioStatus()==SDL_AUDIO_PLAYING)
+		while(xpbeep_sdl.GetAudioStatus()==SDL_AUDIO_PLAYING)
 			SLEEP(1);
 	}
 #endif
@@ -603,10 +715,8 @@ void DLLCALL xptone_complete(void)
 
 #ifdef USE_ALSA_SOUND
 	if(handle_type==SOUND_DEVICE_ALSA) {
-		if(!alsa_device_open_failed) {
-			while(alsa_api->snd_pcm_drain(playback_handle))
-				SLEEP(1);
-		}
+		if(!alsa_device_open_failed)
+			alsa_api->snd_pcm_drain(playback_handle);
 	}
 #endif
 
@@ -615,22 +725,45 @@ void DLLCALL xptone_complete(void)
 		ioctl(dsp, SNDCTL_DSP_SYNC, NULL);
 	}
 #endif
-
 }
 
-BOOL DLLCALL xptone_close(void)
+void DLLCALL
+xptone_complete(void)
 {
-	xptone_complete();
+#ifdef XPDEV_THREAD_SAFE
+	pthread_mutex_lock(&handle_mutex);
+#endif
+	xptone_complete_locked();
+#ifdef XPDEV_THREAD_SAFE
+	pthread_mutex_unlock(&handle_mutex);
+#endif
+}
+
+BOOL DLLCALL xptone_close_locked(void)
+{
+	xptone_complete_locked();
+
+	if (handle_rc <= 0)
+		return FALSE;
+	if (--handle_rc)
+		return TRUE;
+
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
 		pa_api->close(portaudio_stream);
 	}
 #endif
 
+#ifdef WITH_PULSEAUDIO
+	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
+		pu_api->simple_free(pu_handle);
+	}
+#endif
+
 #ifdef WITH_SDL_AUDIO
 	if(handle_type==SOUND_DEVICE_SDL) {
-		sdl.CloseAudio();
-		sdl.SDL_DestroySemaphore(sdlToneDone);
+		xpbeep_sdl.CloseAudio();
+		xpbeep_sdl.SDL_DestroySemaphore(sdlToneDone);
 	}
 #endif
 
@@ -663,8 +796,178 @@ BOOL DLLCALL xptone_close(void)
 #ifdef WITH_PORTAUDIO
 	portaudio_device_open_failed=FALSE;
 #endif
+#ifdef WITH_PULSEAUDIO
+	pulseaudio_device_open_failed = FALSE;
+#endif
 
 	return(TRUE);
+}
+
+BOOL
+DLLCALL xptone_close(void)
+{
+	BOOL ret;
+
+#ifdef XPDEV_THREAD_SAFE
+	pthread_mutex_lock(&handle_mutex);
+#endif
+	ret = xptone_close_locked();
+#ifdef XPDEV_THREAD_SAFE
+	pthread_mutex_unlock(&handle_mutex);
+#endif
+	return ret;
+}
+
+static BOOL
+do_xp_play_sample(const unsigned char *sampo, size_t sz, int *freed)
+{
+	const unsigned char *samp;
+	int need_copy = 0;
+#ifdef AFMT_U8
+	int wr;
+	int	i;
+#endif
+
+#ifdef WITH_PORTAUDIO
+	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
+		if(pa_api->ver < 1899)
+			need_copy = 1;
+	}
+#endif
+#ifdef _WIN32
+	if(handle_type==SOUND_DEVICE_WIN32)
+		need_copy = 1;
+#endif
+#ifdef WITH_SDL_AUDIO
+	if(handle_type==SOUND_DEVICE_SDL)
+		need_copy = 1;
+#endif
+
+	if (freed)
+		*freed = need_copy;
+	if (need_copy) {
+		if (freed) {
+			samp = sampo;
+		}
+		else {
+			samp = malloc(sz);
+			if (!samp)
+				return FALSE;
+			memcpy((void *)samp, sampo, sz);
+		}
+	}
+	else {
+		samp = sampo;
+	}
+
+#ifdef WITH_PULSEAUDIO
+	if(handle_type==SOUND_DEVICE_PULSEAUDIO) {
+		int err;
+		pa_sample_spec ss;
+		ss.format = PA_SAMPLE_U8;
+		ss.rate = 22050;
+		ss.channels = 1;
+		if (pu_handle == NULL) {
+			if((pu_handle = pu_api->simple_new(NULL, "XPBeep", PA_STREAM_PLAYBACK, NULL, "Beeps and Boops", &ss, NULL, NULL, NULL)) == NULL) {
+				pulseaudio_device_open_failed=TRUE;
+				pulseaudio_initialized=FALSE;
+				xptone_close_locked();
+				xptone_open_locked();
+			}
+			else
+				pulseaudio_initialized=TRUE;
+		}
+		if (pulseaudio_initialized)
+			pu_api->simple_write(pu_handle, sampo, sz, &err);
+	}
+#endif
+
+#ifdef WITH_PORTAUDIO
+	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
+		if(pa_api->ver >= 1899) {
+			pa_api->start(portaudio_stream);
+			pa_api->write(portaudio_stream, samp, sz);
+		}
+		else {
+			xptone_complete_locked();
+			pawave=samp;
+			portaudio_buf_pos=0;
+			portaudio_buf_len=sz;
+			pa_api->start(portaudio_stream);
+		}
+		return TRUE;
+	}
+#endif
+
+#ifdef WITH_SDL_AUDIO
+	if(handle_type==SOUND_DEVICE_SDL) {
+		xpbeep_sdl.LockAudio();
+		swave=samp;
+		sdl_audio_buf_pos=0;
+		sdl_audio_buf_len=sz;
+		xpbeep_sdl.UnlockAudio();
+		xpbeep_sdl.PauseAudio(FALSE);
+		xpbeep_sdl.SemWait(sdlToneDone);
+		xpbeep_sdl.PauseAudio(TRUE);
+		return TRUE;
+	}
+#endif
+
+#ifdef _WIN32
+	if(handle_type==SOUND_DEVICE_WIN32) {
+		if(wh[curr_wh].dwFlags & WHDR_PREPARED) {
+			while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
+				SLEEP(1);
+		}
+		free(wh[curr_wh].lpData);
+		wh[curr_wh].lpData=samp;
+		wh[curr_wh].dwBufferLength=sz;
+		if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
+			if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
+				curr_wh ^= 1;
+			}
+		}
+		return TRUE;
+	}
+#endif
+
+#ifdef USE_ALSA_SOUND
+	if(handle_type==SOUND_DEVICE_ALSA) {
+		int ret;
+		int written=0;
+
+		alsa_api->snd_pcm_prepare(playback_handle);
+		while(written < sz) {
+			ret=alsa_api->snd_pcm_writei(playback_handle, samp+written, sz-written);
+			if(ret < 0) {
+				if(written==0) {
+					/* Go back and try OSS */
+					xptone_close_locked();
+					alsa_device_open_failed=TRUE;
+					xptone_open_locked();
+				}
+				break;
+			}
+			written += ret;
+		}
+		if (written == sz)
+			return TRUE;
+	}
+#endif
+
+#ifdef AFMT_U8
+	if(handle_type==SOUND_DEVICE_OSS) {
+		wr=0;
+		while(wr<sz) {
+			i=write(dsp, samp+wr, sz-wr);
+			if(i>=0)
+				wr+=i;
+		}
+		return TRUE;
+	}
+#endif
+
+	return FALSE;
 }
 
 #ifdef XPDEV_THREAD_SAFE
@@ -675,14 +978,11 @@ void DLLCALL xp_play_sample_thread(void *data)
 	BOOL			waited=FALSE;
 	unsigned char	*sample=NULL;
 	size_t			this_sample_size;
-
-#ifdef AFMT_U8
-	int wr;
-	int	i;
-#endif
+	int freed;
 
 	SetThreadName("Sample Play");
 	sample_thread_running=TRUE;
+	sem_post(&sample_complete_sem);
 	while(1) {
 		must_close = FALSE;
 		if(!waited) {
@@ -692,14 +992,18 @@ void DLLCALL xp_play_sample_thread(void *data)
 		else
 			waited=FALSE;
 		posted_last=FALSE;
-		if(pthread_mutex_lock(&sample_mutex)!=0)
+		pthread_mutex_lock(&handle_mutex);
+		if(pthread_mutex_lock(&sample_mutex)!=0) {
+			pthread_mutex_unlock(&handle_mutex);
 			goto error_return;
+		}
 
 		if(handle_type==SOUND_DEVICE_CLOSED) {
 			must_close=TRUE;
-			if(!xptone_open()) {
+			if(!xptone_open_locked()) {
 				sem_post(&sample_complete_sem);
 				pthread_mutex_unlock(&sample_mutex);
+				pthread_mutex_unlock(&handle_mutex);
 				continue;
 			}
 		}
@@ -709,107 +1013,31 @@ void DLLCALL xp_play_sample_thread(void *data)
 		if(sample==NULL) {
 				sem_post(&sample_complete_sem);
 				pthread_mutex_unlock(&sample_mutex);
+				pthread_mutex_unlock(&handle_mutex);
 				continue;
 		}
 		memcpy(sample, sample_buffer, this_sample_size);
 		pthread_mutex_unlock(&sample_mutex);
 
-	#ifdef WITH_PORTAUDIO
-		if(handle_type==SOUND_DEVICE_PORTAUDIO) {
-			if(pa_api->ver >= 1899) {
-				pa_api->write(portaudio_stream, sample, this_sample_size);
-				FREE_AND_NULL(sample);
-			}
-			else {
-				xptone_complete();
-				pawave=sample;
-				sample=NULL;
-				portaudio_buf_pos=0;
-				portaudio_buf_len=this_sample_size;
-				pa_api->start(portaudio_stream);
-			}
-		}
-	#endif
-
-	#ifdef WITH_SDL_AUDIO
-		if(handle_type==SOUND_DEVICE_SDL) {
-			sdl.LockAudio();
-			swave=sample;
-			sample=NULL;
-			sdl_audio_buf_pos=0;
-			sdl_audio_buf_len=this_sample_size;
-			sdl.UnlockAudio();
-			sdl.PauseAudio(FALSE);
-			sdl.SemWait(sdlToneDone);
-			sdl.PauseAudio(TRUE);
-		}
-	#endif
-
-	#ifdef _WIN32
-		if(handle_type==SOUND_DEVICE_WIN32) {
-			if(wh[curr_wh].dwFlags & WHDR_PREPARED) {
-				while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
-					SLEEP(1);
-			}
-			FREE_AND_NULL(wh[curr_wh].lpData);
-			wh[curr_wh].lpData=sample;
-			sample=NULL;
-			wh[curr_wh].dwBufferLength=this_sample_size;
-			if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
-				if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
-					curr_wh ^= 1;
-				}
-			}
-		}
-	#endif
-
-	#ifdef USE_ALSA_SOUND
-		if(handle_type==SOUND_DEVICE_ALSA) {
-			int ret;
-			int written=0;
-
-			while(written < this_sample_size) {
-				ret=alsa_api->snd_pcm_writei(playback_handle, sample+written, this_sample_size-written);
-				if(ret < 0) {
-					if(written==0) {
-						/* Go back and try OSS */
-						xptone_close();
-						alsa_device_open_failed=TRUE;
-						xptone_open();
-					}
-					break;
-				}
-				written += ret;
-			}
-#ifndef AFMT_U8
-			FREE_AND_NULL(sample);
-#endif
-		}
-	#endif
-
-	#ifdef AFMT_U8
-		if(handle_type==SOUND_DEVICE_OSS) {
-			wr=0;
-			while(wr<sample_size) {
-				i=write(dsp, sample_buffer+wr, sample_size-wr);
-				if(i>=0)
-					wr+=i;
-			}
-			FREE_AND_NULL(sample);
-		}
-	#endif
+		do_xp_play_sample(sample, this_sample_size, &freed);
+		if (freed)
+			sample = NULL;
 		sem_post(&sample_complete_sem);
 		posted_last=TRUE;
 		if(must_close) {
-			if(sem_trywait(&sample_pending_sem)==0)
+			if(sem_trywait(&sample_pending_sem)==0) {
 				waited=TRUE;
-			else
-				xptone_close();
+			}
+			else {
+				xptone_close_locked();
+			}
 		}
+		pthread_mutex_unlock(&handle_mutex);
 	}
 
 error_return:
 #ifdef _WIN32
+	pthread_mutex_lock(&handle_mutex);
 	if(handle_type==SOUND_DEVICE_WIN32) {
 		if(wh[curr_wh].dwFlags & WHDR_PREPARED) {
 			while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
@@ -817,13 +1045,24 @@ error_return:
 		}
 		FREE_AND_NULL(wh[curr_wh].lpData);
 	}
+	pthread_mutex_unlock(&handle_mutex);
 #endif
 
 	FREE_AND_NULL(sample);
 	xptone_close();
-	if(!posted_last)
+	if(!posted_last) {
 		sem_post(&sample_complete_sem);
+	}
 	sample_thread_running=FALSE;
+}
+
+static void
+init_sample(void)
+{
+	pthread_mutex_init(&sample_mutex, NULL);
+	pthread_mutex_init(&handle_mutex, NULL);
+	sem_init(&sample_pending_sem, 0, 0);
+	sem_init(&sample_complete_sem, 0, 0);
 }
 
 /*
@@ -832,50 +1071,40 @@ error_return:
  */
 BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t size, BOOL background)
 {
-	if(!sample_initialized) {
-		if(pthread_mutex_init(&sample_mutex, NULL)!=0)
-			return(FALSE);
-		pthread_mutex_lock(&sample_mutex);
-		if(sem_init(&sample_pending_sem, 0, 0)!=0) {
-			pthread_mutex_unlock(&sample_mutex);
-			pthread_mutex_destroy(&sample_mutex);
-			return(FALSE);
-		}
-		if(sem_init(&sample_complete_sem, 0, 1)!=0) {
-			pthread_mutex_unlock(&sample_mutex);
-			pthread_mutex_destroy(&sample_mutex);
-			sem_destroy(&sample_pending_sem);
-			return(FALSE);
-		}
-		sample_initialized=TRUE;
-		pthread_mutex_unlock(&sample_mutex);
-	}
+	pthread_once(&sample_initialized_pto, init_sample);
 
-	sem_wait(&sample_complete_sem);
 	pthread_mutex_lock(&sample_mutex);
 	if(!sample_thread_running) {
 		_beginthread(xp_play_sample_thread, 0,NULL);
+		sem_wait(&sample_complete_sem);
 	}
 
+	while(samples_posted > 0) {
+		pthread_mutex_unlock(&sample_mutex);
+		sem_wait(&sample_complete_sem);
+		pthread_mutex_lock(&sample_mutex);
+		samples_posted--;
+	}
 	sample_buffer=sample;
 	sample_size=size;
-	pthread_mutex_unlock(&sample_mutex);
+	samples_posted++;
 	sem_post(&sample_pending_sem);
 	if(!background) {
-		sem_wait(&sample_complete_sem);
-		sem_post(&sample_complete_sem);
+		while(samples_posted > 0) {
+			pthread_mutex_unlock(&sample_mutex);
+			sem_wait(&sample_complete_sem);
+			pthread_mutex_lock(&sample_mutex);
+			samples_posted--;
+		}
 	}
+	pthread_mutex_unlock(&sample_mutex);
 	return(TRUE);
 }
 #else
 BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOOL background)
 {
-	BOOL			must_close=FALSE;
-
-#ifdef AFMT_U8
-	int wr;
-	int	i;
-#endif
+	BOOL must_close=FALSE;
+	BOOL ret;
 
 	if(handle_type==SOUND_DEVICE_CLOSED) {
 		must_close=TRUE;
@@ -883,101 +1112,10 @@ BOOL DLLCALL xp_play_sample(const unsigned char *sample, size_t sample_size, BOO
 			return(FALSE);
 	}
 
-#ifdef WITH_PORTAUDIO
-	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
-		if(pa_api->ver >= 1899) {
-			pa_api->write(portaudio_stream, sample, sample_size);
-			free(sample);
-		}
-		else {
-			xptone_complete();
-			pawave=sample;
-			portaudio_buf_pos=0;
-			portaudio_buf_len=sample_size;
-			pa_api->start(portaudio_stream);
-		}
-		if(must_close)
-			xptone_close();
-		return TRUE;
-	}
-#endif
-
-#ifdef WITH_SDL_AUDIO
-	if(handle_type==SOUND_DEVICE_SDL) {
-		sdl.LockAudio();
-		swave=sample;
-		sdl_audio_buf_pos=0;
-		sdl_audio_buf_len=sample_size;
-		sdl.UnlockAudio();
-		sdl.PauseAudio(FALSE);
-		sdl.SemWait(sdlToneDone);
-		sdl.PauseAudio(TRUE);
-		if(must_close)
-			xptone_close();
-		return TRUE;
-	}
-#endif
-
-#ifdef _WIN32
-	if(handle_type==SOUND_DEVICE_WIN32) {
-		while(waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==WAVERR_STILLPLAYING)
-			SLEEP(1);
-		FREE_AND_NULL(wh[curr_wh].lpData);
-		wh[curr_wh].lpData=sample;
-		wh[curr_wh].dwBufferLength=sample_size;
-		if(waveOutPrepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
-			if(waveOutWrite(waveOut, &wh[curr_wh], sizeof(wh[curr_wh]))==MMSYSERR_NOERROR) {
-				curr_wh ^= 1;
-				if(must_close)
-					xptone_close();
-				return TRUE;
-			}
-		}
-	}
-#endif
-
-#ifdef USE_ALSA_SOUND
-	if(handle_type==SOUND_DEVICE_ALSA) {
-		int ret;
-		int written=0;
-
-		while(written < sample_size) {
-			ret=alsa_api->snd_pcm_writei(playback_handle, sample+written, sample_size-written);
-			if(ret < 0) {
-				if(written==0) {
-					/* Go back and try OSS */
-					xptone_close();
-					alsa_device_open_failed=TRUE;
-					xptone_open();
-				}
-				break;
-			}
-			written += ret;
-		}
-		if(!alsa_device_open_failed) {
-			if(must_close)
-				xptone_close();
-			return(TRUE);
-		}
-	}
-#endif
-
-#ifdef AFMT_U8
-	if(handle_type==SOUND_DEVICE_OSS) {
-		wr=0;
-		while(wr<sample_size) {
-			i=write(dsp, sample+wr, sample_size-wr);
-			if(i>=0)
-				wr+=i;
-		}
-		if(must_close)
-			xptone_close();
-		return(TRUE);
-	}
-#endif
+	ret = do_xp_play_sample(sample, sample_size, NULL);
 	if(must_close)
 		xptone_close();
-	return(FALSE);
+	return(ret);
 }
 #endif
 
@@ -1004,7 +1142,7 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	if(freq==0 || samples > S_RATE/freq*2) {
 		int sample_len;
 
-		makewave(freq,wave,S_RATE*15/2,shape);
+		xptone_makewave(freq,wave,S_RATE*15/2,shape);
 		for(sample_len=S_RATE*15/2-1; sample_len && wave[sample_len]==128; sample_len--)
 			;
 		sample_len++;
@@ -1016,7 +1154,7 @@ BOOL DLLCALL xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 			samples -= sample_len;
 		}
 	}
-	makewave(freq,wave,samples,shape);
+	xptone_makewave(freq,wave,samples,shape);
 	ret = xp_play_sample(wave, samples, FALSE);
 	free(wave);
 	return ret;

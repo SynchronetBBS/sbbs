@@ -6,7 +6,9 @@
 #ifndef WITHOUT_CRYPTLIB
 #include <cryptlib.h>
 #if CRYPTLIB_VERSION < 3400
+#if CRYPTLIB_VERSION < 340 || CRYPTLIB_VERSION > 999
 #define CRYPT_ATTRIBUTE_ERRORMESSAGE	CRYPT_ATTRIBUTE_INT_ERRORMESSAGE
+#endif
 #endif
 
 struct crypt_funcs {

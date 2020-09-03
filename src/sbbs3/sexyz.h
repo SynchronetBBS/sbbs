@@ -2,7 +2,7 @@
 
 /* Synchronet External X/Y/ZMODEM Transfer Program */
 
-/* $Id$ */
+/* $Id: sexyz.h,v 1.13 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

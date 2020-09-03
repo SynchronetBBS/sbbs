@@ -2,7 +2,7 @@
 
 /* Synchronet new user routine */
 
-/* $Id$ */
+/* $Id: newuser.cpp,v 1.89 2020/08/04 04:26:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -36,6 +36,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "petdefs.h"
 #include "cmdshell.h"
 
 /****************************************************************************/
@@ -74,16 +75,14 @@ BOOL sbbs_t::newuser()
 		c=0;
 		while(++c<4) {
 			bputs(text[NewUserPasswordPrompt]);
-			getstr(str,40,K_UPPER);
+			getstr(str,40,K_UPPER|K_TRIM);
 			if(!strcmp(str,cfg.new_pass))
 				break;
 			SAFEPRINTF(tmp,"NUP Attempted: '%s'",str);
 			logline(LOG_NOTICE,"N!",tmp); 
 		}
 		if(c==4) {
-			SAFEPRINTF(str,"%snupguess.msg",cfg.text_dir);
-			if(fexist(str))
-				printfile(str,P_NOABORT);
+			menu("../nupguess", P_NOABORT|P_NOERROR);
 			hangup();
 			return(FALSE); 
 		} 
@@ -162,26 +161,56 @@ BOOL sbbs_t::newuser()
 
 		if(useron.misc&ANSI) {
 			useron.rows=0;	/* Auto-rows */
-			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || text[ColorTerminalQ][0]==0 || yesno(text[ColorTerminalQ]))
+			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
 				useron.misc&=~COLOR;
+			if(text[MouseTerminalQ][0] && yesno(text[MouseTerminalQ]))
+				useron.misc |= MOUSE;
+			else
+				useron.misc &= ~MOUSE;
 		}
 		else
-			useron.rows=24;
-		if(!(useron.misc&PETSCII) && text[ExAsciiTerminalQ][0] && !yesno(text[ExAsciiTerminalQ]))
-			useron.misc|=NO_EXASCII;
-		else
-			useron.misc&=~NO_EXASCII;
+			useron.rows = TERM_ROWS_DEFAULT;
+
+		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
+			bputs(text[HitYourBackspaceKey]);
+			uchar key = getkey(K_NONE);
+			bprintf(text[CharacterReceivedFmt], key, key);
+			if(key == '\b')
+				break;
+			if(key == DEL) {
+				if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
+					useron.misc |= SWAP_DELETE;
+			}
+			else if(key == PETSCII_DELETE)
+				useron.misc |= (AUTOTERM|PETSCII|COLOR);
+			else {
+				bprintf(text[InvalidBackspaceKeyFmt], key, key);
+				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
+					return FALSE;
+			}
+		}
+
+		if(useron.misc&PETSCII) {
+			autoterm |= PETSCII;
+			outcom(PETSCII_UPPERLOWER);
+			bputs(text[PetTerminalDetected]);
+		} else {
+			if(!yesno(text[ExAsciiTerminalQ]))
+				useron.misc|=NO_EXASCII;
+			else
+				useron.misc&=~NO_EXASCII;
+		}
 
 		if(rlogin_name[0])
 			SAFECOPY(useron.alias,rlogin_name);
 
-		while(online) {
-			if(cfg.uq&UQ_ALIASES)
-				bputs(text[EnterYourAlias]);
-			else
-				bputs(text[EnterYourRealName]);
+		char* prompt = text[EnterYourRealName];
+		if(cfg.uq&UQ_ALIASES)
+			prompt = text[EnterYourAlias];
+		while(*prompt && online) {
+			bputs(prompt);
 			getstr(useron.alias,LEN_ALIAS,kmode);
 			truncsp(useron.alias);
 			if (!check_name(&cfg,useron.alias)
@@ -195,7 +224,7 @@ BOOL sbbs_t::newuser()
 		}
 		if(!online) return(FALSE);
 		if((cfg.uq&UQ_ALIASES) && (cfg.uq&UQ_REALNAME)) {
-			while(online) {
+			while(online && text[EnterYourRealName][0]) {
 				bputs(text[EnterYourRealName]);
 				getstr(useron.name,LEN_NAME,kmode);
 				if (!check_name(&cfg,useron.name)
@@ -209,19 +238,23 @@ BOOL sbbs_t::newuser()
 					return(FALSE);
 			} 
 		}
-		else if(cfg.uq&UQ_COMPANY) {
+		else if(cfg.uq&UQ_COMPANY && text[EnterYourCompany][0]) {
 				bputs(text[EnterYourCompany]);
-				getstr(useron.name,LEN_NAME,(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL); 
+				getstr(useron.name,LEN_NAME,kmode); 
+		}
+		if(!useron.alias[0]) {
+			errormsg(WHERE, ERR_CHK, "alias", 0);
+			return FALSE;
 		}
 		if(!useron.name[0])
 			SAFECOPY(useron.name,useron.alias);
 		if(!online) return(FALSE);
 		if(!useron.handle[0])
 			SAFECOPY(useron.handle,useron.alias);
-		while((cfg.uq&UQ_HANDLE) && online) {
+		while((cfg.uq&UQ_HANDLE) && online && text[EnterYourHandle][0]) {
 			bputs(text[EnterYourHandle]);
 			if(!getstr(useron.handle,LEN_HANDLE
-				,K_LINE|K_EDIT|K_AUTODEL|(cfg.uq&UQ_NOEXASC))
+				,K_LINE|K_EDIT|K_AUTODEL|K_TRIM|(cfg.uq&UQ_NOEXASC))
 				|| strchr(useron.handle,0xff)
 				|| ((cfg.uq&UQ_DUPHAND)
 					&& userdatdupe(0,U_HANDLE,LEN_HANDLE,useron.handle))
@@ -234,13 +267,13 @@ BOOL sbbs_t::newuser()
 		}
 		if(!online) return(FALSE);
 		if(cfg.uq&UQ_ADDRESS)
-			while(online) { 	   /* Get address and zip code */
+			while(online && text[EnterYourAddress][0]) { 	   /* Get address and zip code */
 				bputs(text[EnterYourAddress]);
 				if(getstr(useron.address,LEN_ADDRESS,kmode))
 					break; 
 			}
 		if(!online) return(FALSE);
-		while((cfg.uq&UQ_LOCATION) && online) {
+		while((cfg.uq&UQ_LOCATION) && online && text[EnterYourCityState][0]) {
 			bputs(text[EnterYourCityState]);
 			if(getstr(useron.location,LEN_LOCATION,kmode)
 				&& ((cfg.uq&UQ_NOCOMMAS) || strchr(useron.location,',')))
@@ -249,14 +282,14 @@ BOOL sbbs_t::newuser()
 			useron.location[0]=0; 
 		}
 		if(cfg.uq&UQ_ADDRESS)
-			while(online) {
+			while(online && text[EnterYourZipCode][0]) {
 				bputs(text[EnterYourZipCode]);
 				if(getstr(useron.zipcode,LEN_ZIPCODE
-					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL))
+					,K_UPPER|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL|K_TRIM))
 					break; 
 			}
 		if(!online) return(FALSE);
-		if(cfg.uq&UQ_PHONE) {
+		if((cfg.uq&UQ_PHONE) && text[EnterYourPhoneNumber][0]) {
 			if(text[CallingFromNorthAmericaQ][0])
 				usa=yesno(text[CallingFromNorthAmericaQ]);
 			else
@@ -265,7 +298,7 @@ BOOL sbbs_t::newuser()
 				bputs(text[EnterYourPhoneNumber]);
 				if(!usa) {
 					if(getstr(useron.phone,LEN_PHONE
-						,K_UPPER|K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL)<5)
+						,K_UPPER|K_LINE|(cfg.uq&UQ_NOEXASC)|K_EDIT|K_AUTODEL|K_TRIM)<5)
 						continue; 
 				}
 				else {
@@ -278,20 +311,20 @@ BOOL sbbs_t::newuser()
 			} 
 		}
 		if(!online) return(FALSE);
-		if(cfg.uq&UQ_SEX) {
+		if((cfg.uq&UQ_SEX) && text[EnterYourSex][0]) {
 			bputs(text[EnterYourSex]);
 			useron.sex=(char)getkeys("MF",0); 
 		}
-		while((cfg.uq&UQ_BIRTH) && online) {
+		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
 			bprintf(text[EnterYourBirthday]
 				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
 			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
 				break; 
 		}
 		if(!online) return(FALSE);
-		while(!(cfg.uq&UQ_NONETMAIL) && online) {
+		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
 			bputs(text[EnterNetMailAddress]);
-			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE)
+			if(getstr(useron.netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE|K_TRIM)
 				&& !trashcan(useron.netmail,"email"))
 				break;
 		}
@@ -306,15 +339,9 @@ BOOL sbbs_t::newuser()
 	SAFEPRINTF(str,"New user: %s",useron.alias);
 	logline("N",str);
 	if(!online) return(FALSE);
-	SAFEPRINTF(str,"%ssbbs.msg",cfg.text_dir);
-	if(fexist(str))
-		printfile(str,P_NOABORT);
-	SAFEPRINTF(str,"%ssystem.msg",cfg.text_dir);
-	if(fexist(str))
-		printfile(str,P_NOABORT);
-	SAFEPRINTF(str,"%snewuser.msg",cfg.text_dir);
-	if(fexist(str))
-		printfile(str,P_NOABORT);
+	menu("../sbbs", P_NOABORT|P_NOERROR);
+	menu("../system", P_NOABORT|P_NOERROR);
+	menu("../newuser", P_NOABORT|P_NOERROR);
 	answertime=time(NULL);		/* could take 10 minutes to get this far */
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
@@ -334,7 +361,7 @@ BOOL sbbs_t::newuser()
 			useron.xedit=0;
 	}
 
-	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL)) {
+	if(cfg.total_shells>1 && (cfg.uq&UQ_CMDSHELL) && text[CommandShellHeading][0]) {
 		for(i=0;i<cfg.total_shells;i++)
 			uselect(1,i,text[CommandShellHeading],cfg.shell[i]->name,cfg.shell[i]->ar);
 		if((int)(i=uselect(0,useron.shell,0,0,0))>=0)
@@ -348,7 +375,7 @@ BOOL sbbs_t::newuser()
 	}
 	else {
 		c=0;
-		while(c<LEN_PASS) { 				/* Create random password */
+		while(c < RAND_PASS_LEN) { 				/* Create random password */
 			useron.pass[c]=sbbs_random(43)+'0';
 			if(isalnum(useron.pass[c]))
 				c++; 
@@ -359,8 +386,8 @@ BOOL sbbs_t::newuser()
 
 		if(cfg.sys_misc&SM_PWEDIT && text[NewPasswordQ][0] && yesno(text[NewPasswordQ]))
 			while(online) {
-				bputs(text[NewPassword]);
-				getstr(str,LEN_PASS,K_UPPER|K_LINE);
+				bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
+				getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 				truncsp(str);
 				if(chkpass(str,&useron,true)) {
 					SAFECOPY(useron.pass,str);
@@ -396,10 +423,10 @@ BOOL sbbs_t::newuser()
 	}
 
 	if(!online) return(FALSE);
-	if(cfg.new_magic[0]) {
+	if(cfg.new_magic[0] && text[MagicWordPrompt][0]) {
 		bputs(text[MagicWordPrompt]);
 		str[0]=0;
-		getstr(str,50,K_UPPER);
+		getstr(str,50,K_UPPER|K_TRIM);
 		if(strcmp(str,cfg.new_magic)) {
 			bputs(text[FailedMagicWord]);
 			SAFEPRINTF(tmp,"failed magic word: '%s'",str);
@@ -429,17 +456,15 @@ BOOL sbbs_t::newuser()
 	delallmail(useron.number, MAIL_ANY);
 
 	if(useron.number!=1 && cfg.node_valuser) {
-		SAFEPRINTF(str,"%sfeedback.msg",cfg.text_dir);
-		if(fexist(str))
-			printfile(str,P_NOABORT);
+		menu("../feedback", P_NOABORT|P_NOERROR);
 		safe_snprintf(str,sizeof(str),text[NewUserFeedbackHdr]
 			,nulstr,getage(&cfg,useron.birth),useron.sex,useron.birth
 			,useron.name,useron.phone,useron.comp,useron.modem);
-		email(cfg.node_valuser,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
+		email(cfg.node_valuser,str,"New User Validation",WM_SUBJ_RO|WM_FORCEFWD);
 		if(!useron.fbacks && !useron.emails) {
 			if(online) {						/* didn't hang up */
 				bprintf(text[NoFeedbackWarning],username(&cfg,cfg.node_valuser,tmp));
-				email(cfg.node_valuser,str,"New User Validation",WM_EMAIL|WM_SUBJ_RO|WM_FORCEFWD);
+				email(cfg.node_valuser,str,"New User Validation",WM_SUBJ_RO|WM_FORCEFWD);
 				} /* give 'em a 2nd try */
 			if(!useron.fbacks && !useron.emails) {
         		bprintf(text[NoFeedbackWarning],username(&cfg,cfg.node_valuser,tmp));
@@ -457,7 +482,7 @@ BOOL sbbs_t::newuser()
 	answertime=starttime=time(NULL);	  /* set answertime to now */
 
 #ifdef JAVASCRIPT
-	js_create_user_objects();
+	js_create_user_objects(js_cx, js_glob);
 #endif
 
 	if(cfg.newuser_mod[0])

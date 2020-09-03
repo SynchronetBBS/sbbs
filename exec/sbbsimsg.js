@@ -25,46 +25,46 @@
    - mspservice.js listening on TCP port 18
 */
 
-// $Id$
+// $Id: sbbsimsg.js,v 1.41 2019/07/24 22:17:27 rswindell Exp $
 
-load("sbbsdefs.js");
-load("nodedefs.js");
-load("sockdefs.js");	// SOCK_DGRAM
+require("sbbsdefs.js", 'K_UPPER');
+require("sockdefs.js", 'SOCK_DGRAM');
 var options=load({}, "modopts.js", "sbbsimsg");
 if(!options)
 	options = {};
 if(!options.from_user_prop)
 	options.from_user_prop = "alias";
 var userprops = load({}, "userprops.js");
-var ini_section = "imsg sent";
-var addr_list = userprops.get(ini_section, "address", []);
-var last_send = userprops.get(ini_section, "localtime");
 var lib = load({}, "sbbsimsg_lib.js");
-
-const RcptAddressHistoryLength = 10;
 
 var last_user=0;
 
 lib.read_sys_list();
 
 // Parse arguments
-for(i=0; i<argc; i++) {
-	if(argv[i].toLowerCase()=="-l") {
-		var timeout = 5000;
-		var sent = lib.request_active_users();
-		if(parseInt(argv[i+1]))
-			timeout = parseInt(argv[i+1]);
-		function poll_callback(loop)
-		{
-			printf("%c\1[", "/-\\|"[loop%4]);
+if(this.argc) {
+	for(i=0; i<argc; i++) {
+		if(argv[i].toLowerCase()=="-l") {
+			console.clear(LIGHTGRAY);
+			writeln("\1hInter-BBS Active Users:");
+			var timeout = 2500;
+			var sent = lib.request_active_users();
+			if(parseInt(argv[i+1]))
+				timeout = parseInt(argv[i+1]);
+			function poll_callback(loop)
+			{
+				printf("%c\1[", "/-\\|"[loop%4]);
+				if(console.inkey(0))
+					return true;
+			}
+			lib.poll_systems(sent, 0.25, timeout, poll_callback);
+			list_users();
+			exit();
 		}
-		lib.poll_systems(sent, 0.25, timeout, poll_callback);
-		list_users();
-		exit();
-	}
-	if(argv[i].toLowerCase()=="-d") {
-		print(lfexpand(JSON.stringify(lib.sys_list, null, 4)));
-		exit();
+		if(argv[i].toLowerCase()=="-d") {
+			print(lfexpand(JSON.stringify(lib.sys_list, null, 4)));
+			exit();
+		}
 	}
 }
 
@@ -86,8 +86,8 @@ function list_user(user, sys)
 		,user.name
 		,action
 		,system.secondstr(user.timeon)
-		,user.age
-		,user.sex
+		,user.age ? user.age : ''
+		,user.sex ? user.sex : ''
 		));
 }
 
@@ -133,8 +133,10 @@ function getmsg()
 		lines++;
 	}
 
-	if(!lines || !bbs.online || bbs.sys_status&SS_ABORT)
+	if(!lines || !bbs.online || console.aborted) {
+		console.aborted = false;
 		return("");
+	}
 
 	return(msg);
 }
@@ -152,9 +154,9 @@ function imsg_user_list()
 	return imsg_user;
 }
 
-function get_default_dest()
+function get_default_dest(addr_list, last_send)
 {
-	var rx = userprops.get("imsg received");
+	var rx = userprops.get(lib.props_recv);
 	
 	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
 		var sys = lib.sys_list[rx.ip_address];
@@ -188,13 +190,14 @@ prompt:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
-	console.print("\1n\1h\1bInter-BBS: ");
+	console.print("\1n\1h\1bInterBBS: ");
 	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~Quit: ");
-	bbs.sys_status&=~SS_ABORT;
+	console.aborted = false;
 	var key;
 	var last_request = 0;
 	var request_interval = 60;	// seconds
-	while(bbs.online && !(bbs.sys_status&SS_ABORT)) {
+	var valid_keys = "QLTM\rD";
+	while(bbs.online && !console.aborted) {
 		if(time() - last_request >= request_interval) {
 			lib.request_active_users();
 			last_request = time();
@@ -204,8 +207,8 @@ while(bbs.online) {
 			var message = lib.receive_active_users();
 			if(message) {
 				var result = lib.parse_active_users(message, logon_callback, logoff_callback);
-				if(!result)
-					log(LOG_WARNING, "Failure to parse: "+ JSON.stringify(message));
+				if(result !== true)
+					log(LOG_WARNING, format("%s: %s", result, JSON.stringify(message)));
 			}
 		}
 		bbs.nodesync(true);
@@ -213,20 +216,32 @@ while(bbs.online) {
 			continue prompt;
 		}
 		key=console.inkey(K_UPPER, 500);
-		if(key=='Q' || key=='L' || key=='T' || key=='M' || key=='\r')
+		if(key && valid_keys.indexOf(key) >= 0)
 			break;
 	}
 	switch(key) {
+		case 'D':
+			for(var i in lib.sys_list)
+				print(i + ' = ' + JSON.stringify(lib.sys_list[i]));
+			break;
 		case 'L':
 			print("\1h\1cList\r\n");
 			list_users();
 			break;
 		case 'T':
 			printf("\1h\1cTelegram\r\n\r\n");
-			printf("\1n\1h\1y(user@hostname): \1w");
-			dest=console.getstr(get_default_dest(),64,K_EDIT|K_AUTODEL, addr_list);
-			if(dest==null || dest=='' || bbs.sys_status&SS_ABORT)
+			var addr_list = userprops.get(lib.props_sent, "address", []);
+			var last_send = userprops.get(lib.props_sent, "localtime");
+			printf("\1n\1h\1yDestination (user@hostname): \1w");
+			dest=console.getstr(get_default_dest(addr_list, last_send),64,K_EDIT|K_AUTODEL, addr_list);
+			if(dest==null || dest=='' || console.aborted) {
+				console.aborted = false;
 				break;
+			}
+			if(!lib.dest_host(dest)) {
+				alert("Invalid destination");
+				break;
+			}
 			if((msg=getmsg())=='')
 				break;
 			send_msg(dest, msg);

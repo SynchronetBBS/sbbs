@@ -11,10 +11,35 @@ load("mailutil.js");
  */
 
 var line;
+var verbosity = 0;
 var done_headers=false;
-var hdrs=new Object;
-var body='';
-var rcpt_list=new Array();
+var hdr = { from: 'sendmail' };
+var body = '';
+var rcpt_list = [];
+
+function rcpt(str)
+{
+	return {
+		to: mail_get_name(str),
+		to_net_addr: mail_get_address(str),
+		to_net_type: NET_INTERNET
+	};
+}
+
+for(var i = 0; i < argv.length; i++) {
+	if(argv[i][0] == '-') {
+		switch(argv[i][1]) {
+			case 'v':
+				verbosity++;
+				break;
+			case 'F':
+				hdr.from = argv[++i];
+				break;
+		}
+	} else {
+		rcpt_list.push(rcpt(argv[i]));
+	}
+}
 
 while((line=readln()) != undefined) {
 	if(!done_headers) {
@@ -22,40 +47,38 @@ while((line=readln()) != undefined) {
 			done_headers=true;
 			continue;
 		}
+		if(verbosity)
+			print("sendmail hdr line: '" + line + "'");
 		var m=line.match(/^([^:]*):\s*(.*)$/);
 		if(m != undefined && m.index>-1) {
 			switch(m[1].toLowerCase()) {
 				case 'to':
 					addys=m[2].split(',');
 					for (addy in addys) {
-						var hdr=new Object;
-						hdr.to=mail_get_name(addys[addy]);
-						hdr.to_net_type=NET_INTERNET;
-						hdr.to_net_addr=mail_get_address(addys[addy]);
-						rcpt_list.push(hdr);
+						rcpt_list.push(rcpt(addys[addy]));
 					}
 					break;
 				case 'from':
-					hdrs.from=mail_get_name(m[2]);
-					hdrs.from_net_type=NET_INTERNET;
-					hdrs.from_net_addr=mail_get_address(m[2]);
+					hdr.from=mail_get_name(m[2]);
+					hdr.from_net_type=NET_INTERNET;
+					hdr.from_net_addr=mail_get_address(m[2]);
 					break;
 				case 'subject':
-					hdrs.subject=m[2];
+					hdr.subject=m[2];
 					break;
 				case 'reply-to':
-					hdrs.replyto=mail_get_name(m[2]);
-					hdrs.replyto_net_type=NET_INTERNET;
-					hdrs.replyto_net_addr=mail_get_address(m[2]);
+					hdr.replyto=mail_get_name(m[2]);
+					hdr.replyto_net_type=NET_INTERNET;
+					hdr.replyto_net_addr=mail_get_address(m[2]);
 					break;
 				case 'message-id':
-					hdrs.id=m[2];
+					hdr.id=m[2];
 					break;
 				case 'references':
-					hdrs.reply_id=m[2];
+					hdr.reply_id=m[2];
 					break;
 				case 'date':
-					hdrs.date=m[2];
+					hdr.date=m[2];
 					break;
 			}
 		}
@@ -66,11 +89,11 @@ while((line=readln()) != undefined) {
 }
 
 var msgbase = new MsgBase('mail');
-if(msgbase.open!=undefined && msgbase.open()==false) {
+if(!msgbase.open()) {
 	writeln("Cannot send email (open error)!");
 	exit();
 }
-if(!msgbase.save_msg(hdrs, body, rcpt_list)) {
-	writeln("Cannot send email (save error)!");
+if(!msgbase.save_msg(hdr, body, rcpt_list)) {
+	writeln("Cannot send email: " + msgbase.error);
 	exit();
 }

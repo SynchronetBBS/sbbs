@@ -2,7 +2,7 @@
 
 /* POSIX directory operations using Microsoft _findfirst/next functions. */
 
-/* $Id$ */
+/* $Id: msdirent.c,v 1.3 2018/07/24 01:11:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

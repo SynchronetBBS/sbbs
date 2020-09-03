@@ -1,0 +1,23 @@
+--- ../tmp2/tools/ccopts.sh	2019-03-04 16:32:32.000000000 -0500
++++ tools/ccopts.sh	2019-06-03 16:22:10.631518000 -0400
+@@ -250,13 +250,13 @@
+ 	done
+ 
+ 	# /dev/crypto support
+-	for includepath in $DEVCRYPTOPATHS ; do
+-		if [ -f $includepath ] ; then
+-			echo "/dev/crypto interface detected, enabling crypto hardware support." >&2 ;
+-			CCARGS="$CCARGS -DHAS_DEVCRYPTO -I"$(dirname $includepath)"" ;
+-			break ;
+-		fi
+-	done
++	#for includepath in $DEVCRYPTOPATHS ; do
++	#	if [ -f $includepath ] ; then
++	#		echo "/dev/crypto interface detected, enabling crypto hardware support." >&2 ;
++	#		CCARGS="$CCARGS -DHAS_DEVCRYPTO -I"$(dirname $includepath)"" ;
++	#		break ;
++	#	fi
++	#done
+ 
+ fi
+ if [ -f /usr/include/zlib.h ] ; then

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: http.js,v 1.47 2020/07/22 04:31:48 echicken Exp $ */
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('url.js', 'URL');
@@ -24,6 +24,9 @@ function HTTPRequest(username,password,extra_headers)
 	this.username=username;
 	this.password=password;
 	this.user_agent='SYNXv0.1';
+	this.follow_redirects = 0;
+
+	this.status = { ok: 200, created: 201, accepted: 202, no_content: 204 };
 }
 
 HTTPRequest.prototype.AddDefaultHeaders=function(){
@@ -58,7 +61,7 @@ HTTPRequest.prototype.SetupGet=function(url, referer, base) {
 	this.base=base;
 	this.url=new URL(url, this.base);
 	if(this.url.scheme!='http' && this.url.scheme!='https')
-		throw("Unknown scheme! '"+this.url.scheme+"'");
+		throw new Error("Unknown scheme! '"+this.url.scheme+"' in url:" + url);
 	if(this.url.path=='')
 		this.url.path='/';
 	this.request="GET "+this.url.request_path+" HTTP/1.0";
@@ -74,7 +77,7 @@ HTTPRequest.prototype.SetupPost=function(url, referer, base, data, content_type)
 	this.base=base;
 	this.url=new URL(url, this.base);
 	if(this.url.scheme!='http' && this.url.scheme!='https')
-		throw("Unknown scheme! '"+this.url.scheme+"'");
+		throw new Error("Unknown scheme! '"+this.url.scheme+"' in url: " + url);
 	if(this.url.path=='')
 		this.url.path='/';
 	this.request="POST "+this.url.request_path+" HTTP/1.0";
@@ -88,6 +91,7 @@ HTTPRequest.prototype.SetupPost=function(url, referer, base, data, content_type)
 
 HTTPRequest.prototype.SendRequest=function() {
 	var i;
+	var port;
 
 	function do_send(sock, str) {
 		var sent = 0;
@@ -107,11 +111,18 @@ HTTPRequest.prototype.SendRequest=function() {
 
 	if (this.sock != undefined)
 		this.sock.close();
-	if((this.sock=new Socket(SOCK_STREAM))==null)
-		throw("Unable to create socket");
-	if(!this.sock.connect(this.url.host, this.url.port?this.url.port:(this.url.scheme=='http'?80:443))) {
-		this.sock.close();
-		throw("Unable to connect");
+	port = this.url.port?this.url.port:(this.url.scheme=='http'?80:443);
+	if (js.global.ConnectedSocket != undefined) {
+		if ((this.sock = new ConnectedSocket(this.url.host, port)) == null)
+			throw(format("Unable to connect to %s:%u", this.url.host, this.url.port));
+	}
+	else {
+		if((this.sock=new Socket(SOCK_STREAM))==null)
+			throw("Unable to create socket");
+		if(!this.sock.connect(this.url.host, port)) {
+			this.sock.close();
+			throw(format("Unable to connect to %s:%u", this.url.host, this.url.port));
+		}
 	}
 	if(this.url.scheme=='https')
 		this.sock.ssl_session=true;
@@ -203,6 +214,14 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 	this.BasicAuth();
 	this.SendRequest();
 	this.ReadResponse();
+	if ([301, 302, 307, 308].indexOf(this.response_code) > -1
+		&& this.follow_redirects > 0
+		&& this.response_headers_parsed.Location
+		&& this.response_headers_parsed.Location.length
+	) {
+		this.follow_redirects--;
+		return this.Get(this.response_headers_parsed.Location[0], url); // To-do: be less tired and think about referer,base
+	}
 	return(this.body);
 };
 

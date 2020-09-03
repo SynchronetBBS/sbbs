@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: viewprofile.ssjs,v 1.12 2009/02/03 20:30:48 deuce Exp $ */
 
 load("../web/lib/template.ssjs");
 load("../web/lib/profile_config.ssjs");

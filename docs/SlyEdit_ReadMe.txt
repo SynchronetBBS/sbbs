@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.54
-                        Release date: 2017-12-26
+                              Version 1.73
+                        Release date: 2020-03-31
 
                                   by
 
@@ -30,6 +30,7 @@ Contents
 10. Text replacements (AKA Macros)
 11. User settings
 12. Taglines
+13. Spell check and dictionaries
 
 
 1. Disclaimer
@@ -109,13 +110,17 @@ ICE parameter for IceEdit emulation:
  3. For the internal code, use SLYEDICE (or whatever you want, depending on your
     personal preference)
  4. Press Enter to select and edit the new entry.  Asuming that the .js files
-    are in the sbbs/exect directory, the settings should be as follows:
+    are in the sbbs/exect directory, the settings should be as follows (the
+    wording and options shown may vary, depending on the version of Synchronet
+    you have installed):
       Command line: ?SlyEdit.js %f ICE
       Access requirement string: ANSI
       Intercept standard I/O: No
       Native (32-bit) Executable: No
       Use Shell to Execute: No
-      Quoted Text: All
+      Record Terminal Width: Yes
+      Word-wrap Quoted Text: Your decision - Wrap to specific width, 80, or no
+      Automatically Quoted Text: All
       Editor Information Files: QuickBBS MSGINF/MSGTMP
       Expand Line Feeds to CRLF: Yes
       Strip FidoNet Kludge Lines: No
@@ -132,7 +137,9 @@ ICE parameter for IceEdit emulation:
     ¦ ¦Intercept Standard I/O          No                                ¦
     ¦ ¦Native (32-bit) Executable      No                                ¦
     ¦ ¦Use Shell to Execute            No                                ¦
-    ¦ ¦Quoted Text                     All                               ¦
+    ¦ ¦Record Terminal Width           Yes                               ¦
+    ¦ ¦Word-wrap Quoted Text           Yes, for 80 columns               ¦
+    ¦ ¦Automatically Quoted Text       All                               ¦
     ¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
     ¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
     ¦ ¦Strip FidoNet Kludge Lines      No                                ¦
@@ -152,10 +159,6 @@ ICE parameter for IceEdit emulation:
 ===========
 As mentioned earlier, SlyEdit is can mimic the look & feel of IceEdit or
 DCT Edit.  It also has the following features:
-- Text search: Allows the user to search for text in the message.  If
-  the text is found, the message area will scroll to it, and it will be
-  highlighted.  Repeated searches for the same text will look for the
-  next occurrance of that text.
 - Message quoting: When replying to a message, users can select lines from the
   message to quote.  By default, SlyEdit puts the initials of the original
   author in front of the quote lines to indicate who originally wrote those
@@ -179,6 +182,13 @@ DCT Edit.  It also has the following features:
   current message sub-board, SlyEdit will also output a note explaining that
   the BBS will say the message was aborted, even though it was posted into
   other sub-boards and that is normal.
+- Text search: Allows the user to search for text in the message.  If
+  the text is found, the message area will scroll to it, and it will be
+  highlighted.  Repeated searches for the same text will look for the
+  next occurrance of that text.
+- Allows changing the message subject
+  Note: If using a Synchronet 3.17c development build (pre official release),
+  you will need a build from July 21, 2019 or newer.
 - Navigation: Page up/down, home/end of line, and arrow keys
 - Slash commands (at the start of the line):
   /A: Abort
@@ -189,6 +199,7 @@ DCT Edit.  It also has the following features:
 - Sysops can export the current message to a file (on the BBS machine)
 - Configuration file with behavior and color settings.  See section 4
   (Configuration File) for more information.
+- Spell check
 
 The following is a summary of the keyboard shortcuts, from SlyEdit's command
 help screen (note that file import, with Ctrl-O & Ctrl-X, are only available to
@@ -198,20 +209,23 @@ BBS machine):
 Help keys                                     Slash commands (on blank line)
 ---------                                     ------------------------------
 Ctrl-G       : General help                 ¦ /A      : Abort
-Ctrl-P       : Command key help             ¦ /S      : Save
-Ctrl-R       : Program information          ¦ /Q      : Quote message
+Ctrl-L       : Command key list (this list) ¦ /S      : Save
+                                            ¦ /Q      : Quote message
 Ctrl-T       : List text replacements       ¦ /T      : List text replacements
-                                            ¦ /U      : Your settings
+                                            ¦ /U      : Your user settings
+                                            ¦ /C      : Cross-post selection
+                                            ¦ /UPLOAD : Upload a message
 
 Command/edit keys
 -----------------
 Ctrl-A       : Abort message                ¦ PageUp  : Page up
 Ctrl-Z       : Save message                 ¦ PageDown: Page down
-Ctrl-Q       : Quote message                ¦ Ctrl-N  : Find text
+Ctrl-Q       : Quote message                ¦ Ctrl-W  : Word/text search
 Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
-ESC          : Command menu
+Ctrl-R       : Spell checker                ¦ ESC     : Command menu
 Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
-Ctrl-U       : Your settings
+Ctrl-U       : Your user settings           ¦ Ctrl-C  : Cross-post selection
+Ctrl-S       : Change subject
 
 
 5. Digital Distortion Message Lister note
@@ -313,6 +327,12 @@ allowEditQuoteLines               Whether or not to allow the user to edit
                                   false.  If this option is not specified, the
                                   default value is true.
 
+allowSpellCheck                   Whether or not to allow spell check.  Valid
+                                  values are true and false.  Defaults to true.
+                                  You might want to disable spell check if,
+                                  for instance, the spell check feature causes
+                                  an "out of memory" error on your system.
+
 useQuoteLineInitials              Whether or not to prefix quoted message lines
                                   with the previous author's initials when
                                   replying to a message.  Valued values are
@@ -340,6 +360,18 @@ enableTagLines                    Whether or not to enable the option for users
                                   setting serves as the default for the user
                                   setting, which users can configure in their
                                   own settings.
+
+dictionaryFilenames               Dictionary filenames (used for spell check).
+                                  This is a comma-separated list of dictionary
+                                  filenames.  The dictionary filenames are in
+                                  the format dictionary_<language>.txt, where
+                                  <language> is the language name.  In this
+                                  list, the filenames can be in that format, or
+                                  just <language>.txt, or just <language>.
+                                  Leave blank to use all dictionary files that
+                                  exist on the system.  The dictionary files
+                                  are located in either sbbs/mods, sbbs/ctrl,
+                                  or the same directory as SlyEdit.
 
 Ice colors
 ----------
@@ -756,6 +788,7 @@ replace), you would use $1 to refer to the word "darn".  For example, for
 Since version 1.32, SlyEdit has the ability for each user to configure some
 settings for themselves.  The user settings include the following:
 - Whether or not to enable the option to use taglines
+- Whether or not to prompt for spell checking when saving a message
 - Whether or not to add the original author's initials to quote lines
   (this was previously only configurable in SlyEdit.cfg)
 - Whether or not to indent quote lines that use author's intials (this was
@@ -771,6 +804,14 @@ settings for themselves.  The user settings include the following:
   to specify whehter to use only their first name when signing with their
   real name, and also whether to sign emails with their real name (emails
   don't have a configuration like sub-boards do).
+- Dictionaries for spell-check.  If there is only one dictionary configured,
+  this option won't appear on the user options list.  If there are multiple
+  dictionary files on the BBS machine (in either sbbs/mods, sbbs/ctrl, or in
+  the same directory as SlyEdit), the user will be able to choose any or all
+  dictionaries to be used for the spell check feature.  Multiple dictionaries
+  can be selected, so if the user writes messages in more than one language,
+  or if a message could contain multiple languages, the spell-check feature
+  will use all selected dictionaries for spell checking.
 
 The user settings files will be stored in the sbbs/data/user directory with the
 filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
@@ -804,3 +845,42 @@ to line 7 of the MSGINF drop file, which SlyEdit reads on startup.  If the
 MSGINF file includes the 7th line, then the tagline will appear after the
 user's signature (if they have one).  If the MSGINF file does not include the
 7th line, then the tagline will appear before the user's signature.
+
+13. Spell check and dictionaries
+================================
+Since version 1.64, SlyEdit has a spell check feature.  Spell check can be
+started by the user with the Ctrl-R hotkey, or by the Edit > Spell Checker
+option in the DCT-style ESC menu (only available when in DCT mode).  For spell
+check, SlyEdit will check each word to see if it exists in the configured
+dictionary/dictionaries, and if not, it will prompt the user for a corrected
+version of the word.  The sysop can configure one or multiple dictionaries in
+SlyEdit.cfg with the dictionaryFilenames option.  Dictionary files need to be
+in the format dictionary_<languageName>.txt, where <languageName> is the name
+of the language.  Also, ideally, the language names should follow standard
+language tags, as in "en-us" for English (US), etc.  See these web pages for
+more information:
+https://en.wikipedia.org/wiki/Language_localisation
+http://www.lingoes.net/en/translator/langcode.htm
+Also, the dictionary filenames will be parsed and the language name will be
+used in the menu of dictionaries in the user options - The user is able to
+enable/disable the configured dictionaries for their own use for the spell
+checker.
+
+For the dictionaryFilenames option in SlyEdit.cfg, you can specify a comma-
+separated list of dictionary filenames.  The dictionary filenames are in the
+format dictionary_<languageName>.txt, where <language> is the language name.
+In this list, the filenames can be in that format, or just <languageName>.txt,
+or just <languageName>.  You can leave the setting blank to use all dictionary
+files that exist on the system.
+
+SlyEdit will search for the dictionary files in the following directories, in
+this order:
+1. sbbs/mods
+2. sbbs/ctrl
+3. SlyEdit's own directory
+
+Dictionary files must be sorted in order for word matching to work properly
+(SlyEdit uses a binary search for quick word matching, which requires the words
+to be sorted).  Also, all of the words in the dictionary files must be lower-
+case, since SlyEdit does case-insensitive matching by converting words in the
+message to lower-case and comparing them with the words in the dictionary.

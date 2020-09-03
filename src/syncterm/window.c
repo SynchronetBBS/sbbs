@@ -6,43 +6,55 @@
 #include "term.h"
 #include "syncterm.h"
 
-int drawwin(void)
+void
+get_term_win_size(int *width, int *height, int *nostatus)
 {
 	struct	text_info txtinfo;
+
+	gettextinfo(&txtinfo);
+
+	if(txtinfo.screenwidth < 80)
+		*width=40;
+	else {
+		if(txtinfo.screenwidth <132)
+			*width=80;
+		else
+			*width=132;
+	}
+	*height=txtinfo.screenheight;
+	if(!*nostatus)
+		(*height)--;
+	if(*height<24) {
+		*height=24;
+		*nostatus=1;
+	}
+}
+
+int drawwin(void)
+{
 	char	*winbuf;
 	char	*p;
 	char	str[32];
 	int		x,y,c;
-	int		old_xlat;
+	struct	text_info txtinfo;
 
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 
 	strcpy(str,"         ");
 
-	if(txtinfo.screenwidth < 80)
-		term.width=40;
-	else {
-		if(txtinfo.screenwidth <132)
-			term.width=80;
-		else
-			term.width=132;
-	}
-	term.height=txtinfo.screenheight;
-	if(!term.nostatus)
-		term.height--;
-	if(term.height<24) {
-		term.height=24;
-		term.nostatus=1;
-	}
-	term.x=(txtinfo.screenwidth-term.width)/2+2;
+	get_term_win_size(&term.width, &term.height, &term.nostatus);
+
+	if (settings.left_just)
+		term.x = 2;
+	else
+		term.x=(txtinfo.screenwidth-term.width)/2+2;
 	term.y=(txtinfo.screenheight-term.height)/2+2;
 	if((winbuf=(char *)alloca(txtinfo.screenheight*txtinfo.screenwidth*2))==NULL) {
 		uifcmsg("Cannot allocate memory for terminal buffer",	"`Memory error`\n\n"
-																"Either your system is dangerously low on resources or your\n"
-																"window is farking huge!");
+		    "Either your system is dangerously low on resources or your\n"
+		    "window is farking huge!");
 		return(-1);
 	}
-
 	c=0;
 	for(y=0;y<txtinfo.screenheight;y++) {
 		p=str;
@@ -55,12 +67,12 @@ int drawwin(void)
 			winbuf[c++]=*(p++);
 			if(!*p)
 				p=str;
-			winbuf[c++]=YELLOW|(BLUE<<4);
+			if (settings.left_just)
+				winbuf[c++]=0;
+			else
+				winbuf[c++]=YELLOW|(BLUE<<4);
 		}
 	}
-	old_xlat = ciolib_xlat;
-	ciolib_xlat = CIOLIB_XLAT_CHARS;
 	puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,winbuf);
-	ciolib_xlat = old_xlat;
 	return(0);
 }

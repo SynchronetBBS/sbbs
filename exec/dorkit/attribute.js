@@ -1,25 +1,31 @@
+/*jslint bitwise, this, devel, getset*/
+
 function Attribute(value) {
-	if (value === undefined)
+	'use strict';
+	if (value === undefined) {
 		this.value = 7;
-	else if (typeof(value) == 'object' && value.value !== undefined) {
-		if (typeof(value.value) == 'number')
+	}
+	else if (typeof(value) === 'object' && value.value !== undefined) {
+		if (typeof(value.value) === 'number') {
 			this.value = value.value;
+		}
 		else {
 			try {
 				this.value=parseInt(value, 10);
 			}
-			catch(e) {
+			catch(ignore) {
 				this.value = 7;
 			}
 		}
 	}
-	else if (typeof(value) == 'number')
+	else if (typeof(value) === 'number') {
 		this.value = value;
+	}
 	else {
 		try {
 			this.value=parseInt(value, 10);
 		}
-		catch(e) {
+		catch(ignore) {
 			this.value = 7;
 		}
 	}
@@ -41,65 +47,81 @@ Attribute.prototype = {
 	// TODO: High intensity background, not blink
 	// TODO: Alternative font, not blink
 	get blink() {
-		return (this.value & 0x80) ? true : false;
+		'use strict';
+		return !!(this.value & 0x80);
 	},
 	set blink(val) {
-		if (val)
+		'use strict';
+		if (val) {
 			this.value |= 0x80;
-		else
+		}
+		else {
 			this.value &= ~0x80;
+		}
 	},
 
 	// TODO: Alternative font, not bright
 	get bright() {
-		return (this.value & 0x08) ? true : false;
+		'use strict';
+		return !!(this.value & 0x08);
 	},
 	set bright(val) {
-		if (val)
+		'use strict';
+		if (val) {
 			this.value |= 0x08;
-		else
+		}
+		else {
 			this.value &= ~0x08;
+		}
 	},
 
 	get bg() {
+		'use strict';
 		return (this.value >> 4) & 0x07;
 	},
 	set bg(val) {
+		'use strict';
 		this.value &= 0x8f;
 		this.value |= ((val << 4) & 0x70);
 	},
 
 	get fg() {
+		'use strict';
 		return this.value & 0x07;
 	},
 	set fg(val) {
+		'use strict';
 		this.value &= 0xf8;
 		this.value |= (val & 0x07);
 	},
 
-	_curatr:new Attribute(7),
+	Private_curatr:new Attribute(7),
 	ansi:function(curatr) {
+		'use strict';
 		var str="";
-		if(curatr !== undefined && curatr.value === this.value)
+		if(curatr !== undefined && curatr.value === this.value) {
 			return str;	// Unchanged
+		}
 
 		str = "\x1b[";
 
 		if(curatr === undefined || (!(this.bright) && curatr.bright)
 				|| (!(this.blink) && curatr.blink) || this.value === 7) {
 			str += "0;";
-			curatr = this._curatr;
+			curatr = this.Private_curatr;
 			curatr.value = 7;
 		}
 		if(this.blink) {                     /* special attributes */
-			if(!(curatr.blink))
+			if(!(curatr.blink)) {
 				str += "5;";
+			}
 		}
 		if(this.bright) {
-			if(!(curatr.bright))
-				str += "1;"; 
+			if(!(curatr.bright)) {
+				str += "1;";
+			}
 		}
-		if(this.fg != curatr.fg) {
+		if(this.fg !== curatr.fg) {
 			switch(this.fg) {
 				case Attribute.BLACK:
 					str += "30;";
@@ -127,7 +149,7 @@ Attribute.prototype = {
 					break;
 			}
 		}
-		if(this.bg != curatr.bg) {
+		if(this.bg !== curatr.bg) {
 			switch(this.bg) {
 				case Attribute.BLACK:
 					str += "40;";
@@ -155,8 +177,9 @@ Attribute.prototype = {
 					break;
 			}
 		}
-		if(str.length <= 2)	/* Convert <ESC>[ to blank */
+		if(str.length <= 2) {	/* Convert <ESC>[ to blank */
 			return "";
+		}
 		return str.substring(0, str.length-1) + 'm';
 	}
-}
+};

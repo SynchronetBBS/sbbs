@@ -1,6 +1,6 @@
 /* General cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: genwrap.h,v 1.122 2020/08/08 23:25:46 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -201,6 +201,16 @@ extern "C" {
 	#define ARCHITECTURE_DESC "x86"
 #elif defined(__mips__)
 	#define ARCHITECTURE_DESC "mips"
+#elif __ARM_ARCH == 5 || _M_ARM == 5
+	#define ARCHITECTURE_DESC "armv5"
+#elif __ARM_ARCH == 6 || _M_ARM == 6
+	#define ARCHITECTURE_DESC "armv6"
+#elif __ARM_ARCH == 7 || _M_ARM == 7
+	#define ARCHITECTURE_DESC "armv7"
+#elif __ARM_ARCH == 8 || _M_ARM == 8 
+	#define ARCHITECTURE_DESC "armv8"
+#elif defined(__aarch64__)
+	#define ARCHITECTURE_DESC "arm64"
 #elif defined(__arm__)
 	#define ARCHITECTURE_DESC "arm"
 #elif defined(_M_PPC) || defined(__ppc__)
@@ -224,6 +234,7 @@ extern "C" {
 	#define snprintf		_snprintf
 #endif
 	#define vsnprintf		_vsnprintf
+	#define NEEDS_STRLCPY
 #endif
 
 #if defined(__WATCOMC__)
@@ -244,7 +255,11 @@ extern "C" {
 	#endif
 #endif
 
-#if defined(_MSC_VER)
+#if defined(NEEDS_STRLCPY)
+	size_t strlcpy(char *dst, const char *src, size_t size);
+#endif
+
+#if defined(_WIN32)
 	DLLEXPORT char* DLLCALL strcasestr(const char* haystack, const char* needle);
 #endif
 
@@ -262,6 +277,9 @@ DLLEXPORT char*		DLLCALL truncnl(char* str);
 #else
 	#define STRERROR(x)		truncsp(strerror(x))
 #endif
+
+/* Re-entrant version of strerror() */
+DLLEXPORT char*		DLLCALL safe_strerror(int errnum, char* buf, size_t buflen);
 
 /*********************/
 /* Utility Functions */
@@ -297,7 +315,7 @@ DLLEXPORT int DLLCALL	get_errno(void);
 	#else
 		#define SLEEP(x)		({	int sleep_msecs=x; struct timespec ts={0}; \
 								ts.tv_sec=(sleep_msecs/1000); ts.tv_nsec=((sleep_msecs%1000)*1000000); \
-								nanosleep(&ts, NULL); })
+								while(nanosleep(&ts, &ts) != 0 && errno==EINTR && x > 1); })
 	#endif
 
 	#define YIELD()			SLEEP(1)
@@ -359,7 +377,11 @@ DLLEXPORT long double  	DLLCALL	xp_timer(void);
 DLLEXPORT char*		DLLCALL os_version(char *str);
 DLLEXPORT char*		DLLCALL os_cmdshell(void);
 DLLEXPORT char*		DLLCALL	lastchar(const char* str);
-DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...);
+DLLEXPORT int		DLLCALL safe_snprintf(char *dst, size_t size, const char *fmt, ...)
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 3 , 4)));            // 1 is 'this'
+#endif
+;
 
 /* C string/char escape-sequence processing */
 DLLEXPORT char*		DLLCALL c_escape_str(const char* src, char* dst, size_t maxlen, BOOL ctrl_only);

@@ -4,7 +4,7 @@
 #
 # This file normally goes in your /etc/init.d directory
 #
-# $Id$
+# $Id: sbbs.gentoo,v 1.2 2013/10/05 15:45:02 deuce Exp $
 
 ########################################
 # Synchronet BBS Gentoo startup script #

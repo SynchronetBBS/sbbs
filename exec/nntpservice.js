@@ -2,7 +2,7 @@
 
 // Synchronet Service for the Network News Transfer Protocol (RFC 977)
 
-// $Id$
+// $Id: nntpservice.js,v 1.133 2020/06/08 06:00:18 rswindell Exp $
 
 // Example configuration (in ctrl/services.ini):
 
@@ -29,7 +29,7 @@
 //					Xnews 5.04.25
 //					Mozilla 1.1 (Requires -auto, and a prior login via other method)
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.133 $".split(' ')[1];
 
 var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);
@@ -119,6 +119,35 @@ function xref(hdr)
 		,hdr.number));
 }
 
+// This excludes vote messages, but can be "slow"
+function count_msgs(msgbase)
+{
+	var count = 0;
+	var last = 0;
+	var first = 0;
+	var index = msgbase.get_index();
+	for(var i=0; index && i<index.length; i++) {
+		var idx=index[i];
+		if(idx==null)
+			continue;
+		if(idx.attr&MSG_DELETE)	/* marked for deletion */
+			continue;
+		if(idx.attr&MSG_VOTE)
+			continue;
+		if(first == 0)
+			first = idx.number;
+		last = idx.number;
+		count++;
+	}
+	return { total: count, first: first, last: last };
+}
+
+function bogus_cmd(cmdline)
+{
+	log(LOG_DEBUG, "Received bogus command: '" + cmdline + "'");
+	bogus_cmd_counter++;
+}
+
 var username='';
 var msgbase=null;
 var selected=null;
@@ -135,7 +164,7 @@ if(!no_anonymous)
 while(client.socket.is_connected && !quit) {
 
 	if(bogus_cmd_counter) {
-		log(LOG_DEBUG, "Throttling bogus command sending clinet for " + bogus_cmd_counter + " seconds");
+		log(LOG_DEBUG, "Throttling bogus command sending client for " + bogus_cmd_counter + " seconds");
 		sleep(bogus_cmd_counter * 1000);	// Throttle
 	}
 
@@ -164,7 +193,7 @@ while(client.socket.is_connected && !quit) {
 	}
 
 	if(cmdline=="") {	/* ignore blank commands */
-		bogus_cmd_counter++;
+		bogus_cmd(cmdline);
 		continue;
 	}
 
@@ -223,7 +252,7 @@ while(client.socket.is_connected && !quit) {
 	if(!logged_in) {
 		if (auto_login) {
 			log(LOG_DEBUG,"Autologin Search: Started");
-			var oUser = new User(1);
+			var oUser = new User;
 			sUser = false;
 			sPassword = ""
 			iLastOn = 0;
@@ -280,11 +309,12 @@ while(client.socket.is_connected && !quit) {
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 						if(msgbase.open!=undefined && msgbase.open()==false)
 							continue;
+						var count = count_msgs(msgbase);
 						writeln(format("%s %u %u %s"
 							,msg_area.grp_list[g].sub_list[s].newsgroup
-							,msgbase.last_msg
-							,msgbase.first_msg
-							,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
+							,count.last
+							,count.first
+							,msg_area.grp_list[g].sub_list[s].is_moderated ? "m" : (msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n")
 							));
 						msgbase.close();
 					}
@@ -399,11 +429,12 @@ while(client.socket.is_connected && !quit) {
 						ini_file.close();
 						if(created >= compare.getTime() / 1000 
 							&& msgbase.open()) {
+							var count = count_msgs(msgbase);	
 							writeln(format("%s %u %u %s"
 								,msg_area.grp_list[g].sub_list[s].newsgroup
-								,msgbase.last_msg
-								,msgbase.first_msg
-								,msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n"
+								,count.last
+								,count.first
+								,msg_area.grp_list[g].sub_list[s].is_moderated ? "m" : (msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n")
 								));
 							msgbase.close();
 						}
@@ -450,25 +481,28 @@ while(client.socket.is_connected && !quit) {
 			if(!found) {
 				writeln("411 no such newsgroup");
 				log(LOG_NOTICE,"!no such group");
-				bogus_cmd_counter++;
+				bogus_cmd(cmdline);
 				break;
 			}
 
-			if(cmd[0].toUpperCase()=="GROUP")
+			if(cmd[0].toUpperCase()=="GROUP") {
+				var count = count_msgs(msgbase);
 				writeln(format("211 %u %u %d %s group selected"
-					,msgbase.total_msgs	// articles in group
-					,msgbase.first_msg
-					,(msgbase.total_msgs==0) ? (msgbase.first_msg-1):msgbase.last_msg
+					,count.total	// articles in group
+					,count.first
+					,count.last
 					,selected.newsgroup
 					));
-			else {	// LISTGROUP
+			} else {	// LISTGROUP
 				writeln("211 list of article numbers follow");
 				var total_msgs = msgbase.total_msgs;
 				for(i=0;i<total_msgs;i++) {
-					idx=msgbase.get_msg_index(/* by_offset */true,i);
+					var idx=msgbase.get_msg_index(/* by_offset */true,i);
 					if(idx==null)
 						continue;
 					if(idx.attr&MSG_DELETE)	/* marked for deletion */
+						continue;
+					if(idx.attr&MSG_VOTE)
 						continue;
 					writeln(idx.number);
 				}
@@ -503,6 +537,8 @@ while(client.socket.is_connected && !quit) {
 				if(hdr==null)
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
+					continue;
+				if(hdr.attr&MSG_VOTE)
 					continue;
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
 					,i
@@ -546,6 +582,8 @@ while(client.socket.is_connected && !quit) {
 				if(hdr==null)
 					continue;
 				if(hdr.attr&MSG_DELETE)	/* marked for deletion */
+					continue;
+				if(hdr.attr&MSG_VOTE)
 					continue;
 				var field="";
 				switch(cmd[1].toLowerCase()) {	/* header */
@@ -607,7 +645,7 @@ while(client.socket.is_connected && !quit) {
 		case "STAT":
 			if(!selected) {
 				writeln("412 no newsgroup selected");
-				bogus_cmd_counter++;
+				bogus_cmd(cmdline);
 				break;
 			}
 			if(!selected.can_read) {
@@ -616,7 +654,7 @@ while(client.socket.is_connected && !quit) {
 			}
 			if(cmd[1]==undefined || cmd[1].length==0) {
 				writeln("420 no current article has been selected");
-				bogus_cmd_counter++;
+				bogus_cmd(cmdline);
 				break;
 			}
 			if(cmd[1]!='') {

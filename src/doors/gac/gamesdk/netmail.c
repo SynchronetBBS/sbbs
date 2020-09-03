@@ -1,5 +1,5 @@
-#include "netmail.h"
 #include "genwrap.h"
+#include "netmail.h"
 //unsigned INT16 TestingBit;
 
 #include <assert.h>

@@ -1,7 +1,7 @@
 /* Synchronet real-time chat functions */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: chat.cpp,v 1.84 2020/08/15 21:58:14 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -368,9 +368,7 @@ void sbbs_t::multinodechat(int channel)
 						done=1;
 						break;
 					case '*':
-						if(menu_exists("chan"))
-							menu("chan");
-						else {
+						if(!menu("chan", P_NOERROR)) {
 							bputs(text[ChatChanLstHdr]);
 							bputs(text[ChatChanLstTitles]);
 							if(cfg.total_chans>=10) {
@@ -708,8 +706,9 @@ bool sbbs_t::sysop_page(void)
 		|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron,&client))
 		|| useron.exempt&FLAG('C')) {
 
-		sprintf(str,"paged sysop for chat");
-		logline("C",str);
+		logline("C", "paged sysop for chat");
+		sprintf(str, "%s paged you to chat", useron.alias);
+		notify(&cfg, 1, str, NULL);
 
 		ftouch(syspage_semfile);
 		for(i=0;i<cfg.total_pages;i++)
@@ -1044,7 +1043,7 @@ void sbbs_t::privchat(bool local)
 							,thisnode.misc&NODE_NMSG ? 'M':' ');
 						attr(cfg.color[clr_chatlocal]);
 						for(x=13,y=0;x<rows;x++,y++) {
-							rprintf("\x1b[%d;1H\x1b[K",x+1);
+							comprintf("\x1b[%d;1H\x1b[K",x+1);
 							if(y<=localline)
 								bprintf("%s\r\n",localbuf[y]); 
 						}
@@ -1356,9 +1355,14 @@ void sbbs_t::nodemsg()
 
 	if(nodemsg_inside>1)	/* nested once only */
 		return;
+	nodemsg_inside++;
+	if(cfg.privatemsg_mod[0] != '\0') {
+		exec_bin(cfg.privatemsg_mod, &main_csi);
+		nodemsg_inside--;
+		return;
+	}
 	sys_status|=SS_IN_CTRLP;
 	getnodedat(cfg.node_num,&savenode,0);
-	nodemsg_inside++;
 	wordwrap[0]=0;
 	while(online && !done) {
 		if(useron.rest&FLAG('C')) {
@@ -1866,10 +1870,9 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 			(*ptrptr)++;
 			cp=strchr(str,']');
 			if(cp) *cp=0;
-			ar=arstr(NULL,str,&cfg);
+			ar=arstr(NULL,str,&cfg,NULL);
 			c=chk_ar(ar,&useron,&client);
-			if(ar[0]!=AR_NULL)
-				free(ar);
+			free(ar);
 			if(!c && _and) {
 				result=false;
 				break; 

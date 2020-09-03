@@ -1,6 +1,6 @@
 /* Synchronet FidoNet EchoMail Scanning/Tossing and NetMail Tossing Utility */
 
-/* $Id$ */
+/* $Id: rechocfg.c,v 3.48 2020/05/04 03:14:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -223,10 +223,14 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->kill_empty_netmail			= true;
 	cfg->strict_packet_passwords	= true;
 	cfg->relay_filtered_msgs		= false;
+	cfg->use_outboxes				= true;
 	cfg->umask						= 077;
 	cfg->areafile_backups			= 100;
 	cfg->cfgfile_backups			= 100;
 	cfg->auto_add_subs				= true;
+	cfg->auto_add_to_areafile		= true;
+	cfg->auto_utf8					= true;
+	cfg->strip_soft_cr				= true;
 	cfg->min_free_diskspace			= 10*1024*1024;
 }
 
@@ -266,7 +270,6 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	SAFECOPY(cfg->temp_dir		, iniGetString(ini, ROOT_SECTION, "TempDirectory"	,DEFAULT_TEMP_DIR		, value));
 	SAFECOPY(cfg->outgoing_sem	, iniGetString(ini, ROOT_SECTION, "OutgoingSemaphore",	"", value));
 	cfg->log_level				= iniGetLogLevel(ini, ROOT_SECTION, "LogLevel", cfg->log_level);
-	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
 	cfg->flo_mailer				= iniGetBool(ini, ROOT_SECTION, "BinkleyStyleOutbound", cfg->flo_mailer);
 	cfg->bsy_timeout			= (ulong)iniGetDuration(ini, ROOT_SECTION, "BsyTimeout", cfg->bsy_timeout);
 	cfg->bso_lock_attempts		= iniGetLongInt(ini, ROOT_SECTION, "BsoLockAttempts", cfg->bso_lock_attempts);
@@ -277,6 +280,10 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->areafile_backups		= iniGetInteger(ini, ROOT_SECTION, "AreaFileBackups", cfg->areafile_backups);
 	cfg->cfgfile_backups		= iniGetInteger(ini, ROOT_SECTION, "CfgFileBackups", cfg->cfgfile_backups);
 	cfg->min_free_diskspace		= iniGetBytes(ini, ROOT_SECTION, "MinFreeDiskSpace", 1, cfg->min_free_diskspace);
+	cfg->strip_lf				= iniGetBool(ini, ROOT_SECTION, "StripLineFeeds", cfg->strip_lf);
+	cfg->strip_soft_cr			= iniGetBool(ini, ROOT_SECTION, "StripSoftCRs", cfg->strip_soft_cr);
+	cfg->use_outboxes			= iniGetBool(ini, ROOT_SECTION, "UseOutboxes", cfg->use_outboxes);
+	cfg->auto_utf8				= iniGetBool(ini, ROOT_SECTION, "AutoUTF8", cfg->auto_utf8);
 
 	/* EchoMail options: */
 	cfg->maxbdlsize				= (ulong)iniGetBytes(ini, ROOT_SECTION, "BundleSize", 1, cfg->maxbdlsize);
@@ -292,6 +299,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->max_echomail_age		= (ulong)iniGetDuration(ini, ROOT_SECTION, "MaxEchomailAge", cfg->max_echomail_age);
 	SAFECOPY(cfg->areamgr,		  iniGetString(ini, ROOT_SECTION, "AreaManager", "SYSOP", value));
 	cfg->auto_add_subs			= iniGetBool(ini, ROOT_SECTION, "AutoAddSubs", cfg->auto_add_subs);
+	cfg->auto_add_to_areafile	= iniGetBool(ini, ROOT_SECTION, "AutoAddToAreaFile", cfg->auto_add_to_areafile);
 
 	/* NetMail options: */
 	SAFECOPY(cfg->default_recipient, iniGetString(ini, ROOT_SECTION, "DefaultRecipient", "", value));
@@ -310,6 +318,8 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	/* BinkP options: */
 	SAFECOPY(cfg->binkp_caps, iniGetString(ini, "BinkP", "Capabilities", "", value));
 	SAFECOPY(cfg->binkp_sysop, iniGetString(ini, "BinkP", "Sysop", "", value));
+	cfg->binkp_plainAuthOnly = iniGetBool(ini, "BinkP", "PlainAuthOnly", FALSE);
+	cfg->binkp_plainTextOnly = iniGetBool(ini, "BinkP", "PlainTextOnly", FALSE);
 
 	/******************/
 	/* Archive Types: */
@@ -408,6 +418,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		ncfg->binkp_plainAuthOnly	= iniGetBool(ini, node, "BinkpPlainAuthOnly", FALSE);
 		ncfg->binkp_allowPlainAuth	= iniGetBool(ini, node, "BinkpAllowPlainAuth", FALSE);
 		ncfg->binkp_allowPlainText	= iniGetBool(ini, node, "BinkpAllowPlainText", TRUE);
+		ncfg->binkp_tls             = iniGetBool(ini, node, "BinkpTLS", FALSE);
 	}
 	strListFree(&nodelist);
 
@@ -457,16 +468,40 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	}
 	strListFree(&domains);
 
+	/**********/
+	/* Robots */
+	/**********/
+	str_list_t robots = iniGetSectionList(ini, "robot:");
+	cfg->robot_count = strListCount(robots);
+	if((cfg->robot_list = realloc(cfg->robot_list, sizeof(struct robot)*cfg->robot_count)) == NULL) {
+		strListFree(&robots);
+		return false;
+	}
+	cfg->robot_count = 0;
+	char* robot;
+	while((robot = strListRemove(&robots, 0)) != NULL) {
+		struct robot* bot = &cfg->robot_list[cfg->robot_count++];
+		memset(bot, 0, sizeof(*bot));
+		SAFECOPY(bot->name, robot + 6);
+		SAFECOPY(bot->semfile, iniGetString(ini, robot, "SemFile", "", value));
+		bot->attr = iniGetShortInt(ini, robot, "attr", 0);
+	}
+	strListFree(&robots);
+
+
 	/* make sure we have some sane "maximum" size values here: */
 	if(cfg->maxpktsize<1024)
 		cfg->maxpktsize=DFLT_PKT_SIZE;
 	if(cfg->maxbdlsize<1024)
 		cfg->maxbdlsize=DFLT_BDL_SIZE;
 
+	cfg->used_include = iniHasInclude(ini);
 	strListFree(&ini);
 
 	return true;
 }
+
+ini_style_t sbbsecho_ini_style = {  .value_separator = " = ", .section_separator = "" };
 
 bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 {
@@ -481,69 +516,72 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		return false;
 	ini = iniReadFile(fp);
 
-	ini_style_t style = {  .value_separator = " = " };
-	iniSetDefaultStyle(style);
+	ini_style_t* style = &sbbsecho_ini_style;
 
 	/************************/
 	/* Global/root section: */
 	/************************/
-	iniSetString(&ini,		ROOT_SECTION, "Inbound"					,cfg->inbound					,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "SecureInbound"			,cfg->secure_inbound			,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "Outbound"				,cfg->outbound					,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "AreaFile"				,cfg->areafile					,NULL);
-	iniSetInteger(&ini,		ROOT_SECTION, "AreaFileBackups"			,cfg->areafile_backups			,NULL);
-	iniSetInteger(&ini,		ROOT_SECTION, "CfgFileBackups"			,cfg->cfgfile_backups			,NULL);
-	iniSetBytes(&ini,		ROOT_SECTION, "MinFreeDiskSpace"		,1,cfg->min_free_diskspace		,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "BadAreaFile"				,cfg->badareafile				,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "EchoStats"				,cfg->echostats					,NULL);
+	iniSetString(&ini,		ROOT_SECTION, "Inbound"					,cfg->inbound					,style);
+	iniSetString(&ini,		ROOT_SECTION, "SecureInbound"			,cfg->secure_inbound			,style);
+	iniSetString(&ini,		ROOT_SECTION, "Outbound"				,cfg->outbound					,style);
+	iniSetString(&ini,		ROOT_SECTION, "AreaFile"				,cfg->areafile					,style);
+	iniSetInteger(&ini,		ROOT_SECTION, "AreaFileBackups"			,cfg->areafile_backups			,style);
+	iniSetInteger(&ini,		ROOT_SECTION, "CfgFileBackups"			,cfg->cfgfile_backups			,style);
+	iniSetBytes(&ini,		ROOT_SECTION, "MinFreeDiskSpace"		,1,cfg->min_free_diskspace		,style);
+	iniSetString(&ini,		ROOT_SECTION, "BadAreaFile"				,cfg->badareafile				,style);
+	iniSetString(&ini,		ROOT_SECTION, "EchoStats"				,cfg->echostats					,style);
 	if(cfg->logfile[0])
-	iniSetString(&ini,		ROOT_SECTION, "LogFile"					,cfg->logfile					,NULL);
+	iniSetString(&ini,		ROOT_SECTION, "LogFile"					,cfg->logfile					,style);
 	if(cfg->logtime[0])
-	iniSetString(&ini,		ROOT_SECTION, "LogTimeFormat"			,cfg->logtime					,NULL);
+	iniSetString(&ini,		ROOT_SECTION, "LogTimeFormat"			,cfg->logtime					,style);
 	if(cfg->temp_dir[0])
-	iniSetString(&ini,		ROOT_SECTION, "TempDirectory"			,cfg->temp_dir					,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "OutgoingSemaphore"		,cfg->outgoing_sem				,NULL);
-	iniSetBytes(&ini,		ROOT_SECTION, "BundleSize"				,1,cfg->maxbdlsize				,NULL);
-	iniSetBytes(&ini,		ROOT_SECTION, "PacketSize"				,1,cfg->maxpktsize				,NULL);
-	iniSetStringList(&ini,	ROOT_SECTION, "SysopAliasList", ","		,cfg->sysop_alias_list			,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "ZoneBlind"				,cfg->zone_blind				,NULL);
-	iniSetShortInt(&ini,	ROOT_SECTION, "ZoneBlindThreshold"		,cfg->zone_blind_threshold		,NULL);
-	iniSetLogLevel(&ini,	ROOT_SECTION, "LogLevel"				,cfg->log_level					,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "CheckPathsForDupes"		,cfg->check_path				,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "StrictPacketPasswords"	,cfg->strict_packet_passwords	,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "SecureEchomail"			,cfg->secure_echomail			,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "EchomailNotify"			,cfg->echomail_notify			,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "StripLineFeeds"			,cfg->strip_lf					,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "ConvertTearLines"		,cfg->convert_tear				,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "FuzzyNetmailZones"		,cfg->fuzzy_zone				,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "BinkleyStyleOutbound"	,cfg->flo_mailer				,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "TruncateBundles"			,cfg->trunc_bundles				,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "AreaAddFromEcholistsOnly",cfg->add_from_echolists_only	,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "AutoAddSubs"				,cfg->auto_add_subs				,NULL);
-	iniSetDuration(&ini,	ROOT_SECTION, "BsyTimeout"				,cfg->bsy_timeout				,NULL);
-	iniSetDuration(&ini,	ROOT_SECTION, "BsoLockDelay"			,cfg->bso_lock_delay			,NULL);
-	iniSetLongInt(&ini,		ROOT_SECTION, "BsoLockAttempts"			,cfg->bso_lock_attempts			,NULL);
-	iniSetDuration(&ini,	ROOT_SECTION, "MaxEchomailAge"			,cfg->max_echomail_age			,NULL);
-	iniSetDuration(&ini,	ROOT_SECTION, "MaxNetmailAge"			,cfg->max_netmail_age			,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "RelayFilteredMsgs"		,cfg->relay_filtered_msgs		,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "KillEmptyNetmail",		cfg->kill_empty_netmail			,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "DeleteNetmail",			cfg->delete_netmail				,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "DeletePackets",			cfg->delete_packets				,NULL);
+	iniSetString(&ini,		ROOT_SECTION, "TempDirectory"			,cfg->temp_dir					,style);
+	iniSetString(&ini,		ROOT_SECTION, "OutgoingSemaphore"		,cfg->outgoing_sem				,style);
+	iniSetBytes(&ini,		ROOT_SECTION, "BundleSize"				,1,cfg->maxbdlsize				,style);
+	iniSetBytes(&ini,		ROOT_SECTION, "PacketSize"				,1,cfg->maxpktsize				,style);
+	iniSetStringList(&ini,	ROOT_SECTION, "SysopAliasList", ","		,cfg->sysop_alias_list			,style);
+	iniSetBool(&ini,		ROOT_SECTION, "ZoneBlind"				,cfg->zone_blind				,style);
+	iniSetShortInt(&ini,	ROOT_SECTION, "ZoneBlindThreshold"		,cfg->zone_blind_threshold		,style);
+	iniSetLogLevel(&ini,	ROOT_SECTION, "LogLevel"				,cfg->log_level					,style);
+	iniSetBool(&ini,		ROOT_SECTION, "CheckPathsForDupes"		,cfg->check_path				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "StrictPacketPasswords"	,cfg->strict_packet_passwords	,style);
+	iniSetBool(&ini,		ROOT_SECTION, "SecureEchomail"			,cfg->secure_echomail			,style);
+	iniSetBool(&ini,		ROOT_SECTION, "EchomailNotify"			,cfg->echomail_notify			,style);
+	iniSetBool(&ini,		ROOT_SECTION, "StripLineFeeds"			,cfg->strip_lf					,style);
+	iniSetBool(&ini,		ROOT_SECTION, "StripSoftCRs"			,cfg->strip_soft_cr				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "UseOutboxes"				,cfg->use_outboxes				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "AutoUTF8"				,cfg->auto_utf8					,style);
+	iniSetBool(&ini,		ROOT_SECTION, "ConvertTearLines"		,cfg->convert_tear				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "FuzzyNetmailZones"		,cfg->fuzzy_zone				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "BinkleyStyleOutbound"	,cfg->flo_mailer				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "TruncateBundles"			,cfg->trunc_bundles				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "AreaAddFromEcholistsOnly",cfg->add_from_echolists_only	,style);
+	iniSetBool(&ini,		ROOT_SECTION, "AutoAddSubs"				,cfg->auto_add_subs				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "AutoAddToAreaFile"		,cfg->auto_add_to_areafile		,style);
+	iniSetDuration(&ini,	ROOT_SECTION, "BsyTimeout"				,cfg->bsy_timeout				,style);
+	iniSetDuration(&ini,	ROOT_SECTION, "BsoLockDelay"			,cfg->bso_lock_delay			,style);
+	iniSetLongInt(&ini,		ROOT_SECTION, "BsoLockAttempts"			,cfg->bso_lock_attempts			,style);
+	iniSetDuration(&ini,	ROOT_SECTION, "MaxEchomailAge"			,cfg->max_echomail_age			,style);
+	iniSetDuration(&ini,	ROOT_SECTION, "MaxNetmailAge"			,cfg->max_netmail_age			,style);
+	iniSetBool(&ini,		ROOT_SECTION, "RelayFilteredMsgs"		,cfg->relay_filtered_msgs		,style);
+	iniSetBool(&ini,		ROOT_SECTION, "KillEmptyNetmail",		cfg->kill_empty_netmail			,style);
+	iniSetBool(&ini,		ROOT_SECTION, "DeleteNetmail",			cfg->delete_netmail				,style);
+	iniSetBool(&ini,		ROOT_SECTION, "DeletePackets",			cfg->delete_packets				,style);
 
-	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailDestAddr"	,cfg->ignore_netmail_dest_addr	,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailSentAttr"	,cfg->ignore_netmail_sent_attr	,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailKillAttr"	,cfg->ignore_netmail_kill_attr	,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailRecvAttr"	,cfg->ignore_netmail_recv_attr	,NULL);
-	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailLocalAttr"	,cfg->ignore_netmail_local_attr	,NULL);
-	iniSetString(&ini,		ROOT_SECTION, "DefaultRecipient"		,cfg->default_recipient			,NULL);
-
-	style.key_prefix = "\t";
+	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailDestAddr"	,cfg->ignore_netmail_dest_addr	,style);
+	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailSentAttr"	,cfg->ignore_netmail_sent_attr	,style);
+	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailKillAttr"	,cfg->ignore_netmail_kill_attr	,style);
+	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailRecvAttr"	,cfg->ignore_netmail_recv_attr	,style);
+	iniSetBool(&ini,		ROOT_SECTION, "IgnoreNetmailLocalAttr"	,cfg->ignore_netmail_local_attr	,style);
+	iniSetString(&ini,		ROOT_SECTION, "DefaultRecipient"		,cfg->default_recipient			,style);
 
 	/******************/
 	/* BinkP Settings */
 	/******************/
-	iniSetString(&ini,		"BinkP"	,	"Capabilities"				,cfg->binkp_caps				,&style);
-	iniSetString(&ini,		"BinkP"	,	"Sysop"						,cfg->binkp_sysop				,&style);
+	iniSetString(&ini,		"BinkP"	,	"Capabilities"				,cfg->binkp_caps				,style);
+	iniSetString(&ini,		"BinkP"	,	"Sysop"						,cfg->binkp_sysop				,style);
+	iniSetBool(&ini,		"BinkP"	,	"PlainAuthOnly"				,cfg->binkp_plainAuthOnly		,style);
+	iniSetBool(&ini,		"BinkP"	,	"PlainTextOnly"				,cfg->binkp_plainTextOnly		,style);
 
 	/******************/
 	/* Archive Types: */
@@ -554,10 +592,10 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		if(arc->name[0] == 0)
 			continue;
 		SAFEPRINTF(section,"archive:%s", arc->name);
-		iniSetString(&ini,	section,	"Sig"			,arc->hexid		,&style);
-		iniSetInteger(&ini,	section,	"SigOffset"		,arc->byteloc	,&style);
-		iniSetString(&ini,	section,	"Pack"			,arc->pack		,&style);
-		iniSetString(&ini,	section,	"Unpack"		,arc->unpack	,&style);
+		iniSetString(&ini,	section,	"Sig"			,arc->hexid		,style);
+		iniSetInteger(&ini,	section,	"SigOffset"		,arc->byteloc	,style);
+		iniSetString(&ini,	section,	"Pack"			,arc->pack		,style);
+		iniSetString(&ini,	section,	"Unpack"		,arc->unpack	,style);
 	}
 
 	/****************/
@@ -569,39 +607,40 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		SAFEPRINTF(section,"node:%s", faddrtoa(&node->addr));
 		if(node->domain[0])
 			sprintf(section + strlen(section), "@%s", node->domain);
-		iniSetString(&ini	,section,	"Name"			,node->name			,&style);
-		iniSetString(&ini	,section,	"Comment"		,node->comment		,&style);
-		iniSetString(&ini	,section,	"Archive"		,node->archive == SBBSECHO_ARCHIVE_NONE ? "None" : node->archive->name, &style);
-		iniSetEnum(&ini		,section,	"PacketType"	,pktTypeStringList, node->pkt_type, &style);
-		iniSetString(&ini	,section,	"PacketPwd"		,node->pktpwd		,&style);
-		iniSetBool(&ini		,section,	"AreaFix"		,node->areafix		,&style);
-		iniSetString(&ini	,section,	"AreaFixPwd"	,node->password		,&style);
-		iniSetString(&ini	,section,	"SessionPwd"	,node->sesspwd		,&style);
-		iniSetString(&ini	,section,	"TicFilePwd"	,node->ticpwd		,&style);
-		iniSetString(&ini	,section,	"Inbox"			,node->inbox		,&style);
-		iniSetString(&ini	,section,	"Outbox"		,node->outbox		,&style);
-		iniSetBool(&ini		,section,	"Passive"		,node->passive		,&style);
-		iniSetBool(&ini		,section,	"Direct"		,node->direct		,&style);
-		iniSetBool(&ini		,section,	"Notify"		,node->send_notify	,&style);
-		iniSetStringList(&ini,section,	"Keys", ","		,node->keys			,&style);
-		iniSetEnum(&ini		,section,	"Status"		,mailStatusStringList, node->status, &style);
+		iniSetString(&ini	,section,	"Name"			,node->name			,style);
+		iniSetString(&ini	,section,	"Comment"		,node->comment		,style);
+		iniSetString(&ini	,section,	"Archive"		,node->archive == SBBSECHO_ARCHIVE_NONE ? "None" : node->archive->name, style);
+		iniSetEnum(&ini		,section,	"PacketType"	,pktTypeStringList, node->pkt_type, style);
+		iniSetString(&ini	,section,	"PacketPwd"		,node->pktpwd		,style);
+		iniSetBool(&ini		,section,	"AreaFix"		,node->areafix		,style);
+		iniSetString(&ini	,section,	"AreaFixPwd"	,node->password		,style);
+		iniSetString(&ini	,section,	"SessionPwd"	,node->sesspwd		,style);
+		iniSetString(&ini	,section,	"TicFilePwd"	,node->ticpwd		,style);
+		iniSetString(&ini	,section,	"Inbox"			,node->inbox		,style);
+		iniSetString(&ini	,section,	"Outbox"		,node->outbox		,style);
+		iniSetBool(&ini		,section,	"Passive"		,node->passive		,style);
+		iniSetBool(&ini		,section,	"Direct"		,node->direct		,style);
+		iniSetBool(&ini		,section,	"Notify"		,node->send_notify	,style);
+		iniSetStringList(&ini,section,	"Keys", ","		,node->keys			,style);
+		iniSetEnum(&ini		,section,	"Status"		,mailStatusStringList, node->status, style);
 		if(node->route.zone)
-			iniSetString(&ini,section,	"Route"			,faddrtoa(&node->route), &style);
+			iniSetString(&ini,section,	"Route"			,faddrtoa(&node->route), style);
 		else
 			iniRemoveKey(&ini,section,	"Route");
 		if(node->local_addr.zone)
-			iniSetString(&ini,section,	"LocalAddress"	,faddrtoa(&node->local_addr), &style);
+			iniSetString(&ini,section,	"LocalAddress"	,faddrtoa(&node->local_addr), style);
 		else
 			iniRemoveKey(&ini,section,	"LocalAddress");
-		iniSetStringList(&ini, section, "GroupHub", ","	,node->grphub		,&style);
+		iniSetStringList(&ini, section, "GroupHub", ","	,node->grphub		,style);
 		/* BinkP-related */
-		iniSetString(&ini	,section,	"BinkpHost"		,node->binkp_host	,&style);
-		iniSetShortInt(&ini	,section,	"BinkpPort"		,node->binkp_port	,&style);
-		iniSetBool(&ini		,section,	"BinkpPoll"		,node->binkp_poll	,&style);
-		iniSetBool(&ini		,section,	"BinkpPlainAuthOnly",node->binkp_plainAuthOnly, &style);
-		iniSetBool(&ini		,section,	"BinkpAllowPlainAuth",node->binkp_allowPlainAuth, &style);
-		iniSetBool(&ini		,section,	"BinkpAllowPlainText",node->binkp_allowPlainText, &style);
-		iniSetString(&ini	,section,	"BinkpSourceAddress",node->binkp_src, &style);
+		iniSetString(&ini	,section,	"BinkpHost"		,node->binkp_host	,style);
+		iniSetShortInt(&ini	,section,	"BinkpPort"		,node->binkp_port	,style);
+		iniSetBool(&ini		,section,	"BinkpPoll"		,node->binkp_poll	,style);
+		iniSetBool(&ini		,section,	"BinkpPlainAuthOnly",node->binkp_plainAuthOnly, style);
+		iniSetBool(&ini		,section,	"BinkpAllowPlainAuth",node->binkp_allowPlainAuth, style);
+		iniSetBool(&ini		,section,	"BinkpAllowPlainText",node->binkp_allowPlainText, style);
+		iniSetBool(&ini		,section,	"BinkpTLS",node->binkp_tls, style);
+		iniSetString(&ini	,section,	"BinkpSourceAddress",node->binkp_src, style);
 	}
 
 	/**************/
@@ -613,11 +652,11 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		if(elist->listpath[0] == 0)
 			continue;
 		SAFEPRINTF(section,"echolist:%s", elist->listpath);
-		iniSetString(&ini	,section,	"Hub"		,faddrtoa(&elist->hub)				,&style);
-		iniSetString(&ini	,section,	"AreaMgr"	,elist->areamgr						,&style);
-		iniSetString(&ini	,section,	"Pwd"		,elist->password					,&style);
-		iniSetBool(&ini		,section,	"Fwd"		,elist->forward						,&style);
-		iniSetStringList(&ini,section,	"Keys", ","	,elist->keys						,&style);
+		iniSetString(&ini	,section,	"Hub"		,faddrtoa(&elist->hub)				,style);
+		iniSetString(&ini	,section,	"AreaMgr"	,elist->areamgr						,style);
+		iniSetString(&ini	,section,	"Pwd"		,elist->password					,style);
+		iniSetBool(&ini		,section,	"Fwd"		,elist->forward						,style);
+		iniSetStringList(&ini,section,	"Keys", ","	,elist->keys						,style);
 	}
 
 	/* Domains */
@@ -627,11 +666,22 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		if(dom->name[0] == 0)
 			continue;
 		SAFEPRINTF(section, "domain:%s", dom->name);
-		iniSetIntList(&ini,	section,	"Zones", ",",	dom->zone_list, dom->zone_count, &style);
-		iniSetString(&ini,	section,	"DNSSuffix",	dom->dns_suffix, &style);
+		iniSetIntList(&ini,	section,	"Zones", ",",	dom->zone_list, dom->zone_count, style);
+		iniSetString(&ini,	section,	"DNSSuffix",	dom->dns_suffix, style);
 		if(strcmp(cfg->outbound, dom->root) != 0)
-			iniSetString(&ini,	section,	"OutboundRoot",	dom->root, &style);
-		iniSetString(&ini,	section,	"NodeList",		dom->nodelist, &style);
+			iniSetString(&ini,	section,	"OutboundRoot",	dom->root, style);
+		iniSetString(&ini,	section,	"NodeList",		dom->nodelist, style);
+	}
+
+	/* Robots */
+	iniRemoveSections(&ini, "robot:");
+	for(unsigned i=0; i < cfg->robot_count; i++) {
+		struct robot* bot = &cfg->robot_list[i];
+		if(bot->name[0] == 0)
+			continue;
+		SAFEPRINTF(section, "robot:%s", bot->name);
+		iniSetString(&ini, section, "SemFile", bot->semfile, style);
+		iniSetHexInt(&ini, section, "attr", bot->attr, style);
 	}
 
 	iniWriteFile(fp, ini);

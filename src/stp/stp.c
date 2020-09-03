@@ -2,7 +2,7 @@
 
 /* Synchronet X/Y/ZMODEM Transfer Protocols */
 
-/* $Id$ */
+/* $Id: stp.c,v 1.7 2005/09/05 21:54:11 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

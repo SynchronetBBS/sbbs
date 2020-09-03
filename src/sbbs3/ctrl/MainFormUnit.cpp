@@ -1,6 +1,6 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: MainFormUnit.cpp,v 1.213 2020/04/17 20:38:56 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -85,7 +85,7 @@
 TMainForm *MainForm;
 
 #define LOG_TIME_FMT "  m/d  hh:mm:ssa/p"
-#define STATUSBAR_LAST_PANEL  5
+#define STATUSBAR_LAST_PANEL  6
 
 /* Service functions are NT-only, must call dynamically :-( */
 typedef WINADVAPI SC_HANDLE (WINAPI *OpenSCManager_t)(LPCTSTR,LPCTSTR,DWORD);
@@ -153,6 +153,8 @@ link_list_t ftp_log_list;
 link_list_t web_log_list;
 link_list_t services_log_list;
 link_list_t	login_attempt_list;
+
+bool clearLoginAttemptList = false;
 
 DWORD	MaxLogLen=20000;
 int     threads=1;
@@ -785,7 +787,7 @@ static void recycle(void* cbdata)
         );
     if(fp!=NULL)
         fclose(fp);
-	MainForm->SetLogControls();
+	MainForm->SetControls();
 }
 //---------------------------------------------------------------------------
 __fastcall TMainForm::TMainForm(TComponent* Owner)
@@ -1002,7 +1004,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     long bbs_ver = bbs_ver_num();
     if(bbs_ver != VERSION_HEX) {
         char str[128];
-        sprintf(str,"Incorrect SBBS.DLL Version (%lX)",bbs_ver);
+        sprintf(str,"Incorrect SBBS.DLL Version (%lX, expected %lx)", bbs_ver, VERSION_HEX);
     	Application->MessageBox(str,"ERROR",MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
     }
@@ -1428,7 +1430,7 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
     PROCESS_INFORMATION process_info;
     startup_info.cb=sizeof(startup_info);
     startup_info.lpTitle="Synchronet Configuration Utility";
-	CreateProcess(
+	if(!CreateProcess(
 		NULL,			// pointer to name of executable module
 		str,  			// pointer to command line string
 		NULL,  			// process security attributes
@@ -1439,7 +1441,11 @@ void __fastcall TMainForm::BBSConfigureMenuItemClick(TObject *Sender)
 		cfg.ctrl_dir,	// pointer to current directory name
 		&startup_info,  // pointer to STARTUPINFO
 		&process_info  	// pointer to PROCESS_INFORMATION
-		);
+		))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " executing " + str).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
 	// Resource leak if you don't close these:
 	CloseHandle(process_info.hThread);
 	CloseHandle(process_info.hProcess);
@@ -1636,7 +1642,7 @@ void __fastcall TMainForm::WriteFont(AnsiString subkey, TFont* Font)
     delete Registry;
 }
 
-void __fastcall TMainForm::SetLogControls(void)
+void __fastcall TMainForm::SetControls(void)
 {
     TelnetForm->LogLevelUpDown->Position=bbs_startup.log_level;
     TelnetForm->LogLevelText->Caption=LogLevelDesc[bbs_startup.log_level];
@@ -1648,7 +1654,13 @@ void __fastcall TMainForm::SetLogControls(void)
     WebForm->LogLevelText->Caption=LogLevelDesc[web_startup.log_level];
     ServicesForm->LogLevelUpDown->Position=services_startup.log_level;
     ServicesForm->LogLevelText->Caption=LogLevelDesc[services_startup.log_level];
+
+    if(cfg.total_faddrs)
+        FidonetMenuItem->Visible = true;
+    else
+        FidonetMenuItem->Visible = false;
 }
+
 void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 {
     bool	TelnetFormFloating=false;
@@ -2345,8 +2357,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
                 
     ServiceStatusTimer->Enabled=true;
 
-
-	SetLogControls();
+	SetControls();
 	
     if(!Application->Active)	/* Starting up minimized? */
     	FormMinimize(Sender);   /* Put icon in systray */
@@ -2954,6 +2965,11 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
         sysop_available = ChatToggle->Checked;
         set_sysop_availability(&cfg, sysop_available);
     }
+	
+	if(clearLoginAttemptList) {
+		loginAttemptListClear(&login_attempt_list);
+		clearLoginAttemptList = false;
+	}
 
     if(!start)
         start=time(NULL);
@@ -2964,47 +2980,45 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
         sprintf(days,"%u days ",up/(24*60*60));
         up%=(24*60*60);
     }
-    sprintf(str,"Up: %s%u:%02u"
-        ,days
-        ,up/(60*60)
-        ,(up/60)%60
-        );
-    AnsiString Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text=Str;
-
-    sprintf(str,"Threads: %u",threads);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[0]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[0]->Text=Str;
-
-    sprintf(str,"Sockets: %u",sockets);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[1]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[1]->Text=Str;
-
-    sprintf(str,"Clients: %u",clients);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[2]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[2]->Text=Str;
-
-    sprintf(str,"Served: %u",total_clients);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[3]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[3]->Text=Str;
-
-    sprintf(str,"Errors: %u",errors);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[4]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[4]->Text=Str;
-
-#if 0
-    THeapStatus hp=GetHeapStatus();
-    sprintf(str,"Mem Used: %lu bytes",hp.TotalAllocated);
-    Str=AnsiString(str);
-    if(MainForm->StatusBar->Panels->Items[5]->Text!=Str)
-		MainForm->StatusBar->Panels->Items[5]->Text=Str;
-#endif
+		
+	for(int i = 0; i <= STATUSBAR_LAST_PANEL; i++) {
+		switch(i) {
+			case 0:
+				sprintf(str,"Threads: %u",threads);
+				break;
+			case 1:
+				sprintf(str,"Sockets: %u",sockets);
+				break;
+			case 2:
+				sprintf(str,"Clients: %u",clients);
+				break;
+			case 3:
+			    sprintf(str,"Served: %u",total_clients);
+				break;
+			case 4:
+				sprintf(str,"Failed: %u",loginAttemptListCount(&login_attempt_list));
+				break;
+			case 5:
+				sprintf(str,"Errors: %u",errors);
+				break;
+			default:
+				sprintf(str,"Up: %s%u:%02u"
+					,days
+					,up/(60*60)
+					,(up/60)%60
+					);
+		}
+		TStatusPanel* panel = MainForm->StatusBar->Panels->Items[i];	
+		
+		AnsiString Str = AnsiString(str);
+		if(panel->Text != Str) {
+			panel->Text = Str;
+//			panel->Bevel = pbRaised;
+		} else {
+//			panel->Bevel = pbLowered;
+		}
+	}
+	
     if(TrayIcon->Visible) {
         /* Animate TrayIcon when in use */
         AnsiString NumClients;
@@ -3112,6 +3126,39 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
             ,((TMenuItem*)Sender)->Hint.c_str()
         );
     ViewFile(filename,((TMenuItem*)Sender)->Caption);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainForm::RunJSClick(TObject *Sender)
+{
+	char    cmdline[MAX_PATH+1];
+
+    SAFEPRINTF2(cmdline,"%sjsexec.exe -p %s"
+        ,MainForm->cfg.exec_dir
+        ,((TMenuItem*)Sender)->Hint.c_str()
+        );
+    STARTUPINFO startup_info={0};
+    PROCESS_INFORMATION process_info;
+    startup_info.cb=sizeof(startup_info);
+    startup_info.lpTitle = cmdline;
+	if(!CreateProcess(
+		NULL,			// pointer to name of executable module
+		cmdline,        // pointer to command line string
+		NULL,  			// process security attributes
+		NULL,   		// thread security attributes
+		FALSE, 			// handle inheritance flag
+		0,              // creation flags
+        NULL,  			// pointer to new environment block
+		cfg.ctrl_dir,	// pointer to current directory name
+		&startup_info,  // pointer to STARTUPINFO
+		&process_info  	// pointer to PROCESS_INFORMATION
+		))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " executing " + cmdline).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
+	// Resource leak if you don't close these:
+	CloseHandle(process_info.hThread);
+	CloseHandle(process_info.hProcess);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::UserListExecute(TObject *Sender)
@@ -3370,7 +3417,7 @@ void __fastcall TMainForm::reload_config(void)
     	SoundToggle->Checked=false;
     else
     	SoundToggle->Checked=true;
-	SetLogControls();
+	SetControls();
 }
 //---------------------------------------------------------------------------
 
@@ -3860,10 +3907,10 @@ void __fastcall TMainForm::ClearErrorsExecute(TObject *Sender)
     node_t node;
     for(int i=0;i<cfg.sys_nodes;i++) {
     	int file;
-       	if(NodeForm->getnodedat(i+1,&node,&file))
+       	if(NodeForm->getnodedat(i+1,&node, /*lockit: */true))
             break;
         node.errors=0;
-        if(NodeForm->putnodedat(i+1,&node,file))
+        if(NodeForm->putnodedat(i+1,&node))
             break;
     }
 }
@@ -3904,6 +3951,108 @@ void __fastcall TMainForm::LogPopupCopyClick(TObject *Sender)
 {
     TRichEdit* Log = (TRichEdit*)LogPopupMenu->PopupComponent;
     Log->CopyToClipboard();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::ClearFailedLoginsPopupMenuItemClick(
+      TObject *Sender)
+{
+    clearLoginAttemptList = true;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::RefreshLogClick(TObject *Sender)
+{
+    TRichEdit* Log = (TRichEdit*)LogPopupMenu->PopupComponent;
+    Log->Refresh();
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainForm::FidonetConfigureMenuItemClick(TObject *Sender)
+{
+	char str[MAX_PATH + 1];
+
+    SAFEPRINTF(str, "%sechocfg.exe", cfg.exec_dir);
+    STARTUPINFO startup_info={0};
+    PROCESS_INFORMATION process_info;
+    startup_info.cb=sizeof(startup_info);
+    startup_info.lpTitle="Fidonet Configuration";
+	if(!CreateProcess(
+		NULL,			// pointer to name of executable module
+		str,  			// pointer to command line string
+		NULL,  			// process security attributes
+		NULL,   		// thread security attributes
+		FALSE, 			// handle inheritance flag
+		0,              // creation flags
+        NULL,  			// pointer to new environment block
+		cfg.ctrl_dir,	// pointer to current directory name
+		&startup_info,  // pointer to STARTUPINFO
+		&process_info  	// pointer to PROCESS_INFORMATION
+		))
+       	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " executing " + str).c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
+	// Resource leak if you don't close these:
+	CloseHandle(process_info.hThread);
+	CloseHandle(process_info.hProcess);
+}
+//---------------------------------------------------------------------------
+
+
+
+void __fastcall TMainForm::FidonetPollMenuItemClick(TObject *Sender)
+{
+	char path[MAX_PATH + 1];
+
+    SAFEPRINTF(path, "%sbinkpoll.now", cfg.data_dir);
+    int file=_sopen(path,O_CREAT|O_TRUNC|O_WRONLY
+	                ,SH_DENYRW,S_IREAD|S_IWRITE);
+    if (file!=-1)
+        close(file);
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TMainForm::FileRunJSMenuItemClick(TObject *Sender)
+{
+	TOpenDialog* dlg=new TOpenDialog((TComponent*)Sender);
+
+    dlg->Options << ofNoChangeDir;
+    dlg->Filter = 	"JavaScript files (*.js)|*.js";
+    dlg->InitialDir=cfg.exec_dir;
+    if(dlg->Execute()==true) {
+    	char    cmdline[MAX_PATH+1];
+        SAFEPRINTF2(cmdline,"%sjsexec.exe -p %s"
+            ,MainForm->cfg.exec_dir
+            ,dlg->FileName.c_str()
+            );
+        STARTUPINFO startup_info={0};
+        PROCESS_INFORMATION process_info;
+        startup_info.cb=sizeof(startup_info);
+        startup_info.lpTitle = cmdline;
+    	if(!CreateProcess(
+    		NULL,			// pointer to name of executable module
+    		cmdline,        // pointer to command line string
+    		NULL,  			// process security attributes
+    		NULL,   		// thread security attributes
+    		FALSE, 			// handle inheritance flag
+    		0,              // creation flags
+            NULL,  			// pointer to new environment block
+    		cfg.ctrl_dir,	// pointer to current directory name
+    		&startup_info,  // pointer to STARTUPINFO
+    		&process_info  	// pointer to PROCESS_INFORMATION
+    		))
+           	Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+                " executing " + cmdline).c_str()
+                ,"ERROR"
+                ,MB_OK|MB_ICONEXCLAMATION);
+    	// Resource leak if you don't close these:
+    	CloseHandle(process_info.hThread);
+    	CloseHandle(process_info.hProcess);
+    }
+    delete dlg;
+
 }
 //---------------------------------------------------------------------------
 

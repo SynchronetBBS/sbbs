@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: ftelnet_external.inc,v 1.5 2018/03/18 20:30:51 ree Exp $ -->
 
 <td class="main" valign="top"><br />
     <br />

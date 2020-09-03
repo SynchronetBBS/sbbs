@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: xptime.c,v 1.4 2018/02/14 20:44:00 deuce Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 
 	printf("\n");
 	DESCRIBE_COMPILER(str);
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.4 $", "%*s %s", revision);
 
 	printf("Rev %s Built " __DATE__ " " __TIME__ " with %s\n\n", revision, str);
 

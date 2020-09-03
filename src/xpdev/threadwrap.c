@@ -2,7 +2,7 @@
 
 /* Thread-related cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: threadwrap.c,v 1.37 2019/02/18 04:04:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -112,7 +112,7 @@ pthread_mutex_t DLLCALL pthread_mutex_initializer_np(BOOL recursive)
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	if(recursive)
-#if defined(__linux__) && !defined(__USE_UNIX98)
+#if defined(__linux__) && defined(PTHREAD_MUTEX_RECURSIVE_NP) && !defined(__USE_UNIX98)
 		pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE_NP);
 #else
 		pthread_mutexattr_settype(&attr,PTHREAD_MUTEX_RECURSIVE);

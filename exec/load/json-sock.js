@@ -1,6 +1,6 @@
 //load("synchronet-json.js");
 /* socket mod version */
-Socket.prototype.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
+Socket.prototype.VERSION = "$Revision: 1.18 $".replace(/\$/g,'').split(' ')[1];
 /* round trip packet time */
 Socket.prototype.latency = 0;
 /* one way (latency / 2) */

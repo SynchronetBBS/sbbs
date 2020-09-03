@@ -1,3 +1,5 @@
+// $Id: DDScanMsgs.js,v 1.9 2020/05/23 23:26:55 nightfox Exp $
+
 // This script is to be executed for the 'Scan Msgs' loadable module, configured
 // in SCFG in System > Loadable Modules.
 //

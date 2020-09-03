@@ -2,7 +2,7 @@
 
 /* Synchronet External X/Y/ZMODEM Transfer Protocols */
 
-/* $Id$ */
+/* $Id: sexyz.c,v 2.10 2020/03/31 07:14:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -473,7 +473,6 @@ static int recv_buffer(int timeout /* seconds */)
 #endif
 							FD_SET(sock,&socket_set);
 						tv.tv_sec=timeout;
-						timeout=0;
 						tv.tv_usec=0;
 						if((i=select(sock+1,&socket_set,NULL,NULL,&tv))<1) {
 							if(i==SOCKET_ERROR) {
@@ -483,8 +482,10 @@ static int recv_buffer(int timeout /* seconds */)
 							else
 								lprintf(LOG_WARNING,"Receive timeout (%u seconds)", timeout);
 						}
-						else
+						else {
+							timeout=0;
 							continue;
+						}
 					}
 					return 0;
 				default:
@@ -1123,7 +1124,8 @@ static int receive_files(char** fname_list, int fnames)
 				for(errors=0;errors<=xm.max_errors && !xm.cancelled;errors++) {
 					xmodem_put_nak(&xm, /* expected_block: */ 0);
 					if(xmodem_get_block(&xm, block, /* expected_block: */ 0) == SUCCESS) {
-						send_byte(NULL,ACK,10);
+						if(!(mode&GMODE))
+							send_byte(NULL,ACK,10);
 						break; 
 					} 
 					if(errors+1>xm.max_errors/3 && mode&CRC && !(mode&GMODE)) {
@@ -1412,6 +1414,7 @@ static int receive_files(char** fname_list, int fnames)
 
 void bail(int code)
 {
+	lprintf(LOG_DEBUG, "Exiting with error level %d", code);
 	if(pause_on_exit || (pause_on_abend && code!=0)) {
 		printf("Hit enter to continue...");
 		getchar();
@@ -1538,13 +1541,13 @@ int main(int argc, char **argv)
 	statfp=stdout;
 #endif
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 2.10 $", "%*s %s", revision);
 
 	fprintf(statfp,"\nSynchronet External X/Y/ZMODEM  v%s-%s"
 		"  Copyright %s Rob Swindell\n\n"
 		,revision
 		,PLATFORM_DESC
-		,__DATE__+7
+		,&__DATE__[7]
 		);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL,flush);
@@ -1630,7 +1633,7 @@ int main(int argc, char **argv)
 	else if(outbuf_size > MAX_OUTBUF_SIZE)
 		outbuf_size = MAX_OUTBUF_SIZE;
 	
-	fprintf(statfp,"Output buffer size: %lu\n", outbuf_size);
+	lprintf(LOG_DEBUG, "Output buffer size: %lu", outbuf_size);
 	RingBufInit(&outbuf, outbuf_size);
 
 #if !defined(RINGBUF_EVENT)
@@ -1909,6 +1912,7 @@ int main(int argc, char **argv)
 	}
 
 	if((dszlog=getenv("DSZLOG"))!=NULL) {
+		lprintf(LOG_DEBUG, "Logging to %s", dszlog);
 		if((logfp=fopen(dszlog,"w"))==NULL) {
 			lprintf(LOG_WARNING,"Error %d opening DSZLOG file: %s",errno,dszlog);
 			bail(-1); 
@@ -1955,9 +1959,8 @@ int main(int argc, char **argv)
 /*	sem_post(outbuf.sem);
 	sem_post(outbuf.highwater_sem); */
 
-	fprintf(statfp,"Exiting - Error level: %d, flows: %u, select_errors=%u"
+	lprintf(LOG_INFO, "Exiting - Error level: %d, flows: %u, select_errors=%u"
 		,retval, flows, select_errors);
-	fprintf(statfp,"\n");
 
 	bail(retval);
 	return retval;

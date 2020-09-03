@@ -1,6 +1,6 @@
 /* Synchronet (oh, so old) data access routines */
 
-/* $Id$ */
+/* $Id: data.cpp,v 1.32 2020/04/27 07:42:23 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -160,8 +160,8 @@ extern "C" time_t DLLCALL getnextevent(scfg_t* cfg, event_t* event)
 	time_t	tmptime;
     struct  tm tm, last_tm;
 
-	if(localtime_r(&now,&tm)==NULL)
-		memset(&tm,0,sizeof(tm));
+	if(localtime_r(&now,&tm) == NULL)
+		return 0;
 
 	for(i=0;i<cfg->total_events;i++) {
 		if(!cfg->event[i]->node || cfg->event[i]->node>cfg->sys_nodes
@@ -179,9 +179,11 @@ extern "C" time_t DLLCALL getnextevent(scfg_t* cfg, event_t* event)
 		tm.tm_sec=0;
 		tm.tm_isdst=-1;	/* Do not adjust for DST */
 		thisevent=mktime(&tm);
+		if(thisevent == -1)
+			continue;
 
 		tmptime=cfg->event[i]->last;
-		if(localtime_r(&tmptime,&last_tm)==NULL)
+		if(localtime_r(&tmptime,&last_tm) == NULL)
 			memset(&last_tm,0,sizeof(last_tm));
 
 		if(tm.tm_mday==last_tm.tm_mday && tm.tm_mon==last_tm.tm_mon)

@@ -1,6 +1,6 @@
 /* Synchronet high-level string i/o routines */
 
-/* $Id$ */
+/* $Id: str.cpp,v 1.88 2020/04/23 02:40:19 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -98,14 +98,14 @@ void sbbs_t::userlist(long mode)
 			}
 			sprintf(name,"%s #%d",user.alias,i);
 			sprintf(line[j],text[UserListFmt],name
-				,cfg.sys_misc&SM_LISTLOC ? user.location : user.ipaddr
+				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
 				,unixtodstr(&cfg,user.laston,tmp)
 				,user.modem); 
 		}
 		else {
 			sprintf(name,"%s #%u",user.alias,i);
 			bprintf(text[UserListFmt],name
-				,cfg.sys_misc&SM_LISTLOC ? user.location : user.ipaddr
+				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
 				,unixtodstr(&cfg,user.laston,tmp)
 				,user.modem); 
 		}
@@ -694,14 +694,15 @@ bool sbbs_t::inputnstime(time_t *dt)
 /*****************************************************************************/
 bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 {
-	char c,d,first[128],last[128],sysop[41],sysname[41],*p;
+	char first[128],last[128],sysop[41],sysname[41],*p;
+	int  c, d;
 	char alias[LEN_ALIAS+1], name[LEN_NAME+1], handle[LEN_HANDLE+1];
 	char pass[LEN_PASS+1];
 
 	SAFECOPY(pass,passwd);
 	strupr(pass);
 
-	if(strlen(pass)<4) {
+	if(strlen(pass) < MIN_PASS_LEN) {
 		bputs(text[PasswordTooShort]);
 		return(false); 
 	}
@@ -855,7 +856,6 @@ char* sbbs_t::datestr(time_t t)
 void sbbs_t::sys_info()
 {
 	char	tmp[128];
-	char	path[MAX_PATH+1];
 	uint	i;
 	stats_t stats;
 
@@ -881,15 +881,15 @@ void sbbs_t::sys_info()
 	bprintf(text[SiTotalTime],ultoac(stats.timeon,tmp));
 	bprintf(text[SiTimeToday],ultoac(stats.ttoday,tmp));
 	ver();
-	SAFEPRINTF(path, "%ssystem.msg", cfg.text_dir);
-	if(fexistcase(path) && text[ViewSysInfoFileQ][0] && yesno(text[ViewSysInfoFileQ])) {
+	const char* fname = "../system";
+	if(menu_exists(fname) && text[ViewSysInfoFileQ][0] && yesno(text[ViewSysInfoFileQ])) {
 		CLS;
-		printfile(path,0); 
+		menu(fname);
 	}
-	SAFEPRINTF(path, "%smenu/logon.asc", cfg.text_dir);
-	if(fexistcase(path) && text[ViewLogonMsgQ][0] && yesno(text[ViewLogonMsgQ])) {
+	fname = "logon";
+	if(menu_exists(fname) && text[ViewLogonMsgQ][0] && yesno(text[ViewLogonMsgQ])) {
 		CLS;
-		menu("logon"); 
+		menu(fname);
 	}
 }
 
@@ -942,15 +942,13 @@ void sbbs_t::user_info()
 void sbbs_t::xfer_policy()
 {
 	if(!usrlibs) return;
-	if(menu_exists("tpolicy"))
-		menu("tpolicy");
-	else {
+	if(!menu("tpolicy", P_NOERROR)) {
 		bprintf(text[TransferPolicyHdr],cfg.sys_name);
 		bprintf(text[TpUpload]
 			,cfg.dir[usrdir[curlib][curdir[curlib]]]->up_pct);
 		bprintf(text[TpDownload]
 			,cfg.dir[usrdir[curlib][curdir[curlib]]]->dn_pct);
-		}
+	}
 }
 
 const char* prot_menu_file[] = {
@@ -963,8 +961,7 @@ const char* prot_menu_file[] = {
 
 void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 {
-	if(menu_exists(prot_menu_file[type])) {
-		menu(prot_menu_file[type]);
+	if(menu(prot_menu_file[type], P_NOERROR)) {
 		return;
 	}
 
@@ -1036,11 +1033,16 @@ void sbbs_t::sys_stats(void)
 	bprintf(text[StatsFeedbacksToday],ultoac(stats.ftoday,tmp));
 }
 
-void sbbs_t::logonlist(void)
+void sbbs_t::logonlist(const char* args)
 {
 	char	str[MAX_PATH+1];
 
-	sprintf(str,"%slogon.lst", cfg.data_dir);
+	if(cfg.logonlist_mod[0] != '\0') {
+		SAFEPRINTF2(str, "%s %s", cfg.logonlist_mod, args);
+		exec_bin(str, &main_csi);
+		return;
+	}
+	SAFEPRINTF(str,"%slogon.lst", cfg.data_dir);
 	if(flength(str)<1) {
 		bputs("\r\n\r\n");
 		bputs(text[NoOneHasLoggedOnToday]); 
@@ -1210,7 +1212,7 @@ void sbbs_t::change_user(void)
 	if(online==ON_REMOTE) {
 		getuserrec(&cfg,i,U_LEVEL,2,str);
 		if(atoi(str)>logon_ml) {
-			getuserrec(&cfg,i,U_PASS,8,tmp);
+			getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp);
 			bputs(text[ChUserPwPrompt]);
 			console|=CON_R_ECHOX;
 			getstr(str,8,K_UPPER);

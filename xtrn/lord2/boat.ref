@@ -1,0 +1,115 @@
+;Ref for all boating stuff  (Go Gilligan!)
+
+@#BSIGN
+;A stock message outline
+@DO SAYBAR
+`2You're on a boat!!!
+@DO MOVEBACK
+
+@#BOAT
+;The actual travel boat
+@DO MOVEBACK
+@BUSY
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Looks like a chartering ship  `r0
+
+  `2A small man with a checkboard greets you `0"Tickets please..."
+                      
+@DO WRITE
+`x`x
+@CHOICE
+I was just looking around actually
+>`i26 0 Show him your ticket to ArrisVille
+>`i27 0 Show him your ticket to Sosen Village
+>`i33 0 Show him your ticket to FlagCity
+>`i32 0 Show him your ticket to PortTown
+@IF RESPONSE IS 1 THEN DO
+@Begin
+@Show
+`\`\  `$"Just admiring your nice ship here,"`2 you say.
+`\`k  `0"How nice, please leave" `2he snaps.
+`\`k
+@DRAWMAP
+@UPDATE        
+@CLOSESCRIPT
+@End
+;ticket to ArrisVille
+@IF RESPONSE IS 2 THEN DO
+;ticket to Arrisville
+@Begin
+@do `i26 - 1
+@do `p13 is 3
+@Show
+`\`\  `0"Allrighty then, let's go!" `2The man replies.
+`\`k
+@loadmap 444
+@do map is 444
+@do x is 66
+@do y is 19
+@DRAWMAP
+@DO SAYBAR
+`2Welcome to Arrisville.
+@UPDATE
+@CLOSESCRIPT
+
+
+
+@End
+;ticket to Sosen Village
+@IF RESPONSE IS 3 THEN DO
+@Begin
+@do `i27 - 1
+@do `p13 is 3
+@Show
+`\`\  `0"Allrighty then, let's go!" `2The man replies.
+`\`k
+@loadmap 536
+@do map is 536
+@do x is 40
+@do y is 18
+@DRAWMAP
+@DO SAYBAR
+`2Welcome to Sosen Village.
+@UPDATE
+@CLOSESCRIPT
+@End
+;ticket to FlagCity
+@IF RESPONSE IS 4 THEN DO
+@Begin
+@do `i33 - 1
+@do `p13 is 2
+@Show
+`\`\  `0"Allrighty then, let's go!" `2The man replies.
+`\`k
+@loadmap 71
+@do map is 71
+@do x is 38
+@do y is 14
+@DRAWMAP
+@DO SAYBAR
+`2Welcome to FlagCity.
+@UPDATE
+@CLOSESCRIPT
+@End
+;ticket to PortTown
+@IF RESPONSE IS 5 THEN DO
+@Begin
+@do `i32 - 1
+@do `p13 is 1
+@Show
+`\`\  `0"PortTown?  Good choice, let's go!" `2The man replies.
+`\`k
+@loadmap 152
+@do map is 152
+@do x is 38
+@do y is 2
+@DRAWMAP
+@DO SAYBAR
+`2Welcome to PortTown.
+@UPDATE
+@CLOSESCRIPT
+@End
+
+
+@#nomore

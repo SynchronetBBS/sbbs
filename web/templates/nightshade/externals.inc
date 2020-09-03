@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: externals.inc,v 1.1 2011/07/02 18:31:07 ree Exp $ -->
 
 <div id="contentcontainer">
 	<div id="content2" style='text-align: center;'>

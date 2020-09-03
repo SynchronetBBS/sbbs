@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircbot.js,v 1.38 2020/06/29 18:36:04 echicken Exp $
 /*
 
  This program is free software; you can redistribute it and/or modify
@@ -38,6 +38,8 @@ var Squelch_List = [];
 /* Global Variables */
 var command_prefix = "";
 var real_name = "";
+var max_paragraph_length = 512;
+var max_paragraphs = 1;
 var config_write_delay = 300;
 var config_last_write = time(); /* Store when the config was last written. */
 var config_filename = "ircbot.ini";
@@ -60,11 +62,15 @@ function init() {
 	}
 	
 	command_prefix = 
-		config.iniGetValue(null, "command_prefix");
+		config.iniGetValue(null, "command_prefix", "");
 	real_name = 
-		config.iniGetValue(null, "real_name");
+		config.iniGetValue(null, "real_name", "");
 	config_write_delay=parseInt(
-		config.iniGetValue(null, "config_write_delay"));
+		config.iniGetValue(null, "config_write_delay", 300));
+	max_paragraph_length = parseInt(
+		config.iniGetValue(null, "max_paragraph_length", 512));
+	max_paragraphs = parseInt(
+		config.iniGetValue(null, "max_paragraphs", 1));
 //	Squelch_List = 
 //		config.iniGetValue(null, "Squelch_List").split(",");
 
@@ -93,11 +99,17 @@ function init_servers(config) {
 		var lib=new Array();
 		if(lib_list) {
 			lib_list=lib_list.split(",");
-			for(var l in lib_list) lib.push(removeSpaces(lib_list[l]));
+			for(var l in lib_list) {
+				lib.push(removeSpaces(lib_list[l]));
+			}
 		}
-		
+
 		var dir=backslash(config.iniGetValue(mysec,"dir"));
 		var load_list=directory(dir+"*.js");
+		for(var l in load_list) {
+			lib.push(load_list[l]);
+		}
+		
 		var global=config.iniGetValue(mysec,"global");
 		var channels=parse_channel_list(config.iniGetValue(mysec, "channels"));
 		for(var c in channels) {
@@ -109,7 +121,6 @@ function init_servers(config) {
 		Modules[module_name.toUpperCase()]=new Bot_Module(
 			module_name,
 			dir,
-			load_list,
 			global,
 			channels,
 			lib
@@ -172,9 +183,6 @@ function init_modules() {
 	for(var m in Modules) {
 		for(var l in Modules[m].lib) {
 			if(Modules[m].lib[l]) load(Modules[m],Modules[m].lib[l]);
-		}
-		for(var l in Modules[m].load) {
-			if(Modules[m].load[l]) load(Modules[m],Modules[m].load[l]);
 		}
 	}
 }
@@ -390,6 +398,7 @@ function Bot_IRC_Server(sock,host,nick,svspass,channels,port,name) {
 	this.bot_access = Server_bot_access;
 	this.bot_command = Server_bot_command;
 	this.server_command = Server_command;
+	this.get_buffer = Server_get_buffer;
 }
 
 function Bot_IRC_Channel(name,key) {
@@ -404,10 +413,9 @@ function Bot_IRC_Channel(name,key) {
 	// Functions.
 }
 
-function Bot_Module(name,dir,load,global,channels,lib) {
+function Bot_Module(name,dir,global,channels,lib) {
 	this.name=name;
 	this.dir=dir;
-	this.load=load;
 	this.global=global;
 	this.channels=channels;
 	this.lib=lib;

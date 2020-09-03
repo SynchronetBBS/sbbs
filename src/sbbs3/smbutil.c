@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) utility */
 
-/* $Id: smbutil.c,v 1.129 2018/10/05 08:23:33 rswindell Exp $ */
+/* $Id: smbutil.c,v 1.136 2020/05/25 00:40:34 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -64,16 +64,9 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include <string.h>		/* strrchr */
 #include <ctype.h>		/* toupper */
 
-#include "genwrap.h"	/* stricmp */
-#include "dirwrap.h"	/* fexist */
-#include "conwrap.h"	/* getch */
-#include "filewrap.h"
-#include "smblib.h"
-#include "gen_defs.h"	/* MAX_PATH */
-
-#ifdef __WATCOMC__
-	#include <dos.h>
-#endif
+#include "utf8.h"
+#include "sbbs.h"
+#include "conwrap.h"
 
 /* gets is dangerous */
 #define gets(str)  fgets((str), sizeof(str), stdin)
@@ -94,6 +87,7 @@ FILE*		statfp;
 BOOL		pause_on_exit=FALSE;
 BOOL		pause_on_error=FALSE;
 char*		beep="";
+long		msgtxtmode = GETMSGTXT_ALL|GETMSGTXT_PLAIN;
 
 /************************/
 /* Program usage/syntax */
@@ -134,6 +128,7 @@ char *usage=
 "      -p    = wait for keypress (pause) on exit\n"
 "      -!    = wait for keypress (pause) on error\n"
 "      -b    = beep on error\n"
+"      -r    = display raw message body text (not MIME-decoded)\n"
 "      -C    = continue after some (normally fatal) error conditions\n"
 "      -t<s> = set 'to' user name for imported message\n"
 "      -n<s> = set 'to' netmail address for imported message\n"
@@ -143,7 +138,7 @@ char *usage=
 "      -s<s> = set 'subject' for imported message\n"
 "      -z[n] = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)\n"
 #ifdef __unix__
-"      -U[n] = set umask to specified value\n"
+"      -U[n] = set umask to specified value (use leading 0 for octal, e.g. 022)\n"
 #endif
 "      -#    = set number of messages to view/list (e.g. -1)\n"
 ;
@@ -196,8 +191,8 @@ char* gen_msgid(smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
 	);
 	safe_snprintf(msgid, maxlen
 		,"<%08lX.%lu.%s@%s>"
-		,msg->hdr.when_imported.time
-		,smb->status.last_msg + 1
+		,(ulong)msg->hdr.when_imported.time
+		,(ulong)smb->status.last_msg + 1
 		,getfname(smb->file)
 		,host);
 	return msgid;
@@ -211,8 +206,9 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 {
 	char		str[128];
 	char		buf[1024];
-	uchar*		msgtxt=NULL;
-	uchar*		newtxt;
+	char*		msgtxt=NULL;
+	char*		newtxt;
+	const char* charset = NULL;
 	long		msgtxtlen;
 	int 		i;
 	ushort		agent=AGENT_SMBUTIL;
@@ -225,7 +221,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		i=fread(buf,1,sizeof(buf),fp);
 		if(i<1)
 			break;
-		if((msgtxt=(uchar*)realloc(msgtxt,msgtxtlen+i+1))==NULL) {
+		if((msgtxt = realloc(msgtxt,msgtxtlen+i+1))==NULL) {
 			fprintf(errfp,"\n%s!realloc(%ld) failure\n",beep,msgtxtlen+i+1);
 			bail(1);
 		}
@@ -237,15 +233,22 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 
 		msgtxt[msgtxtlen]=0;	/* Must be NULL-terminated */
 
-		if((newtxt=(uchar*)malloc((msgtxtlen*2)+1))==NULL) {
+		if((newtxt = malloc((msgtxtlen*2)+1))==NULL) {
 			fprintf(errfp,"\n%s!malloc(%ld) failure\n",beep,(msgtxtlen*2)+1);
 			bail(1);
 		}
 
 		/* Expand LFs to CRLFs */
-		msgtxtlen=lf_expand(msgtxt, newtxt);
+		msgtxtlen=lf_expand((uchar*)msgtxt, (uchar*)newtxt);
 		free(msgtxt);
 		msgtxt=newtxt;
+
+		if(!str_is_ascii(msgtxt) && utf8_str_is_valid(msgtxt))
+			charset = FIDO_CHARSET_UTF8;
+		else if(str_is_ascii(msgtxt))
+			charset = FIDO_CHARSET_ASCII;
+		else
+			charset = FIDO_CHARSET_CP437;
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
@@ -298,7 +301,7 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 					,beep,RECIPIENTNETADDR,i,smb.last_error);
 				bail(1); 
 			}
-		} 
+		}
 	}
 
 	if(from==NULL) {
@@ -357,12 +360,19 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 
 	smb_hfield_str(&msg, RFC822MSGID, gen_msgid(&smb, &msg, str, sizeof(str)-1));
+	if(charset != NULL)
+		smb_hfield_str(&msg, FIDOCHARSET, charset);
+
+	if((msg.to != NULL && !str_is_ascii(msg.to) && utf8_str_is_valid(msg.to))
+		|| (msg.from != NULL && !str_is_ascii(msg.from) && utf8_str_is_valid(msg.from))
+		|| (msg.subj != NULL && !str_is_ascii(msg.subj) && utf8_str_is_valid(msg.subj)))
+		msg.hdr.auxattr |= MSG_HFIELDS_UTF8;
 
 	if(mode&NOCRC || smb.status.max_crcs==0)	/* no CRC checking means no body text dupe checking */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 
 	if((i=smb_addmsg(&smb,&msg,smb.status.attr&SMB_HYPERALLOC
-		,dupechk_hashes,xlat,msgtxt,NULL))!=SMB_SUCCESS) {
+		,dupechk_hashes,xlat,(uchar*)msgtxt,NULL))!=SMB_SUCCESS) {
 		fprintf(errfp,"\n%s!smb_addmsg returned %d: %s\n"
 			,beep,i,smb.last_error);
 		bail(1); 
@@ -620,7 +630,7 @@ void viewmsgs(ulong start, ulong count, BOOL verbose)
 		}
 
 		printf("--------------------\n");
-		printf("%-20.20s %ld\n"		,"index record",ftell(smb.sid_fp)/idxreclen);
+		printf("%-16.16s %ld\n"		,"index record",ftell(smb.sid_fp)/idxreclen);
 		smb_dump_msghdr(stdout,&msg);
 		if(verbose) {
 			for(i=0; i<msg.total_hfields; i++) {
@@ -1427,8 +1437,8 @@ void readmsgs(ulong start)
 
 			printf("\n%s\n", msg.summary ? msg.summary : "");
 
-			if((inbuf=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL|GETMSGTXT_PLAIN))!=NULL) {
-				printf("%s",inbuf);
+			if((inbuf=smb_getmsgtxt(&smb,&msg, msgtxtmode))!=NULL) {
+				printf("%s",remove_ctrl_a(inbuf, inbuf));
 				free(inbuf); 
 			}
 
@@ -1489,6 +1499,7 @@ void readmsgs(ulong start)
 				setmsgattr(&smb, msg.hdr.number, msg.hdr.attr^MSG_DELETE);
 				break;
 			case CR:
+			case '\n':
 			case '+':
 				printf("Next\n");
 				msg.offset++;
@@ -1588,7 +1599,7 @@ int main(int argc, char **argv)
 	else	/* if redirected, don't send status messages to stderr */
 		statfp=nulfp;
 
-	sscanf("$Revision: 1.129 $", "%*s %s", revision);
+	sscanf("$Revision: 1.136 $", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 
@@ -1698,6 +1709,9 @@ int main(int argc, char **argv)
 						break;
 					case '!':
 						pause_on_error=TRUE;
+						break;
+					case 'r':
+						msgtxtmode = GETMSGTXT_ALL;
 						break;
 					case 'b':
 						beep="\a";
@@ -1829,7 +1843,8 @@ int main(int argc, char **argv)
 							idxrec_t idx;
 							if((i=smb_getlastidx(&smb, &idx)) != SMB_SUCCESS) {
 								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
-								return i;
+								if(!smb.continue_on_error)
+									return i;
 							}
 							smb.status.last_msg = idx.number;
 							if(stricmp(getfname(smb.file), "mail") == 0)

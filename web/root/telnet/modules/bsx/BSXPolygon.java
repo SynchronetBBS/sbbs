@@ -2,7 +2,7 @@
  * BSXPolygon	-- anhanced Polygon (to meet BSX standard)
  *		   includes color for each polygon
  * --
- * $Id$
+ * $Id: BSXPolygon.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  */
 package modules.bsx;
 

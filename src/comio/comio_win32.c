@@ -2,7 +2,7 @@
 
 /* Synchronet Serial Communications I/O Library Functions for Win32 */
 
-/* $Id$ */
+/* $Id: comio_win32.c,v 1.13 2020/06/26 19:56:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -38,17 +38,17 @@
 #include "comio.h"
 #include "genwrap.h"
 
-char* COMIOCALL comVersion(char* str, size_t len)
+char* comVersion(char* str, size_t len)
 {
 	char revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.13 $", "%*s %s", revision);
 
 	safe_snprintf(str,len,"Synchronet Communications I/O Library for "PLATFORM_DESC" v%s", revision);
 	return str;
 }
 
-COM_HANDLE COMIOCALL comOpen(const char* device)
+COM_HANDLE comOpen(const char* device)
 {
 	COM_HANDLE handle;
 	COMMTIMEOUTS timeouts;
@@ -85,12 +85,12 @@ COM_HANDLE COMIOCALL comOpen(const char* device)
 	return handle;
 }
 
-BOOL COMIOCALL comClose(COM_HANDLE handle)
+BOOL comClose(COM_HANDLE handle)
 {
 	return CloseHandle(handle);
 }
 
-long COMIOCALL comGetBaudRate(COM_HANDLE handle)
+long comGetBaudRate(COM_HANDLE handle)
 {
 	DCB dcb;
 
@@ -100,7 +100,7 @@ long COMIOCALL comGetBaudRate(COM_HANDLE handle)
 	return dcb.BaudRate;
 }
 
-BOOL COMIOCALL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
+BOOL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 {
 	DCB dcb;
 
@@ -112,7 +112,52 @@ BOOL COMIOCALL comSetBaudRate(COM_HANDLE handle, unsigned long rate)
 	return SetCommState(handle, &dcb);
 }
 
-int COMIOCALL comGetModemStatus(COM_HANDLE handle)
+int comGetFlowControl(COM_HANDLE handle)
+{
+	DCB dcb;
+	int result = 0;
+
+	if(GetCommState(handle, &dcb) != TRUE)
+		return COM_ERROR;
+
+	if(dcb.fOutxCtsFlow)
+		result |= COM_FLOW_CONTROL_RTS_CTS;
+	if(dcb.fOutxDsrFlow)
+		result |= COM_FLOW_CONTROL_DTR_DSR;
+	if(dcb.fInX && dcb.fOutX)
+		result |= COM_FLOW_CONTROL_XON_OFF;
+	return result;
+}
+
+BOOL comSetFlowControl(COM_HANDLE handle, int type)
+{
+	DCB dcb;
+
+	if(GetCommState(handle, &dcb) != TRUE)
+		return FALSE;
+
+	dcb.fOutxCtsFlow = 0;
+	dcb.fRtsControl = RTS_CONTROL_DISABLE; // This is questionable
+	dcb.fOutxDsrFlow = 0;
+	dcb.fDsrSensitivity = 0;
+	dcb.fInX = 0;
+	dcb.fOutX = 0;
+	if(type&COM_FLOW_CONTROL_RTS_CTS) {
+		dcb.fOutxCtsFlow = 1;
+		dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
+	}
+	if(type&COM_FLOW_CONTROL_DTR_DSR) {
+		dcb.fOutxDsrFlow = 1;
+		dcb.fDsrSensitivity = 1;
+	}
+	if(type&COM_FLOW_CONTROL_XON_OFF) {
+		dcb.fInX = 1;
+		dcb.fOutX = 1;
+	}
+	return SetCommState(handle, &dcb);
+}
+
+int comGetModemStatus(COM_HANDLE handle)
 {
 	DWORD status=0;
 	
@@ -122,24 +167,34 @@ int COMIOCALL comGetModemStatus(COM_HANDLE handle)
 		return COM_ERROR;
 }
 
-BOOL COMIOCALL comRaiseDTR(COM_HANDLE handle)
+BOOL comRaiseDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, SETDTR);
 }
 
-BOOL COMIOCALL comLowerDTR(COM_HANDLE handle)
+BOOL comLowerDTR(COM_HANDLE handle)
 {
 	return EscapeCommFunction(handle, CLRDTR);
 }
 
-BOOL COMIOCALL comWriteByte(COM_HANDLE handle, BYTE ch)
+BOOL comRaiseRTS(COM_HANDLE handle)
+{
+	return EscapeCommFunction(handle, SETRTS);
+}
+
+BOOL comLowerRTS(COM_HANDLE handle)
+{
+	return EscapeCommFunction(handle, CLRRTS);
+}
+
+BOOL comWriteByte(COM_HANDLE handle, BYTE ch)
 {
 	DWORD wr=0;
 
 	return WriteFile(handle, &ch, sizeof(ch), &wr, NULL) && wr==sizeof(BYTE);
 }
 
-int COMIOCALL comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
+int comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 {
 	DWORD wr=0;
 
@@ -149,24 +204,24 @@ int COMIOCALL comWriteBuf(COM_HANDLE handle, const BYTE* buf, size_t buflen)
 	return wr;
 }
 
-int COMIOCALL comWriteString(COM_HANDLE handle, const char* str)
+int comWriteString(COM_HANDLE handle, const char* str)
 {
 	return comWriteBuf(handle, str, strlen(str));
 }
 
-BOOL COMIOCALL comReadByte(COM_HANDLE handle, BYTE* ch)
+BOOL comReadByte(COM_HANDLE handle, BYTE* ch)
 {
 	DWORD rd;
 
 	return ReadFile(handle, ch, sizeof(BYTE), &rd, NULL) && rd==sizeof(BYTE);
 }
 
-BOOL COMIOCALL comPurgeInput(COM_HANDLE handle)
+BOOL comPurgeInput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_RXCLEAR);
 }
 
-BOOL COMIOCALL comPurgeOutput(COM_HANDLE handle)
+BOOL comPurgeOutput(COM_HANDLE handle)
 {
 	return PurgeComm(handle, PURGE_TXCLEAR);
 }

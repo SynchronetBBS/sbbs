@@ -47,7 +47,7 @@ void display_message(char *title, char *message, char *icon)
 	dialog=gtk_dialog_new_with_buttons(title
 			,GTK_WINDOW(gtk_builder_get_object(builder, "UserListWindow"))
 			,GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT
-			,GTK_STOCK_OK
+			,"_OK"
 			,GTK_RESPONSE_NONE
 			,NULL);
 	if(icon==NULL)
@@ -59,7 +59,7 @@ void display_message(char *title, char *message, char *icon)
 			,"response"
 			,G_CALLBACK(gtk_widget_destroy)
             ,dialog);
-	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)->vbox),
+	gtk_container_add (GTK_CONTAINER (GTK_DIALOG(dialog)),
 			label);
 	gtk_widget_show_all (dialog);
 	gtk_dialog_run(GTK_DIALOG(dialog));
@@ -126,7 +126,9 @@ G_MODULE_EXPORT void update_userlist_callback(GtkWidget *wiggy, gpointer data)
 
 	free_cfg(&cfg);
 	if(!load_cfg(&cfg, NULL, TRUE, str)) {
-		display_message("Load Error","Cannot load configuration data","gtk-dialog-error");
+		char error[256];
+		SAFEPRINTF(error, "ERROR Loading Configuration Data: %s", str);
+		display_message("Load Error",error,"gtk-dialog-error");
 		return;
     }
 
@@ -225,7 +227,7 @@ G_MODULE_EXPORT void apply_ars_filter(GtkWidget *wiggy, gpointer data)
 	GtkWidget	*w;
 
 	w=GTK_WIDGET(gtk_builder_get_object(builder, "eArsFilter"));
-	arbuf=arstr(NULL, (char *)gtk_entry_get_text(GTK_ENTRY(w)), &cfg);
+	arbuf=arstr(NULL, (char *)gtk_entry_get_text(GTK_ENTRY(w)), &cfg, arbuf);
 	update_userlist_callback(wiggy, data);
 }
 

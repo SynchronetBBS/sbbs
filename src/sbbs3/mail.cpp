@@ -1,6 +1,6 @@
 /* Synchronet mail-related routines */
 
-/* $Id$ */
+/* $Id: mail.cpp,v 1.33 2018/04/30 22:54:19 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

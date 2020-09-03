@@ -21,10 +21,10 @@ main(void) {
 	INT16 lvl=0;
 	INT16 cnt;
 	char nnm[36];
-	system("mv "ENEMY_FILENAME" nyenmb.dat");
-	system("mv "ENEMY_INDEX" nyenmb.idx");
-	system("rm "ENEMY_FILENAME);
-	system("rm "ENEMY_INDEX);
+	system("mv " ENEMY_FILENAME " nyenmb.dat");
+	system("mv " ENEMY_INDEX " nyenmb.idx");
+	system("rm " ENEMY_FILENAME);
+	system("rm " ENEMY_INDEX);
 
 	eidx.first_enemy[0]=0;
 	do {

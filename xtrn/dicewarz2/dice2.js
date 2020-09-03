@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dice2.js,v 1.13 2014/01/05 10:44:45 rswindell Exp $ */
 
 load("json-client.js");
 var root = js.exec_dir;

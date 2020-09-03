@@ -5,7 +5,7 @@
  * Per RFC 790, September 1981, taken from the BSD file netinet/in.h.
  */
 
-/* $Id$ */
+/* $Id: sockdefs.js,v 1.8 2020/04/09 19:16:46 deuce Exp $ */
 
 /*
  * Protocols
@@ -79,6 +79,15 @@ var SOCK_DGRAM      =2;              /* datagram socket */
 var SOCK_RAW        =3;              /* raw-protocol interface */
 var SOCK_RDM        =4;              /* reliably-delivered message */
 var SOCK_SEQPACKET  =5;              /* sequenced packet stream */
+
+if (Socket.PF_INET !== undefined)
+	var PF_INET = Socket.PF_INET;
+if (Socket.PF_INET6 !== undefined)
+	var PF_INET6 = Socket.PF_INET6;
+if (Socket.AF_INET !== undefined)
+	var AF_INET = Socket.AF_INET;
+if (Socket.AF_INET6 !== undefined)
+	var AF_INET6 = Socket.AF_INET6;
 
 /* Option name parameter to Socket.getoption/setoption */
 var sockopts = [

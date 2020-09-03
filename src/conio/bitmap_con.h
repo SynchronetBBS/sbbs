@@ -19,6 +19,7 @@ struct rectlist {
 
 extern struct video_stats vstat;
 extern pthread_mutex_t vstatlock;
+extern pthread_mutex_t blinker_lock;
 
 #ifndef BITMAP_CIOLIB_DRIVER
 /* Called from ciolib */
@@ -40,7 +41,7 @@ void bitmap_setvideoflags(int flags);
 int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, struct ciolib_pixels *, void *mask);
-struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey);
+struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
 int bitmap_get_modepalette(uint32_t p[16]);
 int bitmap_set_modepalette(uint32_t p[16]);
 uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b);

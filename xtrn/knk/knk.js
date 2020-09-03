@@ -64,7 +64,6 @@ function getkeys(str)
 	}
 	if (dk.console.remote_screen !== undefined) {
 		dk.console.remote_screen.new_lines = 0;
-		dk.console.remote_screen.touched = false;
 	}
 	/* Don't echo control keys */
 	if(ascii(key)<32)
@@ -361,13 +360,13 @@ function Player_drawscreen(month)
 	dk.console.clear();
 	dk.console.println("");
 	if(this.isplayer) {
-		dk.console.aprint("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\r\n");
+		dk.console.aprint("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\1n\r\n");
 		dk.console.println("");
 		dk.console.attr='G';
 	}
 	else {
 		var mstr=format("%-27s", "*  Month # "+month+"  *");
-		dk.console.aprint("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\r\n");
+		dk.console.aprint("\1h\1r"+mstr+"\1w*  "+this.full_name+"'s Turn  *\1n\r\n");
 		dk.console.println("");
 		dk.console.attr='C';
 	}
@@ -1628,7 +1627,7 @@ function play_game()
 		loser=player;
 	}
 	dk.console.println("");
-	if(dk.console.remote_screen.pos.y > dk.console.rows/2)
+	if(dk.console.pos.y > dk.console.rows/2)
 		dk.console.pause();
 	winner.drawscreen(month);
 	dk.console.println("");
@@ -1636,11 +1635,11 @@ function play_game()
 	loser.score=0;
 	dk.console.println(computer.full_name+" got "+computer.score+" points and you got "+player.score+" points for this game.");
 	dk.console.println('');
-	if(dk.console.remote_screen.pos.y > dk.console.rows/2)
+	if(dk.console.pos.y > dk.console.rows/2)
 		dk.console.pause();
 	update_userfile(player, computer, winner.isplayer);
 	show_scoreboard(true);
-	if(dk.console.remote_screen.pos.y > dk.console.rows/2)
+	if(dk.console.pos.y > dk.console.rows/2)
 		dk.console.pause();
 	var dat_file=read_dat();
 	if(dat_file===undefined || dat_file.shortestgame === undefined || dat_file.shortestgame.months === undefined || dat_file.shortestgame.months >= month) {

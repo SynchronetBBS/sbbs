@@ -1,6 +1,6 @@
 /* Synchronet file contents display routines */
 
-/* $Id: viewfile.cpp,v 1.11 2018/07/24 01:11:08 rswindell Exp $ */
+/* $Id: viewfile.cpp,v 1.12 2020/05/11 08:57:19 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -58,7 +58,7 @@ int sbbs_t::viewfile(smbfile_t* f, bool ext)
 		ASYNC;
 		SAFEPRINTF(str, text[FileInfoPrompt], fname);
 		mnemonics(str);
-		ch=(char)getkeys("BEVQ\r",0);
+		ch=(char)getkeys("BEVQN\r",0);
 		if(ch=='Q' || sys_status&SS_ABORT)
 			return(0);
 		switch(ch) {
@@ -72,6 +72,7 @@ int sbbs_t::viewfile(smbfile_t* f, bool ext)
 			case 'V':
 				ext=0;
 				continue;
+			case 'N':
 			case CR:
 				return(1); 
 		} 

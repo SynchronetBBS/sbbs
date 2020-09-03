@@ -1,0 +1,180 @@
+Story:
+
+=============================================================================
+ 
+Oh what a beautiful morning. Oh what a beautiful DAY! You awake once
+more in the realm. For some reason you have yet to fathom, you are in 
+a great mood! You whistle a jaunty tune and head into the streets.
+
+Everyone is talking about the piles of knawed and burned bones, found
+outside the village gates. You make many humorus, yet unsavory jokes 
+about them. Your mood, is so contagious, soon you and the gossips are
+laughing uproariously over the find. Still chuckling you move on.
+ 
+Everyone you meet seems to pick up your good humor. You make you plans
+to hunt through the forrest, in search of more entertainment.
+ 
+
+=============================================================================
+           
+
+                                DISCLAIMER
+                            
+    The author of Mornlord has taken every precaution to insure that no
+    harm or damage will occur on computer systems operating the Mornlord
+    add-on package. Actually, its practically impossible for this program
+    to do any harm since its just plain TEXT files! But, since this is
+    a free copy, there will probably be some bugs in it! If you encounter
+    any bugs or problems, please call my BBS and leave me a message
+    which explains the problem. If in any way, for any reason, or even without
+    reason this causes any damages to any hardware/software, I take no 
+    responsibity. But dont worry! Its improbable that anything will go wrong!
+
+                             LICENSE AGREEMENT
+                            
+    The Mornlord add-on program, installation and uninstallation
+    programs, and documentation are copyrighted products of Blackfist1 Software
+    and Jonathan Holman. Jon Holman reserves all rights to these products.
+    This is protected by the United States of America (USA) and
+    International Copyright Laws. In no way shall Mornlord be reproduced
+    or modified in any form or method without prior written permission
+    from Jon Holman. No fee may be charged by any agency other than
+    J. Holman, or Blackfist Software beyond the cost of a disk, CD-ROM, or BBS
+    membership plan without written permission from Blackfist Software.
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+1. About Mornlord        
+
+2. Installation Instructions
+
+3. Updates
+
+4. Questions
+
+5. How to contact the Author
+
+6. Registering Mornlord
+
+7. Technical info 
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+
+
+
+
+                          *** 1. About Mornlord ***
+
+   After playing LORD (Legend Of the Red Dragon), for about a year, I began
+   to note that all of the addons were of a single mind set. GRIM. (or very
+   risque!!) I decided to create a number of free addons, which convey different
+   moods, and times of the day. From morning/cheery, to afternnon/sober, to
+   Evening/Rowdy.
+   I hope to instill a little humor into these and future add ons.
+   
+                      *** 2. Installation Instructions ***
+
+   Installing Mornlord should be a simple process since all it does is
+   it renames your current lordtxt.dat files to
+   lordtxt.old.
+
+
+-=-=Batch Installation=-=-
+
+To use the batch files for installation simply extract the
+contents of the zip file to any directory (you probably already
+did that!) Run the file INSTALL.BAT with a parameter of where
+your LORD is installed.
+
+*Example*
+INSTALL.BAT C:\LORD
+
+Its that easy! To Uninstall simply move to your LORD directory
+at the DOS prompt and type UNINSTAL.BAT (or UNINSTAL).
+But please note, if you haven't already installed Mornlord before
+running this file, you will lose a few files LORD needs to run!
+
+
+** If for some reason you did run the Uninstall program first, here
+** is how you fix it...
+
+** You must have your original Lord zip file to fix this problem!
+** Inside of the lord.zip file you will find the two files that you
+** are missing. Look for lordtxt.dat. Ok, extract or
+** move them to your lord directory and its all fixed up!
+** Of course, who is dumb enough to run the uninstall program first? =)
+
+
+-=-=Manual Installation=-=-
+
+If for some reason you need to do a manual installation here is how...
+Go to your LORD directory and rename the following files...
+
+lordtxt.dat  to  lordtxt.old
+
+Now,   rename mtext.dat  to  lordtxt.dat
+
+Ok, now move both of them files to your LORD directory and its all
+set up!
+
+
+                             *** 3. Updates ***
+
+If you would like to recieve updates of this program, see 6. Registering 
+MornLord later in this file...
+
+                            *** 4. Questions ***
+
+--= I thought this program was FREEWARE, why would I register it? =--
+
+** Yes, this program is FREEWARE, you dont have to send me a cent **
+** to use it! But I took a lot of my time to write this program   **
+** so you and your callers could enjoy it! If everyone would send **
+** me some spare change, it would make me want to add more and    **
+** more to my program, and possibly write more programs.          **
+** Like I said earlier, I WILL add more if a few people register! **
+** At least send me a note telling me what you like, don't like,  **
+** Would like to see in the future, etc..                         **
+
+
+--= What do I get if I register? =--
+
+** Well, the main thing you get is knowing that you helped another **
+** person out by making his hard spent time worth something!       **
+** But, thats probably not enough, so you also get all newer       **
+** versions, by E-Mail, and you will get added to my mailing list  **
+** for all new programs I write in the future. (Shareware, or      **
+** FREEWARE only! I cant give you ALL my registered programs!)     **
+
+
+--= Where do I send my registration money? =--
+
+** See chapter 6 for more information on registering **
+
+
+                    *** 5. How to contact the author ***
+
+
+You can contact me, Jon Holman in the following ways...
+
+I call a lot of BBS's in Las Vegas, 702 area, or 
+Aol as Blackfist1, or internet at Blackfist1@AOL.Com
+
+Or you can contact me via snail mail at...
+
+Blackfist Software
+7637 Desert Breeze
+Las Vegas, Nevada
+            89129
+
+                         ** 7. Technical Junk **
+
+
+Techno - Schmecno.....who needs more junk in there lives, Forget it, take
+the rest of your life OFF! Tell 'em Blackfist said you Could!
+
+

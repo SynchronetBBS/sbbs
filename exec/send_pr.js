@@ -1,9 +1,9 @@
-// $Id$
+// $Id: send_pr.js,v 1.24 2005/08/09 22:25:22 deuce Exp $
 
 load("sbbsdefs.js");
 load("gnatslib.js");
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.24 $".split(' ')[1];
 
 const MAX_LINE_LEN = 78
 

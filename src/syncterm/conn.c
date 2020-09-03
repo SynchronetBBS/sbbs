@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: conn.c,v 1.81 2020/06/27 00:04:49 deuce Exp $ */
 
 #include <stdlib.h>
 
@@ -44,9 +44,9 @@
 #include "conn_telnet.h"
 
 struct conn_api conn_api;
-char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","Modem","Serial","Shell",NULL};
-char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial","Shell",NULL};
-short unsigned int conn_ports[]={0,513,513,23,0,22,0,0
+char *conn_types_enum[]={"Unknown","RLogin","RLoginReversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBSGhost",NULL};
+char *conn_types[]={"Unknown","RLogin","RLogin Reversed","Telnet","Raw","SSH","Modem","Serial","Shell","MBBS GHost",NULL};
+short unsigned int conn_ports[]={0,513,513,23,0,22,0,0,0
 #ifdef __unix__
 ,65535
 #endif
@@ -302,9 +302,9 @@ int conn_peek(void *vbuffer, size_t buflen)
 	return(found);
 }
 
-int conn_send(void *vbuffer, size_t buflen, unsigned int timeout)
+int conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 {
-	char *buffer = (char *)vbuffer;
+	const char *buffer = vbuffer;
 	size_t found;
 
 	pthread_mutex_lock(&(conn_outbuf.mutex));
@@ -334,6 +334,7 @@ int conn_connect(struct bbslist *bbs)
 			conn_api.binary_mode_off=telnet_binary_mode_off;
 			break;
 		case CONN_TYPE_RAW:
+		case CONN_TYPE_MBBS_GHOST:
 			conn_api.connect=raw_connect;
 			conn_api.close=raw_close;
 			break;
@@ -421,7 +422,9 @@ int conn_socket_connect(struct bbslist *bbs)
 	char			portnum[6];
 	char str[LIST_ADDR_MAX+40];
 
-	uifc.pop("Looking up host");
+	if (!bbs->hidepopups) {
+		uifc.pop("Looking up host");
+	}
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags=PF_UNSPEC;
 	switch(bbs->address_family) {
@@ -447,8 +450,10 @@ int conn_socket_connect(struct bbslist *bbs)
 		failcode=FAILURE_RESOLVE;
 		res=NULL;
 	}
-	uifc.pop(NULL);
-	uifc.pop("Connecting...");
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+		uifc.pop("Connecting...");
+	}
 
 	/* Drain the input buffer to avoid accidental cancel */
 	while(kbhit())
@@ -530,7 +535,9 @@ connected:
 			int keepalives = TRUE;
 			setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepalives, sizeof(keepalives));
 
-			uifc.pop(NULL);
+			if (!bbs->hidepopups) {
+				uifc.pop(NULL);
+			}
 			return(sock);
 		}
 		failcode=FAILURE_DISCONNECTED;
@@ -540,39 +547,43 @@ connected:
 
 	if(res)
 		freeaddrinfo(res);
-	uifc.pop(NULL);
+	if (!bbs->hidepopups) {
+		uifc.pop(NULL);
+	}
 	conn_api.terminate=-1;
-	switch(failcode) {
-		case FAILURE_RESOLVE:
-			sprintf(str,"Cannot resolve %s!",bbs->addr);
-			uifcmsg(str,	"`Cannot Resolve Host`\n\n"
-							"The system is unable to resolve the hostname... double check the spelling.\n"
-							"If it's not an issue with your DNS settings, the issue is probobly\n"
-							"with the DNS settings of the system you are trying to contact.");
-			break;
-		case FAILURE_CANT_CREATE:
-			sprintf(str,"Cannot create socket (%d)!",ERROR_VALUE);
-			uifcmsg(str,
-							"`Unable to create socket`\n\n"
-							"Your system is either dangerously low on resources, or there\n"
-							"is a problem with your TCP/IP stack.");
-			break;
-		case FAILURE_CONNECT_ERROR:
-			sprintf(str,"Connect error (%d)!",ERROR_VALUE);
-			uifcmsg(str
-							,"`The connect call returned an error`\n\n"
-							 "The call to connect() returned an unexpected error code.");
-			break;
-		case FAILURE_ABORTED:
-			uifcmsg("Connection Aborted.",	"`Connection Aborted`\n\n"
-							"Connection to the remote system aborted by keystroke.");
-			break;
-		case FAILURE_DISCONNECTED:
-			sprintf(str,"Connect error (%d)!",ERROR_VALUE);
-			uifcmsg(str
-							,"`SyncTERM failed to connect`\n\n"
-							 "After connect() succeeded, the socket was in a disconnected state.");
-			break;
+	if (!bbs->hidepopups) {
+		switch(failcode) {
+			case FAILURE_RESOLVE:
+				sprintf(str,"Cannot resolve %s!",bbs->addr);
+				uifcmsg(str,	"`Cannot Resolve Host`\n\n"
+								"The system is unable to resolve the hostname... double check the spelling.\n"
+								"If it's not an issue with your DNS settings, the issue is probobly\n"
+								"with the DNS settings of the system you are trying to contact.");
+				break;
+			case FAILURE_CANT_CREATE:
+				sprintf(str,"Cannot create socket (%d)!",ERROR_VALUE);
+				uifcmsg(str,
+								"`Unable to create socket`\n\n"
+								"Your system is either dangerously low on resources, or there\n"
+								"is a problem with your TCP/IP stack.");
+				break;
+			case FAILURE_CONNECT_ERROR:
+				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
+				uifcmsg(str
+								,"`The connect call returned an error`\n\n"
+								 "The call to connect() returned an unexpected error code.");
+				break;
+			case FAILURE_ABORTED:
+				uifcmsg("Connection Aborted.",	"`Connection Aborted`\n\n"
+								"Connection to the remote system aborted by keystroke.");
+				break;
+			case FAILURE_DISCONNECTED:
+				sprintf(str,"Connect error (%d)!",ERROR_VALUE);
+				uifcmsg(str
+								,"`SyncTERM failed to connect`\n\n"
+								 "After connect() succeeded, the socket was in a disconnected state.");
+				break;
+		}
 	}
 	conn_close();
 	if (sock != INVALID_SOCKET)

@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: choosesubs.inc,v 1.2 2011/12/02 03:17:47 deuce Exp $ -->
 
 <!-- Main Content -->  
     

@@ -295,7 +295,7 @@ function TeamTransfer(type)
 
 function InitializeTeams()
 {
-	uifc.pop("Teams");
+	if(this.uifc) uifc.pop("Teams");
 	db.write(Settings.DB,'teams',[],LOCK_WRITE);
 	db.push(Settings.DB,'teams',{Excuse:"I hate zero-based arrays, so I'm just stuffing this crap in here"},LOCK_WRITE);
 }

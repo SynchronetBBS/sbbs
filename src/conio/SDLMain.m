@@ -200,6 +200,12 @@ static void CustomApplicationMain (int argc, char **argv)
     NSAutoreleasePool	*pool = [[NSAutoreleasePool alloc] init];
     SDLMain				*sdlMain;
 
+    /* If there's no Window Server (ie: remote headless), go in dry. */
+    if (_CGSDefaultConnection() == NULL) {
+        XPDEV_main(argc, argv, environ);
+        return;
+    }
+
     /* Ensure the application object is initialised */
     [NSApplication sharedApplication];
     

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_server.js,v 1.60 2020/04/03 22:21:51 deuce Exp $
 //
 // ircd_channel.js                
 //
@@ -21,7 +21,7 @@
 //
 
 ////////// Constants / Defines //////////
-const SERVER_REVISION = "$Revision$".split(' ')[1];
+const SERVER_REVISION = "$Revision: 1.60 $".split(' ')[1];
 
 // Various N:Line permission bits
 const NLINE_CHECK_QWKPASSWD		=(1<<0);	// q
@@ -50,6 +50,7 @@ function IRC_Server() {
 	this.parent = 0;
 	this.info = "";
 	this.idletime = time();
+	this.outgoing = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	this.type = BAHAMUT; /* Assume bahamut by default */
@@ -620,7 +621,7 @@ function Server_Work(cmdline) {
 				if (!my_server)
 					break;
 				if (cmd[1] != "OK") {
-					my_server.quit("Server not configured.");
+					my_server.quit("S Server not configured.");
 					break;
 				}
 				Servers[my_server.nick.toLowerCase()] = new IRC_Server();
@@ -1215,6 +1216,14 @@ function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 		if (this.socket!=undefined)
 			this.socket.close();
 		delete Local_Sockets[this.id];
+	}
+	if (this.outgoing) {
+		if (YLines[this.ircclass].active > 0) {
+			YLines[this.ircclass].active--;
+			log(LOG_DEBUG, "Class "+this.ircclass+" down to "+YLines[this.ircclass].active+" active out of "+YLines[this.ircclass].maxlinks);
+		}
+		else
+			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 	}
 	delete Local_Sockets[this.id];
 	delete Local_Sockets_Map[this.id];

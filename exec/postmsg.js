@@ -1,6 +1,7 @@
-// $Id$
+// $Id: postmsg.js,v 1.7 2020/03/30 08:31:14 rswindell Exp $
 
-// Post a message to a local sub-board, a preferred alternative to using "smbutil i"
+// Post a message to a local sub-board or mail message base
+// a preferred alternative to using "smbutil i"
 
 var hdrs = { };
 var sub_code;
@@ -14,7 +15,7 @@ function usage()
 	print("<sub-code> must be a valid sub-board (msgbase) internal code or 'mail'");
 	print();
 	print("options:");
-	print("\t-i<filename>  import text from filename rather than stdin");
+	print("\t-i<filename>  import body text from filename rather than stdin");
 	print("\t-t<name>      set 'to' user name");
 	print("\t-n<addr>      set 'to' netmail address");
 	print("\t-u<number>    set 'to' user number");
@@ -124,7 +125,11 @@ if(!hdrs.from)
 	hdrs.from = prompt("From User name");
 if(!hdrs.subject)
 	hdrs.subject = prompt("Subject");
-
+var num;
+if(!hdrs.to_ext && sub_code == 'mail' && !hdrs.to_net_addr && (num = system.matchuser(hdrs.to)) != 0)
+	hdrs.to_ext = num;
+if(!hdrs.from_ext && (num = system.matchuser(hdrs.from)) != 0)
+	hdrs.from_ext = num;
 if(!msgbase.save_msg(hdrs, body)) {
 	alert("Error saving message: " + msgbase.last_error);
 	exit();

@@ -2,7 +2,7 @@
 
 /* Functions to deal with comma (CSV) and tab-delimited files and lists */
 
-/* $Id$ */
+/* $Id: dat_file.h,v 1.4 2018/07/24 01:13:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,12 +1,12 @@
 // rss.ssjs
 
-// $Id$
+// $Id: rss.ssjs,v 1.22 2016/10/20 19:13:38 rswindell Exp $
 
 // Tested successfully with SharpReader v0.9.5.1
 
 load("sbbsdefs.js");
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.22 $".split(' ')[1];
 
 //log(LOG_INFO,"Synchronet RSS " + REVISION);
 

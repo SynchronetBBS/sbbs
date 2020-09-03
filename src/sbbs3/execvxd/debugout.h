@@ -1,6 +1,6 @@
 /* DEBUGOUT.H */
 
-/* $Id$ */
+/* $Id: debugout.h,v 1.1.1.1 2000/10/10 11:27:22 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

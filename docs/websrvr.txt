@@ -1,7 +1,7 @@
 Synchronet Web Server Documentation
 ===================================
 
-$Id$
+$Id: websrvr.txt,v 1.17 2007/11/30 09:05:08 deuce Exp $
 
 1. Introduction
 ---------------

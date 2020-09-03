@@ -1,6 +1,6 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: ClientFormUnit.cpp,v 1.16 2020/04/30 18:28:50 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -35,7 +35,7 @@
 
 //---------------------------------------------------------------------------
 
-#include "sbbs.h"		// filter_ip
+#include "userdat.h"		// filter_ip
 #include <vcl.h>
 #pragma hdrstop
 

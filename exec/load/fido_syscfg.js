@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fido_syscfg.js,v 1.24 2020/05/16 20:10:19 rswindell Exp $
 /*
  * Parse as much as needed from the SBBSecho configuration.
  * v3+ uses sbbsecho.ini.
@@ -18,6 +18,8 @@
  * get_pw(node)		node is a address string to look up a password for.  matches against wildcards.
  * match_pw(node, pw)	checks that the specified password string (pw) matches the password for the given node address (node).
  */
+var fidoaddr = load({}, 'fidoaddr.js');
+
 function SBBSEchoCfg ()
 {
 	var line;
@@ -28,6 +30,10 @@ function SBBSEchoCfg ()
 	this.pktpass = {};
 	this.ticpass = {};
 	this.packer = {};
+	this.inbox = {};
+	this.outbox = {};
+	this.status = {};
+	this.direct = {};
 	this.is_flo = false;
 	this.outbound = undefined;
 	var packer = undefined;
@@ -50,6 +56,18 @@ function SBBSEchoCfg ()
 	ecfg.iniGetSections('node:').forEach(function(section) {
 		this.ticpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'TicFilePwd', '');
 	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.inbox[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'inbox');
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.outbox[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'outbox');
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.status[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'status', '').toLowerCase();
+	}, this);
+	ecfg.iniGetSections('node:').forEach(function(section) {
+		this.direct[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'direct', false);
+	}, this);
 	ecfg.iniGetSections('archive:').forEach(function(packer) {
 		this.packer[packer] = {};
 		this.packer[packer].offset = ecfg.iniGetValue(packer, 'SigOffset', 0);
@@ -62,8 +80,8 @@ function SBBSEchoCfg ()
 }
 SBBSEchoCfg.prototype.get_ticpw = function(node)
 {
+  if (!fidoaddr.is_valid(node)) throw 'get_ticpw: Invalid address ' + node;
 	var n = node;
-
 	while(n) {
 		if (this.ticpass[n] !== undefined)
 			return this.ticpass[n];
@@ -80,8 +98,8 @@ SBBSEchoCfg.prototype.get_ticpw = function(node)
 };
 SBBSEchoCfg.prototype.get_pw = function(node)
 {
+  if (!fidoaddr.is_valid(node)) throw 'get_pw: Invalid address ' + node;
 	var n = node;
-
 	while(n) {
 		if (this.pktpass[n] !== undefined)
 			return this.pktpass[n];

@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: msg.inc,v 1.1 2006/02/22 02:16:41 runemaster Exp $ -->
 
 <!-- Main Content -->  
     

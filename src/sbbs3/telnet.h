@@ -2,7 +2,7 @@
 
 /* Synchronet telnet-related constants and function prototypes */
 
-/* $Id$ */
+/* $Id: telnet.h,v 1.21 2019/08/24 19:37:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -142,9 +142,6 @@ enum {
 #ifdef DLLEXPORT
 #undef DLLEXPORT
 #endif
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
 
 #if defined(_WIN32)
 	#if !defined(TELNET_NO_DLL)
@@ -156,24 +153,20 @@ enum {
 	#else
 		#define DLLEXPORT
 	#endif
-	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
-	#else
-		#define DLLCALL
-	#endif
 #else
 	#define DLLEXPORT
-	#define DLLCALL
 #endif
 
 #ifdef __cplusplus  
 extern "C" {   
 #endif   
 
-DLLEXPORT const char* DLLCALL telnet_cmd_desc(uchar cmd);   
-DLLEXPORT const char* DLLCALL telnet_opt_desc(uchar opt);
-DLLEXPORT		uchar DLLCALL telnet_opt_ack(uchar cmd);
-DLLEXPORT		uchar DLLCALL telnet_opt_nak(uchar cmd);
+DLLEXPORT const char* telnet_cmd_desc(uchar cmd);   
+DLLEXPORT const char* telnet_opt_desc(uchar opt);
+DLLEXPORT		uchar telnet_opt_ack(uchar cmd);
+DLLEXPORT		uchar telnet_opt_nak(uchar cmd);
+DLLEXPORT size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen
+								,BOOL expand_cr, uchar** result);
 
 #ifdef __cplusplus
 }

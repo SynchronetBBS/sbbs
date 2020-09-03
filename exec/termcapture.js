@@ -1,4 +1,4 @@
-// $Id$
+// $Id: termcapture.js,v 1.3 2015/10/28 07:48:57 rswindell Exp $
 
 var capture=load(new Object, "termcapture_lib.js");
 

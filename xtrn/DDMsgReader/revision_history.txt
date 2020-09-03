@@ -5,7 +5,103 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.17     2018-??-??   Added support for Synchronet's new voting feature that
+1.37     2020-07-11   Added mouse support to the scrollable reader interface.
+                      The integrated area changer functionality doesn't have
+                      mouse support yet.
+1.36     2020-05-23   Added a command-line parameter, -onlyNewPersonalEmail,
+                      which specifies to list/read only new/unread personal
+                      email to the user.  And for integration with Synchronet
+                      via the "Read Email" loadable module, this is to be used
+                      together with the updated DDReadPersonalEmail.js.  This
+                      is intended to support the "read your unread mail only"
+                      option in the email menu.
+1.35     2020-05-13   Fixed some logic in determining how to address a personal
+                      email when replying (either to a local user or via their
+                      network address).
+1.34     2020-05-11   The message list mode now honors anonymous posts, showing
+                      the 'from' name as "Anonymous" (for non-sysops).  The
+                      sysop can still see the real name of the poster.  The
+                      reader mode already honored the 'anonymous' flag.
+1.33     2020-04-21   Fixed: A new user starting to read messages in a sub-board
+                      no longer causes an error (it checks for the scan_ptr
+                      being 0xffffffff).  This had been fixed in a couple places
+                      previously, but apparently not this particular case.
+1.32     2020-04-19   Removed some code that's no longer used.  Also, fixed an
+                      issue when changing to another sub-board with the
+                      traditional-style (non-lightbar) list where it was slow to
+                      list sub-boards.  For the number of messages, it was
+                      checking all headers to ignore ones marked as deleted,
+                      etc., but that can be fairly slow..  Now it just uses
+                      total_msgs for the MessageBase object, which is a lot
+                      faster and still gives an idea of how many messages are
+                      there.
+1.31     2020-04-13   The area change feature now uses DDLightbarMenu.  There
+                      is no more internal lightbar code in this message reader.
+1.30     2020-04-07   The message list features now uses DDLightbarMenu rather
+                      than the internal lightbar menu code.  Requires the
+                      latest dd_lightbar_menu.js (in sbbs/exec/load).
+                      Later I also plan to update the area chooser code to also
+                      use DDLightbarMenu and remove the internal lightbar
+                      chooser code from DDMsgReader altogether.
+1.29     2020-04-03   When reading a message, if a message is written to the
+                      current user, the 'To' username in the header above the
+                      message is now written in a different color.  Also, there
+                      are new color settings available in the theme
+                      configuration file (see the readme for descriptions):
+                      msgHdrMsgNumColor, msgHdrFromColor, msgHdrToColor,
+                      msgHdrToUserColor, msgHdrSubjColor, msgHdrDateColor
+1.28     2019-12-21   Bug fix: When the user changes to a different message
+                      area while reading a message, the reader would exit with
+                      an error due to an invalid last-read message number.
+                      This has been fixed.
+1.27     2019-09-16   Bug fix: Now displays the message score in the header
+                      even if the message only has downvotes
+1.26     2019-09-12   Fixed a bug that was causing some of the message vote
+                      tally information to be displayed as "undefined"
+1.25     2019-08-29   Added the ability to search for message groups and
+                      sub-boards when changing to another sub-board. Search
+                      can be started with the / key or CTRL-F (Find). Also, in
+                      lightbar mode, the N key can be used to highlight the
+                      next match in the list.
+1.24     2019-08-17   When making a private reply on local email, an error is
+                      now outputted if the recipient's user number is not
+                      found.  Also, fixed an 'undefined' bug that happened when
+                      searching for messages sometimes.
+1.23     2019-07-27   If a message is in UTF-8 format and the user's terminal
+                      doesn't support UTF-8, the message text will be converted
+                      to CP437.  Also, if there is a color/attribute code in
+                      the message before the message text and there are no
+                      other color/attribute codes, the color/attribute codes
+                      will be removed so  that the entire message isn't colored
+1.22     2019-05-12   If the message score is 0, with upvotes and total_votes
+                      both 0, then don't show the score when using the default
+                      header ANSI.  This is what was intended, but the 0 score
+                      started showing up in more recent builds of Synchronet.
+1.21     2019-05-04   New uses require() instead of load(), if the require()
+                      function exists, to load required .js library scripts.
+                      This helps avoid 'multiple definition' errors.  The
+                      require() function was added in Synchronet 3.17, so
+                      if the require() function doesn't exist, then the reader
+                      will use load().
+1.20     2019-04-26   Added configurable options for the message score colors
+                      for the message list: msgListScoreColor,
+                      msgListToUserScoreColor, msgListFromUserScoreColor, and
+                      msgListScoreHighlightColor
+1.19     2019-04-25   If the terminal size is wide enough (at least 86
+                      characters), the overall vote scores for the messages
+                      is now displayed in the message list.  Also, fixed a
+                      bug introduced in the previous version where the vote
+                      scores were no longer being displayed when reading a
+                      message.  It's no longer using MsgBase.get_index() and
+                      uses get_all_msg_headers(), as before, since that's what
+                      is required for message tallies to be included in the
+                      message headers.
+1.18     2019-04-15   Made use of the new MsgBase.get_index() function (if
+                      available) for better performance.  Added 'undefined'
+                      checks for some of the messaeg attribute definitions
+                      before adding them to the attribute strings, since some
+                      of them have changed.
+1.17     2019-01-02   Added support for Synchronet's new voting feature that
                       was added in Synchronet 1.17.  Added support to allow the
                       sysop to validate messages in moderated message areas.
                       Fixed various bugs related to doing a newscan, displaying

@@ -1,0 +1,311 @@
+Story:
+
+=============================================================================
+ 
+The village has just gone through it's rainy season, but this year was
+extraordinary... There was a massive flood that rampaged through the 
+village. Luckily none of the buildings were hurt nor any villagers.
+
+Rumor has it that the rain has flooded out an abandoned cave that the
+Red Dragon had taken refuge in. With the extra rain it has forced 
+the Dragon out. Now, this cave is very close to the town, and you
+must kill the dragon before it can attack the village.
+ 
+The village is depending on you and your fellow comrades to defeat the
+Red Dragon. Don't let the villagers down.
+ 
+
+=============================================================================
+           
+
+                                DISCLAIMER
+                             (gotta have it!)
+
+    The author of Wetlord has taken every precaution to insure that no
+    harm or damage will occur on computer systems operating the Wetlord
+    add-on package. Actually, its practically impossible for this program
+    to do any harm since its just plain TEXT files! But, since this is
+    a BETA copy, there will probably be some bugs in it! If you encounter
+    any bugs or problems, please call to my BBS and leave the me a message
+    and explain the problem. Oh yeah, one last note, if in any way for any 
+    reason this causes any damages to any hardware/software, I take no 
+    responsibity. But dont worry! Its improbable that anything will go wrong!
+
+                             LICENSE AGREEMENT
+                            (cant forget this!)
+
+    The Wetlord add-on program, installation and uninstallation
+    programs, and documentation are copyrighted products of LD Software
+    and Jason Peterson. Jason Peterson reserves all rights to these products.
+    This is protected by the United States of America (USA) and
+    International Copyright Laws. In no way shall Wetlord be reproduced
+    or modified in any form or method without prior written permission
+    from Jason Peterson. No fee may be charged by any agency other than
+    Jason Peterson or LD Software beyond the cost of a disk, CD-ROM, or BBS
+    membership plan without written permission from Jason Peterson.
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+1. About Wetlord        (isn't that always the first page?)
+
+2. Installation Instructions
+
+3. Updates
+
+4. Questions
+
+5. How to contact the Author
+
+6. Registering Wetlord
+
+7. Technical junk (Future add-ons)
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+
+
+
+
+                          *** 1. About Wetlord ***
+
+   Have you ever started playing LORD (Legend Of the Red Dragon), either
+   locally or on a BBS and think, besides getting killed by John Doe today
+   its still the same thing! You use up your forest fights, kill a few
+   people, (if available) go to Other places and try to get a little further.
+     I am not putting LORD down or anything, but most boards have the default
+   of 10 heroic deeds set up to finish the game! If you noticed, it could
+   take a couple of months just to do 1 heroic deed! So, to actually finish
+   the game, it could take well over a year and 1/2! I dont know if its just
+   me, but I like to finish games within 2 months!
+   Most people like to have friends in the realm so they cant kill a lot
+   of people! Well, I am one of those people that trys to kill that guy that
+   is 3 levels higher than me! Now, thats when I started realizing that if
+   I saved up my money and killed that guy, I would get a LOT of experience!
+     Thats the MAIN reason I decided to write this program! First, it gives
+   LORD a totally new look, the menus are more colorful and I think they
+   look a lot more attractive! The second reason, the storyline of this game
+   puts all the players in a FLOOD.  This will change only little things
+   This will not touch the LORD.EXE, besides its illegal for me to do that.. 
+
+
+
+
+                      *** 2. Installation Instructions ***
+
+   Installing Wetlord should be a simple process since all it does is
+   it renames your current lenemy.dat and lordtxt.dat files to
+   lenemy.old and lordtxt.old.
+
+
+-=-=Batch Installation=-=-
+
+To use the batch files for installation simply extract the
+contents of the zip file to any directory (you probably already
+did that!) Run the file INSTALL.BAT with a parameter of where
+your LORD is installed.
+
+*Example*
+INSTALL.BAT C:\LORD
+
+Its that easy! To Uninstall simply move to your LORD directory
+at the DOS prompt and type UNINSTAL.BAT (or UNINSTAL).
+But please note, if you haven't already installed Wetlord before
+running this file, you will lose a few files LORD needs to run!
+
+
+** If for some reason you did run the Uninstall program first, here
+** is how you fix it...
+
+** You must have your original Lord zip file to fix this problem!
+** Inside of the lord.zip file you will find the two files that you
+** are missing. Look for lenemy.dat and lordtxt.dat. Ok, extract or
+** move them to your lord directory and its all fixed up!
+** Of course, who is dumb enough to run the uninstall program first? =)
+
+
+-=-=Manual Installation=-=-
+
+If for some reason you need to do a manual installation here is how...
+Go to your LORD directory and rename the following files...
+
+lenemy.dat  to  lenemy.old
+lordtxt.dat  to  lordtxt.old
+
+Now,   rename wenemy.dat  to  lenemy.dat
+       rename wartext.dat  to  lordtxt.dat
+
+Ok, now move both of them files to your LORD directory and its all
+set up!
+
+
+
+
+
+                             *** 3. Updates ***
+
+If you would like to recieve updates of this program, see 6. Registering 
+Wetlord later in this file...
+I plan to update all monsters, screens, and so on in the near future...
+The screens are all finished now, but I have more ideas to add to them!
+There are no monsters complete so far, I can't figure out how to put them
+in the LENEMY.DAT file, so I hope to get some monsters in here also...
+
+
+
+
+
+                            *** 4. Questions ***
+
+
+
+--= I thought this program was FREEWARE, why would I register it? =--
+
+** Yes, this program is FREEWARE, you dont have to send me a cent **
+** to use it! But I took a lot of my time to write this program   **
+** so you and your callers could enjoy it! If everyone would send **
+** me some spare change, it would make me want to add more and    **
+** more to my program, and possibly write more programs.          **
+** Like I said earlier, I WILL add more if a few people register! **
+
+
+
+--= What do I get if I register? =--
+
+** Well, the main thing you get is knowing that you helped another **
+** person out by making his hard spent time worth something!       **
+** But, thats probably not enough, so you also get all newer       **
+** versions, by E-Mail, and you will get added to my mailing list  **
+** for all new programs I write in the future. (Shareware, or      **
+** FREEWARE only! I cant give you ALL my registered programs!)     **
+
+
+--= Where do I send my registration money? =--
+
+** See chapter 6 for more information on registering **
+
+
+
+
+                    *** 5. How to contact the author ***
+
+
+You can contact me, Jason Peterson in the following ways...
+
+I call a lot of BBS's in Delaware and other states, here are the most 
+frequent ones I call and their numbers...
+
+Highway To Fun                                    302-674-1843
+The Other Realm                                   302-284-0831
+Mystical Tower (I'm SysOp)                        302-422-6481
+Country Cabin (Don't Call much but I'm there..)   302-284-9438
+Dark Side (Seth's BBS                             000-000-0000            
+The Borg (LordNet Support Site)                   000-000-0000
+
+
+Or you can contact me via snail mail at...
+
+Wetlord
+c/o Jason Peterson
+653 Milford Harrington Hwy.
+Milford, DE 19963
+
+
+
+
+
+                      *** 1. Registering Wetlord ***
+
+Ok, you are probably thinking "I thought this was a FREEWARE program"!!!
+Well, it is, you dont have to send me 1 cent!
+But I took a lot of my time to write this program so you and your callers
+could enjoy it! If everyone would send me some spare change, it would make
+me want to add more and more to my program, and possible write more programs.
+Like I said earlier, I WILL add more if a few people register!
+Another benefit of registering is you will get ALL newer updated versions!
+You will get the newest version before it is available for download
+on BBS's. You will also get the satisfaction of knowing that I
+will take all donations and put them to my future of programming! I am saving
+up for C++ or Turbo Pascal as we speak. I then realized that my life was meant
+for programming and making people happy with my programs, so I decided to
+start with this little program! Its not a programmed program, but it did take
+me a long time to create! Anyway, sorry about blabbing on about my life...
+Here is my address to send any donations to. If you dont want to send
+anything, I understand! You are too greedy to send that $3 or $4 dollars
+from your pocket! Just kidding... Send any ammount to....
+Once again, thanx for BETA testing my program for me!   - Jason Peterson
+
+Wetlord
+c/o Jason Peterson
+653 Milford Harrinton Hwy.
+Milford, DE 19963
+
+
+
+
+
+
+                         ** 7. Technical Junk **
+
+(Future LORDTXT.DAT add-ons !)
+
+Time Lord - You are a business man in the 21st century, and on night you have
+            a dream of going back in time to the darkages to fight mid-evil 
+            villians, and dragons. You wake up a suddenly find that you have
+            been transported back in time, is it real? or is just an elaborate
+            dream?
+
+Spring Lord - It's spring time, Violet is in heat <G>, and everybody is in the
+              duledrums because it is almost time for the Red Dragon to come
+              out of hibernation...
+
+Wet Lord v1.5 - Fix or modify the v1.0 of the first WET LORD.
+
+Future Lord - You wake up from you cot, in the INN, one morning with a spliting 
+              headache, and when you head outside you find that everything is 
+              now all futuristic. Is it a dream? Or is it real?
+
+Lord Plaque - A plaque has come over the village and it is killing all of the
+              people in the village. Rumor has it, that the dragon brought it 
+              over from some other village on one of it's rampages. Almost no 
+              one is in fighting condition, expecally after the dragon attack 
+              from a few nights before. It is your mission to kill the dragon,
+              and hopefully stop the plaque.
+
+SkyLord - Live amoungist the clouds.
+
+RainForest Lord - Live in the rain forest with natives and kill jungle animals
+
+Egypt Lord - Live in Egypt, visit Pyramids, kill sand monsters
+
+Atlantis Lord - Live on the lost continent of Atlantis
+
+Prehistoric Lord - Dinosaurs everywhere.
+
+Modern Lord - Lord for the 90's
+
+Power Ranger Lord <Very Big Grin> - Kill all those damn rangers!
+
+Costom Lord (SysOps/CoSysOps only) I'll costomize your LORD from the BBS name.
+
+Underwater Lord - Name Explains it all..
+
+Space Lord - Name just about explains it..
+
+Moon Lord - Lord on the Moon? Are you crazy??!?! Simply put.. YES!
+
+Mars Lord - Almost same thing a Moon Lord but on Mars
+
+Coputer Lord - A computer Lord.. Robots, etc..
+
+Volcano Lord - Lord after a Volcano eruption..
+
+Earthquake Lord - Lord after an Earthquake..
+
+
+
+Any other ideas? Send me mail on any of the BBSes listed above..
+

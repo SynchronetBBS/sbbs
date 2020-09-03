@@ -1,7 +1,7 @@
 /**
  * mrelayd.c -- a relay daemon
  * --
- * $Id$
+ * $Id: mrelayd.c,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 #define FAILMESSAGE "Sorry, all slots are full.\r\n"
 
 /* string printed before connection */
-#define RELAYHEADER "Relayd $Revision$ (c) Marcus Meissner\r\n"
+#define RELAYHEADER "Relayd $Revision: 1.1.1.1 $ (c) Marcus Meissner\r\n"
 
 /* the tcp port this demons is listening on ... */
 #define LISTENPORT  31415

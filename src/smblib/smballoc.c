@@ -1,7 +1,7 @@
 /* Synchronet message base (SMB) alloc/free routines */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: smballoc.c,v 1.14 2019/04/11 01:00:29 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -248,7 +248,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 		}
 		i+=refs;
 		if(fseek(smb->sda_fp,-(int)sizeof(i),SEEK_CUR)) {
-			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s rewinding %ld", __FUNCTION__, -(int)sizeof(i));
+			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s rewinding %ld", __FUNCTION__, -(long)sizeof(i));
 			return(SMB_ERR_SEEK);
 		}
 		if(!fwrite(&i,sizeof(i),1,smb->sda_fp)) {

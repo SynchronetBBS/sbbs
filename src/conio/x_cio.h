@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: x_cio.h,v 1.27 2020/05/07 20:26:51 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -75,6 +75,8 @@ void x11_drawrect(struct rectlist *data);
 void x11_flush(void);
 void x_setscaling(int newval);
 int x_getscaling(void);
+void x_seticon(const void *icon, unsigned long size);
+int x_mousepointer(enum ciolib_mouse_ptr type);
 #ifdef __cplusplus
 }
 #endif

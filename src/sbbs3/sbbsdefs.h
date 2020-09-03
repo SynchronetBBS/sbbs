@@ -1,6 +1,6 @@
 /* Synchronet constants, macros, and structure definitions */
 
-/* $Id: sbbsdefs.h,v 1.226 2018/10/22 04:18:06 rswindell Exp $ */
+/* $Id: sbbsdefs.h,v 1.267 2020/08/14 02:00:47 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -49,16 +49,18 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.17"  /* Version: Major.minor  */
+#define VERSION 	"3.18"  /* Version: Major.minor  */
 #define REVISION	'a'     /* Revision: lowercase letter */
-#define VERSION_NUM	(31700	 + (tolower(REVISION)-'a'))
-#define VERSION_HEX	(0x31700 + (tolower(REVISION)-'a'))
+#define VERSION_NUM	(31800	 + (tolower(REVISION)-'a'))
+#define VERSION_HEX	(0x31800 + (tolower(REVISION)-'a'))
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
 #define SYNCHRONET_CRC		0x9BCDD162
-#define COPYRIGHT_NOTICE	"Copyright 2018 Rob Swindell"
-#define COPYRIGHT_CRC		0x930AE2A9
+#define COPYRIGHT_NOTICE	"Copyright 2020 Rob Swindell"
+#define COPYRIGHT_CRC		0xB12E96E6
+
+#define SBBSCTRL_DEFAULT	"/sbbs/ctrl"
 
 #define Y2K_2DIGIT_WINDOW	70
 
@@ -70,6 +72,7 @@
 #define UNKNOWN_LOAD_ERROR	"Unknown load error - Library mismatch?"
 
 #define STR_UNKNOWN_USER	"<unknown user>"
+#define STR_NO_HOSTNAME		"<no name>"
 
 #define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
 #define JAVASCRIPT_CONTEXT_STACK	(16*1024)
@@ -164,7 +167,7 @@ typedef struct js_callback {
 #define SM_CELERITY		(1L<<10)	/* Expand Celerity color codes in messages	*/
 #define SM_RENEGADE		(1L<<11)	/* Expand Renegade color codes in messages	*/
 #define SM_ECHO_PW		(1L<<12)	/* Echo passwords locally					*/
-#define SM_UNUSED		(1L<<13)	/* Defaults to *on*	(used to SM_LOCAL_TZ)	*/
+#define SM_SYSPASSLOGIN	(1L<<13)	/* Require system password for sysop login	*/
 #define SM_AUTO_DST		(1L<<14)	/* Automatic Daylight Savings Toggle (US)   */
 #define SM_R_SYSOP		(1L<<15)	/* Allow remote sysop logon/commands		*/
 #define SM_QUOTE_EM		(1L<<16)	/* Allow quoting of e-mail					*/
@@ -176,7 +179,7 @@ typedef struct js_callback {
 #define SM_TIME_EXP		(1L<<22)	/* Set to expired values if out-of-time 	*/
 #define SM_FASTMAIL		(1L<<23)	/* Fast e-mail storage mode 				*/
 #define SM_NONODELIST	(1L<<24)	/* Suppress active node list during logon	*/
-#define SM_ERRALARM		(1L<<25)	/* Error beeps on							*/
+#define SM_UNUSED2		(1L<<25)	/*											*/
 #define SM_FWDTONET		(1L<<26)	/* Allow forwarding of e-mail to netmail	*/
 #define SM_DELREADM		(1L<<27)	/* Delete read mail automatically			*/
 #define SM_NOCDTCVT		(1L<<28)	/* No credit to minute conversions allowed	*/
@@ -387,6 +390,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define EVENT_INIT		(1<<2)		/* Always run event after init			*/
 #define EVENT_DISABLED	(1<<3)		/* Disabled								*/
 
+#define NODE_ANY		0			/* special qhub/event_t.node value		*/
+
 									/* Bits in xtrn_t.misc					*/
 #define MULTIUSER		(1<<0) 		/* allow multi simultaneous users		*/
 #define XTRN_ANSI		(1<<1)		/* LEGACY (not used)                    */
@@ -409,14 +414,11 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define XTRN_SH			(1<<18)		/* Use command shell to execute			*/
 #define XTRN_PAUSE		(1<<19)		/* Force a screen pause on exit			*/
 #define XTRN_NOECHO		(1<<20)		/* Don't echo stdin to stdout			*/
-#define WORDWRAP80		(1<<21)		/* Word-wrap editor to 80 columns		*/
-#define WORDWRAPTERM	(1<<22)		/* Word-wrap editor to terminal width	*/
-#define WORDWRAPLONG	(WORDWRAP80|WORDWRAPTERM)	/* word-wrap to maxlen	*/
-#define WORDWRAPNONE	0			/* No word-wrapping on editor in/ouput	*/
-#define WORDWRAPMASK	WORDWRAPLONG
+#define QUOTEWRAP		(1<<21)		/* Word-wrap quoted message text		*/
+#define SAVECOLUMNS		(1<<22)		/* Save/share current terminal width	*/
+#define XTRN_UTF8		(1<<23)		/* External program supports UTF-8		*/
+#define XTRN_JS_CX		(1<<24)		/* New JavaScript Context				*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
-#define QUOTEWRAP		WORDWRAP80	/* for temporary backwards compat.		*/
-
 
 									/* Bits in cfg.xtrn_misc				*/
 #define XTRN_NO_MUTEX	(1<<0)		/* Do not use exec_mutex for FOSSIL VXD	*/
@@ -439,6 +441,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QWK_MSGID	(1L<<14)		/* Include "@MSGID" in msgs				*/
 #define QWK_HEADERS	(1L<<16)		/* Include HEADERS.DAT file				*/
 #define QWK_VOTING	(1L<<17)		/* Include VOTING.DAT					*/
+#define QWK_UTF8	(1L<<18)		/* Include UTF-8 characters				*/
 
 #define QWK_DEFAULT	(QWK_FILES|QWK_ATTACH|QWK_EMAIL|QWK_DELMAIL)
 
@@ -450,6 +453,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QHUB_NOKLUDGES	(1<<14)		/* Don't include @-kludges */
 #define QHUB_NOHEADERS	(1<<16)		/* Don't include HEADERS.DAT */
 #define QHUB_NOVOTING	(1<<17)		/* Don't include VOTING.DAT */
+#define QHUB_UTF8		(1<<18)		/* Include UTF-8 characters */
 
 							/* Bits in user.chat							*/
 #define CHAT_ECHO	(1<<0)	/* Multinode chat echo							*/
@@ -473,9 +477,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 								/* Console I/O Bits	(console)				*/
 #define CON_R_ECHO		(1<<0)	/* Echo remotely							*/
 #define CON_R_ECHOX		(1<<1)	/* Echo X's to remote user					*/
+#define CON_L_ECHOX		0		// Unused
 #define CON_R_INPUT		(1<<2)	/* Accept input remotely					*/
 #define CON_L_ECHO		(1<<3)	/* Echo locally              				*/
-#define CON_L_ECHOX		(1<<4)	/* Echo X's locally							*/
+#define CON_PAUSEOFF	(1<<4)	// Temporary pause over-ride (same as UPAUSE)
 #define CON_L_INPUT		(1<<5)	/* Accept input locally						*/
 #define CON_RAW_IN		(1<<8)	/* Raw input mode - no editing capabilities	*/
 #define CON_ECHO_OFF	(1<<10)	/* Remote & Local echo disabled for ML/MF	*/
@@ -490,6 +495,10 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_HIGH_FONT	(1<<19)	/* Alt high-intensity font activated		*/
 #define CON_BLINK_FONT	(1<<20)	/* Alt blink attribute font activated		*/
 #define CON_HBLINK_FONT	(1<<21)	/* Alt high-blink attribute font activated	*/
+#define CON_MOUSE_CLK_PASSTHRU	(1<<24)	// Pass-through unhandled mouse button-click reports
+#define CON_MOUSE_REL_PASSTHRU	(1<<25)	// Pass-through unhandled mouse button-release reports
+#define CON_MOUSE_SCROLL		(1<<26)	// Mouse-reports enabled for non-hotspots (e.g. scroll-wheel)
+#define CON_CR_CLREOL			(1<<31)	// outchar('\r') clears to end-of-line first
 
 							/* Number of milliseconds						*/
 #define DELAY_AUTOHG 1500	/* Delay for auto-hangup (xfer) 				*/
@@ -513,7 +522,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_COMP		30	/* User computer description					*/
 #define LEN_COMMENT 	60	/* User comment 								*/
 #define LEN_NETMAIL 	60	/* NetMail forwarding address					*/
-#define LEN_PASS		 8	/* User password								*/
+#define LEN_OLDPASS		 8	/* User password (old)							*/
 #define LEN_PHONE		12	/* User phone number							*/
 #define LEN_BIRTH		 8	/* Birthday in MM/DD/YY format					*/
 #define LEN_ADDRESS 	30	/* User address 								*/
@@ -524,9 +533,11 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_FCDT		 9	/* 9 digits for file credit values				*/
 #define LEN_TITLE		70	/* Message title								*/
 #define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
-#define LEN_XFER_CMD	40
+#define LEN_PASS		40
+#define MIN_PASS_LEN	 4
+#define RAND_PASS_LEN	 8
 #define LEN_SCAN_CMD	35
-#define LEN_IPADDR	45
+#define LEN_IPADDR		45
 #define LEN_CID 		45	/* Caller ID (phone number) 					*/
 #define LEN_ARSTR		40	/* Max length of Access Requirement string		*/
 #define LEN_CHATACTCMD	 9	/* Chat action command							*/
@@ -549,8 +560,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_LOCATION	U_ADDRESS+LEN_ADDRESS
 #define U_ZIPCODE	U_LOCATION+LEN_LOCATION
 
-#define U_PASS		U_ZIPCODE+LEN_ZIPCODE+2
-#define U_PHONE  	U_PASS+8  			/* Offset to phone-number */
+#define U_OLDPASS	U_ZIPCODE+LEN_ZIPCODE+2
+#define U_PHONE  	U_OLDPASS+LEN_OLDPASS  	/* Offset to phone-number */
 #define U_BIRTH  	U_PHONE+12 		/* Offset to users birthday	*/
 #define U_MODEM     U_BIRTH+8
 #define U_LASTON	U_MODEM+8
@@ -591,8 +602,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_CURSUB	U_LEECH+2  	/* Current sub (internal code)  */
 #define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
 #define U_MAIN_CMD	U_CURXTRN+8+2 	/* unused */
-#define U_XFER_CMD	U_MAIN_CMD+LEN_MAIN_CMD 		/* unused */
-#define U_SCAN_CMD	U_XFER_CMD+LEN_XFER_CMD+2  	/* unused */
+#define U_PASS		U_MAIN_CMD+LEN_MAIN_CMD
+#define U_SCAN_CMD	U_PASS+LEN_PASS+2  				/* unused */
 #define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
 #define U_FREECDT	U_IPADDR+LEN_IPADDR+2
 #define U_FLAGS3	U_FREECDT+10 	/* Flag set #3 */
@@ -655,10 +666,18 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define AUTOLOGON	(1L<<22)		/* AutoLogon via IP						*/
 #define HTML		(1L<<23)		/* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN	(1L<<24)		/* No spinning cursor at pause prompt	*/
-#define CTERM_FONTS	(1L<<25)		/* Loadable fonts are supported			*/
 #define PETSCII		(1L<<26)		/* Commodore PET/CBM terminal			*/
+#define SWAP_DELETE	(1L<<27)		/* Swap Delete and Backspace keys		*/
+#define ICE_COLOR	(1L<<28)		/* Bright background color support		*/
+#define UTF8		(1L<<29)		/* UTF-8 terminal						*/
+#define MOUSE		(1L<<31)		/* Mouse supported terminal				*/
 
-#define TERM_FLAGS	(ANSI|COLOR|NO_EXASCII|RIP|WIP|HTML|CTERM_FONTS|PETSCII)
+#define TERM_FLAGS		(ANSI|COLOR|RIP|WIP|HTML|SWAP_DELETE|ICE_COLOR|MOUSE|CHARSET_FLAGS)
+#define CHARSET_FLAGS	(NO_EXASCII|PETSCII|UTF8)
+#define CHARSET_ASCII	NO_EXASCII	// US-ASCII
+#define CHARSET_PETSCII	PETSCII		// CBM-ASCII
+#define CHARSET_UTF8	UTF8
+#define CHARSET_CP437	0
 
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B
@@ -676,7 +695,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define TERM_COLS_MIN		40
 #define TERM_COLS_MAX		255
 #define TERM_COLS_DEFAULT	80
-#define TERM_ROWS_MIN		10
+#define TERM_ROWS_MIN		8	// Amstrad NC100 has an 8-line display
 #define TERM_ROWS_MAX		255
 #define TERM_ROWS_DEFAULT	24
 
@@ -715,6 +734,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_FILEXFER	(1L<<27) /* File transfer in progress, halt spy			*/
 #define SS_SSH		(1L<<28) /* Current login via SSH						*/
 #define SS_MOFF		(1L<<29) /* Disable automatic messages					*/
+#define SS_QWKLOGON	(1L<<30) /* QWK logon									*/
+#define SS_FASTLOGON (1<<31) /* Fast logon									*/
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_NONE		0			/* Use as a place holder for no mode flags	*/
@@ -744,6 +765,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_TRIM		(1L<<23)	/* Trimmed white-space						*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
+#define P_NONE		0			/* No mode flags							*/
 #define P_NOABORT  	(1<<0)		/* Disallows abortion of a message          */
 #define P_SAVEATR   (1<<1)		/* Save the new current attributes after	*/
 								/* msg has printed. */
@@ -755,6 +777,12 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_WORDWRAP	(1<<7)		/* Word-wrap long lines for user's terminal	*/
 #define P_CPM_EOF	(1<<8)		/* Ignore Ctrl-Z chars (CPM End-of-File)	*/
 #define	P_TRUNCATE	(1<<9)		/* Truncate (don't display) long lines		*/
+#define P_NOERROR	(1<<10)		/* Don't report error if file doesn't exist	*/
+#define P_PETSCII	(1<<11)		/* Message is native PETSCII				*/
+#define P_WRAP		(1<<12)		/* Wrap/split long-lines, ungracefully		*/
+#define P_UTF8		(1<<13)		/* Message is UTF-8							*/
+#define P_AUTO_UTF8	(1<<14)		/* Message may be UTF-8, auto-detect		*/
+#define P_NOXATTRS	(1<<15)		/* No "Extra Attribute Codes" supported		*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */
@@ -765,6 +793,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define FL_VIEW     (1<<5)		/* View ZIP/ARC/GIF etc. info               */
 
 								/* Bits in the mode of writemsg and email() */
+#define WM_NONE		0			/* No bit flags set							*/
 #define WM_EXTDESC	(1<<0)		/* Writing extended file description		*/
 #define WM_EMAIL	(1<<1)		/* Writing e-mail							*/
 #define WM_NETMAIL	(1<<2)		/* Writing NetMail							*/
@@ -777,6 +806,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define WM_SUBJ_RO	(1<<9)		/* Subject/title is read-only				*/
 #define WM_EDIT		(1<<10)		/* Editing existing message					*/
 #define WM_FORCEFWD	(1<<11)		/* Force "yes" to ForwardMailQ for email	*/
+#define WM_NOFWD	(1<<12)		/* Don't forward email to netmail			*/
 
 								/* Bits in the mode of loadposts()			*/
 #define LP_BYSELF	(1<<0)		/* Include messages sent by self			*/
@@ -793,6 +823,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LM_INCDEL	(1<<1)		/* Include deleted mail		 				*/
 #define LM_NOSPAM	(1<<2)		/* Exclude SPAM								*/
 #define LM_SPAMONLY	(1<<3)		/* Load SPAM only							*/
+#define LM_REVERSE	(1<<4)		/* Reverse the index order (newest-first)	*/
 
 enum {							/* readmail and delmailidx which types		*/
 	 MAIL_YOUR					/* mail sent to you							*/
@@ -816,6 +847,8 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_CHKTIME	XTRN_CHKTIME	/* Check time left						*/
 #define EX_NOECHO	XTRN_NOECHO		/* Don't echo stdin to stdout 			*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)
+#define EX_JS_CX	(1<<24)		/* New JavaScript context */
+#define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
 
 #if defined(__unix__)
@@ -870,6 +903,7 @@ enum XFER_TYPE {				/* Values for type in xfer_prot_select()	*/
 #define SCAN_MSGSONLY	(1<<6)	/* Do not do a new file scan even if the
 								 * user enabled Automatic New File Scan		*/
 #define SCAN_POLLS		(1<<7)	/* Scan for polls (only)					*/
+#define SCAN_INDEX		(1<<8)	// List the msg index or exec listmsgs_mod
 
 								/* Bits in misc of chan_t					*/
 #define CHAN_PW 	(1<<0)		/* Can be password protected				*/
@@ -941,6 +975,7 @@ enum COLORS {
 
 #define ANSI_NORMAL		0x100
 #define BG_BLACK		0x200
+#define BG_BRIGHT		0x400		// Not an IBM-CGA/ANSI.SYS compatible attribute
 #define BG_BLUE			(BLUE<<4)
 #define BG_GREEN		(GREEN<<4)
 #define BG_CYAN			(CYAN<<4)

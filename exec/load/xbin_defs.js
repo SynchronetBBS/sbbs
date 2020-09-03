@@ -1,4 +1,4 @@
-// $Id$
+// $Id: xbin_defs.js,v 1.1 2018/02/02 12:48:35 rswindell Exp $
 
 // Xbin file format definition
 // https://web.archive.org/web/20120204063040/http://www.acid.org/info/xbin/x_spec.htm

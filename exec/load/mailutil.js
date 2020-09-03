@@ -3,7 +3,7 @@
 // Parses Internet mail and USENET article header fields 
 // for use with newsutil.js and mailproc_util.js
 
-// $Id$
+// $Id: mailutil.js,v 1.3 2016/08/12 22:15:02 rswindell Exp $
 
 //Michael J. Ryan - 2004-04-16 - tracker1(at)theroughnecks.net
 // gets the name portion for the "to/from"

@@ -1,6 +1,6 @@
 /* md5.h - header file for md5.c */
 
-/* $Id$ */
+/* $Id: md5.h,v 1.7 2019/03/22 21:29:12 rswindell Exp $ */
 
 /* RSA Data Security, Inc., MD5 Message-Digest Algorithm */
 
@@ -55,7 +55,7 @@ typedef struct
 		#define MD5EXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define MD5CALL __stdcall
+		#define MD5CALL
 	#else
 		#define MD5CALL
 	#endif

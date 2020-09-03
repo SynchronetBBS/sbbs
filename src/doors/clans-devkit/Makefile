@@ -1,4 +1,4 @@
-CC=	 gcc
+CC?=	 gcc
 FLAGS=	 -O -Wall
 EXECFILE= 
 RM=	 rm -f

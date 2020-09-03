@@ -1,7 +1,7 @@
 Synchronet ListServer Installation/Configuration
 ================================================
 
-$Id$
+$Id: listserver.txt,v 1.1 2004/10/23 03:47:15 rswindell Exp $
 
 Overview
 --------

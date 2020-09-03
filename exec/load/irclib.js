@@ -1,4 +1,4 @@
-// $Id$
+// $Id: irclib.js,v 1.23 2019/08/06 13:38:11 deuce Exp $
 //
 // irclib.js
 //
@@ -22,7 +22,7 @@
 // Copyright 2003-2006 Randolph Erwin Sommerfeld <sysop@rrx.ca>
 //
 
-const IRCLIB_REVISION = "$Revision$".split(' ')[1];
+const IRCLIB_REVISION = "$Revision: 1.23 $".split(' ')[1];
 const IRCLIB_VERSION = "irclib.js-" + IRCLIB_REVISION;
 
 // Connect to a server as a client.
@@ -43,8 +43,18 @@ function IRC_client_connect(hostname,nick,username,realname,port,password) {
 	if (!realname)
 		realname = IRCLIB_VERSION;
 
-	sock = new Socket();
-	sock.connect(hostname,port);
+	if (js.global.ConnectedSocket != undefined) {
+		try {
+			sock = new ConnectedSocket(hostname, port);
+		}
+		catch(e) {
+			return 0;
+		}
+	}
+	else {
+		sock = new Socket();
+		sock.connect(hostname,port);
+	}
 	if (sock.is_connected) {
 		if (password)
 			sock.send("PASS " + password + "\r\n");
@@ -145,7 +155,7 @@ function IRC_quit(server,reason) {
 	/* wait up to 5 seconds for server to disconnect */
 	var start=time();
 	while(server.is_connected && time()-start<5) {
-		if (server.poll(500))
+		if (server.poll(0.5))
 			server.recvline();
 	}
 }

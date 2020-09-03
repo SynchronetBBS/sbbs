@@ -1,7 +1,7 @@
 /* Synchronet answer "caller" function */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: answer.cpp,v 1.116 2020/08/02 03:37:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -99,12 +99,14 @@ bool sbbs_t::answer()
 				,LEN_ALIAS*2,str2
 				,terminal);
 			SAFECOPY(rlogin_term, terminal);
-			SAFECOPY(rlogin_name, str2);
+			SAFECOPY(rlogin_name, parse_login(str2));
 			SAFECOPY(rlogin_pass, str);
 			/* Truncate terminal speed (e.g. "/57600") from terminal-type string 
 			   (but keep full terminal type/speed string in rlogin_term): */
-			truncstr(terminal,"/");	
-			useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
+			truncstr(terminal,"/");
+			useron.number = 0;
+			if(rlogin_name[0])
+				useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
 				useron.misc&=~TERM_FLAGS;
@@ -115,10 +117,10 @@ bool sbbs_t::answer()
 						if(stricmp(tmp,useron.pass)) {
 							if(cfg.sys_misc&SM_ECHO_PW)
 								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-									,0,useron.alias,tmp);
+									,useron.number,useron.alias,tmp);
 							else
 								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-									,0,useron.alias);
+									,useron.number,useron.alias);
 							logline(LOG_NOTICE,"+!",str);
 							badlogin(useron.alias, tmp);
 							rioctl(IOFI);       /* flush input buffer */
@@ -129,7 +131,7 @@ bool sbbs_t::answer()
 							console&=~(CON_R_ECHOX|CON_L_ECHOX);
 						}
 						else {
-							if(REALSYSOP) {
+							if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN)) {
 								rioctl(IOFI);       /* flush input buffer */
 								if(!chksyspass())
 									bputs(text[InvalidLogon]);
@@ -138,18 +140,20 @@ bool sbbs_t::answer()
 									break;
 								}
 							}
-							else
+							else {
+								i = 0;
 								break;
+							}
 						}
 					}
 					if(i) {
 						if(stricmp(tmp,useron.pass)) {
 							if(cfg.sys_misc&SM_ECHO_PW)
 								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-									,0,useron.alias,tmp);
+									,useron.number,useron.alias,tmp);
 							else
 								safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-									,0,useron.alias);
+									,useron.number,useron.alias);
 							logline(LOG_NOTICE,"+!",str);
 							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
@@ -192,7 +196,7 @@ bool sbbs_t::answer()
 		pthread_mutex_lock(&ssh_mutex);
 		ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_USERNAME);
 		if (ctmp) {
-			SAFECOPY(rlogin_name, ctmp);
+			SAFECOPY(rlogin_name, parse_login(ctmp));
 			free_crypt_attrstr(ctmp);
 			ctmp = get_crypt_attribute(ssh_session, CRYPT_SESSINFO_PASSWORD);
 			if (ctmp) {
@@ -214,10 +218,10 @@ bool sbbs_t::answer()
 				if(stricmp(tmp,useron.pass)) {
 					if(cfg.sys_misc&SM_ECHO_PW)
 						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-							,0,useron.alias,tmp);
+							,useron.number,useron.alias,tmp);
 					else
 						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-							,0,useron.alias);
+							,useron.number,useron.alias);
 					logline(LOG_NOTICE,"+!",str);
 					badlogin(useron.alias, tmp);
 					rioctl(IOFI);       /* flush input buffer */
@@ -229,7 +233,7 @@ bool sbbs_t::answer()
 				}
 				else {
 					SAFECOPY(rlogin_pass, tmp);
-					if(REALSYSOP) {
+					if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN)) {
 						rioctl(IOFI);       /* flush input buffer */
 						if(!chksyspass())
 							bputs(text[InvalidLogon]);
@@ -238,18 +242,20 @@ bool sbbs_t::answer()
 							break;
 						}
 					}
-					else
+					else {
+						i = 0;
 						break;
+					}
 				}
 			}
 			if(i) {
 				if(stricmp(tmp,useron.pass)) {
 					if(cfg.sys_misc&SM_ECHO_PW)
 						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt: '%s'"
-							,0,useron.alias,tmp);
+							,useron.number,useron.alias,tmp);
 					else
 						safe_snprintf(str,sizeof(str),"(%04u)  %-25s  FAILED Password attempt"
-							,0,useron.alias);
+							,useron.number,useron.alias);
 					logline(LOG_NOTICE,"+!",str);
 					badlogin(useron.alias, tmp);
 					bputs(text[InvalidLogon]);
@@ -271,21 +277,27 @@ bool sbbs_t::answer()
 	/* Detect terminal type */
 	mswait(200);	// Allow some time for Telnet negotiation
 	rioctl(IOFI);		/* flush input buffer */
-	if(autoterm&PETSCII)
+	safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
+	if(autoterm&PETSCII) {
 		SAFECOPY(terminal, "PETSCII");
-	else {	/* ANSI+ terminal detection */
+		outchar(FF);
+		center(str);
+	} else {	/* ANSI+ terminal detection */
 		putcom( "\r\n"		/* locate cursor at column 1 */
 				"\x1b[s"	/* save cursor position (necessary for HyperTerm auto-ANSI) */
 				"\x1b[0c"	/* Request CTerm version */
     			"\x1b[255B"	/* locate cursor as far down as possible */
 				"\x1b[255C"	/* locate cursor as far right as possible */
-				"\b_"		/* need a printable at this location to actually move cursor */
+				"\b_"		/* need a printable char at this location to actually move cursor */
 				"\x1b[6n"	/* Get cursor position */
 				"\x1b[u"	/* restore cursor position */
 				"\x1b[!_"	/* RIP? */
 	#ifdef SUPPORT_ZUULTERM
 				"\x1b[30;40m\xc2\x9f""Zuul.connection.write('\\x1b""Are you the gatekeeper?')\xc2\x9c"	/* ZuulTerm? */
 	#endif
+				"\r"		/* Move cursor left */
+				"\xef\xbb\xbf"	// UTF-8 Zero-width non-breaking space
+				"\x1b[6n"	/* Get cursor position (again) */
 				"\x1b[0m_"	/* "Normal" colors */
 				"\x1b[2J"	/* clear screen */
 				"\x1b[H"	/* home cursor */
@@ -293,10 +305,8 @@ bool sbbs_t::answer()
 				"\r"		/* Move cursor left (in case previous char printed) */
 				);
 		i=l=0;
-		tos=1;
+		row=0;
 		lncntr=0;
-		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
-		strip_ctrl(str, str);
 		center(str);
 
 		while(i++<50 && l<(int)sizeof(str)-1) { 	/* wait up to 5 seconds for response */
@@ -339,6 +349,7 @@ bool sbbs_t::answer()
 
 			char* tokenizer = NULL;
 			char* p = strtok_r(str, "\x1b", &tokenizer);
+			unsigned cursor_pos_report = 0;
 			while(p != NULL) {
 				int	x,y;
 
@@ -346,15 +357,20 @@ bool sbbs_t::answer()
 					SAFECOPY(terminal,"ANSI");
 				autoterm|=(ANSI|COLOR);
 				if(sscanf(p, "[%u;%uR", &y, &x) == 2) {
-					lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u", x, y);
-					/* Sanity check the coordinates in the response: */
-					if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x; 
-					if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+					cursor_pos_report++;
+					lprintf(LOG_DEBUG,"received ANSI cursor position report [%u]: %ux%u"
+						,cursor_pos_report, x, y);
+					if(cursor_pos_report == 1) {
+						/* Sanity check the coordinates in the response: */
+						if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x; 
+						if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+					} else {	// second report
+						if(x < 3)	// ZWNBSP didn't move cursor (more than one column)
+							autoterm |= UTF8;
+					}
 				} else if(sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
 					lprintf(LOG_INFO,"received CTerm version report: %u.%u", x, y);
 					cterm_version = (x*1000) + y;
-					if(cterm_version >= 1061)
-						autoterm |= CTERM_FONTS;
 				}
 				p = strtok_r(NULL, "\x1b", &tokenizer);
 			}
@@ -362,9 +378,12 @@ bool sbbs_t::answer()
 
 		rioctl(IOFI); /* flush left-over or late response chars */
 
-		if(!autoterm && str[0]) {
-			c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
-			lprintf(LOG_NOTICE,"terminal auto-detection failed, response: '%s'", tmp);
+		if(!autoterm) {
+			autoterm |= NO_EXASCII;
+			if(str[0]) {
+				c_escape_str(str,tmp,sizeof(tmp)-1,TRUE);
+				lprintf(LOG_NOTICE,"terminal auto-detection failed, response: '%s'", tmp);
+			}
 		}
 		if(terminal[0])
 			lprintf(LOG_DEBUG, "auto-detected terminal type: %lux%lu %s", cols, rows, terminal);
@@ -391,52 +410,58 @@ bool sbbs_t::answer()
 	if(!(telnet_mode&TELNET_MODE_OFF)) {
 		/* Stop the input thread from writing to the telnet_* vars */
 		pthread_mutex_lock(&input_thread_mutex);
-		input_thread_mutex_locked = true;
 
-		if(stricmp(telnet_terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
-			SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
-			logline("@S",str);
-			node_connection = (ushort)cur_rate;
-			SAFEPRINTF(connection,"%lu",cur_rate);
-			SAFECOPY(cid,"Unknown");
-			SAFECOPY(client_name,"Unknown");
-			if(telnet_location[0]) {			/* Caller-ID info provided */
-				SAFEPRINTF(str, "CID: %s", telnet_location);
-				logline("@*",str);
-				SAFECOPY(cid,telnet_location);
-				truncstr(cid," ");				/* Only include phone number in CID */
-				char* p=telnet_location;
-				FIND_WHITESPACE(p);
-				SKIP_WHITESPACE(p);
-				if(*p) {
-					SAFECOPY(client_name,p);	/* CID name, if provided (maybe 'P' or 'O' if private or out-of-area) */
+		if(telnet_cmds_received) {
+			if(stricmp(telnet_terminal,"sexpots")==0) {	/* dial-up connection (via SexPOTS) */
+				SAFEPRINTF2(str,"%s connection detected at %lu bps", terminal, cur_rate);
+				logline("@S",str);
+				node_connection = (ushort)cur_rate;
+				SAFEPRINTF(connection,"%lu",cur_rate);
+				SAFECOPY(cid,"Unknown");
+				SAFECOPY(client_name,"Unknown");
+				if(telnet_location[0]) {			/* Caller-ID info provided */
+					SAFEPRINTF(str, "CID: %s", telnet_location);
+					logline("@*",str);
+					SAFECOPY(cid,telnet_location);
+					truncstr(cid," ");				/* Only include phone number in CID */
+					char* p=telnet_location;
+					FIND_WHITESPACE(p);
+					SKIP_WHITESPACE(p);
+					if(*p) {
+						SAFECOPY(client_name,p);	/* CID name, if provided (maybe 'P' or 'O' if private or out-of-area) */
+					}
+				}
+				SAFECOPY(client.addr,cid);
+				SAFECOPY(client.host,client_name);
+				client_on(client_socket,&client,TRUE /* update */);
+			} else {
+				if(telnet_location[0]) {			/* Telnet Location info provided */
+					lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
+					SAFECOPY(cid, telnet_location);
 				}
 			}
-			SAFECOPY(client.addr,cid);
-			SAFECOPY(client.host,client_name);
-			client_on(client_socket,&client,TRUE /* update */);
-		} else {
-			if(telnet_location[0]) {			/* Telnet Location info provided */
-				lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
+			if(telnet_speed) {
+				lprintf(LOG_INFO, "Telnet Speed: %lu bps", telnet_speed);
+				cur_rate = telnet_speed;
+				cur_cps = telnet_speed/10;
 			}
+			if(telnet_terminal[0])
+				SAFECOPY(terminal, telnet_terminal);
+			if(telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
+				cols = telnet_cols;
+			if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
+				rows = telnet_rows;
+		} else {
+			lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw/TCP mode");
+			telnet_mode |= TELNET_MODE_OFF;
+			client.protocol = "Raw";
+			client_on(client_socket, &client,/* update: */true);
+			SAFECOPY(connection, client.protocol);
+			node_connection = NODE_CONNECTION_RAW;
 		}
-		if(telnet_speed) {
-			lprintf(LOG_INFO, "Telnet Speed: %lu bps", telnet_speed);
-			cur_rate = telnet_speed;
-			cur_cps = telnet_speed/10;
-		}
-		if(telnet_terminal[0])
-			SAFECOPY(terminal, telnet_terminal);
-		if(telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
-			cols = telnet_cols;
-		if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
-			rows = telnet_rows;
 		pthread_mutex_unlock(&input_thread_mutex);
-		input_thread_mutex_locked = false;
 	}
 	lprintf(LOG_INFO, "terminal type: %lux%lu %s", cols, rows, terminal);
-	useron.misc&=~TERM_FLAGS;
-	useron.misc|=autoterm;
 	SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
 	SAFECOPY(useron.comp,client_name);
 
@@ -455,25 +480,7 @@ bool sbbs_t::answer()
 		/* Display ANSWER screen */
 		rioctl(IOSM|PAUSE);
 		sys_status|=SS_PAUSEON;
-		SAFEPRINTF(str,"%sanswer",cfg.text_dir);
-		SAFEPRINTF(path,"%s.rip",str);
-		if((autoterm&RIP) && fexistcase(path))
-			printfile(path,P_NOABORT);
-		else {
-			SAFEPRINTF(path,"%s.html",str);
-			if((autoterm&HTML) && fexistcase(path))
-				printfile(path,P_NOABORT);
-			else {
-				SAFEPRINTF(path,"%s.ans",str);
-				if((autoterm&ANSI) && fexistcase(path))
-					printfile(path,P_NOABORT);
-				else {
-					SAFEPRINTF(path,"%s.asc",str);
-					if(fexistcase(path))
-						printfile(path, P_NOABORT);
-				}
-			}
-		}
+		menu("../answer");	// Should use P_NOABORT ?
 		sys_status&=~SS_PAUSEON;
 		exec_bin(cfg.login_mod,&main_csi);
 	} else	/* auto logon here */
@@ -487,7 +494,7 @@ bool sbbs_t::answer()
 		return(false); 
 
 	if(!(sys_status&SS_USERON)) {
-		errormsg(WHERE,ERR_CHK,"User not logged on",0);
+		errormsg(WHERE,ERR_CHK,"User not logged on",sys_status);
 		hangup();
 		return(false); 
 	}

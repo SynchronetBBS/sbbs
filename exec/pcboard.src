@@ -2,7 +2,7 @@
 
 # PCBoard v15.1 menu/command emulation
 
-# $Id$
+# $Id: pcboard.src,v 1.13 2020/04/23 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -234,6 +234,10 @@ cmdstr I
 	menu pcboard/welcome
 	end_cmd
 
+cmdstr NODES
+	nodelist_all
+	end_cmd
+    
 cmdstr WHO
 	nodelist_users
 	end_cmd
@@ -247,11 +251,11 @@ cmdstr NEWS
 	end_cmd
 
 cmdstr DOOR
-	exec_bin xtrn_sec
-    end_cmd
+	xtrn_section
+	end_cmd
 
 cmdstr OPEN
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 compare_word "OPEN "

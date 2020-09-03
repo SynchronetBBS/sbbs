@@ -1,4 +1,5 @@
-/* $Id$ */
+/* $Id: scfgnet.c,v 1.49 2020/05/01 17:21:48 rswindell Exp $ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -151,6 +152,8 @@ uint getsub(void)
 		j=uifc.list(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
 		if(j==-1)
 			continue;
+		sub_dflt++;
+		sub_bar++;
 		return(subnum[j]); 
 	}
 }
@@ -253,7 +256,7 @@ void net_cfg()
 								SAFECOPY(cfg.qhub[i]->pack,"%@zip -jD %f %s");
 								SAFECOPY(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
 								SAFECOPY(cfg.qhub[i]->call,"*qnet-ftp %s hub.address YOURPASS");
-								cfg.qhub[i]->node=1;
+								cfg.qhub[i]->node = NODE_ANY;
 								cfg.qhub[i]->days=(uchar)0xff; /* all days */
 								uifc.changes=1;
 								continue; 
@@ -656,6 +659,9 @@ void net_cfg()
 				sprintf(opt[i++],"%-27.27s%s"
 					,"Send E-mail Using Alias"
 					,cfg.inetmail_misc&NMAIL_ALIAS ? "Yes":"No");
+				sprintf(opt[i++],"%-27.27s%s"
+					,"Kill E-mail After Sent"
+					,cfg.inetmail_misc&NMAIL_KILL ? "Yes":"No");
 				sprintf(opt[i++],"%-27.27s%"PRIu32
 					,"Cost to Send E-mail",cfg.inetmail_cost);
 				opt[i][0]=0;
@@ -763,6 +769,25 @@ void net_cfg()
 						}
 						break;
 					case 6:
+						i=0;
+						uifc.helpbuf=
+							"`Kill Internet E-mail After it is Sent:`\n"
+							"\n"
+							"If you want Internet E-mail messages to be deleted after they are\n"
+							"successfully sent, set this option to `Yes`.\n"
+						;
+						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
+							,"Kill Internet E-mail After it is Sent",uifcYesNoOpts);
+						if(!i && !(cfg.inetmail_misc&NMAIL_KILL)) {
+							uifc.changes=1;
+							cfg.inetmail_misc|=NMAIL_KILL; 
+						}
+						else if(i==1 && cfg.inetmail_misc&NMAIL_KILL) {
+							uifc.changes=1;
+							cfg.inetmail_misc&=~NMAIL_KILL;
+						}
+						break;
+					case 7:
 						ultoa(cfg.inetmail_cost,str,10);
 						uifc.helpbuf=
 							"`Cost in Credits to Send Internet E-mail:`\n"
@@ -785,7 +810,7 @@ void net_cfg()
 			if(i==-1)
 				continue;
 			if(!i) {
-				write_msgs_cfg(&cfg,backup_level);
+				save_msgs_cfg(&cfg,backup_level);
 				refresh_cfg(&cfg);
 			}
 			break;
@@ -805,7 +830,11 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%.40s","Pack Command Line",cfg.qhub[num]->pack);
 		sprintf(opt[i++],"%-27.27s%.40s","Unpack Command Line",cfg.qhub[num]->unpack);
 		sprintf(opt[i++],"%-27.27s%.40s","Call-out Command Line",cfg.qhub[num]->call);
-		sprintf(opt[i++],"%-27.27s%u","Call-out Node",cfg.qhub[num]->node);
+		if(cfg.qhub[num]->node == NODE_ANY)
+			SAFECOPY(str, "Any");
+		else
+			SAFEPRINTF(str, "%u", cfg.qhub[num]->node);
+		sprintf(opt[i++],"%-27.27s%s","Call-out Node", str);
 		sprintf(opt[i++],"%-27.27s%s","Call-out Days",daystr(cfg.qhub[num]->days));
 		if(cfg.qhub[num]->freq) {
 			sprintf(str,"%u times a day",1440/cfg.qhub[num]->freq);
@@ -818,6 +847,7 @@ void qhub_edit(int num)
 		sprintf(opt[i++],"%-27.27s%s","Include Kludge Lines", cfg.qhub[num]->misc&QHUB_NOKLUDGES ? "No":"Yes");
 		sprintf(opt[i++],"%-27.27s%s","Include VOTING.DAT File", cfg.qhub[num]->misc&QHUB_NOVOTING ? "No":"Yes");
 		sprintf(opt[i++],"%-27.27s%s","Include HEADERS.DAT File", cfg.qhub[num]->misc&QHUB_NOHEADERS ? "No":"Yes");
+		sprintf(opt[i++],"%-27.27s%s","Include UTF-8 Characters", cfg.qhub[num]->misc&QHUB_UTF8 ? "Yes":"No");
 		sprintf(opt[i++],"%-27.27s%s","Extended (QWKE) Packets", cfg.qhub[num]->misc&QHUB_EXT ? "Yes":"No");
 		sprintf(opt[i++],"%-27.27s%s","Exported Ctrl-A Codes"
 			,cfg.qhub[num]->misc&QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc&QHUB_RETCTLA ? "Leave in" : "Strip");
@@ -915,16 +945,23 @@ void qhub_edit(int num)
 					,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);
 				break;
 			case 4:
-				sprintf(str,"%u",cfg.qhub[num]->node);
+				if(cfg.qhub[num]->node == NODE_ANY)
+					SAFECOPY(str, "Any");
+				else
+					SAFEPRINTF(str, "%u", cfg.qhub[num]->node);
 				uifc.helpbuf=
 					"`Node to Perform Call-out:`\n"
 					"\n"
 					"This is the number of the node to perform the call-out for this QWK\n"
-					"network hub.\n"
+					"network hub (or `Any`).\n"
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0
-					,"Node to Perform Call-out",str,3,K_EDIT|K_NUMBER);
-				cfg.qhub[num]->node=atoi(str);
+				if(uifc.input(WIN_MID|WIN_SAV,0,0
+					,"Node to Perform Call-out",str,3,K_EDIT) > 0) {
+					if(isdigit(*str))
+						cfg.qhub[num]->node=atoi(str);
+					else
+						cfg.qhub[num]->node = NODE_ANY;
+				}
 				break;
 			case 5:
 				j=0;
@@ -1014,10 +1051,14 @@ void qhub_edit(int num)
 				uifc.changes=1;
 				break;
 			case 10:
-				cfg.qhub[num]->misc^=QHUB_EXT;
+				cfg.qhub[num]->misc^=QHUB_UTF8;
 				uifc.changes=1;
 				break;
 			case 11:
+				cfg.qhub[num]->misc^=QHUB_EXT;
+				uifc.changes=1;
+				break;
+			case 12:
 				i = cfg.qhub[num]->misc&QHUB_CTRL_A;
 				i++;
 				if(i == QHUB_CTRL_A) i = 0;
@@ -1025,10 +1066,10 @@ void qhub_edit(int num)
 				cfg.qhub[num]->misc |= i;
 				uifc.changes=1;
 				break;
-			case 12:
+			case 13:
 				import_qwk_conferences(num);
 				break;
-			case 13:
+			case 14:
 				qhub_sub_edit(num);
 				break; 
 		} 
@@ -1065,7 +1106,7 @@ void qhub_sub_edit(uint num)
 		"not support ANSI escape sequences in messages (or you're not sure), set\n"
 		"this option to `Strip out`.\n"
 		;
-
+	unsigned last_conf_num = 0;
 	k=0;
 	while(1) {
 		unsigned opts = 0;
@@ -1107,10 +1148,15 @@ void qhub_sub_edit(uint num)
 			if((l=getsub())==-1)
 				continue;
 			uifc.helpbuf=qwk_conf_num_help;
+			if(last_conf_num)
+				SAFEPRINTF(str, "%u", last_conf_num + 1);
+			else
+				str[0]=0;
 			if(uifc.input(WIN_MID|WIN_SAV,0,0
 				,"Conference Number on Hub"
-				,str,5,K_NUMBER)<1)
+				,str,5,K_EDIT|K_NUMBER)<1)
 				continue;
+			last_conf_num = atoi(str);
 			strcpy(opt[0],"Strip out");
 			strcpy(opt[1],"Leave in");
 			strcpy(opt[2],"Expand to ANSI");
@@ -1120,7 +1166,7 @@ void qhub_sub_edit(uint num)
 			if((m=uifc.list(WIN_MID|WIN_SAV,0,0,0,&m,0
 				,"Ctrl-A Codes",opt))==-1)
 				continue;
-			if(!new_qhub_sub(cfg.qhub[num], j, cfg.sub[l], atoi(str)))
+			if(!new_qhub_sub(cfg.qhub[num], j, cfg.sub[l], last_conf_num))
 				continue;
 			if(!m)
 				cfg.qhub[num]->mode[j]=QHUB_STRIP;
@@ -1129,6 +1175,8 @@ void qhub_sub_edit(uint num)
 			else
 				cfg.qhub[num]->mode[j]=QHUB_EXPCTLA;
 			uifc.changes=1;
+			k++;
+			bar++;
 			continue; 
 		}
 		if((j&MSK_ON)==MSK_DEL) {
@@ -1244,9 +1292,9 @@ BOOL import_qwk_conferences(uint qhubnum)
 	}
 	uifc.pop("Importing Areas...");
 	long added = 0;
-	long ported = import_msg_areas(IMPORT_LIST_TYPE_QWK_CONTROL_DAT, fp, grpnum, min_confnum, max_confnum, cfg.qhub[qhubnum], &added);
+	long ported = import_msg_areas(IMPORT_LIST_TYPE_QWK_CONTROL_DAT, fp, grpnum, min_confnum, max_confnum, cfg.qhub[qhubnum], /* pkt_orig */NULL, /* faddr: */NULL, /* misc: */0, &added);
 	fclose(fp);
-	uifc.pop(0);
+	uifc.pop(NULL);
 	if(ported < 0)
 		sprintf(str, "!ERROR %ld imported message areas", ported);
 	else {

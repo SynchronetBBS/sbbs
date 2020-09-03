@@ -1,6 +1,6 @@
 // Basic FormMail script, emulates Matt Wright's FormMail.pl script
 
-// $Id$
+// $Id: formmail.ssjs,v 1.17 2005/03/23 10:29:46 rswindell Exp $
 
 load("sbbsdefs.js");
 

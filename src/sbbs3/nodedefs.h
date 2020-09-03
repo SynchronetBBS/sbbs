@@ -2,7 +2,7 @@
 
 /* Synchronet node information structure and constant definitions */
 
-/* $Id$ */
+/* $Id: nodedefs.h,v 1.19 2020/08/01 22:04:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -123,6 +123,7 @@ typedef struct _PACK {					/* Node information kept in node.dab */
 #define NODE_CONNECTION_TELNET			USHRT_MAX	/* 0xffff */
 #define NODE_CONNECTION_RLOGIN			(USHRT_MAX-1)
 #define NODE_CONNECTION_SSH				(USHRT_MAX-2)
+#define NODE_CONNECTION_RAW				(USHRT_MAX-3)
 				misc,					/* Miscellaneous bits for node */
 				aux;					/* Auxillary word for node */
     uint32_t   extaux;					/* Extended aux dword for node */

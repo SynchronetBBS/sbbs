@@ -2,7 +2,7 @@
 
 /* Converts Synchronet Ctrl-A codes into ANSI escape sequences */
 
-/* $Id$ */
+/* $Id: asc2ans.c,v 1.12 2020/05/09 23:06:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -39,6 +39,13 @@
 #include <ctype.h>		/* toupper */
 #include <string.h>		/* strcmp */
 
+#ifdef _WIN32
+	#include <Windows.h>	/* SetConsoleMode */
+	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+	#endif
+#endif
+
 #define CTRL_A	'\1'
 #define ANSI	fprintf(out,"\x1b[")
 
@@ -46,7 +53,7 @@ static void print_usage(const char* prog)
 {
 	char revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.12 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nSynchronet Ctrl-A-Code to ANSI-Terminal-Sequence Conversion Utility v%s\n",revision);
 	fprintf(stderr,"\nusage: %s infile.asc [outfile.ans] [[option] [...]]\n",prog);
@@ -88,10 +95,19 @@ int main(int argc, char **argv)
 		}
 	}
 
+#ifdef _WIN32
+	if(out == stdout) {
+		DWORD conmode = 0;
+		if(GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode)) {
+			SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+		}
+	}
+#endif
+
 	while((ch=fgetc(in))!=EOF) {
 		if(ch==CTRL_A) { /* ctrl-a */
 			ch=fgetc(in);
-			if(ch==EOF)	/* EOF */
+			if(ch==EOF || ch=='Z')	/* EOF */
 				break;
 			if(ch>0x7f) {					/* move cursor right x columns */
 				int cnt=ch-0x7f;
@@ -118,10 +134,16 @@ int main(int argc, char **argv)
 				case ']':
 					fputc('\n',out);
 					break;
+				case 'J':				
+					ANSI;	
+					fprintf(out,"J");	/* clear to EOS */
+					break;
 				case 'L':
 					ANSI;	
 					fprintf(out,"2J");	/* clear screen */
-					ANSI;	
+					/* fall-through */
+				case '\'':
+					ANSI;
 					fprintf(out,"H");	/* home cursor */
 					break;
 				case '-':
@@ -201,6 +223,9 @@ int main(int argc, char **argv)
 				case '7':
 					ANSI;
 					fprintf(out,"47m");
+					break;
+				case 'Z':	/* Actually a lower-case 'z' */
+					fputc('\x1a',out);	/* Ctrl-Z (substitute) char */
 					break;
 				default:
 					if(!strip)

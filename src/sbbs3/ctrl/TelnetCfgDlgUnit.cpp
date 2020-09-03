@@ -1,6 +1,6 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: TelnetCfgDlgUnit.cpp,v 1.26 2019/01/12 23:45:21 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -106,8 +106,6 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_QWK_EVENTS);
     EventsCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_EVENTS);
-    JavaScriptCheckBox->Checked
-        =!(MainForm->bbs_startup.options&BBS_OPT_NO_JAVASCRIPT);
 
     RLoginEnabledCheckBoxClick(Sender);
     SshEnabledCheckBoxClick(Sender);
@@ -156,10 +154,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->bbs_startup.options&=~BBS_OPT_NO_EVENTS;
     else
         MainForm->bbs_startup.options|=BBS_OPT_NO_EVENTS;
-    if(JavaScriptCheckBox->Checked==true)
-        MainForm->bbs_startup.options&=~BBS_OPT_NO_JAVASCRIPT;
-    else
-        MainForm->bbs_startup.options|=BBS_OPT_NO_JAVASCRIPT;
     if(DosSupportCheckBox->Checked==true)
         MainForm->bbs_startup.options&=~BBS_OPT_NO_DOS;
     else

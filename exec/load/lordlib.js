@@ -3,8 +3,8 @@
 		by mcmlxxix - March 5, 2015 
 		www.thebrokenbubble.com
 		
-		$Id$
-		$Revision$
+		$Id: lordlib.js,v 1.1 2015/03/05 20:03:44 mcmlxxix Exp $
+		$Revision: 1.1 $
 */
 
 /********************** API usage example**************************

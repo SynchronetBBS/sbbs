@@ -2,7 +2,7 @@
 
 /* Synchronet miscellaneous command shell/module routines */
 
-/* $Id$ */
+/* $Id: execmisc.cpp,v 1.58 2020/04/11 04:01:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -99,10 +99,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					if(op==VAR_PRINTF)
 						putmsg(cmdstr(p,path,csi->str,buf),P_SAVEATR|P_NOABORT|P_NOATCODES);
 					else {
-						if(online==ON_LOCAL)
-							eprintf(LOG_INFO,"%s",cmdstr(p,path,csi->str,buf));
-						else
-							lputs(LOG_INFO,cmdstr(p,path,csi->str,buf));
+						lputs(LOG_INFO,cmdstr(p,path,csi->str,buf));
 					}
 					free(p);
 					return(0);
@@ -138,7 +135,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->str_vars++;
 					csi->str_var=(char **)realloc(csi->str_var
 						,sizeof(char *)*csi->str_vars);
-					csi->str_var_name=(int32_t *)realloc(csi->str_var_name
+					csi->str_var_name=(uint32_t *)realloc(csi->str_var_name
 						,sizeof(int32_t)*csi->str_vars);
 					if(csi->str_var==NULL
 						|| csi->str_var_name==NULL) { /* REALLOC failed */
@@ -168,7 +165,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					csi->int_vars++;
 					csi->int_var=(int32_t *)realloc(csi->int_var
 						,sizeof(char *)*csi->int_vars);
-					csi->int_var_name=(int32_t *)realloc(csi->int_var_name
+					csi->int_var_name=(uint32_t *)realloc(csi->int_var_name
 						,sizeof(int32_t)*csi->int_vars);
 					if(csi->int_var==NULL
 						|| csi->int_var_name==NULL) { /* REALLOC failed */
@@ -198,7 +195,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					global_str_vars++;
 					global_str_var=(char **)realloc(global_str_var
 						,sizeof(char *)*global_str_vars);
-					global_str_var_name=(int32_t *)realloc(global_str_var_name
+					global_str_var_name=(uint32_t *)realloc(global_str_var_name
 						,sizeof(int32_t)*global_str_vars);
 					if(global_str_var==NULL
 						|| global_str_var_name==NULL) { /* REALLOC failed */
@@ -229,7 +226,7 @@ int sbbs_t::exec_misc(csi_t* csi, char *path)
 					global_int_vars++;
 					global_int_var=(int32_t *)realloc(global_int_var
 						,sizeof(char *)*global_int_vars);
-					global_int_var_name=(int32_t *)realloc(global_int_var_name
+					global_int_var_name=(uint32_t *)realloc(global_int_var_name
 						,sizeof(int32_t)*global_int_vars);
 					if(global_int_var==NULL
 						|| global_int_var_name==NULL) { /* REALLOC failed */

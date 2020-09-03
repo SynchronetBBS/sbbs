@@ -1,6 +1,6 @@
 /* Synchronet message base constant and structure definitions */
 
-/* $Id$ */
+/* $Id: smbdefs.h,v 1.119 2019/07/30 10:20:20 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -124,7 +124,7 @@
 #define HDT 				0xC258		/* Hawaii/Alaska		(-09:00) */
 #define BDT 				0xC294		/* Bering				(-10:00) */
 
-										/* Non-standard Time Zones */
+										/* Non-US Time Zones */
 #define MID 				0x2294		/* Midway				(-11:00) */
 #define VAN 				0x21E0		/* Vancouver			(-08:00) */
 #define EDM 				0x21A4		/* Edmonton 			(-07:00) */
@@ -150,13 +150,18 @@
 #define BAN 				0x11A4		/* Bangkok				(+07:00) */
 #define HON 				0x11E0		/* Hong Kong			(+08:00) */
 #define TOK 				0x121C		/* Tokyo				(+09:00) */
-#define SYD 				0x1258		/* Sydney				(+10:00) */
+#define ACST				0x123a		/* Australian Central	(+09:30) */
+#define AEST 				0x1258		/* Australian Eastern	(+10:00) (Sydney) */
+#define ACDT				0x923a		/* Australian Central D	(+10:30) */
+#define AEDT 				0x9258		/* Australian Eastern D	(+11:00) (Sydney) */
 #define NOU 				0x1294		/* Noumea				(+11:00) */
-#define WEL 				0x12D0		/* Wellington			(+12:00) */
+#define NZST 				0x12D0		/* New Zealand 			(+12:00) (Wellington) */
+#define NZDT				0x92D0		/* New Zealand Daylight	(+13:00) (Wellington) */
 
 #define OTHER_ZONE(zone) (zone<=1000 && zone>=-1000)
 
-#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) || zone==WET || zone==CET || zone==EET))
+#define SMB_TZ_HAS_DST(zone)	((!OTHER_ZONE(zone)) && ((zone&(US_ZONE|DAYLIGHT)) \
+								|| zone==WET || zone==CET || zone==EET || zone==NZST || zone==AEST || zone==ACST))
 
 										/* Valid hfield_t.types */
 #define SENDER				0x00
@@ -177,21 +182,14 @@
 #define SENDERTIME			0x0d		/* authentication/connection time */
 #define SENDERSERVER		0x0e		/* server hostname that authenticated user */
 
-#define AUTHOR				0x10
-#define AUTHORAGENT 		0x11
-#define AUTHORNETTYPE		0x12
-#define AUTHORNETADDR		0x13
-#define AUTHOREXT			0x14
-#define AUTHORPOS			0x15
-#define AUTHORORG			0x16
-
-#define REPLYTO 			0x20
+#define REPLYTO 			0x20		/* Name only */
 #define REPLYTOAGENT		0x21
 #define REPLYTONETTYPE		0x22
 #define REPLYTONETADDR		0x23
 #define REPLYTOEXT			0x24
 #define REPLYTOPOS			0x25
 #define REPLYTOORG			0x26
+#define REPLYTOLIST			0x27
 
 #define RECIPIENT			0x30
 #define RECIPIENTAGENT		0x31
@@ -200,40 +198,19 @@
 #define RECIPIENTEXT		0x34
 #define RECIPIENTPOS		0x35
 #define RECIPIENTORG		0x36
-
-#define FORWARDTO			0x40
-#define FORWARDTOAGENT		0x41
-#define FORWARDTONETTYPE	0x42
-#define FORWARDTONETADDR	0x43
-#define FORWARDTOEXT		0x44
-#define FORWARDTOPOS		0x45
-#define FORWARDTOORG		0x46
+#define RECIPIENTLIST		0x37
 
 #define FORWARDED			0x48
-
-#if 0	/* Deprecating the following fields: (Jan-2009) never used */
-
-#define RECEIVEDBY			0x50
-#define RECEIVEDBYAGENT 	0x51
-#define RECEIVEDBYNETTYPE	0x52
-#define RECEIVEDBYNETADDR	0x53
-#define RECEIVEDBYEXT		0x54
-#define RECEIVEDBYPOS		0x55
-#define RECEIVEDBYORG		0x56
-
-#define RECEIVED			0x58
-
-#endif
 
 #define SUBJECT 			0x60	/* or filename */
 #define SMB_SUMMARY 		0x61	/* or file description */
 #define SMB_COMMENT 		0x62
-#define SMB_CARBONCOPY		0x63
+#define SMB_CARBONCOPY		0x63	/* Comma-separated list of secondary recipients, RFC822-style */
 #define SMB_GROUP			0x64
 #define SMB_EXPIRATION		0x65
-#define SMB_PRIORITY		0x66
+#define SMB_PRIORITY		0x66	/* DEPRECATED */
 #define SMB_COST			0x67
-#define	SMB_EDITOR			0x68
+#define	SMB_EDITOR			0x68	/* Associated with FTN ^aNOTE: control line */
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
 
@@ -264,6 +241,7 @@
 #define PRESENTTRIGGER		0x94
 #define VIDEOTRIGGER		0x95
 #define APPDATATRIGGER		0x96
+#define SMB_COLUMNS			0x6a	/* original text editor width in fixed-width columns */
 
 #define FIDOCTRL			0xa0
 #define FIDOAREA			0xa1
@@ -274,13 +252,19 @@
 #define FIDOPID 			0xa6
 #define FIDOFLAGS			0xa7
 #define FIDOTID 			0xa8
+#define FIDOCHARSET			0xa9	// CHRS or CHARSET control line
 
+// RFC822* header field values are strings of US-ASCII chars, but potentially MIME-encoded (RFC2047)
+// (i.e. base64 or Q-encoded UTF-8, ISO-8859-1, etc.)
 #define RFC822HEADER		0xb0
 #define RFC822MSGID 		0xb1
 #define RFC822REPLYID		0xb2
-#define RFC822TO			0xb3
-#define RFC822FROM			0xb4
-#define RFC822REPLYTO		0xb5
+#define RFC822TO			0xb3		// Comma-separated list of recipients, RFC822-style
+#define RFC822FROM			0xb4		// Original, unparsed/modified RFC822 header "From" value
+#define RFC822REPLYTO		0xb5		// Comma-separated list of recipients, RFC822-style
+#define RFC822CC			0xb6
+#define RFC822ORG			0xb7
+#define RFC822SUBJECT		0xb8
 
 #define USENETPATH			0xc0
 #define USENETNEWSGROUPS	0xc1
@@ -300,16 +284,8 @@
 
 										/* Valid dfield_t.types */
 #define TEXT_BODY			0x00
-#define TEXT_SOUL			0x01
 #define TEXT_TAIL			0x02
-#define TEXT_WING			0x03
-#define IMAGEEMBED			0x20
-#define ANIMEMBED			0x21
-#define FONTEMBED			0x22
-#define SOUNDEMBED			0x23
-#define PRESENTEMBED		0x24
-#define VIDEOEMBED			0x25
-#define APPDATAEMBED		0x26
+
 #define UNUSED				0xff
 
 
@@ -317,7 +293,7 @@
 #define MSG_PRIVATE 		(1<<0)
 #define MSG_READ			(1<<1)
 #define MSG_PERMANENT		(1<<2)
-#define MSG_LOCKED			(1<<3)
+#define MSG_LOCKED			(1<<3)		/* DEPRECATED (never used) */
 #define MSG_DELETE			(1<<4)
 #define MSG_ANONYMOUS		(1<<5)
 #define MSG_KILLREAD		(1<<6)
@@ -338,12 +314,13 @@
 
 										/* Auxiliary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		/* File request */
-#define MSG_FILEATTACH		(1<<1)		/* File(s) attached to Msg */
-#define MSG_TRUNCFILE		(1<<2)		/* Truncate file(s) when sent */
+#define MSG_FILEATTACH		(1<<1)		/* File(s) attached to Msg (file paths/names in subject) */
+#define MSG_MIMEATTACH		(1<<2)		/* Message has one or more MIME-embedded attachments */
 #define MSG_KILLFILE		(1<<3)		/* Delete file(s) when sent */
 #define MSG_RECEIPTREQ		(1<<4)		/* Return receipt requested */
 #define MSG_CONFIRMREQ		(1<<5)		/* Confirmation receipt requested */
 #define MSG_NODISP			(1<<6)		/* Msg may not be displayed to user */
+#define MSG_HFIELDS_UTF8	(1<<13)		/* Message header fields are UTF-8 encoded */
 #define POLL_CLOSED			(1<<24)		/* Closed to voting */
 #define POLL_RESULTS_MASK	(3U<<30)	/* 4 possible values: */
 #define POLL_RESULTS_SECRET	(3U<<30)	/* No one but pollster can see results */
@@ -357,18 +334,10 @@
 #define MSG_INTRANSIT		(1<<1)		/* Msg is in-transit */
 #define MSG_SENT			(1<<2)		/* Sent to remote */
 #define MSG_KILLSENT		(1<<3)		/* Kill when sent */
-#define MSG_ARCHIVESENT 	(1<<4)		/* Archive when sent */
 #define MSG_HOLD			(1<<5)		/* Hold for pick-up */
 #define MSG_CRASH			(1<<6)		/* Crash */
 #define MSG_IMMEDIATE		(1<<7)		/* Send Msg now, ignore restrictions */
 #define MSG_DIRECT			(1<<8)		/* Send directly to destination */
-#define MSG_GATE			(1<<9)		/* Send via gateway */
-#define MSG_ORPHAN			(1<<10) 	/* Unknown destination */
-#define MSG_FPU 			(1<<11) 	/* Force pickup */
-#define MSG_TYPELOCAL		(1<<12) 	/* Msg is for local use only */
-#define MSG_TYPEECHO		(1<<13) 	/* Msg is for conference distribution */
-#define MSG_TYPENET 		(1<<14) 	/* Msg is direct network mail */
-
 
 enum smb_net_type {
      NET_NONE				/* Local message */
@@ -377,13 +346,6 @@ enum smb_net_type {
     ,NET_POSTLINK			/* Imported with UTI driver */
     ,NET_QWK				/* QWK networked messsage */
 	,NET_INTERNET			/* Internet e-mail, netnews, etc. */
-	,NET_WWIV				/* unused */
-	,NET_MHS				/* unused */
-	,NET_FIDO_ASCII			/* FidoNet address, ASCIIZ format (e.g. 5D) - unused and deprecated */
-
-/* Add new ones here */
-
-    ,NET_TYPES
 };
 
 enum smb_agent_type {
@@ -391,29 +353,21 @@ enum smb_agent_type {
     ,AGENT_PROCESS			/* unknown process type */
 	,AGENT_SMBUTIL			/* imported via Synchronet SMBUTIL */
 	,AGENT_SMTPSYSMSG		/* Synchronet SMTP server system message */
-
-/* Add new ones here */
-
-    ,AGENT_TYPES
 };
 
 enum smb_xlat_type {
      XLAT_NONE              /* No translation/End of translation list */
-    ,XLAT_ENCRYPT           /* Encrypted data */
-    ,XLAT_ESCAPED           /* 7-bit ASCII escaping for ctrl and 8-bit data */
-    ,XLAT_HUFFMAN           /* Static and adaptive Huffman coding compression */
-    ,XLAT_LZW               /* Limpel/Ziv/Welch compression */
-    ,XLAT_MLZ78             /* Modified LZ78 compression */
-    ,XLAT_RLE               /* Run length encoding compression */
-    ,XLAT_IMPLODE           /* Implode compression (PkZIP) */
-    ,XLAT_SHRINK            /* Shrink compression (PkZIP) */
-	,XLAT_LZH				/* LHarc (LHA) Dynamic Huffman coding */
-
-/* Add new ones here */
-
-    ,XLAT_TYPES
+	,XLAT_LZH = 9			/* LHarc (LHA) Dynamic Huffman coding */
 };
 
+enum smb_priority {			/* msghdr_t.priority */
+	SMB_PRIORITY_UNSPECIFIED	= 0,
+	SMB_PRIORITY_HIGHEST		= 1,
+	SMB_PRIORITY_HIGH			= 2,
+	SMB_PRIORITY_NORMAL			= 3,
+	SMB_PRIORITY_LOW			= 4,
+	SMB_PRIORITY_LOWEST			= 5
+};
 
 /************/
 /* Typedefs */
@@ -574,8 +528,15 @@ typedef struct _PACK {		/* Message/File header */
 	};
 	/* 32 */ int16_t	votes;				/* Votes value (response to poll) or maximum votes per ballot (poll) */
 	/* 34 */ uint32_t	thread_id;			/* Number of original message in thread (or 0 if unknown) */
-	/* 38 */ uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
-	/* 3c */ uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
+	union {	/* 38-3f */
+		struct {		// message
+			uint8_t		priority;			/* enum smb_priority_t */
+		};
+		struct {		// file
+			uint32_t	times_downloaded;	/* Total number of times downloaded (moved Mar-6-2012) */
+			uint32_t	last_downloaded;	/* Date/time of last download (moved Mar-6-2012) */
+		};
+	};
     /* 40 */ uint32_t	offset;				/* Offset for buffer into data file (0 or mod 256) */
 	/* 44 */ uint16_t	total_dfields;		/* Total number of data fields */
 
@@ -629,6 +590,7 @@ typedef struct {				/* Message or File */
 	msghdr_t	hdr;			/* Header record (fixed portion) */
 	char		*to,			/* To name */
 				*to_ext,		/* To extension */
+				*to_list,		/* Comma-separated list of recipients, RFC822-style */
 				*from,			/* From name */
 				*from_ext,		/* From extension */
 				*from_org,		/* From organization */
@@ -637,6 +599,8 @@ typedef struct {				/* Message or File */
 				*from_prot,		/* From protocol (e.g. "Telnet", "NNTP", "HTTP", etc.) */
 				*replyto,		/* Reply-to name */
 				*replyto_ext,	/* Reply-to extension */
+				*replyto_list,	/* Comma-separated list of mailboxes, RFC822-style */
+				*cc_list,		/* Comma-separated list of additional recipients, RFC822-style */
 				*id,			/* RFC822 Message-ID */
 				*reply_id,		/* RFC822 Reply-ID */
 				*forward_path,	/* SMTP forward-path (RCPT TO: argument) */
@@ -647,6 +611,7 @@ typedef struct {				/* Message or File */
 				*ftn_tid,		/* FTN TID */
 				*ftn_area,		/* FTN AREA */
 				*ftn_flags,		/* FTN FLAGS */
+				*ftn_charset,	/* FTN CHRS */
 				*ftn_msgid,		/* FTN MSGID */
 				*ftn_reply;		/* FTN REPLY */
 	union {
@@ -661,6 +626,12 @@ typedef struct {				/* Message or File */
 		uchar*	text;			/* Message body text (optional) */
 		uchar*	extdesc;		/* File extended description */
 	};
+	char*		tags;			/* Message tags (space-delimited) */
+	char*		editor;			/* Message editor (if known) */
+	char*		mime_version;	/* MIME Version (if applicable) */
+	char*		content_type;	/* MIME Content-Type (if applicable) */
+	char*		text_charset;	/* MIME text <charset>  (if applicable) - malloc'd */
+	char*		text_subtype;	/* MIME text/<sub-type> (if applicable) - malloc'd */
 	uint16_t	to_agent,		/* Type of agent message is to */
 				from_agent, 	/* Type of agent message is from */
 				replyto_agent;	/* Type of agent replies should be sent to */
@@ -674,7 +645,6 @@ typedef struct {				/* Message or File */
 	int32_t		offset; 		/* Offset (number of records) into index */
 	BOOL		forwarded;		/* Forwarded from agent to another */
 	uint32_t	expiration; 	/* Message will expire on this day (if >0) */
-	uint32_t	priority;		/* Message priority (0 is lowest) */
 	uint32_t	cost;			/* Cost to download/read */
 	uint32_t	flags;			/* Various smblib run-time flags (see MSG_FLAG_*) */
 	uint16_t	user_voted;		/* How the current user viewing this message, voted on it */
@@ -685,6 +655,7 @@ typedef struct {				/* Message or File */
 	uint32_t	dir;			/* Directory number */
 	off_t		size;			/* File size */
 	time_t		date;			/* File date/timestamp (current) */
+	uint8_t		columns;		/* 0 means unknown or N/A */
 
 } smbmsg_t, smbfile_t;
 

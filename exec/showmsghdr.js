@@ -1,12 +1,12 @@
-// $Id$
+// $Id: showmsghdr.js,v 1.6 2019/06/15 01:28:28 rswindell Exp $
 
 // This can be loaded from text/menu/msghdr.asc via @EXEC:SHOWMSGHDR@
 // Don't forget to include or exclude the blank line after if do
 // (or don't) want a blank line separating message headers and body text
 
-load("smbdefs.js");
-load("text.js");
-var   USER_ANSI         =(1<<1);
+require("text.js", 'MsgAttr');
+require("smbdefs.js", 'MSG_ANONYMOUS');
+require("userdefs.js", 'USER_ANSI');
 
 // ported from sbbs_t::show_msgattr():
 function show_msgattr(msg_attr, msg_auxattr)
@@ -73,7 +73,8 @@ show_msghdr();
 
 // Avatar support here:
 if(!(bbs.msg_attr&MSG_ANONYMOUS) && console.term_supports(USER_ANSI)) {
-	var Avatar = load({}, 'avatar_lib.js');
-	Avatar.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true);
+	if(!bbs.mods.avatar_lib)
+		bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
+	bbs.mods.avatar_lib.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net, /* above: */true, /* right-justified: */true);
 	console.attributes = 7;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 }

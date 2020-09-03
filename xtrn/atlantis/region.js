@@ -26,9 +26,9 @@ function Region()
 	this.ships=new Array();
 	this.units=new Array();
 	this.immigrants=0;
-	this.id getter=function() { return(this.name+' ('+this.x+','+this.y+')'); };
+	this.__defineGetter__("id", function() { return(this.name+' ('+this.x+','+this.y+')'); });
 
-	this.iscoast getter=function()
+	this.__defineGetter__("iscoast", function()
 	{
 		var i;
 
@@ -39,7 +39,7 @@ function Region()
 			if(this.connect[i]!=null && this.connect[i].terrain==T_OCEAN)
 				return(true);
 		return(false);
-	};
+	});
 
 	this.movewhere=function(keyword) {
 		var r2;

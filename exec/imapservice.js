@@ -5,10 +5,10 @@
  * Copyright 2009, Stephen Hurd.
  * Don't steal my code bitches.
  *
- * $Id$
+ * $Id: imapservice.js,v 1.76 2020/08/12 06:48:14 rswindell Exp $
  */
 
-load("sbbsdefs.js");
+load("smbdefs.js");
 load("822header.js");
 load("mime.js");
 
@@ -278,9 +278,9 @@ function send_fetch_response(msgnum, fmat, uid)
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
 				hdr.attr |= MSG_READ;
-				base.put_msg_header(msgnum);
+				base.put_msg_header(msgnum, hdr);
 				index=read_index(base);
-				hdr=base.get_msg_header(msgnum);
+				hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
 				if(hdr.attr & MSG_READ)
 					seen_changed=true;
 			}
@@ -456,7 +456,7 @@ function send_fetch_response(msgnum, fmat, uid)
 			if(objtype == undefined)
 				continue;
 
-			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS$/)==0) {
+			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS$/i)==0) {
 				tmp='';
 				for(j in fmat[i]) {
 					if(part.headers[fmat[i][j].toLowerCase()]!=undefined)
@@ -465,7 +465,7 @@ function send_fetch_response(msgnum, fmat, uid)
 
 				resp += objtype+" ("+fmat[i].join(" ")+")] "+encode_binary(tmp+"\r\n")+" ";
 			}
-			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS\.NOT$/)==0) {
+			if(objtype.search(/^BODY\[[0-9.]*HEADER\.FIELDS\.NOT$/i)==0) {
 				tmp=eval(part.headers.toSource());
 				delete tmp['::'];
 				delete tmp[':mime:'];
@@ -522,17 +522,17 @@ function send_fetch_response(msgnum, fmat, uid)
 				case 'RFC822.TEXT':
 					set_seen_flag();
 					get_rfc822_text();
-					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/i,"").toUpperCase()+" "+encode_binary(rfc822.text)+" ";
 					break;
 				case 'RFC822.HEADER':
 					set_seen_flag();
 					get_rfc822_header();
-					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
+					resp += fmat[i].replace(/\.PEEK/i,"").toUpperCase()+" "+encode_binary(rfc822.header)+" ";
 					break;
 				case 'RFC822':
 					set_seen_flag();
 					get_rfc822();
-					resp += fmat[i].replace(/\.PEEK/,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
+					resp += fmat[i].replace(/\.PEEK/i,"").toUpperCase()+" "+encode_binary(rfc822.header+rfc822.text)+" ";
 					break;
 				case 'ENVELOPE':
 					set_seen_flag();
@@ -768,9 +768,11 @@ var any_state_command_handlers = {
 		arguments:0,
 		handler:function (args) {
 			var tag=args[0];
-
-			untagged("CAPABILITY IMAP4rev1 AUTH=PLAIN LOGINDISABLED CHILDREN IDLE UNSELECT");
-			tagged(tag, "OK", "Capability completed, no TLS support... deal with it.");
+			if (client.socket.ssl_session)
+				untagged("CAPABILITY IMAP4rev1 AUTH=CRAM-MD5 AUTH=PLAIN CHILDREN IDLE UNSELECT");
+			else
+				untagged("CAPABILITY IMAP4rev1 AUTH=CRAM-MD5 LOGINDISABLED CHILDREN IDLE UNSELECT");
+			tagged(tag, "OK", "Capability completed, no STARTTLS support... deal with it.");
 		},
 	},
 	NOOP:{
@@ -828,7 +830,7 @@ var unauthenticated_command_handlers = {
 		handler:function(args) {
 			var tag=args[0];
 
-			tagged(tag, "BAD", "I told you to deal with the lack of TLS damnit!");
+			tagged(tag, "BAD", "I told you to deal with the lack of STARTTLS damnit!");
 		},
 	},
 	AUTHENTICATE:{
@@ -838,22 +840,92 @@ var unauthenticated_command_handlers = {
 			var mechanism=args[1];
 			var line;
 			var args;
+			var challenge;
+			var un;
+			var u;
 
-			if(mechanism.toUpperCase()=="PLAIN") {
-				client.socket.send("+\r\n");
-				line=client.socket.recvline(10240, 1800);
-				args=base64_decode(line).split(/\x00/);
-				if(!login(args[1],args[2])) {
-					tagged(tag, "NO", "No AUTH for you.");
-					return;
+			function hmac(k, text) {
+				var ik='', ok='', i;
+				var m;
+
+				if (k.length > 64)
+					k = base64_decode(md5_calc(k));
+				while (k.length < 64)
+					k = k + '\x00';
+				for (i=0; i<64; i++) {
+					ik += ascii(ascii(k[i]) ^ 0x36);
+					ok += ascii(ascii(k[i]) ^ 0x5C);
 				}
+				return md5_calc(ok + base64_decode(md5_calc(ik+text)), true);
+			}
+
+			function setcfg()
+			{
 				cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
 				if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
 					tagged(tag, "NO", "Can't open imap state file");
 					return;
 				}
+			}
+
+			if(mechanism.toUpperCase()=="PLAIN") {
+				if (!client.socket.ssl_session) {
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				client.socket.send("+\r\n");
+				line=client.socket.recvline(10240, 1800);
+				args=base64_decode(line).split(/\x00/);
+				if(!login(args[1],args[2])) {
+//					log(LOG_INFO, format("Attempted login: '%s', pw: '%s'", args[1], args[2]));
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				setcfg();
 				tagged(tag, "OK", "Howdy.");
 				state=Authenticated;
+			}
+			else if(mechanism.toUpperCase() == "CRAM-MD5") {
+				challenge = '<'+random(2147483647)+"."+time()+"@"+system.host_name+'>';
+				client.socket.send("+ "+base64_encode(challenge)+"\r\n");
+				line=client.socket.recvline(10240, 1800);
+				args=base64_decode(line).split(/ /);
+				un = system.matchuser(args[0], false);
+				if (un == 0) {
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				u = new User(un);
+				if (u.number < 1) {
+					tagged(tag, "NO", "No AUTH for you.");
+					return;
+				}
+				// First, try as-stored...
+				if (args[1] === hmac(u.security.password, challenge)) {
+					setcfg();
+					login(u.alias, u.security.password);
+					tagged(tag, "OK", "Howdy.");
+					state=Authenticated;
+					return;
+				}
+				// Lower-case
+				if (args[1] === hmac(u.security.password.toLowerCase(), challenge)) {
+					setcfg();
+					login(u.alias, u.security.password);
+					tagged(tag, "OK", "Howdy.");
+					state=Authenticated;
+					return;
+				}
+				// Upper-case
+				if (args[1] === hmac(u.security.password.toUpperCase(), challenge)) {
+					setcfg();
+					login(u.alias, u.security.password);
+					tagged(tag, "OK", "Howdy.");
+					state=Authenticated;
+					return;
+				}
+				tagged(tag, "NO", "No AUTH for you.");
+				return;
 			}
 			else
 				tagged(tag, "NO", "No "+mechanism+" authenticate supported yet... give me a reason to do it and I'll think about it.");
@@ -866,8 +938,17 @@ var unauthenticated_command_handlers = {
 			var usr=args[1];
 			var pass=args[2];
 
+			if (!client.socket.ssl_session) {
+				tagged(tag, "NO", "Basic RFC stuff here! A client implementation MUST NOT send a LOGIN command if the LOGINDISABLED capability is advertised.");
+				return;
+			}
 			if(!login(usr, pass)) {
 				tagged(tag, "NO", "No login for you.");
+				return;
+			}
+			cfgfile=new File(format(system.data_dir+"user/%04d.imap", user.number));
+			if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
+				tagged(tag, "NO", "Can't open imap state file");
 				return;
 			}
 			tagged(tag, "OK", "Sure, come on in.");
@@ -951,24 +1032,6 @@ function parse_flags(inflags)
 			case 'DIRECT':
 				flags.netattr |= MSG_DIRECT;
 				break;
-			case 'GATE':
-				flags.netattr |= MSG_GATE;
-				break;
-			case 'ORPHAN':
-				flags.netattr |= MSG_ORPHAN;
-				break;
-			case 'FPU':
-				flags.netattr |= MSG_FPU;
-				break;
-			case 'TYPELOCAL':
-				flags.netattr |= MSG_TYPELOCAL;
-				break;
-			case 'TYPEECHO':
-				flags.netattr |= MSG_TYPECHO;
-				break;
-			case 'TYPENET':
-				flags.netattr |= MSG_TYPENET;
-				break;
 		}
 	}
 	return(flags);
@@ -1049,18 +1112,6 @@ function calc_msgflags(attr, netattr, num, msg, readonly)
 		flags += "IMMEDIATE ";
 	if(netattr & MSG_DIRECT)
 		flags += "DIRECT ";
-	if(netattr & MSG_GATE)
-		flags += "GATE ";
-	if(netattr & MSG_ORPHAN)
-		flags += "ORPHAN ";
-	if(netattr & MSG_FPU)
-		flags += "FPU ";
-	if(netattr & MSG_TYPELOCAL)
-		flags += "TYPELOCAL ";
-	if(netattr & MSG_TYPEECHO)
-		flags += "TYPEECHO ";
-	if(netattr & MSG_TYPENET)
-		flags += "TYPENET ";
 
 	if(attr==0xffff || orig_ptrs[num] < msg) {
 		flags += '\\Recent ';
@@ -1608,7 +1659,7 @@ var authenticated_command_handlers = {
 			if(typeof(items)!="object")
 				items=[items];
 			base=new MsgBase(sub);
-			if(base == undefined || (!base.open())) {
+			if(base == undefined || sub=="NONE!!!" || (!base.open())) {
 				tagged(tag, "NO", "Can't find your mailbox");
 				return;
 			}
@@ -1683,7 +1734,7 @@ function do_store(seq, uid, item, data)
 
 	for(i in seq) {
 		idx=index.idx[seq[i]];
-		hdr=base.get_msg_header(seq[i]);
+		hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
 		flags=parse_flags(data);
 		switch(item.toUpperCase()) {
 			case 'FLAGS.SILENT':
@@ -1809,7 +1860,7 @@ function do_search(args, uid)
 				break;
 			case 'FLAGGED':
 				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_VERIFIED) return true; return false; });
+				search=(function(idx) { if(idx.attr & MSG_VALIDATED) return true; return false; });
 				break;
 			case 'FROM':
 				type="hdr";
@@ -1861,7 +1912,7 @@ function do_search(args, uid)
 				break;
 			case 'UNFLAGGED':
 				type="idx";
-				search=(function(idx) { if(idx.attr & MSG_VERIFIED) return false; return true; });
+				search=(function(idx) { if(idx.attr & MSG_VALIDATED) return false; return true; });
 				break;
 			case 'UNKEYWORD':
 				type="hdr";
@@ -1963,7 +2014,8 @@ function do_search(args, uid)
 		return([type,search]);
 	}
 
-	if(args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
+	if(typeof(args[0]) == 'string'
+		&& args[0].search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/)==0) {
 		offsets=parse_seq_set(args.shift(), false);
 	}
 
@@ -1984,7 +2036,7 @@ function do_search(args, uid)
 				continue;
 		}
 		if(search_set.hdr.length > 0 || search_set.all.length > 0) {
-			hdr=base.get_msg_header(idx.number);
+			hdr=base.get_msg_header(idx.number, /* expand_fields: */false);
 			if(hdr==null) {
 				log("Unable to get header for idx.number");
 				continue;

@@ -2,7 +2,7 @@
 
 /* Synchronet Windows NT/2000 VDD for FOSSIL and DOS I/O Interrupts */
 
-/* $Id$ */
+/* $Id: sbbsexec.c,v 1.41 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -481,7 +481,7 @@ __declspec(dllexport) void __cdecl VDDDispatch(void)
 
 		case VDD_OPEN:
 
-			sscanf("$Revision$", "%*s %s", revision);
+			sscanf("$Revision: 1.41 $", "%*s %s", revision);
 
 			lprintf(LOG_INFO,"Synchronet Virtual Device Driver, rev %s %s %s"
 				,revision, __DATE__, __TIME__);

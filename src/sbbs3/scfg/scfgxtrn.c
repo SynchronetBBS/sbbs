@@ -1,4 +1,5 @@
-/* $Id$ */
+/* $Id: scfgxtrn.c,v 1.71 2020/08/08 20:18:07 rswindell Exp $ */
+// vi: tabstop=4
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -39,6 +40,21 @@
 char *daystr(char days);
 static void hotkey_cfg(void);
 
+static char* use_shell_opt = "Use Shell / New Context";
+static char* use_shell_help =
+	"`Use System Shell or New JavaScript Context to Execute:`\n"
+	"\n"
+	"If this command-line requires the system command shell to execute\n"
+	"(e.g. uses pipes/redirection or invokes a Unix shell script or\n"
+	"DOS/Windows batch/command file), then set this option to ~Yes~.\n"
+	"\n"
+	"If this command-line is invoking a Synchronet JavaScript module\n"
+	"(e.g. it begins with a '`?`' character), then setting this option to ~Yes~\n"
+	"will enable the creation and initialization of a new JavaScript run-time\n"
+	"context for it to execute within, for every invocation."
+	;
+static char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
+
 #define CUT_XTRNSEC_NUM	USHRT_MAX
 
 static bool new_timed_event(unsigned new_event_num)
@@ -49,7 +65,7 @@ static bool new_timed_event(unsigned new_event_num)
 		return false;
 	}
 	memset(new_event, 0, sizeof(*new_event));
-	new_event->node = 1;
+	new_event->node = NODE_ANY;
 	new_event->days = (uchar)0xff;
 
 	event_t** new_event_list = realloc(cfg.event, sizeof(event_t *)*(cfg.total_events + 1));
@@ -130,6 +146,7 @@ static bool new_external_editor(unsigned new_xedit_num)
 		return false;
 	}
 	memset(new_xedit, 0, sizeof(*new_xedit));
+	new_xedit->misc |= QUOTEWRAP;
 
 	xedit_t** new_xedit_list = realloc(cfg.xedit, sizeof(xedit_t *)*(cfg.total_xedits + 1));
 	if (new_xedit_list == NULL) {
@@ -307,8 +324,8 @@ void xprogs_cfg()
 					break;
 				if(!i) {
 					cfg.new_install=new_install;
-					write_xtrn_cfg(&cfg,backup_level);
-					write_main_cfg(&cfg,backup_level);
+					save_xtrn_cfg(&cfg,backup_level);
+					save_main_cfg(&cfg,backup_level);
 					refresh_cfg(&cfg);
 				}
 				return;
@@ -483,7 +500,11 @@ void tevents_cfg()
 			sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 			sprintf(opt[k++],"%-32.32s%s","Enabled"
 				,cfg.event[i]->misc&EVENT_DISABLED ? "No":"Yes");
-			sprintf(opt[k++],"%-32.32s%u","Execution Node",cfg.event[i]->node);
+			if(cfg.event[i]->node == NODE_ANY)
+				SAFECOPY(str, "Any");
+			else
+				SAFEPRINTF(str, "%u", cfg.event[i]->node);
+			sprintf(opt[k++],"%-32.32s%s","Execution Node", str);
 			sprintf(opt[k++],"%-32.32s%s","Execution Months"
 				,monthstr(cfg.event[i]->months));
 			sprintf(opt[k++],"%-32.32s%s","Execution Days of Month"
@@ -503,13 +524,14 @@ void tevents_cfg()
 				,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","Native Executable"
 				,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
+			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Background Execution"
 				,cfg.event[i]->misc&EX_BG ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s","Always Run After Init/Re-init"
 				,cfg.event[i]->misc&EVENT_INIT ? "Yes":"No");
-
+			if(!(cfg.event[i]->misc&EX_BG))
+				sprintf(opt[k++],"%-32.32s%s","Error Log Level", iniLogLevelStringList()[cfg.event[i]->errlevel]);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Timed Event:`\n"
@@ -571,12 +593,12 @@ void tevents_cfg()
 				case 3:
 					k=(cfg.event[i]->misc&EVENT_DISABLED) ? 1:0;
 					uifc.helpbuf=
-						"`Event Enabled:`\n"
+						"`Timed Event Enabled:`\n"
 						"\n"
 						"If you want disable this event from executing, set this option to ~No~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Enabled",uifcYesNoOpts);
+						,"Event Enabled",uifcYesNoOpts);
 					if((k==0 && cfg.event[i]->misc&EVENT_DISABLED) 
 						|| (k==1 && !(cfg.event[i]->misc&EVENT_DISABLED))) {
 						cfg.event[i]->misc^=EVENT_DISABLED;
@@ -586,21 +608,29 @@ void tevents_cfg()
 
 				case 4:
 					uifc.helpbuf=
-						"`Timed Event Node:`\n"
+						"`Timed Event Execution Node:`\n"
 						"\n"
-						"This is the node number to execute the timed event.\n"
+						"The Execution Node Number specifies the instance of Synchronet that\n"
+						"will run this timed event (or `Any`).\n"
 					;
-					sprintf(str,"%u",cfg.event[i]->node);
-					uifc.input(WIN_MID|WIN_SAV,0,0,"Node Number"
-						,str,3,K_EDIT|K_NUMBER);
-					cfg.event[i]->node=atoi(str);
+					if(cfg.event[i]->node == NODE_ANY)
+						SAFECOPY(str, "Any");
+					else
+						SAFEPRINTF(str, "%u", cfg.event[i]->node);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Execution Node Number (or Any)"
+						,str,3,K_EDIT) > 0) {
+						if(isdigit(*str))
+							cfg.event[i]->node=atoi(str);
+						else
+							cfg.event[i]->node = NODE_ANY;
+					}
 					break;
 				case 5:
 					uifc.helpbuf=
 						"`Months to Execute Event:`\n"
 						"\n"
-						"Specifies the months (`Jan`-`Dec`, separated by spaces) on which \n"
-						"to execute this event, or `Any` to execute event for any/all months.\n"
+						"Specifies the months (`Jan`-`Dec`, separated by spaces) on which to\n"
+						"execute this event, or `Any` to execute event in any/all months.\n"
 					;
 					SAFECOPY(str,monthstr(cfg.event[i]->months));
 					uifc.input(WIN_MID|WIN_SAV,0,0,"Months to Execute Event (or Any)"
@@ -766,11 +796,11 @@ void tevents_cfg()
 					uifc.helpbuf=
 						"`Native Executable:`\n"
 						"\n"
-						"If this event program is a native (e.g. non-DOS) executable,\n"
-						"set this option to `Yes`.\n"
+						"If this event program is a native (e.g. non-DOS) executable, set this\n"
+						"option to `Yes`.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native",uifcYesNoOpts);
+						,"Native Executable",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
 						cfg.event[i]->misc|=EX_NATIVE;
 						uifc.changes=TRUE;
@@ -783,14 +813,9 @@ void tevents_cfg()
 
 				case 12:
 					k=(cfg.event[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf=
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute, (Unix \n"
-						"shell script or DOS/Windows batch/command file), set this option to ~Yes~.\n"
-					;
+					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use System Command Shell",uifcYesNoOpts);
+						,use_shell_prompt, uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&XTRN_SH)) {
 						cfg.event[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE;
@@ -824,13 +849,13 @@ void tevents_cfg()
 				case 14:
 					k=(cfg.event[i]->misc&EVENT_INIT) ? 0:1;
 					uifc.helpbuf=
-						"`Always Run After Initialization or Re-initialization:`\n"
+						"`Always Run After (re-)Initialization:`\n"
 						"\n"
 						"If you want this event to always run after the BBS is initialized or\n"
 						"re-initialized, set this option to ~Yes~.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Always Run After Initialization or Re-initialization",uifcYesNoOpts);
+						,"Always Run After (re-)Initialization",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EVENT_INIT)) {
 						cfg.event[i]->misc|=EVENT_INIT;
 						uifc.changes=1; 
@@ -838,6 +863,21 @@ void tevents_cfg()
 					else if(k==1 && (cfg.event[i]->misc&EVENT_INIT)) {
 						cfg.event[i]->misc&=~EVENT_INIT;
 						uifc.changes=1; 
+					}
+					break;
+
+				case 15:
+					uifc.helpbuf=
+						"`Error Log Level:`\n"
+						"\n"
+						"Specify the log level used when reporting an error executing this event.\n"
+					;
+					k = cfg.event[i]->errlevel;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Error Log Level",iniLogLevelStringList());
+					if(k > 0 && cfg.event[i]->errlevel != k) {
+						cfg.event[i]->errlevel = k;
+						uifc.changes = true;
 					}
 					break;
 			} 
@@ -896,7 +936,7 @@ void xtrn_cfg(uint section)
 				"\n"
 				"This is the name or description of the online program (door).\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,25
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Online Program Name",str,40
 				,0)<1)
 				continue;
 			SAFECOPY(code,str);
@@ -976,7 +1016,7 @@ void xtrn_cfg(uint section)
 					==(XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : nulstr);
 			sprintf(opt[k++],"%-27.27s%s","Native Executable"
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-27.27s%s","Use Shell to Execute"
+			sprintf(opt[k++],"%-27.27s%s",use_shell_opt
 				,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
 			sprintf(opt[k++],"%-27.27s%s","Modify User Data"
 				,cfg.xtrn[i]->misc&MODUSERDAT ? "Yes" : "No");
@@ -1025,6 +1065,9 @@ void xtrn_cfg(uint section)
 				"`Online Program Configuration:`\n"
 				"\n"
 				"This menu is for configuring the selected online program.\n"
+				"\n"
+				"For detailed instructions for configuring BBS doors, see\n"
+				"`http://wiki.synchro.net/howto:door:index`"
 			;
 			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_MID,0,0,60,&opt_dflt,&sub_bar,cfg.xtrn[i]->name
 				,opt)) {
@@ -1236,14 +1279,9 @@ void xtrn_cfg(uint section)
 					break;
 				case 11:
 					k=(cfg.xtrn[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf=
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute, (Unix\n"
-						"shell script or DOS batch file), set this option to ~Yes~.\n"
-					;
+					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use Shell",uifcYesNoOpts);
+						,use_shell_prompt,uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_SH)) {
 						cfg.xtrn[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE; 
@@ -1637,10 +1675,19 @@ void xedit_cfg()
 					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr);
 			sprintf(opt[k++],"%-32.32s%s","Native Executable"
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Use Shell to Execute"
+			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
-			sprintf(opt[k++],"%-32.32s%s","Word Wrap Quoted Text"
-				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No");
+			sprintf(opt[k++],"%-32.32s%s","Record Terminal Width"
+				,cfg.xedit[i]->misc&SAVECOLUMNS ? "Yes" : "No");
+			str[0]=0;
+			if(cfg.xedit[i]->misc&QUOTEWRAP) {
+				if(cfg.xedit[i]->quotewrap_cols == 0)
+					SAFECOPY(str, ", for terminal width");
+				else
+					SAFEPRINTF(str, ", for %u columns", (uint)cfg.xedit[i]->quotewrap_cols);
+			}
+			sprintf(opt[k++],"%-32.32s%s%s","Word-wrap Quoted Text"
+				,cfg.xedit[i]->misc&QUOTEWRAP ? "Yes":"No", str);
 			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 					? "None" : "Prompt User");
@@ -1648,8 +1695,27 @@ void xedit_cfg()
 				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS MSGINF/MSGTMP":"WWIV EDITOR.INF/RESULT.ED");
 			sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
+			const char* p;
+			switch(cfg.xedit[i]->soft_cr) {
+				case XEDIT_SOFT_CR_EXPAND:
+					p = "Convert to CRLF";
+					break;
+				case XEDIT_SOFT_CR_STRIP:
+					p = "Strip";
+					break;
+				case XEDIT_SOFT_CR_RETAIN:
+					p = "Retain";
+					break;
+				default:
+				case XEDIT_SOFT_CR_UNDEFINED:
+					p = "Unspecified";
+					break;
+			}
+			sprintf(opt[k++],"%-32.32s%s","Handle Soft Carriage Returns", p);
 			sprintf(opt[k++],"%-32.32s%s","Strip FidoNet Kludge Lines"
 				,cfg.xedit[i]->misc&STRIPKLUDGE ? "Yes":"No");
+			sprintf(opt[k++],"%-32.32s%s","Support UTF-8 Encoding"
+				,cfg.xedit[i]->misc&XTRN_UTF8 ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","BBS Drop File Type"
 				,dropfile(cfg.xedit[i]->type,cfg.xedit[i]->misc));
 			opt[k][0]=0;
@@ -1658,11 +1724,11 @@ void xedit_cfg()
 				"\n"
 				"This menu allows you to change the settings for the selected external\n"
 				"message editor. External message editors are very common on BBSs. Some\n"
-				"popular editors include `SyncEdit`, `WWIVedit`, `FEdit`, `GEdit`, `IceEdit`,\n"
-				"and many others.\n"
+				"popular editors include `fseditor.js`, `SyncEdit`, `SlyEdit`, `WWIVedit`, `FEdit`,\n"
+				"`GEdit`, `IceEdit`, and many others.\n"
 			;
 
-			sprintf(str,"%s Editor",cfg.xedit[i]->name);
+			SAFEPRINTF(str,"%s Editor",cfg.xedit[i]->name);
 			switch(uifc.list(WIN_SAV|WIN_ACT|WIN_L2R|WIN_BOT,0,0,70,&dfltopt,0
 				,str,opt)) {
 				case -1:
@@ -1794,14 +1860,9 @@ void xedit_cfg()
 					break;
 				case 6:
 					k=(cfg.xedit[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf=
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute, (Unix \n"
-						"shell script or DOS batch file), set this option to ~Yes~.\n"
-					;
+					uifc.helpbuf = use_shell_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Use Shell",uifcYesNoOpts);
+						,use_shell_prompt, uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_SH)) {
 						cfg.xedit[i]->misc|=XTRN_SH;
 						uifc.changes=TRUE; 
@@ -1811,17 +1872,65 @@ void xedit_cfg()
 					}
 					break;
 				case 7:
-					k=(cfg.xedit[i]->misc&QUOTEWRAP) ? 0:1;
+					k=(cfg.xedit[i]->misc&SAVECOLUMNS) ? 0:1;
 					uifc.helpbuf=
-						"`Word Wrap Quoted Text:`\n"
+						"`Record Terminal Width:`\n"
 						"\n"
-						"FIXME\n"
+						"When set to `Yes`, Synchronet will store the current terminal width\n"
+						"(in columns) in the header of messages created with this editor and use\n"
+						"the saved value to nicely re-word-wrap the message text when displaying\n"
+						"or quoting the message for other users with different terminal sizes.\n"
+						"\n"
+						"If this editor correctly detects and supports terminal widths `other`\n"
+						"`than 80 columns`, set this option to `Yes`."
 					;
 					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Word Wrap Quoted Text",uifcYesNoOpts)) {
+						,"Record Terminal Width",uifcYesNoOpts)) {
+						case 0:
+							if(!(cfg.xedit[i]->misc&SAVECOLUMNS)) {
+								cfg.xedit[i]->misc |= SAVECOLUMNS;
+								uifc.changes = TRUE;
+							}
+							break;
+						case 1:
+							if(cfg.xedit[i]->misc&SAVECOLUMNS) {
+								cfg.xedit[i]->misc &= ~SAVECOLUMNS;
+								uifc.changes = TRUE; 
+							}
+							break;
+					}
+					break;
+				case 8:
+					k=(cfg.xedit[i]->misc&QUOTEWRAP) ? 0:1;
+					uifc.helpbuf=
+						"`Word-wrap Quoted Text:`\n"
+						"\n"
+						"Set to `Yes` to have Synchronet word-wrap quoted message text when\n"
+						"creating the quote file (e.g. QUOTES.TXT) or initial message text file\n"
+						"(e.g. MSGTMP) used by some external message editors.\n"
+						"\n"
+						"When set to `No`, the original unmodified message text is written to the\n"
+						"quote / message text file."
+					;
+					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+						,"Word-wrap Quoted Text",uifcYesNoOpts)) {
 						case 0:
 							if(!(cfg.xedit[i]->misc&QUOTEWRAP)) {
 								cfg.xedit[i]->misc|=QUOTEWRAP;
+								uifc.changes=TRUE;
+							}
+							SAFEPRINTF(str, "%u", (uint)cfg.xedit[i]->quotewrap_cols);
+							uifc.helpbuf=
+								"`Screen width to wrap to:`\n"
+								"\n"
+								"Set to `0` to wrap the quoted text suiting the user's terminal width.\n"
+								"Set to `79` to wrap the quoted text suiting an 80 column terminal.\n"
+								"Set to `9999` to unwrap quoted text to long-line paragraphs.\n"
+								;
+							if(uifc.input(WIN_MID|WIN_SAV,0,0
+								,"Screen width to wrap to (0 = current terminal width)"
+								,str, 4, K_NUMBER|K_EDIT) > 0) {
+								cfg.xedit[i]->quotewrap_cols = atoi(str);
 								uifc.changes=TRUE;
 							}
 							break;
@@ -1833,7 +1942,7 @@ void xedit_cfg()
 							break;
 					}
 					break;
-				case 8:
+				case 9:
 					switch(cfg.xedit[i]->misc&(QUOTEALL|QUOTENONE)) {
 						case 0:		/* prompt user */
 							k=2;
@@ -1879,7 +1988,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 9:
+				case 10:
 					k=cfg.xedit[i]->misc&QUICKBBS ? 0:1;
 					strcpy(opt[0],"QuickBBS MSGINF/MSGTMP");
 					strcpy(opt[1],"WWIV EDITOR.INF/RESULT.ED");
@@ -1901,7 +2010,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 10:
+				case 11:
 					k=(cfg.xedit[i]->misc&EXPANDLF) ? 0:1;
 					uifc.helpbuf=
 						"`Expand Line Feeds to Carriage Return/Line Feed Pairs:`\n"
@@ -1920,7 +2029,37 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 11:
+				case 12:
+					k = cfg.xedit[i]->soft_cr;
+					strcpy(opt[0],"Unspecified");
+					strcpy(opt[1],"Convert to CRLF");
+					strcpy(opt[2],"Strip (Remove)");
+					strcpy(opt[3],"Retain (Leave in)");
+					opt[4][0]=0;
+					uifc.helpbuf=
+						"`Handle Soft Carriage Returns:`\n"
+						"\n"
+						"This setting determines what is to be done with so-called \"Soft\" CR\n"
+						"(Carriage Return) characters that are added to the message text by\n"
+						"this message editor.\n"
+						"\n"
+						"Soft-CRs are defined in FidoNet specifications as 8Dh or ASCII 141 and\n"
+						"were used historically to indicate an automatic line-wrap performed by\n"
+						"the message editor.\n"
+						"\n"
+						"The supported settings for this option are:\n"
+						"\n"
+						"    `Convert` - to change Soft-CRs to the more universal CRLF (Hard-CR)\n"
+						"    `Strip`   - to store long line paragraphs in the message bases\n"
+						"    `Retain`  - to treat 8Dh characters like any other printable char\n"
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Handle Soft Carriage Returns", opt);
+					if(k >= 0 &&  k != cfg.xedit[i]->soft_cr) {
+						cfg.xedit[i]->soft_cr = k;
+						uifc.changes=TRUE;
+					}
+					break;
+				case 13:
 					k=(cfg.xedit[i]->misc&STRIPKLUDGE) ? 0:1;
 					uifc.helpbuf=
 						"`Strip FidoNet Kludge Lines From Messages:`\n"
@@ -1940,7 +2079,27 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					break;
-				case 12:
+				case 14:
+					k=(cfg.xedit[i]->misc&XTRN_UTF8) ? 0:1;
+					uifc.helpbuf=
+						"`Support UTF-8 Encoding:`\n"
+						"\n"
+						"If this editor can detect and support UTF-8 terminals, set this option\n"
+						"to `Yes`."
+					;
+					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
+                		,"Support UTF-8 Encoding"
+						,uifcYesNoOpts);
+					if(!k && !(cfg.xedit[i]->misc&XTRN_UTF8)) {
+						cfg.xedit[i]->misc ^= XTRN_UTF8;
+						uifc.changes=TRUE; 
+					}
+					else if(k==1 && (cfg.xedit[i]->misc&XTRN_UTF8)) {
+						cfg.xedit[i]->misc ^= XTRN_UTF8;
+						uifc.changes=TRUE; 
+					}
+					break;
+				case 15:
 					k=0;
 					strcpy(opt[k++],"None");
 					sprintf(opt[k++],"%-15s %s","Synchronet","XTRN.DAT");

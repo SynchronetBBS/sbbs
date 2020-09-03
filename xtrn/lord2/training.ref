@@ -1,0 +1,239 @@
+;training
+@#WIN
+
+@do `p21 is 5
+@do `p03 + `p21
+
+@do `p22 is 2
+@do `p04 + `p22
+
+@do `p23 is 1
+@do `p05 + `p23
+
+
+@do `p09 + 1
+
+@do addlog
+  `r4  `r0 `0`n`2 has beaten `0`e`2 and become level `p09! `r4  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p02 is `p03
+@show
+`r0`c  `r1 YOU HAVE FACED YOUR DARKEST FEAR AND TRIUMPHED! `r0 
+
+  `2You wake up well rested.
+
+  `%YOU ARE NOW LEVEL `p09.
+
+  `2You gain `0`p21`2 hitpoints,`0 `p22`2 muscle and `0`p23`2 dodge.
+
+`k
+@run barak in gshops.ref
+
+@#DIE
+@do `p02 is 1
+@do `t04 is 1 
+@show
+`r0`c  `r4 YOUR NIGHTMARE HAS BESTED YOU `r0 
+
+  `2You wake up screaming to find four men holding you down.
+
+  You have failed.
+
+`k
+@run barak in gshops.ref
+
+@#WAKEUP
+@do `t04 is 1 
+@show
+`r0`c  `r4 YOU ESCAPE - THE ONLY WAY YOU KNOW HOW `r0 
+
+  `2You suddenly sit up in bed.  Wiping the beads of sweat from your brow,
+  you wonder how you could have thought you were ready for this...
+
+`k
+@run barak in gshops.ref
+
+@#arena1
+@show
+`c  `r1                           `4SKY WORLD                           `r0
+
+  `9Your body shoots up through the roof at an incredible speed - you gasp
+  as your head pokes through a wall of clouds.
+
+  You gently land on a soft bed of white.  What a ride!
+
+@
+
+
+@#arena2
+@show
+`c  `r1                           `4BACKYARD                            `r0
+
+  `3You see your house... wait, those berries look familiar.  You are in 
+  your own backyard.  You squint into the sun, you are not alone.
+
+@
+
+@#arena3
+@show
+`c  `r1                           `4SWAMP                              `r0
+
+  `2You open your eyes to find green spongy soil beneath your feet.  Awful
+  smells waft up from the dark and mysterious waters nearby.
+
+@
+
+
+
+
+@#master1
+@show
+  A cackling laughter draws your attention - a blindingly white skeleton
+  is casually juggling bones nearby.  He sees you and roars in fury!
+
+`k
+@fight
+;name
+Skeleton Warrior
+;string said when you see him
+The thing whips out its bone and lunges at you!
+;power move kill string
+Unfortunatly the thing had to split - be split, rather.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+cackles a death chant|`p22
+bites you|`p22
+painfully prods you|`p22
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+TRAINING.REF|WIN
+;if lose: ref file|name or NONE
+TRAINING.REF|DIE
+;if runs: ref file|name or NONE
+TRAINING.REF|WAKEUP
+@closescript
+
+@#master2
+@show
+  The is a looking glass nearby.  To your suprise, your reflection begins to
+  leer at you.  It then steps out of the mirror!
+
+`k
+@do `p29 is 1
+@if sexmale is 0 then `p29 is 2
+@fight
+;name
+Mirror Image
+;string said when you see him
+Your clone smiles at you..just before s&he attacks!
+;power move kill string
+Ouch.. killing yourself hurts somehow.
+;sex - 1 is male, 2 is female, 3 is it
+`p29
+;weapon and strength for the weapon, up to 5
+attacks with s&his s&weapon|`p22
+plays mind games with you|`p22
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+TRAINING.REF|WIN
+;if lose: ref file|name or NONE
+TRAINING.REF|DIE
+;if runs: ref file|name or NONE
+TRAINING.REF|WAKEUP
+@closescript
+
+@#master3
+@show
+  A swamp dago covered in slime is patiently watching you from a distance.
+
+`k
+@do `p29 is 1
+@if sexmale is 0 then `p29 is 2
+@fight
+;name
+Swamp Dago
+;string said when you see him
+You pull your weapon and attack the dago!
+;power move kill string
+You wipe the slime off your hand.. yuck.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+hugs you|`p22
+throws green slime on you|`p22
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+TRAINING.REF|WIN
+;if lose: ref file|name or NONE
+TRAINING.REF|DIE
+;if runs: ref file|name or NONE
+TRAINING.REF|WAKEUP
+@closescript
+
+
+
+
+@#startfight
+
+;do math to create monster
+
+@do `p21 is `p03
+@do `p25 is `p09
+;@do `p25 * `p25
+@do `p25 random `p25
+@do `p21 + `p25
+
+@do `p22 is S&wep_num
+@do `p22 + `p04
+
+@do `p23 is S&arm_num
+@do `p23 + `p05
+
+@do `p24 random `p22
+@do `p21 + `p24
+@do `p24 random `p22
+@do `p21 - `p24
+
+@do `p24 random `p22
+@do `p24 / 5
+@do `p22 - `p24
+
+
+;pick arena
+@do `p20 random 3 1
+@routine arena`p20
+;pick master
+@do `p20 random 3 1
+@routine master`p20
+@#closescript

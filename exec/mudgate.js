@@ -1,6 +1,6 @@
 // mudgate.js
 
-// $Id$
+// $Id: mudgate.js,v 1.1 2005/09/12 19:02:31 deuce Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

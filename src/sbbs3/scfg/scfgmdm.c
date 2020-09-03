@@ -1,6 +1,6 @@
 /* scfgmdm.c */
 
-/* $Id$ */
+/* $Id: scfgmdm.c,v 1.6 2018/07/24 01:12:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

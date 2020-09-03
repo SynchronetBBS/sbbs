@@ -2,7 +2,7 @@
 
 /* Synchronet command shell/module compiler */
 
-/* $Id$ */
+/* $Id: bajavascript.js,v 1.2 2014/02/04 09:23:17 deuce Exp $ */
 
 load("bajalib.js");
 

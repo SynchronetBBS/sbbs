@@ -3,15 +3,10 @@
 // Generates and parses USENET news headers 
 // for use with newslink.js and nntpservice.js
 
-// $Id$
+// $Id: newsutil.js,v 1.34 2020/06/08 03:20:37 rswindell Exp $
 
-if(!js.global || js.global.mail_get_name==undefined)
-	load("mailutil.js");
-
-FIDOCTRL     = 0xa0	// from smbdefs.h
-FIDOSEENBY	 = 0xa2	// from smbdefs.h
-FIDOPATH     = 0xa3 // from smbdefs.h
-RFC822HEADER = 0xb0	// from smbdefs.h
+require("mailutil.js", 'mail_get_name');
+require("smbdefs.js", 'RFC822HEADER');
 					
 function write_news_header(hdr,writeln)
 {
@@ -51,6 +46,8 @@ function write_news_header(hdr,writeln)
 		writeln("X-FTN-MSGID: " + hdr.ftn_msgid);
 	if(hdr.ftn_reply!=undefined)
 		writeln("X-FTN-REPLY: " + hdr.ftn_reply);
+	if(hdr.ftn_charset!=undefined)
+		writeln("X-FTN-CHRS: " + hdr.ftn_charset);
 
 	var content_type;
 
@@ -70,11 +67,10 @@ function write_news_header(hdr,writeln)
 		}
 	}
 	if(content_type==undefined) {
-		/* No content-type specified, so assume IBM code-page 437 (full ex-ASCII) */
-		writeln("Content-Type: text/plain; charset=IBM437");
+		var charset = hdr.text_charset || (hdr.is_utf8 ? "UTF-8" : "IBM437");
+		writeln("Content-Type: text/plain; charset=" + charset);
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
-
 }
 
 function parse_news_header(hdr, line)
@@ -107,7 +103,8 @@ function parse_news_header(hdr, line)
 		case "apparently-to":
 		case "x-comment-to":
 			hdr.to = mail_get_name(data);
-			hdr.to_net_addr = mail_get_address(data);
+			if((hdr.to_net_addr = mail_get_address(data)) != null)
+				hdr.to_net_type = NET_INTERNET;
 			break;
 		case "newsgroups":
 			hdr.newsgroups=data;
@@ -167,6 +164,9 @@ function parse_news_header(hdr, line)
 		case "x-ftn-reply":
 			hdr.ftn_reply=data;
 			break;
+		case "x-ftn-chrs":
+			hdr.ftn_charset=data;
+			break;
 
 		/* NNTP control messages */
 		case "control":
@@ -204,30 +204,33 @@ function parse_news_header(hdr, line)
  */
 function decode_news_body(hdr, body)
 {
-	if(hdr.extra_headers==undefined || hdr.extra_headers["content-transfer-encoding"]===undefined)
-		return(body);
-	switch(hdr.extra_headers["content-transfer-encoding"].hdr_data.toLowerCase()) {
-		case '7bit':
-		case '8bit':
-		case 'binary':
-			break;
-		case 'quoted-printable':
-			/* Remove trailing whitespace from lines */
-			body=body.replace(/\s+\x0d\x0a/g,'\x0d\x0a');
+	if(hdr.extra_headers && hdr.extra_headers["content-transfer-encoding"]) {
+		switch(hdr.extra_headers["content-transfer-encoding"].hdr_data.toLowerCase()) {
+			case '7bit':
+			case '8bit':
+			case 'binary':
+				break;
+			case 'quoted-printable':
+				/* Remove trailing whitespace from lines */
+				body=body.replace(/\s+\x0d\x0a/g,'\x0d\x0a');
 
-			/* Remove "soft" line breaks */
-			body=body.replace(/=\x0d\x0a/g,'');
+				/* Remove "soft" line breaks */
+				body=body.replace(/=\x0d\x0a/g,'');
 
-			/* Collapse =XX encoded bytes */
-			body=body.replace(/=([0-9A-F][0-9A-F])/g,function(str, p1) { return(ascii(parseInt(p1,16))); });
-			hdr.extra_headers["content-transfer-encoding"].hdr_data='8bit';
-			break;
-		case 'base64':
-			/* Remove non-base64 bytes */
-			body=body.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+\/=]/g,'');
-			body=base64_decode(body);
-			hdr.extra_headers["content-transfer-encoding"].hdr_data='8bit';
-			break;
+				/* Collapse =XX encoded bytes */
+				body=body.replace(/=([0-9A-F][0-9A-F])/g,function(str, p1) { return(ascii(parseInt(p1,16))); });
+				hdr.extra_headers["content-transfer-encoding"].hdr_data='8bit';
+				break;
+			case 'base64':
+				/* Remove non-base64 bytes */
+				body=body.replace(/[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+\/=]/g,'');
+				body=base64_decode(body);
+				hdr.extra_headers["content-transfer-encoding"].hdr_data='8bit';
+				break;
+		}
 	}
+	// No content-type specified? Auto-detect UTF-8 and set FTN charset field accordingly
+	if((!hdr.extra_headers || !hdr.extra_headers["content-type"]) && !str_is_ascii(body) && str_is_utf8(body))
+		hdr.ftn_charset = "UTF-8 4";
 	return(body);
 }

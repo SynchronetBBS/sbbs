@@ -2,7 +2,7 @@
 
 /* Synchronet External DOS Program Launcher (16-bit MSVC 1.52c project) */
 
-/* $Id$ */
+/* $Id: dosxtrn.c,v 1.25 2020/04/15 08:22:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -464,6 +464,8 @@ char* getfname(const char* path)
 char *	DllName		=VDD_FILENAME;
 char *	InitFunc	="VDDInitialize";
 char *	DispFunc	="VDDDispatch";
+#define MAX_ENVVARS 32
+#define MAX_ARGS	32
 
 int main(int argc, char **argv)
 {
@@ -471,8 +473,8 @@ int main(int argc, char **argv)
 	char	cmdline[128],*p;
 	char	dll[256];
 	char	exec_dir[128];
-	char*	envvar[10];
-	char*	arg[16];
+	char*	envvar[MAX_ENVVARS];
+	char*	arg[MAX_ARGS];
 	int		i,c,d,envnum=0;
 	FILE*	fp;
 	BOOL	NT=FALSE;
@@ -480,7 +482,7 @@ int main(int argc, char **argv)
 	WORD	buf_seg;
 	WORD	w;
 
-	sscanf("$Revision$", "%*s 1.%u", &revision);
+	sscanf("$Revision: 1.25 $", "%*s 1.%u", &revision);
 
 	sprintf(id_string,"Synchronet FOSSIL Driver (DOSXTRN) revision %u", revision);
 	if(argc<2) {
@@ -514,14 +516,14 @@ int main(int argc, char **argv)
 	truncsp(cmdline);
 
 	arg[0]=cmdline;	/* point to the beginning of the string */
-	for(c=0,d=1;cmdline[c];c++)	/* Break up command line */
+	for(c=0,d=1;cmdline[c] && d < (MAX_ARGS - 1);c++)	/* Break up command line */
 		if(cmdline[c]==' ') {
 			cmdline[c]=0;			/* insert nulls */
 			arg[d++]=cmdline+c+1;	/* point to the beginning of the next arg */
 		}
 	arg[d]=0;
 
-	while(!feof(fp)) {
+	while(!feof(fp) && envnum < MAX_ENVVARS) {
 		if(!fgets(str, sizeof(str), fp))
 			break;
 		truncsp(str);

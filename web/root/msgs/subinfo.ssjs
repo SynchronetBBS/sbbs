@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: subinfo.ssjs,v 1.18 2006/02/25 21:41:08 runemaster Exp $ */
 
 load("sbbsdefs.js");
 load("../web/lib/msgslib.ssjs");

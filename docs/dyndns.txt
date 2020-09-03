@@ -1,7 +1,7 @@
             Synchronet Dynamic Domain Name System (DynDNS) Service
             ======================================================
 
-$Id$
+$Id: dyndns.txt,v 1.2 2007/08/05 02:26:38 rswindell Exp $
 
 Introduction
 ------------

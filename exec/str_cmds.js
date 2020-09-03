@@ -2,7 +2,7 @@
 
 // Global String Command Module for Synchronet
 
-// $Id$
+// $Id: str_cmds.js,v 1.57 2020/05/02 08:09:26 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 
@@ -15,9 +15,14 @@
 // The command string must be the first argument string
 // when this module is loaded.
 
-load("sbbsdefs.js");
-load("nodedefs.js");
-load("text.js");
+require("sbbsdefs.js", 'EX_STDIO');
+require("nodedefs.js", 'NODE_SYSP');
+var text = bbs.mods.text;
+if(!text)
+	text = bbs.mods.text = load({}, "text.js");
+var presence = bbs.mods.presence_lib;
+if(!presence)
+	presence = bbs.mods.presence_lib = load({}, "presence_lib.js");
 
 if(argc>0)
 	str_cmds(argv.join(" "));	// use command-line arguments if supplied
@@ -54,7 +59,7 @@ function str_cmds(str)
 	if(str=="HELP")
 		write("\r\nAvailable STR commands (prefix with a semi-colon)\r\n\r\n");
 
-	if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) {
+	if(bbs.compare_ars("SYSOP")) {
 		// Change node action to "sysop activities"
 		bbs.node_action=NODE_SYSP;
 		//sync
@@ -67,20 +72,21 @@ function str_cmds(str)
 		if(str=="ERR") {
 			var errlog=system.logs_dir+"error.log";
 			if(file_exists(errlog)) {
-				write(bbs.text(ErrorLogHdr));
+				write(bbs.text(text.ErrorLogHdr));
 				console.printfile(errlog);
-				if(!console.noyes(bbs.text(DeleteErrorLogQ)))
+				console.aborted = false;
+				if(!console.noyes(bbs.text(text.DeleteErrorLogQ)))
 					file_remove(errlog);
 			}
 			else {
-				write(format(bbs.text(FileDoesNotExist),errlog));
+				write(format(bbs.text(text.FileDoesNotExist),errlog));
 			}
 			for(i=0;i<system.nodes;i++) {
 				if(system.node_list[i].errors)
 					break;
 			}
 			if(i<system.nodes) {
-				if(!console.noyes(bbs.text(ClearErrCounter))) {
+				if(!console.noyes(bbs.text(text.ClearErrCounter))) {
 					for(i=0;i<system.nodes; i++) {
 						system.node_list[i].errors=0;
 					}
@@ -95,7 +101,7 @@ function str_cmds(str)
 			if(file_exists(system.logs_dir+"guru.log")) {
 				console.printfile(system.logs_dir+"guru.log");
 				console.crlf();
-				if(!console.noyes(bbs.text(DeleteGuruLogQ)))
+				if(!console.noyes(bbs.text(text.DeleteGuruLogQ)))
 					file_remove(system.logs_dir+"guru.log");
 			}
 		}
@@ -109,25 +115,55 @@ function str_cmds(str)
 		}
 
 		if(str=="HELP") {
-			writeln("LIST <filename>");
-			writeln("\tDisplays a file.");
+			writeln("TYPE [filename]");
+			writeln("\tDisplays a file. Aliases: LIST and CAT");
 		}
-		if(word=="LIST") {
+		if(word=="LIST" || word=="TYPE" || word=="CAT") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				console.printfile(get_arg(str));
+				console.printfile(get_filename(str), word == "CAT" ? P_NOATCODES : P_CPM_EOF);
+				return;
+			}
+		}
+		
+		if(str=="HELP") {
+			writeln("ECHO [string]");
+			writeln("\tPrint a text message.");
+		}
+		if(word=="ECHO") {
+			if(bbs.check_syspass()) {
+				str=str.substr(4);
+				console.putmsg(get_arg(str));
+				console.crlf();
+				return;
+			}
+		}
+		
+		if(str=="HELP") {
+			writeln("EVAL [string]");
+			writeln("\tEvaluate a JavaScirpt expression and display result.");
+		}
+		if(word=="EVAL") {
+			if(bbs.check_syspass()) {
+				str=str.substr(4);
+				try {
+					var result = eval(get_arg(str));
+					console.print(format("Result (%s): ", typeof result));
+					console.print(result);
+					console.crlf();
+				} catch(e) {
+					alert(e);
+				}
 				return;
 			}
 		}
 
 		if(str=="HELP")
 			writeln("EDIT\tEdits a specified file using your message editor.");
-		if(str=="EDIT") {
+		if(word=="EDIT") {
 			if(bbs.check_syspass()) {
-				write(bbs.text(Filename));
-				if((str=console.getstr("",60))!=null) {
-					console.editfile(str);
-				}
+				str=str.substr(4);
+				console.editfile(get_filename(str));
 			}
 		}
 
@@ -162,8 +198,9 @@ function str_cmds(str)
 			writeln("NS <#>\tDisplays the current node stats for node #.");
 		if(word=="NS") {
 			str=str.substr(2);
-			str=str.replace(/^\s+/,"");
-			bbs.node_stats(parseInt(str));
+			i=parseInt(get_nodenum(str));
+			if(!i) i=bbs.node_num;
+			bbs.node_stats(i);
 			return;
 		}
 
@@ -174,9 +211,9 @@ function str_cmds(str)
 		if(word=="EXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				str=get_arg(str);
+				str=get_cmdline(str);
 				if(str)
-					bbs.exec(str,EX_OUTR|EX_INR);
+					bbs.exec(str,EX_STDIO);
 			}
 			return;
 		}
@@ -189,9 +226,9 @@ function str_cmds(str)
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(5);
-				str=get_arg(str);
+				str=get_cmdline(str);
 				if(str)
-					bbs.exec(str,EX_OUTR|EX_INR|EX_NATIVE);
+					bbs.exec(str,EX_STDIO|EX_NATIVE);
 			}
 			return;
 		}
@@ -204,7 +241,7 @@ function str_cmds(str)
 		if(word=="FOSSIL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(6);
-				str=get_arg(str);
+				str=get_cmdline(str);
 				if(str)
 					bbs.exec(str);
 			}
@@ -213,24 +250,53 @@ function str_cmds(str)
 
 		if(str=="HELP") {
 			writeln("CALL <HubID>");
-			writeln("\tforces callout to HubID");
+			writeln("\tforces a callout to QWKnet HubID");
 		}
 		if(word=="CALL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				file=new File(system.data_dir+"qnet/"+get_arg(str)+".now");
-				if(file.open("w"))
-					file.close();
+				str=get_arg(str, "QWKnet ID");
+				if(str)
+					file_touch(system.data_dir + "qnet/" + str + ".now");
 			}
 			return;
 		}
+
+		if(str=="HELP") {
+			writeln("EVENT [EventID]");
+			writeln("\tforces a timed-event to execute via semfile");
+		}
+		if(word=="EVENT") {
+			if(bbs.check_syspass()) {
+				str = str.substr(5);
+				if(str)
+					str = get_arg(str);
+				else {
+					var codes = [];
+					for(var i in xtrn_area.event) {
+						if(xtrn_area.event[i].settings & EVENT_DISABLED)
+							continue;
+						console.uselect(codes.length, "Event", i);
+						codes.push(i);
+					}
+					var selection = console.uselect();
+					if(selection >= 0)
+						str = codes[selection];
+					alert(str);
+				}
+				if(str)
+					file_touch(system.data_dir + str + ".now");
+			}
+			return;
+		}
+
 
 		if(str=="HELP") {
 			writeln("NODE [parameters]");
 			writeln("\texecutes the node utility with the passed parameters.");
 		}
 		if(word=="NODE") {
-			bbs.exec(system.exec_dir+str.toLowerCase(), EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!node%.") + str.substr(4).toLowerCase(), EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -240,7 +306,7 @@ function str_cmds(str)
 		}
 		if(word=="DOWN") {
 			str=str.substr(4);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -261,7 +327,7 @@ function str_cmds(str)
 		}
 		if(word=="RERUN") {
 			str=str.substr(5);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -276,7 +342,7 @@ function str_cmds(str)
 		if(str=="HELP")
 			writeln("SLOG\tExecutes the slog utility to display system statistics.");
 		if(str=="SLOG") {
-			bbs.exec(system.exec_dir+"slog /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!slog%. /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -286,12 +352,12 @@ function str_cmds(str)
 			writeln("\tIf # is omitted, uses the current node.");
 		}
 		if(str=="NLOG") {
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+" /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!slog%. %n /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 		if(word=="NLOG") {
 			str=str.substr(5);
-			bbs.exec(system.exec_dir+"slog "+system.node_dir+"../node"+get_arg(str)+" /p",EX_OUTR|EX_INR|EX_NATIVE);
+			bbs.exec(bbs.cmdstr("%!slog%. %n../node"+get_nodenum(str)+" /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 
@@ -303,7 +369,7 @@ function str_cmds(str)
 			// Prompts for syspass
 			str=str.substr(5);
 			if(str.length)
-				bbs.edit_user(bbs.finduser(get_arg(str)));
+				bbs.edit_user(bbs.finduser(get_arg(str, "User Alias")));
 			else
 				bbs.edit_user();
 			return;
@@ -334,7 +400,7 @@ function str_cmds(str)
 		}
 		if(str=="DOS") {	// DOS/Windows shell
 			if(bbs.check_syspass()) {
-				bbs.exec("command.com",EX_OUTR|EX_INR);
+				bbs.exec("command.com",EX_STDIO);
 			}
 			return;
 		}
@@ -344,9 +410,9 @@ function str_cmds(str)
 		if(str=="SHELL") {	// Unix shell (-i for interactive)
 			if(bbs.check_syspass()) {
 				if(system.platform != 'Win32')
-					bbs.exec(system.cmd_shell+" -i"	,EX_OUTR|EX_INR|EX_NATIVE);
+					bbs.exec(system.cmd_shell+" -i"	,EX_STDIO|EX_NATIVE|EX_NOLOG);
 				else
-					bbs.exec(system.cmd_shell		,EX_OUTR|EX_INR|EX_NATIVE);
+					bbs.exec(system.cmd_shell		,EX_STDIO|EX_NATIVE);
 			}
 			return;
 		}
@@ -360,7 +426,7 @@ function str_cmds(str)
 				str=str.substr(3);
 				writeln("");
 				try {	// May throw on parseInt()
-					bbs.spy(parseInt(get_arg(str)));
+					bbs.spy(parseInt(get_nodenum(str)));
 					write("\1n\r\nSpy session complete.\r\n");
 				}
 				catch (e) {}
@@ -414,7 +480,7 @@ function str_cmds(str)
 				var bytes=0;
 				var dirs=0;
 				str=str.substr(3);
-				str=get_arg(str);
+				str=get_arg(str, "Path");
 				str=backslash(str);
 				write("\r\nDirectory of: "+str+"\r\n\r\n");
 				a=directory(str+"*",GLOB_NOSORT);
@@ -449,7 +515,7 @@ function str_cmds(str)
 		}
 		if(word=="LOAD") {
 			str=str.substr(4);
-			bbs.load_text(get_arg(str));
+			bbs.load_text(get_filename(str));
 			return;
 		}
 
@@ -494,7 +560,7 @@ function str_cmds(str)
 		if(word=="ALTUL") {
 			str=str.substr(6);
 			bbs.alt_ul_dir=(str+0);
-			printf(bbs.text(AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(OFF));
+			printf(bbs.text(text.AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(text.OFF));
 			return;
 		}
 
@@ -511,7 +577,7 @@ function str_cmds(str)
 				}
 			}
 			if(i<system.nodes) {
-				write(bbs.text(ResortWarning));
+				write(bbs.text(text.ResortWarning));
 				return;
 			}
 			if(str.search(/^ALL$/i)!=-1) {
@@ -613,7 +679,7 @@ function str_cmds(str)
 				k+=l;
 			}
 			if(k>1)
-				printf(bbs.text(NFilesListed),k);
+				printf(bbs.text(text.NFilesListed),k);
 			return;
 		}
 
@@ -631,7 +697,7 @@ function str_cmds(str)
 					return;
 			}
 			if(!file_exists(str)) {
-				write(bbs.text(FileNotFound));
+				write(bbs.text(text.FileNotFound));
 				return;
 			}
 			if(!bbs.check_syspass())
@@ -668,7 +734,7 @@ function str_cmds(str)
 //# Quiet Node
 	if(user.compare_ars("exempt Q")) {
 		if(str=="HELP")
-			writeln("QUIET\tToggles quiet setting (you are not lised as online).");
+			writeln("QUIET\tToggles quiet setting (you are not listed as online).");
 		if(str=="QUIET") {
 			if(system.node_list[bbs.node_num-1].status==NODE_QUIET)
 				system.node_list[bbs.node_num-1].status=NODE_INUSE;
@@ -683,7 +749,7 @@ function str_cmds(str)
 			writeln("\tmentioned).");
 		}
 		if(str=="ANON") {
-			bbs.node_settings ^= NODE_ANON;
+			system.node_list[bbs.node_num-1].misc ^= NODE_ANON;
 			display_node(bbs.node_num);
 			return;
 		}
@@ -697,7 +763,7 @@ function str_cmds(str)
 		}
 		if(word=="LOCK") {
 			str=str.substr(4);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -709,7 +775,7 @@ function str_cmds(str)
 			return;
 		}
 	}
-			
+
 // Interrupt Node
 	if(user.compare_ars("exempt I")) {
 		if(str=="HELP") {
@@ -718,7 +784,7 @@ function str_cmds(str)
 		}
 		if(word=="INTR") {
 			str=str.substr(4);
-			i=parseInt(get_arg(str));
+			i=parseInt(get_nodenum(str));
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
@@ -744,9 +810,9 @@ function str_cmds(str)
 	if(str=="HELP")
 		writeln("POFF\tToggles if other users can page you for this session.");
 	if(str=="POFF") {
-		bbs.node_settings ^= NODE_POFF;
+		system.node_list[bbs.node_num-1].misc ^= NODE_POFF;
 		write("Paging is ");
-		if(bbs.node_settings & NODE_POFF)
+		if(system.node_list[bbs.node_num-1].misc & NODE_POFF)
 			writeln("OFF");
 		else
 			writeln("ON");
@@ -775,67 +841,52 @@ function str_cmds(str)
 
 //### Generic routine to ask user for parameter if one wasn't specified ###
 
-function get_arg(str)
+function get_arg(str, parm, history)
 {
+	if(!history) {
+		if(!bbs.mods.str_cmds_parameter_history)
+			bbs.mods.str_cmds_parameter_history = [];
+		history = bbs.mods.str_cmds_parameter_history;
+	}
+	if(parm == undefined)
+		parm = "Parameter(s)";
 	str=str.replace(/^\s+/,"");
 	if(str=="") {
-		write("Parameter(s): ");
-		str=console.getstr();
+		write(format("%s: ", parm));
+		str=console.getstr(128, K_MSG, history);
+	}
+	if(str) {
+		var i = history.indexOf(str);
+		if(i >= 0)
+			history.splice(i, 1);
+		history.unshift(str);
 	}
 
 	return(str);
 }
 
+function get_nodenum(str)
+{
+	return get_arg(str, "Node Number");
+}
+
+function get_cmdline(str)
+{
+	return get_arg(str, "Command-line");
+}
+
+function get_filename(str)
+{
+	return get_arg(str, "Filename");
+}
+
 function display_node(node_num)
 {
-	var n=node_num-1;
-
-	printf("Node %2d: ",node_num);
-	var node = system.node_list[node_num-1];
-
-	if(node.status==NODE_QUIET || node.status==NODE_INUSE) {
-		write(system.username(node.useron)
-			+ " "
-			+ format(NodeAction[node.action],system.node_list[n].aux));
-	} else
-		printf(NodeStatus[node.status],node.aux);
-
-	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
-		write(" (");
-		if(node.misc&NODE_AOFF)
-			write('A');
-		if(node.misc&NODE_LOCK)
-			write('L');
-		if(node.misc&(NODE_MSGW|NODE_NMSG))
-			write('M');
-		if(node.misc&NODE_POFF)
-			write('P');
-		write(')');
-	}
-	if(((node.misc
-		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-		|| node.status==NODE_QUIET)) {
-		write(" [");
-		if(node.misc&NODE_ANON)
-			write('A');
-		if(node.misc&NODE_INTR)
-			write('I');
-		if(node.misc&NODE_RRUN)
-			write('R');
-		if(node.misc&NODE_UDAT)
-			write('U');
-		if(node.status==NODE_QUIET)
-			write('Q');
-		if(node.misc&NODE_EVENT)
-			write('E');
-		if(node.misc&NODE_DOWN)
-			write('D');
-		if(node.misc&NODE_LCHAT)
-			write('C');
-		write(']'); }
-	if(node.errors)
-		printf(" %d error%s",node.errors, node.errors>1 ? 's' : '' );
-	printf("\r\n");
+	var options = bbs.mods.nodelist_options;
+	if(!options)
+		options = load({}, "nodelist_options.js");
+	print("Node " + format(options.format, node_num
+		, presence.node_status(system.get_node(node_num), user.is_sysop, options, node_num - 1)));
 }
 
 function add_commas(val, pad)

@@ -1,6 +1,6 @@
 { Synchronet User Editor (Delphi 5 for Win32 project) }
 
-{ $Id$ }
+{ $Id: MainFormUnit.pas,v 1.12 2020/03/31 02:06:20 rswindell Exp $ }
 
 {****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -254,7 +254,7 @@ const					    { String lengths					   	    }
     LEN_COMP		=30;	{ User computer description				    }
     LEN_COMMENT 	=60;	{ User comment 							    }
     LEN_NETMAIL 	=60;	{ NetMail forwarding address		   	    }
-    LEN_PASS		=8;	    { User password							    }
+    LEN_OLDPASS		=8;	    { User password							    }
     LEN_PHONE		=12;	{ User phone number						    }
     LEN_BIRTH		=8;	    { Birthday in xx/xx/YY format		   	    }
     LEN_ADDRESS 	=30;	{ User address 							    }
@@ -264,9 +264,9 @@ const					    { String lengths					   	    }
     LEN_FDESC		=58;	{ File description 						    }
     LEN_FCDT		=9;	    { 9 digits for file credit values	   	    }
     LEN_TITLE		=70;	{ Message title							    }
-    LEN_MAIN_CMD	=40;	{ Storage in user.dat for custom commands	}
-    LEN_XFER_CMD	=40;
-    LEN_SCAN_CMD	=35;
+    LEN_MAIN_CMD	=40;	{ unused }
+    LEN_PASS		=40;	{ password }
+    LEN_SCAN_CMD	=35;	{ unused }
     LEN_IPADDR		=45;
     LEN_CID 		=25;	{ Caller ID (phone number) 				    }
     LEN_ARSTR		=40;	{ Max length of Access Requirement string	}
@@ -290,8 +290,8 @@ const
     U_LOCATION	=U_ADDRESS+LEN_ADDRESS;
     U_ZIPCODE	=U_LOCATION+LEN_LOCATION;
 
-    U_PASS		=U_ZIPCODE+LEN_ZIPCODE+2;
-    U_PHONE  	=U_PASS+8; 			    { Offset to phone-number }
+    U_OLDPASS	=U_ZIPCODE+LEN_ZIPCODE+2;
+    U_PHONE  	=U_OLDPASS+LEN_OLDPASS; { Offset to phone-number }
     U_BIRTH  	=U_PHONE+12; 		    { Offset to users birthday	}
     U_MODEM     =U_BIRTH+8;
     U_LASTON	=U_MODEM+8;
@@ -333,8 +333,8 @@ const
     U_CURDIR	=U_CURSUB+8; 	{ Current dir (internal code  }
     U_CMDSET	=U_CURDIR+8; 	{ unused }
     U_MAIN_CMD	=U_CMDSET+2+2; 	{ unused }
-    U_XFER_CMD	=U_MAIN_CMD+LEN_MAIN_CMD; 		{ unused }
-    U_SCAN_CMD	=U_XFER_CMD+LEN_XFER_CMD+2;  	{ unused }
+    U_PASS		=U_MAIN_CMD+LEN_MAIN_CMD; 		{ password }
+    U_SCAN_CMD	=U_PASS+LEN_PASS+2;  			{ unused }
     U_IPADDR	=U_SCAN_CMD+LEN_SCAN_CMD; 		{ unused }
     U_FREECDT	=U_IPADDR+LEN_IPADDR+2;
     U_FLAGS3	=U_FREECDT+10; 	{ Flag set #3 }
@@ -374,6 +374,12 @@ const
     AUTOHANG	=(1 shl 20);		{ Auto-hang-up after transfer		}
     WIP 		=(1 shl 21);		{ Supports WIP terminal emulation	}
     AUTOLOGON	=(1 shl 22);		{ AutoLogon via IP					}
+    HTML		=(1 shl 23);		{ Using Zuul/HTML terminal				}
+    NOPAUSESPIN	=(1 shl 24);		{ No spinning cursor at pause prompt	}
+    CTERM_FONTS	=(1 shl 25);		{ Loadable fonts are supported			}
+    PETSCII		=(1 shl 26);		{ Commodore PET/CBM terminal			}
+    SWAP_DELETE	=(1 shl 27);		{ Swap Delete and Backspace keys		}
+    ICE_COLOR	=(1 shl 28);		{ Bright background color support		}
 
 { Bit values for user_chat 		}
 const
@@ -838,9 +844,9 @@ begin
     { Open file and read current user record }
     Str:=data_dir+'user/user.dat';
     if FileExists(Str) then
-        f:=TFileStream.Create(Str,fmOpenReadWrite or fmShareExclusive)
+        f:=TFileStream.Create(Str,fmOpenReadWrite or fmShareDenyNone)
     else
-        f:=TFileStream.Create(Str,fmCreate or fmShareExclusive);
+        f:=TFileStream.Create(Str,fmCreate or fmShareDenyNone);
 
     f.Seek((usernumber-1)*U_LEN,soFromBeginning);
     f.Read(buf,U_LEN);

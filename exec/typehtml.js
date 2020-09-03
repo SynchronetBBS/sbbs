@@ -4,7 +4,7 @@
 
 // Planned replacement for exec/typehtml.src (Baja version)
 
-// $Id$
+// $Id: typehtml.js,v 1.10 2014/09/17 22:39:16 deuce Exp $
 
 load("sbbsdefs.js");	// USER_HTML
 load("html2asc.js");

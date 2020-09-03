@@ -2,7 +2,7 @@
 #
 # Global build system setup file for Borland Make/BCC
 #
-# $Id$
+# $Id: Common.bmake,v 1.55 2020/04/30 01:56:59 deuce Exp $
 #
 #############################################################################
 #																			#
@@ -98,7 +98,7 @@ EXEFILE	=	.exe
 OFILE	=	.obj
 SOFILE	=	.dll
 LIBFILE	=	.lib
-DELETE	=	echo y | del 
+DELETE	=	del /q
 IFNOTEXIST = if not exist $@
 UL_PRE	=	
 UL_SUF	=	$(LIBFILE)
@@ -168,9 +168,7 @@ UIFC_SRC	=	$(SRC_ROOT)$(DIRSEP)uifc
 
 # SDL ciolib enabled by default for the moment.
 !ifndef WITHOUT_SDL
-!ifndef USE_SDL_AUDIO
 USE_SDL	=	1
-!endif
 !endif
 
 # Pull in lib-specific flags

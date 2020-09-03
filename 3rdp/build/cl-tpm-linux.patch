@@ -1,0 +1,25 @@
+--- ../tmp2/tools/ccopts.sh	2019-03-04 16:32:32.000000000 -0500
++++ tools/ccopts.sh	2019-06-03 16:30:45.060050000 -0400
+@@ -241,13 +241,15 @@
+ 	done
+ 
+ 	# TPM support
+-	for includepath in $TPMPATHS ; do
+-		if [ -f $includepath ] ; then
+-			echo "TPM interface detected, enabling TPM support." >&2 ;
+-			CCARGS="$CCARGS -DHAS_TPM -I"$(dirname $includepath)"" ;
+-			break ;
+-		fi
+-	done
++	if [ "$(uname -s)" = "Linux" ] ; then
++		for includepath in $TPMPATHS ; do
++			if [ -f $includepath ] ; then
++				echo "TPM interface detected, enabling TPM support." >&2 ;
++				CCARGS="$CCARGS -DHAS_TPM -I"$(dirname $includepath)"" ;
++				break ;
++			fi
++		done
++	fi
+ 
+ 	# /dev/crypto support
+ 	for includepath in $DEVCRYPTOPATHS ; do

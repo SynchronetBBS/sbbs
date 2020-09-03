@@ -1,6 +1,6 @@
 /* Text-mode User Interface Library (inspired by Novell SYSCON look & feel) */
 
-/* $Id$ */
+/* $Id: uifc.h,v 1.97 2020/08/16 20:37:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -53,7 +53,7 @@
 
 #ifdef _WIN32
         #ifdef __BORLANDC__
-                #define UIFCCALL __stdcall
+                #define UIFCCALL
         #else
                 #define UIFCCALL
         #endif
@@ -205,6 +205,7 @@
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
 #define K_PASSWORD	(1L<<16)	/* Does not display text while editing		*/
+#define K_FIND		(1L<<17)	/* Don't set the "changes" flag				*/
 
 
 						/* Extra exit flags */
@@ -416,6 +417,11 @@ typedef struct {
 	uifc_graphics_t	*chars;
 
 /****************************************************************************/
+/* Allow application override												*/
+/****************************************************************************/
+	char** yesNoOpts;
+
+/****************************************************************************/
 /* Exit/uninitialize function.												*/
 /****************************************************************************/
     void    (*bail) (void);
@@ -428,7 +434,10 @@ typedef struct {
 /****************************************************************************/
 /* Popup a message, maybe wait for the user to hit a key or click button.	*/
 /****************************************************************************/
-    void    (*msg)  (char* str);
+	int		(*msg)  (char* str);
+	int		(*msgf) (char* fmt, ...);
+	BOOL	(*deny) (char* fmt, ...);
+	BOOL	(*confirm) (char* fmt, ...);
 /****************************************************************************/
 /* Popup/down a status message.												*/
 /* str is the message to display on popup.									*/

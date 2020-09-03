@@ -59,10 +59,10 @@ else
 endif
 CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 
-CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) -I../sbbs3 -I../smblib -I../comio
-LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(CRYPT_LDFLAGS)
+CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS) -I../sbbs3 -I../comio
+LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS) $(CRYPT_LDFLAGS)
 
-vpath %.c ../sbbs3 ../smblib ../uifc ../comio
+vpath %.c ../sbbs3 ../uifc ../comio
 
 ifdef DEBUG
  INSTALL_EXE	?=	install
@@ -101,7 +101,7 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE):
 
 $(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
 ifeq ($(os),darwin)
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents
@@ -112,9 +112,9 @@ ifeq ($(os),darwin)
 	${QUIET}${INSTALL_EXE} ${SYNCTERM} ${EXEODIR}/SyncTERM.app/Contents/MacOS
 	${QUIET}${INSTALL_DATA} Info.plist ${EXEODIR}/SyncTERM.app/Contents
 	${QUIET}${INSTALL_DATA} SyncTERM.icns ${EXEODIR}/SyncTERM.app/Contents/Resources
-	-${QUIET}rm -rf ${EXEODIR}/SyncTERM.app/Contents/Frameworks/SDL.framework
-	${QUIET}cp -R ${SDL_FRAMEWORK_PATH}/SDL.framework ${EXEODIR}/SyncTERM.app/Contents/Frameworks
-	${QUIET}rm -rf ${EXEODIR}/SyncTERM.app/Contents/Frameworks/SDL.framework/Headers/*
+	-${QUIET}rm -rf ${EXEODIR}/SyncTERM.app/Contents/Frameworks/SDL2.framework
+	${QUIET}cp -R ${SDL_FRAMEWORK_PATH}/SDL2.framework ${EXEODIR}/SyncTERM.app/Contents/Frameworks
+	${QUIET}rm -rf ${EXEODIR}/SyncTERM.app/Contents/Frameworks/SDL2.framework/Headers/*
 endif
 
 syncterm.man: syncterm.man.in
@@ -151,7 +151,7 @@ cscope.files::
 	echo ../sbbs3/zmodem.c >> cscope.files
 	echo ../sbbs3/zmodem.h >> cscope.files
 	echo ../sbbs3/xmodem.h >> cscope.files
-	echo ../smblib/crc16.c >> cscope.files
-	echo ../smblib/crc16.h >> cscope.files
-	echo ../smblib/crc32.c >> cscope.files
-	echo ../smblib/crc32.h >> cscope.files
+	echo ../hash/crc16.c >> cscope.files
+	echo ../hash/crc16.h >> cscope.files
+	echo ../hash/crc32.c >> cscope.files
+	echo ../hash/crc32.h >> cscope.files

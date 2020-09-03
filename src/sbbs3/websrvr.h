@@ -1,6 +1,6 @@
 /* Synchronet Web Server */
 
-/* $Id$ */
+/* $Id: websrvr.h,v 1.57 2020/03/07 00:18:50 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -73,7 +73,6 @@ typedef struct {
 
 	/* Paths */
 	char	ssjs_ext[16];			/* Server-Side JavaScript file extension */
-	char	js_ext[16];				/* Embedded JavaScript file extension */
 	char**	cgi_ext;				/* CGI Extensions */
 	char	cgi_dir[128];			/* relative to root_dir (all files executable) */
     char    ctrl_dir[128];
@@ -128,6 +127,7 @@ static struct init_field web_init_fields[] = {
 #define WEB_OPT_NO_CGI				(1<<5)	/* Disable CGI support				*/
 #define WEB_OPT_HTTP_LOGGING		(1<<6)	/* Create/write-to HttpLogFile		*/
 #define WEB_OPT_ALLOW_TLS			(1<<7)	/* Enable HTTPS						*/
+#define WEB_OPT_HSTS_SAFE			(1<<8)	/* All URLs can be served over HTTPS*/
 
 /* web_startup_t.options bits that require re-init/recycle when changed */
 #define WEB_INIT_OPTS	(WEB_OPT_HTTP_LOGGING)
@@ -142,11 +142,11 @@ static ini_bitdesc_t web_options[] = {
 	{ WEB_OPT_NO_CGI				,"NO_CGI"				},
 	{ WEB_OPT_HTTP_LOGGING			,"HTTP_LOGGING"			},
 	{ WEB_OPT_ALLOW_TLS				,"ALLOW_TLS"			},
+	{ WEB_OPT_HSTS_SAFE				,"HSTS_SAFE"			},
 
 	/* shared bits */
 	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
-	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
 	{ BBS_OPT_MUTE					,"MUTE"					},
 
@@ -175,7 +175,7 @@ static ini_bitdesc_t web_options[] = {
 		#define DLLEXPORT __declspec(dllimport)
 	#endif
 	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
+		#define DLLCALL
 	#else
 		#define DLLCALL
 	#endif

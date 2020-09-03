@@ -2,7 +2,7 @@
 
 /* Network related wrapper functions */
 
-/* $Id$ */
+/* $Id: netwrap.c,v 1.8 2019/07/24 04:21:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -35,9 +35,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "sockwrap.h"
 #include "genwrap.h"	/* truncsp */
 #include "netwrap.h"	/* verify prototypes */
-#include "sockwrap.h"
 
 #include <stdlib.h>		/* malloc() */
 #include <ctype.h>		/* isspace() */

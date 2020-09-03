@@ -17,7 +17,8 @@ function xjs_compile(filename) {
 	if(!file_exists(ssjs_filename)) {
 		var file = new File(filename);
 		if(!file.open("r",true,8192)) {
-			writeln("!ERROR " + file.error + " opening " + filename);
+			writeln("!ERROR " + file.error + " opening " + file.name);
+			log(LOG_ERR, "!ERROR " + file.error + " opening " + file.name);
 			exit();
 		}
 		var text = file.readAll(8192);
@@ -84,6 +85,8 @@ function xjs_compile(filename) {
 		if(f.open("w",false)) {
 			f.write(script);
 			f.close();
+		} else {
+			log(LOG_ERR, "!ERROR " + file.error + " creating " + file.name);
 		}
 	}
 	return(ssjs_filename);

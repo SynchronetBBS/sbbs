@@ -65,6 +65,7 @@ gint
 connect_wait(gpointer data)
 {
 	GtkWidget *MainWindow;
+	gint x, y;
 
 	switch(chat_check_remote()) {
 		case -1:	/* Error */
@@ -74,8 +75,10 @@ connect_wait(gpointer data)
 		case 1:		/* Waiting for remote */
 			return(TRUE);
 		case 2:		/* Chat active */
-			MainWindow = create_MainWindow ();
+			gtk_window_get_position(data, &x, &y);
 			gtk_widget_hide (GTK_WIDGET(data));
+			MainWindow = create_MainWindow ();
+			gtk_window_move(GTK_WINDOW(MainWindow), x, y);
 			gtk_widget_show (MainWindow);
 			return(FALSE);
 	}
@@ -84,7 +87,7 @@ connect_wait(gpointer data)
 
 
 void
-on_MainWindow_destroy                  (GtkObject       *object,
+on_MainWindow_destroy                  (GObject       *object,
                                         gpointer         user_data)
 {
 	chat_close();
@@ -102,7 +105,7 @@ on_LocalText_key_press_event           (GtkWidget       *widget,
 	gsize	inbytes;
 	gsize	outbytes;
 
-	if(event->keyval==GDK_BackSpace || event->keyval==GDK_Delete) {
+	if(event->keyval==GDK_KEY_BackSpace || event->keyval==GDK_KEY_Delete) {
 		GtkTextIter		start;
 		GtkTextIter		end;
 
@@ -134,7 +137,7 @@ on_LocalText_key_press_event           (GtkWidget       *widget,
 		);
 		g_free(outstr);
 	}
-	if(event->keyval == GDK_Return || event->keyval == GDK_KP_Enter) {
+	if(event->keyval == GDK_KEY_Return || event->keyval == GDK_KEY_KP_Enter) {
 		instr[1]=0;
 		instr[0]='\n';
 		chat_write_byte('\r');

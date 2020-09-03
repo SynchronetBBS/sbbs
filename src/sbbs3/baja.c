@@ -2,7 +2,7 @@
 
 /* Synchronet command shell/module compiler */
 
-/* $Id$ */
+/* $Id: baja.c,v 1.52 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -591,9 +591,12 @@ void compile(char *src)
 		if(!stricmp(p,"COMPARE_ARS")) {
 			if(!(*arg)) break;
 			strupr(arg);
-			ar=arstr(&i,arg,NULL);
-			fprintf(out,"%c%c",CS_COMPARE_ARS,(uchar)i);
-			fwrite(ar,i,1,out);
+			ar=arstr(&i,arg,NULL,NULL);
+			if(ar != NULL) {
+				fprintf(out,"%c%c",CS_COMPARE_ARS,(uchar)i);
+				fwrite(ar,i,1,out);
+				free(ar);
+			}
 			continue; }
 
 		if(!stricmp(p,"CHKSYSPASS")) {
@@ -3222,6 +3225,9 @@ void compile(char *src)
 		if(!stricmp(p,"MSG_YOUR_SCAN_ALL")) {
 			fprintf(out,"%c",CS_MSG_YOUR_SCAN_ALL);
 			continue; }
+		if(!stricmp(p,"MSG_LIST")) {
+			fprintf(out,"%c",CS_MSG_LIST);
+			continue; }
 		if(!stricmp(p,"CHAT_SECTION")) {
 			fprintf(out,"%c",CS_CHAT_SECTION);
 			continue; }
@@ -3412,7 +3418,7 @@ int main(int argc, char **argv)
 	int		show_banner=TRUE;
 	char	revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.52 $", "%*s %s", revision);
 
 	p = getenv("BAJAINCLUDE");
 	if(p != NULL) {

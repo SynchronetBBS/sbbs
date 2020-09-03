@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fonttest.js,v 1.1 2018/02/02 13:04:12 rswindell Exp $
 
 var cterm = load({}, 'cterm_lib.js');
 var ansiterm = load({}, 'ansiterm_lib.js');

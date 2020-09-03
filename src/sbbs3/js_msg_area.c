@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "Message Area" Object */
 
-/* $Id$ */
+/* $Id: js_msg_area.c,v 1.75 2020/08/16 01:01:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -54,6 +54,7 @@ static char* msg_grp_prop_desc[] = {
 	,"group name"
 	,"group description"
 	,"group access requirements"
+	,"user has sufficient access to list this group's sub-boards <i>(introduced in v3.18)</i>"
 	,NULL
 };
 
@@ -77,19 +78,22 @@ static char* msg_sub_prop_desc[] = {
 	,"sub-board data storage location"
 	,"FidoNet origin line"
 	,"QWK Network tagline"
-	,"toggle options (bitfield)"
+	,"toggle options (bitfield) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"index into message scan configuration/pointer file"
 	,"QWK conference number"
 	,"configured maximum number of message CRCs to store (for dupe checking)"
 	,"configured maximum number of messages before purging"
 	,"configured maximum age (in days) of messages before expiration"
+	,"additional print mode flags to use when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	,"print mode flags to <i>negate</i> when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	/* Insert here */
-	,"user has sufficient access to read messages"
-	,"user has sufficient access to post messages"
-	,"user has operator access to this message area"
+	,"user has sufficient access to see this sub-board"
+	,"user has sufficient access to read messages in this sub-board"
+	,"user has sufficient access to post messages in this sub-board"
+	,"user has operator access to this sub-board"
 	,"user's posts are moderated"
 	,"user's current new message scan pointer (highest-read message number)"
-	,"user's message scan configuration (bitfield) see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for valid bits"
+	,"user's message scan configuration (bitfield) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"user's last-read message number"
 	,NULL
 };
@@ -105,7 +109,6 @@ struct js_msg_area_priv {
 BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
 {
 	char		str[128];
-	int			c;
 	JSString*	js_str;
 	jsval		val;
 	sub_t*		sub;
@@ -152,36 +155,7 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 	if(!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
-
-	if(sub->newsgroup[0])
-		SAFECOPY(str,sub->newsgroup);
-	else {
-		sprintf(str,"%s.%s",cfg->grp[sub->grp]->sname,sub->sname);
-		/*
-		 * From RFC5536:
-		 * newsgroup-name  =  component *( "." component )
-		 * component       =  1*component-char
-		 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
-		 */
-		if (str[0] == '.')
-			str[0] = '_';
-		for(c=0;str[c];c++) {
-			/* Legal characters */
-			if ((str[c] >= 'A' && str[c] <= 'Z')
-					|| (str[c] >= 'a' && str[c] <= 'z')
-					|| (str[c] >= '0' && str[c] <= '9')
-					|| str[c] == '+'
-					|| str[c] == '-'
-					|| str[c] == '_'
-					|| str[c] == '.')
-				continue;
-			str[c] = '_';
-		}
-		c--;
-		if (str[c] == '.')
-			str[c] = '_';
-	}
-	if((js_str=JS_NewStringCopyZ(cx, str))==NULL)
+	if((js_str=JS_NewStringCopyZ(cx, subnewsgroupname(cfg, sub, str, sizeof(str))))==NULL)
 		return(FALSE);
 	if(!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
@@ -259,6 +233,15 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 	if(!JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 		return(FALSE);
+
+	if(!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
+	if(!JS_DefineProperty(cx, subobj, "print_mode_neg", INT_TO_JSVAL(sub->n_pmode)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+		return(FALSE);
+
 
 #ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, subobj, "_property_desc_list", msg_sub_prop_desc, JSPROP_READONLY);
@@ -371,8 +354,8 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	JSObject*	sub_list;
 	JSString*	js_str;
 	jsval		val;
-	jsuint		grp_index;
-	jsuint		sub_index;
+	jsint		grp_index;
+	jsint		sub_index;
 	uint		l,d;
 	char*		name=NULL;
 	struct js_msg_area_priv *p;
@@ -502,6 +485,10 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 				return JS_FALSE;
 
+			val = BOOLEAN_TO_JSVAL(grp_index >= 0);
+			if(!JS_SetProperty(cx, grpobj, "can_access", &val))
+				return JS_FALSE;
+
 #ifdef BUILD_JSDOCS
 			js_DescribeSyncObject(cx,grpobj,"Message Groups (current user has access to)",310);
 #endif
@@ -573,7 +560,11 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 				if(!js_CreateMsgAreaProperties(cx, p->cfg, subobj, d))
 					return JS_FALSE;
-			
+
+				val = BOOLEAN_TO_JSVAL(grp_index >= 0 && sub_index >= 0);
+				if(!JS_SetProperty(cx, subobj, "can_access", &val))
+					return JS_FALSE;
+
 				if(p->user==NULL)
 					val=BOOLEAN_TO_JSVAL(JS_TRUE);
 				else

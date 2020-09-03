@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dpoker.c,v 1.17 2019/08/13 20:09:01 rswindell Exp $ */
 
 /******************************************************************************
   DPOKER.EXE: Domain Poker online multi-player poker BBS door game for
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
         long points;
     } player_stuff;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.17 $", "%*s %s", revision);
 	DESCRIBE_COMPILER(compiler);
 
     memset(node,'\0',MAX_NODES);
@@ -227,10 +227,10 @@ int main(int argc, char **argv)
             lastrun=time(NULL);
 			lastrun-=lastrun%86400;
             write(file,&lastrun,sizeof(lastrun)); close(file);
-            delfiles(".","player.*");
-            delfiles(".","gamestat.*");
-            delfiles(".","deck.*");
-            delfiles(".","message.*");
+            delfiles(".","player.*", /* keep: */0);
+            delfiles(".","gamestat.*", /* keep: */0);
+            delfiles(".","deck.*", /* keep: */0);
+            delfiles(".","message.*", /* keep: */0);
             unlink("dpoker.plr");
 			close(file);
 		}
@@ -247,10 +247,10 @@ int main(int argc, char **argv)
             lastrun=time(NULL); lseek(file,0L,SEEK_SET);
 			lastrun-=lastrun%86400;
             write(file,&lastrun,sizeof(lastrun));
-            delfiles(".","player.*");
-            delfiles(".","gamestat.*");
-            delfiles(".","deck.*");
-            delfiles(".","message.*");
+            delfiles(".","player.*", /* keep: */0);
+            delfiles(".","gamestat.*", /* keep: */0);
+            delfiles(".","deck.*", /* keep: */0);
+            delfiles(".","message.*", /* keep: */0);
             unlink("dpoker.plr");
 		}
         close(file);

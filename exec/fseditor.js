@@ -1,9 +1,14 @@
 /* ToDo: At what point should trailing whitespace be removed? */
-/* $Id$ */
+/* $Id: fseditor.js,v 1.104 2020/04/26 08:20:59 rswindell Exp $ */
 
 load("sbbsdefs.js");
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.104 $".split(' ')[1];
+require("text.js", 'FileNotReceived');
+
+if(!bbs.mods.userprops)
+	bbs.mods.userprops = load({}, "userprops.js");
+
 var line=new Array();
 var quote_line=new Array();
 var xpos=0;									/* Current xpos of insert point */
@@ -31,13 +36,27 @@ var quote_top;								/* Line number of the first quote line */
 var quote_bottom;							/* Line number of the last quote line */
 var drop_file;
 var info;
-var tab_width=8;
 
 // Message header display format
-var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.60s\1>\r\n";
+var hdr_fmt	= "\1b\1h%-4s\1n\1b: \1h\1c%.*s\1>\r\n";
+var hdr_field_width = console.screen_columns - 7;
 var stat_attr	= 0x1f;
-var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help          %s\1>\1n";
+var stat_fmt	= "\1h\1w\0014 FSEditor v" + REVISION + " - Type \1yCTRL-K\1w for help         %s\1>\1n";
 var subj,to,from;
+
+var options = load('modopts.js', 'fseditor');
+if(!options)
+	options = {};
+if(options.utf8_support === undefined)
+	options.utf8_support = argv.indexOf('-utf8') >= 0;
+if(!options.default_tabstop)
+	options.default_tabstop = 8;
+
+var pmode = 0;
+if(options.utf8_support && console.term_supports(USER_UTF8))
+	pmode |= P_UTF8;
+
+var tab_width = bbs.mods.userprops.get("fseditor", "tabstop", options.default_tabstop);
 
 function Line(copyfrom)
 {
@@ -101,7 +120,7 @@ function draw_line(l,x,clear)
 		console.gotoxy(x+1,yp);
 		for(; x<line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(line[l].attr.substr(x,1));
-			console.write(line[l].text.substr(x,1));
+			console.print(line[l].text.substr(x,1), pmode);
 		}
 		if(clear && x<(console.screen_columns-1)) {
 			console.attributes=7;
@@ -154,8 +173,9 @@ function next_line()
 		scroll(scroll_lines);		/* Scroll up */
 	if(last_xpos>=0)
 		xpos=last_xpos;
-	if(xpos>line[ypos].text.length)
-		xpos=line[ypos].text.length;
+	var text_length = console.strlen(line[ypos].text, pmode);
+	if(xpos>text_length)
+		xpos=text_length;
 }
 
 /*
@@ -171,8 +191,9 @@ function try_prev_line()
 			scroll(0-scroll_lines);		/* Scroll down */
 		if(last_xpos>=0)
 			xpos=last_xpos;
-		if(xpos>line[ypos].text.length)
-			xpos=line[ypos].text.length;
+		var text_length = console.strlen(line[ypos].text, pmode);
+		if(xpos>text_length)
+			xpos=text_length;
 		return(true);
 	}
 	console.beep();
@@ -192,8 +213,9 @@ function try_next_line()
 			scroll(scroll_lines);		/* Scroll up */
 		if(last_xpos>=0)
 			xpos=last_xpos;
-		if(xpos>line[ypos].text.length)
-			xpos=line[ypos].text.length;
+		var text_length = console.strlen(line[ypos].text, pmode);
+		if(xpos>text_length)
+			xpos=text_length;
 		return(true);
 	}
 	console.beep();
@@ -267,6 +289,11 @@ function unwrap_line(l)
 				if(line[l+1].text.length==0) {
 					line[l].kludged=false;
 					line[l].hardcr=line[l+1].hardcr;
+					/*
+					 * TODO: If we splice out the next line,
+					 *       line[l+1] != undefined is not longer
+					 *       guaranteed...
+					 */
 					line.splice(l+1,1);
 				}
 				if(words[1].search(/\s/)!=-1)
@@ -287,15 +314,17 @@ function unwrap_line(l)
 		if(words != null) {
 			line[l].text+=words[1];
 			line[l].attr+=line[l+1].attr.substr(0,words[1].length);
-			line[l+1].text=line[l+1].text.substr(words[1].length);
-			line[l+1].attr=line[l+1].attr.substr(words[1].length);
+			if (line[l+1] !== undefined) {
+				line[l+1].text=line[l+1].text.substr(words[1].length);
+				line[l+1].attr=line[l+1].attr.substr(words[1].length);
+			}
 			if(first) {
 				if(ret==-1)
 					ret=words[1].length;
 				else
 					ret+=words[1].length;
 			}
-			if(line[l+1].text.length==0) {
+			if(line[l+1] !== undefined && line[l+1].text.length==0) {
 				line[l].hardcr=line[l+1].hardcr;
 				line.splice(l+1,1);
 			}
@@ -305,7 +334,8 @@ function unwrap_line(l)
 			/* Nothing on the next line... can't be kludged */
 			if(line[l].kludged)
 				line[l].kludged=false;
-			if(line[l+1].text.length==0) {
+			// Make sure we didn't splice() the next line out...
+			if(line[l+1] !== undefined && line[l+1].text.length==0) {
 				line[l].hardcr=line[l+1].hardcr;
 				line.splice(l+1,1);
 				/* 
@@ -727,15 +757,15 @@ function redraw_screen()
 	status_line();
 	if(edit_top == 5) {
 		console.gotoxy(1,1);
-		printf(hdr_fmt, "Subj", subj);
+		console.print(format(hdr_fmt, "Subj", hdr_field_width, subj), pmode);
 		console.gotoxy(1,2);
-		printf(hdr_fmt, "To",	to);
+		console.print(format(hdr_fmt, "To",	hdr_field_width, to), pmode);
 		console.gotoxy(1,3);
-		printf(hdr_fmt, "From", from);
+		console.print(format(hdr_fmt, "From", hdr_field_width, from), pmode);
 	}
 	else {
 		console.gotoxy(1,1);
-		printf(hdr_fmt, "File", subj);
+		printf(hdr_fmt, "File", hdr_field_width, subj);
 	}
 	/* Display tab line */
 	for(i=0;i<(console.screen_columns-1);i++) {
@@ -1010,8 +1040,8 @@ function make_strings(soft,embed_colour)
 							case CYAN:
 								str+='\x01C';
 								break;
-							case WHITE:
-								str+='\x01W';
+							case LIGHTGRAY:
+								str+='\x01N';
 								break;
 						}
 					}
@@ -1038,7 +1068,7 @@ function make_strings(soft,embed_colour)
 							case CYAN:
 								str+='\x016';
 								break;
-							case WHITE:
+							case LIGHTGRAY:
 								str+='\x017';
 								break;
 						}
@@ -1103,7 +1133,7 @@ function draw_quote_selection(l)
 			}
 			else {
 				console.attributes=ascii(quote_line[l].attr.substr(0,1));
-				console.write(quote_line[l].text.substr(0,1));
+				console.print(quote_line[l].text.substr(0,1), pmode);
 			}
 		}
 	}
@@ -1152,7 +1182,7 @@ function draw_quote_line(l)
 		}
 		for(; x<quote_line[l].text.length && x<(console.screen_columns-1); x++) {
 			console.attributes=ascii(quote_line[l].attr.substr(x,1));
-			console.write(quote_line[l].text.substr(x,1));
+			console.print(quote_line[l].text.substr(x,1), pmode);
 		}
 		if(x<(console.screen_columns-1)) {
 			console.attributes=7;
@@ -1180,7 +1210,10 @@ function draw_quote_window()
 	/* Draw seperater */
 	console.gotoxy(1,quote_sep_pos);
 	console.attributes=7;
-	console.write("\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")+" \xc3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
+	console.print("\xc4\xc4\xb4 "+(quote_ontop?"^^^":"vvv")+" Quote "+(quote_ontop?"^^^":"vvv")
+		+ " \xc3"
+		+ new Array(Math.max(console.screen_columns - 18, 3)).join('\xc4')
+		);
 	for(i=0; i<quote_height; i++) {
 		draw_quote_line(quote_topline+i);
 	}
@@ -1410,8 +1443,49 @@ function add_char(key)
 		draw_line(ypos,xpos-1,false);
 }
 
+function output_filename()
+{
+	return (argc==0?system.temp_dir+"INPUT.MSG":argv[0]);
+}
+
+function save_file()
+{
+	var f=new File(output_filename());
+	if(!f.open("wb")) {
+		console.clear();
+		js.report_error(f.error + " (" + errno_str + ") opening " + f.name, true);
+		return false;
+	}
+	var s=make_strings(/* soft-CRs: */Boolean(options.soft_cr), /* embed-colors: */true);
+	f.write(s[0]);
+	f.close();
+	return true;
+}
+
+function handle_backspace()
+{
+	last_xpos=-1;
+	if(xpos>0) {
+		line[ypos].text=line[ypos].text.substr(0,xpos-1)
+			+line[ypos].text.substr(xpos);
+		line[ypos].attr=line[ypos].attr.substr(0,xpos-1)
+			+line[ypos].attr.substr(xpos);
+		xpos--;
+	}
+	else {
+		if(try_prev_line()) {
+			xpos=line[ypos].text.length;
+			line[ypos].hardcr=false;
+		}
+	}
+	if(!rewrap()) {
+		draw_line(ypos,xpos);
+	}
+}
+
 function edit(quote_first)
 {
+	var prev_key;
 	var key;
 
 	function edit_subject()
@@ -1434,7 +1508,11 @@ function edit(quote_first)
 	}
 	while(1) {
 		set_cursor();
-		key=console.inkey(0,10000);
+		key=console.inkey(/* mode: */0, /* timeout (ms): */10000);
+		if(!bbs.online) {
+			save_file();
+			return 1;	// aborted
+		}
 		if(key=='')
 			continue;
 		switch(key) {
@@ -1518,7 +1596,7 @@ function edit(quote_first)
 				status_line();
 				erase_colour_box();
 				break;
-			case '\x02':	/* CTRL-B KEY_HOME */
+			case KEY_HOME:	/* CTRL-B */
 				last_xpos=-1;
 				xpos=0;
 				break;
@@ -1545,11 +1623,11 @@ function edit(quote_first)
 				break;
 			case '\x04':	/* CTRL-D (Quick Find in SyncEdit)*/
 				break;
-			case '\x05':	/* CTRL-E KEY_END */
+			case KEY_END:	/* CTRL-E  */
 				last_xpos=-1;
-				xpos=line[ypos].text.length;
+				xpos=console.strlen(line[ypos].text, pmode);
 				break;
-			case '\x06':	/* CTRL-F KEY_RIGHT */
+			case KEY_RIGHT:	/* CTRL-F  */
 				last_xpos=-1;
 				xpos++;
 				if(xpos>line[ypos].text.length) {
@@ -1573,23 +1651,7 @@ function edit(quote_first)
 				add_char(key);
 				break;
 			case '\x08':	/* CTRL-H Backspace */
-				last_xpos=-1;
-				if(xpos>0) {
-					line[ypos].text=line[ypos].text.substr(0,xpos-1)
-							+line[ypos].text.substr(xpos);
-					line[ypos].attr=line[ypos].attr.substr(0,xpos-1)
-							+line[ypos].attr.substr(xpos);
-					xpos--;
-				}
-				else {
-					if(try_prev_line()) {
-						xpos=line[ypos].text.length;
-						line[ypos].hardcr=false;
-					}
-				}
-				if(!rewrap()) {
-					draw_line(ypos,xpos);
-				}
+				handle_backspace();
 				break;
 			case '\x09':	/* CTRL-I TAB... ToDo expand to spaces */
 				add_char(' ');
@@ -1766,7 +1828,7 @@ function edit(quote_first)
 				 * this was the first word on the line, or the one before the
 				 * word otherwise.  This puts the cursor on the previous word
 				 * if there is one and the next word if there isn't.  This
-				 * allows multiple ^W to keep deleteing words in all cases.
+				 * allows multiple ^W to keep deleting words in all cases.
 				 */
 				if(xpos) {
 					/* Delete space before the deleted word */
@@ -1811,11 +1873,7 @@ function edit(quote_first)
 				status_line();
 				break;
 			case '\x1a':	/* CTRL-Z (EOF) (PgUp in SyncEdit)  */
-				var f=new File((argc==0?system.temp_dir+"INPUT.MSG":argv[0]));
-				f.open("wb");
-				var s=make_strings(true,true);
-				f.write(s[0]);
-				f.close();
+				save_file();
 				console.line_counter=0;
 				return;
 			case '\x1b':	/* ESC (This should parse extra ANSI sequences) */
@@ -1824,7 +1882,7 @@ function edit(quote_first)
 				/* Same as CTRL-S (Edit Subject) */
 				edit_subject();
 				break;
-			case '\x1d':	/* CTRL-] KEY_LEFT */
+			case KEY_LEFT:	/* CTRL-] */
 				last_xpos=-1;
 				xpos--;
 				if(xpos<0) {
@@ -1832,7 +1890,7 @@ function edit(quote_first)
 					xpos=0;
 				}
 				break;
-			case '\x1e':	/* CTRL-^ KEY_UP */
+			case KEY_UP:	/* CTRL-^ */
 				if(last_xpos==-1)
 					last_xpos=xpos;
 				try_prev_line();
@@ -1840,11 +1898,14 @@ function edit(quote_first)
 			case '\x1f':	/* CTRL-_ Safe quick-abort*/
 				console.line_counter=0;
 				return;
-			case '\x7f':	/* DELETE */
+			case KEY_DEL:	/* DELETE */
 				last_xpos=-1;
-				if(xpos>=line[ypos].text.length)
+				if(xpos>=line[ypos].text.length) {
 					/* delete the hardcr, */
 					line[ypos].hardcr=false;
+					handle_backspace();
+					break;
+				}
 				line[ypos].text=line[ypos].text.substr(0,xpos)
 						+line[ypos].text.substr(xpos+1);
 				line[ypos].attr=line[ypos].attr.substr(0,xpos)
@@ -1852,9 +1913,27 @@ function edit(quote_first)
 				if(!rewrap())
 					draw_line(ypos,xpos);
 				break;
+			case 'B':
+				if(prev_key == '\x18') {	/* CTRL-X, ZDLE */
+					// ZMODEM-receive
+					console.clear(LIGHTGRAY);
+					console.print("ZMODEM upload detected");
+					if(bbs.receive_file(output_filename(), 'Z', /* autohang: */false) == true) {
+						console.line_counter=0;
+						return;
+					}
+					while(console.inkey(/* mode: */0, /* timeout: */500) == '\x18')
+						;
+					console.print(format(bbs.text(FileNotReceived), "File"));
+					console.pause();
+					redraw_screen();
+					break;
+				}
+				// Fall-through
 			default:		/* Insert the char */
 				add_char(key);
 		}
+		prev_key = key;
 	}
 }
 
@@ -1890,13 +1969,15 @@ console.ctrlkey_passthru="+ACGKLNPQRTUVWXYZ_";
 /* Enable delete line in SyncTERM (Disabling ANSI Music in the process) */
 console.write("\033[=1M");
 console.clear();
+console.writeln("Opening " + input_filename);
 var f=new File(input_filename);
 if(f.open("r",false)) {
 	ypos=0;
-	if(use_quotes)
-		quote_line=make_lines(quote_msg(word_wrap(f.read(),76)),'');
-	else
-		line=make_lines(word_wrap(f.read()),'');
+	if(use_quotes) {
+		var quote_width = console.screen_columns - 1;
+		quote_line=make_lines(quote_msg(word_wrap(f.read(), quote_width - 3), quote_width),'');
+	} else
+		line=make_lines(word_wrap(f.read(), console.screen_columns - 1),'');
 	f.close();
 }
 if(line.length==0)
@@ -1934,13 +2015,16 @@ while(result!=undefined) {
 		break;
 	result=file_getcase(result);
 }
-if(edit_top==5 && info[0]!=subj) {
+if(edit_top==5) {
 	drop_file = new File(system.node_dir + "result.ed");
 	if(drop_file.open("w")) {
-		drop_file.writeln("0");
+		drop_file.writeln("0");	// anonymous
 		drop_file.writeln(subj);
+		drop_file.writeln("FSEditor.js v" + REVISION);
 		drop_file.close();
 	}
 }
+if(tab_width != options.default_tabstop)
+	bbs.mods.userprops.set("fseditor", "tabstop", tab_width);
 console.clear();
 exit(exit_code);

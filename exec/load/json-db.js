@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: json-db.js,v 1.40 2015/11/04 09:43:45 deuce Exp $ */
 
 /*     
 	JSON database  - for Synchronet 3.15a+ (2011)
@@ -36,7 +36,7 @@
 */
 
 function JSONdb (fileName, scope) {
-	this.VERSION = "$Revision$".replace(/\$/g,'').split(' ')[1];
+	this.VERSION = "$Revision: 1.40 $".replace(/\$/g,'').split(' ')[1];
 	
     /* database storage file */
 	if(fileName) 

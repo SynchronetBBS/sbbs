@@ -45,7 +45,7 @@ function FileBase(dir) {
 
 		// Read from the IXB file
 		this.base = f.read(8).replace(/ +$/,'');
-		this.ext = f.read(3);
+		this.ext = f.read(3).replace(/ +$/, '');
 		this.datoffset = f.readBin(2);
 		byte = f.readBin(1);
 		this.datoffset |= (byte<<16);

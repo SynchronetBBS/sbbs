@@ -2,7 +2,7 @@
 
 // Lightbar Command Shell for Synchronet Version 4.00a+
 
-// $Id$
+// $Id: lbshell.js,v 1.133 2020/05/04 06:12:43 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 
@@ -27,7 +27,12 @@ load("nodedefs.js");
 load("lightbar.js");
 load("graphic.js");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
+load("text.js");
 load("str_cmds.js");
+var ansiterm = bbs.mods.ansiterm_lib;
+if(!ansiterm)
+	ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
+
 var str;
 var size=file_size(system.text_dir+"lbshell_bg.bin");
 size/=2;	// Divide by two for attr/char pairs
@@ -63,6 +68,7 @@ function handle_a_ctrlkey(key)
 		case ctrl('K'):	/* CTRL-K Control Key Menu */
 			pause=true;
 		case ctrl('P'):	/* Ctrl-P Messages */
+			stop_mouse();
 			clear_screen();
 			console.handle_ctrlkey(key);
 			if(pause)
@@ -70,6 +76,7 @@ function handle_a_ctrlkey(key)
 			draw_main(true);
 			for(i=0; i<menus_displayed.length; i++)
 				menus_displayed[i].draw();
+			start_mouse();
 			break;
 	}
 }
@@ -95,7 +102,7 @@ function get_message()
 	}
 
 	/* Check if user data has changed */
-	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && user.compare_ars("REST NOT G")) {
+	if((system.node_list[bbs.node_num-1].misc & NODE_UDAT) && bbs.compare_ars("REST NOT G")) {
 		user.cached=false;
 		system.node_list[bbs.node_num-1].misc &= ~NODE_UDAT;
 	}
@@ -109,21 +116,21 @@ function get_message()
 
 	/* Sysop Chat? */
 	if(system.node_list[bbs.node_num-1].misc & NODE_LCHAT) {
-		bbs.private_chat(true);
-		bbs.nodesync();
-		draw_main(true);
-		for(i=0; i<menus_displayed.length; i++)
-			menus_displayed[i].draw();
+		menu_opt(function() {
+			bbs.private_chat(true);
+			bbs.nodesync();
+		});
 	}
 
 	/* Time left warning? */
-	if((bbs.time_left/60)<(5-console.timeleft_warning) && !user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP)) {
+	if((bbs.time_left/60)<(5-console.timeleft_warning) && !bbs.compare_ars("SYSOP")) {
 		console.timeleft_warning=5-(bbs.time_left/60);
 		rows+=MessageWindow.putmsg(1,MessageWindow.height,format(bbs.text(OnlyXminutesLeft),bbs.time_left/60+1,(bbs.time_left/60)?"s":""),MessageWindow_Attr,true);
 	}
 
 	if(bbs.time_left==0) {
 		/* Call get_time_left() to handle the hangup and such */
+		stop_mouse();
 		clear_screen();
 		bbs.get_time_left();
 		bbs.hangup();
@@ -233,6 +240,8 @@ ShellLB.prototype.rpadding="\xb3";
 ShellLB.prototype.timeout=100;
 ShellLB.prototype.callback = message_callback;
 ShellLB.prototype.hotkeys = KEY_LEFT+KEY_RIGHT+"\b\x7f\x1b"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
+ShellLB.prototype.mouse_miss_key = '\b';
+ShellLB.prototype.mouse_enabled = true;
 
 function Mainbar()
 {
@@ -241,12 +250,13 @@ function Mainbar()
 	this.xpos=2;
 	this.ypos=1;
 	this.hotkeys=KEY_DOWN+";"+ctrl('O')+ctrl('U')+ctrl('T')+ctrl('K')+ctrl('P');
-	this.add("|File","F",undefined,undefined,undefined,user.compare_ars("REST T"));
+	this.mouse_miss_key = undefined;
+	this.add("|File","F",undefined,undefined,undefined,bbs.compare_ars("REST T"));
 	this.add("|Messages","M");
-	this.add("|Email","E",undefined,undefined,undefined,user.compare_ars("REST SE"));
-	this.add("|Chat","C",undefined,undefined,undefined,user.compare_ars("REST C"));
+	this.add("|Email","E",undefined,undefined,undefined,bbs.compare_ars("REST SE"));
+	this.add("|Chat","C",undefined,undefined,undefined,bbs.compare_ars("REST C"));
 	this.add("|Settings","S");
-	this.add("E|xternals","x",undefined,undefined,undefined,user.compare_ars("REST X"));
+	this.add("E|xternals","x",undefined,undefined,undefined,bbs.compare_ars("REST X"));
 	this.add("|View","V");
 	this.add("|Goodbye","G");
 	this.add("Commands",";");
@@ -315,13 +325,13 @@ function Filemenu()
 	this.add(
 		 format_opt("|Download file(s)",width,true)
 		,"D",width,undefined,undefined
-		,user.compare_ars("REST D")
+		,bbs.compare_ars("REST D")
 			|| (!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_download)
 	);
 	this.add(
 		 format_opt("|Upload file(s)",width,true)
 		,"U",width,undefined,undefined
-		,user.compare_ars("REST U")
+		,bbs.compare_ars("REST U")
 			|| ((!file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].can_upload)
 			&& file_area.upload_dir==undefined)
 	);
@@ -334,7 +344,7 @@ function Filemenu()
 		,"B",width,undefined,undefined
 		// Disabled if you can't upload or download.
 		// Disabled if no upload dir and no batch queue
-		,(user.compare_ars("REST U AND REST D"))
+		,(bbs.compare_ars("REST U AND REST D"))
 			|| (bbs.batch_upload_total <= 0  
 				&& bbs.batch_dnload_total <= 0 
 				&& file_area.upload_dir==undefined
@@ -368,7 +378,7 @@ function Filedirmenu(x, y, changenewscan)
 	this.add("|Library ("+file_area.lib_list[bbs.curlib].name+")","L",width);
 	this.add("|Directory ("+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+")","D",width);
 	if(changenewscan)
-		this.add("Change New Scan |Date","N",width);
+		this.add("Change |New Scan Date","N",width);
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
 Filedirmenu.prototype=ShellLB.prototype;
@@ -411,7 +421,7 @@ function Emailmenu()
 	this.add(top_bar(width),undefined,undefined,"","");
 	this.add(format_opt("|Send Mail",width,true),"S",width);
 	this.add("|Read Inbox","R",width);
-	this.add("Read Sent |Messages","M",width,undefined,undefined,user.compare_ars("REST K"));
+	this.add("Read Sent |Messages","M",width,undefined,undefined,bbs.compare_ars("REST K"));
 	this.add(bottom_bar(width),undefined,undefined,"","");
 }
 Emailmenu.prototype=ShellLB.prototype;
@@ -440,8 +450,8 @@ function Messagemenu()
 		 format_opt("Search For |Text in Messages",width,true)
 		,"T",width
 	);
-	this.add("|Post In "+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name,"P",width,undefined,undefined,user.compare_ars("REST P"));
-	if(user.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
+	this.add("|Post In "+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name,"P",width,undefined,undefined,bbs.compare_ars("REST P"));
+	if(bbs.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
 		this.items[6].disabed=true;
 	this.add("Read/Post |Auto-Message","A",width);
 	this.add("|QWK Packet Transfer Menu","Q",width);
@@ -554,6 +564,7 @@ var mainbar=new Mainbar;
 
 draw_main(true);
 var next_key='';
+start_mouse();
 while(bbs.online) {
 	var done=0;
 	var key=next_key;
@@ -578,6 +589,7 @@ while(bbs.online) {
 			handle_a_ctrlkey(key);
 			break;
 		case ';':
+			stop_mouse();
 			mainbar.current=8;
 			mainbar.draw();
 			console.gotoxy(1,2);
@@ -588,7 +600,7 @@ while(bbs.online) {
 				var str=console.getstr("",40,K_EDIT);
 				clear_screen();
 				if(str=='?') {
-					if(!user.compare_ars("SYSOP") && !(bbs.sys_status&SS_TMPSYSOP))
+					if(!bbs.compare_ars("SYSOP"))
 						str='HELP';
 				}
 				if(str=='?') {
@@ -608,6 +620,7 @@ while(bbs.online) {
 			}
 			else
 				cleararea(1,2,console.screen_columns,1,true);
+			start_mouse();
 			break;
 		case 'F':
 			show_filemenu();
@@ -639,8 +652,13 @@ while(bbs.online) {
 					main_right();
 					break;
 				}
-				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b')
+				if(x_sec=='\b' || x_sec=='\x7f' || x_sec=='\x1b') {
+					if (xtrnsec.mouse_miss_str !== undefined) {
+						console.ungetstr(xtrnsec.mouse_miss_str);
+						delete xtrnsec.mouse_miss_str;
+					}
 					break;
+				}
 				if(x_sec==ctrl('O')
 						|| x_sec==ctrl('U')
 						|| x_sec==ctrl('T')
@@ -663,6 +681,10 @@ while(bbs.online) {
 					}
 					if(x_prog==KEY_RIGHT || x_prog=='\b' || x_prog=='\x7f' || x_prog=='\x1b') {
 						this_xtrnsec.erase();
+						if (this_xtrnsec.mouse_miss_str !== undefined) {
+							console.ungetstr(this_xtrnsec.mouse_miss_str);
+							delete this_xtrnsec.mouse_miss_str;
+						}
 						break;
 					}
 					if(x_prog==ctrl('O')
@@ -673,6 +695,7 @@ while(bbs.online) {
 						handle_a_ctrlkey(x_prog);
 						continue;
 					}
+					stop_mouse();
 					clear_screen();
 					if(file_exists("../xtrn/doorscan/doorscan.js")) {
 						try {
@@ -686,7 +709,7 @@ while(bbs.online) {
 					else {
 						bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
 					}
-					
+					start_mouse();
 					draw_main(true);
 					xtrnsec.draw();
 				}
@@ -709,28 +732,28 @@ while(bbs.online) {
 						handle_a_ctrlkey(key);
 						break;
 					case 'I':
-						clear_screen();
-						bbs.sys_info();
-						console.pause();
-						draw_main(true);
+						menu_opt(function() {
+							bbs.sys_info();
+							console.pause();
+						});
 						break;
 					case 'V':
-						clear_screen();
-						bbs.ver();
-						console.pause();
-						draw_main(true);
+						menu_opt(function() {
+							bbs.ver();
+							console.pause();
+						});
 						break;
 					case 'S':
-						clear_screen();
-						bbs.sub_info();
-						console.pause();
-						draw_main(true);
+						menu_opt(function() {
+							bbs.sub_info();
+							console.pause();
+						});
 						break;
 					case 'Y':
-						clear_screen();
-						bbs.user_info();
-						console.pause();
-						draw_main(true);
+						menu_opt(function() {
+							bbs.user_info();
+							console.pause();
+						});
 						break;
 					case KEY_LEFT:
 						if(infomenu.items[infomenu.current].retval!='U') {
@@ -758,45 +781,50 @@ while(bbs.online) {
 									break infoloop;
 								case KEY_RIGHT:
 								case '\b':
+									if (userlists.mouse_miss_str !== undefined) {
+										console.ungetstr(userlists.mouse_miss_str);
+										delete userlists.mouse_miss_str;
+									}
 								case '\x7f':
 								case '\x1b':
 									userlists.erase();
 									break userlistloop;
 								case 'L':
-									clear_screen();
-									bbs.list_logons();
-									console.pause();
-									draw_main(true);
-									infomenu.draw();
+									menu_opt(function() {
+										bbs.list_logons();
+										console.pause();
+									});
 									break;
 								case 'S':
-									clear_screen();
-									bbs.list_users(UL_SUB);
-									console.pause();
-									draw_main(true);
-									infomenu.draw();
+									menu_opt(function() {
+										bbs.list_users(UL_SUB);
+										console.pause();
+									});
 									break;
 								case 'A':
-									clear_screen();
-									bbs.list_users(UL_ALL);
-									console.pause();
-									draw_main(true);
-									infomenu.draw();
+									menu_opt(function() {
+										bbs.list_users(UL_ALL);
+										console.pause();
+									});
 									break;
 							}
 						}
 						menus_displayed.pop();
 						break;
 					case 'T':
-						clear_screen();
-						bbs.text_sec();
-						draw_main(true);
+						menu_opt(function() {
+							bbs.text_sec();
+						});
 						break infoloop;
 					case KEY_RIGHT:
 						main_right();
 						done=1;
 						break infoloop;
 					case '\b':
+						if (infomenu.mouse_miss_str !== undefined) {
+							console.ungetstr(infomenu.mouse_miss_str);
+							delete infomenu.mouse_miss_str;
+						}
 					case '\x7f':
 					case '\x1b':
 						break infoloop;
@@ -807,10 +835,11 @@ while(bbs.online) {
 			break;
 		case 'G':       // Goodbye
 			if(!extra_select) {
-                console.clear(LIGHTGRAY);
-                bbs.logoff(/* prompt? */false);
+				stop_mouse();
+				console.clear(LIGHTGRAY);
+				bbs.logoff(/* prompt? */false);
 				draw_main(true);
-           }
+			}
 	}
 }
 
@@ -818,6 +847,24 @@ function todo_getfiles(lib, dir)
 {
 	var path=format("%s%s.ixb", file_area.lib_list[lib].dir_list[dir].data_dir, file_area.lib_list[lib].dir_list[dir].code);
 	return(file_size(path)/22);	/* F_IXBSIZE */
+}
+
+function mouse_enable(enable)
+{
+	if(console.term_supports(USER_ANSI)) {
+		ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
+		ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
+	}
+}
+
+function start_mouse()
+{
+	mouse_enable(true);
+}
+
+function stop_mouse()
+{
+	mouse_enable(false);
 }
 
 function clear_screen()
@@ -852,6 +899,17 @@ function draw_main(topline)
 	}
 	else
 		cleararea(1,2,console.screen_columns,console.screen_rows,true);
+}
+
+function menu_opt(func)
+{
+	stop_mouse();
+	clear_screen();
+	func();
+	draw_main(true);
+	for(i=0; i<menus_displayed.length; i++)
+		menus_displayed[i].draw();
+	start_mouse();
 }
 
 function main_right()
@@ -914,6 +972,10 @@ function show_filemenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (filemenu.mouse_miss_str !== undefined) {
+					console.ungetstr(filemenu.mouse_miss_str);
+					delete filemenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				filemenu.erase();
@@ -925,21 +987,50 @@ function show_filemenu()
 				menus_displayed.pop();
 				return;
 			case 'C':
-				clear_screen();
-				changedir: do {
-					if(!file_area.lib_list.length)
-						break changedir;
-					while(bbs.online) {
-						var orig_lib=bbs.curlib;
-						i=0;
-						j=0;
-						if(file_area.lib_list.length>1) {
-							if(file_exists(system.text_dir+"menu/libs.*"))
-								bbs.menu("libs");
+				menu_opt(function() {
+					changedir: do {
+						if(!file_area.lib_list.length)
+							break changedir;
+						while(bbs.online) {
+							var orig_lib=bbs.curlib;
+							i=0;
+							j=0;
+							if(file_area.lib_list.length>1) {
+								if(file_exists(system.text_dir+"menu/libs.*"))
+									bbs.menu("libs");
+								else {
+									console.putmsg(bbs.text(CfgLibLstHdr),P_SAVEATR);
+									for(i=0; i<file_area.lib_list.length; i++) {
+										if(i==bbs.curlib)
+											console.putmsg('*',P_SAVEATR);
+										else
+											console.putmsg(' ',P_SAVEATR);
+										if(i<9)
+											console.putmsg(' ',P_SAVEATR);
+										if(i<99)
+											console.putmsg(' ',P_SAVEATR);
+										// We use console.putmsg to expand ^A, @, etc
+										console.putmsg(format(bbs.text(CfgLibLstFmt),i+1,file_area.lib_list[i].description),P_SAVEATR);
+									}
+								}
+								console.mnemonics(format(bbs.text(JoinWhichLib),bbs.curlib+1));
+								j=console.getnum(file_area.lib_list.length,false);
+								if(j<0)
+									break changedir;
+								if(!j)
+									j=bbs.curlib;
+								else
+									j--;
+							}
+							bbs.curlib=j;
+							if(file_exists(system.text_dir+"menu/dirs"+(bbs.curlib+1)))
+								bbs.menu("dirs"+(bbs.curlib+1));
 							else {
-								console.putmsg(bbs.text(CfgLibLstHdr),P_SAVEATR);
-								for(i=0; i<file_area.lib_list.length; i++) {
-									if(i==bbs.curlib)
+								console.line_counter=0;
+								 console.clear();
+								 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
+								 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
+									if(i==bbs.curdir)
 										console.putmsg('*',P_SAVEATR);
 									else
 										console.putmsg(' ',P_SAVEATR);
@@ -947,62 +1038,33 @@ function show_filemenu()
 										console.putmsg(' ',P_SAVEATR);
 									if(i<99)
 										console.putmsg(' ',P_SAVEATR);
-									// We use console.putmsg to expand ^A, @, etc
-									console.putmsg(format(bbs.text(CfgLibLstFmt),i+1,file_area.lib_list[i].description),P_SAVEATR);
+									console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
 								}
 							}
-							console.mnemonics(format(bbs.text(JoinWhichLib),bbs.curlib+1));
-							j=console.getnum(file_area.lib_list.length,false);
-							if(j<0)
-								break changedir;
-							if(!j)
-								j=bbs.curlib;
+							console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
+							i=console.getnum(file_area.lib_list[j].dir_list.length);
+							if(i==-1) {
+								if(file_area.lib_list.length==1) {
+									bbs.curlib=orig_lib;
+									break changedir;
+								}
+								continue;
+							}
+							if(!i)
+								i=bbs.curdir;
 							else
-								j--;
+								i--;
+							bbs.curdir=i;
+							break changedir;
 						}
-						bbs.curlib=j;
-						if(file_exists(system.text_dir+"menu/dirs"+(bbs.curlib+1)))
-							bbs.menu("dirs"+(bbs.curlib+1));
-						else {
-							console.line_counter=0;
-							 console.clear();
-							 console.putmsg(format(bbs.text(DirLstHdr), file_area.lib_list[j].description),P_SAVEATR);
-							 for(i=0; i<file_area.lib_list[j].dir_list.length; i++) {
-								if(i==bbs.curdir)
-									console.putmsg('*',P_SAVEATR);
-								else
-									console.putmsg(' ',P_SAVEATR);
-								if(i<9)
-									console.putmsg(' ',P_SAVEATR);
-								if(i<99)
-									console.putmsg(' ',P_SAVEATR);
-								console.putmsg(format(bbs.text(DirLstFmt),i+1, file_area.lib_list[j].dir_list[i].description,"",todo_getfiles(j,i)),P_SAVEATR);
-							}
-						}
-						console.mnemonics(format(bbs.text(JoinWhichDir),bbs.curdir+1));
-						i=console.getnum(file_area.lib_list[j].dir_list.length);
-						if(i==-1) {
-							if(file_area.lib_list.length==1) {
-								bbs.curlib=orig_lib;
-								break changedir;
-							}
-							continue;
-						}
-						if(!i)
-							i=bbs.curdir;
-						else
-							i--;
-						bbs.curdir=i;
-						break changedir;
-					}
-				} while(0);
-				draw_main(true);
+					} while(0);
+				});
 				break;
 			case 'L':
-				clear_screen();
-				bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
-				console.pause();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
+					console.pause();
+				});
 				break;
 			case 'N':
 				var typemenu=new Filedirmenu(filemenu.xpos+filemenu.full_width, filemenu.current+1, true);
@@ -1018,39 +1080,35 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\r\nchNew File Scan (All)\r\n");
-							bbs.scan_dirs(FL_ULTIME,true);
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchNew File Scan (All)\r\n");
+								bbs.scan_dirs(FL_ULTIME,true);
+								console.pause();
+							});
 							break;
 						case 'L':
 							/* Scan this lib only */
-							clear_screen();
-							console.putmsg("\r\nchNew File Scan (Lib)\r\n");
-							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
-								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME)<0)
-                                    break;
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchNew File Scan (Lib)\r\n");
+								for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++)
+									if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number,FL_ULTIME)<0)
+										break;
+								console.pause();
+							});
 							break;
 						case 'D':
 							/* Scan this dir only */
-							clear_screen();
-							console.putmsg("\r\nchNew File Scan (Dir)\r\n");
-							bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,FL_ULTIME);
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchNew File Scan (Dir)\r\n");
+								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,FL_ULTIME);
+								console.pause();
+							});
 							break;
 						case 'N':
 							// ToDo: Don't clear screen here, just do one line
-							clear_screen();
-							bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.new_file_time=bbs.get_newscantime(bbs.new_file_time);
+							});
 							break;
 						case KEY_RIGHT:
 							typemenu.erase();
@@ -1059,6 +1117,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							menus_displayed.pop();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:	// Anything else will escape.
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1081,39 +1145,36 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\r\nchSearch for Filename(s) (All)\r\n");
-							var spec=bbs.get_filespec();
-							for(i=0; i<file_area.lib_list.length; i++) {
-								for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
-									if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0)<0)
-                                        break;
-							}
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchSearch for Filename(s) (All)\r\n");
+								var spec=bbs.get_filespec();
+								for(i=0; i<file_area.lib_list.length; i++) {
+									for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
+										if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,0)<0)
+											break;
+								}
+								console.pause();
+							});
 							break;
 						case 'L':
 							/* Scan this lib only */
-							clear_screen();
+							menu_opt(function() {
 								console.putmsg("\r\nchSearch for Filename(s) (Lib)\r\n");
-							var spec=bbs.get_filespec();
-							for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
-								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0)<0)
-                                    break;
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+								var spec=bbs.get_filespec();
+								for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
+									if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,0)<0)
+										break;
+								console.pause();
+							});
 							break;
 						case 'D':
 							/* Scan this dir only */
-							clear_screen();
-							console.putmsg("\r\nchSearch for Filename(s) (Dir)\r\n");
-							var spec=bbs.get_filespec();
-							bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,0);
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchSearch for Filename(s) (Dir)\r\n");
+								var spec=bbs.get_filespec();
+								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,0);
+								console.pause();
+							});
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
@@ -1122,6 +1183,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:	// Anything else will escape.
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1144,42 +1211,39 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\r\nchSearch for Text in Description(s) (All)\r\n");
-							console.putmsg(bbs.text(SearchStringPrompt));
-							var spec=console.getstr(40,K_LINE|K_UPPER);
-							for(i=0; i<file_area.lib_list.length; i++) {
-								for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
-									if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC)<0)
-										break;
-							}
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchSearch for Text in Description(s) (All)\r\n");
+								console.putmsg(bbs.text(SearchStringPrompt));
+								var spec=console.getstr(40,K_LINE|K_UPPER);
+								for(i=0; i<file_area.lib_list.length; i++) {
+									for(j=0;j<file_area.lib_list[i].dir_list.length;j++)
+										if(bbs.list_files(file_area.lib_list[i].dir_list[j].number,spec,FL_FINDDESC)<0)
+											break;
+								}
+								console.pause();
+							});
 							break;
 						case 'L':
 							/* Scan this lib only */
-							clear_screen();
-							console.putmsg("\r\nchSearch for Text in Description(s) (Lib)\r\n");
-							console.putmsg(bbs.text(SearchStringPrompt));
-							var spec=console.getstr(40,K_LINE|K_UPPER);
-							for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
-								if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC)<0)
-									break;
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchSearch for Text in Description(s) (Lib)\r\n");
+								console.putmsg(bbs.text(SearchStringPrompt));
+								var spec=console.getstr(40,K_LINE|K_UPPER);
+								for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++)
+									if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[j].number,spec,FL_FINDDESC)<0)
+										break;
+								console.pause();
+							});
 							break;
 						case 'D':
 							/* Scan this dir only */
-							clear_screen();
-							console.putmsg("\r\nchSearch for Text in Description(s) (Dir)\r\n");
-							console.putmsg(bbs.text(SearchStringPrompt));
-							var spec=console.getstr(40,K_LINE|K_UPPER);
-							bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,FL_FINDDESC);
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\nchSearch for Text in Description(s) (Dir)\r\n");
+								console.putmsg(bbs.text(SearchStringPrompt));
+								var spec=console.getstr(40,K_LINE|K_UPPER);
+								bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number,spec,FL_FINDDESC);
+								console.pause();
+							});
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
@@ -1188,6 +1252,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:	// Anything else will escape.
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1217,24 +1287,20 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'B':
-							clear_screen();
-							bbs.batch_download();
-							/* Redraw just in case */
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.batch_download();
+							});
 							break;
 						case 'N':
-							clear_screen();
-							var spec=bbs.get_filespec();
-							bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								var spec=bbs.get_filespec();
+								bbs.list_file_info(bbs.curdir,spec,FI_DOWNLOAD);
+							});
 							break;
 						case 'U':
-							clear_screen();
-							bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
+							});
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
@@ -1243,6 +1309,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1282,28 +1354,25 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'C':	// Current dir
-							clear_screen();
-							bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.upload_file(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number);
+							});
 							break;
 						case 'P':	// Upload dir
-							clear_screen();
-							bbs.upload_file(file_area.upload_dir);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.upload_file(file_area.upload_dir);
+							});
 							break;
 						case 'S':	// Sysop dir
-							clear_screen();
-							bbs.upload_file(file_area.sysop_dir);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.upload_file(file_area.sysop_dir);
+							});
 							break;
 						case 'U':	// To user
-							clear_screen();
-							bbs.upload_file(file_area.user_dir);
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.upload_file(file_area.user_dir);
+							});
+							break;
 						case KEY_RIGHT:
 							filemenu.erase();
 							typemenu.erase();
@@ -1311,6 +1380,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							typemenu.erase();
 							filemenu.nodraw=true;
@@ -1320,44 +1395,44 @@ function show_filemenu()
 				}
 				break;
 			case 'R':
-				clear_screen();
-				fileremove: do {
-					console.putmsg("\r\nchRemove/Edit File(s)\r\n");
-					str=bbs.get_filespec();
-					if(str==null)
-						break fileremove;
-					if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
-						var s=0;
-						console.putmsg(bbs.text(SearchingAllDirs));
-						for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-							if(i!=bbs.curdir &&
-									(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE))!=0) {
-								if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
-									break fileremove;
-								}
-							}
-						}
-						console.putmsg(bbs.text(SearchingAllLibs));
-						for(i=0; i<file_area.lib_list.length; i++) {
-							if(i==bbs.curlib)
-								continue;
-							for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-								if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_REMOVE))!=0) {
+				menu_opt(function() {
+					fileremove: do {
+						console.putmsg("\r\nchRemove/Edit File(s)\r\n");
+						str=bbs.get_filespec();
+						if(str==null)
+							break fileremove;
+						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
+							var s=0;
+							console.putmsg(bbs.text(SearchingAllDirs));
+							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+								if(i!=bbs.curdir &&
+										(s=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE))!=0) {
 									if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
 										break fileremove;
 									}
 								}
 							}
+							console.putmsg(bbs.text(SearchingAllLibs));
+							for(i=0; i<file_area.lib_list.length; i++) {
+								if(i==bbs.curlib)
+									continue;
+								for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+									if((s=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_REMOVE))!=0) {
+										if(s==-1 || str.indexOf('?')!=-1 || str.indexOf('*')!=-1) {
+											break fileremove;
+										}
+									}
+								}
+							}
 						}
-					}
-				} while(0);
-				draw_main(true);
+					} while(0);
+				});
 				break;
 			case 'B':
 				console.attributes=LBShell_Attr;
-				clear_screen();
-				bbs.batch_menu();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.batch_menu();
+				});
 				break;
 			case 'V':
 				var typemenu=new ShellLB;
@@ -1384,6 +1459,7 @@ function show_filemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'C':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchView File(s)\r\n");
 							str=bbs.get_filespec();
@@ -1412,8 +1488,10 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'I':
+							stop_mouse();
 							clear_screen();
 							console.putmsg("\r\nchView File Information\r\n");
 							str=bbs.get_filespec();
@@ -1442,27 +1520,25 @@ function show_filemenu()
 							console.pause();
 							draw_main(true);
 							filemenu.draw();
+							start_mouse();
 							break;
 						case 'P':
-							clear_screen();
-							bbs.xfer_policy();
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.xfer_policy();
+								console.pause();
+							});
 							break;
 						case 'D':
-							clear_screen();
-							bbs.dir_info();
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.dir_info();
+								console.pause();
+							});
 							break;
 						case 'U':
-							clear_screen();
-							bbs.list_users(UL_DIR);
-							console.pause();
-							draw_main(true);
-							filemenu.draw();
+							menu_opt(function() {
+								bbs.list_users(UL_DIR);
+								console.pause();
+							});
 							break;
 						case 'S':
 							break;
@@ -1473,6 +1549,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							typemenu.erase();
 							menus_displayed.pop();
@@ -1521,6 +1603,12 @@ function show_filemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							filemenu.nodraw=true;
@@ -1571,6 +1659,10 @@ function show_messagemenu()
 				main_left();
 				return;
 			case '\b':
+				if (messagemenu.mouse_miss_str !== undefined) {
+					console.ungetstr(messagemenu.mouse_miss_str);
+					delete messagemenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1582,6 +1674,7 @@ function show_messagemenu()
 				menus_displayed.pop();
 				return;
 			case 'C':
+				stop_mouse();
 				clear_screen();
 				if(!msg_area.grp_list.length)
 					break;
@@ -1658,11 +1751,12 @@ function show_messagemenu()
 					break;
 				}
 				draw_main(true);
+				start_mouse();
 				break;
 			case 'R':
-				clear_screen();
-				bbs.scan_posts();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.scan_posts();
+				});
 				break;
 			case 'N':
 				var typemenu=new ShellLB;
@@ -1693,46 +1787,40 @@ function show_messagemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-							bbs.scan_subs(SCAN_NEW|SCAN_MSGSONLY,/* All? */ true);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+								bbs.scan_subs(SCAN_NEW|SCAN_MSGSONLY,/* All? */ true);
+							});
 							break;
 						case 'G':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
- 							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
- 								if(msg_area.grp_list[bbs.curgrp].sub_list[i].scan_cfg&SCAN_CFG_NEW
-									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW))
-									break;
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+									if(msg_area.grp_list[bbs.curgrp].sub_list[i].scan_cfg&SCAN_CFG_NEW
+									    && !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_NEW))
+										break;
+							});
 							break;
 						case 'S':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
-							bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_NEW);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hNew Message Scan\r\n");
+								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_NEW);
+							});
 							break;
 						case 'C':
-							clear_screen();
-							bbs.cfg_msg_scan(SCAN_CFG_NEW);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								bbs.cfg_msg_scan(SCAN_CFG_NEW);
+							});
 							break;
 						case 'P':
-							clear_screen();
-							bbs.cfg_msg_ptrs(SCAN_CFG_NEW);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								bbs.cfg_msg_ptrs(SCAN_CFG_NEW);
+							});
 							break;
 						case 'R':
-							clear_screen();
-							bbs.reinit_msg_ptrs()
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								bbs.reinit_msg_ptrs()
+							});
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1741,6 +1829,12 @@ function show_messagemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
@@ -1776,34 +1870,30 @@ function show_messagemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-							bbs.scan_subs(SCAN_TOYOU, /* All? */ true);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
+								bbs.scan_subs(SCAN_TOYOU, /* All? */ true);
+							});
 							break;
 						case 'G':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
- 							for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
- 								if(msg_area.grp_list[bbs.curgrp].sub_list.scan_cfg&SCAN_CFG_TOYOU
-									&& !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU))
-									break;
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
+								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++)
+									if(msg_area.grp_list[bbs.curgrp].sub_list.scan_cfg&SCAN_CFG_TOYOU
+									    && !bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_TOYOU))
+										break;
+							});
 							break;
 						case 'S':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
-							bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_TOYOU);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hYour Message Scan\r\n");
+								bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_TOYOU);
+							});
 							break;
 						case 'C':
-							clear_screen();
-							bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								bbs.cfg_msg_scan(SCAN_CFG_TOYOU);
+							});
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1812,6 +1902,12 @@ function show_messagemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
@@ -1848,54 +1944,51 @@ function show_messagemenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-							bbs.scan_subs(SCAN_FIND, /* All? */true);
-							console.crlf();
-							if(console.line_counter)
-								console.pause();
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+								bbs.scan_subs(SCAN_FIND, /* All? */true);
+								console.crlf();
+								if(console.line_counter)
+									console.pause();
+							});
 							break;
 						case 'G':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-							subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
-							console.putmsg(bbs.text(SearchStringPrompt));
-							str=console.getstr("",40,K_LINE|K_UPPER);
-							if(str.length) {
-								for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++) {
-									if(subonly)
-										bbs.list_msgs(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
-									else {
-										if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
-											break;
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+								subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
+								console.putmsg(bbs.text(SearchStringPrompt));
+								str=console.getstr("",40,K_LINE|K_UPPER);
+								if(str.length) {
+									for(i=0; i<msg_area.grp_list[bbs.curgrp].sub_list.length; i++) {
+										if(subonly)
+											bbs.list_msgs(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str);
+										else {
+											if(!bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[i].number, SCAN_FIND, str))
+												break;
+										}
 									}
 								}
-							}
-							console.crlf();
-							if(console.line_counter)
-								console.pause();
-							draw_main(true);
-							messagemenu.draw();
+								console.crlf();
+								if(console.line_counter)
+									console.pause();
+							});
 							break;
 						case 'S':
-							clear_screen();
-							console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
-							subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
-							console.putmsg(bbs.text(SearchStringPrompt));
-							str=console.getstr("",40,K_LINE|K_UPPER);
-							if(str.length) {
-								if(subonly)
-									bbs.list_msgs(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
-								else
-									bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
-							}
-							console.crlf();
-							if(console.line_counter)
-								console.pause();
-							draw_main(true);
-							messagemenu.draw();
+							menu_opt(function() {
+								console.putmsg("\r\n\x01c\x01hMessage Search\r\n");
+								subonly=console.yesno(bbs.text(DisplaySubjectsOnlyQ));
+								console.putmsg(bbs.text(SearchStringPrompt));
+								str=console.getstr("",40,K_LINE|K_UPPER);
+								if(str.length) {
+									if(subonly)
+										bbs.list_msgs(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+									else
+										bbs.scan_posts(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].number, SCAN_FIND, str);
+								}
+								console.crlf();
+								if(console.line_counter)
+									console.pause();
+							});
 							break;
 						case KEY_RIGHT:
 							cleararea(messagemenu.xpos,messagemenu.ypos,messagemenu.items[0].text.length,messagemenu.items.length,true);
@@ -1904,6 +1997,12 @@ function show_messagemenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							messagemenu.nodraw=true;
@@ -1913,25 +2012,25 @@ function show_messagemenu()
 				}
 				break;
 			case 'P':
-				clear_screen();
-				bbs.post_msg();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.post_msg();
+				});
 				break;
 			case 'A':
-				clear_screen();
-				bbs.auto_msg();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.auto_msg();
+				});
 				break;
 			case 'Q':
-				clear_screen();
-				bbs.qwk_sec();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.qwk_sec();
+				});
 				break;
 			case 'V':
-				clear_screen();
-				bbs.sub_info();
-				console.pause();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.sub_info();
+					console.pause();
+				});
 				break;
 		}
 		cur=messagemenu.current;
@@ -1975,6 +2074,10 @@ function show_emailmenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (emailmenu.mouse_miss_str !== undefined) {
+					console.ungetstr(emailmenu.mouse_miss_str);
+					delete emailmenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
@@ -1991,11 +2094,11 @@ function show_emailmenu()
 				typemenu.xpos=emailmenu.xpos+emailmenu.items[0].text.length;
 				typemenu.ypos=emailmenu.current+1;
 				typemenu.add(top_bar(width),undefined,undefined,"","");
-				typemenu.add('To |Sysop','S',width,undefined,undefined,user.compare_ars("REST S"));
-				typemenu.add('To |Local User','L',width,undefined,undefined,user.compare_ars("REST E"));
-				typemenu.add('To Local User with |Attachment','A',width,undefined,undefined,user.compare_ars("REST E"));
-				typemenu.add('To |Remote User','R',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
-				typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,user.compare_ars("REST E OR REST M"));
+				typemenu.add('To |Sysop','S',width,undefined,undefined,bbs.compare_ars("REST S"));
+				typemenu.add('To |Local User','L',width,undefined,undefined,bbs.compare_ars("REST E"));
+				typemenu.add('To Local User with |Attachment','A',width,undefined,undefined,bbs.compare_ars("REST E"));
+				typemenu.add('To |Remote User','R',width,undefined,undefined,bbs.compare_ars("REST E OR REST M"));
+				typemenu.add('To Remote User with A|ttachment','T',width,undefined,undefined,bbs.compare_ars("REST E OR REST M"));
 				typemenu.add(bottom_bar(width),undefined,undefined,"","");
 				menus_displayed.push(typemenu);
 				while(bbs.online) {
@@ -2009,62 +2112,57 @@ function show_emailmenu()
 							handle_a_ctrlkey(ret);
 							break;
 						case 'S':
-							clear_screen();
-							bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
-							draw_main(true);
-							emailmenu.draw();
+							menu_opt(function() {
+								bbs.email(1,WM_EMAIL,bbs.text(ReFeedback));
+							});
 							break;
 						case 'L':
-							clear_screen();
-							console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-							str=console.getstr("",40,K_UPRLWR);
-							if(str!=null && str!="") {
-								if(str=="Sysop")
-									str="1";
-								if(str.search(/\@/)!=-1)
-									bbs.netmail(str);
-								else {
-									i=bbs.finduser(str);
-									if(i>0)
-										bbs.email(i,WM_EMAIL);
+							menu_opt(function() {
+								console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+								str=console.getstr("",40,K_UPRLWR);
+								if(str!=null && str!="") {
+									if(str=="Sysop")
+										str="1";
+									if(str.search(/\@/)!=-1)
+										bbs.netmail(str);
+									else {
+										i=bbs.finduser(str);
+										if(i>0)
+											bbs.email(i,WM_EMAIL);
+									}
 								}
-							}
-							draw_main(true);
-							emailmenu.draw();
+							});
 							break;
 						case 'A':
-							clear_screen();
-							console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-							str=console.getstr("",40,K_UPRLWR);
-							if(str!=null && str!="") {
-								i=bbs.finduser(str);
-								if(i>0)
-									bbs.email(i,WM_EMAIL|WM_FILE);
-							}
-							draw_main(true);
-							emailmenu.draw();
+							menu_opt(function() {
+								console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+								str=console.getstr("",40,K_UPRLWR);
+								if(str!=null && str!="") {
+									i=bbs.finduser(str);
+									if(i>0)
+										bbs.email(i,WM_EMAIL|WM_FILE);
+								}
+							});
 							break;
 						case 'R':
-							clear_screen();
-							if(console.noyes("\r\nAttach a file"))
-								i=0;
-							else
-								i=WM_FILE;
-							console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
-							str=console.getstr("",60,K_LINE);
-							if(str!=null && str !="")
-								bbs.netmail(str,i);
-							draw_main(true);
-							emailmenu.draw();
+							menu_opt(function() {
+								if(console.noyes("\r\nAttach a file"))
+									i=0;
+								else
+									i=WM_FILE;
+								console.putmsg(bbs.text(EnterNetMailAddress),P_SAVEATR);
+								str=console.getstr("",60,K_LINE);
+								if(str!=null && str !="")
+									bbs.netmail(str,i);
+							});
 							break;
 						case 'T':
-							clear_screen();
-							console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
-							str=console.getstr("",40,K_UPRLWR);
-							if(str!=null && str!="")
-								bbs.netmail(str,WM_FILE);
-							draw_main(true);
-							emailmenu.draw();
+							menu_opt(function() {
+								console.putmsg("\x01_\r\n\x01b\x01hE-mail (User name or number): \x01w");
+								str=console.getstr("",40,K_UPRLWR);
+								if(str!=null && str!="")
+									bbs.netmail(str,WM_FILE);
+							});
 							break;
 						case KEY_RIGHT:
 							cleararea(emailmenu.xpos,emailmenu.ypos,emailmenu.items[0].text.length,emailmenu.items.length,true);
@@ -2073,6 +2171,12 @@ function show_emailmenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough XXXX
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							emailmenu.nodraw=true;
@@ -2082,16 +2186,16 @@ function show_emailmenu()
 				}
 				break;
 			case 'R':
-				clear_screen();
-				bbs.read_mail(MAIL_YOUR);
-				console.pause();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.read_mail(MAIL_YOUR);
+					console.pause();
+				});
 				break;
 			case 'M':
-				clear_screen();
-				bbs.read_mail(MAIL_SENT);
-				console.pause();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.read_mail(MAIL_SENT);
+					console.pause();
+				});
 				break;
 		}
 		cur=emailmenu.current;
@@ -2133,6 +2237,10 @@ function show_chatmenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (chatmenu.mouse_miss_str !== undefined) {
+					console.ungetstr(chatmenu.mouse_miss_str);
+					delete chatmenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				cleararea(chatmenu.xpos,chatmenu.ypos,chatmenu.items[0].text.length,chatmenu.items.length,true);
@@ -2144,53 +2252,51 @@ function show_chatmenu()
 				menus_displayed.pop();
 				return;
 			case 'M':
-				clear_screen();
-				bbs.multinode_chat();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.multinode_chat();
+				});
 				break;
 			case 'P':
-				clear_screen();
-				bbs.private_chat();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.private_chat();
+				});
 				break;
 			case 'C':
-				clear_screen();
-				if(!bbs.page_sysop())
-					bbs.page_guru();
-				draw_main(true);
+				menu_opt(function() {
+					if(!bbs.page_sysop())
+						bbs.page_guru();
+				});
 				break;
 			case 'T':
-				clear_screen();
-				bbs.page_guru();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.page_guru();
+				});
 				break;
 			case 'F':
-				clear_screen();
-				bbs.exec("?finger");
-				console.pause();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.exec("?finger");
+					console.pause();
+				});
 				break;
 			case 'R':
-				clear_screen();
-				{
+				menu_opt(function() {
 					var server = "irc.synchro.net 6667";
 					if(user.security.level >= 90 || user.security.exemptions&UFLAG_C) {
 						write("\001n\001y\001hIRC Server: ");
 						server=console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
 						if(console.aborted)
-							break;
+							return;
 					}
 					write("\001n\001y\001hIRC Channel: ");
 					var channel=console.getstr("#Synchronet", 40, K_EDIT|K_LINE|K_AUTODEL);
 					if(!console.aborted)
 						bbs.exec("?irc -a " + server + " " + channel);
-				}
-				draw_main(true);
+				});
 				break;
 			case 'I':
-				clear_screen();
-				bbs.exec("?sbbsimsg");
-				draw_main(true);
+				menu_opt(function() {
+					bbs.exec("?sbbsimsg");
+				});
 				break;
 			case 'S':
 				while(bbs.online) {
@@ -2233,6 +2339,12 @@ function show_chatmenu()
 							menus_displayed.pop();
 							main_right();
 							return;
+						case '\b':
+							if (typemenu.mouse_miss_str !== undefined) {
+								console.ungetstr(typemenu.mouse_miss_str);
+								delete typemenu.mouse_miss_str;
+							}
+							// Fallthrough
 						default:
 							cleararea(typemenu.xpos,typemenu.ypos,typemenu.items[0].text.length,typemenu.items.length,true);
 							chatmenu.nodraw=true;
@@ -2264,20 +2376,20 @@ function show_settingsmenu()
 				handle_a_ctrlkey(ret);
 				break;
 			case 'U':
-				clear_screen();
-				user.cached=false;
-				var oldshell=user.command_shell;
-				bbs.user_config();
-				user.cached=false;
-				/* Still using this shell? */
-				if(user.command_shell != oldshell)
-					exit(0);
-				draw_main(true);
+				menu_opt(function() {
+					user.cached=false;
+					var oldshell=user.command_shell;
+					bbs.user_config();
+					user.cached=false;
+					/* Still using this shell? */
+					if(user.command_shell != oldshell)
+						exit(0);
+				});
 				break;
 			case 'B':
-				clear_screen();
-				bbs.time_bank();
-				draw_main(true);
+				menu_opt(function() {
+					bbs.time_bank();
+				});
 				break;
 			case KEY_RIGHT:
 				settingsmenu.erase();
@@ -2290,6 +2402,10 @@ function show_settingsmenu()
 				menus_displayed.pop();
 				return;
 			case '\b':
+				if (settingsmenu.mouse_miss_str !== undefined) {
+					console.ungetstr(settingsmenu.mouse_miss_str);
+					delete settingsmenu.mouse_miss_str;
+				}
 			case '\x7f':
 			case '\x1b':
 				settingsmenu.erase();

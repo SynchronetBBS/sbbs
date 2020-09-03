@@ -2,7 +2,7 @@
 
 /* Synchronet ANSI terminal functions */
 
-/* $Id$ */
+/* $Id: ansiterm.cpp,v 1.27 2020/05/24 08:26:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -41,8 +41,8 @@
 
 /****************************************************************************/
 /* Returns the ANSI code to obtain the value of atr. Mixed attributes		*/
-/* high intensity colors, or background/forground cobinations don't work.   */
-/* A call to attr is more appropriate, being it is intelligent				*/
+/* high intensity colors, or background/foreground combinations don't work. */
+/* A call to attr() is more appropriate, being it is intelligent			*/
 /****************************************************************************/
 const char *sbbs_t::ansi(int atr)
 {
@@ -53,6 +53,7 @@ const char *sbbs_t::ansi(int atr)
 		case ANSI_NORMAL:
 			return("\x1b[0m");
 		case BLINK:
+		case BG_BRIGHT:
 			return("\x1b[5m");
 
 		/* Foreground */
@@ -195,7 +196,16 @@ extern "C" char* ansi_attr(int atr, int curatr, char* str, BOOL color)
 
 char* sbbs_t::ansi(int atr, int curatr, char* str)
 {
-	return ::ansi_attr(atr, curatr, str, term_supports(COLOR) ? TRUE:FALSE);
+	long term = term_supports();
+	if(term&ICE_COLOR) {
+		switch(atr&(BG_BRIGHT|BLINK)) {
+			case BG_BRIGHT:
+			case BLINK:
+				atr ^= BLINK;
+				break;
+		}
+	}
+	return ::ansi_attr(atr, curatr, str, (term&COLOR) ? TRUE:FALSE);
 }
 
 void sbbs_t::ansi_getlines()
@@ -210,17 +220,20 @@ void sbbs_t::ansi_getlines()
 
 bool sbbs_t::ansi_getxy(int* x, int* y)
 {
-	int 	rsp=0, ch;
+	size_t	rsp=0;
+	int		ch;
+	char	str[128];
 
     *x=0;
     *y=0;
 
-	putcom("\x1b[6n");	/* Request cusor position */
+	putcom("\x1b[6n");	/* Request cursor position */
 
     time_t start=time(NULL);
     sys_status&=~SS_ABORT;
-    while(online && !(sys_status&SS_ABORT)) {
+    while(online && !(sys_status&SS_ABORT) && rsp < sizeof(str)) {
 		if((ch=incom(1000))!=NOINP) {
+			str[rsp] = ch;
 			if(ch==ESC && rsp==0) {
             	rsp++;
 				start=time(NULL);
@@ -249,11 +262,19 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             }
             else if(ch=='R' && rsp)
             	break;
-			else
-				ungetkey(ch);
+			else {
+				str[rsp + 1] = 0;
+#ifdef _DEBUG
+				char dbg[128];
+				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */true);
+				lprintf(LOG_DEBUG, "Unexpected ansi_getxy response: '%s'", dbg);
+#endif
+				ungetstr(str, /* insert */false);
+				rsp = 0;
+			}
         }
     	if(time(NULL)-start>TIMEOUT_ANSI_GETXY) {
-        	lprintf(LOG_NOTICE,"Node %d !TIMEOUT in ansi_getxy", cfg.node_num);
+        	lprintf(LOG_NOTICE, "!TIMEOUT in ansi_getxy");
             return(false);
         }
     }
@@ -264,9 +285,11 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 bool sbbs_t::ansi_gotoxy(int x, int y)
 {
 	if(term_supports(ANSI)) {
-		rprintf("\x1b[%d;%dH",y,x);
+		comprintf("\x1b[%d;%dH",y,x);
 		if(x>0)
 			column=x-1;
+		if(y>0)
+			row = y - 1;
 		lncntr=0;
 		return true;
 	}
@@ -276,7 +299,7 @@ bool sbbs_t::ansi_gotoxy(int x, int y)
 bool sbbs_t::ansi_save(void)
 {
 	if(term_supports(ANSI)) {
-		rputs("\x1b[s");
+		putcom("\x1b[s");
 		return true;
 	}
 	return false;
@@ -285,8 +308,15 @@ bool sbbs_t::ansi_save(void)
 bool sbbs_t::ansi_restore(void)
 {
 	if(term_supports(ANSI)) {
-		rputs("\x1b[u");
+		putcom("\x1b[u");
 		return true;
 	}
 	return false;
+}
+
+int sbbs_t::ansi_mouse(enum ansi_mouse_mode mode, bool enable)
+{
+	char str[32] = "";
+	SAFEPRINTF2(str, "\x1b[?%u%c", mode, enable ? 'h' : 'l');
+	return putcom(str);
 }

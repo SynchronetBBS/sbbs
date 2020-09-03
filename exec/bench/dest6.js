@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: dest6.js,v 1.21 2015/09/26 05:15:37 deuce Exp $ */
 
 /* A sophisticated suite of test cases.  CVS pollution at its finest. */
 

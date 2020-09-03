@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: layout.js,v 1.34 2014/02/02 19:50:08 mcmlxxix Exp $ */
 /* Window-style layout library for Synchronet 3.15+ 
  * 
  * NOTE: frame.js is required to use this library

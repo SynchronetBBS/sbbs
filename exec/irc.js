@@ -3,14 +3,14 @@
 // Deuce's IRC client module for Synchronet
 // With the "Manny Mods".  :-)
 
-// $Id$
+// $Id: irc.js,v 1.60 2020/08/29 01:02:01 rswindell Exp $
 
 // disable auto-termination.
 var old_auto_terminate=js.auto_terminate;
 js.on_exit("js.auto_terminate=old_auto_terminate");
 js.auto_terminate=false;
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.60 $".split(' ')[1];
 const SPACEx80 = "                                                                                ";
 const MAX_HIST = 50;
 
@@ -30,9 +30,56 @@ var quit=0;
 var nick=user.handle;
 var nicks=new Array();
 var loading=true;
-var init_passthru=console.ctrlkey_passthru;
 var real_names=true;
+js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 console.ctrlkey_passthru=~(134217728);
+
+// Commands to send...
+var client_cmds = {
+	'PASS':{minparam:1,maxparam:1},		// Must be sent before NICK/USER
+	'NICK':{minparam:1,maxparam:1},
+	'USER':{minparam:4,maxparam:4},
+	'OPER':{minparam:2,maxparam:2},
+	'QUIT':{minparam:0,maxparam:1},
+	'JOIN':{minparam:1,maxparam:2},
+	'PART':{minparam:1,maxparam:2},
+	'TOPIC':{minparam:1,maxparam:2},
+	'NAMES':{minparam:1,maxparam:1},
+	'LIST':{minparam:1,maxparam:2},
+	'MOTD':{minparam:0,maxparam:1},
+	'VERSION':{minparam:0,maxparam:1},
+	'ADMIN':{minparam:0,maxparam:1},
+	'CONNECT':{minparam:1,maxparam:3},
+	'TIME':{minparam:0,maxparam:1},
+	'STATS':{minparam:0,maxparam:2},
+	'INFO':{minparam:0,maxparam:1},
+	'MODE':{minparam:1,maxparam:Infinity},
+	'PRIVMSG':{minparam:2,maxparam:2},
+	'NOTICE':{minparam:2,maxparam:2},
+	'USERHOST':{minparam:1,maxparam:Infinity},
+	'KILL':{minparam:1,maxparam:2},
+	'SQUIT':{minparam:2,maxparam:2},
+	'INVITE':{minparam:2,maxparam:2},
+	'KICK':{minparam:2,maxparam:3},
+	'LINKS':{minparam:0,maxparam:2},
+	'TRACE':{minparam:0,maxparam:1},
+	'WHO':{minparam:0,maxparam:2},
+	'WHOIS':{minparam:1,maxparam:2},
+	'WHOWAS':{minparam:1,maxparam:3},
+	'PING':{minparam:1,maxparam:2},
+	'PONG':{minparam:1,maxparam:2},
+	'AWAY':{minparam:0,maxparam:1},
+	'REHASH':{minparam:0,maxparam:0},
+	'RESTART':{minparam:0,maxparam:0},
+	'SUMMON':{minparam:1,maxparam:3},
+	'USERS':{minparam:0,maxparam:1},
+	'WALLOPS':{minparam:1,maxparam:1},
+	'ISON':{minparam:1,maxparam:Infinity},
+	'LUSERS':{minparam:0,maxparam:2},
+	'SERVLIST':{minparam:0,maxparam:2},
+	'SQUERY':{minparam:2,maxparam:2},
+	'DIE':{minparam:0,maxparam:0},
+};
 
 /* Command-line options go BEFORE command-line args */
 var irc_theme = "irc-default.js";
@@ -50,9 +97,6 @@ ARGPARSE: for (cmdarg=0;cmdarg<argc;cmdarg++) {
 			break ARGPARSE;
 	}
 }
-
-/* Where we store sysop-defined numeric formats */
-Numeric_Format = new Array;
 
 /* Load the defined theme. -- Cyan */
 load(irc_theme);
@@ -79,15 +123,14 @@ if(!sock.connect(irc_server,irc_port)) {
 	clean_exit();
 }
 
-sock.send("PASS "+user.security.password+"\r\n");	// for use with JS IRC server
+send_cmd("PASS", user.security.password);	// for use with JS IRC server
 if (nick=="")
 	nick=user.alias;
 nick=nick.replace(/\s+/g,"_");
-sock.send("NICK "+nick+"\r\n");
+send_cmd("NICK", nick);
 username=user.alias;
 username=username.replace(/\s+/g,"_");
-sock.send("USER "+username+" 0 * :"+(real_names?user.name:user.alias)
-	+" ("+client.ip_address+")\r\n");
+send_cmd("USER", username+" 0 * :"+(real_names?user.name:user.alias)+" ("+client.ip_address+")");
 
 channels=new Channels();
 
@@ -113,7 +156,7 @@ while(!quit)  {
 	}
 	
 	if(!client.socket.is_connected)  {
-		sock.send("QUIT :Dropped Carrier.\r\n");
+		send_cmd("QUIT",":Dropped Carrier");
 		quit=1;
 		sock.close();
 		bbs.hangup();
@@ -121,7 +164,7 @@ while(!quit)  {
 	}
 
 	if(js.terminated) {
-		sock.send("QUIT :Client terminated.\r\n");
+		send_cmd("QUIT",":Client terminated.");
 		quit=1;
 		sock.close();
 		bbs.hangup();
@@ -129,14 +172,14 @@ while(!quit)  {
 	}
 
 	if(bbs.get_time_left && !bbs.get_time_left()) {
-		sock.send("QUIT :Out of time.\r\n");
+		send_cmd("QUIT",":Out of time.");
 		quit=1;
 		sock.close();
 		clean_exit();
 	}
 
 	if(sock.poll(.01)) {
-		recieve_command();
+		receive_command();
 		screen.update(0);
 	}
 	else
@@ -145,43 +188,73 @@ while(!quit)  {
 sock.close();
 clean_exit();
 
-function handle_command(prefix,command,message)  {
+function send_cmd(command, params)
+{
+	var snd;
+	var plist;
+	var pcnt = 0;
+	var cmd;
+
+	if (params === undefined)
+		plist = [];
+	else {
+		if (params[0] == ':')
+			params = params.substr(1);
+		plist = params.split(/ \:?/);
+	}
+
+	command = command.toUpperCase();
+	cmd = client_cmds[command];
+
+	if (cmd === undefined) {
+		screen.print_line("\x01H\x01R!! \x01N\x01R"+command+" not supported.\x01N\x01W");
+		return;
+	}
+	snd = command;
+	while (plist.length) {
+		snd += ' ';
+		pcnt++;
+		if (pcnt == cmd.maxparam && plist.length > 1)
+			snd += ':';
+		snd += plist.shift();
+	}
+	if (pcnt < cmd.minparam) {
+		screen.print_line("\x01H\x01R!! \x01N\x01R"+command+" requires at least "+cmd.minparam+" parameters\x01N\x01W");
+		return;
+	}
+	sock.send(snd+"\r\n");
+}
+
+function handle_command(tag, prefix, command, message)  {
 	var from_nick=null;
 	var full_message=null;
 	var tmp_str=null;
 	var tmp_str2=null;
 	var	i=0;
 
-	if (command.match(/^[0-9]+/) && Numeric_Format[command]) {
-		var narg = message.split(" ");
-		var narg_string = IRC_string(message);
-		return 0;
-	}
-
-	switch(command)  {
+	switch(command) {
 		case "PING":
-			sock.send("PONG "+message[0]+"\r\n");
+			send_cmd("PONG",message.join(' '));
 			break;
 		case "NOTICE":
-			message.shift();
+			message.shift();	// Target
 			from_nick=get_highlighted_nick(prefix,message);
 			full_message=message.join(" ");
-			full_message=full_message.substr(1);
 			full_message=full_message.replace(/\x01/g,"");
 			screen.print_line(format(NOTICE_FORMAT,from_nick,full_message));
 			break;
 		case "KICK":
-			tmp_str=message.shift();
-			tmp_str2=message.shift();
+			tmp_str=message.shift();	// Channel
+			tmp_str2=message.shift();	// User
 			from_nick=get_nick(prefix);
-			full_message=message.join(" ").substr(1);
+			full_message=message.join(" ");
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
 				channels.part(tmp_str,"");
 			}
 			screen.print_line(format(KICK_FORMAT,tmp_str2,tmp_str,full_message));
 			break;
 		case "PRIVMSG":
-			if(message[1].substr(0,2)==":\x01")  {
+			if(message[1][0]=="\x01")  {
 				// CTCP
 				handle_ctcp(prefix,message);
 			}
@@ -197,7 +270,7 @@ function handle_command(prefix,command,message)  {
 						}
 						else  {
 							from_nick=format(MSG_FORMAT,from_nick);
-							if(message[0].slice(0,1)=="#" || message[0].slice(0,1)=="&")  {
+							if(message[0][0]=="#" || message[0][0]=="&")  {
 								from_nick=from_nick+"\x01N\x01C"+message[0]+":\x01N\x01W ";
 							}
 							else
@@ -208,8 +281,7 @@ function handle_command(prefix,command,message)  {
 						from_nick=format(FROM_NICK_CURCHAN,from_nick);
 					}
 				}
-				message.shift();
-				message[0]=message[0].substr(1);
+				message.shift();	// Receiver
 				screen.print_line(from_nick+" "+message.join(" "));
 			}
 			break;
@@ -217,20 +289,19 @@ function handle_command(prefix,command,message)  {
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=get_nick(prefix);
 			if(tmp_str.toUpperCase()==nick.toUpperCase())  {
-				channels.joined(message[0].substr(1));
+				channels.joined(message[0]);
 			}
 			else  {
-				channels.nick_add(tmp_str,message[0].substr(1));
+				channels.nick_add(tmp_str,message[0]);
 			}
 			prefix=prefix.split("!")[1];
-			screen.print_line(format(JOIN_FORMAT,from_nick,prefix,message[0].substr(1)));
+			screen.print_line(format(JOIN_FORMAT,from_nick,prefix,message[0]));
 			break;
 		case "QUIT":
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=get_nick(prefix);
 			prefix=prefix.split("!")[1];
 			full_message=message.shift();
-			full_message=full_message.substr(1);
 			screen.print_line(format(QUIT_FORMAT,from_nick,channels.current.display,full_message+" "+message.join(" ")));
 			channels.nick_quit(tmp_str);
 			break;
@@ -239,8 +310,6 @@ function handle_command(prefix,command,message)  {
 			tmp_str2=get_nick(prefix);
 			prefix=prefix.split("!")[1];
 			tmp_str=message.shift();
-			if(tmp_str.substr(0,1)==':')
-				tmp_str=tmp_str.substr(1);
 			tmp_str=tmp_str.split("!",1)[0]
 			screen.print_line(format(NICK_FORMAT,from_nick,tmp_str));
 			if(tmp_str2.toUpperCase()==nick.toUpperCase())  {
@@ -250,25 +319,23 @@ function handle_command(prefix,command,message)  {
 			channels.nick_change(tmp_str2,tmp_str);
 			break;
 		case "SQUIT":
-			if(prefix.slice(0,1)==":")  {
+			if(prefix.length > 0)  {
 				from_nick=get_nick(prefix);
 				tmp_str=message.shift();
 				tmp_str2=message.shift();
-				tmp_str2=tmp_str2.substr(1);
 				screen.print_line(format(SQUIT_FROM_NICK,from_nick,tmp_str,tmp_str2+message.join(" ")));
 			}
 			else  {
 				tmp_str=message.shift();
 				tmp_str2=message.shift();
-				tmp_str2=tmp_str2.substr(1);
 				screen.print_line(SQUIT_FROM_SERVER,tmp_str,tmp_str2+message.join(" "));
 			}
 		case "PART":
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=get_nick(prefix);
 			prefix=prefix.split("!")[1];
-			screen.print_line(format(PART_FORMAT,from_nick,prefix,message[0].substr(1)));
-			channels.nick_part(tmp_str,message[0].substr(1));
+			screen.print_line(format(PART_FORMAT,from_nick,prefix,message[0]));
+			channels.nick_part(tmp_str,message[0]);
 			break;
 		case "MODE":
 			from_nick=get_highlighted_nick(prefix,message);
@@ -285,7 +352,6 @@ function handle_command(prefix,command,message)  {
 			from_nick=get_highlighted_nick(prefix,message);
 			tmp_str=message.shift();
 			tmp_str2=message.join(" ");
-			tmp_str2=tmp_str2.substr(1);
 			for(i=0;i<channels.length;i++)  {
 				if(tmp_str.toUpperCase()==channels.channel[i].name)  {
 					channels.channel[i].topic=tmp_str2;
@@ -296,25 +362,7 @@ function handle_command(prefix,command,message)  {
 			break;
 
 		// Numeric reply codes.
-		// <word1> <word2> <word3> <word4> <word5> <word6> <word7> :Message
 		case "211":		// Trace Server
-			while(message.length < 9) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word1> <word2> <word3> <word4> <word5> <word6> :Message
 		case "352":		// WHO reply
 		case "206":		// Trace Server
 		case "213":		// Stats CLINE
@@ -322,57 +370,13 @@ function handle_command(prefix,command,message)  {
 		case "215":		// Stats ILINE
 		case "216":		// Stats KLINE
 		case "218":		// Stats YLINE
-			while(message.length < 8) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word1> <word2> <word3> <word4> <word5> :Message
 		case "241":		// Stats LLINE
-			while(message.length < 7) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word1> <word2> <word3> <word4> :Message
 		case "311":		// WHOIS reply
 		case "314":		// WHOWAS reply
+		case "367":		// Ban List
 		case "200":		// Trace Link
 		case "243":		// Stats OLINE
 		case "244":		// Stats HLINE
-			while(message.length < 6) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word1> <word2> <word3> :Message
 		case "317":		// WHOISIDLE Reply
 		case "324":		// Channel Modes
 		case "201":		// Trace Connecting
@@ -382,38 +386,12 @@ function handle_command(prefix,command,message)  {
 		case "205":		// Trace User
 		case "208":		// New type of trace
 		case "261":		// Trace LOG
-			while(message.length < 5) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word1> <word2> :Message
 		case "312":		// WHOISSERVER Reply
 		case "322":		// LIST data
 		case "341":		// Invite being sent
 		case "351":		// (server) VERSION reply
 		case "364":		// Links
-		case "367":		// Ban List
 		case "212":		// Stats Command
-			while(message.length < 4) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word> :Message
 		case "313":		// WHOISOPERATOR Reply
 		case "319":		// WHOISCHANNELS Reply
 		case "301":		// AWAY Reply
@@ -432,22 +410,6 @@ function handle_command(prefix,command,message)  {
 		case "253":		// # unknown connections
 		case "254":		// # channels
 		case "256":		// Admin info
-			while(message.length < 3) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01C!! \x01N\x01C"+tmp_str+" - "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-			
-		case "376":		// MOTD End
-			if (loading) {
-				loading = false;
-				channels.join(default_channel);
-			}
-		// :Message
 		case "001":		// Sent on successful registration
 		case "002":		// Sent on successful registration
 		case "003":		// Sent on successful registration
@@ -476,47 +438,47 @@ function handle_command(prefix,command,message)  {
 		case "375":		// MOTD Start
 		case "372":		// MOTD
 		case "333":		// Extended TOPIC info (apparently)
-			while(message.length < 2) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str="\x01H\x01C!! \x01N\x01C"+tmp_str.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str);
+			message.shift();	// Client
+			screen.print_line("\x01H\x01C!! \x01N\x01C"+message.join(" ")+"\x01N\x01W");
 			break;
-		
+
+		// Things that actually need dealing with...
+		case "376":		// MOTD End
+			if (loading) {
+				loading = false;
+				channels.join(default_channel);
+			}
+			message.shift();	// Client
+			screen.print_line("\x01H\x01C!! \x01N\x01C"+message.join(" ")+"\x01N\x01W");
+			break;
 		case "331":		// No Topic
 		case "332":		// Topic
-			while(message.length < 2) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str2=message.join(" ");
-			tmp_str2=tmp_str2.substr(1);
 			for(i=0;i<channels.length;i++)  {
-				if(tmp_str.toUpperCase()==channels.channel[i].name)  {
-					channels.channel[i].topic=tmp_str2;
+				if(message[1].toUpperCase()==channels.channel[i].name)  {
+					channels.channel[i].topic=message[2];
 					screen.update_statline();
 				}
 			}
 			break;
 
 		case "353":		// Name reply
-			while(message.length < 3) {
-				message.push("");
-			}
-			message.shift();
-			message.shift();
-			tmp_str=message.shift();
-			message[0]=message[0].substr(1);
-			for(i=0;i<message.length;i++)  {
-				if(message[i].slice(0,1)=="@" || message[i].slice(0,1)=="+")  {
-					message[i]=message[i].substr(1);
+			message.shift();		// Client
+			message.shift();		// Symbol
+			tmp_str=message.shift().toUpperCase();	// Channel
+			message = message[0].split(' ');
+			for(i=0;i<message.length;i++) {
+				switch(message[i][0]) {
+					case '~':	// Founder
+					case '&':	// Protected
+					case '@':	// Op
+					case '%':	// Half-op
+					case '+':	// Voice
+						message[i]=message[i].substr(1);
+						break;
 				}
 			}
 			for(i=0;i<channels.length;i++)  {
-				if(tmp_str.toUpperCase()==channels.channel[i].name)  {
+				if(tmp_str == channels.channel[i].name)  {
 					channels.channel[i].nick=message;
 				}
 			}
@@ -527,29 +489,14 @@ function handle_command(prefix,command,message)  {
 			break;
 
 		// Error Codes
+		case "433":		// Nickname already in use
+			message.shift();	// Client
+			nick=message.shift()+"_";
+			send_cmd("NICK", nick);
+			break;
 		// <word1> <word2> :Message errors
 		case "441":		// Nick not on channel
 		case "443":		// User already on channel (invite)
-			while(message.length < 4) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str=tmp_str+" "+message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01R!! \x01N\x01R"+tmp_str+" "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-
-		// <word> :Message errors.
-		case "433":		// Nickname already in use
-			while(message.length < 2) {
-				message.push("");
-			}
-			message.shift();
-			nick=message.shift()+"_";
-			sock.send("NICK " + nick + "\r\n");
-			break;
 		case "401":		// No such nick
 		case "402":		// No such server
 		case "403":		// No such channel
@@ -573,17 +520,6 @@ function handle_command(prefix,command,message)  {
 		case "474":		// Banned from channel
 		case "475":		// Bad channel key (+k)
 		case "482":		// Not ChanOP so can't do that.
-			while(message.length < 3) {
-				message.push("");
-			}
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str2=message.shift();
-			tmp_str2="\x01H\x01R!! \x01N\x01R"+tmp_str+" - "+tmp_str2.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str2);
-			break;
-			
-		// :Message errors.
 		case "422":		// MOTD is missing
 		case "409":		// No origin
 		case "411":		// No recipient
@@ -602,37 +538,83 @@ function handle_command(prefix,command,message)  {
 		case "491":		// No O-lines for your host
 		case "501":		// Unknown MODE flag
 		case "502":		// Can't change other users mode
-			while(message.length < 3) {
-				message.push("");
+			message.shift();	// Client
+			if (message.length > 1) {
+				tmp_str=message.shift();
+				screen.print_line("\x01H\x01R!! \x01N\x01R"+tmp_str+" - "+message.join(" ")+"\x01N\x01W");
 			}
-			message.shift();
-			message.shift();
-			tmp_str=message.shift();
-			tmp_str="\x01H\x01R!! \x01N\x01R"+tmp_str.substr(1)+" "+message.join(" ")+"\x01N\x01W";
-			screen.print_line(tmp_str);
+			else {
+				screen.print_line("\x01H\x01R!! \x01N\x01R"+message.join(" ")+"\x01N\x01W");
+			}
 			break;
-
 		default:
 			screen.print_line("\x01N\x01R"+prefix+" "+command+" "+message.join(" ")+"\x01N\x01W");
 	}
 }
 
-function recieve_command()  {
+function get_command()
+{
+	var tag = "";
 	var prefix="";
 	var command=null;
-	var message;
-	if(sock.poll(0))  {
-		message=sock.recvline().split(" ");
+	var line;
+	var message = [];
+	var i;
 
-		if(message[0].substr(0,1)==":")  {
-			prefix=message.shift();
+	if(sock.poll(0)) {
+		line=sock.recvline();
+		if(!line)
+			return;
+
+		if (line[0] == '@') {
+			tag = line.slice(1, line.indexOf(" "));
+			line = line.substr(tag.length + 2);
 		}
-		command=message.shift();
-		handle_command(prefix,command,message);
+		if (line[0] == ':') {
+			prefix = line.slice(1, line.indexOf(" "));
+			line = line.substr(prefix.length + 2);
+		}
+		message.push(tag);
+		message.push(prefix);
+		while (line.length > 0) {
+			if (line[0] == ':') {
+				message.push(line.substr(1));
+				line = '';
+			}
+			else {
+				i = line.indexOf(' ');
+				if (i == -1) {
+					message.push(line);
+					line = '';
+				}
+				else {
+					message.push(line.slice(0, i));
+					line = line.substr(i + 1);
+				}
+			}
+		}
+		return message;
 	}
 }
 
+function receive_command() {
+	var tag = "";
+	var prefix="";
+	var command=null;
+	var message;
+
+	var message = get_command();
+	if (message == undefined)
+		return;
+	tag = message.shift();
+	prefix = message.shift();
+	command = message.shift();
+
+	handle_command(tag, prefix, command, message);
+}
+
 function wait_for(commands)  {
+	var tag = '';
 	var prefix="";
 	var command=null;
 	var message="";
@@ -646,20 +628,18 @@ function wait_for(commands)  {
 		}
 
 		if(!client.socket.is_connected)  {
-			sock.send("QUIT :Dropped Carrier.\r\n");
+			send_cmd("QUIT", ":Dropped Carrier.");
 			quit=1;
 			sock.close();
 			bbs.hangup();
 			clean_exit();
 		}
-		if(sock.poll(0))  {
-			message=sock.recvline().split(" ");
-
-			if(message[0].substr(0,1)==":")  {
-				prefix=message.shift();
-			}
-			command=message.shift();
-			handle_command(prefix,command,message);
+		message = get_command();
+		if (message != undefined) {
+			tag = message.shift();
+			prefix = message.shift();
+			command = message.shift();
+			handle_command(tag,prefix,command,message);
 			for(i=0;i<commands.length;i++)  {
 				if(command==commands[i])  {
 					return command;
@@ -679,16 +659,30 @@ function send_command(command,param)  {
 	var got="";
 
 	switch(command)  {
+		case "HELP":
+			const fmt = "/%-25s %s";
+			screen.print_line(format(fmt, "help", "Display this list"));
+			screen.print_line(format(fmt, "q[uit]", "Leave IRC Module " + REVISION));
+			screen.print_line(format(fmt, "me <text>", "Send an action message"));
+			screen.print_line(format(fmt, "quote <text>", "Send a literal message"));
+			screen.print_line(format(fmt, "msg <nick>", "Send a private message"));
+			screen.print_line(format(fmt, "j[oin] <#channel>", "Join a channel"));
+			screen.print_line(format(fmt, "n[ext]", "Switch to next channel"));
+			screen.print_line(format(fmt, "p[revious]", "Switch to previous channel"));
+			screen.print_line(format(fmt, "part", "Leave current channel"));
+			screen.print_line(format(fmt, "topic [#channel] <text>", "Set channel topic"));
+			screen.print_line(format(fmt, "kick [nick]", "Kick a user from channel"));
+			break;
 		case "MSG":
 			params=param.split(" ");
 			send_to=params.shift();
-			sock.send("PRIVMSG "+send_to+" :"+params.join(" ")+"\r\n");
+			send_cmd("PRIVMSG", send_to+" :"+params.join(" "));
 			screen.print_line(send_to+"\x01H\x01C<\x01N\x01C-\x01N\x01W "+params.join(" "));
 			break;
 		case "X":
 		case "Q":
 		case "QUIT":
-			sock.send("QUIT :"+param+"\r\n");
+			send_cmd("QUIT", param);
 			quit=1;
 			sock.close();
 			clean_exit();
@@ -711,7 +705,7 @@ function send_command(command,param)  {
 			send_to=params.shift();
 			full_params=params.join(" ");
 			full_params=full_params.toUpperCase();
-			sock.send("PRIVMSG "+send_to+" :\x01"+full_params+"\x01\r\n");
+			send_cmd("PRIVMSG", send_to+" :\x01"+full_params+"\x01");
 			break;
 		case "PART":
 			// If the user specifies a channel, this SHOULD part that channel,
@@ -736,18 +730,27 @@ function send_command(command,param)  {
 			screen.update_statline();
 			break;
 		case "TOPIC":
-			sock.send("TOPIC "+channels.current.name+" :"+param+"\r\n");
+			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
+				send_cmd(command, param);
+			}
+			else  {
+				send_cmd(command, channels.current.name+" "+param);
+			}
 			break;
 		case "KICK":
 			if (param.substr(0,1) == '#' || param.substr(0,1) == '&')  {
-				sock.send(command+" "+param+"\r\n");
+				send_cmd(command, param);
 			}
 			else  {
-				sock.send("KICK "+channels.current.name+" "+param+"\r\n");
+				send_cmd(command, channels.current.name+" "+param);
 			}
 			break;
+		case "QUOTE":
+			if (param.length)
+				sock.send(param+"\r\n");
+			break;
 		default:
-			if(command.slice(0,1)=="#" || command.slice(0,1)=="&")  {
+			if(command[0]=="#" || command[0]=="&")  {
 				for(i=0;i<channels.length;i++)  {
 					if(command.toUpperCase()==channels.channel[i].name)  {
 						channels.index=i;
@@ -756,7 +759,7 @@ function send_command(command,param)  {
 				}
 			}
 			else  {
-				sock.send(command+" "+param+"\r\n");
+				send_cmd(command, param);
 			}
 	}
 }
@@ -780,13 +783,13 @@ function handle_ctcp(prefix,message)  {
 		case "FINGER":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01FINGER :"+user.name+" ("+user.alias+") Idle: "+user.timeout+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01FINGER :"+user.name+" ("+user.alias+") Idle: "+user.timeout+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP FINGER Reply: "+user.name+" ("+user.alias+") Idle: "+user.timeout);
 			break;
 		case "VERSION":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01VERSION Synchronet IRC Module:"+REVISION+":Synchronet"+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01VERSION Synchronet IRC Module:"+REVISION+":Synchronet"+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP VERSION Reply: VERSION Synchronet IRC Module:"+REVISION+":Synchronet");
 			break;
 		case "PING":
@@ -794,13 +797,13 @@ function handle_ctcp(prefix,message)  {
 			message.shift();
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01PING "+message.join(" ")+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01PING "+message.join(" ")+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP PING Reply.");
 			break;
 		case "TIME":
 			from_nick=get_highlighted_nick(prefix,message);
 			to_nick=get_nick(prefix);
-			sock.send("NOTICE "+to_nick+" :\x01TIME "+strftime("%A, %B %d, %I:%M:%S%p, %Y %Z",time())+"\x01\r\n");
+			send_cmd("NOTICE", to_nick+" :\x01TIME "+strftime("%A, %B %d, %I:%M:%S%p, %Y %Z",time())+"\x01");
 			screen.print_line(">"+from_nick+"<"+" CTCP TIME Reply: "+strftime("%A, %B %d, %I:%M:%S%p, %Y %Z",time() ));
 			break;
 	}
@@ -811,7 +814,7 @@ function get_highlighted_nick(prefix,message)  {
 	var from_nick=null;
 
 	// Check if your nick is in the text...
-	from_nick=prefix.substr(1);
+	from_nick=prefix;
 	from_nick=from_nick.split("!",1)[0];
 	re=new RegExp("\\b"+nick+"\\b","i");
 	for(j=0;j<message.length;j++)  {
@@ -829,13 +832,13 @@ function get_highlighted_nick(prefix,message)  {
 
 function get_nick(prefix)  {
 	// Check if your nick is in the text...
-	var to_nick=prefix.substr(1);
-	to_nick=to_nick.split("!",1)[0];
+	var to_nick;
+
+	to_nick=prefix.split("!",1)[0];
 	return to_nick;
 }
 
 function clean_exit()  {
-	console.ctrlkey_passthru=init_passthru;
 	exit();
 }
 
@@ -853,8 +856,8 @@ function Channel(cname)  {
 }
 
 function Channel_part(message)  {
-	sock.send("PART "+this.name+" :"+message+"\r\n");
-	screen.print_line("PART "+this.name+" "+message+"\r\n");
+	send_cmd("PART", this.name+" :"+message);
+	screen.print_line("PART "+this.name+" "+message);
 	this.name=null;
 	this.display=null;
 	this.topic=null;
@@ -862,7 +865,7 @@ function Channel_part(message)  {
 }
 
 function Channel_send(message)  {
-	sock.send("PRIVMSG "+this.name+" :"+message+"\r\n");
+	send_cmd("PRIVMSG", this.name+" :"+message);
 }
 
 function Channel_matchnick(nickpart)  {
@@ -976,7 +979,7 @@ function Channels_nick_add(nick,cname)  {
 }
 
 function Channels_join(cname)  {
-	sock.send("JOIN "+cname+"\r\n");
+	send_cmd("JOIN", cname);
 }
 
 function Channels_joined(cname)  {
@@ -1021,11 +1024,11 @@ function Screen()  {
 				if(channels.current != undefined)  {
 					var nick_chan="";
 					nick_char=format("\x01N\x014 Nick: %s   Channel: %s (%d)",nick,channels.current.display,channels.current.nick.length)+SPACEx80;
-					return nick_char.substr(0,68)+" /quit to exit \x01N\x010\x01W";
+					return nick_char.substr(0,67)+" /help for help \x01N\x010\x01W";
 				}
 			}
 		}
-		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel (0)"+SPACEx80.substr(0,79-48-nick.length)+" /quit to exit \x01N\x010\x01W";
+		return "\x01N\x014 Nick: "+nick+"   Channel: No Channel (0)"+SPACEx80.substr(0,79-49-nick.length)+" /help for help \x01N\x010\x01W";
 	});
 	this.__defineGetter__("topicline", function() {
 		if(connected)  {

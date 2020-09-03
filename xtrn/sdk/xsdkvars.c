@@ -2,7 +2,7 @@
 
 /* Synchronet XSDK global variables */
 
-/* $Id$ */
+/* $Id: xsdkvars.c,v 1.5 2005/09/20 06:00:38 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

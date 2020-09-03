@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: nodelist.ssjs,v 1.8 2006/02/25 21:40:04 runemaster Exp $ */
 
 load("../web/lib/template.ssjs");
 

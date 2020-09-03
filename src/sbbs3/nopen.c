@@ -2,7 +2,7 @@
 
 /* Network open functions (nopen and fnopen) and friends */
 
-/* $Id$ */
+/* $Id: nopen.c,v 1.30 2018/11/23 17:08:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -171,7 +171,7 @@ BOOL fcopy(const char* src, const char* dest)
 			break;
 		}
 		if(((count++)%(32*1024))==0)
-			YIELD();
+			MAYBE_YIELD();
 	}
 
 	fclose(in);

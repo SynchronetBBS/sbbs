@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_user.js,v 1.53 2020/04/03 23:27:54 deuce Exp $
 //
 // ircd_unreg.js
 //
@@ -21,7 +21,7 @@
 //
 
 ////////// Constants / Defines //////////
-const USER_REVISION = "$Revision$".split(' ')[1];
+const USER_REVISION = "$Revision: 1.53 $".split(' ')[1];
 
 const USERMODE_NONE			=(1<<0); // NONE
 const USERMODE_OPER			=(1<<1); // o
@@ -148,6 +148,7 @@ function IRC_User(id) {
 	this.uprefix = "";
 	this.id = id;
 	this.throttle_count = 0;	/* Number of commands executed within 2 secs */
+	this.outgoing = false;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	////////// FUNCTIONS
@@ -1550,6 +1551,15 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 			+ this.ip + "]");
 		if (this.socket!=undefined)
 			this.socket.close();
+	}
+	if (this.outgoing) {
+		log(LOG_ERROR, "Outgoing USER connection detected!");
+		if (YLines[this.ircclass].active > 0) {
+			YLines[this.ircclass].active--;
+			log(LOG_DEBUG, "Class "+this.ircclass+" down to "+YLines[this.ircclass].active+" active out of "+YLines[this.ircclass].maxlinks);
+		}
+		else
+			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
 	}
 
 	delete Local_Sockets[this.id];

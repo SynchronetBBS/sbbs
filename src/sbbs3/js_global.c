@@ -1,6 +1,6 @@
 /* Synchronet JavaScript "global" object properties/methods for all servers */
 
-/* $Id$ */
+/* $Id: js_global.c,v 1.409 2020/08/09 01:53:52 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -42,6 +42,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "wordwrap.h"
+#include "utf8.h"
 
 /* SpiderMonkey: */
 #include <jsapi.h>
@@ -52,11 +53,14 @@
 
 #ifdef JAVASCRIPT
 
-/* Global Object Properites */
+extern JSClass js_global_class;
+
+/* Global Object Properties */
 enum {
 	 GLOB_PROP_ERRNO
 	,GLOB_PROP_ERRNO_STR
 	,GLOB_PROP_SOCKET_ERRNO
+	,GLOB_PROP_SOCKET_ERRNO_STR
 };
 
 BOOL DLLCALL js_argc(JSContext *cx, uintN argc, uintN min)
@@ -71,6 +75,7 @@ BOOL DLLCALL js_argc(JSContext *cx, uintN argc, uintN min)
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
+	char		err[128];
     jsint       tiny;
 	JSString*	js_str;
 
@@ -80,6 +85,11 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	switch(tiny) {
 		case GLOB_PROP_SOCKET_ERRNO:
 			*vp=DOUBLE_TO_JSVAL(ERROR_VALUE);
+			break;
+		case GLOB_PROP_SOCKET_ERRNO_STR:
+			if((js_str=JS_NewStringCopyZ(cx, socket_strerror(socket_errno, err, sizeof(err))))==NULL)
+				return(JS_FALSE);
+	        *vp = STRING_TO_JSVAL(js_str);
 			break;
 		case GLOB_PROP_ERRNO:
 			*vp=INT_TO_JSVAL(errno);
@@ -96,11 +106,12 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 #define GLOBOBJ_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY|JSPROP_SHARED
 
 static jsSyncPropertySpec js_global_properties[] = {
-/*		 name,			tinyid,					flags,			ver */
+/*		 name,				tinyid,						flags,			ver */
 
-	{	"errno"			,GLOB_PROP_ERRNO		,GLOBOBJ_FLAGS, 310 },
-	{	"errno_str"		,GLOB_PROP_ERRNO_STR	,GLOBOBJ_FLAGS, 310 },
-	{	"socket_errno"	,GLOB_PROP_SOCKET_ERRNO	,GLOBOBJ_FLAGS, 310 },
+	{	"errno"				,GLOB_PROP_ERRNO			,GLOBOBJ_FLAGS, 310 },
+	{	"errno_str"			,GLOB_PROP_ERRNO_STR		,GLOBOBJ_FLAGS, 310 },
+	{	"socket_errno"		,GLOB_PROP_SOCKET_ERRNO		,GLOBOBJ_FLAGS, 310 },
+	{	"socket_errno_str"	,GLOB_PROP_SOCKET_ERRNO_STR	,GLOBOBJ_FLAGS, 31800 },
 	{0}
 };
 
@@ -265,13 +276,14 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount	rc;
 	jsrefcount	brc;
 	size_t		len;
+	JSObject*	scope = JS_GetScopeChain(cx);
 
 	JS_SET_RVAL(cx, arglist,JSVAL_VOID);
 
-	if((p=(global_private_t*)JS_GetPrivate(cx,obj))==NULL)
+	if((p=(global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class))==NULL)
 		return(JS_FALSE);
 
-	exec_obj=JS_GetScopeChain(cx);
+	exec_obj=scope;
 
 	if(JSVAL_IS_BOOLEAN(argv[argn]))
 		background=JSVAL_TO_BOOLEAN(argv[argn++]);
@@ -297,7 +309,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		bg->cb.bg = TRUE;
 
 		// Get the js.internal private data since it's the parents js_callback_t...
-		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "js", &val) && !JSVAL_NULL_OR_VOID(val)) {
+		if((JS_GetProperty(cx, scope, "js", &val) && !JSVAL_NULL_OR_VOID(val))
+		    || (JS_GetProperty(cx, obj, "js", &val) && !JSVAL_NULL_OR_VOID(val))) {
 			js_internal = JSVAL_TO_OBJECT(val);
 			bg->cb.parent_cb = (js_callback_t*)JS_GetPrivate(cx,js_internal);
 			if (bg->cb.parent_cb == NULL) {
@@ -305,7 +318,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 		else {
-			lprintf(LOG_ERR, "!ERROR unabled to locate global js object");
+			lprintf(LOG_ERR, "!ERROR unable to locate global js object");
 		}
 
 		if((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__))==NULL) {
@@ -376,7 +389,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		/* Save parent's 'log' function (for later use by our log function) */
 		brc=JS_SUSPENDREQUEST(bg->cx);
 		JS_RESUMEREQUEST(cx, rc);
-		if(JS_GetProperty(cx, obj, "log", &val)) {
+		if(JS_GetProperty(cx, scope, "log", &val) || JS_GetProperty(cx, obj, "log", &val)) {
 			JSFunction* func;
 			if((func=JS_ValueToFunction(cx, val))!=NULL) {
 				JSObject *obj;
@@ -398,11 +411,11 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if (JS_HasProperty(cx, obj, "console", &success) && success)
 			js_CreateConsoleObject(bg->cx, bg->obj);
 		if (JS_HasProperty(cx, obj, "stdin", &success) && success)
-			js_CreateFileObject(bg->cx, bg->obj, "stdin", stdin);
+			js_CreateFileObject(bg->cx, bg->obj, "stdin", STDIN_FILENO, "r");
 		if (JS_HasProperty(cx, obj, "stdout", &success) && success)
-			js_CreateFileObject(bg->cx, bg->obj, "stdout", stdout);
+			js_CreateFileObject(bg->cx, bg->obj, "stdout", STDOUT_FILENO, "w");
 		if (JS_HasProperty(cx, obj, "stderr", &success) && success)
-			js_CreateFileObject(bg->cx, bg->obj, "stderr", stderr);
+			js_CreateFileObject(bg->cx, bg->obj, "stderr", STDERR_FILENO, "w");
 		JS_SetContextPrivate(bg->cx, bg);
 
 		exec_cx = bg->cx;
@@ -507,7 +520,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		path[0]=0;	/* Empty path, indicates load file not found (yet) */
 
 		JS_RESUMEREQUEST(cx, rc);
-		if(JS_GetProperty(cx, obj, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
+		if((JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))
+		    || (JS_GetProperty(cx, obj, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))) {
 			JSObject* js_obj = JSVAL_TO_OBJECT(val);
 			
 			/* if js.exec_dir is defined (location of executed script), search there first */
@@ -588,6 +602,10 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		/* lastly, search exec dir */
 		if(path[0]==0)
 			SAFEPRINTF2(path,"%s%s",p->cfg->exec_dir,filename);
+
+		if(!fexistcase(path)) {
+			SAFECOPY(path, filename);
+		}
 	}
 	free(filename);
 
@@ -637,6 +655,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ENDREQUEST(bg->cx);
 		JS_ClearContextThread(bg->cx);
 		bg->sem=&p->bg_sem;
+//		lprintf(LOG_DEBUG, "JavaScript Background Load: %s", path); // non-contextual (always logs to terminal server)
 		success = _beginthread(background_thread,0,bg)!=-1;
 		JS_RESUMEREQUEST(cx, rc);
 		if(success) {
@@ -721,11 +740,13 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 
 	ret = js_load(cx, argc-1, arglist);
 
-	if (!JS_HasProperty(cx, exec_obj, property, &found) || !found) {
-		JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
-		JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
-		free(filename);
-		return(JS_FALSE);
+	if (!JS_IsExceptionPending(cx)) {
+		if (!JS_HasProperty(cx, exec_obj, property, &found) || !found) {
+			JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
+			JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
+			free(filename);
+			return(JS_FALSE);
+		}
 	}
 	free(property);
 	return ret;
@@ -849,12 +870,14 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_exit(JSContext *cx, uintN argc, jsval *arglist)
 {
+	JSObject *scope = JS_GetScopeChain(cx);
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	jsval val;
 
 	if(argc) {
-		if(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val)) {
+		if((JS_GetProperty(cx, scope, "js", &val) && JSVAL_IS_OBJECT(val)) || 
+		    (JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val))) {
 			obj = JSVAL_TO_OBJECT(val);
 			if(JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val))
 				obj = JSVAL_TO_OBJECT(val);
@@ -1175,6 +1198,7 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	int32		len=79;
 	int32		oldlen=79;
 	JSBool		handle_quotes=JS_TRUE;
+	JSBool		is_utf8=JS_FALSE;
 	char*		inbuf = NULL;
 	char*		outbuf;
 	JSString*	js_str;
@@ -1206,10 +1230,12 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>3 && JSVAL_IS_BOOLEAN(argv[3]))
 		handle_quotes = JSVAL_TO_BOOLEAN(argv[3]);
+	if(argc>4 && JSVAL_IS_BOOLEAN(argv[4]))
+		is_utf8 = JSVAL_TO_BOOLEAN(argv[4]);
 
 	rc=JS_SUSPENDREQUEST(cx);
 
-	outbuf=wordwrap(inbuf, len, oldlen, handle_quotes);
+	outbuf=wordwrap(inbuf, len, oldlen, handle_quotes, is_utf8);
 	free(inbuf);
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -1602,7 +1628,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc==0 || JSVAL_IS_VOID(argv[0]))
 		return(JS_TRUE);
 
-	if((p=(global_private_t*)JS_GetPrivate(cx,obj))==NULL)		/* Will this work?  Ask DM */
+	if((p=(global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class))==NULL)
 		return(JS_FALSE);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
@@ -2187,8 +2213,8 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 						outbuf[j++]='\r';
 						hpos=0;
 						break;
-					case 'Z':
-						outbuf[j++]=CTRL_Z;
+					case 'Z':	/* EOF */
+						outbuf[j++] = 0;
 						break;
 					case 'A':
 					default:
@@ -2425,8 +2451,9 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 			continue;
 		}
 
-		if(strcmp(token,"lsquo")==0 || strcmp(token,"rsquo")==0) {
-			outbuf[j++]='\'';	/* single quotation mark */
+		if(strcmp(token,"lsquo")==0 || strcmp(token,"rsquo")==0
+			|| strcmp(token,"lsaquo")==0 || strcmp(token,"rsaquo")==0) {
+			outbuf[j++]='\'';	/* single quotation mark: should lsaquo be converted to backtick (`)? */
 			continue;
 		}
 
@@ -2439,6 +2466,9 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 			outbuf[j++]='-';	/* dash */
 			continue;
 		}
+
+		if(strcmp(token, "zwj") == 0 || strcmp(token, "zwnj") == 0)	/* zero-width joiner / non-joiner */
+			continue;
 
 		/* Unknown character entity, leave intact */
 		j+=sprintf(outbuf+j,"&%s;",token);
@@ -3160,6 +3190,65 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_fmode(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+	int			mode = -1;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL)
+	HANDLE_PENDING(cx, fname);
+	if(fname == NULL) 
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	struct stat st = {0};
+	if(stat(fname, &st) == 0)
+		mode = st.st_mode;
+	free(fname);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(mode));
+	return JS_TRUE;
+}
+
+static JSBool
+js_chmod(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		fname = NULL;
+	jsrefcount	rc;
+	int32		mode;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc < 2 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL)
+	HANDLE_PENDING(cx, fname);
+	if(fname == NULL) 
+		return JS_TRUE;
+
+	if(!JS_ValueToInt32(cx, argv[1], &mode)) {
+		free(fname);
+		return JS_FALSE;
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	int result = CHMOD(fname, mode);
+	free(fname);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result == 0));
+	return JS_TRUE;
+}
+
+static JSBool
 js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -3586,21 +3675,25 @@ static JSBool
 js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	JSObject*	inarray=NULL;
+	JSObject*	inarray[3]={NULL, NULL, NULL};
+	jsuint		inarray_cnt = 0;
+	JSObject*	robj;
 	JSObject*	rarray;
 	BOOL		poll_for_write=FALSE;
-	fd_set		socket_set;
-	fd_set*		rd_set=NULL;
-	fd_set*		wr_set=NULL;
+	fd_set		socket_set[3];
+	fd_set*		sets[3] = {NULL, NULL, NULL};
 	uintN		argn;
 	SOCKET		sock;
 	SOCKET		maxsock=0;
 	struct		timeval tv = {0, 0};
 	jsuint		i;
-    jsuint      limit;
+	jsuint		j;
+	jsuint      limit[3];
 	jsval		val;
 	int			len=0;
 	jsrefcount	rc;
+	BOOL	all_zero = TRUE;
+	const char *props[3] = {"read", "write", "except"};
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -3608,58 +3701,124 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 		if(JSVAL_IS_BOOLEAN(argv[argn]))
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
 		else if(JSVAL_IS_OBJECT(argv[argn]))
-			inarray = JSVAL_TO_OBJECT(argv[argn]);
+			inarray[inarray_cnt++] = JSVAL_TO_OBJECT(argv[argn]);
 		else if(JSVAL_IS_NUMBER(argv[argn]))
 			js_timeval(cx,argv[argn],&tv);
 	}
 
-    if(inarray==NULL || !JS_IsArrayObject(cx, inarray))
+	if(inarray_cnt == 0)
 		return(JS_TRUE);	/* This not a fatal error */
+	for (i = 0; i < inarray_cnt; i++) {
+		if (!JS_IsArrayObject(cx, inarray[i]))
+			return(JS_TRUE);	/* This not a fatal error */
+		if (JS_GetArrayLength(cx, inarray[i], &limit[i]) != 0)
+			all_zero = FALSE;
+	}
+	if (inarray_cnt > 3)
+		inarray_cnt = 3;
 
-    if(!JS_GetArrayLength(cx, inarray, &limit))
+	if (all_zero)
 		return(JS_TRUE);
 
-	/* Return array */
-    if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
-		return(JS_FALSE);
+	if (inarray_cnt == 1) {
+		/* Return array */
+		if((robj = JS_NewArrayObject(cx, 0, NULL))==NULL)
+			return(JS_FALSE);
+		FD_ZERO(&socket_set[0]);
+		if(poll_for_write)
+			sets[1]=&socket_set[0];
+		else
+			sets[0]=&socket_set[0];
 
-	FD_ZERO(&socket_set);
-	if(poll_for_write)
-		wr_set=&socket_set;
-	else
-		rd_set=&socket_set;
-
-    for(i=0;i<limit;i++) {
-        if(!JS_GetElement(cx, inarray, i, &val))
-			break;
-		sock=js_socket_add(cx,val,&socket_set);
-		if(sock!=INVALID_SOCKET) {
-			if(sock>maxsock)
-				maxsock=sock;
-		}
-    }
-
-	rc=JS_SUSPENDREQUEST(cx);
-	if(select(maxsock+1,rd_set,wr_set,NULL,&tv) >= 0) {
-		for(i=0;i<limit;i++) {
-        	if(!JS_GetElement(cx, inarray, i, &val))
+		for(i=0;i<limit[0];i++) {
+			if(!JS_GetElement(cx, inarray[0], i, &val))
 				break;
-			if(js_socket_isset(cx,val,&socket_set)) {
-				val=INT_TO_JSVAL(i);
-				JS_RESUMEREQUEST(cx, rc);
-   				if(!JS_SetElement(cx, rarray, len++, &val)) {
-					rc=JS_SUSPENDREQUEST(cx);
-					break;
-				}
-				rc=JS_SUSPENDREQUEST(cx);
+			sock=js_socket_add(cx,val,&socket_set[0]);
+			if(sock!=INVALID_SOCKET) {
+				if(sock>maxsock)
+					maxsock=sock;
 			}
 		}
 
-		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(rarray));
-	}
-	JS_RESUMEREQUEST(cx, rc);
+		rc=JS_SUSPENDREQUEST(cx);
+		if(select(maxsock+1,sets[0],sets[1],sets[2],&tv) >= 0) {
+			for(i=0;i<limit[0];i++) {
+				if(!JS_GetElement(cx, inarray[0], i, &val))
+					break;
+				if(js_socket_isset(cx,val,&socket_set[0])) {
+					val=INT_TO_JSVAL(i);
+					JS_RESUMEREQUEST(cx, rc);
+					if(!JS_SetElement(cx, robj, len++, &val)) {
+						rc=JS_SUSPENDREQUEST(cx);
+						break;
+					}
+					rc=JS_SUSPENDREQUEST(cx);
+				}
+			}
 
-    return(JS_TRUE);
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
+		}
+		JS_RESUMEREQUEST(cx, rc);
+
+		return(JS_TRUE);
+	}
+	else {
+		/* Return object */
+		if((robj = JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			return(JS_FALSE);
+		for (j = 0; j < inarray_cnt; j++) {
+			if (limit[j] > 0) {
+				FD_ZERO(&socket_set[j]);
+				sets[j] = &socket_set[j];
+				for (i = 0; i < limit[j]; i++) {
+					if(!JS_GetElement(cx, inarray[j], i, &val))
+						break;
+					sock=js_socket_add(cx,val,&socket_set[j]);
+					if(sock!=INVALID_SOCKET) {
+						if(sock>maxsock)
+							maxsock=sock;
+					}
+				}
+			}
+		}
+
+		rc=JS_SUSPENDREQUEST(cx);
+		if(select(maxsock+1,sets[0],sets[1],sets[2],&tv) >= 0) {
+			for (j = 0; j < inarray_cnt; j++) {
+				if (limit[j] > 0) {
+					len = 0;
+					JS_RESUMEREQUEST(cx, rc);
+					if((rarray = JS_NewArrayObject(cx, 0, NULL))==NULL)
+						return(JS_FALSE);
+					val = OBJECT_TO_JSVAL(rarray);
+					if (!JS_SetProperty(cx, robj, props[j], &val))
+						return JS_FALSE;
+					rc=JS_SUSPENDREQUEST(cx);
+					for(i=0;i<limit[j];i++) {
+						JS_RESUMEREQUEST(cx, rc);
+						if(!JS_GetElement(cx, inarray[j], i, &val)) {
+							rc=JS_SUSPENDREQUEST(cx);
+							break;
+						}
+						rc=JS_SUSPENDREQUEST(cx);
+						if(js_socket_isset(cx,val,&socket_set[j])) {
+							val=INT_TO_JSVAL(i);
+							JS_RESUMEREQUEST(cx, rc);
+							if(!JS_SetElement(cx, rarray, len++, &val)) {
+								rc=JS_SUSPENDREQUEST(cx);
+								break;
+							}
+							rc=JS_SUSPENDREQUEST(cx);
+						}
+					}
+				}
+			}
+			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(robj));
+		}
+		JS_RESUMEREQUEST(cx, rc);
+
+		return(JS_TRUE);
+	}
 }
 
 static JSBool
@@ -3982,6 +4141,280 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 	return(JS_TRUE);
 }
+
+static bool
+str_is_utf16(JSContext *cx, jsval val)
+{
+	if(JSVAL_NULL_OR_VOID(val))
+		return false;
+
+	JSString* js_str = JS_ValueToString(cx, val);
+	if(js_str == NULL)
+		return false;
+
+	size_t len;
+	const jschar * str = JS_GetStringCharsAndLength(cx, js_str, &len);
+	if(str == NULL)
+		return false;
+
+	bool result = false;
+	for(size_t i = 0; i < len; i++) {
+		if(str[i] > 0xff)
+			result = true;
+	}
+	return result;
+}
+
+static JSBool
+js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	size_t		len;
+	char*		outbuf;
+	JSString*	js_str;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	if(JSVAL_IS_STRING(argv[0])) {
+		if(str_is_utf16(cx, argv[0])) {
+			js_str = JS_ValueToString(cx, argv[0]);
+			if(js_str == NULL)
+				return JS_TRUE;
+
+			size_t inbuf_len;
+			const jschar * inbuf = JS_GetStringCharsAndLength(cx, js_str, &inbuf_len);
+			if(inbuf == NULL)
+				return JS_TRUE;
+
+			len = (inbuf_len * UTF8_MAX_LEN) + 1;
+
+			if((outbuf = malloc(len)) == NULL) {
+				JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
+					, len, getfname(__FILE__), __LINE__);
+				return JS_FALSE;
+			}
+
+			rc=JS_SUSPENDREQUEST(cx);
+			size_t outlen = 0;
+			for(size_t i = 0; i < inbuf_len; i++) {
+				int retval = utf8_putc(outbuf + outlen, len - outlen, inbuf[i]);
+				if(retval < 1)
+					break;
+				outlen += retval;
+			}
+			outbuf[outlen] = 0;
+			JS_RESUMEREQUEST(cx, rc);
+		} else {
+			size_t		inbuf_len;
+			char*		inbuf = NULL;
+
+			JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
+			HANDLE_PENDING(cx, inbuf);
+			if(inbuf == NULL)
+				return JS_TRUE;
+
+			len = (inbuf_len * UTF8_MAX_LEN) + 1;
+
+			if((outbuf = malloc(len)) == NULL) {
+				free(inbuf);
+				JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
+					, len, getfname(__FILE__), __LINE__);
+				return JS_FALSE;
+			}
+
+			rc=JS_SUSPENDREQUEST(cx);
+			cp437_to_utf8_str(inbuf, outbuf, len, /* minval: */0x80);
+			free(inbuf);
+			JS_RESUMEREQUEST(cx, rc);
+		}
+	}
+	else if(JSVAL_IS_NUMBER(argv[0])) {
+		len = UTF8_MAX_LEN + 1;
+		if((outbuf = malloc(len)) == NULL) {
+			JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
+				, len, getfname(__FILE__), __LINE__);
+			return JS_FALSE;
+		}
+		int32 codepoint = 0;
+		if(!JS_ValueToInt32(cx, argv[0], &codepoint))
+			return JS_FALSE;
+		int result = utf8_putc(outbuf, len - 1, codepoint);
+		if(result < 1) {
+			free(outbuf);
+			JS_ReportError(cx, "utf8_encode: error: %d", result);
+			return JS_FALSE;
+		}
+		outbuf[result] = 0;
+	}
+	else {
+		JS_ReportError(cx, "utf8_encode: Invalid argument type");
+		return JS_FALSE;
+	}
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	free(outbuf);
+	if(js_str==NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
+js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		buf = NULL;
+	JSString*	js_str;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
+	HANDLE_PENDING(cx, buf);
+	if(buf==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	utf8_to_cp437_str(buf);
+	JS_RESUMEREQUEST(cx, rc);
+
+	js_str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
+	if(js_str==NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
+js_utf8_get_width(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	size_t width = utf8_str_total_width(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(width));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_is_utf8(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = utf8_str_is_valid(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_is_utf16(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	bool result = str_is_utf16(cx, argv[0]);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_is_ascii(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = str_is_ascii(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+static JSBool
+js_str_has_ctrl(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		str = NULL;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	if(argc==0 || JSVAL_NULL_OR_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
+	HANDLE_PENDING(cx, str);
+	if(str==NULL)
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = str_has_ctrl(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	free(str);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	return JS_TRUE;
+}
+
+
 #if 0
 static JSBool
 js_qwknet_route(JSContext *cx, uintN argc, jsval *arglist)
@@ -4043,7 +4476,19 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"will be automatically written to the <i>parent_queue</i> "
 		"which may be read later by the parent script (using <i>load_result.read()</i>, for example).")
 	,312
-	},		
+	},
+	{"require",         js_require,         1,	JSTYPE_UNDEF
+	,JSDOCSTR("[<i>object</i> scope,] <i>string</i> filename, propname [,args]")
+	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
+		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
+		"and a list of arguments to pass to the module (as <i>argv</i>) "
+		"IF AND ONLY IF the property named <i>propname</i> is not defined in "
+		"the target scope (a defined symbol with a value of undefined will not "
+		"cause the script to be loaded). "
+		"Returns the result (last executed statement) of the executed script "
+		"or null if the script is not executed. ")
+	,317
+	},
 	{"sleep",			js_mswait,			0,	JSTYPE_ALIAS },
 	{"mswait",			js_mswait,			0,	JSTYPE_NUMBER,	JSDOCSTR("[milliseconds=<tt>1</tt>]")
 	,JSDOCSTR("millisecond wait/sleep routine (AKA sleep), returns number of elapsed clock ticks (in v3.13)")
@@ -4082,7 +4527,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"ascii_str",		js_ascii_str,		1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("convert extended-ASCII in text string to plain ASCII, returns modified string")
+	,JSDOCSTR("convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string")
 	,310
 	},		
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("text")
@@ -4090,7 +4535,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("text")
-	,JSDOCSTR("strip extended-ASCII characters from string, returns modified string")
+	,JSDOCSTR("strip all extended-ASCII characters from string, returns modified string")
 	,310
 	},		
 	{"skipsp",			js_skipsp,			1,	JSTYPE_STRING,	JSDOCSTR("text")
@@ -4182,19 +4627,35 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"file_attrib",		js_fattr,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's permissions/attributes")
+	,JSDOCSTR("get a file's attributes (same as </i>file_mode()</i> on *nix). "
+		"On Windows, the return value corresponds with <tt>_finddata_t.attrib</tt> "
+		"(includes DOS/Windows file system-specific attributes, like <i>hidden</i>, and <i>archive</i>). "
+		"Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},		
+	{"file_mode",		js_fmode,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
+	,JSDOCSTR("get a file's type and mode flags (e.g. read/write/execute permissions). "
+		"The return value corresponds with <tt>struct stat.st_mode</tt>. "
+		"Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
+	,31702
+	},		
+	{"file_chmod",		js_chmod,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename, number mode")
+	,JSDOCSTR("set a file's permissions flags. "
+		"The supported <i>mode</i> bit values are system-dependent "
+		"(e.g. Windows only supports setting or clearing the user-write/0x80 mode flag). "
+		"Returns <tt>true</tt> if the requested change was successful.")
+	,31702
+	},		
 	{"file_date",		js_fdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's last modified date/time (in time_t format)")
+	,JSDOCSTR("get a file's last modified date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},
 	{"file_cdate",		js_fcdate,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's creation date/time (in time_t format)")
+	,JSDOCSTR("get a file's creation date/time (in time_t format). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,317
 	},
 	{"file_size",		js_flength,			1,	JSTYPE_NUMBER,	JSDOCSTR("path/filename")
-	,JSDOCSTR("get a file's length (in bytes)")
+	,JSDOCSTR("get a file's length (in bytes). Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	,310
 	},
 	{"file_utime",		js_utime,			3,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename [,access_time=<i>current</i>] [,mod_time=<i>current</i>]")
@@ -4240,7 +4701,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"socket_select",	js_socket_select,	0,	JSTYPE_ARRAY,	JSDOCSTR("[array of socket objects or descriptors] [,timeout=<tt>0</tt>] [,write=<tt>false</tt>]")
 	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
 		"default timeout value is 0.0 seconds (immediate timeout), "
-		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing, or <i>null</i> on error")
+		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing, or <i>null</i> on error. "
+		"If multiple arrays of sockets are passed, they are presumet to be in the order of read, write, and except.  In this case, the write parameter is ignored "
+		"and an object is returned instead with up to three properties \"read\", \"write\", and \"except\", corresponding to the passed arrays.  Empty passed "
+		"arrays will not have a corresponding property in the returned object.")
 	,311
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
@@ -4248,7 +4712,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,310
 	},		
 	{"mkpath",			js_mkpath,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
-	,JSDOCSTR("make a path to a directory (creating all necessary sub-directories)")
+	,JSDOCSTR("make a path to a directory (creating all necessary sub-directories). Returns true if the directory already exists.")
 	,315
 	},		
 	{"rmdir",			js_rmdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
@@ -4265,7 +4729,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"html_encode",		js_html_encode,		1,	JSTYPE_STRING,	JSDOCSTR("text [,ex_ascii=<tt>true</tt>] [,white_space=<tt>true</tt>] [,ansi=<tt>true</tt>] [,ctrl_a=<tt>true</tt>] [, state (object)]")
 	,JSDOCSTR("return an HTML-encoded text string (using standard HTML character entities), "
-		"escaping IBM extended-ASCII, white-space characters, ANSI codes, and CTRL-A codes by default."
+		"escaping IBM extended-ASCII (CP437), white-space characters, ANSI codes, and CTRL-A codes by default."
 		"Optionally storing the current ANSI state in <i>state</i> object")
 	,311
 	},
@@ -4273,10 +4737,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("return a decoded HTML-encoded text string")
 	,311
 	},
-	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt> [, orig_line_length=<tt>79</tt> [, handle_quotes=<tt>true</tt>]]]]")
+	{"word_wrap",		js_word_wrap,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt> [, orig_line_length=<tt>79</tt> [, handle_quotes=<tt>true</tt> [, is_utf8=<tt>false</tt>]]]]")
 	,JSDOCSTR("returns a word-wrapped version of the text string argument optionally handing quotes magically, "
-		"<i>line_length</i> defaults to <i>79</i> <i>orig_line_length</i> defaults to <i>79</i> "
-		"and <i>handle_quotes</i> defaults to <i>true</i>")
+		"<i>line_length</i> defaults to <i>79</i>, <i>orig_line_length</i> defaults to <i>79</i>, "
+		"<i>handle_quotes</i> defaults to <i>true</i>, and <i>is_utf8</i> defaults to <i>false</i>")
 	,311
 	},
 	{"quote_msg",		js_quote_msg,		1,	JSTYPE_STRING,	JSDOCSTR("text [,line_length=<tt>79</tt>] [,prefix=<tt>\" > \"</tt>]")
@@ -4314,8 +4778,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	},
 	{"gethostbyname",	js_resolve_ip,		1,	JSTYPE_ALIAS },
 	{"resolve_ip",		js_resolve_ip,		1,	JSTYPE_STRING,	JSDOCSTR("hostname [,array=<tt>false</tt>]")
-	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname).  If array is true (added in 3.17), will return "
-	"an array of all addresses rather than just the first one")
+	,JSDOCSTR("resolve IP address of specified hostname (AKA gethostbyname).  If <i>array</i> is true (added in 3.17), will return "
+	"an array of all addresses rather than just the first one (upon success).")
 	,311
 	},
 	{"gethostbyaddr",	js_resolve_host,	1,	JSTYPE_ALIAS },
@@ -4337,18 +4801,34 @@ static jsSyncMethodSpec js_global_functions[] = {
 	"(returns number OR string) - (added in v3.13)")
 	,313
 	},
-	{"require",         js_require,         1,	JSTYPE_UNDEF
-	,JSDOCSTR("[<i>object</i> scope,] <i>string</i> filename, propname [,args]")
-	,JSDOCSTR("load and execute a JavaScript module (<i>filename</i>), "
-		"optionally specifying a target <i>scope</i> object (default: <i>this</i>) "
-		"and a list of arguments to pass to the module (as <i>argv</i>) "
-		"IF AND ONLY IF the property named <i>propname</i> is not defined in "
-		"the target scope (a defined symbol with a value of undefined will not "
-		"cause the script to be loaded). "
-		"Returns the result (last executed statement) of the executed script "
-		"or null if the script is not executed. ")
-	,317
-	},		
+	{"utf8_encode",		js_utf8_encode,		1,	JSTYPE_STRING,	JSDOCSTR("[string CP437] or [string UTF16] or [number codepoint]")
+	,JSDOCSTR("returns UTF-8 encoded version of the specified CP437 text string, UTF-16 encoded text string, or a single Unicode <i>codepoint</i>")
+	,31702
+	},
+	{"utf8_decode",		js_utf8_decode,		1,	JSTYPE_STRING,	JSDOCSTR("text")
+		,JSDOCSTR("returns CP437 representation of UTF-8 encoded text string or <i>null</i> on error (invalid UTF-8)")
+		,31702
+	},
+	{"utf8_get_width",		js_utf8_get_width,	1,	JSTYPE_NUMBER,	JSDOCSTR("text")
+		,JSDOCSTR("returns the fixed printed-width of the specified string of UTF-8 encoded characters")
+		,31702
+	},
+	{"str_is_utf8",			js_str_is_utf8,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only valid UTF-8 encoded and US-ASCII characters")
+		,31702
+	},
+	{"str_is_utf16",		js_str_is_utf16,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains one or more UTF-16 encoded characters")
+		,31702
+	},
+	{"str_is_ascii",		js_str_is_ascii,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains only US-ASCII (no CP437 or UTF-8) characters")
+		,31702
+	},
+	{"str_has_ctrl",		js_str_has_ctrl,	1,	JSTYPE_BOOLEAN,	JSDOCSTR("text")
+		,JSDOCSTR("returns <tt>true</tt> if the specified string contains any control characters (ASCII 0x01 - 0x1F)")
+		,31702
+	},
 	{0}
 };
 
@@ -4465,7 +4945,11 @@ static JSBool js_global_resolve(JSContext *cx, JSObject *obj, jsid id)
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			HANDLE_PENDING(cx, name);
+			if(JS_IsExceptionPending(cx)) {
+				JS_ClearPendingException(cx);
+				free(name);
+				return JS_FALSE;
+			}
 		}
 	}
 
@@ -4485,7 +4969,7 @@ static JSBool js_global_enumerate(JSContext *cx, JSObject *obj)
 	return(js_global_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_global_class = {
+JSClass js_global_class = {
      "Global"				/* name			*/
     ,JSCLASS_HAS_PRIVATE|JSCLASS_GLOBAL_FLAGS	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

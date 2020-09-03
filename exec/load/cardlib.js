@@ -1,4 +1,4 @@
-// $Id$
+// $Id: cardlib.js,v 1.7 2010/06/09 17:47:31 mcmlxxix Exp $
 /*
 	A library for dealing with a traditional deck of cards in various ways.
 	Licensed under the GPLv2 by Randolph E. Sommerfeld <cyan@rrx.ca>

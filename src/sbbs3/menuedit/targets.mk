@@ -2,7 +2,7 @@
 
 # Make 'include file' defining targets for Synchronet MenuEdit project
 
-# $Id$
+# $Id: targets.mk,v 1.2 2011/05/27 06:03:31 deuce Exp $
 
 # EXEODIR, LIBODIR, DIRSEP, and EXEFILE must be pre-defined
 

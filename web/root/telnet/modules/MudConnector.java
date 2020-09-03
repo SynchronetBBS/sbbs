@@ -4,7 +4,7 @@
  *                 It loads a tabulator separated list via http and
  *                 displays it in a List-Box.
  * --
- * $Id$
+ * $Id: MudConnector.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Sun Apr 13 22:29:16 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -46,7 +46,7 @@ import java.util.*;
  *   <DD>The url of the Mudlist. This url MUST be located on the same web
  *       server as the applet!
  * </DL>
- * @version $Id$
+ * @version $Id: MudConnector.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  * @see modules.Module
  */

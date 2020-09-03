@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: newuser_created.inc,v 1.6 2007/05/25 00:49:13 deuce Exp $ -->
 
 <!-- Main Content -->  
     

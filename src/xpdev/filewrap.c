@@ -2,7 +2,7 @@
 
 /* File-related system-call wrappers */
 
-/* $Id$ */
+/* $Id: filewrap.c,v 1.50 2019/08/31 20:59:39 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -60,7 +60,7 @@
 /* Returns the modification time of the file in 'fd'						*/
 /* or -1 if file doesn't exist.												*/
 /****************************************************************************/
-time_t DLLCALL filetime(int fd)
+time_t filetime(int fd)
 {
 	struct stat st;
 
@@ -76,7 +76,7 @@ time_t DLLCALL filetime(int fd)
 /* Returns the length of the file in 'fd'									*/
 /* or -1 if file doesn't exist.												*/
 /****************************************************************************/
-off_t DLLCALL filelength(int fd)
+off_t filelength(int fd)
 {
 	struct stat st;
 
@@ -86,11 +86,20 @@ off_t DLLCALL filelength(int fd)
 	return(st.st_size);
 }
 
+// See https://patchwork.kernel.org/patch/9289177/
+#if defined(F_OFD_SETLK) && _FILE_OFFSET_BITS != 64
+	#undef F_OFD_SETLK
+#endif
+
 /* Sets a lock on a portion of a file */
-int DLLCALL lock(int fd, off_t pos, off_t len)
+int lock(int fd, off_t pos, off_t len)
 {
 	#if defined(F_SANERDLCKNO) || !defined(BSD)
- 		struct flock alock;
+ 		struct flock alock = {0};
+		int cmd = F_SETLK;
+	#ifdef F_OFD_SETLK
+		cmd = F_OFD_SETLK;
+	#endif
 
 	#ifndef F_SANEWRLCKNO
 		int	flags;
@@ -107,8 +116,13 @@ int DLLCALL lock(int fd, off_t pos, off_t len)
 		alock.l_start = pos;
 		alock.l_len = (int)len;
 
-		if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL)
-			return(-1);
+		int result = fcntl(fd, cmd, &alock);
+		if(result == -1 && errno != EINVAL)
+			return -1;
+	#ifdef F_OFD_SETLK
+		if(result == 0)
+			return 0;
+	#endif
 	#endif
 
 	#if !defined(F_SANEWRLCKNO) && !defined(__QNX__) && !defined(__solaris__)
@@ -121,11 +135,15 @@ int DLLCALL lock(int fd, off_t pos, off_t len)
 }
 
 /* Removes a lock from a file record */
-int DLLCALL unlock(int fd, off_t pos, off_t len)
+int unlock(int fd, off_t pos, off_t len)
 {
 
 #if defined(F_SANEUNLCK) || !defined(BSD)
-	struct flock alock;
+	struct flock alock = {0};
+	int cmd = F_SETLK;
+#ifdef F_OFD_SETLK
+	cmd = F_OFD_SETLK;
+#endif
 #ifdef F_SANEUNLCK
 	alock.l_type = F_SANEUNLCK;   /* remove the lock */
 #else
@@ -134,8 +152,13 @@ int DLLCALL unlock(int fd, off_t pos, off_t len)
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
 	alock.l_len = (int)len;
-	if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL)
-		return(-1);
+	int result = fcntl(fd, cmd, &alock);
+	if(result == -1 && errno != EINVAL)
+		return -1;
+#ifdef F_OFD_SETLK
+	if(result == 0)
+		return 0;
+#endif
 #endif
 
 #if !defined(F_SANEUNLCK) && !defined(__QNX__) && !defined(__solaris__)
@@ -184,7 +207,7 @@ int DLLCALL unlock(int fd, off_t pos, off_t len)
  * 2 = open succeeds if file read-only, else fails with INT 24 
  */
 #if !defined(__QNX__)
-int DLLCALL sopen(const char *fn, int sh_access, int share, ...)
+int sopen(const char *fn, int sh_access, int share, ...)
 {
 	int fd;
 	int pmode=S_IREAD;
@@ -192,7 +215,7 @@ int DLLCALL sopen(const char *fn, int sh_access, int share, ...)
 	int	flock_op=LOCK_NB;	/* non-blocking */
 #endif
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
-	struct flock alock;
+	struct flock alock = {0};
 #endif
     va_list ap;
 
@@ -208,13 +231,17 @@ int DLLCALL sopen(const char *fn, int sh_access, int share, ...)
 	if (share == SH_DENYNO || share == SH_COMPAT) /* no lock needed */
 		return fd;
 #if defined(F_SANEWRLCKNO) || !defined(BSD)
+	int cmd = F_SETLK;
+#ifdef F_OFD_SETLK
+	cmd = F_OFD_SETLK;
+#endif
 	/* use fcntl (doesn't work correctly with threads) */
 	alock.l_type = share;
 	alock.l_whence = L_SET;
 	alock.l_start = 0;
 	alock.l_len = 0;       /* lock to EOF */
 
-	if(fcntl(fd, F_SETLK, &alock)==-1 && errno != EINVAL) {	/* EINVAL means the file does not support locking */
+	if(fcntl(fd, cmd, &alock)==-1 && errno != EINVAL) {	/* EINVAL means the file does not support locking */
 		close(fd);
 		return -1;
 	}
@@ -249,7 +276,7 @@ int DLLCALL sopen(const char *fn, int sh_access, int share, ...)
 	#define LK_UNLCK LK_UNLOCK
 #endif
 
-int DLLCALL lock(int file, off_t offset, off_t size) 
+int lock(int file, off_t offset, off_t size) 
 {
 	int	i;
 	off_t pos;
@@ -263,7 +290,7 @@ int DLLCALL lock(int file, off_t offset, off_t size)
 	return(i);
 }
 
-int DLLCALL unlock(int file, off_t offset, off_t size)
+int unlock(int file, off_t offset, off_t size)
 {
 	int	i;
 	off_t	pos;
@@ -319,7 +346,7 @@ static int expandtofit(char **linep, size_t len, size_t *linecapp)
 	return 0;
 }
 
-long DLLCALL getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
+long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 {
 	size_t	linelen;
 	int		ch;

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: curs_cio.h,v 1.19 2020/05/02 08:46:44 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -50,8 +50,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-int curs_puttext(int sx, int sy, int ex, int ey, void *fill);
-int curs_gettext(int sx, int sy, int ex, int ey, void *fill);
+int curs_puttext(int sx, int sy, int ex, int ey, void *fillbuf);
+int curs_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fillbuf);
+int curs_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fillbuf);
 void curs_textattr(int attr);
 int curs_kbhit(void);
 void curs_gotoxy(int x, int y);
@@ -66,6 +67,12 @@ int curs_showmouse(void);
 void curs_beep(void);
 int curs_getvideoflags(void);
 void curs_setvideoflags(int flags);
+int curs_setfont(int font, int force, int font_num);
+int curs_getfont(int font_num);
+int curs_set_modepalette(uint32_t p[16]);
+int curs_get_modepalette(uint32_t p[16]);
+int curs_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
+int curs_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp);
 #ifdef __cplusplus
 }
 #endif

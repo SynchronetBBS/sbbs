@@ -1,6 +1,6 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: NodeFormUnit.cpp,v 1.32 2020/04/30 18:28:50 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -34,7 +34,6 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
-#include "sbbs.h"
 #include <vcl.h>
 #pragma hdrstop
 #include <io.h>
@@ -59,6 +58,7 @@ __fastcall TNodeForm::TNodeForm(TComponent* Owner)
 {
     MainForm->bbs_startup.node_spybuf
         =(RingBuf**)calloc(1,sizeof(RingBuf*)*MAX_NODES);
+	file = -1;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNodeForm::FormHide(TObject *Sender)
@@ -66,12 +66,12 @@ void __fastcall TNodeForm::FormHide(TObject *Sender)
 	MainForm->ViewNodes->Checked=false;
 }
 //---------------------------------------------------------------------------
-int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, int* file)
+int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, bool lockit)
 {
     char    errmsg[128];
     int     err;
 
-    if((err=::getnodedat(&MainForm->cfg,node_num,node,file))!=0) {
+    if((err=::getnodedat(&MainForm->cfg,node_num,node,lockit,&file))!=0) {
         sprintf(errmsg,"getnodedat returned %d",err);
     	Application->MessageBox(errmsg
             ,"ERROR",MB_OK|MB_ICONEXCLAMATION);
@@ -80,12 +80,12 @@ int __fastcall TNodeForm::getnodedat(int node_num, node_t* node, int* file)
     return(err);
 }
 //---------------------------------------------------------------------------
-int __fastcall TNodeForm::putnodedat(int node_num, node_t* node, int file)
+int __fastcall TNodeForm::putnodedat(int node_num, node_t* node)
 {
     char    errmsg[128];
     int     err;
 
-    if((err=::putnodedat(&MainForm->cfg,node_num,node, file))!=0) {
+    if((err=::putnodedat(&MainForm->cfg,node_num,node, /* closeit: */false,file))!=0) {
         sprintf(errmsg,"putnodedat(%d) returned %d",file,err);
     	Application->MessageBox(errmsg
             ,"ERROR",MB_OK|MB_ICONEXCLAMATION);
@@ -173,7 +173,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 		sprintf(str,"%*d %s"
 			,digits
 			,n+1
-			,nodestatus(&MainForm->cfg,&node,status,sizeof(status)));
+			,nodestatus(&MainForm->cfg,&node,status,sizeof(status),n+1));
         AnsiString Str=AnsiString(str);
         if(ListBox->Items->Count<n+1)
         	ListBox->Items->Add(Str);
@@ -196,15 +196,14 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 void __fastcall TNodeForm::InterruptNodeButtonClick(TObject *Sender)
 {
 	int i;
-    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,&file))
+        	if(getnodedat(i+1,&node, /* lockit: */true))
                 break;
             node.misc^=NODE_INTR;
-            if(putnodedat(i+1,&node,file))
+            if(putnodedat(i+1,&node))
                 break;
         }
     TimerTick(Sender);
@@ -214,15 +213,14 @@ void __fastcall TNodeForm::InterruptNodeButtonClick(TObject *Sender)
 void __fastcall TNodeForm::LockNodeButtonClick(TObject *Sender)
 {
 	int i;
-    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,&file))
+        	if(getnodedat(i+1,&node, /*lockit: */true))
                 break;
             node.misc^=NODE_LOCK;
-            if(putnodedat(i+1,&node,file))
+            if(putnodedat(i+1,&node))
                 break;
         }
     TimerTick(Sender);
@@ -232,15 +230,14 @@ void __fastcall TNodeForm::LockNodeButtonClick(TObject *Sender)
 void __fastcall TNodeForm::RerunNodeButtonClick(TObject *Sender)
 {
 	int i;
-    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,&file))
+        	if(getnodedat(i+1,&node, /*lockit: */true))
                 break;
             node.misc^=NODE_RRUN;
-            if(putnodedat(i+1,&node,file))
+            if(putnodedat(i+1,&node))
                 break;
         }
     TimerTick(Sender);
@@ -262,12 +259,11 @@ void __fastcall TNodeForm::SelectAllMenuItemClick(TObject *Sender)
 void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
 {
 	int i;
-    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,&file))
+        	if(getnodedat(i+1,&node, /*lockit: */true))
                 break;
             if(node.status==NODE_WFC)
             	node.status=NODE_OFFLINE;
@@ -275,7 +271,7 @@ void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
             	node.status=NODE_WFC;
             else
 	            node.misc^=NODE_DOWN;
-            if(putnodedat(i+1,&node,file))
+            if(putnodedat(i+1,&node))
                 break;
         }
     TimerTick(Sender);
@@ -285,15 +281,14 @@ void __fastcall TNodeForm::DownButtonClick(TObject *Sender)
 void __fastcall TNodeForm::ClearErrorButtonClick(TObject *Sender)
 {
 	int i;
-    int file;
     node_t node;
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,&file))
+        	if(getnodedat(i+1,&node, /*lockit: */true))
                 break;
             node.errors=0;
-            if(putnodedat(i+1,&node,file))
+            if(putnodedat(i+1,&node))
                 break;
         }
     TimerTick(Sender);
@@ -309,7 +304,7 @@ void __fastcall TNodeForm::ChatButtonClick(TObject *Sender)
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,NULL))
+        	if(getnodedat(i+1,&node, /*lockit: */false))
                 break;
             if(node.status==NODE_WFC || node.status>NODE_QUIET)
                 continue;
@@ -352,7 +347,7 @@ void __fastcall TNodeForm::UserEditButtonClick(TObject *Sender)
 
     for(i=0;i<ListBox->Items->Count;i++)
     	if(ListBox->Selected[i]==true) {
-        	if(getnodedat(i+1,&node,NULL))
+        	if(getnodedat(i+1,&node, /*lockit: */false))
                 break;
             if(node.useron==0)
                 continue;
@@ -378,7 +373,7 @@ void __fastcall TNodeForm::UserMsgButtonClick(TObject *Sender)
         UserMsgForm->Memo->Lines->Add("");
         for(i=0;i<ListBox->Items->Count;i++)
             if(ListBox->Selected[i]==true) {
-               	if(getnodedat(i+1,&node,NULL))
+               	if(getnodedat(i+1,&node, /*lockit: */false))
                     break;
                 if(node.useron==0)
                     continue;

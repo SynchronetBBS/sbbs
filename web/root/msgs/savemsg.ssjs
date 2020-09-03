@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: savemsg.ssjs,v 1.35 2018/10/06 21:38:09 rswindell Exp $ */
 
 load("../web/lib/msgslib.ssjs");
 

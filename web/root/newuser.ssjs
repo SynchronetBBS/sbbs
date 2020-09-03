@@ -2,7 +2,7 @@
  * New user sign-up form for Synchronet
  */
 
-/* $Id$ */
+/* $Id: newuser.ssjs,v 1.44 2011/12/04 01:10:03 rswindell Exp $ */
 
 /* ToDo: Deal with UQ_NODEF */
 

@@ -2,7 +2,7 @@
 
 # Baja include file defining various Synchronet related constants
 
-# $Id$
+# $Id: sbbsdefs.inc,v 1.17 2011/11/12 00:11:47 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 

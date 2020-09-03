@@ -2,7 +2,7 @@
 
 /* Program to add a user to a Synchronet user database */
 
-/* $Id$ */
+/* $Id: makeuser.c,v 1.12 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 	time_t	now;
 	user_t	user;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.12 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nMAKEUSER v%s-%s - Adds User to Synchronet User Database\n"
 		,revision
@@ -105,12 +105,7 @@ int main(int argc, char **argv)
 	if(strcspn(argv[first_arg],"/\\")!=strlen(argv[first_arg]))
 		p=argv[first_arg++];
 	else
-		p=getenv("SBBSCTRL");
-	if(p==NULL) {
-		printf("\nSBBSCTRL environment variable not set.\n");
-		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); 
-	}
+		p = get_ctrl_dir(/* warn: */TRUE);
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);

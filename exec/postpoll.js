@@ -1,4 +1,4 @@
-// $Id$
+// $Id: postpoll.js,v 1.8 2017/11/07 03:24:34 rswindell Exp $
 
 load('sbbsdefs.js');
 

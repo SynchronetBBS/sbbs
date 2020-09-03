@@ -1,4 +1,4 @@
-/** $Id$
+/** $Id: bayes.js,v 1.1 2015/12/14 21:05:44 mcmlxxix Exp $
 	Bayes Classifier ~
 	Modified for Synchronet from: http://www.dusbabek.org/~garyd/bayes/bayes.js **/
 

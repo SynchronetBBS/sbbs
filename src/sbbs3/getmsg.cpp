@@ -1,6 +1,6 @@
 /* Synchronet message retrieval functions */
 
-/* $Id$ */
+/* $Id: getmsg.cpp,v 1.102 2020/05/08 05:19:29 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -39,6 +39,7 @@
 /***********************************************************************/
 
 #include "sbbs.h"
+#include "utf8.h"
 
 /****************************************************************************/
 /* Loads an SMB message from the open msg base the fastest way possible 	*/
@@ -57,7 +58,7 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 
 		if((i=smb_lockmsghdr(&smb,msg)) != SMB_SUCCESS) {
 			errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-			return i; 
+			return i;
 		}
 
 		i=smb_getmsghdr(&smb,msg);
@@ -68,7 +69,7 @@ int sbbs_t::loadmsg(smbmsg_t *msg, ulong number)
 			smb_freemsgmem(msg);
 		}
 
-		smb_unlockmsghdr(&smb,msg); 
+		smb_unlockmsghdr(&smb,msg);
 	}
 
 	msg->hdr.number=number;
@@ -94,6 +95,7 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 	uint16_t attr = msg->hdr.attr;
 	uint16_t poll = attr&MSG_POLL_VOTE_MASK;
 	uint32_t auxattr = msg->hdr.auxattr;
+	uint32_t netattr = msg->hdr.netattr;
 
 	bprintf(text[MsgAttr]
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
@@ -110,49 +112,102 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,poll == MSG_POLL	? "Poll  "		:nulstr
 		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
-		,nulstr
-		,nulstr
-		,nulstr
+		,auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH) ? "Attach  "   :nulstr
+		,netattr&MSG_SENT						 ? "Sent  "		:nulstr
+		,netattr&MSG_INTRANSIT					 ? "InTransit  ":nulstr
+		,netattr&MSG_KILLSENT					 ? "KillSent  " :nulstr
 		);
+}
+
+/* Returns a CP437 text.dat string converted to UTF-8, when appropriate */
+const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index)
+{
+	if(msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+		return text[index];
+
+	if(cp437_to_utf8_str(text[index], msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */'\x80') < 1)
+		return text[index];
+
+	return msghdr_utf8_text;
+}
+
+// Returns a CP437 version of a message header field or UTF-8 if can_utf8 is true
+// Doesn't do CP437->UTF-8 conversion
+const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf, bool can_utf8)
+{
+	if(msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+		return str;
+
+	if(can_utf8)
+		return str;
+
+	if(buf == NULL)
+		buf = msgghdr_field_cp437_str;
+
+	strncpy(buf, str, sizeof(msgghdr_field_cp437_str));
+	utf8_to_cp437_str(buf);
+
+	return buf;
 }
 
 /****************************************************************************/
 /* Displays a message header to the screen                                  */
 /****************************************************************************/
-void sbbs_t::show_msghdr(smbmsg_t* msg)
+void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const char* from, const char* to)
 {
 	char	str[MAX_PATH+1];
 	char	age[64];
 	char	*sender=NULL;
 	int 	i;
+	smb_t	saved_smb = this->smb;
+	long	pmode = 0;
+
+	if(smb != NULL)
+		this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
+	if(msg != NULL) {
+		current_msg = msg;		// Needed for @-codes and JS bbs.msg_* properties
+		current_msg_subj = msg->subj;
+		current_msg_from = msg->from;
+		current_msg_to = msg->to;
+		if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
+			pmode |= P_UTF8;
+	}
+	if(subject != NULL)
+		current_msg_subj = subject;
+	if(from != NULL)
+		current_msg_from = from;
+	if(to != NULL)
+		current_msg_to = to;
 
 	attr(LIGHTGRAY);
-	if(useron.misc&CLRSCRN)
-		outchar(FF);
-	else
-		CRLF;
-
-	if(menu_exists("msghdr")) {
-		menu("msghdr");
-	} else {
-		bprintf(text[MsgSubj],msg->subj);
+	if(row != 0) {
+		if(useron.misc&CLRSCRN)
+			outchar(FF);
+		else
+			CRLF;
+	}
+	msghdr_tos = (row == 0);
+	if(!menu("msghdr", P_NOERROR)) {
+		bprintf(pmode, msghdr_text(msg, MsgSubj), current_msg_subj);
 		if(msg->tags && *msg->tags)
 			bprintf(text[MsgTags], msg->tags);
-		if(msg->hdr.attr)
+		if(msg->hdr.attr || msg->hdr.netattr || (msg->hdr.auxattr & ~MSG_HFIELDS_UTF8))
 			show_msgattr(msg);
-		if(msg->to && *msg->to) {
-			bprintf(text[MsgTo],msg->to);
+		if(current_msg_to != NULL && *current_msg_to != 0) {
+			bprintf(pmode, msghdr_text(msg, MsgTo), current_msg_to);
 			if(msg->to_net.addr!=NULL)
 				bprintf(text[MsgToNet],smb_netaddrstr(&msg->to_net,str));
 			if(msg->to_ext)
 				bprintf(text[MsgToExt],msg->to_ext);
 		}
-		if(!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP) {
-			bprintf(text[MsgFrom],msg->from);
+		if(msg->cc_list != NULL)
+			bprintf(text[MsgCarbonCopyList], msg->cc_list);
+		if(current_msg_from != NULL && (!(msg->hdr.attr&MSG_ANONYMOUS) || SYSOP)) {
+			bprintf(pmode, msghdr_text(msg, MsgFrom), current_msg_from);
 			if(msg->from_ext)
 				bprintf(text[MsgFromExt],msg->from_ext);
-			if(msg->from_net.addr!=NULL && strchr(msg->from,'@')==NULL)
-				bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str)); 
+			if(msg->from_net.addr!=NULL)
+				bprintf(text[MsgFromNet],smb_netaddrstr(&msg->from_net,str));
 		}
 		if(!(msg->hdr.attr&MSG_POLL) && (msg->upvotes || msg->downvotes))
 			bprintf(text[MsgVotes]
@@ -170,25 +225,29 @@ void sbbs_t::show_msghdr(smbmsg_t* msg)
 			sender=(char *)msg->hfield_dat[i];
 		if(msg->hfield[i].type==FORWARDED && sender)
 			bprintf(text[ForwardedFrom],sender
-				,timestr(*(time32_t *)msg->hfield_dat[i])); 
+				,timestr(*(time32_t *)msg->hfield_dat[i]));
 	}
+	this->smb = saved_smb;
+	current_msg_subj = NULL;
+	current_msg_from = NULL;
+	current_msg_to = NULL;
 }
 
 /****************************************************************************/
 /* Displays message header and text (if not deleted)                        */
 /****************************************************************************/
-void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
+bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 {
 	char*	txt;
 
 	if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
 		|| msg->hdr.type == SMB_MSG_TYPE_POLL)
-		msg->user_voted = smb_voted_already(&smb, msg->hdr.number
-					,cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
+		msg->user_voted = smb_voted_already(smb, msg->hdr.number
+					,cfg.sub[smb->subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL);
 
-	show_msghdr(msg);
+	show_msghdr(smb, msg);
 
-	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb.subnum < cfg.total_subs) {
+	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb->subnum < cfg.total_subs) {
 		char* answer;
 		int longest_answer = 0;
 
@@ -224,8 +283,8 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 			bool results_visible = false;
 			if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_OPEN)
 				results_visible = true;
-			else if((msg->from_net.type == NET_NONE && sub_op(smb.subnum)) 
-				|| smb_msg_is_from(msg, cfg.sub[smb.subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
+			else if((msg->from_net.type == NET_NONE && sub_op(smb->subnum))
+				|| smb_msg_is_from(msg, cfg.sub[smb->subnum]->misc&SUB_NAME ? useron.name : useron.alias, NET_NONE, NULL))
 				results_visible = true;
 			else if((msg->hdr.auxattr&POLL_RESULTS_MASK) == POLL_RESULTS_CLOSED)
 				results_visible = (msg->hdr.auxattr&POLL_CLOSED) ? true : false;
@@ -246,44 +305,168 @@ void sbbs_t::show_msg(smbmsg_t* msg, long mode, post_t* post)
 		}
 		if(!msg->user_voted && !(useron.misc&EXPERT) && !(msg->hdr.auxattr&POLL_CLOSED) && !(useron.rest&FLAG('V')))
 			mnemonics(text[VoteInThisPollNow]);
-		return;
+		return true;
 	}
-	if((txt=smb_getmsgtxt(&smb, msg, 0)) != NULL) {
-		char* p = txt;
-		if(!(console&CON_RAW_IN)) {
-			mode|=P_WORDWRAP;
-			p = smb_getplaintext(msg, txt);
-			if(p == NULL)
-				p = txt;
-			else
-				bputs(text[MIMEDecodedPlainText]);
+	if((txt=smb_getmsgtxt(smb, msg, 0)) == NULL)
+		return false;
+	char* p = txt;
+	if(!(console&CON_RAW_IN)) {
+		if(strstr(txt, "\x1b[") == NULL)	// Don't word-wrap raw ANSI text
+			p_mode|=P_WORDWRAP;
+		p = smb_getplaintext(msg, txt);
+		if(p == NULL)
+			p = txt;
+		else
+			bprintf(text[MIMEDecodedPlainTextFmt]
+				, msg->text_charset == NULL ? "unspecified (US-ASCII)" : msg->text_charset
+				, msg->text_subtype);
+	}
+	truncsp(p);
+	SKIP_CRLF(p);
+	if(smb_msg_is_utf8(msg)) {
+		if(!term_supports(UTF8))
+			utf8_normalize_str(txt);
+		p_mode |= P_UTF8;
+	}
+	if(smb->subnum < cfg.total_subs) {
+		p_mode |= cfg.sub[smb->subnum]->pmode;
+		p_mode &= ~cfg.sub[smb->subnum]->n_pmode;
+	}
+	putmsg(p, p_mode, msg->columns);
+	smb_freemsgtxt(txt);
+	if(column)
+		CRLF;
+	if((txt=smb_getmsgtxt(smb,msg,GETMSGTXT_TAIL_ONLY))==NULL)
+		return false;
+
+	putmsg(txt, p_mode&(~P_WORDWRAP));
+	smb_freemsgtxt(txt);
+	return true;
+}
+
+void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
+{
+	char str[256];
+	char fpath[MAX_PATH+1];
+	char* txt;
+	int attachment_index = 0;
+	bool found = true;
+	while((txt=smb_getmsgtxt(smb, msg, 0)) != NULL && found) {
+		char filename[MAX_PATH+1] = {0};
+		uint32_t filelen = 0;
+		uint8_t* filedata;
+		if((filedata = smb_getattachment(msg, txt, filename, sizeof(filename), &filelen, attachment_index++)) != NULL
+			&& filename[0] != 0 && filelen > 0) {
+			char tmp[32];
+			SAFEPRINTF2(str, text[DownloadAttachedFileQ], filename, ultoac(filelen,tmp));
+			if(!noyes(str)) {
+				SAFEPRINTF2(fpath, "%s%s", cfg.temp_dir, filename);
+				FILE* fp = fopen(fpath, "wb");
+				if(fp == NULL)
+					errormsg(WHERE, ERR_OPEN, fpath, 0);
+				else {
+					int result = fwrite(filedata, filelen, 1, fp);
+					fclose(fp);
+					if(!result)
+						errormsg(WHERE, ERR_WRITE, fpath, filelen);
+					else
+						sendfile(fpath, useron.prot, "attachment");
+				}
+			}
+		} else
+			found = false;
+		smb_freemsgtxt(txt);
+	}
+
+	if(msg->hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
+		char subj[FIDO_SUBJ_LEN];
+		smb_getmsgidx(smb, msg);
+		SAFECOPY(subj, msg->subj);					/* filenames (multiple?) in title */
+		char *p,*tp,ch;
+		tp=subj;
+		while(online) {
+			p=strchr(tp,' ');
+			if(p) *p=0;
+			tp=getfname(tp);
+			SAFEPRINTF3(fpath,"%sfile/%04u.in/%s"  /* path is path/fname */
+				,cfg.data_dir, msg->idx.to, tp);
+			if(!fexistcase(fpath) && msg->idx.from)
+				SAFEPRINTF3(fpath,"%sfile/%04u.out/%s"  /* path is path/fname */
+					,cfg.data_dir, msg->idx.from,tp);
+			long length=(long)flength(fpath);
+			if(length<1)
+				bprintf(text[FileDoesNotExist], tp);
+			else if(!(useron.exempt&FLAG('T')) && cur_cps && !SYSOP
+				&& length/(long)cur_cps>(time_t)timeleft)
+				bputs(text[NotEnoughTimeToDl]);
+			else {
+				char 	tmp[512];
+				int		i;
+				SAFEPRINTF2(str, text[DownloadAttachedFileQ]
+					,getfname(fpath),ultoac(length,tmp));
+				if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
+					{	/* Remote User */
+						xfer_prot_menu(XFER_DOWNLOAD);
+						mnemonics(text[ProtocolOrQuit]);
+						strcpy(str,"Q");
+						for(i=0;i<cfg.total_prots;i++)
+							if(cfg.prot[i]->dlcmd[0]
+								&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
+								sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+								strcat(str,tmp);
+							}
+						ch=(char)getkeys(str,0);
+						for(i=0;i<cfg.total_prots;i++)
+							if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
+								&& chk_ar(cfg.prot[i]->ar,&useron,&client))
+								break;
+						if(i<cfg.total_prots) {
+							int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
+							if(checkprotresult(cfg.prot[i],error,fpath)) {
+								if(del)
+									remove(fpath);
+								logon_dlb+=length;	/* Update stats */
+								logon_dls++;
+								useron.dls=(ushort)adjustuserrec(&cfg,useron.number
+									,U_DLS,5,1);
+								useron.dlb=adjustuserrec(&cfg,useron.number
+									,U_DLB,10,length);
+								bprintf(text[FileNBytesSent]
+									,getfname(fpath),ultoac(length,tmp));
+								SAFEPRINTF(str
+									,"downloaded attached file: %s"
+									,getfname(fpath));
+								logline("D-",str);
+							}
+							autohangup();
+						}
+					}
+				}
+			}
+			if(!p)
+				break;
+			tp=p+1;
+			while(*tp==' ') tp++;
 		}
-		truncsp(p);
-		SKIP_CRLF(p);
-		putmsg(p, mode);
-		smb_freemsgtxt(txt);
-		if(column)
-			CRLF;
-	}
-	if((txt=smb_getmsgtxt(&smb,msg,GETMSGTXT_TAIL_ONLY))!=NULL) {
-		putmsg(txt, mode&(~P_WORDWRAP));
-		smb_freemsgtxt(txt);
+		// Remove the *.in directory, only if its empty
+		SAFEPRINTF2(fpath, "%sfile/%04u.in", cfg.data_dir, msg->idx.to);
+		rmdir(fpath);
 	}
 }
 
 /****************************************************************************/
 /* Writes message header and text data to a text file						*/
 /****************************************************************************/
-void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode)
+bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header, ulong gettxt_mode)
 {
 	char	*buf;
 	char	tmp[128];
 	int 	i;
 	FILE	*out;
 
-	if((out=fnopen(&i,str,O_WRONLY|O_CREAT|O_APPEND))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,0);
-		return; 
+	if((out=fnopen(&i,fname,O_WRONLY|O_CREAT|O_APPEND))==NULL) {
+		errormsg(WHERE,ERR_OPEN,fname,0);
+		return false;
 	}
 	if(header) {
 		fprintf(out,"\r\n");
@@ -301,17 +484,20 @@ void sbbs_t::msgtotxt(smbmsg_t* msg, char *str, bool header, ulong mode)
 		fprintf(out,"\r\nDate : %.24s %s"
 			,timestr(msg->hdr.when_written.time)
 			,smb_zonestr(msg->hdr.when_written.zone,NULL));
-		fprintf(out,"\r\n\r\n"); 
+		fprintf(out,"\r\n\r\n");
 	}
 
-	buf=smb_getmsgtxt(&smb,msg,mode);
+	bool result = false;
+	buf=smb_getmsgtxt(smb, msg, gettxt_mode);
 	if(buf!=NULL) {
 		strip_invalid_attr(buf);
 		fputs(buf,out);
-		smb_freemsgtxt(buf); 
+		smb_freemsgtxt(buf);
+		result = true;
 	} else if(smb_getmsgdatlen(msg)>2)
-		errormsg(WHERE,ERR_READ,smb.file,smb_getmsgdatlen(msg));
+		errormsg(WHERE,ERR_READ,smb->file,smb_getmsgdatlen(msg));
 	fclose(out);
+	return result;
 }
 
 /****************************************************************************/
@@ -332,7 +518,7 @@ ulong sbbs_t::getmsgnum(uint subnum, time_t t)
 	smb.subnum=subnum;
 	if((i=smb_open_index(&smb)) != SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return 0; 
+		return 0;
 	}
 	int result = smb_getmsgidx_by_time(&smb, &idx, t);
 	smb_close(&smb);
@@ -357,17 +543,17 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); 
+		return(0);
 	}
 	if(!filelength(fileno(smb.sid_fp))) {			/* Empty base */
 		smb_close(&smb);
-		return(0); 
+		return(0);
 	}
 	msg.offset=0;
 	msg.hdr.number=0;
 	if(smb_getmsgidx(&smb,&msg)) {				/* Get first message index */
 		smb_close(&smb);
-		return(0); 
+		return(0);
 	}
 	if(!ptr || msg.idx.number>=ptr) {			/* ptr is before first message */
 		smb_close(&smb);
@@ -376,7 +562,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 
 	if(smb_getlastidx(&smb,&lastidx)) { 			 /* Get last message index */
 		smb_close(&smb);
-		return(0); 
+		return(0);
 	}
 	if(lastidx.number<ptr) {					/* ptr is after last message */
 		smb_close(&smb);
@@ -387,7 +573,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 	msg.hdr.number=ptr;
 	if(!smb_getmsgidx(&smb,&msg)) {
 		smb_close(&smb);
-		return(msg.idx.time); 
+		return(msg.idx.time);
 	}
 
 	if(ptr-msg.idx.number < lastidx.number-ptr) {
@@ -397,10 +583,10 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 			msg.hdr.number=0;
 			if(smb_getmsgidx(&smb,&msg) || msg.idx.number>=ptr)
 				break;
-			msg.offset++; 
+			msg.offset++;
 		}
 		smb_close(&smb);
-		return(msg.idx.time); 
+		return(msg.idx.time);
 	}
 
 	ptr--;
@@ -408,7 +594,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 		msg.hdr.number=ptr;
 		if(!smb_getmsgidx(&smb,&msg))
 			break;
-		ptr--; 
+		ptr--;
 	}
 	smb_close(&smb);
 	return(msg.idx.time);
@@ -439,22 +625,22 @@ ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 	smb.subnum=subnum;
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return(0); 
+		return(0);
 	}
 
 	if(!filelength(fileno(smb.sid_fp))) {			/* Empty base */
 		smb_close(&smb);
-		return(0); 
+		return(0);
 	}
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return(0); 
+		return(0);
 	}
 	if((i=smb_getlastidx(&smb,&idx))!=0) {
 		smb_close(&smb);
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-		return(0); 
+		return(0);
 	}
 	total=(long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
 	smb_unlocksmbhdr(&smb);

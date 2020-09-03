@@ -59,7 +59,7 @@ InputFuncMainLoop:
 		CheckTime();
 		CheckTerminate();
 
-		key=console.inkey(100);
+		key=console.inkey(K_NONE, 100);
 		if(key == '') {
 			/* Busy loop checking */
 		}

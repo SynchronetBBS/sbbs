@@ -1,6 +1,6 @@
 /* Synchronet QWK packet-related functions */
 
-/* $Id: qwk.cpp,v 1.86 2018/09/06 02:21:11 rswindell Exp $ */
+/* $Id: qwk.cpp,v 1.97 2020/08/10 00:43:42 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -447,42 +447,61 @@ void sbbs_t::qwk_sec()
 			while(online) {
 				CLS;
 				bprintf(text[QWKSettingsHdr],useron.alias,useron.number);
+				add_hotspot('A');
 				bprintf(text[QWKSettingsCtrlA]
 					,useron.qwk&QWK_EXPCTLA
 					? "Expand to ANSI" : useron.qwk&QWK_RETCTLA ? "Leave in"
 					: "Strip");
+				add_hotspot('T');
 				bprintf(text[QWKSettingsArchive],useron.tmpext);
+				add_hotspot('E');
 				bprintf(text[QWKSettingsEmail]
 					,useron.qwk&QWK_EMAIL ? "Un-read Only"
 					: useron.qwk&QWK_ALLMAIL ? text[Yes] : text[No]);
 				if(useron.qwk&(QWK_ALLMAIL|QWK_EMAIL)) {
+					add_hotspot('I');
 					bprintf(text[QWKSettingsAttach]
 						,useron.qwk&QWK_ATTACH ? text[Yes] : text[No]);
+					add_hotspot('D');
 					bprintf(text[QWKSettingsDeleteEmail]
 						,useron.qwk&QWK_DELMAIL ? text[Yes]:text[No]);
 				}
+				add_hotspot('F');
 				bprintf(text[QWKSettingsNewFilesList]
 					,useron.qwk&QWK_FILES ? text[Yes]:text[No]);
+				add_hotspot('N');
 				bprintf(text[QWKSettingsIndex]
 					,useron.qwk&QWK_NOINDEX ? text[No]:text[Yes]);
+				add_hotspot('C');
 				bprintf(text[QWKSettingsControl]
 					,useron.qwk&QWK_NOCTRL ? text[No]:text[Yes]);
+				add_hotspot('V');
 				bprintf(text[QWKSettingsVoting]
 					,useron.qwk&QWK_VOTING ? text[Yes]:text[No]);
+				add_hotspot('H');
 				bprintf(text[QWKSettingsHeaders]
 					,useron.qwk&QWK_HEADERS ? text[Yes]:text[No]);
+				add_hotspot('Y');
 				bprintf(text[QWKSettingsBySelf]
 					,useron.qwk&QWK_BYSELF ? text[Yes]:text[No]);
+				add_hotspot('Z');
 				bprintf(text[QWKSettingsTimeZone]
 					,useron.qwk&QWK_TZ ? text[Yes]:text[No]);
+				add_hotspot('P');
 				bprintf(text[QWKSettingsVIA]
 					,useron.qwk&QWK_VIA ? text[Yes]:text[No]);
+				add_hotspot('M');
 				bprintf(text[QWKSettingsMsgID]
 					,useron.qwk&QWK_MSGID ? text[Yes]:text[No]);
+				add_hotspot('U');
+				bprintf(text[QWKSettingsUtf8]
+					,useron.qwk&QWK_UTF8 ? text[Yes]:text[No]);
+				add_hotspot('X');
 				bprintf(text[QWKSettingsExtended]
 					,useron.qwk&QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[QWKSettingsWhich]);
-				ch=(char)getkeys("AEDFHIOPQTYMNCXZV",0);
+				add_hotspot('Q');
+				ch=(char)getkeys("AEDFHIOPQTUYMNCXZV",0);
 				if(sys_status&SS_ABORT || !ch || ch=='Q' || !online)
 					break;
 				switch(ch) {
@@ -551,10 +570,14 @@ void sbbs_t::qwk_sec()
 					case 'X':	/* QWKE */
 						useron.qwk^=QWK_EXT;
 						break;
+					case 'U':
+						useron.qwk^=QWK_UTF8;
+						break;
 				}
 				putuserrec(&cfg,useron.number,U_QWK,8,ultoa(useron.qwk,str,16));
 			}
 			delfiles(cfg.temp_dir,ALLFILES);
+			clear_hotspots();
 			continue;
 		}
 
@@ -1043,7 +1066,8 @@ uint sbbs_t::resolve_qwkconf(uint n, int hubnum)
 	return usrsub[j][k];
 }
 
-bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, const char* qnet_id, int hubnum)
+bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, const char* qnet_id
+	, uint confnum, int hubnum)
 {
 	char* section;
 	char location[128];
@@ -1053,15 +1077,17 @@ bool sbbs_t::qwk_voting(str_list_t* ini, long offset, smb_net_type_t net_type, c
 
 	sprintf(location, "%lx", offset);
 	if((found = strListFind(section_list, location, /* case_sensitive: */FALSE)) < 0) {
+		lprintf(LOG_NOTICE, "QWK vote message (offset: %ld) not found in %s VOTING.DAT", offset, qnet_id);
 		strListFree(&section_list);
 		return false;
 	}
 	/* The section immediately following the (empty) [offset] section is the section of interest */
 	if((section = section_list[found+1]) == NULL) {
+		lprintf(LOG_NOTICE, "QWK vote section (offset: %ld) not found in %s VOTING.DAT", offset, qnet_id);
 		strListFree(&section_list);
 		return false;
 	}
-	result = qwk_vote(*ini, section, net_type, qnet_id, hubnum);
+	result = qwk_vote(*ini, section, net_type, qnet_id, confnum, hubnum);
 	iniRemoveSection(ini, section);
 	iniRemoveSection(ini, location);
 	strListFree(&section_list);
@@ -1072,23 +1098,41 @@ void sbbs_t::qwk_handle_remaining_votes(str_list_t* ini, smb_net_type_t net_type
 {
 	str_list_t section_list = iniGetSectionList(*ini, /* prefix: */NULL);
 
-	for(int i=0; section_list != NULL && section_list[i] != NULL; i++)
-		qwk_vote(*ini, section_list[i], net_type, qnet_id, hubnum);
+	for(int i=0; section_list != NULL && section_list[i] != NULL; i++) {
+		if(strnicmp(section_list[i], "poll:", 5) == 0
+			|| strnicmp(section_list[i], "vote:", 5) == 0
+			|| strnicmp(section_list[i], "close:", 6) == 0)
+			qwk_vote(*ini, section_list[i], net_type, qnet_id, /* confnum: */0, hubnum);
+	}
 	strListFree(&section_list);
 }
 
-bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, int hubnum)
+bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_type, const char* qnet_id, uint confnum, int hubnum)
 {
 	char* p;
 	int result;
 	smb_t smb;
 	ZERO_VAR(smb);
+	ulong n = iniGetLongInt(ini, section, "Conference", 0);
 
-	smb.subnum = resolve_qwkconf(iniGetInteger(ini, section, "Conference", 0), hubnum);
-	if(smb.subnum == INVALID_SUB)
+	if(confnum == 0)
+		confnum = n;
+	else if(n != confnum) {
+		char info[128];
+		SAFEPRINTF(info, "conference number (expected: %u)", confnum);
+		errormsg(WHERE, ERR_CHK, info, n, section);
 		return false;
-	if(cfg.sub[smb.subnum]->misc&SUB_NOVOTING)
+	}
+
+	smb.subnum = resolve_qwkconf(confnum, hubnum);
+	if(smb.subnum == INVALID_SUB) {
+		errormsg(WHERE, ERR_CHK, "conference number (invalid)", confnum, section);
 		return false;
+	}
+	if(cfg.sub[smb.subnum]->misc&SUB_NOVOTING) {
+		errormsg(WHERE, ERR_CHK, "conference number (voting not allowed)", confnum, section);
+		return false;
+	}
 	if((result = smb_open_sub(&cfg, &smb, smb.subnum)) != SMB_SUCCESS) {
 		errormsg(WHERE, ERR_OPEN, smb.file, 0, smb.last_error);
 		return false;
@@ -1185,17 +1229,73 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 			notice = text[PollVoteNotice];
 		}
 		result = votemsg(&cfg, &smb, &msg, notice, text[VoteNoticeFmt]);
-		if(result != SMB_SUCCESS && result != SMB_DUPE_MSG)
-			errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		if(result == SMB_DUPE_MSG)
+			lprintf(LOG_DEBUG, "Duplicate vote-msg (%s) from %s", msg.id, qnet_id);
+		else if(result != SMB_SUCCESS) {
+			if(hubnum >= 0) {
+				lprintf(LOG_DEBUG, "Error %s (%d) writing %s vote-msg (%s) to %s"
+					,smb.last_error, result, qnet_id, msg.id, smb.file);
+				result = SMB_SUCCESS; // ignore vote failures for old messages
+			} else
+				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		}
 	}
 	else if(strnicmp(section, "close:", 6) == 0) {
 		smb_hfield_str(&msg, RFC822MSGID, section + 6);
-		if((result = smb_addpollclosure(&smb, &msg, smb_storage_mode(&cfg, &smb))) != SMB_SUCCESS)
-			errormsg(WHERE,ERR_WRITE,smb.file,result,smb.last_error);
+		if((result = smb_addpollclosure(&smb, &msg, smb_storage_mode(&cfg, &smb))) != SMB_SUCCESS) {
+			if(hubnum >= 0)
+				lprintf(LOG_DEBUG, "Error %s (%d) writing poll-close-msg (%s) to %s"
+					,smb.last_error, result, msg.id, smb.file);
+			else
+				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		}
 	}
 	else result = SMB_SUCCESS;
 
 	smb_close(&smb);
 	smb_freemsgmem(&msg);
 	return result == SMB_SUCCESS;
+}
+
+bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, str_list_t ip_can, str_list_t host_can, str_list_t subject_can, str_list_t twit_list)
+{
+	uint32_t now = time32(NULL);
+
+	if(cfg.max_qwkmsgage && msg->hdr.when_written.time < now
+		&& (now-msg->hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
+			,msg->from
+			,(unsigned int)(now-msg->hdr.when_written.time)/(24*60*60)); 
+		return true;
+	}
+
+	if(findstr_in_list(msg->from_ip,ip_can)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked IP: %s"
+			,msg->from
+			,msg->from_ip); 
+		return true;
+	}
+
+	const char* hostname=getHostNameByAddr(msg->from_host);
+	if(findstr_in_list(hostname,host_can)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to blocked hostname: %s"
+			,msg->from
+			,hostname); 
+		return true;
+	}
+
+	if(findstr_in_list(msg->subj,subject_can)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to filtered subject: %s"
+			,msg->from
+			,msg->subj); 
+		return true;
+	}
+
+	if(findstr_in_list(msg->from,twit_list) || findstr_in_list(msg->to,twit_list)) {
+		lprintf(LOG_NOTICE,"!Filtering QWK message from '%s' to '%s'"
+			,msg->from
+			,msg->to);
+		return true;
+	}
+	return false;
 }

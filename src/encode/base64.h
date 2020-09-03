@@ -1,6 +1,6 @@
 /* Base64 encoding/decoding exported function prototypes */
 
-/* $Id$ */
+/* $Id: base64.h,v 1.8 2019/03/22 21:29:12 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -43,7 +43,7 @@
 		#define B64EXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define B64CALL __stdcall
+		#define B64CALL
 	#else
 		#define B64CALL
 	#endif

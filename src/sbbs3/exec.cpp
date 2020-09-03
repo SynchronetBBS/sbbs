@@ -1,8 +1,9 @@
 /* exec.cpp */
+// vi: tabstop=4
 
 /* Synchronet command shell/module interpretter */
 
-/* $Id$ */
+/* $Id: exec.cpp,v 1.116 2020/08/01 18:34:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -38,8 +39,9 @@
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "js_request.h"
+#include "js_rtpool.h"
 
-char ** sbbs_t::getstrvar(csi_t *bin, int32_t name)
+char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 {
 	uint i;
 
@@ -124,7 +126,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, int32_t name)
 	return((char **)&sysvar_p[sysvar_pi++]);
 }
 
-int32_t * sbbs_t::getintvar(csi_t *bin, int32_t name)
+int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 {
 	uint i;
 
@@ -243,8 +245,8 @@ int32_t * sbbs_t::getintvar(csi_t *bin, int32_t name)
 			return((int32_t *)&dte_rate);
 		case 0x7fbf958e:
 			return((int32_t *)&lncntr);
-		case 0x5c1c1500:
-			return((int32_t *)&tos);
+//		case 0x5c1c1500:
+//			return((int32_t *)&tos);
 		case 0x613b690e:
 			return((int32_t *)&rows);
 		case 0x205ace36:
@@ -561,14 +563,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-static const char* js_ext(const char* fname)
-{
-	if(getfext(fname)==NULL)
-		return(".js");
-	return("");
-}
-
-long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope)
+long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
 {
 	char*		p;
 	char*		args=NULL;
@@ -581,7 +576,12 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	jsval		old_js_argv = JSVAL_VOID;
 	jsval		old_js_argc = JSVAL_VOID;
 	jsval		rval;
-	int32_t		result=0;
+	int32		result=0;
+
+	if(js_cx == NULL)
+		js_cx = this->js_cx;
+	if(js_glob == NULL)
+		js_glob = this->js_glob;
 
 	if(js_cx==NULL) {
 		errormsg(WHERE,ERR_CHK,"JavaScript support",0);
@@ -599,12 +599,15 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 
 	path[0]=0;
 	if(strcspn(fname,"/\\")==strlen(fname)) {
+		const char* js_ext = "";
+		if(getfext(fname) == NULL)
+			js_ext = ".js";
 		if(startup_dir!=NULL && *startup_dir)
-			SAFEPRINTF3(path,"%s%s%s",startup_dir,fname,js_ext(fname));
+			SAFEPRINTF3(path,"%s%s%s",startup_dir,fname,js_ext);
 		if(path[0]==0 || !fexistcase(path)) {
-			SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext(fname));
+			SAFEPRINTF3(path,"%s%s%s",cfg.mods_dir,fname,js_ext);
 			if(cfg.mods_dir[0]==0 || !fexistcase(path))
-				SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext(fname));
+				SAFEPRINTF3(path,"%s%s%s",cfg.exec_dir,fname,js_ext);
 		}
 	} else
 		SAFECOPY(path,fname);
@@ -688,9 +691,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 #else
 		JS_SetBranchCallback(js_cx, js_BranchCallback);
 #endif
-
-		js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	}
+	js_PrepareToExecute(js_cx, js_glob, path, startup_dir, js_scope);
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	sys_status &=~ SS_ABORT;
 
@@ -729,6 +731,22 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 
 	return(result);
 }
+
+// Execute a JS Module in its own temporary JS runtime and context
+long sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
+{
+	JSRuntime* js_runtime;
+	JSObject* js_glob;
+	JSContext* js_cx = js_init(&js_runtime, &js_glob, "XtrnModule");
+	js_create_user_objects(js_cx, js_glob);
+	long result = js_execfile(cmd, startup_dir, js_glob, js_cx, js_glob);
+	JS_BEGINREQUEST(js_cx);
+	JS_RemoveObjectRoot(js_cx, &js_glob);
+	JS_ENDREQUEST(js_cx);
+	JS_DestroyContext(js_cx);
+	jsrt_Release(js_runtime);
+	return result;
+}
 #endif
 
 /* Important change as of Nov-16-2006, 'cmdline' may contain args */
@@ -741,6 +759,8 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	int 	file;
     csi_t   bin;
 
+	if(cmdline == NULL || *cmdline == 0)
+		return -33;
 	SAFECOPY(mod,cmdline);
 	p=mod;
 	FIND_CHAR(p,' ');
@@ -1281,10 +1301,7 @@ int sbbs_t::exec(csi_t *csi)
 				putmsg(cmdstr((char*)csi->ip,path,csi->str,(char*)buf),P_SAVEATR|P_NOABORT);
 				break;
 			case CS_PRINT_LOCAL:
-				if(online==ON_LOCAL)
-					eprintf(LOG_INFO,"%s",cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
-				else
-					lputs(LOG_INFO,cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
+				lputs(LOG_INFO,cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
 				break;
 			case CS_PRINT_REMOTE:
 				putcom(cmdstr((char*)csi->ip,path,csi->str,(char*)buf));
@@ -1919,7 +1936,7 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic=LOGIC_FALSE;
 			return(0);
 		case CS_UNGETKEY:
-			ungetkey(csi->cmd&0x7f);
+			ungetkey(csi->cmd&0x7f, /* insert: */true);
 			return(0);
 		case CS_UNGETSTR:
 			j=strlen(csi->str);

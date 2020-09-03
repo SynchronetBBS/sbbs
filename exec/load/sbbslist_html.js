@@ -1,6 +1,7 @@
-/* $Id$ */
+/* $Id: sbbslist_html.js,v 1.12 2020/08/01 22:07:25 rswindell Exp $ */
+// vi: tabstop=4
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.12 $".split(' ')[1];
 
 var start=time();
 
@@ -58,21 +59,21 @@ load("graphic.js");
 
 //writeln('<body><font face="Arial" size="-1">');
 
-list=list.filter(function(obj) { return obj.software && obj.software.substr(0,10).toLowerCase() == "synchronet"; });
-
+list=list.filter(function(obj) { return (obj.software && obj.software.substr(0,10).toLowerCase() == "synchronet") ||
+	(obj.entry && obj.entry.autoverify && obj.entry.autoverify.success && obj.entry.autoverify.last_success.result.substr(0,14) == "Synchronet BBS"); });
 
 writeln('<h1 style="text-align: center;"><i>' + 'Synchronet'.link('http://www.synchro.net') + ' BBS List</i></h1>');
 
-if(0) {
+if(false) {
 	var synch_ansi="";
-	var f=new File(system.text_dir + "menu/logon.asc");
+	var f=new File(system.text_dir + "synch.ans");
 	if(f.open("rb")) {
     		synch_ansi=f.read();
     		f.close();
 	}
 
-	writeln('<table><tr><td><pre style="background-color:lightgrey;">'
-        	+html_encode(synch_ansi, true, false, true, true).replace(/background-color: black;/g, 'background-color: lightgrey')
+	writeln('<table align="center"><tr><td><pre style="background-color:black;">'
+        	+html_encode(synch_ansi, true, false, true, true) //.replace(/background-color: black;/g, 'background-color: lightgrey')
         	+'</pre></table>');
 }
 
@@ -96,6 +97,8 @@ function encode_text(str)
 
 function bbs_service(service)
 {
+	if(!service.address || !service.protocol)
+		return "";
     var uri = service.address;
 	if(uri.length==0)
 		return "";
@@ -120,7 +123,15 @@ function bbs_service(service)
 
         uri=format('%s:%s%s%s', protocol, sep, service.address, port);
     }
-    return encode_text(service.address).link(encodeURI(uri)) + " ("+encode_text(service.protocol)+")";
+	var desc = service.description;
+	if(!desc)
+		desc = '';
+	var prot = service.protocol;
+	if(!prot)
+		prot = '';
+	else
+		prot = " ("+encode_text(prot)+") ";
+    return encode_text(service.address).link(encodeURI(uri)) + prot + desc;
 }
 
 function bbs_sysop(sysop)
@@ -189,7 +200,8 @@ function bbs_table_entry(num, bbs)
 
     writeln('<tr><td><table>');
     /* Name: */
-    writeln('<tr class="row"><td class="bbsName">');
+    writeln(format('<tr class="row"><td class="bbsName"><a name="%s"/></a>'
+		, encodeURI(bbs.name.toLowerCase())));
     var uri = bbs.web_site;
     if(uri && uri.length) {
         if(uri.indexOf('://')<1)
@@ -197,8 +209,7 @@ function bbs_table_entry(num, bbs)
         writeln(encode_text(bbs.name).link(encodeURI(uri)));
     } else
         writeln(encode_text(bbs.name));
-    writeln('</b>');
-    writeln('<tr><td>' + encode_text(bbs.description.join("\r\n")));
+    writeln('<tr><td>' + encode_text(bbs.description.join(" ")));
     writeln('</table>');
 
     /* Since: */
@@ -303,10 +314,16 @@ function bbs_table_entry(num, bbs)
 writeln('<table>');
 writeln('<caption>');
 writeln(format("List of Synchronet BBSes (%u systems) exported from ", list.length) + system.name.link("http://" + system.inet_addr) + " on " + Date());
-writeln('<p></caption>');
+writeln('<p>');
+writeln(format("Download a %s compatible list file %s"
+	,"SyncTERM".link("http://syncterm.net")
+	,"here".link("ftp://ftp.synchro.net/syncterm.lst")));
+writeln('<p>');
+writeln('</caption>');
 writeln('<thead>');
 writeln('<tr>');
-writeln('<th style="width:25%;">BBS Name and Description</th>');
+//writeln('<th style="width:25%;">BBS Name and Description</th>');
+writeln('<th>BBS</th>');
 writeln('<th>Since</th>');
 writeln('<th>Operators</th>');
 writeln('<th>Location</th>');

@@ -1,23 +1,11 @@
-/* $Id$ */
+/* $Id: js_rtpool.c,v 1.33 2019/09/10 19:57:27 deuce Exp $ */
 // vi: tabstop=4
 
+#include <gen_defs.h>		/* SLEEP() */
 #include "js_rtpool.h"
 #include <threadwrap.h>		/* Must be included after jsapi.h */
 #include <genwrap.h>		/* SLEEP() */
 #include <link_list.h>
-
-#ifdef DLLCALL
-#undef DLLCALL
-#endif
-#ifdef _WIN32
-	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
-	#else
-		#define DLLCALL
-	#endif
-#else	/* !_WIN32 */
-	#define DLLCALL
-#endif
 
 static pthread_mutex_t		jsrt_mutex;
 static int			initialized=0;

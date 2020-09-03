@@ -1,5 +1,5 @@
 // JavaScript HTML Index for Synchronet FTP Server
-// $Id$
+// $Id: ftp-web-html.js,v 1.11 2015/04/14 01:42:29 rswindell Exp $
 
 load("sbbsdefs.js");    // Synchronet constants
 

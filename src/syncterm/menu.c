@@ -1,10 +1,11 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: menu.c,v 1.67 2020/05/07 18:12:10 deuce Exp $ */
 
 #include <genwrap.h>
 #include <uifc.h>
 #include <ciolib.h>
+#include <vidmodes.h>
 
 #include "cterm.h"
 #include "term.h"
@@ -23,13 +24,12 @@ void viewscroll(void)
 	struct	text_info txtinfo;
 	int	x,y;
 	struct mouse_event mevent;
-	int old_xlat=ciolib_xlat;
 	struct ciolib_screen *savscrn;
 
 	x=wherex();
 	y=wherey();
 	uifcbail();
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	/* too large for alloca() */
 	scrollback=malloc((scrollback_buf==NULL?0:(term.width*sizeof(*scrollback)*settings.backlines))+(txtinfo.screenheight*txtinfo.screenwidth*sizeof(*scrollback)));
 	if(scrollback==NULL)
@@ -43,19 +43,20 @@ void viewscroll(void)
 	setfont(0, FALSE, 4);
 	drawwin();
 	top=cterm->backpos;
+	set_modepalette(palettes[COLOUR_PALETTE]);
 	gotoxy(1,1);
 	textattr(uifc.hclr|(uifc.bclr<<4)|BLINK);
+	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 	for(i=0;(!i) && (!quitting);) {
 		if(top<1)
 			top=1;
 		if(top>cterm->backpos)
 			top=cterm->backpos;
 		vmem_puttext(term.x-1,term.y-1,term.x+term.width-2,term.y+term.height-2,scrollback+(term.width*top));
-		ciolib_xlat = CIOLIB_XLAT_CHARS;
 		cputs("Scrollback");
 		gotoxy(cterm->width-9,1);
 		cputs("Scrollback");
-		ciolib_xlat = old_xlat;
 		gotoxy(1,1);
 		key=getch();
 		switch(key) {
@@ -70,6 +71,14 @@ void viewscroll(void)
 						switch(mevent.event) {
 							case CIOLIB_BUTTON_1_DRAG_START:
 								mousedrag(scrollback);
+								break;
+							case CIOLIB_BUTTON_4_PRESS:
+								top--;
+								break;
+							case CIOLIB_BUTTON_5_PRESS:
+								top++;
+								if (top > cterm->backpos)
+									i = 1;
 								break;
 						}
 						break;
@@ -135,11 +144,11 @@ int syncmenu(struct bbslist *bbs, int *speed)
 						,"Send Login ("ALT_KEY_NAMEP"-L)"
 						,"Upload ("ALT_KEY_NAMEP"-U)"
 						,"Download ("ALT_KEY_NAMEP"-D)"
-						,"Change Output Rate ("ALT_KEY_NAMEP"-Up/"ALT_KEY_NAMEP"-Down)"
+						,"Change Output Rate (Ctrl-Up/Ctrl-Down)"
 						,"Change Log Level"
 						,"Capture Control ("ALT_KEY_NAMEP"-C)"
 						,"ANSI Music Control ("ALT_KEY_NAMEP"-M)"
-						,"Font Control ("ALT_KEY_NAMEP"-F)"
+						,"Font Setup ("ALT_KEY_NAMEP"-F)"
 						,"Toggle Doorway Mode"
 #ifndef WITHOUT_OOII
 						,"Toggle Operation Overkill ][ Mode"

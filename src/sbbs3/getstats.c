@@ -1,6 +1,6 @@
 /* Synchronet C-export statistics retrieval functions */
 
-/* $Id: getstats.c,v 1.4 2018/07/24 01:11:07 rswindell Exp $ */
+/* $Id: getstats.c,v 1.5 2020/04/11 04:01:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -67,7 +67,7 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 	if(dirnum>=cfg->total_dirs)	/* out of range */
 		return(0);
 	if(cfg->dir[dirnum]->misc&DIR_FILES)
-		return getfilecount(cfg->dir[dirnum]->path, ALLFILES);
+		return getfilecount(cfg->dir[dirnum]->path);
 	sprintf(str,"%s%s.sid",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	l=(long)flength(str);
 	if(l>0L)
@@ -88,4 +88,50 @@ ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 	if((long)l==-1)
 		return(0);
 	return(l/sizeof(idxrec_t));
+}
+
+BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
+{
+	char	str[MAX_PATH+1];
+	int		file;
+	uint32_t	val;
+
+	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
+	if((file=nopen(str,O_RDWR))==-1) 
+		return(FALSE);
+
+	lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	read(file,&val,4);        /* Uploads today         */
+	val+=files;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	read(file,&val,4);        /* Upload bytes today    */
+	val+=bytes;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	close(file);
+	return(TRUE);
+}
+
+BOOL inc_sys_download_stats(scfg_t* cfg, ulong files, ulong bytes)
+{
+	char	str[MAX_PATH+1];
+	int		file;
+	uint32_t	val;
+
+	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
+	if((file=nopen(str,O_RDWR))==-1) 
+		return(FALSE);
+
+	lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	read(file,&val,4);        /* Downloads today         */
+	val+=files;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	read(file,&val,4);        /* Download bytes today    */
+	val+=bytes;
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	close(file);
+	return(TRUE);
 }

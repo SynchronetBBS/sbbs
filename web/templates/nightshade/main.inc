@@ -1,4 +1,4 @@
-<!-- $Id$ -->
+<!-- $Id: main.inc,v 1.4 2018/03/14 02:19:55 deuce Exp $ -->
 
 <!-- Begin Main Content -->
 

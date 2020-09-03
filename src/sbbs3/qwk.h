@@ -1,6 +1,6 @@
 /* Synchronet QWK-related structures, constants, and prototypes */ 
 
-/* $Id$ */
+/* $Id: qwk.h,v 1.10 2019/08/17 02:21:01 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -50,6 +50,7 @@
 #define QM_MSGID	(1<<10)	/* Include @MSGID and @REPLY kludges */
 #define QM_REPLYTO	(1<<11)	/* Include @REPLYTO kludge */
 #define QM_EXT		(1<<13)	/* QWK Extended (QWKE) mode (same as QWK_EXT and QHUB_EXT) */
+#define QM_UTF8		(1<<18)	/* Include UTF-8 characters */
 
 float	ltomsbin(long val);
 bool	route_circ(char *via, char *id);

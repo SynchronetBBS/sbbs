@@ -1,4 +1,4 @@
-// $Id$
+// $Id: scanpolls.js,v 1.1 2016/11/27 23:23:46 rswindell Exp $
 
 load('sbbsdefs.js');
 

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: global_defs.ssjs,v 1.8 2006/02/06 10:41:26 runemaster Exp $ */
 
 /*            Global Definitions              */
 /*            Place globals here              */

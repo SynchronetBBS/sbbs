@@ -2,7 +2,7 @@
 
 # Module for performing various i/o operations on a single file
 
-# $Id$
+# $Id: file_io.src,v 1.3 2000/10/26 11:36:52 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 

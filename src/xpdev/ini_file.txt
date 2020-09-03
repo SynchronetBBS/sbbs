@@ -1,4 +1,4 @@
-$Id$
+$Id: ini_file.txt,v 1.2 2005/10/13 10:16:07 rswindell Exp $
 
 Synchronet/xpdev ini_file module
 --------------------------------

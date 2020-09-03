@@ -5,7 +5,9 @@
 
 // To jump straight to a specific xtrn section, pass the section code as an argument
 
-// $Id$
+// $Id: xtrn_sec.js,v 1.29 2020/05/09 10:11:23 rswindell Exp $
+
+"use strict";
 
 load("sbbsdefs.js");
 
@@ -29,18 +31,74 @@ var options;
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
 	options = {multicolumn: true, sort: false};	// default values
 
-if(options.multicolumn == undefined)
+if(options.multicolumn === undefined)
 	options.multicolumn = true;
+
+if(options.multicolumn_separator === undefined)
+	options.multicolumn_separator = " ";
+
+if(options.multicolumn_fmt === undefined)
+	options.multicolumn_fmt = bbs.text(XtrnProgLstFmt);
+
+if(options.singlecolumn_fmt === undefined)
+	options.singlecolumn_fmt = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
+
+if(options.singlecolumn_margin == undefined)
+	options.singlecolumn_margin = 7;
+
+if(options.singlecolumn_height == undefined)
+	options.singlecolumn_height = console.screen_rows - options.singlecolumn_margin;
 
 if(console.screen_columns < 80)
 	options.multicolumn = false;
 
+if(options.restricted_user_msg === undefined)
+	options.restricted_user_msg = bbs.text(R_ExternalPrograms);
+
+if(options.no_programs_msg === undefined)
+	options.no_programs_msg = bbs.text(NoXtrnPrograms);
+
+if(options.header_fmt === undefined)
+	options.header_fmt = bbs.text(XtrnProgLstHdr);
+
+if(options.titles === undefined)
+	options.titles = bbs.text(XtrnProgLstTitles);
+
+if(options.underline === undefined)
+	options.underline = bbs.text(XtrnProgLstUnderline);
+
+if(options.which === undefined)
+	options.which = bbs.text(WhichXtrnProg);
+
+if(options.clear_screen === undefined)
+	options.clear_screen = true;
+
 function sort_by_name(a, b)
-{ 
-	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1; 
+{
+	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
 	if(a.name.toLowerCase()<b.name.toLowerCase()) return -1;
 	return 0;
-} 
+}
+
+function exec_xtrn(prog)
+{
+	if(options.clear_screen_on_exec)
+		console.clear();
+	if(options.eval_before_exec)
+		eval(options.eval_before_exec);
+	load('fonts.js', 'xtrn:' + prog.code);
+	bbs.exec_xtrn(prog.code);
+	console.attributes = 0;
+	console.attributes = LIGHTGRAY;
+	load('fonts.js', 'default');
+	if(options.eval_after_exec)
+		eval(options.eval_after_exec);
+
+	if(prog.settings&XTRN_PAUSE)
+		console.pause();
+	else
+		console.line_counter=0;
+}
 
 function external_program_menu(xsec)
 {
@@ -50,73 +108,78 @@ function external_program_menu(xsec)
 
 		console.aborted = false;
 	    if(user.security.restrictions&UFLAG_X) {
-		    write(bbs.text(R_ExternalPrograms));
+		    write(options.restricted_user_msg);
 		    break;
 	    }
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
 		if(!prog_list.length) {
-			write(bbs.text(NoXtrnPrograms));
+			write(options.no_programs_msg);
 			console.pause();
-			break; 
+			break;
 		}
 
 		// If there's only one program available to the user in the section, just run it (or try to)
 		if(options.autoexec && prog_list.length == 1) {
-			if(options.clear_screen_on_exec)
-				console.clear();
-			bbs.exec_xtrn(prog_list[0].code); 
-			if(prog_list[0].settings&XTRN_PAUSE)
-				console.pause();
+			exec_xtrn(prog_list[0]);
 			break;
 		}
+		
+		if(options.clear_screen)
+			console.clear(LIGHTGRAY);
 
-		if(bbs.menu_exists("xtrn" + (xtrn_area.sec_list[xsec].number+1))) {
-			bbs.menu("xtrn" + (xtrn_area.sec_list[xsec].number+1)); 
+		var secnum = xtrn_area.sec_list[xsec].number+1
+		if(bbs.menu_exists("xtrn" + secnum + "_head")) {
+			bbs.menu("xtrn" + secnum + "_head");
+		}
+		if(bbs.menu_exists("xtrn" + secnum)) {
+			bbs.menu("xtrn" + secnum);
 		}
 		else {
+			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
 			if(options.sort)
 				prog_list.sort(sort_by_name);
-			printf(bbs.text(XtrnProgLstHdr),xtrn_area.sec_list[xsec].name);
-			write(bbs.text(XtrnProgLstTitles));
-			if(options.multicolumn && prog_list.length >= 10) {
-				write("     ");
-				write(bbs.text(XtrnProgLstTitles)); 
+			printf(options.header_fmt, xtrn_area.sec_list[xsec].name);
+			write(options.titles);
+			if(multicolumn) {
+				write(options.multicolumn_separator);
+				write(options.titles);
 			}
 			console.crlf();
-			write(bbs.text(XtrnProgLstUnderline));
-			if(options.multicolumn && prog_list.length >= 10) {
-				write("     ");
-				write(bbs.text(XtrnProgLstUnderline)); 
+			write(options.underline);
+			if(multicolumn) {
+				write(options.multicolumn_separator);
+				write(options.underline);
 			}
 			console.crlf();
 			var n;
-			if(options.multicolumn && prog_list.length >= 10)
+			if(multicolumn)
 				n=Math.floor(prog_list.length/2)+(prog_list.length&1);
 			else
 				n=prog_list.length;
 
 			for(i=0;i<n && !console.aborted;i++) {
-				printf(bbs.text(XtrnProgLstFmt),i+1
+				console.add_hotspot(i+1);
+				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
+					,i+1
 					,prog_list[i].name
 					,prog_list[i].cost);
 
-				if(options.multicolumn
-					&& prog_list.length>=10) {
+				if(multicolumn) {
 					j=Math.floor(prog_list.length/2)+i+(prog_list.length&1);
 					if(j<prog_list.length) {
-						write("     ");
-						printf(bbs.text(XtrnProgLstFmt),j+1
+						write(options.multicolumn_separator);
+						console.add_hotspot(j+1);
+						printf(options.multicolumn_fmt, j+1
 							,prog_list[j].name
-							,prog_list[j].cost); 
+							,prog_list[j].cost);
 					}
 				}
-
-				console.crlf(); 
+				console.crlf();
 			}
 			bbs.node_sync();
-			console.mnemonics(bbs.text(WhichXtrnProg)); 
+			console.mnemonics(options.which);
 		}
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
@@ -128,16 +191,7 @@ function external_program_menu(xsec)
 			bbs.menu("xtrn/" + prog_list[i].code);
 			console.line_counter=0;
 		}
-		if(options.clear_screen_on_exec)
-			console.clear();
-		load('fonts.js', 'xtrn:' + prog_list[i].code);
-		bbs.exec_xtrn(prog_list[i].code); 
-		load('fonts.js', 'default');
-
-		if(prog_list[i].settings&XTRN_PAUSE)
-			console.pause();
-		else
-			console.line_counter=0;
+		exec_xtrn(prog_list[i]);
 	}
 }
 
@@ -149,13 +203,13 @@ function external_section_menu()
 
 		console.aborted = false;
 	    if(user.security.restrictions&UFLAG_X) {
-		    write(bbs.text(R_ExternalPrograms));
+		    write(options.restricted_user_msg);
 		    break;
 	    }
 
 	    if(!xtrn_area.sec_list.length) {
-		    write(bbs.text(NoXtrnPrograms));
-		    break; 
+		    write(options.no_programs_msg);
+		    break;
 	    }
 
 	    var xsec=0;
@@ -173,13 +227,13 @@ function external_section_menu()
 			xsec--;
 		}
 		else {
-	
+
 			if(options.sort)
 				sec_list.sort(sort_by_name);
 			for(i in sec_list)
 				console.uselect(Number(i),"External Program Section"
 					,sec_list[i].name);
-			xsec=console.uselect(); 
+			xsec=console.uselect();
 		}
 	    if(xsec<0)
 		    break;

@@ -2,7 +2,7 @@
 
 /* Synchronet message-related command shell/module routines */
 
-/* $Id$ */
+/* $Id: execmsg.cpp,v 1.15 2020/05/24 08:11:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -51,9 +51,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			while(online) {
 				j=0;
 				if(usrgrps>1) {
-					if(menu_exists("grps"))
-						menu("grps");
-					else {
+					if(!menu("grps", P_NOERROR)) {
 						bputs(text[CfgGrpLstHdr]);
 						for(i=0;i<usrgrps && !msgabort();i++) {
 							if(i==curgrp)
@@ -61,24 +59,23 @@ int sbbs_t::exec_msg(csi_t *csi)
 							else outchar(' ');
 							if(i<9) outchar(' ');
 							if(i<99) outchar(' ');
+							add_hotspot(i+1);
 							bprintf(text[CfgGrpLstFmt]
 								,i+1, cfg.grp[usrgrp[i]]->lname); } 
 					}
 					sprintf(str,text[JoinWhichGrp],curgrp+1);
 					mnemonics(str);
 					j=getnum(usrgrps);
+					clear_hotspots();
 					if((int)j==-1)
 						return(0);
 					if(!j)
 						j=curgrp;
 					else
-						j--; 
+						j--;
 				}
 				sprintf(str,"subs%u",usrgrp[j]+1);
-				if(menu_exists(str)) {
-					menu(str); 
-				}
-				else {
+				if(!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
 					for(i=0;i<usrsubs[j] && !msgabort();i++) {
@@ -89,11 +86,13 @@ int sbbs_t::exec_msg(csi_t *csi)
 							,getposts(&cfg,usrsub[j][i]));
 						if(i<9) outchar(' ');
 						if(i<99) outchar(' ');
+						add_hotspot(i+1);
 						bputs(str); } 
 				}
 				sprintf(str,text[JoinWhichSub],cursub[j]+1);
 				mnemonics(str);
 				i=getnum(usrsubs[j]);
+				clear_hotspots();
 				if((int)i==-1) {
 					if(usrgrps==1)
 						return(0);
@@ -154,6 +153,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 				}
 				if(i<=usrsubs[curgrp])
 					cursub[curgrp]=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((uint)(ch&0xf)<=usrsubs[curgrp] && (ch&0xf) && usrgrps)
@@ -188,10 +189,14 @@ int sbbs_t::exec_msg(csi_t *csi)
 				i+=ch&0xf;
 				if(i<=usrgrps)
 					curgrp=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((uint)(ch&0xf)<=usrgrps && (ch&0xf))
 				curgrp=(ch&0xf)-1;
+			if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+				ungetkey(ch, /* insert: */true);
 			return(0);
 
 		case CS_MSG_SET_GROUP:
@@ -207,8 +212,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 		case CS_MSG_SHOW_GROUPS:
 			if(!usrgrps) return(0);
-			if(menu_exists("grps")) {
-				menu("grps");
+			if(menu("grps", P_NOERROR)) {
 				return(0); 
 			}
 			bputs(text[GrpLstHdr]);
@@ -217,6 +221,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					outchar('*');
 				else outchar(' ');
 				if(i<9) outchar(' ');
+				add_hotspot(i+1);
 				bprintf(text[GrpLstFmt],i+1
 					,cfg.grp[usrgrp[i]]->lname,nulstr,usrsubs[i]); 
 			}
@@ -225,8 +230,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 		case CS_MSG_SHOW_SUBBOARDS:
 			if(!usrgrps) return(0);
 			sprintf(str,"subs%u",usrgrp[curgrp]+1);
-			if(menu_exists(str)) {
-				menu(str);
+			if(menu(str, P_NOERROR)) {
 				return(0); 
 			}
 			CRLF;
@@ -239,6 +243,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					,getposts(&cfg,usrsub[curgrp][i]));
 				if(i<9) outchar(' ');
 				if(i<99) outchar(' ');
+				add_hotspot(i+1);
 				bputs(str); 
 			}
 			return(0);
@@ -335,7 +340,10 @@ int sbbs_t::exec_msg(csi_t *csi)
 			return(0);
 		case CS_MSG_YOUR_SCAN_ALL:
 			scanallsubs(SCAN_TOYOU);
-			return(0); 
+			return(0);
+		case CS_MSG_LIST:
+			listsub(usrsub[curgrp][cursub[curgrp]], SCAN_INDEX, /* start: */0, /* search: */NULL);
+			return(0);
 	}
 	errormsg(WHERE,ERR_CHK,"shell function",*(csi->ip-1));
 	return(0);

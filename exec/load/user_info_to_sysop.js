@@ -7,7 +7,7 @@ http://www.gnu.org/licenses/gpl.html
 
 FILE NAME	:	user_info_to_sysop.js
 
-CVS ID		:	$Id$
+CVS ID		:	$Id: user_info_to_sysop.js,v 1.2 2010/07/09 21:09:47 deuce Exp $
 
 CREATED		:	2006-04-20
 BY			:	Michael J. Ryan <tracker1(at)theroughnecks(dot)net>

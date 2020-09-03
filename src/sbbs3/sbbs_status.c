@@ -48,7 +48,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF(errmsg, "stat %s", sbuf);
-		errorlog(&scfg, startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -669,7 +669,7 @@ void status_thread(void *arg)
 								msg->msg.stats.status[0] = 0;
 							else
 								strcpy(msg->msg.stats.status, status[i]);
-							
+
 							send(*csock, msg, msg->hdr.len, 0);
 							free(msg);
 						}
@@ -756,7 +756,7 @@ void status_##lower##_thread_up(void *cbdata, BOOL up, BOOL setuid) { status_thr
 void status_##lower##_socket_open(void *cbdata, BOOL open) { status_socket_open(SERVICE_##UPPER, open); }                         \
 void status_##lower##_client_on(void *cbdata, BOOL on, SOCKET sock, client_t *client, BOOL update) { status_client_on(SERVICE_##UPPER, on, sock, client, update); }
 
-makestubs(ftp, TERM);
+makestubs(ftp, FTP);
 makestubs(mail, MAIL);
 makestubs(term, TERM);
 makestubs(web, WEB);

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fido.js,v 1.36 2020/03/23 18:17:07 rswindell Exp $
 require('fido_syscfg.js', 'FTNDomains');
 
 /*
@@ -150,8 +150,9 @@ var FIDO = {
 		var zone;
 		var domain;
 
-		m = addr.toString().match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(?:@(.*))?$/);
-		if (m===null)
+		if(addr)
+			m = addr.toString().match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(?:@(.*))?$/);
+		if (!m)
 			throw('invalid address '+addr);
 		zone = m[1];
 		domain = m[5];
@@ -520,7 +521,7 @@ Object.defineProperties(FIDO.Addr.prototype, {
 			}
 
 			if (this.point !== undefined)
-				ret += format("p%d", this.point);
+				ret += format("p%d.", this.point);
 			ret += format("f%d.n%d.z%d.%s", this.node, this.net, this.zone, FIDO.FTNDomains.domainDNSMap[this.domain] === undefined ? '.example.com' : FIDO.FTNDomains.domainDNSMap[this.domain]);
 			return ret;
 		}

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: birthdays.js,v 1.1 2018/06/06 23:07:20 rswindell Exp $
 
 // Find users with the specified birthday (or birthmonth)
 
@@ -18,7 +18,7 @@ load("birthdate.js");
 // Note: month is 0-based, day (of month) is optional and 1-based
 function birthdays(month, day)
 {
-	var u = new User(1);
+	var u = new User;
 	var lastuser = system.stats.total_users;
 	var list = [];
 	for(u.number = 1; u.number <= lastuser; u.number++) {

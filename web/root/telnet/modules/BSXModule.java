@@ -1,7 +1,7 @@
 /**
  * BSXModule -- implements BSX controll sequence handling
  * --
- * $Id$
+ * $Id: BSXModule.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Tue Oct 14 18:00:00 1997 by Thomas Kriegelstein :$
  *
  * This file and the related package may be part of "The Java Telnet

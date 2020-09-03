@@ -2,7 +2,7 @@
 
 /* Helper functions to get values from sbbs.ini/services.ini for fTelnet */
 
-/* $Id$ */
+/* $Id: ftelnethelper.js,v 1.11 2019/08/11 16:43:05 echicken Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -40,6 +40,9 @@ var FLoadedSBBSIni = false;
 var FBBSOptions    = "";
 var FRLoginPort    = -1;
 var FTelnetPort    = -1;
+var FGlobalInterface = "";
+var FRLoginInterface = "";
+var FTelnetInterface = "";
 
 // Values from services.ini
 var FLoadedServicesIni = false;
@@ -59,6 +62,9 @@ function GetSBBSIniValues() {
 				FBBSOptions = f.iniGetValue("BBS", "Options", "");
 				FRLoginPort = f.iniGetValue("BBS", "RLoginPort", -1);
 				FTelnetPort = f.iniGetValue("BBS", "TelnetPort", -1);
+				FGlobalInterface = f.iniGetValue("Global", "Interface", "").split(',')[0];
+				FRLoginInterface = f.iniGetValue("BBS", "RLoginInterface", "").split(',')[0];
+				FTelnetInterface = f.iniGetValue("BBS", "TelnetInterface", "").split(',')[0];
 				f.close();
 			}
 		} catch (err) {
@@ -128,4 +134,24 @@ function StringToBytes(InLine) {
 function UsingSecondRLoginName() {
 	GetSBBSIniValues();
 	return (FBBSOptions.indexOf("USE_2ND_RLOGIN") !== -1);
+}
+
+function GetInterface(i) {
+	if (['', '0.0.0.0', '::'].indexOf(i) > -1) return 'localhost';
+	return i;
+}
+
+function GetGlobalInterface() {
+	GetSBBSIniValues();
+	return GetInterface(FGlobalInterface);
+}
+
+function GetTelnetInterface() {
+	GetSBBSIniValues();
+	return GetInterface(FTelnetInterface);
+}
+
+function GetRLoginInterface() {
+	GetSBBSIniValues();
+	return GetInterface(FRLoginInterface);
 }

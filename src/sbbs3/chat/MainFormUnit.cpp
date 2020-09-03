@@ -2,7 +2,7 @@
 
 /* Local sysop chat module (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: MainFormUnit.cpp,v 1.9 2018/10/15 08:31:12 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

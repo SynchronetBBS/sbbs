@@ -8,7 +8,7 @@
 # usage: make															#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.15 2020/08/16 20:37:07 rswindell Exp $
 
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version
@@ -17,7 +17,7 @@ SRC_ROOT = ..
 # Cross platform/compiler definitions
 include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rules
 
-CFLAGS += -DWRAPPER_IMPORTS -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+CFLAGS += -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 
 # UIFC Library Link Rule
 $(UIFCLIB_BUILD): $(OBJS)

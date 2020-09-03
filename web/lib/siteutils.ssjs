@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: siteutils.ssjs,v 1.14 2006/06/06 19:00:16 runemaster Exp $ */
 
 /* Small utilitiy to pull non-standard ports from */
 /*  ini files.  Used for URI's in web interface   */

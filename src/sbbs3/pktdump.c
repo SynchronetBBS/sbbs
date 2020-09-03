@@ -1,15 +1,17 @@
 /* pktdump.c */
 
-/* $Id$ */
+/* $Id: pktdump.c,v 1.17 2020/04/28 05:41:30 rswindell Exp $ */
 
 #include "fidodefs.h"
 #include "xpendian.h"	/* swap */
 #include "dirwrap.h"	/* _PATH_DEVNULL */
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 FILE* nulfp;
 FILE* bodyfp;
+FILE* ctrlfp;
 
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
@@ -31,24 +33,45 @@ char *faddrtoa(struct fidoaddr* addr, char* outstr)
 	return(outstr);
 }
 
-char* freadstr(FILE* fp, char* str, size_t maxlen)
+bool freadstr(FILE* fp, char* str, size_t maxlen)
 {
 	int		ch;
 	size_t	len=0;
 
+	memset(str, 0, maxlen);
 	while((ch=fgetc(fp))!=EOF && len<maxlen) {
 		str[len++]=ch;
 		if(ch==0)
 			break;
 	}
 
-	str[maxlen-1]=0;
-
-	return(str);
+	return str[maxlen-1] == 0;
 }
-	
 
-int pktdump(FILE* fp, const char* fname)
+const char* fmsgattr_str(uint16_t attr)
+{
+	static char str[64] = "";
+
+#define FIDO_ATTR_CHECK(a, f) if(a&FIDO_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+	FIDO_ATTR_CHECK(attr, PRIVATE);
+	FIDO_ATTR_CHECK(attr, CRASH);
+	FIDO_ATTR_CHECK(attr, RECV);
+	FIDO_ATTR_CHECK(attr, SENT);
+	FIDO_ATTR_CHECK(attr, FILE);
+	FIDO_ATTR_CHECK(attr, INTRANS);
+	FIDO_ATTR_CHECK(attr, ORPHAN);
+	FIDO_ATTR_CHECK(attr, KILLSENT);
+	FIDO_ATTR_CHECK(attr, LOCAL);
+	FIDO_ATTR_CHECK(attr, HOLD);
+	FIDO_ATTR_CHECK(attr, FREQ);
+	FIDO_ATTR_CHECK(attr, RRREQ);
+	FIDO_ATTR_CHECK(attr, RR);
+	FIDO_ATTR_CHECK(attr, AUDIT);
+	FIDO_ATTR_CHECK(attr, FUPREQ);
+	return str;
+}
+
+int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 {
 	int			ch,lastch=0;
 	char		buf[128];
@@ -116,22 +139,81 @@ int pktdump(FILE* fp, const char* fname)
 	} else
 		fprintf(stdout,"2.0 (prod: %02X, serial: %u)", pkthdr.type2.prodcode, pkthdr.type2.sernum);
 
-	printf(" from %s",faddrtoa(&orig,NULL));
-	printf(" to %s\n"	,faddrtoa(&dest,NULL));
+	printf(" from %s", faddrtoa(&orig,NULL));
+	printf(" to %s\n", faddrtoa(&dest,NULL));
 
 	if(pkthdr.type2.password[0])
 		fprintf(stdout,"Password: '%.*s'\n",(int)sizeof(pkthdr.type2.password),pkthdr.type2.password);
 
+	if(good != NULL)
+		fwrite(&pkthdr, sizeof(pkthdr), 1, good);
+	if(bad != NULL)
+		fwrite(&pkthdr, sizeof(pkthdr), 1, bad);
 	fseek(fp,sizeof(pkthdr),SEEK_SET);
 
 	/* Read/Display packed messages */
 	while(!feof(fp)) {
 
-		printf("%08lX\n",offset=ftell(fp));
+		offset=ftell(fp);
 
-		/* Read fixed-length header fields */
+		if(fread(&pkdmsg.type, 1, sizeof(pkdmsg.type), fp) != sizeof(pkdmsg.type))
+			break;
+		if(pkdmsg.type == FIDO_PACKET_TERMINATOR)
+			continue;
+		if(pkdmsg.type != 2) {
+			printf("%s %06lX Corrupted Message Header (type: %04hX)\n"
+				,fname
+				,offset
+				,pkdmsg.type);
+			continue;
+		}
+
+		bool corrupted = false;
+		fseek(fp, offset, SEEK_SET);
+		/* Read fixed-length header fields (or final NULL byte) */
 		if(fread(&pkdmsg,sizeof(BYTE),sizeof(pkdmsg),fp)!=sizeof(pkdmsg))
 			break;
+		if(pkdmsg.time[0] == '\0' || pkdmsg.time[sizeof(pkdmsg.time) - 1] != '\0') {
+			printf("%s %06lX Corrupted Message Header (DateTime)\n"
+				,fname
+				,offset);
+			corrupted = true;
+		}
+
+		/* Read variable-length header fields */
+		freadstr(fp,to,sizeof(to));
+		freadstr(fp,from,sizeof(from));
+		freadstr(fp,subj,sizeof(subj));
+		if(!corrupted && (from[0] == '\0'
+			|| to[sizeof(to) - 1] != '\0'
+			|| from[sizeof(from) - 1] != '\0'
+			|| subj[sizeof(subj) - 1] != '\0'
+			)) {
+			printf("%s %06lX Corrupted Message Header (variable-length fields)\n"
+				,fname
+				,offset);
+			corrupted = true;
+		}
+
+		if(corrupted) { // Seek to the end of the message body (hopefully)
+			if(bad != NULL) {
+				fwrite(&pkdmsg, sizeof(pkdmsg), 1, bad);
+				for(int i = 0, ch = EOF; i < sizeof(to) && ch != '\0'; i++)
+					fputc(ch = to[i], bad);
+				for(int i = 0, ch = EOF; i < sizeof(from) && ch != '\0'; i++)
+					fputc(ch = from[i], bad);
+				for(int i = 0, ch = EOF; i < sizeof(subj) && ch != '\0'; i++)
+					fputc(ch = subj[i], bad);
+			}
+			while((ch = fgetc(fp)) != EOF && ch != 0) {
+				if(bad != NULL)
+					fputc(ch, bad);
+			}
+			if(bad != NULL)
+				fputc('\0', bad);
+			continue;
+		}
+
 		/* Display fixed-length fields */
 		printf("%s %06lX Packed Message Type: %d from %u/%u to %u/%u\n"
 			,fname
@@ -139,42 +221,69 @@ int pktdump(FILE* fp, const char* fname)
 			,pkdmsg.type
 			,pkdmsg.orignet, pkdmsg.orignode
 			,pkdmsg.destnet, pkdmsg.destnode);
-		printf("Attribute: %04X\n",pkdmsg.attr);
+		printf("Attribute: 0x%04X (%s)\n",pkdmsg.attr, fmsgattr_str(pkdmsg.attr));
 		printf("Date/Time: %s\n",pkdmsg.time);
-
-		/* Read variable-length header fields */
-		freadstr(fp,to,sizeof(to));
-		freadstr(fp,from,sizeof(from));
-		freadstr(fp,subj,sizeof(subj));
 	
 		/* Display variable-length fields */
 		printf("%-4s : %s\n","To",to);
 		printf("%-4s : %s\n","From",from);
 		printf("%-4s : %s\n","Subj",subj);
 
+		if(good != NULL) {
+			fwrite(&pkdmsg, sizeof(pkdmsg), 1, good);
+			fwrite(to, strlen(to) + 1, 1, good);
+			fwrite(from, strlen(from) + 1, 1, good);
+			fwrite(subj, strlen(subj) + 1, 1, good);
+		}
+
 		fprintf(bodyfp,"\n-start of message text-\n");
 
+		size_t count = 0;
 		while((ch=fgetc(fp))!=EOF && ch!=0) {
+			count++;
+			if((count == 1 || lastch == '\r') && ch == 1) {
+				fputc('@', ctrlfp);
+				while((ch = fgetc(fp)) != EOF && ch != 0 && ch != '\r')
+					fputc(ch, ctrlfp);
+				fputc('\n', ctrlfp);
+				if(ch == 0)
+					break;
+				continue;
+			}
 			if(lastch=='\r' && ch!='\n')
 				fputc('\n',bodyfp);
 			fputc(lastch=ch,bodyfp);
+			if(good != NULL)
+				fputc(ch, good);
 		}
+		if(good != NULL)
+			fputc('\0', good);
 
 		fprintf(bodyfp,"\n-end of message text-\n");
+	}
+	if(good != NULL) { // Final terminating NULL bytes
+		fputc('\0', good);
+		fputc('\0', good);
+	}
+	if(bad != NULL) { // Final terminating NULL bytes
+		fputc('\0', bad);
+		fputc('\0', bad);
 	}
 
 	return(0);
 }
 
-char* usage = "usage: pktdump [-body] <file1.pkt> [file2.pkt] [...]\n";
+char* usage = "usage: pktdump [-body | -ctrl] [-recover | -split] <file1.pkt> [file2.pkt] [...]\n";
 
 int main(int argc, char** argv)
 {
 	FILE*	fp;
+	bool	split = false;
+	bool	recover = false;
 	int		i;
 	char	revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.17 $", "%*s %s", revision);
 
 	fprintf(stderr,"pktdump rev %s - Dump FidoNet Packets\n\n"
 		,revision
@@ -190,6 +299,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	bodyfp=nulfp;
+	ctrlfp=nulfp;
 
 	if(sizeof(fpkthdr_t)!=FIDO_PACKET_HDR_LEN) {
 		printf("sizeof(fpkthdr_t)=%" XP_PRIsize_t "u, expected: %d\n",sizeof(fpkthdr_t),FIDO_PACKET_HDR_LEN);
@@ -208,7 +318,16 @@ int main(int argc, char** argv)
 		if(argv[i][0]=='-') {
 			switch(tolower(argv[i][1])) {
 				case 'b':
-					bodyfp=stdout;;
+					bodyfp=stdout;
+					/* fall-through */
+				case 'c':
+					ctrlfp = stdout;
+					break;
+				case 'r':
+					recover=true;
+					break;
+				case 's':
+					split=true;
 					break;
 				default:
 					printf("%s",usage);
@@ -221,7 +340,41 @@ int main(int argc, char** argv)
 			perror(argv[i]);
 			continue;
 		}
-		pktdump(fp, argv[i]);
+		FILE* good = NULL;
+		FILE* bad = NULL;
+		char good_fname[MAX_PATH + 1] = "";
+		char bad_fname[MAX_PATH + 1] = "";
+		if(recover || split) {
+			SAFEPRINTF(good_fname, "%s.good", argv[i]);
+			if((good = fopen(good_fname, "wb")) == NULL) {
+				perror(argv[i]);
+				return EXIT_FAILURE;
+			}
+		}
+		if(split) {
+			SAFEPRINTF(bad_fname, "%s.bad", argv[i]);
+			if((bad = fopen(bad_fname, "wb")) == NULL) {
+				perror(argv[i]);
+				return EXIT_FAILURE;
+			}
+		}
+		pktdump(fp, argv[i], good, bad);
+		if(good != NULL) {
+			long length = ftell(good);
+			fclose(good);
+			good = NULL;
+			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
+				|| length == ftell(fp))
+				remove(good_fname);
+		}
+		if(bad != NULL) {
+			long length = ftell(bad);
+			fclose(bad);
+			bad = NULL;
+			if(length <= sizeof(fpkthdr_t) + sizeof(uint16_t) // no messages
+				|| length == ftell(fp))
+				remove(bad_fname);
+		}
 		fclose(fp);
 	}
 

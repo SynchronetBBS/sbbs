@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: wordwrap.h,v 1.8 2019/07/08 07:08:01 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -38,7 +38,7 @@
 extern "C" {
 #endif
 
-char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes);
+char* wordwrap(char* inbuf, int len, int oldlen, BOOL handle_quotes, BOOL is_utf8);
 
 #ifdef __cplusplus
 }

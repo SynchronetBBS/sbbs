@@ -1,0 +1,20 @@
+--- ./tools/ccopts.sh.orig	2020-05-02 04:05:14.767613000 -0400
++++ ./tools/ccopts.sh	2020-05-02 04:15:51.301386000 -0400
+@@ -357,7 +357,7 @@
+ # tools/getlibs.sh also for clang 4.7 or newer.
+ 
+ if [ $ISCLANG -gt 0 ] && [ $ISSPECIAL -eq 0 ] ; then
+-	CLANG_VER="$($CC -dumpversion | tr -d  '.' | cut -c 1-2)" ;
++	CLANG_VER="$($CC -dumpversion | sed -E 's/^([0-9]+)$/\1.0/' | sed -E 's/^([0-9]+)\.([0-9]).*$/\1\2/')" ;
+ 	if [ $CLANG_VER -gt 42 ] ; then
+ 		CCARGS="$CCARGS -fsanitize=safe-stack" ;
+ 	fi ;
+@@ -509,7 +509,7 @@
+ # apparent version less than 10 we add a trailing zero to the string to make
+ # the checks that follow work.
+ 
+-GCC_VER="$($CC -dumpversion | tr -d  '.' | cut -c 1-2)"
++GCC_VER="$($CC -dumpversion | sed -E 's/^([0-9]+)$/\1.0/' | sed -E 's/^([0-9]+)\.([0-9]).*$/\1\2/')"
+ if [ "$GCC_VER" -lt 10 ] ; then
+ 	GCC_VER="${GCC_VER}0" ;
+ fi

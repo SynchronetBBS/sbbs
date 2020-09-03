@@ -1,6 +1,6 @@
 /* Synchronet file transfer-related command shell/module routines */
 
-/* $Id: execfile.cpp,v 1.14 2018/01/07 23:00:26 rswindell Exp $ */
+/* $Id: execfile.cpp,v 1.18 2020/05/24 08:11:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -40,7 +40,7 @@ int sbbs_t::exec_file(csi_t *csi)
 {
 	char	str[256],ch;
 	int		s;
-	uint 	i,j,x,y;
+	ulong 	i,j,x,y;
 	smbfile_t	f;
 
 	switch(*(csi->ip++)) {
@@ -51,9 +51,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			while(online) {
 				j=0;
 				if(usrlibs>1) {
-					if(menu_exists("libs"))
-						menu("libs");
-					else {
+					if(!menu("libs", P_NOERROR)) {
 						bputs(text[CfgLibLstHdr]);
 						for(i=0;i<usrlibs && !msgabort();i++) {
 							if(i==curlib)
@@ -61,6 +59,7 @@ int sbbs_t::exec_file(csi_t *csi)
 							else outchar(' ');
 							if(i<9) outchar(' ');
 							if(i<99) outchar(' ');
+							add_hotspot(i+1);
 							bprintf(text[CfgLibLstFmt]
 								,i+1,cfg.lib[usrlib[i]]->lname); 
 						} 
@@ -68,6 +67,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					sprintf(str,text[JoinWhichLib],curlib+1);
 					mnemonics(str);
 					j=getnum(usrlibs);
+					clear_hotspots();
 					if((int)j==-1)
 						return(0);
 					if(!j)
@@ -76,10 +76,7 @@ int sbbs_t::exec_file(csi_t *csi)
 						j--; 
 				}
 				sprintf(str,"dirs%u",usrlib[j]+1);
-				if(menu_exists(str)) {
-					menu(str); 
-				}
-				else {
+				if(!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
 					for(i=0;i<usrdirs[j] && !msgabort();i++) {
@@ -90,12 +87,14 @@ int sbbs_t::exec_file(csi_t *csi)
 							,getfiles(&cfg,usrdir[j][i]));
 						if(i<9) outchar(' ');
 						if(i<99) outchar(' ');
+						add_hotspot(i+1);
 						bputs(str); 
 					} 
 				}
 				sprintf(str,text[JoinWhichDir],curdir[j]+1);
 				mnemonics(str);
 				i=getnum(usrdirs[j]);
+				clear_hotspots();
 				if((int)i==-1) {
 					if(usrlibs==1)
 						return(0);
@@ -156,6 +155,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				}
 				if(i<=usrdirs[curlib])
 					curdir[curlib]=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((ch&0xf)<=(int)usrdirs[curlib] && (ch&0xf) && usrlibs)
@@ -190,16 +191,19 @@ int sbbs_t::exec_file(csi_t *csi)
 				i+=ch&0xf;
 				if(i<=usrlibs)
 					curlib=i-1;
+				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */true);
 				return(0); 
 			}
 			if((ch&0xf)<=(int)usrlibs && (ch&0xf))
 				curlib=(ch&0xf)-1;
+			if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
+				ungetkey(ch, /* insert: */true);
 			return(0);
 
 		case CS_FILE_SHOW_LIBRARIES:
 			if(!usrlibs) return(0);
-			if(menu_exists("libs")) {
-				menu("libs");
+			if(menu("libs", P_NOERROR)) {
 				return(0); 
 			}
 			bputs(text[LibLstHdr]);
@@ -208,6 +212,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					outchar('*');
 				else outchar(' ');
 				if(i<9) outchar(' ');
+				add_hotspot(i+1);
 				bprintf(text[LibLstFmt],i+1
 					,cfg.lib[usrlib[i]]->lname,nulstr,usrdirs[i]); 
 			}
@@ -216,8 +221,7 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_SHOW_DIRECTORIES:
 			if(!usrlibs) return(0);
 			sprintf(str,"dirs%u",usrlib[curlib]+1);
-			if(menu_exists(str)) {
-				menu(str);
+			if(menu(str, P_NOERROR)) {
 				return(0); 
 			}
 			CRLF;
@@ -230,6 +234,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					,getfiles(&cfg,usrdir[curlib][i]));
 				if(i<9) outchar(' ');
 				if(i<99) outchar(' ');
+				add_hotspot(i+1);
 				bputs(str); 
 			}
 			return(0);

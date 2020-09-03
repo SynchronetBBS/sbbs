@@ -1,9 +1,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-    <!-- $Id$ -->
+    <!-- $Id: header.inc,v 1.18 2019/07/24 09:21:09 rswindell Exp $ -->
 <head>
 <title>%%title%%</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
 @@JS:if(http_request.virtual_path=="/nodelist.ssjs")'<meta http-equiv="refresh" content="30" />';@@
 <link rel="stylesheet" href="@@Theme_CSS_File@@" type="text/css" />

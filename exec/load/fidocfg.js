@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fidocfg.js,v 1.45 2020/04/12 01:34:13 rswindell Exp $
 require('fido.js', 'FIDO');
 
 /*
@@ -42,15 +42,11 @@ function TickITCfg() {
 
 	this.cfgfile = tcfg.name;
 	function get_bool(val) {
-		if (val === undefined)
-			return false;
-		switch(val.toUpperCase()) {
-		case 'YES':
-		case 'TRUE':
-		case 'ON':
-			return true;
-		}
-		return false;
+		if (typeof val == 'undefined') return false;
+		if (typeof val == 'boolean') return val;
+		if (typeof val == 'number') return val != 0;
+		if (typeof val != 'string') return false;
+		return ['TRUE', 'YES', 'ON'].indexOf(val.toUpperCase()) > -1;
 	}
 
 	function lcprops(obj)
@@ -79,6 +75,15 @@ function TickITCfg() {
 		if (require(this.gcfg.handler, tmp, "Handle_TIC") == null)
 			delete this.gcfg.handler;
 	}
+	var auto_areas = tcfg.iniGetValue(null, "AutoAreas", []);
+	for(var code in file_area.dir) {
+		var dir = file_area.dir[code];
+		if(auto_areas.indexOf(dir.lib_name) < 0)
+			continue;
+		if(dir.name.indexOf(' ') >= 0) // Invalid areatag
+			continue;
+		this.acfg[dir.name.toLowerCase()] = { dir: code };
+	}
 	sects = tcfg.iniGetSections();
 	for (i=0; i<sects.length; i++) {
 		this.acfg[sects[i].toLowerCase()] = tcfg.iniGetObject(sects[i]);
@@ -91,6 +96,9 @@ function TickITCfg() {
 		}
 	}
 	tcfg.close();
+	this.gcfg.addfileslogcap = get_bool(this.gcfg.addfileslogcap);
+	this.gcfg.akamatching = get_bool(this.gcfg.akamatching);
+	this.gcfg.forcereplace = get_bool(this.gcfg.forcereplace);
 	this.gcfg.ignorepassword = get_bool(this.gcfg.ignorepassword);
 	this.gcfg.secureonly = get_bool(this.gcfg.secureonly);
 }
@@ -186,10 +194,46 @@ TickITCfg.prototype.save = function()
 			tcfg.iniRemoveKey(section, 'Path');
 		else
 			tcfg.iniSetValue(section, 'Path', obj.path);
+
+		if (obj.sourceaddress === undefined)
+			tcfg.iniRemoveKey(section, 'SourceAddress');
+		else
+			tcfg.iniSetValue(section, 'SourceAddress', obj.sourceaddress);
+
+		if (obj.uploader === undefined)
+			tcfg.iniRemoveKey(section, 'Uploader');
+		else
+			tcfg.iniSetValue(section, 'Uploader', obj.uploader);
+
+		if (obj.addfileslogcap === undefined)
+			tcfg.iniRemoveKey(section, 'AddFilesLogCap');
+		else
+			tcfg.iniSetValue(section, 'AddFilesLogCap', obj.addfileslogcap);
+
+		if (obj.akamatching === undefined)
+			tcfg.iniRemoveKey(section, 'AKAMatching');
+		else
+			tcfg.iniSetValue(section, 'AKAMatching', obj.akamatching);
+
+		if (obj.forcereplace === undefined)
+			tcfg.iniRemoveKey(section, 'ForceReplace');
+		else
+			tcfg.iniSetValue(section, 'ForceReplace', obj.forcereplace);
+
+		if (obj.ignorepassword === undefined)
+			tcfg.iniRemoveKey(section, 'IgnorePassword');
+		else
+			tcfg.iniSetValue(section, 'IgnorePassword', obj.ignorepassword);
+
+		if (obj.secureonly === undefined)
+			tcfg.iniRemoveKey(section, 'SecureOnly');
+		else
+			tcfg.iniSetValue(section, 'SecureOnly', obj.secureonly);
+
 	}
 
 	if (!tcfg.open(tcfg.exists ? 'r+':'w+'))
-		throw("Unable to open '"+tcfg.name+"'");
+		return "Unable to open '"+tcfg.name+"'";
 
 	writesect(null, this.gcfg);
 	sects = tcfg.iniGetSections().map(function(v){return v.toLowerCase();});
@@ -202,6 +246,7 @@ TickITCfg.prototype.save = function()
 	for (i=0; i<sects.length; i++)
 		tcfg.iniRemoveSection(sects[i]);
 	tcfg.close();
+	return true;
 };
 
 /*
@@ -294,7 +339,7 @@ FREQITCfg.prototype.save = function()
 	}
 
 	if (!fcfg.open(fcfg.exists ? 'r+':'w+'))
-		throw("Unable to open '"+fcfg.name+"'");
+		return "Unable to open '"+fcfg.name+"'";
 
 	if (this.dirs.length > 0)
 		fcfg.iniSetValue(null, 'Dirs', this.dirs.join(','));
@@ -315,6 +360,7 @@ FREQITCfg.prototype.save = function()
 	for (i=0; i<sects.length; i++)
 		fcfg.iniRemoveSection(sects[i]);
 	fcfg.close();
+	return true;
 };
 
 function BinkITCfg()
@@ -329,6 +375,8 @@ function BinkITCfg()
 	else {
 		this.caps = f.iniGetValue('BinkP', 'Capabilities');
 		this.sysop = f.iniGetValue('BinkP', 'Sysop', system.operator);
+		this.plain_auth_only = f.iniGetValue('BinkP', 'PlainAuthOnly', false);
+		this.crypt_support = !f.iniGetValue('BinkP', 'PlainTextOnly', false);
 		sects = f.iniGetSections('node:');
 		sects.forEach(function(section) {
 			var addr = section.substr(5);
@@ -338,14 +386,17 @@ function BinkITCfg()
 				return;		// Ignore addresses with wildcards (e.g. 'ALL')
 			}
 			this.node[sec] = {};
-			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd');
+			this.node[sec].pass = f.iniGetValue(section, 'SessionPwd', '');
 			this.node[sec].nomd5 = f.iniGetValue(section, 'BinkpAllowPlainAuth', false);
-			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', false);
+			this.node[sec].nocrypt = f.iniGetValue(section, 'BinkpAllowPlainText', true);
 			this.node[sec].plain_auth_only = f.iniGetValue(section, 'BinkpPlainAuthOnly', false);
 			this.node[sec].poll = f.iniGetValue(section, 'BinkpPoll', false);
 			this.node[sec].port = f.iniGetValue(section, 'BinkpPort');
 			this.node[sec].src = f.iniGetValue(section, 'BinkpSourceAddress');
 			this.node[sec].host = f.iniGetValue(section, 'BinkpHost');
+			this.node[sec].inbox = f.iniGetValue(section, 'inbox');
+			this.node[sec].outbox = f.iniGetValue(section, 'outbox');
+			this.node[sec].tls = f.iniGetValue(section, 'BinkpTLS', false);
 		}, this);
 		f.close();
 	}

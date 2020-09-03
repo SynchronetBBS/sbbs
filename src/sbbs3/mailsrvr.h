@@ -1,6 +1,6 @@
 /* Synchronet Mail (SMTP/POP3/SendMail) server */
 
-/* $Id$ */
+/* $Id: mailsrvr.h,v 1.88 2019/03/22 21:28:27 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -235,7 +235,7 @@ static ini_bitdesc_t mail_options[] = {
 		#define DLLEXPORT __declspec(dllimport)
 	#endif
 	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
+		#define DLLCALL
 	#else
 		#define DLLCALL
 	#endif

@@ -122,7 +122,7 @@ var twenty1=new Twenty1();
 
 function create_player()
 {
-	player=players.New();
+	player=players.new();
 }
 
 function enter_casino()
@@ -178,9 +178,9 @@ function find_player()
 		messagefile.close();
 	}
 
-	stranger=game.Get(0);
+	stranger=game.get(0);
 	if(stranger==null)
-		stranger=game.New();
+		stranger=game.new();
 	if(stranger.dating_kathy)
 		stranger_dates_kathy=true;
 	else
@@ -189,7 +189,7 @@ function find_player()
 		sysoplog("\r\n***  New Day for the Casino  ***\r\n");
 		stranger.old_date=system.datestr();
 		for(i=0; i<players.length; i++) {
-			player=players.Get(i);
+			player=players.get(i);
 			player.played_roulette=0;
 			player.played_baccarat=0;
 			player.played_twenty1=0;
@@ -200,7 +200,7 @@ function find_player()
 	}
 
 	for(i=0; i<players.length; i++) {
-		player=players.Get(i);
+		player=players.get(i);
 		if(player.UserNumber == user.number) {
 			if(!file_exists(system.data_dir+format("user/%04d.mc",player.UserNumber))) {
 				player.ReInit();
@@ -217,7 +217,7 @@ function find_player()
 	}
 	if(!found) {
 		is_new=true;
-		player=players.New();
+		player=players.new();
 	}
 	check_winnings();
 	if(player.last_on != system.datestr())
@@ -442,7 +442,7 @@ function do_stats()
 
 	player.Put();
 	for(i=0; i<players.length; i++)
-		all_players.push(players.Get(i));
+		all_players.push(players.get(i));
 
 	all_players=all_players.sort(function(a,b) {
 		return(real_dough(b)-real_dough(a));

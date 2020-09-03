@@ -1,6 +1,6 @@
 /* Program to delete expired files from a Synchronet file database */
 
-/* $Id: delfiles.c,v 1.10 2018/07/18 04:50:28 rswindell Exp $ */
+/* $Id: delfiles.c,v 1.14 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -117,6 +117,7 @@ int main(int argc, char **argv)
 	if(argc<2) {
 		printf("\n   usage: %s <dir_code or * for ALL> [switches]\n", argv[0]);
 		printf("\nswitches: -lib name All directories of specified library\n");
+		printf("          -all      Search all directories\n");
 		printf("          -not code Exclude specific directory\n");
 		printf("          -off      Remove files that are offline "
 			"(don't exist on disk)\n");
@@ -127,16 +128,7 @@ int main(int argc, char **argv)
 		return(0); 
 	}
 
-	p=getenv("SBBSCTRL");
-	if(p==NULL) {
-		printf("\nSBBSCTRL environment variable not set.\n");
-	#ifdef __unix__
-		printf("\nExample: export SBBSCTRL=/sbbs/ctrl\n");
-	#else
-		printf("\nExample: SET SBBSCTRL=C:\\SBBS\\CTRL\n");
-	#endif
-		return(1); 
-	}
+	p = get_ctrl_dir(/* warn: */TRUE);
 
 	memset(&cfg, 0, sizeof(cfg));
 	cfg.size=sizeof(cfg);
@@ -268,7 +260,7 @@ int main(int argc, char **argv)
 				&& (now - f->hdr.last_downloaded)/86400L > cfg.dir[i]->maxage) {
 					printf("Deleting %s (%ld days since last download)\n"
 						,f->filename
-						,(now-f->hdr.last_downloaded)/86400L);
+						,(long)(now - f->hdr.last_downloaded)/86400L);
 					if(!(misc&REPORT)) {
 						removefile(&smb, f);
 						delfile(fpath); 
@@ -279,7 +271,7 @@ int main(int argc, char **argv)
 				&& (now - f->hdr.when_imported.time)/86400L > cfg.dir[i]->maxage) {
 					printf("Deleting %s (uploaded %ld days ago)\n"
 						,f->filename
-						,(now - f->hdr.when_imported.time)/86400L);
+						,(long)(now - f->hdr.when_imported.time)/86400L);
 					if(!(misc&REPORT)) {
 						removefile(&smb, f);
 						delfile(fpath); 

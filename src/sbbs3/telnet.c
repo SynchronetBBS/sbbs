@@ -2,7 +2,7 @@
 
 /* Synchronet telnet command/option functions */
 
-/* $Id$ */
+/* $Id: telnet.c,v 1.10 2019/08/24 19:37:11 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -36,10 +36,11 @@
  ****************************************************************************/
 
 #include <stdio.h>		/* sprintf */
+#include <string.h>		/* memchr */
 #include "gen_defs.h"
 #include "telnet.h"
 
-const char* DLLCALL telnet_cmd_desc(uchar cmd)
+const char* telnet_cmd_desc(uchar cmd)
 {
 	static char unknown[32];
 
@@ -112,7 +113,7 @@ char* telnet_option_descriptions[]={
 	,"TN3270E"								/* 40 */
 };
 
-const char* DLLCALL telnet_opt_desc(uchar opt)
+const char* telnet_opt_desc(uchar opt)
 {
 	static char unknown[32];
 
@@ -126,7 +127,7 @@ const char* DLLCALL telnet_opt_desc(uchar opt)
     return(unknown);
 }
 
-uchar DLLCALL telnet_opt_ack(uchar cmd)
+uchar telnet_opt_ack(uchar cmd)
 {
 	switch(cmd) {
 		case TELNET_DO:		return TELNET_WILL;
@@ -137,7 +138,7 @@ uchar DLLCALL telnet_opt_ack(uchar cmd)
 	return 0;
 }
 
-uchar DLLCALL telnet_opt_nak(uchar cmd)
+uchar telnet_opt_nak(uchar cmd)
 {
 	switch(cmd) {
 		case TELNET_DO:		return TELNET_WONT;
@@ -146,4 +147,44 @@ uchar DLLCALL telnet_opt_nak(uchar cmd)
 		case TELNET_WONT:	return TELNET_DO;
 	}
 	return 0;
+}
+
+/*****************************************************************************/
+// Escapes Telnet IACs in 'inbuf' by doubling the IAC char
+// 'result' may point to either inbuf (if there were no IACs) or outbuf
+// Returns the final byte count of the result
+/*****************************************************************************/
+size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, BOOL expand_cr, uchar** result)
+{
+    BYTE* first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
+	BYTE*   first_cr=NULL;
+	if(expand_cr)
+	    first_cr = (BYTE*)memchr(inbuf, '\r', inlen);
+
+	if(first_iac == NULL && first_cr==NULL) {	/* Nothing to expand */
+		if(result != NULL)
+			*result = (uchar*)inbuf;
+		return inlen;
+	}
+
+	size_t o;
+
+	if(first_iac != NULL && (first_cr == NULL || first_iac < first_cr))
+		o = first_iac - inbuf;
+	else
+		o = first_cr - inbuf;
+	memcpy(outbuf, inbuf, o);
+
+	for(size_t i = o; i < inlen && o < outlen; i++) {
+		if(inbuf[i] == TELNET_IAC)
+			outbuf[o++] = TELNET_IAC;
+		if(o >= outlen)
+			break;
+		outbuf[o++] = inbuf[i];
+		if(expand_cr && inbuf[i] == '\r' && o < outlen)
+			outbuf[o++] = '\n'; // See RFC5198
+	}
+	if(result != NULL)
+		*result = outbuf;
+	return o;
 }

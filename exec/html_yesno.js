@@ -1,4 +1,4 @@
-// $Id$
+// $Id: html_yesno.js,v 1.5 2007/07/29 04:53:35 deuce Exp $
 
 load("sbbsdefs.js");
 load("text.js");

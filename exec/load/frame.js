@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: frame.js,v 1.91 2020/08/01 19:32:23 rswindell Exp $ */
 
 /**
  	Javascript Frame Library
@@ -385,6 +385,25 @@ Frame.prototype.setData = function(x,y,ch,attr,use_offset) {
 		this.__properties__.data[py][px].attr = attr;
 	if(this.__properties__.open)
 		this.__properties__.display.updateChar(this,x,y);
+}
+Frame.prototype.getWord = function(x,y) {
+	var word = []
+	var nx = x-this.x;
+	var ny = y-this.y;
+	var cell = this.getData(nx,ny,false);
+	while(nx >= 0 && cell != undefined && cell.ch != undefined && cell.ch.match(/[0-9a-zA-Z]/)) {
+		word.unshift(cell.ch);
+		nx--;
+		cell = this.getData(nx,ny,false);
+	}
+	nx = x-this.x+1;
+	cell = this.getData(nx,ny,false);
+	while(nx < this.width && cell != undefined && cell.ch != undefined && cell.ch.match(/[0-9a-zA-Z]/)) {
+		word.push(cell.ch);
+		nx++;
+		cell = this.getData(nx,ny,false);
+	}
+	return word.join("");
 }
 Frame.prototype.clearData = function(x,y,use_offset) {
 	var px = x;
@@ -927,6 +946,31 @@ Frame.prototype.clear = function (attr) {
 	this.home();
 	this.invalidate();
 }
+Frame.prototype.erase = function(ch, attr) {
+	if(attr == undefined)
+		attr = this.attr;
+	var px = this.__position__.offset.x;
+	var py = this.__position__.offset.y;
+	for(var y = 0; y< this.height; y++) {
+		if(!this.__properties__.data[py + y]) {
+			continue;
+		}
+		for(var x = 0; x<this.width; x++) {
+			if(!this.__properties__.data[py + y][px + x]) {
+				continue;
+			}
+			if((this.__properties__.data[py + y][px + x].ch === undefined || 
+				this.__properties__.data[py + y][px + x].ch === ch) && 
+				this.__properties__.data[py + y][px + x].attr == attr) {
+				continue;
+			}
+			this.__properties__.data[py + y][px + x].ch = undefined;
+			this.__properties__.data[py + y][px + x].attr = attr;
+			this.__properties__.display.updateChar(this, x, y);
+		}
+	}
+	this.home();
+}
 Frame.prototype.clearline = function(attr) {
 	if(attr == undefined)
 		attr = this.attr;
@@ -952,12 +996,12 @@ Frame.prototype.cleartoeol = function(attr) {
 		return false;
 	for(var x=px;x<this.__properties__.data[py].length;x++) {
 		if(this.__properties__.data[py][x]) {
-			this.__properties__.data[py][x].ch = undefined;
+			if(this.__properties__.data[py][x].ch !== undefined) {
+				this.__properties__.data[py][x].ch = undefined;
+				this.__properties__.display.updateChar(this,x - this.__position__.offset.x, this.__position__.cursor.y);
+			}
 			this.__properties__.data[py][x].attr = attr;
 		}
-	}
-	for(var x=this.__position__.cursor.x;x<this.width;x++) {
-		this.__properties__.display.updateChar(this,x,this.__position__.cursor.y);
 	}
 }
 Frame.prototype.crlf = function() {
@@ -991,7 +1035,9 @@ Frame.prototype.putmsg = function(str,attr) {
 		var remainingWidth = this.width - this.__position__.cursor.x;
 		if(str.length > remainingWidth) {
 			str = word_wrap(str,remainingWidth,str.length,false).split('\n');
+			var trailing_newline = str[str.length - 1].length == 0;
 			str = str.shift() + '\r\n' + word_wrap(str.join('\r\n'),this.width,remainingWidth,false);
+			if(!trailing_newline) str = str.trimRight();
 		}
 	}
 	str = str.toString().split('');
@@ -1070,6 +1116,7 @@ Frame.prototype.putmsg = function(str,attr) {
 			case 'N': 	/* Normal */
 				this.__properties__.curr_attr&=~HIGH;
 				this.__properties__.curr_attr&=~BLINK;
+				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0x8f)|LIGHTGRAY;
 				break;
       case '+':
         this.__properties__.attr_stack.push(this.__properties__.curr_attr);
@@ -1565,6 +1612,7 @@ Display.prototype.__updateChar__ = function(x,y/*,data*/) {
 		this.__properties__.update[y] = {};
 	this.__properties__.update[y][x] = 1; /*data; */
 }
+
 Display.prototype.__getUpdateList__ = function() {
 	var list = [];
 	for(var y in this.__properties__.update) {
@@ -1627,7 +1675,7 @@ Display.prototype.__drawChar__ = function(ch,attr,xpos,ypos) {
 Display.prototype.__getTopCanvas__ = function(x,y) {
 	var top = undefined;
 	for each(var c in this.__properties__.canvas) {
-		if(c.hasData(x,y))
+		if(c.frame.parent == undefined || c.hasData(x,y))
 			top = c;
 	}
 	return top;
@@ -1646,22 +1694,6 @@ function Cursor(x,y,frame) {
 		y:undefined,
 		frame:undefined
 	}
-	this.__defineGetter__("x", function() {
-		return this.__properties__.x;
-	});
-	this.__defineSetter__("x", function(x) {
-		if(isNaN(x))
-			throw("invalid x coordinate: " + x);
-		this.__properties__.x = x;
-	});
-	this.__defineGetter__("y", function() {
-		return this.__properties__.y;
-	});
-	this.__defineSetter__("y", function(y) {
-		if(isNaN(y))
-			throw("invalid y coordinate: " + y);
-		this.__properties__.y = y;
-	});
 
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
@@ -1671,6 +1703,25 @@ function Cursor(x,y,frame) {
 	this.x = x;
 	this.y = y;
 }
+
+Cursor.prototype.__defineGetter__("x", function() {
+	return this.__properties__.x;
+});
+Cursor.prototype.__defineSetter__("x", function(x) {
+	if(isNaN(x))
+		throw("invalid x coordinate: " + x);
+	this.__properties__.x = x;
+});
+Cursor.prototype.__defineGetter__("y", function() {
+	return this.__properties__.y;
+});
+Cursor.prototype.__defineSetter__("y", function(y) {
+	if(isNaN(y))
+		throw("invalid y coordinate: " + y);
+	this.__properties__.y = y;
+});
+
+
 
 /* self-validating scroll offset object */
 function Offset(x,y,frame) {
@@ -1679,30 +1730,6 @@ function Offset(x,y,frame) {
 		y:undefined,
 		frame:undefined
 	}
-	this.__defineGetter__("x", function() {
-		return this.__properties__.x;
-	});
-	this.__defineSetter__("x", function(x) {
-		if(x == undefined)
-			throw("invalid x offset: " + x);
-		else if(x < 0)
-			x = 0;
-/* 		else if(x > this.__properties__.frame.data_width - this.__properties__.frame.width)
-			x = this.__properties__.frame.data_width - this.__properties__.frame.width;
- */		this.__properties__.x = x;
-	});
-	this.__defineGetter__("y", function() {
-		return this.__properties__.y;
-	});
-	this.__defineSetter__("y", function(y) {
-		if(y == undefined)
-			throw("invalid y offset: " + y);
-		else if(y < 0)
-			y = 0;
-/* 		else if(y > this.__properties__.frame.data_height - this.__properties__.frame.height)
-			y = this.__properties__.frame.data_height - this.__properties__.frame.height;
- */		this.__properties__.y = y;
-	});
 
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
@@ -1712,3 +1739,24 @@ function Offset(x,y,frame) {
 	this.x = x;
 	this.y = y;
 }
+
+Offset.prototype.__defineGetter__("x", function() {
+	return this.__properties__.x;
+});
+Offset.prototype.__defineSetter__("x", function(x) {
+	if(x == undefined)
+		throw("invalid x offset: " + x);
+	else if(x < 0)
+		x = 0;
+	this.__properties__.x = x;
+});
+Offset.prototype.__defineGetter__("y", function() {
+	return this.__properties__.y;
+});
+Offset.prototype.__defineSetter__("y", function(y) {
+	if(y == undefined)
+		throw("invalid y offset: " + y);
+	else if(y < 0)
+		y = 0;
+	this.__properties__.y = y;
+});

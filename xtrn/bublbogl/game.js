@@ -1,4 +1,4 @@
-/*
+/*
 	BUBBLE BOGGLE 
 	for Synchronet v3.15+ (javascript)
 	by Matt Johnson (2009)
@@ -10,7 +10,6 @@
 	Matt Johnson ( MCMLXXIX@BBS.THEBROKENBUBBLE.COM )
 */
 
-var oldpass=console.ctrl_key_passthru;
 var game_id = "boggle";
 
 load("graphic.js");
@@ -325,19 +324,35 @@ function boggle() {
 			}
 			return match;
 		}
+		// Linear search of dictionary (not recursive, not fast)
 		function scanDictionary(word,lower,upper,dict)
+		{
+			dict.rewind();
+			while(!dict.eof) {
+				if(word == dict.readln())
+					return true;
+			}
+			return false;
+		}
+		function scanDictionaryFast(word,lower,upper,dict)
 		{
 			middle=parseInt(lower+((upper-lower)/2),10);
 			dict.position=middle-25;
 			var checkword=dict.readln();
-			while(dict.position<=middle) checkword=dict.readln();
+			var bol = dict.position;
+			while(dict.position<=middle) {
+				checkword=dict.readln();
+				bol = dict.position;
+			}
 			var comparison=word.localeCompare(checkword);
 			if(comparison<0) {
-				return scanDictionary(word,lower,middle,dict);
+				return scanDictionary(word,lower,bol,dict);
 			}
-			if(dict.position>upper || upper-lower<2) return false;
+			if(dict.position>upper || upper-lower<2)  {
+				return false;
+			}
 			else if(comparison>0){
-				return scanDictionary(word,middle,upper,dict);
+				return scanDictionary(word,bol,upper,dict);
 			}
 			else return true;
 		}
@@ -508,7 +523,9 @@ function open() {
 	client.subscribe(game_id,"players");
 	data.players[useralias].laston = time();
 	data.storePlayer();
+	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru="+ACGKLOPQRTUVWXYZ";
+	js.on_exit("bbs.sys_status = " + bbs.sys_status);
 	bbs.sys_status|=SS_MOFF;
 	bbs.sys_status |= SS_PAUSEOFF;	
 	if(file_exists(root + "boggle.bin")) {
@@ -525,9 +542,6 @@ function open() {
 function close() {
 	
 	client.unsubscribe(game_id,"players");
-	console.ctrlkey_passthru=oldpass;
-	bbs.sys_status&=~SS_MOFF;
-	bbs.sys_status&=~SS_PAUSEOFF;
 	console.attributes=ANSI_NORMAL;
 	console.clear();
 	var splash_filename=root + "exit.bin";

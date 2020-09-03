@@ -20,6 +20,7 @@ __published:	// IDE-managed Components
     TMenuItem *RefreshPopup;
     TMenuItem *FilterIpMenuItem;
     TMenuItem *ResolveHostnameMenuItem;
+    TMenuItem *ClearListMenuItem;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
     void __fastcall ListViewColumnClick(TObject *Sender,
@@ -31,6 +32,7 @@ __published:	// IDE-managed Components
     void __fastcall RefreshPopupClick(TObject *Sender);
     void __fastcall FilterIpMenuItemClick(TObject *Sender);
     void __fastcall ResolveHostnameMenuItemClick(TObject *Sender);
+    void __fastcall ClearListMenuItemClick(TObject *Sender);
 private:	// User declarations
     void __fastcall FillListView(TObject *Sender);
 public:		// User declarations

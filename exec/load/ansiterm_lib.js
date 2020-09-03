@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ansiterm_lib.js,v 1.10 2020/05/01 19:35:05 rswindell Exp $
 // vi: tabstop=4
 
 /* Example usage:
@@ -21,6 +21,14 @@ const defs = {
 		bg_bright_intensity:	33,
 		blink_alt_charset:		34,
 		no_blink:				35,
+	},
+	
+	mouse_reporting: {
+		x10_compatible:			9,
+		normal_tracking:		1000,
+		button_events:			1002,
+		any_events:				1003,
+		extended_coord:			1006,	// modifies the above modes
 	},
 
 	// SyncTerm emulation speed map
@@ -160,7 +168,11 @@ var ext_mode = {
 	restore: function(mode) { return format("\x1b[?%uu", defs.ext_mode[mode]); },
 	save_all:		function()	{ return "\x1b[?s"; },
 	restore_all:	function()	{ return "\x1b[?u"; }
+}
 
+var mouse = {
+	set: 	function(mode)	{ return format("\x1b[?%uh", defs.mouse_reporting[mode]); },
+	clear: 	function(mode)	{ return format("\x1b[?%ul", defs.mouse_reporting[mode]); }
 }
 
 var speed = {
@@ -203,7 +215,7 @@ function set_attributes(a)
 
 function send(a,b,c,d)
 {
-	log(LOG_DEBUG, "ansterm.sending: " + this[a][b](c,d));
+	log(LOG_DEBUG, "ansiterm.sending: " + this[a][b](c,d));
 	console.write(this[a][b](c,d));
 }
 

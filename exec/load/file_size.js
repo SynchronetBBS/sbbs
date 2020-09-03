@@ -1,6 +1,6 @@
 // file_size.js
 
-// $Id$
+// $Id: file_size.js,v 1.2 2005/03/08 03:07:17 rswindell Exp $
 
 // Function for returning a string representation of a file size
 

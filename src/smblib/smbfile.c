@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) FILE stream I/O routines */
 
-/* $Id$ */
+/* $Id: smbfile.c,v 1.17 2020/04/14 07:08:50 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -98,7 +98,7 @@ size_t SMBCALL smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 	while(1) {
 		if((ret=fread(buf,sizeof(char),bytes,fp))==bytes)
 			return(ret);
-		if(get_errno()!=EDEADLOCK)
+		if(feof(fp) || (get_errno()!=EDEADLOCK && get_errno()!=EACCES))
 			return(ret);
 		if(!start)
 			start=time(NULL);
@@ -121,7 +121,7 @@ size_t SMBCALL smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
 
 /****************************************************************************/
 /* Opens a non-shareable file (FILE*) associated with a message base		*/
-/* Retrys for retry_time number of seconds									*/
+/* Retries for retry_time number of seconds									*/
 /* Return 0 on success, non-zero otherwise									*/
 /****************************************************************************/
 int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
@@ -156,7 +156,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 	SAFEPRINTF2(path,"%s.%s",smb->file,ext);
 
 	while(1) {
-		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,share,S_IREAD|S_IWRITE))!=-1)
+		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,share,DEFFILEMODE))!=-1)
 			break;
 		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
@@ -169,8 +169,8 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time) {
 				safe_snprintf(smb->last_error,sizeof(smb->last_error)
-					,"%s timeout opening %s (retry_time=%ld)", __FUNCTION__
-					,path,smb->retry_time);
+					,"%s timeout opening %s (retry_time=%lu)", __FUNCTION__
+					,path, (ulong)smb->retry_time);
 				return(SMB_ERR_TIMEOUT); 
 			}
 		SLEEP(smb->retry_delay);
@@ -182,12 +182,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 		close(file);
 		return(SMB_ERR_OPEN); 
 	}
-#if 0	/* This causes a noticeable performance hit when new-scanning subs */
-	if(fp==&smb->sid_fp)
-		setvbuf(*fp,NULL,_IONBF,0);	/* no buffering (cause of *.sid corruption?) */
-	else
-#endif
-		setvbuf(*fp,NULL,_IOFBF,2*1024);
+	setvbuf(*fp,NULL,_IOFBF, 2*1024);
 	return(SMB_SUCCESS);
 }
 

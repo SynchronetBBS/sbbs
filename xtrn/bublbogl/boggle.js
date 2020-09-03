@@ -3,7 +3,7 @@
 	for Synchronet v3.15+ (javascript)
 	by Matt Johnson (2009)
 
-    $Id$
+    $Id: boggle.js,v 1.16 2012/12/24 11:50:03 rswindell Exp $
 	
 	Game uses standard "Big Boggle" rules, scoring, and dice
 	Dictionary files created from ENABLe gaming dictionary

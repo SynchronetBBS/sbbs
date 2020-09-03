@@ -2,7 +2,7 @@
 
 /* Synchronet ARS checking routine */
 
-/* $Id$ */
+/* $Id: chk_ar.cpp,v 1.32 2020/03/19 18:50:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -89,6 +89,9 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 		switch(artype) {
 			case AR_ANSI:				/* No arguments */
 			case AR_PETSCII:
+			case AR_ASCII:
+			case AR_UTF8:
+			case AR_CP437:
 			case AR_RIP:
 			case AR_WIP:
 			case AR_LOCAL:
@@ -147,7 +150,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ANSI:
-				if(!(user->misc&ANSI))
+				if(!term_supports(ANSI))
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -156,7 +159,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_PETSCII:
-				if(!(user->misc&PETSCII))
+				if((term_supports()&CHARSET_FLAGS) != CHARSET_PETSCII)
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -164,8 +167,35 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					noaccess_val=PETSCII; 
 				}
 				break;
+			case AR_ASCII:
+				if((term_supports()&CHARSET_FLAGS) != CHARSET_ASCII)
+					result=_not;
+				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=NO_EXASCII; 
+				}
+				break;
+			case AR_UTF8:
+				if((term_supports()&CHARSET_FLAGS) != CHARSET_UTF8)
+					result=_not;
+				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=UTF8; 
+				}
+				break;
+			case AR_CP437:
+				if((term_supports()&CHARSET_FLAGS) != CHARSET_CP437)
+					result=_not;
+				else result=!_not;
+				if(!result) {
+					noaccess_str=text[NoAccessTerminal];
+					noaccess_val=0; 
+				}
+				break;
 			case AR_RIP:
-				if(!(user->misc&RIP))
+				if(!term_supports(RIP))
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -174,7 +204,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_WIP:
-				if(!(user->misc&WIP))
+				if(!term_supports(WIP))
 					result=_not;
 				else result=!_not;
 				if(!result) {
@@ -679,7 +709,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_COLS:
-				if((equal && cols != n) || (!equal && cols < (long)n))
+				if((equal && cols != (long)n) || (!equal && cols < (long)n))
 					result=_not;
 				else
 					result=!_not;
@@ -689,7 +719,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ROWS:
-				if((equal && rows != n) || (!equal && rows < (long)n))
+				if((equal && rows != (long)n) || (!equal && rows < (long)n))
 					result=_not;
 				else
 					result=!_not;

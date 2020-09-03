@@ -109,114 +109,72 @@
 			Array of { type : String, url : String, length : Number } objects
 			for any <enclosure> elements in the item.
 
-		Item.extra (Object)
-
-			If the item/entry contains additional elements not provided for
-			above, they are tacked on to this object in case you may need
-			to access them.  Presumably these will all be E4X XML objects.
-
 */
 
 load("http.js");
 
-// This is really not the way to do things, but meh.
-var toLocal = function(xmlObject) {
-	for each(var element in xmlObject) {
-		element.setName(element.localName());
-		toLocal(element);
+const Item = function (i) {
+
+	this.id = i.guid.length() ? i.guid[0].toString() : (i.id.length() ? i.id[0].toString() : '');
+	this.title = ''; // uh ...
+	this.date = i.pubDate.length() ? i.pubDate[0].toString() : (i.updated.length() ? i.updated[0].toString() : '');
+	this.author = i.author.length() ? i.author.toString() : '';
+	this.body = i.description.length() ? i.description[0].toString() : (i.summary.length() ? i.summary[0].toString() : '');
+	this.content = i.encoded.length() ? i.encoded.toString() : '';
+	this.link = i.link.length() ? skipsp(truncsp(i.link[0].toString())) : '';
+	this.enclosures = [];
+
+	var enclosures = i.enclosure.length();
+	for (var n = 0; n < enclosures; n++) {
+		this.enclosures.push({
+			type: i.enclosure[n].attribute('type'),
+			url: i.enclosure[n].attribute('url'),
+			length: parseInt(i.enclosure[n].attribute('length'), 10),
+		});
 	}
+
 }
 
-var Feed = function(url) {
+const Channel = function (c) {
 
-	var Item = function(xmlObject) {
+	this.title = c.title.length() ? c.title[0].toString() : '';
+	this.description = c.description.length() ? c.description[0].toString() : (c.subtitle.length() ? c.subtitle[0].toString() : '');
+	this.link = c.link.length() ? skipsp(truncsp(c.link[0].toString())) : '';
+	this.updated = c.lastBuildDate.length() ? c.lastBuildDate[0].toString() : (c.updated.length() ? c.updated[0].toString() : '');
+	this.items = [];
 
-		this.id = "";
-		this.title = "";
-		this.date = "";
-		this.author = "";
-		this.body = "";
-		this.content = "";
-		this.link = "";
-		this.enclosures = [];
-		this.extra = {};
-
-		for each(var element in xmlObject) {
-			if(element.name() == "guid" || element.name() == "id")
-				this.id = element;
-			else if(element.name() == "title")
-				this.title = element;
-			else if(element.name() == "pubDate" || element.name() == "updated")
-				this.date = element;
-			else if(element.name() == "author")
-				this.author = element.text(); // To do: deal with Atom-style <author>
-			else if(element.name() == "description" || element.name() == "summary")
-				this.body = element;
-			else if(element.name() == "link")
-				this.link = element.text(); // To do: deal with multiple links
-			else if(element.name() == "encoded") // content:encoded
-				this.content = element;
-			else if(element.name() == "enclosure")
-				this.enclosures.push({'type':element.attribute('type'),'url':element.attribute("url"),'length':parseInt(element.attribute('length'))});
-			else
-				this.extra[element.name()] = element;
-
-		}
-
+	var items = c.item.length();
+	for (var n = 0; n < items; n++) {
+		this.items.push(new Item(c.item[n]));
 	}
 
-	var Channel = function(xmlObject) {
-
-		this.title = "a";
-		this.description = "";
-		this.link = "";
-		this.updated = "";
-		this.items = [];
-
-		if(typeof xmlObject.title != "undefined")
-			this.title = xmlObject.title;
-
-		if(typeof xmlObject.description != "undefined")
-			this.description = xmlObject.description;
-		else if(typeof xmlObject.subtitle != "undefined")
-			this.description = xmlObject.subtitle;
-
-		// To do: deal with multiple links
-		if(typeof xmlObject.link != "undefined")
-			this.link = xmlObject.link.text();
-
-		if(typeof xmlObject.lastBuildDate != "undefined")
-			this.updated = xmlObject.lastBuildDate;
-		else if(typeof xmlObject.updated != "undefined")
-			this.updated = xmlObject.updated;
-
-		var items = xmlObject.elements("item");
-		for each(var item in items) {
-			this.items.push(new Item(item));
-		}
-
-		var entries = xmlObject.elements("entry");
-		for each(var entry in entries) {
-			this.items.push(new Item(entry));
-		}
-
+	var entries = c.entry.length();
+	for (var n = 0; n < entries; n++) {
+		this.items.push(new Item(c.entry[n]));
 	}
+
+}
+
+const Feed = function (url, follow_redirects) {
 
 	this.channels = [];
 
-	this.load = function() {
+	this.load = function () {
 		var httpRequest = new HTTPRequest();
+		httpRequest.follow_redirects = follow_redirects || 0;
 		var response = httpRequest.Get(url);
-		if(typeof response == "undefined" || response == "")
-			throw "Empty response from server.";
-
+		if (typeof response == "undefined" || response == "") {
+			throw new Error('Empty response from server.');
+		}
 		var feed = new XML(response.replace(/^<\?xml.*\?>/g, ""));
-		toLocal(feed); // This is shitty
-		switch(feed.localName()) {
+		httpRequest = undefined;
+		response = undefined;
+		switch (feed.localName()) {
 			case "rss":
-				var channels = feed.elements("channel");
-				for each(var element in channels)
-					this.channels.push(new Channel(element));
+				var channels = feed.channel.length();
+				for (var n = 0; n < channels; n++) {
+					this.channels.push(new Channel(feed.channel[n]));
+				}
 				break;
 			case "feed":
 				this.channels.push(new Channel(feed));
@@ -224,6 +182,7 @@ var Feed = function(url) {
 			default:
 				break;
 		}
+		feed = undefined;
 	}
 
 	this.load();

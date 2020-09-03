@@ -1,0 +1,1051 @@
+;ArrisVille & friends ref file
+@#castle
+;Corin's castle
+@do moveback
+@busy
+@offmap
+@show
+`r0`c  `%`r1  The Royal Palace  `r0
+
+  `2The Arrisville castle is a picturesque stone monument that pays
+  homage to perseverance.  Even though his mother and father have been
+  missing for nearly a year, `0Prince Corin`2 has kept this city strong.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Ask for an audience with Corin
+Leave
+@if responce is 1 then do
+  @begin
+  @if `p07 < -50 then do
+   @begin
+  @show
+`\`\  `2The prince refuses to grant you an audience.  Apparently he's heard
+  of you.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `2The prince agrees to see you.
+`\`k
+@label ca1
+@do `v01 is 1
+@show
+`r0`c  `%`r1  Audience With The Prince `r0
+
+  `0"And how can I help you today, `n`0?" `2the prince asks.
+
+@do write
+`x`x
+@choice
+Tell me of rumors you've heard
+Conduct business with Corin
++`t17 4 -`t17 5 I must ask a favor of you, dear prince.
++`t17 5 -`t17 6 Prince.. I am back.
+>`i72 0 I have the Gryphon Moon!
+End the audience
+@if responce is 5 then do
+  @begin
+  @show
+`\`\  `0"Incredible work!" `2the prince compliments you warmly.
+
+`k
+  @do goto ca1
+  @end
+@if responce is 4 then do
+ @begin
+@show
+`\`\  `0"What happened over there?!" `2Corin demands.
+
+  `$"Terrible things....  I barely escaped with my life.  But I did not
+  accomplish what I came do to, so I must ask yet another boon of you..."
+
+`k  `2A few days later you are dropped off at the `4Dragon Tooth Clan's`2
+  headquarters.
+
+`k
+@do `i67 is 1
+@do map is 705
+@do x is 29
+@do y is 11
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+ @end
+
+@if responce is 3 then do
+  @begin
+  @show
+`\`\  `0"Anything!  I have heard of your efforts to stop the Dragon Tooth Clan."`2
+  the prince tells you excitedly.
+
+`k  `$"Can one of your great ships take me to our enemies lair?  You know the
+  island of which I speak, don't you."
+
+`k  `0"Yes, yes I do." `2Corin tells you somberly.  `0"You may leave tommorow,
+  for now, you must rest."
+
+`k`c  `r1  `%Goodnight  `r0
+`\  `2Palace servants take you to a most wonderful room - ornamental rugs
+  cover much of the floors and walls, many of which contain scenes of men
+  doing battle with dragons and other beasts.
+
+  Your bed is large and soft.  The silk sheets feel like clouds against your
+  skin... clouds.. this seems to follow you into your dreams.
+
+`k`c  `r1  `%All aboard!  `r0
+
+  `2After a huge breakfast the prince accompanies you to the docks.
+
+`k  `0"I wish you great success in whatever it is you must do.  I would that
+  you would take this gift, `n`0."
+
+`k  `%THE PRINCE GIVES YOU A DISGUISE!
+
+`k  `2The crew is quiet during the journey.  The silence is unnerving.
+
+`k  You finally arrive.
+
+`k
+@do `i67 is 1
+@bitset `t17 5 1
+@do map is 705
+@do x is 29
+@do y is 11
+@loadmap &map
+@drawmap
+@update
+@closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @if bitcheck `t17 7 1 then do
+    @begin
+  @show
+`\`\  `2Corin's face becomes earnest.  `0"Things are much better now.  You have
+  done this country a great service by taking the `%Gryphon Moon`0.  If you
+  ever need anything, let me know."
+`\`k
+  @do goto ca1
+    @end
+
+  @show
+`\`\  `2Corin's face becomes earnest.  `0"To be honest, there is much unrest.
+  The people are afraid... afraid of the `4Dragon Tooth Clan`0 and the threats
+  they make.  I have refused to pay the tribute they demand and many fear they
+  will retaliate soon."
+`\`k
+  @do goto ca1
+  @end
+
+  @if responce is 2 then do
+    @begin
+    @do `p20 is 6
+    @run getquest in quest.ref
+    @end
+
+  @end
+
+@drawmap
+@update
+
+@#ghost
+;The ghost quest, that haunts the .... :)
+@if bitcheck `t14 4 0 then do
+  @begin
+@if `i61 > 0 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@busy
+@show
+`r0`c  `%`r1  A Ghostly Image  `r0
+
+  `3Walking down the halls of the inn you begin to hear a quiet moaning.
+  You look around but see nothing.  The sound seems to be coming from a
+  wall!  You move closer to hear more, the moaning seems to be getting
+  louder.  Suddenly you notice a light, but not from a candle, it seems
+  to be a brilliant blue.
+
+  A transparent blue body floats out from the wall, it's a man with a
+  dismal look on his face moaning loudly.  You're both scared an
+  exhilarated at the same time.  `%Who is this Ghost?`3
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Attempt to talk to it
+Fight it
+Run
+@if response is 1 then do
+  @begin
+  @do `i61 is 1
+  @show
+`\`\  `%You fight back your fear and reach out towards the apparition.
+  As you do so the figure stops its moaning and looks to you.
+  `$"Who .. who are you?"  `%you ask.
+  `%"A person .. like yourself,"  `3he replies.  `%"I too quested for the
+  Red Dragon, back when we were sure of his existance.  I believed I had
+  found my way to one of his lairs.  Here in this land, in the northeast
+  a cave in the water.  I went in hoping to find the beast, but was betrayed
+  by a companion."
+
+  `%"You may right my death though. `3Take this and find the cave, honor my
+  body..."
+
+  `%His image fades and lying where he was is a small silver ring.
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @pauseoff
+  @do `p07 - 1
+  @show
+`\`\  `%Your instincts take over as you pull out your s&weapon.  The ghost
+  seems instantly aware of you.  It speaks ...
+  `3"Beware the path you choose warrior, it may not be as easy as you may
+  think ..."  `%and like that he's gone.
+
+  `bYOUR ALIGNMENT GOES DOWN BY ONE!`b
+`\`k
+  @end
+@end
+@drawmap
+@update
+
+@#sh1
+;Sosen house 1 person
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Talking to Basil  `r0
+
+  `2A slightly evil looking man encourages you to sit.
+
+@do write
+`x`x
+@choice
+Gossip
+Conduct business with Basil
+Leave
+@if responce is 2 then do
+  @begin
+  @do `p20 is 5
+  @run getquest in quest.ref
+  @end
+
+@if responce is 1 then do
+  @begin
+   @do `p21 random 3 1
+   @if `p21 is 1 then do
+     @begin
+     @show
+`\`\  `0"Well.. I believe the Dragon Cult is telling the truth.  The Dragon
+  is alive and well and serves them.  You would do well to respect them."
+`\`k
+     @end
+
+   @if `p21 is 2 then do
+     @begin
+     @show
+`\`\  `0"The Koshi people will kill you if you get too close.  Stay away from
+  where they live.  Me?  Of course I don't know where that is..."
+`\`k
+     @end
+
+   @if `p21 is 3 then do
+     @begin
+     @show
+`\`\  `0"This town is small.  There ain't much business around here.. but I
+  have a few customers.. What do I sell? Don't EVER ask me that again!"
+`\`k
+     @end
+
+  @do goto sh1
+  @end
+
+@drawmap
+@update
+
+@#kosign
+;Sosen house 1 person
+@do moveback
+@do saybar
+`0Sign: `2<--- Koshi mountains.  Stay away from these sick people!
+
+@#sh2
+;Sosen house 2 person
+@do moveback
+@do saybar
+`0Matt Longsword: `2We Dragon Tooth members like to drink blood.  Do you?
+
+@#sh3
+;Sosen house 3 person
+@do moveback
+@do saybar
+`0Wise Child: There is a music shop west of Arrisville..`2My house `bsucks`2.  
+
+@#sosstore
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                      `r1  Sosen Village General Store  `r0
+
+
+
+
+@buymanager
+26
+32
+33
+58
+59
+60
+40
+5
+@drawmap
+@update
+
+@#STORE
+;The ArrisVille Store
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1  ArrisVille Store  `r0
+
+
+
+
+@buymanager
+58
+59
+60
+@drawmap
+@update
+
+@#inn
+;The ArrisVille (tm) Inn
+@do `v01 is 1
+@offmap
+@do moveback
+@show
+`r0`c  `%`r1  ArrisVille Inn  `r0
+
+  `2The towered Inn looks very nice -  A refreshing change from what you're
+  used to in your travels.
+
+  A well dressed man looks up from the front desk.
+
+  `0"Good day s&sir, how may I help you?"`2
+  
+  You are holding `$$&money`2.
+
+@do write
+`x`x
+@choice
+Get a room (`$$100`%)
+Leave
+@if response is 1 then do
+  @begin
+  @if money < 100 then do
+    @begin
+    @show
+`\`\`2  You are short on cash.  It's okay, someday you'll be able to stay
+  here...
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2You give the man the cash.  He leads you inside...
+`\`k
+   @do money - 100
+   @do x is 21
+   @do y is 13  
+   @do map is 450
+   @loadmap 450
+   @drawmap
+   @update
+   @closescript
+  @end
+
+@drawmap
+@update
+
+
+@#seth
+;talking to seth (gosh, he rules!)
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  `%The Music Shop  `r0
+
+  `2The man looks up.  Somehow he looks so familiar..
+
+  `0"What can I help you with, friend?" `2he asks.
+
+@do write
+`x`x
+@choice
+Do I know you?
+-`t14 1 >`i07 0 Can you fix my flute?
++`t14 1 -`t14 2 >`i07 0 Can you teach me how to play my flute?
+Leave
+@if responce is 3 then do
+  @begin
+  @show
+`\`\  `2The man agrees.  Half an hour later you have mastered TWO songs!
+
+`k
+  @bitset `t14 2 1
+  @end
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `0"Hey there... look at this.  Can you fix it?  I've tried blowing it
+  and it don't work so hot," `2you ask.
+
+  `2The man studies your flute for sometime.  He suddenly looks at you.
+  `0"Where did you find this?!!"
+
+`k  `2You tell him.  He explains that there are only two of them in the
+  world - and he owns the other one.  The Trondhiem Flutes each contain
+  special powers.  If you know how to play them correctly...
+
+  `$"So are you gonna fix it, sir?"
+
+`k  `2The man laughs.  `0"It isn't broken!  You just didn't know how to play
+  it!"
+
+`k
+  @bitset `t14 1 1
+  @do goto seth
+  @end
+
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `0"No, no I don't think so.  I moved from Greentree a few years ago."
+
+  `$"But I come from Stonebrook!  That is right next to you!!!" `2you exclaim.
+
+  `0"Oh yeah?  Woah."  `2After a moment or so of uncomfortable silence you
+  decide to move on.
+
+`k
+  @do goto seth
+  @end
+
+
+
+@drawmap
+@update
+
+@#sethsign
+@do moveback
+@do saybar
+`0Sign: `2<---- The Music Shop
+
+@#heal
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1  ArrisVille Master Healing  `r0
+
+`2  Master looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well come on!  How am I supposed to make money when I can barely walk?
+Buddy, how 'bout a little compassion for once in your life freak!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Master informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take like uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later!" `2says Master.
+
+`k
+@drawmap
+@update
+
+@#bank
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1  `%5th Bank Of ArrisVille  `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdrawal.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last questions?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+
+@#bank2
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1 `%4th Bank Of Sosen `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdrawal.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last questions?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+
+   @end
+
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+
+
+
+@drawmap
+@update
+
+@#TRAV
+;Travel ticket place in ArrisVille
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1  ArrisVille Travel  `r0
+
+
+
+
+@buymanager
+27
+32
+33
+@drawmap
+@update
+
+
+@#LSTORE
+;Store in the Sosen Village
+@OFFMAP
+@DO MOVEBACK
+
+
+@#nomore

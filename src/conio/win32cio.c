@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: win32cio.c,v 1.115 2020/06/27 00:04:45 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -101,8 +101,8 @@ CIOLIBEXPORTVAR const struct keyvals keyval[] =
 	{VK_UP, 0x4800, 0x4800, 0x8d00, 0x9800},
 	{VK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00},
 	{VK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000},
-	{VK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, 0xa200},
-	{VK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, 0xa300},
+	{VK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC},
+	{VK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_CTRL_IC},
 	{VK_NUMPAD0, '0', 0x5200, 0x9200, 0},
 	{VK_NUMPAD1, '1', 0x4f00, 0x7500, 0},
 	{VK_NUMPAD2, '2', 0x5000, 0x9100, 0},
@@ -332,30 +332,41 @@ static int win32_keyboardio(int isgetch)
 					if(input.Event.MouseEvent.dwMousePosition.X+1 != LastX || input.Event.MouseEvent.dwMousePosition.Y+1 != LastY) {
 						LastX=input.Event.MouseEvent.dwMousePosition.X+1;
 						LastY=input.Event.MouseEvent.dwMousePosition.Y+1;
-						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY);
+						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY, -1, -1);
 					}
-					if(last_state != input.Event.MouseEvent.dwButtonState) {
-						switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
-							case FROM_LEFT_1ST_BUTTON_PRESSED:
-								if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-									ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-								else
-									ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-								break;
-							case FROM_LEFT_2ND_BUTTON_PRESSED:
-								if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_2ND_BUTTON_PRESSED)
-									ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-								else
-									ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-								break;
-							case RIGHTMOST_BUTTON_PRESSED:
-								if(input.Event.MouseEvent.dwButtonState & RIGHTMOST_BUTTON_PRESSED)
-									ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-								else
-									ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1);
-								break;
+					if (input.Event.MouseEvent.dwEventFlags == 0) {
+						if(last_state != input.Event.MouseEvent.dwButtonState) {
+							switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
+								case FROM_LEFT_1ST_BUTTON_PRESSED:
+									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
+										ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+									else
+										ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+									break;
+								case FROM_LEFT_2ND_BUTTON_PRESSED:
+									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_2ND_BUTTON_PRESSED)
+										ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+									else
+										ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+									break;
+								case RIGHTMOST_BUTTON_PRESSED:
+									if(input.Event.MouseEvent.dwButtonState & RIGHTMOST_BUTTON_PRESSED)
+										ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+									else
+										ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+									break;
+							}
+							last_state=input.Event.MouseEvent.dwButtonState;
 						}
-						last_state=input.Event.MouseEvent.dwButtonState;
+					}
+					else if (input.Event.MouseEvent.dwEventFlags == MOUSE_WHEELED) {
+						// If the high word of the dwButtonState member contains a positive value... ARGH!
+						if (input.Event.MouseEvent.dwButtonState & 0x80000000) {
+							ciomouse_gotevent(CIOLIB_BUTTON_5_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+						}
+						else {
+							ciomouse_gotevent(CIOLIB_BUTTON_4_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+						}
 					}
 				}
 		}
@@ -805,44 +816,63 @@ void win32_settitle(const char *title)
 void win32_copytext(const char *text, size_t buflen)
 {
 	HGLOBAL	clipbuf;
-	LPTSTR	clip;
+	LPWSTR	clip;
+	int new_buflen = MultiByteToWideChar(CP_UTF8, 0, text, buflen, NULL, 0);
 
-	if(!OpenClipboard(NULL))
+	new_buflen = MultiByteToWideChar(CP_UTF8, 0, text, buflen, NULL, 0);
+	if (new_buflen == 0) {
 		return;
-	EmptyClipboard();
-	clipbuf=GlobalAlloc(GMEM_MOVEABLE, buflen+1);
-	if(clipbuf==NULL) {
-		CloseClipboard();
+	}
+	clipbuf=GlobalAlloc(GMEM_MOVEABLE, new_buflen * sizeof(WCHAR));
+	if (clipbuf == NULL) {
 		return;
 	}
 	clip=GlobalLock(clipbuf);
-	memcpy(clip, text, buflen);
-	clip[buflen]=0;
+	if (MultiByteToWideChar(CP_UTF8, 0, text, buflen, clip, new_buflen) != new_buflen) {
+		GlobalUnlock(clipbuf);
+		GlobalFree(clipbuf);
+		return;
+	}
 	GlobalUnlock(clipbuf);
-	SetClipboardData(CF_OEMTEXT, clipbuf);
+	if(!OpenClipboard(NULL)) {
+		GlobalFree(clipbuf);
+		return;
+	}
+	EmptyClipboard();
+	if (SetClipboardData(CF_UNICODETEXT, clipbuf) == NULL) {
+		GlobalFree(clipbuf);
+	}
 	CloseClipboard();
 }
 
 char *win32_getcliptext(void)
 {
 	HGLOBAL	clipbuf;
-	LPTSTR	clip;
+	LPWSTR	clip;
 	char *ret = NULL;
+	int u8sz;
 
-	if(!IsClipboardFormatAvailable(CF_OEMTEXT))
+	if (!IsClipboardFormatAvailable(CF_UNICODETEXT))
 		return(NULL);
-	if(!OpenClipboard(NULL))
+	if (!OpenClipboard(NULL))
 		return(NULL);
-	clipbuf=GetClipboardData(CF_OEMTEXT);
-	if(clipbuf!=NULL) {
-		clip=GlobalLock(clipbuf);
-		ret=(char *)malloc(strlen(clip)+1);
-		if(ret != NULL)
-			strcpy(ret, clip);
-		GlobalUnlock(clipbuf);
+	clipbuf = GetClipboardData(CF_UNICODETEXT);
+	if (clipbuf != NULL) {
+		clip = GlobalLock(clipbuf);
+		if (clip != NULL) {
+			u8sz = WideCharToMultiByte(CP_UTF8, 0, clip, -1, NULL, 0, NULL, NULL);
+			if (u8sz > 0) {
+				ret = (char *)malloc(u8sz);
+				if(ret != NULL) {
+					if (WideCharToMultiByte(CP_UTF8, 0, clip, -1, ret, u8sz, NULL, NULL) == 0)
+						FREE_AND_NULL(ret);
+				}
+			}
+			GlobalUnlock(clipbuf);
+		}
 	}
 	CloseClipboard();
-	
+
 	return(ret);
 }
 

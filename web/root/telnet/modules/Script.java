@@ -1,7 +1,7 @@
 /**
  * Script -- A module for scripting (very simple).
  * --
- * $Id$
+ * $Id: Script.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Mon Mar 24 15:52:12 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -65,7 +65,7 @@ import java.awt.Event;
  *       &quot;{}&quot; as well.
  *       
  * </DL>
- * @version $Id$
+ * @version $Id: Script.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  * @see modules.Module
  */

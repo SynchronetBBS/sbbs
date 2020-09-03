@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: fmsgdump.c,v 3.6 2020/04/26 21:01:55 rswindell Exp $ */
 // vi: tabstop=4
 
 #include "gen_defs.h"
@@ -89,9 +89,9 @@ int msgdump(FILE* fp, const char* fname)
 
 	printf("Subj: %.*s\n", (int)sizeof(hdr.subj)-1, hdr.subj);
 	printf("Attr: 0x%04hX %s\n", hdr.attr, fmsgattr_str(hdr.attr));
-	printf("To  : %.*s (%u.%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
+	printf("To  : %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
 		,hdr.destzone, hdr.destnet, hdr.destnode, hdr.destpoint);
-	printf("From: %.*s (%u.%u/%u.%u)\n", (int)sizeof(hdr.from)-1, hdr.from
+	printf("From: %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.from)-1, hdr.from
 		,hdr.origzone, hdr.orignet, hdr.orignode, hdr.origpoint);
 	printf("Time: %.*s\n", (int)sizeof(hdr.time)-1, hdr.time);
 
@@ -136,7 +136,7 @@ int msgdump(FILE* fp, const char* fname)
 	return(0);
 }
 
-char* usage = "usage: fmsgdump [-body] [-ctrl] <file1.msg> [file2.msg] [...]\n";
+char* usage = "usage: fmsgdump [-body | -ctrl] <file1.msg> [file2.msg] [...]\n";
 
 int main(int argc, char** argv)
 {
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 	int		i;
 	char	revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 3.6 $", "%*s %s", revision);
 
 	fprintf(stderr,"fmsgdump rev %s - Dump FidoNet Stored Messages\n\n"
 		,revision

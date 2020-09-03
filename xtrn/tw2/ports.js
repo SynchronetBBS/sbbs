@@ -349,7 +349,7 @@ function InitializePorts()
 {
 	var port;
 	
-	uifc.pop("Placing Ports");
+	if(this.uifc) uifc.pop("Placing Ports");
 
 	db.lock(Settings.DB,'ports',LOCK_WRITE);
 	db.write(Settings.DB,'ports',[]);

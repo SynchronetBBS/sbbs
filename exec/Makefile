@@ -26,8 +26,6 @@ all : 	\
 	simple.bin \
 	type.bin \
 	wildcat.bin \
-	wiplogin.bin \
-	wipshell.bin \
 	wwiv.bin \
 	yesnobar.bin 
 

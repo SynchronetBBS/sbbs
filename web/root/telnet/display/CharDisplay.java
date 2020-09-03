@@ -1,7 +1,7 @@
 /**
  * CharDisplay -- a simple character display
  * --
- * $Id$
+ * $Id: CharDisplay.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Thu Jul 24 15:19:18 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -41,7 +41,7 @@ import java.awt.Rectangle;
 
 /**
  * A simple character display.
- * @version $Id$
+ * @version $Id: CharDisplay.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  */
 public class CharDisplay extends Panel
@@ -49,7 +49,7 @@ public class CharDisplay extends Panel
   /**
    * If you need the runtime version, just ask this variable.
    */
-  public String version = "$Revision$ $Date$";
+  public String version = "$Revision: 1.1.1.1 $ $Date: 2005/09/25 22:40:20 $";
   /**
    * Enable debug messages. This is final static to prevent unused
    * code to be compiled.

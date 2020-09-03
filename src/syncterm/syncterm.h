@@ -31,9 +31,9 @@ enum {
 
 /* "ALT/META" key name string */
 #if defined(__APPLE__) && defined(__MACH__)
-#define ALT_KEY_NAME	"COMMAND"
-#define ALT_KEY_NAMEP	"Command"
-#define ALT_KEY_NAME3CH	"CMD"
+#define ALT_KEY_NAME	"OPTION"
+#define ALT_KEY_NAMEP	"Option"
+#define ALT_KEY_NAME3CH	"OPT"
 #else
 #define ALT_KEY_NAME	"ALT"
 #define ALT_KEY_NAMEP	"Alt"
@@ -59,6 +59,12 @@ struct syncterm_settings {
 	int		scaling_factor;
 	int		xfer_failure_keypress_timeout;	/* wait for user acknowledgement via keypress, in seconds */
 	int		xfer_success_keypress_timeout;	/* wait for user acknowledgement via keypress, in seconds */
+	int		custom_cols;
+	int		custom_rows;
+	int		custom_fontheight;
+	int		window_width;
+	int		window_height;
+	int		left_just;
 };
 
 extern char *inpath;

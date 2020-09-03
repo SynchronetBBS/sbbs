@@ -1,6 +1,6 @@
 /* Execute a Synchronet JavaScript module from the command-line */
 
-/* $Id$ */
+/* $Id: jsexec.c,v 1.217 2020/08/17 00:48:28 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -51,8 +51,14 @@
 #include "js_request.h"
 #include "jsdebug.h"
 
-#define DEFAULT_LOG_LEVEL	LOG_DEBUG	/* Display all LOG levels */
+#define DEFAULT_LOG_LEVEL	LOG_INFO
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
+
+static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
+static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
+static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
+static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
+static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
 
 js_startup_t	startup;
 JSRuntime*	js_runtime;
@@ -60,6 +66,7 @@ JSContext*	js_cx;
 JSObject*	js_glob;
 js_callback_t	cb;
 scfg_t		scfg;
+char*		text[TOTAL_TEXT];
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
 ulong		js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp;
@@ -77,6 +84,7 @@ BOOL		terminated=FALSE;
 BOOL		recycled;
 int			log_level=DEFAULT_LOG_LEVEL;
 int  		err_level=DEFAULT_ERR_LOG_LVL;
+long		umask_val = -1;
 pthread_mutex_t output_mutex;
 #if defined(__unix__)
 BOOL		daemonize=FALSE;
@@ -334,6 +342,7 @@ static int do_bail(int code)
 		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 
+	cooked_tty();
 	if(pause_on_exit || (code && pause_on_error)) {
 		fprintf(statfp,"\nHit enter to continue...");
 		getchar();
@@ -341,7 +350,6 @@ static int do_bail(int code)
 
 	if(code)
 		fprintf(statfp,"\nReturning error code: %d\n",code);
-	cooked_tty();
 	return(code);
 }
 
@@ -823,6 +831,9 @@ static BOOL js_init(char** env)
 
     if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
+#ifdef JSDOOR
+	JS_SetOptions(js_cx, JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING);
+#endif
 	JS_BEGINREQUEST(js_cx);
 
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -856,17 +867,17 @@ static BOOL js_init(char** env)
 	}
 
 	/* STDIO objects */
-	if(!js_CreateFileObject(js_cx, js_glob, "stdout", stdout)) {
+	if(!js_CreateFileObject(js_cx, js_glob, "stdout", STDOUT_FILENO, "w")) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
-	if(!js_CreateFileObject(js_cx, js_glob, "stdin", stdin)) {
+	if(!js_CreateFileObject(js_cx, js_glob, "stdin", STDIN_FILENO, "r")) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
 
-	if(!js_CreateFileObject(js_cx, js_glob, "stderr", stderr)) {
+	if(!js_CreateFileObject(js_cx, js_glob, "stderr", STDERR_FILENO, "w")) {
 		JS_ENDREQUEST(js_cx);
 		return(FALSE);
 	}
@@ -935,6 +946,7 @@ long js_exec(const char *fname, char** args)
 	long double	start;
 	long double	diff;
 	JSBool		exec_result;
+	BOOL		abort = FALSE;
 
 	if(fname!=NULL) {
 		if(isfullpath(fname)) {
@@ -1041,21 +1053,25 @@ long js_exec(const char *fname, char** args)
 	js_PrepareToExecute(js_cx, js_glob, fname==NULL ? NULL : path, orig_cwd, js_glob);
 	start=xp_timer();
 	if(debugger)
-		debug_prompt(js_cx, js_script);
-	exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
-	JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
-	if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
-		char	*p;
-
-		JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
-		mfprintf(statfp,"Using JavaScript exit_code: %s",p);
-		free(p);
-		JS_ValueToInt32(js_cx,rval,&result);
-	} else if(!exec_result)
+		abort = debug_prompt(js_cx, js_script) == DEBUG_EXIT;
+	if (abort) {
 		result = EXIT_FAILURE;
-	js_EvalOnExit(js_cx, js_glob, &cb);
+	} else {
+		exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
+		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
+			char	*p;
 
-	JS_ReportPendingException(js_cx);
+			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
+			mfprintf(statfp,"Using JavaScript exit_code: %s",p);
+			free(p);
+			JS_ValueToInt32(js_cx,rval,&result);
+		} else if(!exec_result)
+			result = EXIT_FAILURE;
+		js_EvalOnExit(js_cx, js_glob, &cb);
+
+		JS_ReportPendingException(js_cx);
+	}
 
 	if((diff=xp_timer()-start) > 0)
 		mfprintf(statfp,"%s executed in %.2Lf seconds"
@@ -1111,6 +1127,23 @@ int parseLogLevel(const char* p)
 	return DEFAULT_LOG_LEVEL;
 }
 
+void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
+{
+	log_level = iniGetLogLevel(ini, section, "LogLevel" , log_level);
+	err_level = iniGetLogLevel(ini, section, "ErrorLevel" , err_level);
+	debugger = iniGetBool(ini, section, "Debugger", debugger);
+	pause_on_exit = iniGetBool(ini, section, "PauseOnExit", pause_on_exit);
+	pause_on_error = iniGetBool(ini, section, "PauseOnError", pause_on_error);
+	umask_val = iniGetInteger(ini, section, "umask", umask_val);
+
+	js_max_bytes		= (ulong)iniGetBytes(ini, section, strJavaScriptMaxBytes	,/* unit: */1, js_max_bytes);
+	js_cx_stack			= (ulong)iniGetBytes(ini, section, strJavaScriptContextStack,/* unit: */1, js_cx_stack);
+	cb->limit			= iniGetInteger(ini, section, strJavaScriptTimeLimit		, cb->limit);
+	cb->gc_interval		= iniGetInteger(ini, section, strJavaScriptGcInterval		, cb->gc_interval);
+	cb->yield_interval	= iniGetInteger(ini, section, strJavaScriptYieldInterval	, cb->yield_interval);
+	cb->auto_terminate	= iniGetBool(ini, section, "AutoTerminate"					, cb->auto_terminate);
+}
+
 /*********************/
 /* Entry point (duh) */
 /*********************/
@@ -1128,6 +1161,9 @@ int main(int argc, char **argv, char** env)
 	BOOL	loop=FALSE;
 	BOOL	nonbuffered_con=FALSE;
 	BOOL	change_cwd=TRUE;
+	FILE*	fp;
+	char	ini_fname[MAX_PATH + 1];
+	str_list_t ini = NULL;
 
 	confp=stdout;
 	errfp=stderr;
@@ -1150,7 +1186,7 @@ int main(int argc, char **argv, char** env)
 	cb.gc_interval=JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate=TRUE;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.217 $", "%*s %s", revision);
 	DESCRIBE_COMPILER(compiler);
 
 	memset(&scfg,0,sizeof(scfg));
@@ -1158,6 +1194,18 @@ int main(int argc, char **argv, char** env)
 
 	if(!winsock_startup())
 		return(do_bail(2));
+
+#ifndef JSDOOR
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */FALSE));
+	iniFileName(ini_fname, sizeof(ini_fname), scfg.ctrl_dir, "jsexec.ini");
+	if((fp = iniOpenFile(ini_fname, /* create: */FALSE)) != NULL) {
+		ini = iniReadFile(fp);
+		iniCloseFile(fp);
+	} else if(fexist(ini_fname)) {
+		fprintf(stderr, "Error %d (%s) opening %s\n", errno, strerror(errno), ini_fname);
+	}
+	get_ini_values(ini, /* section (global): */NULL, &cb);
+#endif
 
 	getcwd(orig_cwd, sizeof(orig_cwd));
 	backslash(orig_cwd);
@@ -1184,12 +1232,79 @@ int main(int argc, char **argv, char** env)
 		if(argv[argn][0]=='-') {
 			p=argv[argn]+2;
 			switch(argv[argn][1]) {
+				/* These options require a parameter value */
+				case 'c':
+				case 'e':
+				case 'E':
+				case 'g':
+				case 'i':
+				case 'L':
+				case 'm':
+				case 'o':
+				case 's':
+				case 't':
+				case 'u':
+				case 'y':
+				{
+					char opt = argv[argn][1];
+					if(*p==0) {
+						if(argn + 1 >= argc) {
+							fprintf(errfp,"\n!Option requires a parameter value: %s\n", argv[argn]);
+							usage(errfp);
+							return(do_bail(1));
+						}
+						p=argv[++argn];
+					}
+					switch(opt) {
+						case 'c':
+							SAFECOPY(scfg.ctrl_dir,p);
+							break;
+						case 'E':
+							err_level=parseLogLevel(p);
+							break;
+						case 'e':
+							if (errfp != stderr)
+								fclose(errfp);
+							if((errfp=fopen(p,omode))==NULL) {
+								perror(p);
+								return(do_bail(1));
+							}
+							break;
+						case 'g':
+							cb.gc_interval=strtoul(p,NULL,0);
+							break;
+						case 'i':
+							load_path_list=p;
+							break;
+						case 'L':
+							log_level=parseLogLevel(p);
+							break;
+						case 'm':
+							js_max_bytes=(ulong)parse_byte_count(p, /* units: */1);
+							break;
+						case 'o':
+							if((confp=fopen(p,omode))==NULL) {
+								perror(p);
+								return(do_bail(1));
+							}
+							break;
+						case 's':
+							js_cx_stack=(ulong)parse_byte_count(p, /* units: */1);
+							break;
+						case 't':
+							cb.limit=strtoul(p,NULL,0);
+							break;
+						case 'u':
+							umask_val = strtol(p,NULL,8);
+							break;
+						case 'y':
+							cb.yield_interval=strtoul(p,NULL,0);
+							break;
+					}
+					break;
+				}
 				case 'a':
 					omode="a";
-					break;
-				case 'c':
-					if(*p==0) p=argv[++argn];
-					SAFECOPY(scfg.ctrl_dir,p);
 					break;
 				case 'C':
 					change_cwd = FALSE;
@@ -1202,25 +1317,8 @@ int main(int argc, char **argv, char** env)
 				case 'D':
 					debugger=TRUE;
 					break;
-				case 'E':
-					if(*p==0) p=argv[++argn];
-					err_level=parseLogLevel(p);
-					break;
-				case 'e':
-					if(*p==0) p=argv[++argn];
-					if (errfp != stderr)
-						fclose(errfp);
-					if((errfp=fopen(p,omode))==NULL) {
-						perror(p);
-						return(do_bail(1));
-					}
-					break;
 				case 'f':
 					nonbuffered_con=TRUE;
-					break;
-				case 'g':
-					if(*p==0) p=argv[++argn];
-					cb.gc_interval=strtoul(p,NULL,0);
 					break;
 				case 'h':
 					if(*p==0)
@@ -1228,30 +1326,11 @@ int main(int argc, char **argv, char** env)
 					else
 						host_name=p;
 					break;
-				case 'i':
-					if(*p==0) p=argv[++argn];
-					load_path_list=p;
-					break;
-				case 'L':
-					if(*p==0) p=argv[++argn];
-					log_level=parseLogLevel(p);
-					break;
 				case 'l':
 					loop=TRUE;
 					break;
-				case 'm':
-					if(*p==0) p=argv[++argn];
-					js_max_bytes=(ulong)parse_byte_count(p, /* units: */1);
-					break;
 				case 'n':
 					statfp=nulfp;
-					break;
-				case 'o':
-					if(*p==0) p=argv[++argn];
-					if((confp=fopen(p,omode))==NULL) {
-						perror(p);
-						return(do_bail(1));
-					}
 					break;
 				case 'p':
 					pause_on_exit=TRUE;
@@ -1259,28 +1338,12 @@ int main(int argc, char **argv, char** env)
 				case 'q':
 					confp=nulfp;
 					break;
-				case 's':
-					if(*p==0) p=argv[++argn];
-					js_cx_stack=(ulong)parse_byte_count(p, /* units: */1);
-					break;
-				case 't':
-					if(*p==0) p=argv[++argn];
-					cb.limit=strtoul(p,NULL,0);
-					break;
-				case 'u':
-					if(*p==0) p=argv[++argn];
-					umask(strtol(p,NULL,8));
-					break;
 				case 'v':
 					banner(statfp);
 					fprintf(statfp,"%s\n",(char *)JS_GetImplementationVersion());
 					return(do_bail(0));
 				case 'x':
 					cb.auto_terminate=FALSE;
-					break;
-				case 'y':
-					if(*p==0) p=argv[++argn];
-					cb.yield_interval=strtoul(p,NULL,0);
 					break;
 				case '!':
 					pause_on_error=TRUE;
@@ -1293,20 +1356,16 @@ int main(int argc, char **argv, char** env)
 			}
 			continue;
 		}
+		char ini_section[MAX_PATH + 1];
 		module=argv[argn];
+		SAFECOPY(ini_section, getfname(module));
+		if((p = getfext(ini_section)) != NULL)
+			*p = 0;
+		get_ini_values(ini, ini_section, &cb);
 	}
 
-#ifndef JSDOOR
-	if(scfg.ctrl_dir[0]==0) {
-		if((p=getenv("SBBSCTRL"))==NULL) {
-			fprintf(errfp,"\nSBBSCTRL environment variable not set and -c option not specified.\n");
-			fprintf(errfp,"\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-			fprintf(errfp,"\n     or: %s -c /sbbs/ctrl [module]\n",argv[0]);
-			return(do_bail(1)); 
-		}
-		SAFECOPY(scfg.ctrl_dir,p);
-	}	
-#endif
+	if(umask_val >= 0)
+		umask(umask_val);
 
 	if(module==NULL && isatty(fileno(stdin))) {
 		fprintf(errfp,"\n!Module name not specified\n");
@@ -1318,12 +1377,17 @@ int main(int argc, char **argv, char** env)
 
 #ifdef JSDOOR
 	SAFECOPY(scfg.temp_dir,"./temp");
+	scfg.tls_certificate = -1;
+	strcpy(scfg.sys_pass, "ThisIsNotHowToDoSecurity");
+	strcpy(scfg.sys_name, "JSDoor");
+	strcpy(scfg.sys_inetaddr, "example.com");
+	scfg.prepped = TRUE;
 #else
 	if(change_cwd && chdir(scfg.ctrl_dir)!=0)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg,NULL,TRUE,error)) {
+	if(!load_cfg(&scfg,text,TRUE,error)) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		return(do_bail(1));
 	}
@@ -1338,7 +1402,7 @@ int main(int argc, char **argv, char** env)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-			fprintf(statfp,"!ERROR %d running as daemon\n",errno);
+			fprintf(statfp,"!ERROR %d (%s) running as daemon\n", errno, strerror(errno));
 			daemonize=FALSE;
 		}
 	}
@@ -1403,6 +1467,7 @@ int main(int argc, char **argv, char** env)
 
 	} while((recycled || loop) && !terminated);
 
+	iniFreeStringList(ini);
 	return(do_bail(result));
 }
 

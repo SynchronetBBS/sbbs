@@ -1,0 +1,474 @@
+;all bounty hunting stuff is done in here
+
+@#BOUNTYLIST
+  @show
+`r0`c  `r1  Target                      Payoff                   Placed by    `r0
+
+  @do `p21 is 1
+  @do `p25 is &totalaccounts
+  @do `p25 + 1
+   @label readmore
+   @if bounty.`p21 exist TRUE then do
+     @begin
+     @readfile bounty.`p21
+`p20
+`p22
+     @do `s01 is getname `p21
+     @do `s02 is getname `p20
+     @do `s03 is `p22
+     @do pad `s01 20
+     @do pad `s03 10
+     @show
+  `0`s01          `$$`s03 `2             `s02
+     @end
+   @do `p21 + 1
+   @if `p21 < `p25 then goto readmore
+
+  @show
+
+`k
+
+
+@#DIEHUNT
+;customized death for when a bounty hunter kills
+  @do X is 27
+  @do Y is 7
+  @do money / 2
+  @do `p02 is `p03 (give 'em max hit points)
+  @do `p20 is `p01
+  @do `p20 / 5
+  @do `p01 - `p20
+  @do MAP is 155
+  @do dead is 1
+  @update_update
+
+  @do talk `4Newsflash:`0`x`n`x`2was`x`bmurdered`x`2by`x`0`s01`2! all
+  @do addlog
+  `0`n`2 was `bmurdered`2 by bounty hunter `0`s01`2!
+  @routine seperate in gametxt.ref
+
+@pauseoff
+@show
+`r0`c
+[34C[0mÜÜÜÛÛÛÛÛÛÛÛÛÜÜÜ
+[29CÜÛÛ[1;30;47m°°°°[0;47mÛ[1;30m°[0;47mÛÛÛÛÛÛÛÛÛÛÛ[40mÜ
+[28CÛ[1;30;47m°°°°[0;47mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[40mÝ
+[27CÛ[1;30;47m°±±°[0;47mÛÛÛÛÛÛÛÛ[1;30mÞÜ[0;47mÛÛÛÛÛÛÛÛÛ[40mÛ
+[19CÜÜ[5CÞ[1;30;47m°±²°[0;47mÛÛÛÛÛÛÛÛÛÛ[1;30mÛÛßß[0;47mÛÛÛÛÛ[40m
+[A[50C[47m[1;30mÞ[0mÛÛ
+[18CßÜÛÝ    [1;30;47m°±²±°[0;47mÛÛÛÛÛ[1;30mÜ Ý[0;47mÛ[1;30mÞÛÜ[40m
+[A[43C[0;47mÛÛÛÛÛ[1;30mÜÜ²[0mÛ[47mÛ[1C[40mÜ[1;47m±²[40mÜ
+[17C[30mÜ[47m°[0;47mÛÛ[1mÜ[0mÜ   [1;30;47m±²±° [0;47mÛÛ[1;30m°[40m
+[A[34C[0;47mÛ[1;30m°°²ÝÜß°Ü[0;47mÛ[1;30m°[0;47mÛÛÛÛ[1;30mß²Ý[40m
+[A[52C[47m[0mÝ[1;30mÜ[47m°[0;47mÛ[1m±[40mÝ
+[17C[30;47m²±°[0;47mÛÛ[1mßÜ[0mÜ [1;30mÞ[0mÜßß    [1;30mßß²[47m[40m
+[A[37C[47m²²°Ü[40m²ßß[5C[0mßß[1;30;47mß[40mÞ[47m±°[0mß ß
+[18C[1;30mßßß[47m°°[0;47mÛ [1;30m°[1C[0mÜ    [31mß   [1;30m±²
+[A[38C[47m²²°[40m±   [0;31mß    [37mÞÝ[1;30;47m²[40mß
+[23C[0mß[1;30;47m°±[40mÝ[0mÞÛÜÜ    ÜÜ[1;30;47mß[0mßß[1;30mß
+[A[41C[47mß[0mÜÜ    ÜÛ[1;47mÜ[0mÝ[1;30mÝ
+[25C[47m²[40mß[0mÜ[1;30;47mÜ [0;47mÛÛ[1;30mßßÜÜß[0mÝ [1;30mÝ [0mÞ
+[A[42C[1;30;47mÜÜßß[0;47mÛÛÛÛ[1mßÜ[0mÜ
+[26CÛ[1;30;47mß[0;47mÛÛÛÛ[1;30mÜ²²Ü[0;47mÛ[2C[1;30;40m²Ü [47m°±[40m
+[A[44C[47m°[0;47mÛÛÛÛÛ[40mßß
+[27CßÛÛ[1;30;47m°²[40m²±²[47m°[0mÜÜ[1;30;47m°²±°±[40m²ß[0mß ßßßß
+[29C[1;30mÜÜ ßÜ [0mßß[1;30mßß ß[0mß[1;30mß Üß [47m²±[0mÜ
+[27CÜ[1;30;47m°±²[40mÝ ß [47m°[0mÝ[1;47m²Û[40mÞÛ[0mßÜ[1;30;47m[40m
+[A[43C[47m°[40mß Ü [47m±°[0;47mÛ[40mÜ
+[22C[1mÜ  [47m±°[30m°°[40mß [0mÜ [1;30mß [0mÜ Ü[1mÜ Ü[0mÜ Ü 
+[A[45C[1;30mßÜ[47m°[1C[0mß[47m  [1m±[40mÜÜÜ
+[19CÜ[47m²²±°°[30m±[0mÝß ÜÛÛ[1;30;47mÞ[0;47mÛ[40mÜÜ ÜÜÜÜÜ ÜÜ
+[A[45C[1;30;47m°±[0;47mÛÛ[40mÜ ß[1;30;47m±[37m°±[40mß[47m²[40m
+[19C[0;31mÜ [37mÜßÛ[1;30;47m±[40mß[0;33mÜ²ÜÜ [37mß[1;47mßÜ[30m[40m
+[A[34C[47mß[0;47mÛÛÛ[1;30mÜß[0;47mÛÛÛÛ [1mÜß[0mß [33mÜÜÝ[1;30mÞ
+[A[53C[47m±[0mÜÝ[31mÜ
+[17C°±²ÛÜ[37mß[1;30mß[0;31mÜÜÜ[33;41mßßßß[40mÜ [37mß[1;47mß[40m
+[A[35C[0;47mÛÛ[1;30mÜ±[40m²[47m±Ü[40mß[47mÜ[37mß[0mß [31mÜ
+[A[48C[33;41mßßß[31;40mÜÜ[1;30mß[0;31mÜÜÛ²±°
+
+                     `%You have made an error, s&boy.
+
+`k
+ @if `v03 is 0 then do
+   @begin
+ ;rules.ref file says unlimited deaths not allowed, so we will boot them
+ ;till tomorrow
+
+ ;take them off the map
+  @do map is 1
+   @halt
+   @end
+
+ @pauseon
+
+ @do dead is 0
+
+ @if `p07 less 0 then do
+ @begin
+ @show
+`r0`c`%  `r1IT FEELS KINDA WARM IN HERE?`r0
+
+  `4You open your eyes.
+
+`k  `4There are naked screaming people all around you.  A little boy with
+  a ghastly face begins to gnaw on your leg.
+
+`k  `6"Din, leave the newcomer alone.  S&he isn't staying." `4a slow voice that
+  can only be described as an abomination dolefully states.
+
+`k  `2You feel yourself floating away... faster and faster.
+ @end
+
+ @if `p07 more -1 then do
+ @begin
+ @show
+`r0`c`%  `r1APPARENTLY DEATH ISN'T THE END.`r0
+
+  `2You open your eyes.
+
+`k  `2You are lying on a table of solid rock in a marble room.  Hundreds of
+  soft voices are murmuring all around you, but you see no one.
+
+`k  `%"Send s&him back." `2a voice whispers, this one louder than the others.
+
+`k  `2You feel yourself floating away... faster and faster.
+
+`k
+ @end
+
+
+@show
+`c  `r1`%AWAKENING.`r0
+
+  `0"Can you hear me, `n?" `2a stressed voice shouts.
+
+  `$"Yeah.  Christ mom, lemmie up, I'm fine." `2you assure your mother.
+
+  `0"You're alive!! The elders brought your body here yesterday, you must
+  have fainted out there." `2your mother shouts, tears of joy streaming down
+  her wrinkled face.
+
+  `$"Ok, ok - nice little happy reunion and all that, but I gotta hit the
+  road now. Buhbye." `2you tell her.  Afterall, you need to make the most of
+  this new lease on life.
+
+  `2You lose `4half`2 the gold you were carrying and `4`p20`2 experience.
+
+`k
+  @loadmap map
+  @drawmap
+  @update
+
+
+@#HUNTERS
+;called from genran, it's the .ref called when someone meets up with a
+;bounty hunter
+@do `p20 random 5 1
+@if `p20 is 1 then `s01 is Job
+@if `p20 is 2 then `s01 is Kasabo
+@if `p20 is 3 then `s01 is Year
+@if `p20 is 4 then `s01 is Sedahk
+@if `p20 is 5 then `s01 is Eudor
+
+
+  @if bounty.&playernum exist false then do
+    @begin
+    @do saybar
+Bounty hunter `s01 and his men pass close by.
+    @closescript
+    @end
+
+    @readfile bounty.&playernum
+`p23
+`p24
+@do `v01 is 1
+@show
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2You are suddenly surounded.  Press ENTER to continue...
+@do readspecial `s02 `x
+
+
+
+  @show
+`r0`c  `r1  A deal, perhaps?  `r0
+
+  `2It is `s01 and his men.  Looks like you are screwed.
+
+  `0"There is a price on your head, friend.  A price of `$`$`p24`0."
+
+@do write
+`x`x
+@choice
+I know this, `s01.  I will pay you the same amount to pass me by.
+Please don't hurt me!  I'll do anything!
+@show
+`\
+@if responce is 1 then do
+  @begin
+  @do `p25 is `p24
+  @do `p25 - 1
+  @if money > `p25 then do
+    @begin
+    @do money - `p24
+    @show
+  `0"Very well.  But next time I may not be so friendly.. I do have a
+  reputation to uphold!" `2`s01 grunts as he takes your money.
+
+`k
+   @drawmap
+   @update
+   @closescript
+    @end
+@show
+  `2You reach into your pockets and pull out some.. lint.
+
+  @end
+;they might get killed here
+@show
+  `0"Kill him!" `2`s01 roars.
+
+@do `p26 random 2 1
+@if `p26 is 1 then do
+ @begin
+ ;dies
+ @do delete bounty.&playernum
+   @writefile mail\mail`p23.dat
+  `0Bounty hunter `s01 reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has been `4killed`2.  Good doing business with you.
+
+ @show
+  `2You are unable to escape.  You are still alive when `s01 begins to
+  remove his price - your head.
+
+`k
+ @run diehunt
+ @end
+@show
+  `2You hack your way through the crowd, you are a mighty warrior!
+
+`k  `%YOU ESCAPE.  `2But this may happen again - until your bounty is
+  paid off in FlagCity - or you are killed.
+
+`k
+@drawmap
+@update
+
+@#BOUNTY
+;The Bounty Hunting Office
+@OFFMAP
+@DO MOVEBACK
+@label hunt
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Bounty Office  `r0
+
+  `2A helmeted man with a crossbow slung to his side stands behind the
+  counter.  He looks looks well seasoned and speaks with a raspy voice,
+  `0"Good afternoon, how may we ... help you?"`2
+
+`2  You see the word `0'Nickabrick' `2carved into his arm.
+
+@DO WRITE
+`x`x
+@CHOICE
+View bounty list
+Place a bounty
+Pay off your own bounty
+Ask for advice
+Check out their weapons
+Conduct 'business' with Nickabrick
+Leave, quick!!
+@if response is 6 then do
+  @begin
+  @do `p20 is 3
+  @run getquest in quest.ref
+  @end
+
+
+@if responce is 1 then do
+  @begin
+  @routine bountylist
+@do goto hunt
+@end
+
+@IF RESPONSE IS 2 THEN DO
+  @BEGIN
+  @SHOW
+`r0`c  `r1  Playing dirty  `r0
+`\  `$"I need to make someone's life hard, can you help?,"`2 you say.
+
+  `0"Of course... who is our lucky winner?"
+  @chooseplayer `p22
+  @if `p22 is 0 then do
+    @begin
+    @show
+`k
+    @do goto hunt
+    @end
+  @if `p22 is &playernum then do
+    @begin
+    @show
+  `0"Ha, I like the concept!" `2Nickabrick laughs.  You must have amused him
+  in some small way.`\`\`k
+    @do goto hunt
+    @end
+   @show
+  `0"Of course.  How much money are you willing to place?"`2 he asks calmly.
+
+  @do write
+`x`x
+  @do readnum 30
+  @do `p20 is `v40
+  @if `p20 < 1000 then do
+    @begin
+    @show
+`\`\  `0"Minimum bounty is `$1000`0, friend."
+`\`k
+    @do goto hunt
+    @end
+  @show
+
+  @if money < `p20 then do
+     @begin
+     @show
+`\  `2You don't have that much gold on you... Better hit the bank.
+
+`k
+     @do goto hunt
+     @end
+  @do money - `p20
+@show
+
+
+  @if bounty.`p22 exist true then do
+    @begin
+    @readfile bounty.`p22
+`p23
+`p24
+    @if `p23 not &playernum then do
+      @begin
+      @if `p24 > `p20 then do
+        @begin
+        @show
+  `0"There is a problem.  Someone has already placed a bounty on that
+  person..  Of course, we will let you do anything for a price.  Try an
+  amount that is at least `$$`p24 `0and we'll think about it."
+`\`k
+        @do goto hunt
+        @end
+      @end
+    @end
+
+  @do `s05 is getname `p22
+  @do delete bounty.`p22
+  @writefile bounty.`p22
+&playernum
+`p20
+    @do addlog
+  `0`n `2has set a bounty of `$`p20 `2to kill `0`s05`2!
+     @routine seperate in gametxt.ref
+
+  @show
+  `0"Alright.  The bounty has been placed... The only way to get out of it
+  is if `s05 gets in here and pays it off... or death of course."
+
+`k
+  @do goto hunt
+  @END
+
+@IF RESPONSE IS 3 THEN DO
+  @BEGIN
+  @SHOW
+`r0`c  `r1  `%Cutting a deal  `r0
+
+  `$"Someone hates me, but I have more money than them.  Please stop
+  chasing me."`2 you state.
+
+@if bounty.&playernum exist false then do
+  @begin
+  @show
+  `0"Huh?  You are not marked by us.  Not yet."
+
+  `2You turn bright red.  `$"I, I uh, knew that..."
+`\`k
+  @do goto hunt
+  @end
+  @readfile bounty.&playernum
+`p20
+`p21
+  @show
+  `0"It will cost you `$$`p21 `0to clear your name.  Can you pay it?"
+
+  @do `v01 is 1
+  @do write
+`x`x
+   @choice
+Yes, I can  `2(you have `0`$$&money`2)
+I cannot pay it
+@if responce is 1 then do
+  @begin
+  @if money < `p21 then do
+    @begin
+    @do money / 2
+    @show
+`\`\  `0"Very well, where is the gold?"`2
+
+`2  You search your pockets desperately.  A few moments later you are
+  outside with quite a bruise and some money missing.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+
+    @do money - `p21
+    @do delete bounty.&playernum
+    @do addlog
+  `0`n `2convinces the Bounty Hunter Guild to stop chasing s&him.
+     @routine seperate in gametxt.ref
+@show
+`\`\  `0"Very well, now you're no good to me dead."`2
+`\`k
+  @do goto hunt
+  @end
+@do goto hunt
+  @END
+@IF RESPONSE IS 4 THEN DO
+  @BEGIN
+  @SHOW
+`\`\  `$"Excuse me, could you give me some advice?"`2 you ask.
+
+`k  `0"Money makes the world go around.  And if you have enough when we
+  catch up with you it just might save ya."`2 he offers.
+`\`k
+@do goto hunt
+  @END
+@IF RESPONSE IS 5 THEN DO
+@Begin
+@Show
+`\`\  `$"I'm kinda in the business myself," `2you say.  `$"What tools do you
+  recommend?"  `2He smiles, `0"These have helped many a hunter..."
+  `2You review your choices.
+
+`k
+@show
+`r0`c                         `r1 `%Bounty Hunting weapons
+
+
+@buymanager
+4
+12
+38
+49
+40
+@do goto hunt
+@End
+@drawmap
+@update
+@end

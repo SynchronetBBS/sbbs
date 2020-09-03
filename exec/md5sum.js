@@ -2,7 +2,7 @@
 
 /* Calculate and displays MD5 digest (in hex) of specified file or string */
 
-/* $Id$ */
+/* $Id: md5sum.js,v 1.1 2004/11/17 11:16:50 rswindell Exp $ */
 
 var filename;
 var binary=true;

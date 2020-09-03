@@ -1,0 +1,525 @@
+;general random stuff that is usually called from any major tavel route
+;where roads are
+
+
+@#GENRAN
+@do `p20 random 8 1
+
+@if `p20 is 1 then do
+ @begin
+ @run event1
+ @end
+@if `p20 is 2 then do
+  @begin
+  @run event2
+  @end
+@if `p20 is 3 then do
+  @begin
+  @run hunters in bounty.ref
+  @end
+@if `p20 is 4 then do
+  @begin
+  @run event4
+  @end
+@if `p20 is 5 then do
+  @begin
+  @run event5
+  @end
+@if `p20 is 6 then do
+  @begin
+  @run event6
+  @end
+@if `p20 is 7 then do
+  @begin
+  @run event7
+  @end
+@if `p20 is 8 then do
+  @begin
+  @run event6
+  ; yes, we want the run in with the Dragon Tooth guards to happen A LOT
+  @end
+
+@#EVENT7
+;The travelers who speak of the dragon
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2Sounds like traveling folk.  Stop? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  `%Group of Travelers  `r0
+
+  `0"Hello!"  `2says the leader.  His groups seems happy and well travelled.
+  `$"Good day sir, how goes the travels?"  `2you ask.
+  `2You sit down and talk with the group a while.  They tell you how they're
+  on their way to FlagCity and then on to PortTown.  They've heard many a
+  rumor and story on their quests.  He also speaks of the dragon ...`k
+
+  `0"There are those who believe ... that the `bRed Dragon`0 is still alive.
+  With the existance of the Dragon Tooth clan that possibility seems more
+  and more real.  If the Dragon is still alive, terror could very well
+  come to this land.  I suspect only the Dragon Tooth ... and maybe the
+  Koshi know the truth."  `%(YOU ARE FULLY RESTED!)
+`\`k  
+@do `p02 is `p03
+@drawmap
+@update
+ @do saybar
+`0"Have good travels!"
+@closescript
+@end
+
+ @do saybar
+You hide in the bushes while they pass.
+
+@#EVENT6
+;Evil with the Dragon Tooth Clan
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You hear a lot of footsteps coming.  Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is N then do
+  @begin
+  @do saybar
+You wait until the sounds are gone before advancing.
+  @closescript
+  @end
+
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  `%Dragon Tooth Battalion  `r0
+
+  `0"Halt lowly citizen!"  `2the lieutenant screams.  His men seem very
+  loyal and very shady.
+  `0"What's you business here?"  `2he asks.
+  
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Listen to what they have to say
+-`t18 0 Insult them
+-`t18 0 <`p07 -9 Inquire about recruitment
++`t18 0 Head to the castle
+Take off
+@if response is 1 then do
+  @begin
+  @pauseoff
+  @show
+`\`\  `0"The Dragon is still alive my friends, and only we know of the way
+  to stop him.  We may protect you, but for a price.  It costs us to fight
+  off the beast on a constant basis.  We need your money to make the towns
+  safe.  Give it to us or your friends will surely die!"  `2You stand not
+  very sure of this loser's speech.  Sounds like a classic scam.
+
+  `$"I hate to ruin your fine speech sir, but I don't live near here."
+  `2you say.
+
+  `0"The Dragon has wings, he will travel.  Soon your home may be next!"
+  `2he replys.
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `$"You guys suck, what a load of crap!!"  `2you yell.
+
+  `0"You'll regret that s&boy."  `2says the lieutenant.
+`\`k
+  @do goto DBATTLE
+  @end
+@if response is 3 then do
+  @begin
+  @show
+`\`\  `$"Hey, I like being evil.  Could I join you guys and get a piece
+  of the action?"  `2you ask.
+
+  `0"You are lowly, but not so lowly that you can't be trained.  Yes ...
+  now I think I see a little potential in you s&boy.  You could be
+  trained to serve us.  Come, to our castle where you may learn more about
+  yourself in our eyes."
+`\`k
+  @loadmap 705
+  @do map is 705
+  @do x is 27
+  @do y is 11
+  @update
+  @drawmap
+  @closescript
+  @end
+@if response is 4 then do
+  @begin
+  @show
+`\`\  `$"My masters, I must see the gatekeeper and ask him of my progress."
+  `2you say.
+
+  `0"It shall be done ..."
+`\`k
+  @loadmap 705
+  @do map is 705
+  @do x is 27
+  @do y is 11
+  @update
+  @drawmap
+  @closescript
+  @end
+@drawmap
+@update
+@if bitcheck `t18 0 0 then do
+ @begin
+ @do saybar
+`0"We'll meet again!"
+ @end
+
+@#DBATTLE
+@fight
+;name
+Dragon Tooth Battalion
+;string said when you see him
+They suddenly charge you, so much for protection.
+;power move kill string
+`$"Save your own ass!!"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+charges you|100
+surrounds and beats you|125
+practice with their swords on you|150
+attempt to trample you|97
+NONE|NONE
+;defense
+40
+;gold reward
+1400
+;experience
+210
+;hit points
+700
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+
+@#EVENT5
+;Injured person
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You hear an injured person nearby.  Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  `%Aid a fellow traveler  `r0
+
+  `0"Please help me!" `2the injured man screams.  His leg seems to have
+  taken quite a blow.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the man out
+Beat him and take his money
+Leave
+@if response is 1 then do
+  @begin
+  @do `p07 + 1
+  @show
+`\`\  `2You help the man, and with the first aid are able to get him on his
+  way to a city where he can further heal.
+
+  `bYOUR ALIGNMENT GOES UP BY ONE!`b
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @do `p07 - 2
+  @do `p20 random 1300 221
+  @do money + `p20
+  @show
+`\`\  `$"Sure I'll help you .. die!"  `2You slam him with your s&weapon, and
+  after he falls unconscious you raid his purse.
+
+  `2You find `$`p20 `2gold!
+
+  `bYOUR ALIGNMENT GOES DOWN BY TWO!`0
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+ @end
+@do saybar
+You are much too busy to help the man.
+
+@#4run
+@drawmap
+@update
+@do quebar
+You run... she'll have to fend for herself.
+
+@#4win
+@drawmap
+@update
+@do `p07 + 1
+@do quebar
+You saved her!  Alignment goes up by one.
+
+@#event4
+;if clean mode, find another event to run, this one isn't suitable...
+@if `v06 is 1 then goto genran
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2A woman is being raped by two men nearby.  Interrupt them? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  Violation or a right, you decide  `r0
+
+  `0"Please help me!" `2the woman screams.  The two men are wearing
+  Dragon Tooth armour... they also seem to be having quite the good time.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the woman and kill the men
+Join in the fun
+Leave the encounter
+@if responce is 2 then do
+  @begin
+@drawmap
+@update
+@do `p07 - 1
+@do quebar
+A few hours later you are finished!  Yeah!  Alignment goes down by one.
+  @closescript
+  @end
+@if responce is 1 then do
+  @begin
+  @fight
+;name
+The Guards
+;string said when you see him
+`0"Kill that s&boy!  s&he saw us" `2they yell!
+;power move kill string
+You strike a blow for justice this day!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+sock you|45
+clothesline you|52
+laugh as one trips you for|36
+NONE|NONE
+NONE|NONE
+;defense
+15
+;gold reward
+89
+;experience
+54
+;hit points
+136
+;if win: ref file|name or NONE
+GENRAN.REF|4WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+GENRAN.REF|4RUN
+  @end
+@closescript
+@end
+
+@do saybar
+Screw it, why be a hero?
+
+@#event2
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A dark robed priest approaches.  Speak with him? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @label ev1
+  @show
+`r0`c  `r1  A deal, perhaps?  `r0
+
+  `0"Greetings fellow traveler.  Would you be interested in a traveling
+  potion for `$$500`0?" `2the priest asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Exactly how does it work, strange dark robed priest?
+>&money 499 Yes, I'll take it!
+>&money 499 No thanks.
+<&money 500 I can't afford it.
+@if response is 1 then do
+  @begin
+  @show
+`r0`c  `r1  How it works  `r0
+
+  `0"It's really very simple young s&man, first you drink it.  Then you
+  wait.  You will be randomly teleported to one of ten various places."
+
+  `$"What if I don't like where I am?"
+
+`k  `0"Then you're pretty much screwed, aren't you," `2he laughs.
+ 
+  `$"Hey!  A priest isn't supposed to talk like that!" `2you accuse.
+
+`k  `0"We're also not supposed to sell illegal drugs, what's your point?"
+
+`k
+  @do goto ev1
+  @end
+ @if response is 2 then do
+   @begin
+   @show
+`\`\  `0"Great doing business with you," `2he smiles as he hands you a
+  funny looking vial.
+`\`k
+   @drawmap
+   @update
+   @do `i50 + 1
+   @do money - 500
+   @closescript
+   @end
+  
+
+
+ @if response is 3 then do
+   @begin
+   @show
+`\`\  `0"Maybe next time, friend," `2he smiles.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+
+ @if response is 4 then do
+   @begin
+   @show
+`\`\  `0"Maybe next time, friend," `2he smiles.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+
+  @end
+@do saybar
+You move to the side to let him pass.
+
+@#event1
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A hooded figure approaches.  Speak with him? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+  @busy
+  @do `p20 random 4 1
+  @if `p20 is 1 then `s10 is `+22
+  @if `p20 is 2 then `s10 is `+23
+  @if `p20 is 3 then `s10 is `+24
+  @if `p20 is 4 then `s10 is `+25
+
+  @show
+`r0`c  `r1  Dark Trading `r0
+
+  `0"Greetings, stranger.  I have a very magical item called a `%`s10
+  `0for sale.. would you like to buy it for `$$100`0?"
+  @do write
+`\`x`x
+  @do `v01 is 1
+  @choice
+>&money 99 Sure, I'll take it
+>&money 99 I don't deal with your type.
+<&money 100 Sorry, I can't afford that.
+  @if response is 1 then do
+    @begin
+  @if `p20 is 1 then `i22 + 1
+  @if `p20 is 2 then `i23 + 1
+  @if `p20 is 3 then `i24 + 1
+  @if `p20 is 4 then `i25 + 1
+    @do money - 100
+  @show
+`\`\  `0"Nice doing business with you," `2the dark trader laughs evilly as
+  he hands you the `%`s10`2.
+`\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+
+  @if response is 2 then do
+   @begin
+   @show
+`\`\  `0"You are making a mistake.." `2the dark trader grunts as he leaves.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+   @show
+`\`\  `0"Maybe next time.." `2the dark trader grunts as he leaves.
+`\`k
+   @drawmap
+   @update
+  @closescript
+
+ @end
+
+@do saybar
+You move to the side to let him pass.
+
+
+
+
+
+@#done

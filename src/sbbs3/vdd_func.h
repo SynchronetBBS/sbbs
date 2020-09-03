@@ -2,7 +2,7 @@
 
 /* Synchronet WinNT VDD FOSSIL constant/type definitions */
 
-/* $Id$ */
+/* $Id: vdd_func.h,v 1.10 2018/07/24 01:11:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

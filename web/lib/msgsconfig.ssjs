@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: msgsconfig.ssjs,v 1.12 2006/01/31 23:19:29 runemaster Exp $ */
 
 max_messages=20;
 max_pages=20;

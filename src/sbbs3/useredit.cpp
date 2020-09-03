@@ -1,6 +1,6 @@
 /* Synchronet online sysop user editor */
 
-/* $Id$ */
+/* $Id: useredit.cpp,v 1.75 2020/08/04 04:26:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -56,19 +56,12 @@ void sbbs_t::useredit(int usernumber)
 	uint	i,j,k;
 	float	f;
 	long	l;
+	long	kmode = K_LINE|K_EDIT|K_AUTODEL|K_TRIM;
 	user_t	user;
 	struct	tm tm;
 
-	if(online==ON_REMOTE && console&(CON_R_ECHO|CON_R_INPUT) && !chksyspass())
+	if(!chksyspass())
 		return;
-#if 0	/* no local logins in v3 */
-	if(online==ON_LOCAL) {
-		if(!(cfg.sys_misc&SM_L_SYSOP))
-			return;
-		if(cfg.node_misc&NM_SYSPW && !chksyspass())
-			return; 
-	}
-#endif
 	if(usernumber)
 		user.number=usernumber;
 	else
@@ -171,22 +164,24 @@ void sbbs_t::useredit(int usernumber)
 			SAFECOPY(str,"QG[]?/{},");
 		else
 			SAFECOPY(str,"ABCDEFGHIJKLMNOPQRSTUVWXYZ+[]?/{}~*$#");
-		l=getkeys(str,l);
+		l=getkeys(str, l, K_UPPER|K_NOCRLF);
 		if(l&0x80000000L) {
 			user.number=(ushort)(l&~0x80000000L);
 			continue; 
 		}
+		if(l != '[' && l != ']' && l != '{' && l != '}' && l != '?')
+			newline();
 		switch(l) {
 			case 'A':
 				bputs(text[EnterYourAlias]);
-				getstr(user.alias,LEN_ALIAS,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.alias,LEN_ALIAS,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_ALIAS,LEN_ALIAS,user.alias);
 				if(!(user.misc&DELETED))
 					putusername(&cfg,user.number,user.alias);
 				bputs(text[EnterYourHandle]);
-				getstr(user.handle,LEN_HANDLE,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.handle,LEN_HANDLE,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
@@ -194,14 +189,14 @@ void sbbs_t::useredit(int usernumber)
 			case 'B':
 				bprintf(text[EnterYourBirthday]
 					,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
-				gettmplt(user.birth,"nn/nn/nn",K_LINE|K_EDIT|K_AUTODEL);
+				gettmplt(user.birth,"nn/nn/nn",kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
 				break;
 			case 'C':
 				bputs(text[EnterYourComputer]);
-				getstr(user.comp,LEN_COMP,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.comp,LEN_COMP,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_COMP,LEN_COMP,user.comp);
@@ -405,12 +400,12 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'L':
 				bputs(text[EnterYourAddress]);
-				getstr(user.address,LEN_ADDRESS,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.address,LEN_ADDRESS,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_ADDRESS,LEN_ADDRESS,user.address);
 				bputs(text[EnterYourCityState]);
-				getstr(user.location,LEN_LOCATION,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.location,LEN_LOCATION,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_LOCATION,LEN_LOCATION,user.location);
@@ -436,26 +431,27 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'O':
 				bputs(text[UeditComment]);
-				getstr(user.comment,60,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.comment,60,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_COMMENT,60,user.comment);
 				break;
 			case 'P':
 				bputs(text[EnterYourPhoneNumber]);
-				getstr(user.phone,LEN_PHONE,K_UPPER|K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.phone,LEN_PHONE,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_PHONE,LEN_PHONE,user.phone);
 				break;
 			case 'Q':
+				lncntr = 0;
 				CLS;
 				sys_status&=~SS_INUEDIT;
-				FREE_AR(ar);	/* assertion here */
+				free(ar);	/* assertion here */
 				return;
 			case 'R':
 				bputs(text[EnterYourRealName]);
-				getstr(user.name,LEN_NAME,K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.name,LEN_NAME,kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_NAME,LEN_NAME,user.name);
@@ -528,7 +524,7 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'W':
 				bputs(text[UeditPassword]);
-				getstr(user.pass,LEN_PASS,K_UPPER|K_LINE|K_EDIT|K_AUTODEL);
+				getstr(user.pass,LEN_PASS,K_UPPER|kmode);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user.number,U_PASS,LEN_PASS,user.pass);
@@ -587,11 +583,7 @@ void sbbs_t::useredit(int usernumber)
 					l*=1024;
 				else if(strstr(str,"$"))
 					l*=cfg.cdt_per_dollar;
-				if(l<0L && l*-1 > (long)user.cdt)
-					user.cdt=0L;
-				else
-					user.cdt+=l;
-				putuserrec(&cfg,user.number,U_CDT,10,ultoa(user.cdt,tmp,10));
+				adjustuserrec(&cfg, user.number, U_CDT, 10, l);
 				break;
 			case '*':
 				bputs(text[ModifyMinutes]);
@@ -623,8 +615,7 @@ void sbbs_t::useredit(int usernumber)
 				bputs(text[SearchStringPrompt]);
 				if(getstr(artxt,40,K_UPPER|K_LINE))
 					stype=SEARCH_ARS;
-				FREE_AR(ar);
-				ar=arstr(NULL,artxt,&cfg);
+				ar=arstr(NULL,artxt,&cfg,NULL);
 				break;
 			case '{':
 				if(stype==SEARCH_TXT)
@@ -678,7 +669,6 @@ void sbbs_t::useredit(int usernumber)
 		} /* switch */
 	} /* while */
 	sys_status&=~SS_INUEDIT;
-	FREE_AR(ar);
 }
 
 /****************************************************************************/
@@ -810,63 +800,86 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->rows)
 			rows=user->rows;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
-		if(user->misc&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sPETSCII %s%u cols"
-							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
-							,user->misc&COLOR ? "(Color) ":"(Mono) "
-							,cols);
+		long term = (user == &useron) ? term_supports() : user->misc;
+		if(term&PETSCII)
+			safe_snprintf(str,sizeof(str),"%sPETSCII %lu %s"
+							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
+							,cols, text[TerminalColumns]);
 		else
-			safe_snprintf(str,sizeof(str),"%s%s%s%s%s"
-							,user->misc&AUTOTERM ? "Auto Detect ":nulstr
-							,user->misc&ANSI ? "ANSI ":"TTY "
-							,user->misc&COLOR ? "(Color) ":"(Mono) "
-							,user->misc&WIP	? "WIP" : user->misc&RIP ? "RIP "
-								: user->misc&HTML ? "HTML " : nulstr
-							,user->misc&NO_EXASCII ? "ASCII Only":nulstr);
-		bprintf(text[UserDefaultsTerminal],str);
-		if(cfg.total_xedits)
-			bprintf(text[UserDefaultsXeditor]
-				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
+			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s%s"
+							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
+							,term_charset(term)
+							,term_type(term)
+							,term&COLOR ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
+							,term&MOUSE ? text[TerminalMouse] : ""
+							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
+		add_hotspot('T');
+		bprintf(text[UserDefaultsTerminal], truncsp(str));
 		if(user->rows)
 			ultoa(user->rows,tmp,10);
 		else
-			SAFEPRINTF(tmp,"Auto Detect (%ld)",rows);
-		bprintf(text[UserDefaultsRows],tmp);
-		if(cfg.total_shells>1)
+			SAFEPRINTF2(tmp,"%s%ld", text[TerminalAutoDetect], rows);
+		add_hotspot('L');
+		bprintf(text[UserDefaultsRows], tmp, text[TerminalRows]);
+		if(cfg.total_shells>1) {
+			add_hotspot('K');
 			bprintf(text[UserDefaultsCommandSet]
 				,cfg.shell[user->shell]->name);
+		}
+		if(cfg.total_xedits) {
+			add_hotspot('E');
+			bprintf(text[UserDefaultsXeditor]
+				,user->xedit ? cfg.xedit[user->xedit-1]->name : "None");
+		}
+		add_hotspot('A');
 		bprintf(text[UserDefaultsArcType]
 			,user->tmpext);
+		add_hotspot('X');
 		bprintf(text[UserDefaultsMenuMode]
 			,user->misc&EXPERT ? text[On] : text[Off]);
+		add_hotspot('P');
 		bprintf(text[UserDefaultsPause]
 			,user->misc&UPAUSE ? text[On] : text[Off]);
+		add_hotspot('H');
 		bprintf(text[UserDefaultsHotKey]
 			,user->misc&COLDKEYS ? text[Off] : text[On]);
+		add_hotspot('S');
 		bprintf(text[UserDefaultsCursor]
 			,user->misc&SPIN ? text[On] : user->misc&NOPAUSESPIN ? text[Off] : "Pause Prompt Only");
+		add_hotspot('C');
 		bprintf(text[UserDefaultsCLS]
 			,user->misc&CLRSCRN ? text[On] : text[Off]);
+		add_hotspot('N');
 		bprintf(text[UserDefaultsAskNScan]
 			,user->misc&ASK_NSCAN ? text[On] : text[Off]);
+		add_hotspot('Y');
 		bprintf(text[UserDefaultsAskSScan]
 			,user->misc&ASK_SSCAN ? text[On] : text[Off]);
+		add_hotspot('F');
 		bprintf(text[UserDefaultsANFS]
 			,user->misc&ANFSCAN ? text[On] : text[Off]);
+		add_hotspot('R');
 		bprintf(text[UserDefaultsRemember]
 			,user->misc&CURSUB ? text[On] : text[Off]);
+		add_hotspot('B');
 		bprintf(text[UserDefaultsBatFlag]
 			,user->misc&BATCHFLAG ? text[On] : text[Off]);
-		if(cfg.sys_misc&SM_FWDTONET)
+		if(cfg.sys_misc&SM_FWDTONET) {
+			add_hotspot('M');
 			bprintf(text[UserDefaultsNetMail]
 				,user->misc&NETMAIL ? text[On] : text[Off]
 				,user->netmail);
-		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V'))
+		}
+		if(startup->options&BBS_OPT_AUTO_LOGON && user->exempt&FLAG('V')) {
+			add_hotspot('I');
 			bprintf(text[UserDefaultsAutoLogon]
 			,user->misc&AUTOLOGON ? text[On] : text[Off]);
-		if(useron.exempt&FLAG('Q') || user->misc&QUIET)
+		}
+		if(user->exempt&FLAG('Q') || user->misc&QUIET) {
+			add_hotspot('D');
 			bprintf(text[UserDefaultsQuiet]
 				,user->misc&QUIET ? text[On] : text[Off]);
+		}
 		SAFECOPY(str,"None");
 		for(i=0;i<cfg.total_prots;i++) {
 			if(user->prot==cfg.prot[i]->mnemonic) {
@@ -874,8 +887,10 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			}
 		}
+		add_hotspot('Z');
 		bprintf(text[UserDefaultsProtocol],str
 			,user->misc&AUTOHANG ? "(Auto-Hangup)":nulstr);
+		add_hotspot('W');
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			bputs(text[UserDefaultsPassword]);
 
@@ -884,7 +899,7 @@ void sbbs_t::maindflts(user_t* user)
 		SAFECOPY(str,"HTBALPRSYFNCQXZ\r");
 		if(cfg.sys_misc&SM_PWEDIT && !(user->rest&FLAG('G')))
 			strcat(str,"W");
-		if(useron.exempt&FLAG('Q') || user->misc&QUIET)
+		if(user->exempt&FLAG('Q') || user->misc&QUIET)
 			strcat(str,"D");
 		if(cfg.total_xedits)
 			strcat(str,"E");
@@ -895,38 +910,87 @@ void sbbs_t::maindflts(user_t* user)
 		if(cfg.total_shells>1)
 			strcat(str,"K");
 
+		add_hotspot('Q');
 		ch=(char)getkeys(str,0);
 		switch(ch) {
 			case 'T':
 				if(yesno(text[AutoTerminalQ])) {
-					user->misc|=AUTOTERM;
-					user->misc&=~(ANSI|RIP|WIP|HTML);
-					user->misc|=autoterm; 
+					user->misc |= AUTOTERM;
+					user->misc &= ~(ANSI|RIP|WIP|HTML|PETSCII|UTF8);
 				}
 				else
-					user->misc&=~AUTOTERM;
+					user->misc &= ~AUTOTERM;
+				if(sys_status&SS_ABORT)
+					break;
 				if(!(user->misc&AUTOTERM)) {
-					if(yesno(text[AnsiTerminalQ]))
-						user->misc|=ANSI;
+					if(!noyes(text[Utf8TerminalQ]))
+						user->misc |= UTF8;
 					else
-						user->misc&=~(ANSI|COLOR); 
+						user->misc &= ~UTF8;
+					if(yesno(text[AnsiTerminalQ])) {
+						user->misc |= ANSI;
+						user->misc &= ~PETSCII;
+					} else if(!(user->misc&UTF8)) {
+						user->misc &= ~(ANSI|COLOR|ICE_COLOR);
+						if(!noyes(text[PetTerminalQ]))
+							user->misc |= PETSCII|COLOR;
+						else
+							user->misc &= ~PETSCII;
+					}
 				}
-				if(user->misc&(ANSI|PETSCII)) {
-					if(yesno(text[ColorTerminalQ]))
-						user->misc|=COLOR;
+				if(sys_status&SS_ABORT)
+					break;
+				term = (user == &useron) ? term_supports() : user->misc;
+				if(term&(AUTOTERM|ANSI) && !(term&PETSCII)) {
+					user->misc |= COLOR;
+					user->misc &= ~ICE_COLOR;
+					if((user->misc&AUTOTERM) || yesno(text[ColorTerminalQ])) {
+						if(!(console&(CON_BLINK_FONT|CON_HBLINK_FONT))
+							&& !noyes(text[IceColorTerminalQ]))
+							user->misc |= ICE_COLOR;
+					} else
+						user->misc &= ~COLOR;
+				}
+				if(sys_status&SS_ABORT)
+					break;
+				if(term&ANSI) {
+					if(text[MouseTerminalQ][0] && yesno(text[MouseTerminalQ]))
+						user->misc |= MOUSE;
 					else
-						user->misc&=~COLOR; 
+						user->misc &= ~MOUSE;
 				}
-				if(!(user->misc&PETSCII) && !yesno(text[ExAsciiTerminalQ]))
-					user->misc|=NO_EXASCII;
-				else
-					user->misc&=~NO_EXASCII;
-				if(!(user->misc&AUTOTERM) && (user->misc&(ANSI|NO_EXASCII)) == ANSI) {
+				if(sys_status&SS_ABORT)
+					break;
+				if(!(term&PETSCII)) {
+					if(!(user->misc&UTF8) && !yesno(text[ExAsciiTerminalQ]))
+						user->misc|=NO_EXASCII;
+					else
+						user->misc&=~NO_EXASCII;
+					user->misc &= ~SWAP_DELETE;
+					while(text[HitYourBackspaceKey][0] && !(user->misc&SWAP_DELETE) && online) {
+						bputs(text[HitYourBackspaceKey]);
+						uchar key = getkey(K_NONE);
+						bprintf(text[CharacterReceivedFmt], key, key);
+						if(key == '\b')
+							break;
+						if(key == DEL) {
+							if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
+								user->misc |= SWAP_DELETE;
+						}
+						else
+							bprintf(text[InvalidBackspaceKeyFmt], key, key);
+					}
+				}
+				if(sys_status&SS_ABORT)
+					break;
+				if(!(user->misc&AUTOTERM) && (term&(ANSI|NO_EXASCII)) == ANSI) {
 					if(!noyes(text[RipTerminalQ]))
 						user->misc|=RIP;
 					else
 						user->misc&=~RIP; 
 				}
+				if(sys_status&SS_ABORT)
+					break;
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'B':
@@ -1007,7 +1071,7 @@ void sbbs_t::maindflts(user_t* user)
 				break;
 			case 'M':   /* NetMail address */
 				bputs(text[EnterNetMailAddress]);
-				getstr(user->netmail,LEN_NETMAIL,K_EDIT|K_AUTODEL|K_LINE);
+				getstr(user->netmail,LEN_NETMAIL,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
@@ -1034,17 +1098,17 @@ void sbbs_t::maindflts(user_t* user)
 				if(!noyes(text[NewPasswordQ])) {
 					bputs(text[CurrentPassword]);
 					console|=CON_R_ECHOX;
-					ch=getstr(str,LEN_PASS,K_UPPER);
+					ch=(char)getstr(str,LEN_PASS,K_UPPER);
+					console&=~(CON_R_ECHOX|CON_L_ECHOX);
 					if(sys_status&SS_ABORT)
 						break;
-					console&=~(CON_R_ECHOX|CON_L_ECHOX);
 					if(stricmp(str,user->pass)) {
 						bputs(text[WrongPassword]);
 						pause();
 						break; 
 					}
-					bputs(text[NewPassword]);
-					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE))
+					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
+					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM))
 						break;
 					truncsp(str);
 					if(!chkpass(str,user,false)) {
@@ -1103,6 +1167,7 @@ void sbbs_t::maindflts(user_t* user)
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			default:
+				clear_hotspots();
 				return; 
 		} 
 	}

@@ -2,7 +2,7 @@
 
 # Default Command Shell for Synchronet Version 2.00a+
 
-# $Id$
+# $Id: default.src,v 1.29 2020/05/26 19:25:26 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -26,6 +26,8 @@
 ################################# Begins Here #################################
 
 !include sbbsdefs.inc
+
+str last_str_cmd
 
 # Set return point for main menu commands (via end_cmd)
 cmd_home
@@ -164,9 +166,17 @@ cmdkey ;
 	if_true
 		shift_str 1
 	else
-		getstrupr 40
+		getstr 40
 		end_if
+    compare_str !
+    if_equal
+        copy str last_str_cmd
+        end_if
 	exec_bin "str_cmds %s"
+    compare_str ""
+    if_not_equal
+        copy last_str_cmd str
+        end_if
 	end_cmd
 
 cmdkey T
@@ -204,6 +214,7 @@ if_true
 cmdkey A
 	auto_message
 	end_cmd
+    
 cmdkey /A
 	compare_ars ANSI and not GUEST
 	if_false
@@ -227,6 +238,7 @@ cmdkey C
 
 cmdkey D
 	user_defaults
+	exec_bin "termsetup"
 	end_cmd
 
 cmdkey E
@@ -253,11 +265,19 @@ cmdkey I
 cmdkey J
 	msg_select_area
 	end_cmd
+    
+cmdkey L
+    msg_list
+    end_cmd
 
 cmdkey /L
 	nodelist_all
 	end_cmd
 
+cmdkey W
+	nodelist_users
+	end_cmd
+    
 cmdkey M
 	minute_bank
 	end_cmd
@@ -314,11 +334,14 @@ cmdkey /S
 
 cmdkey U
 	print "\r\n\1c\1hList Users\r\n"
-	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
-	getcmd LSA\r
+	mnemonics "\r\n~Logons Today, ~Yesterday, ~Sub-board, or ~All: "
+	getcmd LSAY\r
 
 	cmdkey L
 		userlist_logons
+		end_cmd
+	cmdkey Y
+		exec_bin "logonlist -y"
 		end_cmd
 	cmdkey S
 		userlist_sub
@@ -343,7 +366,7 @@ cmdkey /V
     end_cmd
 
 cmdkey X
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdkey Z
@@ -630,9 +653,17 @@ cmdkey ;
 	if_true
 		shift_str 1
 	else
-                getstrupr 40
+        getstr 40
 		end_if
+    compare_str !
+    if_equal
+        copy str last_str_cmd
+        end_if
 	exec_bin "str_cmds %s"
+    compare_str ""
+    if_not_equal
+        copy last_str_cmd str
+        end_if
 	end_cmd
 
 cmdkey Q
@@ -722,7 +753,11 @@ cmdkey L
 cmdkey /L
 	nodelist_all
 	end_cmd
-
+    
+cmdkey W
+	nodelist_users
+	end_cmd
+   
 cmdkey N
 	print "\r\n\1c\1hNew File Scan\r\n"
 	file_new_scan

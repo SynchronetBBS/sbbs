@@ -1,43 +1,51 @@
-"\1n\1h\1cÚÄÄÄÄÄÄ\1nÄÄÄÄÄÄ\1h\1kÄÄÄÄÄÄÄ\1n\1cÄÄÄÄÄúúúú\r\n"\	001 MsgSubj 
-	"\1h³ \1bSubj\1n\1b: \1h\1c%.70s"
-"\r\n³ \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s"       002 MsgAttr
-"\r\n³ \1bTo  \1n\1b: \1h\1c%.70s"                              003 MsgTo
-" #%s"                                                  004 MsgToExt
-" (%.40s)"                                              005 MsgToNet
-"\r\n\1w³ \1bFrom\1n\1b: \1h\1c%.70s"                         006 MsgFrom
-" #%s"                                                  007 MsgFromExt
-" (%.40s)"                                              008 MsgFromNet
-"\r\n\1w³ \1bDate\1n\1b: \1h\1c%.24s %s (%s)\r\n"\      009 MsgDate
-	"\1wÀÄÄÄÄÄÄ\1cÄÄÄÄÄÄÄÄÄ\1nÄÄÄÄÄÄÄÄÄÄ\1h\1kÄÄÄÄ"\
-	"ÄÄÄÄ\1n\1cÄÄÄÄÄÄÄ\1bÄÄÄÄÄÄÄúúúúúú\1n"
-"\1_\r\n\1b\1hE-mail (User name or number): \1w"            010 Email
-"\r\nPost on %s %s"                                     011 Post
+"\1n\1h\1c\xda\xc4\xc4\xc4\xc4\xc4\xc4"\                        001 MsgSubj
+    "\1n\xc4\xc4\xc4\xc4\xc4\xc4"\ 
+    "\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\1c\xc4\xc4\xc4\xc4\xc4"\
+    "\xfa\xfa\xfa\xfa"\
+    "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"       
+"\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s" 002 MsgAttr
+"\r\n\xb3 \1bTo  \1n\1b: \1h\1c%.70s"                           003 MsgTo
+" #%s"                                                          004 MsgToExt
+" (%.40s)"                                                      005 MsgToNet
+"\r\n\1w\xb3 \1bFrom\1n\1b: \1h\1c%.33s"                        006 MsgFrom
+" #%s"                                                          007 MsgFromExt
+" (%.35s)"                                                      008 MsgFromNet
+"\r\n\1w\xb3 \1bDate\1n\1b: \1h\1c%.24s %s (%s)\r\n"\           009 MsgDate
+    "\1w\xc0\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1c\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\1c\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1b\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xfa\xfa\xfa\xfa\xfa\xfa\1n"
+"\1_\1?\1b\1hE-mail (User name or number): \1w"           010 Email
+"\r\nPost on %s\1\\ %s"                                   011 Post
 "\1r\1h\r\n\7You have sent too many E-mails today.\r\n"   012 TooManyEmailsToday
 "\1r\1h\r\n\7You have posted too many times today.\r\n"   013 TooManyPostsToday
-"\1[\7\1n\1r\1hCannot add \1w%s\1r to queue - \1n"             014 CantAddToQueue
-"\1n\r\nThe sending of mail is beyond your ability.\r\n" 015 R_Email
-"\1n\r\nYou can't post messages.\r\n"                    016 R_Post
-"\1n\r\nYou can't send E-mail to %s.\r\n"                017 R_Feedback
-"\1n\1m\r\nSending E-mail to \1h%s \1n\1m#%u\1n\r\n"          018 Emailing
-"\1n\1m\r\nPosting on \1h%s\1n\1m %s\r\n"                    019 Posting
-"\r\nNew file.\r\n"                                     020 NewFile
+"\1[\7\1n\1r\1hCannot add \1w%s\1r to queue - \1n"        014 CantAddToQueue
+"\1n\r\nThe sending of mail is beyond your ability.\r\n"  015 R_Email
+"\1n\r\nYou can't post messages.\r\n"                     016 R_Post
+"\1n\r\nYou can't send E-mail to %s.\r\n"                 017 R_Feedback
+"\1n\1?\1mSending E-mail to \1h%s \1n\1m#%u\1n\r\n"       018 Emailing
+"\1n\1?\1mPosting on \1h%s\1n\1m %s\r\n"                  019 Posting
+"\r\nNew file.\r\n"                                       020 NewFile
 "\1_\r\n\1y\1hSubject: "                                   021 SubjectPrompt
 "\1n\1g\r\nEnter message now (\1h%d\1n\1g lines max). "\     022 EnterMsgNow
 	"Type \1h/?\1n\1g on a new line for menu.\r\n\1n"
 "\1n\1g\r\nRaw message input (\1h%u\1n\1g bytes max). "\    023 EnterMsgNowRaw
 	"\1hCtrl-Z\1n\1g to save, \1hCtrl-C\1n\1g to abort.\1n\r\n\r\n"
-"Line limit (%u) reached.\r\n"                  	024 NoMoreLines
+"\1n\1h\1rLine limit (\1w%u\1r) reached.\1n\r\n"       	024 NoMoreLines
 "Only %u lines left.\r\n"                               025 OnlyNLinesLeft
 "\r\n\r\n\1n\1r\1h\1iOut of bytes.\1n\r\n"              026 OutOfBytes
 "Invalid line number\r\n"                               027 InvalidLineNumber
 "\1nMessage cleared.\r\n"                                028 MsgCleared
 "With line numbers"                                     029 WithLineNumbersQ
-"\r\n\1r\1h\1iAborted.\1n\r\n"                              030 Aborted
+"\1?\1r\1h\1iAborted.\1n\r\n"                              030 Aborted
 "\r\nAnonymous"                                         031 AnonymousQ
 "ANONYMOUS"                                             032 Anonymous
-"\1n\1h\r\nSaving..."                                     033 Saving
+"\1n\1h\r\nSaving @ELLIPSIS@"                           033 Saving
 "\1[\1bSaved \1w%u\1b characters (\1w%u\1b lines).\1n\r\n"    034 SavedNBytes
-"\1n\r\nWriting Index..."                                035 WritingIndx
+"\1n\r\nWriting Index @ELLIPSIS@"                              035 WritingIndx
 "\1[\1n\1mE-mail sent to \1h%s \1n\1m#%d.\1n\r\n"              036 Emailed
 "\1[\1n\1mPosted on \1h%s\1n\1m %s.\r\n"                      037 Posted
 "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you E-mail.\r\n"       038 EmailNodeMsg
@@ -45,15 +53,15 @@
 "\1n\1m\r\nForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
 	"\1h%s\1n\r\n"
 "\1n\1m\r\nMail forwarded to \1h%s \1n\1m#%d.\1n\r\n"         041 Forwarded
-"\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"           042 AutoMsgBy
+"\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"            042 AutoMsgBy
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
-"\1_\r\n\1q\1g\1hMail Waiting:\r\n\r\n"                       046 MailWaitingLstHdr
-"\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %.46s\r\n"              047 MailWaitingLstFmt
+"\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
+"\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %s\r\n"              047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
-"\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w?\1b=Menu)"\  049 ReadingMail
-	" (\1w%u\1b of \1w%u\1b): \1n"
+"\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
+	" (\1w%u\1b of \1w%u\1b): \1n\1~"
 "\1n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
 "  \1h\1bRe\1n\1b: \1h\1c%s\1n\r\n\r\n"                        051 Regarding
 "  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\				   052 RegardingByOn
@@ -67,40 +75,40 @@
 "Save/Append message to another file"                  057 SaveMsgToFile
 "\1_\1y\1hPath/Filename to write to: \1n"                   058 FileToWriteTo
 "\1n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
-"\r\n\1q\1g\1hMail that you've sent still pending:"\         060 MailSentLstHdr
+"\r\n\1q\1g\1hMail that you've sent still pending (%s first):"\ 060 MailSentLstHdr
 	"\r\n\r\n\1n"
 "\1n\r\n\1cþ \1h\1bReading Sent E-mail \1n\1cþ \1h\1b"\		061 ReadingSentMail
-	"(\1w?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n"
-"\1h\1m\r\nSending Internet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
-	"                    From: \1w%s\r\n"
+	"(\1w\1`?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n\1~"
+"\1h\1?\1mInternet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
+	"            From: \1w%s\r\n"
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
 	"(\1w%u \1bof \1w%u\1b): \1n" 
-"\1_\r\n\1q\1g\1h      From                   "\              065 MailOnSystemLstHdr
+"\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
 	"To                     A Subject\r\n\1n"
-"\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %.25s\r\n"     066 MailOnSystemLstFmt
+"\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"     066 MailOnSystemLstFmt
 "\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                 067 NScanStatusFmt
 	"\1n\1cNew:\1h%5u \1n\1cof\1h %-u"
-"\1-\r\n\1c%-15.15s \1y\1h%-44.44s \1w%u"             068 SearchSubFmt
+"\1-\r\n\1c%-20s \1y\1h%-50s \1w%6u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\n\1n\1cPost : [\1h%u\1n\1c][\1h%u\1n\1c] \1h%u\1n\1c/\1h%u"   070 ZScanPostHdr
 "\1n\r\n\1cþ \1h\1bReading \1n\1cþ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
-	" %4u\b\b\b\b\1h%s \1n\1c(\1h?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n"
+	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
-"\r\nDelete message #%u '%s'"                          073 DeletePostQ
+"\1?Delete message #%u '%s'"                          073 DeletePostQ
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "\1_\r\n\1y\1hText to search for: "                      076 SearchStringPrompt
-"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\                    077 PrivateChatSeparator
+"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    077 PrivateChatSeparator
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
-	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
-"\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %.25s\r\n"    078 SubMsgLstFmt
-"\1w\1hÄÄÄÄÄ[\1i\1r%c\1n\1h]ÄÄÄÄ´ "\                    079 SysopChatSeparator
+	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
+"\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"    078 SubMsgLstFmt
+"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    079 SysopChatSeparator
 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
 	"Time Left: \1g%-8s\1w"\
-	" ÃÄÄÄÄ[\1i\1b%c\1n\1h]ÄÄÄÄÄ"
+	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "\1l\1_\1c\1hGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "\1n\1c<\1h%d\1n\1c> %s\r\n"                                082 TextSectionLstFmt
@@ -109,7 +117,7 @@
 "\1c\1h%3d: \1n\1c%s"                                      085 TextFilesLstFmt
 "\r\nWhich, ~Add, ~Remove, ~Edit, or ~Quit: "           086 WhichTextFileSysop
 "\1_\r\n\1n\1cWhich or \1h~Q\1n\1cuit: \1h"                    087 WhichTextFile
-"\1_\r\n\1y\1hBefore which file: \1n"                       088 AddTextFileBeforeWhich
+"\1_\r\n\1y\1hBefore which file [last]: \1n"            088 AddTextFileBeforeWhich
 "\r\nPath and filename (no path indicates "\            089 AddTextFilePath
 	"%stext/%s/filename):\r\n"
 "Description:\r\n"                                      090 AddTextFileDesc
@@ -143,7 +151,7 @@
 "\1r\1iaborted.\1n\r\n"                                    118 MessageScanAborted
 "\r\nLog off"                                           119 LogOffQ
 "\r\nYou can't post on this sub.\r\n"                   120 CantPostOnSub
-"\r\n\1n\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
+"\1n\1?\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
 "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\r\n\r\nYou can't use the external programs.\r\n"      123 R_ExternalPrograms
 "\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"       124 UserStats
@@ -188,13 +196,13 @@
 "\r\n\1n\1r\1hDirectory does not exist: \1c%s\1n\r\n"   159 DirectoryDoesNotExist
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
-"\1n\r\n\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
+"\1n\1?\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
 	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"  
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
-"\r\n\1w\1hSearching all directories...\r\n"              166 SearchingAllDirs
-"\1w\1hSearching all libraries...\r\n"                    167 SearchingAllLibs
+"\r\n\1w\1hSearching all directories @ELLIPSIS@\r\n"      166 SearchingAllDirs
+"\1w\1hSearching all libraries @ELLIPSIS@\r\n"            167 SearchingAllLibs
 "\r\n\1w\1h%u Files Listed.\r\n"                          168 NFilesListed
 "\r\n\1w\1hEmpty directory.\r\n"                          169 EmptyDir
 "\r\n\1n\1cSearching for files "\                         170 NScanHdr
@@ -203,7 +211,7 @@
 "\r\n\r\nThis directory is full.\r\n"                   172 DirFull
 "\r\n\r\nYou can't upload.\r\n"                         173 R_Upload
 "\r\n\r\nYou can't upload here.\r\n"                    174 CantUploadHere
-"\1_\r\n\r\n\1y\1hFilespec: \1n"                            175 FileSpec
+"\1_\r\n\r\n\1y\1hFilespec: \1n\1~"                     175 FileSpec
 "SY: "                                                  176 SystemPassword
 "\r\n\r\nNo sysop directory specified.\r\n"             177 NoSysopDir
 "\r\n\r\nYou can't upload to sysop.\r\n"                178 CantUploadToSysop
@@ -213,9 +221,9 @@
 "\r\n\1q\1_\1g\1hFile Libraries \1n\1g                   "\     181 LibLstHdr
 	"                       Directories\r\n\r\n\1h"
 "\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             182 LibLstFmt
-"\1n\r\nInvalid NetMail address.\r\n"                   183 InvalidNetMailAddr
+"\1n\r\nInvalid NetMail address: \1h%s\1n\r\n"                183 InvalidNetMailAddr
 "\1_\r\n\1g\1h%s \1n\1gTransfer Policy\r\n\r\n\1n"            184 TransferPolicyHdr
-"\1n\1h[\1y%c\1w] \1b%-25s  "                           185 TransferProtLstFmt
+"\1n\1h[\1y\1~%c\1w] \1b%-25s  "                        185 TransferProtLstFmt
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
 "All downloads are rewarded with %d%% of the "\         187 TpDownload
@@ -229,7 +237,7 @@
 "\1n\1cFiles     : %u\1y\1h"                               194 BoxHdrFiles
 "\1n\1c(\1h%u\1n\1c) %s "                                    195 ShortHdrLib
 "\1n\1c(\1h%u\1n\1c) %s"                                     196 ShortHdrDir
-"\1r\1hFilenames, specs, or flags [None]: \1m\1h"           197 BatchDlFlags
+"\1r\1hFilenames, specs, or flags [None]: \1m\1h\1~"        197 BatchDlFlags
 "\r\n\7\1r\1h\1iBatch download queue is full.\1n\r\n"       198 BatchDlQueueIsFull
 "\1_\r\n\1y\1hFilespec [\1wAll Files\1y]: \1n"              199 FileSpecStarDotStar
 "\r\n\r\n\1r\1h\1iNot enough free disk space.\1n\r\n"\      200 LowDiskSpace
@@ -239,9 +247,9 @@
 "\r\n\1r\1hBad filename.\r\n"                             203 BadFilename
 "Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
 "Upload '%s' to User directory"                         205 UploadToUserDirQ
-"Upload '%s' to %s %s"                                  206 UploadToCurDirQ
+"Upload '%s' to %s\1\\ %s"                                  206 UploadToCurDirQ
 "\r\n\1r\1h\1iThat file is already there!\1n\r\n"           207 FileAlreadyThere
-"That file is already on disk. Add to data base"        208 FileOnDiskAddQ
+"That file is already on disk.\1\\ Add to data base"        208 FileOnDiskAddQ
 "\r\n\1r\1h\1iThat file is not on disk!\1n\r\n"             209 FileNotOnDisk
 "\r\n\1r\1h\1iPlease upload files with the following "\    210 TheseFileExtsOnly
 	"extensions only:\1n\r\n\1w\1h"
@@ -258,7 +266,7 @@
 "\r\n\1-\1gHow do you rate the content of this file "\    218 RateThisFile
 	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g): \1n"
 "[%c] "                                                 219 Rated
-"Is this upload part of a set (multiple files)"         220 MultipleDiskQ
+"Is this upload part of a set\1\\ (multiple files)"         220 MultipleDiskQ
 "\1_\1y\1hHow many files total: \1n"                        221 HowManyDisksTotal
 "\1_\1y\1hWhich file number is your upload: \1n"            222 NumberOfFile
 " [%2.2d/%2.2d]"                                        223 FileOneOfTen
@@ -274,9 +282,9 @@
 "\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
-	"\1w~Q\1yuit or [Next]: \1w"
-"\r\n~Quit or [Next]: "                                 233 QuitOrNext
-"~Remove, ~Move, ~Edit, ~View, ~Quit, or [Next]: "      234 RExemptRemoveFilePrompt
+	"\1w~Q\1yuit or [~Next]: \1w"
+"\r\n~Quit or [~Next]: "                                233 QuitOrNext
+"~Remove, ~Move, ~Edit, ~View, ~Quit, or [~Next]: "      234 RExemptRemoveFilePrompt
 "\1n(%d) %s\r\n"                                         235 MoveToLibLstFmt
 "\1_\r\n\1y\1hLibrary [%d]: \1n"                            236 MoveToLibPrompt
 "\1n(%d) %s\r\n"                                         237 MoveToDirLstFmt
@@ -284,8 +292,8 @@
 "%s moved to %s %s.\r\n"                                239 MovedFile
 "\r\nClose file record"                                 240 CloseFileRecordQ
 "~Remove, ~Credits only, ~File only, ~Move, ~Edit, "\   241 SysopRemoveFilePrompt
-	"~View, ~Quit, or [Next]: "
-"~Remove, ~Edit, ~View, ~Quit, or [Next]: "             242 UserRemoveFilePrompt
+	"~View, ~Quit, or [~Next]: "
+"~Remove, ~Edit, ~View, ~Quit, or [~Next]: "            242 UserRemoveFilePrompt
 "\r\n\1n\1r\1hFile does not exist: \1c%s\1n\r\n"        243 FileDoesNotExist
 "\7\r\n\1r\1h\1iCouldn't remove '%s'.\1n\r\n"               244 CouldntRemoveFile
 "Delete file"                                           245 DeleteFileQ
@@ -308,7 +316,7 @@
 "\r\n\1w\1hYou only have %s credits.\r\n"                 261 YouOnlyHaveNCredits
 "\r\nYou don't have enough credits.\r\n"                262 NotEnoughCredits
 "\r\n\1w\1hNot enough time left to transfer.\r\n"         263 NotEnoughTimeToDl
-"\r\nProtocol, ~Batch, ~Quit, or [Next]: "              264 ProtocolBatchQuitOrNext
+"\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
 "\r\nBulk Upload %s %s Directory\r\n"\                  265 BulkUpload
 	"(Enter '-' for description to skip file):\r\n"
 "\1_\1y\1h%s\1w%7uk\1b:"                                     266 BulkUploadDescPrompt
@@ -334,10 +342,10 @@
 "\r\nUpload queue is empty\r\n"                         281 UploadQueueIsEmpty
 "\r\nHang up after transfer"                            282 HangUpAfterXferQ
 "\r\n\1w\1hStart transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
-"\1_\r\n\1b\1hDisconnecting... \1wH\1bang up or \1wA\1bbort "  284 Disconnecting
+"\1_\r\n\1b\1hDisconnecting @ELLIPSIS@ \1wH\1bang up or \1wA\1bbort "  284 Disconnecting
 "\1[\1w\1hGood-bye!  (Time Used: @TUSED@)\1>"               285 Disconnected
 "\1r\1h\1i%s NOT SENT!\1n\r\n"                              286 FileNotSent
-"Deleting files in temp directory...\r\n"               287 RemovingTempFiles
+"Deleting files in temp directory @ELLIPSIS@\r\n"           287 RemovingTempFiles
 "\1_\1y\1hExtract from: \1n"                                288 ExtractFrom
 "\r\nUnextractable file type.\r\n"                      289 UnextractableFile
 "\r\nFile not found.\r\n"                               290 FileNotFound
@@ -352,7 +360,7 @@
 	"during resort/compression.\1n\r\n"
 "\1-\1c%-15.15s \1y\1h%-25.25s "                            298 ResortLineFmt
 "\1bEmpty\1n\r\n"                                         299 ResortEmptyDir
-"\1wSorting..."                                          300 Sorting
+"\1wSorting @ELLIPSIS@"                                   300 Sorting
 "\b\b\b\b\b\b\b\b\b\b\1bSorted    \1n\r\n"                301 Sorted
 "\b\b\b\b\b\b\b\b\b\b\1bCompressed %u slots "\           302 Compressed
 	"(%s bytes)\1n\r\n"
@@ -392,22 +400,22 @@
 "\1w\1hYou haven't changed your password in more "\       330 TimeToChangePw
 	"than %d days.\r\n\r\n"
 "\r\nEnter a different password"                        331 NewPasswordQ
-"\1_\r\n\1y\1hNew password (4-8 chars): "                  332 NewPassword
+"\1_\1?\1y\1hNew password (%u-%u chars): "                  332 NewPasswordPromptFmt
 "\1_\1y\1hVerify (enter again): \1n"                        333 VerifyPassword
 "\7\1r\1hWrong!"                                          334 Wrong
 "\1w\1hPassword changed.\r\n"                             335 PasswordChanged
 "Sorry, you have no more logons allowed today.\r\n"     336 NoMoreLogons
 "You can only logon once a day.\r\n"                    337 R_Logons
-"\1_\1b\1h[\1cû\1b] \1yEnter your full name or alias\1\\: \1w"     338 EnterYourAlias
-"\1_\1b\1h[\1cû\1b] \1yEnter your full real name\1\\: \1w"         339 EnterYourRealName
-"\1_\1b\1h[\1cû\1b] \1yEnter your company name\1\\: \1w"           340 EnterYourCompany
-"\1_\1b\1h[\1cû\1b] \1yEnter your handle or call-sign\1\\: \1w"    341 EnterYourHandle
-"\1_\1b\1h[\1cû\1b] \1yEnter your sex (M/F)\1\\: \1w"              342 EnterYourSex
-"\1_\1b\1h[\1cû\1b] \1yEnter your street address\1\\: \1w"         343 EnterYourAddress
-"\1_\1b\1h[\1cû\1b] \1yEnter your voice phone number\1\\: \1w"     344 EnterYourPhoneNumber
-"\1_\1b\1h[\1cû\1b] \1yEnter your birthday (%s)\1\\: \1w"          345 EnterYourBirthday
-"\1_\1b\1h[\1cû\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
-"\1_\1b\1h[\1cû\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your full name or alias\1\\: \1w"     338 EnterYourAlias
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your full real name\1\\: \1w"         339 EnterYourRealName
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your company name\1\\: \1w"           340 EnterYourCompany
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your handle or call-sign\1\\: \1w"    341 EnterYourHandle
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your sex (M/F)\1\\: \1w"              342 EnterYourSex
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your street address\1\\: \1w"         343 EnterYourAddress
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your voice phone number\1\\: \1w"     344 EnterYourPhoneNumber
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (@DATEFMT@)\1\\: \1w"   345 EnterYourBirthday
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
 "\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
 "Are you connecting from North America"                 349 CallingFromNorthAmericaQ
 "Is the above information correct"                      350 UserInfoCorrectQ
@@ -431,12 +439,12 @@
 "New User Password: "                                   364 NewUserPasswordPrompt
 "Use automatic terminal type detection"                 365 AutoTerminalQ
 "Does your terminal support ANSI"                       366 AnsiTerminalQ
-"Do you have a color terminal"                          367 ColorTerminalQ
+"Does your terminal display colors"                     367 ColorTerminalQ
 "\1n\1gAre you using \1hRIPterm\1n\1g or a \1hRIPscrip "\     368 RipTerminalQ
 	"\1n\1gcompatible terminal program?\r\n"\
 	"\1h\1wIMPORTANT:\1n\1g If you are not absolutely "\
 	"sure, hit \1h\1w\1iN\1n\1b\1h"
-"Does your terminal support IBM extended ASCII"         369 ExAsciiTerminalQ
+"Does your terminal support IBM extended ASCII (CP437)"     369 ExAsciiTerminalQ
 "\1nYou can't use that name (duplicate or invalid).\r\n" 370 YouCantUseThatName
 "\1l\1-\1gYour password is \1h%s\r\n"                       371 YourPasswordIs
 "\r\n\1_\1w\1hDon't forget and keep it "\                   372 NewUserPasswordVerify
@@ -452,10 +460,12 @@
 "\7\r\n\1r\1h\1iYou must leave %s mail in order to be "\   378 NoFeedbackWarning
 	"validated!\1n\r\n"
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
-"\1l\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
-"\1n\1cNum \1h³\1n\1c Name                           "       381 XtrnProgLstTitles
-"\1hÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ      "               382 XtrnProgLstUnderline
-"\1h\1c%3u ³ \1n\1c%-25.25s\1h      "                        383 XtrnProgLstFmt
+"\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
+"\1n\1cNum \1h\xb3\1n\1c Name                             "       381 XtrnProgLstTitles
+"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
+	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
+	"\xc4\xc4\xc4\xc4\xc4\xc4 "
+"\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
 "\r\n\1-\1cWhich or \1h~Q\1n\1cuit: \1h"                      384 WhichXtrnProg
 "\r\n%s is currently running %s on node %d.\r\n"\       385 UserRunningXtrn
 	"\r\nTry again later.\r\n\r\n"
@@ -470,7 +480,7 @@
 	"E:%3u   F:%3u   U:%6uk %3u  D:%6uk %3u\r\n"
 "Locally"                                               393 Locally
 "\r\nSort alphabetically"                               394 SortAlphaQ
-"\r\n\1m\1hChecking Slots..."                             395 CheckingSlots
+"\r\n\1m\1hChecking Slots @ELLIPSIS@"                          395 CheckingSlots
 "\1n\1h%-32.32s\1n\1m%-30.30s\1h%-8.8s \1n\1m%-8.8s\r\n"       396 UserListFmt
 "\1[\1h\1w%d\1b total users.        \r\n"                397 NTotalUsers
 "\1w%d \1busers with access to current sub-board.\r\n"  398 NUsersOnCurSub
@@ -534,7 +544,7 @@
 "\1n\1cFlags #1  : \1h%-26s   \1n\1cFlags #3  : \1h%s\r\n"\   439 UeditFlags
 	"\1n\1cFlags #2  : \1h%-26s   \1n\1cFlags #4  : \1h%s\r\n"
 "\1n\1cExemption : \1h%-26s   \1n\1cRestricts : \1h%s\r\n"    440 UeditExempts
-"\1_\1y\1hUser edit (\1w?\1y=Menu) "\                    441 UeditPrompt
+"\1_\1y\1hUser edit (\1w\1`?\1y=Menu) "\                    441 UeditPrompt
 	"(\1w%u\1y of \1w%u\1y): \1n"
 "Restore User"                                          442 UeditRestoreQ
 "Activate User"                                         443 UeditActivateQ
@@ -573,7 +583,7 @@
 "\1h\1bUser Settings for \1w%s #%d\1b:\r\n\r\n"                474 UserDefaultsHdr
 "\1n\1b[\1h\1wT\1n\1b] \1hTerminal Mode                \1n\1b\1\\: \1c%s\r\n"   475 UserDefaultsTerminal
 "\1n\1b[\1h\1wE\1n\1b] \1hExternal Editor              \1n\1b\1\\: \1c%s\r\n"   476 UserDefaultsXeditor
-"\1n\1b[\1h\1wL\1n\1b] \1hScreen Length                \1n\1b\1\\: \1c%s\r\n"   477 UserDefaultsRows
+"\1n\1b[\1h\1wL\1n\1b] \1hScreen Length                \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
 "\1n\1b[\1h\1wX\1n\1b] \1hExpert Menu Mode             \1n\1b: \1c%s\r\n"   478 UserDefaultsMenuMode
 "\1n\1b[\1h\1wP\1n\1b] \1hScreen Pause                 \1n\1b: \1c%s\r\n"   479 UserDefaultsPause
 "\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
@@ -594,11 +604,11 @@
 "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   494 UserDefaultsWhich
 "On"                                                    495 On
 "Off"                                                   496 Off
-"\r\n\1_\1b\1h[\1cû\1b] \1yHow many rows on your monitor "\   497 HowManyRows
+"\r\n\1_\1b\1h[\1c@CHECKMARK@\1b] \1yHow many rows on your monitor "\   497 HowManyRows
 	"[\1wAuto Detect\1y]: "
 "\r\n\1_\1y\1hCurrent Password: \1w"                        498 CurrentPassword
 "Forward personal e-mail to network mail address"       499 ForwardMailQ
-"\1_\1b\1h[\1cû\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
 	"(Example: user@domain)\r\n : "
 "\1n\1l\1gSelect \1h%s\1n\1g:\r\n\r\n"                        501 SelectItemHdr
 "\1g\1h%3d: \1n\1g%s\r\n"                                   502 SelectItemFmt
@@ -673,13 +683,13 @@
 "\1bTime Used       : \1c%s\r\n"                                554 TiTimeon
 "\1bTime Remaining  : \1c%s\r\n\r\n"                            555 TiTimeLeft
 "\r\n\r\n\1nCtrl-Key Commands (from most anywhere)\r\n"\ 556 ControlKeyMenu
-    "\r\n\1hCtrl-K  \1nThis Menu"\
-	"\r\n\1hCtrl-C  \1nAbort Current Process"\
-	"\r\n\1hCtrl-O  \1nToggle Pause Prompt Temporarily"\
-	"\r\n\1hCtrl-Z  \1nToggle Raw Input/Output Mode (e.g. for ASCII-uploading message text)"\
-	"\r\n\1hCtrl-U  \1nList Users Online"\
-	"\r\n\1hCtrl-P  \1nSend Private Message To or Chat with Another Node"\
-	"\r\n\1hCtrl-T  \1nTime Information\r\n\r\n"
+    "\r\n\1h^K  \1nThis Menu"\
+	"\r\n\1h^C  \1nAbort Current Process"\
+	"\r\n\1h^O  \1nToggle Pause Prompt Temporarily"\
+	"\r\n\1h^Z  \1nToggle Raw Input/Output Mode\1\\ (e.g. for ASCII-uploading msg text)"\
+	"\r\n\1h^U  \1nList Users Online"\
+	"\r\n\1h^P  \1nSend Instant-Messages and Telegrams"\
+	"\r\n\1h^T  \1nTime Information\r\n\r\n"
 "\r\n\1nYou've taken too long to log on.\r\n"            557 TakenTooLongToLogon
 "\r\n\1nYou've been inactive too long.\r\n"              558 CallBackWhenYoureThere
 "@EXEC:yesnobar@"                                       559 YesNoQuestion
@@ -703,7 +713,7 @@
 "\1[\1bPacked:\1w%4u \1bof\1w %u\1>"                        573 QWKPackedSubboard
 "\r\n\1_\1h\1wPacking E-mail...            "               574 QWKPackingEmail
 "\1[\1bPacked \1w%u\1b E-mail messages.\1>"                  575 QWKPackedEmail
-"\r\n\1_\1h\1wUnpacking..."                                576 QWKUnpacking
+"\r\n\1_\1h\1wUnpacking @ELLIPSIS@"                          576 QWKUnpacking
 "\1[\1_\1h\1bUnpacked.\1>"                                   577 QWKUnpacked
 "\1_\1w\1hNo new messages.\r\n"                            578 QWKNoNewMessages
 "\r\n\1r\1h\1iPacket Compression Failed!\1n\r\n"            579 QWKCompressionFailed
@@ -732,9 +742,9 @@
 "\r\n\1_\1y\1hPost to: "                                   597 PostTo
 "\r\nPrivate posts require a destination user "\        598 NoToUser
 	"name.\r\n"
-"\r\n\1_\1w\1hUsing your real name...\r\n"                 599 UsingRealName
-"\r\n\1_\1w\1hPosting Privately...\r\n"                    600 PostingPrivately
-"\r\n\1_\1w\1hPosting anonymously...\r\n"                  601 PostingAnonymously
+"\r\n\1_\1w\1hUsing your real name @ELLIPSIS@\r\n"         599 UsingRealName
+"\r\n\1_\1w\1hPosting Privately @ELLIPSIS@\r\n"            600 PostingPrivately
+"\r\n\1_\1w\1hPosting anonymously @ELLIPSIS@\r\n"          601 PostingAnonymously
 "\r\nCan't delete posts on this sub-board.\r\n"         602 CantDeletePosts
 "\r\n\1h\1gSub-board Information:\r\n\r\n\1n"              603 SubInfoHdr
 "\1n\1h\1bDescription             : \1c%s\r\n"             604 SubInfoLongName
@@ -753,7 +763,7 @@
 "\1n\r\nNo NetMail allowed.\r\n"                         617 NoNetMailAllowed
 "\r\nIt will cost you %u credits to send NetMail. "\   618 NetMailCostContinueQ
 	"Continue"
-"\1n\1m\r\nSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
+"\1n\1?\1mSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
 	"              From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
 "Remove this sub-board from your new-scan list"         620 RemoveFromNewScanQ
 "\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
@@ -774,7 +784,7 @@
 	"or [%s]: \1w"
 "\r\n\1_\1c\1hMultinode Chat Channels:\r\n\r\n"            636 ChatChanLstHdr
 "\1n\1cNum Name                         Cost"             637 ChatChanLstTitles
-"\1hÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ    ÄÄÄÄ"               638 ChatChanLstUnderline
+"\1h\xc4\xc4\xc4 \xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4    \xc4\xc4\xc4\xc4"               638 ChatChanLstUnderline
 "\1h\1c%3u \1n\1c%-25.25s\1h%8u"                           639 ChatChanLstFmt
 "\r\nYou can't access that channel.\r\n"                640 CantAccessThatChannel
 "\r\nYou can't download from this directory.\r\n"       641 CantDownloadFromDir
@@ -797,11 +807,11 @@
 "\1l\1_\1g\1hFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
 "\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
-	"(\1h%u\1n\1c) %s (\1h?\1n\1c=Menu) (\1h%u\1n\1c Files\1n\1c): \1n"
-"\1n\1>\1q\1l\x014 \1h\1y[\1wD\1y]ownload  \1h\1y[\1wB\1y]atch  "\                   661 FileListBatchCommands
-	"[\1wV\1y]iew Content  [\1wE\1y]xtended Info  "\
-	"[\1wP\1y]revious Page  [\1wQ\1y]uit\1>\1n\r\n"
-"\r\nDownload attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
+	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c Files\1n\1c): \1n\1~"
+"\1n\1>\1q\1l\x014 \1h\1y[\1w\1~D\1y]ownload  \1h\1y[\1w\1~B\1y]atch  "\ 661 FileListBatchCommands
+	"[\1w\1~V\1y]iew Content  [\1w\1~E\1y]xtended Info  "\
+	"[\1w\1~P\1y]revious Page  [\1w\1~Q\1y]uit\1>\1n\r\n"
+"\1\?Download attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
 "\r\n\r\n\1nTime left : %13u\r\n"                        663 FreeMinLeft
 "\1b\1h\r\nTime left to deposit in minute bank "\         664 FreeMinToDeposit
 	"(\1w%u Max\1b): \1n"
@@ -837,7 +847,7 @@
 "Library %u"                                            692 NoAccessLib
 "Directory %u"                                          693 NoAccessDir
 "\1n\1hNode Status\r\n\1c"\                                694 NodeLstHdr
-	"ÄÄÄÄ ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\r\n"
+	"\xc4\xc4\xc4\xc4 \xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n"
 ""                                                      695 NodeActionMain
 ""                                                      696 NodeActionReadMsgs
 ""                                                      697 NodeActionReadMail
@@ -902,13 +912,13 @@
 "\1n\1b[\1h\1wX\1n\1b] \1hExtended (QWKE) Packet Format\1n\1b: \1c%s\r\n"	755 QWKSettingsExtended
 "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
 "\1n\r\nSorry, you can't edit this message.\r\n"	757 CantEditMsg
-"\1n\r\nSorry, you can't delete this message.\r\n"	758 CantDeleteMsg
+"\1n\r\nSorry, you can't delete message #%lu.\r\n"	758 CantDeleteMsg
 "\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
 "\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
 "Add this sub-board to your new-scan list"         762 AddSubToNewScanQ
 "\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning
-"\1n\1hStarting new user registration...\r\n"           764 StartingNewUserRegistration
+"\1n\1hStarting new user registration @ELLIPSIS@\r\n"   764 StartingNewUserRegistration
 "\r\n\r\n\1nCtrl-Key Commands (during line input)\r\n"\ 765 GetStrMenu
     "\r\n\1h^K  \1nThis Menu"\
 	"\r\n\1h^C  \1nAbort Current Line Input"\
@@ -949,7 +959,7 @@
 "\r\n\1h\1rSorry, you're not allowed to vote.\r\n" 781 R_Voting
 "\1n\1b[\1h\1wV\1n\1b] \1hInclude VOTING.DAT File      \1n\1b: \1c%s\r\n"	782 QWKSettingsVoting
 "\r\nVote for message: ~Up, ~Down, or ~Quit: "               783 VoteMsgUpDownOrQuit
-"\r\n³ \1bMsg \1n\1b: \1h\1cVoted Up %u times%s and Down %u times%s (Score: %d)"          784 MsgVotes
+"\r\n\xb3 \1bMsg \1n\1b: \1h\1cVoted Up %u times%s and Down %u times%s (Score: %d)"          784 MsgVotes
 "\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1cUp\1n\1m-voted your message: \1n\1h%s\r\n" 785 MsgUpVoteNotice
 "\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s \1rDown\1n\1m-voted your message: \1n\1h%s\r\n" 786 MsgDownVoteNotice
 "\1n\1hOn %s, in \1c%s \1n\1c%s\r\n\1h\1m%s voted in your poll: \1n\1h%s\r\n" 787 PollVoteNotice
@@ -962,7 +972,7 @@
 "Only"									794 Only
 "\1n\1h\1c\r\nSPAM Visibility is now: \1w"	795 SPAMVisibilityIsNow
 "\r\nTo vote in this poll, hit ~V now.\r\n" 796 VoteInThisPollNow
-"\1n\1mMIME-decoded plain-text:\1n\r\n"     797 MIMEDecodedPlainText
+"\1n\1mMIME-decoded %s %s-text:\1n\r\n"  797 MIMEDecodedPlainTextFmt
 "\1/@EXEC:SHOWMSGAVATAR@\r\n"				798 MsgHdrBodySeparator
 "\1/\r\n@EXEC:SHOWFILEAVATAR@"				799 FileHdrDescSeparator
 "Remove file"                               800 RemoveFileQ
@@ -970,9 +980,35 @@
 "\1n\1h\251 \1m%.77s\r\n"		            802 VoteNoticeFmt
 "\r\nTag this message"                      803 TagMessageQ
 "\r\n\1h\1yEnter (space-separated) Tags: "  804 TagMessagePrompt
-"\r\n³ \1bTags\1n\1b: \1h\1c%.70s"          805 MsgTags
+"\r\n\xb3 \1bTags\1n\1b: \1h\1c%.70s"          805 MsgTags
 "Terminal type"                             806 NoAccessTerminal
-"\r\n "                                     807 LongLineContinuationPrefix
+"\r\n"                                      807 LongLineContinuationPrefix
 "Scanning"                                  808 Scanning
 "Done"                                      809 Done
 "\1[\1>"                                    810 Scanned
+"\1n\1b\1h[\1c@CHECKMARK@\1b] \1h\1yHIT your \1wBACKSPACE\1y or DELETE-LEFT key: " 811 HitYourBackspaceKey
+"\1\\\1n\1cCharacter \1h%u (%02Xh) \1n\1creceived.\r\n"   812 CharacterReceivedFmt
+"\1r\1h!Unsupported backspace key: \1w%02Xh\r\n"          813 InvalidBackspaceKeyFmt
+""                                                        814 SwapDeleteKeyQ
+"\1n\1hCBM/\1yPETSCII\1w terminal detected.\r\n"          815 PetTerminalDetected
+"Are you using a CBM/PETSCII terminal"                    816 PetTerminalQ
+"Auto "                                                   817 TerminalAutoDetect
+"columns"                                                 818 TerminalColumns
+"rows"                                                    819 TerminalRows
+"(mono) "                                                 820 TerminalMonochrome
+"(color) "                                                821 TerminalColor
+"(iCE color) "                                            822 TerminalIceColor
+"Does your terminal display bright background "\          823 IceColorTerminalQ
+    "(iCE) colors\r\n    \1n"\
+    "(i.e. \1i\1k\x013this text\1n is black on yellow and NOT BLINKING)"
+"Does your terminal support UTF-8"                        824 Utf8TerminalQ
+"\r\n\xb3 \1bCC  \1n\1b: \1h\1c%.70s"                     825 MsgCarbonCopyList
+"\1n\1hLogging on to @BBS@ as @ALIAS@ @ELLIPSIS@\1n\r\n"\ 826 LoggingOn
+    "@RESETPAUSE@"
+"\1n\1b[\1h\1wU\1n\1b] \1hInclude UTF-8 Characters     \1n\1b: \1c%s\r\n"	827 QWKSettingsUtf8
+"\1n\1m\1h%s\1n\1m%.0s posted to you "\                                     828 MsgPostedToYouVia
+    "on \1h%s \1n\1m%s\r\n" 
+"unlimited"                                               829 Unlimited
+" via raw"						                          830 NodeConnectionRaw
+"Does your terminal support mouse reporting"              831 MouseTerminalQ
+"(mouse) "                                                832 TerminalMouse

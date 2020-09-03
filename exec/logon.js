@@ -2,18 +2,45 @@
 
 // Synchronet v3.1 Default Logon Module
 
-// $Id$
+// $Id: logon.js,v 1.55 2020/05/26 04:21:18 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 
-load("sbbsdefs.js");
-load("text.js");
-var Avatar = load({}, "avatar_lib.js");
+require("sbbsdefs.js", 'SS_RLOGIN');
+require("nodedefs.js", 'NODE_QUIET');
+if(!bbs.mods.avatar_lib)
+	bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
+if(!bbs.mods.logonlist_lib)
+	bbs.mods.logonlist_lib = load({}, 'logonlist_lib.js');
+load("fonts.js", "preload", "default");
+if(!bbs.mods.userprops)
+	bbs.mods.userprops = load({}, "userprops.js");
 var options = load("modopts.js", "logon");
-load("loadfonts.js");
+if(!options)
+	options = {};
+if(options.show_avatar === undefined)
+	options.show_avatar = true;
+if(options.draw_avatar_right === undefined)
+	options.draw_avatar_right = true;
+if(options.show_logon_list === undefined)
+	options.show_logon_list = true;
+
+if(options.eval_first)
+	eval(options.eval_first);
+
+if(user.settings & USER_ICE_COLOR) {
+	var cterm = load({}, "cterm_lib.js");
+	cterm.bright_background(true);
+}
+
+if(options.email_validation == true) {
+	load({}, "emailval.js");
+	if(!bbs.online)
+		exit();
+}
 
 // Check if we're being asked to auto-run an external (web interface external programs section uses this)
-if (options && (options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
+if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
     var external_code = console.terminal.substring(5);
     if (!bbs.exec_xtrn(external_code)) {
         alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
@@ -74,15 +101,10 @@ if(user.security.restrictions&UFLAG_G) {
 		bbs.log_str(ref + "\r\n");
 		break;
 	}
-
-//	print("name: " + user.name);
-//	print("email: " + user.netmail);
-//	print("location: " + user.location);
 }
 
-
 // Force split-screen chat on ANSI users
-if(user.settings&USER_ANSI)
+if(console.term_supports(USER_ANSI))
 	user.chat_settings|=CHAT_SPLITP;
 
 // Inactivity exemption
@@ -93,170 +115,89 @@ if(user.security.exemptions&UFLAG_H)
 * Replaces the 2.1 Logon stuff
 ******************************/
 
-// Logon screens
+if(options.fast_logon !== true || !(bbs.sys_status&SS_FASTLOGON)
+	|| !user.compare_ars(options.fast_logon_requirements)) {
 
-// Print successively numbered logon screens (logon, logon1, logon2, etc.)
-var highest_printed_logon_screen=-1;
-for(var i=0;;i++) {
-	var fname="logon";
-	if(i)
-		fname+=i;
-	if(!file_exists(system.text_dir + "menu/" + fname + ".asc")) {
-		if(i>1)
-			break;
-		continue;
-	}
-	bbs.menu(fname);
-    highest_printed_logon_screen = i;
-}
+	// Logon screens
 
-// Print logon screens based on security level
-if(user.security.level > highest_printed_logon_screen 
-    && file_exists(system.text_dir + "menu/logon" + user.security.level + ".*"))
-	bbs.menu("logon" + user.security.level);
-
-// Print one of text/menu/random*.*, picked at random
-// e.g. random1.asc, random2.asc, random3.asc, etc.
-var random_list = directory(system.text_dir + "menu/random*.*");
-if(random_list.length)
-	bbs.menu(file_getname(random_list[random(random_list.length)]).slice(0,-4));
-
-console.clear();
-bbs.user_event(EVENT_LOGON);
-
-/*
-	* Disable HTML mode if not using an HTML shell
-	* If you don't do this, you'll get HTML menus that flash on
-	* screen then disappear when the ANSI prompt is displayed
-	*
-	* It's still in the autoterm variable, so you CAN switch
-	*/
-if(user.settings&USER_HTML) {
-	if(user.command_shell.search(/html/i)==-1)
-		user.settings&=~USER_HTML;
-}
-
-if(user.settings&USER_HTML) {
-	load("asc2htmlterm.js");
-	var buf="\2\2<html><head><title>Welcome status screen</title></head><body bgcolor=\"black\" text=\"#a8a8a8\">";
-
-	// Last few callers
-	logonlst=system.data_dir + "logon.lst"
-	if(file_size(logonlst)<1)
-		buf += asc2htmlterm("\1n\1g\1hYou are the first caller of the day!\r\n",false,true).replace(/(?:&nbsp;)*<br>/g,'<br>');
-	else {
-		f=new File(logonlst);
-		if(f.open("rb",true,f.length)) {
-			var lastbuf=f.read(f.length);
-			f.close();
-			lastbuf = lastbuf.replace(/^.*((?:[\x00\x09\x0b-\xff]*[\n]){1,4})$/,'$1');
-			buf += asc2htmlterm("\1n\1g\1hLast few callers:\1n\r\n",false,true).replace(/(?:&nbsp;)*<br>/g,'<br>');
-			buf += asc2htmlterm(lastbuf, false, true).replace(/(?:&nbsp;)*<br>/g,'<br>');
+	// Print successively numbered logon screens (logon, logon1, logon2, etc.)
+	var highest_printed_logon_screen=-1;
+	for(var i=0;;i++) {
+		var fname="logon";
+		if(i)
+			fname+=i;
+		if(!bbs.menu_exists(fname)) {
+			if(i>1)
+				break;
+			continue;
 		}
-	}
-	buf += '&nbsp;<br>';
-
-	// Auto-message
-	auto_msg=system.data_dir + "msgs/auto.msg"
-	if(file_size(auto_msg)>0) {
-		f=new File(auto_msg);
-		if(f.open("rb",true,f.length)) {
-			buf += asc2htmlterm(f.read(f.length), false, true, P_NOATCODES).replace(/(?:&nbsp;)*<br>/g,'<br>');
-			f.close();
-		}
-
-		buf += '&nbsp;<br>';
+		bbs.menu(fname);
+		highest_printed_logon_screen = i;
 	}
 
-	if(!(system.settings&SYS_NOSYSINFO)) {
-		buf += asc2htmlterm(format(bbs.text(SiSysName),system.name)
-					+ format(bbs.text(LiUserNumberName),user.number,user.alias)
-					+ format(bbs.text(LiLogonsToday),user.stats.logonstoday
-							,user.limits.logons_per_day)
-					+ format(bbs.text(LiTimeonToday),user.stats.timeon_today
-							,user.limits.time_per_day+user.security.minutes)
-					+ format(bbs.text(LiMailWaiting),user.mail_waiting)
-				, false, true).replace(/(?:&nbsp;)*<br>/g,'<br>');
-			/*
-				* Notes:
-				* 1) We cannot access cfg.sys_char_ar
-				* 2) logon.cpp and chat.cpp differ... chat.cpp adds useron.exempt&FLAG('C')
-				*/
-			/*
-			strcpy(str,bbs.text[LiSysopIs]);
-			if(bbs.startup_options&BBS_OPT_SYSOP_AVAILABLE
-					|| (cfg.sys_chat_ar[0] && chk_ar(cfg.sys_chat_ar,&useron)))
-					strcat(str,bbs.text[LiSysopAvailable]);
-			else
-					strcat(str,bbs.text[LiSysopNotAvailable]);
-			format("%s\r\n\r\n",str);
-			*/
-	}
+	// Print logon screens based on security level
+	if(user.security.level > highest_printed_logon_screen
+		&& bbs.menu_exists("logon" + user.security.level))
+		bbs.menu("logon" + user.security.level);
 
-	buf += "<br><a href=\" \">Click here to continue...</a></body>\n\2";
-	/* Disable autopause */
-	var os = bbs.sys_status;
-	bbs.sys_status |= SS_PAUSEOFF;
-	bbs.sys_status &= ~SS_PAUSEON;
-	console.write(buf);
-	bbs.sys_status=os;
-	console.getkey();
+	// Print one of text/menu/random*.*, picked at random
+	// e.g. random1.asc, random2.asc, random3.asc, etc.
+	bbs.menu("random*");
+
+	console.clear(LIGHTGRAY);
+	bbs.user_event(EVENT_LOGON);
 }
-else {
-	// Last few callers
-	console.aborted=false;
-	console.clear();
-	logonlst=system.data_dir + "logon.lst"
-	if(file_size(logonlst)<1)
-		printf("\1n\1g\1hYou are the first caller of the day!\r\n");
-	else {
-		printf("\1n\1g\1hLast few callers:\1n\r\n");
-		console.printtail(logonlst,4,P_NOATCODES|P_TRUNCATE);      // args: filename, lines, mode
-	}
-	console.crlf();
-
-	// Auto-message
-	auto_msg=system.data_dir + "msgs/auto.msg"
-	if(file_size(auto_msg)>0) {
-		console.printfile(auto_msg,P_NOATCODES);
-	}
-	console.crlf();
-
-	if(console.term_supports(USER_ANSI)) {
-		Avatar.draw(user.number, /* name: */null, /* netaddr: */null, /* above: */false, /* right: */true);
-		console.attributes = 7;	// Clear the background attribute
-	}
-}
-
-// Automatically set shell to WIPSHELL
-if(user.settings&USER_WIP)
-	user.command_shell="WIPSHELL";
 
 if(user.security.level==99				/* Sysop logging on */
 	&& !system.matchuser("guest")		/* Guest account does not yet exist */
-	&& user.security.flags4&UFLAG_G		/* Sysop has not asked to stop this question */
+	&& bbs.mods.userprops.get("logon", "makeguest", true) /* Sysop has not asked to stop this question */
 	) {
 	if(console.yesno("Create Guest/Anonymous user account (highly recommended)"))
 		load("makeguest.js");
 	else if(!console.yesno("Ask again later"))
-		user.security.flags4&=~UFLAG_G;	/* Turn off flag 4G to not ask again */
+		bbs.mods.userprops.set("logon", "makeguest", false);
 	console.crlf();
+}
+
+// Last few callers
+console.aborted=false;
+console.clear(LIGHTGRAY);
+if(options.show_logon_list === true)
+	bbs.exec("?logonlist -l");
+if(bbs.node_status != NODE_QUIET && ((system.settings&SYS_SYSSTAT) || !user.is_sysop))
+	bbs.mods.logonlist_lib.add();
+
+// Auto-message
+auto_msg=system.data_dir + "msgs/auto.msg"
+if(file_size(auto_msg)>0) {
+	console.printfile(auto_msg,P_NOATCODES|P_WORDWRAP);
+}
+console.crlf();
+
+if(options.show_avatar && console.term_supports(USER_ANSI)) {
+	if(options.draw_avatar_above || options.draw_avatar_right)
+		bbs.mods.avatar_lib.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
+	else
+		bbs.mods.avatar_lib.show(user.number);
+	console.attributes = 7;	// Clear the background attribute
 }
 
 // Set rlogin_xtrn_menu=true in [logon] section of ctrl/modopts.ini
 // if you want your RLogin server to act as a door game server only
-if(options
-	&& options.rlogin_xtrn_menu
+if(options.rlogin_xtrn_menu
 	&& bbs.sys_status&SS_RLOGIN) {
 	bbs.xtrn_sec();
 	bbs.hangup();
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
-	&& options && options.set_avatar == true) {
-	var avatar = Avatar.read_localuser(user.number);
+	&& options.set_avatar == true) {
+	var avatar = bbs.mods.avatar_lib.read(user.number);
 	if(!avatar || (!avatar.data && !avatar.disabled)) {
 		alert("You have not selected an avatar.");
 		if(console.yesno("Select avatar now"))
 			load("avatar_chooser.js");
 	}
 }
+
+if(options.eval_last)
+	eval(options.eval_last);

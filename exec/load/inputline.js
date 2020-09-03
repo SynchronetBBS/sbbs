@@ -1,3 +1,5 @@
+// $Id: inputline.js,v 1.24 2020/03/26 07:37:27 rswindell Exp $
+
 if(js.global.getColor == undefined)
 	js.global.load(js.global,"funclib.js");
 if(js.global.Frame == undefined)
@@ -288,7 +290,7 @@ function InputLine(frame) {
 		// if(strlen(properties.buffer)<1) 
 			// return null;
 		if(properties.buffer[0]==";") {
-			if(properties.buffer.length>1 && (user.compare_ars("SYSOP") || bbs.sys_status&SS_TMPSYSOP)) {
+			if(properties.buffer.length>1 && bbs.compare_ars("SYSOP")) {
 				bbs.command_str='';
 				js.global.load("str_cmds.js",properties.buffer.substr(1));
 				properties.frame.invalidate();

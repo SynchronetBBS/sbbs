@@ -1,4 +1,5 @@
-#!/synchronet/src/src/sbbs3/gcc.freebsd.exe.stephen.hurd.local/jsexec
+// $Id: twint500.js,v 1.13 2020/04/17 05:05:00 rswindell Exp $
+// #!/synchronet/src/src/sbbs3/gcc.freebsd.exe.stephen.hurd.local/jsexec
 
 var startup_path='.';
 try { throw barfitty.barf(barf) } catch(e) { startup_path=e.fileName }
@@ -99,21 +100,68 @@ function ConfigureSettings()
 	}
 }
 
-if(uifc == undefined) {
-	writeln("UIFC interface not available!");
-	exit(1);
-}
+var reset = false;
+if(this.uifc == undefined) {
 
-uifc.init("TradeWars 2 Initialization", /* ciolibmode: */argv[0]);
-ConfigureSettings();
+	while(!js.terminated && (!this.console || !console.aborted)) {
+		print("Configuration:");
+		print();
+		for(var i=0; i< GameSettingProperties.length; i++)
+			print(format("%2d: %-35s = %s", i + 1, GameSettingProperties[i].name, Settings[GameSettingProperties[i].prop]));
+		print();
+		var which = prompt("Which");
+		which = parseInt(which, 10);
+		if(isNaN(which))
+			break;
+		if(which < 1 || which > GameSettingProperties.length)
+			continue;
+		which--;
+		if(GameSettingProperties[which].type == "Boolean") {
+			if(Settings[GameSettingProperties[which].prop])
+				Settings[GameSettingProperties[which].prop] = confirm(GameSettingProperties[which].name);
+			else
+				Settings[GameSettingProperties[which].prop] = !deny(GameSettingProperties[which].name);
+			continue;
+		}
+		var val = prompt(GameSettingProperties[which].name);
+		switch(GameSettingProperties[which].type) {
+			case "String":
+				Settings[GameSettingProperties[which].prop] = val;
+				break;
+			case "Date":
+				Settings[GameSettingProperties[which].prop] = val;
+				break;
+			case "Integer":
+				Settings[GameSettingProperties[which].prop] = parseInt(val);
+				break;
+		}
+	}
+	if(js.terminated || (this.console && console.aborted))
+		exit(0);
+	
+	reset = confirm("Reset Game");
+	try {
+		db=new JSONClient(Settings.Server,Settings.Port);
+		db.connect();
+		Settings.save();
+	}
+	catch (e) {
+		alert("WARNING: Unable to connect to server: " + e);
+	}
+} else {
+	uifc.init("TradeWars 2 Initialization", /* ciolibmode: */argv[0]);
+	ConfigureSettings();
 
-if(js.global.db != undefined) {
-	if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"])!=1) {
-		uifc.bail();
-		exit(1);
+	if(js.global.db != undefined) {
+		if(uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Reset Game?", ["No", "Yes"]) == 1)
+			reset = true;
 	}
 }
 
+if(!reset)
+	exit(0);
+
+print("Resetting game");
 load(fname("ports.js"));
 load(fname("planets.js"));
 load(fname("teams.js"));
@@ -124,8 +172,6 @@ load(fname("messages.js"));
 load(fname("computer.js"));
 load(fname("input.js"));
 
-var i;
-
 ResetAllPlayers();
 ResetAllPlanets();
 ResetAllMessages();
@@ -134,6 +180,7 @@ InitializeSectors();
 InitializePorts();
 InitializeCabal();
 db.write(Settings.DB,'twopeng',[],LOCK_WRITE);
-
-uifc.pop();
-uifc.bail();
+if(this.uifc) {
+	uifc.pop();
+	uifc.bail();
+}

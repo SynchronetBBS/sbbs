@@ -1,0 +1,63 @@
+					************************************
+					******  BBS DICE WARZ (2008) *******
+					** for use with Synchronet v3.14+ **
+					*******  by Matt Johnson  **********
+					************************************
+
+This game was modelled after "Dice Wars" which is a web-interface strategy 
+game involving dice, similar to Risk. 
+	
+The object of the game is to conquer the map by rolling dice against 
+neighboring tiles. The game can be played by 4 to 7 players, and can 
+be either 1 human player vs. all computer players, all human vs. human 
+players, or a mix of humans and computers. 
+	
+While the settings can be adjusted, the default maximum dice per tile is 8, 
+and the default maximum reserve dice is 30.
+
+							####GAMEPLAY#### 
+
+When it is your turn, you press "T" to start your turn, and then "A" to 
+begin attacking. Use the arrow keys to move around the map, and the [ENTER] 
+key to select a territory. It would make sense to not attack a tile when 
+the odds are against you. You are not required to make an attack at all, 
+and you can simply press "E" to end your turn immediately if you only wish 
+to place reinforcements.
+
+Example: 
+  Attacking tile's dice: 2 (6 + 6)
+  Defending tile's dice: 8 (6 + 6 + 6 + 6 + 6 + 6 + 6 + 6)
+	
+In this scenario, the highest possible roll you can get as the attacker is 
+a 12, whereas the highest roll the defender can get is 48. You will most 
+likely lose, and would be better off attacking somewhere else.
+
+When rolling dice against another player, all ties go to the defender. 
+
+If you win the dice roll, the defending tile becomes yours, and all but 
+one of your dice are automatically moved to the tile. The remaining die 
+is left behind on the tile from which you attacked.
+
+When you are finished attacking press "E" to end your turn, and you will 
+be given reinforcement dice equal to the largest number of CONNECTED 
+tiles you possess. This creates a secondary objective in the game which 
+is to connect as many of your tiles on board as possible, so as to get 
+more reinforcements. These are placed randomly on your tiles. 
+
+If all of your tiles have reached the maximum number of dice per tile, 
+any remaining reinforcements will be added to a reserve, up to a maximum 
+of 30 dice. These reserve dice will be placed at the end of your turn 
+along with your regular reinforcements as needed, unless all of your 
+territories are already full.
+
+The game is over (for you) when you have either conquered all of the 
+tiles on the board, or had all of your tiles taken over by other players.
+
+							####THANKS TO#### 
+
+Landis for his coding advice.
+Chrispi for his relentless bug detection.
+Deuce for his AI work.
+Your mother for making you the wonderful human you are today.
+
+Now everyone go get killed!

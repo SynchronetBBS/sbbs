@@ -2,7 +2,7 @@
 
 /* Synchronet text data-related routines (exported) */
 
-/* $Id$ */
+/* $Id: dat_rec.c,v 1.3 2018/02/20 11:56:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

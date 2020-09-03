@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mime_decode.ssjs,v 1.22 2009/05/06 21:54:05 deuce Exp $ */
 
 function count_attachments(hdr, body)
 {

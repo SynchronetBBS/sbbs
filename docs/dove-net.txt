@@ -1,7 +1,7 @@
 DOVE-Net Introduction, Rules and Instructions
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-$Id$
+$Id: dove-net.txt,v 1.13 2007/07/13 01:22:23 rswindell Exp $
 
 *****************************************
 * Answers to Frequently Asked Questions *

@@ -1,4 +1,4 @@
-// $Id$
+// $Id: vga_defs.js,v 1.1 2018/02/06 04:50:56 rswindell Exp $
 // VGA (IBM Video Graphics Array) definitions
 
 const color_palette = [ 

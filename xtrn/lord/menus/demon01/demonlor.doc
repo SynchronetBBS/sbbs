@@ -1,0 +1,230 @@
+Story:
+
+=============================================================================
+ NOTHING BUT PURE ARTWORK!!!
+	
+=============================================================================
+           
+
+                                DISCLAIMER
+                             (gotta have it!)
+
+    The author of DEMONLORD has taken every precaution to insure that no
+    harm or damage will occur on computer systems operating the Earthquake Lord
+    add-on package. Actually, its practically impossible for this program
+    to do any harm since its just plain TEXT files! But, since this is
+    a BETA copy, there will probably be some bugs in it! If you encounter
+    any bugs or problems, please call to my BBS and leave the me a message
+    and explain the problem. Oh yeah, one last note, if in any way for any 
+    reason this causes any damages to any hardware/software, I take no 
+    responsibity. But dont worry! Its improbable that anything will go wrong!
+
+                             LICENSE AGREEMENT
+                            (cant forget this!)
+
+    The Earthquake Lord add-on program, installation and uninstallation
+    programs, and documentation are copyrighted products of Butcher Shoppe
+    Software and Billy Watford. Who also reserves all rights to these products.
+    This is protected by the United States of America (USA) and
+    International Copyright Laws. In no way shall DEMONLORD be reproduced
+    or modified in any form or method without prior written permission
+    from Billy Watford. No fee may be charged by any agency other than
+    Billy Watford or Butcher Shoppe Software beyond the cost of a disk, CD-ROM,
+    or BBS membership plan without written permission from the Aurthor.
+
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+1. About DEMONLORD Lord        (isn't that always the first page?)
+
+2. Installation Instructions
+
+3. Updates
+
+4. Questions
+
+5. How to contact the Author
+
+6. Registering DEMONLORD
+
+
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+
+
+
+
+                          *** 1. About DEMONLORD ***
+
+   Have you ever started playing LORD (Legend Of the Red Dragon), either
+   locally or on a BBS and think, besides getting killed by John Doe today
+   its still the same thing! You use up your forest fights, kill a few
+   people, (if available) go to Other places and try to get a little further.
+     I am not putting LORD down or anything, but most boards have the default
+   of 10 heroic deeds set up to finish the game! If you noticed, it could
+   take a couple of months just to do 1 heroic deed! So, to actually finish
+   the game, it could take well over a year and 1/2! I dont know if its just
+   me, but I like to finish games within 2 months!
+   Most people like to have friends in the realm so they cant kill a lot
+   of people! Well, I am one of those people that trys to kill that guy that
+   is 3 levels higher than me! Now, thats when I started realizing that if
+   I saved up my money and killed that guy, I would get a LOT of experience!
+     Thats the MAIN reason I decided to write this program! First, it gives
+   LORD a totally new look, the menus are more colorful and I think they
+   look a lot more attractive!  This will change only little things
+   This will not touch the LORD.EXE, besides its illegal for me to do that.. 
+
+
+
+!!!!IMPORTANT!!!!
+
+                      *** 2. Installation Instructions ***
+
+   Installing DEMONLORD Lord should be a simple process since all it does is
+   it renames your current and lordtxt.dat files to
+   lordtxt.old.
+
+
+-=-=Batch Installation=-=-
+
+To use the batch files for installation simply extract the
+contents of the zip file to any directory (you probably already
+did that!) Run the file INSTALL.BAT with a parameter of where
+your LORD is installed.
+
+*Example*
+INSTALL.BAT C:\LORD
+
+Its that easy! To Uninstall simply move to your LORD directory
+at the DOS prompt and type UNINSTAL.BAT (or UNINSTAL).
+But please note, if you haven't already installed DEMONLORD before
+running this file, you will lose a few files LORD needs to run!
+
+
+** If for some reason you did run the Uninstall program first, here
+** is how you fix it...
+
+** You must have your original Lord zip file to fix this problem!
+** Inside of the lord.zip file you will find the two files that you
+** are missing. Look for lenemy.dat and lordtxt.dat. Ok, extract or
+** move them to your lord directory and its all fixed up!
+** Of course, who is dumb enough to run the uninstall program first? =)
+
+
+-=-=Manual Installation=-=-
+
+If for some reason you need to do a manual installation here is how...
+Go to your LORD directory and rename the following files...
+
+lordtxt.dat  to  lordtxt.old
+
+Now,  rename DEMON1.DAT  to  lordtxt.dat
+
+Ok, now move both of them files to your LORD directory and its all
+set up!
+
+
+
+
+
+                             *** 3. Updates ***
+
+If you would like to recieve updates of this program, see 6. Registering 
+DEMONLORD later in this file...
+I plan to update all monsters, screens, and so on in the near future...
+The screens are all finished now, but I have more ideas to add to them!
+There are no monsters complete so far, so I hope to get some monsters in here also...
+
+
+
+
+
+                            *** 4. Questions ***
+
+
+
+--= I thought this program was FREEWARE, why would I register it? =--
+
+** Yes, this program is FREEWARE, you dont have to send me a cent **
+** to use it! But I took a lot of my time to write this program   **
+** so you and your callers could enjoy it! If everyone would send **
+** me some spare change, it would make me want to add more and    **
+** more to my program, and possibly write more programs.          **
+** Like I said earlier, I WILL add more if a few people register! **
+
+
+
+--= What do I get if I register? =--
+
+** Well, the main thing you get is knowing that you helped another **
+** person out by making his hard spent time worth something!       **
+** But, thats probably not enough, so you also get all newer       **
+** versions, by E-Mail, and you will get added to my mailing list  **
+** for all new programs I write in the future. (Shareware, or      **
+** FREEWARE only! I cant give you ALL my registered programs!)     **
+
+
+--= Where do I send my registration money? =--
+
+** See chapter 6 for more information on registering **
+
+
+
+
+                    *** 5. How to contact the author ***
+
+
+You can contact me, Billy Watford in the following ways...
+
+I call a lot of BBS's in other states, here are the most 
+frequent ones I call and their numbers...
+
+Highway To Fun                                    302-674-1843
+Mystical Tower                                    302-422-6481
+Dark Side (Seth's BBS                             503-838-6171            
+The Buther's Shoppe (LordNet Host) <-my bbs       706-563-7494
+
+
+Or you can contact me via snail mail at...
+
+DEMONLORD
+c/o BILLY WATFORD
+2514 AVALON RD..
+COLUMBUS, GA 31903
+
+BTW....MY FIDO ADDRESS IS 1:3613/20
+
+
+
+
+
+                      *** 1. Registering DEMONLORD ***
+
+Ok, you are probably thinking "I thought this was a FREEWARE program"!!!
+Well, it is, you dont have to send me 1 cent!
+But I took a lot of my time to write this program so you and your callers
+could enjoy it! If everyone would send me some spare change, it would make
+me want to add more and more to my program, and possible write more programs.
+Like I said earlier, I WILL add more if a few people register!
+Another benefit of registering is you will get ALL newer updated versions!
+You will get the newest version before it is available for download
+on BBS's. You will also get the satisfaction of knowing that I
+will take all donations and put them to my future of programming! 
+so I decided to
+start with this little program! Its not a programmed program, but it did take
+me a long time to create! Anyway, sorry about blabbing on about my life...
+Here is my address to send any donations to. If you dont want to send
+anything, I understand! You are too greedy to send that $3 or $4 dollars
+from your pocket! Just kidding... Send any ammount to....
+Once again, thanx for BETA testing my program for me!   - BILLY WATFORD
+
+
+IF YOUR A  IGM PROGRAMER OR JUST WANT  ANSI'S FOR YOUR BBS..CONTACT ME!!!
+
+
+
+
+

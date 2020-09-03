@@ -1,3 +1,5 @@
+// $Id: avatar_chooser.js,v 1.34 2020/05/05 05:17:00 echicken Exp $
+
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
@@ -6,7 +8,12 @@ load('event-timer.js');
 load('ansiedit.js');
 
 const sauce_lib = load({}, 'sauce_lib.js');
-const avatar_lib = load({}, 'avatar_lib.js');
+if (bbs.mods.avatar_lib) {
+	avatar_lib = bbs.mods.avatar_lib;
+} else {
+	avatar_lib = load({}, 'avatar_lib.js');
+}
+require("mouse_getkey.js", "mouse_getkey");
 const ansiterm = load({}, 'ansiterm_lib.js');
 
 const BORDER = [ BLUE, LIGHTBLUE, CYAN, LIGHTCYAN, WHITE ];
@@ -87,6 +94,11 @@ Frame.prototype.blit = function (bin, w, h, x, y, str, sc) {
 	}
 }
 
+function mouse_enable(enable) {
+	if (!console.term_supports(USER_ANSI)) return;
+	ansiterm.send('mouse', enable ? 'set' : 'clear', 'normal_tracking');
+}
+
 function bury_cursor() {
 	console.gotoxy(console.screen_columns, console.screen_rows);
 }
@@ -162,12 +174,10 @@ function CollectionBrowser(filename, parent_frame) {
 	}
 
 	function draw_collection(offset) {
-
 		const f = new File(filename);
 		f.open('rb');
 		const avatars = f.read();
 		f.close();
-
 		var x = 1, y = 2;
 		for (var a = 0; a < collection.count; a++) {
 			frames.container.blit(avatars.substr(a * avatar_lib.size, avatar_lib.size), avatar_lib.defs.width, avatar_lib.defs.height, x, y, collection.descriptions[a], WHITE);
@@ -177,9 +187,7 @@ function CollectionBrowser(filename, parent_frame) {
 				y += avatar_lib.defs.height + 2;
 			}
 		}
-
 		highlight();
-
 	}
 
 	function highlight() {
@@ -238,53 +246,81 @@ function CollectionBrowser(filename, parent_frame) {
 
 	this.getcmd = function (cmd) {
 		var ret = null;
-		switch (cmd.toLowerCase()) {
-			case KEY_LEFT:
+		if (cmd.mouse !== null && cmd.mouse.press && cmd.mouse.x >= frames.container.x && cmd.mouse.x < frames.container.x + frames.container.width && cmd.mouse.y >= frames.container.y && cmd.mouse.y < frames.container.y + frames.container.height) {
+			if (cmd.mouse.button == 0) {
+				var mx = cmd.mouse.x - frames.container.x;
+				var my = cmd.mouse.y - frames.container.y;
+				var mcol = Math.min(Math.floor(mx / (avatar_lib.defs.width + 2)), state.cols);
+				var mrow = Math.min(Math.floor(my / (avatar_lib.defs.height + 2)), state.rows);
+				var sel = (mcol + (state.cols * mrow));
+				if (sel < collection.count) {
+					state.selected = sel;
+					highlight();
+					flashy_flashy();
+					ret = state.selected;
+				}
+			} else if (cmd.mouse.button == 64) {
 				if (state.selected > 0) {
 					state.selected--;
 					highlight();
 				}
-				break;
-			case KEY_RIGHT:
+			} else if (cmd.mouse.button == 65) {
 				if (state.selected < collection.count - 1) {
 					state.selected++;
 					highlight();
 				}
-				break;
-			case KEY_UP:
-				if (state.selected - state.cols >= 0) {
-					state.selected -= state.cols;
-					highlight();
-				}
-				break;
-			case KEY_DOWN:
-				if (state.selected + state.cols < collection.count) {
-					state.selected += state.cols;
-					highlight();
-				}
-				break;
-            case KEY_HOME:
-                if (state.selected > 0) {
-                    state.selected = 0;
-                    highlight();
-                }
-                break;
-            case KEY_END:
-                if (state.selected < collection.count - 1) {
-                    state.selected = collection.count - 1;
-                    highlight();
-                }
-                break;
-			case '\r':
-			case '\n':
-				flashy_flashy();
-				ret = state.selected;
-				break;
-			case 'q':
-				ret = -1;
-				break;
-			default:
-				break;
+			}
+		} else if (clicked_quit(cmd, frames.parent)) {
+			ret = -1;
+		} else {
+			switch (cmd.key.toLowerCase()) {
+				case KEY_LEFT:
+					if (state.selected > 0) {
+						state.selected--;
+						highlight();
+					}
+					break;
+				case KEY_RIGHT:
+					if (state.selected < collection.count - 1) {
+						state.selected++;
+						highlight();
+					}
+					break;
+				case KEY_UP:
+					if (state.selected - state.cols >= 0) {
+						state.selected -= state.cols;
+						highlight();
+					}
+					break;
+				case KEY_DOWN:
+					if (state.selected + state.cols < collection.count) {
+						state.selected += state.cols;
+						highlight();
+					}
+					break;
+				case KEY_HOME:
+					if (state.selected > 0) {
+						state.selected = 0;
+						highlight();
+					}
+					break;
+				case KEY_END:
+					if (state.selected < collection.count - 1) {
+						state.selected = collection.count - 1;
+						highlight();
+					}
+					break;
+				case '\r':
+				case '\n':
+					flashy_flashy();
+					ret = state.selected;
+					break;
+				case 'q':
+					ret = -1;
+					break;
+				default:
+					break;
+			}
 		}
 		return ret;
 	}
@@ -329,8 +365,7 @@ function CollectionLister(dir, parent_frame) {
 	}
 
 	function display_collection_info(sauce, fn) {
-
-		frames.info.clear();
+		frames.info.erase(' ');
 		frames.info.putmsg('Author: ' + (sauce.author.length ? sauce.author : 'Unknown') + '\r\n');
 		frames.info.putmsg('Group: ' + (sauce.group.length ? sauce.group : 'Unknown') + '\r\n');
 		frames.info.putmsg('Avatars: ' + Math.floor(sauce.rows / avatar_lib.defs.height) + '\r\n');
@@ -401,7 +436,7 @@ function CollectionLister(dir, parent_frame) {
 		state.tree.colors.kfg = LIGHTCYAN;
 		var first_collection = null;
 		directory(dir + '/*.bin').forEach(
-			function (e, i) {
+			function (e) {
 				if (e.search(EXCLUDE_FILES) > -1) return;
 				const sauce = sauce_lib.read(e);
 				if (!sauce) return;
@@ -448,20 +483,20 @@ function CollectionLister(dir, parent_frame) {
 				state.collection = null;
 			}
 		} else {
-			if (cmd.toLowerCase() == 'q') {
+			if (cmd.key.toLowerCase() == 'q' || clicked_quit(cmd, frames.parent)) {
 				return false;
-			} else if (cmd == KEY_LEFT) {
+			} else if (cmd.key == KEY_LEFT) {
 				var num_avatars = Math.floor(state.tree.currentItem.sauce.filesize / avatar_lib.size);
 				state.preview = state.preview - 1;
 				if (state.preview < 0) state.preview = num_avatars - 1;
 				display_preview(state.tree.currentItem.file, state.preview);
-			} else if (cmd == KEY_RIGHT) {
+			} else if (cmd.key == KEY_RIGHT) {
 				var num_avatars = Math.floor(state.tree.currentItem.sauce.filesize / avatar_lib.size);
 				state.preview = (state.preview + 1) % num_avatars;
 				display_preview(state.tree.currentItem.file, state.preview);
 			} else if (
-				(state.tree.index > 0 || cmd != KEY_UP) &&
-				(state.tree.index < state.tree.items.length - 1 || cmd != KEY_DOWN) &&
+				(state.tree.index > 0 || cmd.key != KEY_UP) &&
+				(state.tree.index < state.tree.items.length - 1 || cmd.key != KEY_DOWN) &&
 				state.tree.getcmd(cmd)
 			) {
 				frames.info.clear();
@@ -561,7 +596,7 @@ function AvatarEditor(parent_frame, on_exit) {
 	}
 
 	this.getcmd = function (cmd) {
-		editor.getcmd(cmd);
+		editor.getcmd(cmd.key);
 	}
 
 	this.cycle = function () {
@@ -585,22 +620,22 @@ function MainMenu(parent_frame) {
 	const user_fname = avatar_lib.localuser_fname(user.number);
 
 	const frames = {
-		parent : parent_frame,
-		container : null,
-		tree : null,
-		info : null,
-		user_avatar : null
+		parent: parent_frame,
+		container: null,
+		tree: null,
+		info: null,
+		user_avatar: null
 	};
 
 	const state = {
-		ae : null,
-		cl : null,
-		tree : null,
-        ed_item : null,
-		timer : new Timer(),
-		utime : file_exists(user_fname) ? file_date(user_fname) : -1,
-        user_avatar : null,
-        opt_out_item : null
+		ae: null,
+		cl: null,
+		tree: null,
+        ed_item: null,
+		timer: new Timer(),
+		utime: file_exists(user_fname) ? file_date(user_fname) : -1,
+        user_avatar: null,
+        opt_out_item: null
 	};
 
 	function load_user_avatar() {
@@ -614,11 +649,9 @@ function MainMenu(parent_frame) {
 				'My Avatar', WHITE
 			);
             state.user_avatar = {};
-            Object.keys(user_avatar).forEach(
-                function (e) {
-                    if (e !== 'data') state.user_avatar[e] = user_avatar[e];
-                }
-            );
+            Object.keys(user_avatar).forEach(function (e) {
+				if (e !== 'data') state.user_avatar[e] = user_avatar[e];
+			});
             if (state.user_avatar.disabled) {
                 for (var y = 1; y < frames.user_avatar.data.length - 2; y++) {
                     if (!Array.isArray(frames.user_avatar.data[y])) continue;
@@ -706,51 +739,40 @@ function MainMenu(parent_frame) {
 		state.tree.colors.lfg = WHITE;
 		state.tree.colors.lbg = BG_BLUE;
 		state.tree.colors.kfg = LIGHTCYAN;
-		state.tree.addItem(
-			'Select an avatar', function () {
-				state.tree.close();
-				state.cl = new CollectionLister(avatar_lib.local_library(), frames.parent);
-				state.cl.open();
+		state.tree.addItem('Select an avatar', function () {
+			state.tree.close();
+			state.cl = new CollectionLister(avatar_lib.local_library(), frames.parent);
+			state.cl.open();
+		});
+		state.tree.addItem('Upload an avatar', function () {
+			console.clear(WHITE);
+			console.putmsg('Your avatar must be 10 x 6 characters in size and saved in binary format.\r\n');
+			if (upload_avatar()) {
+				console.putmsg('Your avatar has been updated.');
+			} else {
+				console.putmsg('An error was encountered.  Your avatar has nto been updated.');
 			}
-		);
-		state.tree.addItem(
-			'Upload an avatar', function () {
-				console.clear(WHITE);
-				console.putmsg('Your avatar must be 10 x 6 characters in size and saved in binary format.\r\n');
-				if (upload_avatar()) {
-					console.putmsg('Your avatar has been updated.');
-				} else {
-					console.putmsg('An error was encountered.  Your avatar has nto been updated.');
-				}
-				console.clear(LIGHTGRAY);
-				frames.parent.invalidate();
-			}
-		);
-		state.tree.addItem(
-			'Download your avatar', function () {
-				console.clear(WHITE);
-				console.putmsg(
-					'Avatars are ' +
-					avatar_lib.defs.width + ' x ' + avatar_lib.defs.height +
-					' characters in size, and are sent in binary format.\r\n'
-				);
-				download_avatar();
-				console.clear(LIGHTGRAY);
-				frames.parent.invalidate();
-			}
-		);
-		state.tree.addItem(
-			'Edit your avatar', function () {
-				state.ae = new AvatarEditor(
-					frames.parent,
-					function () {
-						state.ae.close();
-						state.ae = null;
-					}
-				);
-				state.ae.open();
-			}
-		);
+			console.clear(LIGHTGRAY);
+			frames.parent.invalidate();
+		});
+		state.tree.addItem('Download your avatar', function () {
+			console.clear(WHITE);
+			console.putmsg(
+				'Avatars are ' +
+				avatar_lib.defs.width + ' x ' + avatar_lib.defs.height +
+				' characters in size, and are sent in binary format.\r\n'
+			);
+			download_avatar();
+			console.clear(LIGHTGRAY);
+			frames.parent.invalidate();
+		});
+		state.tree.addItem('Edit your avatar', function () {
+			state.ae = new AvatarEditor(frames.parent, function () {
+				state.ae.close();
+				state.ae = null;
+			});
+			state.ae.open();
+		});
         state.ed_item = state.tree.addItem(
             tree_strings[state.user_avatar !== null && state.user_avatar.disabled ? 'enable' : 'disable'],
             enable_disable
@@ -758,14 +780,12 @@ function MainMenu(parent_frame) {
         if (state.user_avatar === null) {
             state.ed_item.disable();
             state.ed_item.hide();
-            state.opt_out_item = state.tree.addItem(
-                "I don't want an avatar", function () {
-                    avatar_lib.update_localuser(user.number, '');
-                    avatar_lib.enable_localuser(user.number, false);
-                    state.opt_out_item.hide();
-                    state.tree.getcmd(KEY_UP);
-                }
-            );
+            state.opt_out_item = state.tree.addItem("I don't want an avatar", function () {
+				avatar_lib.update_localuser(user.number, '');
+				avatar_lib.enable_localuser(user.number, false);
+				state.opt_out_item.hide();
+				state.tree.getcmd(KEY_UP);
+			});
         }
 		state.tree.open();
 
@@ -788,7 +808,7 @@ function MainMenu(parent_frame) {
                     state.opt_out_item.hide();
                 }
 			}
-		} else if (cmd.toLowerCase() == 'q') {
+		} else if (cmd.key.toLowerCase() == 'q' || clicked_quit(cmd, frames.parent)) {
 			return false;
 		} else {
 			state.tree.getcmd(cmd);
@@ -814,21 +834,35 @@ function MainMenu(parent_frame) {
 
 }
 
+function clicked_quit(i, frame) {
+	if (i.mouse === null) return false;
+	if (!i.mouse.press) return false;
+	if (i.mouse.button != 0) return false;
+	if (i.mouse.y != frame.y + frame.height - 1) return false;
+	var sx = frame.x + frame.width - 20;
+	var ex = frame.x + frame.width - 4;
+	if (i.mouse.x < sx || i.mouse.x > ex) return false;
+	return true;
+}
+
 var sys_status, console_attr;
 
 function init() {
-	sys_status = bbs.sys_status;
-	console_attr = console.attributes;
 	bbs.sys_status|=SS_MOFF;
 	console.clear(LIGHTGRAY);
 	ansiterm.send("ext_mode", "clear", "cursor");
     js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	js.on_exit("ansiterm.send('ext_mode', 'set', 'cursor')");
+	js.on_exit("mouse_enable(false);");
+	js.on_exit("bbs.sys_status = " + bbs.sys_status + ";");
+	js.on_exit("console.attributes = " + console.attributes + ";");
+	js.on_exit("console.clear();");
 	console.ctrlkey_passthru|=(1<<11);      // Disable Ctrl-K handling in sbbs
 	console.ctrlkey_passthru|=(1<<16);      // Disable Ctrl-P handling in sbbs
 	console.ctrlkey_passthru|=(1<<20);      // Disable Ctrl-T handling in sbbs
 	console.ctrlkey_passthru|=(1<<21);      // Disable Ctrl-U handling in sbbs
 	console.ctrlkey_passthru|=(1<<26);      // Disable Ctrl-Z handling in sbbs
+	mouse_enable(true);
 }
 
 function main() {
@@ -844,8 +878,8 @@ function main() {
 	const menu = new MainMenu(frame);
 	menu.open();
 	while (true) {
-		var i = console.inkey(K_NONE);
-		if (i !== '' && !menu.getcmd(i)) break;
+		var i = mouse_getkey(K_NONE, 5, true); //console.inkey(K_NONE);
+		if ((i.key != '' || (i.mouse && i.mouse.press)) && !menu.getcmd(i)) break;
 		menu.cycle();
 		if (frame.cycle()) bury_cursor();
 	}
@@ -854,12 +888,5 @@ function main() {
 
 }
 
-function clean_up() {
-	bbs.sys_status = sys_status;
-	console.attributes = console_attr;
-	console.clear();
-}
-
 init();
 main();
-clean_up();

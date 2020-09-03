@@ -2,7 +2,7 @@
 
 /* Hi-level command shell/module routines (functions) */
 
-/* $Id: execfunc.cpp,v 1.44 2018/07/29 05:33:46 rswindell Exp $ */
+/* $Id: execfunc.cpp,v 1.46 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -181,16 +181,16 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_MAIL_SEND:		 /* Send E-mail */
 			if(strchr(csi->str,'@')) {
 				i=1;
-				netmail(csi->str,nulstr,0); 
+				netmail(csi->str); 
 			}
 			else if((i=finduser(csi->str))!=0 
 				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str))!=0))
-				email(i,nulstr,nulstr,WM_EMAIL);
+				email(i);
 			csi->logic=!i;
 			return(0);
 		case CS_MAIL_SEND_FEEDBACK: 	  /* Feedback */
 			if((i=finduser(csi->str))!=0)
-				email(i,text[ReFeedback],nulstr,WM_EMAIL);
+				email(i,text[ReFeedback]);
 			csi->logic=!i;
 			return(0);
 		case CS_MAIL_SEND_NETMAIL:
@@ -199,7 +199,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			bputs(text[EnterNetMailAddress]);
 			csi->logic=LOGIC_FALSE;
 			if(getstr(str,60,K_LINE)) {
-				if(netmail(str,nulstr,cmd == CS_MAIL_SEND_NETFILE ? WM_FILE : 0)) {
+				if(netmail(str, NULL, cmd == CS_MAIL_SEND_NETFILE ? WM_FILE : WM_NONE)) {
 					csi->logic=LOGIC_TRUE; 
 				}
 			}
@@ -208,21 +208,20 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_MAIL_SEND_FILE:   /* Upload Attached File to E-mail */
 			if(strchr(csi->str,'@')) {
 				i=1;
-				netmail(csi->str,nulstr,WM_FILE); 
+				netmail(csi->str,NULL,WM_FILE); 
 			}
 			else if((i=finduser(csi->str))!=0
 				|| (cfg.msg_misc&MM_REALNAME && (i=userdatdupe(0,U_NAME,LEN_NAME,csi->str))!=0))
-				email(i,nulstr,nulstr,WM_EMAIL|WM_FILE);
+				email(i,NULL,NULL,WM_FILE);
 			csi->logic=!i;
 			return(0);
 		case CS_MAIL_SEND_BULK:
 			if(csi->str[0])
-				p=arstr(NULL,csi->str, &cfg);
+				p=arstr(NULL,csi->str, &cfg,NULL);
 			else
-				p=(uchar *)nulstr;
+				p=NULL;
 			bulkmail(p);
-			if(p && p[0])
-				free(p);
+			free(p);
 			return(0);
 
 		case CS_INC_MAIN_CMDS:

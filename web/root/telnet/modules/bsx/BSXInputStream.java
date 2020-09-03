@@ -1,7 +1,7 @@
 /*
  * BSXInputStream	-- extends InputStream for BSX Polygons
  * --
- * $Id$
+ * $Id: BSXInputStream.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Wed Feb 14 21:36:56 1996 by Matthias L. Jugel :$
  */
 package modules.bsx;

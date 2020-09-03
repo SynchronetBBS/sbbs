@@ -1,4 +1,4 @@
-// $Id$
+// $Id: xbimage.js,v 1.6 2020/04/19 19:52:31 rswindell Exp $
 
 // Utility module for creating and displaying XBin image files.
 
@@ -64,6 +64,10 @@ function convert_from_bmp(filename, charheight, fg_color, bg_color, palette, inv
 
 function show(filename, xpos, ypos, fg_color, bg_color, palette, delay, cleanup)
 {
+	if(console.term_supports()&(USER_ANSI|USER_NO_EXASCII|USER_UTF8|USER_ICE_COLOR)
+		!= USER_ANSI)
+		return false;
+		
 	var cterm = load({}, 'cterm_lib.js');
 
 	if(cterm.supports_fonts() === false)
@@ -139,6 +143,8 @@ function demo(filename, delay)
 	var obj = ini.iniGetAllObjects();
 	ini.close();
 
+	console.line_counter = 0;
+	console.clear();
 	if(global.name) {
 		print("\1n\1hDemonstration beginning: \1y" + global.name + "\1w (Hit '\1cQ\1w' to abort)");
 		var key = console.inkey(K_UPPER, delay);

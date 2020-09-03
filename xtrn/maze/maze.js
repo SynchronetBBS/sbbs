@@ -1,4 +1,4 @@
-//$Id$
+//$Id: maze.js,v 1.10 2020/06/04 16:57:53 mcmlxxix Exp $
 /*
 	SYNCHRONET MAZE RACE 
 	A Javascript remake 
@@ -10,11 +10,7 @@
 load("json-client.js");
 var root = js.exec_dir;
 
-if(!file_exists(root + "server.ini")) {
-	throw("server initialization file missing");
-}
-
-var server_file = new File(root + "server.ini");
+var server_file = new File(file_cfgname(root, "server.ini"));
 server_file.open('r',true);
 
 //var autoUpdate=server_file.iniGetValue(null,"autoUpdate");

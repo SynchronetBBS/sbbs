@@ -1,6 +1,6 @@
 /* Synchronet Services */
 
-/* $Id$ */
+/* $Id: services.c,v 1.336 2020/08/08 23:27:23 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -71,6 +71,7 @@
 
 static services_startup_t* startup=NULL;
 static scfg_t	scfg;
+static char*	text[TOTAL_TEXT];
 static volatile BOOL	terminated=FALSE;
 static time_t	uptime=0;
 static ulong	served=0;
@@ -138,7 +139,7 @@ static int lprintf(int level, const char *fmt, ...)
 	if(level <= LOG_ERR) {
 		char errmsg[sizeof(sbuf)+16];
 		SAFEPRINTF(errmsg, "srvc %s", sbuf);
-		errorlog(&scfg,startup==NULL ? NULL:startup->host_name, errmsg);
+		errorlog(&scfg, level, startup==NULL ? NULL:startup->host_name, errmsg);
 		if(startup!=NULL && startup->errormsg!=NULL)
 			startup->errormsg(startup->cbdata,level,errmsg);
 	}
@@ -253,6 +254,7 @@ static SOCKET open_socket(int family, int type, service_t* serv)
 
 static int close_socket(SOCKET sock)
 {
+	char	err[128];
 	int		result;
 
 	if(sock==INVALID_SOCKET)
@@ -263,7 +265,7 @@ static int close_socket(SOCKET sock)
 	if(startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,FALSE);
 	if(result!=0)
-		lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",sock, ERROR_VALUE);
+		lprintf(LOG_WARNING,"%04d !ERROR %d (%s) closing socket",sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
 
 	return(result);
 }
@@ -348,7 +350,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		user;
-	char*		pass;
+	char*		pass = NULL;
 	JSBool		inc_logons=JS_FALSE;
 	jsval		val;
 	service_client_t* client;
@@ -365,10 +367,11 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	/* Password */
-	JSVALUE_TO_ASTRING(cx, argv[1], pass, LEN_PASS+2, NULL);
-	if(pass==NULL) 
-		return(JS_FALSE);
-
+	if(argc > 1) {
+		JSVALUE_TO_ASTRING(cx, argv[1], pass, LEN_PASS+2, NULL);
+		if(pass==NULL) 
+			return(JS_FALSE);
+	}
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&client->user,0,sizeof(user_t));
 
@@ -399,7 +402,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	/* Password */
-	if(client->user.pass[0] && stricmp(client->user.pass,pass)) { /* Wrong password */
+	if(client->user.pass[0] && (pass == NULL || stricmp(client->user.pass,pass))) { /* Wrong password */
 		lprintf(LOG_WARNING,"%04d %s !INVALID PASSWORD ATTEMPT FOR USER: %s"
 			,client->socket,client->service->protocol,client->user.alias);
 		badlogin(client->socket, client->service->protocol, user, pass, client->client->host, &client->addr);
@@ -441,13 +444,15 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(client->client!=NULL) {
 		client->client->user=client->user.alias;
+		client->client->usernum = client->user.number;
 		client_on(client->socket,client->client,TRUE /* update */);
 	}
 
 	client->logintime=time(NULL);
 
-	lprintf(LOG_INFO,"%04d %s Logging in %s"
-		,client->socket,client->service->protocol,client->user.alias);
+	if(client->service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO,"%04d %s Logging in %s"
+			,client->socket,client->service->protocol,client->user.alias);
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
 	JS_SetProperty(cx, obj, "logged_in", &val);
@@ -480,8 +485,9 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	if(!logoutuserdat(&scfg,&client->user,time(NULL),client->logintime))
 		lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat",client->socket);
 
-	lprintf(LOG_INFO,"%04d %s Logging out %s"
-		,client->socket,client->service->protocol,client->user.alias);
+	if(client->service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO,"%04d %s Logging out %s"
+			,client->socket,client->service->protocol,client->user.alias);
 
 	memset(&client->user,0,sizeof(client->user));
 	JS_RESUMEREQUEST(cx, rc);
@@ -585,7 +591,8 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	lprintf(log_level,"%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
+	if(client == NULL || client->service == NULL || client->service->log_level >= log_level)
+		lprintf(log_level,"%04d %s !JavaScript %s%s%s: %s",sock,prot,warning,file,line,message);
 	JS_RESUMEREQUEST(cx, rc);
 }
 
@@ -617,6 +624,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	client.protocol=service_client->service->protocol;
 	client.time=time32(NULL);
 	client.user=STR_UNKNOWN_USER;
+	client.usernum = 0;
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
@@ -990,31 +998,30 @@ static void js_service_thread(void* arg)
 	socket=service_client.socket;
 	service=service_client.service;
 
-	lprintf(LOG_DEBUG,"%04d %s JavaScript service thread started", socket, service->protocol);
+	if(service->log_level >= LOG_DEBUG)
+		lprintf(LOG_DEBUG,"%04d %s JavaScript service thread started", socket, service->protocol);
 
 	SetThreadName("sbbs/jsService");
 	thread_up(TRUE /* setuid */);
 	sbbs_srand();	/* Seed random number generator */
 	protected_uint32_adjust(&threads_pending_start, -1);
 
-	/* Host name lookup and filtering */
-	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
-			|| startup->options&BBS_OPT_NO_HOST_LOOKUP)
-		strcpy(host_name, "<no name>");
-	else {
-		if(getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD) != 0)
-			strcpy(host_name, "<no name>");
-	}
+	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
+	/* Host name lookup and filtering */
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
 		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
-		lprintf(LOG_INFO,"%04d %s Hostname: %s"
-			,socket, service->protocol, host_name);
+		getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		if(service->log_level >= LOG_INFO)
+			lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]"
+				,socket, service->protocol, host_name, client.addr);
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
-			,socket, service->protocol, host_name);
+		if(service->log_level >= LOG_NOTICE)
+			lprintf(LOG_NOTICE,"%04d %s !CLIENT BLOCKED in host.can: %s"
+				,socket, service->protocol, host_name);
 		close_socket(socket);
 		if(service->clients)
 			service->clients--;
@@ -1043,6 +1050,7 @@ static void js_service_thread(void* arg)
 			}
 		}
 #endif
+		lock_ssl_cert();
 		if (scfg.tls_certificate != -1) {
 			HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate), &service_client, "setting private key");
 		}
@@ -1051,11 +1059,13 @@ static void js_service_thread(void* arg)
 
 		HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_NETWORKSOCKET, socket), &service_client, "setting network socket");
 		if (!HANDLE_CRYPT_CALL(cryptSetAttribute(service_client.tls_sess, CRYPT_SESSINFO_ACTIVE, 1), &service_client, "setting session active")) {
+			unlock_ssl_cert();
 			if (service_client.tls_sess != -1)
 				cryptDestroySession(service_client.tls_sess);
 			js_service_failure_cleanup(service, socket);
 			return;
 		}
+		unlock_ssl_cert();
 	}
 
 #if 0	/* Need to export from SBBS.DLL */
@@ -1075,11 +1085,11 @@ static void js_service_thread(void* arg)
 
 	client.size=sizeof(client);
 	client.time=time32(NULL);
-	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&service_client.addr);
 	client.protocol=service->protocol;
 	client.user=STR_UNKNOWN_USER;
+	client.usernum = 0;
 	service_client.client=&client;
 
 	/* Initialize client display */
@@ -1087,8 +1097,9 @@ static void js_service_thread(void* arg)
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL
 		|| (js_cx=js_initcx(js_runtime,socket,&service_client,&js_glob))==NULL) {
-		lprintf(LOG_ERR,"%04d %s !ERROR initializing JavaScript context"
-			,socket,service->protocol);
+		if(service->log_level >= LOG_ERR)
+			lprintf(LOG_ERR,"%04d %s !ERROR initializing JavaScript context"
+				,socket,service->protocol);
 		if (service_client.tls_sess != -1)
 			cryptDestroySession(service_client.tls_sess);
 		client_off(socket);
@@ -1103,8 +1114,9 @@ static void js_service_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &service_client.addr)) > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
-			,socket, service->protocol, client.addr, login_attempts);
+		if(service->log_level >= LOG_DEBUG)
+			lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
+				,socket, service->protocol, client.addr, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
 
@@ -1137,9 +1149,10 @@ static void js_service_thread(void* arg)
 
 	js_script=JS_CompileFile(js_cx, js_glob, spath);
 
-	if(js_script==NULL)
-		lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",socket,spath);
-	else  {
+	if(js_script==NULL) {
+		if(service->log_level >= LOG_ERR)
+			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)",socket,spath);
+	} else {
 		js_PrepareToExecute(js_cx, js_glob, spath, /* startup_dir */NULL, js_glob);
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 		JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
@@ -1154,8 +1167,9 @@ static void js_service_thread(void* arg)
 	if(service_client.user.number) {
 		if(service_client.subscan!=NULL)
 			putmsgptrs(&scfg, &service_client.user, service_client.subscan);
-		lprintf(LOG_INFO,"%04d %s Logging out %s"
-			,socket, service->protocol, service_client.user.alias);
+		if(service->log_level >= LOG_INFO)
+			lprintf(LOG_INFO,"%04d %s Logging out %s"
+				,socket, service->protocol, service_client.user.alias);
 		logoutuserdat(&scfg,&service_client.user,time(NULL),service_client.logintime);
 	}
 	FREE_AND_NULL(service_client.subscan);
@@ -1171,8 +1185,9 @@ static void js_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
-		,socket, service->protocol, service->clients, active_clients(), service->served);
+	if(service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
+			,socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1197,7 +1212,8 @@ static void js_static_service_thread(void* arg)
 
 	service->running=TRUE;
 
-	lprintf(LOG_DEBUG,"%s static JavaScript service thread started", service->protocol);
+	if(service->log_level >= LOG_DEBUG)
+		lprintf(LOG_DEBUG,"%s static JavaScript service thread started", service->protocol);
 
 	SetThreadName("sbbs/jsStatic");
 	thread_up(TRUE /* setuid */);
@@ -1214,8 +1230,9 @@ static void js_static_service_thread(void* arg)
 	service_client.callback.auto_terminate = TRUE;
 
 	if((js_runtime=jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {
-		lprintf(LOG_ERR,"%s !ERROR initializing JavaScript runtime"
-			,service->protocol);
+		if(service->log_level >= LOG_ERR)
+			lprintf(LOG_ERR,"%s !ERROR initializing JavaScript runtime"
+				,service->protocol);
 		xpms_destroy(service->set, close_socket_cb, service);
 		service->set = NULL;
 		thread_down();
@@ -1230,8 +1247,9 @@ static void js_static_service_thread(void* arg)
 
 	do {
 		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {
-			lprintf(LOG_ERR,"%s !ERROR initializing JavaScript context"
-				,service->protocol);
+			if(service->log_level >= LOG_ERR)
+				lprintf(LOG_ERR,"%s !ERROR initializing JavaScript context"
+					,service->protocol);
 			break;
 		}
 
@@ -1243,7 +1261,8 @@ static void js_static_service_thread(void* arg)
 		JS_SetOperationCallback(js_cx, js_OperationCallback);
 	
 		if((js_script=JS_CompileFile(js_cx, js_glob, spath))==NULL)  {
-			lprintf(LOG_ERR,"!JavaScript FAILED to compile script (%s)",spath);
+			if(service->log_level >= LOG_ERR)
+				lprintf(LOG_ERR,"!JavaScript FAILED to compile script (%s)",spath);
 			break;
 		}
 
@@ -1265,14 +1284,16 @@ static void js_static_service_thread(void* arg)
 	jsrt_Release(js_runtime);
 
 	if(service->clients) {
-		lprintf(LOG_WARNING,"%s !service terminating with %u active clients"
-			, service->protocol, service->clients);
+		if(service->log_level >= LOG_WARNING)
+			lprintf(LOG_WARNING,"%s !service terminating with %u active clients"
+				, service->protocol, service->clients);
 		service->clients=0;
 	}
 
 	thread_down();
-	lprintf(LOG_INFO,"%s service thread terminated (%lu clients served)"
-		, service->protocol, service->served);
+	if(service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO,"%s service thread terminated (%lu clients served)"
+			, service->protocol, service->served);
 
 	xpms_destroy(service->set, close_socket_cb, service);
 	service->set = NULL;
@@ -1297,7 +1318,8 @@ static void native_static_service_thread(void* arg)
 
 	inst.service->running++;
 
-	lprintf(LOG_DEBUG,"%04d %s static service thread started", inst.socket, inst.service->protocol);
+	if(inst.service->log_level >= LOG_DEBUG)
+		lprintf(LOG_DEBUG,"%04d %s static service thread started", inst.socket, inst.service->protocol);
 
 	SetThreadName("sbbs/static");
 	thread_up(TRUE /* setuid */);
@@ -1324,18 +1346,19 @@ static void native_static_service_thread(void* arg)
 
 	/* RUN SCRIPT */
 	if(strpbrk(inst.service->cmd,"/\\")==NULL)
-		sprintf(cmd,"%s%s",scfg.exec_dir,inst.service->cmd);
+		SAFEPRINTF2(cmd,"%s%s",scfg.exec_dir,inst.service->cmd);
 	else
-		strcpy(cmd,inst.service->cmd);
-	sprintf(fullcmd,cmd,socket_dup);
+		SAFECOPY(cmd,inst.service->cmd);
+	SAFEPRINTF(fullcmd,cmd,socket_dup);
 	
 	do {
 		system(fullcmd);
 	} while(!inst.service->terminated && inst.service->options&SERVICE_OPT_STATIC_LOOP);
 
 	thread_down();
-	lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients served)"
-		,inst.socket, service->protocol, service->served);
+	if(inst.service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients served)"
+			,inst.socket, service->protocol, service->served);
 
 	close_socket(inst.socket);
 	closesocket(socket_dup);	/* close duplicate handle */
@@ -1360,24 +1383,22 @@ static void native_service_thread(void* arg)
 	socket=service_client.socket;
 	service=service_client.service;
 
-	lprintf(LOG_DEBUG,"%04d %s service thread started", socket, service->protocol);
+	if(service->log_level >= LOG_DEBUG)
+		lprintf(LOG_DEBUG,"%04d %s service thread started", socket, service->protocol);
 
 	SetThreadName("sbbs/native");
 	thread_up(TRUE /* setuid */);
 	protected_uint32_adjust(&threads_pending_start, -1);
 
-	/* Host name lookup and filtering */
-	if(service->options&BBS_OPT_NO_HOST_LOOKUP 
-			|| startup->options&BBS_OPT_NO_HOST_LOOKUP)
-		strcpy(host_name, "<no name>");
-	else 
-		if(getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD)!=0)
-			strcpy(host_name, "<no name>");
+	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
+	/* Host name lookup and filtering */
+	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(service->options&BBS_OPT_NO_HOST_LOOKUP)
 		&& !(startup->options&BBS_OPT_NO_HOST_LOOKUP)) {
-		lprintf(LOG_INFO,"%04d %s Hostname: %s"
-			,socket, service->protocol, host_name);
+		getnameinfo(&service_client.addr.addr, xp_sockaddr_len(&service_client), host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
+		lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]"
+			,socket, service->protocol, host_name, client.addr);
 #if	0 /* gethostbyaddr() is apparently not (always) thread-safe
 	     and getnameinfo() doesn't return alias information */
 		for(i=0;host!=NULL && host->h_aliases!=NULL 
@@ -1415,11 +1436,11 @@ static void native_service_thread(void* arg)
 
 	client.size=sizeof(client);
 	client.time=time32(NULL);
-	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 	SAFECOPY(client.host,host_name);
 	client.port=inet_addrport(&service_client.addr);
 	client.protocol=service->protocol;
 	client.user=STR_UNKNOWN_USER;
+	client.usernum = 0;
 
 #ifdef _WIN32
 	if(!DuplicateHandle(GetCurrentProcess(),
@@ -1453,10 +1474,10 @@ static void native_service_thread(void* arg)
 
 	/* RUN SCRIPT */
 	if(strpbrk(service->cmd,"/\\")==NULL)
-		sprintf(cmd,"%s%s",scfg.exec_dir,service->cmd);
+		SAFEPRINTF2(cmd,"%s%s",scfg.exec_dir,service->cmd);
 	else
-		strcpy(cmd,service->cmd);
-	sprintf(fullcmd,cmd,socket_dup);
+		SAFECOPY(cmd,service->cmd);
+	SAFEPRINTF(fullcmd,cmd,socket_dup);
 
 	system(fullcmd);
 
@@ -1471,8 +1492,9 @@ static void native_service_thread(void* arg)
 #endif
 
 	thread_down();
-	lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
-		,socket, service->protocol, service->clients, active_clients(), service->served);
+	if(service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
+			,socket, service->protocol, service->clients, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1513,7 +1535,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	char		*default_interfaces;
 
 	if((fp=fopen(services_ini,"r"))==NULL) {
-		lprintf(LOG_CRIT,"!ERROR %d opening %s", errno, services_ini);
+		lprintf(LOG_CRIT,"!ERROR %d (%s) opening %s", errno, strerror(errno), services_ini);
 		return(NULL);
 	}
 
@@ -1628,8 +1650,9 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_	
 	if(WSAInitialized) {
+		char err[128];
 		if(WSACleanup()!=0) 
-			lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
+			lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d (%s)",ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
 		WSAInitialized = FALSE;
 	}
 #endif
@@ -1649,7 +1672,7 @@ const char* DLLCALL services_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.336 $", "%*s %s", revision);
 
 	sprintf(ver,"Synchronet Services %s%s  "
 		"Compiled %s %s with %s"
@@ -1668,21 +1691,23 @@ const char* DLLCALL services_ver(void)
 void service_udp_sock_cb(SOCKET sock, void *cbdata)
 {
 	service_t	*serv = (service_t *)cbdata;
-	int				optval;
+	int			optval;
+	char		err[128];
 
 	open_socket_cb(sock, cbdata);
 
 	/* We need to set the REUSE ADDRESS socket option */
 	optval=TRUE;
 	if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval,sizeof(optval))!=0) {
-		lprintf(LOG_ERR,"%04d !ERROR %d setting %s socket option"
-			,sock, ERROR_VALUE, serv->protocol);
+		lprintf(LOG_ERR,"%04d !ERROR %d (%s) setting %s socket option"
+			,sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), serv->protocol);
 		close_socket(sock);
 		return;
 	}
    #ifdef BSD
 	if(setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (char*)&optval,sizeof(optval))!=0) {
-		lprintf(LOG_ERR,"%04d !ERROR %d setting %s socket option",sock, ERROR_VALUE, serv->protocol);
+		lprintf(LOG_ERR,"%04d !ERROR %d (%s) setting %s socket option"
+			,sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), serv->protocol);
 		close_socket(sock);
 		return;
 	}
@@ -1788,14 +1813,14 @@ void DLLCALL services_thread(void* arg)
 			,ctime_r(&t,str),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, startup->ctrl_dir);
+			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, NULL, TRUE, error)) {
+		if(!load_cfg(&scfg, text, TRUE, error)) {
 			lprintf(LOG_CRIT,"!ERROR %s",error);
 			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1);
@@ -1984,7 +2009,7 @@ void DLLCALL services_thread(void* arg)
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_NOTICE,"0000 Services sockets closed");
 				else
-					lprintf(LOG_WARNING,"0000 !ERROR %d selecting sockets",ERROR_VALUE);
+					lprintf(LOG_WARNING,"0000 !ERROR %d (%s) selecting sockets",ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 				continue;
 			}
 
@@ -2015,16 +2040,16 @@ void DLLCALL services_thread(void* arg)
 							,&client_addr.addr, &client_addr_len);
 						if(udp_len<1) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d recvfrom failed"
-								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE);
+							lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) recvfrom failed"
+								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							continue;
 						}
 
 						if((client_socket = open_socket(service[i].set->socks[j].domain, SOCK_DGRAM, &service[i]))
 							==INVALID_SOCKET) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d opening socket"
-								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) opening socket"
+								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							continue;
 						}
 
@@ -2036,8 +2061,8 @@ void DLLCALL services_thread(void* arg)
 						if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEADDR
 							,(char*)&optval,sizeof(optval))!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d setting socket option"
-								,client_socket, service[i].protocol, ERROR_VALUE);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) setting socket option"
+								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
 						}
@@ -2045,8 +2070,8 @@ void DLLCALL services_thread(void* arg)
 						if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEPORT
 							,(char*)&optval,sizeof(optval))!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d setting socket option"
-								,client_socket, service[i].protocol, ERROR_VALUE);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) setting socket option"
+								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
 						}
@@ -2057,16 +2082,16 @@ void DLLCALL services_thread(void* arg)
 						result=bind(client_socket, &addr.addr, addr_len);
 						if(result==SOCKET_ERROR) {
 							/* Failed to re-bind to same port number, use user port */
-							lprintf(LOG_NOTICE,"%04d %s ERROR %d re-binding socket to port %u failed, "
+							lprintf(LOG_NOTICE,"%04d %s ERROR %d (%s) re-binding socket to port %u failed, "
 								"using user port"
-								,client_socket, service[i].protocol, ERROR_VALUE, service[i].port);
+								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)), service[i].port);
 							inet_setaddrport(&addr, 0);
 							result=bind(client_socket, (struct sockaddr *) &addr, addr_len);
 						}
 						if(result!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d re-binding socket to port %u"
-								,client_socket, service[i].protocol, ERROR_VALUE, service[i].port);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) re-binding socket to port %u"
+								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)), service[i].port);
 							close_socket(client_socket);
 							continue;
 						}
@@ -2075,8 +2100,8 @@ void DLLCALL services_thread(void* arg)
 						if(connect(client_socket
 							,(struct sockaddr *)&client_addr, client_addr_len)!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d connect failed"
-								,client_socket, service[i].protocol, ERROR_VALUE);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) connect failed"
+								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
 						}
@@ -2089,8 +2114,8 @@ void DLLCALL services_thread(void* arg)
 								lprintf(LOG_NOTICE,"%04d %s socket closed while listening"
 									,service[i].set->socks[j].sock, service[i].protocol);
 							else
-								lprintf(LOG_WARNING,"%04d %s !ERROR %d accepting connection" 
-									,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE);
+								lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) accepting connection" 
+									,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 	#ifdef _WIN32
 							if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */
 								break;
@@ -2108,9 +2133,10 @@ void DLLCALL services_thread(void* arg)
 						continue;
 					}
 
-					lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
-						,client_socket
-						,service[i].protocol, host_ip, inet_addrport(&client_addr));
+					if(service[i].log_level >= LOG_INFO)
+						lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
+							,client_socket
+							,service[i].protocol, host_ip, inet_addrport(&client_addr));
 
 					if(service[i].max_clients && service[i].clients+1>service[i].max_clients) {
 						lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied"

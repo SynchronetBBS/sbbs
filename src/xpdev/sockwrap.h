@@ -2,7 +2,7 @@
 
 /* Berkley/WinSock socket API wrappers */
 
-/* $Id$ */
+/* $Id: sockwrap.h,v 1.61 2020/08/08 23:26:38 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -61,6 +61,9 @@
 	/* Let's agree on a standard WinSock symbol here, people */
 	#define _WINSOCKAPI_
 #endif
+#ifndef MSG_WAITALL
+#define MSG_WAITALL 0x08
+#endif
 
 #elif defined __unix__		/* Unix-variant */
 							
@@ -87,7 +90,7 @@
 #endif
 
 #include <errno.h>		/* errno */
-#include "wrapdll.h"	/* DLLEXPORT/DLLCALL */
+#include "wrapdll.h"	/* DLLEXPORT */
 
 typedef struct {
 	char*	name;
@@ -179,9 +182,11 @@ union xp_sockaddr {
 
 #define s_addr			S_un.S_addr
 #define sa_family_t		ushort
+typedef uint32_t                in_addr_t;
 
 static  int wsa_error;
-#define ERROR_VALUE		((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
+#define ERROR_VALUE			((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
+#define socket_errno		WSAGetLastError()
 #define sendsocket(s,b,l)	send(s,b,l,0)
 
 /* For getaddrinfo() */
@@ -206,6 +211,7 @@ static  int wsa_error;
 #define closesocket		close
 #define ioctlsocket		ioctl
 #define ERROR_VALUE		errno
+#define socket_errno	errno
 #define sendsocket		write		/* FreeBSD send() is broken */
 
 #ifdef __WATCOMC__
@@ -218,22 +224,22 @@ static  int wsa_error;
 extern "C" {
 #endif
 
-DLLEXPORT socket_option_t* DLLCALL
-		getSocketOptionList(void);
-DLLEXPORT int DLLCALL		getSocketOptionByName(const char* name, int* level);
+DLLEXPORT socket_option_t* getSocketOptionList(void);
+DLLEXPORT int getSocketOptionByName(const char* name, int* level);
 
-DLLEXPORT int DLLCALL		sendfilesocket(int sock, int file, off_t* offset, off_t count);
-DLLEXPORT int DLLCALL		recvfilesocket(int sock, int file, off_t* offset, off_t count);
-DLLEXPORT BOOL DLLCALL	socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
-DLLEXPORT int DLLCALL 	retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
+DLLEXPORT off_t sendfilesocket(int sock, int file, off_t* offset, off_t count);
+DLLEXPORT off_t recvfilesocket(int sock, int file, off_t* offset, off_t count);
+DLLEXPORT BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout);
+DLLEXPORT int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 				   ,uint retries, uint wait_secs, const char* prot
 				   ,int (*lprintf)(int level, const char *fmt, ...));
-DLLEXPORT int DLLCALL		nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
-DLLEXPORT union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
-DLLEXPORT const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
-DLLEXPORT uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr);
-DLLEXPORT void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
-DLLEXPORT BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
+DLLEXPORT int nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
+DLLEXPORT union xp_sockaddr* inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size);
+DLLEXPORT const char* inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size);
+DLLEXPORT uint16_t inet_addrport(union xp_sockaddr *addr);
+DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
+DLLEXPORT BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
+DLLEXPORT char* socket_strerror(int, char*, size_t);
 
 #ifdef __cplusplus
 }

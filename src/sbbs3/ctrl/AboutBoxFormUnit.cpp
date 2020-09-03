@@ -1,6 +1,6 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: AboutBoxFormUnit.cpp,v 1.14 2020/04/15 05:27:14 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -120,9 +120,8 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         + " (c) 1998 Netscape Communications Corp.");
 
 #ifdef USE_CRYPTLIB
-    wsprintf(ver,"Cryptlib v%u.%u.%u.%u"
-        ,CRYPTLIB_VERSION/1000
-        ,(CRYPTLIB_VERSION/100)%10
+    wsprintf(ver,"Cryptlib v%u.%u.%u"
+        ,(CRYPTLIB_VERSION/100)
         ,(CRYPTLIB_VERSION/10)%10
         ,CRYPTLIB_VERSION%10);
     Credits->Lines->Add(AnsiString(ver) +

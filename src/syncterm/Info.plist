@@ -21,7 +21,7 @@
 	<string>SyncTERM</string>
 
 	<key>CFBundleShortVersionString</key>
-	<string>1.1b</string>
+	<string>1.2a</string>
 
 	<key>CFBundleGetInfoString</key>
 	<string>An ANSI-BBS terminal which supports telnet, rlogin, and SSH</string>
@@ -74,7 +74,7 @@
 	</array>
 
 	<key>CFBundleVersion</key>
-	<string>1.1b</string>
+	<string>1.2</string>
 
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
@@ -87,5 +87,7 @@
 
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright 2011, Stephen Hurd.</string>
+
+	<key>NSHighResolutionCapable</key> <true/>
 </dict>
 </plist>

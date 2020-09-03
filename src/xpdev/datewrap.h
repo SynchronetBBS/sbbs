@@ -2,7 +2,7 @@
 
 /* Wrappers for non-standard date and time functions */
 
-/* $Id$ */
+/* $Id: datewrap.h,v 1.28 2019/07/24 04:08:25 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -68,7 +68,6 @@ DLLEXPORT struct tm*	DLLCALL		localtime32(const time32_t* t, struct tm* tm);
 	DLLEXPORT struct tm*    DLLCALL		localtime_r(const time_t* t, struct tm* tm);
 	DLLEXPORT char*	        DLLCALL		ctime_r(const time_t *t, char *buf);
 	DLLEXPORT char*	        DLLCALL		asctime_r(const struct tm *tm, char *buf);
-	DLLEXPORT char*			DLLCALL		strtok_r(char *str, const char *delim, char **last);
 
 #endif
 

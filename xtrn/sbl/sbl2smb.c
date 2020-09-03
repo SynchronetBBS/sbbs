@@ -2,7 +2,7 @@
 
 /* Scans SBL database and posts any additions/updates into the an SMB base */
 
-/* $Id$ */
+/* $Id: sbl2smb.c,v 1.14 2019/08/06 17:06:32 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -48,6 +48,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "md5.h"
 #include "genwrap.h"
 #include "filewrap.h"
 #include "dirwrap.h"
@@ -132,7 +133,7 @@ int main(int argc, char **argv)
 	smbmsg_t msg;
 	FILE	*stream;
 
-	sscanf("$Revision$" + 11, "%s", revision);
+	sscanf("$Revision: 1.14 $" + 11, "%s", revision);
 
 	fprintf(stderr,"\nSBL2SMB v2.%s-%s - Write SBL to SMB - Coyright 2002 "
 		"Rob Swindell\n\n",revision,PLATFORM_DESC);

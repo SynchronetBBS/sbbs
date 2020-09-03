@@ -401,7 +401,7 @@ function InitializeCabal()
 {
 	var sector=db.read(Settings.DB,'sectors.85',LOCK_READ);
 
-	uifc.pop("Initializing the Cabal");
+	if(this.uifc) uifc.pop("Initializing the Cabal");
 	sector_map[85].Fighters=3000;
 	sector_map[85].FightersOwner=-1;
 	sector.Fighters=3000;

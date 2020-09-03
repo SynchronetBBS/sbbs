@@ -1,6 +1,6 @@
 /* Synchronet file transfer-related functions */
 
-/* $Id: file.cpp,v 1.35 2018/07/23 23:05:50 rswindell Exp $ */
+/* $Id: file.cpp,v 1.36 2019/08/12 06:24:08 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -41,7 +41,6 @@
 /****************************************************************************/
 void sbbs_t::fileinfo(smbfile_t* f)
 {
-	char	ext[513];
 	char 	tmp[512];
 	char	tmp2[64];
 	char	path[MAX_PATH+1];
@@ -59,7 +58,6 @@ void sbbs_t::fileinfo(smbfile_t* f)
 	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
 	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
 	bprintf(text[FiFilename],f->filename);
-
 
 	if(getfilesize(&cfg, f) >= 0)
 		bprintf(text[FiFileSize], ultoac((ulong)f->size,tmp)
@@ -298,4 +296,12 @@ bool sbbs_t::checkfname(char *fname)
 		c++; 
 	}
 	return(true);
+}
+
+long sbbs_t::delfiles(const char *inpath, const char *spec, size_t keep)
+{
+	long result = ::delfiles(inpath, spec, keep);
+	if(result < 0)
+		errormsg(WHERE, ERR_REMOVE, inpath, result, spec);
+	return result;
 }

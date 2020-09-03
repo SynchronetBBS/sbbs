@@ -897,7 +897,7 @@ function DropFighters()
 
 function ResetAllPlayers()
 {
-	uifc.pop("Creating Players");
+	if(this.uifc) uifc.pop("Creating Players");
 	var player={};
 	var i;
 

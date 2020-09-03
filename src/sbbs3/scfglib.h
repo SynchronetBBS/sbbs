@@ -1,6 +1,6 @@
 /* Synchronet configuration library routine prototypes */
 
-/* $Id$ */
+/* $Id: scfglib.h,v 1.25 2020/05/14 07:50:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -50,18 +50,6 @@
 extern "C" {
 #endif
 
-extern const char*	scfgnulstr;
-
-#if defined(SCFG)	/* Don't compile AR strings for SCFG */
-	#define ARSTR(str,cfg)	NULL
-    #define FREE_AR(x)
-#else
-	extern const uchar* nular;
-	#define ARSTR(str,cfg)	arstr(NULL,str,cfg)
-	/* allocated with arstr() */
-	#define FREE_AR(x)		if(x!=NULL && x!=nular)	{ FREE(x); x=NULL; }
-#endif
-
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
 BOOL	allocerr(FILE*, char* error, long offset, char *fname, uint size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
@@ -85,7 +73,7 @@ void	free_chat_cfg(scfg_t* cfg);
 
 long	aftol(char *str);              /* Converts flag string to long */
 char*	ltoaf(long l, char *str);     /* Converts long to flag string */
-uchar	attrstr(char *str);		/* Convert ATTR string into attribute int */
+uint	attrstr(char *str);		/* Convert ATTR string into attribute int */
 
 #ifdef __cplusplus
 }

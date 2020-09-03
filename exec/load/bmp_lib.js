@@ -1,4 +1,4 @@
-// $Id$
+// $Id: bmp_lib.js,v 1.1 2018/02/02 12:46:44 rswindell Exp $
 
 // Library for dealing with Microsoft BMP/DIB files
 

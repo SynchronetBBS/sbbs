@@ -1,6 +1,6 @@
 /* Synchronet BBS as a set of Windows NT Services */
 
-/* $Id$ */
+/* $Id: ntsvcs.c,v 1.53 2020/08/17 18:21:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -1196,12 +1196,7 @@ int main(int argc, char** argv)
 
 	loginAttemptListInit(&login_attempt_list);
 
-	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
-	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
-		ctrl_dir="\\sbbs\\ctrl";		/* Not set? Use default */
-		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
-			,ctrl_dir);
-	}
+	ctrl_dir = get_ctrl_dir(/* warn: */TRUE);
 
 	sbbs_get_ini_fname(ini_file, ctrl_dir, NULL /* auto-host_name */);
 
@@ -1288,7 +1283,7 @@ int main(int argc, char** argv)
 		fclose(fp);
 
 	if(chdir(ctrl_dir)!=0) {
-		sprintf(str,"!ERROR %d changing directory to: %s", errno, ctrl_dir);
+		sprintf(str,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), ctrl_dir);
 		svc_lputs(NULL,LOG_ERR,str);
 	}
 

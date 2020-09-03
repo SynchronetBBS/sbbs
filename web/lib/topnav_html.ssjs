@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: topnav_html.ssjs,v 1.20 2011/07/02 18:28:12 ree Exp $ */
 
 var is_sysop=false;
 

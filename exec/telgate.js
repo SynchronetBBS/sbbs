@@ -1,6 +1,6 @@
 // telgate.js
 
-// $Id$
+// $Id: telgate.js,v 1.2 2014/11/05 22:35:53 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

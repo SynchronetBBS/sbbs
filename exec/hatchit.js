@@ -254,19 +254,21 @@ function hatch_file(file, area, origin)
 				tf.write('Ldesc '+line+'\r\n');
 			});
 		}
-		tf.write('Created by TickIT '+"$Revision$".split(' ')[1]+'\r\n');
+		tf.write('Created by TickIT '+"$Revision: 1.6 $".split(' ')[1]+'\r\n');
 		tf.printf('Crc %08lX\r\n', file_crc(file.path));
 		for (i=0; i<tic.path.length; i++)
 			tf.write('Path '+tic.path[i]+'\r\n');
-		for (i=0; i<tic.seenby.length; i++)
-			tf.write('Seenby '+tic.seenby[i]+'\r\n');
+		for (i=0; i<tic.seenby.length; i++) {
+			if(tic.seenby[i] != link)
+				tf.write('Seenby '+tic.seenby[i]+'\r\n');
+		}
 		tf.write('Pw '+pw+'\r\n');
 		tf.close();
 
 		// Create bsy file...
 		flobase = outb+format("%04x%04x", addr.net, addr.node);
 		bf = new File(flobase+'.bsy');
-		while (!bf.open('web+')) {
+		while (!bf.open('wxb+')) {
 			// TODO: This waits forever...
 			log(LOG_WARNING, "Waiting for BSY file '"+bf.name+"'...");
 			mswait(1000);
@@ -296,6 +298,7 @@ function main() {
 	var origin;
 
 	uifc.init('HatchIT');
+	js.on_exit('uifc.bail()');
 	file = pick_file();
 	if (file === undefined || file.path === undefined)
 		return;
@@ -315,7 +318,6 @@ function main() {
 	if (uifc.list(WIN_MID, "Proceed?", ["No", "Yes"]) == 1) {
 		hatch_file(file, area, origin);
 	}
-	uifc.bail();
 }
 
 main();

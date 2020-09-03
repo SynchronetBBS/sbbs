@@ -2,7 +2,7 @@
 
 # Sep 28 1995 - Digital Man
 
-# $Id$
+# $Id: yesnobar.src,v 1.14 2020/05/11 01:46:07 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -17,13 +17,18 @@ if_true
 	crlf
 	shift_str _question 2
 	end_if
-printf "nbh[cûb] y%s? " _question
+compare_strn 2 _question "\1?"
+if_true
+	print "\1?"
+	shift_str _question 2
+	end_if
+print "\x01n\x01b\x01h[\x01c@CHECKMARK@\x01b] \x01y@QUESTION->@? @CLEAR_HOT@"
 :top
 compare_str "Y"
 if_equal
-	print "h4w[Yes]nbh No "
+	print "\x01h\x014\x01w\x01e[\x01~Yes]\x01n\x01b\x01h \x01~No "
 else
-	print "nbh Yes 4w[No]"
+	print "\x01n\x01b\x01h \x01~Yes \x014\x01w\x01e[\x01~No]"
 	end_if
 int aborted
 copy aborted _sys_status
@@ -31,8 +36,15 @@ and aborted SS_ABORT
 compare aborted SS_ABORT
 if_not_equal
     getkey
+    print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"    
+    int aborted
+    copy aborted _sys_status
+    and aborted SS_ABORT
+    compare aborted SS_ABORT
+    if_equal
+        return
+        end_if
     end_if
-print "\b\b\b\b\b\b\b\b\b\1n\1h\1>"
 if_equal
     return
     end_if

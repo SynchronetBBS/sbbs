@@ -21,7 +21,6 @@ int main(int argc, char **argv)
 	GtkListStore	*quickstore = NULL;
 	GtkTreeIter		curr;
 	GtkCellRenderer *column;
-	GtkWindow*	xml;
 
     gtk_init(&argc, &argv);
 
@@ -50,10 +49,6 @@ int main(int argc, char **argv)
 
     /* connect the signals in the interface */
 	gtk_builder_connect_signals (builder, NULL);
-
-	/* Get MainWindow and display it */
-	xml = GTK_WINDOW (gtk_builder_get_object (builder, "MainWindow"));
-	gtk_window_present(xml);
 
 	/* Set up user list */
 	w=GTK_WIDGET(gtk_builder_get_object(builder, "lUserList"));
@@ -313,7 +308,7 @@ int main(int argc, char **argv)
 	}
 
 	gtk_list_store_move_after(quickstore, &curr, 0);
-	for(i=1; i<=10; i++) {
+	for(i=0; i<10; i++) {
 		gtk_list_store_append(quickstore, &curr);
 		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],flags));
 		gtk_list_store_set(quickstore, &curr, 0, str, -1);

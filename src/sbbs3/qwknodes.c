@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: qwknodes.c,v 1.25 2020/08/17 00:48:28 rswindell Exp $ */
 
 /* Synchronet QWKnet node list or route.dat file generator */
 
@@ -172,10 +172,9 @@ int main(int argc, char **argv)
 	FILE		*route,*users,*nodes;
 	time_t		now;
 	smbmsg_t	msg;
-	char		*ctrl_dir;
 	char		revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.25 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nSynchronet QWKnet Node/Route/User List Generator v%s-%s\n"
 		,revision, PLATFORM_DESC);
@@ -253,13 +252,7 @@ int main(int argc, char **argv)
 		}
 
 	cfg.size=sizeof(cfg);
-	ctrl_dir=getenv("SBBSCTRL");
-	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
-		ctrl_dir="/sbbs/ctrl";          /* Not set? Use default */
-		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
-				,ctrl_dir);
-	}
-	SAFECOPY(cfg.ctrl_dir, ctrl_dir);
+	SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 
 	if(!load_cfg(&cfg, NULL, TRUE, str)) {
 		printf("\7\n%s\n",str);

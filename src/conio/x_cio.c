@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: x_cio.c,v 1.56 2020/05/07 20:26:51 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -31,6 +31,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,7 +95,7 @@ static void write_event(struct x11_local_event *ev)
 
 void x_beep(void)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_BEEP;
 	write_event(&ev);
@@ -102,7 +103,7 @@ void x_beep(void)
 
 void x_textmode(int mode)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETMODE;
 	ev.data.mode = mode;
@@ -112,7 +113,7 @@ void x_textmode(int mode)
 
 void x_setname(const char *name)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETNAME;
 	SAFECOPY(ev.data.name, name);
@@ -121,16 +122,33 @@ void x_setname(const char *name)
 
 void x_settitle(const char *title)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_SETTITLE;
 	SAFECOPY(ev.data.title, title);
 	write_event(&ev);
 }
 
+void x_seticon(const void *icon, unsigned long size)
+{
+	const uint32_t *icon32 = icon;
+	struct x11_local_event ev = {0};
+	int i;
+
+	ev.data.icon_data = malloc((size*size + 2)*sizeof(ev.data.icon_data[0]));
+	if (ev.data.icon_data != NULL) {
+		ev.type=X11_LOCAL_SETICON;
+		for (i = 0; i < size*size; i++)
+			ev.data.icon_data[i + 2] = ((icon32[i] & 0xff000000))|((icon32[i] & 0x00ff0000) >> 16)|((icon32[i] & 0x0000ff00))|((icon32[i] & 0x000000ff)<<16);
+		ev.data.icon_data[0] = size;
+		ev.data.icon_data[1] = size;
+		write_event(&ev);
+	}
+}
+
 void x_copytext(const char *text, size_t buflen)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	pthread_mutex_lock(&copybuf_mutex);
 	FREE_AND_NULL(copybuf);
@@ -139,6 +157,7 @@ void x_copytext(const char *text, size_t buflen)
 	if(copybuf) {
 		ev.type=X11_LOCAL_COPY;
 		write_event(&ev);
+		copybuf_format = XA_STRING;
 	}
 	pthread_mutex_unlock(&copybuf_mutex);
 	return;
@@ -147,7 +166,7 @@ void x_copytext(const char *text, size_t buflen)
 char *x_getcliptext(void)
 {
 	char *ret=NULL;
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_PASTE;
 	write_event(&ev);
@@ -396,6 +415,52 @@ int x_init(void)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XAllocClassHint=xp_dlsym(dl,XAllocClassHint))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetForeground=xp_dlsym(dl,XSetForeground))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetLocaleModifiers=xp_dlsym(dl,XSetLocaleModifiers))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XOpenIM=xp_dlsym(dl,XOpenIM))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateIC=xp_dlsym(dl,XCreateIC))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XwcLookupString=xp_dlsym(dl,XwcLookupString))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XSetICFocus=xp_dlsym(dl,XSetICFocus))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFilterEvent=xp_dlsym(dl,XFilterEvent))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XCreateFontCursor=xp_dlsym(dl,XCreateFontCursor))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XDefineCursor=xp_dlsym(dl,XDefineCursor))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	if((x11.XFreeCursor=xp_dlsym(dl,XFreeCursor))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
+	setlocale(LC_ALL, "");
+	x11.XSetLocaleModifiers("@im=none");
 
 	if(sem_init(&pastebuf_set, 0, 0)) {
 		xp_dlclose(dl);
@@ -447,7 +512,7 @@ int x_init(void)
 
 void x11_drawrect(struct rectlist *data)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_DRAWRECT;
 	if(x11_initialized) {
@@ -458,7 +523,7 @@ void x11_drawrect(struct rectlist *data)
 
 void x11_flush(void)
 {
-	struct x11_local_event ev;
+	struct x11_local_event ev = {0};
 
 	ev.type=X11_LOCAL_FLUSH;
 	if(x11_initialized)
@@ -467,6 +532,8 @@ void x11_flush(void)
 
 void x_setscaling(int newval)
 {
+	if (newval < 1)
+		newval = 1;
 	pthread_mutex_lock(&vstatlock);
 	x_cvstat.scaling = vstat.scaling = newval;
 	pthread_mutex_unlock(&vstatlock);
@@ -475,4 +542,17 @@ void x_setscaling(int newval)
 int x_getscaling(void)
 {
 	return x_cvstat.scaling;
+}
+
+int x_mousepointer(enum ciolib_mouse_ptr type)
+{
+	struct x11_local_event ev = {0};
+
+	ev.type=X11_LOCAL_MOUSEPOINTER;
+	if(x11_initialized) {
+		ev.data.ptr=type;
+		write_event(&ev);
+		return 1;
+	}
+	return 0;
 }

@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "Client" Object */
 
-/* $Id$ */
+/* $Id: js_client.c,v 1.29 2020/03/19 06:08:27 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -47,17 +47,19 @@ enum {
 	,CLIENT_PROP_TIME		/* connect time */
 	,CLIENT_PROP_PROTOCOL	/* protocol description */
 	,CLIENT_PROP_USER		/* user name */
+	,CLIENT_PROP_USERNUM	/* user number */
 };
 
 #ifdef BUILD_JSDOCS
 	static char* client_prop_desc[] = {
 	"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
-	,"client's IP address (in dotted-decimal format)"
+	,"client's IPv4 or IPv6 address"
 	,"client's host name (up to 64 characters)"
 	,"client's TCP or UDP port number"
 	,"date/time of initial connection (in time_t format)"
-	,"protocol description (e.g. 'Telnet', 'FTP', etc.)"
-	,"user's name/alias (if logged in)"
+	,"protocol/service name (e.g. 'Telnet', 'FTP', etc.)"
+	,"user's name/alias"
+	,"user's number (non-zero if logged in)"
 	/* this next one must be last */
 	,NULL
 	};
@@ -102,6 +104,9 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CLIENT_PROP_USER:
 			p=client->user;
 			break;
+		case CLIENT_PROP_USERNUM:
+			val=client->usernum;
+			break;
 		default:
 			return(JS_TRUE);
 	}
@@ -126,6 +131,7 @@ static jsSyncPropertySpec js_client_properties[] = {
 	{	"connect_time"		,CLIENT_PROP_TIME	 	,CLIENT_PROP_FLAGS,		310},
 	{	"protocol"			,CLIENT_PROP_PROTOCOL 	,CLIENT_PROP_FLAGS,		310},
 	{	"user_name"			,CLIENT_PROP_USER	 	,CLIENT_PROP_FLAGS,		310},
+	{	"user_number"		,CLIENT_PROP_USERNUM	,CLIENT_PROP_FLAGS,		31702},
 	{0}
 };
 

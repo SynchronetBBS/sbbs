@@ -1,8 +1,9 @@
 /* sockopts.c */
+// vi: tabstop=4
 
 /* Set socket options based on contents of ctrl/sockopts.ini */
 
-/* $Id$ */
+/* $Id: sockopts.c,v 1.26 2019/01/12 22:44:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -64,8 +65,14 @@ int DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, c
 
 	result=iniGetSocketOptions(list,ROOT_SECTION,sock,error,errlen);
 
-	if(result==0)
-		result=iniGetSocketOptions(list,type==SOCK_STREAM ? "tcp":"udp",sock,error,errlen);
+	if(result==0) {
+		const char* section = (type==SOCK_STREAM) ? "tcp":"udp";
+		struct sockaddr sockaddr;
+		socklen_t len = sizeof(sockaddr);
+		if(getsockname(sock, &sockaddr, &len) == 0 && sockaddr.sa_family == PF_UNIX)
+			section = "unix";
+		result=iniGetSocketOptions(list,section,sock,error,errlen);
+	}
 	if(result==0 && protocol!=NULL && *protocol!=0)
 		result=iniGetSocketOptions(list,protocol,sock,error,errlen);
 

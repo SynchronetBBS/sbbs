@@ -3,7 +3,7 @@
 	For Synchronet v3.15+
 	Matt Johnson(2009)
 */
-//$Id$
+//$Id: game.js,v 1.1 2010/10/01 14:31:59 mcmlxxix Exp $
 load("chateng.js");
 //load("helpfile.js"); //TODO: write instructions!
 

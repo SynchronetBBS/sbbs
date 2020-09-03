@@ -1,7 +1,7 @@
 /**
  * Module -- Module interface
  * --
- * $Id$
+ * $Id: Module.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Mon Mar 24 15:35:13 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -26,7 +26,7 @@ package modules;
 
 /**
  * Modules must implement this interface to be detected as valid modules
- * @version $Id$
+ * @version $Id: Module.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  */
 public interface Module 

@@ -1,6 +1,6 @@
 /* Synchronet initialization (.ini) file routines */
 
-/* $Id$ */
+/* $Id: sbbs_ini.c,v 1.170 2019/07/24 04:41:49 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -36,10 +36,11 @@
 
 #define STARTUP_INI_BITDESC_TABLES
 
+#include "sockwrap.h"
 #include <string.h>	/* strchr, memset */
 
-#include "dirwrap.h"	/* backslash */
 #include "sbbs_ini.h"
+#include "dirwrap.h"	/* backslash */
 #include "sbbsdefs.h"	/* JAVASCRIPT_* macros */
 
 static const char*	nulstr="";
@@ -47,8 +48,8 @@ static const char*  strAutoStart="AutoStart";
 static const char*  strCtrlDirectory="CtrlDirectory";
 static const char*  strTempDirectory="TempDirectory";
 static const char*	strOptions="Options";
-static const char*	strOutgoing4="OutgoingV4";
-static const char*	strOutgoing6="OutgoingV6";
+static const char*	strOutgoing4="OutboundInterface";
+static const char*	strOutgoing6="OutboundV6Interface";
 static const char*	strInterfaces="Interface";
 static const char*	strPort="Port";
 static const char*	strMaxClients="MaxClients";
@@ -692,8 +693,6 @@ void sbbs_read_ini(
 			=iniGetStringList(list,section,"CGIExtensions", "," ,".cgi");
 		SAFECOPY(web->ssjs_ext
 			,iniGetString(list,section,"JavaScriptExtension",".ssjs",value));
-		SAFECOPY(web->js_ext
-			,iniGetString(list,section,"EmbJavaScriptExtension",".bbs",value));
 
 		web->max_cgi_inactivity
 			=iniGetShortInt(list,section,"MaxCgiInactivity",WEB_DEFAULT_MAX_CGI_INACTIVITY);	/* seconds */
@@ -747,7 +746,9 @@ BOOL sbbs_write_ini(
 
 	memset(&style, 0, sizeof(style));
 	style.key_prefix = "\t";
-    style.bit_separator = " | ";
+	style.section_separator = "";
+	style.value_separator = " = ";
+	style.bit_separator = " | ";
 
 	if((list=iniReadFile(fp))==NULL)
 		return(FALSE);

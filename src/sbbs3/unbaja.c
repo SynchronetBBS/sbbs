@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: unbaja.c,v 1.48 2020/05/26 19:14:37 rswindell Exp $ */
 
 #include <stdio.h>
 #include <string.h>
@@ -1957,7 +1957,7 @@ void decompile(FILE *bin, FILE *srcfile)
 					case FIO_GET_POS:
 						VARVAR("FGET_POS");
 					case FIO_SEEK:
-						WRITE_NAME("FSEEK");
+						WRITE_NAME("FSET_POS");
 						write_var(bin,src);
 						write_lng(bin,src);
 						fread(&ush,2,1,bin);
@@ -1970,7 +1970,7 @@ void decompile(FILE *bin, FILE *srcfile)
 						eol(src);
 						break;
 					case FIO_SEEK_VAR:
-						WRITE_NAME("FSEEK");
+						WRITE_NAME("FSET_POS");
 						write_var(bin,src);
 						write_var(bin,src);
 						fread(&ush,2,1,bin);
@@ -2131,8 +2131,8 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("MSG_NEW_SCAN_SUB");
 			case CS_MSG_SET_GROUP:
 				NONE("MSG_SET_GROUP");
-			case CS_MSG_UNUSED4:
-				NONE("MSG_UNUSED4");
+			case CS_MSG_LIST:
+				NONE("MSG_LIST");
 			case CS_MSG_UNUSED3:
 				NONE("MSG_UNUSED3");
 			case CS_MSG_UNUSED2:
@@ -2329,7 +2329,7 @@ int main(int argc, char **argv)
 	char	cache_line[1024];
 	char	*crc,*good,*str;
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.48 $", "%*s %s", revision);
 
 	printf("\nUNBAJA v%s-%s - Synchronet Baja Shell/Module De-compiler\n"
 		,revision, PLATFORM_DESC);

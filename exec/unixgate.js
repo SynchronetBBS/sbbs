@@ -2,7 +2,7 @@
 
 // Telnet Gateway for Unix servers - Requires v3.00c
 
-// $Id$
+// $Id: unixgate.js,v 1.1 2005/09/12 19:48:34 deuce Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

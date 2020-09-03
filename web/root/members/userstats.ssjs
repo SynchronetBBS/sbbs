@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: userstats.ssjs,v 1.12 2006/02/25 21:40:35 runemaster Exp $ */
 
 load("../web/lib/template.ssjs");
 

@@ -1,4 +1,4 @@
-// $Id$	
+// $Id: syncdata.js,v 1.1 2018/01/17 02:45:48 rswindell Exp $	
 	
 // Find the correct/full internal code for the "syncdata" sub-board:
 function find(code)

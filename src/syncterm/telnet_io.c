@@ -1,12 +1,9 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: telnet_io.c,v 1.41 2020/05/02 03:09:15 rswindell Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
-
-#include "term.h"
-#include "cterm.h"
 
 #include "genwrap.h"
 #include "sockwrap.h"
@@ -19,6 +16,7 @@
 #include "conn.h"
 #include "uifcinit.h"
 #include "conn_telnet.h"
+#include "term.h"
 
 #define TELNET_TERM_MAXLEN	40
 
@@ -49,15 +47,35 @@ static int lprintf(int level, const char *fmt, ...)
 
 void putcom(char* buf, size_t len)
 {
-	char	str[128];
-	char*	p=str;
-	size_t i;
 
-	for(i=0;i<len;i++)
-		p+=sprintf(p,"%u ", ((BYTE)buf[i]));
+	fd_set	wds;
+	FD_ZERO(&wds);
+	FD_SET(telnet_sock, &wds);
+	struct timeval tv;
+	tv.tv_sec=10;
+	tv.tv_usec=0;
+	/*
+	 * Note, this select() call was added when debugging file transfer
+	 * issues presumably because something made it appear to "hang forever".
+	 * Since blocking sockets are used, this is very much not a complete
+	 * fix as the buffer size will usually be greater than the one byte
+	 * select() guarantees you will be able to send().
+	 *
+	 * The original fix waited 1ms in select(), which is unlikely to actually
+	 * allow the ACK to come back fast enough to clear a full output buffer.
+	 * I've increased it to 10s and left the select() in place.
+	 */
+	if(select(telnet_sock+1, NULL, &wds, NULL, &tv) == 1) {
+		char	str[128];
+		char*	p=str;
+		size_t i;
+		for(i=0;i<len;i++)
+			p+=sprintf(p,"%u ", ((BYTE)buf[i]));
 
-	lprintf(LOG_DEBUG,"TX: %s", str);
-	send(telnet_sock, buf, len, 0);
+		lprintf(LOG_DEBUG,"TX: %s", str);
+		sendsocket(telnet_sock, buf, len);
+	} else
+		lprintf(LOG_WARNING, "TX: putcom(%d) timeout", len);
 }
 
 static void send_telnet_cmd(uchar cmd, uchar opt)
@@ -91,7 +109,7 @@ void request_telnet_opt(uchar cmd, uchar opt)
 	send_telnet_cmd(cmd,opt);
 }
 
-BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
+BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen, struct bbslist *bbs)
 {
 	BYTE	command;
 	BYTE	option;
@@ -159,24 +177,13 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
 						char buf[32];
-						const char *termtype;
-						switch(cterm->emulation) {
-							case CTERM_EMULATION_PETASCII:
-								termtype = "PETSCII";
-								break;
-							case CTERM_EMULATION_ATASCII:
-								termtype = "ATASCII";
-								break;
-							default:
-								termtype = "ANSI";
-								break;
-						}
+						const char *emu = get_emulation_str(get_emulation(bbs));
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
-							,termtype
+							,emu
 							,TELNET_IAC,TELNET_SE);
-						lprintf(LOG_INFO,"TX: Terminal Type is %s", termtype);
+						lprintf(LOG_INFO,"TX: Terminal Type is %s", emu);
 						putcom(buf,len);
 						request_telnet_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 					}
@@ -210,18 +217,21 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 					}
 
 					if(command==TELNET_DO && option==TELNET_NEGOTIATE_WINDOW_SIZE) {
+						int rows, cols;
 						BYTE buf[32];
+
+						get_cterm_size(&cols, &rows, bbs->nostatus);
 						buf[0]=TELNET_IAC;
 						buf[1]=TELNET_SB;
 						buf[2]=TELNET_NEGOTIATE_WINDOW_SIZE;
-						buf[3]=(term.width>>8)&0xff;
-						buf[4]=term.width&0xff;
-						buf[5]=(term.height>>8)&0xff;
-						buf[6]=term.height&0xff;
+						buf[3]=(cols>>8)&0xff;
+						buf[4]=cols&0xff;
+						buf[5]=(rows>>8)&0xff;
+						buf[6]=rows&0xff;
 						buf[7]=TELNET_IAC;
 						buf[8]=TELNET_SE;
 						lprintf(LOG_INFO,"TX: Window Size is %u x %u"
-							,term.width, term.height);
+							,cols, rows);
 						putcom((char *)buf,9);
 					}
 
@@ -254,36 +264,3 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
     return(outbuf);
 }
 
-BYTE* telnet_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t *newlen)
-{
-	BYTE*   first_iac;
-	BYTE*   first_cr=NULL;
-	ulong	i,outlen;
-
-    first_iac=(BYTE*)memchr(inbuf, TELNET_IAC, inlen);
-	if(telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO)
-	    first_cr=(BYTE*)memchr(inbuf, '\r', inlen);
-
-	if(first_iac==NULL && first_cr==NULL) {	/* Nothing to expand */
-		*newlen=inlen;
-		return(inbuf);
-	}
-
-	if(first_iac!=NULL && (first_cr==NULL || first_iac < first_cr))
-		outlen=first_iac-inbuf;
-	else
-		outlen=first_cr-inbuf;
-	memcpy(outbuf, inbuf, outlen);
-
-    for(i=outlen;i<inlen;i++) {
-		if(inbuf[i]==TELNET_IAC)
-			outbuf[outlen++]=TELNET_IAC;
-		outbuf[outlen++]=inbuf[i];
-		if(telnet_local_option[TELNET_BINARY_TX]!=TELNET_DO) {
-			if(inbuf[i]=='\r')
-				outbuf[outlen++]='\n';
-		}
-	}
-    *newlen=outlen;
-    return(outbuf);
-}

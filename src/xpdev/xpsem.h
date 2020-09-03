@@ -2,7 +2,7 @@
 #define _XPSEM_H_
 
 /*
- * $Id$
+ * $Id: xpsem.h,v 1.10 2012/01/26 01:44:02 deuce Exp $
  *
  * semaphore.h: POSIX 1003.1b semaphores
 */
@@ -78,7 +78,7 @@ int  xp_sem_timedwait (xp_sem_t *sem, const struct timespec *abs_timeout);
 #endif
 
 /*
-* $Id$
+* $Id: xpsem.h,v 1.10 2012/01/26 01:44:02 deuce Exp $
 */
 
 /* Begin thread_private.h kluge */

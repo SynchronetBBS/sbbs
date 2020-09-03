@@ -2,7 +2,7 @@
 
 /* Synchronet User Interface constants */
 
-/* $Id$ */
+/* $Id: uifcdefs.js,v 1.3 2009/01/30 06:46:34 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

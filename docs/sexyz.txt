@@ -1,7 +1,7 @@
 Synchronet External X/Y/ZMODEM (SEXYZ) File Transfer Protocol Driver
 --------------------------------------------------------------------
 
-$Id$
+$Id: sexyz.txt,v 1.28 2014/12/11 10:27:34 rswindell Exp $
 
 The live version of this document is online at:
 http://wiki.synchro.net/util:sexyz

@@ -2,7 +2,7 @@
 
 /* Unix-to-unix encoding/decoding routines */
 
-/* $Id$ */
+/* $Id: uucode.c,v 1.6 2019/07/18 03:10:54 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -112,7 +112,7 @@ int uuencode(char *target, size_t tlen, const char *source, size_t slen)
 		if(rd+len>slen)
 			len=slen-rd;
 		BIAS(len);
-		target[wr++]=len;
+		target[wr++]=(char)len;
 
 		block=0;
 		while(block<len && wr<tlen && rd<slen) {

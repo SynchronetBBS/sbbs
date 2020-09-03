@@ -1,6 +1,6 @@
 // webInit.ssjs, by echicken -at- bbs.electronicchicken.com
 
-// $Id$
+// $Id: webInit.ssjs,v 1.20 2015/05/21 02:48:47 rswindell Exp $
 
 // Some bootstrapping stuff for the web interface, kept in exec/load/ so that
 // other scripts can find it.  Could/should be moved to /sbbs/web/lib.

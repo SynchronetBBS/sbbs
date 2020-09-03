@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircbot_commands.js,v 1.37 2015/03/04 18:25:38 mcmlxxix Exp $
 /*
 
  This program is free software; you can redistribute it and/or modify

@@ -25,8 +25,8 @@ object WebCfgDlg: TWebCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = HttpTabSheet
+    TabIndex = 2
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -228,16 +228,6 @@ object WebCfgDlg: TWebCfgDlg
         AutoSize = False
         Caption = 'Server-Side JS File Extension'
       end
-      object EmbeddedJsExtLabel: TLabel
-        Left = 7
-        Top = 88
-        Width = 143
-        Height = 20
-        AutoSize = False
-        Caption = 'Embedded JS File Extension'
-        Enabled = False
-        Visible = False
-      end
       object IndexLabel: TLabel
         Left = 7
         Top = 62
@@ -278,20 +268,6 @@ object WebCfgDlg: TWebCfgDlg
         ShowHint = True
         TabOrder = 3
       end
-      object EmbeddedJsExtEdit: TEdit
-        Left = 156
-        Top = 88
-        Width = 85
-        Height = 21
-        Hint = 
-          'File extension that denotes embedded JavaScript files (e.g. ".bb' +
-          's")'
-        Enabled = False
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 4
-        Visible = False
-      end
       object VirtualHostsCheckBox: TCheckBox
         Left = 7
         Top = 140
@@ -301,7 +277,7 @@ object WebCfgDlg: TWebCfgDlg
         Caption = 'Virtual Hosts'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 5
+        TabOrder = 4
       end
       object IndexFileEdit: TEdit
         Left = 85

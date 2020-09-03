@@ -1,6 +1,6 @@
 /* General(ly useful) constant, macro, and type definitions */
 
-/* $Id$ */
+/* $Id: gen_defs.h,v 1.85 2020/08/15 19:57:51 rswindell Exp $ */
 // vi: tabstop=4
 																			
 /****************************************************************************
@@ -171,7 +171,9 @@ typedef ulong   uint32_t;
 
 #endif
 
+#if !defined(__MSDOS__)
 #if defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__)
+typedef SSIZE_T ssize_t;
 typedef signed __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 #define INTTYPES_H_64BIT_PREFIX         "I64"
@@ -190,6 +192,7 @@ typedef int64_t		intmax_t;
 typedef uintmax_t	uintptr_t;
 typedef intmax_t	intptr_t;
 #endif
+#endif // !MSDOS
 
 /* printf integer formatters: */
 
@@ -256,8 +259,8 @@ typedef int32_t         time32_t;
 #    define PRIdOFF     PRId64
 #    define PRIuOFF     PRIu64
 #  else
-#    define PRIdOFF     PRId32
-#    define PRIuOFF     PRIu32
+#    define PRIdOFF     "ld"
+#    define PRIuOFF     "lu"
 #  endif
 #else
 #  define PRIdOFF       PRId64
@@ -362,6 +365,23 @@ typedef struct {
 /* Data Block Length Alignment Macro (returns required padding length for proper alignment) */
 #define PAD_LENGTH_FOR_ALIGNMENT(len,blk)       (((len)%(blk))==0 ? 0 : (blk)-((len)%(blk)))
 
+#define HEX_DIGITS(n)   ( n > 0xfffffff  ? 8 \
+                        : n > 0x0ffffff  ? 7 \
+                        : n > 0x00fffff  ? 6 \
+                        : n > 0x000ffff  ? 5 \
+                        : n > 0x0000fff  ? 4 \
+                        : n > 0x00000ff  ? 3 \
+                        : n > 0x000000f  ? 2 : 1 )
+#define DEC_DIGITS(n)   ( n < 10         ? 1 \
+                        : n < 100        ? 2 \
+                        : n < 1000       ? 3 \
+                        : n < 10000      ? 4 \
+                        : n < 100000     ? 5 \
+                        : n < 1000000    ? 6 \
+                        : n < 10000000   ? 7 \
+                        : n < 100000000  ? 8 \
+                        : n < 1000000000 ? 9 : 10 )
+
 /***********************/
 /* Handy String Macros */
 /***********************/
@@ -376,7 +396,11 @@ typedef struct {
 #define SAFECOPY(dst,src)                   (strncpy(dst,src,sizeof(dst)), TERMINATE(dst))
 #endif
 
-#define SAFECAT(dst, src)					if(strlen(dst) + strlen(src) < sizeof(dst)) { strcat(dst, src); }
+#define SAFECAT(dst, src) do { \
+	if(strlen(dst) + strlen(src) < sizeof(dst)) { \
+		strcat(dst, src); \
+	} \
+} while(0)
 
 /* Bound-safe version of sprintf() - only works with fixed-length arrays */
 #if (defined __FreeBSD__) || (defined __NetBSD__) || (defined __OpenBSD__) || (defined(__APPLE__) && defined(__MACH__) && defined(__POWERPC__))
@@ -469,7 +493,12 @@ typedef struct {
 /********************************/
 /* Handy Pointer-freeing Macros */
 /********************************/
-#define FREE_AND_NULL(x)                if((x)!=NULL) { FREE(x); (x)=NULL; }
+#define FREE_AND_NULL(x)	do {                  \
+								if((x)!=NULL) {   \
+									FREE(x);      \
+									(x)=NULL;     \
+								}		          \
+							} while(0)
 #define FREE_LIST_ITEMS(list,i)         if(list!=NULL) {                                \
 											for(i=0;list[i]!=NULL;i++)      \
 												FREE_AND_NULL(list[i]); \
@@ -497,14 +526,8 @@ typedef struct {
         #define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
-/* Special hackery for SDL */
 #ifdef WITH_SDL_AUDIO
         #include <SDL.h>
-
-        #ifdef main
-                #undef main
-        #endif
-        #define main    XPDEV_main
 #endif
 
 #endif /* Don't add anything after this #endif statement */

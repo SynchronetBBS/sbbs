@@ -1,6 +1,6 @@
 /* Double-Linked-list library */
 
-/* $Id$ */
+/* $Id: link_list.h,v 1.29 2019/08/02 02:36:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -204,6 +204,12 @@ DLLEXPORT void* DLLCALL listRemoveTaggedNode(link_list_t*, list_node_tag_t, BOOL
 
 /* Remove multiple nodes from list, returning the number of nodes removed */
 DLLEXPORT long	DLLCALL	listRemoveNodes(link_list_t*, list_node_t* /* NULL=first */, long count, BOOL free_data);
+
+/* Reverse the nodes in a list */
+DLLEXPORT void DLLCALL listReverse(link_list_t*);
+
+/* Return >= 0 (count of nodes) if list is valid, negative otherwise */
+DLLEXPORT long DLLCALL listVerify(link_list_t*);
 
 #if defined(__cplusplus)
 }

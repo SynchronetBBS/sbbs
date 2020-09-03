@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: scfg.h,v 1.35 2020/06/12 15:57:17 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -81,6 +81,9 @@ enum import_list_type {
 	IMPORT_LIST_TYPE_GENERIC_AREAS_BBS,
 	IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS,
 	IMPORT_LIST_TYPE_BACKBONE_NA,
+	IMPORT_LIST_TYPE_BAD_AREAS,
+	IMPORT_LIST_TYPE_ECHOSTATS,
+	IMPORT_LIST_TYPE_NEWSGROUPS
 };
 
 /************/
@@ -100,7 +103,7 @@ extern char *nulstr;
 extern char *invalid_code,*num_flags;
 extern int	backup_level;
 extern BOOL new_install;
-char* area_sort_desc[AREA_SORT_TYPES+1];
+extern char* area_sort_desc[AREA_SORT_TYPES+1];
 
 /***********************/
 /* Function Prototypes */
@@ -142,15 +145,28 @@ int export_mdm(char *fname);
 int code_ok(char *str);
 int  bits(long l);
 void getar(char *desc, char *ar);
-bool new_sub(unsigned new_subnum, unsigned group_num);
+bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long misc);
 bool new_qhub_sub(qhub_t*, unsigned qsubnum, sub_t*, unsigned confnum);
+void remove_sub(scfg_t*, unsigned subnum, bool cut);
 void sort_subs(int grpnum);
 void sort_dirs(int libnum);
 unsigned subs_in_group(unsigned grpnum);
 char random_code_char(void);
+BOOL load_main_cfg(scfg_t*, char*);
+BOOL load_node_cfg(scfg_t*, char*);
+BOOL load_msgs_cfg(scfg_t*, char*);
+BOOL load_file_cfg(scfg_t*, char*);
+BOOL load_chat_cfg(scfg_t*, char*);
+BOOL load_xtrn_cfg(scfg_t*, char*);
+BOOL save_main_cfg(scfg_t*, int);
+BOOL save_node_cfg(scfg_t*, int);
+BOOL save_msgs_cfg(scfg_t*, int);
+BOOL save_file_cfg(scfg_t*, int);
+BOOL save_chat_cfg(scfg_t*, int);	
+BOOL save_xtrn_cfg(scfg_t*, int);
 
-	
-long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum, qhub_t*, long* added);
+long import_msg_areas(enum import_list_type, FILE*, unsigned grpnum, int min_confnum, int max_confnum
+	, qhub_t*, const char* pkt_orig, faddr_t* faddr, uint32_t misc, long* added);
 
 /* Prepare a string to be used as an internal code; Note: use the return value, Luke */
 char* prep_code(char *str, const char* prefix);

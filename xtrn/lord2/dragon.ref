@@ -1,0 +1,606 @@
+;For the Dragon Tooth Cult and their evil!
+;And for Pap, who is the ultimate evil in real life.  He cuts kids.
+@#barman
+@do moveback
+@if bitcheck `t18 2 0 then do
+  @begin
+  @do saybar
+`0One Eye:  `2Get lost, punk...
+  @closescript
+  @end
+
+@if `i73 > 0 then do
+  @begin
+  @do saybar
+`0One Eye:  `2Haw!  Long time no see....  you did yourself proud.
+  @closescript
+  @end
+
+@show
+`r0`c  `r1  `%Talking to One Eye  `r0
+
+  `0"Get lost, punk..." `2he grunts.
+
+`k  `$"And anger my master, Phineaus?" `2you cooly reply.
+
+`k  `2His voice quickly changes tone.  `0"So you are he.  Alright, come
+  with me."
+
+`k`c  `r1  The Flying Machine  `r0
+
+  `2One Eye takes you to the roof - where a strange contraption is sitting
+  on a landing pad of sorts.
+
+`k  `0"It's me special invention!  With this I can drop you on the cliffs
+  near the Koshi village, and you can sneak in!"
+
+`k  `%THE JOURNEY IS THRILLING!  `2And you only get airsick once...
+
+`2  At the right time you jump overboard... One Eye waves as he sails
+  away...
+
+`k
+@do map is 195
+@do x is 58
+@do y is 14
+@loadmap &map
+@drawmap
+@update
+
+@#old
+@do moveback
+@if `p07 > -99 then do
+  @begin
+  @do saybar
+Phineaus: `2Hey, you don't look that evil!  Get out!!  GUARDS!!!!
+  @closescript
+  @end
+
+@if bitcheck `t18 7 1 then do
+  @begin
+    @do saybar
+`0Phineaus: `2You RULE!
+    @closescript
+
+  @end
+
+@if bitcheck `t18 2 1 then do
+  @begin
+  ;does he have the wand?
+  @if `i73 < 1 then do
+    @begin
+    @do saybar
+Phineaus: `2Bring me the smackrod!
+    @closescript
+    @end
+    @do saybar
+
+@show
+`r0`c  `r1  `%TALKING WITH EVIL INCARNATE `r0
+
+`4  `$"I have the Smackrod as I swore I would master."
+
+`k  `%"Exellent my s&boy...exellent.  Without this, the Koshi shall never
+  defeat us!!!" `4the old man cackles in delight.
+
+`k  `%"Hell, why don't you keep the damn rod, after all.. you will lead my
+  minions into battle from now on!  I'm making you the general of all my
+  armies!"
+
+`k  `%YOU GET 500 QUEST POINTS AND 10,000 EXPERIENCE!
+
+  `$You have won this game as evil.  But this doesn't have to be the end..
+  using your new powers why not run throughout the world creating havoc and
+  disaster?
+
+`k
+@bitset `t18 7 1
+@do `p18 + 500
+@do `p01 + 10000
+@do `p02 is `p03
+@do addlog
+  `r1  `r0 `0`n`% has stolen the Smackrod and become a hero! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+    @drawmap
+    @update
+    @closescript
+  @end
+
+@show
+`r0`c  `r1  `%TALKING WITH EVIL INCARNATE `r0
+
+`4  A man with a scarred face and more than a few teeth missing grins at
+  you eerily.
+
+@if bitcheck `t18 1 0 then do
+  @begin
+  @show
+  `%"Do you know me, s&boy?" `4the shady character asks you.
+
+`k  `$"Um.. no sir.. should I?" `4you stammer.
+
+`k  `%"Of course you should!" `4he spits, apparently insulted to some
+  degree, `%"I run this whole organization!"
+
+`k  `4The man continues to educate you in the way of the Cult.. you find
+  out his name is Phineaus Crane.
+
+`k  `4Before dismissing you, he whispers something in your ear.  `%"You
+  are the one I've chosen."
+
+`k
+  @bitset `t18 1 1
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if `p18 < 100 then do
+  @begin
+  @show
+  `4Phineaus stares at you awhile.  `%"You are not ready for the mission I
+  am preparing you for.  You need to have 100 quests completed before you
+  will be qualified sufficiently."
+
+`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@show
+  `%"Are you ready for your greatest quest ever, my son?"
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, why yes, yes indeed!
+Not exactly - maybe tomorrow...
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `%"Good.  Very good..  It is true we have stolen the Koshi's Gryphon
+  moon, but there is one more thing we need to take from them.  It is called
+  the Smackrod.  This strange and magical item they have created has the
+  power to teleport short distances... very useful."
+
+`k  `$"Ok.. I'll steal the Smackrod for you... But where is it?"
+
+`k  `%"The Koshi live high in the mountains west of Arrisville.  You could
+  try to sneak in, or talk to a man I have stationed in Bonetown.. a man
+  you shouldn't have too much trouble finding, we call him One Eye.  He
+  has something that could help."
+
+`k  `$"I will bring it back, my master." `4you vow.
+
+`k
+  @bitset `t18 2 1
+  @drawmap
+  @update
+  @closescript
+  @end
+
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  `%"Come back when you are ready."
+`\`k
+  @end
+
+@drawmap
+@update
+
+@#enter
+  @do map is 708
+  @do x is 10
+  @do y is 9
+  @loadmap &map
+  @drawmap
+  @update
+
+
+@if bitcheck `t17 5 1 then do
+  @begin
+  @if `p07 > 50 then do
+   @begin
+   @do saybar
+You sneak into the inner sanctum while no one is looking...
+  @closescript
+
+   @end
+  @end
+
+   @do saybar
+Ahh... the pride and joy of the Dragon Tooth Cult!
+
+
+@#gryphon
+@do moveback
+
+
+
+@if `p07 < 50 then do
+  @begin
+  @do saybar
+Ha ha!  You must fight to keep this treasure safe.
+  @closescript
+  @end
+
+@if bitcheck `t17 7 1 then do
+  @begin
+  @do saybar
+`0Ahh, the memories...
+  @closescript
+  @end
+
+@if bitcheck `t17 6 1 then do
+  @begin
+  @if `i72 < 1 then do
+    @begin
+    @do `i72 is 1
+  @do saybar
+`0You grab the `%Gryphon Moon`0!  (again...)
+  @closescript
+
+    @end
+
+  @do saybar
+`0You better take the `%Gryphon Moon`0 back to the Koshi, quick!
+  @closescript
+  @end
+
+@if bitcheck `t17 5 1 then do
+  @begin
+
+@bitset `t17 6 1
+@do saybar
+`0You find the `%Gryphon Moon`2!
+  @do `i72 is 1
+@closescript
+  @end
+@#STORE
+;The weapons store in the castle
+@if bitcheck `t18 0 1 then do
+  @begin
+  @do moveback
+  @offmap
+  @busy
+  @show
+`r0`c                         `r1  Dragon Tooth Weapons  `r0
+
+
+
+
+  @buymanager
+68
+69
+70
+71
+55
+@drawmap
+@update
+ @closescript
+@end
+;If not a member
+@do saybar
+`2Looks like the Dragon Tooth's weapons...
+@do moveback
+
+@#random
+@if `i67 > 0 then do
+  @begin
+  @do `s01 is s&armour
+  @if `s01 not Disguise then do
+    @begin
+    @do map is 59
+    @do x is 36
+    @do y is 8
+    @do `i72 is 0
+    @do `p02 / 3
+    @loadmap &map
+    @show
+`r0`c  `r1  `%A problem  `r0
+
+  `0"Hey you! Come here for a second!" `2a guard yells.
+
+`k  `$"Who me?"
+
+  `0"Yeah!  Who are you?  What are you doing here?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+I work on boats.
+I clean stables.
+I just forgot to put on my disguise!
+@show
+`\`\  `0"Get him!!!!" `2yells the guard.
+
+  `4They beat you unconscious.
+
+`k
+    @drawmap
+    @update
+    @do saybar
+Where are you?  Your head really hurts.
+    @closescript
+    @end
+
+  @do saybar
+  A guard waves you through, he is fooled!
+  @end
+
+@#GUARD1
+;Guard on the beach
+@do saybar
+`0"Welcome to our Island."
+@do moveback
+
+@#CASTLE
+;The evil castle for the Dragon Tooth
+@if `i67 > 0 then do
+  @begin
+  @do map is 707
+  @do x is 10
+  @do y is 11
+  @loadmap &map
+  @drawmap
+  @update
+  @do saybar
+You sneak into the Castle!  Better be careful...
+  @closescript
+  @end
+@do moveback
+@offmap
+@do `v01 is 1
+@show
+`r0`c  `r1  Dragon Tooth Castle  `r0
+
+  `2The castle is huge!  Various shields and crests hang on its sides, as
+  well as bodies!  The ominous gates send a chill down your spine as you
+  enter.  The gatekeeper on the inside eyes you.
+
+  `0"You, what is your business here?"  `2he asks.
+                        
+@DO WRITE
+`x`x
+@CHOICE
+-`t18 0 Join them
++`t18 0 See how you're doing
+Leave
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `0"You look like you might be able to join us.  But to do so you
+  must prove yourself."  `2he says.
+
+`k  `$"I .. I'm ready."  `2you tell him.
+
+  `0"Very well, we have someone for you to kill.  Do so, and we'll let you
+  join."
+`\`k  `%They drag a bleeding body outside... it's a Koshi man!  His wings are
+  torn off.
+`\`k
+  @do goto JOINB
+  @end
+@if response is 2 then do
+;First level
+ @begin
+  @if `p07 > -20 then do
+    @begin
+    @show
+`\`\  `0"You need to work MUCH harder!!  You're so nice you might as well go
+  work with the Koshi.  Go hurt some people damnit!"  `2he tells you.
+`\`k
+    @do goto castle
+    @end
+;Next level
+  @if `p07 > -40 then do
+    @begin
+    @show
+`\`\  `0"Well, you've been doing better lately.  But try getting more money
+  as well, we can't do our evil quests without funding!"  `2he laughs.
+`\`k
+    @do goto castle
+    @end
+;Again up
+  @if `p07 > -60 then do
+    @begin
+    @do `s01 is rape
+     @if `v06 is 1 then `s01 is pillaging
+    @show
+`\`\  `0"I beginning to like your style a bit.  A little `s01 here, a bit of
+  stealing there and it's cool.  Keep it up and you'll be rising in the
+  ranks soon."  `2he tells you.
+`\`k
+    @do goto castle
+    @end
+;Again ..
+  @if `p07 > -80 then do
+    @begin
+    @show
+`\`\  `0"The cult is beginning to owe a lot to you `n`0.  Be patient and
+  continue your deeds, soon you will rise up to our honored ranks.  Now go
+  do death my brother."  `2he informs you.
+`\`k
+    @do goto castle
+    @end
+;Once more
+  @if `p07 > -100 then do
+    @begin
+    @show
+`\`\  `0"`n my friend, I have nominated you for our honor ranks.  Even now
+  the council is discussing your fate.  Be diligent now and continue your
+  strife, and soon you will find a new light."  `2the gatekeeper tells you.
+`\`k
+    @do goto castle
+    @end
+;If they're really cool
+  @if `p07 < -99 then do
+    @begin
+    @show
+`\`\  `2The gatekeeper looks up at you and smiles.
+  `0"I have a surprise for you my child.  Come this way."  `2He leads you
+  through the giant wooden doors ...
+`\`k
+    @loadmap 707
+    @do map is 707
+    @do x is 10
+    @do y is 11
+    @end
+ @end
+@drawmap
+@update
+
+@#CULTJOIN
+;You win the fight
+@bitset `t18 0 1
+@show
+`r0`c  `r1  Joining the Cult  `r0
+
+  `2You stand proud of your victory!  Around you in the courtyard a few
+  other members cheer at your triumph.  The gatekeeper comes to you.
+
+  `0"Good show there warrior.  You may now join our ranks and fight for
+  the good of the cult."  `2he says.
+
+  `0"Someday, ya might even be able to help us rid the earth of the
+  plague we call the Koshi."
+`\`k
+@do goto castle
+
+@#JOINB
+;Fighting to join the Dragon Tooth Cult
+@fight
+;name
+Captured Koshi Warrior
+;string said when you see him
+You prepare to take on the wounded warrior, with s&weapon ready.
+;power move kill string
+`$"Stupid Koshi"  `2you shout.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+punches you|78
+kicks you in the gut|80
+throws you across the courtyard|91
+NONE|NONE
+NONE|NONE
+;defense
+32
+;gold reward
+0
+;experience
+1
+;hit points
+120
+;if win: ref file|name or NONE
+DRAGON.REF|CULTJOIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+DRAGON.REF|CULTRUN
+@drawmap
+@update
+
+@#CULTRUN
+@pauseoff
+@show
+`\`\`r0`c  `r1  RUN?  `r0
+
+  `2The guards laugh at your cowardice.  They decide not to let you join.
+
+`k
+@drawmap
+@update
+
+@#TRAVEL
+;Getting off the island
+@do moveback
+@busy
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1  Looks like a Warship  `r0
+
+  `2A man with a big sword greets you `0"Where would you like us to
+  drop you off?"
+                      
+@DO WRITE
+`x`x
+@CHOICE
+<`p07 -99 ArrisVille
+PortTown
+<`p07 -99 FlagCity
+Sosen Village
+Don't want to leave yet
+@if response is 1 then do
+;Going to ArrisVille
+  @begin
+  @Show
+`\`\  `0"I don't like the prince there .. but let's go!" `2He replies.
+`\`k
+  @loadmap 444
+  @do map is 444
+  @do x is 66
+  @do y is 19
+  @DRAWMAP
+  @DO SAYBAR
+  `2Welcome to Arrisville.
+  @UPDATE
+  @CLOSESCRIPT
+  @end
+@if response is 2 then do
+;Going to PortTown
+  @begin
+  @show
+`\`\  `0"Okay, that's a nice town to raid."
+`\`k
+  @loadmap 152
+  @do map is 152
+  @do x is 38
+  @do y is 2
+  @DRAWMAP
+  @DO SAYBAR
+  `2Welcome to PortTown.
+  @UPDATE
+  @CLOSESCRIPT
+  @end
+@if response is 3 then do
+;Going to FlagCity
+  @begin
+  @show
+`\`\  `0"Those stupid flags, okay let's go."
+`\`k
+  @loadmap 71
+  @do map is 71
+  @do x is 38
+  @do y is 14
+  @DRAWMAP
+  @DO SAYBAR
+  `2Welcome to FlagCity.
+  @UPDATE
+  @CLOSESCRIPT
+  @end
+@if response is 4 then do
+  @begin
+  @show
+`\`\  `0"It's a little place, with plenty of money for us!"
+`\`k
+  @loadmap 536
+  @do map is 536
+  @do x is 40
+  @do y is 18
+  @DRAWMAP
+  @DO SAYBAR
+  `2Welcome to Sosen Village.
+  @UPDATE
+  @CLOSESCRIPT
+  @end
+@drawmap
+@update
+
+@#nomore

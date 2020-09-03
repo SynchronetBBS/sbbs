@@ -4,7 +4,7 @@
 #
 # This file normally goes in your /etc/init.d directory
 #
-# $Id$
+# $Id: sbbs.debian,v 1.4 2011/10/17 09:00:36 sbbs Exp $
 
 ### BEGIN INIT INFO
 # Provides:          sbbs

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: subs.ssjs,v 1.24 2018/10/15 22:23:28 rswindell Exp $ */
 
 load("../web/lib/msgslib.ssjs");
 

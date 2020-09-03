@@ -1,6 +1,9 @@
-// $Id$
+// $Id: msgutil.js,v 1.2 2020/04/25 00:49:32 rswindell Exp $
+
+"use strict";
 
 load('sbbsdefs.js');
+load('822header.js');
 
 function show_index(msgbase, first_msg, last_msg, include_votes)
 {
@@ -19,9 +22,8 @@ function show_index(msgbase, first_msg, last_msg, include_votes)
 	}
 }
 
-function show_headers(msgbase, include_votes)
+function show_headers_fast(msgbase, include_votes)
 {
-	alert("include votes = " + include_votes);
 	var hdrs = msgbase.get_all_msg_headers(include_votes);
 
 	var i;
@@ -33,28 +35,92 @@ function show_headers(msgbase, include_votes)
 	}
 }
 
+function show_headers(msgbase, option)
+{
+	var i;
+	var total_msgs = msgbase.total_msgs;
+	var errors = 0;
+	for(i = 0; i < total_msgs; i++) {
+		var hdr = msgbase.get_msg_header(true, i+1);
+		print("[" + i + "]");
+		if(!hdr) {
+			alert(msgbase.status);
+			errors++;
+		} else if(option.json)
+			print(lfexpand(JSON.stringify(hdr, null, 4)));
+		else {
+			for(var h in hdr)
+				print(format("%25s = ", h) + hdr[h]);
+		}
+	}
+	return errors;
+}
+
+function export_msgs(msgbase, option)
+{
+	var errors = 0;
+	var hdrs = msgbase.get_all_msg_headers(option.votes);
+	var i;
+	for(i in hdrs) {
+		var msg = hdrs[i];
+		var fname = system.temp_dir + basecode + "_" + msg.number + ".txt";
+		var f = new File(fname);
+		if(!f.open("wb")) {
+			alert("Error " + f.error + " opening " + f.name);
+			errors++;
+			continue;
+		}
+		var text = msgbase.get_msg_body(msg
+					,/* strip ctrl-a */true
+					,/* dot-stuffing */false
+					,/* tails */true
+					,/* plain-text */true);	
+		if(!text) {
+			errors++;
+			continue;
+		}
+		f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false));
+		f.write(text);
+		f.close();
+		print("Created " + f.name);
+	}
+	return errors;
+}
+
 var i;
 var basecode;
 var option = [];
 
-for(i in argv)
+for(i in argv) {
 	if(argv[i].charAt(0) != '-') {
 		if(!basecode)
 			basecode = argv[i];
 	} else
 		option[argv[i].slice(1)] = true;
+}
 
 if(basecode == undefined) {
 	alert("Message base not specified");
 	exit();
 }
 
-var start = time();
 var msgbase = MsgBase(basecode);
 if(!msgbase.open()) {
 	alert("Error " + msgbase.last_error + " opening " + basecode);
-	exit();
+	exit(1);
 }
-show_index(msgbase, msgbase.first_msg, msgbase.last_msg, option.votes);
-show_headers(msgbase, option.votes);
-print(Number(time() - start) + " seconds");
+var errors = 0;
+for(i in option) {
+	switch(i) {
+		case "hdrs":
+			errors += show_headers(msgbase, option);
+			break;
+		case "index":
+			errors += show_index(msgbase, msgbase.first_msg, msgbase.last_msg, option.votes);
+			break;
+		case "export":
+			errors += export_msgs(msgbase, option);
+			break;
+	}
+}
+print(errors + " errors");

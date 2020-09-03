@@ -1,7 +1,7 @@
 /**
  * appWrapper -- applet/application wrapper
  * --
- * $Id$
+ * $Id: appWrapper.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Thu Jul 24 13:08:23 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -57,7 +57,7 @@ import java.awt.FontMetrics;
  * <DD>The <I>frameTitle</I> is the text that is shown in the title bar of the
  *     applet window.<P>
  * </DL>
- * @version $Id$
+ * @version $Id: appWrapper.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel
  */
 public class appWrapper extends Applet implements AppletStub, Runnable
@@ -165,7 +165,7 @@ public class appWrapper extends Applet implements AppletStub, Runnable
    */
   public String getAppletInfo()
   {
-    String info = "appWrapper: $Id$\n";
+    String info = "appWrapper: $Id: appWrapper.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $\n";
     if(applet != null)
       info += applet.getAppletInfo();
     return info;

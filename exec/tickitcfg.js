@@ -47,7 +47,7 @@ function pick_dir(obj)
 			}
 			dir = uifc.list(WIN_SAV|WIN_ACT|WIN_BOT, "Select Dir", dirs, dctx);
 			if (dir >= 0) {
-				return dirs[dir];
+				return dircodes[dir];
 			}
 		}
 	}
@@ -80,7 +80,7 @@ function set_location(obj)
 		case 1:
 			dir = null;
 			while(dir !== undefined) {
-				dir = uifc.input(WIN_SAV|WIN_MID, "Path", tickit.gcfg.path === undefined ? '' : tickit.gcfg.path, 1024, K_EDIT);
+				dir = uifc.input(WIN_SAV|WIN_MID, "Path", obj.path === undefined ? '' : obj.path, 1024, K_EDIT);
 				if (dir != undefined) {
 					if (file_isdir(dir)) {
 						delete obj.dir;
@@ -94,6 +94,54 @@ function set_location(obj)
 			}
 			break;
 		}
+	}
+}
+
+function set_akamatching(obj)
+{
+	switch(uifc.list(WIN_MID|WIN_SAV, "AKA Matching", ["Yes", "No"])) {
+	case 0:
+		obj.akamatching = true;
+		break;
+	case 1:
+		obj.akamatching = false;
+		break;
+	}
+}
+
+function set_secureonly(obj)
+{
+	switch(uifc.list(WIN_MID|WIN_SAV, "Secure Only", ["Yes", "No"])) {
+	case 0:
+		obj.secureonly = true;
+		break;
+	case 1:
+		obj.secureonly = false;
+		break;
+	}
+}
+
+function set_ignorepassword(obj)
+{
+	switch(uifc.list(WIN_MID|WIN_SAV, "Ignore Password", ["Yes", "No"])) {
+	case 0:
+		obj.ignorepassword = true;
+		break;
+	case 1:
+		obj.ignorepassword = false;
+		break;
+	}
+}
+
+function set_forcereplace(obj)
+{
+	switch(uifc.list(WIN_MID|WIN_SAV, "Force Replace", ["Yes", "No"])) {
+	case 0:
+		obj.forcereplace = true;
+		break;
+	case 1:
+		obj.forcereplace = false;
+		break;
 	}
 }
 
@@ -123,23 +171,69 @@ function edit_links(links)
 	return links;
 }
 
+function select_sourceaddress(obj)
+{
+	var ctx = new uifc.list.CTX();
+	var tmp;
+	var addr;
+	var addrs = ["No Source Address"]; // initial value so we can remove object's sourceaddress
+
+	// TODO: error dialog if system.fido_addr_list is empty.
+	for (addr in system.fido_addr_list)
+		addrs.push(FIDO.parse_addr(system.fido_addr_list[addr]));
+	tmp = uifc.list(WIN_SAV|WIN_MID|WIN_ESC, "Select Address", addrs, ctx);
+	if (tmp == -1)
+		return;							// ESC hit so do not change anything
+	if (tmp === 0)
+		delete obj.sourceaddress;		// selected No Source Address so delete it from the object
+	else
+		obj.sourceaddress = addrs[tmp];	// save selected source address string value in object's sourceaddress
+}
+
+function edit_uploader(obj)
+{
+	var tmp;
+
+	tmp = uifc.input(WIN_SAV|WIN_MID, "Uploader", obj.uploader === undefined ? '' : obj.uploader, 32, K_EDIT);
+	if (tmp != undefined)
+		obj.uploader = tmp;
+}
+
+const menu_fmt = "%-20s %s";
+
 function edit_area(obj, name)
 {
 	var cmd = 0;
 	var link = 0;
 	var links;
-	var menu = ["Location", "Links"];
 	var tmp;
-	var tmp2;
 	var ctx = new uifc.list.CTX();
 
-	while(cmd >= 0) {
+	while(obj && cmd >= 0) {
+		var menu = [format(menu_fmt, "AKA Matching", (obj.akamatching === true ? "Yes" : "No")),
+					format(menu_fmt, "Force Replace", (obj.forcereplace === true ? "Yes" : "No")),
+					format(menu_fmt, "Source Address", (obj.sourceaddress === undefined ? "" : obj.sourceaddress)),
+					format(menu_fmt, "Uploader Name", (obj.uploader === undefined ? "" : obj.uploader)),
+					format(menu_fmt, "Location", (obj.path === undefined ? obj.dir : obj.path)),
+					"Links..."];
 		cmd = uifc.list(WIN_SAV|WIN_ACT|WIN_BOT|WIN_RHT, name+" Options", menu, ctx);
 		switch(cmd) {
 			case 0:
-				set_location(obj);
+				set_akamatching(obj);
 				break;
 			case 1:
+				set_forcereplace(obj);
+				break;
+			case 2:
+				select_sourceaddress(obj);
+				break;
+			case 3:
+				edit_uploader(obj);
+				break;
+			case 4:
+				set_location(obj);
+				break;
+			case 5:
 				if (obj.links === undefined)
 					links = [];
 				else
@@ -219,6 +313,68 @@ function import_areas(libname)
 	file.close();
 }
 
+function edit_globals(obj)
+{
+
+	var cmd = 0;
+	var link = 0;
+	var links;
+	var tmp;
+	var ctx = new uifc.list.CTX();
+
+	while(cmd >= 0) {
+		var menu = [format(menu_fmt, "AKA Matching", (obj.akamatching === true ? "Yes" : "No")),
+					format(menu_fmt, "Force Replace", (obj.forcereplace === true ? "Yes" : "No")),
+					format(menu_fmt, "Ignore Password", (obj.ignorepassword === true ? "Yes" : "No")),
+					format(menu_fmt, "Secure Only", (obj.secureonly === true ? "Yes" : "No")),
+					format(menu_fmt, "Source Address", (obj.sourceaddress === undefined ? "" : obj.sourceaddress)),
+					format(menu_fmt, "Uploader Name", (obj.uploader === undefined ? "" : obj.uploader)),
+					format(menu_fmt, "Location", (obj.path === undefined ? obj.dir : obj.path)),
+					"Links..."];
+		cmd = uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, "Global Options", menu, ctx);
+		switch(cmd) {
+			case 0:
+				set_akamatching(obj);
+				break;
+			case 1:
+				set_forcereplace(obj);
+				break;
+			case 2:
+				set_ignorepassword(obj);
+				break;
+			case 3:
+				set_secureonly(obj);
+				break;
+			case 4:
+				select_sourceaddress(obj);
+				break;
+			case 5:
+				edit_uploader(obj);
+				break;
+			case 6:
+				set_location(obj);
+				break;
+			case 7:
+				if (obj.links === undefined)
+					links = [];
+				else
+					links = obj.links.split(/,/);
+				tmp = edit_links(links);
+				if (tmp.length === 0)
+					delete obj.links;
+				else
+					obj.links = tmp.join(',');
+				break;
+			case -1:
+				break;
+			default:
+				uifc.msg("Unhandled Return: "+cmd);
+				break;
+		}
+	}
+}
+
+var unexpected_exit = true;
 function main()
 {
 
@@ -227,44 +383,34 @@ function main()
 			return import_areas(argv[i].substr(7));
 
 	uifc.init("TickIT Config Program");
+	js.on_exit("uifc.bail();");
+	js.on_exit("if(unexpected_exit) uifc.msg('Abnormal Exit');");
 
 	var cmd = 0;
-	var link = 0;
-	var links;
-	var menu = ["Global Location", "Global Links", "Areas..."];
-	var tmp;
-	var tmp2;
 	var ctx = new uifc.list.CTX();
 
 	while(cmd >= 0) {
-		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID, "Global Options", menu, ctx);
+		var menu = ["Global Options","Per Area Options"];
+		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC, "TickIT Options", menu, ctx);
 		switch(cmd) {
 			case 0:
-				set_location(tickit.gcfg);
+				edit_globals(tickit.gcfg);
 				break;
 			case 1:
-				if (tickit.gcfg.links === undefined)
-					links = [];
-				else
-					links = tickit.gcfg.links.split(/,/);
-				tmp = edit_links(links);
-				if (tmp.length === 0)
-					delete tickit.gcfg.links;
-				else
-					tickit.gcfg.links = tmp.join(',');
-				break;
-			case 2:
 				edit_areas();
 				break;
 			case -1:
-				switch(uifc.list(WIN_MID, "Write INI", ["Yes", "No"])) {
+				// TODO: ask to save ini only if changes were made.
+				switch(uifc.list(WIN_MID|WIN_SAV, "Write INI", ["Yes", "No"])) {
 					case 0:
-						tickit.save();
-						uifc.bail();
-						break;
+						var result = tickit.save();
+						if(result !== true)
+							uifc.msg(result);
+						/* fall-through */
 					case 1:
-						uifc.bail();
-						break;
+						uifc.pop("Exiting");
+						unexpected_exit = false;
+						return;
 					default:
 						cmd = 0;
 						break;

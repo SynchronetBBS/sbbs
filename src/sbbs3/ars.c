@@ -2,7 +2,7 @@
 
 /* Synchronet Access Requirement String (ARS) functions */
 
-/* $Id$ */
+/* $Id: ars.c,v 1.24 2020/05/14 07:49:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -37,8 +37,6 @@
 
 #include "sbbs.h"
 
-const uchar* nular=(uchar*)"";	/* AR_NULL */
-
 static BOOL ar_string_arg(int artype)
 {
 	switch(artype) {
@@ -58,12 +56,12 @@ static BOOL ar_string_arg(int artype)
 #ifdef __BORLANDC__	/* Eliminate warning when buildling Baja */
 #pragma argsused
 #endif
-uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
+uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 {
 	const char*	p;
 	const char*	np;
 	char	ch;
-	uchar	ar[1024],*ar_buf;
+	uchar	ar[1024];
 	int		artype=AR_INVALID;
 	uint	i,j,n,not=0,equal=0;
 	uint	maxlen;
@@ -368,6 +366,18 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
 				artype=AR_PETSCII;
 				i+=6; 
 			}
+			else if(!strnicmp(str+i,"ASCII",5)) {
+				artype=AR_ASCII;
+				i+=4; 
+			}
+			else if(!strnicmp(str+i,"UTF8",4)) {
+				artype=AR_UTF8;
+				i+=3; 
+			}
+			else if(!strnicmp(str+i,"CP437",5)) {
+				artype=AR_CP437;
+				i+=4; 
+			}
 			else if(!strnicmp(str+i,"TERM",4)) {
 				artype=AR_TERM;
 				i+=3; 
@@ -505,6 +515,9 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
 					case AR_WIP:
 					case AR_ANSI:
 					case AR_PETSCII:
+					case AR_ASCII:
+					case AR_UTF8:
+					case AR_CP437:
 					case AR_DOS:
 					case AR_OS2:
 					case AR_UNIX:
@@ -706,22 +719,14 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg)
 				break;
 		} 
 	}
-	if(!j) {
-		if(count)
-			(*count)=0;
-		return((uchar*)nular);	/* Save memory */
-	}
 
 	ar[j++]=AR_NULL;
-	/** DEBUG stuff
-	for(i=0;i<j;i++)
-		lprintf(LOG_DEBUG,"%02X ",(uint)ar[i]);
-	lputs("\r\n");
-	***/
-	if((ar_buf=(uchar *)calloc(j+4,1))==NULL) {	/* Padded for ushort dereferencing */
-		if(count)
-			(*count)=0;
-		return(NULL);
+	if(ar_buf == NULL) {
+		if((ar_buf=(uchar *)calloc(j+4,1))==NULL) {	/* Padded for ushort dereferencing */
+			if(count)
+				(*count)=0;
+			return(NULL);
+		}
 	}
 	memcpy(ar_buf,ar,j);
 	if(count)

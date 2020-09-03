@@ -1,4 +1,4 @@
-// $Id$
+// $Id: fonts.js,v 1.3 2020/06/07 05:12:35 rswindell Exp $
 
 var cterm = load({}, 'cterm_lib.js');
 
@@ -26,14 +26,20 @@ function fonts(key)
 	var filenames = ini.iniGetObject("filenames:" + charheight);
 	var obj = ini.iniGetObject(key + ':' + charheight);
 	ini.close();
+	var requirements = slotnames.requirements;
+	slotnames.requirements = undefined;
 	if(!obj)
 		return false;
 	for(var p in obj) {
 		if(parseInt(p, 10) || slotnames[p]) {	// load
 			load_font(slotnames[p] ? slotnames[p] : p, obj[p]);
 		} else {	// activate
+			if(p == 'requirements')
+				continue;
 			var slotval = slotnames[obj[p]];
 			var slotnum = parseInt(slotval, 10);
+			if(!bbs.compare_ars(requirements) || !bbs.compare_ars(obj.requirements))
+				slotnum = 0;
 			log(LOG_DEBUG, "activate: " + obj[p] + " slot " + slotnum + " >= " + cterm.font_slot_first);
 			if(slotval !== undefined && slotnum >= cterm.font_slot_first
 				&& !cterm.fonts_loaded[slotnum]) {

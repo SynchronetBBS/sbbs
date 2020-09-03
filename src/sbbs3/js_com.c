@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "COM" Object */
 
-/* $Id$ */
+/* $Id: js_com.c,v 1.33 2020/04/20 01:47:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -55,8 +55,6 @@ typedef struct
 
 } private_t;
 
-static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
-
 static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 {
 	va_list argptr;
@@ -97,6 +95,8 @@ static void js_finalize_com(JSContext *cx, JSObject *obj)
 
 /* COM Object Methods */
 
+extern JSClass js_com_class;
+
 static JSBool
 js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -106,8 +106,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -117,7 +116,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	comClose(p->com);
 
-	p->last_error = ERROR_VALUE;
+	p->last_error = COM_ERROR_VALUE;
 
 	dbprintf(FALSE, p, "closed");
 
@@ -137,8 +136,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -148,8 +146,8 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	p->com=comOpen(p->dev);
 
 	if(p->com==COM_HANDLE_INVALID) {
-		p->last_error=ERROR_VALUE;
-		dbprintf(TRUE, p, "connect failed with error %d",ERROR_VALUE);
+		p->last_error=COM_ERROR_VALUE;
+		dbprintf(TRUE, p, "connect failed with error %d", p->last_error);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
@@ -177,8 +175,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -195,7 +192,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
-		p->last_error=ERROR_VALUE;
+		p->last_error=COM_ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
 	}
 	if(cp)
@@ -219,8 +216,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -260,7 +256,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
-		p->last_error=ERROR_VALUE;
+		p->last_error=COM_ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes failed",len);
 	}
 	free(buf);
@@ -285,8 +281,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -326,7 +321,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(FALSE, p, "sent %u bytes (binary)",size);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
-		p->last_error=ERROR_VALUE;
+		p->last_error=COM_ERROR_VALUE;
 		dbprintf(TRUE, p, "send of %u bytes (binary) failed",size);
 	}
 		
@@ -349,8 +344,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -373,7 +367,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	len = comReadBuf(p->com,buf,len,NULL,timeout);
 	JS_RESUMEREQUEST(cx, rc);
 	if(len<0) {
-		p->last_error=ERROR_VALUE;
+		p->last_error=COM_ERROR_VALUE;
 		free(buf);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		return(JS_TRUE);
@@ -408,8 +402,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -448,7 +441,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc=JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "received %u bytes (recvline) lasterror=%d"
-		,i,ERROR_VALUE);
+		,i,COM_ERROR_VALUE);
 	JS_RESUMEREQUEST(cx, rc);
 		
 	return(JS_TRUE);
@@ -470,8 +463,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
-		JS_ReportError(cx,getprivate_failure,WHERE);
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_com_class))==NULL) {
 		return(JS_FALSE);
 	}
 
@@ -508,7 +500,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(rd!=size)
-		p->last_error=ERROR_VALUE;
+		p->last_error=COM_ERROR_VALUE;
 		
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
@@ -781,7 +773,7 @@ static JSBool js_com_enumerate(JSContext *cx, JSObject *obj)
 	return(js_com_resolve(cx, obj, JSID_VOID));
 }
 
-static JSClass js_com_class = {
+JSClass js_com_class = {
      "COM"				/* name			*/
     ,JSCLASS_HAS_PRIVATE	/* flags		*/
 	,JS_PropertyStub		/* addProperty	*/

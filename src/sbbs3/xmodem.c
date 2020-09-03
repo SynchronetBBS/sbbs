@@ -2,7 +2,7 @@
 
 /* Synchronet X/YMODEM Functions */
 
-/* $Id$ */
+/* $Id: xmodem.c,v 1.52 2019/08/31 22:39:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -193,6 +193,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 	uint		b,errors;
 	uint16_t	crc,calc_crc;
 
+	lprintf(xm, LOG_DEBUG, "Requesting data block %u", expected_block_num);
 	for(errors=0;errors<=xm->max_errors && is_connected(xm);errors++) {
 
 		i=getcom(expected_block_num<=1 ? 3 : 10);
@@ -228,7 +229,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 						,expected_block_num);
 					continue; 
 				}
-				lprintf(xm,LOG_WARNING,"Block %u: Cancelled remotely", expected_block_num);
+				lprintf(xm,LOG_WARNING,"Block %u: Canceled remotely", expected_block_num);
 				return(CAN);
 			default:
 				lprintf(xm,LOG_WARNING,"Block %u: Received %s  Expected SOH, STX, or EOT"
@@ -362,7 +363,7 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 		if((*xm->mode)&GMODE) {		/* Don't wait for ACK on X/Ymodem-G */
 			SLEEP(xm->g_delay);
 			if(getcom(0)==CAN) {
-				lprintf(xm,LOG_WARNING,"Block %u: !Cancelled remotely", block_num);
+				lprintf(xm,LOG_WARNING,"Block %u: !Canceled remotely", block_num);
 				xmodem_cancel(xm);
 				return(CAN); 
 			}
@@ -376,7 +377,7 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			break;
 		if(i==CAN) {
 			if(can) {	/* 2 CANs in a row */
-				lprintf(xm,LOG_WARNING,"Block %u: !Cancelled remotely", block_num);
+				lprintf(xm,LOG_WARNING,"Block %u: !Canceled remotely", block_num);
 				xmodem_cancel(xm);
 				return(CAN); 
 			}
@@ -426,7 +427,7 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 				return(TRUE); 
 			case CAN:
 				if(can) {
-					lprintf(xm,LOG_WARNING,"Cancelled remotely");
+					lprintf(xm,LOG_WARNING,"Canceled remotely");
 					return(FALSE); 
 				}
 				can=1; 
@@ -523,6 +524,9 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 			
 			block_len=strlen(block)+1+i;
 			for(xm->errors=0;xm->errors<=xm->max_errors && !is_cancelled(xm) && is_connected(xm);xm->errors++) {
+				int ch;
+				while((ch=getcom(0))!=NOINP && is_connected(xm))
+					lprintf(xm,LOG_INFO,"Throwing out received: %s",chr((uchar)ch));
 				xmodem_put_block(xm, (uchar*)block, block_len <=XMODEM_MIN_BLOCK_SIZE ? XMODEM_MIN_BLOCK_SIZE:XMODEM_MAX_BLOCK_SIZE, 0  /* block_num */);
 				if((i=xmodem_get_ack(xm,/* tries: */1, /* block_num: */0)) == ACK) {
 					sent_header=TRUE;
@@ -618,7 +622,7 @@ const char* xmodem_source(void)
 
 char* xmodem_ver(char *buf)
 {
-	sscanf("$Revision$", "%*s %s", buf);
+	sscanf("$Revision: 1.52 $", "%*s %s", buf);
 
 	return(buf);
 }

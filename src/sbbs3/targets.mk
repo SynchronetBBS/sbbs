@@ -2,7 +2,7 @@
 
 # Make 'include file' defining targets for Synchronet project
 
-# $Id$
+# $Id: targets.mk,v 1.54 2020/05/14 20:32:04 rswindell Exp $
 
 # LIBODIR, EXEODIR, DIRSEP, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
@@ -62,6 +62,8 @@ utils:	smblib xpdev-mt xpdev ciolib-mt uifc-mt \
 		$(LIBODIR) $(OBJODIR) $(MTOBJODIR) $(EXEODIR) \
 		$(UTILS)
 
+gtkutils: gtkmonitor gtkchat gtkuseredit gtkuserlist
+
 dlls:	$(JS_DEPS) smblib xpdev-mt \
 		$(MTOBJODIR) $(LIBODIR) \
 		$(SBBS) $(FTPSRVR) $(MAILSRVR) $(SERVICES)
@@ -82,30 +84,47 @@ uedit:
 umonitor:
 	$(MAKE) -C umonitor $(MAKEFLAGS)
 
+.PHONY: gtkmonitor
+gtkmonitor:
+	$(MAKE) -C gtkmonitor $(MAKEFLAGS)
+
+.PHONY: gtkchat
+gtkchat:
+	$(MAKE) -C gtkchat $(MAKEFLAGS)
+
+.PHONY: gtkuseredit
+gtkuseredit:
+	$(MAKE) -C gtkuseredit $(MAKEFLAGS)
+
+.PHONY: gtkuserlist
+gtkuserlist:
+	$(MAKE) -C gtkuserlist $(MAKEFLAGS)
 
 ifdef SBBSEXEC
 .PHONY: install
 install: all
 	install $(EXEODIR)/* $(SBBSEXEC)
 	install $(LIBODIR)/* $(SBBSEXEC)
-	install scfg/$(EXEODIR)/* $(SBBSEXEC)
-	install uedit/$(EXEODIR)/* $(SBBSEXEC)
-	install umonitor/$(EXEODIR)/* $(SBBSEXEC)
+	install */$(EXEODIR)/* $(SBBSEXEC)
 
 .PHONY: symlinks
 symlinks: all
 	ln -sfr $(EXEODIR)/* $(SBBSEXEC)
 	ln -sfr $(LIBODIR)/* $(SBBSEXEC)
-	ln -sfr scfg/$(EXEODIR)/* $(SBBSEXEC)
-	ln -sfr uedit/$(EXEODIR)/* $(SBBSEXEC)
-	ln -sfr umonitor/$(EXEODIR)/* $(SBBSEXEC)
+	ln -sfr */$(EXEODIR)/* $(SBBSEXEC)
+endif
+
+ifeq ($(os),linux)
+.PHONY: setcap
+setcap: all
+	sudo setcap 'cap_net_bind_service=+ep' $(EXEODIR)/sbbs
 endif
 
 .PHONY: sexyz
 sexyz:	$(SEXYZ)
 
 .PHONY: jsdoor
-jsdoor: $(JSDOOR)
+jsdoor: $(JS_DEPS) $(CRYPT_DEPS) $(XPDEV-MT_LIB) $(SMBLIB) $(UIFCLIB-MT) $(CIOLIB-MT) $(JSDOOR)
 
 # Library dependencies
 $(SBBS): 

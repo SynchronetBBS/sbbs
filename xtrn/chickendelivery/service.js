@@ -104,7 +104,7 @@ var initJson = function() {
 
 var main = function() {
 	while(!js.terminated) {
-		mswait(5);
+		mswait(50);
 		jsonClient.cycle();
 	}
 }

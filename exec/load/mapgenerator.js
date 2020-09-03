@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: mapgenerator.js,v 1.14 2015/03/17 15:28:52 mcmlxxix Exp $ */
 
 /* JavaScript Random Terrain Generator
    by MCMLXXIX (2012)

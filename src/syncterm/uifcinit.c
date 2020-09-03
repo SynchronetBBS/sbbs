@@ -1,11 +1,12 @@
 /* Copyright (C), 2007 by Sephen Hurd */
 
-/* $Id$ */
+/* $Id: uifcinit.c,v 1.44 2020/05/15 11:05:40 deuce Exp $ */
 
 #include <gen_defs.h>
 #include <stdio.h>
 
 #include <ciolib.h>
+#include <vidmodes.h>
 #include <uifc.h>
 
 #include "uifcinit.h"
@@ -19,26 +20,25 @@ static int uifc_initialized=0;
 #define WITH_BOT	(1<<2)
 
 static void (*bottomfunc)(int);
-int orig_ciolib_xlat;
 int orig_vidflags;
 int orig_x;
 int orig_y;
+uint32_t orig_palette[16];
 
-int	init_uifc(BOOL scrn, BOOL bottom) {
+int
+init_uifc(BOOL scrn, BOOL bottom) {
 	int	i;
 	struct	text_info txtinfo;
 	char	top[80];
 
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	if(!uifc_initialized) {
 		/* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len=0;
-		orig_ciolib_xlat = ciolib_xlat;
 		orig_vidflags = getvideoflags();
 		orig_x=wherex();
 		orig_y=wherey();
 		setvideoflags(orig_vidflags&(CIOLIB_VIDEO_NOBLINK|CIOLIB_VIDEO_BGBRIGHT));
-		ciolib_xlat = CIOLIB_XLAT_CHARS;
 		uifc.chars = NULL;
 		if((i=uifcini32(&uifc))!=0) {
 			fprintf(stderr,"uifc library init returned error %d\n",i);
@@ -46,13 +46,21 @@ int	init_uifc(BOOL scrn, BOOL bottom) {
 		}
 		bottomfunc=uifc.bottomline;
 		uifc_initialized=UIFC_INIT;
+		get_modepalette(orig_palette);
+		set_modepalette(palettes[COLOUR_PALETTE]);
+		if ((cio_api.options & (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING)) == (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING)) {
+			uifc.bclr=BLUE;
+			uifc.hclr=YELLOW;
+			uifc.lclr=WHITE;
+			uifc.cclr=CYAN;
+			uifc.lbclr=BLUE|(LIGHTGRAY<<4);	/* lightbar color */
+		}
 	}
 
 	if(scrn) {
 		sprintf(top, "%.40s - %.30s", syncterm_version, output_descrs[cio_api.mode]);
 		if(uifc.scrn(top)) {
 			printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
-			uifc_initialized=0;
 			uifc.bail();
 		}
 		uifc_initialized |= (WITH_SCRN|WITH_BOT);
@@ -81,7 +89,7 @@ void uifcbail(void)
 {
 	if(uifc_initialized) {
 		uifc.bail();
-		ciolib_xlat = orig_ciolib_xlat;
+		set_modepalette(orig_palette);
 		setvideoflags(orig_vidflags);
 		loadfont(NULL);
 		gotoxy(orig_x, orig_y);
@@ -95,13 +103,12 @@ void uifcmsg(char *msg, char *helpbuf)
 	struct ciolib_screen *savscrn;
 
 	i=uifc_initialized;
-	if(!i) {
+	if(!i)
 		savscrn = savescreen();
-		setfont(0, FALSE, 1);
-		setfont(0, FALSE, 2);
-		setfont(0, FALSE, 3);
-		setfont(0, FALSE, 4);
-	}
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
@@ -123,13 +130,12 @@ void uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 	struct ciolib_screen *savscrn;
 
 	i=uifc_initialized;
-	if(!i) {
+	if(!i)
 		savscrn = savescreen();
-		setfont(0, FALSE, 1);
-		setfont(0, FALSE, 2);
-		setfont(0, FALSE, 3);
-		setfont(0, FALSE, 4);
-	}
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;
@@ -157,13 +163,12 @@ int confirm(char *msg, char *helpbuf)
 	int		copt=0;
 
 	i=uifc_initialized;
-	if(!i) {
+	if(!i)
 		savscrn = savescreen();
-		setfont(0, FALSE, 1);
-		setfont(0, FALSE, 2);
-		setfont(0, FALSE, 3);
-		setfont(0, FALSE, 4);
-	}
+	setfont(0, FALSE, 1);
+	setfont(0, FALSE, 2);
+	setfont(0, FALSE, 3);
+	setfont(0, FALSE, 4);
 	init_uifc(FALSE, FALSE);
 	if(uifc_initialized) {
 		uifc.helpbuf=helpbuf;

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: nopen.h,v 1.4 2017/11/06 06:28:56 rswindell Exp $ */
 
 /* "Network-file Open" (nopen) and friends */
 

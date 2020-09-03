@@ -1,6 +1,6 @@
 /* Synchronet telnet gateway routines */
 
-/* $Id$ */
+/* $Id: telgate.cpp,v 1.46 2019/08/04 17:49:51 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -69,7 +69,7 @@ void sbbs_t::telnet_gate(char* destaddr, ulong mode, char* client_user_name, cha
 		return;
 	}
 
-    if((remote_socket = open_socket(SOCK_STREAM, client.protocol)) == INVALID_SOCKET) {
+    if((remote_socket = open_socket(PF_INET, SOCK_STREAM, client.protocol)) == INVALID_SOCKET) {
 		errormsg(WHERE,ERR_OPEN,"socket",0);
 		return;
 	}

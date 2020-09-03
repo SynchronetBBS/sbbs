@@ -1,7 +1,7 @@
 /*
  * Terminal -- Terminal emulation (abstract class)
  * --
- * $Id$
+ * $Id: Terminal.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Wed Mar  5 11:27:13 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -31,7 +31,7 @@ import java.awt.Dimension;
  * Terminal is an abstract emulation class.
  * It contains a character display.
  *
- * @version $Id$
+ * @version $Id: Terminal.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  */
 public abstract class Terminal extends Panel

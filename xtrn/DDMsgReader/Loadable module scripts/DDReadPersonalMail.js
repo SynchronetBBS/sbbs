@@ -1,7 +1,12 @@
+// $Id: DDReadPersonalMail.js,v 1.5 2020/05/23 23:35:48 nightfox Exp $
+
 // This script is to be executed for the 'Read mail' loadable module, configured
 // in SCFG in System > Loadable Modules.
 
-load("sbbsdefs.js");
+if (typeof(require) === "function")
+	require("sbbsdefs.js", "SCAN_UNREAD");
+else
+	load("sbbsdefs.js");
 
 console.print("\1n");
 
@@ -18,10 +23,21 @@ if (argc < 2)
 	console.pause();
 	exit(1);
 }
+//bbs.read_mail(whichMailbox);
+//exit(0);
 
 
 var whichMailbox = Number(argv[0]);
 var userNum = Number(argv[1]);
+// The 3rd argument is mode bits.  See if we should only display new (unread)
+// personal email.
+var newMailOnly = false;
+if (argv.length >= 3)
+{
+	var modeVal = +(argv[2]);
+	newMailOnly = (((modeVal & SCAN_FIND) == SCAN_FIND) && ((modeVal & LM_UNREAD) == LM_UNREAD));
+}
+
 
 // SYSOPS: Change the msgReaderPath variable if you put Digital Distortion
 // Message Reader in a different path
@@ -42,7 +58,11 @@ var rdrCmdStrStart = "?" + msgReaderPath + "/DDMsgReader.js ";
 switch (whichMailbox)
 {
 	case MAIL_YOUR: // Mail sent to you
-		bbs.exec(rdrCmdStrStart + "-personalEmail -userNum=" + userNum + " -startMode=" + readerStartmode);
+		var cmdArgs = "-personalEmail -userNum=" + userNum;
+		if (newMailOnly)
+			cmdArgs += " -onlyNewPersonalEmail";
+		cmdArgs += " -startMode=" + readerStartmode;
+		bbs.exec(rdrCmdStrStart + cmdArgs);
 		break;
 	case MAIL_SENT: // Mail you have sent
 		bbs.exec(rdrCmdStrStart + "-personalEmailSent -userNum=" + userNum + " -startMode=" + readerStartmode);

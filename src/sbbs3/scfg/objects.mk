@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for Synchronet SCFG
 
-# $Id$
+# $Id: objects.mk,v 1.18 2020/05/14 17:57:42 rswindell Exp $
 
 # MTLIBODIR, SBBSMTLIBODIR, DIRSEP, and OFILE must be pre-defined
 
@@ -21,6 +21,7 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)scfg$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)scfglib1$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)load_cfg$(OFILE)\
+            $(MTOBJODIR)$(DIRSEP)ars$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)nopen$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)dat_rec$(OFILE)\
             $(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\

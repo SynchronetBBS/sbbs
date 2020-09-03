@@ -2,7 +2,7 @@
 
 // Default Command Shell for Synchronet Version 4.00a+
 
-// $Id$
+// $Id: classic_shell.js,v 1.17 2019/07/26 02:22:29 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 
@@ -48,7 +48,7 @@ while(1) {
 
 	// Display main Prompt
 	console.print("-c\r\nþ bhMain ncþ h");
-	if(user.compare_ars("exempt T"))
+	if(bbs.compare_ars("exempt T"))
 		console.putmsg("@TUSED@",P_SAVEATR);
 	else
 		console.putmsg("@TLEFT@",P_SAVEATR);
@@ -57,7 +57,7 @@ while(1) {
 	// Get key (with / extended commands allowed)
 	str=get_next_key();
 
-	if(user.compare_ars("RIP"))
+	if(bbs.compare_ars("RIP"))
 		console.getlines();
 
 	// Do nothing for control keys and space
@@ -163,7 +163,7 @@ while(1) {
 	}
 
 	// Sysop Menu
-	if(user.compare_ars("SYSOP or EXEMPT Q or I or N") || (bbs.sys_status&SS_TMPSYSOP)) {
+	if(bbs.compare_ars("SYSOP or EXEMPT Q or I or N")) {
 		switch(str) {
 			case '!':
 				bbs.menu("sysmain");
@@ -640,7 +640,7 @@ function file_transfers()
 {
 	var key;
 
-	if(user.compare_ars("file_cmds=0")) {
+	if(bbs.compare_ars("file_cmds=0")) {
 		if(user.settings & USER_ASK_NSCAN) {
 			console.crlf();
 			console.crlf();
@@ -665,7 +665,7 @@ file_transfers:
 
 		// Display main Prompt
 		console.print("-c\r\nþ bhFile ncþ h");
-		if(user.compare_ars("exempt T"))
+		if(bbs.compare_ars("exempt T"))
 			console.putmsg("@TUSED@",P_SAVEATR);
 		else
 			console.putmsg("@TLEFT@",P_SAVEATR);
@@ -674,7 +674,7 @@ file_transfers:
 		// Get key (with / extended commands allowed)
 		str=get_next_key();
 
-		if(user.compare_ars("RIP"))
+		if(bbs.compare_ars("RIP"))
 			console.getlines();
 
 		// Do nothing for control keys and space
@@ -781,7 +781,7 @@ file_transfers:
 				continue file_transfers;
 		}
 
-		if(user.compare_ars("SYSOP") || (bbs.sys_status&SS_TMPSYSOP)) {
+		if(bbs.compare_ars("SYSOP")) {
 			switch(str) {
 				case '!':
 					bbs.menu("sysxfer");
@@ -846,7 +846,7 @@ file_transfers:
 				if(file_area.user_dir==undefined)
 					console.putmsg(bbs.text(NoUserDir),P_SAVEATR);
 				else {
-					if(user.compare_ars("rest D"))
+					if(bbs.compare_ars("rest D"))
 						console.putmsg(bbs.text(R_Download),P_SAVEATR);
 					else {
 						console.crlf();

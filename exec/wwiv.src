@@ -163,12 +163,16 @@ cmdkey J
 	end_cmd
 
 cmdkey L
-	exec_xtrn SBL
+	exec_xtrn sbbslist
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	nodelist_users
 	end_cmd
+    
+cmdkey W
+    nodelist_all
+    end_cmd
 
 cmdkey $
 	minute_bank
@@ -247,7 +251,7 @@ cmdkey /U
 	end_cmd
 
 cmdkey .
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdkey Z
@@ -563,8 +567,12 @@ cmdkey L
 	end_cmd
 
 cmdkey /L
-	nodelist_all
+	nodelist_users
 	end_cmd
+    
+cmdkey W
+    nodelist_all
+    end_cmd
 
 cmdkey N
 	print "\r\nchNew File Scan\r\n"

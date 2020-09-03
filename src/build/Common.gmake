@@ -3,7 +3,7 @@
 #
 # Global build system setup file (for GNU Make and gcc)
 #
-# $Id$
+# $Id: Common.gmake,v 1.112 2020/05/02 01:30:46 rswindell Exp $
 #
 #############################################################################
 # @format.tab-size 4		(Plain Text/Source Code File Header)			#
@@ -92,10 +92,12 @@
 #					  (Numeric ONLY)										#
 #  OUTPUT			- Compiler flag specifying output filename				#
 #  LOUTPUT			- Linker flag specifying output filename				#
-#  XPDEV_SRC		- Path to xpdev											#
-#  UIFC_SRC			- Path to uifc											#
-#  CIOLIB_SRC		- Path to ciolib										#
-#  SMBLIB_SRC		- Path to smblib										#
+#  XPDEV_SRC		- Path to xpdev lib source								#
+#  UIFC_SRC			- Path to uifc lib source								#
+#  CIOLIB_SRC		- Path to ciolib source									#
+#  SMBLIB_SRC		- Path to smblib source									#
+#  ENCODE_SRC	    - Path to encode lib source								#
+#  HASH_SRC			- Path to hash lib source								#
 #  MT_CFLAGS		- CFLAGS for building MT objects						#
 #  MT_LDFLAGS		- LDFLAGS for linking MT targets						#
 #  UL_PRE			- Use Library prefix (*nix is -l)						#
@@ -318,12 +320,15 @@ ifeq ($(os),haiku)
  CFLAGS	+=	-D__unix__ -DNEEDS_FORKPTY
 endif
 ifeq ($(os),darwin)
+ MIN_MAC_OSX_VERSION = 10.6
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
+ CFLAGS +=  -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
+ LDFLAGS += -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
 endif
 
 # PThread-specific flags
 ifeq ($(os),linux)    # Linux
- CFLAGS	+=	-DPOSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -DSPEED_MACROS_ONLY -D_GNU_SOURCE
+ CFLAGS	+=	-DPOSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE -D_BSD_SOURCE -DSPEED_MACROS_ONLY -D_GNU_SOURCE
  ifndef THREADS_ACTUALLY_WORK
   CFLAGS    += -D_THREAD_SUID_BROKEN
  endif
@@ -395,14 +400,14 @@ XPDEV_SRC	:=	$(SRC_ROOT)$(DIRSEP)xpdev
 CIOLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)conio
 SMBLIB_SRC	:=	$(SRC_ROOT)$(DIRSEP)smblib
 UIFC_SRC	:=	$(SRC_ROOT)$(DIRSEP)uifc
+ENCODE_SRC	:=	$(SRC_ROOT)$(DIRSEP)encode
+HASH_SRC 	:=	$(SRC_ROOT)$(DIRSEP)hash
 3RDP_ROOT	?=	$(SRC_ROOT)$(DIRSEP)..$(DIRSEP)3rdp
 3RDP_BUILD	:=	$(3RDP_ROOT)$(DIRSEP)build
 
 # SDL ciolib enabled by default for the moment.
 ifndef WITHOUT_SDL
- ifndef USE_SDL_AUDIO
-  USE_SDL	:=	1
- endif
+ USE_SDL	:=	1
 endif
 
 # Pull in lib-specific flags
@@ -414,6 +419,10 @@ endif
 -include		$(CIOLIB_SRC)$(DIRSEP)Common.gmake
 -include		$(UIFC_SRC)$(DIRSEP)Common.make
 -include		$(UIFC_SRC)$(DIRSEP)Common.gmake
+-include		$(ENCODE_SRC)$(DIRSEP)Common.make
+-include		$(ENCODE_SRC)$(DIRSEP)Common.gmake
+-include		$(HASH_SRC)$(DIRSEP)Common.make
+-include		$(HASH_SRC)$(DIRSEP)Common.gmake
 -include		$(3RDP_BUILD)$(DIRSEP)Common.make
 -include		$(3RDP_BUILD)$(DIRSEP)Common.gmake
 
@@ -477,6 +486,14 @@ $(XPDEV-MT_LIB): xpdev-mt
 xpdev-mt:
 	$(MAKE) -C $(XPDEV_SRC) mtlib
 
+$(ENCODE_LIB): encode
+encode:
+	$(MAKE) -C $(ENCODE_SRC) lib
+
+$(HASH_LIB): hash
+hash:
+	$(MAKE) -C $(HASH_SRC) lib
+
 $(SMBLIB): smblib
 smblib:
 	$(MAKE) -C $(SMBLIB_SRC) lib
@@ -500,3 +517,4 @@ js:
 $(CRYPT_LIB):  $(CRYPT_DEPS)
 cl:
 	$(MAKE) -C $(3RDPBUILDDIR) cryptlib
+

@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: syncterm.c,v 1.261 2020/06/27 00:04:50 deuce Exp $ */
 
 #if defined(__APPLE__) && defined(__MACH__)
 #include <CoreServices/CoreServices.h>	// FSFindFolder() and friends
@@ -38,6 +38,13 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include <filewrap.h>	// STDOUT_FILENO
 
 #include <cterm.h>
+#include <vidmodes.h>
+#if !(defined __BORLANDC__ || defined _MSC_VER)
+ #include <stdbool.h>
+#else
+ #define bool int
+ enum { false, true };
+#endif
 
 #include "st_crypt.h"
 #include "fonts.h"
@@ -48,22 +55,22 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include "uifcinit.h"
 #include "window.h"
 
-char* syncterm_version = "SyncTERM 1.1b"
+char* syncterm_version = "SyncTERM 1.2a"
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif
 	;
 
-char	*usage = 
+char	*usage =
 		"\nusage: syncterm [options] [URL]"
         "\n\noptions:\n\n"
         "-e# =  set escape delay to #msec\n"
 		"-iX =  set interface mode to X (default=auto) where X is one of:\n"
 		"       S[W|F] = SDL surface mode W for windowed and F for fullscreen\n"
-		"       O[W|F] = SDL overlay mode (hardware scaled)\n"
 #ifdef __unix__
 		"       X = X11 mode\n"
 		"       C = Curses mode\n"
+		"       I = Curses mode with forced ASCII charset\n"
 		"       F = Curses mode with forced IBM charset\n"
 #else
 		"       W[F] = Win32 native mode, F for fullscreen\n"
@@ -78,6 +85,8 @@ char	*usage =
 		"-s  =  enable \"Safe Mode\" which prevents writing/browsing local files\n"
 		"-T  =  when the ONLY argument, dumps the terminfo entry to stdout and exits\n"
 		"-v  =  when the ONLY argument, dumps the version info to stdout and exits\n"
+		"-c  =  Hide the status line\n"
+		"-q  =  Quiet mode (Hide various popups such as this during a connect)\n"
 		"\n"
 		"URL format is: [(rlogin|telnet|ssh|raw)://][user[:password]@]domainname[:port]\n"
 		"raw:// URLs MUST include a port.\n"
@@ -135,7 +144,7 @@ static BOOL winsock_startup(void)
 static const struct {
   unsigned int 	 width;
   unsigned int 	 height;
-  unsigned int 	 bytes_per_pixel; /* 3:RGB, 4:RGBA */ 
+  unsigned int 	 bytes_per_pixel; /* 3:RGB, 4:RGBA */
   unsigned char	 pixel_data[64 * 64 * 4 + 1];
 } syncterm_icon = {
   64, 64, 4,
@@ -707,6 +716,7 @@ char *output_types[]={
 #ifdef __unix__
 	,"Curses"
 	,"Curses on cp437 Device"
+	,"Curses using US-ASCII"
 #endif
 	,"ANSI"
 #if defined(__unix__) && !defined(NO_X)
@@ -719,8 +729,6 @@ char *output_types[]={
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,"SDL"
 	,"SDL Fullscreen"
-	,"SDL Overlay"
-	,"SDL Overlay Fullscreen"
 #endif
 ,NULL};
 int output_map[]={
@@ -740,36 +748,32 @@ int output_map[]={
 #if defined(WITH_SDL) || defined(WITH_SDL_AUDIO)
 	,CIOLIB_MODE_SDL
 	,CIOLIB_MODE_SDL_FULLSCREEN
-	,CIOLIB_MODE_SDL_YUV
-	,CIOLIB_MODE_SDL_YUV_FULLSCREEN
 #endif
 ,0};
 char *output_descrs[]={
 	 "Autodetect"
 	,"Curses"
 	,"Curses on cp437 Device"
+	,"Curses using US-ASCII"
 	,"ANSI"
 	,"X11"
 	,"Win32 Console"
 	,"Win32 Console Fullscreen"
 	,"SDL"
 	,"SDL Fullscreen"
-	,"SDL Overlay"
-	,"SDL Overlay Fullscreen"
 ,NULL};
 
 char *output_enum[]={
 	 "Autodetect"
 	,"Curses"
 	,"Curses437"
+	,"CursesAscii"
 	,"ANSI"
 	,"X11"
 	,"WinConsole"
 	,"WinConsoleFullscreen"
 	,"SDL"
 	,"SDLFullscreen"
-	,"SDLOverlay"
-	,"SDLOverlayFullscreen"
 ,NULL};
 
 BOOL check_exit(BOOL force)
@@ -788,7 +792,8 @@ BOOL check_exit(BOOL force)
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
 	char *p1, *p2, *p3;
-	struct	bbslist	*list[MAX_OPTS+1]={NULL};
+#define BBSLIST_SIZE ((MAX_OPTS+1)*sizeof(struct bbslist *))
+	struct	bbslist	**list;
 	int		listcount=0, i;
 
 	bbs->id=-1;
@@ -832,6 +837,11 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		bbs->port=conn_ports[bbs->conn_type];
 		p1=url+6;
 	}
+	else if(!strnicmp("ghost://",url,8)) {
+		bbs->conn_type=CONN_TYPE_MBBS_GHOST;
+		bbs->port=conn_ports[bbs->conn_type];
+		p1=url+8;
+	}
 	/* ToDo: RFC2806 */
 	p3=strchr(p1,'@');
 	if(p3!=NULL) {
@@ -856,6 +866,11 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		else
 			p2 = p1;
 	}
+	p3=strrchr(p1,'/');
+	if(p3!=NULL) {
+		*p3=0;
+		SAFECOPY(bbs->ghost_program,p3+1);
+	}
 	SAFECOPY(bbs->name,p1);
 	p2=strrchr(p2,':');
 	if(p2!=NULL) {
@@ -863,13 +878,10 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		p2++;
 		bbs->port=atoi(p2);
 	}
-	/* Remove trailing / (Win32 adds one 'cause it hates me) */
-	p2=strrchr(p1,'/');
-	if(p2!=NULL && *(p2+1)==0)
-		*p2=0;
 	SAFECOPY(bbs->addr,p1);
 
 	/* Find BBS listing in users phone book */
+	list = calloc(1, BBSLIST_SIZE);
 	read_list(settings.list_path, &list[0], NULL, &listcount, USER_BBSLIST);
 	for(i=0;i<listcount;i++) {
 		if((stricmp(bbs->addr,list[i]->addr)==0)
@@ -890,13 +902,13 @@ void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_def
 		}
 	}
 	free_list(&list[0],listcount);
+	free(list);
 }
 
 #if defined(__APPLE__) && defined(__MACH__)
 static char *get_new_OSX_filename(char *fn, int fnlen, int type, int shared)
 {
 	FSRef		ref;
-	long		size;
 
 	/* First, get the path */
 	switch(type) {
@@ -1199,7 +1211,7 @@ char *get_syncterm_filename(char *fn, int fnlen, int type, int shared)
 						rmdir(oldlst);
 					}
 				}
-				
+
 			}
 		}
 	}
@@ -1226,9 +1238,16 @@ void load_settings(struct syncterm_settings *set)
 	set->backlines=iniReadInteger(inifile,"SyncTERM","ScrollBackLines",2000);
 	set->xfer_success_keypress_timeout=iniReadInteger(inifile,"SyncTERM", "TransferSuccessKeypressTimeout", /* seconds: */0);
 	set->xfer_failure_keypress_timeout=iniReadInteger(inifile,"SyncTERM", "TransferFailureKeypressTimeout", /* seconds: */60);
+	set->custom_cols = iniReadInteger(inifile, "SyncTERM", "CustomCols", 80);
+	set->custom_rows = iniReadInteger(inifile, "SyncTERM", "CustomRows", 25);
+	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
 	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, FALSE);
 	iniReadString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path);
 	set->scaling_factor=iniReadInteger(inifile,"SyncTERM","ScalingFactor",0);
+	set->window_width=iniReadInteger(inifile,"SyncTERM","WindowWidth",0);
+	set->window_height=iniReadInteger(inifile,"SyncTERM","WindowHeight",0);
+	// TODO: Add this to the UI somewhere.
+	set->left_just=iniReadBool(inifile,"SyncTERM","LeftJustify",FALSE);
 
 	/* Modem settings */
 	iniReadString(inifile, "SyncTERM", "ModemInit", "AT&F&C1&D2", set->mdm.init_string);
@@ -1273,30 +1292,44 @@ int main(int argc, char **argv)
 	int		addr_family=PF_UNSPEC;
 	char	*last_bbs=NULL;
 	char	*p, *lp;
+	int	cvmode;
+	int	ww, wh, sf;
+	int default_hidepopups=-1;
+	int default_nostatus=-1;
 	const char syncterm_termcap[]="\n# terminfo database entry for SyncTERM\n"
 				"syncterm|SyncTERM,\n"
-				"	am,bce,ccc,da,mir,msgr,ndscr,\n"	// sam?
-				"	it#8,colors#256,\n"
-				"	acsc=l\\332m\\300k\\277j\\331u\\264t\\303v\\301w\\302q\\304x\\263n\\305`\\004a\\260f\\370g\\361~\\371.\\031-\\030h\\261i^U0\\333y\\363z\\362,\n"
-				"	cbt=\\E[Z,bel=^G,cr=^M,csr=\\E[%i%p1%d;%p2%dr,clear=\\E[2J,el1=\\E[1K,el=\\E[K,ed=\\E[J,\n"
-				"	hpa=\\E[%i%p1%dG,cup=\\E[%i%p1%d;%p2%dH,cud1=^J,home=\\E[H,civis=\\E[?25l,cub1=\\E[D,cnorm=\\E[?25h,\n"
-				"	cuf1=\\E[C,ll=\\E[255H,cuu1=\\E[A,dch1=\\E[P,dl1=\\E[M,smam=\\E[?7h,blink=\\E[5m,bold=\\E[1m,\n"
-				"	ech=\\E[%p1%dX,rmam=\\E[7l,sgr0=\\E[m,\n"
-				"	is1=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[m\\E[?s,\n"
-				"	ich1=\\E[@,il1=\\E[L,\n"
-				"	kbs=^H,kdch1=\\177,kcud1=\\E[B,kend=\\E[K,\n"
-				"	kf1=\\EOP,kf2=\\EOQ,kf3=\\EOR,kf4=\\EOS,kf5=\\EOt,kf6=\\E[17~,\n"
-				"	kf7=\\E[18~,kf8=\\E[19~,kf9=\\E[20~,kf10=\\E[21~,kf11=\\E[23~,kf12=\\E[24~,\n"
-				"	khome=\\E[H,kich1=\\E[@,kcub1=\\E[D,knp=\\E[U,kpp=\\E[V,kcuf1=\\E[C,\n"
-				"	kcuu1=\\E[A,\n"
-				"	nel=^M^J,\n"
-				"	dch=\\E[%p1%dP,dl=\\E[%p1%dM,cud=\\E[%p1%dB,ich=\\E[%p1%d@,indn=\\E[%p1%dS,\n"
-				"	il=\\E[%p1%dL,cub=\\E[%p1%dD,cuf=\\E[%p1%dC,rin=\\E[%p1%dT,cuu=\\E[%p1%dA,\n"
-				"	rs1=\\E[?7h\\E[?25h\\E[?31l\\E[?32l\\E[?33l\\E[*r\\E[ D\\E[m\\E[?s,\n"
-				"	rc=\\E[u,sc=\\E[s,ind=\\E[S,ri=\\E[T,\n"
-				"	ht=\t,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
+				// cwin maybe?  Or just left/right and top/bottom margins?
+				// smgtb=\\E[%i%p1%d;%p2%dr,
+				// shift/ctrl/alt Fx as extra keys?
+				// Booleans:
+				"	am,bce,da,ndscr,\n"	// sam is a printer capability
+				// Numeric:
+				"	it#8,colors#8,pairs#64,\n"        
+				// Strings:
+				"	acsc=}\\234|\\330{\\322+\\020\\,\\021l\\332m\\300k\\277j\\331u\\264t\\303v\\301w\\302q\\304x\\263n\\305`^Da\\260f\\370g\\361~\\371.^Y-^Xh\\261i^U0\\333y\\363z\\362,\n"
+				"	cbt=\\E[Z,bel=^G,cr=^M,csr=\\E[%i%p1%d;%p2%dr,tbc=\\E[3g,\n"
+				"	mgc=\\E[69h\\E[s\\e[69l,clear=\\E[2J,csr=\\E[%i%p1%d;%p2%dr,el1=\\E[1K,\n"
+				"	el=\\E[K,ed=\\E[J,hpa=\\E[%i%p1%dG,cup=\\E[%i%p1%d;%p2%dH,cud1=^J,home=\\E[H,\n"
+				"	civis=\\E[?25l,cub1=\\E[D,cnorm=\\E[?25h,cuf1=\\E[C,ll=\\E[255H,cuu1=\\E[A,\n"
+				"	cvvis=\\E[?25h,dch1=\\E[P,dl1=\\E[M,smam=\\E[?7h,blink=\\E[5m,bold=\\E[1m,\n"
+				"	ech=\\E[%p1%dX,rmam=\\E[7l,sgr0=\\E[m,is1=\\Ec,ich1=\\E[@,il1=\\E[L,kbs=^H,\n"
+				"	kcbt=\\E[Z,kdch1=\\177,kcud1=\\E[B,kend=\\E[K,kf1=\\E[11~,kf2=\\E[12~,\n"
+				"	kf3=\\E[13~,kf4=\\E[14~,kf5=\\E[15~,kf6=\\E[17~,kf7=\\E[18~,kf8=\\E[19~,\n"
+				"	kf9=\\E[20~,kf10=\\E[21~,kf11=\\E[23~,kf12=\\E[24~,kcub1=\\E[D,knp=\\E[U,\n"
+				"	kpp=\\E[V,kcuf1=\\E[C,kcuu1=\\E[A,nel=^M^J,dch=\\E[%p1%dP,dl=\\E[%p1%dM,\n"
+				"	cud=\\E[%p1%dB,ich=\\E[%p1%d@,indn=\\E[%p1%dS,il=\\E[%p1%dL,cub=\\E[%p1%dD,\n"
+				"	cuf=\\E[%p1%dC,rin=\\E[%p1%dT,cuu=\\E[%p1%dA,rep=%p1%c\\E[%p2%{1}%-%db,\n"
+				"	rs1=\\E[c,rc=\\E[u,sc=\\E[s,ind=\\E[S,ri=\\E[T,\n"
 				"	sgr=\\E[0%?%p1%p6%|%t;1%;%?%p4%|%t;5%;%?%p1%p3%|%t;7%;%?%p7%|%t;8%;m,\n"
-				"	smso=\\E[0;1;7m,rmso=\\E[m,\n"
+				"	smglp=\\E[69h\\E[%{1}%p1%+%d;0s\\E[69l,smgrp=\\E[69h\\E[0;%{1}%p1%+%ds\\E[69l,\n"
+				"	hts=\\E[H,ht=\t,setab=\\E[4%p1%dm,setaf=\\E[3%p1%dm,\n"
+				"	smglr=\\E[?69h\\E[%i%p1%d;%p2%ds\\E?69l,smso=\\E[0;1;7m,rmso=\\E[m,\n"
+				"syncterm-bitmap|SyncTERM in Bitmap Mode,\n"
+				"	ccc,\n"
+				"	colors#256,pairs#65535,\n"
+				"	initc=\\E]4;%p1%d;rgb\\:%p2%{255}%*%{1000}%/%2.2X/%p3%{255}%*%{1000}%/%2.2X/%p4%{255}%*%{1000}%/%2.2X\\E\\\\,\n"
+				"	setab=\\E[%?%p1%{8}%<%t4%p1%d%e%p1%{16}%<%t10%p1%{8}%-%d%e48;5;%p1%d%;m,\n"
+				"	setaf=\\E[%?%p1%{8}%<%t3%p1%d%e%p1%{16}%<%t9%p1%{8}%-%d%e38;5;%p1%d%;m,\n"
 				"syncterm-24|SyncTERM 80x25,\n"
 				"	lines#24,use=syncterm,\n"
 				"syncterm-25|SyncTERM No Status Line,\n"
@@ -1344,7 +1377,55 @@ int main(int argc, char **argv)
 				"syncterm-59-w|SyncTERM 132x60,\n"
 				"	cols#132,lines#59,use=syncterm,\n"
 				"syncterm-60-w|SyncTERM 132x60 No Status Line,\n"
-				"	cols#132,lines#60,use=syncterm,\n";
+				"	cols#132,lines#60,use=syncterm,\n"
+				"syncterm-24-bitmap|SyncTERM 80x25,\n"
+				"	lines#24,use=syncterm-bitmap,\n"
+				"syncterm-25-bitmap|SyncTERM No Status Line,\n"
+				"	lines#25,use=syncterm-bitmap,\n"
+				"syncterm-27-bitmap|SyncTERM 80x28 With Status,\n"
+				"	lines#27,use=syncterm-bitmap,\n"
+				"syncterm-28-bitmap|SyncTERM 80x28 No Status Line,\n"
+				"	lines#28,use=syncterm-bitmap,\n"
+				"syncterm-42-bitmap|SyncTERM 80x23,\n"
+				"	lines#42,use=syncterm-bitmap,\n"
+				"syncterm-43-bitmap|SyncTERM 80x23 No Status Line,\n"
+				"	lines#43,use=syncterm-bitmap,\n"
+				"syncterm-49-bitmap|SyncTERM 80x50,\n"
+				"	lines#49,use=syncterm-bitmap,\n"
+				"syncterm-50-bitmap|SyncTERM 80x50 No Status Line,\n"
+				"	lines#50,use=syncterm-bitmap,\n"
+				"syncterm-59-bitmap|SyncTERM 80x60,\n"
+				"	lines#59,use=syncterm-bitmap,\n"
+				"syncterm-60-bitmap|SyncTERM 80x60 No Status Line,\n"
+				"	lines#60,use=syncterm-bitmap,\n"
+				"syncterm-w-bitmap|SyncTERM Wide,\n"
+				"	cols#132,use=syncterm-bitmap,\n"
+				"syncterm-25-w-bitmap|SyncTERM No Status Line,\n"
+				"	cols#132,lines#25,use=syncterm-bitmap,\n"
+				"syncterm-27-w-bitmap|SyncTERM 132x28 With Status,\n"
+				"	cols#132,lines#27,use=syncterm-bitmap,\n"
+				"syncterm-28-w-bitmap|SyncTERM 132x28 No Status Line,\n"
+				"	cols#132,lines#28,use=syncterm-bitmap,\n"
+				"syncterm-36-w-bitmap|SyncTERM 132x37,\n"
+				"	cols#132,lines#36,use=syncterm-bitmap,\n"
+				"syncterm-37-w-bitmap|SyncTERM 132x37 No Status Line,\n"
+				"	cols#132,lines#37,use=syncterm-bitmap,\n"
+				"syncterm-42-w-bitmap|SyncTERM 132x23,\n"
+				"	cols#132,lines#42,use=syncterm-bitmap,\n"
+				"syncterm-43-w-bitmap|SyncTERM 132x23 No Status Line,\n"
+				"	cols#132,lines#43,use=syncterm-bitmap,\n"
+				"syncterm-49-w-bitmap|SyncTERM 132x50,\n"
+				"	cols#132,lines#49,use=syncterm-bitmap,\n"
+				"syncterm-50-w-bitmap|SyncTERM 132x50 No Status Line,\n"
+				"	cols#132,lines#50,use=syncterm-bitmap,\n"
+				"syncterm-51-w-bitmap|SyncTERM 132x52,\n"
+				"	cols#132,lines#51,use=syncterm-bitmap,\n"
+				"syncterm-52-w-bitmap|SyncTERM 132x52 No Status Line,\n"
+				"	cols#132,lines#52,use=syncterm-bitmap,\n"
+				"syncterm-59-w-bitmap|SyncTERM 132x60,\n"
+				"	cols#132,lines#59,use=syncterm-bitmap,\n"
+				"syncterm-60-w-bitmap|SyncTERM 132x60 No Status Line,\n"
+				"	cols#132,lines#60,use=syncterm-bitmap,\n";
 
 	SetThreadName("Main Thread");
 	if(argc==2 && strcmp(argv[1],"-T")==0) {
@@ -1365,13 +1446,19 @@ int main(int argc, char **argv)
 #endif
 
 	/* UIFC initialization */
-    memset(&uifc,0,sizeof(uifc));
+	memset(&uifc,0,sizeof(uifc));
 	uifc.mode=UIFC_NOCTRL|UIFC_NHM;
 	uifc.size=sizeof(uifc);
 	uifc.esc_delay=25;
 	url[0]=0;
 
 	load_settings(&settings);
+	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
+	vparams[cvmode].cols = settings.custom_cols;
+	vparams[cvmode].rows = settings.custom_rows;
+	vparams[cvmode].charheight = settings.custom_fontheight;
+	ciolib_initial_window_height = settings.window_height;
+	ciolib_initial_window_width = settings.window_width;
 	ciolib_mode=settings.output_mode;
 	if(settings.startup_mode != SCREEN_MODE_CURRENT)
 		text_mode=screen_to_ciolib(settings.startup_mode);
@@ -1409,6 +1496,9 @@ int main(int argc, char **argv)
 						case 'F':
 							ciolib_mode=CIOLIB_MODE_CURSES_IBM;
 							break;
+						case 'I':
+							ciolib_mode=CIOLIB_MODE_CURSES_ASCII;
+							break;
 						case 'X':
 							ciolib_mode=CIOLIB_MODE_X;
 							break;
@@ -1428,17 +1518,6 @@ int main(int argc, char **argv)
 									break;
 								case 'F':
 									ciolib_mode=CIOLIB_MODE_SDL_FULLSCREEN;
-									break;
-							}
-							break;
-						case 'O':
-							switch(toupper(argv[i][3])) {
-								case 0:
-								case 'W':
-									ciolib_mode=CIOLIB_MODE_SDL_YUV;
-									break;
-								case 'F':
-									ciolib_mode=CIOLIB_MODE_SDL_YUV_FULLSCREEN;
 									break;
 							}
 							break;
@@ -1477,6 +1556,12 @@ int main(int argc, char **argv)
                 			break;
 					}
                     break;
+#ifdef __DARWIN__
+				case 'P':
+					if (strncmp("-psn_", argv[i], 5) == 0)
+						break;
+					goto USAGE;
+#endif
 				case 'R':
 					conn_type=CONN_TYPE_RLOGIN;
 					override_conn=TRUE;
@@ -1492,6 +1577,12 @@ int main(int argc, char **argv)
 				case 'S':
 					safe_mode=1;
 					break;
+				case 'Q':
+					default_hidepopups=1;
+					break;
+				case 'C':
+					default_nostatus=1;
+					break;
                 default:
 					goto USAGE;
            }
@@ -1503,10 +1594,13 @@ int main(int argc, char **argv)
 		return(1);
 	ciolib_reaper=FALSE;
 	seticon(syncterm_icon.pixel_data,syncterm_icon.width);
+	if (settings.scaling_factor)
+		setscaling(settings.scaling_factor);
+	if (settings.window_width && settings.window_height)
+		setwinsize(settings.window_width, settings.window_height);
 	textmode(text_mode);
-	setscaling(settings.scaling_factor);
 
-    gettextinfo(&txtinfo);
+	gettextinfo(&txtinfo);
 	if((txtinfo.screenwidth<40) || txtinfo.screenheight<24) {
 		fputs("Window too small, must be at least 80x24\n",stderr);
 		return(1);
@@ -1556,11 +1650,28 @@ int main(int argc, char **argv)
 	if(!winsock_startup())
 		return(1);
 
+
 	load_font_files();
 	while((!quitting) && (bbs!=NULL || (bbs=show_bbslist(last_bbs, FALSE))!=NULL)) {
+		if (default_hidepopups >= 0)
+			bbs->hidepopups = default_hidepopups;
+		if (default_nostatus >= 0)
+			bbs->nostatus = default_nostatus;
     		gettextinfo(&txtinfo);	/* Current mode may have changed while in show_bbslist() */
 		FREE_AND_NULL(last_bbs);
-		if(!conn_connect(bbs)) {
+		uifcbail();
+		textmode(screen_to_ciolib(bbs->screen_mode));
+		if (!bbs->hidepopups)
+			init_uifc(TRUE, TRUE);
+		load_font_files();
+		setfont(find_font_id(bbs->font),TRUE,1);
+		if(conn_connect(bbs)) {
+			load_font_files();
+			uifcbail();
+			textmode(txtinfo.currmode);
+			init_uifc(TRUE, TRUE);
+			settitle("SyncTERM");
+		} else {
 			/* ToDo: Update the entry with new lastconnected */
 			/* ToDo: Disallow duplicate entries */
 			bbs->connected=time(NULL);
@@ -1583,9 +1694,6 @@ int main(int argc, char **argv)
 				}
 			}
 			uifcbail();
-			textmode(screen_to_ciolib(bbs->screen_mode));
-			load_font_files();
-			setfont(find_font_id(bbs->font),TRUE,1);
 			sprintf(str,"SyncTERM - %s",bbs->name);
 			settitle(str);
 			term.nostatus=bbs->nostatus;
@@ -1628,14 +1736,16 @@ int main(int argc, char **argv)
 						/* Started from the command-line with a URL */
 						init_uifc(TRUE, TRUE);
 						i=1;
-						switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this directory entry?",YesNo)) {
-							case 0:	/* Yes */
-								edit_list(NULL, bbs,settings.list_path,FALSE);
-								add_bbs(settings.list_path,bbs);
-								last_bbs=strdup(bbs->name);
-								break;
-							default: /* ESC/No */
-								break;
+						if (!bbs->hidepopups) {
+							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,NULL,"Save this directory entry?",YesNo)) {
+								case 0:	/* Yes */
+									edit_list(NULL, bbs,settings.list_path,FALSE);
+									add_bbs(settings.list_path,bbs);
+									last_bbs=strdup(bbs->name);
+									break;
+								default: /* ESC/No */
+									break;
+							}
 						}
 					}
 				}
@@ -1660,28 +1770,43 @@ int main(int argc, char **argv)
 	if (last_bbs)
 		free(last_bbs);
 	// Save changed settings
-	if(getscaling() > 0 && getscaling() != settings.scaling_factor) {
-		char	inipath[MAX_PATH+1];
-		FILE	*inifile;
-		str_list_t	inicontents;
+	gettextinfo(&txtinfo);
+	// Only save window info if we're in the startup mode...
+	if (txtinfo.currmode == settings.startup_mode || (settings.startup_mode == SCREEN_MODE_CURRENT && txtinfo.currmode == C80)) {
+		ww = wh = sf = -1;
+		get_window_info(&ww, &wh, NULL, NULL);
+		sf = getscaling();
+		if((sf > 0 && sf != settings.scaling_factor) ||
+		    (ww > 0 && ww != settings.window_width) ||
+		    (wh > 0 && wh != settings.window_height)) {
+			char	inipath[MAX_PATH+1];
+			FILE	*inifile;
+			str_list_t	inicontents;
 
-		get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
-		if((inifile=fopen(inipath,"r"))!=NULL) {
-			inicontents=iniReadFile(inifile);
-			fclose(inifile);
-		}
-		else {
-			inicontents=strListInit();
-		}
-		iniSetInteger(&inicontents,"SyncTERM","ScalingFactor",getscaling(),&ini_style);
-		if((inifile=fopen(inipath,"w"))!=NULL) {
-			iniWriteFile(inifile,inicontents);
-			fclose(inifile);
+			get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, FALSE);
+			if((inifile=fopen(inipath,"r"))!=NULL) {
+				inicontents=iniReadFile(inifile);
+				fclose(inifile);
+			}
+			else {
+				inicontents=strListInit();
+			}
+			if (sf > 0 && sf != settings.scaling_factor)
+				iniSetInteger(&inicontents,"SyncTERM","ScalingFactor",sf,&ini_style);
+			if (ww > 0 && ww != settings.window_width)
+				iniSetInteger(&inicontents,"SyncTERM","WindowWidth",ww,&ini_style);
+			if (wh > 0 && wh != settings.window_height)
+				iniSetInteger(&inicontents,"SyncTERM","WindowHeight",wh,&ini_style);
+			if((inifile=fopen(inipath,"w"))!=NULL) {
+				iniWriteFile(inifile,inicontents);
+				fclose(inifile);
+			}
 		}
 	}
+
 	uifcbail();
 #ifdef _WINSOCKAPI_
-	if(WSAInitialized && WSACleanup()!=0) 
+	if(WSAInitialized && WSACleanup()!=0)
 		fprintf(stderr,"!WSACleanup ERROR %d",ERROR_VALUE);
 #endif
 	return(0);
@@ -1775,6 +1900,10 @@ int screen_to_ciolib(int screen)
 			return(ATARI_40X24);
 		case SCREEN_MODE_ATARI_XEP80:
 			return(ATARI_80X25);
+		case SCREEN_MODE_CUSTOM:
+			return(CIOLIB_MODE_CUSTOM);
+		case SCREEN_MODE_EGA_80X25:
+			return(EGA80X25);
 	}
 	gettextinfo(&ti);
 	return(ti.currmode);
@@ -1817,6 +1946,10 @@ int ciolib_to_screen(int ciolib)
 			return(SCREEN_MODE_ATARI);
 		case ATARI_80X25:
 			return(SCREEN_MODE_ATARI_XEP80);
+		case CIOLIB_MODE_CUSTOM:
+			return(SCREEN_MODE_CUSTOM);
+		case EGA80X25:
+			return(SCREEN_MODE_EGA_80X25);
 	}
 	return(SCREEN_MODE_CURRENT);
 }

@@ -1,8 +1,9 @@
 #include <stdlib.h>
+#include <locale.h>
 
 #include <gtk/gtk.h>
 
-#include "dirwrap.h"
+#include "sbbs.h"
 
 #include "chatfuncs.h"
 #include "interface.h"
@@ -22,14 +23,12 @@ main (int argc, char *argv[])
   char		*ctrl_dir;
   GtkWidget *WaitWindow;
 
-  gtk_set_locale ();
+  setlocale(LC_ALL, "");
   gtk_init (&argc, &argv);
 
 /*  add_pixmap_directory (PACKAGE_DATA_DIR "/" PACKAGE "/pixmaps"); */
 
-  ctrl_dir=getenv("SBBSCTRL");
-  if(ctrl_dir==NULL)
-  	return(1);
+  ctrl_dir = get_ctrl_dir(/* warn: */TRUE);
 
   if(argc<2)
     return(1);

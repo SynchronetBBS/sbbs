@@ -58,6 +58,7 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
     unsigned int		added = 0;
     int					ret;
     char				port_str[6];
+	char				err[128];
 
 #ifndef _WIN32
 	struct addrinfo		dummy;
@@ -152,8 +153,9 @@ BOOL DLLCALL xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		if(type != SOCK_DGRAM) {
 			if(listen(xpms_set->socks[xpms_set->sock_count].sock, SOMAXCONN)==-1) {
 				if(xpms_set->lprintf)
-					xpms_set->lprintf(LOG_WARNING, "%04d !%s ERROR %d listen()ing on port %d"
-							,xpms_set->socks[xpms_set->sock_count].sock, prot, ERROR_VALUE, port);
+					xpms_set->lprintf(LOG_WARNING, "%04d !%s ERROR %d (%s) listening on port %d"
+						,xpms_set->socks[xpms_set->sock_count].sock, prot, ERROR_VALUE
+						,socket_strerror(socket_errno,err,sizeof(err)), port);
 				closesocket(xpms_set->socks[xpms_set->sock_count].sock);
 				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);

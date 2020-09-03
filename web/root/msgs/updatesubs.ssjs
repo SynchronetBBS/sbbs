@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: updatesubs.ssjs,v 1.5 2006/02/25 21:41:08 runemaster Exp $ */
 
 load("../web/lib/template.ssjs");
 load("../web/lib/msgslib.ssjs");

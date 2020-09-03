@@ -1,0 +1,330 @@
+@#turgbarak
+@show
+
+  `0"That rascal!  How dare the council let Barak take my position!"
+
+  `$"Yeah, well, they did.  Any ideas?  I've pretty much done all the
+  detective work I can..."
+
+  `2Turgon looks discouraged.  `0"I know Barak is at fault - if only you can
+  prove it!"
+
+`k
+@do `t01 is 8
+
+@#turgmeet
+@do `t01 is 1
+@do `v01 is 1
+@pauseoff
+@show
+`r0`c[4C[0mÜÛÜ  ÛÜ[1mß    Üß [0mß[1mÛÛÛ[0mÜÛ[1mÛÛ[0mÜÛÛÜÜ [33mÜ[1;37mÜ
+   [0mÜÜÜÛß  [1mÜ    [0mÛß[5C[33mÜÜÜÜÜ[37mßßÛÛÛß[33mß [1;37mÛ
+   [0mÛßÜÛ Û[1mÜÛ[8C[0;33mÜßß[5Cßß [37mß[33mÞß [37mß
+   ÛÜÜ [1mÛß[21C[0;33mßÛÝ
+    [37mÛÛ[1mß[9C[0;33mßÜ[9C[1;37mþ[0;36mß [33mßÛÛ[9C[1;37mTurgon 
+[A[49Cis a bearded old man [0m- [1myou
+   [0mÛ ÛÜ    [33mÛÛßß  ßÛÜ ÜÜ   [36mÜ[1mß [0;33mÜÛ ÛÛ[8C[1;37msee mu
+[A[48Cch wisdom in his eyes [0m- [1mbut
+   [0mÜßÛ[1mÛÛ   [0;33mÛ ÛßßßßÜÛÛÛßÛÛÜÛÛÛÛ ÛÛÛÛÜ[6C[1;37malso there is 
+[A[56Csadness.
+  [0mÛÛ   ßÜ    [33mßÛÛÛßÛÛÛßßÛÜÛÛßÛÛÛÛÛÛÛÛÝ
+ [37mÛÜÛÜÜßÛ [1mÛ[5C[0;33mÛ ÛÛß ÛÛÛÛß  ÜÛÛÛÛÛÛÛÛ
+[37mßÜÛÜÛ   [1mÛÜ[7C[0;33mßÜÛÛÛÜÜß ßÜÛß ßßÛÛÛ[46mÜ[1;36;43mÜ[40m
+[0mÛ[1mÜ  ß[0mÛÜ ÛÛ[8C[33mßÜÛÛÛßÛÜ    [1;37mÜ[0mÜ Û[1;36mß[0;33mß
+ [37mÛÜ   [1mÛ[0mÛÛ  [1mÜ[7C[0;33mÜ Ûß [1;37mÜ Ü[0mÛÛ[1mÛ[0mÛ[1mÝ
+[A[32CÛ
+  Ü[0mÛ  Üß  ÛÜ[1mßÜ    [0;33mÜÜß[37mÜÛÛÜ[1mß [0;33mÜÜÜÛßÛ
+ [37mÜÛ[1mß   ß [0mÛ[1mÛÜ[0mÜß[1mÜ   [0;33mÛ [37mÛÛ ß[8C[33mÜ
+[37mÛ[1mÛß   [0mÜ[1mÛß[0mÜÜ[1mÜß[0mÜÜ[1mÛ [0;33mÛÛÝ[37mÛÜ Û  [33m
+[A[26CßßÛÛÛÛß
+[1;30mú [37mß ß [0mÛÛ[1mÜß[0mÛß[1mÛÜß   [0;33mÛÝ[37mß [1mÛ[0mÛÛÛÛÜ
+[A[28CÜ[1mÜÜÜÛ[0mÜ
+ßÜ[1mÛ [0mß [1mÛ[0mßÜÛÜÛ[1mÜß[0mÜ    [33mÛÜ[37mßÜ[1mß[0mÛÛÛÛÛ[1mÛ
+[A[30C[0mÛÛ[1mÛß
+[0m
+`k`c  `r1 MEETING THE ANCIENT ONE. `r0
+
+  `0"My name is Turgon.  I was once a great warrior, lad."
+
+  `2You can't help but giggle - he looks so old and frail!
+
+  `0"Stop that giggling, I say!" `2the elderly one shouts.
+
+@pauseoff
+@do write
+`x`x
+@choice
+If you were such a great warrior, why do you live in this dump?
+Obnoxiously giggle even louder.
+@if response is 1 then do
+ @begin
+ @show
+`\`\  `0"I was banished from Greentree, where I used to train.
+
+  `$"What the hell is Greentree?" `2you politely ask.
+
+  `0"A city - a great city northwest of here." `2he sighs.
+
+`k  `0"Besides, it's my father's house, not a dump.  There may be something of value
+  here..   You look like a smart s&boy, if you can find it, you can have it."
+
+ `k
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `0"You annoying little brat!  Begone from me!" `2Turgon shouts.
+
+  `$"Not until you tell me why you live out here in the sticks!"
+
+  `0"I was banished from my home town, Greentree, are you happy?! Get out!"
+
+ `k
+ @end
+
+@#TURGON
+;@do `t01 is 0 (I used this to test this .ref file)
+@do moveback
+@if bitcheck `t19 1 1 then do
+  @begin
+   @do saybar
+`0Goat Boy:`2  Get out of here!  I live here now!
+   @closescript
+  @end
+@busy
+@if `t01 more 0 then do
+ @begin
+ @show
+`r0`c  `2Turgon looks at you expectantly.
+
+ @end
+
+@if `t01 is 4 then do
+ @begin
+ @show
+  `0"Did you find a way to clear my name?"
+
+ @end
+
+@if `t01 = 0 then do
+ @begin
+ @show
+`r0`c  `2An old man with a white beard stands before you.
+
+ @end
+@do `v01 is 1
+@do write
+`x`x
+@choice
+=`t01 0 What is your name, old man with a white beard?
+=`t01 1 Tell me about Greentree, I wanna go there, sounds cool.
+=`t01 2 Come on you old codger!  Why were you kicked out of Greentree?
+=`t01 2 >`i08 0 Offer Turgon your berry pie.
+=`t01 3 Tell me about Greentree, I wanna go there, sounds cool.
+-`t19 0 =`t01 4 No, not really - you better get used to living here.
+=`t01 5 I have news - Barak stole your old position!
+=`t01 8 =`i74 1 I found something!  Barak's Diary!
+Leave.
+@do write
+`\`\
+@if responce is 8 then do
+ @begin
+ @pauseoff
+@do addlog
+  `r1  `r0 `0`n`% has cleared Turgon's name! `r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p18 + 30
+@bitset `t19 1 1
+@do `i74 = 0
+@do x is 23
+@do y is 16
+@do map is 68
+@loadmap &map
+ @show
+`k`c  `r1  Talking To Turgon `r0
+
+  `2Turgon reads the diary quietly.  He looks sad.
+
+  `0"I knew Barak to be juvenile - but I never dreamed he felt this way.  We
+  must go to the city council and show them."
+
+`k  `2You agree to go with Turgon.  A short while later you pass through
+  the Greentree gates.  Turgon dabs his eyes quickly.
+
+`k  `2People eye him as you pass - the guards do not stop him - many
+  probably trained under him.  A crowd begins to form behind you.
+
+`k  The walk ends in front of the city council.  Turgon goes in and comes
+  out a few minutes later with the town elders.
+
+`k`c  `r1`%  Clearing His Name  `r0
+
+  `0"Turgon is innocent!  Turgon is innocent!" `2a young child screams
+  excitedly.  Other voices join his cry - by the time the group reaches
+  the training center there are hundreds.
+
+`k  Turgon stands erect - for the first time since you met him you now
+  understand what being a `0level 12`2 master is all about.  He demands that
+  Barak see him.
+
+`k  `2You see Barak's face look out a window.  When his eyes fall upon the
+  small book you are clutching he screams.  `0"`n`0!  Why have you
+  done this to me?!  You have ruined me!"
+
+  `$"You ruined yourself.  Don't forget this." `2you reply stonily.
+
+`k  `%YOU RECIEVE 30 QUEST POINTS.
+
+  `2You give the diary back to the sobbing Barak.
+
+`k
+  @drawmap
+  @update
+ @end
+
+@if responce is 1 then do
+ @begin
+ @routine turgmeet
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if responce is 7 then do begin
+ @begin
+ @routine turgbarak
+ @drawmap
+ @update
+ @closescript
+ @end
+
+
+@if responce is 2 then do begin
+ @begin
+@show
+  `0"It is a beautiful land.  Ahh, memories.  Sweet Abdul, obese Arthur and
+  childish Barak.  I knew these people you see." `2Turgon smiles.
+
+  `$"They sound like freaks.  Why did they kick you out?" `2you demand.
+
+  `0"I would rather not speak of this subject anymore," `2Turgon's voice cracks
+  with emotion.
+
+`k
+ @do `t01 is 2
+ @do goto turgon
+ @end
+
+@if responce is 3 then do begin
+ @begin
+
+@show
+  `0"No, child.  I will not speak of it!" `2Turgon shouts.
+
+  `2He seems pretty determined. If only you had some kind
+  of peace offering...
+
+`k
+ @do goto turgon
+ @end
+
+@if responce is 4 then do begin
+ @begin
+
+@show
+  `0"A pie?  For me?!  Such a good s&boy!" `2Turgon exclaims.
+
+  `$"Yeah... Yeah I am." `2you agree wholeheartedly.
+
+`k  `%You get a quest point!
+
+`k
+ @do `t01 is 3
+ @do `p18 + 1
+ @do `i08 - 1
+ @do goto turgon
+ @end
+
+@if responce is 6 then do begin
+ @begin
+
+@show
+  `0"Don't worry, s&boy, I'll find a way somehow..." `2Turgon promises.
+
+`k
+ @do goto turgon
+ @end
+
+
+@if responce is 5 then do begin
+ @begin
+
+@show
+  `0"Alright, I'll tell you what happened."
+
+  `2You sit down in front of the old man and cross your legs.  Story time!
+
+`k`c  `r1  TURGON'S STORY HOUR `r0
+
+`0  "I was once a level 12 master.  People would come from distant lands just
+  to train with me," `2the elderly one whispers with a far away look in his eyes.
+
+  `$"Yeah, I'm happy for you and everything, but what did you do that got you
+  banished?  Are you that guy in the story I heard where he was exiled for
+  having relations with a goat?" `2you ask curiously.
+
+`k  Turgon is indignant.  `0"That is a crazy old legend to scare people.
+  There was never such a person."
+
+  `2You snicker - is he telling the truth?
+
+`k  `0"The truth is this - it was soon after the great Red Dragon had been
+  slain when.."
+
+  `$"Red dragon?" `2you rudely interrupt in astonishment.
+
+  `0"Nevermind.. suffice to say we were very happy and celebrating with a great
+  feast when something awful happened," `2Turgon continues.
+
+`k  `0"An anonymous report had led the city council to my door.  They forced the
+  door and searched my home.  They found a satchel of stolen Gems."
+
+`$  "Why'd you take 'em, old man?!" `2you ask puzzled.
+
+  `0"I didn't take them!" `2he screams.
+
+  `2His haggard eyes convince you - you vow to clear his name!
+
+`k
+ @do `t01 is 4
+ @do goto turgon
+ @end
+
+
+
+@drawmap
+@update
+
+@#CHEST
+@do moveback
+@if `t02 is 0 then do
+ @begin
+ @do saybar
+  You find a `+10!
+ @do `i10 + 1
+ @do `t02 = 1
+ @closescript
+ @end
+
+@if `t02 is 1 then do
+ @begin
+ @do saybar
+  There is nothing on the table.
+ @end
+
+@#NOTHING
+
+
+

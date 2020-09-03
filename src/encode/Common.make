@@ -1,0 +1,8 @@
+# $Id: Common.make,v 1.1.1.1 2019/06/28 22:46:04 rswindell Exp $
+# Available Options:
+
+ENCODE_LIB		=	$(ENCODE_SRC)$(DIRSEP)$(LIBODIR)$(DIRSEP)$(LIBPREFIX)encode$(LIBFILE)
+
+ENCODE_CFLAGS	=	-I$(ENCODE_SRC)
+ENCODE_LDFLAGS	=	-L$(ENCODE_SRC)$(DIRSEP)$(LIBODIR)
+ENCODE_LIBS	=	$(UL_PRE)encode$(UL_SUF)

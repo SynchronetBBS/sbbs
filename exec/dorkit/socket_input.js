@@ -1,7 +1,7 @@
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 if (typeof(system) !== 'undefined')
 	js.load_path_list.unshift(system.exec_dir+"dorkit/");
-load('ansi_input.js');
+load('ansi_input.js', undefined);
 var i;
 var q = new Queue("dorkit_input");
 var k;
@@ -66,7 +66,7 @@ while(!js.terminated) {
 		break;
 	k = undefined;
 	if (socket_select([sock], 0.1).length == 1) {
-		k = telnet.interpret(read(1));
+		k = telnet.interpret(sock.read(1));
 	}
 	if (k != undefined && k.length) {
 		for(i=0; i<k.length; i++)

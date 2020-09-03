@@ -1,6 +1,6 @@
 /* Synchronet FidoNet EchoMail tosser/scanner/areafix program */
 
-/* $Id$ */
+/* $Id: sbbsecho.h,v 3.42 2020/06/12 13:00:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -42,7 +42,7 @@
 #include "fidodefs.h"
 
 #define SBBSECHO_VERSION_MAJOR		3
-#define SBBSECHO_VERSION_MINOR		6
+#define SBBSECHO_VERSION_MINOR		11
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -76,6 +76,7 @@ enum pkt_type {
 #define DFLT_BDL_SIZE   (250*1024L)
 
 #define SBBSECHO_MAX_KEY_LEN	25	/* for AreaFix/EchoList keys (previously known as "flags") */
+#define SBBSECHO_MAX_TICPWD_LEN 40	/* FRL-1039: no restrictions on the length ... of the password */
 
 typedef struct {
     uint		sub;						/* Set to INVALID_SUB if pass-thru */
@@ -110,7 +111,7 @@ typedef struct {
 	char		password[FIDO_SUBJ_LEN];	/* Areafix password for this node */
 	char		sesspwd[41];				/* Binkd's MAXPWDLEN = 40 */
 	char		pktpwd[FIDO_PASS_LEN+1];	/* Packet password for this node */
-	char		ticpwd[FIDO_PASS_LEN+1];	/* TIC File password for this node */
+    char		ticpwd[SBBSECHO_MAX_TICPWD_LEN + 1]; /* TIC File password for this node */
 	char		comment[64];	/* Comment for this node */
 	char		name[FIDO_NAME_LEN];
 	char		inbox[MAX_PATH+1];
@@ -128,6 +129,7 @@ typedef struct {
 	bool		binkp_plainAuthOnly;
 	bool		binkp_allowPlainAuth;
 	bool		binkp_allowPlainText;
+	bool		binkp_tls;
 	bool		binkp_poll;
 	uint16_t	binkp_port;
 	char		binkp_host[64];
@@ -155,6 +157,13 @@ struct fido_domain {
 	char		root[MAX_PATH + 1];
 	char		nodelist[MAX_PATH + 1];
 	char		dns_suffix[64];
+};
+
+struct robot {
+	char		name[FIDO_NAME_LEN];
+	char		semfile[MAX_PATH + 1];
+	uint16_t	attr;
+	unsigned	recv_count;
 };
 
 typedef struct {
@@ -194,6 +203,7 @@ typedef struct {
 	bool		secure_echomail;
 	bool		strict_packet_passwords;	/* Packet passwords must always match the configured linked-node */
 	bool		strip_lf;
+	bool		strip_soft_cr;
 	bool		convert_tear;
 	bool		fuzzy_zone;
 	bool		flo_mailer;				/* Binkley-Style-Outbound / FLO mailer */
@@ -210,6 +220,9 @@ typedef struct {
 	bool		ignore_netmail_local_attr;
 	bool		relay_filtered_msgs;
 	bool		auto_add_subs;
+	bool		auto_add_to_areafile;
+	bool		auto_utf8;
+	bool		use_outboxes;
 	ulong		bsy_timeout;
 	ulong		bso_lock_attempts;
 	ulong		bso_lock_delay;			/* in seconds */
@@ -218,12 +231,19 @@ typedef struct {
 	int64_t		min_free_diskspace;
 	struct fido_domain* domain_list;
 	unsigned	domain_count;
+	struct robot* robot_list;
+	unsigned	robot_count;
 	char		binkp_caps[64];
 	char		binkp_sysop[64];
+	bool		binkp_plainAuthOnly;
+	bool		binkp_plainTextOnly;
+	bool		used_include;
 } sbbsecho_cfg_t;
 
-char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];
-char* mailStatusStringList[4];
+extern ini_style_t sbbsecho_ini_style;
+
+extern char* pktTypeStringList[PKT_TYPES_SUPPORTED+1];
+extern char* mailStatusStringList[4];
 
 /***********************/
 /* Function prototypes */

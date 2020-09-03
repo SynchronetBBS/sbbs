@@ -1,5 +1,5 @@
 /* 	CNF file reader/writer - mcmlxxix - 2013
-	$Id$
+	$Id: cnfdefs.js,v 1.10 2020/03/01 19:12:28 rswindell Exp $
 */
 
 /* miscellaneous constants required for cnf parsing
@@ -97,10 +97,10 @@ struct.hotkey_t={
 
 /* message group/sub record structures */
 struct.faddr_t={
-	faddr1:		{bytes:2,				type:"int"},
-	faddr2:		{bytes:2,				type:"int"},
-	faddr3:		{bytes:2,				type:"int"},
-	faddr4:		{bytes:2,				type:"int"}
+	zone:		{bytes:2,				type:"int"},
+	net:		{bytes:2,				type:"int"},
+	node:		{bytes:2,				type:"int"},
+	point:		{bytes:2,				type:"int"}
 };
 struct.sub_t={
 	grp_number:		{bytes:UINT16_T,		type:"int"},	// was grp
@@ -122,7 +122,7 @@ struct.sub_t={
 	fidonet_origin:	{bytes:51,				type:"str"},	// was origline
 	post_sem:		{bytes:LEN_DIR+1,		type:"str"},
 	newsgroup:		{bytes:LEN_DIR+1,		type:"str"},
-	faddr:			{bytes:struct.faddr_t,	type:"obj"},
+	fidonet_addr:	{bytes:struct.faddr_t,	type:"obj"},
 	max_msgs:		{bytes:UINT32_T,		type:"int"},	// was maxmsgs
 	max_crcs:		{bytes:UINT32_T,		type:"int"},	// was maxcrcs
 	max_age:		{bytes:UINT16_T,		type:"int"},	// was maxage
@@ -172,9 +172,127 @@ struct.phub_t={
 	__PADDING__:64
 };
 
+struct.node_dir_t={
+	path:			{bytes:LEN_DIR+1,		type:"str"},
+};
+
+struct.validation_set_t={
+	level:		{bytes:UCHAR,				type:"int"},
+	expire:		{bytes:UINT16_T,			type:"int"},
+	flags1:		{bytes:UINT32_T,			type:"int"},
+	flags2:		{bytes:UINT32_T,			type:"int"},
+	flags3:		{bytes:UINT32_T,			type:"int"},
+	flags4:		{bytes:UINT32_T,			type:"int"},
+	cdt:		{bytes:UINT32_T,			type:"int"},
+	exempt:		{bytes:UINT32_T,			type:"int"},
+	rest:		{bytes:UINT32_T,			type:"int"},
+	__PADDING__:16
+};
+
+struct.sec_level_t={
+	timeperday:	{bytes:UINT16_T,			type:"int"},
+	timepercall:{bytes:UINT16_T,			type:"int"},
+	callsperday:{bytes:UINT16_T,			type:"int"},
+	freecdtperd:{bytes:UINT32_T,			type:"int"},
+	linespermsg:{bytes:UINT16_T,			type:"int"},
+	postsperday:{bytes:UINT16_T,			type:"int"},
+	emailperday:{bytes:UINT16_T,			type:"int"},
+	misc:		{bytes:UINT32_T,			type:"int"},
+	expireto:	{bytes:UCHAR,				type:"int"},
+	__PADDING__:11
+};
+
+struct.cmd_shell_t={
+	name:		{bytes:40+1,				type:"str"},
+	code:		{bytes:LEN_CODE+1,			type:"str"},
+	ars:		{bytes:LEN_ARSTR+1,			type:"str"},
+	misc:		{bytes:UINT32_T,			type:"int"},
+	__PADDING__:16
+};
+
 /* NOTE: top-level data structures only below this point 
 as they may contain references to the data structures above
 and will not work if they are defined first */
+
+/* main config file structure (main.cnf) */
+struct.main={
+	sys_name:			{bytes:40+1,				type:"str"},
+	sys_qwk_id:			{bytes:LEN_QWKID+1,			type:"str"},	// sys_id
+	sys_location:		{bytes:40+1,				type:"str"},
+	sys_phonefmt:		{bytes:12+1,				type:"str"},
+	sys_operator:		{bytes:40+1,				type:"str"},	// sys_op
+	sys_guru:			{bytes:40+1,				type:"str"},
+	sys_pass:			{bytes:40+1,				type:"str"},
+	node_dir:			{bytes:struct.node_dir_t,	type:"lst"},
+	data_dir:			{bytes:LEN_DIR+1,			type:"str"},
+	exec_dir:			{bytes:LEN_DIR+1,			type:"str"},
+	sys_logon:			{bytes:LEN_CMD+1,			type:"str"},
+	sys_logout:			{bytes:LEN_CMD+1,			type:"str"},
+	sys_daily:			{bytes:LEN_CMD+1,			type:"str"},
+	sys_timezone:		{bytes:UINT16_T,			type:"int"},
+	sys_settings:		{bytes:UINT32_T,			type:"int"},	// sys_misc
+	sys_lastnode:		{bytes:UINT16_T,			type:"int"},
+	sys_autonode:		{bytes:UINT16_T,			type:"int"},
+	newuser_questions:	{bytes:UINT32_T,			type:"int"},	// uq
+	sys_pwdays:			{bytes:UINT16_T,			type:"int"},
+	sys_deldays:		{bytes:UINT16_T,			type:"int"},
+	sys_exp_warn:		{bytes:UCHAR,				type:"int"},
+	sys_autodel:		{bytes:UINT16_T,			type:"int"},
+	__PADDING__:1,
+	sys_chat_ars:		{bytes:LEN_ARSTR+1,			type:"str"},	// sys_chat_ar
+	cdt_min_value:		{bytes:UINT16_T,			type:"int"},
+	max_minutes:		{bytes:UINT32_T,			type:"int"},
+	cdt_per_dollar:		{bytes:UINT32_T,			type:"int"},
+	newuser_pass:				{bytes:40+1,		type:"str"},	// new_pass
+	newuser_magic_word:			{bytes:20+1,		type:"str"},	// new_magic
+	newuser_sif:				{bytes:8+1,			type:"str"},
+	newuser_sof:				{bytes:8+1,			type:"str"},
+	newuser_level:				{bytes:UCHAR,		type:"int"},
+	newuser_flags1:				{bytes:UINT32_T,	type:"int"},
+	newuser_flags2:				{bytes:UINT32_T,	type:"int"},
+	newuser_flags3:				{bytes:UINT32_T,	type:"int"},
+	newuser_flags4:				{bytes:UINT32_T,	type:"int"},
+	newuser_exemptions:			{bytes:UINT32_T,	type:"int"},	// new_exempt
+	newuser_restrictions:		{bytes:UINT32_T,	type:"int"},	// new_rest
+	newuser_credits:			{bytes:UINT32_T,	type:"int"},	// new_cdt
+	newuser_minutes:			{bytes:UINT32_T,	type:"int"},	// new_min
+	newuser_editor:				{bytes:LEN_CODE+1,	type:"str"},	// new_xedit
+	newuser_expiration_days:	{bytes:UINT16_T,	type:"int"},	// new_expire
+	newuser_command_shell:		{bytes:UINT16_T,	type:"int"},	// new_shell
+	newuser_settings:			{bytes:UINT32_T,	type:"int"},	// new_misc
+	newuser_download_protocol:	{bytes:UCHAR,		type:"int"},	// new_prot
+	new_install:				{bytes:UCHAR,		type:"int"},
+	newuser_msgscan_init:		{bytes:UINT16_T,	type:"int"},	// new_msgcan_init
+	guest_msgscan_init:			{bytes:UINT16_T,	type:"int"},
+	__PADDING1__:10,
+	expired_level:				{bytes:UCHAR,		type:"int"},
+	expired_flags1:				{bytes:UINT32_T,	type:"int"},
+	expired_flags2:				{bytes:UINT32_T,	type:"int"},
+	expired_flags3:				{bytes:UINT32_T,	type:"int"},
+	expired_flags4:				{bytes:UINT32_T,	type:"int"},
+	expired_exemptions:			{bytes:UINT32_T,	type:"int"},
+	expired_restrictions:		{bytes:UINT32_T,	type:"int"},
+	logon_mod:			{bytes:LEN_MODNAME+1,		type:"str"},
+	logoff_mod:			{bytes:LEN_MODNAME+1,		type:"str"},
+	newuser_mod:		{bytes:LEN_MODNAME+1,		type:"str"},
+	login_mod:			{bytes:LEN_MODNAME+1,		type:"str"},
+	logout_mod:			{bytes:LEN_MODNAME+1,		type:"str"},
+	sync_mod:			{bytes:LEN_MODNAME+1,		type:"str"},
+	expire_mod:			{bytes:LEN_MODNAME+1,		type:"str"},
+	ctrlkey_passthru:	{bytes:UINT32_T,			type:"int"},
+	mods_dir:			{bytes:LEN_DIR+1,			type:"str"},
+	logs_dir:			{bytes:LEN_DIR+1,			type:"str"},
+	readmail_mod:		{bytes:LEN_CMD+1,			type:"str"},
+	scanposts_mod:		{bytes:LEN_CMD+1,			type:"str"},
+	scansubs_mod:		{bytes:LEN_CMD+1,			type:"str"},
+	listmsgs_mod:		{bytes:LEN_CMD+1,			type:"str"},
+	__PADDING2__:569,
+	user_backup_level:	{bytes:UINT16_T,			type:"int"},
+	mail_backup_level:	{bytes:UINT16_T,			type:"int"},
+	validation_set:		{bytes:struct.validation_set_t, type:"lst", length: 10},
+	sec_level:			{bytes:struct.sec_level_t, 	type:"lst", length: 100},
+	command_shell:		{bytes:struct.cmd_shell_t,	type:"lst"},	// cmd_shell
+};
 
 /* main external programs file structure (xtrn.cnf) */
 struct.xtrn={
@@ -193,7 +311,7 @@ struct.msg={
 	max_qwkmsgs:	{bytes:UINT32_T,		type:"int"},
 	mail_maxcrcs:	{bytes:UINT32_T, 		type:"int"},
 	mail_maxage:	{bytes:UINT16_T, 		type:"int"},
-	preqwk_ar:		{bytes:LEN_ARSTR+1, 	type:"str"},
+	preqwk_ars:		{bytes:LEN_ARSTR+1, 	type:"str"},	// preqwk_ar
 	smb_retry_time:	{bytes:UCHAR, 			type:"int"},
 	max_qwkmsgage:	{bytes:UINT16_T, 		type:"int"},
 	__PADDING1__:466,
@@ -201,24 +319,24 @@ struct.msg={
 	__PADDING2__:510,
 	grp:			{bytes:struct.grp_t, 	type:"lst"},
 	sub:			{bytes:struct.sub_t, 	type:"lst"},
-	faddr:			{bytes:struct.faddr_t, 	type:"lst"},
-	origline:		{bytes:51, 				type:"str"},
-	netmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
-	echomail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
-	netmail_dir:	{bytes:LEN_DIR+1, 		type:"str"},
-	echomail_dir:	{bytes:LEN_DIR+1, 		type:"str"},
-	fidofile_dir:	{bytes:LEN_DIR+1, 		type:"str"},
-	netmail_misc:	{bytes:UINT16_T, 		type:"int"},
-	netmail_cost:	{bytes:UINT32_T, 		type:"int"},
-	dflt_faddr:		{bytes:struct.faddr_t, 	type:"obj"},
+	fido_addr_list:	{bytes:struct.faddr_t, 	type:"lst"},
+	fido_default_origin:{bytes:51, 			type:"str"},
+	fido_netmail_sem:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_echomail_sem:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_netmail_dir:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_echomail_dir:	{bytes:LEN_DIR+1, 	type:"str"},
+	fido_file_dir:		{bytes:LEN_DIR+1, 	type:"str"},
+	fido_netmail_misc:	{bytes:UINT16_T, 	type:"int"},
+	fido_netmail_cost:	{bytes:UINT32_T, 	type:"int"},
+	fido_default_addr:	{bytes:struct.faddr_t, 	type:"obj"},
 	__PADDING3__:56,
-	qnet_tagline:	{bytes:128, 			type:"str"},
-	qhub:			{bytes:struct.qhub_t, 	type:"lst"},
+	qwknet_default_tagline:{bytes:128, 		type:"str"},
+	qwknet_hub:		{bytes:struct.qhub_t, 	type:"lst"},
 	__PADDING4__:64,
 	__PADDING5__:11,
-	sys_psnum:		{bytes:UINT32_T, 		type:"int"},
-	phub:			{bytes:struct.phub_t, 	type:"lst"},
-	sys_psname:		{bytes:13, 				type:"str"},
+	postlink_num:	{bytes:UINT32_T, 		type:"int"},
+	postlink_hub:	{bytes:struct.phub_t, 	type:"lst"},
+	postlink_name:	{bytes:13, 				type:"str"},
 	__PADDING6__:64,
 	sys_inetaddr:	{bytes:128, 			type:"str"},
 	inetmail_sem:	{bytes:LEN_DIR+1, 		type:"str"},
@@ -308,7 +426,7 @@ struct.dlevent_t={
 
 /* File Transfer Protocol (drivers) */
 struct.prot_t={
-	mnemonic:		{bytes:1,				type:"str"},
+	key:			{bytes:UCHAR,			type:"str"},
 	name:			{bytes:26,				type:"str"},
 	ulcmd:			{bytes:LEN_CMD+1,		type:"str"},
 	dlcmd:			{bytes:LEN_CMD+1,		type:"str"},

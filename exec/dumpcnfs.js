@@ -1,4 +1,4 @@
-// $Id$
+// $Id: dumpcnfs.js,v 1.1 2018/03/11 00:43:01 rswindell Exp $
 
 // Example use of cnflib.js
 // Changes to the objects may be written back to the files using cnf.write()

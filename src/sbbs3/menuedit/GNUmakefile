@@ -6,7 +6,7 @@
 # @format.tab-size 4													#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.5 2011/05/27 06:03:31 deuce Exp $
 
 # Macros
 #DEBUG	=	1				# Comment out for release (non-debug) version

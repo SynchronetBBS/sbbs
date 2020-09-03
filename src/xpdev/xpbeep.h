@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: xpbeep.h,v 1.16 2020/04/15 15:18:00 deuce Exp $ */
 
 #ifndef _XPBEEP_H_
 #define _XPBEEP_H_
@@ -34,6 +34,7 @@ enum WAVE_SHAPE {
 #ifdef __cplusplus
 extern "C" {
 #endif
+DLLEXPORT void DLLCALL xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape);
 DLLEXPORT BOOL DLLCALL xptone_open(void);
 DLLEXPORT BOOL DLLCALL xptone_close(void);
 DLLEXPORT void DLLCALL xpbeep(double freq, DWORD duration);

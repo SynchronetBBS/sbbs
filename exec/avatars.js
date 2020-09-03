@@ -1,6 +1,6 @@
-// $Id$
+// $Id: avatars.js,v 1.39 2019/08/19 03:01:58 rswindell Exp $
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 1.39 $".split(' ')[1];
 
 load('sbbsdefs.js');
 load("lz-string.js");
@@ -195,7 +195,9 @@ function import_shared_file(hdr, body)
 
 	// If the filename (in the subject) already contains the sender's QWK-ID, skip-it
 	var filename = file_getname(hdr.subject);
-	var prefix = file_getname(hdr.from_net_addr) + '.';
+	var prefix = '';
+	if(!fidoaddr.is_valid(hdr.from_net_addr))
+		prefix = file_getname(hdr.from_net_addr) + '.';
 	var suffix = '.bin';
 	if(filename.length > prefix.length + suffix.length
 		&& filename.substr(0, prefix.length).toLowerCase() == prefix.toLowerCase())
@@ -330,7 +332,7 @@ function export_users(msgbase, realnames, all)
 		var u = new User(n);
 		if((u.settings&USER_DELETED)
 			|| !u.stats.total_posts			// No need to export avatars for users that have never posted
-			|| (u.security_restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
+			|| (u.security.restrictions&(UFLAG_P|UFLAG_N|UFLAG_Q)) // or will never post
 			) {
 			if(verbosity)
 				printf("User #%u hasn't or can't post, skipping\r\n", n);
@@ -598,6 +600,8 @@ function main()
 			case "normalize":
 			case "count":
 			case "colls":
+			case "msg-default":
+			case "msg_default":
 				cmds.push(arg);
 				break;
 			default:
@@ -769,6 +773,33 @@ function main()
 				var success = ini.iniSetValue("newuser", "avatar", data);
 				if(success)
 					ini.iniRemoveKey("newuser", "avatar_file");
+				printf("%s\r\n", success ? "Successful" : "FAILED!");
+				ini.close();
+				break;
+			case "msg-default":
+			case "msg_default":
+				if(!files.length)
+					files.push(optval[cmd]);
+				if(!files.length) {
+					alert("No file specified");
+					break;
+				}
+				if(!file_exists(files[0])) {
+					printf("File does not exist: %s\r\n", files[0]);
+					break;
+				}
+				printf("Importing %s sub-board default avatar\r\n", files[0]);
+				var data = lib.import_file(null, files[0], offset);
+				if(!data) {
+					alert("Failed");
+					break;
+				}
+				var ini = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
+				if(!ini.open(file_exists(ini.name) ? 'r+':'w+')) {
+					alert(ini.name + " open error " + ini.error);
+					break;
+				}
+				var success = ini.iniSetValue("avatars", "msg_default", data);
 				printf("%s\r\n", success ? "Successful" : "FAILED!");
 				ini.close();
 				break;

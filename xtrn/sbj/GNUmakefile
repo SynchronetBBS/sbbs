@@ -10,7 +10,7 @@
 # FreeBSD: make -f Makefile.gnu os=freebsd								#
 #########################################################################
 
-# $Id$
+# $Id: GNUmakefile,v 1.19 2006/01/11 02:18:57 deuce Exp $
 
 XSDK		=	../sdk
 SRC_ROOT	?=	../../src

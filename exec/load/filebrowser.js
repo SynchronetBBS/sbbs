@@ -178,7 +178,7 @@ var FileBrowser = function (options) {
 		if (typeof options.path != "string" ||
 			!file_isdir(options.path)
 		) {
-			throw "FileBrowser: invalid or no 'path' argument.";
+			throw "FileBrowser: invalid or no 'path' argument: " + options.path;
 		}
 
 		if (typeof options.frame != "undefined") {

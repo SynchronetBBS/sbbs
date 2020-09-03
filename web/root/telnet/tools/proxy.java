@@ -1,7 +1,7 @@
 /**
  * proxy -- a proxy server for telnet
  * --
- * $Id$
+ * $Id: proxy.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Tue May 27 15:08:19 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * proxy class -- implements a proxy server to redirect network access
  * @author Matthias L. Jugel, Marcus Meiﬂner
- * @version $Id$
+ * @version $Id: proxy.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  */
 
 public class proxy implements Runnable

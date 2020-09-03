@@ -1,6 +1,6 @@
---- session/ssh2_authc.c.orig	2017-01-18 22:42:06.000000000 -0500
-+++ session/ssh2_authc.c	2018-01-03 01:24:48.768379000 -0500
-@@ -530,7 +530,7 @@
+--- ../tmp2/session/ssh2_authc.c	2018-12-14 17:31:34.000000000 -0500
++++ session/ssh2_authc.c	2019-06-03 16:41:49.956986000 -0400
+@@ -868,7 +868,7 @@
  		if( !cryptStatusError( status ) )
  			{
  			status = CRYPT_OK;	/* readUint32() returns a count value */
@@ -9,7 +9,7 @@
  				{
  				/* Requesting zero or more than a small number of prompts is 
  				   suspicious */
-@@ -538,46 +538,49 @@
+@@ -876,49 +876,52 @@
  				}
  			}
  		}
@@ -17,21 +17,27 @@
 +	if( noPrompts > 0 )
  		{
 -		status = readString32( &stream, promptBuffer, 
--							   CRYPT_MAX_TEXTSIZE, &promptLength );
--		if( cryptStatusOK( status ) && promptLength <= 0 )
 +		if( cryptStatusOK( status ) )
- 			{
--			/* We must have at least some sort of prompt given that we 
--			   require num_prompts to be nonzero */
--			status = CRYPT_ERROR_BADDATA;
++ 			{
 +			status = readString32( &stream, promptBuffer, 
-+								   CRYPT_MAX_TEXTSIZE, &promptLength );
+ 							   CRYPT_MAX_TEXTSIZE, &promptLength );
+-		if( cryptStatusOK( status ) && promptLength <= 0 )
 +			if( cryptStatusOK( status ) && promptLength <= 0 )
 +				{
 +				/* We must have at least some sort of prompt given that we 
 +				   require num_prompts to be nonzero */
 +				status = CRYPT_ERROR_BADDATA;
 +				}
++			}
++		sMemDisconnect( &stream );
++		if( cryptStatusError( status ) )
+ 			{
+-			/* We must have at least some sort of prompt given that we 
+-			   require num_prompts to be nonzero */
+-			status = CRYPT_ERROR_BADDATA;
++			retExt( status,
++					( status, SESSION_ERRINFO, 
++					  "Invalid PAM authentication request packet" ) );
  			}
 -		}
 -	sMemDisconnect( &stream );
@@ -41,13 +47,10 @@
 -				( status, SESSION_ERRINFO, 
 -				  "Invalid PAM authentication request packet" ) );
 -		}
-+		sMemDisconnect( &stream );
-+		if( cryptStatusError( status ) )
-+			{
-+			retExt( status,
-+					( status, SESSION_ERRINFO, 
-+					  "Invalid PAM authentication request packet" ) );
-+			}
+-	REQUIRES( nameLength >= 0 && nameLength <= CRYPT_MAX_TEXTSIZE );
+-	REQUIRES( promptLength >= 1 && promptLength <= CRYPT_MAX_TEXTSIZE );
++		REQUIRES( nameLength >= 0 && nameLength <= CRYPT_MAX_TEXTSIZE );
++		REQUIRES( promptLength >= 1 && promptLength <= CRYPT_MAX_TEXTSIZE );
  
 -	/* Make sure that we're being asked for some form of password 
 -	   authentication.  This assumes that the prompt string begins with the 
@@ -70,6 +73,7 @@
 -								  nameLength ) : \
 -				  sanitiseString( promptBuffer, CRYPT_MAX_TEXTSIZE, \
 -								  promptLength ) ) );
+-		}
 +		/* Make sure that we're being asked for some form of password 
 +		   authentication.  This assumes that the prompt string begins with the 
 +		   word "password" (which always seems to be the case), if it isn't then 
@@ -92,6 +96,7 @@
 +					  sanitiseString( promptBuffer, CRYPT_MAX_TEXTSIZE, \
 +									  promptLength ) ) );
 +			}
- 		}
++	}
  
  	REQUIRES( passwordPtr != NULL && \
+ 			  passwordPtr->valueLength > 0 && \

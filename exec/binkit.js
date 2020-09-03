@@ -1,5 +1,5 @@
-// $Id$
-
+// $Id: binkit.js,v 2.39 2020/05/04 22:58:33 rswindell Exp $
+// vi: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 /*
  * Intentionally simple "Advanced BinkleyTerm Style Outbound"
  * mailer.
@@ -22,9 +22,66 @@ load('fidocfg.js');
 load('binkp.js');
 load('freqit_common.js');
 
-var REVISION = "$Revision$".split(' ')[1];
+var REVISION = "$Revision: 2.39 $".split(' ')[1];
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
+// data/binkstats.ini
+var stats = { inbound: { true: {}, false: {} }, callout: { true: {}, false: {} }, totals: {} };
+
+function update_stats(stats, addr, bp, host)
+{
+	stats[addr] = {};
+	if(bp.remote_operator)
+		stats[addr].oper = bp.remote_operator;
+	if(bp.remote_addrs)
+		stats[addr].AKAs = bp.remote_addrs;
+	if(bp.remote_capabilities)
+		stats[addr].caps = bp.remote_capabilities;
+	if(bp.remote_ver)
+		stats[addr].vers = bp.remote_ver;
+	if(bp.connect_host)
+		stats[addr].host = bp.connect_host;
+	else if(host)
+		stats[addr].host = host;
+	if(bp.connect_port)
+		stats[addr].port = bp.connect_port;
+	if(bp.connect_error !== undefined)
+		stats[addr].connect_error = bp.connect_error;
+	for(var i in bp.remote_info)
+		stats[addr]['info.' + i.toLowerCase()] = bp.remote_info[i];
+
+	stats[addr].localtime = new Date();
+	if(bp.sent_files.length)
+		stats[addr].sent_files = bp.sent_files;
+	if(bp.failed_sent_files.length)
+		stats[addr].failed_sent_files = bp.failed_sent_files;
+	if(bp.received_files.length)
+		stats[addr].received_files = bp.received_files;
+	if(bp.failed_received_files.length)
+		stats[addr].failed_received_files = bp.failed_received_files;
+}
+
+function update_totals(stats, addr, bp, callout, success)
+{
+	if(!stats[addr])
+		stats[addr] = {};
+	var counter = format("%s_%s", success ? "successful" : "failed", callout ? "callouts":"inbounds");
+	if(!stats[addr][counter])
+		stats[addr][counter] = 0;
+	stats[addr][counter]++;
+	if(!stats[addr].sent_files)
+		stats[addr].sent_files = 0;
+	stats[addr].sent_files += bp.sent_files.length;
+	if(!stats[addr].received_files)
+		stats[addr].received_files = 0;
+	stats[addr].received_files += bp.received_files.length;
+	if(!stats[addr].failed_sent_files)
+		stats[addr].failed_sent_files = 0;
+	stats[addr].failed_sent_files += bp.failed_sent_files.length;
+	if(!stats[addr].failed_received_files)
+		stats[addr].failed_received_files = 0;
+	stats[addr].failed_received_files += bp.failed_received_files.length;
+}
 
 FREQIT.add_file = function(filename, bp, cfg)
 {
@@ -95,7 +152,7 @@ function lock_flow(file)
 			return undefined;
 		}
 	}
-	ret.bsy.writeln("BinkIT");
+	ret.bsy.writeln(version_notice + " args: " + argv.join(' '));
 	ret.bsy.flush();
 	log(LOG_DEBUG, "Lock successful.");
 	return ret;
@@ -113,8 +170,8 @@ function unlock_flow(locks)
 function outbound_root(addr, scfg)
 {
 	if (FIDO.FTNDomains.outboundMap[addr.domain] === undefined)
-		return scfg.outbound.replace(/[\\\/]$/, '');
-	return FIDO.FTNDomains.outboundMap[addr.domain];
+		return fullpath(scfg.outbound.replace(/[\\\/]$/, ''));
+	return fullpath(FIDO.FTNDomains.outboundMap[addr.domain]);
 }
 
 /*
@@ -143,7 +200,7 @@ function add_outbound_files(addrs, bp)
 	addrs.forEach(function(addr) {
 		var lock_files;
 
-		log(LOG_DEBUG, "Adding outbound files for "+addr);
+		log(LOG_DEBUG, "Adding outbound files for "+addr + " (" + typeof(addr) + ")");
 		// Find all possible flow files for the remote.
 		var allfiles = directory(outbound_root(addr, bp.cb_data.binkit_scfg)+addr.flo_outbound(bp.default_zone, bp.default_domain)+'*');
 		// Parse flow files and call addFile() tracking what to do on success.
@@ -237,6 +294,16 @@ function add_outbound_files(addrs, bp)
 				}
 			});
 		}
+		if(bp.cb_data.binkitcfg.node[addr] === undefined
+			|| !bp.cb_data.binkitcfg.node[addr].outbox)
+			return;
+		var boxfiles = directory(backslash(bp.cb_data.binkitcfg.node[addr].outbox) + '*');
+		for(var f in boxfiles) {
+			var fname = boxfiles[f];
+			log("outbox file: " + fname);
+			if (bp.addFile(fname))
+				bp.cb_data.binkit_file_actions[fname] = 'DELETE';
+		}
 	});
 }
 
@@ -249,7 +316,7 @@ function callout_auth_cb(mode, bp)
 	 */
 	var addrs = [];
 
-	if (bp.cb_data.binkitpw === undefined || bp.cb_data.binkitpw === '-')
+	if (!bp.cb_data.binkitpw || bp.cb_data.binkitpw === '-')
 		addrs.push(bp.cb_data.binkit_to_addr);
 	else {
 		bp.remote_addrs.forEach(function(addr) {
@@ -265,6 +332,15 @@ function callout_auth_cb(mode, bp)
 	add_outbound_files(addrs, bp);
 }
 
+function remove_file(fname)
+{
+	if (file_remove(fname))
+		log(LOG_INFO, "Deleted file: " + fname);
+	else
+		log(LOG_ERROR, "Unable to delete file: " + fname);
+}
+
+
 /*
  * Delete completed flo files.
  */
@@ -278,7 +354,7 @@ function tx_callback(fname, bp)
 			while ((j = bp.cb_data.binkit_flow_contents[flo].indexOf(fname)) !== -1)
 				bp.cb_data.binkit_flow_contents[flo].splice(j, 1);
 			if (bp.cb_data.binkit_flow_contents[flo].length == 0)
-				file_remove(flo);
+				remove_file(flo);
 		}
 	});
 }
@@ -314,13 +390,18 @@ function handle_freq(reqfname, bp)
 	}
 }
 
-function rename_or_move(src, dst)
+function rename_or_move(src, dst_dir, dst_fname)
 {
 	var sf;
 	var df;
 	var buf;
 	var remain;
 
+	if (!mkpath(dst_dir)) {
+		log(LOG_ERR, "Error " + errno + " making directory: " + dst_dir);
+		return false;
+	}
+	var dst = dst_dir + dst_fname;
 	if (file_rename(src, dst))
 		return true;
 	sf = new File(src);
@@ -379,7 +460,7 @@ function rx_callback(fname, bp)
 
 	if (fname.search(/\.req$/i) !== -1) {
 		handle_freq(fname, bp);
-		file_remove(fname);
+		remove_file(fname);
 	}
 	else {
 		if (bp.authenticated === 'secure') {
@@ -387,7 +468,7 @@ function rx_callback(fname, bp)
 				log(LOG_ERROR, "No secure inbound configured in sbbsecho!  Leaving secure file as '"+fname+"'.");
 			else {
 				log(LOG_INFO, "Moving '"+fname+"' to '"+secure_inbound+file_getname(fname)+"'.");
-				if (!rename_or_move(fname, secure_inbound+file_getname(fname)))
+				if (!rename_or_move(fname, secure_inbound, file_getname(fname)))
 					return false;
 			}
 		}
@@ -397,7 +478,7 @@ function rx_callback(fname, bp)
 				log(LOG_ERROR, "No inbound configured in sbbsecho!  Leaving insecure file as '"+fname+"'.");
 			else {
 				log(LOG_INFO, "Moving '"+fname+"' to '"+inbound+file_getname(fname)+"'.");
-				if (!rename_or_move(fname, inbound+file_getname(fname)))
+				if (!rename_or_move(fname, inbound, file_getname(fname)))
 					return false;
 			}
 		}
@@ -433,7 +514,7 @@ function callout_want_callback(fobj, fsize, fdate, offset, bp)
 	if (this.received_files.indexOf(fobj.name) != -1)
 		return this.file.REJECT;
 	// Reject or skip existing files.
-	if (file_exists(fobj.name)) {
+	if (file_size(fobj.name) > 0) {
 		log(LOG_WARNING, "Inbound file already exists: " + fobj.name);
 		// If the size and date are the same, reject it.
 		if (fsize == file_size(fobj.name) && fdate == file_date(fobj.name))
@@ -462,10 +543,8 @@ function callout_done(bp)
 						log(LOG_ERROR, "Unable to truncate '"+f.name+"'.");
 					break;
 				case 'DELETE':
-					if (file_remove(file))
-						log(LOG_INFO, "Removed '"+file+"'.");
-					else
-						log(LOG_ERROR, "Unable to remove '"+file+"'.");
+					remove_file(file);
+					break;
 			}
 		}
 	});
@@ -511,7 +590,7 @@ function callout_done(bp)
 	Object.keys(bp.cb_data.binkit_flow_contents).forEach(function(flo) {
 		if (file_exists(flo)) {
 			if (bp.cb_data.binkit_flow_contents[flo].length == 0)
-				file_remove(flo);
+				remove_file(flo);
 		}
 	});
 }
@@ -522,6 +601,7 @@ function callout(addr, scfg, locks, bicfg)
 	var bp = new BinkP(version_notice, undefined, rx_callback, tx_callback);
 	var port;
 	var host;
+	var tls = false;
 	var f;
 	var success = false;
 	var src_addr;
@@ -530,9 +610,11 @@ function callout(addr, scfg, locks, bicfg)
 	if (bicfg === undefined)
 		bicfg = new BinkITCfg();
 	bp.system_operator = bicfg.sysop;
+	bp.plain_auth_only = bicfg.plain_auth_only;
+	bp.crypt_support = bicfg.crypt_support;
 	bp.cb_data = {
 		binkitcfg:bicfg,
-		binkit_to_addr:addr,
+		binkit_to_addr:FIDO.parse_addr(addr, myaddr.zone, myaddr.domain),
 		binkit_scfg:scfg,
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
@@ -542,9 +624,15 @@ function callout(addr, scfg, locks, bicfg)
 		bp.cb_data.binkitpw = bp.cb_data.binkitcfg.node[addr].pass;
 		port = bp.cb_data.binkitcfg.node[addr].port;
 		host = bp.cb_data.binkitcfg.node[addr].host;
-		bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
-		bp.require_crypt = !(bp.cb_data.binkitcfg.node[addr].nocrypt);
-		bp.plain_auth_only = bp.cb_data.binkitcfg.node[addr].plain_auth_only;
+		tls = bp.cb_data.binkitcfg.node[addr].tls;
+		if (bp.plain_auth_only) {
+			bp.require_md5 = false;
+			bp.require_crypt = false;
+		} else {
+			bp.require_md5 = !(bp.cb_data.binkitcfg.node[addr].nomd5);
+			bp.require_crypt = bp.crypt_support && !(bp.cb_data.binkitcfg.node[addr].nocrypt);
+			bp.plain_auth_only = bp.cb_data.binkitcfg.node[addr].plain_auth_only;
+		}
 	}
 	// TODO: Force debug mode for now...
 	bp.debug = true;
@@ -576,7 +664,10 @@ function callout(addr, scfg, locks, bicfg)
 
 	log(LOG_DEBUG, format("connecting to %s at %s", addr, host));
 	// We won't add files until the auth finishes...
-	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host);
+	success = bp.connect(addr, bp.cb_data.binkitpw, callout_auth_cb, port, host, tls);
+	// Statistics
+	update_stats(stats.callout[success], addr, bp, host);
+	update_totals(stats.totals, addr, bp, true, success);
 	callout_done(bp);
 }
 
@@ -719,6 +810,23 @@ function run_one_outbound_dir(dir, scfg, ran)
 	log(LOG_DEBUG, "Done checking in "+dir+".");
 }
 
+function run_one_outbox_dir(addr, scfg, bicfg, ran)
+{
+	var dir = bicfg.node[addr].outbox;
+	if(!dir)
+		return;
+	dir = backslash(dir);
+	log(LOG_DEBUG, "Running outbox dir for (" + addr + "): " + dir);
+	var files = directory(dir + '*');
+	if(files.length) {
+		log(LOG_INFO, "Attempting callout for " + addr + ", outbox files: " + files);
+		var locks = [];
+		callout(addr, scfg, locks, bicfg);
+		ran[addr] = true;
+		locks.forEach(unlock_flow);
+	}
+}
+
 function touch_semaphores()
 {
 	semaphores.forEach(function(semname) {
@@ -729,6 +837,7 @@ function touch_semaphores()
 
 function run_outbound(ran)
 {
+	var bicfg;
 	var scfg;
 	var outbound_dirs=[];
 	var outbound_roots=[];
@@ -736,6 +845,7 @@ function run_outbound(ran)
 
 	log(LOG_DEBUG, "Running outbound");
 	scfg = new SBBSEchoCfg();
+	bicfg = new BinkITCfg();
 
 	if (!scfg.is_flo) {
 		log(LOG_ERROR, "sbbsecho not configured for FLO-style mailers.");
@@ -753,45 +863,52 @@ function run_outbound(ran)
 
 		function addDir(dir) {
 			var bdir = backslash(dir);
-			if (outbound_dirs.indexOf(bdir) == -1)
-				outbound_dirs.push(bdir);
+			bdir = fullpath(bdir);
+			if (outbound_dirs.indexOf(bdir) == -1) outbound_dirs.push(bdir);
 		}
 
-		if (file_isdir(oroot))
+		function addPoints(dir) {
+			var pnts = directory(backslash(dir) + '*.pnt', false);
+			pnts.forEach(function (pdir) {
+				if (pdir.search(/[\\\/][0-9a-z]{8}.pnt$/) >= 0 && file_isdir(pdir)) {
+					addDir(pdir);
+				} else {
+					log(LOG_WARNING, "Unhandled/Unexpected point path '"+pdir+"'.");
+				}
+			});
+		}
+
+		if (file_isdir(oroot)) {
 			addDir(oroot);
-		else {
+			addPoints(oroot);
+		} else {
 			log(LOG_NOTICE, "Skipping non-existent outbound directory: " + oroot);
 			return;
 		}
 		dirs = directory(oroot+'.*', 0);
 		dirs.forEach(function(dir) {
-			var pnts;
-
 			var ext = file_getext(dir);
 			if (ext === undefined)
 				return;
 			if (ext.search(/^\.[0-9a-f]+$/) == 0) {
 				if (file_isdir(dir)) {
 					addDir(dir);
-					pnts = directory(backslash(dir)+'.pnt', false);
-					pnts.forEach(function(pdir) {
-						if (pdir.search(/[\\\/][0-9a-z]{8}.pnt$/) >= 0 && file_isdir(pdir))
-							addDir(pdir);
-						else
-							log(LOG_WARNING, "Unhandled/Unexpected point path '"+pdir+"'.");
-					});
-				}
-				else
+					addPoints(dir);
+				} else {
 					log(LOG_WARNING, "Unexpected file in outbound '"+dir+"'.");
-			}
-			else
+				}
+			} else {
 				log(LOG_WARNING, "Unhandled outbound '"+dir+"'.");
+			}
 		});
 	});
 	log(LOG_DEBUG, "Outbound dirs: " + JSON.stringify(outbound_dirs, null, 0));
 	outbound_dirs.forEach(function(dir) {
 		run_one_outbound_dir(dir, scfg, ran);
 	});
+	for(var addr in bicfg.node) {
+		run_one_outbox_dir(addr, scfg, bicfg, ran);
+	}
 }
 
 /*
@@ -859,7 +976,7 @@ function inbound_auth_cb(pwd, bp)
 	var invalid=false;
 
 	function check_nocrypt(node) {
-		if (node) {
+		if (node.nocrypt) {
 			if (nocrypt === undefined)
 				nocrypt = true;
 		}
@@ -868,12 +985,13 @@ function inbound_auth_cb(pwd, bp)
 		}
 	}
 
+	log(LOG_INFO, "Remote addresses: " + bp.remote_addrs.join(' '));
 	bp.remote_addrs.forEach(function(addr) {
 		var cpw;
 		if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
 			log(LOG_INFO, "Inbound session for: " + addr);
 			cpw = bp.cb_data.binkitcfg.node[addr].pass;
-			if (cpw === undefined)
+			if (!cpw)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
 				if (mystic_broken_cram(bp))
@@ -911,8 +1029,11 @@ function inbound_auth_cb(pwd, bp)
 			}
 			else {
 				// TODO: Deal with arrays of passwords?
-				if (!bp.cb_data.binkitcfg.node[addr].nomd5)	// BinkpAllowPlainAuth=false
+				if (!bp.plain_auth_only								// [BinkP] PlainAuthOnly=false
+					&& !bp.cb_data.binkitcfg.node[addr].nomd5) {	// [node:] BinkpAllowPlainAuth=false
 					log(LOG_WARNING, "CRAM-MD5 required (and not provided) by " + addr);
+					invalid = "CRAM-MD5 authentication required";
+				}
 				else if (bp.cb_data.binkitcfg.node[addr].pass === pwd[0]) {
 					log(LOG_INFO, "Plain-text password match for " + addr);
 					addrs.push(addr);
@@ -930,7 +1051,7 @@ function inbound_auth_cb(pwd, bp)
 	});
 	if (addrs.length === 0) {
 		if (invalid) {
-			bp.sendCmd(bp.command.M_ERR, "Password mismatch");
+			bp.sendCmd(bp.command.M_ERR, typeof invalid == "string" ? invalid : "Password mismatch");
 		}
 		else {
 			// If we have NONE of their nodes configured, we can send them files for ALL of them.
@@ -946,7 +1067,7 @@ function inbound_auth_cb(pwd, bp)
 		if (nocrypt === undefined)
 			nocrypt = false;
 	}
-	bp.require_crypt = !nocrypt;
+	bp.require_crypt = bp.crypt_support && !bp.plain_auth_only && !nocrypt;
 
 	add_outbound_files(addrs, bp);
 	return ret;
@@ -970,6 +1091,8 @@ function run_inbound(sock)
 		binkit_locks:locks
 	};
 	bp.system_operator = bp.cb_data.binkitcfg.sysop;
+	bp.plain_auth_only = bp.cb_data.binkitcfg.plain_auth_only;
+	bp.crypt_support = bp.cb_data.binkitcfg.crypt_support;
 
 	// TODO: Force debug mode for now...
 	bp.debug = true;
@@ -985,7 +1108,15 @@ function run_inbound(sock)
 
 	// We won't add files until the auth finishes...
 	success = bp.accept(sock, inbound_auth_cb);
-
+	
+	// Statistics
+	if(bp.remote_addrs !== undefined && bp.remote_addrs.length) {
+		var addr = bp.remote_addrs[0];
+		if(addr) {
+			update_stats(stats.inbound[success], addr, bp, sock.remote_ip_address);
+			update_totals(stats.totals, addr, bp, false, success);
+		}
+	}
 	callout_done(bp);
 
 	locks.forEach(function(lock) {
@@ -1049,83 +1180,6 @@ function run_polls(ran)
 		poll_node(addr_str, scfg, bicfg, myaddr);
 		ran[addr] = true;
 	});
-}
-
-// First-time installation routine (only)
-function install()
-{
-	var cnflib = load({}, "cnflib.js");
-	var xtrn_cnf = cnflib.read("xtrn.cnf");
-	if (!xtrn_cnf)
-		return "Failed to read xtrn.cnf";
-
-	var changed = false;
-	if (!xtrn_area.event["binkout"]) {
-		printf("Adding timed event: BINKOUT\r\n");
-		xtrn_cnf.event.push( {
-				"code": "BINKOUT",
-				"cmd": "?binkit",
-				"days": 255,
-				"time": 0,
-				"node_num": 1,
-				"settings": 0,
-				"startup_dir": "",
-				"freq": 0,
-				"mdays": 0,
-				"months": 0
-				});
-		changed = true;
-	}
-
-	if (!xtrn_area.event["binkpoll"]) {
-		printf("Adding timed event: BINKPOLL\r\n");
-		xtrn_cnf.event.push( {
-				"code": "BINKPOLL",
-				"cmd": "?binkit -p",
-				"days": 255,
-				"time": 0,
-				"node_num": 1,
-				"settings": 0,
-				"startup_dir": "",
-				"freq": 60,
-				"mdays": 0,
-				"months": 0
-				});
-		changed = true;
-	}
-
-	if (changed && !cnflib.write("xtrn.cnf", undefined, xtrn_cnf))
-		return "Failed to write xtrn.cnf";
-
-	var ini = new File(file_cfgname(system.ctrl_dir, "sbbsecho.ini"));
-	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
-		return ini.name + " open error " + ini.error;
-	printf("Updating %s\r\n", ini.name);
-	ini.iniSetValue(null, "BinkleyStyleOutbound", true);
-	ini.iniSetValue(null, "OutgoingSemaphore", "../data/binkout.now");
-	var links = ini.iniGetAllObjects("addr", "node:");
-	for (var i in links) {
-		if (links[i].addr.toUpperCase().indexOf('ALL') >= 0)	// Don't include wildcard links
-			continue;
-		var password = links[i].PacketPwd ? links[i].PacketPwd : links[i].AreaFixPwd;
-		ini.iniSetValue("node:"+links[i].addr, "SessionPwd", password === undefined ? '' : password);
-		ini.iniSetValue("node:"+links[i].addr, "Poll", links[i].GroupHub ? true : false);
-	}
-	ini.close();
-
-	ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
-	if (!ini.open(file_exists(ini.name) ? 'r+':'w+'))
-		return ini.name + " open error " + ini.error;
-	if(!ini.iniGetObject("BINKP") && !ini.iniGetObject("BINKIT")) {
-		printf("Updating %s\r\n", ini.name);
-		var section = "BINKP";
-		ini.iniSetValue(section, "Enabled", true);
-		ini.iniSetValue(section, "Command", "binkit.js");
-		ini.iniSetValue(section, "Port", 24554);
-	}
-	ini.close();
-
-	return true;
 }
 
 // Upgrade from separate binkit.ini/sbbsecho.ini/ftn_domains.ini to a combined sbbsecho.ini
@@ -1197,15 +1251,28 @@ catch(e) {}
 var ran = {};
 var i;
 var addr;
+var stats_file = new File(system.data_dir + 'binkstats.ini');
+if(stats_file.open("r")) {
+	var sections = stats_file.iniGetSections("totals: ");
+	for(i in sections) {
+		stats.totals[sections[i].slice(8)] = stats_file.iniGetObject(sections[i]);
+	}
+	stats_file.close();
+}
 
 log(LOG_INFO, version_notice + " invoked with options: " + argv.join(' '));
+
+if (system.fido_addr_list.length < 1) {
+	alert("No system FidoNet address configured");
+	exit(1);
+}
 
 // If we're running as a service, call run_inbound().
 if (sock !== undefined && sock.descriptor !== -1)
 	run_inbound(sock);
 else {
 	if (argv.indexOf('install') !== -1) {
-		var result = install();
+		var result = load({}, "install-binkit.js");
 		if (result != true) {
 			alert(result);
 			exit(1);
@@ -1248,5 +1315,25 @@ else {
 				run_polls(ran);
 		}
 	}
+}
+
+// Update binkstats.ini
+if(stats_file.open(stats_file.exists ? 'r+':'w+')) {
+	stats_file.ini_key_prefix = '\t';
+	stats_file.ini_section_separator = '';
+	stats_file.ini_value_separator = ' = ';
+	stats_file.iniReplaceObject = function(sec, obj) { this.iniRemoveSection(sec); this.iniSetObject(sec, obj); };
+
+	for(i in stats.totals)
+		stats_file.iniSetObject('totals: ' + i, stats.totals[i]);
+	for(i in stats.callout[true])
+		stats_file.iniReplaceObject('callout success: ' + i, stats.callout[true][i]);
+	for(i in stats.callout[false])
+		stats_file.iniReplaceObject('callout failure: ' + i, stats.callout[false][i]);
+	for(i in stats.inbound[true])
+		stats_file.iniReplaceObject('inbound success: ' + i, stats.inbound[true][i]);
+	for(i in stats.inbound[false])
+		stats_file.iniReplaceObject('inbound failure: ' + i, stats.inbound[false][i]);
+	stats_file.close();
 }
 touch_semaphores();

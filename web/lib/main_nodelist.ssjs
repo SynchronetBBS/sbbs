@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: main_nodelist.ssjs,v 1.5 2006/01/31 23:19:29 runemaster Exp $ */
 
 /*  Do not change anything else unless you need to :) */
 

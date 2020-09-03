@@ -1,7 +1,7 @@
 /**
  * socket.TelnetIO - a telnet implementation
  * --
- * $Id$
+ * $Id: TelnetIO.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Tue May 27 13:27:05 1997 by Matthias L. Jugel :$
  *
  * This file is part of "The Java Telnet Applet".
@@ -34,7 +34,7 @@ import java.util.Vector;
 /**
  * Implements simple telnet io
  *
- * @version $Id$
+ * @version $Id: TelnetIO.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * @author  Matthias L. Jugel, Marcus Meiﬂner
  * @version 1.2 3/7/97 George Ruban added available() because it was needed.
  */
@@ -43,7 +43,7 @@ public class TelnetIO implements StatusPeer
   /**
    * Return the version of TelnetIO.
    */
-  public String toString() { return "$Id$"; }
+  public String toString() { return "$Id: TelnetIO.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $"; }
   
 	/**
 	 * Debug level. This results in additional diagnostic messages on the

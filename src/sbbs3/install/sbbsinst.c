@@ -2,7 +2,7 @@
 
 /* Synchronet installation utility 										*/
 
-/* $Id$ */
+/* $Id: sbbsinst.c,v 1.100 2020/03/31 06:48:50 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -47,6 +47,7 @@
 /* XPDEV */
 #include "gen_defs.h"
 
+#include "md5.h"
 #include "ciolib.h"
 #include "uifc.h"
 #include "sbbs.h"
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
 	params.use_dosemu=FALSE;
 #endif
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.100 $", "%*s %s", revision);
 	umask(077);
 
     printf("\nSynchronet Installation %s-%s\n",revision,PLATFORM_DESC);

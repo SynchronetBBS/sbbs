@@ -2,7 +2,7 @@
 
 /* Synchronet JavaScript "File Area" Object */
 
-/* $Id$ */
+/* $Id: js_file_area.c,v 1.56 2020/08/16 01:01:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -55,6 +55,7 @@ static char* lib_prop_desc[] = {
 	,"library description"
 	,"library access requirements"
 	,"library link (for HTML index)"
+	,"user has sufficient access to this library's directories <i>(introduced in v3.18)</i>"
 	,NULL
 };
 
@@ -85,9 +86,10 @@ static char* dir_prop_desc[] = {
 	,"percent of file size awarded uploader in credits upon file upload"
 	,"percent of file size awarded uploader in credits upon subsequent downloads"
 	,"directory link (for HTML index)"
-	,"user has sufficient access to upload files"
-	,"user has sufficient access to download files"
-	,"user is exempt from download credit costs"
+	,"user has sufficient access to view this directory (e.g. list files) <i>(introduced in v3.18)</i>"
+	,"user has sufficient access to upload files to this directory"
+	,"user has sufficient access to download files from this directory"
+	,"user is exempt from download credit costs (or the directory is configured for free downloads)"
 	,"user has operator access to this directory"
 	,"directory is for offline storage <i>(introduced in v3.14)</i>"
 	,"directory is for uploads only <i>(introduced in v3.14)</i>"
@@ -115,8 +117,8 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	JSObject*	dir_list;
 	JSString*	js_str;
 	jsval		val;
-	jsuint		lib_index;
-	jsuint		dir_index;
+	jsint		lib_index;
+	jsint		dir_index;
 	uint		l,d;
 	BOOL		is_op;
 	char*		name=NULL;
@@ -260,6 +262,10 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				return JS_FALSE;
 			val=STRING_TO_JSVAL(js_str);
 			if(!JS_SetProperty(cx, libobj, "link", &val))
+				return JS_FALSE;
+
+			val = BOOLEAN_TO_JSVAL(lib_index >= 0);
+			if(!JS_SetProperty(cx, libobj, "can_access", &val))
 				return JS_FALSE;
 
 #ifdef BUILD_JSDOCS
@@ -456,6 +462,10 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					is_op=TRUE;
 				else
 					is_op=FALSE;
+
+				val = BOOLEAN_TO_JSVAL(dir_index >= 0 && lib_index >= 0);
+				if(!JS_SetProperty(cx, dirobj, "can_access", &val))
+					return JS_FALSE;
 
 				if(p->user==NULL 
 					|| ((is_op || p->user->exempt&FLAG('U')

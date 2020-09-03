@@ -2,9 +2,9 @@
 
 // Full-screen message editor for Synchronet v3.10m+
 
-// $Id$
+// $Id: sbbsedit.js,v 1.4 2003/07/08 10:33:38 rswindell Exp $
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.4 $".split(' ')[1];
 
 const debug=true;
 

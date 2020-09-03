@@ -2,7 +2,7 @@
 
 /* Synchronet FOSSIL driver (VxD) for Windows 9x API */
 
-/* $Id$ */
+/* $Id: execvxd.h,v 1.1.1.1 2000/10/10 11:26:23 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -9,10 +9,8 @@ src/sbbs3/zmodem.c
 src/sbbs3/zmodem.h
 src/sbbs3/xmodem.h
 src/sbbs3/sexyz.h
-src/smblib/crc16.c
-src/smblic/crc16.h
-src/smblib/crc32.c
-src/smblic/crc32.h
+src/hash/*
+src/encode/*
 src/syncterm/*
 src/uifc/*
 src/xpdev/*
@@ -22,6 +20,7 @@ src/comio/*
 3rdp/build/GNUmakefile
 3rdp/build/targets.mk
 3rdp/dist/cryptlib.zip
+3rdp/dist/*.patch
 
 The directory structure under src *must* be kept intact.  Once you have all
 this in place, a simple "make" should build everything you need.  If you're
@@ -40,7 +39,7 @@ Refer to src/build/Common.gmake or src/build/Common.bmake for details of some
 of the make options the build system supports.
 
 Release builds for Mac OS X use the following command line:
-make USE_SDL_AUDIO=1 STATIC_SDL=1 RELEASE=1 PREFIX=/usr
+make RELEASE=1 USE_SDL_AUDIO=1 PREFIX=/usr
 
 The package is generated and copied do a disk image which is then converted
 with the following command:
@@ -48,3 +47,6 @@ hdiutil convert ~/Desktop/SyncTERM.dmg -format UDRO -o /Volumes/Synchronet/sbbs/
 
 Release builds for Win32 using MinGW32 use the following command line:
 gmake DONT_CLOBBER_CC=yes CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres
+
+Release builds of jsdoor (not related at all)
+gmake jsdoor DONT_CLOBBER_CC=yes CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs

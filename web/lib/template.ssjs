@@ -27,7 +27,7 @@
 /*                                                                           */
 /*****************************************************************************/
 
-/* $Id$ */
+/* $Id: template.ssjs,v 1.32 2006/02/25 21:39:35 runemaster Exp $ */
 
 template=new Object;
 load("sbbsdefs.js");    // UFLAG_G

@@ -70,6 +70,8 @@ function lobby() {
 	var chatFrame=new Frame(2,16,78,8,BG_BLACK|LIGHTGRAY,frame);
 	var scoreFrame=new Frame(5,5,70,15,BG_BLUE|YELLOW,frame);
 	var infoFrame=new Frame(20,8,40,10,BG_BLUE,frame);
+	var helpFrame = new Frame(1,1,80,24,BG_BLACK|LIGHTGRAY,frame);
+	var helpInfoBar = new Frame(1,24,80,1,BG_BLUE|YELLOW,helpFrame);
 	var channel="#dicewarz2";
 	var menu,menuFrame;
 
@@ -94,6 +96,7 @@ function lobby() {
 		listFrame.open();
 		chatFrame.open();
 		menu.draw();
+		loadInstructions();
 		gameList();
 	}	
 	function main() {
@@ -128,7 +131,7 @@ function lobby() {
 				case "S":
 					selectGame();
 					break;
-				case "I":
+				case "H":
 					viewInstructions();
 					break;
 				case "B":
@@ -285,8 +288,45 @@ function lobby() {
 		scoreFrame.draw();
 		while(console.getkey(K_NOCRLF|K_NOECHO) !== " ");
 	}
-	function viewInstructions(section) {
+	function loadInstructions() {
+		helpInfoBar.putmsg("Commands: UP, DOWN, HOME, END, Q");
+		var f=new File(root+settings.help_file);
+		if (!f.open("r", true)) {
+			log(LOG_INFO, "error opening help file: " + f.name);
+			return false;
+		}
+		var lines=f.readAll();
+		f.close();
+		while(lines.length > 0) {
+			helpFrame.putmsg(lines.shift() + "\r\n");
+		}
+	}
+	function viewInstructions() {
 
+		helpFrame.scrollTo(0,0);
+		helpFrame.open();
+		
+		while(!js.terminated) {
+			helpFrame.cycle();
+			var cmd = console.getkey(K_NOSPIN|K_NOECHO|K_UPPER);
+			switch(cmd) {
+				case KEY_UP:
+					helpFrame.scroll(0,-1);
+					break;
+				case KEY_DOWN:
+					helpFrame.scroll(0,1);
+					break;
+				case KEY_HOME:
+					helpFrame.pageup();
+					break;
+				case KEY_END:
+					helpFrame.pagedown();
+					break;
+				case "Q":
+					helpFrame.close();
+					return;
+			}
+		}
 	}
 	function wrap(f,msg,lst) {
 		f.putmsg(msg);

@@ -196,8 +196,9 @@ function ConcensusObject(host, port, scope)
 	}
 
 	this.dongcount=0;
-	u=new User(1);
-	for(i=1; i<=system.lastuser; i++) {
+	u=new User;
+	var lastuser = system.lastuser;
+	for(i=1; i<=lastuser; i++) {
 		u.number=i;
 		if(u.settings&USER_DELETED)
 			continue;

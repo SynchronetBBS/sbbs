@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Synchronet BBS Software"
-#define MyAppVersion "3.16c"
+#define MyAppVersion "3.17b"
 #define MyAppPublisher "Rob Swindell"
 #define MyAppURL "http://www.synchro.net/"
 #define MyAppSupportURL "http://wiki.synchro.net/howto:support"
@@ -10,7 +10,7 @@
 #define MyAppExeName "sbbsctrl.exe"
 #define sbbsCtrlPanel "Synchronet Control Panel"
 #define release "release"
-#define source "e:"
+#define source "e:\src\sbbs317"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -24,8 +24,8 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppSupportURL}
 AppUpdatesURL={#MyAppDownloadURL}
-AppCopyright=Copyright 2015 {#MyAppPublisher}
-VersionInfoVersion=3.16.2
+AppCopyright=Copyright 2019 {#MyAppPublisher}
+VersionInfoVersion=3.17.1
 AppMutex=sbbs_running,sbbsctrl_running
 DefaultDirName={sd}\sbbs
 DefaultGroupName={#MyAppName}
@@ -38,7 +38,7 @@ SolidCompression=yes
 MinVersion = 5.1
 InfoBeforeFile=e:\stock\docs\install.rtf
 ChangesEnvironment=yes
-SourceDir=e:\
+SourceDir={#source}
 UninstallDisplayIcon="{app}\exec\sbbsctrl.exe"
 
 [Languages]
@@ -59,7 +59,7 @@ Name: "enable_svcs"; Description: "Enable Synchronet Services (Finger, Gopher, N
 Name: "enable_ntsvcs"; Description: "Enable Synchronet NT services"; GroupDescription: {#ntsvcs_group}; Flags: unchecked
 Name: "enable_sexpots"; Description: "Enable POTS (dial-up modem) support service"; GroupDescription: {#ntsvcs_group}; Flags: unchecked
 name: "web_runemaster"; Description: "Enable Legacy/Runemaster Web Interface"; GroupDescription: {#webui_group}; Flags: exclusive
-name: "web_echicken"; Description: "Enable echicken's Web Interface (ecWeb v3)"; GroupDescription: {#webui_group}; Flags: exclusive unchecked
+name: "web_echicken"; Description: "Enable echicken's Web Interface (v4)"; GroupDescription: {#webui_group}; Flags: exclusive unchecked
 
 [Files]
 Source: "src\sbbs3\ctrl\sbbsctrl.exe";                         DestDir: "{app}\exec";  Flags: ignoreversion
@@ -77,19 +77,17 @@ Source: "s:\sbbs\exec\user.com";                                DestDir: "{app}\
 Source: "s:\sbbs\exec\mlabels.exe";                             DestDir: "{app}\exec";  Flags: ignoreversion; Check: not IsWin64
 Source: "s:\sbbs\exec\svdmansi.com";                            DestDir: "{app}\exec";  Flags: ignoreversion; Check: not IsWin64
 Source: "s:\sbbs\exec\dosxtrn.exe";                             DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "stock\node1\node.cnf";                                DestDir: "{app}\node1"; Flags: ignoreversion
-Source: "stock\node1\node.cnf";                                DestDir: "{app}\node2"; Flags: ignoreversion
-Source: "stock\node1\node.cnf";                                DestDir: "{app}\node3"; Flags: ignoreversion
-Source: "stock\node1\node.cnf";                                DestDir: "{app}\node4"; Flags: ignoreversion
-Source: "stock\exec\*";   DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,baja.js,menu.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
-Source: "stock\ctrl\*";   DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,*.?.cnf"
-Source: "stock\text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
-Source: "stock\xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,server.ini"
-Source: "stock\docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
-Source: "stock\web\*";    DestDir: "{app}\web";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
-Source: "stock\web\root\error\*";    DestDir: "{app}\web\root\ecwebv3\error";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
-Source: "stock\web\root\icons\*";    DestDir: "{app}\web\root\ecwebv3\icons";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
-Source: "s:\sbbs\xtrn\sbl\*.exe";   DestDir: "{app}\xtrn\sbl"; Flags: ignoreversion
+Source: "e:\stock\node1\node.cnf";                                DestDir: "{app}\node1"; Flags: ignoreversion
+Source: "e:\stock\node1\node.cnf";                                DestDir: "{app}\node2"; Flags: ignoreversion
+Source: "e:\stock\node1\node.cnf";                                DestDir: "{app}\node3"; Flags: ignoreversion
+Source: "e:\stock\node1\node.cnf";                                DestDir: "{app}\node4"; Flags: ignoreversion
+Source: "e:\stock\exec\*";   DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,baja.js,menu.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
+Source: "e:\stock\ctrl\*";   DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,*.?.cnf,*.?.ini"
+Source: "e:\stock\text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
+Source: "e:\stock\xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*,server.ini"
+Source: "e:\stock\docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
+Source: "e:\stock\web\*";    DestDir: "{app}\web";   Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
+Source: "e:\stock\webv4\*";  DestDir: "{app}\webv4"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "CVS,.#*"
 Source: "c:\bin\zip.exe"; DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "c:\bin\unzip.exe"; DestDir: "{app}\exec";  Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
@@ -132,8 +130,8 @@ Filename: "{app}\ctrl\sbbs.ini"; Section: "Mail";     Key: "AutoStart"; String: 
 Filename: "{app}\ctrl\sbbs.ini"; Section: "FTP";      Key: "AutoStart"; String: "false"; Tasks: not enable_ftp
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "AutoStart"; String: "false"; Tasks: not enable_web
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Services"; Key: "AutoStart"; String: "false"; Tasks: not enable_svcs
-Filename: "{app}\ctrl\sbbs.ini"; Section: "BBS";      Key: "Options"; String: "XTRN_MINIMIZED | SYSOP_AVAILABLE | ALLOW_RLOGIN | ALLOW_SSH | NO_DOS"; Check: IsWin64
-Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../web/root/ecwebv3"; Tasks: web_echicken
+Filename: "{app}\ctrl\sbbs.ini"; Section: "BBS";      Key: "Options"; String: "XTRN_MINIMIZED | ALLOW_RLOGIN | ALLOW_SSH | NO_DOS"; Check: IsWin64
+Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../webv4/root"; Tasks: web_echicken
 
 [Dirs]
 Name: "{app}\data"

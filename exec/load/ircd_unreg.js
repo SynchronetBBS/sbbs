@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd_unreg.js,v 1.53 2020/04/04 03:34:03 deuce Exp $
 //
 // ircd_unreg.js
 //
@@ -20,7 +20,7 @@
 // ** Handle unregistered clients.
 //
 
-const UNREG_REVISION = "$Revision$".split(' ')[1];
+const UNREG_REVISION = "$Revision: 1.53 $".split(' ')[1];
 
 ////////// Objects //////////
 function Unregistered_Client(id,socket) {
@@ -118,6 +118,7 @@ function IRC_Unregistered_Commands(cmdline) {
 		// since some *broken* IRC clients use this in the unreg stage.
 		command = cmd[1].toUpperCase();
 		cmdline = cmdline.slice(cmdline.indexOf(" ")+1);
+		cmd = cmdline.split(" ");
 	} else {
 		command = cmd[0].toUpperCase();
 	}
@@ -165,45 +166,49 @@ function IRC_Unregistered_Commands(cmdline) {
 				break;
 			}
 			if (Servers[cmd[1].toLowerCase()]) {
-				this.quit("Server already exists.");
+	     			if (parseInt(cmd[2]) < 2)
+					this.quit("Server already exists.");
 				return 0;
 			}
 			var this_nline = 0;
 			var qwk_slave = false;
 			var qwkid = cmd[1].slice(0,cmd[1].indexOf(".")).toUpperCase();
-			for (nl in NLines) {
-				if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
-				    wildmatch(cmd[1],NLines[nl].servername)) {
-					if (check_qwk_passwd(qwkid,this.password)) {
-						this_nline = NLines[nl];
-						break;
-					}
-				} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
-					   wildmatch(cmd[1],NLines[nl].servername)) {
-						for (qwkm_nl in NLines) {
-							if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
-								var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
-								if (!qwk_master) {
-									this.quit("No QWK master available for authorization.");
-									return 0;
-								} else {
-									qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
-									qwk_slave = true;
+     			if (parseInt(cmd[2]) < 2) {
+				for (nl in NLines) {
+					if ((NLines[nl].flags&NLINE_CHECK_QWKPASSWD) &&
+					    wildmatch(cmd[1],NLines[nl].servername)) {
+						if (check_qwk_passwd(qwkid,this.password)) {
+							this_nline = NLines[nl];
+							break;
+						}
+					} else if ((NLines[nl].flags&NLINE_CHECK_WITH_QWKMASTER) &&
+						   wildmatch(cmd[1],NLines[nl].servername)) {
+							for (qwkm_nl in NLines) {
+								if (NLines[qwkm_nl].flags&NLINE_IS_QWKMASTER) {
+									var qwk_master = searchbyserver(NLines[qwkm_nl].servername);
+									if (!qwk_master) {
+										this.quit("No QWK master available for authorization.");
+										return 0;
+									} else {
+										qwk_master.rawout(":" + servername + " PASS " + this.password + " :" + qwkid + " QWK");
+										qwk_slave = true;
+									}
 								}
 							}
-						}
-				} else if ((NLines[nl].password == this.password) &&
-					   (wildmatch(cmd[1],NLines[nl].servername))
-					  ) {
-						this_nline = NLines[nl];
-						break;
+					} else if ((NLines[nl].password == this.password) &&
+						   (wildmatch(cmd[1],NLines[nl].servername))
+						  ) {
+							this_nline = NLines[nl];
+							break;
+					}
 				}
 			}
 			if ( (!this_nline ||
 			      ( (this_nline.password == "*") && !this.outgoing
 				&& !(this_nline.flags&NLINE_CHECK_QWKPASSWD) )
 			     ) && !qwk_slave) {
-				this.quit("Server not configured.");
+	     			if (parseInt(cmd[2]) < 2)
+					this.quit("UR Server not configured.");
 				return 0;
 			}
 			// Take care of registration right now.
@@ -224,6 +229,8 @@ function IRC_Unregistered_Commands(cmdline) {
 			new_server.hostname = this.hostname;
 			new_server.recvq = this.recvq;
 			new_server.sendq = this.sendq;
+			new_server.ircclass = this.ircclass;
+			new_server.outgoing = this.outgoing;
 			if (!qwk_slave) { // qwk slaves should never be hubs.
 				for (hl in HLines) {
 					if (HLines[hl].servername.toLowerCase()
@@ -305,7 +312,17 @@ function Unregistered_Quit(msg) {
 		server.client_remove(this.socket);
 	if(server.clients != undefined)
 		log(LOG_DEBUG,format("%d clients", server.clients));
+	else
+		log(LOG_INFO, "Unregistered_Quit(\""+msg+"\")");
 	this.socket.close();
+	if (this.outgoing) {
+		if (YLines[this.ircclass].active > 0) {
+			YLines[this.ircclass].active--;
+			log(LOG_DEBUG, "Class "+this.ircclass+" down to "+YLines[this.ircclass].active+" active out of "+YLines[this.ircclass].maxlinks);
+		}
+		else
+			log(LOG_ERROR, format("Class %d YLine going negative", this.ircclass));
+	}
 	delete Local_Sockets[this.id];
 	delete Local_Sockets_Map[this.id];
 	delete Unregistered[this.id];
@@ -382,6 +399,8 @@ function Unregistered_Welcome() {
 	new_user.ircclass = my_iline.ircclass;
 	new_user.sendq = this.sendq;
 	new_user.recvq = this.recvq;
+	// Shouldn't be a thing...
+	new_user.outgoing = this.outgoing;
 	hcc_counter++;
 	this.numeric("001", ":Welcome to the Synchronet IRC Service, " + new_user.nuh);
 	this.numeric("002", ":Your host is " + servername + ", running version " + VERSION);

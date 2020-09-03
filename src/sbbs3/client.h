@@ -2,7 +2,7 @@
 
 /* Synchronet client information to share with SBBSCTRL */
 
-/* $Id$ */
+/* $Id: client.h,v 1.10 2020/03/19 05:09:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -51,6 +51,7 @@ typedef struct {
 	time32_t	time;		/* connect time */
 	const char*	protocol;	/* protocol description */
 	const char*	user;		/* user name */
+	uint32_t	usernum;	/* user number (authenticated when non-zero) */
 } client_t;
 
 /* Used for ctrl/client.dab */

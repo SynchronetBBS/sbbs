@@ -1,8 +1,8 @@
-/* $Id$ */
+/* $Id: update.js,v 1.10 2020/05/05 01:09:27 rswindell Exp $ */
 
 /* Synchronet v3.15 update script (to be executed with jsexec) */
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.10 $".split(' ')[1];
 
 var test = argv.indexOf("-test") >= 0;
 
@@ -56,6 +56,54 @@ function move_laston_address()
 	return updated;
 }
 
+function base_filename(fullname)
+{
+	var ext = file_getext(fullname);
+
+	if(!ext)
+		return fullname;
+
+	return fullname.slice(0, -ext.length);
+}
+
+function update_gfile_indexes()
+{
+	var count = 0;
+	var ixt_files = directory(system.data_dir + "text/*.ixt");
+	for(var i in ixt_files) {
+		var file = new File(ixt_files[i]);
+		var ini_file = base_filename(file.name) + ".ini";
+		if(file_exists(ini_file))
+			continue;
+		print("Upgrading " + file.name);
+		if(!file.open("r")) {
+			alert("Error " + file.error + " opening " + file.name);
+			continue;
+		}
+		var list = [];
+		while(!file.eof) {
+			var path = file.readln();
+			if(!path)
+				break;
+			list.push({ name: path, desc: file.readln() });
+		}
+		file.close();
+		file = new File(ini_file);
+		printf("       to %-30s ", file.name);
+		if(!file.open("w+")) {
+			alert("Error " + file.error + " creating " + file.name);
+			continue;
+		}
+		file.writeln("; Migrated from " + ixt_files[i] 
+			+ " by " + js.exec_file + " " + REVISION
+			+ " on " + new Date().toLocaleString());
+		file.iniSetAllObjects(list);
+		file.close();
+		print("Success");
+		count++;
+	}
+	return count;
+}
 
 printf("Synchronet update.js revision %u\n", REVISION);
 printf("Updating exec directory: ");
@@ -68,26 +116,37 @@ var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
 if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {
 	printf("Converting %s to %s: ", sbbsecho_cfg, sbbsecho_ini);
 	if(!test)
-		load({}, "sbbsecho_upgrade.js");
+		js.exec("sbbsecho_upgrade.js", {});
 }
 
 var binkit_ini = system.ctrl_dir + "binkit.ini";
 if(file_exists(binkit_ini) && file_exists(sbbsecho_ini)) {
 	printf("Merging %s with %s: ", binkit_ini, sbbsecho_ini);
 	if(!test)
-		load({}, "binkit.js", "upgrade");
+		js.exec("binkit.js", {}, "upgrade");
 }
 
 if(!file_exists(system.data_dir + "sbbslist.json")) {
 	print("Installing SBBSLIST v4 (replacing SBL v3)");
 	if(!test)
-		load({}, "sbbslist.js", "install");
+		js.exec("sbbslist.js", {}, "install");
 }
 
 if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
 	print("Installing Avatars feature");
 	if(!test)
-		load({}, "avatars.js", "install");
+		js.exec("avatars.js", {}, "install");
+}
+
+print("Updating [General] Text File Section indexes");
+print(update_gfile_indexes() + " indexes updated.");
+
+var src = system.exec_dir + "jsexec.ini";
+var dst = system.ctrl_dir + "jsexec.ini";
+if(file_exists(src) && !file_exists(dst)) {
+	print("Moving " + src + " to " + dst);
+	if(!file_rename(src, dst))
+		alert("Could not move '" + src + "' to '" + dst + "'");
 }
 
 print("Updating (compiling) Baja modules");

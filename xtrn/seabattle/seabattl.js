@@ -3,7 +3,7 @@
 	For Synchronet v3.15+
 	Matt Johnson(2009)
 */
-//$Id$
+//$Id: seabattl.js,v 1.13 2010/10/01 14:31:59 mcmlxxix Exp $
 load("commclient.js");
 
 var root = js.exec_dir;

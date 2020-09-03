@@ -11,8 +11,8 @@ function Ship()
 	this.type=0;
 	this.left=0;
 	this.region=null;	// TODO: Added
-	this.id getter=function() { return(this.name+' ('+this.no+')'); };
-	this.cansail getter=function() {
+	this.__defineGetter__("id", function() { return(this.name+' ('+this.no+')'); });
+	this.__defineGetter__("cansail", function() {
 		var n,u;
 
 		n = 0;
@@ -22,8 +22,8 @@ function Ship()
 				n += this.region.units[u].itemweight + this.region.units[u].horseweight + (this.region.units[u].number * 10);
 
 		return n <= shiptypes[this.type].capacity;
-	};
-	this.owner getter=function() {
+	});
+	this.__defineGetter__("owner", function() {
 		var u;
 
 		for(u in this.region.units)
@@ -31,7 +31,7 @@ function Ship()
 				return(this.region.units[u]);
 
 		return(null);
-	};
+	});
 
 	this.mayboard=function(u) {
 		var u2=this.owner;

@@ -1,6 +1,6 @@
 /* Standard I/O Implementation of UIFC (user interface) library */
 
-/* $Id$ */
+/* $Id: uifcx.c,v 1.41 2020/08/16 20:37:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -33,6 +33,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "genwrap.h"
+#include "gen_defs.h"
+#include "xpprintf.h"
 #include "uifc.h"
 
 #include <sys/types.h>
@@ -56,7 +59,10 @@ static int ulist(int mode, int left, int top, int width, int *dflt, int *bar
 	,char *title, char **option);
 static int uinput(int imode, int left, int top, char *prompt, char *str
 	,int len ,int kmode);
-static void umsg(char *str);
+static int umsg(char *str);
+static int umsgf(char *str, ...);
+static BOOL confirm(char *str, ...);
+static BOOL deny(char *str, ...);
 static void upop(char *str);
 static void sethelp(int line, char* file);
 
@@ -82,16 +88,23 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 /****************************************************************************/
 int UIFCCALL uifcinix(uifcapi_t* uifcapi)
 {
+	static char* yesNoOpts[] = {"Yes", "No", NULL};
 
     if(uifcapi==NULL || uifcapi->size!=sizeof(uifcapi_t))
         return(-1);
 
     api=uifcapi;
 
+	if (api->yesNoOpts == NULL)
+		api->yesNoOpts = yesNoOpts; // Not currently used in this interface instance
+
     /* install function handlers */
     api->bail=uifcbail;
     api->scrn=uscrn;
     api->msg=umsg;
+	api->msgf=umsgf;
+	api->confirm=confirm;
+	api->deny=deny;
     api->pop=upop;
     api->list=ulist;
     api->input=uinput;
@@ -154,10 +167,9 @@ static int getstr(char* str, int maxlen)
 			str[len++]=ch;
 	}
     str[len]=0;	/* we need The Terminator */
-    
+
 	return(len);
 }
-	
 
 /****************************************************************************/
 /* Local utility function.													*/
@@ -176,34 +188,6 @@ static int which(char* prompt, int max)
             return(i-1);
     }
 }
-
-/****************************************************************************/
-/* Truncates white-space chars off end of 'str'								*/
-/****************************************************************************/
-static void truncsp(char *str)
-{
-	uint c;
-
-	c=strlen(str);
-	while(c && (uchar)str[c-1]<=' ') c--;
-	str[c]=0;
-}
-
-/****************************************************************************/
-/* Convert ASCIIZ string to upper case										*/
-/****************************************************************************/
-#if defined(__unix__) && !defined(__HAIKU__)
-static char* strupr(char* str)
-{
-	char*	p=str;
-
-	while(*p) {
-		*p=toupper(*p);
-		p++;
-	}
-	return(str);
-}
-#endif
 
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
@@ -268,7 +252,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
         }
         str[0]=0;
         getstr(str,sizeof(str)-1);
-        
+
         truncsp(str);
         i=atoi(str);
         if(i>0 && i<=opts) {
@@ -356,7 +340,7 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 	int max, int kmode)
 {
     char str[256];
-    
+
     while(1) {
         printf("%s (maxlen=%u): ",prompt,max);
 
@@ -370,16 +354,62 @@ int uinput(int mode, int left, int top, char *prompt, char *outstr,
 		api->changes=1;
     if(kmode&K_UPPER)	/* convert to uppercase? */
     	strupr(str);
-    strcpy(outstr,str);    
+    strcpy(outstr,str);
     return(strlen(outstr));
 }
 
 /****************************************************************************/
-/* Displays the message 'str' and waits for the user to select "OK"         */
+/* Displays the message 'str' and waits for the user to hit ENTER           */
 /****************************************************************************/
-void umsg(char *str)
+int umsg(char *str)
 {
-    printf("%s\n",str);
+	int ch;
+	printf("%s\nHit enter to continue:",str);
+	ch = getchar();
+	return ch == '\r' || ch == '\n';
+}
+
+/* Same as above, using printf-style varargs */
+int umsgf(char* fmt, ...)
+{
+	int retval = -1;
+	va_list va;
+	char* buf = NULL;
+
+	va_start(va, fmt);
+	vasprintf(&buf, fmt, va);
+	va_end(va);
+	if(buf != NULL) {
+		retval = umsg(buf);
+		free(buf);
+	}
+	return retval;
+}
+
+BOOL confirm(char* fmt, ...)
+{
+	int ch;
+	va_list va;
+
+	va_start(va, fmt);
+	vprintf(fmt, va);
+	va_end(va);
+	printf(" (Y/n)? ");
+	ch = getchar();
+	return tolower(ch) != 'n' && ch != EOF;
+}
+
+BOOL deny(char* fmt, ...)
+{
+	int ch;
+	va_list va;
+
+	va_start(va, fmt);
+	vprintf(fmt, va);
+	va_end(va);
+	printf(" (N/y)? ");
+	ch = getchar();
+	return tolower(ch) != 'y';
 }
 
 /****************************************************************************/
@@ -387,10 +417,12 @@ void umsg(char *str)
 /****************************************************************************/
 void upop(char *str)
 {
+	static int len;
+
     if(str==NULL)
-        printf("\n");
+        printf("\r%*s\r", len, "");
     else
-        printf("\r%-79s",str);
+        len = printf("\r%s\r", str) - 2;
 }
 
 /****************************************************************************/
@@ -426,7 +458,7 @@ void help()
     printf("\n");
     if(!api->helpbuf) {
         if((fp=fopen(api->helpixbfile,"rb"))==NULL)
-            sprintf(hbuf,"ERROR: Cannot open help index: %s"
+            SAFEPRINTF(hbuf,"ERROR: Cannot open help index: %.128s"
                 ,api->helpixbfile);
         else {
             p=strrchr(helpfile,'/');
@@ -454,25 +486,25 @@ void help()
             }
             fclose(fp);
             if(l==-1L)
-                sprintf(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %s"
+                SAFEPRINTF3(hbuf,"ERROR: Cannot locate help key (%s:%u) in: %.128s"
                     ,p,helpline,api->helpixbfile);
             else {
                 if((fp=fopen(api->helpdatfile,"rb"))==NULL)
-                    sprintf(hbuf,"ERROR: Cannot open help file: %s"
+                    SAFEPRINTF(hbuf,"ERROR: Cannot open help file: %.128s"
                         ,api->helpdatfile);
                 else {
                     if(fseek(fp,l,SEEK_SET)!=0) {
-						sprintf(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %s"
+						SAFEPRINTF4(hbuf,"ERROR: Cannot seek to help key (%s:%u) at %ld in: %.128s"
 							,p,helpline,l,api->helpixbfile);
 					}
 					else {
 						if(fread(hbuf,1,HELPBUF_SIZE,fp)<1) {
-							sprintf(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %s"
+							SAFEPRINTF4(hbuf,"ERROR: Cannot read help key (%s:%u) at %ld in: %.128s"
 								,p,helpline,l,api->helpixbfile);
 						}
 						hbuf[HELPBUF_SIZE-1] = 0;
 					}
-					fclose(fp); 
+					fclose(fp);
 				}
 			}
 		}

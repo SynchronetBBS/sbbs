@@ -1,6 +1,6 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
-/* $Id$ */
+/* $Id: SpyFormUnit.cpp,v 1.15 2020/04/15 05:37:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -100,13 +100,13 @@ int __fastcall TSpyForm::strip_telnet(uchar *buf, int len)
 //---------------------------------------------------------------------------
 void __fastcall TSpyForm::SpyTimerTick(TObject *Sender)
 {
-    uchar   buf[1024];
+    uchar   buf[8192];
     int     rd;
 
     if(*outbuf==NULL)
         return;
 
-    rd=RingBufRead(*outbuf,buf,sizeof(buf)-1);
+    rd=RingBufRead(*outbuf,buf,sizeof(buf));
     if(rd) {
         rd=strip_telnet(buf,rd);
         Terminal->WriteBuffer(buf,rd);

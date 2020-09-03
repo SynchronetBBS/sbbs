@@ -1,6 +1,6 @@
 /* Synchronet vanilla/console-mode "front-end" */
 
-/* $Id$ */
+/* $Id: sbbscon.c,v 1.282 2020/08/17 00:48:28 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -40,6 +40,7 @@
 
 /* ANSI headers */
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
@@ -157,7 +158,11 @@ BOOL				syslog_always=FALSE;
 
 static const char* prompt;
 
-static const char* usage  = "\nusage: %s [[setting] [...]] [path/ini_file]\n"
+static const char* usage  = "\nusage: %s [[cmd | setting] [...]] [path/ini_file]\n"
+							"\n"
+							"Commands:\n"
+							"\n"
+							"\tversion    show version/revision details and exit\n"
 							"\n"
 							"Global settings:\n"
 							"\n"
@@ -221,7 +226,7 @@ static const char* web_usage  = "Web server settings:\n"
 							"\n"
 							"\twp<port>   set HTTP server port\n"
 							"\two<value>  set Web server option value (advanced)\n"
-							"\tw-         disable Web server (no services module)\n"
+							"\tw-         disable Web server\n"
 							;
 
 static int lputs(int level, char *str)
@@ -304,13 +309,13 @@ static BOOL setid_mutex_initialized=0;
 /**********************************************************
 * Change uid of the calling process to the user if specified
 * **********************************************************/
-static BOOL do_seteuid(BOOL to_new) 
+static BOOL do_seteuid(BOOL to_new)
 {
 	BOOL	result=FALSE;
 
     if(capabilities_set)
 	    return(TRUE);		/* do nothing */
-  
+
     if(new_uid_name[0]==0)	/* not set? */
 	    return(TRUE);		/* do nothing */
 
@@ -392,7 +397,7 @@ BOOL do_setuid(BOOL force)
 			lputs(LOG_ERR,"!initgroups FAILED");
 			lputs(LOG_ERR,strerror(errno));
 			result=FALSE;
-		}	
+		}
 		if(setreuid(new_uid,new_uid))
 		{
 			lputs(LOG_ERR,"!setuid FAILED");
@@ -409,32 +414,33 @@ BOOL do_setuid(BOOL force)
 	return(result);
 }
 
-int change_user(void)
+bool change_user(void)
 {
     if(!do_setuid(FALSE)) {
         /* actually try to change the uid of this process */
-        lputs(LOG_ERR,"!Setting new user_id failed!  (Does the user exist?)");
-        return(-1);
-	} else {
-        struct passwd *pwent;
-        
-        pwent=getpwnam(new_uid_name);
-        if(pwent != NULL) {
-            static char	uenv[128];
-            static char	henv[MAX_PATH+6];
-            sprintf(uenv,"USER=%s",pwent->pw_name);
-            putenv(uenv);
-            sprintf(henv,"HOME=%s",pwent->pw_dir);
-            putenv(henv);
-        }
-        if(new_gid_name[0]) {
-            static char	genv[128];
-            sprintf(genv,"GROUP=%s",new_gid_name);
-            putenv(genv);
-        }
-        lprintf(LOG_INFO,"Successfully changed user_id to %s", new_uid_name);
-    }
-	return(0);
+        lputs(LOG_ERR,"!Setting new user-id failed!  (Does the user exist?)");
+        return false;
+	}
+	struct passwd *pwent;
+
+	pwent=getpwnam(new_uid_name);
+	if(pwent == NULL)
+		lprintf(LOG_WARNING, "No password name for: %s", new_uid_name);
+	else {
+		static char	uenv[128];
+		static char	henv[MAX_PATH+6];
+		sprintf(uenv,"USER=%s",pwent->pw_name);
+		putenv(uenv);
+		sprintf(henv,"HOME=%s",pwent->pw_dir);
+		putenv(henv);
+	}
+	if(new_gid_name[0]) {
+		static char	genv[128];
+		sprintf(genv,"GROUP=%s",new_gid_name);
+		putenv(genv);
+	}
+	lprintf(LOG_INFO,"Successfully changed user-id to %s", new_uid_name);
+	return true;
 }
 
 #ifdef USE_LINUX_CAPS
@@ -446,18 +452,20 @@ void whoami(void)
 {
     uid_t a, b, c;
     getresuid(&a, &b, &c);
-    lprintf(LOG_DEBUG,"Current uids: ruid - %d, euid - %d, suid - %d", a, b, c);
+    lprintf(LOG_DEBUG,"Current usr ids: ruid - %d, euid - %d, suid - %d", a, b, c);
     getresgid(&a, &b, &c);
-    lprintf(LOG_DEBUG,"Current gids: rgid - %d, egid - %d, sgid - %d", a, b, c);
+    lprintf(LOG_DEBUG,"Current grp ids: rgid - %d, egid - %d, sgid - %d", a, b, c);
 }
 
-void list_caps(void)
+bool list_caps(void)
 {
     cap_t caps = cap_get_proc();
+    if(caps == NULL)
+	    return false;
     ssize_t y = 0;
     lprintf(LOG_DEBUG, "The process %d was given capabilities %s", (int) getpid(), cap_to_text(caps, &y));
-    fflush(0);
     cap_free(caps);
+    return true;
 }
 
 static int linux_keepcaps(void)
@@ -476,11 +484,11 @@ static int linux_keepcaps(void)
     return(0);
 }
 
-static int linux_setcaps(unsigned int caps)
+static bool linux_setcaps(unsigned int caps)
 {
     struct __user_cap_header_struct caphead;
     struct __user_cap_data_struct cap;
-    
+
     memset(&caphead, 0, sizeof(caphead));
     caphead.version = _LINUX_CAPABILITY_VERSION;
     caphead.pid = 0;
@@ -488,10 +496,16 @@ static int linux_setcaps(unsigned int caps)
     cap.effective = caps;
     cap.permitted = caps;
     cap.inheritable = 0;
-    return(syscall(SYS_capset, &caphead, &cap));
+    int ret = syscall(SYS_capset, &caphead, &cap);
+    if (ret == 0)
+	    return true;
+    lprintf(LOG_ERR, "linux_setcaps(0x%x) failed (errno %d: %s)"
+		, caps, errno, strerror(errno));
+
+    return false;
 }
 
-static int linux_initialprivs(void)
+static bool linux_initialprivs(void)
 {
     unsigned int caps;
 
@@ -502,10 +516,10 @@ static int linux_initialprivs(void)
     caps |= (1 << CAP_DAC_READ_SEARCH);
     caps |= (1 << CAP_SYS_RESOURCE);
     printf("Setting initial privileges\n");
-    return(linux_setcaps(caps));
+    return linux_setcaps(caps);
 }
 
-static int linux_minprivs(void)
+static bool linux_minprivs(void)
 {
     unsigned int caps;
 
@@ -513,7 +527,7 @@ static int linux_minprivs(void)
     caps |= (1 << CAP_NET_BIND_SERVICE);
     caps |= (1 << CAP_SYS_RESOURCE);
     printf("Setting minimum privileges\n");
-    return(linux_setcaps(caps));
+    return linux_setcaps(caps);
 }
 /**********************************************************
 * End capabilities section
@@ -537,7 +551,7 @@ static BOOL winsock_startup(void)
 	return(FALSE);
 }
 
-static BOOL winsock_cleanup(void)	
+static BOOL winsock_cleanup(void)
 {
 	if(WSACleanup()==0)
 		return(TRUE);
@@ -548,7 +562,7 @@ static BOOL winsock_cleanup(void)
 
 #else /* No WINSOCK */
 
-#define winsock_startup()	(TRUE)	
+#define winsock_startup()	(TRUE)
 #define winsock_cleanup()	(TRUE)
 
 #endif
@@ -702,7 +716,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
     return(strlen(logline)+1);
 }
 
@@ -767,7 +781,7 @@ static int stat_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%sstat %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
 	return(strlen(logline)+1);
 }
 
@@ -834,7 +848,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
     return(strlen(logline)+1);
 }
 
@@ -900,7 +914,7 @@ static int mail_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
     return(strlen(logline)+1);
 }
 
@@ -966,7 +980,7 @@ static int services_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
     return(strlen(logline)+1);
 }
 
@@ -1032,7 +1046,7 @@ static int event_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
     return(strlen(logline)+1);
 }
 
@@ -1074,7 +1088,7 @@ static int web_lputs(void* p, int level, const char *str)
 	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-32,str);
 	truncsp(logline);
 	lputs(level,logline);
-	
+
     return(strlen(logline)+1);
 }
 
@@ -1152,7 +1166,7 @@ static void read_startup_ini(BOOL recycle
 	FILE*	fp=NULL;
 
 	/* Read .ini file here */
-	if(ini_file[0]!=0) { 
+	if(ini_file[0]!=0) {
 		if((fp=fopen(ini_file,"r"))==NULL) {
 			lprintf(LOG_ERR,"!ERROR %d (%s) opening %s",errno,strerror(errno),ini_file);
 		} else {
@@ -1163,13 +1177,13 @@ static void read_startup_ini(BOOL recycle
 		lputs(LOG_WARNING,"Using default initialization values");
 
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, 
+	sbbs_read_ini(fp,
 		ini_file,
 		NULL,			/* global_startup */
 		&run_bbs,		bbs,
-		&run_ftp,		ftp, 
+		&run_ftp,		ftp,
 		&run_web,		web,
-		&run_mail,		mail, 
+		&run_mail,		mail,
 		&run_services,	services);
 
 	/* read/default any sbbscon-specific .ini keys here */
@@ -1355,7 +1369,7 @@ static void show_usage(char *cmd)
 /****************************************************************************/
 /* Main Entry Point															*/
 /****************************************************************************/
-#ifdef BUILD_JSDOCS
+#if defined(BUILD_JSDOCS) && defined(WITH_SDL)
 int CIOLIB_main(int argc, char** argv)
 #else
 int main(int argc, char** argv)
@@ -1363,7 +1377,7 @@ int main(int argc, char** argv)
 {
 	int		i;
 	int		n;
-	int		file;
+	int		nodefile = -1;
 	char	ch;
 	char*	p;
 	char*	arg;
@@ -1391,20 +1405,15 @@ int main(int argc, char** argv)
 #elif defined(_WIN32)
 	CreateMutex(NULL, FALSE, "sbbs_running");	/* For use by Inno Setup */
 #endif
-	printf("\nSynchronet Console for %s  Version %s%c  %s\n\n"
-		,PLATFORM_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
+	printf("\nSynchronet Console for %s-%s  Version %s%c  %s\n\n"
+		,PLATFORM_DESC,ARCHITECTURE_DESC,VERSION,REVISION,COPYRIGHT_NOTICE);
 
 	SetThreadName("sbbs");
 	listInit(&client_list, LINK_LIST_MUTEX);
 	loginAttemptListInit(&login_attempt_list);
 	atexit(cleanup);
 
-	ctrl_dir=getenv("SBBSCTRL");	/* read from environment variable */
-	if(ctrl_dir==NULL || ctrl_dir[0]==0) {
-		ctrl_dir="/sbbs/ctrl";		/* Not set? Use default */
-		printf("!SBBSCTRL environment variable not set, using default value: %s\n\n"
-			,ctrl_dir);
-	}
+	ctrl_dir = get_ctrl_dir(/* warn: */true);
 
 	if(!winsock_startup())
 		return(-1);
@@ -1560,6 +1569,26 @@ int main(int argc, char** argv)
 			strcpy(ini_file,arg);
 			continue;
 		}
+		if(stricmp(arg, "version") == 0) {
+			char revision[16];
+			sscanf("$Revision: 1.282 $", "%*s %s", revision);
+			char compiler[32];
+			DESCRIBE_COMPILER(compiler);
+			printf("%s\n", bbs_ver());
+			printf("%s\n", mail_ver());
+			printf("%s\n", ftp_ver());
+			printf("%s\n", web_ver());
+			printf("%s\n", services_ver());
+			printf("Synchronet Console %s%s  Compiled %s %s with %s\n"
+				,revision
+#ifdef _DEBUG
+				," Debug"
+#else
+				,""
+#endif
+				,__DATE__, __TIME__, compiler);
+			return EXIT_SUCCESS;
+		}
 		if(!stricmp(arg,"ni")) {
 			ini_file[0]=0;
 			break;
@@ -1629,7 +1658,7 @@ int main(int argc, char** argv)
 #endif
 			case 'T':	/* Terminal server settings */
 				switch(toupper(*(arg++))) {
-					case '-':	
+					case '-':
 						run_bbs=FALSE;
 						break;
 					case 'D': /* debug output */
@@ -1671,7 +1700,7 @@ int main(int argc, char** argv)
 				break;
 			case 'F':	/* FTP */
 				switch(toupper(*(arg++))) {
-					case '-':	
+					case '-':
 						run_ftp=FALSE;
 						break;
 					case 'P':
@@ -1756,7 +1785,7 @@ int main(int argc, char** argv)
 				break;
 			case 'W':	/* Web server */
 				switch(toupper(*(arg++))) {
-					case '-':	
+					case '-':
 						run_web=FALSE;
 						break;
 					case 'P':
@@ -1821,7 +1850,7 @@ int main(int argc, char** argv)
 						{
 							SAFECOPY(new_uid_name,arg);
 						}
-#endif			
+#endif
 						break;
 					case 'G': /* groupname */
 #ifdef __unix__
@@ -1829,7 +1858,7 @@ int main(int argc, char** argv)
 						{
 							SAFECOPY(new_gid_name,arg);
 						}
-#endif			
+#endif
 						break;
 					default:
 						show_usage(argv[0]);
@@ -1895,7 +1924,7 @@ int main(int argc, char** argv)
     SAFECOPY(scfg.ctrl_dir,bbs_startup.ctrl_dir);
 
 	if(chdir(scfg.ctrl_dir)!=0)
-		lprintf(LOG_ERR,"!ERROR %d changing directory to: %s", errno, scfg.ctrl_dir);
+		lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), scfg.ctrl_dir);
 
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
@@ -1946,7 +1975,7 @@ int main(int argc, char** argv)
 
 		lprintf(LOG_INFO,"Running as daemon");
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
-			lprintf(LOG_ERR,"!ERROR %d running as daemon",errno);
+			lprintf(LOG_ERR,"!ERROR %d (%s) running as daemon", errno, strerror(errno));
 			is_daemon=FALSE;
 		}
 	}
@@ -1966,7 +1995,7 @@ int main(int argc, char** argv)
 	old_gid = getgid();
 	if((gr_entry=getgrnam(new_gid_name))!=0)
 		new_gid=gr_entry->gr_gid;
-	
+
 	do_seteuid(TRUE);
 #endif
 
@@ -1990,39 +2019,33 @@ int main(int argc, char** argv)
 #elif defined(__unix__)
 
 #ifdef USE_LINUX_CAPS /* set capabilities and change user before we start threads */
-    whoami();
-    list_caps();
-    if(linux_initialprivs() < 0) {
-        lputs(LOG_ERR,"linux_initialprivs() FAILED");
-        /* assuming if we pass here the module is loaded so no further module messages are needed */
-        lputs(LOG_ERR,"Verify the following kernel module is loaded [See insmod(8)]: capability");
-		lputs(LOG_ERR,strerror(errno));
-    }
-	else {
-    	list_caps();
-    	if(linux_keepcaps() < 0) {
-			lputs(LOG_ERR,"linux_keepcaps() FAILED");
-			lputs(LOG_ERR,strerror(errno));
-    	}
-		else {
-    		if(change_user() < 0) {
-				lputs(LOG_ERR,"change_user() FAILED");
+	if(getuid() == 0) {
+		whoami();
+		if(list_caps() && linux_initialprivs()) {
+			if(linux_keepcaps() < 0) {
+				lputs(LOG_ERR,"linux_keepcaps() FAILED");
+				lputs(LOG_ERR,strerror(errno));
 			}
 			else {
-    			if(linux_minprivs() < 0) {
-					lputs(LOG_ERR,"linux_minprivs() FAILED");
-					lputs(LOG_ERR,strerror(errno));
-    			}
+				if(!change_user()) {
+					lputs(LOG_ERR,"change_user() FAILED");
+				}
 				else {
-					capabilities_set=TRUE;
+					if(!linux_minprivs()) {
+						lputs(LOG_ERR,"linux_minprivs() FAILED");
+						lputs(LOG_ERR,strerror(errno));
+					}
+					else {
+						capabilities_set=TRUE;
+					}
 				}
 			}
 		}
+		whoami();
+		list_caps();
 	}
-    whoami();
-    list_caps();
 #endif /* USE_LINUX_CAPS */
-    
+
     /* Set up blocked signals */
 	sigemptyset(&sigs);
 	sigaddset(&sigs,SIGINT);
@@ -2043,28 +2066,37 @@ int main(int argc, char** argv)
 #if !defined(DONT_BLAME_SYNCHRONET)
     		if(!thread_suid_broken) {
      			if(bbs_startup.telnet_port < IPPORT_RESERVED
-    				|| (bbs_startup.options & BBS_OPT_ALLOW_RLOGIN
+    				|| ((bbs_startup.options & BBS_OPT_ALLOW_RLOGIN)
     					&& bbs_startup.rlogin_port < IPPORT_RESERVED)
 #ifdef USE_CRYPTLIB
-    				|| (bbs_startup.options & BBS_OPT_ALLOW_SSH
+    				|| ((bbs_startup.options & BBS_OPT_ALLOW_SSH)
     					&& bbs_startup.ssh_port < IPPORT_RESERVED)
 #endif
-    				)
+    				) {
+					lputs(LOG_WARNING, "Disabling Terminal Server recycle support");
     				bbs_startup.options|=BBS_OPT_NO_RECYCLE;
-    			if(ftp_startup.port < IPPORT_RESERVED)
+				}
+    			if(ftp_startup.port < IPPORT_RESERVED) {
+					lputs(LOG_WARNING, "Disabling FTP Server recycle support");
     				ftp_startup.options|=FTP_OPT_NO_RECYCLE;
-    			if(web_startup.port < IPPORT_RESERVED)
+				}
+    			if(web_startup.port < IPPORT_RESERVED) {
+					lputs(LOG_WARNING, "Disabling Web Server recycle support");
     				web_startup.options|=BBS_OPT_NO_RECYCLE;
-    			if((mail_startup.options & MAIL_OPT_ALLOW_POP3
+				}
+    			if(((mail_startup.options & MAIL_OPT_ALLOW_POP3)
     				&& mail_startup.pop3_port < IPPORT_RESERVED)
-    				|| mail_startup.smtp_port < IPPORT_RESERVED)
+    				|| mail_startup.smtp_port < IPPORT_RESERVED) {
+					lputs(LOG_WARNING, "Disabling Mail Server recycle support");
     				mail_startup.options|=MAIL_OPT_NO_RECYCLE;
-    			/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
+				}
+				/* Perhaps a BBS_OPT_NO_RECYCLE_LOW option? */
+				lputs(LOG_WARNING, "Disabling Services recycle support");
     			services_startup.options|=BBS_OPT_NO_RECYCLE;
     		}
 #endif /* !defined(DONT_BLAME_SYNCHRONET) */
     	}
-    } /* end if(!capabilities_set) */    
+    } /* end if(!capabilities_set) */
 	_beginthread(status_thread, 0, &status_startup);
 #endif /* defined(__unix__) */
 
@@ -2088,20 +2120,21 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef __unix__
-    if(getuid() && !capabilities_set)  { /*  are we running as a normal user?  */
+	uid_t uid = getuid();
+    if(uid != 0 && !capabilities_set)  { /*  are we running as a normal user?  */
     	lprintf(LOG_WARNING
-    		,"!Started as non-root user.  Cannot bind() to ports below %u.", IPPORT_RESERVED);
+    		,"!Started as non-root user (id %d): May fail to bind TCP/UDP ports below %u", uid, IPPORT_RESERVED);
     }
     else if(new_uid_name[0]==0)   /*  check the user arg, if we have uid 0 */
-    	lputs(LOG_WARNING,"WARNING: No user account specified, running as root.");
-	
-    else 
+    	lputs(LOG_WARNING,"WARNING: No user account specified, running as root!");
+
+    else
     {
     	lputs(LOG_INFO,"Waiting for child threads to bind ports...");
-	   	while((run_bbs && !(bbs_running || bbs_stopped)) 
-			|| (run_ftp && !(ftp_running || ftp_stopped)) 
-			|| (run_web && !(web_running || web_stopped)) 
-			|| (run_mail && !(mail_running || mail_stopped)) 
+	   	while((run_bbs && !(bbs_running || bbs_stopped))
+			|| (run_ftp && !(ftp_running || ftp_stopped))
+			|| (run_web && !(web_running || web_stopped))
+			|| (run_mail && !(mail_running || mail_stopped))
 			|| (run_services && !(services_running || services_stopped)))  {
 	    	mswait(1000);
 		    if(run_bbs && !(bbs_running || bbs_stopped))
@@ -2117,7 +2150,7 @@ int main(int argc, char** argv)
 	    }
 
         if(!capabilities_set) { /* if using capabilities user should already have changed */
-            if(change_user() < 0)
+            if(!change_user())
 		        lputs(LOG_ERR,"change_user FAILED");
         }
 	}
@@ -2181,7 +2214,7 @@ int main(int argc, char** argv)
 					printf("\n");
 					count=0;
 					for(i=1;i<=scfg.sys_nodes;i++) {
-						getnodedat(&scfg,i,&node,NULL /* file */);
+						getnodedat(&scfg,i,&node, /* lockit: */FALSE, &nodefile);
 						if(ch=='w' && node.status!=NODE_INUSE && node.status!=NODE_QUIET)
 							continue;
 						printnodedat(&scfg, i,&node);
@@ -2201,7 +2234,7 @@ int main(int argc, char** argv)
 						break;
 					fflush(stdin);
 					printf("\n");
-					if((i=getnodedat(&scfg,n,&node,&file))!=0) {
+					if((i=getnodedat(&scfg,n,&node, /* lockit: */TRUE, &nodefile))!=0) {
 						printf("!Error %d getting node %d data\n",i,n);
 						break;
 					}
@@ -2216,7 +2249,7 @@ int main(int argc, char** argv)
 							node.misc^=NODE_INTR;
 							break;
 					}
-					putnodedat(&scfg,n,&node,file);
+					putnodedat(&scfg,n,&node,/* closeit: */FALSE, nodefile);
 					printnodedat(&scfg,n,&node);
 #ifdef __unix__
 	                _echo_off(); /* turn off echoing - failsafe */
@@ -2289,7 +2322,7 @@ int main(int argc, char** argv)
 								ftp_startup.recycle_now=TRUE;
 								web_startup.recycle_now=TRUE;
 								mail_startup.recycle_now=TRUE;
-								services_startup.recycle_now=TRUE;							
+								services_startup.recycle_now=TRUE;
 							}
 							break;
 						case 'C':
@@ -2387,13 +2420,13 @@ int main(int argc, char** argv)
 					printf("t   = terminate servers (immediately)\n");
 					printf("!   = execute external command\n");
 					printf("?   = print this help information\n");
-#if 0	/* to do */	
+#if 0	/* to do */
 					printf("c#  = chat with node #\n");
 					printf("s#  = spy on node #\n");
 #endif
 					break;
 				default:
-                    break;    
+                    break;
 			}
 			lputs(LOG_INFO,"");	/* redisplay prompt */
 		}

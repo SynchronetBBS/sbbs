@@ -1,0 +1,734 @@
+/* Synchronet Unicode encode/decode/translate functions */
+
+/* $Id: unicode.c,v 1.15 2019/08/30 11:04:53 rswindell Exp $ */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ *																			*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+#include "unicode.h"
+#include "cp437defs.h"
+#include "unicode_defs.h"
+
+// Want UNICDE encodings of terminal control characters?
+#if defined USE_UNICODE_FOR_TERM_CTRL_CHARS
+#	define UNICODE_TERM_CTRL_CHAR_CODE(x) x
+#else
+#	define UNICODE_TERM_CTRL_CHAR_CODE(x) 0
+#endif
+
+// CP437 character to/from UNICODE code point conversion
+// The CP437 character value is the index into the table.
+// If the value at that index is 0, no translation is needed (1:1 mapping).
+enum unicode_codepoint cp437_unicode_tbl[] =
+{
+	/* 0x00 */ UNICODE_UNDEFINED,
+	/* 0x01 */ UNICODE_WHITE_SMILING_FACE,
+	/* 0x02 */ UNICODE_BLACK_SMILING_FACE,
+	/* 0x03 */ UNICODE_BLACK_HEART_SUIT,
+	/* 0x04 */ UNICODE_BLACK_DIAMOND_SUIT,
+	/* 0x05 */ UNICODE_BLACK_CLUB_SUIT,
+	/* 0x06 */ UNICODE_BLACK_SPADE_SUIT,
+	/* 0x07 '\a' */	UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_BULLET),
+	/* 0x08 '\b' */	UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_INVERSE_BULLET),
+	/* 0x09 '\t' */	UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_WHITE_CIRCLE),
+	/* 0x0A '\n' */	UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_INVERSE_WHITE_CIRCLE),
+	/* 0x0B */ UNICODE_MALE_SIGN,
+	/* 0x0C '\f' */	UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_FEMALE_SIGN),
+	/* 0x0D '\r' */	UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_EIGHTH_NOTE),
+	/* 0x0E */ UNICODE_BEAMED_EIGHTH_NOTES,
+	/* 0x0F */ UNICODE_WHITE_SUN_WITH_RAYS,
+	/* 0x10 */ UNICODE_BLACK_RIGHT_POINTING_POINTER,
+	/* 0x11 */ UNICODE_BLACK_LEFT_POINTING_POINTER,
+	/* 0x12 */ UNICODE_UP_DOWN_ARROW,
+	/* 0x13 */ UNICODE_DOUBLE_EXCLAMATION_MARK,
+	/* 0x14 */ UNICODE_PILCROW_SIGN,
+	/* 0x15 */ UNICODE_SECTION_SIGN,
+	/* 0x16 */ UNICODE_BLACK_RECTANGLE,
+	/* 0x17 */ UNICODE_UP_DOWN_ARROW_WITH_BASE,
+	/* 0x18 */ UNICODE_UPWARDS_ARROW,
+	/* 0x19 */ UNICODE_DOWNWARDS_ARROW,
+	/* 0x1A */ UNICODE_RIGHTWARDS_ARROW,
+	/* 0x1B '\e' */ UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_LEFTWARDS_ARROW),
+	/* 0x1C */ UNICODE_RIGHT_ANGLE,
+	/* 0x1D */ UNICODE_LEFT_RIGHT_ARROW,
+	/* 0x1E */ UNICODE_BLACK_UP_POINTING_TRIANGLE,
+	/* 0x1F */ UNICODE_BLACK_DOWN_POINTING_TRIANGLE,
+	/* 0x20-0x7E	(1:1 with US-ASCII and CP437) */
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	/* 0x7F (DEL) */ UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_HOUSE),
+	/* 0x80 */ UNICODE_LATIN_CAPITAL_LETTER_C_WITH_CEDILLA,
+	/* 0x81 */ UNICODE_LATIN_SMALL_LETTER_U_WITH_DIAERESIS,
+	/* 0x82 */ UNICODE_LATIN_SMALL_LETTER_E_WITH_ACUTE,
+	/* 0x83 */ UNICODE_LATIN_SMALL_LETTER_A_WITH_CIRCUMFLEX,
+	/* 0x84 */ UNICODE_LATIN_SMALL_LETTER_A_WITH_DIAERESIS,
+	/* 0x85 */ UNICODE_LATIN_SMALL_LETTER_A_WITH_GRAVE,
+	/* 0x86 */ UNICODE_LATIN_SMALL_LETTER_A_WITH_RING_ABOVE,
+	/* 0x87 */ UNICODE_LATIN_SMALL_LETTER_C_WITH_CEDILLA,
+	/* 0x88 */ UNICODE_LATIN_SMALL_LETTER_E_WITH_CIRCUMFLEX,
+	/* 0x89 */ UNICODE_LATIN_SMALL_LETTER_E_WITH_DIAERESIS,
+	/* 0x8A */ UNICODE_LATIN_SMALL_LETTER_E_WITH_GRAVE,
+	/* 0x8B */ UNICODE_LATIN_SMALL_LETTER_I_WITH_DIAERESIS,
+	/* 0x8C */ UNICODE_LATIN_SMALL_LETTER_I_WITH_CIRCUMFLEX,
+	/* 0x8D */ UNICODE_LATIN_SMALL_LETTER_I_WITH_GRAVE,
+	/* 0x8E */ UNICODE_LATIN_CAPITAL_LETTER_A_WITH_DIAERESIS,
+	/* 0x8F */ UNICODE_LATIN_CAPITAL_LETTER_A_WITH_RING_ABOVE,
+	/* 0x90 */ UNICODE_LATIN_CAPITAL_LETTER_E_WITH_ACUTE,
+	/* 0x91 */ UNICODE_LATIN_SMALL_LETTER_AE,
+	/* 0x92 */ UNICODE_LATIN_CAPITAL_LETTER_AE,
+	/* 0x93 */ UNICODE_LATIN_SMALL_LETTER_O_WITH_CIRCUMFLEX,
+	/* 0x94 */ UNICODE_LATIN_SMALL_LETTER_O_WITH_DIAERESIS,
+	/* 0x95 */ UNICODE_LATIN_SMALL_LETTER_O_WITH_GRAVE,
+	/* 0x96 */ UNICODE_LATIN_SMALL_LETTER_U_WITH_CIRCUMFLEX,
+	/* 0x97 */ UNICODE_LATIN_SMALL_LETTER_U_WITH_GRAVE,
+	/* 0x98 */ UNICODE_LATIN_SMALL_LETTER_Y_WITH_DIAERESIS,
+	/* 0x99 */ UNICODE_LATIN_CAPITAL_LETTER_O_WITH_DIAERESIS,
+	/* 0x9A */ UNICODE_LATIN_CAPITAL_LETTER_U_WITH_DIAERESIS,
+	/* 0x9B */ UNICODE_CENT_SIGN,
+	/* 0x9C */ UNICODE_POUND_SIGN,
+	/* 0x9D */ UNICODE_YEN_SIGN,
+	/* 0x9E */ UNICODE_PESETA_SIGN,
+	/* 0x9F */ UNICODE_LATIN_SMALL_LETTER_F_WITH_HOOK,
+	/* 0xA0 */ UNICODE_LATIN_SMALL_LETTER_A_WITH_ACUTE,
+	/* 0xA1 */ UNICODE_LATIN_SMALL_LETTER_I_WITH_ACUTE,
+	/* 0xA2 */ UNICODE_LATIN_SMALL_LETTER_O_WITH_ACUTE,
+	/* 0xA3 */ UNICODE_LATIN_SMALL_LETTER_U_WITH_ACUTE,
+	/* 0xA4 */ UNICODE_LATIN_SMALL_LETTER_N_WITH_TILDE,
+	/* 0xA5 */ UNICODE_LATIN_CAPITAL_LETTER_N_WITH_TILDE,
+	/* 0xA6 */ UNICODE_FEMININE_ORDINAL_INDICATOR,
+	/* 0xA7 */ UNICODE_MASCULINE_ORDINAL_INDICATOR,
+	/* 0xA8 */ UNICODE_INVERTED_QUESTION_MARK,
+	/* 0xA9 */ UNICODE_REVERSED_NOT_SIGN,
+	/* 0xAA */ UNICODE_NOT_SIGN,
+	/* 0xAB */ UNICODE_VULGAR_FRACTION_ONE_HALF,
+	/* 0xAC */ UNICODE_VULGAR_FRACTION_ONE_QUARTER,
+	/* 0xAD */ UNICODE_INVERTED_EXCLAMATION_MARK,
+	/* 0xAE */ UNICODE_LEFT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK,
+	/* 0xAF */ UNICODE_RIGHT_POINTING_DOUBLE_ANGLE_QUOTATION_MARK,
+	/* 0xB0 */ UNICODE_LIGHT_SHADE,
+	/* 0xB1 */ UNICODE_MEDIUM_SHADE,
+	/* 0xB2 */ UNICODE_DARK_SHADE,
+	/* 0xB3 */ UNICODE_BOX_DRAWINGS_LIGHT_VERTICAL,
+	/* 0xB4 */ UNICODE_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
+	/* 0xB5 */ UNICODE_BOX_DRAWINGS_VERTICAL_SINGLE_AND_LEFT_DOUBLE,
+	/* 0xB6 */ UNICODE_BOX_DRAWINGS_VERTICAL_DOUBLE_AND_LEFT_SINGLE,
+	/* 0xB7 */ 0x2556,
+	/* 0xB8 */ 0x2555,
+	/* 0xB9 */ 0x2563,
+	/* 0xBA */ 0x2551,
+	/* 0xBB */ 0x2557,
+	/* 0xBC */ 0x255D,
+	/* 0xBD */ 0x255C,
+	/* 0xBE */ 0x255B,
+	/* 0xBF */ 0x2510,
+	/* 0xC0 */ 0x2514,
+	/* 0xC1 */ 0x2534,
+	/* 0xC2 */ 0x252C,
+	/* 0xC3 */ 0x251C,
+	/* 0xC4 */ 0x2500,
+	/* 0xC5 */ 0x253C,
+	/* 0xC6 */ 0x255E,
+	/* 0xC7 */ 0x255F,
+	/* 0xC8 */ 0x255A,
+	/* 0xC9 */ 0x2554,
+	/* 0xCA */ 0x2569,
+	/* 0xCB */ 0x2566,
+	/* 0xCC */ 0x2560,
+	/* 0xCD */ 0x2550,
+	/* 0xCE */ 0x256C,
+	/* 0xCF */ 0x2567,
+	/* 0xD0 */ 0x2568,
+	/* 0xD1 */ 0x2564,
+	/* 0xD2 */ 0x2565,
+	/* 0xD3 */ 0x2559,
+	/* 0xD4 */ 0x2558,
+	/* 0xD5 */ 0x2552,
+	/* 0xD6 */ 0x2553,
+	/* 0xD7 */ 0x256B,
+	/* 0xD8 */ 0x256A,
+	/* 0xD9 */ 0x2518,
+	/* 0xDA */ 0x250C,
+	/* 0xDB */ 0x2588,
+	/* 0xDC */ UNICODE_LOWER_HALF_BLOCK,
+	/* 0xDD */ 0x258C,
+	/* 0xDE */ 0x2590,
+	/* 0xDF */ UNICODE_UPPER_HALF_BLOCK,
+	/* 0xE0 */ UNICODE_GREEK_SMALL_LETTER_ALPHA,
+	/* 0xE1 */ UNICODE_GREEK_SMALL_LETTER_BETA, // or UNICODE_LATIN_SMALL_LETTER_SHARP_S
+	/* 0xE2 */ UNICODE_GREEK_SMALL_LETTER_GAMMA,
+	/* 0xE3 */ UNICODE_GREEK_SMALL_LETTER_PI,
+	/* 0xE4 */ UNICODE_GREEK_CAPITAL_LETTER_SIGMA,
+	/* 0xE5 */ UNICODE_GREEK_SMALL_LETTER_SIGMA,
+	/* 0xE6 */ UNICODE_GREEK_SMALL_LETTER_MU, // or UNICODE_MICRO_SIGN
+	/* 0xE7 */ UNICODE_GREEK_SMALL_LETTER_TAU,
+	/* 0xE8 */ UNICODE_GREEK_CAPITAL_LETTER_PHI,
+	/* 0xE9 */ UNICODE_GREEK_SMALL_LETTER_THETA, // or UNICODE_GREEK_CAPITAL_LETTER_THETA
+	/* 0xEA */ UNICODE_GREEK_CAPITAL_LETTER_OMEGA,
+	/* 0xEB */ UNICODE_GREEK_SMALL_LETTER_DELTA,
+	/* 0xEC */ UNICODE_INFINITY,
+	/* 0xED */ UNICODE_GREEK_SMALL_LETTER_PHI,
+	/* 0xEE */ UNICODE_GREEK_SMALL_LETTER_EPSILON,
+	/* 0xEF */ UNICODE_INTERSECTION,
+	/* 0xF0 */ UNICODE_IDENTICAL_TO, // A.K.A. "TRIPLE BAR"
+	/* 0xF1 */ UNICODE_PLUS_MINUS_SIGN,
+	/* 0xF2 */ UNICODE_GREATER_THAN_OR_EQUAL_TO,
+	/* 0xF3 */ UNICODE_LESS_THAN_OR_EQUAL_TO,
+	/* 0xF4 */ UNICODE_TOP_HALF_INTEGRAL,
+	/* 0xF5 */ UNICODE_BOTTOM_HALF_INTEGRAL,
+	/* 0xF6 */ UNICODE_DIVISION_SIGN,
+	/* 0xF7 */ UNICODE_ALMOST_EQUAL_TO,
+	/* 0xF8 */ UNICODE_DEGREE_SIGN,
+	/* 0xF9 */ UNICODE_BULLET_OPERATOR,
+	/* 0xFA */ UNICODE_MIDDLE_DOT,
+	/* 0xFB */ UNICODE_SQUARE_ROOT, // or UNICODE_CHECK_MARK
+	/* 0xFC */ UNICODE_SUPERSCRIPT_LATIN_SMALL_LETTER_N,
+	/* 0xFD */ UNICODE_SUPERSCRIPT_TWO,
+	/* 0xFE */ UNICODE_HALFWIDTH_BLACK_SQUARE, // or UNICODE_BLACK_SQUARE
+	/* 0xFF */ UNICODE_NO_BREAK_SPACE
+};
+
+size_t unicode_width(enum unicode_codepoint u)
+{
+	switch(u) {
+		case UNICODE_UNDEFINED:
+		case UNICODE_ZERO_WIDTH_SPACE:
+		case UNICODE_ZERO_WIDTH_NON_JOINER:
+		case UNICODE_ZERO_WIDTH_JOINER:
+		case UNICODE_VARIATION_SELECTOR_1:
+		case UNICODE_VARIATION_SELECTOR_2:
+		case UNICODE_VARIATION_SELECTOR_3:
+		case UNICODE_VARIATION_SELECTOR_4:
+		case UNICODE_VARIATION_SELECTOR_5:
+		case UNICODE_VARIATION_SELECTOR_6:
+		case UNICODE_VARIATION_SELECTOR_7:
+		case UNICODE_VARIATION_SELECTOR_8:
+		case UNICODE_VARIATION_SELECTOR_9:
+		case UNICODE_VARIATION_SELECTOR_10:
+		case UNICODE_VARIATION_SELECTOR_11:
+		case UNICODE_VARIATION_SELECTOR_12:
+		case UNICODE_VARIATION_SELECTOR_13:
+		case UNICODE_VARIATION_SELECTOR_14:
+		case UNICODE_VARIATION_SELECTOR_15:
+		case UNICODE_VARIATION_SELECTOR_16:
+		case UNICODE_ZERO_WIDTH_NO_BREAK_SPACE:
+			return 0;
+		default:
+			if(    (u >= UNICODE_BLOCK_CJK_RADICALS_SUPPLEMENT_BEGIN		&& u <= UNICIDE_BLOCK_YI_RADICALS_END)
+				|| (u >= UNICIDE_BLOCK_HANGUL_SYLLABLES_BEGIN				&& u <= UNICIDE_BLOCK_HANGUL_SYLLABLES_END)
+				|| (u >= UNICODE_BLOCK_CJK_COMPATIBILITY_IDEOGRAPHS_BEGIN	&& u <= UNICODE_BLOCK_CJK_COMPATIBILITY_IDEOGRAPHS_END)
+				|| (u >= UNICODE_BLOCK_VERTICAL_FORMS_BEGIN					&& u <= UNICODE_BLOCK_VERTICAL_FORMS_END)
+				|| (u >= UNICODE_BLOCK_CJK_COMPATIBILITY_FORMS_BEGIN		&& u <= UNICODE_BLOCK_CJK_COMPATIBILITY_FORMS_END)
+				|| (u >= UNICODE_BLOCK_SMALL_FORM_VARIANTS_BEGIN			&& u <= UNICODE_BLOCK_SMALL_FORM_VARIANTS_END)
+				|| (u >= UNICODE_SUBBLOCK_FULLWIDTH_CHARS_BEGIN				&& u <= UNICODE_SUBBLOCK_FULLWIDTH_CHARS_END)
+				|| (u >= UNICODE_SUBBLOCK_FULLWIDTH_SYMBOLS_BEGIN			&& u <= UNICODE_SUBBLOCK_FULLWIDTH_SYMBOLS_END)
+				)
+				return 2;
+			return 1;
+	}
+}
+
+char unicode_to_cp437(enum unicode_codepoint codepoint)
+{
+	switch(codepoint) {
+		case UNICODE_ACUTE_ACCENT:								return '\'';
+
+		case UNICODE_BROKEN_BAR:								return '|';
+
+		case UNICODE_CENT_SIGN:									return CP437_CENT_SIGN;
+		case UNICODE_POUND_SIGN:								return CP437_POUND_SIGN;
+		case UNICODE_YEN_SIGN:									return CP437_YEN_SIGN;
+		case UNICODE_SECTION_SIGN:								return CP437_SECTION_SIGN;
+		case UNICODE_DEGREE_CELSIUS:
+		case UNICODE_DEGREE_FAHRENHEIT:
+		case UNICODE_DEGREE_SIGN:								return CP437_DEGREE_SIGN;
+		case UNICODE_PLUS_MINUS_SIGN:							return CP437_PLUS_MINUS_SIGN;
+		case UNICODE_SUPERSCRIPT_TWO:							return CP437_SUPERSCRIPT_TWO;
+		case UNICODE_PILCROW_SIGN:								return CP437_PILCROW_SIGN;
+		case UNICODE_INVERTED_QUESTION_MARK:					return CP437_INVERTED_QUESTION_MARK;
+		case UNICODE_INVERTED_EXCLAMATION_MARK:					return CP437_INVERTED_EXCLAMATION_MARK;
+		case UNICODE_DOUBLE_EXCLAMATION_MARK:					return CP437_DOUBLE_EXCLAMATION_MARK;
+		case UNICODE_LEFT_POINTING_ANGLE_BRACKET:				return '<';
+		case UNICODE_RIGHT_POINTING_ANGLE_BRACKET:				return '>';
+		case UNICODE_COUNTERSINK:								return 'v';
+		case UNICODE_APL_FUNCTIONAL_SYMBOL_I_BEAM:				return 'I';
+
+		// Perform Upper -> Lower case mapping where an upper case equivalent doesn't exist in CP437:
+		case UNICODE_LATIN_CAPITAL_LETTER_A_WITH_GRAVE:			return CP437_LATIN_SMALL_LETTER_A_WITH_GRAVE;
+		case UNICODE_LATIN_CAPITAL_LETTER_A_WITH_ACUTE:			return CP437_LATIN_SMALL_LETTER_A_WITH_ACUTE;
+		case UNICODE_LATIN_CAPITAL_LETTER_A_WITH_CIRCUMFLEX:	return CP437_LATIN_SMALL_LETTER_A_WITH_CIRCUMFLEX;
+
+		case UNICODE_LATIN_CAPITAL_LETTER_E_WITH_GRAVE:			return CP437_LATIN_SMALL_LETTER_E_WITH_GRAVE;
+		case UNICODE_LATIN_CAPITAL_LETTER_E_WITH_CIRCUMFLEX:	return CP437_LATIN_SMALL_LETTER_E_WITH_CIRCUMFLEX;
+		case UNICODE_LATIN_CAPITAL_LETTER_E_WITH_DIAERESIS:		return CP437_LATIN_SMALL_LETTER_E_WITH_DIAERESIS;
+
+		case UNICODE_LATIN_CAPITAL_LETTER_I_WITH_GRAVE:			return CP437_LATIN_SMALL_LETTER_I_WITH_GRAVE;
+		case UNICODE_LATIN_CAPITAL_LETTER_I_WITH_ACUTE:			return CP437_LATIN_SMALL_LETTER_I_WITH_ACUTE;
+		case UNICODE_LATIN_CAPITAL_LETTER_I_WITH_CIRCUMFLEX:	return CP437_LATIN_SMALL_LETTER_I_WITH_CIRCUMFLEX;
+		case UNICODE_LATIN_CAPITAL_LETTER_I_WITH_DIAERESIS:		return CP437_LATIN_SMALL_LETTER_I_WITH_DIAERESIS;
+
+		case UNICODE_LATIN_CAPITAL_LETTER_O_WITH_GRAVE:			return CP437_LATIN_SMALL_LETTER_O_WITH_GRAVE;
+		case UNICODE_LATIN_CAPITAL_LETTER_O_WITH_ACUTE:			return CP437_LATIN_SMALL_LETTER_O_WITH_ACUTE;
+		case UNICODE_LATIN_CAPITAL_LETTER_O_WITH_CIRCUMFLEX:	return CP437_LATIN_SMALL_LETTER_O_WITH_CIRCUMFLEX;
+
+		case UNICODE_LATIN_CAPITAL_LETTER_U_WITH_GRAVE:			return CP437_LATIN_SMALL_LETTER_U_WITH_GRAVE;
+		case UNICODE_LATIN_CAPITAL_LETTER_U_WITH_ACUTE:			return CP437_LATIN_SMALL_LETTER_U_WITH_ACUTE;
+		case UNICODE_LATIN_CAPITAL_LETTER_U_WITH_CIRCUMFLEX:	return CP437_LATIN_SMALL_LETTER_U_WITH_CIRCUMFLEX;
+
+		case UNICODE_LATIN_CAPITAL_LETTER_Y_WITH_DIAERESIS:		return CP437_LATIN_SMALL_LETTER_Y_WITH_DIAERESIS;
+
+		// Greek letters
+		case UNICODE_GREEK_CAPITAL_LETTER_ALPHA:
+		case UNICODE_GREEK_CAPITAL_LETTER_ALPHA_WITH_TONOS:		return 'A';
+		case UNICODE_GREEK_CAPITAL_LETTER_BETA:					return 'B';
+		case UNICODE_GREEK_CAPITAL_LETTER_GAMMA:
+		case UNICODE_GREEK_SMALL_LETTER_GAMMA:					return CP437_GREEK_CAPITAL_LETTER_GAMMA;
+		case UNICODE_GREEK_CAPITAL_LETTER_DELTA:
+		case UNICODE_GREEK_SMALL_LETTER_DELTA:					return CP437_GREEK_SMALL_LETTER_DELTA;
+		case UNICODE_GREEK_CAPITAL_LETTER_EPSILON:
+		case UNICODE_GREEK_CAPITAL_LETTER_EPSILON_WITH_TONOS:
+		case UNICODE_GREEK_SMALL_LETTER_EPSILON:
+		case UNICODE_GREEK_SMALL_LETTER_EPSILON_WITH_TONOS:		return CP437_GREEK_SMALL_LETTER_EPSILION;
+		case UNICODE_GREEK_CAPITAL_LETTER_ZETA:					return 'Z';
+		case UNICODE_GREEK_CAPITAL_LETTER_ETA:					return 'H';
+		case UNICODE_GREEK_CAPITAL_LETTER_THETA:
+		case UNICODE_GREEK_SMALL_LETTER_THETA:
+		case UNICODE_GREEK_THETA_SYMBOL:						return CP437_GREEK_SMALL_LETTER_THETA;
+		case UNICODE_GREEK_CAPITAL_LETTER_IOTA:					
+		case UNICODE_GREEK_CAPITAL_LETTER_IOTA_WITH_DIALYTIKA:	return 'I';
+		case UNICODE_GREEK_CAPITAL_LETTER_KAPPA:				return 'K';
+		case UNICODE_GREEK_CAPITAL_LETTER_MU:					return 'M';
+		case UNICODE_GREEK_CAPITAL_LETTER_NU:					return 'N';
+		case UNICODE_GREEK_CAPITAL_LETTER_OMICRON:				return 'O';
+		case UNICODE_GREEK_CAPITAL_LETTER_PI:
+		case UNICODE_GREEK_SMALL_LETTER_PI:
+		case UNICODE_GREEK_PI_SYMBOL:							return CP437_GREEK_SMALL_LETTER_PI;
+		case UNICODE_GREEK_CAPITAL_LETTER_RHO:					return 'P';
+		case UNICODE_GREEK_CAPITAL_LETTER_SIGMA:				return CP437_GREEK_CAPITAL_LETTER_SIGMA;			
+		case UNICODE_GREEK_CAPITAL_LETTER_TAU:
+		case UNICODE_GREEK_SMALL_LETTER_TAU:
+																return 'T';
+		case UNICODE_GREEK_CAPITAL_LETTER_UPSILON:				return 'Y';
+		case UNICODE_GREEK_CAPITAL_LETTER_PHI:					return CP437_GREEK_CAPITAL_LETTER_PHI;
+		case UNICODE_GREEK_CAPITAL_LETTER_CHI:					return 'X';
+		case UNICODE_GREEK_CAPITAL_LETTER_OMEGA:
+		case UNICODE_GREEK_CAPITAL_LETTER_OMEGA_WITH_TONOS:
+		case UNICODE_GREEK_SMALL_LETTER_OMEGA:
+		case UNICODE_GREEK_SMALL_LETTER_OMEGA_WITH_TONOS:		return CP437_GREEK_CAPITAL_LETTER_OMEGA;
+		case UNICODE_GREEK_CAPITAL_LETTER_UPSILON_WITH_DIALYTIKA:
+																return CP437_LATIN_SMALL_LETTER_Y_WITH_DIAERESIS;
+		case UNICODE_GREEK_SMALL_LETTER_ALPHA:
+		case UNICODE_GREEK_SMALL_LETTER_ALPHA_WITH_TONOS:		return CP437_GREEK_SMALL_LETTER_ALPHA;
+		case UNICODE_GREEK_SMALL_LETTER_BETA:					return CP437_GREEK_SMALL_LETTER_BETA;
+		case UNICODE_GREEK_SMALL_LETTER_MU:						return CP437_GREEK_SMALL_LETTER_MU;
+		case UNICODE_GREEK_SMALL_LETTER_NU:						return 'v';
+		case UNICODE_GREEK_SMALL_LETTER_OMICRON:				return 'o';
+		case UNICODE_GREEK_SMALL_LETTER_OMICRON_WITH_TONOS:		return CP437_LATIN_SMALL_LETTER_O_WITH_ACUTE;
+		case UNICODE_GREEK_SMALL_LETTER_UPSILON:				return 'u';
+		case UNICODE_GREEK_SMALL_LETTER_UPSILON_WITH_TONOS:		return CP437_LATIN_SMALL_LETTER_U_WITH_ACUTE;
+		case UNICODE_GREEK_SMALL_LETTER_UPSILON_WITH_DIALYTIKA:
+		case UNICODE_GREEK_SMALL_LETTER_UPSILON_WITH_DIALYTIKA_AND_TONOS:
+																return CP437_LATIN_SMALL_LETTER_U_WITH_DIAERESIS;
+		case UNICODE_GREEK_SMALL_LETTER_IOTA:					
+		case UNICODE_GREEK_SMALL_LETTER_IOTA_WITH_TONOS:		return 'i';
+		case UNICODE_GREEK_SMALL_LETTER_KAPPA:					return 'k';
+		case UNICODE_GREEK_SMALL_LETTER_CHI:					return 'x';
+		case UNICODE_GREEK_SMALL_LETTER_SIGMA:
+		case UNICODE_GREEK_SMALL_LETTER_FINAL_SIGMA:			return CP437_GREEK_SMALL_LETTER_SIGMA;
+		case UNICODE_GREEK_SMALL_LETTER_RHO:					return 'p';	
+		case UNICODE_GREEK_SMALL_LETTER_ZETA:					return 'z';
+		case UNICODE_GREEK_SMALL_LETTER_ETA:					return 'n';
+
+		case UNICODE_EM_DASH:
+			return '\xC4';
+
+		case UNICODE_BULLET:
+		case UNICODE_BULLET_OPERATOR:							return CP437_BULLET_OPERATOR;
+
+		case UNICODE_NO_BREAK_SPACE:
+		case UNICODE_EN_QUAD:
+		case UNICODE_EM_QUAD:
+		case UNICODE_EN_SPACE:
+		case UNICODE_EM_SPACE:									return ' ';
+
+		case UNICODE_SQUARE_ROOT:								return CP437_SQUARE_ROOT;
+		case UNICODE_CHECK_MARK:
+		case UNICODE_HEAVY_CHECK_MARK:							return CP437_CHECK_MARK;
+
+		case UNICODE_MULTIPLICATION_X:
+		case UNICODE_HEAVY_MULTIPLICATION_X:
+		case UNICODE_BALLOT_X:
+		case UNICODE_HEAVY_BALLOT_X:							return 'x';
+
+		case UNICODE_DIVISION_SLASH:							return '/';
+		case UNICODE_SET_MINUS:									return '\\';
+		case UNICODE_ASTERISK_OPERATOR:							return '*';
+
+		case UNICODE_DOUBLE_VERTICAL_LINE:						return CP437_BOX_DRAWINGS_DOUBLE_VERTICAL;
+
+		case UNICODE_DOUBLE_LOW_LINE:							return '=';
+		case UNICODE_LEFT_SINGLE_QUOTATION_MARK:
+		case UNICODE_RIGHT_SINGLE_QUOTATION_MARK:
+		case UNICODE_SINGLE_HIGH_REVERSED_9_QUOTATION_MARK:		return '\'';
+		case UNICODE_SINGLE_LOW_9_QUOTATION_MARK:				return ',';
+		case UNICODE_LEFT_DOUBLE_QUOTATION_MARK:
+		case UNICODE_RIGHT_DOUBLE_QUOTATION_MARK:				
+		case UNICODE_DOUBLE_LOW_9_QUOTATION_MARK:
+		case UNICODE_DOUBLE_HIGH_REVERSED_9_QUOTATION_MARK:		return '"';
+		case UNICODE_DAGGER:									return CP437_BOX_DRAWINGS_VERTICAL_AND_HORIZONTAL;
+		
+		case UNICODE_BLACK_SQUARE:
+		case UNICODE_BLACK_SQUARE_CENTERED:
+		case UNICODE_BLACK_SQUARE_FOR_STOP:
+		case UNICODE_BLACK_SMALL_SQUARE:
+		case UNICODE_BLACK_MEDIUM_SQUARE:
+		case UNICODE_BLACK_LARGE_SQUARE:
+		case UNICODE_BLACK_MEDIUM_SMALL_SQUARE:
+		case UNICODE_BLACK_VERY_SMALL_SQUARE:	
+		case UNICODE_HALFWIDTH_BLACK_SQUARE:					return CP437_HALFWIDTH_BLACK_SQUARE;
+
+		case UNICODE_HORIZONTAL_BAR:
+		case UNICODE_OVERLINE:
+		case 0x2500: // Box Drawings Light Horizontal
+		case 0x2501: // Box Drawings Heavy Horizontal
+		case 0x2504: // Box Drawings Light Triple Dash Horizontal
+		case 0x2505: // Box Drawings Heavy Triple Dash Horizontal
+		case 0x2508: // Box Drawings Light Quadruple Dash Horizontal
+		case 0x2509: // Box Drawings Heavy Quadruple Dash Horizontal
+		case 0x254C: // Box Drawings Light Double Dash Horizontal
+		case 0x254D: // Box Drawings Heavy Double Dash Horizontal
+		case 0x2574: // Box Drawings Light Left
+		case 0x2576: // Box Drawings Light Right
+		case 0x2578: // Box Drawings Heavy Left
+		case 0x257A: // Box Drawings Heavy Right
+		case 0x257C: // Box Drawings Light Left and Heavy Right
+		case 0x257E: // Box Drawings Heavy Left and Light Right
+			return '\xC4';
+
+		case 0x2502: // Box Drawings Light Vertical
+		case 0x2503: // Box Drawings Heavy Vertical
+		case 0x2506: // Box Drawings Light Triple Dash Vertical
+		case 0x2507: // Box Drawings Heavy Triple Dash Vertical
+		case 0x250A: // Box Drawings Light Quadruple Dash Vertical
+		case 0x250B: // Box Drawings Heavy Quadruple Dash Vertical
+			return '\xB3';
+
+		case 0x250C: // BOX DRAWINGS LIGHT DOWN AND RIGHT
+		case 0x250D:
+		case 0x250E:
+		case 0x250F: // BOX DRAWINGS HEAVY DOWN AND RIGHT
+			return '\xDA';
+
+		case 0x2510: // BOX DRAWINGS LIGHT DOWN AND LEFT
+		case 0x2511:
+		case 0x2512:
+		case 0x2513: // BOX DRAWINGS HEAVY DOWN AND LEFT
+			return '\xBF';
+
+		case 0x2514: // BOX DRAWINGS LIGHT UP AND RIGHT
+		case 0x2515:
+		case 0x2516:
+		case 0x2517: // BOX DRAWINGS HEAVY UP AND RIGHT
+			return '\xC0';
+
+		case 0x2518: // BOX DRAWINGS LIGHT UP AND LEFT
+		case 0x2519:
+		case 0x251A:
+		case 0x251B: // BOX DRAWINGS HEAVY UP AND LEFT
+			return '\xD9';
+
+		case 0x251C: // BOX DRAWINGS LIGHT VERTICAL AND RIGHT
+		case 0x251D:
+		case 0x251E:
+		case 0x251F:
+		case 0x2520:
+		case 0x2521:
+		case 0x2522:
+		case 0x2523: // BOX DRAWINGS HEAVY VERTICAL AND RIGHT
+			return '\xC3';
+
+		case 0x2524: // BOX DRAWINGS LIGHT VERTICAL AND LEFT
+		case 0x2525:
+		case 0x2526:
+		case 0x2527:
+		case 0x2528:
+		case 0x2529:
+		case 0x252A:
+		case 0x252B:
+			return '\xB4';
+
+		case 0x252C: // BOX DRAWINGS LIGHT DOWN AND HORIZONTAL
+		case 0x252D:
+		case 0x252E:
+		case 0x252F:
+		case 0x2530:
+		case 0x2531:
+		case 0x2532: // BOX DRAWINGS LEFT LIGHT AND RIGHT DOWN HEAVY
+		case 0x2533: // BOX DRAWINGS HEAVY DOWN AND HORIZONTAL
+			return '\xC2';
+
+		case 0x2534: // BOX DRAWINGS LIGHT UP AND HORIZONTAL
+		case 0x2535: // BOX DRAWINGS LEFT HEAVY AND RIGHT UP LIGHT
+		case 0x2536: // BOX DRAWINGS RIGHT HEAVY AND LEFT UP LIGHT
+		case 0x2537: // BOX DRAWINGS UP LIGHT AND HORIZONTAL HEAVY
+		case 0x2538: // BOX DRAWINGS UP HEAVY AND HORIZONTAL LIGHT
+		case 0x2539: // BOX DRAWINGS RIGHT LIGHT AND LEFT UP HEAVY
+		case 0x253A: // BOX DRAWINGS LEFT LIGHT AND RIGHT UP HEAVY
+		case 0x253B: // BOX DRAWINGS HEAVY UP AND HORIZONTAL
+			return '\xC1';
+
+		case 0x253C: // BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL
+		case 0x253D: // BOX DRAWINGS LEFT HEAVY AND RIGHT VERTICAL LIGHT
+		case 0x253E: // BOX DRAWINGS RIGHT HEAVY AND LEFT VERTICAL LIGHT
+		case 0x253F: // BOX DRAWINGS VERTICAL LIGHT AND HORIZONTAL HEAVY
+		case 0x2540: // BOX DRAWINGS UP HEAVY AND DOWN HORIZONTAL LIGHT
+		case 0x2541: // BOX DRAWINGS DOWN HEAVY AND UP HORIZONTAL LIGHT
+		case 0x2542: // BOX DRAWINGS VERTICAL HEAVY AND HORIZONTAL LIGHT
+		case 0x2543: // BOX DRAWINGS LEFT UP HEAVY AND RIGHT DOWN LIGHT
+		case 0x2544: // BOX DRAWINGS RIGHT UP HEAVY AND LEFT DOWN LIGHT
+		case 0x2545: // BOX DRAWINGS LEFT DOWN HEAVY AND RIGHT UP LIGHT
+		case 0x2546: // BOX DRAWINGS RIGHT DOWN HEAVY AND LEFT UP LIGHT
+		case 0x2547: // BOX DRAWINGS DOWN LIGHT AND UP HORIZONTAL HEAVY
+		case 0x2548: // BOX DRAWINGS UP LIGHT AND DOWN HORIZONTAL HEAVY
+		case 0x2549: // BOX DRAWINGS RIGHT LIGHT AND LEFT VERTICAL HEAVY
+		case 0x254A: // BOX DRAWINGS LEFT LIGHT AND RIGHT VERTICAL HEAVY
+		case 0x254B: // BOX DRAWINGS HEAVY VERTICAL AND HORIZONTAL
+			return '\xC5';
+
+		case 0x254E: // BOX DRAWINGS LIGHT DOUBLE DASH VERTICAL
+		case 0x254F: // BOX DRAWINGS HEAVY DOUBLE DASH VERTICAL
+			return '|';
+
+		case 0x256D: // BOX DRAWINGS LIGHT ARC DOWN AND RIGHT
+			return '\xDA';
+
+		case 0x256E: // BOX DRAWINGS LIGHT ARC DOWN AND LEFT
+			return '\xBF';
+
+		case 0x256F: // BOX DRAWINGS LIGHT ARC UP AND LEFT
+			return '\xD9';
+
+		case 0x2570: // BOX DRAWINGS LIGHT ARC UP AND RIGHT
+			return '\xC0';
+
+		case 0x2571: // BOX DRAWINGS LIGHT DIAGONAL UPPER RIGHT TO LOWER LEFT
+			return '/';
+
+		case 0x2572: // BOX DRAWINGS LIGHT DIAGONAL UPPER LEFT TO LOWER RIGHT
+			return '\\';
+
+		case 0x2573: // BOX DRAWINGS LIGHT DIAGONAL CROSS
+			return 'X';
+
+		case 0x2575: // Box Drawings Light Up
+		case 0x2577: // Box Drawings Light Down
+		case 0x2579: // Box Drawings Heavy Up
+		case 0x257B: // Box Drawings Heavy Down
+		case 0x257D: // Box Drawings Light Up and Heavy Down
+		case 0x257F: // Box Drawings Heavy Up and Light Down
+			return '\xB3';
+
+		case UNICODE_FULL_BLOCK:
+			return CP437_FULL_BLOCK;
+		case UNICODE_LOWER_HALF_BLOCK:
+			return CP437_LOWER_HALF_BLOCK;
+		case UNICODE_LEFT_HALF_BLOCK:
+			return CP437_LEFT_HALF_BLOCK;
+		case UNICODE_RIGHT_HALF_BLOCK:
+			return CP437_RIGHT_HALF_BLOCK;
+		case UNICODE_UPPER_HALF_BLOCK:
+			return CP437_UPPER_HALF_BLOCK;
+
+		case 0x2581: // Lower One Eighth Block
+			return '_';
+
+		case 0x2582: // Lower One Quarter Block
+		case 0x2583: // Lower Three Eighths Block
+			return '\x16';
+
+		case 0x2585: // Lower Five Eighths Block
+		case 0x2586: // Lower Three Quarters Block
+		case 0x2587: // Lower Seven Eighths Block
+			return '\xDC';
+
+		case 0x2589: // Left Seven Eighths Block
+			return '\xDB';
+
+		case 0x258A: // Left Three Quarters Block
+		case 0x258B: // Left Five Eighths Block
+		case 0x258D: // Left Three Eighths Block
+		case 0x258E: // Left One Quarter Block
+		case 0x258F: // Left One Eighth Block
+			return '\xDD';
+
+		case 0x2595: // Right One Eighth Block
+			return '\xDE';
+
+		case 0x2594: // Upper One Eighth Block
+			return '\xDF';
+
+		case UNICODE_SMALL_COMMA:				
+		case UNICODE_SMALL_IDEOGRAPHIC_COMMA:				return ',';
+		case UNICODE_SMALL_FULL_STOP:						return '.';
+		case UNICODE_SMALL_SEMICOLON:						return ';';
+		case UNICODE_SMALL_COLON:							return ':';
+		case UNICODE_SMALL_QUESTION_MARK:					return '?';
+		case UNICODE_SMALL_EXCLAMATION_MARK:				return '!';
+		case UNICODE_SMALL_EM_DASH:							return '-';
+		case UNICODE_SMALL_LEFT_PARENTHESIS:				return '(';
+		case UNICODE_SMALL_RIGHT_PARENTHESIS:				return ')';
+		case UNICODE_SMALL_LEFT_CURLY_BRACKET:				return '{';
+		case UNICODE_SMALL_RIGHT_CURLY_BRACKET:				return '}';
+		case UNICODE_SMALL_LEFT_TORTOISE_SHELL_BRACKET:		return '[';
+		case UNICODE_SMALL_RIGHT_TORTOISE_SHELL_BRACKET:	return ']';
+		case UNICODE_SMALL_NUMBER_SIGN:						return '#';
+		case UNICODE_SMALL_AMPERSAND:						return '&';
+		case UNICODE_SMALL_ASTERISK:						return '*';
+		case UNICODE_SMALL_PLUS_SIGN:						return '+';
+		case UNICODE_SMALL_HYPHEN_MINUS:					return '-';
+		case UNICODE_SMALL_LESS_THAN_SIGN:					return '<';
+		case UNICODE_SMALL_GREATER_THAN_SIGN:				return '>';
+		case UNICODE_SMALL_EQUALS_SIGN:						return '=';
+		case UNICODE_SMALL_REVERSE_SOLIDUS:					return '\\';
+		case UNICODE_SMALL_DOLLAR_SIGN:						return '$';
+		case UNICODE_SMALL_PERCENT_SIGN:					return '%';
+		case UNICODE_SMALL_COMMERCIAL_AT:					return '@';
+
+		default:	
+		{
+			int i;
+
+			if(codepoint >= UNICODE_FULLWIDTH_EXCLAMATION_MARK && codepoint <= UNICODE_FULLWIDTH_TILDE)
+				return '!' + (codepoint - UNICODE_FULLWIDTH_EXCLAMATION_MARK);
+
+			// Look for a 1:1 match in the CP437 -> Unicode table
+			for(i = 1; i < 0x100; i++) {
+				if(cp437_unicode_tbl[i] == codepoint)
+					return i;
+			}
+			break;
+		}
+	}
+
+	return UNICODE_UNDEFINED; // Not-mapped
+}

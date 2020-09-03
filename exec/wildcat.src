@@ -1,6 +1,6 @@
 # wildcat.src
 
-# $Id$
+# $Id: wildcat.src,v 1.17 2020/04/23 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -13,9 +13,9 @@ compare_ars expert
 if_false
 	clear_abort
 	menu wildcat/main
-	print "\r\nwhCommand >>? n"
+	print "\r\n\x01w\x01hCommand >>? \x01n"
 else
-	print "\r\nyh@GRP@ @SUB@, wMAIN MENUy: ? n"
+	print "\r\n\x01y\x01h@GRP@ @SUB@, \x01wMAIN MENU\x01y: ? \x01n"
 	end_if
 
 node_action node_main
@@ -37,7 +37,7 @@ cmdkey M
 	goto message
 	end_cmd
 cmdkey U
-	print "\r\nchList Users\r\n"
+	print "\r\n\x01c\x01hList Users\r\n"
 	mnemonics "\r\n~Logons Today, ~Sub-board, or ~All: "
 	getcmd LSA\r
 	cmdkey L
@@ -114,7 +114,7 @@ cmdkey B
 	end_cmd
 
 cmdkey D
-	exec_bin xtrn_sec
+	xtrn_section
 	end_cmd
 
 cmdkey E
@@ -126,11 +126,11 @@ cmdkey A
 	end_cmd
 
 cmdkey V
-	print "\r\nyhUsername search string: w"
+	print "\r\n\x01y\x01hUsername search string: \x01w"
 	getname 25
 	finduser
 	if_true
-		print "yhVerified: w"
+		print "\x01y\x01hVerified: \x01w"
 		printstr
 		crlf
 		end_if
@@ -172,9 +172,9 @@ compare_ars expert
 if_false
 	clear_abort
 	menu wildcat/file
-	print "\r\nwhCommand >>? n"
+	print "\r\n\x01w\x01hCommand >>? \x01n"
 else
-	print "\r\nyh@LIB@ @DIR@, wFILE MENUy: ? n"
+	print "\r\n\x01y\x01h@LIB@ @DIR@, \x01wFILE MENU\x01y: ? \x01n"
 	end_if
 
 # Update node status
@@ -212,7 +212,7 @@ cmdkey L
         end_cmd
 
 cmdkey D
-	print "\r\nchDownload File(s)\r\n"
+	print "\r\n\x01c\x01hDownload File(s)\r\n"
 	file_download_batch
 	if_true
 		end_cmd
@@ -224,7 +224,7 @@ cmdkey D
         end_cmd
 
 cmdkey U
-	print "\r\nchUpload File\r\n"
+	print "\r\n\x01c\x01hUpload File\r\n"
 	chkfile "../text/menu/upload.*"
 	if_true
 		menu upload
@@ -233,7 +233,7 @@ cmdkey U
 	end_cmd
 
 cmdkey N
-	print "\r\nbhUse c@NEWFILETIME@b for new file scan date/time "
+	print "\r\n\x01b\x01hUse \x01c@NEWFILETIME@\x01b for new file scan date/time "
 	yes_no ""
 	if_false
 		file_ptrs_cfg
@@ -245,7 +245,7 @@ cmdkey N
 	end_cmd
 
 cmdkey V
-	print "\r\nchView File(s)\r\n"
+	print "\r\n\x01c\x01hView File(s)\r\n"
 	getfilespec
 	if_true
 		file_view
@@ -258,7 +258,7 @@ cmdkey M
 	end_cmd
 
 cmdkey S
-	print "\r\nchSearch for Filename(s)\r\n"
+	print "\r\n\x01c\x01hSearch for Filename(s)\r\n"
 	file_find_name
         end_cmd
 
@@ -281,7 +281,7 @@ cmdkey P
 	end_cmd
 
 cmdkey I
-	print "\r\nchList Extended File Information\r\n"
+	print "\r\n\x01c\x01hList Extended File Information\r\n"
 	getfilespec
 	if_true
 		file_list_extended
@@ -322,9 +322,9 @@ compare_ars expert
 if_false
 	clear_abort
 	menu wildcat/msg
-	print "\r\nwhCommand >>? n"
+	print "\r\n\x01w\x01hCommand >>? \x01n"
 else
-	print "\r\nyh@GRP@ @SUB@, wMESSAGE MENUy: ? n"
+	print "\r\n\x01y\x01h@GRP@ @SUB@, \x01wMESSAGE MENU\x01y: ? \x01n"
 	end_if
 
 # Update node status
@@ -346,9 +346,9 @@ cmdkey Q
 
 cmdkey R
 	cmd_home
-	print "n\r\nyhReading Messages: [\1wA\1y]ll messages, [wNy]ew messages, [wSy]earch, "
-	print "[wUy]nread personal,\r\n"
-	print "[wJy]oin, or [wENTERy] to quit? "
+	print "\x01n\r\n\x01y\x01hReading Messages: [\1wA\1y]ll messages, [\x01wN\x01y]ew messages, [\x01wS\x01y]earch, "
+	print "[\x01wU\x01y]nread personal,\r\n"
+	print "[\x01wJ\x01y]oin, or [\x01wENTER\x01y] to quit? "
 	getstr 5
 	logkey
 
@@ -392,12 +392,12 @@ cmdkey F
 	end_cmd
 
 cmdkey S
-	print "\r\nchSearch for Text in Messages\r\n"
+	print "\r\n\x01c\x01hSearch for Text in Messages\r\n"
 	msg_find_text
         end_cmd
 
 cmdkey C
-	print "\r\nchCheck for Messages Posted to You\r\n"
+	print "\r\n\x01c\x01hCheck for Messages Posted to You\r\n"
 	msg_your_scan
         end_cmd
 
@@ -408,7 +408,7 @@ cmdkey U
 		menu maincfg
 		end_if
 	async
-	print "\r\nyhConfig: n"
+	print "\r\n\x01y\x01hConfig: \x01n"
 	getcmd ?QNPIS
 	logkey
 
@@ -493,9 +493,9 @@ compare_ars expert
 if_false
 	clear_abort
 	menu wildcat/sysop
-	print "\r\nwhCommand >>? n"
+	print "\r\n\x01w\x01hCommand >>? \x01n"
 else
-	print "\r\nyh@GRP@ @SUB@, wSYSOP MENUy: ? n"
+	print "\r\n\x01y\x01h@GRP@ @SUB@, \x01wSYSOP MENU\x01y: ? \x01n"
 	end_if
 
 # Update node status

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: scfgchat.c,v 1.23 2018/06/21 20:22:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

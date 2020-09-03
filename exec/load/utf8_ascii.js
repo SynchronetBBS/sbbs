@@ -1,3 +1,5 @@
+// $Id: utf8_ascii.js,v 1.4 2019/07/24 22:05:29 rswindell Exp $
+
 require("unicode_cp437.js", 'unicode_cp437');
 
 function utf8_ascii(uni)

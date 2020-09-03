@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id$ */
+/* $Id: conn.h,v 1.27 2020/06/27 00:04:49 deuce Exp $ */
 
 #ifndef _CONN_H_
 #define _CONN_H_
@@ -24,6 +24,7 @@ enum {
 	,CONN_TYPE_MODEM
 	,CONN_TYPE_SERIAL
 	,CONN_TYPE_SHELL
+	,CONN_TYPE_MBBS_GHOST
 	,CONN_TYPE_TERMINATOR
 };
 
@@ -60,7 +61,7 @@ struct conn_buffer {
 int conn_recv_upto(void *buffer, size_t buflen, unsigned int timeout);
 int conn_recv(void *buffer, size_t buflen, unsigned int timeout);
 int conn_peek(void *buffer, size_t buflen);
-int conn_send(void *buffer, size_t buflen, unsigned int timeout);
+int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_connect(struct bbslist *bbs);
 int conn_close(void);
 BOOL conn_connected(void);

@@ -1,7 +1,7 @@
 // ANSI/Block/RIP artwork file SAUCE record definitions
 // Derived from here: http://www.acid.org/info/sauce/sauce.htm
 // vi: tabstop=4
-// $Id$
+// $Id: saucedefs.h,v 1.2 2018/02/12 04:03:34 rswindell Exp $
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

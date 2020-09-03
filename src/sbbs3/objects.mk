@@ -2,7 +2,7 @@
 
 # Make 'include file' listing object files for SBBS.DLL
 
-# $Id$(DIRSEP)09$(DIRSEP)08 07:23:54 deuce Exp $
+# $Id: objects.mk,v 1.76 2020/04/03 19:54:31 rswindell Exp $(DIRSEP)09$(DIRSEP)08 07:23:54 deuce Exp $
 
 # OBJODIR, SLASH, and OFILE must be pre-defined
 
@@ -108,13 +108,11 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)upload$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)useredit$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)uucode$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)viewfile$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)writemsg$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)xtrn_sec$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)yenc$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ver$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)ssl$(OFILE)
 
@@ -195,10 +193,10 @@ SBBSECHO_OBJS = \
 ECHOCFG_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)echocfg$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)rechocfg$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(UIFC_OBJS) \
-			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE) \
-			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)
-			
+			$(MTOBJODIR)$(DIRSEP)nopen$(OFILE)
+
 ADDFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)addfiles$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
@@ -257,6 +255,8 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)js_client$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_com$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_cryptcon$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_cryptcert$(OFILE) \
+			$(MTOBJODIR)$(DIRSEP)js_cryptkeyset$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_global$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_rtpool$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)js_sprintf$(OFILE) \
@@ -276,8 +276,7 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)uucode$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)yenc$(OFILE)\
+			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
 
 SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \
@@ -338,6 +337,7 @@ SMBACTIV_OBJS = \
 DSTSEDIT_OBJS = \
 			$(OBJODIR)$(DIRSEP)dstsedit$(OFILE)\
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
+			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE)
 
 READSAUCE_OBJS = \

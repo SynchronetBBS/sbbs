@@ -1,23 +1,24 @@
-// $Id$
+// $Id: websocketservice.js,v 1.14 2019/08/11 19:20:20 echicken Exp $
 
 // websocketservice.js 
 
 // Synchronet Service for redirecting incoming WebSocket connections to the Telnet and/or RLogin server
 // Mainly to be used in conjunction with fTelnet
 
+// Command-line syntax:
+// websocketservice.js [hostname] [port]
+
 // Example configuration (in ctrl/services.ini)
 //
-// ; WebSocket to RLogin
-// [WebSocket-RLogin]
-// Port=11513
-// Options=NO_HOST_LOOKUP
-// Command=websocketservice.js localhost 513
-//
-// ; WebSocket to Telnet
-// [WebSocket-Telnet]
+// [WS]
 // Port=1123
 // Options=NO_HOST_LOOKUP
-// Command=websocketservice.js localhost 23
+// Command=websocketservice.js
+//
+// [WSS]
+// Port=11235
+// Options=NO_HOST_LOOKUP|TLS
+// Command=websocketservice.js
 
 //include definitions for synchronet
 load("nodedefs.js");
@@ -49,7 +50,7 @@ try {
         SendToWebSocketClient(StringToBytes("Redirecting to server...\r\n"));
 
         // Default to localhost on the telnet port
-		var TargetHostname = 'localhost';
+		var TargetHostname = GetTelnetInterface();
 		var TargetPort = GetTelnetPort();
         
         // If fTelnet client sent a port on the querystring, try to use that
@@ -61,21 +62,25 @@ try {
             if ((RequestedPort > 0) && (RequestedPort <= 65535) && ((RequestedPort == GetTelnetPort()) || (RequestedPort == GetRLoginPort()))) {
                 TargetPort = RequestedPort;
                 log(LOG_DEBUG, "Using user-requested port " + Path.query.Port);
+                if (TargetPort == GetRLoginPort()) TargetHostname = GetRLoginInterface();
             } else {
                 log(LOG_NOTICE, "Client requested to connect to port " + Path.query.Port + ", which was denied");
             }
         } else {
             // If SysOp gave an alternate hostname/port when installing the service, use that instead
-            if (argc === 1) {
-                TargetPort = parseInt(argv[0]);
-            } else if (argc === 2) {
-                TargetHostname = argv[0];
-                TargetPort = parseInt(argv[1]);
+			for(var i in argv) {
+                var port = parseInt(argv[i], 10);
+                if (argv[i].search(/\D/) > -1 || port < 0 || port > 65535) {
+                    TargetHostname = argv[i];
+                } else if (!isNaN(port)) {
+                    TargetPort = port;
+                }
             }
         }
         
 		// Connect to the server
         FServerSocket = new Socket();
+		log(LOG_DEBUG, "Connecting to " + TargetHostname + ":" + TargetPort);
         if (FServerSocket.connect(TargetHostname, TargetPort)) {
             // Variables we'll use in the loop
             var DoYield = true;
@@ -111,7 +116,7 @@ try {
 			if (!FServerSocket.is_connected) log(LOG_DEBUG, 'Server socket no longer connected');
         } else {
             // FServerSocket.connect() failed
-            log(LOG_ERR, "Unable to connect to server at " + TargetHostname + ":" + TargetPort);
+            log(LOG_ERR, "Error " + FServerSocket.error + " connecting to server at " + TargetHostname + ":" + TargetPort);
             SendToWebSocketClient(StringToBytes("ERROR: Unable to connect to server\r\n"));
             mswait(2500);
         }

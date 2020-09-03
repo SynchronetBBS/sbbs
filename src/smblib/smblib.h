@@ -1,6 +1,6 @@
 /* Synchronet message base (SMB) library function prototypes */
 
-/* $Id$ */
+/* $Id: smblib.h,v 1.99 2020/05/25 00:39:47 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -37,15 +37,13 @@
 #ifndef _SMBLIB_H
 #define _SMBLIB_H
 
-#include "lzh.h"
-
 #ifdef SMBEXPORT
 	#undef SMBEXPORT
 #endif
 
 #ifdef _WIN32
 	#ifdef __BORLANDC__
-		#define SMBCALL __stdcall
+		#define SMBCALL
 	#else
 		#define SMBCALL
 	#endif
@@ -67,6 +65,7 @@
 #endif
 
 #include "smbdefs.h"
+#include "str_list.h"
 
 #define SMB_SUCCESS			0			/* Successful result/return code */
 #define SMB_FAILURE			-1			/* Generic error (discouraged) */
@@ -98,20 +97,18 @@
 #define SMB_CLOSED			2			/* Poll/thread is closed to replies/votes */
 #define SMB_UNAUTHORIZED	3			/* Poll was posted by someone else */
 
-#define SMB_STACK_LEN		4			/* Max msg bases in smb_stack() 	*/
-#define SMB_STACK_POP       0           /* Pop a msg base off of smb_stack()*/
-#define SMB_STACK_PUSH      1           /* Push a msg base onto smb_stack() */
-#define SMB_STACK_XCHNG     2           /* Exchange msg base w/last pushed	*/
-
 #define SMB_ALL_REFS		0			/* Free all references to data		*/
 
-#define GETMSGTXT_TAILS 		(1<<0)	/* Get message tail(s)				*/
-#define GETMSGTXT_NO_BODY		(1<<1)	/* Don't retrieve message body		*/
-#define GETMSGTXT_NO_HFIELDS	(1<<2)	/* Don't include text header fields	*/
-#define GETMSGTXT_PLAIN			(1<<3)	/* Get plaintext portion only of MIME-encoded body (all, otherwise) */
+										/* smb_getmsgtxt() mode flags		*/
+#define GETMSGTXT_TAILS 		(1<<0)	/* Incude message tail(s)			*/
+#define GETMSGTXT_NO_BODY		(1<<1)	/* Exclude message body				*/
+#define GETMSGTXT_NO_HFIELDS	(1<<2)	/* Exclude text header fields		*/
+#define GETMSGTXT_PLAIN			(1<<3)	/* Get text-plain or text-html portion only of MIME-encoded body (all, otherwise) */
+										/* common smb_getmsgtxt() mode values */
 #define GETMSGTXT_BODY_ONLY		GETMSGTXT_NO_HFIELDS
 #define GETMSGTXT_TAIL_ONLY		(GETMSGTXT_TAILS|GETMSGTXT_NO_BODY|GETMSGTXT_NO_HFIELDS)
 #define GETMSGTXT_ALL			GETMSGTXT_TAILS
+#define GETMSGTXT_NO_TAILS		0		/* Exclude message tails(s)			*/
 
 #define SMB_IS_OPEN(smb)	((smb)->shd_fp!=NULL)
 
@@ -136,7 +133,6 @@ SMBEXPORT int		SMBCALL smb_open_index(smb_t* smb);
 SMBEXPORT void		SMBCALL smb_close(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_initsmbhdr(smb_t* smb);
 SMBEXPORT int 		SMBCALL smb_create(smb_t* smb);
-SMBEXPORT int 		SMBCALL smb_stack(smb_t* smb, int op);
 SMBEXPORT int 		SMBCALL smb_trunchdr(smb_t* smb);
 SMBEXPORT int		SMBCALL smb_lock(smb_t* smb);
 SMBEXPORT int		SMBCALL smb_unlock(smb_t* smb);
@@ -173,7 +169,7 @@ SMBEXPORT int		SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, cons
 #define smb_hfield_netaddr(msg, type, str, nettype) smb_hfield_add_netaddr(msg, type, str, nettype, /* insert: */FALSE)
 
 SMBEXPORT int 		SMBCALL smb_dfield(smbmsg_t* msg, uint16_t type, ulong length);
-SMBEXPORT void*		SMBCALL smb_get_hfield(smbmsg_t* msg, uint16_t type, hfield_t* hfield);
+SMBEXPORT void*		SMBCALL smb_get_hfield(smbmsg_t* msg, uint16_t type, hfield_t** hfield);
 SMBEXPORT int 		SMBCALL smb_addmsghdr(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int 		SMBCALL smb_putmsg(smb_t* smb, smbmsg_t* msg);
 SMBEXPORT int 		SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg);
@@ -196,6 +192,7 @@ SMBEXPORT uint32_t	SMBCALL smb_last_in_branch(smb_t*, smbmsg_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_thread(smb_t*, smbmsg_t*);
 SMBEXPORT size_t	SMBCALL smb_idxreclen(smb_t*);
 SMBEXPORT uint32_t	SMBCALL	smb_count_idx_records(smb_t*, uint16_t mask, uint16_t cmp);
+SMBEXPORT BOOL		SMBCALL smb_msg_is_utf8(const smbmsg_t*);
 
 /* smbadd.c */
 SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
@@ -267,18 +264,24 @@ SMBEXPORT char*		SMBCALL smb_netaddr(net_t* net);
 SMBEXPORT char*		SMBCALL smb_netaddrstr(net_t* net, char* fidoaddr_buf);
 SMBEXPORT char*		SMBCALL	smb_nettype(enum smb_net_type);
 SMBEXPORT char*		SMBCALL smb_zonestr(int16_t zone, char* outstr);
+SMBEXPORT char*		SMBCALL smb_msgattrstr(int16_t attr, char* outstr, size_t maxlen);
+SMBEXPORT char*		SMBCALL smb_auxattrstr(int32_t attr, char* outstr, size_t maxlen);
+SMBEXPORT char*		SMBCALL smb_netattrstr(int32_t attr, char* outstr, size_t maxlen);
 SMBEXPORT char*		SMBCALL smb_hashsource(smbmsg_t* msg, int source);
 SMBEXPORT char*		SMBCALL smb_hashsourcetype(uchar type);
 SMBEXPORT fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str);
 SMBEXPORT enum smb_net_type SMBCALL smb_netaddr_type(const char* addr);
 SMBEXPORT enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr);
 /* smbdump.c */
-SMBEXPORT void		SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg);
+SMBEXPORT void		SMBCALL smb_dump_msghdr(FILE*, smbmsg_t*);
+SMBEXPORT str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t*);
 
 /* smbtxt.c */
-SMBEXPORT char*		SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode);
-SMBEXPORT char*		SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf);
-SMBEXPORT uint8_t*	SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, uint32_t* filelen, int index);
+SMBEXPORT char*		SMBCALL smb_getmsgtxt(smb_t*, smbmsg_t*, ulong mode);
+SMBEXPORT char*		SMBCALL smb_getplaintext(smbmsg_t*, char* body);
+SMBEXPORT uint8_t*	SMBCALL smb_getattachment(smbmsg_t*, char* body, char* filename, size_t filename_len, uint32_t* filelen, int index);
+SMBEXPORT ulong		SMBCALL	smb_countattachments(smb_t*, smbmsg_t*, const char* body);
+SMBEXPORT void		SMBCALL smb_parse_content_type(const char* content_type, char** subtype, char** charset);
 
 /* smbfile.c */
 SMBEXPORT int 		SMBCALL smb_feof(FILE* fp);
@@ -296,7 +299,7 @@ SMBEXPORT void		SMBCALL smb_rewind(FILE* fp);
 SMBEXPORT void		SMBCALL smb_clearerr(FILE* fp);
 SMBEXPORT int 		SMBCALL smb_open_fp(smb_t* smb, FILE**, int share);
 SMBEXPORT void		SMBCALL smb_close_fp(FILE**);
-					
+
 #ifdef __cplusplus
 }
 #endif

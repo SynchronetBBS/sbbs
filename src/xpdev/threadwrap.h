@@ -1,6 +1,6 @@
 /* Thread-related cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: threadwrap.h,v 1.52 2019/07/24 04:15:24 rswindell Exp $ */
 // vi: tabstop=4
 
 /****************************************************************************
@@ -124,7 +124,7 @@ DLLEXPORT int DLLCALL pthread_mutex_destroy(pthread_mutex_t*);
 
 // A structure in case we need to add an event or something...
 typedef struct {
-	uint32_t	state;
+	long	state;
 } pthread_once_t;
 
 #define PTHREAD_ONCE_INIT	{0};

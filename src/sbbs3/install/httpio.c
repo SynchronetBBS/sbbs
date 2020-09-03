@@ -122,7 +122,7 @@ int http_get_fd(char *URL, size_t *len, char *error)
 		return(-1);
 	}
 	strncpy(host, URL+7, MAX_HOST_LEN);
-	host[MAX_HOST_LEN+1]=0;
+	host[MAX_HOST_LEN]=0;
 	if((p=strchr(host,'/'))==NULL)  {
 		if(error!=NULL)
 			strcpy(error, "Host too long or no path info found");

@@ -1,6 +1,6 @@
 /* Synchronet FTP server */
 
-/* $Id$ */
+/* $Id: ftpsrvr.h,v 1.58 2019/03/22 21:28:27 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -169,7 +169,7 @@ static ini_bitdesc_t ftp_options[] = {
 		#define DLLEXPORT __declspec(dllimport)
 	#endif
 	#ifdef __BORLANDC__
-		#define DLLCALL __stdcall
+		#define DLLCALL
 	#else
 		#define DLLCALL
 	#endif

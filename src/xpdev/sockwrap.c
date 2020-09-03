@@ -2,7 +2,7 @@
 
 /* Berkley/WinSock socket API wrappers */
 
-/* $Id$ */
+/* $Id: sockwrap.c,v 1.74 2020/08/09 02:13:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -71,6 +71,9 @@ static socket_option_t socket_options[] = {
 	{ "REUSEADDR",			0,				SOL_SOCKET,		SO_REUSEADDR		},	
 #ifdef SO_REUSEPORT	/* BSD */
 	{ "REUSEPORT",			0,				SOL_SOCKET,		SO_REUSEPORT		},	
+#endif
+#ifdef SO_EXCLUSIVEADDRUSE /* WinSock */
+	{ "EXCLUSIVEADDRUSE",	0,				SOL_SOCKET,		SO_EXCLUSIVEADDRUSE },
 #endif
 	{ "KEEPALIVE",			SOCK_STREAM,	SOL_SOCKET,		SO_KEEPALIVE		},
 	{ "DONTROUTE",			0,				SOL_SOCKET,		SO_DONTROUTE		},
@@ -144,7 +147,7 @@ static socket_option_t socket_options[] = {
 	{ NULL }
 };
 
-int DLLCALL getSocketOptionByName(const char* name, int* level)
+int getSocketOptionByName(const char* name, int* level)
 {
 	int i;
 
@@ -162,19 +165,19 @@ int DLLCALL getSocketOptionByName(const char* name, int* level)
 	return(strtol(name,NULL,0));
 }
 
-socket_option_t* DLLCALL getSocketOptionList(void)
+socket_option_t* getSocketOptionList(void)
 {
 	return(socket_options);
 }
 
-int DLLCALL sendfilesocket(int sock, int file, off_t *offset, off_t count)
+off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	char		buf[1024*16];
 	off_t		len;
-	int			rd;
-	int			wr=0;
-	int			total=0;
-	int			i;
+	ssize_t		rd;
+	ssize_t		wr=0;
+	off_t		total=0;
+	ssize_t		i;
 
 /* sendfile() on Linux may or may not work with non-blocking sockets ToDo */
 	len=filelength(file);
@@ -193,7 +196,7 @@ int DLLCALL sendfilesocket(int sock, int file, off_t *offset, off_t count)
 		SLEEP(1);
 	}
 	if(i==0)
-		return((int)count);
+		return(count);
 #endif
 
 	if(count<0) {
@@ -229,7 +232,7 @@ int DLLCALL sendfilesocket(int sock, int file, off_t *offset, off_t count)
 	return(total);
 }
 
-int DLLCALL recvfilesocket(int sock, int file, off_t *offset, off_t count)
+off_t recvfilesocket(int sock, int file, off_t *offset, off_t count)
 {
 	/* Writes a file from a socket -
 	 *
@@ -247,8 +250,8 @@ int DLLCALL recvfilesocket(int sock, int file, off_t *offset, off_t count)
 	 */
 	 
 	char*	buf;
-	int		rd;
-	int		wr;
+	ssize_t	rd;
+	ssize_t	wr;
 
 	if(count<1) {
 		errno=ERANGE;
@@ -284,7 +287,7 @@ int DLLCALL recvfilesocket(int sock, int file, off_t *offset, off_t count)
 
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
-BOOL DLLCALL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
+BOOL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 {
 	char	ch;
 	int		i,rd;
@@ -343,12 +346,13 @@ BOOL DLLCALL socket_check(SOCKET sock, BOOL* rd_p, BOOL* wr_p, DWORD timeout)
 	return(FALSE);
 }
 
-int DLLCALL retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
+int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			   ,uint retries, uint wait_secs
 			   ,const char* prot
 			   ,int (*lprintf)(int level, const char *fmt, ...))
 {
 	char	port_str[128];
+	char	err[128];
 	int		result=-1;
 	uint	i;
 
@@ -361,7 +365,7 @@ int DLLCALL retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			break;
 		if(lprintf!=NULL)
 			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d binding %s socket%s", s, ERROR_VALUE, prot, port_str);
+				,"%04d !ERROR %d (%s) binding %s socket%s", s, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), prot, port_str);
 		if(i<retries) {
 			if(lprintf!=NULL)
 				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
@@ -372,7 +376,7 @@ int DLLCALL retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 	return(result);
 }
 
-int DLLCALL nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
+int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
 {
 	int result;
 
@@ -408,7 +412,7 @@ int DLLCALL nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size,
 }
 
 
-union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size)
+union xp_sockaddr* inet_ptoaddr(char *addr_str, union xp_sockaddr *addr, size_t size)
 {
     struct addrinfo hints = {0};
     struct addrinfo *res, *cur;
@@ -435,7 +439,7 @@ union xp_sockaddr* DLLCALL inet_ptoaddr(char *addr_str, union xp_sockaddr *addr,
     return addr;
 }
 
-const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
+const char* inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 {
 #ifdef _WIN32
 	if(getnameinfo(&addr->addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
@@ -458,7 +462,7 @@ const char* DLLCALL inet_addrtop(union xp_sockaddr *addr, char *dest, size_t siz
 #endif
 }
 
-uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr)
+uint16_t inet_addrport(union xp_sockaddr *addr)
 {
 	switch(addr->addr.sa_family) {
 		case AF_INET:
@@ -470,7 +474,7 @@ uint16_t DLLCALL inet_addrport(union xp_sockaddr *addr)
 	}
 }
 
-void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
+void inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 {
 	switch(addr->addr.sa_family) {
 		case AF_INET:
@@ -483,7 +487,7 @@ void DLLCALL inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 }
 
 /* Return TRUE if the 2 addresses are the same host (type and address) */
-BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
+BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 {
 	if(addr1->addr.sa_family != addr2->addr.sa_family)
 		return FALSE;
@@ -495,4 +499,26 @@ BOOL DLLCALL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 			return memcmp(&addr1->in6.sin6_addr, &addr2->in6.sin6_addr, sizeof(addr1->in6.sin6_addr)) == 0;
 	}
 	return FALSE;
+}
+
+/* Return the current socket error description (for Windows), like strerror() does for errno */
+DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
+{
+#if defined(_WINSOCKAPI_)
+	strncpy(buf, "Unknown error", buflen);
+	buf[buflen - 1] = 0;
+	if(error_number > 0 && error_number < WSABASEERR)
+		error_number += WSABASEERR;
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
+		NULL,			// lpSource
+		error_number,	// dwMessageId
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId
+		buf,
+		buflen,
+		NULL);
+	truncsp(buf);
+	return buf;
+#else
+	return safe_strerror(error_number, buf, buflen);
+#endif
 }

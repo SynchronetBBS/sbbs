@@ -1,0 +1,18 @@
+--- session/ssl_suites.c.orig	2020-01-23 14:12:41.131472000 -0500
++++ session/ssl_suites.c	2020-01-23 14:12:59.980267000 -0500
+@@ -357,12 +357,12 @@
+ static const CIPHERSUITES_LIST cipherSuitesList[] = {
+ 	{ cipherSuitePSK, FAILSAFE_ARRAYSIZE( cipherSuitePSK, CIPHERSUITE_INFO ) },
+ #ifdef PREFER_ECC
+-  #ifdef USE_GCM
+-	{ cipherSuiteGCM, FAILSAFE_ARRAYSIZE( cipherSuiteGCM, CIPHERSUITE_INFO ) },
+-  #endif /* USE_GCM */
+   #if defined( USE_ECDH )
+ 	{ cipherSuiteECC, FAILSAFE_ARRAYSIZE( cipherSuiteECC, CIPHERSUITE_INFO ) },
+   #endif /* USE_ECDH */
++  #ifdef USE_GCM
++	{ cipherSuiteGCM, FAILSAFE_ARRAYSIZE( cipherSuiteGCM, CIPHERSUITE_INFO ) },
++  #endif /* USE_GCM */
+ #endif /* PREFER_ECC */
+ 	{ cipherSuiteDH, FAILSAFE_ARRAYSIZE( cipherSuiteDH, CIPHERSUITE_INFO ) },
+ #ifdef USE_RSA_SUITES 

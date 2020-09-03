@@ -1,7 +1,7 @@
 var ai={
 	charbuf:'',
 	ansi_started:0,
-	input_queue:new Queue("dorkit_input"),
+	input_queue:new Queue("dorkit_input"+(argv[0] === undefined ? '' : argv[0])),
 
 	// Called every 100ms *and* every char.
 	ANSIRe:/^\x1b\[([<-\?]{0,1})([0-;]*)([ -\/]*)([@-~])$/,

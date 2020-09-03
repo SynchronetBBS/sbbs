@@ -2,7 +2,7 @@
 
 /* Synchronet LZH compression library */
 
-/* $Id$ */
+/* $Id: lzh.h,v 1.13 2019/03/22 21:29:12 rswindell Exp $ */
 
 /**************************************************************************** 
  * @format.tab-size 4		(Plain Text/Source Code File Header)			* 
@@ -40,7 +40,7 @@
 
 #ifdef _WIN32
 	#ifdef __BORLANDC__
-		#define LZHCALL __stdcall
+		#define LZHCALL
 	#else
 		#define LZHCALL
 	#endif

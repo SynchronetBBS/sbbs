@@ -1,20 +1,26 @@
 // E-mail Section
 
-// $Id$
+// $Id: email_sec.js,v 1.10 2020/04/24 08:05:39 rswindell Exp $
 
 // Note: this module replaces the old ### E-mail section ### Baja code in exec/*.src
 // replace "call E-mail" with "exec_bin email_sec"
 
-load("sbbsdefs.js");
-var text = load({}, "text.js");
-var userprops = load({}, "userprops.js");
-var ini_section = "netmail sent";
+require("sbbsdefs.js", "WM_NONE");
+require("userdefs.js", "USER_EXPERT");
+var text = bbs.mods.text;
+if(!text)
+	text = load(bbs.mods.text = {}, "text.js");
+var userprops = bbs.mods.userprops;
+if(!userprops)
+	userprops = load(bbs.mods.userprops = {}, "userprops.js");
+const ini_section = "netmail sent";
 
 const NetmailAddressHistoryLength = 10;
 
 while(bbs.online) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu("e-mail");
+	bbs.nodesync();
 	console.print("\r\n\1_\1y\1hE-mail: \1n");
 	var wm_mode = WM_NONE;
 	var cmdkeys = "SARUFNKQ?\r";
@@ -23,10 +29,10 @@ while(bbs.online) {
 			bbs.read_mail(MAIL_YOUR, user.number);
 			break;
 		case 'U':	// Read your un-read mail
-			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD);
+			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD|LM_REVERSE);
 			break;
 		case 'K':	// Read/Kill sent mail
-			bbs.read_mail(MAIL_SENT, user.number);
+			bbs.read_mail(MAIL_SENT, user.number, LM_REVERSE);
 			break;
 		case 'F':	// Send Feedback
 			bbs.email(/* user # */1, bbs.text(text.ReFeedback));
@@ -34,7 +40,7 @@ while(bbs.online) {
 		case 'A':	// Send file attachment
 			wm_mode = WM_FILE;
 		case 'S':	// Send Mail
-			console.print(bbs.text(text.Email));
+			console.putmsg(bbs.text(text.Email));
 			var name = console.getstr(40);
 			if(!name)
 				break;
@@ -50,7 +56,7 @@ while(bbs.online) {
 			if(number)
 				bbs.email(number, wm_mode);
 			else
-				console.print(bbs.text(text.UnknownUser));
+				console.putmsg(bbs.text(text.UnknownUser));
 			break;
 		case 'N':	// Send NetMail
 			var netmail = msg_area.fido_netmail_settings | msg_area.inet_netmail_settings;
@@ -59,12 +65,12 @@ while(bbs.online) {
 				wm_mode = WM_FILE;
 			if(console.aborted)
 				break;
-			console.print(bbs.text(text.EnterNetMailAddress));
+			console.putmsg(bbs.text(text.EnterNetMailAddress));
 			var addr_list = userprops.get(ini_section, "address", []) || [];
-			var addr = console.getstr(60, K_LINE, addr_list);
+			var addr = console.getstr(256, K_LINE, addr_list);
 			if(!addr || console.aborted)
 				break;
-			if(bbs.netmail(addr, wm_mode)) {
+			if(bbs.netmail(addr.split(','), wm_mode)) {
 				var addr_idx = addr_list.indexOf(addr);
 				if(addr_idx >= 0)
 					addr_list.splice(addr_idx, 1);

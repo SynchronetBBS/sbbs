@@ -97,6 +97,6 @@ if (argv.indexOf('--import') > -1) {
 	ks.add_private_key(rsa, syspass);
 	ks.add_public_key(cert);
 	ks.close();
-	print("Certificate imported, delete "+csr_fname+" after verifying.);
+	print("Certificate imported, delete "+csr_fname+" after verifying.");
 	file_touch(recycle_sem);
 }

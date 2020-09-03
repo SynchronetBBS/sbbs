@@ -1,10 +1,11 @@
 /*
  * Generic lightbar interface.
- * $Id$
+ * $Id: lightbar.js,v 1.48 2020/04/09 04:44:11 deuce Exp $
  */
 
 /* ToDo: Support multiple columns */
 require("sbbsdefs.js", 'SYS_CLOSED');
+require("mouse_getkey.js", 'mouse_getkey');
 
 /*
  * Lightbar object
@@ -76,6 +77,9 @@ Lightbar.prototype.hblanks=2;
 Lightbar.prototype.hotkeys='';
 Lightbar.prototype.callback=undefined;
 Lightbar.prototype.timeout=0;
+Lightbar.prototype.mouse_miss_key=undefined;
+Lightbar.prototype.mouse_miss_str=undefined;
+Lightbar.prototype.mouse_enabled=false;
 
 Lightbar.prototype.add = function(txt, retval, width, lpadding, rpadding, disabled, nodraw)
 {
@@ -137,29 +141,33 @@ Lightbar.prototype.getval = function(current,key)
 	if(key) loop=false;
 	var ret=undefined;
 	var last_cur;
-	
+	var mk;
+
 	if(!this.nodraw)
 		this.draw();
-		
+	delete this.mouse_miss_str;
+
 	/* Main loop */
 	while(bbs.online) {
-	
 		last_cur=this.current;
 		/* Get input */
-		/*
-		 * ToDo: K_GETSTR is to ensure that the users SPIN mode isn't used
-		 * This is a hack which triples the time that an ESC takes to be
-		 * procesed.
-		 */
 		if(key==undefined || key=='' || key==null) {
-			if(this.callback != undefined)
-				this.callback();
-			if(this.timeout>1)
-				key=console.inkey(K_UPPER|(user.settings&USER_SPIN?K_GETSTR:0),this.timeout);
-			else
-				key=console.getkey(K_UPPER|(user.settings&USER_SPIN?K_GETSTR:0));
+			mk = mouse_getkey(K_NOSPIN, this.timeout > 1 ? this.timeout : undefined, this.mouse_enabled);
+			if (mk.mouse !== null) {
+				// Mouse
+				if (mk.mouse.press && mk.mouse.mods === 0 && mk.mouse.button == 0 && mk.mouse.motion == 0) {
+					key = 'Mouse';
+					this.mouse_miss_str = mk.mouse.ansi;
+				}
+				else {
+					key = undefined;
+				}
+			}
+			else {
+				key = mk.key.toUpperCase();
+			}
 		}
-		
+
 		else {
 			if(this.hotkeys.indexOf(key)!=-1) {
 				this.nodraw=false;
@@ -167,6 +175,26 @@ Lightbar.prototype.getval = function(current,key)
 			}
 			
 			switch(key) {
+				case 'Mouse':
+					if (mk.mouse.button === 0) {
+						var hit = this.mouse_hit(mk.mouse.x, mk.mouse.y);
+						if (hit === -1) {
+							if (this.mouse_miss_key !== undefined) {
+								return this.mouse_miss_key;
+							}
+						}
+						else {
+							delete this.mouse_miss_str;
+							this.draw(hit);
+							this.nodraw=false;
+							if(this.items[this.current].retval==undefined)
+								return(undefined);
+							return(this.items[this.current].retval);
+						}
+					}
+					else
+						delete this.mouse_miss_str;
+					break;
 				case KEY_UP:
 					if(this.direction==0) {
 						do {
@@ -250,6 +278,77 @@ Lightbar.prototype.getval = function(current,key)
 			key=undefined;
 		} 
 	}
+};
+
+Lightbar.prototype.mouse_hit = function(x, y)
+{
+	if(this.direction < 0 || this.direction > 1) {
+		alert("Unknown lightbar direction!");
+		return -1;
+	}
+
+	var i;
+	var curx=this.xpos;
+	var cury=this.ypos;
+
+	for(i=0; i<this.items.length; i++) {
+		var width;
+
+		// Some basic validation.
+		if(this.items[i]==undefined) {
+			alert("Sparse items array!");
+			return -1;
+		}
+		if(this.items[i].text==undefined) {
+			alert("No text for item "+i+"!");
+			return -1;
+		}
+
+		// Set up a cleaned version for length calculations.
+		var cleaned=this.items[i].text;
+		cleaned=cleaned.replace(/\|/g,'');
+
+		/*
+		 * Calculate the width.  Forced width, item width, text width
+		 * In that order.  First one wins.
+		 */
+		if(this.force_width>0)
+			width=this.force_width;
+		else {
+			if(this.items[i].width!=undefined)
+				width=this.items[i].width;
+			else
+				width=cleaned.length;
+		}
+
+		var lpadding=this.lpadding;
+		if(this.items[i].lpadding!=undefined)
+			lpadding=this.items[i].lpadding;
+
+		if(lpadding != undefined && lpadding != null) {
+			curx+=lpadding.length;
+		}
+
+		if (cury === y) {
+			if (x >= curx && x <= curx + width)
+				return i;
+		}
+		curx += width;
+
+		var rpadding=this.rpadding;
+		if(this.items[i].rpadding!=undefined)
+			rpadding=this.items[i].rpadding;
+		curx += rpadding.length;
+
+		if(this.direction==0) {
+			cury++;
+			curx=this.xpos;
+		}
+		else {
+			curx += this.hblanks;
+		}
+	}
+	return -1;
 };
 
 Lightbar.prototype.draw = function(current)

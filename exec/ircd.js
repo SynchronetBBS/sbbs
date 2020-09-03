@@ -1,4 +1,4 @@
-// $Id$
+// $Id: ircd.js,v 1.193 2020/04/04 08:32:04 deuce Exp $
 //
 // ircd.js
 //
@@ -32,7 +32,7 @@ load("ircd_channel.js");
 load("ircd_server.js");
 
 // CVS revision
-const MAIN_REVISION = "$Revision$".split(' ')[1];
+const MAIN_REVISION = "$Revision: 1.193 $".split(' ')[1];
 
 // Please don't play with this, unless you're making custom hacks.
 // IF you're making a custom version, it'd be appreciated if you left the
@@ -174,7 +174,7 @@ if(this.server==undefined) {		// Running from JSexec?
 		default_port = mline_port;
 
 	server = { socket: false, terminated: false,
-		version_detail: jsexec_revision_detail };
+		version_detail: jsexec_revision_detail, interface_ip_addr_list: ["0.0.0.0","::"] };
 	server.socket = create_new_socket(default_port)
 	if (!server.socket)
 		exit();
@@ -202,12 +202,15 @@ js.auto_terminate=false; // we handle our own termination requests
 ///// Main Loop /////
 while (!js.terminated) {
 
+	if(file_date(system.ctrl_dir + "ircd.rehash") > time_config_read)
+		read_config_file();
+
 	// Setup a new socket if a connection is accepted.
 	for (pl in open_plines) {
 		if (open_plines[pl].poll()) {
-			log(LOG_DEBUG,"Accepting new connection on port "
-				+ open_plines[pl].local_port);
 			var client_sock=open_plines[pl].accept();
+			log(LOG_DEBUG,"Accepting new connection on port "
+				+ client_sock.local_port);
 			if(client_sock) {
 				client_sock.nonblocking = true;
 				switch(client_sock.local_port) {
@@ -294,13 +297,14 @@ while (!js.terminated) {
 	for(thisCL in CLines) {
 		my_cline = CLines[thisCL];
 		if (my_cline.port && YLines[my_cline.ircclass].connfreq &&
+		    (YLines[my_cline.ircclass].maxlinks > YLines[my_cline.ircclass].active) &&
 		    (search_server_only(my_cline.servername) < 1) &&
 		     ((time() - my_cline.lastconnect) >
 		     YLines[my_cline.ircclass].connfreq)
 		   ) {
 			umode_notice(USERMODE_ROUTING,"Routing",
 				"Auto-connecting to " +
-				CLines[thisCL].servername);
+				CLines[thisCL].servername + " ("+CLines[thisCL].host+")");
 			connect_to_server(CLines[thisCL]);
 		}
 	}
@@ -526,7 +530,7 @@ function create_ban_mask(str,kline) {
 	tmp_banstr[2] = "";
 	var bchar_counter = 0;
 	var part_counter = 0; // BAN: 0!1@2 KLINE: 0@1
-	var regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~]";
+	var regexp="[A-Za-z\{\}\`\^\_\|\\]\\[\\\\0-9\-.*?\~:]";
 	var finalstr;
 	for (bchar in str) {
 		if (str[bchar].match(regexp)) {
@@ -627,9 +631,19 @@ function connect_to_server(this_cline,the_port) {
 		the_port = this_cline.port;
 	else if (!the_port)
 		the_port = default_port; // try a safe default.
-	connect_sock = new Socket();
-	connect_sock.bind(0,server.interface_ip_address);
-	connect_sock.connect(this_cline.host,the_port,ob_sock_timeout);
+	if (js.global.ConnectedSocket != undefined) {
+		try {
+			connect_sock = new ConnectedSocket(this_cline.host, the_port, {timeout:ob_sock_timeout, bindaddrs:server.interface_ip_addr_list});
+		}
+		catch(e) {
+			connect_sock = new Socket();
+		}
+	}
+	else {
+		connect_sock = new Socket();
+		connect_sock.bind(0,server.interface_ip_address);
+		connect_sock.connect(this_cline.host,the_port,ob_sock_timeout);
+	}
 
 	var sendts = true; /* Assume Bahamut */
 
@@ -656,9 +670,16 @@ function connect_to_server(this_cline,the_port) {
 		Unregistered[new_id]=new Unregistered_Client(new_id,connect_sock);
 		Unregistered[new_id].sendps = false; // Don't do P/S pair again
 		Unregistered[new_id].outgoing = true; /* Outgoing Connection */
+		Unregistered[new_id].ircclass = this_cline.ircclass;
+		YLines[this_cline.ircclass].active++;
+		log(LOG_DEBUG, "Class "+this_cline.ircclass+" up to "+YLines[this_cline.ircclass].active+" active out of "+YLines[this_cline.ircclass].maxlinks);
 	}
-	else
+	else {
+		umode_notice(USERMODE_ROUTING,"Routing",
+			"Failed to connect to " +
+			this_cline.servername + " ("+this_cline.host+")");
 		connect_sock.close();
+	}
 	this_cline.lastconnect = time();
 }
 
@@ -687,6 +708,8 @@ function search_nickbuf(bufnick) {
 	}
 	return 0;
 }
+
+var time_config_read;
 
 function read_config_file() {
 	/* All of these variables are global. */
@@ -725,6 +748,8 @@ function read_config_file() {
 		read_ini_config(fname);
 	else
 		read_conf_config(fname);
+
+	time_config_read = time();
 }
 
 function read_ini_config(fname) {
@@ -737,11 +762,49 @@ function read_ini_config(fname) {
 
 function read_conf_config(fname) {
 	var conf = new File(fname);
+
+	function fancy_split(line) {
+		var ret = [];
+		var i;
+		var s = 0;
+		var inb = false;
+		var str;
+
+		for (i = 0; i < line.length; i++) {
+			if (line[i] == ':') {
+				if (inb)
+					continue;
+				if (i > 0 && line[i-1] == ']')
+					str = line.slice(s, i-1);
+				else
+					str = line.slice(s, i);
+				ret.push(str);
+				s = i + 1;
+			}
+			else if (!inb && line[i] == '[' && s == i) {
+				inb = true;
+				s = i + 1;
+			}
+			else if (line[i] == ']' && (i+1 == line.length || line[i+1] == ':')) {
+				inb = false;
+			}
+		}
+		if (s < line.length) {
+			if (i > 0 && line[i-1] == ']')
+				str = line.slice(s, i-1);
+			else
+				str = line.slice(s, i);
+			ret.push(str);
+		}
+
+		return ret;
+	}
+
 	if (conf.open("r")) {
 		while (!conf.eof) {
 			var conf_line = conf.readln();
 			if ((conf_line != null) && conf_line.match("[:]")) {
-				var arg = conf_line.split(":");
+				var arg = fancy_split(conf_line);
 				for(argument in arg) {
 					arg[argument]=arg[argument].replace(
 						/SYSTEM_HOST_NAME/g,system.host_name);
@@ -852,19 +915,34 @@ function read_conf_config(fname) {
 }
 
 function create_new_socket(port) {
+	var newsock;
+
 	log(LOG_DEBUG,"Creating new socket object on port " + port);
-	var newsock = new Socket();
-	if(!newsock.bind(port,server.interface_ip_address)) {
-		log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port "
-			+ port);
-		return 0;
+	if (js.global.ListeningSocket != undefined) {
+		try {
+			newsock = new ListeningSocket(server.interface_ip_addr_list, port, "IRCd");
+			log(format("IRC server socket bound to TCP port " + port));
+		}
+		catch(e) {
+			log(LOG_ERR,"!Error " + e + " creating listening socket on port "
+				+ port);
+			return 0;
+		}
 	}
-	log(format("%04u ",newsock.descriptor)
-		+ "IRC server socket bound to TCP port " + port);
-	if(!newsock.listen(5 /* backlog */)) {
-		log(LOG_ERR,"!Error " + newsock.error
-			+ " setting up socket for listening");
-		return 0;
+	else {
+		newsock = new Socket();
+		if(!newsock.bind(port,server.interface_ip_address)) {
+			log(LOG_ERR,"!Error " + newsock.error + " binding socket to TCP port "
+				+ port);
+			return 0;
+		}
+		log(format("%04u ",newsock.descriptor)
+			+ "IRC server socket bound to TCP port " + port);
+		if(!newsock.listen(5 /* backlog */)) {
+			log(LOG_ERR,"!Error " + newsock.error
+				+ " setting up socket for listening");
+			return 0;
+		}
 	}
 	return newsock;
 }
@@ -2931,8 +3009,10 @@ function IRCClient_check_queues() {
 		cmd = this.recvq.del();
 		Global_CommandLine = cmd;
 		this.work(cmd);
-		if (this.replaced_with !== undefined)
+		if (this.replaced_with !== undefined) {
 			this.replaced_with.check_queues();
+			break;
+		}
 	}
 }
 
@@ -3017,6 +3097,7 @@ function YLine(pingfreq,connfreq,maxlinks,sendq) {
 	this.connfreq = connfreq;
 	this.maxlinks = maxlinks;
 	this.sendq = sendq;
+	this.active = 0;
 }
 
 function ZLine(ipmask,reason) {

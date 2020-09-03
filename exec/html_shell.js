@@ -2,7 +2,7 @@
 
 // Default Command Shell for Synchronet Version 4.00a+
 
-// $Id$
+// $Id: html_shell.js,v 1.5 2008/02/21 03:20:24 rswindell Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

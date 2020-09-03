@@ -7,7 +7,7 @@ Fix logging on Windows
 Range check screen width and height, clamp at 255 rows/cols
 Add CSI = 1 n and CSI = 2 n ANSI commands (see cterm.txt for details)
 Fix CSI ? s and CSI ? n
-Update to Cryptlib 3.4.4
+Update to Cryptlib 3.4.5
 Ignore unsupported APC, DCS, OSC, PM, and SOS strings
 Add support for the palette redefinition/reset OSC commands from xterm
 Use XTerm 256-color palette
@@ -20,6 +20,47 @@ Add a new ANSI compliant DCS command for font loading
 Support bright background mode in curses when in xterm 88 or 256 color mode
 Added support for cached font assets
 Support for XTerm and TundraDraw/PabloDraw 24-bit color modes
+Some PETSCII keyboard changes
+Add support for DECRQSS
+Terminal type is now sent as "syncterm", "PETSCII", or "ATASCII"
+Menus are now always in cp437, and there is no shadow corruption
+Added CSI Pn SP @ to shift the screen left
+Added CSI Pn SP A to shift the screen right
+Added CSI Pn b to repeat a character multiple times
+Added CSI Pn d to change rows
+Added CSI Pn a as an alias to CSI Pn C
+Added CSI Pn ` as an alias to CSI Pn G
+Added ESC H to set a tabstop
+Added CSI Pn g to clear tabs
+Added CSI 2 $ w to request a tab report
+Added ESC M as a reverse linefeed
+Added CSI Pn e as an alias to CSI Pn B
+Added CSI Pn Y and CSI Pn I to move a specified numer of tab stops
+Added CSI Pn SP c to remove a specific tab stop
+Added CSI Pn k as an alias to CSI Pn A
+Support for a "Custom" video mode added
+X/Ymodem progress on Win32 fixed
+Enable SSH CTR modes
+Fix directory title to reflect changes to list size
+Update to SDL2 
+Allow snapping to scale using ALT-<arrow-key> in SDL mode
+Support XTerm style mouse reporting (except drag and keyboard modbits)
+CTRL-F/CTRL-G will now search the listing
+Support changing left/right margins the same way xterm does
+Implement ESC c to reset the terminal
+Implement Character Position Barckward
+Add UTF-8 copy/paste support
+Use Unicode in curses mode to allow full cp437 emulation
+Add -iI for forced ASCII curses mode
+Send sequences for backtab, shift/alt/ctrl + Function key
+Fix X11 copy/paste
+Changed codes used for F1-F5
+Speed change keys changed to CTRL up/down
+Add support for DEC style macros
+Fix X11 handing of non-multiple window sizes
+Allow "control characters" in Atari mode
+Built-in fonts now have a unicode mapping for copy/paste
+Added scrollwheel support
 
 Version 1.0
 -----------

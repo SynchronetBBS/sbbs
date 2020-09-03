@@ -1,6 +1,5 @@
-/* DUPEFIND.C */
-
-/* Developed 1990-1997 by Rob Swindell; PO Box 501, Yorba Linda, CA 92885 */
+/* $Id: dupefind.c,v 1.8 2020/08/17 00:48:28 rswindell Exp $ */
+// vi: tabstop=4
 
 #include "sbbs.h"
 #include "crc32.h"
@@ -72,7 +71,6 @@ int main(int argc,char **argv)
 	uint i,j,k,h,start_lib=0,end_lib=0,found=-1;
 	scfg_t cfg;
 
-	putenv("TZ=UCT0");
 	setvbuf(stdout,NULL,_IONBF,0);
 
 	char revision[16];
@@ -80,16 +78,7 @@ int main(int argc,char **argv)
 	fprintf(stderr,"\nDUPEFIND v%s-%s (rev %s) - Synchronet Duplicate File "
 		"Finder\n", DUPEFIND_VER, PLATFORM_DESC, revision);
 
-    p=getenv("SBBSCTRL");
-    if(p==NULL) {
-		fprintf(stderr,"\nSBBSCTRL environment variable must be set.\n");
-#ifdef __unix__
-		fprintf(stderr,"\nExample: export SBBSCTRL=/sbbs/ctrl\n");
-#else
-		fprintf(stderr,"\nExample: SET SBBSCTRL=C:\\SBBS\\CTRL\n");
-#endif
-        return(1); 
-	}
+    p = get_ctrl_dir(/* warn: */TRUE);
 
 	if(argc>1 && (!stricmp(argv[1],"/?") || !stricmp(argv[1],"?") || !stricmp(argv[1],"-?"))) {
 		fprintf(stderr,"\n");

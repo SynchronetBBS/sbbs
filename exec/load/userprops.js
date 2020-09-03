@@ -1,4 +1,6 @@
-// $Id$
+// $Id: userprops.js,v 1.7 2020/04/02 07:30:26 rswindell Exp $
+
+require("userdefs.js", 'UFLAG_G');
 
 function filename(usernum)
 {
@@ -7,8 +9,11 @@ function filename(usernum)
 
 function get(section, key, deflt, usernum)
 {
-	if(!usernum)
+	if(!usernum) {
 		usernum = user.number;
+		if(user.security.restrictions & UFLAG_G)
+			return deflt;
+	}
 	var file = new File(filename(usernum));
 	if(!file.open('r'))
 		return deflt;
@@ -25,8 +30,11 @@ function get(section, key, deflt, usernum)
 
 function set(section, key, value, usernum)
 {
-	if(!usernum)
+	if(!usernum) {
 		usernum = user.number;
+		if(user.security.restrictions & UFLAG_G)
+			return true;
+	}
 	var file = new File(filename(usernum));
 	if(!file.open(file.exists ? 'r+':'w+'))
 		return false;
@@ -36,6 +44,8 @@ function set(section, key, value, usernum)
 	var result;
 	if(!section)
 		result = file.iniSetAllObjects(value);
+	else if(value === undefined)
+		result = file.iniSetObject(section, key);
 	else if(!key)
 		result = file.iniSetObject(section, value);
 	else

@@ -1,6 +1,6 @@
 # tome/GNUmakefile
 #
-# $Id$
+# $Id: GNUmakefile,v 1.3 2006/05/30 22:53:55 deuce Exp $
 #
 #############################################################################
 # @format.tab-size 4		(Plain Text/Source Code File Header)			#

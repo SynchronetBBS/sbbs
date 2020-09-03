@@ -1,10 +1,15 @@
-load("sbbsdefs.js");
+// $Id: badpasswords.js,v 1.3 2019/01/11 09:38:12 rswindell Exp $
+
+"use strict";
+require("sbbsdefs.js", 'USER_DELETED');
+
 var badpasswords=0;
-usr = new User(1);
-for(u=1; u<=system.lastuser; u++) {
-	usr.number=u;
-	if(usr==null)
-		break;
+var usr = new User;
+var lastuser = system.lastuser;
+for(var u=1; u <= lastuser; u++) {
+	usr.number = u;
+	if(usr == null)
+		continue;
 	if(usr.settings&(USER_DELETED|USER_INACTIVE))
 	    continue;
 	if(!system.trashcan("password",usr.security.password))

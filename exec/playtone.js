@@ -2,7 +2,7 @@
 
 /* Tone Generation Utility (using PC speaker, not sound card) */
 
-const REVISION = "$Revision$".split(' ')[1];
+const REVISION = "$Revision: 1.4 $".split(' ')[1];
 
 const NO_VISUAL		=(1<<3)
 

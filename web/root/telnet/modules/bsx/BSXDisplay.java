@@ -1,7 +1,7 @@
 /*
  * BSXDisplay 	-- a graphics component for drawing BSX Objects on
  * --
- * $Id$
+ * $Id: BSXDisplay.java,v 1.1.1.1 2005/09/25 22:40:20 rswindell Exp $
  * $timestamp: Thu Feb 15 00:47:34 1996 by Matthias L. Jugel :$ 
  */
 package modules.bsx;

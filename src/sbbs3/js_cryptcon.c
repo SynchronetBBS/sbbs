@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: js_cryptcon.c,v 1.20 2018/04/06 02:42:37 rswindell Exp $ */
 
 // Cyrptlib encryption context...
 

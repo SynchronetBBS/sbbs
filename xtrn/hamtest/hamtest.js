@@ -7,6 +7,7 @@ function select_test()
 	console.crlf();
 	console.write("Class: ");
 	switch(console.getkeys("ABEGTQ")) {
+		default:
 		case 'Q':
 			return;
 		case 'A':

@@ -2,7 +2,7 @@
 
 /* Defines DLLEXPORT and DLLCALL for cross-platform development wrappers */
 
-/* $Id$ */
+/* $Id: wrapdll.h,v 1.8 2019/03/22 21:29:46 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -49,7 +49,7 @@
 		#define DLLEXPORT	__declspec(dllexport)
 	#endif
 	#if defined(__BORLANDC__)
-		#define DLLCALL __stdcall
+		#define DLLCALL
 	#else
 		#define DLLCALL
 	#endif

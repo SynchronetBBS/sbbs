@@ -2,16 +2,20 @@
 
 // Synchronet inter-bbs instant message library
 
-// $Id$
+// $Id: sbbsimsg_lib.js,v 1.6 2019/06/15 03:07:56 rswindell Exp $
 
-load("sockdefs.js");	// SOCK_DGRAM
+require("sockdefs.js", 'SOCK_DGRAM');
+
+const SentAddressHistoryLength = 10;
+const props_sent = "imsg sent";
+const props_recv = "imsg received";
 
 // Read the list of systems into list array
 var filename = system.ctrl_dir + "sbbsimsg.lst";
 var sys_list = {};
 var sock = new Socket(SOCK_DGRAM);
 
-function read_sys_list()
+function read_sys_list(include_self)
 {
 	var f = new File(filename);
 	if(!f.open("r")) {
@@ -29,18 +33,18 @@ function read_sys_list()
 
 		var word = line.split('\t');
 		var host = word[0].trimRight();
-
-		if(host == system.host_name
-			|| host == system.inetaddr)		// local system?
-			continue;						// ignore
-
 		var ip_addr = word[1];
 		var name = word[2];
 
-//		if(js.global.client && ip_addr == client.socket.local_ip_address)
-//			continue;
-		if(js.global.server && ip_addr == server.interface_ip_address)
-			continue;
+		if(!include_self) {
+			if(host == system.host_name
+				|| host == system.inetaddr)		// local system?
+				continue;						// ignore
+	//		if(js.global.client && ip_addr == client.socket.local_ip_address)
+	//			continue;
+			if(js.global.server && ip_addr == server.interface_ip_address)
+				continue;
+		}
 
 		this.sys_list[ip_addr] = { host: host, name: name, users: [] };
 	}
@@ -81,16 +85,19 @@ function parse_active_users(message, logon_callback, logoff_callback)
 	if(!message)
 		return false;
 	var sys = sys_list[message.ip_address];
-	if(!sys) {
-		alert("Unknown system: " + message.ip_address);
-		return false;
-	}
+	if(!sys)
+		return "Unknown system: " + message.ip_address;
 	
 	sys.last_response = time();
 	var old_users = sys.users.slice();
 	
-	if(message.data[0] == '[')
-		sys.users = JSON.parse(message.data);
+	if(message.data[0] == '[') {
+		try {
+			sys.users = JSON.parse(message.data);
+		} catch(e) {
+			return e;
+		}
+	}
 	else {
 		var response = message.data.split("\r\n");
 		
@@ -144,35 +151,45 @@ function receive_active_users()
 	return sock.recvfrom(0x10000);
 }
 
+// Cancel listening if callback returns 'true'
 function poll_systems(sent, interval, timeout, callback)
 {
 	var replies = 0;
 	var begin = new Date();
 	for(var loop = 0; replies < sent && new Date().valueOf()-begin.valueOf() < timeout; loop++)
 	{
-		if(callback)
-			callback(loop);
+		if(callback && callback(loop))
+			break;
 		if(!sock.poll(interval))
 			continue;
 
 		var message = receive_active_users();
 		if(message == null)
 			continue;
+		
 		replies++;
 
 		var result = parse_active_users(message);
-		if(!result)
-			alert("Failed to parse: " + JSON.stringify(message));
+		if(result !== true)
+			return format("%s: %s", result, JSON.stringify(message));
 	}
 	return replies;
+}
+
+function dest_host(dest)
+{
+	var hp = dest.indexOf('@');
+	if(hp < 0)
+		return false;
+	return hp;
 }
 
 // Returns true on success, string (error) on failure
 function send_msg(dest, msg, from)
 {
-	var hp = dest.indexOf('@');
-	if(hp < 0)
-		return "Invalid user";
+	var hp = dest_host(dest);
+	if(!hp)
+		return "Invalid destination";
 	var host = dest.slice(hp+1);
 	var destuser = dest.substr(0, hp);
 	var sock = new Socket();
@@ -182,6 +199,17 @@ function send_msg(dest, msg, from)
 	sock.close();
 	if(result < 1)
 		return "MSP Send to " + host + " failed with error " + sock.last_error;
+	
+	var userprops = load({}, "userprops.js")
+	var addr_list = userprops.get(props_sent, "address", []);
+	var addr_idx = addr_list.indexOf(dest);
+	if(addr_idx >= 0)	 
+		addr_list.splice(addr_idx, 1);
+	addr_list.unshift(dest);
+	if(addr_list.length > SentAddressHistoryLength)
+		addr_list.length = SentAddressHistoryLength;
+	userprops.set(props_sent, "address", addr_list);
+	userprops.set(props_sent, "localtime", new Date().toString());
 	return true;
 }
 

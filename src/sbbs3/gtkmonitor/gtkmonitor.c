@@ -77,7 +77,9 @@ void refresh_events(void)
     /* Read .cfg files here */
 	free_cfg(&cfg);
     if(!load_cfg(&cfg, NULL, TRUE, str)) {
-		display_message("Load Error","Cannot load configuration data","gtk-dialog-error");
+		char error[256];
+		SAFEPRINTF(error, "ERROR Loading Configuration Files: %s", str);
+		display_message("Load Error",error,"gtk-dialog-error");
         return;
 	}
 
@@ -151,7 +153,7 @@ void refresh_events(void)
 			gtk_list_store_append(quickstore, &curr);
 			quickslots++;
 		}
-		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i],ltoaf(cfg.val_flags1[i],flags));
+		sprintf(str,"%-2d  SL: %-2d  F1: %s",i,cfg.val_level[i - 1],ltoaf(cfg.val_flags1[i - 1],flags));
 		gtk_list_store_set(quickstore, &curr, 0, str, -1);
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(quickstore), &curr);
 	}
@@ -218,10 +220,10 @@ int refresh_data(gpointer data)
 			nodes++;
 		}
 
-		if((j=getnodedat(&cfg,i,&node,NULL)))
+		if((j=getnodedat(&cfg,i,&node,FALSE,NULL)))
 			sprintf(str,"Error reading node data (%d)!",j);
 		else
-			nodestatus(&cfg,&node,str,1023);
+			nodestatus(&cfg,&node,str,1023, i);
 		gtk_list_store_set(store, &curr, 1, str, -1);
 		gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &curr);
 	}
@@ -258,7 +260,7 @@ int refresh_data(gpointer data)
 		gtk_tree_selection_selected_foreach(sel
 				,get_lastselected_node
 				,&i);
-		if((j=getnodedat(&cfg,i,&node,NULL))) {
+		if((j=getnodedat(&cfg,i,&node,FALSE,NULL))) {
 			sprintf(str,"Error reading node data (%d)!",j);
 			node.status=NODE_WFC;
 		}
@@ -441,15 +443,11 @@ gtk_widget_set_sensitive(w, TRUE);
 int read_config(void)
 {
 	char	ctrl_dir[MAX_PATH+1];
-	char	*p;
 
-	p=getenv("SBBSCTRL");
-	if(p==NULL)
-		p="/sbbs/ctrl";
-	SAFECOPY(ctrl_dir, p);
+	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 	prep_dir("",ctrl_dir,sizeof(ctrl_dir));
 	if(!isdir(ctrl_dir)) {
-		display_message("Environment Errpr","SBBSCTRL does not point to a directory","gtk-dialog-error");
+		display_message("Environment Error","SBBSCTRL does not point to a directory","gtk-dialog-error");
 		return(-1);
 	}
     memset(&cfg,0,sizeof(cfg));

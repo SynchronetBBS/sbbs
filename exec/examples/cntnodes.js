@@ -5,7 +5,7 @@
 // Usage: 	load("cntnodes.js");
 // 		cntnodes();
 
-// $Id$
+// $Id: cntnodes.js,v 1.3 2005/09/12 19:29:44 deuce Exp $
 
 // @format.tab-size 4, @format.use-tabs true
 

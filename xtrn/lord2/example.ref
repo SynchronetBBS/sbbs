@@ -1,0 +1,90 @@
+; Afraid of using vars that LORD2 or other IGM's might change?  No prob!
+; use your OWN vars!! The new @data commands make it easy and simple!
+
+; example of how to use the @data command set to easily create your own
+; data file to check if a person had been in here that day already.
+; by Seth A. Robinson, 6-24-97
+
+; ok, we'll call it 'the magic rock', it says something clever if a user
+; pushes against it (it runs this file) but only ONCE per day.. if they
+; they have already got their 'wisdom' for the day, it says go away.
+
+; this is a good example because this probably how most people will use
+; the @data commands, just to see if someone has been here or not today.  But
+; don't forget it is 200 longints that could be used in other ways too, for
+; instance, a bank of your own, etc.
+
+; another note.. this .ref *IS* used in the game itself so don't delete it!!
+; you could change it and see how it changes in the game though, the 'magic
+; rock' is located in Greentree.
+
+@#START
+@do moveback
+; first we move them back, so they are not standing on the rock
+
+@datanewday rock.idf
+
+; the above command will reset all #'s in ROCK.IDF to 0 *IF* a new day has
+; occured since the last time this command was called.
+
+; use idf so it is easy for sysops to know which data files they can delete
+; safely  (IGM DATA FILE)
+
+@dataload rock.idf &playernum `p20
+
+; the above command is important - this is how you retrieve ALL data.
+; &playernum is the current players # in the trader.dat file, and `p20 is
+; a scratch var that we want to put the return result in.
+
+@if `p20 not 1 then do
+  @begin
+
+  ; woohoo, they have not been here yet today!
+  ; lets spew some wisdom.
+
+  @do `p21 random 10 1
+  ; now `p21 is a random # between 1 and 10
+
+  @if `p21 is 1 then saybar
+`0Magic Rock: `2Don't eat poison much.
+  @if `p21 is 2 then saybar
+`0Magic Rock: `2My sources say yes.
+  @if `p21 is 3 then saybar
+`0Magic Rock: `2Barak is guilty!  But you must prove it.
+  @if `p21 is 4 then saybar
+`0Magic Rock: `2You must learn to love yourself before you can love others.
+  @if `p21 is 5 then saybar
+`0Magic Rock: `2You must be very evil to be taken to Dragon Island...
+  @if `p21 is 6 then saybar
+`0Magic Rock: `2Making LORD2 IGM's is very easy.  Anyone can do it.
+  @if `p21 is 7 then saybar
+`0Magic Rock: `2There is a `%Moonstone`2 hidden in a waterfall.
+  @if `p21 is 8 then saybar
+`0Magic Rock: `2The Smackrod could help you break into Sosen Inn...
+  @if `p21 is 9 then saybar
+`0Magic Rock: `2Nice people have to pay more to get into Bonetown.
+  @if `p21 is 10 then saybar
+`0Magic Rock: `2If someone places a bounty on your head, your dead.
+
+  @datasave rock.idf &playernum 1
+
+  ; the above is IMPORTANT - we just set this persons data # to 1, now we
+  ; will know that he was here!  Until the next day, when it is reset to 0.
+
+  ; all done let's do a @closescript so it will quit right now
+
+  @closescript
+  @end
+
+; if we got here, it means they HAVE been on today.
+
+@do saybar
+`2The strange rock refuses to speak again.
+
+; all done!
+
+@#NOMORE
+
+; always put this at an end of a .ref file.. when it sees the @# it knows
+; that the routine it was sent to do is over.  a @closescript works too.
+

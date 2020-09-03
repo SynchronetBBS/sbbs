@@ -1,68 +1,63 @@
 // This is the actual game.  It's a disaster, but it gets the job done.
-var Level = function(l, n) {
+var Level = function (l, n) {
 
 	// Scope some variables for use by functions and methods in this object
-	var timer = new Timer(), // A Timer
-		// A place to organize this level's frames
+	var timer = new Timer(),
 		frames = {
-			'counters' : {}
+			labels: {},
+			counters: {}
 		},
 		cursor,		// The 1x1 cursor frame
 		countDown,	// Level timeout
 		lost = 0,	// Lemons lost
 		saved = 0,	// Lemons saved
 		total = 0,	// Total lemon count for this level
-		// Placeholder values for how many of each skill may be assigned
-		quotas = {
-			'basher' : 0,
-			'blocker' : 0,
-			'bomber' : 0,
-			'builder' : 0,
-			'climber' : 0,
-			'digger' : 0
-		},
-		nuked = false;
+		nuked = false,
+		currentSkill = null,
+		quotas = {};
+	quotas[KEY_BASH] = 0;
+	quotas[KEY_BLOCK] = 0;
+	quotas[KEY_BOMB] = 0;
+	quotas[KEY_BUILD] = 0;
+	quotas[KEY_CLIMB] = 0;
+	quotas[KEY_DIG] = 0;
 
 	// The parent Game object will want to read this
 	this.score = 0;
 
 	/*	Change the colour of a lemon's peel without altering the colour of its
 		shoes or 'nuked' position. */
-	var colorize = function(sprite, colour) {
+	function colorize(sprite, colour) {
 		var fgmask = (1<<0)|(1<<1)|(1<<2)|(1<<3);
-		for(var y = 0; y < sprite.frame.data.length; y++) {
-			for(var x = 0; x < 9; x++) {
+		for (var y = 0; y < sprite.frame.data.length; y++) {
+			for (var x = 0; x < 9; x++) {
 				sprite.frame.data[y][x].attr&=~fgmask;
-				if((y == 2 || y == 5) && (x == 0 || x == 2 || x == 3 || x == 5 || x == 6 || x == 8))
+				if ((y == 2 || y == 5) && (x == 0 || x == 2 || x == 3 || x == 5 || x == 6 || x == 8)) {
 					sprite.frame.data[y][x].attr=BG_BLACK|BROWN;
-				else
+				} else {
 					sprite.frame.data[y][x].attr|=colour;
+				}
 			}
 		}
 		sprite.frame.invalidate();
 	}
 
 	//	Turn skilled lemon back into an ordinary zombie-lemon.
-	var lemonize = function(sprite) {
+	function lemonize(sprite) {
 		colorize(sprite, COLOUR_LEMON);
 		sprite.ini.constantmotion = 1;
 		sprite.ini.gravity = 1;
 		sprite.ini.speed = .25;
 		sprite.ini.skill = "lemon";
-		if(typeof sprite.ini.buildCount != "undefined")
-			delete sprite.ini.buildCount;
-		if(typeof sprite.ini.lastBuild != "undefined")
-			delete sprite.ini.lastBuild;
-		if(typeof sprite.ini.climbStart != "undefined")
-			delete sprite.ini.climbStart;
-		if(typeof sprite.ini.lastDig != "undefined")
-			delete sprite.ini.lastDig;
+		if (typeof sprite.ini.buildCount != "undefined") delete sprite.ini.buildCount;
+		if (typeof sprite.ini.lastBuild != "undefined") delete sprite.ini.lastBuild;
+		if (typeof sprite.ini.climbStart != "undefined") delete sprite.ini.climbStart;
+		if (typeof sprite.ini.lastDig != "undefined") delete sprite.ini.lastDig;
 	}
 
 	// Remove the lemon from the screen
-	var remove = function(sprite) {
-		if(!sprite.open)
-			return;
+	function remove(sprite) {
+		if (!sprite.open) return;
 		sprite.remove();
 	}
 
@@ -72,41 +67,22 @@ var Level = function(l, n) {
 		on top of it (stairs, etc.)
 		Normal, bomber, and builder lemons should be passed to this function.
 	*/
-	var turnOrClimbIfObstacle = function(sprite) {
+	function turnOrClimbIfObstacle(sprite) {
 
 		var beside = (sprite.bearing == "w") ? Sprite.checkLeft(sprite) : Sprite.checkRight(sprite);
-		if(!beside)
-			beside = Sprite.checkOverlap(sprite);
-		if(!beside)
-			return;
+		if (!beside) beside = Sprite.checkOverlap(sprite);
+		if (!beside) return;
 
-		for(var b = 0; b < beside.length; b++) {
+		for (var b = 0; b < beside.length; b++) {
 
-			if(	beside[b].ini.type != "block"
-				&&
-				beside[b].ini.type != "lemon"
-				&&
-				beside[b].ini.type != "hazard"
-			) {
-				continue;
-			}
+			if (beside[b].ini.type != "block" && beside[b].ini.type != "lemon" && beside[b].ini.type != "hazard") continue;
 
-			if(	beside[b].ini.type == "block"
-				&&
-				beside[b].y == sprite.y + sprite.ini.height - 1
-			) {
-				sprite.moveTo(
-					(sprite.bearing == "w") ? (sprite.x - 1) : (sprite.x + 1),
-					sprite.y - 1
-				);
-				if(Sprite.checkOverlap(sprite)) {
-					sprite.moveTo(
-						(sprite.bearing == "w") ? (sprite.x + 1) : (sprite.x - 1),
-						sprite.y + 1
-					);
+			if (beside[b].ini.type == "block" && beside[b].y == sprite.y + sprite.ini.height - 1) {
+				sprite.moveTo((sprite.bearing == "w") ? (sprite.x - 1) : (sprite.x + 1), sprite.y - 1);
+				if (Sprite.checkOverlap(sprite)) {
+					sprite.moveTo((sprite.bearing == "w") ? (sprite.x + 1) : (sprite.x - 1), sprite.y + 1);
 					sprite.turnTo((sprite.bearing == "w") ? "e" : "w");
-					if(sprite.ini.skill == "builder")
-						lemonize(sprite);
+					if (sprite.ini.skill == "builder") lemonize(sprite);
 				}
 				sprite.lastMove = system.timer;
 				break;
@@ -115,29 +91,23 @@ var Level = function(l, n) {
 				sprite.turnTo((sprite.bearing == "w") ? "e" : "w");
 				sprite.lastMove = system.timer;
 				var overlaps = Sprite.checkOverlap(sprite);
-				if(overlaps) {
-					for(var o = 0; o < overlaps.length; o++) {
-						if(	overlaps[o].ini.type != "block"
-							&&
-							overlaps[o].ini.type != "lemon"
-							&&
-							overlaps[o].ini.type != "hazard"
-						) {
+				if (overlaps) {
+					for (var o = 0; o < overlaps.length; o++) {
+						if (overlaps[o].ini.type != "block" && overlaps[o].ini.type != "lemon" && overlaps[o].ini.type != "hazard") {
 							continue;
 						}
-						if(sprite.bearing == "w") {
-							while(sprite.x < overlaps[o].x + overlaps[o].frame.width) {
+						if (sprite.bearing == "w") {
+							while (sprite.x < overlaps[o].x + overlaps[o].frame.width) {
 								sprite.move("reverse");
 							}
-						} else if(sprite.bearing == "e") {
-							while(sprite.x + sprite.ini.width > overlaps[o].x) {
+						} else if (sprite.bearing == "e") {
+							while (sprite.x + sprite.ini.width > overlaps[o].x) {
 								sprite.move("reverse");
 							}
 						}
 					}
 				}
-				if(sprite.ini.skill == "builder")
-					lemonize(sprite);
+				if (sprite.ini.skill == "builder") lemonize(sprite);
 				break;
 			}
 
@@ -151,74 +121,53 @@ var Level = function(l, n) {
 		was just a single block (stairs, perhaps) and the 'climber' skill
 		is retained for later use.  Otherwise convert back to normal lemon
 		status. */
-	var climbIfObstacle = function(sprite) {
+	function climbIfObstacle(sprite) {
 
-		if(system.timer - sprite.lastYMove < sprite.ini.speed)
-			return;
+		if (system.timer - sprite.lastYMove < sprite.ini.speed) return;
 
-		if(Sprite.checkAbove(sprite)) {
+		if (Sprite.checkAbove(sprite)) {
 			lemonize(sprite);
 			sprite.lastMove = system.timer;
 			return;
 		}
 
 		var beside = (sprite.bearing == "w") ? Sprite.checkLeft(sprite) : Sprite.checkRight(sprite);
-		if(!beside)
-			beside = Sprite.checkOverlap(sprite);
-		if(!beside)
-			return;
+		if (!beside) beside = Sprite.checkOverlap(sprite);
+		if (!beside) return;
 
-		if(typeof sprite.ini.climbStart == "undefined")
-			sprite.ini.climbStart = sprite.y;
-
+		if (typeof sprite.ini.climbStart == "undefined") sprite.ini.climbStart = sprite.y;
 		sprite.ini.gravity = 0;
 		sprite.ini.constantmotion = 0;
-
-		for(var b = 0; b < beside.length; b++) {
-
-			if(	beside[b].ini.type == "entrance"
-				||
-				beside[b].ini.type == "exit"
-				||
-				beside[b].ini.type == "projectile"
-			) {
+		for (var b = 0; b < beside.length; b++) {
+			if (beside[b].ini.type == "entrance" || beside[b].ini.type == "exit" || beside[b].ini.type == "projectile") {
 				lemonize(sprite);
 				return;
-			} else if(beside[b].ini.type == "lemon") {
+			} else if (beside[b].ini.type == "lemon") {
 				sprite.turnTo((sprite.bearing == "w") ? "e" : "w");
 				sprite.ini.gravity = 1;
 				sprite.ini.constantmotion = 1;
 				return;
 			}
-
 		}
 
-		sprite.moveTo(
-			(sprite.bearing == "w") ? (sprite.x - 1) : (sprite.x + 1),
-			sprite.y - 1
-		);
+		sprite.moveTo((sprite.bearing == "w") ? (sprite.x - 1) : (sprite.x + 1), sprite.y - 1);
 		sprite.lastYMove = system.timer;
 		var overlaps = Sprite.checkOverlap(sprite);
-		if(overlaps) {
-			for(var o = 0; o < overlaps.length; o++) {
-				if(overlaps[o].y != sprite.y + sprite.ini.height - 1)
-					continue;
-				if(sprite.bearing == "w") {
-					while(sprite.x < overlaps[o].x + overlaps[o].frame.width) {
+		if (overlaps) {
+			for (var o = 0; o < overlaps.length; o++) {
+				if (overlaps[o].y != sprite.y + sprite.ini.height - 1) continue;
+				if (sprite.bearing == "w") {
+					while (sprite.x < overlaps[o].x + overlaps[o].frame.width) {
 						sprite.move("reverse");
 					}
-				} else if(sprite.bearing == "e") {
-					while(sprite.x + sprite.ini.width > overlaps[o].x) {
+				} else if (sprite.bearing == "e") {
+					while (sprite.x + sprite.ini.width > overlaps[o].x) {
 						sprite.move("reverse");
 					}
 				}
 				break;
 			}
-		} else if(
-			sprite.ini.climbStart > sprite.y
-			&&
-			sprite.ini.climbStart - sprite.y > 1
-		) {
+		} else if (sprite.ini.climbStart > sprite.y && sprite.ini.climbStart - sprite.y > 1) {
 			lemonize(sprite);
 		} else {
 			sprite.ini.constantmotion = 1;
@@ -232,36 +181,25 @@ var Level = function(l, n) {
 		for us.  We just need to enforce straight vertical drops, and make
 		sure certain types don't start moving again once they land. 
 		All lemons should be passed to this function.  */
-	var fallIfNoFloor = function(sprite) {
+	function fallIfNoFloor(sprite) {
 
 		if(sprite.inFall && sprite.ini.constantmotion == 1) {
 			// Stop lemons from moving horizontally when falling
 			sprite.ini.constantmotion = 0;
 		} else if(
 			!sprite.inFall
-			&&
-			sprite.ini.constantmotion == 0
-			&&
-			sprite.ini.gravity == 1
-			&&
-			sprite.ini.skill != "blocker"
-			&&
-			sprite.ini.skill != "digger"
-			&&
-			sprite.ini.skill != "basher"
-			&&
-			sprite.ini.skill != "builder"
-			&&
-			sprite.ini.skill != "dying"
+			&& sprite.ini.constantmotion == 0
+			&& sprite.ini.gravity == 1
+			&& sprite.ini.skill != KEY_BLOCK
+			&& sprite.ini.skill != KEY_DIG
+			&& sprite.ini.skill != KEY_BASH
+			&& sprite.ini.skill != KEY_BUILD
+			&& sprite.ini.skill != "dying"
 		) {
 
-			if(typeof sprite.ini.forceDrop == "boolean")
-				delete sprite.ini.forceDrop;
+			if (typeof sprite.ini.forceDrop == "boolean") delete sprite.ini.forceDrop;
 
-			if(	typeof sprite.ini.ticker == "undefined"
-				&&
-				sprite.ini.skill != "climber"
-			) {
+			if(typeof sprite.ini.ticker == "undefined" && sprite.ini.skill != "climber") {
 				lemonize(sprite);
 			} else {
 				sprite.ini.constantmotion = 1;
@@ -273,13 +211,11 @@ var Level = function(l, n) {
 	/*	If a lemon has reached the exit, remove it and update counters
 		accordingly.
 		All but blocker lemons should be passed to this function. */
-	var removeIfAtExit = function(sprite) {
+	function removeIfAtExit(sprite) {
 		var overlaps = Sprite.checkOverlap(sprite);
-		if(!overlaps)
-			return;
-		for(var o = 0; o < overlaps.length; o++) {
-			if(overlaps[o].ini.type != "exit")
-				continue;
+		if (!overlaps) return;
+		for (var o = 0; o < overlaps.length; o++) {
+			if (overlaps[o].ini.type != "exit") continue;
 			sprite.remove();
 			saved++;
 			frames.counters.lostSaved.clear();
@@ -294,15 +230,13 @@ var Level = function(l, n) {
 		It's too easy to just remove an entire block from the screen,
 		so we will produce a nice effect by dismantling the block by
 		one half-cell every ~ .5 seconds. */
-	var bashersGonnaBash = function(sprite) {
+	function bashersGonnaBash(sprite) {
 
-		if(typeof sprite.ini.lastDig != "undefined" && system.timer - sprite.ini.lastDig < .5)
-			return;
+		if (typeof sprite.ini.lastDig != "undefined" && system.timer - sprite.ini.lastDig < .5) return;
 
 		var beside = (sprite.bearing == "e") ? Sprite.checkRight(sprite) : Sprite.checkLeft(sprite);
-		if(!beside)
-			beside = Sprite.checkOverlap(sprite);
-		if(!beside) {
+		if (!beside) beside = Sprite.checkOverlap(sprite);
+		if (!beside) {
 			sprite.ini.constantmotion = 1;
 			return;
 		}
@@ -311,71 +245,56 @@ var Level = function(l, n) {
 
 		var blockFound = false;
 		var columnClear = false;
-		for(var b = 0; b < beside.length; b++) {
+		for (var b = 0; b < beside.length; b++) {
 
-			if(beside[b].ini.type == "lemon") {
+			if (beside[b].ini.type == "lemon") {
 				sprite.turnTo((sprite.bearing == "e") ? "w" : "e");
 				return;
 			}
 
-			if(	beside[b].ini.type != "block"
-				||
-				!beside[b].open
-			) {
-				continue;
-			}
+			if (beside[b].ini.type != "block" || !beside[b].open) continue;
 
-			if(beside[b].y == sprite.y + sprite.ini.height - 1) {
-				sprite.moveTo(
-					(sprite.bearing == "w") ? (sprite.x - 1) : (sprite.x + 1),
-					sprite.y - 1
-				);
-				if(!Sprite.checkOverlap(sprite)) {
+			if (beside[b].y == sprite.y + sprite.ini.height - 1) {
+				sprite.moveTo((sprite.bearing == "w") ? (sprite.x - 1) : (sprite.x + 1), sprite.y - 1);
+				if (!Sprite.checkOverlap(sprite)) {
 					sprite.ini.constantmotion = 1;
 					return;
 				}
-				sprite.moveTo(
-					(sprite.bearing == "w") ? (sprite.x + 1) : (sprite.x - 1),
-					sprite.y + 1
-				);
+				sprite.moveTo((sprite.bearing == "w") ? (sprite.x + 1) : (sprite.x - 1), sprite.y + 1);
 			}
 
 			blockFound = true;
 
-			if(beside[b].ini.material == "metal") {
+			if (beside[b].ini.material == "metal") {
 				lemonize(sprite);
 				sprite.turnTo((sprite.bearing == "e") ? "w" : "e");
 				return;
 			}
 
-			if(sprite.bearing == "e")
+			if (sprite.bearing == "e") {
 				var x = (beside[b].x - sprite.x == 3) ? 0 : ((beside[b].x - sprite.x == 2) ? 1 : 2);
-			else
+			} else {
 				var x = (sprite.x - beside[b].x == 3) ? 2 : ((sprite.x - beside[b].x == 2) ? 1 : 0);
+			}
 
 			beside[b].frame.invalidate();
 			sprite.ini.lastDig = system.timer;
 
-			if(beside[b].frame.data[0][x].ch == ascii(220)) {
+			if (beside[b].frame.data[0][x].ch == ascii(220)) {
 				beside[b].frame.data[0][x].ch = " ";
 				beside[b].frame.data[0][x].attr = BG_BLACK;
-				if(	(sprite.bearing == "e" && x == 2)
-					||
-					(sprite.bearing == "w" && x == 0)
-				) {
-					beside[b].remove();
-				}
+				if(	(sprite.bearing == "e" && x == 2) || (sprite.bearing == "w" && x == 0)) beside[b].remove();
 				columnClear = (b == beside.length - 1);
 				break;
 			}
 
-			if(beside[b].frame.data[0][x].ch == ascii(223)) {
+			if (beside[b].frame.data[0][x].ch == ascii(223)) {
 				beside[b].frame.data[0][x].ch = ascii(220);
 				beside[b].frame.data[0][x].attr = BG_BLACK|BROWN;
 				break;
 			}
 
-			if(beside[b].frame.data[0][x].ch == ascii(219)) {
+			if (beside[b].frame.data[0][x].ch == ascii(219)) {
 				beside[b].frame.data[0][x].ch = ascii(220);
 				beside[b].frame.data[0][x].attr = BG_BLACK|RED;
 				break;
@@ -383,59 +302,47 @@ var Level = function(l, n) {
 
 		}
 
-		if(columnClear) {
+		if (columnClear) {
 			sprite.move("forward");
-			if(	((sprite.bearing == "e" && !Sprite.checkRight(sprite))
-				||
-				(sprite.bearing == "w" && !Sprite.checkLeft(sprite)))
-				&&
-				!Sprite.checkOverlap(sprite)
-			) {
+			if (((sprite.bearing == "e" && !Sprite.checkRight(sprite)) || (sprite.bearing == "w" && !Sprite.checkLeft(sprite))) && !Sprite.checkOverlap(sprite)) {
 				lemonize(sprite);
 				return;
 			}
-		} else if(!blockFound) {
+		} else if (!blockFound) {
 			lemonize(sprite);
 		}
 
 	}
 
 	//	Like bashersGonnaBash, but for digging downward.
-	var diggersGonnaDig = function(sprite) {
+	function diggersGonnaDig(sprite) {
 
-		if(typeof sprite.ini.lastDig != "undefined" && system.timer - sprite.ini.lastDig < .5)
-			return;
+		if (typeof sprite.ini.lastDig != "undefined" && system.timer - sprite.ini.lastDig < .5) return;
 
 		var below = Sprite.checkBelow(sprite);
-		if(!below)
-			below = Sprite.checkOverlap(sprite);
-		if(!below)
-			return;
+		if (!below) below = Sprite.checkOverlap(sprite);
+		if (!below) return;
 
 		sprite.ini.constantmotion = 0;
 
 		var clear = below.length;
-		for(var b = 0; b < below.length; b++) {
+		for (var b = 0; b < below.length; b++) {
 
-			if(	below[b].ini.type != "block"
-				||
-				!below[b].open
-			) {
+			if (below[b].ini.type != "block" || !below[b].open) {
 				clear--;
 				continue;
 			}
 
-			if(below[b].ini.material == "metal") {
+			if (below[b].ini.material == "metal") {
 				lemonize(sprite);
 				return;
 			}
 
 			var cleared = true;
-			for(var c = 0; c < 3; c++) {
-				if(below[b].frame.data[0][c].ch != " ")
-					cleared = false;
+			for (var c = 0; c < 3; c++) {
+				if (below[b].frame.data[0][c].ch != " ") cleared = false;
 			}				
-			if(cleared) {
+			if (cleared) {
 				below[b].remove();
 				clear--;
 				continue;
@@ -444,21 +351,21 @@ var Level = function(l, n) {
 			below[b].frame.invalidate();
 			sprite.ini.lastDig = system.timer;
 
-			for(var c = 0; c < 3; c++) {
+			for (var c = 0; c < 3; c++) {
 
-				if(below[b].frame.data[0][c].ch == ascii(220)) {
+				if (below[b].frame.data[0][c].ch == ascii(220)) {
 					below[b].frame.data[0][c].ch = " ";
 					below[b].frame.data[0][c].attr = 0;
 					break;
 				}
 
-				if(below[b].frame.data[0][c].ch == ascii(223)) {
+				if (below[b].frame.data[0][c].ch == ascii(223)) {
 					below[b].frame.data[0][c].ch = ascii(220);
 					below[b].frame.data[0][c].attr = BG_BLACK|BROWN;
 					break;
 				}
 
-				if(below[b].frame.data[0][c].ch == ascii(219)) {
+				if (below[b].frame.data[0][c].ch == ascii(219)) {
 					below[b].frame.data[0][c].ch = ascii(220);
 					below[b].frame.data[0][c].attr = BG_BLACK|RED;
 					break;
@@ -468,9 +375,9 @@ var Level = function(l, n) {
 
 		}
 
-		if(clear == 0) {
+		if (clear == 0) {
 			sprite.moveTo(sprite.x, sprite.y + 1);
-			if(!Sprite.checkBelow(sprite)) {
+			if (!Sprite.checkBelow(sprite)) {
 				lemonize(sprite);
 				sprite.lastMove = system.timer;
 			}
@@ -479,17 +386,16 @@ var Level = function(l, n) {
 	}
 
 	// Build a staircase four blocks high, or until an obstacle is encountered
-	var buildersGonnaBuild = function(sprite) {
+	function buildersGonnaBuild(sprite) {
 
-		if(typeof sprite.ini.lastBuild == "undefined") {
+		if (typeof sprite.ini.lastBuild == "undefined") {
 			sprite.ini.lastBuild = system.timer;
 			sprite.ini.buildCount = 0;
 			sprite.ini.constantmotion = 0;
 		}
-		if(system.timer - sprite.ini.lastBuild < .5)
-			return;
+		if (system.timer - sprite.ini.lastBuild < .5) return;
 
-		if(sprite.ini.buildCount == 4) {
+		if (sprite.ini.buildCount == 4) {
 			lemonize(sprite);
 			return;
 		}
@@ -506,22 +412,19 @@ var Level = function(l, n) {
 			"normal"
 		);
 		var overlap = Sprite.checkOverlap(block);
-		if(overlap) {
+		if (overlap) {
 			block.remove();
 			Sprite.profiles.splice(block.index, 1);
 			lemonize(sprite);
 			return;
 		}
 		block.frame.open();
-		sprite.moveTo(
-			(sprite.bearing == "e") ? (sprite.x + 3) : (sprite.x - 3),
-			sprite.y - 1
-		);
+		sprite.moveTo((sprite.bearing == "e") ? (sprite.x + 3) : (sprite.x - 3), sprite.y - 1);
 
 	}
 
 	// Draw the time left until explosion at the centre of each of a lemon's positions
-	var ticker = function(sprite) {
+	function ticker(sprite) {
 		sprite.ini.ticker--;
 		sprite.frame.data[1][1].ch = sprite.ini.ticker;
 		sprite.frame.data[1][4].ch = sprite.ini.ticker;
@@ -532,15 +435,13 @@ var Level = function(l, n) {
 	}
 
 	// Make the lemon look explodey, cause some damage
-	var explode = function(sprite) {
-		if(!sprite.open)
-			return;
+	function explode(sprite) {
+		if (!sprite.open) return;
 		sprite.changePosition("nuked");
 		sprite.ini.speed = 2000;
 		var overlap = Sprite.checkOverlap(sprite, 1);
-		for(var o = 0; overlap && o < overlap.length; o++) {
-			if(overlap[o].ini.type == "lemon")
-				continue;
+		for (var o = 0; overlap && o < overlap.length; o++) {
+			if (overlap[o].ini.type == "lemon") continue;
 			overlap[o].remove();
 		}
 		lost++;
@@ -549,7 +450,7 @@ var Level = function(l, n) {
 	}
 
 	// Redden a lemon, and prepare it for obliteration
-	var nuke = function(sprite) {
+	function nuke(sprite) {
 		sprite.ini.ticker = 5;
 		timer.addEvent(5000, false, explode, [sprite]);
 		timer.addEvent(6000, false, remove, [sprite]);
@@ -559,25 +460,16 @@ var Level = function(l, n) {
 	}
 
 	// Make a lemon tap its foot
-	var tapFoot = function(sprite) {
-		sprite.changePosition(
-			(sprite.position == "normal") ? "normal2" : "normal"
-		);
+	function tapFoot(sprite) {
+		sprite.changePosition((sprite.position == "normal") ? "normal2" : "normal");
 	}
 
 	/*	Populate the terminal with a status bar, the level's static sprites,
 		and set up timed events for releasing lemons and level timeout.	*/
-	var loadLevel = function(level, frame) {
+	function loadLevel(level, frame) {
 
 		// The parent frame for all sprites & frames created by Level
-		frames.game = new Frame(
-			frame.x,
-			frame.y,
-			frame.width,
-			frame.height,
-			BG_BLACK|LIGHTGRAY,
-			frame
-		);
+		frames.game = new Frame(frame.x, frame.y, frame.width, frame.height, BG_BLACK|LIGHTGRAY, frame);
 
 		// The gameplay area
 		frames.field = new Frame(
@@ -599,53 +491,107 @@ var Level = function(l, n) {
 			frames.game
 		);
 
-		frames.counters.basher = new Frame(
-			frames.statusBar.x + 10,
+		frames.labels[KEY_BASH] = new Frame(
+			frames.statusBar.x,
+			frames.statusBar.y,
+			9,
+			1,
+			COLOUR_STATUSBAR_BG|COLOUR_BASHER,
+			frames.statusBar
+		);
+
+		frames.counters[KEY_BASH] = new Frame(
+			frames.statusBar.x + 9,
 			frames.statusBar.y,
 			3,
 			1,
 			COLOUR_STATUSBAR_BG|COLOUR_STATUSBAR_FG,
 			frames.statusBar
 		);
+
+		frames.labels[KEY_BOMB] = new Frame(
+			frames.statusBar.x + 13,
+			frames.statusBar.y,
+			9,
+			1,
+			COLOUR_STATUSBAR_BG|COLOUR_BOMBER,
+			frames.statusBar
+		);
 		
-		frames.counters.bomber = new Frame(
-			frames.statusBar.x + 24,
+		frames.counters[KEY_BOMB] = new Frame(
+			frames.statusBar.x + 21,
 			frames.statusBar.y,
 			3,
 			1,
 			COLOUR_STATUSBAR_BG|COLOUR_STATUSBAR_FG,
 			frames.statusBar
 		);
-		
-		frames.counters.climber = new Frame(
-			frames.statusBar.x + 38,
+
+		frames.labels[KEY_CLIMB] = new Frame(
+			frames.statusBar.x + 25,
+			frames.statusBar.y,
+			9,
+			1,
+			COLOUR_STATUSBAR_BG|COLOUR_CLIMBER,
+			frames.statusBar
+		);
+
+		frames.counters[KEY_CLIMB] = new Frame(
+			frames.statusBar.x + 34,
 			frames.statusBar.y,
 			3,
 			1,
 			COLOUR_STATUSBAR_BG|COLOUR_STATUSBAR_FG,
 			frames.statusBar
 		);
+
+		frames.labels[KEY_BLOCK] = new Frame(
+			frames.statusBar.x,
+			frames.statusBar.y + 1,
+			9,
+			1,
+			COLOUR_STATUSBAR_BG|COLOUR_BLOCKER,
+			frames.statusBar
+		);
 		
-		frames.counters.blocker = new Frame(
-			frames.statusBar.x + 10,
+		frames.counters[KEY_BLOCK] = new Frame(
+			frames.statusBar.x + 9,
 			frames.statusBar.y + 1,
 			3,
 			1,
 			COLOUR_STATUSBAR_BG|COLOUR_STATUSBAR_FG,
 			frames.statusBar
 		);
+
+		frames.labels[KEY_BUILD] = new Frame(
+			frames.statusBar.x + 25,
+			frames.statusBar.y + 1,
+			9,
+			1,
+			COLOUR_STATUSBAR_BG|COLOUR_BUILDER,
+			frames.statusBar
+		);
 		
-		frames.counters.builder = new Frame(
-			frames.statusBar.x + 24,
+		frames.counters[KEY_BUILD] = new Frame(
+			frames.statusBar.x + 34,
 			frames.statusBar.y + 1,
 			3,
 			1,
 			COLOUR_STATUSBAR_BG|COLOUR_STATUSBAR_FG,
 			frames.statusBar
 		);
+
+		frames.labels[KEY_DIG] = new Frame(
+			frames.statusBar.x + 13,
+			frames.statusBar.y + 1,
+			9,
+			1,
+			COLOUR_STATUSBAR_BG|COLOUR_DIGGER,
+			frames.statusBar
+		);
 		
-		frames.counters.digger = new Frame(
-			frames.statusBar.x + 38,
+		frames.counters[KEY_DIG] = new Frame(
+			frames.statusBar.x + 21,
 			frames.statusBar.y + 1,
 			3,
 			1,
@@ -680,33 +626,65 @@ var Level = function(l, n) {
 			frames.statusBar
 		);		
 		
-		// Populate the status bar's static text fields
-		frames.statusBar.putmsg(KEY_BASH + ") Bash :     ", COLOUR_BASHER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg(KEY_BOMB + ") Bomb :     ", COLOUR_BOMBER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg(KEY_CLIMB + ") Climb:     ", COLOUR_CLIMBER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("N)uke   ", COLOUR_NUKED|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("H)elp  ", WHITE|COLOUR_STATUSBAR_BG);
+		frames.labels[KEY_BASH].putmsg(KEY_BASH + ') Bash');
+		frames.labels[KEY_BOMB].putmsg(KEY_BOMB + ') Bomb');
+		frames.labels[KEY_BLOCK].putmsg(KEY_BLOCK + ') Block');
+		frames.labels[KEY_BUILD].putmsg(KEY_BUILD + ') Build');
+		frames.labels[KEY_CLIMB].putmsg(KEY_CLIMB + ') Climb');
+		frames.labels[KEY_DIG].putmsg(KEY_DIG + ') Dig');
+
+		frames.statusBar.gotoxy(frames.counters[KEY_CLIMB].x + 5 - frames.statusBar.x, 1);
+		frames.statusBar.putmsg("N)uke", COLOUR_NUKED|COLOUR_STATUSBAR_BG);
+		frames.statusBar.gotoxy(frames.counters[KEY_CLIMB].x + 5 - frames.statusBar.x, 2);
+		frames.statusBar.putmsg("P)ause", WHITE|COLOUR_STATUSBAR_BG);
+
+		frames.statusBar.gotoxy(frames.counters[KEY_CLIMB].x + 13 - frames.statusBar.x, 1);
+		frames.statusBar.putmsg("H)elp", WHITE|COLOUR_STATUSBAR_BG);
+		frames.statusBar.gotoxy(frames.counters[KEY_CLIMB].x + 13 - frames.statusBar.x, 2);
+		frames.statusBar.putmsg("Q)uit", WHITE|COLOUR_STATUSBAR_BG);
+
+		frames.statusBar.gotoxy(frames.counters[KEY_CLIMB].x + 24 - frames.statusBar.x, 1);
 		frames.statusBar.putmsg("  Released:       Time:\r\n", WHITE|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg(KEY_BLOCK + ") Block:     ", COLOUR_BLOCKER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg(KEY_BUILD + ") Build:     ", COLOUR_BUILDER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg(KEY_DIG + ") Dig  :     ", COLOUR_DIGGER|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("P)ause  ", WHITE|COLOUR_STATUSBAR_BG);
-		frames.statusBar.putmsg("Q)uit  ", WHITE|COLOUR_STATUSBAR_BG);
+		frames.statusBar.gotoxy(frames.counters[KEY_CLIMB].x + 24 - frames.statusBar.x, 2);
 		frames.statusBar.putmsg("Lost/Saved: ", WHITE|COLOUR_STATUSBAR_BG);
 
 		// Display the initial lost/saved value
 		frames.counters.lostSaved.putmsg(lost + "/" + saved);
-
 		// Set the quota values
-		if(typeof level.quotas == "undefined")
-			level.quotas = {};
-		for(var q in level.quotas) {
-			quotas[q] = level.quotas[q];
-			frames.counters[q].putmsg(quotas[q]);
+		if (typeof level.quotas == "undefined") level.quotas = {};
+		for (var q in level.quotas) {
+			switch (q) {
+				case 'basher':
+					quotas[KEY_BASH] = level.quotas[q];
+					frames.counters[KEY_BASH].putmsg(quotas[KEY_BASH]);
+					break;
+				case 'bomber':
+					quotas[KEY_BOMB] = level.quotas[q];
+					frames.counters[KEY_BOMB].putmsg(quotas[KEY_BOMB]);
+					break;
+				case 'blocker':
+					quotas[KEY_BLOCK] = level.quotas[q];
+					frames.counters[KEY_BLOCK].putmsg(quotas[KEY_BLOCK]);
+					break;
+				case 'builder':
+					quotas[KEY_BUILD] = level.quotas[q];
+					frames.counters[KEY_BUILD].putmsg(quotas[KEY_BUILD]);
+					break;
+				case 'climber':
+					quotas[KEY_CLIMB] = level.quotas[q];
+					frames.counters[KEY_CLIMB].putmsg(quotas[KEY_CLIMB]);
+					break;
+				case 'digger':
+					quotas[KEY_DIG] = level.quotas[q];
+					frames.counters[KEY_DIG].putmsg(quotas[KEY_DIG]);
+					break;
+				default:
+					break;
+			}
 		}
 
 		// Add bricks, etc. to the screen
-		for(var b = 0; b < level.blocks.length; b++) {
+		for (var b = 0; b < level.blocks.length; b++) {
 			new Sprite.Profile(
 				level.blocks[b].type,
 				frames.field,
@@ -718,7 +696,7 @@ var Level = function(l, n) {
 		}
 
 		// Add hazards (water, slime, lava) to the screen
-		for(var h = 0; h < level.hazards.length; h++) {
+		for (var h = 0; h < level.hazards.length; h++) {
 			new Sprite.Profile(
 				level.hazards[h].type,
 				frames.field,
@@ -730,7 +708,7 @@ var Level = function(l, n) {
 		}
 
 		// Add any shooters
-		for(var s = 0; s < level.shooters.length; s++) {
+		for (var s = 0; s < level.shooters.length; s++) {
 			new Sprite.Profile(
 				level.shooters[s].type,
 				frames.field,
@@ -778,22 +756,14 @@ var Level = function(l, n) {
 
 		// Set up a timed lemon-release event and "remaining lemons" counter
 		var remaining = level.lemons;
-		var releaseLemon = function(x, y) {
-			new Sprite.Profile(
-				"lemon",
-				frames.field,
-				x,
-				y,
-				"e",
-				"normal"
-			);
+		function releaseLemon(x, y) {
+			new Sprite.Profile("lemon", frames.field, x, y, "e", "normal");
 			Sprite.profiles[Sprite.profiles.length - 1].frame.open();
 			Sprite.profiles[Sprite.profiles.length - 1].ini.skill = "lemon";
 			remaining--;
 			frames.counters.remaining.clear();
 			frames.counters.remaining.putmsg((level.lemons - remaining) + "/" + level.lemons);
-			if(nuked)
-				nuke(Sprite.profiles[Sprite.profiles.length - 1]);
+			if (nuked) nuke(Sprite.profiles[Sprite.profiles.length - 1]);
 		}
 		frames.counters.remaining.putmsg(remaining);
 
@@ -801,15 +771,13 @@ var Level = function(l, n) {
 			3000,
 			level.lemons,
 			releaseLemon,
-			[	frames.field.x + level.entrance.x - 1,
-				frames.field.y + level.entrance.y - 1
-			]
+			[frames.field.x + level.entrance.x - 1, frames.field.y + level.entrance.y - 1]
 		);
 		total = level.lemons; // When lost + saved == total, the level is done
 
 		// Set up a timed event to update the clock
 		countDown = level.time + 3; // Don't penalize users for delayed release
-		var tickTock = function() {
+		function tickTock() {
 			countDown--;
 			frames.counters.time.clear();
 			frames.counters.time.putmsg(countDown);
@@ -828,41 +796,35 @@ var Level = function(l, n) {
 	/*	Make the lemons behave according to skillset, or die if necessary.
 		Return a LEVEL_ value to the parent script indicating whether the level
 		is complete (and why) or if it is in progress. */
-	this.cycle = function() {
-
+	this.cycle = function () {
 		/*	Record the index of the first lemon that overlaps with the cursor,
 			if any, for use when assigning skills during this.getcmd.
 			Make the cursor red if there's an overlap, white if not. */
 		cursor.frame.top();
 		var overlaps = Sprite.checkOverlap(cursor);
-		if(overlaps) {
-			for(var o = 0; o < overlaps.length; o++) {
-				if(overlaps[o].ini.type != "lemon")
-					continue;
+		if (overlaps) {
+			for (var o = 0; o < overlaps.length; o++) {
+				if (overlaps[o].ini.type != "lemon") continue;
 				cursor.frame.data[0][0].attr = LIGHTRED;
 				cursor.ini.hoveringOver = overlaps[o].index;
 				break;
 			}
-		} else if(typeof cursor.ini.hoveringOver != "undefined") {
+		} else if (typeof cursor.ini.hoveringOver != "undefined") {
 			cursor.frame.data[0][0].attr = WHITE;
 			delete cursor.ini.hoveringOver;
 		}
 
-		for(var s = 0; s < Sprite.profiles.length; s++) {
+		for (var s = 0; s < Sprite.profiles.length; s++) {
 
-			if(Sprite.profiles[s].ini.type == "shooter") {
+			if (Sprite.profiles[s].ini.type == "shooter") {
 				Sprite.profiles[s].putWeapon();
 				continue;
 			}
 
-			if(	Sprite.profiles[s].ini.type == "projectile"
-				&&
-				Sprite.profiles[s].open
-			) {
+			if (Sprite.profiles[s].ini.type == "projectile" && Sprite.profiles[s].open) {
 				var overlaps = Sprite.checkOverlap(Sprite.profiles[s]);
-				for(var o = 0; o < overlaps.length; o++) {
-					if(overlaps[o].ini.type != "lemon")
-						continue;
+				for (var o = 0; o < overlaps.length; o++) {
+					if (overlaps[o].ini.type != "lemon") continue;
 					overlaps[o].remove();
 					lost++;
 					frames.counters.lostSaved.clear();
@@ -870,17 +832,13 @@ var Level = function(l, n) {
 				}
 			}
 
-			if(Sprite.profiles[s].ini.type != "lemon" || !Sprite.profiles[s].open)
-				continue;
+			if (Sprite.profiles[s].ini.type != "lemon" || !Sprite.profiles[s].open) continue;
 
 			// Remove any lemons that have gone off the screen
-			if(	!Sprite.profiles[s].open
-				||
-				Sprite.profiles[s].y + Sprite.profiles[s].ini.height > frames.field.y + frames.field.height
-				||
-				Sprite.profiles[s].x + Sprite.profiles[s].ini.width <= frames.field.x
-				||
-				Sprite.profiles[s].x >= frames.field.x + frames.field.width
+			if (!Sprite.profiles[s].open
+				|| Sprite.profiles[s].y + Sprite.profiles[s].ini.height > frames.field.y + frames.field.height
+				|| Sprite.profiles[s].x + Sprite.profiles[s].ini.width <= frames.field.x
+				|| Sprite.profiles[s].x >= frames.field.x + frames.field.width
 			) {
 				Sprite.profiles[s].remove();
 				lost++;
@@ -890,52 +848,32 @@ var Level = function(l, n) {
 
 			// Don't stand on top of a door, start a death march if on a hazard
 			var below = Sprite.checkBelow(Sprite.profiles[s]);
-			if(below) {
-				for(var b = 0; b < below.length; b++) {
-					if(	below[b].ini.type == "exit"
-						||
-						below[b].ini.type == "entrance"
-					) {
-						Sprite.profiles[s].moveTo(
-							Sprite.profiles[s].x,
-							Sprite.profiles[s].y + 1
-						);
+			if (below) {
+				for (var b = 0; b < below.length; b++) {
+					if (below[b].ini.type == "exit" || below[b].ini.type == "entrance") {
+						Sprite.profiles[s].moveTo(Sprite.profiles[s].x, Sprite.profiles[s].y + 1);
 						break;
-					} else if(
-						below[b].ini.type == "hazard"
-						&&
-						Sprite.profiles[s].ini.skill != "dying"
-					) {
+					} else if (below[b].ini.type == "hazard" && Sprite.profiles[s].ini.skill != "dying") {
 						Sprite.profiles[s].ini.constantmotion = 0;
 						lost++;
 						frames.counters.lostSaved.clear();
 						frames.counters.lostSaved.putmsg(lost + "/" + saved);
 						Sprite.profiles[s].ini.skill = "dying";
 						colorize(Sprite.profiles[s], COLOUR_DYING);
-						timer.addEvent(
-							1000,
-							false,
-							remove,
-							[Sprite.profiles[s]]
-						);
+						timer.addEvent(1000, false, remove, [Sprite.profiles[s]]);
 						break;
 					}
 				}
-			} else if(
-				Sprite.profiles[s].ini.skill != "digger"
-				&&
-				typeof Sprite.profiles[s].ini.forceDrop == "undefined"
-				&&
-				Sprite.profiles[s].ini.skill != "basher"
+			} else if (
+				Sprite.profiles[s].ini.skill != KEY_DIG
+				&& typeof Sprite.profiles[s].ini.forceDrop == "undefined"
+				&& Sprite.profiles[s].ini.skill != KEY_BASH
 			) {
 				/*	Sprite() moves things horizontally first, then vertically.
 					In certain circumstances (a hole of only the same width as
 					the sprite has just appeared beneath it) we need to force
 					the sprite to drop one cell to initiate a fall.	*/
-				Sprite.profiles[s].moveTo(
-					Sprite.profiles[s].x,
-					Sprite.profiles[s].y + 1
-				);
+				Sprite.profiles[s].moveTo(Sprite.profiles[s].x, Sprite.profiles[s].y + 1);
 				// But we only want to do it once, not every .cycle()
 				Sprite.profiles[s].ini.forceDrop = true;
 				/*	This will be cleared in fallIfNoFloor once the lemon
@@ -943,35 +881,20 @@ var Level = function(l, n) {
 			}
 
 			// Animate the lemon's walk, if applicable
-			if(	((	!Sprite.profiles[s].inFall
-					&&
-					system.timer - Sprite.profiles[s].lastMove > Sprite.profiles[s].ini.speed
-				)
-				||
-				(	Sprite.profiles[s].inFall
-					&&
-					system.timer - Sprite.profiles[s].lastYMove > Sprite.profiles[s].ini.speed	
-				))
-				&&
-				Sprite.profiles[s].ini.gravity == 1
-				&&
-				Sprite.profiles[s].ini.skill != "blocker"
-				&&
-				Sprite.profiles[s].position != "nuked"
-				&&
-				Sprite.profiles[s].ini.skill != "builder"
-				&&
-				Sprite.profiles[s].ini.skill != "digger"
-				&&
-				typeof Sprite.profiles[s].ini.lastDig == "undefined"
+			if (((!Sprite.profiles[s].inFall && system.timer - Sprite.profiles[s].lastMove > Sprite.profiles[s].ini.speed)
+				|| (Sprite.profiles[s].inFall && system.timer - Sprite.profiles[s].lastYMove > Sprite.profiles[s].ini.speed	))
+				&& Sprite.profiles[s].ini.gravity == 1
+				&& Sprite.profiles[s].ini.skill != KEY_BLOCK
+				&& Sprite.profiles[s].position != "nuked"
+				&& Sprite.profiles[s].ini.skill != KEY_BUILD
+				&& Sprite.profiles[s].ini.skill != KEY_DIG
+				&& typeof Sprite.profiles[s].ini.lastDig == "undefined"
 			) {
-				Sprite.profiles[s].changePosition(
-					(Sprite.profiles[s].position == "normal") ? "normal2" : "normal"
-				);
+				Sprite.profiles[s].changePosition((Sprite.profiles[s].position == "normal") ? "normal2" : "normal");
 			}
 
 			// Make the different types of lemons behave as they should
-			switch(Sprite.profiles[s].ini.skill) {
+			switch (Sprite.profiles[s].ini.skill) {
 
 				case "lemon":
 					turnOrClimbIfObstacle(Sprite.profiles[s]);
@@ -979,36 +902,36 @@ var Level = function(l, n) {
 					removeIfAtExit(Sprite.profiles[s]);
 					break;
 
-				case "basher":
+				case KEY_BASH:
 					bashersGonnaBash(Sprite.profiles[s]);
 					fallIfNoFloor(Sprite.profiles[s]);
 					removeIfAtExit(Sprite.profiles[s]);
 					break;
 
-				case "blocker":
+				case KEY_BLOCK:
 					fallIfNoFloor(Sprite.profiles[s]);
 					break;
 
-				case "bomber":
+				case KEY_BOMB:
 					turnOrClimbIfObstacle(Sprite.profiles[s]);
 					fallIfNoFloor(Sprite.profiles[s]);
 					removeIfAtExit(Sprite.profiles[s]);
 					break;
 
-				case "builder":
+				case KEY_BUILD:
 					turnOrClimbIfObstacle(Sprite.profiles[s]);
 					buildersGonnaBuild(Sprite.profiles[s]);
 					fallIfNoFloor(Sprite.profiles[s]);
 					removeIfAtExit(Sprite.profiles[s]);
 					break;
 
-				case "climber":
+				case KEY_CLIMB:
 					climbIfObstacle(Sprite.profiles[s]);
 					fallIfNoFloor(Sprite.profiles[s]);
 					removeIfAtExit(Sprite.profiles[s]);
 					break;
 
-				case "digger":
+				case KEY_DIG:
 					diggersGonnaDig(Sprite.profiles[s]);
 					fallIfNoFloor(Sprite.profiles[s]);
 					break;
@@ -1025,15 +948,14 @@ var Level = function(l, n) {
 		Sprite.cycle();
 
 		// Tell the parent script how to proceed
-		if(countDown <= 0) {
-			if(saved < (total / 2))
-				return LEVEL_TIME;
+		if (countDown <= 0) {
+			if (saved < (total / 2)) return LEVEL_TIME;
 			this.score = (saved * 100);
 			return LEVEL_NEXT;
-		} else if(lost + saved == total && saved >= (total / 2)) {
+		} else if (lost + saved == total && saved >= (total / 2)) {
 			this.score = (saved * 100) + (countDown * 10);
 			return LEVEL_NEXT;
-		} else if(lost + saved == total && saved < (total / 2)) {
+		} else if (lost + saved == total && saved < (total / 2)) {
 			return LEVEL_DEAD;
 		} else {
 			return LEVEL_CONTINUE;
@@ -1042,11 +964,64 @@ var Level = function(l, n) {
 	}
 
 	// Do what the user asked us to do, if it's valid
-	this.getcmd = function(userInput) {
+	this.getcmd = function (userInput) {
 
 		var ret = true;
 
-		switch(userInput.toUpperCase()) {
+		if (userInput.mouse !== null) {
+			// If it wasn't a left-click
+			if (userInput.mouse.button != 0 && !userInput.mouse.press) return ret;
+			// If they clicked inside the statusbar region ...
+			if (userInput.mouse.y >= frames.statusBar.y && userInput.mouse.y <= frames.statusBar.y + 1) {
+				if (userInput.mouse.x < frames.labels[KEY_BOMB].x) {
+					if (userInput.mouse.y == frames.statusBar.y) {
+						return this.getcmd({ key: KEY_BASH, mouse: null });
+					} else {
+						return this.getcmd({ key: KEY_BLOCK, mouse: null });
+					}
+				} else if (userInput.mouse.x < frames.labels[KEY_CLIMB].x) {
+					if (userInput.mouse.y == frames.statusBar.y) {
+						return this.getcmd({ key: KEY_BOMB, mouse: null });
+					} else {
+						return this.getcmd({ key: KEY_DIG, mouse: null });
+					}
+				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 5) {
+					if (userInput.mouse.y == frames.statusBar.y) {
+						return this.getcmd({ key: KEY_CLIMB, mouse: null });
+					} else {
+						return this.getcmd({ key: KEY_BUILD, mouse: null });
+					}
+				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 13) {
+					if (userInput.mouse.y == frames.statusBar.y) {
+						for (var s = 0; s < Sprite.profiles.length; s++) {
+							if (Sprite.profiles[s].ini.type != "lemon" || !Sprite.profiles[s].open) continue;
+							nuke(Sprite.profiles[s]);
+						}
+						nuked = true;
+					} else {
+						state = STATE_PAUSE;
+					}
+				} else if (userInput.mouse.x < frames.counters[KEY_CLIMB].x + 24) {
+					if (userInput.mouse.y == frames.statusBar.y) {
+						state = STATE_HELP;
+					} else {
+						return false;
+					}
+				}
+			} else if (
+				userInput.mouse.y >= frames.field.y
+				&& userInput.mouse.y < frames.field.y + frames.field.height
+				&& userInput.mouse.x >= frames.field.x
+				&& userInput.mouse.x < frames.field.x + frames.field.width
+			) {
+				cursor.moveTo(userInput.mouse.x, userInput.mouse.y);
+				this.cycle();
+				if (currentSkill != null) return this.getcmd({ key: '\r', mouse: null });
+			}
+			return ret;
+		}
+
+		switch (userInput.key.toUpperCase()) {
 
 			case "":
 				break;
@@ -1069,139 +1044,89 @@ var Level = function(l, n) {
 			// Cursor movement
 			case "8":
 			case KEY_UP:
-				if(cursor.y > frames.field.y)
-					cursor.moveTo(cursor.x, cursor.y - 1);
+				if (cursor.y > frames.field.y) cursor.moveTo(cursor.x, cursor.y - 1);
 				break;
 
 			case "2":
 			case KEY_DOWN:
-				if(cursor.y < frames.field.y + frames.field.height - 1)
-					cursor.moveTo(cursor.x, cursor.y + 1);
+				if (cursor.y < frames.field.y + frames.field.height - 1) cursor.moveTo(cursor.x, cursor.y + 1);
 				break;
 
 			case "4":
 			case KEY_LEFT:
-				if(cursor.x > frames.field.x)
-					cursor.moveTo(cursor.x - 1, cursor.y);
+				if (cursor.x > frames.field.x) cursor.moveTo(cursor.x - 1, cursor.y);
 				break;
 
 			case "6":
 			case KEY_RIGHT:
-				if(cursor.x < frames.field.x + frames.field.width - 1)
-					cursor.moveTo(cursor.x + 1, cursor. y);
+				if (cursor.x < frames.field.x + frames.field.width - 1) cursor.moveTo(cursor.x + 1, cursor. y);
 				break;
 
 			case "7":
-				if(cursor.y > frames.field.y && cursor.x > frames.field.x)
-					cursor.moveTo(cursor.x - 1, cursor.y - 1);
+				if (cursor.y > frames.field.y && cursor.x > frames.field.x) cursor.moveTo(cursor.x - 1, cursor.y - 1);
 				break;
 
 			case "9":
-				if(cursor.y > frames.field.y && cursor.x < frames.field.x + frames.field.width - 1)
-					cursor.moveTo(cursor.x + 1, cursor.y - 1);
+				if (cursor.y > frames.field.y && cursor.x < frames.field.x + frames.field.width - 1) cursor.moveTo(cursor.x + 1, cursor.y - 1);
 				break;
 
 			case "1":
-				if(cursor.y < frames.field.y + frames.field.height - 1 && cursor.x > frames.field.x)
-					cursor.moveTo(cursor.x - 1, cursor.y + 1);
+				if (cursor.y < frames.field.y + frames.field.height - 1 && cursor.x > frames.field.x) cursor.moveTo(cursor.x - 1, cursor.y + 1);
 				break;
 
 			case "3":
-				if(cursor.y < frames.field.y + frames.field.height - 1 && cursor.x < frames.field.x + frames.field.width - 1)
-					cursor.moveTo(cursor.x + 1, cursor.y + 1);
+				if (cursor.y < frames.field.y + frames.field.height - 1 && cursor.x < frames.field.x + frames.field.width - 1) cursor.moveTo(cursor.x + 1, cursor.y + 1);
 				break;
 
-			// Nuke the h'wales
 			case "N":
-				for(var s = 0; s < Sprite.profiles.length; s++) {
-					if(Sprite.profiles[s].ini.type != "lemon" || !Sprite.profiles[s].open)
-						continue;
+				for (var s = 0; s < Sprite.profiles.length; s++) {
+					if (Sprite.profiles[s].ini.type != "lemon" || !Sprite.profiles[s].open) continue;
 					nuke(Sprite.profiles[s]);
 				}
 				nuked = true;
 				break;
 
-			// Basher
 			case KEY_BASH:
-				if(typeof cursor.ini.hoveringOver == "undefined")
-					break;
-				if(quotas.basher < 1)
-					break;
-				quotas.basher--;
-				frames.counters.basher.clear();
-				frames.counters.basher.putmsg(quotas.basher);
-				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = "basher";
-				colorize(Sprite.profiles[cursor.ini.hoveringOver], COLOUR_BASHER);
-				break;
-
-			// Blocker
 			case KEY_BLOCK:
-				if(typeof cursor.ini.hoveringOver == "undefined")
-					break;
-				if(quotas.blocker < 1)
-					break;
-				quotas.blocker--;
-				frames.counters.blocker.clear();
-				frames.counters.blocker.putmsg(quotas.blocker);
-				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = "blocker";
-				Sprite.profiles[cursor.ini.hoveringOver].ini.constantmotion = 0;
-				Sprite.profiles[cursor.ini.hoveringOver].changePosition("fall");
-				colorize(Sprite.profiles[cursor.ini.hoveringOver], COLOUR_BLOCKER);
-				timer.addEvent(1000, true, tapFoot, [Sprite.profiles[cursor.ini.hoveringOver]]);
-				break;
-
-			// Bomber
 			case KEY_BOMB:
-				if(typeof cursor.ini.hoveringOver == "undefined")
-					break;
-				if(quotas.bomber < 1)
-					break;
-				quotas.bomber--;
-				frames.counters.bomber.clear();
-				frames.counters.bomber.putmsg(quotas.bomber);
-				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = "bomber";
-				nuke(Sprite.profiles[cursor.ini.hoveringOver]);
-				break;
-
-			// Builder
 			case KEY_BUILD:
-				if(typeof cursor.ini.hoveringOver == "undefined")
-					break;
-				if(quotas.builder < 1)
-					break;
-				quotas.builder--;
-				frames.counters.builder.clear();
-				frames.counters.builder.putmsg(quotas.builder);
-				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = "builder";
-				colorize(Sprite.profiles[cursor.ini.hoveringOver], COLOUR_BUILDER);
-				break;
-
-			// Climber
 			case KEY_CLIMB:
-				if(typeof cursor.ini.hoveringOver == "undefined")
-					break;
-				if(quotas.climber < 1)
-					break;
-				quotas.climber--;
-				frames.counters.climber.clear();
-				frames.counters.climber.putmsg(quotas.climber);
-				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = "climber";
-				colorize(Sprite.profiles[cursor.ini.hoveringOver], COLOUR_CLIMBER);
+			case KEY_DIG:
+				if (currentSkill !== null) {
+					frames.labels[currentSkill].data[0] = frames.labels[currentSkill].data[0].map(function (e) {
+						if (typeof e != 'object') return e;
+						e.attr &=~ BG_LIGHTGRAY;
+						e.attr |= COLOUR_STATUSBAR_BG;
+						return e;
+					});
+					frames.labels[currentSkill].invalidate();		
+				}
+				currentSkill = userInput.key.toUpperCase();
+				frames.labels[currentSkill].data[0] = frames.labels[currentSkill].data[0].map(function (e) {
+					if (typeof e != 'object') return e;
+					e.attr &=~ COLOUR_STATUSBAR_BG;
+					e.attr |= BG_LIGHTGRAY;
+					return e;
+				});
+				frames.labels[currentSkill].invalidate();
 				break;
 
-			// Digger
-			case KEY_DIG:
-				if(typeof cursor.ini.hoveringOver == "undefined")
-					break;
-				if(quotas.digger < 1)
-					break;
-				quotas.digger--;
-				frames.counters.digger.clear();
-				frames.counters.digger.putmsg(quotas.digger);
-				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = "digger";
-				Sprite.profiles[cursor.ini.hoveringOver].ini.constantmotion = 0;
-				Sprite.profiles[cursor.ini.hoveringOver].changePosition("fall");
-				colorize(Sprite.profiles[cursor.ini.hoveringOver], COLOUR_DIGGER);
+			case "\r":
+			case " ":
+				if (typeof cursor.ini.hoveringOver == "undefined") break;
+				if (quotas[currentSkill] < 1) break;
+				quotas[currentSkill]--;
+				frames.counters[currentSkill].clear();
+				frames.counters[currentSkill].putmsg(quotas[currentSkill]);
+				Sprite.profiles[cursor.ini.hoveringOver].ini.skill = currentSkill;
+				colorize(Sprite.profiles[cursor.ini.hoveringOver], COLOUR[currentSkill]);
+				if (currentSkill == KEY_BLOCK || currentSkill == KEY_DIG) {
+					Sprite.profiles[cursor.ini.hoveringOver].ini.constantmotion = 0;
+					Sprite.profiles[cursor.ini.hoveringOver].changePosition("fall");
+					if (currentSkill == KEY_BLOCK) timer.addEvent(1000, true, tapFoot, [Sprite.profiles[cursor.ini.hoveringOver]]);
+				} else if (currentSkill == KEY_BOMB) {
+					nuke(Sprite.profiles[cursor.ini.hoveringOver]);
+				}
 				break;
 
 			default:
@@ -1212,43 +1137,27 @@ var Level = function(l, n) {
 
 	}
 
-	/*	Halt or resume all timed events.
-		This doesn't actually block - that should be done in the main loop.
-		If no argument is specified, events are removed from the timer and an
-		array of these events is returned.
-		If an argument is specified, it is assumed to be an array of events,
-		and they are added back into the timer. */
-	this.pause = function(events) {
-		if(typeof events == "undefined") {
+	this.pause = function (events) {
+		if (typeof events == "undefined") {
 			var events = timer.events;
 			timer.events = [];
 			return events;
 		} else {
-			for(var e = 0; e < events.length; e++) {
-				timer.addEvent(
-					events[e].interval,
-					events[e].repeat,
-					events[e].action,
-					events[e].arguments,
-					events[e].context
-				);
+			for (var e = 0; e < events.length; e++) {
+				timer.addEvent(events[e].interval, events[e].repeat, events[e].action, events[e].arguments, events[e].context);
 			}
 		}
 	}
 
 	// Reset the Sprite globals, clean up the display
-	this.close = function() {
-		
+	this.close = function () {
 		cursor.remove();
 		Sprite.platforms = [];
-
-		for(var s = 0; s < Sprite.profiles.length; s++) {
+		for (var s = 0; s < Sprite.profiles.length; s++) {
 			Sprite.profiles[s].remove();
 		}
 		Sprite.profiles = [];
-
 		frames.game.delete();
-
 	}
 
 	loadLevel(l, frame);

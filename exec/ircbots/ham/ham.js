@@ -1,3 +1,4 @@
+require("maidenhead.js", "Maidenhead");
 if(!js.global || js.global.HTTPRequest==undefined)
 	js.global.load("http.js");
 if(!js.global || js.global.USCallsign==undefined)
@@ -19,6 +20,7 @@ var ctydat={};
 var last_contest_update=0;
 var rig_index={};
 var last_rig_index=0;
+var pskreporter_cache={};
 
 function main(srv,target)
 {
@@ -849,86 +851,191 @@ Bot_Commands["CONTESTS"].command = function (target, onick, ouh, srv, lvl, cmd) 
 	}
 }
 
-Bot_Commands["BANDS"] = new Bot_Command(0,false,false);
-Bot_Commands["BANDS"].usage = get_cmd_prefix() + "BANDS [band]";
-Bot_Commands["BANDS"].help = "Displays the current band conditions";
-Bot_Commands["BANDS"].command = function (target,onick,ouh,srv,lvl,cmd) {
-	var band;
-	var b;
+Bot_Commands["SPOTS"] = new Bot_Command(0,false,false);
+Bot_Commands["SPOTS"].usage = get_cmd_prefix() + "SPOTS <call>";
+Bot_Commands["SPOTS"].help = "Displays spots the specified call if available";
+Bot_Commands["SPOTS"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	var callsign;
 	var i;
-	var req;
-	var resp;
+	var spots = [];
+	var req = new HTTPRequest();
+	var url;
 	var m;
-	var re;
-	var uri;
-	var cond = {};
+	var json;
+	var tmp;
+	var months = {'Jan':0, 'Feb':1, 'Mar':2, 'Apr':3, 'May':4, 'Jun':5, 'Jul':6, 'Aug':7, 'Sep':8, 'Oct':9, 'Nov':10, 'Dec':11};
+	var modes = {1:'CW', 2:'Phone', 10:'PSK31', 11:'RTTY', 12:'BPSK', 13:'GMSK', 14:'FSK', 15:'SSTV', 16:'MFSK', 17:'QPSK', 21:'JT65', 22:'Hell', 23:'DominoEX', 24:'MT63', 25:'RTTYM', 26:'THOR', 27:'THROB', 28:'Olivia', 29:'Contestia', 30:'PSK63', 31:'PSK125', 32:'JT9', 33:'Opera', 34:'FT8'};
+	var mname = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	var psspots;
+	var from;
+	var to;
 
 	// Remove empty cmd args
-	for (i=1; i<cmd.length; i++) {
-		if (cmd[i].search(/^\s*$/)==0) {
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
 			cmd.splice(i,1);
 			i--;
 		}
 	}
 
-	if (cmd.length == 2) {
-		band = cmd[1];
-		if ([160,80,40,30,20,17,15].indexOf(parseInt(band,10)) == -1)
-			return true;
-	}
-	else if (cmd.length != 1)
+	if(cmd.length==2)
+		callsign=cmd[1].toUpperCase();
+	else {
 		return true;
-
-	function condx(val) {
-		var v = parseInt(val, 10);
-		if (v >= 100)
-			return "QRP";
-		if (v >= 70)
-			return "Barefoot";
-		if (v >= 51)
-			return "AMP, High lobe";
-		if (v >= 36)
-			return "AMP, Low lobe";
-		if (v >= 19)
-			return "NVIS";
-		return "Groundwave ONLY";
 	}
 
-	function change(r, slash) {
-		var ch;
+	try {
+		tmp = false;
+		if (pskreporter_cache[callsign.toUpperCase()] !== undefined) {
+			if (new Date() - pskreporter_cache[callsign.toUpperCase()].time > 300000) {
+				delete pskreporter_cache[callsign.toUpperCase()];
+			}
+			else {
+				tmp = true;
+			}
+		}
 
-		re = /^([0-9]{1,3})\<IMG SRC="http:\/\/www\.bandcondx\.com\/TRENDS\/(-?[0-9]{1,3})\.JPG/ym;
-		while ((m = re.exec(r)) != null) {
-			ch = parseInt(m[2], 10);
-			cond[m[1]] += format("% 3d", m[2]);
-			if (slash)
-				cond[m[1]] += '/'
-			else
-				cond[m[1]] += ')'
+		if (!tmp) {
+			url = 'https://pskreporter.info/cgi-bin/pskquery5.pl?encap=0&callback=doNothing&statistics=0&noactive=1&rronly=1&nolocator=1&senderCallsign='+callsign;
+
+			var psk = req.Get(url);
+			if (psk.search(/The storm clouds are gathering/) >= 0) {
+				srv.o(target,'warning: pskreporter error');
+			}
+			else if (psk.search(/Your IP has made too many requests for the same data too often/) >= 0) {
+				srv.o(target,'warning: pskreporter throttled');
+			}
+			else {
+				psk = psk.replace(/^doNothing\(/,'');
+				psk = psk.replace(/^\);$/m, '');
+				json = JSON.parse(psk);
+				psspots = [];
+				for (i in json.receptionReport) {
+					var rpt = json.receptionReport[i]
+					var from = new Maidenhead(rpt.senderLocator);
+					var to = new Maidenhead(rpt.receiverLocator);
+					var dist = parseInt((from.distance(to)/1000),10);
+					psspots.push({rx:rpt.receiverCallsign, tx:rpt.senderCallsign, freq:rpt.frequency, mode:rpt.mode + " dist: " + dist + "km", time:new Date(rpt.flowStartSeconds*1000), dist:dist});
+				}
+				pskreporter_cache[callsign.toUpperCase()] = {spots:[], time:new Date()};
+				tmp = pskreporter_cache[callsign.toUpperCase()];
+				if (psspots.length > 0) {
+					psspots.sort(function(a,b) {if (a.time.valueOf() == b.time.valueOf()) { return a.dist-b.dist; } return a.time.valueOf()-b.time.valueOf()});
+					tmp.spots.push(psspots[psspots.length - 1]);
+					psspots.sort(function(a,b) {return a.dist-b.dist;});
+					if (psspots[psspots.length - 1].dist > tmp.spots[tmp.spots.length - 1].dist)
+						tmp.spots.push(psspots[psspots.length - 1]);
+				}
+			}
+		}
+		if (pskreporter_cache[callsign.toUpperCase()] !== undefined) {
+			spots.push.apply(spots, pskreporter_cache[callsign.toUpperCase()].spots);
+		}
+	}
+	catch(e) {
+		srv.o(target,"PSK reporter threw: "+e);
+	}
+
+	try {
+		url = 'https://www.dxwatch.com/dxsd1/s.php?s=0&r=50&cdx='+callsign;
+		json = JSON.parse(req.Get(url));
+		if (json.s !== undefined) {
+			for (i in json.s) {
+				rpt = json.s[i];
+				tmp = new Date();
+				m = rpt[4].match(/^([0-9]{2,2})([0-9]{2,2})z ([0-9]{0,2}) ([^\s]*)$/);
+				if (m == null) {
+					srv.o(target,"bad dxwatch date: "+rpt[4]);
+				}
+				else {
+					if (months[m[4]] === undefined) {
+						srv.o(target,"bad dxwatch month: "+m[4]);
+					}
+					tmp.setUTCMonth(months[m[4]], parseInt(m[3], 10));
+					tmp.setUTCHours(parseInt(m[1], 10), parseInt(m[2], 10));
+					if (tmp > new Date())
+						tmp.setUTCFullYear(tmp.getUTCFullYear()-1);
+				}
+				spots.push({rx:rpt[0], tx:rpt[2], freq:parseFloat(rpt[1])*1000, mode:rpt[3], time:tmp});
+			}
+		}
+	}
+	catch(e) {
+		srv.o(target,"dxwatch threw: "+e);
+	}
+
+if (false) {
+	try {
+		url = 'http://www.reversebeacon.net/dxsd1/sk.php?s=0&r=15&cdx='+callsign;
+		json = JSON.parse(req.Get(url));
+		if (json.s !== undefined) {
+			for (i in json.s) {
+				rpt = json.s[i];
+				tmp = new Date();
+				m = rpt[5].match(/^([0-9]{2,2})([0-9]{2,2})z ([0-9]{0,2}) ([^\s]*)$/);
+				if (m == null) {
+					srv.o(target,"bad reversebeacon date: "+rpt[5]);
+				}
+				else {
+					if (months[m[4]] === undefined) {
+						srv.o(target,"bad reversebeacon month: "+m[4]);
+					}
+					tmp.setUTCMonth(months[m[4]], parseInt(m[3], 10));
+					tmp.setUTCHours(parseInt(m[1], 10), parseInt(m[2], 10));
+					if (tmp > new Date())
+						tmp.setUTCFullYear(tmp.getUTCFullYear()-1);
+				}
+				if (modes[parseInt(rpt[3], 10)] !== undefined)
+					rpt[3] = modes[parseInt(rpt[3], 10)];
+				spots.push({rx:rpt[0], tx:rpt[2], freq:parseFloat(rpt[1])*1000, mode:rpt[3], time:tmp});
+			}
+		}
+	}
+	catch(e) {
+		srv.o(target,"reversebeacon threw: "+e);
+	}
+}
+
+	spots.sort(function (a, b) { return a.time.valueOf() - b.time.valueOf() });
+	spots = spots.slice(-5);
+	for (i in spots) {
+		srv.o(target, format("%-8.8s %-8.8s % 7.3f %-30.30s %02d%02dz %02d %s", spots[i].rx, spots[i].tx, parseInt(spots[i].freq/1000, 10)/1000, spots[i].mode, spots[i].time.getUTCHours(), spots[i].time.getUTCMinutes(), spots[i].time.getUTCDate(), mname[spots[i].time.getUTCMonth()]));
+	}
+	if (spots.length <= 0) {
+		srv.o(target,callsign + ' never spotted');
+	}
+
+	return true;
+}
+
+Bot_Commands["DXPED"] = new Bot_Command(0,false,false);
+Bot_Commands["DXPED"].usage = get_cmd_prefix() + "SPOTS <call>";
+Bot_Commands["DXPED"].help = "Lists currently active DXpeditions";
+Bot_Commands["DXPED"].command = function (target,onick,ouh,srv,lvl,cmd) {
+	// Remove empty cmd args
+	for(i=1; i<cmd.length; i++) {
+		if(cmd[i].search(/^\s*$/)==0) {
+			cmd.splice(i,1);
+			i--;
 		}
 	}
 
-	req = new HTTPRequest();
-	resp = req.Get("http://www.bandconditions.com/");
-	m = resp.match(/frame src="([^"]*)"/);
-	if (m != null) {
-		uri = m[1];
-		resp = req.Get(uri);
-		re = /^([0-9]{1,3})\<IMG SRC="http:\/\/www\.bandcondx\.com\/([0-9]{1,3})\.jpg/ym;
-		while ((m = re.exec(resp)) != null) {
-			cond[m[1]] = format("% 4d: %-20.20s (", m[1]+'m', condx(m[2]));
-			i = parseInt(m[2], 10);
-		}
-		resp = req.Get(uri.replace(/[^\/]*$/, '10MIN.htm'));
-		change(resp, true);
-		resp = req.Get(uri.replace(/[^\/]*$/, '1HR.htm'));
-		change(resp, true);
-		resp = req.Get(uri.replace(/[^\/]*$/, '24HRS.htm'));
-		change(resp, false);
-		srv.o(target, 'Band: Usage                (10m/hr /day change)');
-		for (b in cond) {
-			if (band === undefined || band == b)
-				srv.o(target, cond[b]);
+	if(cmd.length == 1) {
+		var req = new HTTPRequest();
+		var dx = req.Get('https://www.ng3k.com/misc/adxo.html');
+		var peds = [];
+		var row;
+		var re = /<tr class="adxoitem" bgcolor="#FFDAB9">([\u0000-\uffff]*?)<\/tr/g;
+		var re2 = /<td[^>]*>([\u0000-\uffff]*?)<\/\s*td/g;
+		var m, m2;
+
+		while ((m = re.exec(dx)) !== null) {
+			row = [];
+			while ((m2 = re2.exec(m[1])) !== null) {
+				row.push(m2[1].replace(/<[^>]*>/g,'').replace(/\[spots\]/g,'').replace(/[0-9]{4} ([A-Za-z]{3})([0-9]{2})/g, "$1 $2").replace(/^\s*(.*?)\s*$/,"$1"));
+			}
+			srv.o(target, format("%10.10s %s until %s", html_decode(row[3]), html_decode(row[2]), html_decode(row[1])));
+			peds.push(row);
 		}
 	}
 }
@@ -941,5 +1048,4 @@ Bot_Commands["BANDS"].command = function (target,onick,ouh,srv,lvl,cmd) {
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','kj6pxy']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','va6rrx']);
 //Bot_Commands["CALLSIGN"].command(undefined, undefined, undefined,dumb,undefined,['asdf','g1xkz']);
-//Bot_Commands["BANDS"].command(undefined, undefined, undefined,dumb,undefined,['BANDS']);
-//Bot_Commands["BANDS"].command(undefined, undefined, undefined,dumb,undefined,['BANDS','80']);
+//Bot_Commands["SPOTS"].command(undefined, undefined, undefined,dumb,undefined,['asdf','w8bsd']);

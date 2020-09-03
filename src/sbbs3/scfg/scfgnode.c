@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: scfgnode.c,v 1.37 2020/08/08 19:24:27 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -32,6 +32,10 @@
  ****************************************************************************/
  
 #include "scfg.h"
+
+/* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
+static char* errLevelStringList[]
+	= {"Emergency", "Alert", "Critical", "Error", NULL};
 
 void node_menu()
 {
@@ -88,7 +92,7 @@ void node_menu()
 			if(!i) {
 				--cfg.sys_nodes;
 				cfg.new_install=new_install;
-				write_main_cfg(&cfg,backup_level);
+				save_main_cfg(&cfg,backup_level);
 				refresh_cfg(&cfg);
 			}
 			continue; 
@@ -96,9 +100,7 @@ void node_menu()
 		if(msk == MSK_INS) {
 			SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 			i=cfg.sys_nodes+1;
-			uifc.pop("Reading node.cnf ...");
-			read_node_cfg(&cfg,error);
-			uifc.pop(0);
+			load_node_cfg(&cfg,error);
 			sprintf(str,"../node%d/",i);
 			sprintf(tmp,"Node %d Path",i);
 			uifc.helpbuf=
@@ -124,8 +126,8 @@ void node_menu()
 			SAFEPRINTF(cfg.node_name,"Node %u",cfg.node_num);
 			SAFECOPY(cfg.node_phone,"N/A");
 			cfg.new_install=new_install;
-			write_node_cfg(&cfg,backup_level);
-			write_main_cfg(&cfg,backup_level);
+			save_node_cfg(&cfg,backup_level);
+			save_main_cfg(&cfg,backup_level);
 			free_node_cfg(&cfg);
 			refresh_cfg(&cfg);
 			continue;
@@ -135,9 +137,7 @@ void node_menu()
 				free_node_cfg(&cfg);
 			i&=MSK_OFF;
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
-			uifc.pop("Reading node.cnf ...");
-			read_node_cfg(&cfg,error);
-			uifc.pop(0);
+			load_node_cfg(&cfg,error);
 			savnode=1;
 			continue; 
 		}
@@ -145,9 +145,8 @@ void node_menu()
 			i&=MSK_OFF;
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 			cfg.node_num=i+1;
-			write_node_cfg(&cfg,backup_level);
+			save_node_cfg(&cfg,backup_level);
 			refresh_cfg(&cfg);
-			uifc.changes=1;
 			continue;
 		}
 
@@ -158,12 +157,10 @@ void node_menu()
 		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 		prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
 
-		uifc.pop("Reading node.cnf ...");
-		read_node_cfg(&cfg,error);
-		uifc.pop(0);
+		load_node_cfg(&cfg,error);
 		if (cfg.node_num != i + 1) { 	/* Node number isn't right? */
 			cfg.node_num = i + 1;		/* so fix it */
-			write_node_cfg(&cfg, backup_level); /* and write it back */
+			save_node_cfg(&cfg, backup_level); /* and write it back */
 		}
 		node_cfg();
 
@@ -199,7 +196,7 @@ void node_cfg()
 			case -1:
 				i=save_changes(WIN_MID|WIN_SAV);
 				if(!i) {
-					write_node_cfg(&cfg,backup_level);
+					save_node_cfg(&cfg,backup_level);
 					refresh_cfg(&cfg);
 				}
 				if(i!=-1)
@@ -374,6 +371,10 @@ void node_cfg()
 					i=0;
 					sprintf(opt[i++],"%-27.27s%s","Validation User"
 						,cfg.node_valuser ? ultoa(cfg.node_valuser,tmp,10) : "Nobody");
+					sprintf(opt[i++],"%-27.27s%s","Notification User"
+						,cfg.node_erruser ? ultoa(cfg.node_erruser,tmp,10) : "Nobody");
+					sprintf(opt[i++],"%-27.27s%s","Notification Error Level"
+						,errLevelStringList[cfg.node_errlevel]);
 					sprintf(opt[i++],"%-27.27s%u seconds","Semaphore Frequency"
 						,cfg.node_sem_check);
 					sprintf(opt[i++],"%-27.27s%u seconds","Statistics Frequency"
@@ -397,7 +398,7 @@ void node_cfg()
 						case -1:
 							done=1;
 							break;
-						case 0:
+						case __COUNTER__:
 							ultoa(cfg.node_valuser,str,10);
 							uifc.helpbuf=
 								"`Validation User Number:`\n"
@@ -414,7 +415,37 @@ void node_cfg()
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.node_valuser=atoi(str);
 							break;
-						case 1:
+						case __COUNTER__:
+							ultoa(cfg.node_erruser,str,10);
+							uifc.helpbuf=
+								"`Notification User Number:`\n"
+								"\n"
+								"When an error has occurred, a notification message can be sent to a\n"
+								"configured user number (i.e. a sysop). This feature can be disabled by\n"
+								"setting this value to `0`. The normal value of this option is `1` for\n"
+								"user number one.\n"
+								"\n"
+								"Note: error messages are always logged as well (e.g. to `data/error.log`)."
+							;
+							uifc.input(WIN_MID,0,13,"Notification User Number (0=Nobody)"
+								,str,4,K_NUMBER|K_EDIT);
+							cfg.node_erruser=atoi(str);
+							break;
+						case __COUNTER__:
+							uifc.helpbuf=
+								"~ Notification Error Level ~\n"
+								"\n"
+								"Select the minimum severity of error messages that should be forwarded\n"
+								"to the Notification User. The normal setting would be `Critical`.";
+							int i = cfg.node_errlevel;
+							i = uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Notification Error Level",errLevelStringList);
+							if(i>=0 && i<=LOG_ERR) {
+								if(cfg.node_errlevel != i)
+									uifc.changes = TRUE;
+								cfg.node_errlevel=i;
+							}
+							break;
+						case __COUNTER__:
 							ultoa(cfg.node_sem_check,str,10);
 							uifc.helpbuf=
 								"`Semaphore Check Frequency While Waiting for Call (in seconds):`\n"
@@ -427,7 +458,7 @@ void node_cfg()
 								,str,3,K_NUMBER|K_EDIT);
 							cfg.node_sem_check=atoi(str);
 							break;
-						case 2:
+						case __COUNTER__:
 							ultoa(cfg.node_stat_check,str,10);
 							uifc.helpbuf=
 								"`Statistics Check Frequency While Waiting for Call (in seconds):`\n"
@@ -440,7 +471,7 @@ void node_cfg()
 								,str,3,K_NUMBER|K_EDIT);
 							cfg.node_stat_check=atoi(str);
 							break;
-						case 3:
+						case __COUNTER__:
 							ultoa(cfg.sec_warn,str,10);
 							uifc.helpbuf=
 								"`Seconds Before Inactivity Warning:`\n"
@@ -453,7 +484,7 @@ void node_cfg()
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.sec_warn=atoi(str);
 							break;
-						case 4:
+						case __COUNTER__:
 							ultoa(cfg.sec_hangup,str,10);
 							uifc.helpbuf=
 								"`Seconds Before Inactivity Disconnection:`\n"
@@ -466,7 +497,7 @@ void node_cfg()
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.sec_hangup=atoi(str);
 							break;
-						case 5:
+						case __COUNTER__:
 							uifc.helpbuf=
 								"`Daily Event:`\n"
 								"\n"
@@ -482,7 +513,7 @@ void node_cfg()
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 								,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
 							break;
-						case 6:
+						case __COUNTER__:
 							uifc.helpbuf=
 								"`Text Directory:`\n"
 								"\n"

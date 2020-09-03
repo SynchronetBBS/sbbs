@@ -1,8 +1,10 @@
-// finger.js
+// $Id: finger.js,v 1.8 2019/01/12 01:47:34 rswindell Exp $
 
-// A simple finger client
+// A simple finger/systat (who) client suitable for running via the BBS or JSexec
 
-load('sockdefs.js');
+"use strict";
+
+var lib = load({}, "finger_lib.js");
 var dest;
 var use_udp = false;
 var protocol = "finger";
@@ -21,24 +23,25 @@ for(i = 0; i < argc; i++) {
 	}
 }
 
-if(!dest && (dest = prompt("User (user@hostname)"))==null)
-	exit();
+function finger(dest, protocol, use_udp)
+{
+	if(!dest && (dest = prompt("User (user@hostname)"))==null)
+		return;
 
-if((hp = dest.indexOf('@'))==-1) {
-        dest += "@" + system.host_name;
-	hp = dest.indexOf('@')
+	writeln();
+	var hp;
+	if((hp = dest.indexOf('@')) == -1) {
+		dest += "@" + system.host_name;
+		hp = dest.indexOf('@')
+	}
+
+	var host = dest.slice(hp + 1);
+	var result = lib.request(host, dest.slice(0, hp), protocol, use_udp);
+	if(typeof result != 'object')
+		alert(result);
+	else
+		for(var i in result)
+			writeln(result[i]);
 }
 
-host = dest.slice(hp+1);
-sock = new Socket(use_udp ? SOCK_DGRAM : SOCK_STREAM);
-//sock.debug = true;
-if(!sock.connect(host, protocol)) 
-	alert("Connection to " + host + " failed with error " + sock.last_error);
-else {
-	sock.send(dest.slice(0,hp)+"\r\n");
-	if(use_udp)
-		print(sock.recvfrom().data);
-	else while(sock.is_connected && !js.terminated)
-		print(sock.readline());
-}
-sock.close();
+finger(dest, protocol, use_udp);

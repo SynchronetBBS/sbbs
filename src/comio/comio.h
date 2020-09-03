@@ -2,7 +2,7 @@
 
 /* Synchronet Serial Communications (COM) I/O Library */
 
-/* $Id$ */
+/* $Id: comio.h,v 1.15 2020/06/26 19:56:48 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -43,11 +43,6 @@
 #define COM_ERROR						-1
 
 #ifdef _WIN32
-	#ifdef __BORLANDC__
-		#define COMIOCALL __stdcall
-	#else
-		#define COMIOCALL
-	#endif
 	#if defined(COMIO_IMPORTS) || defined(COMIO_EXPORTS)
 		#if defined(COMIO_IMPORTS)
 			#define COMIOEXPORT __declspec( dllimport )
@@ -58,7 +53,6 @@
 		#define COMIOEXPORT
 	#endif
 #else
-	#define COMIOCALL
 	#define COMIOEXPORT
 #endif
 
@@ -104,6 +98,11 @@
 
 #endif
 
+#define COM_FLOW_CONTROL_NONE			0
+#define COM_FLOW_CONTROL_RTS_CTS		(1<<0)
+#define COM_FLOW_CONTROL_DTR_DSR		(1<<1)
+#define COM_FLOW_CONTROL_XON_OFF		(1<<2)
+
 /**************/
 /* Prototypes */
 /**************/
@@ -112,24 +111,28 @@
 extern "C" {
 #endif
 
-COMIOEXPORT char*		COMIOCALL comVersion(char* str, size_t len);
-COMIOEXPORT COM_HANDLE	COMIOCALL comOpen(const char* device);
-COMIOEXPORT BOOL		COMIOCALL comClose(COM_HANDLE);
-COMIOEXPORT long		COMIOCALL comGetBaudRate(COM_HANDLE);
-COMIOEXPORT BOOL		COMIOCALL comSetBaudRate(COM_HANDLE, ulong rate);
-COMIOEXPORT int			COMIOCALL comGetModemStatus(COM_HANDLE);
-COMIOEXPORT int			COMIOCALL comRaiseDTR(COM_HANDLE);
-COMIOEXPORT int			COMIOCALL comLowerDTR(COM_HANDLE);
-COMIOEXPORT BOOL		COMIOCALL comWriteByte(COM_HANDLE, BYTE);
-COMIOEXPORT int			COMIOCALL comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
-COMIOEXPORT int			COMIOCALL comWriteString(COM_HANDLE, const char*);
-COMIOEXPORT BOOL		COMIOCALL comReadByte(COM_HANDLE, BYTE*);
-COMIOEXPORT size_t		COMIOCALL comReadBuf(COM_HANDLE, char* buf, size_t buflen
-					    ,const char* terminators, int timeout /* in milliseconds */);
-COMIOEXPORT size_t		COMIOCALL comReadLine(COM_HANDLE, char* buf, size_t buflen
-						,int timeout /* in milliseconds */);
-COMIOEXPORT BOOL		COMIOCALL comPurgeInput(COM_HANDLE);
-COMIOEXPORT BOOL		COMIOCALL comPurgeOutput(COM_HANDLE);
+COMIOEXPORT char*		comVersion(char* str, size_t len);
+COMIOEXPORT COM_HANDLE	comOpen(const char* device);
+COMIOEXPORT BOOL		comClose(COM_HANDLE);
+COMIOEXPORT long		comGetBaudRate(COM_HANDLE);
+COMIOEXPORT BOOL		comSetBaudRate(COM_HANDLE, ulong rate);
+COMIOEXPORT int			comGetFlowControl(COM_HANDLE);
+COMIOEXPORT BOOL		comSetFlowControl(COM_HANDLE, int);
+COMIOEXPORT int			comGetModemStatus(COM_HANDLE);
+COMIOEXPORT int			comRaiseDTR(COM_HANDLE);
+COMIOEXPORT int			comLowerDTR(COM_HANDLE);
+COMIOEXPORT int			comRaiseRTS(COM_HANDLE);
+COMIOEXPORT int			comLowerRTS(COM_HANDLE);
+COMIOEXPORT BOOL		comWriteByte(COM_HANDLE, BYTE);
+COMIOEXPORT int			comWriteBuf(COM_HANDLE, const BYTE*, size_t buflen);
+COMIOEXPORT int			comWriteString(COM_HANDLE, const char*);
+COMIOEXPORT BOOL		comReadByte(COM_HANDLE, BYTE*);
+COMIOEXPORT size_t		comReadBuf(COM_HANDLE, char* buf, size_t buflen
+							,const char* terminators, int timeout /* in milliseconds */);
+COMIOEXPORT size_t		comReadLine(COM_HANDLE, char* buf, size_t buflen
+							,int timeout /* in milliseconds */);
+COMIOEXPORT BOOL		comPurgeInput(COM_HANDLE);
+COMIOEXPORT BOOL		comPurgeOutput(COM_HANDLE);
 
 #if defined(__cplusplus)
 }

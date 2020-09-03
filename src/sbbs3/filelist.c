@@ -4,7 +4,7 @@
 /* Default list format is FILES.BBS, but file size, uploader, upload date */
 /* and other information can be included. */
 
-/* $Id: filelist.c,v 1.20 2018/07/15 07:53:30 rswindell Exp $ */
+/* $Id: filelist.c,v 1.22 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 	long	max_age=0;
 	FILE*	out=NULL;
 
-	sscanf("$Revision: 1.20 $", "%*s %s", revision);
+	sscanf("$Revision: 1.22 $", "%*s %s", revision);
 
 	fprintf(stderr,"\nFILELIST v%s-%s (rev %s) - Generate Synchronet File "
 		"Directory Lists\n"
@@ -178,12 +178,12 @@ int main(int argc, char **argv)
 	if(p==NULL) {
 		printf("\nSBBSCTRL environment variable not set.\n");
 		printf("\nExample: SET SBBSCTRL=/sbbs/ctrl\n");
-		exit(1); 
+		exit(1);
 	}
 
 	memset(&scfg,0,sizeof(scfg));
 	scfg.size=sizeof(scfg);
-	SAFECOPY(scfg.ctrl_dir,p);
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 
 	if(chdir(scfg.ctrl_dir)!=0)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);

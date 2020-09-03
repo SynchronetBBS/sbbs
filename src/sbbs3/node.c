@@ -1,7 +1,7 @@
 /* Synchronet BBS Node control program */
 // vi: tabstop=4
 
-/* $Id$ */
+/* $Id: node.c,v 1.34 2020/08/01 22:04:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -74,6 +74,7 @@ enum {
 
 char tmp[256];
 int nodefile;
+int nodeexb;
 
 #if defined(_WIN32)	/* Microsoft-supplied cls() routine - ugh! */
 
@@ -231,11 +232,24 @@ static char* node_connection_desc(ushort conn, char* str)
 		case NODE_CONNECTION_SSH:
 			strcpy(str,"via ssh");
 			break;
+		case NODE_CONNECTION_RAW:
+			strcpy(str,"via raw");
+			break;
 		default:
 			sprintf(str,"at %ubps",conn);
 			break;
 	}
 
+	return str;
+}
+
+static char* extended_status(int num, char* str)
+{
+	if(nodeexb < 0)
+		return "No extended status file open";
+	lseek(nodeexb, num * 128, SEEK_SET);
+	read(nodeexb, str, 128);
+	str[127] = 0;
 	return str;
 }
 
@@ -280,6 +294,10 @@ void printnodedat(int number, node_t node)
 			break;
 		case NODE_QUIET:
 		case NODE_INUSE:
+			if(node.misc&NODE_EXT) {
+				printf("%s", extended_status(number - 1, tmp));
+				break;
+			}
 			printf("User #%d",node.useron);
 			printf(" ");
 			switch(node.action) {
@@ -443,7 +461,7 @@ int main(int argc, char **argv)
 
 	char		revision[16];
 
-	sscanf("$Revision$", "%*s %s", revision);
+	sscanf("$Revision: 1.34 $", "%*s %s", revision);
 
 	printf("\nSynchronet Node Display/Control Utility v%s\n\n", revision);
 
@@ -493,6 +511,9 @@ int main(int argc, char **argv)
 	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 		printf("\7\nError %d opening %s.\n",errno,str);
 		exit(1); }
+
+	sprintf(str,"%snode.exb",ctrl_dir);
+	nodeexb=sopen(str,O_RDWR|O_BINARY,SH_DENYNO);
 
 	sys_nodes=filelength(nodefile)/sizeof(node_t);
 	if(!sys_nodes) {

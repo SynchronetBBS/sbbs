@@ -4,7 +4,7 @@
 # for the old build system.
 #
 
-# $Id$
+# $Id: GNUmakefile,v 1.1 2014/02/12 04:00:03 deuce Exp $
 
 all: output-dirs
 
