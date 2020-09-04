@@ -843,6 +843,16 @@ enum {
 	,NodeConnectionRaw
 	,MouseTerminalQ
 	,TerminalMouse
+	,SpinningCursor0
+	,SpinningCursor1
+	,SpinningCursor2
+	,SpinningCursor3
+	,SpinningCursor4
+	,SpinningCursor5
+	,SpinningCursor6
+	,SpinningCursor7
+	,SpinningCursor8
+	,SpinningCursor9
 
 	,TOTAL_TEXT
 };
