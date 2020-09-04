@@ -1012,7 +1012,7 @@
 " via raw"						                          830 NodeConnectionRaw
 "Does your terminal support mouse reporting"              831 MouseTerminalQ
 "(mouse) "                                                832 TerminalMouse
-"->)|(<-<(|)>"                                            833 SpinningCursor0
+"->)\xb3(<-<(\xb3)>"                                      833 SpinningCursor0
 "\xb3/\xc4\\"                                             834 SpinningCursor1
 "\xb3\\\xc4/"                                             835 SpinningCursor2
 "\xb0\xb1\xb2\xdb\xb2\xb1"                                836 SpinningCursor3
