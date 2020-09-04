@@ -10430,7 +10430,7 @@ setpixel(x1, y1, xx);
 									if (stat(&args[6], &st))
 										conn_send("0\r", 2, 1000);
 									else {
-										localtime_r(&st.st_atim.tv_sec, &tm);
+										localtime_r(&st.st_atime, &tm);
 										strftime(dstr, sizeof(dstr), "%m/%d/&y.%H:%M:%S", &tm);
 										sprintf(str, "1.%" PRIdOFF ".%s\n", st.st_size, dstr);
 										conn_send(str, strlen(str), 1000);
@@ -10440,7 +10440,7 @@ setpixel(x1, y1, xx);
 									if (stat(&args[6], &st))
 										conn_send("0\r", 2, 1000);
 									else {
-										localtime_r(&st.st_atim.tv_sec, &tm);
+										localtime_r(&st.st_atime, &tm);
 										strftime(dstr, sizeof(dstr), "%m/%d/&y.%H:%M:%S", &tm);
 										sprintf(str, "1.%s.%" PRIdOFF ".%s\n", &args[6], st.st_size, dstr);
 										conn_send(str, strlen(str), 1000);
