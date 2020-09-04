@@ -243,8 +243,8 @@ endif
 	-chown -h $(SBBSCHOWN) $(SBBSDIR)/exec/*
 
 $(REPODIR):
-	git clone https://gitlab.com/synchronet/sbbs.git $(REPODIR) \
-		|| git clone https://github.com/rswindell/sbbs.git $(REPODIR) \
+	git clone https://gitlab.com/SynchronetBBS/sbbs.git $(REPODIR) \
+		|| git clone https://github.com/SynchronetBBS/sbbs.git $(REPODIR) \
 		|| git clone https://gitlab.synchro.net/sbbs/sbbs.git $(REPODIR)
 	git -C $(REPODIR) remote set-url origin https://gitlab.synchro.net/sbbs/sbbs.git
 ifdef TAG
