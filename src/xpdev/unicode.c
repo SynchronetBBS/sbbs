@@ -354,6 +354,7 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case UNICODE_ACUTE_ACCENT:								return '\'';
 
 		case UNICODE_BROKEN_BAR:								return '|';
+		case UNICODE_MACRON:									return '~';
 
 		case UNICODE_CENT_SIGN:									return CP437_CENT_SIGN;
 		case UNICODE_POUND_SIGN:								return CP437_POUND_SIGN;
