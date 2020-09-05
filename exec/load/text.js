@@ -839,7 +839,17 @@ var Unlimited=829;
 var NodeConnectionRaw=830;
 var MouseTerminalQ=831;
 var TerminalMouse=832;
+var SpinningCursor0=833;
+var SpinningCursor1=834;
+var SpinningCursor2=835;
+var SpinningCursor3=836;
+var SpinningCursor4=837;
+var SpinningCursor5=838;
+var SpinningCursor6=839;
+var SpinningCursor7=840;
+var SpinningCursor8=841;
+var SpinningCursor9=842;
 
-var TOTAL_TEXT=833;
+var TOTAL_TEXT=843;
 
 this;
