@@ -1,26 +1,23 @@
-// $Id: ircd_unreg.js,v 1.53 2020/04/04 03:34:03 deuce Exp $
-//
-// ircd_unreg.js
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2010 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Handle unregistered clients.
-//
+/*
 
-const UNREG_REVISION = "$Revision: 1.53 $".split(' ')[1];
+ ircd/unregistered.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ http://www.gnu.org/licenses/gpl.txt
+
+ How unregistered clients are handled in the IRCd.
+
+ Copyright 2003-2020 Randy Sommerfeld <cyan@rrx.ca>
+
+*/
 
 ////////// Objects //////////
 function Unregistered_Client(id,socket) {

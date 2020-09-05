@@ -1,27 +1,23 @@
-// $Id: ircd_user.js,v 1.53 2020/04/03 23:27:54 deuce Exp $
-//
-// ircd_unreg.js
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Handle registered clients.
-//
+/*
 
-////////// Constants / Defines //////////
-const USER_REVISION = "$Revision: 1.53 $".split(' ')[1];
+ ircd/user.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ http://www.gnu.org/licenses/gpl.txt
+
+ Handling of regular user-to-server communication in the IRCd.
+
+ Copyright 2003-2020 Randy Sommerfeld <cyan@rrx.ca>
+
+*/
 
 const USERMODE_NONE			=(1<<0); // NONE
 const USERMODE_OPER			=(1<<1); // o
