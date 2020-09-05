@@ -1,47 +1,44 @@
-// $Id: ircd.js,v 1.193 2020/04/04 08:32:04 deuce Exp $
-//
-// ircd.js
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
+/*
 
-//load("synchronet-json.js");
+ ircd.js
 
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ http://www.gnu.org/licenses/gpl.txt
+
+ Synchronet IRC Daemon. Link compatible with Bahamut.
+
+ Copyright 2003-2020 Randy Sommerfeld <cyan@rrx.ca>
+
+*/
+
+/* Synchronet libraries */
 load("sbbsdefs.js");
 load("sockdefs.js");
 load("nodedefs.js");
-
 load("irclib.js");
 
-load("ircd_unreg.js");
-load("ircd_user.js");
-load("ircd_channel.js");
-load("ircd_server.js");
+/* Libraries specific to the IRCd */
+load("ircd/core.js");
+load("ircd/unregistered.js");
+load("ircd/user.js");
+load("ircd/channel.js");
+load("ircd/server.js");
+load("ircd/objects.js");
 
-// CVS revision
-const MAIN_REVISION = "$Revision: 1.193 $".split(' ')[1];
-
-// Please don't play with this, unless you're making custom hacks.
-// IF you're making a custom version, it'd be appreciated if you left the
-// version number alone, and add a token in the form of +hack (i.e. 1.0+cyan)
-// This is so everyone knows your revision base, AND type of hack used.
-const VERSION = "SynchronetIRCd-1.3a(" + MAIN_REVISION + ")";
-const VERSION_STR = "Synchronet " 
-	+ system.version + system.revision + "-" + system.platform 
-	+ system.beta_version + " (IRCd by Randy Sommerfeld)";
+const VERSION = "SynchronetIRCd-1.9a";
+const VERSION_STR = format(
+	"Synchronet %s%s-%s%s (IRCd by Randy Sommerfeld)",
+	system.version, system.revision,
+	system.platform, system.beta_version
+);
 
 // This will dump all I/O to and from the server to your Synchronet console.
 // It also enables some more verbose WALLOPS, especially as they pertain to
@@ -87,10 +84,6 @@ const max_topiclen = 307;	// Maximum length of topic per channel
 const max_kicklen = 307;	// Maximum length of kick reasons
 const max_who = 100;		// Maximum replies to WHO for non-oper users
 const max_silence = 10;		// Maximum entries on a user's SILENCE list
-
-/* Server types */
-const BAHAMUT = 1;
-const DREAMFORGE = 2;
 
 var default_port = 6667;
 
@@ -1338,9 +1331,12 @@ function IRCClient_numeric482(tmp_chan_nam) {
 //////////////////// Multi-numeric Display Functions ////////////////////
 
 function IRCClient_lusers() {
-	this.numeric(251, ":There are " + num_noninvis_users() + " users and "
-		+ num_invis_users() + " invisible on " + true_array_len(Servers)
-		+ " servers.");
+	this.numeric(251,
+		format(":There are %d users and %d invisible on %d servers."),
+		num_noninvis_users(),
+		num_invis_users(),
+		true_array_len(Servers)
+	);
 	this.numeric(252, num_opers() + " :IRC operators online.");
 	var unknown_connections = true_array_len(Unregistered);
 	if (unknown_connections)
@@ -1656,15 +1652,19 @@ function IRCClient_do_msg(target,type_str,send_str) {
 		if ( (chan.mode&CHANMODE_MODERATED) &&
 		     !chan.modelist[CHANMODE_VOICE][this.id] &&
 		     !chan.modelist[CHANMODE_OP][this.id] ) {
-			this.numeric(404, chan.nam + " :Cannot send to channel "
-				+ "(+m: moderated)");
+			this.numeric(404,
+				format("%s :Can't send to channel (+m: moderated)"),
+				chan.nam
+			);
 			return 0;
 		}
 		if (chan.isbanned(this.nuh) &&
 		   !chan.modelist[CHANMODE_VOICE][this.id] &&
 		   !chan.modelist[CHANMODE_OP][this.id] ) {
-			this.numeric(404, chan.nam + " :Cannot send to channel "
-				+ "(+b: you're banned!)");
+			this.numeric(404,
+				format("%s :Can't send to channel (+b: you're banned!)"),
+				chan.nam
+			);
 			return 0;
 		}
 		if(send_to_list == -1) {
@@ -1745,7 +1745,7 @@ function IRCClient_do_info() {
 		" (" + this.uprefix + "@" + this.hostname + ") [" +
 		this.servername + "]");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=*[ The Synchronet IRCd v1.3a ]*=-=-=-=-=-=-=-=-=--");
-	this.numeric(371, ":  IRCd Copyright 2003-2009 by Randolph E. Sommerfeld <cyan@rrx.ca>");
+	this.numeric(371, ":     IRCd Copyright 2003-2020 by Randy Sommerfeld <cyan@rrx.ca>");
 	this.numeric(371, ":" + system.version_notice + " " + system.copyright + ".");
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-( A big thanks to the following )-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":DigitalMan (Rob Swindell): Resident coder god, various hacking all");
@@ -1769,8 +1769,8 @@ function IRCClient_do_info() {
 		this.numeric(371, ":This IRCd was executed via:");
 		this.numeric(371, ":" + server.version_detail);
 	}
-	this.numeric(371, ":IRCd CVS revisions:")
-	this.numeric(371, ":Main(" + MAIN_REVISION + ") User(" + USER_REVISION + ") Channel(" + CHANNEL_REVISION + ") Server(" + SERVER_REVISION + ") Unreg(" + UNREG_REVISION + ")");
+	this.numeric(371, ":IRCd git commit hashes:")
+	this.numeric(371, ":XXX FIXME XXX");
 	this.numeric(371, ":IRClib Version: " + IRCLIB_VERSION);
 	this.numeric(371, ":--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=--");
 	this.numeric(371, ":This program is distributed under the terms of the GNU General Public");
@@ -2071,7 +2071,7 @@ function IRCClient_do_complex_who(cmd) {
 	var who = new Who();
 	var tmp;
 	var eow = "*";
-	var add = true;	// assume the user is doing + by default
+	var add = true;	/* We assume + so things like 'MODE #chan o cyan' work */
 	var arg = 1;
 	var whomask = "";
 	var chan;
