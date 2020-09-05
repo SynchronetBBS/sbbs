@@ -160,16 +160,15 @@ void sbbs_t::useredit(int usernumber)
 		l=lastuser(&cfg);
 		ASYNC;
 		bprintf(text[UeditPrompt],user.number,l);
-		if(user.level>useron.level && console&CON_R_INPUT)
-			SAFECOPY(str,"QG[]?/{},");
-		else
-			SAFECOPY(str,"ABCDEFGHIJKLMNOPQRSTUVWXYZ+[]?/{}~*$#");
+		SAFEPRINTF4(str, "QG[]?/{}%c%c%c%c", TERM_KEY_LEFT, TERM_KEY_RIGHT, TERM_KEY_HOME, TERM_KEY_END);
+		if(user.level <= useron.level)
+			SAFECAT(str, "ABCDEFHIJKLMNOPRSTUVWXYZ+~*$#");
 		l=getkeys(str, l, K_UPPER|K_NOCRLF);
 		if(l&0x80000000L) {
 			user.number=(ushort)(l&~0x80000000L);
 			continue; 
 		}
-		if(l != '[' && l != ']' && l != '{' && l != '}' && l != '?')
+		if(l >= ' ' && l != '[' && l != ']' && l != '{' && l != '}' && l != '?')
 			newline();
 		switch(l) {
 			case 'A':
@@ -656,16 +655,24 @@ void sbbs_t::useredit(int usernumber)
 						user.number=k; 
 				}
 				break;
+			case TERM_KEY_RIGHT:
 			case ']':
 				if(user.number==lastuser(&cfg))
 					user.number=1;
 				else user.number++;
 				break;
+			case TERM_KEY_LEFT:
 			case '[':
 				if(user.number==1)
 					user.number=lastuser(&cfg);
 				else user.number--;
-				break; 
+				break;
+			case TERM_KEY_HOME:
+				user.number = 1;
+				break;
+			case TERM_KEY_END:
+				user.number = lastuser(&cfg);
+				break;
 		} /* switch */
 	} /* while */
 	sys_status&=~SS_INUEDIT;

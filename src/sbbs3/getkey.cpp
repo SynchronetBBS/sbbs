@@ -44,7 +44,8 @@
 /****************************************************************************/
 char sbbs_t::getkey(long mode)
 {
-	uchar	ch,coldkey,c=0,spin=sbbs_random(5);
+	uchar	ch, coldkey, spin = sbbs_random(10);
+	ulong	c = sbbs_random(5);
 	time_t	last_telnet_cmd=0;
 	long	term = term_supports();
 
@@ -70,145 +71,11 @@ char sbbs_t::getkey(long mode)
 		}
 
 		if(mode&K_SPIN) {
-			if(term&NO_EXASCII) {
-				switch(c++) {
-					case 0:
-						outchar(BS);
-						outchar('|');
-						break;
-					case 1:
-						outchar(BS);
-						outchar('/');
-						break;
-					case 2:
-						outchar(BS);
-						outchar('-');
-						break;
-					case 3:
-						outchar(BS);
-						outchar('\\');
-						c=0;
-						break;
-				}
-			} else {
-				switch(spin) {
-					case 0:
-						switch(c++) {
-							case 0:
-								outchar(BS);
-								outchar('³');
-								break;
-							case 1:
-								outchar(BS);
-								outchar('/');
-								break;
-							case 2:
-								outchar(BS);
-								outchar('Ä');
-								break;
-							case 3:
-								outchar(BS);
-								outchar('\\');
-								c=0;
-								break;
-						}
-						break;
-					case 1:
-						switch(c++) {
-							case 0:
-								outchar(BS);
-								outchar('°');
-								break;
-							case 1:
-								outchar(BS);
-								outchar('±');
-								break;
-							case 2:
-								outchar(BS);
-								outchar('²');
-								break;
-							case 3:
-								outchar(BS);
-								outchar('Û');
-								break;
-							case 4:
-								outchar(BS);
-								outchar('²');
-								break;
-							case 5:
-								outchar(BS);
-								outchar('±');
-								c=0;
-								break;
-						}
-						break;
-					case 2:
-						switch(c++) {
-							case 0:
-								outchar(BS);
-								outchar('-');
-								break;
-							case 1:
-								outchar(BS);
-								outchar('=');
-								break;
-							case 2:
-								outchar(BS);
-								outchar('ð');
-								break;
-							case 3:
-								outchar(BS);
-								outchar('=');
-								c=0;
-								break;
-						}
-						break;
-					case 3:
-						switch(c++) {
-							case 0:
-								outchar(BS);
-								outchar('Ú');
-								break;
-							case 1:
-								outchar(BS);
-								outchar('À');
-								break;
-							case 2:
-								outchar(BS);
-								outchar('Ù');
-								break;
-							case 3:
-								outchar(BS);
-								outchar('¿');
-								c=0;
-								break;
-						}
-						break;
-					case 4:
-						switch(c++) {
-							case 0:
-								outchar(BS);
-								outchar('Ü');
-								break;
-							case 1:
-								outchar(BS);
-								outchar('Þ');
-								break;
-							case 2:
-								outchar(BS);
-								outchar('ß');
-								break;
-							case 3:
-								outchar(BS);
-								outchar('Ý');
-								c=0;
-								break;
-						}
-						break; 
-				}
-			}
+			char* cursor = text[SpinningCursor0  + spin];
+			outchar('\b');
+			outchar(cursor[(c++) % strlen(cursor)]);
 		}
-		ch=inkey(mode,mode&K_SPIN ? 250:1000);
+		ch=inkey(mode,mode&K_SPIN ? 200:1000);
 		if(sys_status&SS_ABORT)
 			return(0);
 		now=time(NULL);
