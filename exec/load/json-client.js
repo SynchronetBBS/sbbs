@@ -101,11 +101,10 @@ function JSONClient(serverAddr,serverPort) {
 			return false;
 			
         this.socket=new Socket();
-		this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT);
-		
-		if(!this.socket.is_connected) {
+		if(!this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT)) {
+			var connect_error = this.socket.error 
 			this.socket.close();
-			throw("error " + this.socket.error + " connecting to TCP port " + this.serverPort + " on server " + this.serverAddr);
+			throw("error " + connect_error + " (" + socket_errno_str + ") connecting to TCP port " + this.serverPort + " on server " + this.serverAddr);
 		}
 		return true;
     }
