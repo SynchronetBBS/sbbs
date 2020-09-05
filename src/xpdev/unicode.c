@@ -688,6 +688,8 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case 0x2594: // Upper One Eighth Block
 			return '\xDF';
 
+		case UNICODE_KATAKANA_LETTER_TU:					return CP437_BLACK_SMILING_FACE;
+
 		case UNICODE_SMALL_COMMA:				
 		case UNICODE_SMALL_IDEOGRAPHIC_COMMA:				return ',';
 		case UNICODE_SMALL_FULL_STOP:						return '.';
