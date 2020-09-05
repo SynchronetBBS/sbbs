@@ -44,10 +44,11 @@
 /****************************************************************************/
 char sbbs_t::getkey(long mode)
 {
-	uchar	ch, coldkey, spin = sbbs_random(10);
+	uchar	ch, coldkey;
 	ulong	c = sbbs_random(5);
 	time_t	last_telnet_cmd=0;
-	long	term = term_supports();
+	char* cursor = text[SpinningCursor0  + sbbs_random(10)];
+	size_t cursors = strlen(cursor);
 
 	if(online==ON_REMOTE && !input_thread_running)
 		online=FALSE;
@@ -71,9 +72,8 @@ char sbbs_t::getkey(long mode)
 		}
 
 		if(mode&K_SPIN) {
-			char* cursor = text[SpinningCursor0  + spin];
 			outchar('\b');
-			outchar(cursor[(c++) % strlen(cursor)]);
+			outchar(cursor[(c++) % cursors]);
 		}
 		ch=inkey(mode,mode&K_SPIN ? 200:1000);
 		if(sys_status&SS_ABORT)
