@@ -1010,7 +1010,7 @@ void shell_cfg()
 			"\n"
 			"This is a list of `Command Shells` configured for your system.\n"
 			"Command shells are the programmable command and menu structures which\n"
-			"are available for your BBS.\n"
+			"are available for the users of your BBS's terminal server.\n"
 			"\n"
 			"To add a command shell section, select the desired location with the\n"
 			"arrow keys and hit ~ INS ~.\n"

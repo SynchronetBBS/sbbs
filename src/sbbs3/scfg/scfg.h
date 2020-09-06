@@ -47,8 +47,14 @@
 
 #define SETHELP(where)  uifc.sethelp(where)
 
+#define SCFG_CMDLINE_PREFIX_HELP "\n"																				\
+								"Command lines may begin with a special `prefix` character to indicate:\n"			\
+								"\n"																				\
+								"  `*`   Program is either a JavaScript (`.js`) or Baja (`.bin`) module\n"			\
+								"  `?`   Program is a JavaScript (`.js`) module\n"
+
 #define SCFG_CMDLINE_SPEC_HELP 	"\n"																				\
-								"The following is a list of commonly-used command-line specifiers:\n"				\
+								"The following is a list of commonly-used command line specifiers:\n"				\
 								"\n"																				\
 								"  `%f`  The path/filename of the file to act upon or door/game `drop file`\n"		\
 								"  `%s`  File specification (e.g. `*.txt`) or the current `Startup Directory`\n"	\
@@ -69,7 +75,6 @@
 								"\n"																				\
 								"For a complete list of the supported command-line specifiers, see:\n"				\
 								"`http://wiki.synchro.net/config:cmdline`\n"
-
 
 /*************/
 /* Constants */

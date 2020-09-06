@@ -445,7 +445,7 @@ void net_cfg()
 							"FidoNet front-end that new NetMail has been created and the messages\n"
 							"should be re-scanned.\n"
 							"\n"
-							"`Command-line specifiers may be included in the semaphore filename.`\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
 							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail Semaphore"
@@ -459,7 +459,7 @@ void net_cfg()
 							"FidoNet front-end that new EchoMail has been created and the messages\n"
 							"should be re-scanned.\n"
 							"\n"
-							"`Command-line specifiers may be included in the semaphore filename.`\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
 							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Semaphore"
@@ -701,7 +701,7 @@ void net_cfg()
 							"external Internet e-mail processors that new mail has been received\n"
 							"and the message base should be re-scanned.\n"
 							"\n"
-							"`Command-line specifiers may be included in the semaphore filename.`\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
 							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
@@ -715,7 +715,7 @@ void net_cfg()
 							"external Internet gateways (if supported) that new mail has been created\n"
 							"and the message base should be re-scanned.\n"
 							"\n"
-							"`Command-line specifiers may be included in the semaphore filename.`\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
 							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
@@ -937,6 +937,7 @@ void qhub_edit(int num)
 					"\n"
 					"This is the command line to use to create (compress) REP packets for\n"
 					"this QWK network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
@@ -948,6 +949,7 @@ void qhub_edit(int num)
 					"\n"
 					"This is the command line to use to extract (decompress) QWK packets from\n"
 					"this QWK network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
@@ -959,6 +961,7 @@ void qhub_edit(int num)
 					"\n"
 					"This is the command line to use to initiate a call-out to this QWK\n"
 					"network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""

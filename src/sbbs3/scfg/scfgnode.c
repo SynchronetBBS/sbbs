@@ -513,6 +513,7 @@ void node_cfg()
 								"\n"
 								"An event can be any valid command line. If multiple programs or commands\n"
 								"are required, use a batch file or shell script.\n"
+								SCFG_CMDLINE_PREFIX_HELP
 								SCFG_CMDLINE_SPEC_HELP
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
