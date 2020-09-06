@@ -160,15 +160,24 @@ const Feed = function (url, follow_redirects) {
 	this.channels = [];
 
 	this.load = function () {
-		var httpRequest = new HTTPRequest();
-		httpRequest.follow_redirects = follow_redirects || 0;
-		var response = httpRequest.Get(url);
-		if (typeof response == "undefined" || response == "") {
-			throw new Error('Empty response from server.');
+		var doc;
+		if (url.search('file://') == 0) {
+			var f = new File(url.substring(7));
+			if (!f.open('f')) throw new Error(f.error);
+			doc = f.read();
+			f.close();
+			f = undefined;
+		} else {
+			var httpRequest = new HTTPRequest();
+			httpRequest.follow_redirects = follow_redirects || 0;
+			doc = httpRequest.Get(url);
+			if (typeof doc == "undefined" || doc == "") {
+				throw new Error('Empty response from server.');
+			}
+			httpRequest = undefined;
 		}
-		var feed = new XML(response.replace(/^<\?xml.*\?>/g, ""));
-		httpRequest = undefined;
-		response = undefined;
+		var feed = new XML(doc.replace(/^<\?xml.*\?>/g, ""));
+		doc = undefined;
 		switch (feed.localName()) {
 			case "rss":
 				var channels = feed.channel.length();
