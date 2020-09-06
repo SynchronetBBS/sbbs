@@ -20,6 +20,7 @@ src/sbbs3/ctrl/*.tds
 src/sbbs3/ctrl/sbbsctrl.mak
 3rdp/src
 localdefs.mk
+data
 node2
 node3
 node4
