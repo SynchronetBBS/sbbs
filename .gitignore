@@ -20,3 +20,8 @@ src/sbbs3/ctrl/*.tds
 src/sbbs3/ctrl/sbbsctrl.mak
 3rdp/src
 localdefs.mk
+node2
+node3
+node4
+*.?.cnf
+ctrl/recycle
