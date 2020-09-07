@@ -736,8 +736,8 @@ function verify_bbs(bbs)
     for(i in bbs.service) {
         if(js.terminated)
             break;
-        var protocol = bbs.service[i].protocol.toLowerCase();
-        if(protocol != "telnet" && protocol != "rlogin")
+        var protocol = bbs.service[i].protocol;
+        if(!protocol || (protocol.toLowerCase() != "telnet" && protocol.toLowerCase() != "rlogin"))
             continue;
         bbs.entry.autoverify.attempts++;
         var result = verify_terminal_service(bbs.service[i]);
@@ -2327,6 +2327,9 @@ function main()
 			case "-exclude":
 				exclude.push(val);
 				break;
+			case "-force":
+				export_freq = 0;
+				break;
 			case "-format":
 				if(val === undefined || val === '?' || !val.length) {
 					print("Supported list formats:");
@@ -2577,6 +2580,9 @@ function main()
 					if(limit && count >= limit)
 						break;
 				}
+				break;
+			case "share":
+				print(lfexpand(JSON.stringify(lib.share_list(list, optval[cmd] == "qwk"), null, 1)));
 				break;
 			case "add":
 				if(lib.system_exists(list, system.name)) {

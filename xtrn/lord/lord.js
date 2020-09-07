@@ -1788,7 +1788,8 @@ function rfmutex(fname)
 	fname += '.lock';
 	idx = cleanup_files.indexOf(fname);
 	if (idx === -1) {
-		throw new Error('Removing unknown fmutex '+fname);
+	//	throw new Error('Removing unknown fmutex '+fname);
+		return;
 	}
 	file_remove(fname);
 	cleanup_files.splice(idx, 1);
