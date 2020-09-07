@@ -1,0 +1,177 @@
+/* Alternating rows in lists of messages, Who's Online, etc. */
+.striped:nth-of-type(even), .table-striped > tbody > tr:nth-child(odd) > td, .table-striped > tbody > tr:nth-child(odd) > th {
+	background: #F2F2F2;
+}
+
+/* A link in a list when the mouse is hovering over it (mostly applies to the Forum) */
+a.list-group-item:hover, a.list-group-item:active, li.list-group-item.mail:hover {
+	background-color: #A9E2F3;
+}
+
+/* A link to a scanned sub in a list, should you wish to style it, I guess. */
+a.list-group-item.scanned:hover {
+}
+
+/* An unread mail message in the list view. */
+a.unread {
+	background: #FFFFFF;
+}
+
+/* A read mail message in the list view. */
+a.read {
+	background: #E6E6E6;
+}
+
+/* Unread-message indicator for scanned subs. */
+span.badge.scanned {
+	background-color: #2E9AFE;
+}
+
+/* Unread-message indicator for all subs. */
+span.badge.total {
+}
+
+/* Inline quoted text in a message. */
+blockquote {
+	font-size: 14px;
+	border-left : 5px solid #A4A4A4;
+}
+
+/* The 'current' message being viewed in a thread. */
+li.current {
+	border-left-color : #000000;
+	border-right-color : #000000;
+}
+
+/* Unused? */
+span.message-header.unread {
+	background-color: #FCF8E3;
+}
+
+/*	You probably don't need to mess with rules below this line. */
+
+blockquote {
+	margin: .5em;
+	padding: .5em;
+}
+
+div.message {
+	margin: 1em 0 1em 1em;
+}
+
+input.dropdown {
+	clear: both;
+	margin: 0 0 1em 0;
+}
+
+pre.ansi {
+	background-color : black;
+	font-family : Courier New, monospace;
+	line-height : 1;
+}
+
+pre.list {
+	color : inherit;
+	background-color : inherit;
+	border : none;
+}
+
+.list-group-item.sidebar {
+	overflow: hidden;
+	word-wrap: break-word;
+}
+
+.list-group-item.sidebar:empty {
+	display: none;
+}
+
+.icon {
+	margin: 0 1em 1em 0;
+}
+
+.reply {
+	margin: 1em 0 1em 0;
+}
+
+/* Upvote button */
+.btn-uv { }
+
+/* Downvote button */
+.btn-dv { }
+
+.upvote-bg {
+	background-color : #F0B27A;
+}
+
+.downvote-bg {
+	background-color : #85C1E9;
+}
+
+.upvote-fg, .upvote:hover {
+	color : #F0B27A;
+}
+
+.downvote-fg, .downvote:hover {
+	color : #85C1E9;
+}
+
+.indicator {
+    background-color: transparent !important;
+    -webkit-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-webkit-keyframes indicator-fade {
+    from { background-color: #82E0AA; }
+    to { background-color: transparent; }
+}
+
+-moz-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-moz-keyframes indicator-fade {
+    from { background-color: #82E0AA; }
+    to { background-color: transparent; }
+}
+
+-ms-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-ms-keyframes indicator-fade {
+    from { background-color: #82E0AA; }
+    to { background-color: transparent; }
+}
+
+-o-animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@-o-keyframes indicator-fade {
+    from { background-color: #82E0AA;}
+    to { background-color: transparent; }
+}
+
+animation: indicator-fade 3s ease 0s 1 alternate !important;
+}
+
+@keyframes indicator-fade {
+    from { background-color: #82E0AA;}
+    to { background-color: transparent; }
+}
+
+.dropdown-submenu {
+    position: relative;
+}
+.dropdown-submenu > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -6px;
+} 
+
+.breadcrumb {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.breadcrumb li {
+	display: inline;
+}
