@@ -141,6 +141,12 @@ function menu() {
 		exit(0);
 }
 
+if (argc == 1 && argv[0] == 'INSTALL') {
+        var install = {
+                desc:'`0T`2ravel `0T`2o Other Places Pickles',
+        }
+        exit(0);
+}
 // possible record changes: hp, hp_max, forest_fights, gold, bank, def, str, cha, gem, des1
 
 menu();
