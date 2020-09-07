@@ -87,10 +87,10 @@ Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs 
 Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "web\*";    DestDir: "{app}\web";   Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "e:\webv4\web\*";                                     DestDir: "{app}\webv4";            Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "e:\webv4\web\pages\.examples\*";                     DestDir: "{app}\webv4\pages";      Flags: ignoreversion recursesubdirs
-Source: "e:\webv4\web\components\.examples\*";                DestDir: "{app}\webv4\components"; Flags: ignoreversion recursesubdirs
-Source: "e:\webv4\web\sidebar\.examples\*";                   DestDir: "{app}\webv4\sidebar";    Flags: ignoreversion recursesubdirs
+Source: "webv4\*";                                            DestDir: "{app}\webv4";            Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "webv4\pages\.examples\*";                            DestDir: "{app}\webv4\pages";      Flags: ignoreversion recursesubdirs
+Source: "webv4\components\.examples\*";                       DestDir: "{app}\webv4\components"; Flags: ignoreversion recursesubdirs
+Source: "webv4\sidebar\.examples\*";                          DestDir: "{app}\webv4\sidebar";    Flags: ignoreversion recursesubdirs
 Source: "c:\bin\zip.exe";                                     DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "c:\bin\unzip.exe";                                   DestDir: "{app}\exec";  Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
