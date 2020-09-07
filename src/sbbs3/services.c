@@ -182,6 +182,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static ulong active_clients(void)
 {
 	ulong i;
@@ -824,7 +829,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;
 
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL) 
 			break;
 
 		if(service_client->service->js_server_props.version[0]==0) {
@@ -1839,9 +1844,6 @@ void DLLCALL services_thread(void* arg)
 			cleanup(1);
 			return;
 		}
-
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 		if((t=checktime())!=0) {   /* Check binary time */
 			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);

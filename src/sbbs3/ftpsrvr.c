@@ -201,6 +201,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
@@ -593,7 +598,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_c
 			break;
 
 		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL) 
 			break;
 
 		if((*ftp=JS_DefineObject(js_cx, *glob, "ftp", NULL
@@ -3124,7 +3129,7 @@ static void ctrl_thread(void* arg)
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
 
-	sockprintf(sock,sess,"220-%s (%s)",scfg.sys_name, startup->host_name);
+	sockprintf(sock,sess,"220-%s (%s)",scfg.sys_name, server_host_name());
 	sockprintf(sock,sess," Synchronet FTP Server %s-%s Ready"
 		,revision,PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
@@ -3850,7 +3855,7 @@ static void ctrl_thread(void* arg)
 				ip_addr=0;
 				/* TODO: IPv6 this here lookup */
 				if(startup->options&FTP_OPT_LOOKUP_PASV_IP
-					&& (host=gethostbyname(startup->host_name))!=NULL) 
+					&& (host=gethostbyname(server_host_name()))!=NULL) 
 					ip_addr=ntohl(*((ulong*)host->h_addr_list[0]));
 				if(ip_addr==0 && (ip_addr=startup->pasv_ip_addr.s_addr)==0)
 					ip_addr=ntohl(pasv_addr.in.sin_addr.s_addr);
@@ -6106,9 +6111,6 @@ void DLLCALL ftp_server(void* arg)
 			cleanup(1,__LINE__);
 			break;
 		}
-
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 		if((t=checktime())!=0) {   /* Check binary time */
 			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);

@@ -311,7 +311,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	smb_t smb;
 	memset(&smb, 0, sizeof(smb));
 	smb.subnum = INVALID_SUB;
-	int result = savemsg(&cfg, &smb, &msg, &client, startup->host_name, buf, remsg);
+	int result = savemsg(&cfg, &smb, &msg, &client, server_host_name(), buf, remsg);
 	free(buf);
 	smb_close(&smb);
 	smb_freemsgmem(&msg);
@@ -1120,13 +1120,13 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
 	editor_info_to_msg(&msg, editor, charset);
 
-	i = savemsg(&cfg, &smb, &msg, &client, startup->host_name, msgbuf, remsg);
+	i = savemsg(&cfg, &smb, &msg, &client, server_host_name(), msgbuf, remsg);
 	free(msgbuf);
 
 	if(i!=SMB_SUCCESS) {
@@ -1396,7 +1396,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
 	smb_hfield_str(&msg,SUBJECT,title);
 

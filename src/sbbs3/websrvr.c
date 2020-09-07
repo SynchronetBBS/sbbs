@@ -740,6 +740,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
@@ -2797,7 +2802,7 @@ static BOOL parse_headers(http_session_t * session)
 	}
 	if(content_len)
 		session->req.post_len = content_len;
-	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
+	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : server_host_name() );
 	return TRUE;
 }
 
@@ -3125,12 +3130,12 @@ static BOOL get_request_headers(http_session_t * session)
 	}
 
 	if(!(session->req.vhost[0])) {
-		SAFECOPY(session->req.vhost, startup->host_name);
+		SAFECOPY(session->req.vhost, server_host_name());
 		/* Lower-case for normalization */
 		strlwr(session->req.vhost);
 	}
 	if(!(session->req.host[0])) {
-		SAFECOPY(session->req.host, startup->host_name);
+		SAFECOPY(session->req.host, server_host_name());
 		/* Lower-case for normalization */
 		strlwr(session->req.host);
 	}
@@ -5764,7 +5769,7 @@ js_initcx(http_session_t *session)
 	if(!js_CreateCommonObjects(js_cx, &scfg, NULL
 									,NULL						/* global */
 									,uptime						/* system */
-									,startup->host_name			/* system */
+									,server_host_name()			/* system */
 									,SOCKLIB_DESC				/* system */
 									,&session->js_callback		/* js */
 									,&startup->js				/* js */
@@ -7066,9 +7071,6 @@ void DLLCALL web_server(void* arg)
 			cgi_env = iniReadFile(fp);
 			iniCloseFile(fp);
 		}
-
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */

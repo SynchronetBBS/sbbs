@@ -643,6 +643,7 @@ public:
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
+	char*	server_host_name(void);
 	char*	timestr(time_t);
 	char*	datestr(time_t);
     char	timestr_output[60];

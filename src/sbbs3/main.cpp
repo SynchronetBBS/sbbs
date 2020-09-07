@@ -1284,7 +1284,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
 		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 		if(!js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
-					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
+					,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 					,&js_callback								/* js */
 					,&startup->js
 					,&client, client_socket, -1					/* client */
@@ -3077,7 +3077,7 @@ void event_thread(void* arg)
 					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
 				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday)
-				&& (sbbs->cfg.event[i]->mdays==0
+				&& (sbbs->cfg.event[i]->mdays < 2
 					|| sbbs->cfg.event[i]->mdays&(1<<now_tm.tm_mday))
 				&& (sbbs->cfg.event[i]->months==0
 					|| sbbs->cfg.event[i]->months&(1<<now_tm.tm_mon))))
@@ -5094,9 +5094,6 @@ void DLLCALL bbs_thread(void* arg)
 		cleanup(1);
 		return;
 	}
-
-	if(startup->host_name[0]==0)
-		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 
 	if((t=checktime())!=0) {   /* Check binary time */
 		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);

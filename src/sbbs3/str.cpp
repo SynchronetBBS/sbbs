@@ -1272,3 +1272,8 @@ char* sbbs_t::age_of_posted_item(char* buf, size_t max, time_t t)
 	safe_snprintf(buf, max, text[AgeOfPostedItem], value, units, past);
 	return buf;
 }
+
+char* sbbs_t::server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : cfg.sys_inetaddr;
+}

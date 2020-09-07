@@ -505,7 +505,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(cfg.sys_inetaddr);
 
 	if(!strcmp(sp,"HOSTNAME"))
-		return(startup->host_name);
+		return server_host_name();
 
 	if(!strcmp(sp,"FIDOADDR")) {
 		if(cfg.total_faddrs)
