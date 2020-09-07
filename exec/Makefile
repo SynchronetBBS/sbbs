@@ -31,4 +31,4 @@ all : 	\
 
 
 .src.bin:
-	@baja /q $<
+	@baja.exe /q $<
