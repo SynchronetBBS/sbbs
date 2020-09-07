@@ -48,6 +48,8 @@ directory(system.exec_dir + '../xtrn/*', GLOB_ONLYDIR).forEach(function (e) {
 	}
     const xtrn = f.iniGetObject();
     f.close();
+	if(xtrn['xtrn-setup'] === false)
+		return;
 	if(!xtrn.Name) {
 		alert("Skipping file with no 'Name' value: " + f.name);
 		return;
