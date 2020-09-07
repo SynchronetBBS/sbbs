@@ -106,3 +106,4 @@ while (!js.terminated) {
 }
 
 frame.close();
+console.clear(BG_BLACK|LIGHTGRAY);
