@@ -1184,8 +1184,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						break;
 					if(f.misc&FM_EXTDESC) {
 						if(!noyes(text[DeleteExtDescriptionQ])) {
-							remove(str);
-							f.misc&=~FM_EXTDESC; } 
+							f.misc&=~FM_EXTDESC; }
 					}
 					if(!dir_op(dirnum)) {
 						putfiledat(&cfg,&f);

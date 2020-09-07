@@ -225,7 +225,7 @@ void net_cfg()
 								"`QWK Network Hubs:`\n"
 								"\n"
 								"This is a list of QWK network hubs that your system calls to exchange\n"
-								"packets with.\n"
+								"message packets with.\n"
 								"\n"
 								"To add a hub, select the desired location with the arrow keys and hit\n"
 								"~ INS ~.\n"
@@ -245,7 +245,7 @@ void net_cfg()
 									"`QWK Network Hub System ID:`\n"
 									"\n"
 									"This is the QWK System ID of this hub. It is used for incoming and\n"
-									"outgoing network packets and must be accurate.\n"
+									"outgoing network message packets and must be accurate.\n"
 								;
 								if(uifc.input(WIN_MID|WIN_SAV,0,0
 									,"System ID",str,LEN_QWKID,K_UPPER)<1)
@@ -444,6 +444,9 @@ void net_cfg()
 							"This is a filename that will be used as a semaphore (signal) to your\n"
 							"FidoNet front-end that new NetMail has been created and the messages\n"
 							"should be re-scanned.\n"
+							"\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
+							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"NetMail Semaphore"
 							,cfg.netmail_sem,sizeof(cfg.netmail_sem)-1,K_EDIT);
@@ -455,6 +458,9 @@ void net_cfg()
 							"This is a filename that will be used as a semaphore (signal) to your\n"
 							"FidoNet front-end that new EchoMail has been created and the messages\n"
 							"should be re-scanned.\n"
+							"\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
+							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"EchoMail Semaphore"
 							,cfg.echomail_sem,sizeof(cfg.echomail_sem)-1,K_EDIT);
@@ -470,7 +476,7 @@ void net_cfg()
 							,cfg.netmail_dir,sizeof(cfg.netmail_dir)-1,K_EDIT);
 						break;
 					case 5:
-						i=0;
+						i = (cfg.netmail_misc & NMAIL_ALLOW) ? 0 : 1;
 						uifc.helpbuf=
 							"`Allow Users to Send NetMail:`\n"
 							"\n"
@@ -489,7 +495,7 @@ void net_cfg()
 						}
 						break;
 					case 6:
-						i=0;
+						i = (cfg.netmail_misc & NMAIL_FILE) ? 0 : 1;
 						uifc.helpbuf=
 							"`Allow Users to Send NetMail File Attachments:`\n"
 							"\n"
@@ -508,7 +514,7 @@ void net_cfg()
 						}
 						break;
 					case 7:
-						i=1;
+						i = (cfg.netmail_misc & NMAIL_ALIAS) ? 0 : 1;
 						uifc.helpbuf=
 							"`Use Aliases in NetMail:`\n"
 							"\n"
@@ -529,7 +535,7 @@ void net_cfg()
 						}
 						break;
 					case 8:
-						i=1;
+						i = (cfg.netmail_misc & NMAIL_CRASH) ? 0 : 1;
 						uifc.helpbuf=
 							"`NetMail Defaults to Crash Status:`\n"
 							"\n"
@@ -548,7 +554,7 @@ void net_cfg()
 						}
 						break;
 					case 9:
-						i=1;
+						i = (cfg.netmail_misc & NMAIL_DIRECT) ? 0 : 1;
 						uifc.helpbuf=
 							"`NetMail Defaults to Direct Status:`\n"
 							"\n"
@@ -567,7 +573,7 @@ void net_cfg()
 						}
 						break;
 					case 10:
-						i=1;
+						i = (cfg.netmail_misc & NMAIL_HOLD) ? 0 : 1;
 						uifc.helpbuf=
 							"`NetMail Defaults to Hold Status:`\n"
 							"\n"
@@ -586,7 +592,7 @@ void net_cfg()
 						}
 						break;
 					case 11:
-						i=0;
+						i = (cfg.netmail_misc & NMAIL_KILL) ? 0 : 1;
 						uifc.helpbuf=
 							"`Kill NetMail After it is Sent:`\n"
 							"\n"
@@ -618,7 +624,7 @@ void net_cfg()
 						cfg.netmail_cost=atol(str);
 						break; 
 					case 13:
-						i=0;
+						i = (cfg.netmail_misc & NMAIL_CHSRCADDR) ? 0 : 1;
 						uifc.helpbuf=
 							"`Choose NetMail Source Address:`\n"
 							"\n"
@@ -694,6 +700,9 @@ void net_cfg()
 							"This is a filename that will be used as a semaphore (signal) to any\n"
 							"external Internet e-mail processors that new mail has been received\n"
 							"and the message base should be re-scanned.\n"
+							"\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
+							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Inbound Semaphore"
 							,cfg.smtpmail_sem,sizeof(cfg.smtpmail_sem)-1,K_EDIT);
@@ -705,12 +714,15 @@ void net_cfg()
 							"This is a filename that will be used as a semaphore (signal) to any\n"
 							"external Internet gateways (if supported) that new mail has been created\n"
 							"and the message base should be re-scanned.\n"
+							"\n"
+							"`Command line specifiers may be included in the semaphore filename.`\n"
+							SCFG_CMDLINE_SPEC_HELP
 						;
 						uifc.input(WIN_MID|WIN_SAV,0,0,"Outbound Semaphore"
 							,cfg.inetmail_sem,sizeof(cfg.inetmail_sem)-1,K_EDIT);
 						break;
 					case 3:
-						i=0;
+						i = (cfg.inetmail_misc & NMAIL_ALLOW) ? 0 : 1;
 						uifc.helpbuf=
 							"`Allow Users to Send Internet E-mail:`\n"
 							"\n"
@@ -729,7 +741,7 @@ void net_cfg()
 						}
 						break;
 					case 4:
-						i=0;
+						i = (cfg.inetmail_misc & NMAIL_FILE) ? 0 : 1;
 						uifc.helpbuf=
 							"`Allow Users to Send Internet E-mail File Attachments:`\n"
 							"\n"
@@ -748,7 +760,7 @@ void net_cfg()
 						}
 						break;
 					case 5:
-						i=1;
+						i = (cfg.inetmail_misc & NMAIL_ALIAS) ? 0 : 1;
 						uifc.helpbuf=
 							"`Use Aliases in Internet E-mail:`\n"
 							"\n"
@@ -769,7 +781,7 @@ void net_cfg()
 						}
 						break;
 					case 6:
-						i=0;
+						i = (cfg.inetmail_misc & NMAIL_KILL) ? 0 : 1;
 						uifc.helpbuf=
 							"`Kill Internet E-mail After it is Sent:`\n"
 							"\n"
@@ -879,6 +891,11 @@ void qhub_edit(int num)
 			"found in Kludge Lines and also addresses the 25-character QWK field\n"
 			"length limits. HEADERS.DAT is supported in Synchronet v3.15 and later.\n"
 			"\n"
+			"Synchronet v3.18 and later supports `UTF-8` encoded messages within QWK\n"
+			"packets. If the hub is using Synchronet v3.18 or later, set this option\n"
+			"to `Yes`. This option also changes the QWK new-line sequence to the ASCII\n"
+			"LF (10) character instead of the traditional QWK newline byte (227).\n"
+			"\n"
 			"`Extended (QWKE) Packets` are not normally used in QWK Networking.\n"
 			"Setting this to `Yes` enables some QWKE-specific Kludge Lines that are\n"
 			"superfluous when the HEADERS.DAT file is supported and used.\n"
@@ -920,6 +937,8 @@ void qhub_edit(int num)
 					"\n"
 					"This is the command line to use to create (compress) REP packets for\n"
 					"this QWK network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->pack,sizeof(cfg.qhub[num]->pack)-1,K_EDIT);
@@ -930,6 +949,8 @@ void qhub_edit(int num)
 					"\n"
 					"This is the command line to use to extract (decompress) QWK packets from\n"
 					"this QWK network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->unpack,sizeof(cfg.qhub[num]->unpack)-1,K_EDIT);
@@ -940,6 +961,8 @@ void qhub_edit(int num)
 					"\n"
 					"This is the command line to use to initiate a call-out to this QWK\n"
 					"network hub.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,""
 					,cfg.qhub[num]->call,sizeof(cfg.qhub[num]->call)-1,K_EDIT);

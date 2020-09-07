@@ -1505,10 +1505,18 @@ void msg_opts()
 				uifc.helpbuf=
 					"`Extra Attribute Codes...`\n"
 					"\n"
-					"Synchronet can support the native text attribute codes of other BBS\n"
-					"programs in messages (menus, posts, e-mail, etc.) To enable the extra\n"
-					"attribute codes for another BBS program, set the corresponding option\n"
-					"to `Yes`.\n"
+					"Synchronet can support the native text attribute (e.g. color) codes of\n"
+					"other BBS programs in messages (menus, posts, e-mail, etc.) To enable\n"
+					"extra attribute codes for another BBS program, set the corresponding\n"
+					"option to `Yes`.\n"
+					"\n"
+					"- WWIV color codes are preceded by a Ctrl-C (ASCII 3) character.\n"
+					"- PCBoard color codes are of the form `@Xxx` where `xx` are hex digits.\n"
+					"- Wildcat color codes are of the form `@xx@` where `xx` are hex digits.\n"
+					"- Celerity color codes are of the form `|x` where `x` is an alpha char.\n"
+					"- Renegade color codes are of the form `|xx` where `xx` are decimal digits.\n"
+					"\n"
+					"See `http://wiki.synchro.net/custom:colors` for details.\n"
 				;
 
 				j=0;

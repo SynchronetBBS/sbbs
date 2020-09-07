@@ -1272,7 +1272,7 @@ void dir_cfg(uint libnum)
 						"the directory based on the date the file was uploaded or last\n"
 						"downloaded (If the `Purge by Last Download` toggle option is used).\n"
 						"\n"
-						"The Synchronet file base maintenance program (`DELFILES`) must be used\n"
+						"The Synchronet file base maintenance program (`delfiles`) must be used\n"
 						"to automatically remove files based on age.\n"
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Files (in days)"
@@ -1746,7 +1746,7 @@ void dir_cfg(uint libnum)
 								uifc.helpbuf=
 									"`Purge Files Based on Date of Last Download:`\n"
 									"\n"
-									"Using the Synchronet file base maintenance utility (`DELFILES`), you can\n"
+									"Using the Synchronet file base maintenance utility (`delfiles`), you can\n"
 									"have files removed based on the number of days since last downloaded\n"
 									"rather than the number of days since the file was uploaded (default),\n"
 									"by setting this option to `Yes`.\n"
@@ -1911,7 +1911,10 @@ void dir_cfg(uint libnum)
 									"`Upload Semaphore File:`\n"
 									"\n"
 									"This is a filename that will be used as a semaphore (signal) to your\n"
-									"FidoNet front-end that new files are ready to be hatched for export.\n"
+									"FidoNet software that new files are ready to be hatched for export.\n"
+									"\n"
+									"`Command line specifiers may be included in the semaphore filename.`\n"
+									SCFG_CMDLINE_SPEC_HELP
 								;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Upload Semaphore"
 									,cfg.dir[i]->upload_sem,sizeof(cfg.dir[i]->upload_sem)-1,K_EDIT);
