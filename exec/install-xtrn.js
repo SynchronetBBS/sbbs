@@ -69,12 +69,15 @@
 // [ini:<filename.ini>[:section]]
 //      keys            = comma-separated list of keys to add/update in .ini
 //      values          = list of values to eval() and assign to keys[]
+//                        Note: string values must be enclosed in quotes!
 
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
 //		note			= note to sysop displayed before installation
 //      prompt          = confirmation prompt (or false if no prompting)
 //		required		= if true, this item must be installed to continue
+//      last            = if true, this item will be the last of its type
+//      done            = if true, no more installer items will be processed
 //
 // Notes:
 //
@@ -250,9 +253,10 @@ function install(ini_fname)
 		editor:	{ desc: "External Editor",		struct: "xedit" }
 	};
 	
+	var done = false;
 	for (var t in types) {
 		var list = ini_file.iniGetAllObjects("code", t + ":");
-		for (var i = 0; i < list.length; i++) {
+		for (var i = 0; i < list.length && !done; i++) {
 			var item = list[i];
 			if (item.startup_dir === undefined)
 				item.startup_dir = startup_dir;
@@ -263,14 +267,53 @@ function install(ini_fname)
 				installed++;
 			else if(item.required)
 				return false;
+			if(item.last === true)
+				break;
+			done = item.done;
 		}
 	}
 	
+	var list = ini_file.iniGetAllObjects("filename", "ini:");
+	for (var i = 0; i < list.length && !done; i++) {
+		var item = list[i];
+		var a = item.filename.split(':');
+		item.filename = startup_dir + a[0];
+		if(!file_exists(item.filename))
+			item.filename = file_cfgname(system.ctrl_dir, a[0]);
+		item.section = a[1] || null;
+		item.keys = item.keys.split(',');
+		item.values = item.values.split(',');
+		var prompt = "Add/update the " + (item.section || "root") + " section of " + file_getname(item.filename);
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+		var file = new File(item.filename);
+		if(!file.open(file.exists ? 'r+':'w+'))
+			return "Error " + file.error + " opening " + file.name;
+		var result = true;
+		if (options.debug)
+			print(JSON.stringify(item));
+		for(var k in item.keys) {
+			print("Setting " + item.keys[k] + " = " + eval(item.values[k]));
+			result = file.iniSetValue(item.section, item.keys[k], eval(item.values[k]));
+		}
+		file.close();
+		if(required && result !== true)
+			return false;
+		if(item.last === true)
+			break;
+		done = item.done;
+	}
+
 	var services_ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 	var list = ini_file.iniGetAllObjects("protocol", "service:");
-	for (var i = 0; i < list.length; i++) {
+	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
-		var prompt = "Install/enable the " + item.protocol + " service in " + services_ini.name;
+		var prompt = "Install/enable the " + item.protocol + " service in " + file_getname(services_ini.name);
 		if (item.prompt !== undefined)
 			prompt = item.prompt;
 		if (prompt && !confirm(prompt)) {
@@ -301,41 +344,13 @@ function install(ini_fname)
 		services_ini.close();
 		if(required && result !== true)
 			return false;
-	}
-	
-	var list = ini_file.iniGetAllObjects("filename", "ini:");
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var a = item.filename.split(':');
-		item.filename = file_cfgname(system.ctrl_dir, a[0]);
-		item.section = a[1] || null;
-		item.keys = item.keys.split(',');
-		item.values = item.values.split(',');
-		var prompt = "Add/update the " + (item.section || "root") + " section of " + item.filename;
-		if (item.prompt !== undefined)
-			prompt = item.prompt;
-		if (prompt && !confirm(prompt)) {
-			if (item.required == true)
-				return prompt + " is required to continue";
-			continue;
-		}
-		var file = new File(item.filename);
-		if(!file.open(file.exists ? 'r+':'w+'))
-			return "Error " + file.error + " opening " + file.name;
-		var result = true;
-		if (options.debug)
-			print(JSON.stringify(item));
-		for(var k in item.keys) {
-			print("Setting " + item.keys[k] + " = " + eval(item.values[k]));
-			result = file.iniSetValue(item.section, item.keys[k], eval(item.values[k]));
-		}
-		file.close();
-		if(required && result !== true)
-			return false;
+		if(item.last === true)
+			break;
+		done = item.done;
 	}
 	
 	var list = ini_file.iniGetAllObjects("cmd", "exec:");
-	for (var i = 0; i < list.length; i++) {
+	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
 		var js_args = item.cmd.split(/\s+/);
 		var js_file = js_args.shift();
@@ -364,10 +379,13 @@ function install(ini_fname)
 			,[js_file, item.startup_dir, {}].concat(js_args));
 		if (result !== 0 && item.required)
 			return "Error " + result + " executing " + item.cmd;
+		if(item.last === true)
+			return true;
+		done = item.done;
 	}
 	
 	var list = ini_file.iniGetAllObjects("str", "eval:");
-	for (var i = 0; i < list.length; i++) {
+	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
 		if (!item.cmd)
 			item.cmd = item.str; // the str can't contain [], so allow cmd to override
@@ -383,6 +401,9 @@ function install(ini_fname)
 			if (item.required == true)
 				return "Truthful evaluation of '" + item.cmd + "' is required to continue";
 		}
+		if(item.last === true)
+			return true;
+		done = item.done;
 	}
 
 	if (installed) {
