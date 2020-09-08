@@ -773,8 +773,6 @@ void make_data_dirs(scfg_t* cfg)
 	md(str);
 	SAFEPRINTF(str,"%suser",cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%suser/ptrs",cfg->data_dir);
-	md(str);
 	SAFEPRINTF(str,"%sqnet",cfg->data_dir);
 	md(str);
 	SAFEPRINTF(str,"%sfile",cfg->data_dir);
