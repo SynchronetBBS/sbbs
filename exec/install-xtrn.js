@@ -105,7 +105,7 @@ function aborted()
 	return false;
 }
 
-function install_xtrn_item(cnf, type, name, desc, item)
+function install_xtrn_item(cnf, type, name, desc, item, cats)
 {
 	if (!item.code)
 		return false;
@@ -155,20 +155,29 @@ function install_xtrn_item(cnf, type, name, desc, item)
 	if (type == "xtrn") {
 		if (!xtrn_area.sec_list.length)
 			return "No external program sections have been created";
-		
-		for (var i = 0; i < xtrn_area.sec_list.length; i++)
-			print(format("%2u: ", i + 1) + xtrn_area.sec_list[i].name);
 
-		var which;
-		while ((!which || which > xtrn_area.sec_list.length) && !aborted())
-			which = js.global.prompt("Install " + item.name  + " into which section");
-		if(aborted())
-			return false;
-		which = parseInt(which, 10);
-		if (!which)
-			return false;
-		
-		item.sec = xtrn_area.sec_list[which - 1].number;
+		for (var i = 0; i < xtrn_area.sec_list.length; i++) {
+			if(cats.indexOf(xtrn_area.sec_list[i].name) >= 0
+				&& confirm("Install " + item.name + " into " + xtrn_area.sec_list[i].name + " section")) {
+				item.sec = xtrn_area.sec_list[i].number;
+				break;
+			}
+		}
+		if(item.sec === undefined) {
+			for (var i = 0; i < xtrn_area.sec_list.length; i++)
+				print(format("%2u: ", i + 1) + xtrn_area.sec_list[i].name);
+
+			var which;
+			while ((!which || which > xtrn_area.sec_list.length) && !aborted())
+				which = js.global.prompt("Install " + item.name  + " into which section");
+			if(aborted())
+				return false;
+			which = parseInt(which, 10);
+			if (!which)
+				return false;
+
+			item.sec = xtrn_area.sec_list[which - 1].number;
+		}
 	}
 
 
@@ -247,7 +256,7 @@ function install(ini_fname)
 			var item = list[i];
 			if (item.startup_dir === undefined)
 				item.startup_dir = startup_dir;
-			var result = install_xtrn_item(xtrn_cnf, types[t].struct, name, types[t].desc, item);
+			var result = install_xtrn_item(xtrn_cnf, types[t].struct, name, types[t].desc, item, cats);
 			if (typeof result !== 'boolean')
 				return result;
 			if (result === true)
