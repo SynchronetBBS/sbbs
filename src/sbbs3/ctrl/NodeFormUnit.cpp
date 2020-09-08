@@ -138,11 +138,11 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 
     if(nodedab<1) {
     	char path[MAX_PATH+1];
-        sprintf(path,"%sNODE.DAB",MainForm->global.ctrl_dir);
+        sprintf(path,"%snode.dab",MainForm->global.ctrl_dir);
     	nodedab=_sopen(path,O_RDONLY|O_BINARY|O_CREAT, SH_DENYNONE, S_IREAD|S_IWRITE);
 		if(nodedab==-1) {
 		    ListBox->Items->Clear();
-        	ListBox->Items->Add("Error "+AnsiString(errno)+" opening NODE.DAB");
+			ListBox->Items->Add("!Error "+AnsiString(errno)+" opening node.dab");
             return;
         }
     }
