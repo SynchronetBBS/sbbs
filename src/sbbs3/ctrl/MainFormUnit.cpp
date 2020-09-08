@@ -3361,17 +3361,17 @@ void __fastcall TMainForm::RestoreTrayMenuItemClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::BBSConfigWizardMenuItemClick(TObject *Sender)
 {
-    TConfigWizard* ConfigWizard;
+    static TConfigWizard* ConfigWizard;
     static inside;
     if(inside) return;
     inside=true;
 
-    Application->CreateForm(__classid(TConfigWizard), &ConfigWizard);
+	if(ConfigWizard == NULL)
+	    Application->CreateForm(__classid(TConfigWizard), &ConfigWizard);
 	if(ConfigWizard->ShowModal()==mrOk) {
         SaveSettings(Sender);
 //        ReloadConfigExecute(Sender);  /* unnecessary since refresh_cfg() is already called */
     }
-    delete ConfigWizard;
 
     inside=false;
 }
