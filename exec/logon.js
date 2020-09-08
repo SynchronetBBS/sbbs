@@ -152,11 +152,12 @@ if(user.security.level==99				/* Sysop logging on */
 	&& !system.matchuser("guest")		/* Guest account does not yet exist */
 	&& bbs.mods.userprops.get("logon", "makeguest", true) /* Sysop has not asked to stop this question */
 	) {
-	if(console.yesno("Create Guest/Anonymous user account (highly recommended)"))
+	if(console.yesno("\1?Create Guest/Anonymous user account (highly recommended)"))
 		load("makeguest.js");
-	else if(!console.yesno("Ask again later"))
+	else if(!console.yesno("Ask again later")) {
 		bbs.mods.userprops.set("logon", "makeguest", false);
-	console.crlf();
+		console.crlf();
+	}
 }
 
 // Last few callers
