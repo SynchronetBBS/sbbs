@@ -58,8 +58,8 @@ Name: "enable_web"; Description: "Enable Web Server (HTTP protocol)"; GroupDescr
 Name: "enable_svcs"; Description: "Enable Synchronet Services (Finger, Gopher, NNTP, IRC, IMAP, etc.)"; GroupDescription: {#services_group}
 Name: "enable_ntsvcs"; Description: "Enable Synchronet NT services"; GroupDescription: {#ntsvcs_group}; Flags: unchecked
 Name: "enable_sexpots"; Description: "Enable POTS (dial-up modem) support service"; GroupDescription: {#ntsvcs_group}; Flags: unchecked
-name: "web_runemaster"; Description: "Enable Legacy/Runemaster Web Interface"; GroupDescription: {#webui_group}; Flags: exclusive
-name: "web_echicken"; Description: "Enable echicken's Web Interface (v4)"; GroupDescription: {#webui_group}; Flags: exclusive unchecked
+name: "web_echicken"; Description: "Enable echicken's Web Interface (v4)"; GroupDescription: {#webui_group}; Flags: exclusive
+name: "web_runemaster"; Description: "Enable Legacy/Runemaster Web Interface"; GroupDescription: {#webui_group}; Flags: unchecked exclusive
 
 [Files]
 Source: "src\sbbs3\ctrl\sbbsctrl.exe";                        DestDir: "{app}\exec";  Flags: ignoreversion
@@ -134,6 +134,7 @@ Filename: "{app}\ctrl\sbbs.ini"; Section: "FTP";      Key: "AutoStart"; String: 
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "AutoStart"; String: "false"; Tasks: not enable_web
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Services"; Key: "AutoStart"; String: "false"; Tasks: not enable_svcs
 Filename: "{app}\ctrl\sbbs.ini"; Section: "BBS";      Key: "Options"; String: "XTRN_MINIMIZED | ALLOW_RLOGIN | ALLOW_SSH | NO_DOS"; Check: IsWin64
+Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../web/root"; Tasks: web_runemaster
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../webv4/root"; Tasks: web_echicken
 
 [Dirs]
