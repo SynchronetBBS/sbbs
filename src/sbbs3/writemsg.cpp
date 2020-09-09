@@ -1236,7 +1236,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		if(stricmp(msgtmp,path)) {
 			removecase(msgtmp);
 			if(fexistcase(path))
-				fcopy(path, msgtmp);
+				CopyFile(path, msgtmp, /* failIfExists: */FALSE);
 		}
 
 		editor_inf(useron_xedit,/* to: */fname,/* from: */nulstr,/* subj: */nulstr,/* mode: */0,INVALID_SUB,/* tagfile: */NULL);
