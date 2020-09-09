@@ -999,6 +999,14 @@ int ansi_initciolib(long inmode)
 	return(1);
 }
 
+void ansi_suspend(void)
+{
+#if defined _WIN32
+	// Prevents the wait for a key press when exit() is called and the stdin stream is flushed
+	_unlock_file(stdin);
+#endif
+}
+
 CIOLIBEXPORT void CIOLIBCALL ansi_ciolib_setdoorway(int enable)
 {
 	if(cio_api.mode!=CIOLIB_MODE_ANSI)

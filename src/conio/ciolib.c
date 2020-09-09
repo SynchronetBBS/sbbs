@@ -322,6 +322,7 @@ static int try_ansi_init(int mode)
 		cio_api.textmode=ansi_textmode;
 		cio_api.ESCDELAY=&CIOLIB_ANSI_TIMEOUT;
 		cio_api.beep=ansi_beep;
+		cio_api.suspend=ansi_suspend;
 		return(1);
 	}
 	return(0);
