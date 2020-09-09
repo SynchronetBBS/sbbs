@@ -78,7 +78,7 @@ var key;
 var xtrn;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
-    key = mouse_getkey(K_NONE, undefined, true);//console.getkey();
+    key = mouse_getkey(K_NOSPIN, undefined, true);//console.getkey();
     if (key.key.toLowerCase() == 'q') break;
     if (key.mouse && key.mouse.press && key.mouse.button == 0 && key.mouse.y == frame.y + frame.height - 1 && key.mouse.x >= 52 && key.mouse.x <= 65) break;
     t = tree.getcmd(key);
