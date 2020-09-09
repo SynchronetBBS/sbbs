@@ -298,8 +298,13 @@ function install(ini_fname)
 		if (options.debug)
 			print(JSON.stringify(item));
 		for(var k in item.keys) {
-			print("Setting " + item.keys[k] + " = " + eval(item.values[k]));
-			result = file.iniSetValue(item.section, item.keys[k], eval(item.values[k]));
+			try {
+				var value = eval(item.values[k]);
+			} catch(e) {
+				return e;
+			}
+			print("Setting " + item.keys[k] + " = " + value);
+			result = file.iniSetValue(item.section, item.keys[k], value);
 		}
 		file.close();
 		if(required && result !== true)
@@ -397,7 +402,12 @@ function install(ini_fname)
 				return prompt + " is required to continue";
 			continue;
 		}
-		if (!eval(item.cmd)) {
+		try {
+			var result = eval(item.cmd);
+		} catch(e) {
+			return e;
+		}
+		if (!result) {
 			if (item.required == true)
 				return "Truthful evaluation of '" + item.cmd + "' is required to continue";
 		}
