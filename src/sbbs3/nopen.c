@@ -150,7 +150,7 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 
 BOOL fcopy(const char* src, const char* dest)
 {
-	int		ch;
+	uint8_t	buf[256 * 1024];
 	ulong	count=0;
 	FILE*	in;
 	FILE*	out;
@@ -164,14 +164,14 @@ BOOL fcopy(const char* src, const char* dest)
 	}
 
 	while(!feof(in)) {
-		if((ch=fgetc(in))==EOF)
+		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), in);
+		if(rd < 1)
 			break;
-		if(fputc(ch,out)==EOF) {
-			success=FALSE;
+		if(fwrite(buf, sizeof(uint8_t), rd, out) != rd) {
+			success = FALSE;
 			break;
 		}
-		if(((count++)%(32*1024))==0)
-			MAYBE_YIELD();
+		MAYBE_YIELD();
 	}
 
 	fclose(in);
