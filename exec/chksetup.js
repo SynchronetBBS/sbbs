@@ -3,7 +3,7 @@
 // Sanity-check a Synchronet BBS installation
 
 "use strict";
-const REVISION = "$Revision: 1.17 $".split(' ')[1];
+const REVISION = "$Revision: 1.18 $".split(' ')[1];
 require("sbbsdefs.js", 'USER_DELETED');
 
 function check_codes(desc, grp_list, sub_list)
@@ -257,7 +257,7 @@ var tests = {
 	
 	check_dove_net: function(options)
 	{
-		const TOTAL_DOVENET_CONFERENCES = 22;
+		const TOTAL_DOVENET_CONFERENCES = js.global.jsexec_revision ? 22 : 21;
 		var output = [];
 		var grp = msg_area.grp["DOVE-Net"];
 		if(!grp)
