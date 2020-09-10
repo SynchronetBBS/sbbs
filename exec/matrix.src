@@ -39,42 +39,42 @@ else
         end_if
 
 print "                        "
-print "4yh"
-print "ษออออออออออออออออออออออออออออออปn\r\n"
+print "\x014\x01y\x01h"
+print "ษออออออออออออออออออออออออออออออป\x01n\r\n"
 print "                        "
-print "4yh"
-print "บ         Logon Matrix         บnbฐฐn\r\n"
+print "\x014\x01y\x01h"
+print "บ         Logon Matrix         บ\x01n\x01bฐฐ\x01n\r\n"
 print "                        "
-print "4yh"
-print "ฬออออออออออออออออออออออออออออออนnbฐฐn\r\n"
-print "                        4yhบ "
+print "\x014\x01y\x01h"
+print "ฬออออออออออออออออออออออออออออออน\x01n\x01bฐฐ\x01n\r\n"
+print "                        \x014\x01y\x01hบ "
 compare m 0
 	if_equal
-		print "7bh"
+		print "\x10\x017\x01b\x01h"
 	else
-		print " 4wh"
+		print " \x014\x01w\x01h"
 	end_if
 print " Existing User Account     "
-print "4y บnbฐฐn\r\n                        4yhบ "
+print "\x014\x01y บ\x01n\x01bฐฐ\x01n\r\n                        \x014\x01y\x01hบ "
 compare m 1
 	if_equal
-		print "7bh"
+		print "\x10\x017\x01b\x01h"
 	else
-		print " 4wh"
+		print " \x014\x01w\x01h"
 	end_if
 print " New User Account          "
-print "4y บnbฐฐn\r\n                        4yhบ "
+print "\x014\x01y บ\x01n\x01bฐฐ\x01n\r\n                        \x014\x01y\x01hบ "
 compare m 2
 	if_equal
-		print "7bh"
+		print "\x10\x017\x01b\x01h"
 	else
-		print " 4wh"
+		print " \x014\x01w\x01h"
 	end_if
 print " Guest User Account        "
-print "4y บnbฐฐn\r\n                        4yh"
-print "ศออออออออออออออออออออออออออออออผnbฐฐn\r\nnb"
+print "\x014\x01y บ\x01n\x01bฐฐ\x01n\r\n                        \x014\x01y\x01h"
+print "ศออออออออออออออออออออออออออออออผ\x01n\x01bฐฐ\x01n\r\n\x01n\x01b"
 print "                         "
-print " ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐn\r\n"
+print " ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ\x01n\r\n"
 
 #sync
 getkey
