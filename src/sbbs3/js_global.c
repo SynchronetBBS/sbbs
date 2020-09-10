@@ -3047,7 +3047,7 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=fcopy(src,dest);
+	ret = CopyFile(src, dest, /* failIfExists: */FALSE);
 	free(src);
 	free(dest);
 	JS_RESUMEREQUEST(cx, rc);
