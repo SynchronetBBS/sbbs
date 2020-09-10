@@ -1223,7 +1223,6 @@ int DLLCALL mkpath(const char* path)
 BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 {
 	uint8_t	buf[256 * 1024];
-	ulong	count=0;
 	FILE*	in;
 	FILE*	out;
 	BOOL	success=TRUE;

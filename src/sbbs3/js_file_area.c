@@ -129,7 +129,7 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 	if(id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval))
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
@@ -219,7 +219,7 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			lib_index=-1;
 			if(p->user==NULL || chk_ar(p->cfg,p->cfg->lib[l]->ar,p->user,p->client)) {
 
-				if(!JS_GetArrayLength(cx, lib_list, &lib_index))
+				if(!JS_GetArrayLength(cx, lib_list, (jsuint*)&lib_index))
 					return JS_FALSE;
 
 				if(!JS_SetElement(cx, lib_list, lib_index, &val))
@@ -291,7 +291,7 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				dir_index=-1;
 				if(p->user==NULL || chk_ar(p->cfg,p->cfg->dir[d]->ar,p->user,p->client)) {
 
-					if(!JS_GetArrayLength(cx, dir_list, &dir_index))
+					if(!JS_GetArrayLength(cx, dir_list, (jsuint*)&dir_index))
 						return JS_FALSE;
 
 					if(!JS_SetElement(cx, dir_list, dir_index, &val))
