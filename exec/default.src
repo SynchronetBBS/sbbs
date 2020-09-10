@@ -51,7 +51,7 @@ if_true
 	end_if
 
 # Display main Prompt
-print "\1-\1c\r\nþ \1b\1hMain \1n\1cþ \1h"
+print "\1-\1c\r\n\xfe \1b\1hMain \1n\1c\xfe \1h"
 compare_ars exempt T
 if_true
 	print "@TUSED@"
@@ -533,7 +533,7 @@ async
 inc_file_cmds
 
 # Display main Prompt
-print "\1-\1c\r\nþ \1b\1hFile \1n\1cþ \1h"
+print "\1-\1c\r\n\xfe \1b\1hFile \1n\1c\xfe \1h"
 compare_ars exempt T
 if_true
 	print "@TUSED@"
