@@ -1746,7 +1746,7 @@ function view(list, current)
 					}
 					console.clear();
 					lib.draw_preview(bbs);
-					key = console.getkey();
+					key = console.getkey(K_NOSPIN);
 					console.clear();
 					if(!is_nav_key(key))
 						break;
@@ -1763,10 +1763,12 @@ function view(list, current)
 								current++;
 								break;
 						}
-						if(current >= list.length)
+						if(current < 0 || current >= list.length)
 							break;
 						bbs = list[current];
 					} while(!bbs.preview);
+					if(current < 0 || current >= list.length)
+						break;
 				}
 				break;
 			case 'L':
@@ -1778,7 +1780,7 @@ function view(list, current)
 					if(result == true) {
 						console.clear();
 						lib.draw_preview(copy);
-						console.getkey();
+						console.getkey(K_NOSPIN);
 					} else {
 						console.crlf();
 						alert("Result: " + result);
