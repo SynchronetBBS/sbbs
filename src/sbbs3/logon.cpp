@@ -257,8 +257,11 @@ bool sbbs_t::logon()
 					CRLF;
 					bputs(text[VerifyPassword]); 
 				}
-				else
+				else {
+					if(!text[NewUserPasswordVerify][0])
+						break;
 					bputs(text[NewUserPasswordVerify]);
+				}
 				console|=CON_R_ECHOX;
 				getstr(tmp,LEN_PASS*2,K_UPPER);
 				console&=~(CON_R_ECHOX|CON_L_ECHOX);
