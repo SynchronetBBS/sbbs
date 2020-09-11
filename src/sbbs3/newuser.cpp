@@ -399,7 +399,7 @@ BOOL sbbs_t::newuser()
 			}
 
 		c=0;
-		while(online) {
+		while(online && text[NewUserPasswordVerify][0]) {
 			bputs(text[NewUserPasswordVerify]);
 			console|=CON_R_ECHOX;
 			str[0]=0;
