@@ -1681,17 +1681,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     int		FtpFormPage=PAGE_LOWERRIGHT;
     int		WebFormPage=PAGE_LOWERRIGHT;
     int     ServicesFormPage=PAGE_LOWERRIGHT;
-#if 0   /* not yet working */
-    bool	TelnetFormVisible=true;
-    bool	EventsFormVisible=true;
-    bool	ServicesFormVisible=true;
-    bool 	NodeFormVisible=true;
-    bool	StatsFormVisible=true;
-    bool	ClientFormVisible=true;
-    bool 	MailFormVisible=true;
-    bool	FtpFormVisible=true;
-    bool	WebFormVisible=true;
-#endif
 
     AnsiString	Str;
 
@@ -1741,26 +1730,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         if(Registry->ValueExists("WebFormFloating"))
             WebFormFloating=Registry->ReadBool("WebFormFloating");
     }
-#if 0
-    if(Registry->ValueExists("TelnetFormVisible"))
-        TelnetFormVisible=Registry->ReadBool("TelnetFormVisible");
-    if(Registry->ValueExists("EventsFormVisible"))
-        EventsFormVisible=Registry->ReadBool("EventsFormVisible");
-    if(Registry->ValueExists("ServicesFormVisible"))
-        ServicesFormVisible=Registry->ReadBool("ServicesFormVisible");
-    if(Registry->ValueExists("NodeFormVisible"))
-        NodeFormVisible=Registry->ReadBool("NodeFormVisible");
-    if(Registry->ValueExists("StatsFormVisible"))
-        StatsFormVisible=Registry->ReadBool("StatsFormVisible");
-    if(Registry->ValueExists("ClientFormVisible"))
-        ClientFormVisible=Registry->ReadBool("ClientFormVisible");
-    if(Registry->ValueExists("MailFormVisible"))
-        MailFormVisible=Registry->ReadBool("MailFormVisible");
-    if(Registry->ValueExists("FtpFormVisible"))
-        FtpFormVisible=Registry->ReadBool("FtpFormVisible");
-    if(Registry->ValueExists("WebFormVisible"))
-        WebFormVisible=Registry->ReadBool("WebFormVisible");
-#endif
     if(Registry->ValueExists("TelnetFormPage"))
     	TelnetFormPage=Registry->ReadInteger("TelnetFormPage");
     if(Registry->ValueExists("EventsFormPage"))
@@ -2280,24 +2249,14 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	WebForm->ManualDock(PageControl(WebFormPage),NULL,alClient);
 
     NodeForm->Show();
-//    ViewNodes->Checked=NodeFormVisible,     ViewNodesExecute(Sender);
     ClientForm->Show();
-//    ViewClients->Checked=ClientFormVisible, ViewClientsExecute(Sender);
     StatsForm->Show();
-//    ViewStats->Checked=StatsFormVisible,    ViewStatsExecute(Sender);
     TelnetForm->Show();
-//    ViewTelnet->Checked=TelnetFormVisible,  ViewTelnetExecute(Sender);
     EventsForm->Show();
-//    ViewEvents->Checked=EventsFormVisible,  ViewEventsExecute(Sender);
     FtpForm->Show();
-//    ViewFtpServer->Checked=FtpFormVisible,  ViewFtpServerExecute(Sender);
     WebForm->Show();
-//    ViewWebServer->Checked=WebFormVisible;
-//    WebForm->Visible=ViewWebServer->Checked;
     MailForm->Show();
-//    ViewMailServer->Checked=MailFormVisible,ViewMailServerExecute(Sender);
     ServicesForm->Show();
-//    ViewServices->Checked=ServicesFormVisible,ViewServicesExecute(Sender);
 
 	UpperLeftPageControl->Visible=true;
 	UpperRightPageControl->Visible=true;
