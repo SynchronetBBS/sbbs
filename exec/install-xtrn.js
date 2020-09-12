@@ -449,7 +449,7 @@ var xtrn_dirs = fullpath(system.ctrl_dir + "../xtrn/*");
 if(!ini_list.length) {
 	var dir_list = directory(xtrn_dirs);
 	for(var d in dir_list) {
-		if(!options.overwrite && find_startup_dir(dir_list[d]))
+		if(!options.overwrite && find_startup_dir(dir_list[d]) >= 0)
 			continue;
 		var fname = file_getcase(dir_list[d] + ini_fname);
 		if(fname)
