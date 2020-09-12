@@ -436,14 +436,41 @@ for (var i = 0; i < argc; i++) {
 		ini_list.push(argv[i]);
 }
 
+function find_startup_dir(dir)
+{
+	for (var i=0; i < xtrn_area.prog.length; i++) {
+		if (xtrn_area.prog[i].startup_dir.toLowerCase() == dir.toLowerCase())
+			return i;
+	}
+	return -1;
+}
+
 var xtrn_dirs = fullpath(system.ctrl_dir + "../xtrn/*");
 if(!ini_list.length) {
 	var dir_list = directory(xtrn_dirs);
 	for(var d in dir_list) {
+		if(!options.overwrite && find_startup_dir(dir_list[d]))
+			continue;
 		var fname = file_getcase(dir_list[d] + ini_fname);
 		if(fname)
 			ini_list.push(fname);
 	}
+}
+
+if(!options.auto && ini_list.length > 1) {
+	for(var i = 0; i < ini_list.length; i++) {
+		printf("%3d: %s\r\n", i+1, ini_list[i].substr(0, ini_list[i].length - ini_fname.length));
+	}
+	var which;
+	while(!which || which < 1 || which > ini_list.length) {
+		var str = prompt("Which or [Q]uit");
+		if(aborted())
+			exit(0);
+		if(str && str.toUpperCase() == 'Q')
+			exit(0);
+		which = parseInt(str, 10);
+	}
+	ini_list = [ini_list[which - 1]];
 }
 
 if(!ini_list.length) {
@@ -454,6 +481,8 @@ if(!ini_list.length) {
 	var ini_path;
 	while (!ini_path || !file_exists(ini_path)) {
 		ini_path = prompt("Location of " + ini_fname);
+		if(aborted())
+			exit(0);
 		if (file_isdir(ini_path))
 			ini_path = backslash(ini_path) + ini_fname;
 	}
