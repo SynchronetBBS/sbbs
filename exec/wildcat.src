@@ -1,6 +1,6 @@
 # wildcat.src
 
-# $Id: wildcat.src,v 1.17 2020/04/23 02:46:09 rswindell Exp $
+# $Id: wildcat.src,v 1.17 2020/09/12 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -95,6 +95,7 @@ cmdkey I
 
 cmdkey Y
 	user_defaults
+	exec_bin "termsetup"
 	end_cmd
 
 cmdkey W

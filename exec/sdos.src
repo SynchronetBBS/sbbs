@@ -2,7 +2,7 @@
 
 # DOS shell for Synchronet version 2 systems
 
-# $Id: sdos.src,v 1.15 2020/04/23 02:46:09 rswindell Exp $
+# $Id: sdos.src,v 1.15 2020/09/12 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -149,6 +149,7 @@ if_true
 compare_str "setup"
 if_true
 	user_defaults
+	exec_bin "termsetup"
 	return
 	end_if
 

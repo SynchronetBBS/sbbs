@@ -135,6 +135,7 @@ cmdkey C
 
 cmdkey D
 	user_defaults
+	exec_bin "termsetup"
 	end_cmd
 
 cmdkey E

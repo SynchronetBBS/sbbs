@@ -2,7 +2,7 @@
 
 # PCBoard v15.1 menu/command emulation
 
-# $Id: pcboard.src,v 1.13 2020/04/23 02:46:09 rswindell Exp $
+# $Id: pcboard.src,v 1.14 2020/09/12 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -219,6 +219,7 @@ cmdstr G
 
 cmdstr W
 	user_defaults
+	exec_bin "termsetup"
 	end_cmd
 
 cmdstr O
