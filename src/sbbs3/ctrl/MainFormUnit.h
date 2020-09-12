@@ -492,6 +492,7 @@ public:		// User declarations
 	TPageControl* __fastcall PageControl(int num);
 	int __fastcall  PageNum(TPageControl* obj);
     void __fastcall FormMinimize(TObject *Sender);
+	void __fastcall DisplayMainPanels(TObject *Sender);
     TColor __fastcall ReadColor(TRegistry*, AnsiString);
     void __fastcall WriteColor(TRegistry*, AnsiString, TColor);
     void __fastcall ReadFont(AnsiString, TFont*);
