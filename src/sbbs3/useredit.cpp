@@ -1082,11 +1082,9 @@ void sbbs_t::maindflts(user_t* user)
 				if(sys_status&SS_ABORT)
 					break;
 				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
-				if(user->netmail[0] == 0 || noyes(text[ForwardMailQ]))
-					user->misc&=~NETMAIL;
-				else {
-					user->misc|=NETMAIL;
-				}
+				user->misc &= ~NETMAIL;
+				if(is_supported_netmail_addr(&cfg, user->netmail) && !noyes(text[ForwardMailQ]))
+					user->misc |= NETMAIL;
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 'C':

@@ -262,6 +262,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         DateUsRadioButton->Checked=true;
 
     WizNotebook->PageIndex=0;
+	ProgressBar->Position=0;
     ProgressBar->Max=WizNotebook->Pages->Count-1;
     IllegalCharsLabel->Caption="Illegal characters: '"
         ILLEGAL_QWKID_CHARS "'";
@@ -323,14 +324,12 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
             scfg.sys_misc|=SM_SYSVDELM;
             scfg.sys_misc&=~SM_USRVDELM;
         }
-
         scfg.new_install=FALSE;
         if(!save_cfg(&scfg,0)) {
         	Application->MessageBox("Error saving configuration"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
         } else
         	refresh_cfg(&scfg);
-
         Close();
         return;
     }

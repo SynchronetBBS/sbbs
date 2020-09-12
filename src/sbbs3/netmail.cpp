@@ -1428,3 +1428,23 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	logline("EN",str);
 	return(true);
 }
+
+extern "C" BOOL is_supported_netmail_addr(scfg_t* cfg, const char* addr)
+{
+	switch (smb_netaddr_type(addr)) {
+		case NET_FIDO:
+			return INT_TO_BOOL(cfg->total_faddrs && (cfg->netmail_misc&NMAIL_ALLOW));
+		case NET_INTERNET:
+			return INT_TO_BOOL(cfg->inetmail_misc&NMAIL_ALLOW);
+		case NET_QWK:
+		{
+			char fulladdr[256] = "";
+			const char* p = strchr(addr, '@');
+			if(p == NULL)
+				return FALSE;
+			qwk_route(cfg, p + 1, fulladdr, sizeof(fulladdr)-1);
+			return fulladdr[0] != 0;
+		}
+	}
+	return FALSE;
+}
