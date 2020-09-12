@@ -43,6 +43,7 @@
 #include "dirwrap.h"
 #include "datewrap.h"
 #include "sockwrap.h"
+#include "threadwrap.h"
 #include "ini_file.h"
 
 /* comio lib */
@@ -152,7 +153,7 @@ int usage(const char* fname)
 #endif
 		"\n"
 		,getfname(fname)
-		,NAME);
+		);
 
 	return 0;
 }
@@ -788,8 +789,6 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 {
 	char		str[128];
 	char*		p;
-	BOOL		result=TRUE;
-	DWORD		events=0;
 	time_t		start=time(NULL);
 
 	ZERO_VAR(cid_name);
@@ -835,7 +834,7 @@ BOOL wait_for_call(COM_HANDLE com_handle)
 				if(strncmp(p,"CONNECT ",8)==0) {
 					long rate=atoi(p+8);
 					if(rate)
-						SAFEPRINTF2(termspeed,"%u,%u", rate, rate);
+						SAFEPRINTF2(termspeed,"%ld,%ld", rate, rate);
 				}
 				else if(strncmp(p,"NMBR",4)==0 || strncmp(p,"MESG",4)==0) {
 					p+=4;
@@ -1139,7 +1138,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 							,telnet_opt_desc(option));
 					/* sub-option terminated */
 					if(option==TELNET_TERM_TYPE && telnet_cmd[3]==TELNET_TERM_SEND) {
-						BYTE buf[32];
+						char buf[32];
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_TYPE,TELNET_TERM_IS
@@ -1150,7 +1149,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 						sendsocket(sock,buf,len);
 /*						request_telnet_opt(TELNET_WILL, TELNET_TERM_SPEED); */
 					} else if(option==TELNET_TERM_SPEED && telnet_cmd[3]==TELNET_TERM_SEND) {
-						BYTE buf[32];
+						char buf[32];
 						int len=sprintf(buf,"%c%c%c%c%s%c%c"
 							,TELNET_IAC,TELNET_SB
 							,TELNET_TERM_SPEED,TELNET_TERM_IS
@@ -1186,7 +1185,7 @@ BYTE* telnet_interpret(BYTE* inbuf, int inlen, BYTE* outbuf, int *outlen)
 								break;
 							case TELNET_SEND_LOCATION:
 								if(command==TELNET_DO) {
-									BYTE buf[128];
+									char buf[128];
 									int len=safe_snprintf(buf,sizeof(buf),"%c%c%c%s %s%c%c"
 										,TELNET_IAC,TELNET_SB
 										,TELNET_SEND_LOCATION
