@@ -2,7 +2,7 @@
 
 /* Synchronet External Plain Old Telephone System (POTS) support */
 
-/* $Id: sexpots.c,v 1.32 2019/05/05 22:48:33 rswindell Exp $ */
+/* $Id: sexpots.c,v 1.33 2020/09/11 22:48:33 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
