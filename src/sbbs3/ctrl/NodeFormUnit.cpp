@@ -34,6 +34,7 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
+#include "sbbs.h"
 #include <vcl.h>
 #pragma hdrstop
 #include <io.h>
@@ -129,6 +130,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 {
 	static int nodedab;
     char	str[256];
+	char	tmp[128];
 	char	status[128];
     int		i,n,rd,digits=1;
     node_t	node;
@@ -169,11 +171,11 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 
         if(rd!=sizeof(node_t))
         	continue;
-            
-		sprintf(str,"%*d %s"
+
+		safe_snprintf(str, sizeof(str), "%*d %s"
 			,digits
 			,n+1
-			,nodestatus(&MainForm->cfg,&node,status,sizeof(status),n+1));
+			,strip_ctrl(nodestatus(&MainForm->cfg, &node, status, sizeof(status), n+1), tmp));
         AnsiString Str=AnsiString(str);
         if(ListBox->Items->Count<n+1)
         	ListBox->Items->Add(Str);
