@@ -141,9 +141,9 @@ const TColor LogLevelColor[] = {
                                 ,clRed
                                 ,clRed
                                 ,clFuchsia	
-                                ,clBlue
+                                ,clSkyBlue
                                 ,clBlack    /* not used */
-                                ,clGreen
+                                ,clLime
                                 };
 
 link_list_t bbs_log_list;
@@ -972,7 +972,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         for(i=LOG_EMERG;i<=LOG_DEBUG;i++) {
             LogFont[i] = new TFont;
             LogFont[i]->Color=LogLevelColor[i];
-//            if(i <= LOG_ERR)
+            if(i <= LOG_CRIT)
                 LogFont[i]->Style = TFontStyles()<< fsBold;
         }
     }

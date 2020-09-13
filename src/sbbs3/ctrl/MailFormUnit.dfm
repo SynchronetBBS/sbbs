@@ -151,7 +151,7 @@ object MailForm: TMailForm
     Font.Color = clWhite
     Font.Height = -12
     Font.Name = 'MS Sans Serif'
-    Font.Style = [fsBold]
+    Font.Style = []
     HideScrollBars = False
     ParentFont = False
     PopupMenu = MainForm.LogPopupMenu
