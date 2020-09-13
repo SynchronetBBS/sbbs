@@ -7033,13 +7033,11 @@ void DLLCALL web_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 		prep_dir(startup->ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
-		MKDIR(scfg.temp_dir);
-		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
+		if(!md(scfg.temp_dir)) {
 			cleanup(1);
 			return;
 		}
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		lprintf(LOG_DEBUG,"Root directory: %s", root_dir);
 		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
 		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
