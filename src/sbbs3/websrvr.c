@@ -6954,9 +6954,10 @@ void DLLCALL web_server(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 	protected_uint32_init(&thread_count, 0);
-	protected_uint32_init(&active_clients,0);
 
 	do {
+		protected_uint32_init(&active_clients,0);
+
 		/* Setup intelligent defaults */
 		if(startup->port==0)					startup->port=IPPORT_HTTP;
 		if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);

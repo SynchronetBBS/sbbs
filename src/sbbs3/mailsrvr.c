@@ -6012,9 +6012,10 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
-	protected_uint32_init(&active_clients, 0);
 
 	do {
+		protected_uint32_init(&active_clients, 0);
+
 		/* Setup intelligent defaults */
 		if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
 		if(startup->submission_port==0)			startup->submission_port=IPPORT_SUBMISSION;

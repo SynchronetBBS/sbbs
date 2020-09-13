@@ -6049,9 +6049,10 @@ void DLLCALL ftp_server(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 	protected_uint32_init(&thread_count, 0);
-	protected_uint32_init(&active_clients, 0);
 
 	do {
+		protected_uint32_init(&active_clients, 0);
+
 		/* Setup intelligent defaults */
 		if(startup->port==0)					startup->port=IPPORT_FTP;
 		if(startup->qwk_timeout==0)				startup->qwk_timeout=FTP_DEFAULT_QWK_TIMEOUT;		/* seconds */
