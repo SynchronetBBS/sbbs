@@ -1259,8 +1259,7 @@ extern "C" {
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
 	DLLEXPORT ushort	DLLCALL sys_timezone(scfg_t* cfg);
 	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
-	DLLEXPORT BOOL 		DLLCALL md(const char *path);
-
+	DLLEXPORT int 		DLLCALL md(const char *path);
 
 	/* scfgsave.c */
 	DLLEXPORT BOOL		DLLCALL save_cfg(scfg_t* cfg, int backup_level);
