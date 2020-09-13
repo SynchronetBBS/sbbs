@@ -1259,6 +1259,8 @@ extern "C" {
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
 	DLLEXPORT ushort	DLLCALL sys_timezone(scfg_t* cfg);
 	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
+	DLLEXPORT BOOL 		DLLCALL md(const char *path);
+
 
 	/* scfgsave.c */
 	DLLEXPORT BOOL		DLLCALL save_cfg(scfg_t* cfg, int backup_level);
@@ -1502,7 +1504,6 @@ int		pstrcmp(const char **str1, const char **str2);  /* Compares pointers to poi
 int		strsame(const char *str1, const char *str2);	/* Compares number of same chars */
 
 /* load_cfg.c */
-BOOL 	md(char *path);
 char*	prep_code(char *str, const char* prefix);
 
 #ifdef SBBS /* These aren't exported */

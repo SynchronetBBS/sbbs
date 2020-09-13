@@ -326,9 +326,10 @@ void DLLCALL free_text(char* text[])
 /****************************************************************************/
 /* If the directory 'path' doesn't exist, create it.                      	*/
 /****************************************************************************/
-BOOL md(char *inpath)
+BOOL md(const char* inpath)
 {
 	char	path[MAX_PATH+1];
+	char*	p;
 
 	if(inpath[0]==0)
 		return(FALSE);
@@ -336,19 +337,18 @@ BOOL md(char *inpath)
 	SAFECOPY(path,inpath);
 
 	/* Remove trailing '.' if present */
-	if(path[strlen(path)-1]=='.')
-		path[strlen(path)-1]=0;
+	p = lastchar(path);
+	if(*p=='.')
+		*p = '\0';
 
 	/* Remove trailing slash if present */
-	if(path[strlen(path)-1]=='\\' || path[strlen(path)-1]=='/')
-		path[strlen(path)-1]=0;
+	p = lastchar(path);
+	if(*p == '\\' || *p == '/')
+		*p = '\0';
 
 	if(!isdir(path)) {
-		/* lprintf("Creating directory: %s",path); */
-		if(mkpath(path)) {
-			lprintf(LOG_WARNING,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), path);
-			return(FALSE); 
-		} 
+		if(mkpath(path) != 0)
+			return FALSE;
 	}
 	
 	return(TRUE);

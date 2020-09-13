@@ -3312,7 +3312,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		else
 			SAFECOPY(cfg.temp_dir,"../temp");
     	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
-		md(cfg.temp_dir);
+		if(!md(cfg.temp_dir))
+			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), cfg.temp_dir);
 		if(sd==INVALID_SOCKET) {	/* events thread */
 			if(startup->first_node==1)
 				SAFEPRINTF(path,"%sevent",cfg.temp_dir);
@@ -3540,7 +3541,10 @@ bool sbbs_t::init()
 		return(false);
 	}
 
-	md(cfg.temp_dir);
+	if(!md(cfg.temp_dir)) {
+		lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), cfg.temp_dir);
+		return false;
+	}
 
 	/* Shared NODE files */
 	SAFEPRINTF2(str,"%s%s",cfg.ctrl_dir,"node.dab");
@@ -5119,8 +5123,13 @@ void DLLCALL bbs_thread(void* arg)
 	/* Create missing node directories and dsts.dab files */
 	lprintf(LOG_INFO,"Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
-		if(i)
-			md(scfg.node_path[i-1]);
+		if(i) {
+			if(!md(scfg.node_path[i-1])) {
+				lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), scfg.node_path[i-1]);
+				cleanup(1);
+				return;
+			}
+		}
 		SAFEPRINTF(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
 			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, DEFFILEMODE))==-1) {
