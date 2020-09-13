@@ -972,7 +972,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
         for(i=LOG_EMERG;i<=LOG_DEBUG;i++) {
             LogFont[i] = new TFont;
             LogFont[i]->Color=LogLevelColor[i];
-            if(i<=LOG_ERR)
+//            if(i <= LOG_ERR)
                 LogFont[i]->Style = TFontStyles()<< fsBold;
         }
     }
@@ -1565,12 +1565,12 @@ int __fastcall TMainForm::PageNum(TPageControl* obj)
 	return(PAGE_LOWERRIGHT);
 }
 TColor __fastcall TMainForm::ReadColor(TRegistry* Registry
-    ,AnsiString name)
+    ,AnsiString name, TColor deflt)
 {
     if(Registry->ValueExists(name + "Color"))
         return(StringToColor(Registry->ReadString(name + "Color")));
         
-    return(clWindow);   // Default
+    return deflt;
 }
 void __fastcall TMainForm::WriteColor(TRegistry* Registry
     ,AnsiString name, TColor color)
@@ -1755,28 +1755,30 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     if(Registry->ValueExists("WebFormPage"))
     	WebFormPage=Registry->ReadInteger("WebFormPage");
 
-    TelnetForm->Log->Color=ReadColor(Registry,"TelnetLog");
+    TelnetForm->Log->Color=ReadColor(Registry,"TelnetLog",TelnetForm->Log->Color);
     ReadFont("TelnetLog",TelnetForm->Log->Font);
-    EventsForm->Log->Color=ReadColor(Registry,"EventsLog");
+    EventsForm->Log->Color=ReadColor(Registry,"EventsLog",EventsForm->Log->Color);
     ReadFont("EventsLog",EventsForm->Log->Font);
-    ServicesForm->Log->Color=ReadColor(Registry,"ServicesLog");
+    ServicesForm->Log->Color=ReadColor(Registry,"ServicesLog",ServicesForm->Log->Color);
     ReadFont("ServicesLog",ServicesForm->Log->Font);
-    MailForm->Log->Color=ReadColor(Registry,"MailLog");
+    MailForm->Log->Color=ReadColor(Registry,"MailLog",MailForm->Log->Color);
     ReadFont("MailLog",MailForm->Log->Font);
-    FtpForm->Log->Color=ReadColor(Registry,"FtpLog");
+    FtpForm->Log->Color=ReadColor(Registry,"FtpLog",FtpForm->Log->Color);
     ReadFont("FtpLog",FtpForm->Log->Font);
-    WebForm->Log->Color=ReadColor(Registry,"WebLog");
+    WebForm->Log->Color=ReadColor(Registry,"WebLog",WebForm->Log->Color);
     ReadFont("WebLog",WebForm->Log->Font);
-    NodeForm->ListBox->Color=ReadColor(Registry,"NodeList");
+    NodeForm->ListBox->Color=ReadColor(Registry,"NodeList",NodeForm->ListBox->Color);
     ReadFont("NodeList",NodeForm->ListBox->Font);
-    ClientForm->ListView->Color=ReadColor(Registry,"ClientList");
+    ClientForm->ListView->Color=ReadColor(Registry,"ClientList",ClientForm->ListView->Color);
     ReadFont("ClientList",ClientForm->ListView->Font);
 
     {
         int i;
 
-        for(i=LOG_EMERG; i<=LOG_DEBUG; i++)
-            ReadFont("Log" + AnsiString(LogLevelDesc[i]), LogFont[i]);
+		for(i=LOG_EMERG; i<=LOG_DEBUG; i++) {
+			if(i != LOG_INFO)
+				ReadFont("Log" + AnsiString(LogLevelDesc[i]), LogFont[i]);
+		}
     }
 
 	if(Registry->ValueExists("TelnetFormTop"))
@@ -2241,8 +2243,10 @@ void __fastcall TMainForm::SaveRegistrySettings(TObject* Sender)
     {
         int i;
 
-        for(i=LOG_EMERG;i<=LOG_DEBUG;i++)
-            WriteFont("Log" + AnsiString(LogLevelDesc[i]), LogFont[i]);
+        for(i=LOG_EMERG;i<=LOG_DEBUG;i++) {
+			if(i != LOG_INFO)
+				WriteFont("Log" + AnsiString(LogLevelDesc[i]), LogFont[i]);
+		}
     }
 
     Registry->WriteBool("ToolBarVisible",Toolbar->Visible);
@@ -2358,7 +2362,7 @@ void __fastcall TMainForm::ExportFont(TMemIniFile* IniFile, const char* section,
 void __fastcall TMainForm::ImportSettings(TObject* Sender)
 {
     OpenDialog->Filter="Settings files (*.ini)|*.ini|All files|*.*";
-    OpenDialog->FileName=AnsiString(global.ctrl_dir)+"sbbsctrl.ini";
+    OpenDialog->FileName=AnsiString(global.ctrl_dir)+"sbbsctrl*.ini";
     if(!OpenDialog->Execute())
     	return;
 
@@ -2427,6 +2431,15 @@ void __fastcall TMainForm::ImportSettings(TObject* Sender)
         if(IniFile->ValueExists(section,str))
             ClientForm->ListView->Columns->Items[i]->Width
                 =IniFile->ReadInteger(section,str,0);
+    }
+
+    {
+        int i;
+
+        for(i=LOG_EMERG; i<=LOG_DEBUG; i++) {
+			if(i != LOG_INFO)
+				ImportFont(IniFile, ("Log" + AnsiString(LogLevelDesc[i]) + "Font").c_str(), "", LogFont[i]);
+		}
     }
 
     section = "SpyTerminal";
@@ -2512,6 +2525,15 @@ void __fastcall TMainForm::ExportSettings(TObject* Sender)
     ExportFormSettings(IniFile,section = "WebForm",WebForm);
     ExportFont(IniFile,section,"LogFont",WebForm->Log->Font);
     IniFile->WriteString(section,"LogColor",ColorToString(WebForm->Log->Color));
+
+    {
+        int i;
+
+        for(i=LOG_EMERG; i<=LOG_DEBUG; i++) {
+			if(i != LOG_INFO)
+				ExportFont(IniFile, ("Log" + AnsiString(LogLevelDesc[i]) + "Font").c_str(), "", LogFont[i]);
+		}
+    }
 
     section = "SpyTerminal";
 	IniFile->WriteInteger(section, "Width"
