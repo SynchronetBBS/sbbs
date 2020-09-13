@@ -148,11 +148,12 @@ object WebForm: TWebForm
     Width = 446
     Height = 165
     Align = alClient
+    Color = clBlack
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
+    Font.Color = clWhite
     Font.Height = -12
     Font.Name = 'MS Sans Serif'
-    Font.Style = []
+    Font.Style = [fsBold]
     HideScrollBars = False
     ParentFont = False
     PopupMenu = MainForm.LogPopupMenu
