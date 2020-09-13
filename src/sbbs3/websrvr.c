@@ -7034,6 +7034,7 @@ void DLLCALL web_server(void* arg)
 			SAFECOPY(scfg.temp_dir,"../temp");
 		prep_dir(startup->ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 		if(!md(scfg.temp_dir)) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", errno, strerror(errno), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
