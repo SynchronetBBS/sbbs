@@ -1445,6 +1445,8 @@ extern "C" BOOL is_supported_netmail_addr(scfg_t* cfg, const char* addr)
 			qwk_route(cfg, p + 1, fulladdr, sizeof(fulladdr)-1);
 			return fulladdr[0] != 0;
 		}
+		default:
+			return FALSE;
 	}
 	return FALSE;
 }
