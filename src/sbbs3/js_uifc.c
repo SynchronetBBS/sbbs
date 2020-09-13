@@ -755,7 +755,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	if(title == NULL || opts == NULL) {
-		JS_SET_RVAL(cx, arglist, JS_FALSE);
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 	} else {
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(uifc->list(mode,left,top,width,(int*)dptr,(int*)bptr,title,opts)));
