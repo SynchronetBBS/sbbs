@@ -185,6 +185,10 @@ while(bbs.online) {
 						alert("Sorry, you can't read that file");
 						break;
 					}
+					if(!list[cmd].path) {
+						alert("Sorry, that file doesn't exist yet");
+						break;
+					}
 					var mode = P_OPENCLOSE | P_CPM_EOF;
 					if(list[cmd].mode !== undefined)
 						mode = eval(list[cmd].mode);
