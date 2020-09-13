@@ -438,18 +438,20 @@ for (var i = 0; i < argc; i++) {
 
 function find_startup_dir(dir)
 {
-	for (var i=0; i < xtrn_area.prog.length; i++) {
+	for (var i in xtrn_area.prog) {
+		if(!xtrn_area.prog[i].startup_dir)
+			continue;
 		if (xtrn_area.prog[i].startup_dir.toLowerCase() == dir.toLowerCase())
 			return i;
 	}
-	return -1;
+	return null;
 }
 
 var xtrn_dirs = fullpath(system.ctrl_dir + "../xtrn/*");
 if(!ini_list.length) {
 	var dir_list = directory(xtrn_dirs);
 	for(var d in dir_list) {
-		if(!options.overwrite && find_startup_dir(dir_list[d]) >= 0)
+		if(!options.overwrite && find_startup_dir(fullpath(dir_list[d])) != null)
 			continue;
 		var fname = file_getcase(dir_list[d] + ini_fname);
 		if(fname)
