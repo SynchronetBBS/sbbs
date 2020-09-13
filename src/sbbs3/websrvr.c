@@ -6914,7 +6914,8 @@ void DLLCALL web_server(void* arg)
 	http_session_t *	session=NULL;
 	void			*acc_type;
 	char			*ssl_estr;
-	int			lvl;
+	int				lvl;
+	int				i;
 
 	startup=(web_startup_t*)arg;
 
@@ -6953,6 +6954,7 @@ void DLLCALL web_server(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 	protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&active_clients,0);
 
 	do {
 		/* Setup intelligent defaults */
@@ -7033,8 +7035,8 @@ void DLLCALL web_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 		prep_dir(startup->ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		if(!md(scfg.temp_dir)) {
-			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", errno, strerror(errno), scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
@@ -7074,7 +7076,6 @@ void DLLCALL web_server(void* arg)
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
-		protected_uint32_init(&active_clients,0);
 		update_clients();
 
 		/* open a socket and wait for a client */

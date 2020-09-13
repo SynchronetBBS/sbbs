@@ -6049,6 +6049,7 @@ void DLLCALL ftp_server(void* arg)
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
 	protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&active_clients, 0);
 
 	do {
 		/* Setup intelligent defaults */
@@ -6124,8 +6125,8 @@ void DLLCALL ftp_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		if(!md(scfg.temp_dir)) {
-			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1,__LINE__);
 			break;
 		}
@@ -6155,7 +6156,6 @@ void DLLCALL ftp_server(void* arg)
 
 		lprintf(LOG_DEBUG,"Maximum inactivity: %d seconds",startup->max_inactivity);
 
-		protected_uint32_init(&active_clients, 0);
 		update_clients();
 
 		strlwr(scfg.sys_id); /* Use lower-case unix-looking System ID for group name */

@@ -5867,7 +5867,6 @@ static void cleanup(int code)
 		}
 		lprintf(LOG_INFO, "0000 Done waiting for child threads to terminate");
 	}
-
 	free_cfg(&scfg);
 
 	semfile_list_free(&recycle_semfiles);
@@ -5899,7 +5898,6 @@ static void cleanup(int code)
 	if(WSAInitialized && WSACleanup()!=0) 
 		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
-
 	thread_down();
 	status("Down");
 	if(terminate_server || code) {
@@ -6014,6 +6012,7 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&active_clients, 0);
 
 	do {
 		/* Setup intelligent defaults */
@@ -6084,8 +6083,8 @@ void DLLCALL mail_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		if(!md(scfg.temp_dir)) {
-			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", errno, strerror(errno), scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
@@ -6149,7 +6148,6 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf(LOG_DEBUG,"Maximum inactivity: %u seconds",startup->max_inactivity);
 
-		protected_uint32_init(&active_clients, 0);
 		update_clients();
 
 		/* open a socket and wait for a client */

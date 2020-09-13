@@ -326,13 +326,13 @@ void DLLCALL free_text(char* text[])
 /****************************************************************************/
 /* If the directory 'path' doesn't exist, create it.                      	*/
 /****************************************************************************/
-BOOL md(const char* inpath)
+int md(const char* inpath)
 {
 	char	path[MAX_PATH+1];
 	char*	p;
 
 	if(inpath[0]==0)
-		return(FALSE);
+		return EINVAL;
 
 	SAFECOPY(path,inpath);
 
@@ -348,10 +348,10 @@ BOOL md(const char* inpath)
 
 	if(!isdir(path)) {
 		if(mkpath(path) != 0)
-			return FALSE;
+			return errno;
 	}
 	
-	return(TRUE);
+	return 0;
 }
 
 /****************************************************************************/

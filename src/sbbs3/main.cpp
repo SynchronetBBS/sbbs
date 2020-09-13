@@ -3312,8 +3312,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		else
 			SAFECOPY(cfg.temp_dir,"../temp");
     	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
-		if(!md(cfg.temp_dir))
-			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), cfg.temp_dir);
+		if((i = md(cfg.temp_dir)) != 0)
+			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
 		if(sd==INVALID_SOCKET) {	/* events thread */
 			if(startup->first_node==1)
 				SAFEPRINTF(path,"%sevent",cfg.temp_dir);
@@ -3541,8 +3541,8 @@ bool sbbs_t::init()
 		return(false);
 	}
 
-	if(!md(cfg.temp_dir)) {
-		lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), cfg.temp_dir);
+	if((i = md(cfg.temp_dir)) != 0) {
+		lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
 		return false;
 	}
 
@@ -5124,8 +5124,9 @@ void DLLCALL bbs_thread(void* arg)
 	lprintf(LOG_INFO,"Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
 		if(i) {
-			if(!md(scfg.node_path[i-1])) {
-				lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", errno, strerror(errno), scfg.node_path[i-1]);
+			int err;
+			if((err = md(scfg.node_path[i-1])) != 0) {
+				lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", err, strerror(err), scfg.node_path[i-1]);
 				cleanup(1);
 				return;
 			}
