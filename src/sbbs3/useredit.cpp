@@ -969,7 +969,7 @@ void sbbs_t::maindflts(user_t* user)
 				if(sys_status&SS_ABORT)
 					break;
 				if(!(term&PETSCII)) {
-					if(!(user->misc&UTF8) && !yesno(text[ExAsciiTerminalQ]))
+					if(!(term&UTF8) && !yesno(text[ExAsciiTerminalQ]))
 						user->misc|=NO_EXASCII;
 					else
 						user->misc&=~NO_EXASCII;
