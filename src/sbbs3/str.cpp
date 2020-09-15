@@ -111,7 +111,7 @@ void sbbs_t::userlist(long mode)
 		}
 		j++; 
 	}
-	close(userfile);
+	closeuserdat(userfile);
 	if(i<=k) {	/* aborted */
 		if(sort)
 			for(i=0;i<j;i++)
