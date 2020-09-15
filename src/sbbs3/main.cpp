@@ -2785,7 +2785,7 @@ void event_thread(void* arg)
 						sbbs->online=FALSE;
 					}
 				}
-				close(userfile);
+				closeuserdat(userfile);
 				lastprepack=(time32_t)now;
 				SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
@@ -4824,7 +4824,7 @@ void sbbs_t::daily_maint(void)
 			putuserrec(&cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16));
 		}
 	}
-	close(userfile);
+	closeuserdat(userfile);
 
 	lputs(LOG_INFO,"DAILY: Purging deleted/expired e-mail");
 	SAFEPRINTF(smb.file,"%smail",cfg.data_dir);
