@@ -153,6 +153,9 @@ int usage(const char* fname)
 #endif
 		"\n"
 		,getfname(fname)
+#if defined(_WIN32)
+		,NAME
+#endif
 		);
 
 	return 0;
