@@ -347,8 +347,11 @@ int md(const char* inpath)
 		*p = '\0';
 
 	if(!isdir(path)) {
-		if(mkpath(path) != 0)
-			return errno;
+		if(mkpath(path) != 0) {
+			int result = errno;
+			if(!isdir(path)) // race condition: did another thread make the directory already?
+				return result;
+		}
 	}
 	
 	return 0;
