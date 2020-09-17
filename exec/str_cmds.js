@@ -66,6 +66,16 @@ function str_cmds(str)
 
 		// ######################## SYSOP Functions ##############################
 		if(str=="HELP") {
+			writeln("AVAIL\tToggle sysop chat availability");
+		}
+		if(str=="AVAIL") {
+			system.operator_available = !system.operator_available;
+			write(format(bbs.text(text.LiSysopIs)
+				, bbs.text(system.operator_available ? text.LiSysopAvailable : text.LiSysopNotAvailable)));
+			return;
+		}
+
+		if(str=="HELP") {
 			writeln("ERR\tDisplay currrent error log and opptionally delete it as well as");
 			writeln("\toptionally clearing all nodes error counters.");
 		}
