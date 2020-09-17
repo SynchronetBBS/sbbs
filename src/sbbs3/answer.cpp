@@ -452,7 +452,7 @@ bool sbbs_t::answer()
 			if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
 				rows = telnet_rows;
 		} else {
-			lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw/TCP mode");
+			lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw TCP mode");
 			telnet_mode |= TELNET_MODE_OFF;
 			client.protocol = "Raw";
 			client_on(client_socket, &client,/* update: */true);
