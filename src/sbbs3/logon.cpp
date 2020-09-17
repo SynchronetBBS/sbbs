@@ -467,8 +467,9 @@ bool sbbs_t::logon()
 		bprintf(text[LiTimeonToday],useron.ttoday
 			,cfg.level_timeperday[useron.level]+useron.min);
 		bprintf(text[LiMailWaiting],mailw);
-		bprintf("%s%s\r\n\r\n", text[LiSysopIs]
+		bprintf(text[LiSysopIs]
 			, text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
+		newline();
 	}
 
 	if(sys_status&SS_EVENT)

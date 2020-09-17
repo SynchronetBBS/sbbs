@@ -51,6 +51,7 @@ extern JSClass js_system_class;
 enum {
 	 SYS_PROP_NAME
 	,SYS_PROP_OP
+	,SYS_PROP_OP_AVAIL
 	,SYS_PROP_ID
 	,SYS_PROP_MISC
 	,SYS_PROP_INETADDR
@@ -145,6 +146,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_OP:
 			p=cfg->sys_op;
+			break;
+		case SYS_PROP_OP_AVAIL:
+			*vp=BOOLEAN_TO_JSVAL(sysop_available(cfg));
 			break;
 		case SYS_PROP_ID:
 			p=cfg->sys_id;
@@ -359,10 +363,16 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SYS_PROP_MISC:
 			JS_ValueToInt32(cx, *vp, &sys->cfg->sys_misc);
 			break;
+		case SYS_PROP_OP_AVAIL:
+			if(!set_sysop_availability(sys->cfg, JSVAL_TO_BOOLEAN(*vp))) {
+				JS_ReportError(cx, "%s: Failed to set sysop availability", __FUNCTION__);
+				return JS_FALSE;
+			}
+			break;
 	}
 #endif
 
-	return(TRUE);
+	return JS_TRUE;
 }
 
 
@@ -374,6 +384,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 #ifndef JSDOOR
 	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310  },
 	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
+	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801  },
 	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
 	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
 	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
@@ -452,6 +463,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"operator name"
+	,"operator is available for chat"
 	,"system QWK-ID (for QWK packets)"
 	,"settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Internet address (host or domain name)"
