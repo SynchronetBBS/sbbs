@@ -93,6 +93,28 @@ o New properties: system.min_password_length, system.max_password_length,
   msg_area.grp[]/grp_list[].can_access, msg_area.sub[].can_access,
   file_area.lib[]/lib_list[].can_access, file_area.dir[].can_access
 
+SBBSecho
+~~~~~~~~
+o Import performance improvements (new smblib, twitlist caching)
+o Configurable Soft-CR (0x8D) import behavior: default is to leave-alone
+o AreaFix support for links with 5D addresses (zone:net/node[.point]@domain)
+o Tic passwords up to 40 chars in length
+o Explicit CHRS and NOTE header (control paragraph) import/export support
+o Ctrl-A to '@' import-conversion for invalid control paragraphs
+o Better "Kill Sent" (KFS) support on exported mail
+o Export the original message author's editor columns (COLS kludge) when known
+o Simplified and more deterministic TZUTC (timezone) import logic
+  (just store the UTC offset, don't infer the location)
+o Ability to operate without an Area File (for systems with no downlinks)
+  (set AutoAddsSubs=true, AutoAddToAreaFile=false)
+o Auto-detection of UTF-8 encoded message body text
+  (and never strip Soft-CRs from them)
+o sbbsecho.ini format is more compatible crudini/python-iniparse
+o NetMail Robots (e.g. tickit-FileFix, a.k.a. TickFix) are now supported
+o New remote FileFix module (tickfix.js) for use with tickit.js 
+o Removed old 80-column word-wrap on import behavior
+o Include Message and Reply-IDs in export NetMail messages
+
 Control Panel
 ~~~~~~~~~~~~~
 o FidoNet related menu items
