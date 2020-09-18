@@ -4,11 +4,6 @@
 # see https://hub.docker.com/_/gcc/
 image: gcc
 
-# cache outputs to reduce the build time
-cache:
-    paths:
-        - "**/*.o"
-
 build-sbbs:
   stage: build
   # instead of calling g++ directly you can also use some build toolkit like make
