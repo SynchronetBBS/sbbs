@@ -1065,6 +1065,8 @@ void sbbs_t::privchat(bool local)
 					}
 					// SYNC;
 				} 
+			} else { // illegal key
+				continue;
 			}
 
 			read(out,&c,1);
