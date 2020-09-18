@@ -927,7 +927,7 @@ public:
 	void	localguru(char *guru, int gurunum);
 	bool	sysop_page(void);
 	bool	guru_page(void);
-	void	privchat(bool local=false);
+	void	privchat(bool forced=false, int node_num=0);
 	bool	chan_access(uint cnum);
 	int		getnodetopage(int all, int telegram);
 
