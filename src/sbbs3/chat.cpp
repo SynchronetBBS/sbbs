@@ -1270,7 +1270,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		sprintf(str,text[NodeToPrivateChat],lastnodemsg);
 	mnemonics(str);
 
-	strcpy(str,lastnodemsguser);
+	SAFECOPY(str,lastnodemsguser);
 	getstr(str,LEN_ALIAS,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
 	if(sys_status&SS_ABORT) {
 		sys_status&= ~SS_ABORT;
@@ -1291,7 +1291,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
 			return(0); 
 		}
-		strcpy(lastnodemsguser,str);
+		SAFECOPY(lastnodemsguser,str);
 		if(telegram)
 			return(node.useron);
 		return(j); 
@@ -1332,7 +1332,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 			}
 			if(telegram)
 				return(j);
-			strcpy(lastnodemsguser,str);
+			SAFECOPY(lastnodemsguser,str);
 			return(i); 
 		} 
 	}
