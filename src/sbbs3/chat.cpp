@@ -964,7 +964,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			,thisnode.misc&NODE_MSGW ? 'T':' '
 			,sectostr(timeleft,tmp)
 			,thisnode.misc&NODE_NMSG ? 'M':' ');
-		CRLF;
+		ansi_gotoxy(1,14);
 		local_y=14; 
 	}
 
@@ -1016,7 +1016,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 						,thisnode.misc&NODE_MSGW ? 'T':' '
 						,sectostr(timeleft,tmp)
 						,thisnode.misc&NODE_NMSG ? 'M':' ');
-					CRLF;
+					ansi_gotoxy(1,14);
 					attr(cfg.color[clr_chatlocal]);
 					localbuf[localline][localchar]=0;
 					for(i=0;i<=localline;i++) {
@@ -1040,7 +1040,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 					localbuf[localline][localchar]=0;
 					localchar=0;
 
-					if(sys_status&SS_SPLITP && local_y==24) {
+					if(sys_status&SS_SPLITP && local_y >= rows) {
 						ansi_gotoxy(1,13);
 						bprintf(forced ? local_sep : sep
 							,thisnode.misc&NODE_MSGW ? 'T':' '
