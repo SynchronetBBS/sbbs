@@ -25,9 +25,21 @@ o Automatic text-portion of multi-part MIME-messages in QWK message packets
 o New operator option to delete numeric ranges of messages in sub-boards
 o Configurable treatment of "Soft-CRs" created by external message editors
 o @-codes:
-  - Many added (including some additional PCBoard codes)
-  - New output formatting options
+  - New formatting options: http://wiki.synchro.net/custom:atcodes#formatting
+  - UNICODE http://wiki.synchro.net/custom:atcodes#unicode
+  - Mouse "hot spot" control (HOT, CLEAR_HOT, ~, `)
+  - Many added (including some additional PCBoard codes):
+    CHECKMARK, ELLIPSIS, COPY, SOUNDCOPY, REGISTERED, TRADEMARK, DEGREE_C,
+    WIDE, CHARSET, NN, TN, AN, ON, PWDAYS, AUTODEL, DATETIMEZONE, DATEFMT,
+    FILE, FILESIZE, FILEBYTES, FILEKB, FILEMB, FILEGB, FILL, POS, DELAY,
+    YESCHAR, NOCHAR, QUITCHAR, BPS:<rate>, PWAGE, PWDATE, MPERC, MPERD,
+    MAXCALLS, MAXPOSTS, MAXMAILS, MAXLINES, FIRSTON, FIRSTDATEON, FIRSTTIMEON,
+    EMAILS, FBACKS, ETODAY, PTODAY, LTODAY, MTODAY, MTOTAL, TTODAY, TTOTAL,
+    TLAST, MEXTRA, TEXTRA, MBANKED, TBANKED, PCR, CREDITS, FREECDT,
+    REALNAME, STR, STRVAR, JS:<prop>, CLREOL, MAILW#, MAILP#, SPAMW#,
+    MSG_IMP_DATE, MSG_IMP_TIMEZONE, SYSAVAIL
 o New helpful sysop debugging command: ECHO and EVAL
+o New sysop command to toggle chat availability: AVAIL
 o Auto-ZMODEM upload of message text from user
  (internal editor and fseditor.js)
 o sexyz:
