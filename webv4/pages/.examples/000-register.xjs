@@ -67,10 +67,10 @@
 				<?xjs write(locale.strings.page_register.input_password); ?>
 			</label>
 			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
-			<input type="password" data-minlength="4" maxlength="8" class="form-control" id="password1" name="password1" placeholder="<?xjs write(locale.strings.page_register.input_password); ?>" required>
+			<input type="password" data-minlength="<?xjs write(system.min_password_length) ?>" maxlength="<?xjs write(system.max_password_length) ?>" class="form-control" id="password1" name="password1" placeholder="<?xjs write(locale.strings.page_register.input_password); ?>" required>
 			<span class="help-block">
-				<?xjs write(format(locale.strings.page_register.help_text_minimum_characters, settings.minimum_password_length)); ?>,
-				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_PASS)); ?>
+				<?xjs write(format(locale.strings.page_register.help_text_minimum_characters, system.min_password_length)); ?>,
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, system.max_password_length)); ?>
 			</span>
 		</div>
 			<div class="form-group">
@@ -78,7 +78,7 @@
 				<?xjs write(locale.strings.page_register.input_password_confirm); ?>
 			</label>
 			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
-			<input type="password" data-minlength="4" maxlength="8" class="form-control" id="password2" name="password2" placeholder="<?xjs write(locale.strings.page_register.input_password_confirm); ?>" data-match="#password1" required>
+			<input type="password" data-minlength="<?xjs write(system.min_password_length) ?>" maxlength="<?xjs write(system.max_password_length) ?>" class="form-control" id="password2" name="password2" placeholder="<?xjs write(locale.strings.page_register.input_password_confirm); ?>" data-match="#password1" required>
 		</div>
 
 		<div class="form-group">
