@@ -1112,7 +1112,7 @@ void sbbs_t::maindflts(user_t* user)
 						pause();
 						break; 
 					}
-					bprintf(text[NewPasswordPromptFmt], cfg->min_pwlen, LEN_PASS);
+					bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM))
 						break;
 					truncsp(str);
