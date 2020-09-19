@@ -456,6 +456,7 @@ typedef struct
 	char 			sys_daily[LEN_CMD+1];	   /* Daily event */
 	char 			sys_logon[LEN_CMD+1];	   /* Logon event */
 	char 			sys_logout[LEN_CMD+1];	   /* Logoff event */
+	uint8_t			min_pwlen;
 	uint16_t		sys_pwdays; 		/* Max days between password change */
 	uint16_t		sys_deldays;		/* Days to keep deleted users */
 	uint16_t		sys_autodel;		/* Autodeletion after x days inactive */

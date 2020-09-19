@@ -99,15 +99,17 @@ void sys_cfg(void)
 		sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
 		sprintf(opt[i++],"%-33.33s%s","Password","**********");
 
-		sprintf(str,"%s Password"
+		SAFEPRINTF(str,"%s Password"
 			,cfg.sys_misc&SM_PWEDIT && cfg.sys_pwdays ? "Users Must Change"
 			: cfg.sys_pwdays ? "Users Get New Random" : "Users Can Change");
 		if(cfg.sys_pwdays)
-			sprintf(tmp,"Every %u Days",cfg.sys_pwdays);
+			SAFEPRINTF(tmp,"Every %u Days",cfg.sys_pwdays);
 		else if(cfg.sys_misc&SM_PWEDIT)
-			strcpy(tmp,"Yes");
+			SAFECOPY(tmp,"Yes");
 		else
-			strcpy(tmp,"No");
+			SAFECOPY(tmp,"No");
+		if(cfg.sys_misc&SM_PWEDIT)
+			sprintf(tmp + strlen(tmp), ", %u chars minimum", cfg.min_pwlen);
 		sprintf(opt[i++],"%-33.33s%s",str,tmp);
 
 		sprintf(opt[i++],"%-33.33s%u","Days to Preserve Deleted Users"
@@ -427,6 +429,20 @@ void sys_cfg(void)
 				else if(i==1 && cfg.sys_misc&SM_PWEDIT) {
 					cfg.sys_misc&=~SM_PWEDIT;
 					uifc.changes=1; 
+				} else if(i == -1)
+					break;
+
+				if(cfg.sys_misc&SM_PWEDIT) {
+					SAFEPRINTF(tmp, "%u", cfg.min_pwlen);
+					SAFEPRINTF2(str, "Minimum Password Length (between %u and %u)", MIN_PASS_LEN, LEN_PASS);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0, str
+						,tmp, 2, K_NUMBER|K_EDIT) < 1)
+						break;
+					cfg.min_pwlen=atoi(tmp);
+					if(cfg.min_pwlen < MIN_PASS_LEN)
+						cfg.min_pwlen = MIN_PASS_LEN;
+					if(cfg.min_pwlen > LEN_PASS)
+						cfg.min_pwlen = LEN_PASS;
 				}
 				i = cfg.sys_pwdays ? 0 : 1;
 				uifc.helpbuf=

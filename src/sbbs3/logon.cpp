@@ -248,7 +248,7 @@ bool sbbs_t::logon()
 
 			if(cfg.sys_misc&SM_PWEDIT && yesno(text[NewPasswordQ]))
 				while(online) {
-					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
+					bprintf(text[NewPasswordPromptFmt], cfg->min_pwlen, LEN_PASS);
 					getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 					truncsp(str);
 					if(chkpass(str,&useron,true))
