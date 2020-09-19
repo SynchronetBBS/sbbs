@@ -101,8 +101,8 @@ if (!valid_param('alias', MIN_ALIAS, LEN_ALIAS) || !system.check_name(clean_para
 
 if (!Request.has_param('password1') || !Request.has_param('password2') || clean_param('password1') != clean_param('password2')) {
 	reply.errors.push(locale.strings.api_register.error_password_mismatch);
-} else if (!in_range(clean_param('password1').length, settings.minimum_password_length, LEN_PASS)) {
-	reply.errors.push(format(locale.strings.api_register.error_password_length, settings.minimum_password_length, LEN_PASS));
+} else if (!in_range(clean_param('password1').length, system.min_password_length, system.max_password_length)) {
+	reply.errors.push(format(locale.strings.api_register.error_password_length, system.min_password_length, system.max_password_length));
 } else {
 	prepUser.password = clean_param('password1');
 }
