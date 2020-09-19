@@ -386,7 +386,7 @@ BOOL sbbs_t::newuser()
 
 		if(cfg.sys_misc&SM_PWEDIT && text[NewPasswordQ][0] && yesno(text[NewPasswordQ]))
 			while(online) {
-				bprintf(text[NewPasswordPromptFmt], cfg->min_pwlen, LEN_PASS);
+				bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 				getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 				truncsp(str);
 				if(chkpass(str,&useron,true)) {
