@@ -1082,7 +1082,7 @@ function browse(list)
 	var num_entries_on_page = 0;
 	var prompt_row = 0;
 	var previous_prompt_row = 0;
-	while(!js.terminated) {
+	while(js.global.bbs.online && !js.terminated) {
 //		console.clear(LIGHTGRAY);
 		console.home();
 		console.current_column = 0;
@@ -1590,7 +1590,7 @@ function view(list, current)
 {
 	console.line_counter = 0;
 	console.clear(LIGHTGRAY);
-	while(!js.terminated) {
+	while(js.global.bbs.online && !js.terminated) {
 
 		/* Bounds checking: */
 		if(current < 0) {
