@@ -176,7 +176,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(cfg->sys_pwdays);
 			break;
 		case SYS_PROP_MINPWLEN:
-			*vp = INT_TO_JSVAL(MIN_PASS_LEN);
+			*vp = INT_TO_JSVAL(cfg->min_pwlen);
 			break;
 		case SYS_PROP_MAXPWLEN:
 			*vp = INT_TO_JSVAL(LEN_PASS);

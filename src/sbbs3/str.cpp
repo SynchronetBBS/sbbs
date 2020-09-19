@@ -702,7 +702,7 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 	SAFECOPY(pass,passwd);
 	strupr(pass);
 
-	if(strlen(pass) < MIN_PASS_LEN) {
+	if(strlen(pass) < cfg->min_pwlen) {
 		bputs(text[PasswordTooShort]);
 		return(false); 
 	}
