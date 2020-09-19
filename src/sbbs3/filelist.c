@@ -414,7 +414,7 @@ int main(int argc, char **argv)
 			}
 
 			if(misc&MINUS) {
-				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
+				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,fname);
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 			desc_off++;
 
 			if(misc&DFD) {
-				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
+				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,fname);
 				fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
 				desc_off+=9; 
 			}

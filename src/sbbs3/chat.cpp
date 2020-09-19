@@ -1436,7 +1436,7 @@ void sbbs_t::nodemsg()
 					bprintf("%4s",nulstr);
 					if(!getstr(line,70,K_WRAP|K_MSG))
 						break;
-					sprintf(str,"%4s%s\r\n",nulstr,line);
+					SAFEPRINTF2(str,"%4s%s\r\n",nulstr,line);
 					SAFECAT(buf,str);
 					if(line[0]) {
 						if(i)

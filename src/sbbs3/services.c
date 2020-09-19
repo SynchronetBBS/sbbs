@@ -1128,9 +1128,9 @@ static void js_service_thread(void* arg)
 	/* RUN SCRIPT */
 	SAFECOPY(fname,service->cmd);
 	truncstr(fname," ");
-	sprintf(spath,"%s%s",scfg.mods_dir,fname);
+	SAFEPRINTF2(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,fname);
+		SAFEPRINTF2(spath,"%s%s",scfg.exec_dir,fname);
 
 	js_init_args(js_cx, js_glob, service->cmd);
 
@@ -1246,9 +1246,9 @@ static void js_static_service_thread(void* arg)
 
 	SAFECOPY(fname,service->cmd);
 	truncstr(fname," ");
-	sprintf(spath,"%s%s",scfg.mods_dir,fname);
+	SAFEPRINTF2(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,fname);
+		SAFEPRINTF2(spath,"%s%s",scfg.exec_dir,fname);
 
 	do {
 		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {

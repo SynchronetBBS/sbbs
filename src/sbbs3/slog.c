@@ -54,7 +54,7 @@ if(!dir[0]) {
 
 backslash(dir);
 
-sprintf(str,"%scsts.dab",dir);
+SAFEPRINTF(str,"%scsts.dab",dir);
 if(!fexistcase(str)) {
 	printf("%s does not exist\r\n",str);
 	return(1); }

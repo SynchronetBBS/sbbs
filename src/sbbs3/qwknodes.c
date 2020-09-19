@@ -340,7 +340,7 @@ int main(int argc, char **argv)
 								p=addr;
 							else
 								*(p++)=0;
-							sprintf(str,"%s %s:%s%c%s"
+							safe_snprintf(str, sizeof(str), "%s %s:%s%c%s"
 								,unixtodstr(&cfg,msg.hdr.when_written.time,tmp)
 								,p,cfg.sys_id,p==addr ? 0 : '/'
 								,addr);
