@@ -204,7 +204,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		SAFECOPY(tmp, cfg.data_dir);
 		if(tmp[0]=='.')    /* Relative path */
 			sprintf(tmp,"%s%s", cfg.node_dir, cfg.data_dir);
-		sprintf(str,"%sfile/%04u.out/%s",tmp,useron.number,fname);
+		SAFEPRINTF3(str,"%sfile/%04u.out/%s",tmp,useron.number,fname);
 		SAFECOPY(subj, str);
 		if(fexistcase(str)) {
 			bputs(text[FileAlreadyThere]);
@@ -1423,7 +1423,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	sprintf(str,"sent QWK NetMail to %s (%s)"
+	SAFEPRINTF2(str,"sent QWK NetMail to %s (%s)"
 		,to,fulladdr);
 	logline("EN",str);
 	return(true);

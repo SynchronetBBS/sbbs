@@ -1000,7 +1000,7 @@ int main(int argc, char **argv)
 					synclist(str,i);
 				continue;
 			}
-			sprintf(str,"%s%s",scfg.dir[f.dir]->path,auto_name);
+			SAFEPRINTF2(str,"%s%s",scfg.dir[f.dir]->path,auto_name);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
 				addlist(str,f,desc_offset,size_offset);
@@ -1015,7 +1015,7 @@ int main(int argc, char **argv)
 		if(!listgiven && !namegiven) {
 			sprintf(str,"%s%s.lst",scfg.dir[f.dir]->path, scfg.dir[f.dir]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
-				sprintf(str,"%s%s",scfg.dir[f.dir]->path, auto_name);
+				SAFEPRINTF2(str,"%s%s",scfg.dir[f.dir]->path, auto_name);
 			addlist(str,f,desc_offset,size_offset);
 			if(mode&SYNC_LIST)
 				synclist(str,f.dir);

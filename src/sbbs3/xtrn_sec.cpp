@@ -212,7 +212,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			return; 
 		}
 
-		sprintf(str,"%s\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%s\n"
 			,name								/* User name */
 			,cfg.sys_name						/* System name */
 			,cfg.sys_op 						/* Sysop name */
@@ -220,7 +220,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%lu\n%s\n%lu\n%lu\n"
 			,ctrl_dir							/* Ctrl dir */
 			,data_dir							/* Data dir */
 			,cfg.sys_nodes						/* Total system nodes */
@@ -234,7 +234,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n%u\n%s\n%c\n%u\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%s\n%c\n%u\n%s\n"
 			,useron.level						/* User main level */
 			,useron.level						/* User transfer level */
 			,useron.birth						/* User birthday */
@@ -244,7 +244,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n%u\n%x\n%lu\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%x\n%lu\n%s\n%s\n"
 			"%s\n%s\n%s\n%s\n%s\n%s\n%lu\n"
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? 0:cfg.com_port		/* Com port or 0 if !FOSSIL */
 			,cfg.com_irq						/* Com IRQ */
@@ -295,7 +295,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%s\n%s\n%d\n%s\n%lu\n%s\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%d\n%s\n%lu\n%s\n%s\n%s\n%s\n"
 			"%" PRIx32 "\n%d\n"
 			,ltoaf(useron.flags3,tmp)			/* Flag set #3 */
 			,ltoaf(useron.flags4,tmp2)			/* Flag set #4 */
@@ -329,7 +329,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
 			tleft=0x7fff;	/* That interpret this value as a signed short	*/
 
-		sprintf(str,"%u\n%s\n%s\n%s\n%u\n%c\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%u\n%c\n"
 			,useron.number						/* User number */
 			,name								/* User name */
 			,useron.name						/* User real name */
@@ -340,7 +340,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%ld\n%u\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%ld\n%u\n"
 			,useron.cdt+useron.freecdt			/* Gold */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* User last on date */
 			,cols 								/* User screen width */
@@ -353,7 +353,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%s\n%s\n%s\n%lu\n%d\n%s\n%s\n"
 			"%u\n%u\n%lu\n%u\n%lu\n%u\n%s\n"
 			,tleft								/* Time left in seconds */
 			,node_dir							/* Gfiles dir (log dir) */
@@ -464,7 +464,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n%lu\n%s\n%s\n%s\n%s"
+		safe_snprintf(str, sizeof(str), "%u\n%lu\n%s\n%s\n%s\n%s"
 			"\n%s\n%02d:%02d\n%c\n"
 			,0									/* 30: Kbytes downloaded today */
 			,(useron.cdt+useron.freecdt)/1024UL /* 31: Max Kbytes to download today */

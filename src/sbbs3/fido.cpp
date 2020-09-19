@@ -82,7 +82,7 @@ bool sbbs_t::lookup_netuser(char *into)
 		strupr(name);
 		str[35]=0;
 		truncsp(str+27);
-		sprintf(q,"Do you mean %s @%s",str,str+27);
+		SAFEPRINTF2(q,"Do you mean %s @%s",str,str+27);
 		if(strstr(name,to) && yesno(q)) {
 			fclose(stream);
 			sprintf(into,"%s@%s",str,str+27);

@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 
 		if(misc&NO_LINK && cfg.dir[i]->misc&DIR_FCHK) {
 			strcpy(tmp,cfg.dir[i]->path);
-			sprintf(str,"%s*.*",tmp);
+			SAFEPRINTF(str,"%s*.*",tmp);
 			printf("\nSearching %s for unlinked files\n",str);
 			if(!glob(str, GLOB_MARK, NULL, &gl)) {
 				for(j=0; j<(int)gl.gl_pathc; j++) {
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 			strcpy(workfile.name,fname);
 			unpadfname(workfile.name,fname);
 			workfile.dir=i;
-			sprintf(str,"%s%s"
+			SAFEPRINTF2(str,"%s%s"
 				,workfile.altpath>0 && workfile.altpath<=cfg.altpaths
 					? cfg.altpath[workfile.altpath-1]
 				: cfg.dir[workfile.dir]->path,fname);

@@ -1518,18 +1518,19 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 
 		if(session->req.error_dir) {
 			/* We have a custom error directory from webctrl.ini look there first */
-			sprintf(sbuf,"%s%s%s",session->req.error_dir,error_code,startup->ssjs_ext);
+			SAFEPRINTF3(sbuf,"%s%s%s",session->req.error_dir,error_code,startup->ssjs_ext);
 			if(stat(sbuf,&sb)) {
 				/* No custom .ssjs error message... check for custom .html */
-				sprintf(sbuf2,"%s%s.html",session->req.error_dir,error_code);
+				SAFEPRINTF2(sbuf2,"%s%s.html",session->req.error_dir,error_code);
 				if(stat(sbuf2,&sb)) {
 					/* Nope, no custom .html error either, check for global ssjs one */
-					sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+					SAFEPRINTF3(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
 				}
 			}
 		}
-		else
-			sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+		else {
+			SAFEPRINTF3(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+		}
 		if(!stat(sbuf,&sb)) {
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
 			session->req.dynamic=IS_SSJS;
@@ -3611,7 +3612,7 @@ static BOOL check_request(http_session_t * session)
 		p=last_slash;
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
-		sprintf(str,"%saccess.ars",curdir);
+		SAFEPRINTF(str,"%saccess.ars",curdir);
 		if(!stat(str,&sb)) {
 			/* NEVER serve up an access.ars file */
 			lprintf(LOG_WARNING,"%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.",session->socket);
@@ -3633,7 +3634,7 @@ static BOOL check_request(http_session_t * session)
 			/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
 			truncsp(session->req.ars);
 		}
-		sprintf(str,"%swebctrl.ini",curdir);
+		SAFEPRINTF(str,"%swebctrl.ini",curdir);
 		if(!stat(str,&sb)) {
 			/* NEVER serve up a webctrl.ini file */
 			if(!strcmp(path,str)) {

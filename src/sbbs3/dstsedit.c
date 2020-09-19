@@ -63,7 +63,7 @@ main(int argc, char **argv)
 	}
 	backslash(path);
 
-	sprintf(str, "%sdsts.dab", path);
+	SAFEPRINTF(str, "%sdsts.dab", path);
 	if ((file = nopen(str, O_RDONLY)) == -1) {
 		printf("Can't open %s\r\n", str);
 		exit(1);
@@ -179,7 +179,7 @@ main(int argc, char **argv)
 				stats.nusers = atoi(str);
 			break;
 		case 'Q':
-			sprintf(str, "%sdsts.dab", path);
+			SAFEPRINTF(str, "%sdsts.dab", path);
 			if ((file = nopen(str, O_WRONLY)) == -1) {
 				printf("Error opening %s\r\n", str);
 				exit(1);

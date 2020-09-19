@@ -713,7 +713,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -778,7 +778,7 @@ static int stat_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sstat %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sstat %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -845,7 +845,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -911,7 +911,7 @@ static int mail_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -977,7 +977,7 @@ static int services_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -1043,7 +1043,7 @@ static int event_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -1085,7 +1085,7 @@ static int web_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
