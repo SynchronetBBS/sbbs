@@ -81,6 +81,7 @@ Security
 ~~~~~~~~
 o User security notifications: failed login attempts, password requests
 o User password maximum length increased from 8 to 40 characters
+o Sysop can set the minimum user password length from 4 to 40 characters
 o Sysop-reset of the failed-login/temp-ban list via "ctrl/clear" sem file
 o Updated TLS/SSL/SSH library (Cryptlib 3.4.5) and patched for compatibility
   and security
