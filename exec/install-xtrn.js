@@ -27,6 +27,7 @@
 //
 // [prog:<code>]
 // 		name 			= program name or description (40 chars max)
+//      cats            = additional target installation categories (sections)
 //		cmd 			= command-line to execute (63 chars max)
 //		clean_cmd 		= clean-up command-line, if needed (63 chars max)
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
@@ -90,7 +91,7 @@
 
 "use strict";
 
-const REVISION = "$Revision: 1.14 $".split(' ')[1];
+const REVISION = "3.18b";
 const ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");
@@ -115,7 +116,12 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 
 	if (!item.name)
 		item.name = name || item.code;
-	
+
+	if(item.cats)
+		item.cats = item.cats.split(',').concat(cats);
+	else
+		item.cats = cats;
+
 	function find_code(objs, code)
 	{
 		if (!options.overwrite) {
@@ -160,7 +166,7 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 			return "No external program sections have been created";
 
 		for (var i = 0; i < xtrn_area.sec_list.length; i++) {
-			if(cats.indexOf(xtrn_area.sec_list[i].name) >= 0
+			if(item.cats.indexOf(xtrn_area.sec_list[i].name) >= 0
 				&& confirm("Install " + item.name + " into " + xtrn_area.sec_list[i].name + " section")) {
 				item.sec = xtrn_area.sec_list[i].number;
 				break;
