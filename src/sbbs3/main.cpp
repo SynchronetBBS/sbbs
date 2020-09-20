@@ -1768,14 +1768,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		putcom(buf,2);
+		sendsocket(client_socket, buf, 2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		putcom(buf,3);
+		sendsocket(client_socket, buf, 3);
 	}
 }
 
@@ -5840,7 +5840,7 @@ NO_SSH:
 			new_node->client_socket_dup=accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
 
 			if(new_node->client_socket_dup == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"Node %d !ERROR (%d) connecting accept()ing on passthru socket"
+				lprintf(LOG_ERR,"Node %d !ERROR (%d) accepting on passthru socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				lprintf(LOG_WARNING,"Node %d !WARNING native doors which use sockets will not function"
 					,new_node->cfg.node_num);
