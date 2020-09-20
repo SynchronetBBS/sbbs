@@ -1077,7 +1077,10 @@ bool sbbs_t::spy(uint i /* node_num */)
 	}
 	bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
 		"\r\n\r\n",i);
-	spy_socket[i-1]=client_socket;
+	if(passthru_thread_running)
+		spy_socket[i-1]=client_socket_dup;
+	else
+		spy_socket[i-1]=client_socket;
 	ansi_len=0;
 	while(online 
 		&& client_socket!=INVALID_SOCKET 
@@ -1120,7 +1123,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			lncntr=0;						/* defeat pause */
 			spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
 			ch=handle_ctrlkey(ch,K_NONE);
-			spy_socket[i-1]=client_socket;	/* enable spy output */
+			spy_socket[i-1] = passthru_thread_running ? client_socket_dup : client_socket;	/* enable spy output */
 			if(ch==0)
 				continue;
 		}
@@ -1128,6 +1131,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
 	}
 	spy_socket[i-1]=INVALID_SOCKET;
+
 	return(true);
 }
 
