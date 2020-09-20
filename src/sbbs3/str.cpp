@@ -1059,8 +1059,8 @@ extern RingBuf* node_inbuf[];
 bool sbbs_t::spy(uint i /* node_num */)
 {
 	char	ch;
-	char	ansi_seq[32];
-	int		ansi_len;
+	char	ansi_seq[256];
+	size_t	ansi_len;
 	int		in;
 
 	if(!i || i>MAX_NODES) {
@@ -1092,29 +1092,45 @@ bool sbbs_t::spy(uint i /* node_num */)
 			continue;
 		}
 		ch=in;
-		if(ch==ESC) {
-			if(!ansi_len) {
-				ansi_seq[ansi_len++]=ch;
-				continue;
-			}
-			ansi_len=0;
-		}
-		if(ansi_len && ansi_len<(int)sizeof(ansi_seq)-2) {
-			if(ansi_len==1) {
-				if(ch=='[') {
-					ansi_seq[ansi_len++]=ch;
-					continue;
+		if(ch == ESC) {
+			if(ansi_len)
+				ansi_len = 0;
+			else {
+				if((in = incom(500)) != NOINP) {
+					if(in == '[') {
+						ansi_seq[ansi_len++] = ESC;
+						ansi_seq[ansi_len++] = '[';
+						continue;
+					} else {
+						if(node_inbuf[i-1] != NULL) {
+							RingBufWrite(node_inbuf[i-1], (uchar*)&ch, sizeof(ch));
+							ch = in;
+						}
+					}
 				}
-				ansi_len=0;
 			}
-			if(ch=='R') { /* throw-away cursor position report */
-				ansi_len=0;
-				continue;
-			}
-			ansi_seq[ansi_len++]=ch;
-			if(isalpha(ch)) {
-				if(node_inbuf[i-1]!=NULL) 
-					RingBufWrite(node_inbuf[i-1],(uchar*)ansi_seq,ansi_len);
+		}
+		if(ansi_len) {
+			if(ansi_len < sizeof(ansi_seq))
+				ansi_seq[ansi_len++] = ch;
+			if(ch >= '@' && ch <= '~') {
+				switch(ch) {
+					case 'A':	// Up
+					case 'B':	// Down
+					case 'C':	// Right
+					case 'D':	// Left
+					case 'F':	// Preceding line
+					case 'H':	// Home
+					case 'K':	// End
+					case 'V':	// PageUp
+					case 'U':	// PageDn
+					case '@':	// Insert
+					case '~':	// Various VT-220
+						// Pass-through these sequences to spied-upon node (eat all others)
+						if(node_inbuf[i-1] != NULL) 
+							RingBufWrite(node_inbuf[i-1], (uchar*)ansi_seq, ansi_len);
+						break;
+				}
 				ansi_len=0;
 			}
 			continue;
