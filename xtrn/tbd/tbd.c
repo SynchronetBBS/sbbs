@@ -370,6 +370,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '4':                           /* Move West */
             case 'A':
+            case TERM_KEY_LEFT:
                 check=inway(x,y,z,gx-1,gy);
                 if(weapon_ready) { tpic=LEFT;
                     if(check)
@@ -404,6 +405,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '6':                           /* Move East */
             case 'D':
+            case TERM_KEY_RIGHT:
                 check=inway(x,y,z,gx+1,gy);
                 if(weapon_ready) { tpic=RIGHT;
                     if(check)
@@ -438,6 +440,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '2':                           /* Move South */
             case 'X':
+            case TERM_KEY_DOWN:
                 check=inway(x,y,z,gx,gy+1);
                 if(weapon_ready) { tpic=DOWN;
                     if(check)
@@ -474,6 +477,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '8':                           /* Move North */
             case 'W':
+            case TERM_KEY_UP:
                 check=inway(x,y,z,gx,gy-1);
                 if(weapon_ready) { tpic=UP;
                     if(check)
@@ -512,6 +516,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '7':                           /* Move NorthWest */
             case 'Q':
+            case TERM_KEY_HOME:
                 check=inway(x,y,z,gx-1,gy-1);
                 if(weapon_ready) { tpic=UP;
                     if(check)
@@ -534,6 +539,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '9':                           /* Move NorthEast */
             case 'E':
+            case TERM_KEY_PAGEUP:
                 check=inway(x,y,z,gx+1,gy-1);
                 if(weapon_ready) { tpic=UP;
                     if(check)
@@ -556,6 +562,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '1':                           /* Move SouthWest */
             case 'Z':
+            case TERM_KEY_END:
                 check=inway(x,y,z,gx-1,gy+1);
                 if(weapon_ready) { tpic=DOWN;
                     if(check)
@@ -578,6 +585,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '3':                           /* Move SouthEast */
             case 'C':
+            case TERM_KEY_PAGEDN:
                 check=inway(x,y,z,gx+1,gy+1);
                 if(weapon_ready) { tpic=DOWN;
                     if(check)
