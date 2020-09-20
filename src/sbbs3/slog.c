@@ -111,9 +111,10 @@ while(l>-1L) {
 		,fbacks,ulb/1024,uls,dlb/1024,dls);
 	lncntr++;
 	if(pause && lncntr>=20) {
-		printf("[Hit a key]");
+		printf("More (Y/n) ? ");
 		fflush(stdout);
-		if(getchar()==3)
+		char ch = getchar();
+		if(ch == CTRL_C || toupper(ch) == 'N')
 			break;
 		printf("\r");
 		lncntr=0; } }
