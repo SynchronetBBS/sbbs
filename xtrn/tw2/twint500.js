@@ -36,7 +36,7 @@ function ConfigureSettings()
 		for(i=0; i<GameSettingProperties.length; i++)
 			list.push(format("%-35s %s",GameSettingProperties[i].name,Settings[GameSettingProperties[i].prop]));
 
-		i=uifc.list(WIN_MID|WIN_ORG|WIN_ACT|WIN_ESC, 0, 0, 0, last, last, "Configuration", list);
+		i=uifc.list(WIN_MID|WIN_ORG|WIN_ACT|WIN_ESC, 0, 0, 0, last, last, "Trade Wars 2 Configuration", list);
 		if(i==-1) {
 			if(uifc.changes) {
 				var q=uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Save Changes?", ["Yes", "No"]);
@@ -104,7 +104,7 @@ var reset = false;
 if(this.uifc == undefined) {
 
 	while(!js.terminated && (!this.console || !console.aborted)) {
-		print("Configuration:");
+		print("Trade Wars 2 Configuration:");
 		print();
 		for(var i=0; i< GameSettingProperties.length; i++)
 			print(format("%2d: %-35s = %s", i + 1, GameSettingProperties[i].name, Settings[GameSettingProperties[i].prop]));
@@ -149,7 +149,7 @@ if(this.uifc == undefined) {
 		alert("WARNING: Unable to connect to server: " + e);
 	}
 } else {
-	uifc.init("TradeWars 2 Initialization", /* ciolibmode: */argv[0]);
+	uifc.init("Trade Wars 2 Initialization", /* ciolibmode: */argv[0]);
 	ConfigureSettings();
 
 	if(js.global.db != undefined) {
