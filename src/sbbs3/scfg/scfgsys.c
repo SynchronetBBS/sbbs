@@ -39,7 +39,9 @@ static void configure_dst(void)
 	strcpy(opt[1],"No");
 	strcpy(opt[2],"Automatic");
 	opt[3][0]=0;
-	int i=1;
+	int i = 2;
+	if(!(cfg.sys_misc & SM_AUTO_DST))
+		i = !(cfg.sys_timezone & DAYLIGHT);
 	uifc.helpbuf=
 		"`Daylight Saving Time (DST):`\n"
 		"\n"
@@ -172,7 +174,7 @@ void sys_cfg(void)
 				uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
 				break;
 			case 2:
-				i=0;
+				i = !(cfg.sys_timezone & US_ZONE);
 				uifc.helpbuf=
 					"`United States Time Zone:`\n"
 					"\n"
