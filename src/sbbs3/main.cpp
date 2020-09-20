@@ -3483,8 +3483,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	/* used by update_qwkroute(): */
 	qwknode=NULL;
 	total_qwknodes=0;
-
-	spymsg("Connected");
 }
 
 //****************************************************************************
@@ -3533,7 +3531,7 @@ bool sbbs_t::init()
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
 		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
 			,client_socket, local_addr, inet_addrport(&addr));
-
+		spymsg("Connected");
 	}
 
 	if((comspec=os_cmdshell())==NULL) {
