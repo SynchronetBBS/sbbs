@@ -158,28 +158,27 @@ if(this.uifc == undefined) {
 	}
 }
 
-if(!reset)
-	exit(0);
+if(reset) {
+	print("Resetting game");
+	load(fname("ports.js"));
+	load(fname("planets.js"));
+	load(fname("teams.js"));
+	load(fname("sectors.js"));
+	load(fname("maint.js"));
+	load(fname("players.js"));
+	load(fname("messages.js"));
+	load(fname("computer.js"));
+	load(fname("input.js"));
 
-print("Resetting game");
-load(fname("ports.js"));
-load(fname("planets.js"));
-load(fname("teams.js"));
-load(fname("sectors.js"));
-load(fname("maint.js"));
-load(fname("players.js"));
-load(fname("messages.js"));
-load(fname("computer.js"));
-load(fname("input.js"));
-
-ResetAllPlayers();
-ResetAllPlanets();
-ResetAllMessages();
-InitializeTeams();
-InitializeSectors();
-InitializePorts();
-InitializeCabal();
-db.write(Settings.DB,'twopeng',[],LOCK_WRITE);
+	ResetAllPlayers();
+	ResetAllPlanets();
+	ResetAllMessages();
+	InitializeTeams();
+	InitializeSectors();
+	InitializePorts();
+	InitializeCabal();
+	db.write(Settings.DB,'twopeng',[],LOCK_WRITE);
+}
 if(this.uifc) {
 	uifc.pop();
 	uifc.bail();
