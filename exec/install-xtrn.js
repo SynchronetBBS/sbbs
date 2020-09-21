@@ -165,10 +165,11 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 		if (!xtrn_area.sec_list.length)
 			return "No external program sections have been created";
 
-		for (var i = 0; i < xtrn_area.sec_list.length; i++) {
-			if(item.cats.indexOf(xtrn_area.sec_list[i].name) >= 0
-				&& confirm("Install " + item.name + " into " + xtrn_area.sec_list[i].name + " section")) {
-				item.sec = xtrn_area.sec_list[i].number;
+		for (var i = 0; i < item.cats.length; i++) {
+			var code = item.cats[i].toLowerCase();
+			if(xtrn_area.sec[code]
+				&& confirm("Install " + item.name + " into " + xtrn_area.sec[code].name + " section")) {
+				item.sec = xtrn_area.sec[code].number;
 				break;
 			}
 		}
