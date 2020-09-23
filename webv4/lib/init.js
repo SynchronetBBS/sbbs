@@ -1,4 +1,5 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
+load('array.js');
 
 // Paths
 settings.web_directory = fullpath(
@@ -19,6 +20,8 @@ settings.web_lib = backslash(settings.web_directory + 'lib/');
 settings.web_components = backslash(settings.web_directory + 'components/');
 settings.web_pages = backslash(fullpath(settings.web_root + '../pages'));
 settings.web_sidebar = backslash(fullpath(settings.web_root + '../sidebar'));
+settings.web_mods = backslash(fullpath(settings.web_directory + 'mods/'));
+settings.web_mods_pages = backslash(fullpath(settings.web_mods + 'pages/'));
 
 var defaults = {
   guest : {
