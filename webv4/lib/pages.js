@@ -104,6 +104,7 @@ function _getPageList(dir) {
             if (Object.keys(list).length) {
 				const t = c.replace(/\\*\/*$/, '').split(sep).slice(-1)[0];
             	a.push({
+					file: t,
 					name: pageName(t),
 					type: 'list',
 					title: t,
@@ -126,6 +127,7 @@ function _getPageList(dir) {
 			f.close();
 			if (l.length < 2) return a;
 			a.push({
+				file: fn,
 				name: pageName(c),
 				title: l[1],
 				page: l[0],
@@ -135,6 +137,7 @@ function _getPageList(dir) {
 			const ctrl = getCtrlLine(c);
 			if (!ctrl.options.hidden) {
 				a.push({
+					file: fn,
 					name: pageName(fn),
 					page: fn,
 					title: ctrl.title,
@@ -168,7 +171,15 @@ function mergePageLists(stock, mods) {
 			a[idx].list = mergePageLists(a[idx].list, c.list);
 		}
 		return a;
-	}, stock);
+	}, stock).sort(function (a, b) {
+		if (a.file < b.file) {
+			return -1;
+		} else if (a.file > b.file) {
+			return 1;
+		} else {
+			return 0;
+		}
+	});
 }
 
 function getPageList() {
