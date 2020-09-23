@@ -10,7 +10,7 @@
 w              Synchronet BBS for @PLATFORM@ - Version @FULL_VER@
 w              @COPYRIGHT@ - http://www.synchro.net
 gh
-32-bit Multi-threaded Bulletin Board System Software for the Internet Age
+Native Multi-threaded Bulletin Board System Software for the Internet Age
 ng
 Integrated TCP/IP Servers: hong Telnet/RLogin/SSH
                            hong SMTP/POP3 (inbound and outbound e-mail)
@@ -19,7 +19,7 @@ Integrated TCP/IP Servers: hong Telnet/RLogin/SSH
                            hong Web (HTTP with server-side JavaScript and CGI)
                            hong Finger, Gopher, and IRC
 h
-Native versions for Win32 and Unix (e.g. Linux, FreeBSD, and OpenBSD) platforms
+Native versions for Win32 and Unix-like (e.g. Linux and FreeBSD) platforms
 n@CLS@-----------------------------------------------------------------------------
 hRemembering these keys will help you enjoy your cSynchronetw Telnet experience:
 n-----------------------------------------------------------------------------

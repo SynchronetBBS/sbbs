@@ -240,7 +240,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
                 ,tz_str[i]
                 );
         else
-            strcpy(str,tz_str[i]);
+            SAFECOPY(str,tz_str[i]);
         TimeZoneComboBox->Items->Add(str);
     }
    	sprintf(str,"Other (%s)",smb_zonestr(scfg.sys_timezone,NULL));
@@ -262,6 +262,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         DateUsRadioButton->Checked=true;
 
     WizNotebook->PageIndex=0;
+	ProgressBar->Position=0;
     ProgressBar->Max=WizNotebook->Pages->Count-1;
     IllegalCharsLabel->Caption="Illegal characters: '"
         ILLEGAL_QWKID_CHARS "'";
@@ -284,13 +285,13 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         MainForm->SaveIniSettings(Sender);
 
         // Write CNF files
-        strcpy(scfg.sys_name,SystemNameEdit->Text.c_str());
-        strcpy(scfg.sys_id,QWKIDEdit->Text.c_str());
-        strcpy(scfg.sys_location,SystemLocationEdit->Text.c_str());
-        strcpy(scfg.sys_op,SysopNameEdit->Text.c_str());
-        strcpy(scfg.sys_pass,SystemPasswordEdit->Text.c_str());
-        strcpy(scfg.sys_inetaddr,InternetAddressComboBox->Text.c_str());
-        strcpy(scfg.qnet_tagline,QNetTaglineEdit->Text.c_str());
+        SAFECOPY(scfg.sys_name,SystemNameEdit->Text.c_str());
+        SAFECOPY(scfg.sys_id,QWKIDEdit->Text.c_str());
+        SAFECOPY(scfg.sys_location,SystemLocationEdit->Text.c_str());
+        SAFECOPY(scfg.sys_op,SysopNameEdit->Text.c_str());
+        SAFECOPY(scfg.sys_pass,SystemPasswordEdit->Text.c_str());
+        SAFECOPY(scfg.sys_inetaddr,InternetAddressComboBox->Text.c_str());
+        SAFECOPY(scfg.qnet_tagline,QNetTaglineEdit->Text.c_str());
         scfg.sys_nodes=NodesUpDown->Position;
         if(TimeZoneComboBox->ItemIndex>=0
         	&& TimeZoneComboBox->ItemIndex<=sizeof(tz_val)/sizeof(tz_val[0]))
@@ -323,14 +324,12 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
             scfg.sys_misc|=SM_SYSVDELM;
             scfg.sys_misc&=~SM_USRVDELM;
         }
-
         scfg.new_install=FALSE;
         if(!save_cfg(&scfg,0)) {
         	Application->MessageBox("Error saving configuration"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
         } else
         	refresh_cfg(&scfg);
-
         Close();
         return;
     }
@@ -424,7 +423,7 @@ void __fastcall TConfigWizard::WizNotebookPageChanged(TObject *Sender)
                 char bbsname[41];
                 char qwkid[9];
                 int len=0;
-                strcpy(bbsname,SystemNameEdit->Text.UpperCase().c_str());
+                SAFECOPY(bbsname,SystemNameEdit->Text.UpperCase().c_str());
                 for(char*p=bbsname;*p && len<8;p++) {
                     if(strchr(ILLEGAL_QWKID_CHARS,*p))
                         continue;

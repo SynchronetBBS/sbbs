@@ -182,6 +182,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static ulong active_clients(void)
 {
 	ulong i;
@@ -824,7 +829,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;
 
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL) 
 			break;
 
 		if(service_client->service->js_server_props.version[0]==0) {
@@ -1123,9 +1128,9 @@ static void js_service_thread(void* arg)
 	/* RUN SCRIPT */
 	SAFECOPY(fname,service->cmd);
 	truncstr(fname," ");
-	sprintf(spath,"%s%s",scfg.mods_dir,fname);
+	SAFEPRINTF2(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,fname);
+		SAFEPRINTF2(spath,"%s%s",scfg.exec_dir,fname);
 
 	js_init_args(js_cx, js_glob, service->cmd);
 
@@ -1241,9 +1246,9 @@ static void js_static_service_thread(void* arg)
 
 	SAFECOPY(fname,service->cmd);
 	truncstr(fname," ");
-	sprintf(spath,"%s%s",scfg.mods_dir,fname);
+	SAFEPRINTF2(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,fname);
+		SAFEPRINTF2(spath,"%s%s",scfg.exec_dir,fname);
 
 	do {
 		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {
@@ -1832,16 +1837,12 @@ void DLLCALL services_thread(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		MKDIR(scfg.temp_dir);
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
-		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
-
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 
 		if((t=checktime())!=0) {   /* Check binary time */
 			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);

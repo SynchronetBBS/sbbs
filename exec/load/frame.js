@@ -1,4 +1,4 @@
-/* $Id: frame.js,v 1.89 2020/05/05 04:23:21 mcmlxxix Exp $ */
+/* $Id: frame.js,v 1.91 2020/08/01 19:32:23 rswindell Exp $ */
 
 /**
  	Javascript Frame Library
@@ -1116,18 +1116,17 @@ Frame.prototype.putmsg = function(str,attr) {
 				this.__properties__.curr_attr|=BLINK;
 				break;
 			case 'N': 	/* Normal */
-				this.__properties__.curr_attr&=~HIGH;
-				this.__properties__.curr_attr&=~BLINK;
+				this.__properties__.curr_attr=(this.attr);
 				break;
-      case '+':
-        this.__properties__.attr_stack.push(this.__properties__.curr_attr);
-        break;
+			case '+':
+				this.__properties__.attr_stack.push(this.__properties__.curr_attr);
+				break;
 			case '-':	/* Normal if High, Blink, or BG */
-        if (this.__properties__.attr_stack.length) {
-          this.__properties__.curr_attr = this.__properties__.attr_stack.pop();
-        } else if(this.__properties__.curr_attr & 0xf8) {
-					this.__properties__.curr_attr=this.attr;
-        }
+				if (this.__properties__.attr_stack.length) {
+				  this.__properties__.curr_attr = this.__properties__.attr_stack.pop();
+				} else if(this.__properties__.curr_attr & 0xf8) {
+							this.__properties__.curr_attr=this.attr;
+				}
 				break;
 			case '_':	/* Normal if blink/background */
 				if(this.__properties__.curr_attr & 0xf0)
@@ -1184,6 +1183,7 @@ Frame.prototype.putmsg = function(str,attr) {
 				pos.x++;
 				break;
 			}
+
 		}
 	}
 }

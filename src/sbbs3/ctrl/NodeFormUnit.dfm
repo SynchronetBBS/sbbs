@@ -10,7 +10,7 @@ object NodeForm: TNodeForm
   DragKind = dkDock
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
+  Font.Color = clWhite
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
@@ -114,6 +114,7 @@ object NodeForm: TNodeForm
     MultiSelect = True
     PopupMenu = PopupMenu
     TabOrder = 1
+    Color = clBlack
   end
   object Timer: TTimer
     OnTimer = TimerTick

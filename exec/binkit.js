@@ -318,7 +318,7 @@ function callout_auth_cb(mode, bp)
 
 	if (!bp.cb_data.binkitpw || bp.cb_data.binkitpw === '-')
 		addrs.push(bp.cb_data.binkit_to_addr);
-	else {
+	else if(bp.remote_addrs !== undefined) {
 		bp.remote_addrs.forEach(function(addr) {
 			if (bp.cb_data.binkitcfg.node[addr] !== undefined) {
 				if (bp.cb_data.binkitcfg.node[addr].pass === bp.cb_data.binkitpw)

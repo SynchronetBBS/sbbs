@@ -152,7 +152,26 @@ BOOL sbbs_t::newuser()
 		} else
 			useron.misc&=~AUTOTERM;
 
-		if(!(useron.misc&AUTOTERM)) {
+		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
+			bputs(text[HitYourBackspaceKey]);
+			uchar key = getkey(K_NONE);
+			bprintf(text[CharacterReceivedFmt], key, key);
+			if(key == '\b')
+				break;
+			if(key == DEL) {
+				if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
+					useron.misc |= SWAP_DELETE;
+			}
+			else if(key == PETSCII_DELETE)
+				useron.misc |= (PETSCII|COLOR);
+			else {
+				bprintf(text[InvalidBackspaceKeyFmt], key, key);
+				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
+					return FALSE;
+			}
+		}
+
+		if(!(useron.misc&(AUTOTERM|PETSCII))) {
 			if(text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
 				useron.misc|=ANSI; 
 			else
@@ -172,25 +191,6 @@ BOOL sbbs_t::newuser()
 		}
 		else
 			useron.rows = TERM_ROWS_DEFAULT;
-
-		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
-			bputs(text[HitYourBackspaceKey]);
-			uchar key = getkey(K_NONE);
-			bprintf(text[CharacterReceivedFmt], key, key);
-			if(key == '\b')
-				break;
-			if(key == DEL) {
-				if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
-					useron.misc |= SWAP_DELETE;
-			}
-			else if(key == PETSCII_DELETE)
-				useron.misc |= (AUTOTERM|PETSCII|COLOR);
-			else {
-				bprintf(text[InvalidBackspaceKeyFmt], key, key);
-				if(text[ContinueQ][0] && !yesno(text[ContinueQ]))
-					return FALSE;
-			}
-		}
 
 		if(useron.misc&PETSCII) {
 			autoterm |= PETSCII;
@@ -328,10 +328,10 @@ BOOL sbbs_t::newuser()
 				&& !trashcan(useron.netmail,"email"))
 				break;
 		}
-		if(useron.netmail[0] && cfg.sys_misc&SM_FWDTONET && text[ForwardMailQ][0] && yesno(text[ForwardMailQ]))
+		useron.misc&=~NETMAIL;
+		if((cfg.sys_misc&SM_FWDTONET) && is_supported_netmail_addr(&cfg, useron.netmail) && yesno(text[ForwardMailQ]))
 			useron.misc|=NETMAIL;
-		else 
-			useron.misc&=~NETMAIL;
+
 		if(text[UserInfoCorrectQ][0]==0 || yesno(text[UserInfoCorrectQ]))
 			break; 
 	}
@@ -386,7 +386,7 @@ BOOL sbbs_t::newuser()
 
 		if(cfg.sys_misc&SM_PWEDIT && text[NewPasswordQ][0] && yesno(text[NewPasswordQ]))
 			while(online) {
-				bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
+				bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 				getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 				truncsp(str);
 				if(chkpass(str,&useron,true)) {
@@ -399,7 +399,7 @@ BOOL sbbs_t::newuser()
 			}
 
 		c=0;
-		while(online) {
+		while(online && text[NewUserPasswordVerify][0]) {
 			bputs(text[NewUserPasswordVerify]);
 			console|=CON_R_ECHOX;
 			str[0]=0;

@@ -44,11 +44,11 @@ static char* use_shell_opt = "Use Shell / New Context";
 static char* use_shell_help =
 	"`Use System Shell or New JavaScript Context to Execute:`\n"
 	"\n"
-	"If this command-line requires the system command shell to execute\n"
+	"If this command line requires the system command shell to execute\n"
 	"(e.g. uses pipes/redirection or invokes a Unix shell script or\n"
 	"DOS/Windows batch/command file), then set this option to ~Yes~.\n"
 	"\n"
-	"If this command-line is invoking a Synchronet JavaScript module\n"
+	"If this command line is invoking a Synchronet JavaScript module\n"
 	"(e.g. it begins with a '`?`' character), then setting this option to ~Yes~\n"
 	"will enable the creation and initialization of a new JavaScript run-time\n"
 	"context for it to execute within, for every invocation."
@@ -313,8 +313,8 @@ void xprogs_cfg()
 		uifc.helpbuf=
 			"`Online External Programs:`\n"
 			"\n"
-			"From this menu, you can configure external events, external editors, or\n"
-			"online external programs (doors).\n"
+			"From this menu, you can configure external events, external message\n"
+			"editors, or online external programs (e.g. `door games`).\n"
 		;
 		switch(uifc.list(WIN_ORG|WIN_CHE|WIN_ACT,0,0,0,&xprogs_dflt,0
 			,"External Programs",opt)) {
@@ -383,6 +383,7 @@ void fevents_cfg()
 					"in the logon sequence of users that includes interaction or requires\n"
 					"account information, you probably want to use an online external\n"
 					"program configured to run as a logon event.\n"
+					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Event"
@@ -398,6 +399,7 @@ void fevents_cfg()
 					"wish to have a program execute before carrier is dropped, you probably\n"
 					"want to use an `Online External Program` configured to run as a logoff\n"
 					"event.\n"
+					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Event"
@@ -409,6 +411,7 @@ void fevents_cfg()
 					"\n"
 					"This is the command line for a program that will run after the first\n"
 					"user that logs on after midnight, logs off (regardless of what node).\n"
+					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Daily Event"
@@ -584,6 +587,7 @@ void tevents_cfg()
 						"`Timed Event Command Line:`\n"
 						"\n"
 						"This is the command line to execute upon this timed event.\n"
+						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
@@ -1122,6 +1126,7 @@ void xtrn_cfg(uint section)
 						"`Online Program Command Line:`\n"
 						"\n"
 						"This is the command line to execute to run the online program.\n"
+						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
@@ -1133,6 +1138,7 @@ void xtrn_cfg(uint section)
 						"\n"
 						"This is the command line to execute after the main command line. This\n"
 						"option is usually only used for multiuser online programs.\n"
+						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Clean-up"
@@ -1373,8 +1379,9 @@ void xtrn_cfg(uint section)
 						"Set this option to ~Yes~ if you would like an automatic screen pause\n"
 						"(`[Hit a key]` prompt) to appear after the program executes.\n"
 						"\n"
-						"This can be useful if the program displays information just before exiting\n"
-						"or you want to debug a program with a program not running correctly.\n"
+						"This can be useful if the program displays information just before\n"
+						"exiting or you want to debug a program with a program not running\n"
+						"correctly.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 						,"Pause After Execution",uifcYesNoOpts);
@@ -1769,6 +1776,7 @@ void xedit_cfg()
 						"`External Editor Command Line:`\n"
 						"\n"
 						"This is the command line to execute when using this editor.\n"
+						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Command"
@@ -2543,6 +2551,7 @@ void hotkey_cfg(void)
 						"`Hot Key Event Command Line:`\n"
 						"\n"
 						"This is the command line to execute when this hot key is pressed.\n"
+						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
 					;
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Command"

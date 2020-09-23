@@ -82,6 +82,7 @@ function sort_by_name(a, b)
 
 function exec_xtrn(prog)
 {
+	console.attributes = LIGHTGRAY;
 	if(options.clear_screen_on_exec)
 		console.clear();
 	if(options.eval_before_exec)

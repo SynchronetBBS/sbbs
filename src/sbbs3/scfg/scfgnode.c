@@ -55,9 +55,16 @@ void node_menu()
 		if(savnode)
 			j|=WIN_PASTE;
 		uifc.helpbuf=
-			"`Node List:`\n"
+			"`Nodes:`\n"
 			"\n"
-			"This is the list of configured nodes in your system.\n"
+			"This is the list of configured terminal server nodes. A node is required\n"
+			"for each supported simultaneous 'caller'.\n"
+			"\n"
+			"`Note:` The `FirstNode` (e.g. Node 1) configuration settings are used for\n"
+			"      all the nodes supported by a single terminal server instance.\n"
+			"\n"
+			"`Note:` When nodes are added to this list, the `LastNode` value must be\n"
+			"      adjusted accordingly. See the `ctrl/sbbs.ini` file for more details.\n"
 			"\n"
 			"To add a node, hit ~ INS ~.\n"
 			"\n"
@@ -184,12 +191,11 @@ void node_cfg()
 		opt[i][0]=0;
 		sprintf(str,"Node %d Configuration",cfg.node_num);
 		uifc.helpbuf=
-			"`Node Configuration Menu:`\n"
+			"`Node Configuration:`\n"
 			"\n"
-			"This is the node configuration menu. The options available from this\n"
-			"menu will only affect the selected node's configuration.\n"
-			"\n"
-			"Options with a trailing `...` will produce a sub-menu of more options.\n"
+			"The configuration settings of the `FirstNode` will determine the behavior\n"
+			"of all nodes of a single terminal server instance  (through `LastNode`).\n"
+			"See the `ctrl/sbbs.ini` file for details.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 			,str,opt)) {
@@ -205,8 +211,9 @@ void node_cfg()
 			case 0:
 				uifc.helpbuf=
 					"`Node Phone Number:`\n"
-					"This is the phone number to access the selected node (e.g. for SEXPOTS).\n"
-					"This value is used for documentary purposes only.\n"
+					"\n"
+					"This is the phone number to access the selected node (e.g. for `SEXPOTS`).\n"
+					"This value is used for information purposes only.\n"
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Phone Number",cfg.node_phone,sizeof(cfg.node_phone)-1,K_EDIT);
 				break;
@@ -238,7 +245,7 @@ void node_cfg()
 						"This is the toggle options menu for the selected node's configuration.\n"
 						"\n"
 						"The available options from this menu can all be toggled between two or\n"
-						"more states, such as `Yes` and `No``\n"
+						"more states, such as `Yes` and `No``.\n"
 					;
 					switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT|WIN_SAV,3,2,35,&tog_dflt
 						,&tog_bar,"Toggle Options",opt)) {
@@ -250,8 +257,8 @@ void node_cfg()
 							uifc.helpbuf=
 								"`Allow Login by User Number:`\n"
 								"\n"
-								"If you want users to be able login using their user number at the `NN:`\n"
-								"set this option to `Yes`.\n"
+								"If you want users to be able login using their user number at the\n"
+								"login prompt, set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Allow Login by User Number",uifcYesNoOpts);
@@ -289,7 +296,7 @@ void node_cfg()
 								"`Always Prompt for Password:`\n"
 								"\n"
 								"If you want to have attempted logins using an unknown user name still\n"
-								"prompt for a password, set this option to `Yes`.\n"
+								"prompt for a password (i.e. for enhanced security), set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Always Prompt for Password",uifcYesNoOpts);
@@ -327,8 +334,8 @@ void node_cfg()
 							uifc.helpbuf=
 								"`Spinning Pause Prompt:`\n"
 								"\n"
-								"If you want to have a spinning cursor at the [Hit a key] prompt, set\n"
-								"this option to `Yes`.\n"
+								"If you want to display a spinning cursor at the [Hit a key] prompt,\n"
+								"set this option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,10,0,&i,0
 								,"Spinning Cursor at Pause Prompt",uifcYesNoOpts);
@@ -411,7 +418,7 @@ void node_cfg()
 								"whom the feedback is sent. The normal value of this option is `1` for\n"
 								"user number one.\n"
 							;
-							uifc.input(WIN_MID,0,13,"Validation User Number (0=Nobody)"
+							uifc.input(WIN_MID|WIN_SAV,0,13,"Validation User Number (0=Nobody)"
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.node_valuser=atoi(str);
 							break;
@@ -427,13 +434,13 @@ void node_cfg()
 								"\n"
 								"Note: error messages are always logged as well (e.g. to `data/error.log`)."
 							;
-							uifc.input(WIN_MID,0,13,"Notification User Number (0=Nobody)"
+							uifc.input(WIN_MID|WIN_SAV,0,13,"Notification User Number (0=Nobody)"
 								,str,4,K_NUMBER|K_EDIT);
 							cfg.node_erruser=atoi(str);
 							break;
 						case __COUNTER__:
 							uifc.helpbuf=
-								"~ Notification Error Level ~\n"
+								"`Notification Error Level`\n"
 								"\n"
 								"Select the minimum severity of error messages that should be forwarded\n"
 								"to the Notification User. The normal setting would be `Critical`.";
@@ -451,7 +458,7 @@ void node_cfg()
 								"`Semaphore Check Frequency While Waiting for Call (in seconds):`\n"
 								"\n"
 								"This is the number of seconds between semaphore checks while this node\n"
-								"is waiting for a caller. Default is `60` seconds.\n"
+								"is waiting for a caller. Default is `5` seconds.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Seconds Between Semaphore Checks"
@@ -464,7 +471,7 @@ void node_cfg()
 								"`Statistics Check Frequency While Waiting for Call (in seconds):`\n"
 								"\n"
 								"This is the number of seconds between static checks while this node\n"
-								"is waiting for a caller. Default is `10` seconds.\n"
+								"is waiting for a caller. Default is `5` seconds.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,14
 								,"Seconds Between Statistic Checks"
@@ -501,14 +508,13 @@ void node_cfg()
 							uifc.helpbuf=
 								"`Daily Event:`\n"
 								"\n"
-								"If you have an event that this node should run every day, enter the\n"
-								"command line for that event here.\n"
+								"If you have an event that this node's terminal server should run every\n"
+								"day, enter the command line for that event here.\n"
 								"\n"
-								"An event can be any valid DOS command line. If multiple programs or\n"
-								"commands are required, use a batch file.\n"
-								"\n"
-								"Remember: The `%!` command line specifier is an abbreviation for your\n"
-								"         configured `EXEC` directory path.\n"
+								"An event can be any valid command line. If multiple programs or commands\n"
+								"are required, use a batch file or shell script.\n"
+								SCFG_CMDLINE_PREFIX_HELP
+								SCFG_CMDLINE_SPEC_HELP
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 								,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
@@ -522,9 +528,6 @@ void node_cfg()
 								"disk or other volatile media. This directory contains the system's menus\n"
 								"and other important text files, so be sure the files and directories are\n"
 								"moved to this directory if you decide to change it.\n"
-								"\n"
-								"This option allows you to change the location of your control directory.\n"
-								"The `/text/`` suffix (sub-directory) cannot be changed or removed.\n"
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
 								,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);

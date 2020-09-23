@@ -396,7 +396,7 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		MKDIR(inbox);
 
 		// Copy files
-		sprintf(fname,"%s/%s",inbox,dirent->d_name);
+		SAFEPRINTF2(fname,"%s/%s",inbox,dirent->d_name);
 		mv(str,fname,1 /* overwrite */);
 		sprintf(str,text[ReceivedFileViaQWK],dirent->d_name,cfg.qhub[hubnum]->id);
 		putsmsg(&cfg,1,str);

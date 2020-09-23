@@ -948,7 +948,7 @@ USAGE:
 #endif
 					         "       A = ANSI mode\n"
 					         "-l# =  set screen lines to #\n"
-					         "-s# =  set idle slsep to # milliseconds (defualt: %d)\n"
+					         "-s# =  set idle slsep to # milliseconds (default: %d)\n"
 					    ,argv[0]
 					    ,idle_sleep
 					);
@@ -1192,8 +1192,11 @@ USAGE:
 				uifc.msg("Error reading node data!");
 				continue;
 			}
-			if((node.status==NODE_INUSE) && node.useron)
-				chat(&cfg,main_dflt,&node,&boxch,NULL);
+			if((node.status==NODE_INUSE) && node.useron) {
+				int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
+				if(result != 0)
+					uifc.msgf("Chat error: %d (%s)", result, strerror(errno));
+			}
 			continue;
 		}
 
@@ -1305,9 +1308,12 @@ USAGE:
 							break;
 
 						case 3: /* Chat with User */
-							chat(&cfg,main_dflt,&node,&boxch,NULL);
+						{
+							int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
+							if(result != 0)
+								uifc.msgf("Chat error %d (%s)", result, strerror(errno));
 							break;
-
+						}
 						case 4: /* Node Toggles */
 							node_toggles(&cfg, j);
 							break;

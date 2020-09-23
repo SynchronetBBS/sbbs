@@ -74,7 +74,7 @@ var key;
 var zone;
 console.ungetstr(KEY_UP);
 while (!js.terminated) {
-    key = mouse_getkey(K_NONE, undefined, true);
+    key = mouse_getkey(K_NOSPIN, undefined, true);
     //key = console.getkey();
     if (key.key.toLowerCase() == 'q') break;
 	if (key.mouse && key.mouse.press && key.mouse.button == 0 && key.mouse.y == frame.y + frame.height - 1 && key.mouse.x >= 52 && key.mouse.x <= 65) break;
@@ -106,3 +106,5 @@ while (!js.terminated) {
 }
 
 frame.close();
+console.creturn();
+console.cleartoeol();

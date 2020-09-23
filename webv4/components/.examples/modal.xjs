@@ -1,0 +1,14 @@
+<div class="modal" id="popUpModal" tabindex="-1" role="dialog" style="display:none;">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="popUpModalTitle">Pop-Up Thingie</h4>
+            </div>
+            <div class="modal-body" id="popUpModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" id="popUpModalCloseButton"><? write(locale.strings.main.button_close); ?></button>
+                <button type="button" class="btn btn-primary" id="popUpModalActionButton" hidden><? write(locale.strings.main.button_submit); ?></button>
+            </div>
+        </div>
+    </div>
+</div>

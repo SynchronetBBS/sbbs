@@ -1,0 +1,115 @@
+<?xjs
+	var settings = load('modopts.js', 'web');
+	load(settings.web_directory + '/lib/init.js');
+
+	load(settings.web_lib + 'auth.js');
+	load(settings.web_lib + 'pages.js');
+	load(settings.web_lib + 'sidebar.js');
+
+	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
+    if (page.search(/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/i) > -1) {
+        http_reply.status = '301 Moved Permanently';
+        http_reply.header['Location'] = page;
+        exit();
+    }
+
+    if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
+        page = '000-home.xjs';
+    }
+	var page_ctrl = getCtrlLine(settings.web_pages + page);
+?>
+
+<?xjs
+	function _sidebar() {
+		if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return;
+?>
+		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
+<?xjs
+	}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="icon" href="./images/favicon.ico">
+		<title><? write(page_ctrl.title + ': ' + system.name); ?></title>
+		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
+		<link href="./css/offcanvas.css" rel="stylesheet">
+		<link href="./css/style.css" rel="stylesheet">
+		<?xjs if (file_exists(settings.web_root + 'css/custom.css')) { ?>
+			<link href="./css/custom.css" rel="stylesheet">
+		<?xjs } ?>
+	</head>
+
+	<body>
+
+		<script src="./js/jquery.min.js"></script>
+		<script src="./bootstrap/js/bootstrap.min.js"></script>
+		<script src="./js/common.js"></script>
+
+		<?xjs
+			(function () {
+				load(xjs_compile(settings.web_components + 'modal.xjs'));
+			})();
+
+			if (file_exists(settings.web_components + 'header.xjs')) {
+				(function () {
+					load(xjs_compile(settings.web_components + 'header.xjs'));
+				})();
+			}
+
+			(function () {
+				load(xjs_compile(settings.web_components + 'navbar.xjs'));
+			})();
+		?>
+
+		<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
+			<div class="row row-offcanvas row-offcanvas-<?xjs write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
+				<?xjs if (settings.layout_sidebar_left) _sidebar(); ?>
+				<div class="col-xs-12 col-sm-<?xjs write(settings.layout_sidebar_off || page_ctrl.options.no_sidebar ? 12 : 9); ?>">
+					<div style="clear:both;">
+					<p class="pull-<?xjs write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
+						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas"><span class="glyphicon glyphicon-tasks"></span><?xjs write(locale.strings.main.label_sidebar); ?></button>
+					</p>
+					</div>
+					<?xjs writePage(page); ?>
+				</div>
+				<?xjs if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
+			</div>
+		  	<hr>
+			<footer>
+				<?xjs
+					if (file_exists(settings.web_components + 'footer.xjs')) {
+						(function () {
+							load(xjs_compile(settings.web_components + 'footer.xjs'));
+						})();
+					} else {
+				?>
+						<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs
+					}
+				?>
+			</footer>
+		</div>
+
+		<script src="./js/offcanvas.js"></script>
+    	<script>
+			$('.dropdown-menu a.dropdown-toggle').on('click', function (e) {
+				if (!$(this).next().hasClass('show')) {
+					$(this).parents('.dropdown-menu').first().find('.show').removeClass("show");
+				}
+			    var $subMenu = $(this).next(".dropdown-menu");
+    			$subMenu.toggleClass('show');
+    			$(this).parents('li.nav-item.dropdown.show').on('hidden.bs.dropdown', function (e) {
+        			$('.dropdown-submenu .show').removeClass("show");
+    			});
+    			return false;
+			});
+		</script>
+
+	</body>
+
+</html>

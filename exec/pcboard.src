@@ -2,7 +2,7 @@
 
 # PCBoard v15.1 menu/command emulation
 
-# $Id: pcboard.src,v 1.13 2020/04/23 02:46:09 rswindell Exp $
+# $Id: pcboard.src,v 1.14 2020/09/12 02:46:09 rswindell Exp $
 
 # @format.tab-size 8, @format.use-tabs true
 
@@ -18,8 +18,8 @@ if_false
 	end_if
 node_action node_main
 async
-print "n\r\nyh(r@MINLEFT@y min. left) @GRP@ (@GN@) @SUB@ (@SN@) "
-print "Command? n"
+print "\x01n\r\n\x01y\x01h(\x01r@MINLEFT@\x01y min. left) @GRP@ (@GN@) @SUB@ (@SN@) "
+print "Command? \x01n"
 getstr 60
 
 compare_str ""
@@ -101,7 +101,7 @@ cmdstr L
 	end_cmd
 
 cmdstr N
-	print "\r\nbhUse c@LASTNEW@b for new file scan date"
+	print "\r\n\x01b\x01hUse \x01c@LASTNEW@\x01b for new file scan date"
 	yes_no ""
 	if_false
 		file_ptrs_cfg
@@ -219,6 +219,7 @@ cmdstr G
 
 cmdstr W
 	user_defaults
+	exec_bin "termsetup"
 	end_cmd
 
 cmdstr O
@@ -271,7 +272,7 @@ if_true
 	crlf
 	finduser
 	if_true
-		print "yhVerified: w"
+		print "\x01y\x01hVerified: \x01w"
 		printstr
 		crlf
                 end_if
@@ -279,7 +280,7 @@ if_true
 	end_If
 
 cmdstr USER
-	print "\r\nyhUsername search string (Enter=List Conferences Users): w"
+	print "\r\n\x01y\x01hUsername search string (Enter=List Conferences Users): \x01w"
         getname 25
 	compare_str ""
 	if_true
@@ -288,7 +289,7 @@ cmdstr USER
 		crlf
 		finduser
 		if_true
-			print "yhVerified: w"
+			print "\x01y\x01hVerified: \x01w"
 			printstr
 			crlf
 			end_if
@@ -296,6 +297,6 @@ cmdstr USER
 		end_If
 	end_cmd
 
-print "\r\nrhInvalid Entry!  Please try again, @FIRST@ ...\r\n"
+print "\r\n\x01r\x01hInvalid Entry!  Please try again, @FIRST@ ...\r\n"
 end_cmd
 

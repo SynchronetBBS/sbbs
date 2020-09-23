@@ -220,9 +220,9 @@ send_email(system.platform + " builds successful in " + elapsed_time(time() - st
 
 chdir(temp_dir);
 
-var comment = "Successful build on " + system_description;
-system.exec("git tag -m \"" + comment + "\" -a goodbuild_" + platform + "_" + date_str);
-system.exec("git push --tags");
+system.exec("git checkout -b dailybuild_" + platform);
+system.exec("git merge master");
+system.exec("git push --set-upstream origin dailybuild_" + platform);
 
 var dest = file_area.dir["sbbs"].path+archive;
 log(LOG_INFO,format("Copying %s to %s",archive,dest));

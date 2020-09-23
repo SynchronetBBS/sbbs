@@ -148,38 +148,6 @@ BOOL fmutex(const char* fname, const char* text, long max_age)
 	return TRUE;
 }
 
-BOOL fcopy(const char* src, const char* dest)
-{
-	int		ch;
-	ulong	count=0;
-	FILE*	in;
-	FILE*	out;
-	BOOL	success=TRUE;
-
-	if((in=fopen(src,"rb"))==NULL)
-		return FALSE;
-	if((out=fopen(dest,"wb"))==NULL) {
-		fclose(in);
-		return FALSE;
-	}
-
-	while(!feof(in)) {
-		if((ch=fgetc(in))==EOF)
-			break;
-		if(fputc(ch,out)==EOF) {
-			success=FALSE;
-			break;
-		}
-		if(((count++)%(32*1024))==0)
-			MAYBE_YIELD();
-	}
-
-	fclose(in);
-	fclose(out);
-
-	return(success);
-}
-
 BOOL fcompare(const char* fn1, const char* fn2)
 {
 	FILE*	fp1;
@@ -240,7 +208,7 @@ BOOL backup(const char *fname, int backup_level, BOOL ren)
 				/* preserve the original time stamp */
 				ut.modtime = fdate(fname);
 
-				if(!fcopy(fname,newname))
+				if(!CopyFile(fname, newname, /* failIfExists: */FALSE))
 					return FALSE;
 
 				ut.actime = time(NULL);

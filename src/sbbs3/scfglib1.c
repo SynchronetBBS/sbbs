@@ -233,7 +233,13 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->new_install,instream);
 	get_int(cfg->new_msgscan_init,instream);
 	get_int(cfg->guest_msgscan_init,instream);
-	for(i=0;i<5;i++)
+	get_int(cfg->min_pwlen, instream);
+	if(cfg->min_pwlen < MIN_PASS_LEN)
+		cfg->min_pwlen = MIN_PASS_LEN;
+	if(cfg->min_pwlen > LEN_PASS)
+		cfg->min_pwlen = LEN_PASS;
+	get_int(c, instream);
+	for(i=0;i<4;i++)
 		get_int(n,instream);
 
 	/*************************/
@@ -772,8 +778,6 @@ void make_data_dirs(scfg_t* cfg)
 	SAFEPRINTF(str,"%smsgs",cfg->data_dir);
 	md(str);
 	SAFEPRINTF(str,"%suser",cfg->data_dir);
-	md(str);
-	SAFEPRINTF(str,"%suser/ptrs",cfg->data_dir);
 	md(str);
 	SAFEPRINTF(str,"%sqnet",cfg->data_dir);
 	md(str);

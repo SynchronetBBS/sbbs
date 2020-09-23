@@ -127,8 +127,9 @@ object ServicesForm: TServicesForm
     Width = 721
     Height = 144
     Align = alClient
+    Color = clBlack
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
+    Font.Color = clWhite
     Font.Height = -12
     Font.Name = 'MS Sans Serif'
     Font.Style = []

@@ -25,8 +25,8 @@ object WebCfgDlg: TWebCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = HttpTabSheet
-    TabIndex = 2
+    ActivePage = TlsTabSheet
+    TabIndex = 1
     TabOrder = 0
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -199,6 +199,17 @@ object WebCfgDlg: TWebCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
+      end
+      object HSTSEnableCheckBox: TCheckBox
+        Left = 148
+        Top = 10
+        Width = 119
+        Height = 20
+        Hint = 'HTTP Strict Transport Security'
+        Caption = 'HSTS Support'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
       end
     end
     object HttpTabSheet: TTabSheet

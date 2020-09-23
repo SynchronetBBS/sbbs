@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 					for(;argv[i][j];j++)
 						if(isalpha(argv[i][j]))
 							flags|=FLAG(toupper(argv[i][j]));
-					sprintf(str,"%suser.dat",dir);
+					SAFEPRINTF(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 						printf("Error opening %s\n",str);
 						exit(1); 
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
 					for(;argv[i][j];j++)
 						if(isalpha(argv[i][j]))
 							flags|=FLAG(toupper(argv[i][j]));
-					sprintf(str,"%suser.dat",dir);
+					SAFEPRINTF(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 						printf("Error opening %s\n",str);
 						exit(1); 
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 						j=99;
 					if(j<0)
 						j=0;
-					sprintf(str,"%suser.dat",dir);
+					SAFEPRINTF(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 						printf("Error opening %s\n",str);
 						exit(1); 

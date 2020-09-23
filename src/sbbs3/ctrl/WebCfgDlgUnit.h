@@ -108,6 +108,7 @@ __published:	// IDE-managed Components
     TEdit *TlsPortEdit;
     TLabel *AuthTypesLabel;
     TEdit *AuthTypesEdit;
+    TCheckBox *HSTSEnableCheckBox;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall AnswerSoundButtonClick(TObject *Sender);
     void __fastcall HangupSoundButtonClick(TObject *Sender);

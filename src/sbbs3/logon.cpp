@@ -180,6 +180,10 @@ bool sbbs_t::logon()
 	if(useron.misc&AUTOTERM) {
 		useron.misc&=~(ANSI|RIP|PETSCII);
 		useron.misc|=autoterm;
+	} else if((useron.misc&PETSCII) && (autoterm&ANSI)) {
+		// User manually-enabled PETSCII, but they're logging in with an ANSI (auto-detected) terminal
+		useron.misc &= ~PETSCII;
+		useron.misc |= (AUTOTERM | autoterm);
 	}
 
 	if(!chk_ar(cfg.shell[useron.shell]->ar,&useron,&client)) {
@@ -244,7 +248,7 @@ bool sbbs_t::logon()
 
 			if(cfg.sys_misc&SM_PWEDIT && yesno(text[NewPasswordQ]))
 				while(online) {
-					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
+					bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 					getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 					truncsp(str);
 					if(chkpass(str,&useron,true))
@@ -257,8 +261,11 @@ bool sbbs_t::logon()
 					CRLF;
 					bputs(text[VerifyPassword]); 
 				}
-				else
+				else {
+					if(!text[NewUserPasswordVerify][0])
+						break;
 					bputs(text[NewUserPasswordVerify]);
+				}
 				console|=CON_R_ECHOX;
 				getstr(tmp,LEN_PASS*2,K_UPPER);
 				console&=~(CON_R_ECHOX|CON_L_ECHOX);
@@ -460,8 +467,9 @@ bool sbbs_t::logon()
 		bprintf(text[LiTimeonToday],useron.ttoday
 			,cfg.level_timeperday[useron.level]+useron.min);
 		bprintf(text[LiMailWaiting],mailw);
-		bprintf("%s%s\r\n\r\n", text[LiSysopIs]
+		bprintf(text[LiSysopIs]
 			, text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
+		newline();
 	}
 
 	if(sys_status&SS_EVENT)
