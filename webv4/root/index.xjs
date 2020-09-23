@@ -12,11 +12,9 @@
         http_reply.header['Location'] = page;
         exit();
     }
-
-    if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
-        page = '000-home.xjs';
-    }
-	var page_ctrl = getCtrlLine(settings.web_pages + page);
+	var pagePath = getPagePath(page);
+	if (pagePath == null) page = '000-home.xjs';
+	var page_ctrl = getCtrlLine(pagePath);
 ?>
 
 <?xjs
