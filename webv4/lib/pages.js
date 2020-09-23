@@ -172,13 +172,9 @@ function mergePageLists(stock, mods) {
 		}
 		return a;
 	}, stock).sort(function (a, b) {
-		if (a.file < b.file) {
-			return -1;
-		} else if (a.file > b.file) {
-			return 1;
-		} else {
-			return 0;
-		}
+		if (a.file < b.file) return -1;
+		if (a.file > b.file) return 1;
+		return 0;
 	});
 }
 
