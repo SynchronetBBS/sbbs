@@ -1,4 +1,4 @@
-/* $Id: frame.js,v 1.91 2020/08/01 19:32:23 rswindell Exp $ */
+/* $Id: frame.js,v 1.89 2020/05/05 04:23:21 mcmlxxix Exp $ */
 
 /**
  	Javascript Frame Library
@@ -809,8 +809,10 @@ Frame.prototype.load = function(filename,width,height) {
     case "BIN":
         if (!this.load_bin(contents, width, height, 0)) return false;
 		break;
+	case "ASC":
+	case "MSG":
 	case "TXT":
-		var lines=contents.split(/\r\n/);
+		var lines=contents.split(/\r*\n/);
 		while(lines.length > 0)
 			this.putmsg(lines.shift() + "\r\n");
 		break;
@@ -1116,7 +1118,6 @@ Frame.prototype.putmsg = function(str,attr) {
 			case 'N': 	/* Normal */
 				this.__properties__.curr_attr&=~HIGH;
 				this.__properties__.curr_attr&=~BLINK;
-				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0x8f)|LIGHTGRAY;
 				break;
       case '+':
         this.__properties__.attr_stack.push(this.__properties__.curr_attr);
