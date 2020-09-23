@@ -92,7 +92,7 @@ function getCtrlLine(file) {
 
 function _getPageList(dir) {
 
-	if (!file_isdir(dir)) return {};
+	if (!file_isdir(dir)) return [];
 
 	const webctrl = getWebCtrl(dir);
 	const sep = system.platform.search(/^win/i) == 0 ? '\\' : '/';
