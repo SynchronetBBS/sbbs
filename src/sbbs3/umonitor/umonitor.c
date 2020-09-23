@@ -1192,7 +1192,7 @@ USAGE:
 				uifc.msg("Error reading node data!");
 				continue;
 			}
-			if(node.status >= NODE_INUSE && node.status <= NODE_QUIET && node.useron) {
+			if(node.status >= NODE_LOGON && node.status <= NODE_QUIET && node.useron) {
 				int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
 				if(result != 0)
 					uifc.msgf("Chat error: %d (%s)", result, strerror(errno));
@@ -1261,7 +1261,7 @@ USAGE:
 			continue;
 
 		if(j<=cfg.sys_nodes && j>0) {
-			if(node.status >= NODE_INUSE && node.status <= NODE_QUIET && node.useron) {
+			if(node.status >= NODE_LOGON && node.status <= NODE_QUIET && node.useron) {
 				i=0;
 				strcpy(opt[i++],"Edit User");
 				strcpy(opt[i++],"Spy on node");
