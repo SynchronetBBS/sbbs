@@ -321,7 +321,8 @@ function nodelist(print, active, listself, is_sysop, options)
 	var n;
 	for(n = 0; n < system.node_list.length; n++) {
 		var node = system.get_node(n + 1);
-		if(active && node.status != NODE_INUSE)
+		if(active && node.status != NODE_INUSE
+			&& (!is_sysop || node.status != NODE_QUIET))
 			continue;
 		if(js.global.bbs && n == (bbs.node_num - 1)) {
 			if(!listself)
