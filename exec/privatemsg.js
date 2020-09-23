@@ -1,4 +1,4 @@
-// $Id: privatemsg.js,v 1.10 2020/04/21 20:30:19 rswindell Exp $
+// $Id: privatemsg.js,v 1.10 2020/09/13 20:30:19 rswindell Exp $
 
 // Private Message Module
 // Installed in SCFG->System->Loadable Modules->Private Msg
@@ -67,8 +67,6 @@ while(bbs.online && !(console.aborted)) {
 					continue;
 				if(node.misc & NODE_POFF)
 					continue;
-				if(node.useron == user.number)
-					continue;
 				if(!shown) {
 					writeln();
 					write(bbs.text(NodeLstHdr));
@@ -81,8 +79,6 @@ while(bbs.online && !(console.aborted)) {
 			var web_users = presence.web_users();
 			for(w = 0; w < web_users.length; w++) {
 				var web_user = web_users[w];
-				if(web_user.name == user.alias)
-					continue;
 				if(web_user.do_not_disturb)
 					continue;
 				if(!shown) {
@@ -103,11 +99,11 @@ while(bbs.online && !(console.aborted)) {
 			var node_num = parseInt(str, 10);
 			var user_num;
 			if(node_num > 0) {
-				if(users[node_num - 1] == undefined) {
+				user_num = users[node_num - 1];
+				if(user_num == undefined) {
 					write(format(bbs.text(NodeNIsNotInUse), node_num));
 					break;
 				}
-				user_num = users[node_num - 1];
 			}
 			else if(str.charAt(0) == '#')
 				user_num = parseInt(str.slice(1), 10);
@@ -121,6 +117,10 @@ while(bbs.online && !(console.aborted)) {
 					write(bbs.text(UnknownUser));
 					break;
 				}
+			}
+			if(user_num == user.number && !user.is_sysop) {
+				write(format(bbs.text(NoNeedToSendMsgToSelf)));
+				break;
 			}
 			var user_name = system.username(user_num);
 			write(format(bbs.text(SendingTelegramToUser), user_name, user_num));

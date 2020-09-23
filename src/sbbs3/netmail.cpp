@@ -204,7 +204,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		SAFECOPY(tmp, cfg.data_dir);
 		if(tmp[0]=='.')    /* Relative path */
 			sprintf(tmp,"%s%s", cfg.node_dir, cfg.data_dir);
-		sprintf(str,"%sfile/%04u.out/%s",tmp,useron.number,fname);
+		SAFEPRINTF3(str,"%sfile/%04u.out/%s",tmp,useron.number,fname);
 		SAFECOPY(subj, str);
 		if(fexistcase(str)) {
 			bputs(text[FileAlreadyThere]);
@@ -311,7 +311,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	smb_t smb;
 	memset(&smb, 0, sizeof(smb));
 	smb.subnum = INVALID_SUB;
-	int result = savemsg(&cfg, &smb, &msg, &client, startup->host_name, buf, remsg);
+	int result = savemsg(&cfg, &smb, &msg, &client, server_host_name(), buf, remsg);
 	free(buf);
 	smb_close(&smb);
 	smb_freemsgmem(&msg);
@@ -1120,13 +1120,13 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
 	editor_info_to_msg(&msg, editor, charset);
 
-	i = savemsg(&cfg, &smb, &msg, &client, startup->host_name, msgbuf, remsg);
+	i = savemsg(&cfg, &smb, &msg, &client, server_host_name(), msgbuf, remsg);
 	free(msgbuf);
 
 	if(i!=SMB_SUCCESS) {
@@ -1396,7 +1396,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
 	smb_hfield_str(&msg,SUBJECT,title);
 
@@ -1423,8 +1423,30 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	sprintf(str,"sent QWK NetMail to %s (%s)"
+	SAFEPRINTF2(str,"sent QWK NetMail to %s (%s)"
 		,to,fulladdr);
 	logline("EN",str);
 	return(true);
+}
+
+extern "C" BOOL is_supported_netmail_addr(scfg_t* cfg, const char* addr)
+{
+	switch (smb_netaddr_type(addr)) {
+		case NET_FIDO:
+			return INT_TO_BOOL(cfg->total_faddrs && (cfg->netmail_misc&NMAIL_ALLOW));
+		case NET_INTERNET:
+			return INT_TO_BOOL(cfg->inetmail_misc&NMAIL_ALLOW);
+		case NET_QWK:
+		{
+			char fulladdr[256] = "";
+			const char* p = strchr(addr, '@');
+			if(p == NULL)
+				return FALSE;
+			qwk_route(cfg, p + 1, fulladdr, sizeof(fulladdr)-1);
+			return fulladdr[0] != 0;
+		}
+		default:
+			return FALSE;
+	}
+	return FALSE;
 }

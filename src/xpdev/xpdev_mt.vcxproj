@@ -86,7 +86,7 @@
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN32;_LIB;LINK_LIST_THREADSAFE;%(PreprocessorDefinitions);HAS_STDINT_H</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeaderOutputFile>.\msvc.win32.release_mt/xpdev_mt.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\msvc.win32.release_mt/</AssemblerListingLocation>

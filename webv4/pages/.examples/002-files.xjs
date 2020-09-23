@@ -1,0 +1,130 @@
+<!--Files-->
+
+<?xjs
+	load(settings.web_lib + 'request.js');
+	load(settings.web_lib + 'files.js');
+    locale.section = 'page_files';
+	if (Request.has_param('dir') && file_area.dir[Request.get_param('dir')]) {
+?>
+	<ol class="breadcrumb">
+		<li>
+			<a href="./?page=<? Request.write_param('page'); ?>">
+				<? locale.write('title'); ?>
+			</a>
+		</li>
+		<li>
+			<a href="./?page=<? Request.write_param('page'); ?>&amp;library=<? write(file_area.dir[Request.get_param('dir')].lib_index); ?>">
+				<? write(file_area.dir[Request.get_param('dir')].lib_name); ?>
+			</a>
+		</li>
+		<li>
+			<a href="./?page=<? Request.write_param('page'); ?>&amp;dir=<? Request.write_param('dir'); ?>">
+				<? Request.write_param('dir'); ?>
+			</a>
+		</li>
+	</ol>
+
+	<?xjs function writeFileDetails(file) { ?>
+		<a href="./api/files.ssjs?call=download-file&amp;dir=<? Request.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+			<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
+			<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
+			<?xjs if (typeof file.extdesc === 'undefined') { ?>
+				<p><? write(file.desc); ?></p>
+			<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) { ?>
+				<pre class="ansi"><? write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
+			<?xjs } else { ?>
+				<pre class="list"><? write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?></pre>
+			<?xjs } ?>
+		</a>
+	<?xjs } ?>
+
+	<div class="clearfix" style="margin-bottom:1em;">
+		<div class="dropdown pull-right">
+			<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+				Sort by <span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu dropdown-menu-right">
+				<li class="text-right"><a href="#" onclick="file_sort('data-uploaded', true)">Date Uploaded <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-uploaded', false)">Date Uploaded <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-name', true)">Name <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-name', false)">Name <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-size', true)">Size <span class="glyphicon glyphicon-chevron-up" aria-hidden="true"></span></a></li>
+				<li class="text-right"><a href="#" onclick="file_sort('data-size', false)">Size <span class="glyphicon glyphicon-chevron-down" aria-hidden="true"></span></a></li>
+			</ul>
+		</div>
+	</div>
+	<div id="file-list-container" class="list-group">
+	<?xjs listFiles(Request.get_param('dir')).forEach(writeFileDetails); ?>
+	</div>
+
+<?xjs } else if (Request.has_param('library') && file_area.lib_list[Request.get_param('library')]) { ?>
+
+	<ol class="breadcrumb">
+		<li>
+			<a href="./?page=<? Request.write_param('page'); ?>">
+				<? locale.write('title'); ?>
+			</a>
+		</li>
+		<li>
+			<a href="./?page=<? Request.write_param('page'); ?>&amp;library=<? Request.write_param('library'); ?>">
+				<? write(file_area.lib_list[Request.get_param('library')].name); ?>
+			</a>
+		</li>
+	</ol>
+
+
+	<?xjs function writeDirectory(dir) { ?>
+		<a href="./?page=<? Request.write_param('page'); ?>&amp;dir=<? write(dir.dir.code); ?>" class="list-group-item striped">
+			<h4><strong><? write(dir.dir.name); ?></strong></h4>
+			<p>
+				<? write(dir.dir.description); ?>:
+				<? write(dir.fileCount); ?>
+				<? locale.write(dir.fileCount === 1 ? 'stat_suffix_file' : 'stat_suffix_files'); ?>
+			</p>
+		</a>
+	<?xjs } ?>
+
+	<div id="file-list-container" class="list-group">
+		<?xjs listDirectories(Request.get_param('library')).forEach(writeDirectory); ?>
+	</div>
+
+<?xjs } else { ?>
+
+	<ol class="breadcrumb">
+		<li>
+			<a href="./?page=<? Request.write_param('page'); ?>"><? locale.write('title'); ?></a>
+		</li>
+	</ol>
+
+	<?xjs function writeLibrary(library) { ?>
+		<a href="./?page=<? Request.write_param('page'); ?>&amp;library=<? write(library.index); ?>" class="list-group-item striped">
+			<h3><strong><? write(library.name); ?></strong></h3>
+			<p>
+				<? write(library.description); ?>:
+				<? write(library.dir_list.length); ?>
+				<? locale.write(library.dir_list.length === 1 ? 'stat_suffix_directory' : 'stat_suffix_directories'); ?>
+			</p>
+		</a>
+	<?xjs } ?>
+
+	<div id="file-list-container" class="list-group">
+		<?xjs listLibraries().forEach(writeLibrary); ?>
+	</div>
+
+<?xjs } ?>
+
+<script type="text/javascript">
+	function file_sort(field, ascending) {
+		const list = Array.from(document.querySelectorAll('a[data-file-list-element]')).sort((a, b) => {
+			if (a.getAttribute(field) == b.getAttribute(field)) return 0;
+			if (a.getAttribute(field) > b.getAttribute(field)) {
+				return ascending ? 1 : -1
+			} else {
+				return ascending ? -1 : 1
+			}
+		});
+		const flc = document.getElementById('file-list-container');
+		flc.innerHTML = '';
+		list.forEach(e => flc.appendChild(e));
+	}
+</script>

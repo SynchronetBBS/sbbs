@@ -736,8 +736,8 @@ function verify_bbs(bbs)
     for(i in bbs.service) {
         if(js.terminated)
             break;
-        var protocol = bbs.service[i].protocol.toLowerCase();
-        if(protocol != "telnet" && protocol != "rlogin")
+        var protocol = bbs.service[i].protocol;
+        if(!protocol || (protocol.toLowerCase() != "telnet" && protocol.toLowerCase() != "rlogin"))
             continue;
         bbs.entry.autoverify.attempts++;
         var result = verify_terminal_service(bbs.service[i]);
@@ -1082,7 +1082,7 @@ function browse(list)
 	var num_entries_on_page = 0;
 	var prompt_row = 0;
 	var previous_prompt_row = 0;
-	while(!js.terminated) {
+	while(js.global.bbs.online && !js.terminated) {
 //		console.clear(LIGHTGRAY);
 		console.home();
 		console.current_column = 0;
@@ -1590,7 +1590,7 @@ function view(list, current)
 {
 	console.line_counter = 0;
 	console.clear(LIGHTGRAY);
-	while(!js.terminated) {
+	while(js.global.bbs.online && !js.terminated) {
 
 		/* Bounds checking: */
 		if(current < 0) {
@@ -1746,7 +1746,7 @@ function view(list, current)
 					}
 					console.clear();
 					lib.draw_preview(bbs);
-					key = console.getkey();
+					key = console.getkey(K_NOSPIN);
 					console.clear();
 					if(!is_nav_key(key))
 						break;
@@ -1763,10 +1763,12 @@ function view(list, current)
 								current++;
 								break;
 						}
-						if(current >= list.length)
+						if(current < 0 || current >= list.length)
 							break;
 						bbs = list[current];
 					} while(!bbs.preview);
+					if(current < 0 || current >= list.length)
+						break;
 				}
 				break;
 			case 'L':
@@ -1778,7 +1780,7 @@ function view(list, current)
 					if(result == true) {
 						console.clear();
 						lib.draw_preview(copy);
-						console.getkey();
+						console.getkey(K_NOSPIN);
 					} else {
 						console.crlf();
 						alert("Result: " + result);
@@ -2327,6 +2329,9 @@ function main()
 			case "-exclude":
 				exclude.push(val);
 				break;
+			case "-force":
+				export_freq = 0;
+				break;
 			case "-format":
 				if(val === undefined || val === '?' || !val.length) {
 					print("Supported list formats:");
@@ -2577,6 +2582,9 @@ function main()
 					if(limit && count >= limit)
 						break;
 				}
+				break;
+			case "share":
+				print(lfexpand(JSON.stringify(lib.share_list(list, optval[cmd] == "qwk"), null, 1)));
 				break;
 			case "add":
 				if(lib.system_exists(list, system.name)) {

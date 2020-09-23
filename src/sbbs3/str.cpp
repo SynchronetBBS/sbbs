@@ -111,7 +111,7 @@ void sbbs_t::userlist(long mode)
 		}
 		j++; 
 	}
-	close(userfile);
+	closeuserdat(userfile);
 	if(i<=k) {	/* aborted */
 		if(sort)
 			for(i=0;i<j;i++)
@@ -702,7 +702,7 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 	SAFECOPY(pass,passwd);
 	strupr(pass);
 
-	if(strlen(pass) < MIN_PASS_LEN) {
+	if(strlen(pass) < cfg.min_pwlen) {
 		bputs(text[PasswordTooShort]);
 		return(false); 
 	}
@@ -1059,8 +1059,8 @@ extern RingBuf* node_inbuf[];
 bool sbbs_t::spy(uint i /* node_num */)
 {
 	char	ch;
-	char	ansi_seq[32];
-	int		ansi_len;
+	char	ansi_seq[256];
+	size_t	ansi_len;
 	int		in;
 
 	if(!i || i>MAX_NODES) {
@@ -1077,7 +1077,10 @@ bool sbbs_t::spy(uint i /* node_num */)
 	}
 	bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
 		"\r\n\r\n",i);
-	spy_socket[i-1]=client_socket;
+	if(passthru_thread_running)
+		spy_socket[i-1]=client_socket_dup;
+	else
+		spy_socket[i-1]=client_socket;
 	ansi_len=0;
 	while(online 
 		&& client_socket!=INVALID_SOCKET 
@@ -1089,29 +1092,45 @@ bool sbbs_t::spy(uint i /* node_num */)
 			continue;
 		}
 		ch=in;
-		if(ch==ESC) {
-			if(!ansi_len) {
-				ansi_seq[ansi_len++]=ch;
-				continue;
-			}
-			ansi_len=0;
-		}
-		if(ansi_len && ansi_len<(int)sizeof(ansi_seq)-2) {
-			if(ansi_len==1) {
-				if(ch=='[') {
-					ansi_seq[ansi_len++]=ch;
-					continue;
+		if(ch == ESC) {
+			if(ansi_len)
+				ansi_len = 0;
+			else {
+				if((in = incom(500)) != NOINP) {
+					if(in == '[') {
+						ansi_seq[ansi_len++] = ESC;
+						ansi_seq[ansi_len++] = '[';
+						continue;
+					} else {
+						if(node_inbuf[i-1] != NULL) {
+							RingBufWrite(node_inbuf[i-1], (uchar*)&ch, sizeof(ch));
+							ch = in;
+						}
+					}
 				}
-				ansi_len=0;
 			}
-			if(ch=='R') { /* throw-away cursor position report */
-				ansi_len=0;
-				continue;
-			}
-			ansi_seq[ansi_len++]=ch;
-			if(isalpha(ch)) {
-				if(node_inbuf[i-1]!=NULL) 
-					RingBufWrite(node_inbuf[i-1],(uchar*)ansi_seq,ansi_len);
+		}
+		if(ansi_len) {
+			if(ansi_len < sizeof(ansi_seq))
+				ansi_seq[ansi_len++] = ch;
+			if(ch >= '@' && ch <= '~') {
+				switch(ch) {
+					case 'A':	// Up
+					case 'B':	// Down
+					case 'C':	// Right
+					case 'D':	// Left
+					case 'F':	// Preceding line
+					case 'H':	// Home
+					case 'K':	// End
+					case 'V':	// PageUp
+					case 'U':	// PageDn
+					case '@':	// Insert
+					case '~':	// Various VT-220
+						// Pass-through these sequences to spied-upon node (eat all others)
+						if(node_inbuf[i-1] != NULL) 
+							RingBufWrite(node_inbuf[i-1], (uchar*)ansi_seq, ansi_len);
+						break;
+				}
 				ansi_len=0;
 			}
 			continue;
@@ -1120,7 +1139,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			lncntr=0;						/* defeat pause */
 			spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
 			ch=handle_ctrlkey(ch,K_NONE);
-			spy_socket[i-1]=client_socket;	/* enable spy output */
+			spy_socket[i-1] = passthru_thread_running ? client_socket_dup : client_socket;	/* enable spy output */
 			if(ch==0)
 				continue;
 		}
@@ -1128,6 +1147,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
 	}
 	spy_socket[i-1]=INVALID_SOCKET;
+
 	return(true);
 }
 
@@ -1271,4 +1291,9 @@ char* sbbs_t::age_of_posted_item(char* buf, size_t max, time_t t)
 		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
 	safe_snprintf(buf, max, text[AgeOfPostedItem], value, units, past);
 	return buf;
+}
+
+char* sbbs_t::server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : cfg.sys_inetaddr;
 }

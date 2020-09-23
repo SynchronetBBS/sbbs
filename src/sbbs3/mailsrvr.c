@@ -237,6 +237,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static void update_clients(void)
 {
 	if(startup!=NULL && startup->clients!=NULL)
@@ -1143,7 +1148,7 @@ static void pop3_thread(void* arg)
 		srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));	/* seed random number generator */
 		rand();	/* throw-away first result */
 		safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%.128s>"
-			,rand(),socket,(ulong)time(NULL),(ulong)clock(),startup->host_name);
+			,rand(),socket,(ulong)time(NULL),(ulong)clock(), server_host_name());
 
 		sockprintf(socket,client.protocol,session,"+OK Synchronet %s Server %s-%s Ready %s"
 			,client.protocol, revision,PLATFORM_DESC,challenge);
@@ -2231,7 +2236,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		if(*js_glob==NULL) {
 			/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 			if(!js_CreateCommonObjects(*js_cx, &scfg, &scfg, NULL
-						,uptime, startup->host_name, SOCKLIB_DESC	/* system */
+						,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 						,&js_callback								/* js */
 						,&startup->js
 						,client, sock, -1							/* client */
@@ -3181,7 +3186,7 @@ static void smtp_thread(void* arg)
 	/* SMTP session active: */
 
 	sockprintf(socket,client.protocol,session,"220 %s Synchronet %s Server %s-%s Ready"
-		,startup->host_name, client.protocol, revision, PLATFORM_DESC);
+		,server_host_name(), client.protocol, revision, PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, client.protocol, session, buf, sizeof(buf));
 		if(rd<0) 
@@ -3712,7 +3717,7 @@ static void smtp_thread(void* arg)
 					smb_hfield_str(&msg, RECIPIENT, rcpt_name);
 
 					smb.subnum=subnum;
-					if((i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf, /* remsg: */NULL))!=SMB_SUCCESS) {
+					if((i=savemsg(&scfg, &smb, &msg, &client, server_host_name(), msgbuf, /* remsg: */NULL))!=SMB_SUCCESS) {
 						lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) posting message to %s (%s)"
 							,socket, client.protocol, i, smb.last_error, scfg.sub[subnum]->sname, smb.file);
 						sockprintf(socket,client.protocol,session, "452 ERROR %d (%s) posting message"
@@ -3818,7 +3823,7 @@ static void smtp_thread(void* arg)
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
 				/* creates message data, but no header or index records (since msg.to==NULL) */
-				i=savemsg(&scfg, &smb, &msg, &client, startup->host_name, msgbuf, /* remsg: */NULL);
+				i=savemsg(&scfg, &smb, &msg, &client, server_host_name(), msgbuf, /* remsg: */NULL);
 				if(smb_countattachments(&smb, &msg, msgbuf) > 0)
 					msg.hdr.auxattr |= MSG_MIMEATTACH;
 				msg.hdr.netattr |= MSG_KILLSENT;
@@ -3877,7 +3882,7 @@ static void smtp_thread(void* arg)
 						,host_name,hello_name
 						,smtp.client_addr.addr.sa_family==AF_INET6?"IPv6: ":""
 						,host_ip
-						,startup->host_name
+						,server_host_name()
 						,server_addr.addr.sa_family==AF_INET6?"IPv6: ":""
 						,server_ip
 						,server_name
@@ -4068,7 +4073,7 @@ static void smtp_thread(void* arg)
 			p=buf+4;
 			SKIP_WHITESPACE(p);
 			SAFECOPY(hello_name,p);
-			sockprintf(socket,client.protocol,session,"250 %s",startup->host_name);
+			sockprintf(socket,client.protocol,session,"250 %s",server_host_name());
 			esmtp=FALSE;
 			state=SMTP_STATE_HELO;
 			cmd=SMTP_CMD_NONE;
@@ -4080,7 +4085,7 @@ static void smtp_thread(void* arg)
 			p=buf+4;
 			SKIP_WHITESPACE(p);
 			SAFECOPY(hello_name,p);
-			sockprintf(socket,client.protocol,session,"250-%s",startup->host_name);
+			sockprintf(socket,client.protocol,session,"250-%s",server_host_name());
 			sockprintf(socket,client.protocol,session,"250-AUTH PLAIN LOGIN CRAM-MD5");
 			sockprintf(socket,client.protocol,session,"250-SEND");
 			sockprintf(socket,client.protocol,session,"250-SOML");
@@ -4209,7 +4214,7 @@ static void smtp_thread(void* arg)
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
 			safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%s>"
-				,rand(),socket,(ulong)time(NULL),(ulong)clock(),startup->host_name);
+				,rand(),socket,(ulong)time(NULL),(ulong)clock(),server_host_name());
 #if 0
 			lprintf(LOG_DEBUG,"%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);
@@ -4300,7 +4305,7 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(buf,"QUIT")) {
-			sockprintf(socket,client.protocol,session,"221 %s Service closing transmission channel",startup->host_name);
+			sockprintf(socket,client.protocol,session,"221 %s Service closing transmission channel",server_host_name());
 			break;
 		} 
 		if(!stricmp(buf,"NOOP")) {
@@ -5104,7 +5109,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	else
 		attempts[0]=0;
 	SAFEPRINTF2(str,"%s reporting delivery failure of message %s"
-		,startup->host_name, attempts);
+		,server_host_name(), attempts);
 	smb_hfield_str(&newmsg, SMB_COMMENT, str);
 	SAFEPRINTF2(str,"from %s to %s\r\n"
 		,msg->from
@@ -5294,7 +5299,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			return INVALID_SOCKET;
 		}
 
-		sockprintf(sock, "SEND", *session,"EHLO %s",startup->host_name);
+		sockprintf(sock, "SEND", *session,"EHLO %s",server_host_name());
 		switch (sockgetrsp_opt(sock, "SEND", *session,"250", "STARTTLS", buf, sizeof(buf))) {
 			case -1:
 				if(startup->options&MAIL_OPT_RELAY_TX 
@@ -5305,7 +5310,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 					mail_close_socket(&sock, session);
 					return INVALID_SOCKET;
 				}
-				sockprintf(sock, "SEND", *session,"HELO %s",startup->host_name);
+				sockprintf(sock, "SEND", *session,"HELO %s",server_host_name());
 				if(!sockgetrsp(sock, "SEND", *session,"250",buf,sizeof(buf))) {
 					SAFEPRINTF3(err,badrsp_err,server,buf,"250");
 					remove_msg_intransit(smb,msg);
@@ -5371,7 +5376,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 								continue;
 							}
 						}
-						sockprintf(sock,prot,*session,"EHLO %s",startup->host_name);
+						sockprintf(sock,prot,*session,"EHLO %s",server_host_name());
 						if(!sockgetrsp(sock, prot, *session,"250",buf,sizeof(buf))) {
 							SAFEPRINTF3(err,badrsp_err,server,buf,"220");
 							lprintf(LOG_INFO, "%04d SEND/TLS %s", sock, err);
@@ -5862,7 +5867,6 @@ static void cleanup(int code)
 		}
 		lprintf(LOG_INFO, "0000 Done waiting for child threads to terminate");
 	}
-
 	free_cfg(&scfg);
 
 	semfile_list_free(&recycle_semfiles);
@@ -5894,7 +5898,6 @@ static void cleanup(int code)
 	if(WSAInitialized && WSACleanup()!=0) 
 		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
 #endif
-
 	thread_down();
 	status("Down");
 	if(terminate_server || code) {
@@ -6011,6 +6014,8 @@ void DLLCALL mail_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		protected_uint32_init(&active_clients, 0);
+
 		/* Setup intelligent defaults */
 		if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
 		if(startup->submission_port==0)			startup->submission_port=IPPORT_SUBMISSION;
@@ -6079,13 +6084,12 @@ void DLLCALL mail_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		MKDIR(scfg.temp_dir);
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
-		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 
 		/* Parse the mailproc[.host].ini */
 		mailproc_list=NULL;
@@ -6128,9 +6132,6 @@ void DLLCALL mail_server(void* arg)
 			iniCloseFile(fp);
 		}
 
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
-
 		if((t=checktime())!=0) {   /* Check binary time */
 			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 		}
@@ -6148,7 +6149,6 @@ void DLLCALL mail_server(void* arg)
 
 		lprintf(LOG_DEBUG,"Maximum inactivity: %u seconds",startup->max_inactivity);
 
-		protected_uint32_init(&active_clients, 0);
 		update_clients();
 
 		/* open a socket and wait for a client */

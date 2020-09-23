@@ -1236,7 +1236,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		if(stricmp(msgtmp,path)) {
 			removecase(msgtmp);
 			if(fexistcase(path))
-				fcopy(path, msgtmp);
+				CopyFile(path, msgtmp, /* failIfExists: */FALSE);
 		}
 
 		editor_inf(useron_xedit,/* to: */fname,/* from: */nulstr,/* subj: */nulstr,/* mode: */0,INVALID_SUB,/* tagfile: */NULL);
@@ -1378,7 +1378,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 
 	/* Security logging */
 	msg_client_hfields(msg,&client);
-	smb_hfield_str(msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(msg,SENDERSERVER, server_host_name());
 
 	username(&cfg,usernumber,touser);
 	smb_hfield_str(msg,RECIPIENT,touser);

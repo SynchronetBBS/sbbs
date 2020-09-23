@@ -143,8 +143,9 @@ object FtpForm: TFtpForm
     Width = 509
     Height = 86
     Align = alClient
+    Color = clBlack
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
+    Font.Color = clWhite
     Font.Height = -12
     Font.Name = 'MS Sans Serif'
     Font.Style = []

@@ -326,7 +326,7 @@ object PropertiesDlg: TPropertiesDlg
         Height = 21
         ItemHeight = 13
         TabOrder = 0
-        Text = 'Node List'
+        Text = 'Source'
         OnChange = SourceComboBoxChange
         Items.Strings = (
           'Node List'
@@ -380,6 +380,7 @@ object PropertiesDlg: TPropertiesDlg
         Height = 21
         ItemHeight = 13
         TabOrder = 5
+        Text = 'Target'
         Items.Strings = (
           'Node List'
           'Client List'

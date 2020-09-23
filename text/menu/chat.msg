@@ -5,7 +5,7 @@
 Ûß‰ß4 HWJoin a Chat NBß‰ßÛ
 Û HCJY NCJoin/initiate multinode chatW…BÛ
 Û HCPNC Join/start private node/node chatG BÛ
-Û HCCY NCChat with @SYSOP-L##############@G BÛ
+Û HCCY NCChat with Sysop: HY@SYSAVAIL-L####@NG BÛ
 Û HCTY NCTalk with The Guru (AI)WŠBÛ
 Û HCFY NCFinger (query) remote user/systemW BÛ
 Û HCRY NCInternet Relay Chat (IRC)WˆBÛ

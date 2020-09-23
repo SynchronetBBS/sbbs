@@ -34,6 +34,7 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
+#include "sbbs.h"
 #include <vcl.h>
 #pragma hdrstop
 #include <io.h>
@@ -129,6 +130,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 {
 	static int nodedab;
     char	str[256];
+	char	tmp[128];
 	char	status[128];
     int		i,n,rd,digits=1;
     node_t	node;
@@ -138,11 +140,11 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 
     if(nodedab<1) {
     	char path[MAX_PATH+1];
-        sprintf(path,"%sNODE.DAB",MainForm->global.ctrl_dir);
+        sprintf(path,"%snode.dab",MainForm->global.ctrl_dir);
     	nodedab=_sopen(path,O_RDONLY|O_BINARY|O_CREAT, SH_DENYNONE, S_IREAD|S_IWRITE);
 		if(nodedab==-1) {
 		    ListBox->Items->Clear();
-        	ListBox->Items->Add("Error "+AnsiString(errno)+" opening NODE.DAB");
+			ListBox->Items->Add("!Error "+AnsiString(errno)+" opening node.dab");
             return;
         }
     }
@@ -169,11 +171,11 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
 
         if(rd!=sizeof(node_t))
         	continue;
-            
-		sprintf(str,"%*d %s"
+
+		safe_snprintf(str, sizeof(str), "%*d %s"
 			,digits
 			,n+1
-			,nodestatus(&MainForm->cfg,&node,status,sizeof(status),n+1));
+			,strip_ctrl(nodestatus(&MainForm->cfg, &node, status, sizeof(status), n+1), tmp));
         AnsiString Str=AnsiString(str);
         if(ListBox->Items->Count<n+1)
         	ListBox->Items->Add(Str);

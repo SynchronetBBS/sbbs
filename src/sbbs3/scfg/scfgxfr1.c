@@ -337,7 +337,7 @@ void xfer_opts()
 									,cfg.fview[i]->ext,sizeof(cfg.fview[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.fview[i]->cmd,sizeof(cfg.fview[i]->cmd)-1,K_EDIT);
@@ -468,7 +468,7 @@ void xfer_opts()
 									,cfg.ftest[i]->ext,sizeof(cfg.ftest[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.ftest[i]->cmd,sizeof(cfg.ftest[i]->cmd)-1,K_EDIT);
@@ -602,7 +602,7 @@ void xfer_opts()
 									,cfg.dlevent[i]->ext,sizeof(cfg.dlevent[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.dlevent[i]->cmd,sizeof(cfg.dlevent[i]->cmd)-1,K_EDIT);
@@ -727,7 +727,7 @@ void xfer_opts()
 									,cfg.fextr[i]->ext,sizeof(cfg.fextr[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.fextr[i]->cmd,sizeof(cfg.fextr[i]->cmd)-1,K_EDIT);
@@ -845,7 +845,7 @@ void xfer_opts()
 									,cfg.fcomp[i]->ext,sizeof(cfg.fcomp[i]->ext)-1,K_EDIT);
 								break;
 							case 1:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.fcomp[i]->cmd,sizeof(cfg.fcomp[i]->cmd)-1,K_EDIT);
@@ -998,31 +998,31 @@ void xfer_opts()
 								getar(str,cfg.prot[i]->arstr);
 								break;
 							case 3:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.prot[i]->ulcmd,sizeof(cfg.prot[i]->ulcmd)-1,K_EDIT);
 								break;
 							case 4:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.prot[i]->dlcmd,sizeof(cfg.prot[i]->dlcmd)-1,K_EDIT);
 								break;
 							case 5:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.prot[i]->batulcmd,sizeof(cfg.prot[i]->batulcmd)-1,K_EDIT);
 								break;
 							case 6:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.prot[i]->batdlcmd,sizeof(cfg.prot[i]->batdlcmd)-1,K_EDIT);
 								break;
 							case 7:
-								uifc.helpbuf = SCFG_CMDLINE_SPEC_HELP;
+								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Command"
 									,cfg.prot[i]->bicmd,sizeof(cfg.prot[i]->bicmd)-1,K_EDIT);

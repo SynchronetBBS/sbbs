@@ -316,7 +316,7 @@ bool sbbs_t::upload(uint dirnum)
 			,cfg.dir[dirnum]->sname);
 	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
-	sprintf(str,"%s%s",path,fname);
+	SAFEPRINTF2(str,"%s%s",path,fname);
 	if(fexistcase(str)) {   /* File is on disk */
 #ifdef _WIN32
 		GetShortPathName(str, spath, sizeof(spath));
@@ -459,7 +459,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(!noyes(text[AnonymousQ]))
 			f.misc|=FM_ANON; 
 	}
-	sprintf(str,"%s%s",path,fname);
+	SAFEPRINTF2(str,"%s%s",path,fname);
 	if(fexistcase(str)) {   /* File is on disk */
 		if(!uploadfile(&f))
 			return(false); 
@@ -570,7 +570,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	SYNC;
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {
-		sprintf(str,"%s%s",path,dirent->d_name);
+		SAFEPRINTF2(str,"%s%s",path,dirent->d_name);
 		if(isdir(str))
 			continue;
 #ifdef _WIN32

@@ -3339,7 +3339,7 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 			sbbs->bputs("\1n: \1h");
 			if(!sbbs->getstr(line, 70, i < 4 ? (K_WRAP|K_MSG) : (K_MSG)))
 				break;
-			sprintf(str,"%4s%s\r\n",nulstr,line);
+			SAFEPRINTF2(str,"%4s%s\r\n",nulstr,line);
 			SAFECAT(buf, str);
 			if(i && line[0])
 				SAFECAT(logbuf, " ");

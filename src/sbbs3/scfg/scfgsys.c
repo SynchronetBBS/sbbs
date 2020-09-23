@@ -39,7 +39,9 @@ static void configure_dst(void)
 	strcpy(opt[1],"No");
 	strcpy(opt[2],"Automatic");
 	opt[3][0]=0;
-	int i=1;
+	int i = 2;
+	if(!(cfg.sys_misc & SM_AUTO_DST))
+		i = !(cfg.sys_timezone & DAYLIGHT);
 	uifc.helpbuf=
 		"`Daylight Saving Time (DST):`\n"
 		"\n"
@@ -99,15 +101,17 @@ void sys_cfg(void)
 		sprintf(opt[i++],"%-33.33s%s","Operator",cfg.sys_op);
 		sprintf(opt[i++],"%-33.33s%s","Password","**********");
 
-		sprintf(str,"%s Password"
+		SAFEPRINTF(str,"%s Password"
 			,cfg.sys_misc&SM_PWEDIT && cfg.sys_pwdays ? "Users Must Change"
 			: cfg.sys_pwdays ? "Users Get New Random" : "Users Can Change");
 		if(cfg.sys_pwdays)
-			sprintf(tmp,"Every %u Days",cfg.sys_pwdays);
+			SAFEPRINTF(tmp,"Every %u Days",cfg.sys_pwdays);
 		else if(cfg.sys_misc&SM_PWEDIT)
-			strcpy(tmp,"Yes");
+			SAFECOPY(tmp,"Yes");
 		else
-			strcpy(tmp,"No");
+			SAFECOPY(tmp,"No");
+		if(cfg.sys_misc&SM_PWEDIT)
+			sprintf(tmp + strlen(tmp), ", %u chars minimum", cfg.min_pwlen);
 		sprintf(opt[i++],"%-33.33s%s",str,tmp);
 
 		sprintf(opt[i++],"%-33.33s%u","Days to Preserve Deleted Users"
@@ -170,7 +174,7 @@ void sys_cfg(void)
 				uifc.input(WIN_MID,0,0,"Location",cfg.sys_location,sizeof(cfg.sys_location)-1,K_EDIT);
 				break;
 			case 2:
-				i=0;
+				i = !(cfg.sys_timezone & US_ZONE);
 				uifc.helpbuf=
 					"`United States Time Zone:`\n"
 					"\n"
@@ -410,7 +414,7 @@ void sys_cfg(void)
 				uifc.input(WIN_MID,0,0,"System Password",cfg.sys_pass,sizeof(cfg.sys_pass)-1,K_EDIT|K_UPPER);
 				break;
 			case 5:
-				i=1;
+				i = (cfg.sys_misc&SM_PWEDIT) ? 0 : 1;
 				uifc.helpbuf=
 					"`Allow Users to Change Their Password:`\n"
 					"\n"
@@ -427,27 +431,41 @@ void sys_cfg(void)
 				else if(i==1 && cfg.sys_misc&SM_PWEDIT) {
 					cfg.sys_misc&=~SM_PWEDIT;
 					uifc.changes=1; 
+				} else if(i == -1)
+					break;
+
+				if(cfg.sys_misc&SM_PWEDIT) {
+					SAFEPRINTF(tmp, "%u", cfg.min_pwlen);
+					SAFEPRINTF2(str, "Minimum Password Length (between %u and %u)", MIN_PASS_LEN, LEN_PASS);
+					if(uifc.input(WIN_MID|WIN_SAV,0,0, str
+						,tmp, 2, K_NUMBER|K_EDIT) < 1)
+						break;
+					cfg.min_pwlen=atoi(tmp);
+					if(cfg.min_pwlen < MIN_PASS_LEN)
+						cfg.min_pwlen = MIN_PASS_LEN;
+					if(cfg.min_pwlen > LEN_PASS)
+						cfg.min_pwlen = LEN_PASS;
 				}
-				i=0;
+				i = cfg.sys_pwdays ? 0 : 1;
 				uifc.helpbuf=
-					"`Force Periodic Password uifc.changes:`\n"
+					"`Force Periodic New Password:`\n"
 					"\n"
-					"If you want your users to be forced to change their passwords\n"
-					"periodically, select `Yes`.\n"
+					"If you want your users to be forced to have a new password periodically,\n"
+					"select `Yes`.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Force Periodic Password Changes",opt);
+					,"Force Periodic New Password",uifcYesNoOpts);
 				if(!i) {
 					ultoa(cfg.sys_pwdays,str,10);
 				uifc.helpbuf=
-					"`Maximum Days Between Password uifc.changes:`\n"
+					"`Maximum Days Between New Passwords:`\n"
 					"\n"
-					"Enter the maximum number of days allowed between password uifc.changes.\n"
+					"Enter the maximum number of days allowed between password changes.\n"
 					"If a user has not voluntarily changed his or her password in this\n"
 					"many days, he or she will be forced to change their password upon\n"
 					"logon.\n"
 				;
-					uifc.input(WIN_MID,0,0,"Maximum Days Between Password Changes"
+					uifc.input(WIN_MID,0,0,"Maximum Days Between New Password"
 						,str,5,K_NUMBER|K_EDIT);
 					cfg.sys_pwdays=atoi(str); 
 				}
@@ -476,7 +494,7 @@ void sys_cfg(void)
 				uifc.helpbuf=
 					"`Maximum Days of Inactivity Before Auto-Deletion:`\n"
 					"\n"
-					"If you want users that haven't logged on in certain period of time to\n"
+					"If you want users that have not logged-on in a certain period of time to\n"
 					"be automatically deleted, set this value to the maximum number of days\n"
 					"of inactivity before the user is deleted. Setting this value to `0`\n"
 					"disables this feature.\n"
@@ -491,9 +509,9 @@ void sys_cfg(void)
 				uifc.helpbuf=
 					"`New User Password:`\n"
 					"\n"
-					"If you want callers to only be able to logon as `New` if they know a\n"
-					"certain password, enter that password here. If you want any caller to\n"
-					"be able to logon as New, leave this option blank.\n"
+					"If you want callers to only be able to logon as `New` ~ only ~ if they know\n"
+					"a secret password, enter that password here.  If you prefer any caller\n"
+					"be able to logon as `New`, leave this option blank.\n"
 				;
 				uifc.input(WIN_MID,0,0,"New User Password",cfg.new_pass,sizeof(cfg.new_pass)-1
 					,K_EDIT|K_UPPER);
@@ -612,7 +630,8 @@ void sys_cfg(void)
 							uifc.helpbuf=
 								"`Allow Sysop Logins:`\n"
 								"\n"
-								"If you want to be able to login with sysop access, set this option to `Yes`.\n"
+								"If you want to be able to login with system operator access, set this\n"
+								"option to `Yes`.\n"
 							;
 							i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
 								,"Allow Sysop Logins",uifcYesNoOpts);
@@ -952,6 +971,8 @@ void sys_cfg(void)
 								"`New User Exemption Flags:`\n"
 								"\n"
 								"These are the exemptions that are automatically given to new users.\n"
+								"\n"
+								"See `http://wiki.synchro.net/access:exemptions` for details.\n"
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Exemption Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
@@ -963,6 +984,8 @@ void sys_cfg(void)
 								"`New User Restriction Flags:`\n"
 								"\n"
 								"These are the restrictions that are automatically given to new users.\n"
+								"\n"
+								"See `http://wiki.synchro.net/access:restrictions` for details.\n"
 							;
 							uifc.input(WIN_SAV|WIN_MID,0,0,"Restriction Flags",str,26
 								,K_EDIT|K_UPPER|K_ALPHA);
@@ -1084,8 +1107,8 @@ void sys_cfg(void)
 								"settings on this menu. The user can then change them to his or her\n"
 								"liking.\n"
 								"\n"
-								"See the Synchronet User Manual for more information on the individual\n"
-								"options available.\n"
+								"See the Synchronet User Manual (`http://synchro.net/docs/user.html`)\n"
+								"for more information on the individual options available.\n"
 							;
 							j=0;
 							k=0;
@@ -1128,7 +1151,7 @@ void sys_cfg(void)
 									,"Auto Hang-up After Xfer"
 									,cfg.new_misc&AUTOHANG ? "Yes":"No");
 								opt[i][0]=0;
-								j=uifc.list(WIN_BOT|WIN_RHT,2,1,0,&j,&k
+								j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,&k
 									,"Default Toggle Options",opt);
 								if(j==-1)
 									break;
@@ -1240,7 +1263,7 @@ void sys_cfg(void)
 									,"Color Terminal"
 									,cfg.uq&UQ_COLORTERM ? "Yes":"No");
 								opt[i][0]=0;
-								j=uifc.list(WIN_BOT|WIN_RHT,2,1,0,&j,&k
+								j=uifc.list(WIN_BOT|WIN_RHT|WIN_SAV,2,1,0,&j,&k
 									,"New User Questions",opt);
 								if(j==-1)
 									break;
@@ -1374,7 +1397,7 @@ void sys_cfg(void)
 								"Think of it as a password to guarantee that new users read the text\n"
 								"displayed to them.\n"
 							;
-							uifc.input(WIN_MID,0,0,"New User Magic Word",cfg.new_magic,sizeof(cfg.new_magic)-1
+							uifc.input(WIN_MID|WIN_SAV,0,0,"New User Magic Word",cfg.new_magic,sizeof(cfg.new_magic)-1
 								,K_EDIT|K_UPPER);
 							break;
 						case 1:
@@ -1384,6 +1407,8 @@ void sys_cfg(void)
 								"The Synchronet data directory contains almost all the data for your BBS.\n"
 								"This directory must be located where `ALL` nodes can access it and\n"
 								"`MUST NOT` be placed on a RAM disk or other volatile media.\n"
+								"\n"
+								"See `http://wiki.synchro.net/dir:data` for details.\n"
 								"\n"
 								"This option allows you to change the location of your data directory.\n"
 							;
@@ -1399,6 +1424,8 @@ void sys_cfg(void)
 								"`Log File Directory:`\n"
 								"\n"
 								"Log files will be stored in this directory.\n"
+								"\n"
+								"By default, this is set to the same as your Data File directory.\n"
 							;
 							strcpy(str,cfg.logs_dir);
 							if(uifc.input(WIN_MID|WIN_SAV,0,9,"Logs Directory"
@@ -1411,11 +1438,14 @@ void sys_cfg(void)
 							uifc.helpbuf=
 								"`Executable/Module File Directory:`\n"
 								"\n"
-								"The Synchronet exec directory contains executable files that your BBS\n"
-								"executes. This directory does `not` need to be in your DOS search path.\n"
+								"The Synchronet exec directory contains program and script files that the\n"
+								"BBS executes. This directory does `not` need to be in your OS search path.\n"
+								"\n"
 								"If you place programs in this directory for the BBS to execute, you\n"
-								"should place the `%!` abbreviation for the exec directory at the\n"
+								"should place the `%!` specifier for the `exec` directory at the\n"
 								"beginning of the configured command-lines.\n"
+								"\n"
+								"See `http://wiki.synchro.net/dir:exec` for details.\n"
 								"\n"
 								"This option allows you to change the location of your exec directory.\n"
 							;
@@ -1431,12 +1461,17 @@ void sys_cfg(void)
 								"`Modified Modules Directory:`\n"
 								"\n"
 								"This optional directory can be used to specify a location where modified\n"
-								"module files are stored. These modified modules will take precedence over\n"
-								"stock modules with the same filename (in the exec directory) and will\n"
-								"not be overwritten by future updates/upgrades.\n"
+								"module files are stored. These modified modules will take precedence\n"
+								"over modules with the same filename (in the `exec` directory) and will\n"
+								"`not be overwritten` by future updates/upgrades.\n"
 								"\n"
-								"If this directory is `blank`, then this feature is not used and all modules\n"
-								"are assumed to be located in the `exec` directory.\n"
+								"Sub-directory searches of this directory also take precedence\n"
+								"(e.g. `mods/load/*` overrides `exec/load/*`).\n"
+								"\n"
+								"If this directory is `blank`, then this feature is not used and all\n"
+								"modules are assumed to be located in the `exec` directory.\n"
+								"\n"
+								"See `http://wiki.synchro.net/dir:mods` for details.\n"
 							;
 							strcpy(str,cfg.mods_dir);
 							if(uifc.input(WIN_MID|WIN_SAV,0,9,"Mods Directory"
@@ -1483,9 +1518,9 @@ void sys_cfg(void)
 								"\n"
 								"This is the monetary value of a credit (How many credits per dollar).\n"
 								"This value should be a power of 2 (1, 2, 4, 8, 16, 32, 64, 128, etc.)\n"
-								"since credits are usually converted by 100 kilobyte (102400) blocks.\n"
-								"To make a dollar worth two megabytes of credits, set this value to\n"
-								"2,097,152 (a megabyte is 1024*1024 or 1048576).\n"
+								"since credits are usually converted in 100 kibibyte (102400) blocks.\n"
+								"To make a dollar worth two mebibytes of credits, set this value to\n"
+								"2,097,152 (a mebibyte is 1024*1024 or 1048576).\n"
 							;
 							ultoa(cfg.cdt_per_dollar,str,10);
 							uifc.input(WIN_MID|WIN_SAV,0,0
@@ -1668,15 +1703,15 @@ void sys_cfg(void)
 						"`Scan Msgs`    Executed when a user reads or scans a message sub-board\n"
 						"`Scan Subs`    Executed when a user scans one or more sub-boards for msgs\n"
 						"`List Msgs`    Executed when a user lists msgs from the msg read prompt\n"
-						"`List Logons`  Executed when a user lists logons (i.e. '-y' for yesterday)\n"
+						"`List Logons`  Executed when a user lists logons ('-y' for yesterday)\n"
 						"`List Nodes`   Executed when a user lists all nodes\n"
 						"`Who's Online` Executed when a user lists the nodes in-use (e.g. `^U`)\n"
 						"`Private Msg`  Executed when a user sends a private node msg (e.g. `^P`)\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
-						"in your `exec` or `mods` directories.\n"
+						"      in your `exec` or `mods` directories.\n"
 					;
-					switch(uifc.list(WIN_ACT|WIN_T2B|WIN_RHT,0,0,32,&k,0
+					switch(uifc.list(WIN_ACT|WIN_T2B|WIN_RHT,0,0,40,&k,0
 						,"Loadable Modules",opt)) {
 
 						case -1:
@@ -2059,10 +2094,6 @@ void sys_cfg(void)
 						"Restrictions, Expiration Date, and Credits) with one key stroke. The\n"
 						"user's expiration date may be extended and additional credits may also\n"
 						"be added using quick-validation sets.\n"
-						"\n"
-						"Holding down ~ ALT ~ and one of the number keys (`1-9`) while a user\n"
-						"is online, automatically sets his or user security values to the\n"
-						"quick-validation set for that number key.\n"
 						"\n"
 						"From within the `User Edit` function, a sysop can use the `V`alidate\n"
 						"User command and select from this quick-validation list to change a\n"

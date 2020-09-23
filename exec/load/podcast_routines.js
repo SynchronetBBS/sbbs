@@ -40,7 +40,7 @@ function podcast_load_headers(base, from, to, all_hdrs)
 			continue;
 		if (hdr.from.toLowerCase() != from.toLowerCase() || hdr.to.toLowerCase() != to.toLowerCase())
 			continue;
-		if (hdr.from_net_type != NET_NONE)
+		if (hdr.from_net_type)
 			continue;
 		hdrs.push(hdr);
 	}
