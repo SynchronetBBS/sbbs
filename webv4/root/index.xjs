@@ -26,6 +26,23 @@
 	}
 ?>
 
+<?xjs
+	function loadComponent(fn) {
+		return (function () {
+			const cdir = backslash(fullpath(settings.web_mods + 'components'));
+			if (file_isdir(cdir) && file_exists(cdir + fn)) {
+				load(xjs_compile(cdir + fn));
+				return true;
+			}
+			if (file_exists(settings.web_components + fn)) {
+				load(xjs_compile(settings.web_components + fn));
+				return true;
+			}
+			return false;
+		})();
+	}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -49,19 +66,9 @@
 		<script src="./js/common.js"></script>
 
 		<?xjs
-			(function () {
-				load(xjs_compile(settings.web_components + 'modal.xjs'));
-			})();
-
-			if (file_exists(settings.web_components + 'header.xjs')) {
-				(function () {
-					load(xjs_compile(settings.web_components + 'header.xjs'));
-				})();
-			}
-
-			(function () {
-				load(xjs_compile(settings.web_components + 'navbar.xjs'));
-			})();
+			loadComponent('modal.xjs');
+			loadComponent('header.xjs');
+			loadComponent('navbar.xjs');
 		?>
 
 		<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
@@ -79,17 +86,9 @@
 			</div>
 		  	<hr>
 			<footer>
-				<?xjs
-					if (file_exists(settings.web_components + 'footer.xjs')) {
-						(function () {
-							load(xjs_compile(settings.web_components + 'footer.xjs'));
-						})();
-					} else {
-				?>
-						<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
-				<?xjs
-					}
-				?>
+				<?xjs if (!loadComponent('footer.xjs')) { ?>
+					<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs } ?>
 			</footer>
 		</div>
 
