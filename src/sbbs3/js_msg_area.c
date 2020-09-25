@@ -43,8 +43,8 @@
 
 static char* msg_area_prop_desc[] = {
 	  "message area settings (bitfield) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	  "FidoNet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	  "Internet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	 ,"FidoNet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	 ,"Internet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,NULL
 };
 
