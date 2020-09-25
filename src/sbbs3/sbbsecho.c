@@ -3613,7 +3613,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 	i=smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
 	if(i == SMB_SUCCESS) {
 		if(subnum != INVALID_SUB && scfg.sub[subnum]->post_sem[0])
-			ftouch(cmdstr(&scfg, NULL, scfg.sub[subnum]->post_sem, "", "", str));
+			ftouch(mycmdstr(&scfg, scfg.sub[subnum]->post_sem, "", ""));
 	} else {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d adding message to %s"
 			,i, smbfile->last_error, __LINE__, subnum==INVALID_SUB ? "mail":scfg.sub[subnum]->code);
