@@ -477,11 +477,6 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	memset(p,0,sizeof(struct private_data));
 
-	if(!JS_SetPrivate(cx, obj, p)) {
-		JS_ReportError(cx,"JS_SetPrivate failed");
-		return(JS_FALSE);
-	}
-
 	JSSTRING_TO_MSTRING(cx, fn, p->name, &fnslen);
 	if (p->name == NULL) {
 		free(p);
@@ -495,6 +490,11 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		FREE_AND_NULL(p->name);
 		free(p);
 		return JS_FALSE;
+	}
+
+	if(!JS_SetPrivate(cx, obj, p)) {
+		JS_ReportError(cx,"JS_SetPrivate failed");
+		return(JS_FALSE);
 	}
 
 #ifdef BUILD_JSDOCS
