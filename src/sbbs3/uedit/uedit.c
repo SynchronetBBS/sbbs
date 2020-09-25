@@ -1789,29 +1789,12 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 /* Create a Default User: "New User" */
 /*      Adapted from makeuser.c      */
 
-int createdefaults()
+int createdefaults(scfg_t* cfg)
 
 {
 	int		i;
 	time_t	now;
-	scfg_t cfg;
 	user_t	user;
-	char	error[512];
-	char* environ;
-
-	environ=getenv("SBBSCTRL");
-
-	memset(&cfg,0,sizeof(cfg));
-	cfg.size=sizeof(cfg);
-	SAFECOPY(cfg.ctrl_dir,environ);
-
-	if(chdir(cfg.ctrl_dir)!=0)
-		lprintf("!ERROR changing directory to: %s", cfg.ctrl_dir);
-
-	if(!load_cfg(&cfg,NULL,TRUE,error)) {
-		lprintf("!ERROR loading configuration files: %s\n",error);
-		exit(1);
-	}
 
 	now=time(NULL);
 
@@ -1819,7 +1802,7 @@ int createdefaults()
 
     SAFECOPY(user.alias,"New Alias");
     SAFECOPY(user.name,"New User");
-    SAFECOPY(user.handle,"New Handle");
+    SAFECOPY(user.handle,"Handle");
     SAFECOPY(user.pass,"PASSWORD");
     SAFECOPY(user.birth,"01/01/80");
 
@@ -1835,30 +1818,30 @@ int createdefaults()
 
     SAFECOPY(user.netmail,"name@address.com");
 
-	user.level=cfg.new_level;
-	user.flags1=cfg.new_flags1;
-	user.flags2=cfg.new_flags2;
-	user.flags3=cfg.new_flags3;
-	user.flags4=cfg.new_flags4;
-	user.rest=cfg.new_rest;
-	user.exempt=cfg.new_exempt;
+	user.level=cfg->new_level;
+	user.flags1=cfg->new_flags1;
+	user.flags2=cfg->new_flags2;
+	user.flags3=cfg->new_flags3;
+	user.flags4=cfg->new_flags4;
+	user.rest=cfg->new_rest;
+	user.exempt=cfg->new_exempt;
 
-	user.cdt=cfg.new_cdt;
-	user.min=cfg.new_min;
-	user.freecdt=cfg.level_freecdtperday[user.level];
+	user.cdt=cfg->new_cdt;
+	user.min=cfg->new_min;
+	user.freecdt=cfg->level_freecdtperday[user.level];
 
-	if(cfg.total_fcomps)
-		strcpy(user.tmpext,cfg.fcomp[0]->ext);
+	if(cfg->total_fcomps)
+		strcpy(user.tmpext,cfg->fcomp[0]->ext);
 	else
 		strcpy(user.tmpext,"ZIP");
-	for(i=0;i<cfg.total_xedits;i++)
-		if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit))
+	for(i=0;i<cfg->total_xedits;i++)
+		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit))
 			break;
-	if(i<cfg.total_xedits)
+	if(i<cfg->total_xedits)
 		user.xedit=i+1;
 
-	user.shell=cfg.new_shell;
-	user.misc=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
+	user.shell=cfg->new_shell;
+	user.misc=(cfg->new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
     user.misc^=AUTOTERM;
     user.misc^=ANSI;
     user.misc^=COLOR;
@@ -1868,11 +1851,11 @@ int createdefaults()
 	user.pwmod=now;
 	user.logontime=now;
 	user.sex=' ';
-	user.prot=cfg.new_prot;
-	if(cfg.new_expire)
-		user.expire=now+((long)cfg.new_expire*24L*60L*60L);
+	user.prot=cfg->new_prot;
+	if(cfg->new_expire)
+		user.expire=now+((long)cfg->new_expire*24L*60L*60L);
 
-	if((i=matchuser(&cfg,user.alias,FALSE))!=0) {
+	if((i=matchuser(cfg,user.alias,FALSE))!=0) {
 	    lprintf("Error!  Default User already in Userfile");
 		return(2);
 	}
@@ -1882,7 +1865,7 @@ int createdefaults()
 	if(user.name[0]==0)
 		SAFECOPY(user.name,user.alias);
 
-	if((i=newuserdat(&cfg, &user))!=0) {
+	if((i=newuserdat(cfg, &user))!=0) {
 	    lprintf("%s %d", "Error creating Default User.  Error # ",i);
 		return(i);
 	}
@@ -2108,7 +2091,7 @@ int main(int argc, char** argv)  {
 
 		if(j==0) {
 			/* New User */
-			    createdefaults();
+			    createdefaults(&cfg);
 			    lprintf("Please edit defaults using next screen.");
 			    getuser(&cfg,&user,"New User");
 		}
