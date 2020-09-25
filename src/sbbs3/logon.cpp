@@ -233,7 +233,7 @@ bool sbbs_t::logon()
 	batch_add_list(str);
 	if(!(sys_status&SS_QWKLOGON)) { 	 /* QWK Nodes don't go through this */
 
-		if(cfg.sys_pwdays
+		if(cfg.sys_pwdays && useron.pass[0]
 			&& (ulong)logontime>(useron.pwmod+((ulong)cfg.sys_pwdays*24UL*60UL*60UL))) {
 			bprintf(text[TimeToChangePw],cfg.sys_pwdays);
 
