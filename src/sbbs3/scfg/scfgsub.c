@@ -1505,7 +1505,8 @@ void sub_cfg(uint grpnum)
 									"`Sub-board Semaphore File:`\n"
 									"\n"
 									"This is a filename that will be created as a semaphore (signal) to an\n"
-									"external program or event whenever a message is posted in this sub-board.\n"
+									"external program or event whenever a message is posted in this\n"
+									"sub-board.\n"
 								;
 								uifc.input(WIN_MID|WIN_SAV,0,17,"Semaphore File"
 									,cfg.sub[i]->post_sem,sizeof(cfg.sub[i]->post_sem)-1,K_EDIT);
