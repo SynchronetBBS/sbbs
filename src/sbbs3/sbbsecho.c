@@ -3611,8 +3611,10 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		dupechk_hashes=SMB_HASH_SOURCE_NONE;
 
 	i=smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
-
-	if(i!=SMB_SUCCESS) {
+	if(i == SMB_SUCCESS) {
+		if(subnum != INVALID_SUB && scfg.sub[subnum]->post_sem[0])
+			ftouch(cmdstr(&scfg, NULL, scfg.sub[subnum]->post_sem, "", "", str));
+	} else {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d adding message to %s"
 			,i, smbfile->last_error, __LINE__, subnum==INVALID_SUB ? "mail":scfg.sub[subnum]->code);
 	}
@@ -6110,7 +6112,7 @@ int main(int argc, char **argv)
 		memset(&smb[i],0,sizeof(smb_t));
 	memset(&cfg,0,sizeof(cfg));
 
-	sscanf("$Revision: 3.177 $", "%*s %s", revision);
+	sscanf("$Revision: 3.178 $", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 
