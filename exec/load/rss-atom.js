@@ -116,7 +116,7 @@ load("http.js");
 const Item = function (i) {
 
 	this.id = i.guid.length() ? i.guid[0].toString() : (i.id.length() ? i.id[0].toString() : '');
-	this.title = ''; // uh ...
+	this.title = i.title.length() ? i.title[0].toString() : ''; // uh ...
 	this.date = i.pubDate.length() ? i.pubDate[0].toString() : (i.updated.length() ? i.updated[0].toString() : '');
 	this.author = i.author.length() ? i.author.toString() : '';
 	this.body = i.description.length() ? i.description[0].toString() : (i.summary.length() ? i.summary[0].toString() : '');
