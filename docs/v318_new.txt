@@ -5,8 +5,6 @@
 
 Terminal Server
 ~~~~~~~~~~~~~~~
-o Server-side JavaScript for dynamically-loaded BBS modules 
-  and dynamic-HTML indexes for FTP server
 o UTF-8 support
   - Auto-detect UTF-8 terminals
   - Automatic translation of DOS/native door game output
