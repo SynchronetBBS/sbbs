@@ -779,7 +779,8 @@ void maint(void)
 	printf("Scanning for read messages to be killed...\n");
 	uint32_t total_msgs = 0;
 	for(m=f=0;m<l;m++) {
-		if(!(idx[m].attr&(MSG_POLL|MSG_VOTE)))
+		enum smb_msg_type type = smb_msg_type(idx[m].attr);
+		if(type == SMB_MSG_TYPE_NORMAL || type == SMB_MSG_TYPE_POLL)
 			total_msgs++;
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
