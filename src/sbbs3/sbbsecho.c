@@ -3505,11 +3505,11 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		if(cr && (!strncmp(fbuf+l,"--- ",4)
 			|| !strncmp(fbuf+l,"---\r",4)))
 			done=1; 			/* tear line and down go into tail */
-		else if(cr && !strncmp(fbuf+l," * Origin: ",11)) {
+		else if(cr && !strncmp(fbuf+l," * Origin: ",11) && subnum != INVALID_SUB) {
 			p=(char*)fbuf+l+11;
 			while(*p && *p!='\r') p++;	 /* Find CR */
-			while(p && *p!='(') p--;     /* rewind to '(' */
-			if(p)
+			while(p >= fbuf+l && *p!='(') p--;     /* rewind to '(' */
+			if(*p == '(')
 				origaddr=atofaddr(p+1); 	/* get orig address */
 			done=1;
 		}
@@ -6112,7 +6112,7 @@ int main(int argc, char **argv)
 		memset(&smb[i],0,sizeof(smb_t));
 	memset(&cfg,0,sizeof(cfg));
 
-	sscanf("$Revision: 3.178 $", "%*s %s", revision);
+	sscanf("$Revision: 3.179 $", "%*s %s", revision);
 
 	DESCRIBE_COMPILER(compiler);
 
