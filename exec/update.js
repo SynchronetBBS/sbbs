@@ -56,6 +56,20 @@ function move_laston_address()
 	return updated;
 }
 
+function install_logonlist()
+{
+	var cnflib = load({}, "cnflib.js");
+	var main_cnf = cnflib.read("main.cnf");
+	if(!main_cnf)
+		return "!Failed to read main.cnf";
+	if(main_cnf.sys_daily)
+		return format("System daily event already set to: '%s'", main_cnf.sys_daily);
+	main_cnf.sys_daily = maint_event;
+	if(!cnflib.write("main.cnf", undefined, main_cnf))
+		return "!Failed to write main.cnf";
+	return "Successful";
+}
+
 function base_filename(fullname)
 {
 	var ext = file_getext(fullname);
@@ -137,6 +151,8 @@ if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
 	if(!test)
 		js.exec("avatars.js", {}, "install");
 }
+
+print("Installing Logon List module: " + install_logonlist());
 
 print("Updating [General] Text File Section indexes");
 print(update_gfile_indexes() + " indexes updated.");
