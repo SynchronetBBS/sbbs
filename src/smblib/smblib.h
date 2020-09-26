@@ -190,6 +190,8 @@ SMBEXPORT uint32_t	SMBCALL smb_next_in_thread(smb_t*, smbmsg_t*, msghdr_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_branch(smb_t*, smbmsg_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_thread(smb_t*, smbmsg_t*);
 SMBEXPORT BOOL		SMBCALL smb_msg_is_utf8(const smbmsg_t*);
+SMBEXPORT size_t	SMBCALL smb_msg_count(smb_t*, unsigned types);
+SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t);
 
 /* smbadd.c */
 SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
