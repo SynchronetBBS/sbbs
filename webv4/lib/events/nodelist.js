@@ -8,6 +8,7 @@ const node_state = system.node_list.map(function (e, i) {
         aux: -1,
         extaux: -1,
         useron: -1,
+        misc: -1,
         connection : -1
     };
 });
@@ -19,6 +20,7 @@ function scan_nodes() {
     system.node_list.forEach(function (e, i) {
         const n = system.node_list[i];
         if (n.status != node_state[i].status
+            || n.misc != node_state[i].misc
             || n.action != node_state[i].action
             || n.useron != node_state[i].useron
         ) {
@@ -27,6 +29,7 @@ function scan_nodes() {
                 status: n.status,
                 action: n.action,
                 aux: n.aux,
+                misc: n.misc,
                 extaux: n.extaux,
                 useron: n.useron,
                 connection: n.connection
@@ -67,7 +70,7 @@ function scan() {
     const web_change = scan_web();
     if (node_change) {
         out = node_state.map(function (e, i) {
-            if (e.status != 3) {
+            if (e.status != NODE_INUSE) {
                 return {
                     node: i + 1,
                     status: null,
@@ -81,7 +84,7 @@ function scan() {
                     node: i + 1,
                     status: format(NodeStatus[e.status], e.aux, e.extaux),
                     action: format(NodeAction[e.action], e.aux, e.extaux),
-                    user: usr.alias,
+                    user: (e.misc & NODE_ANON) && !user.is_sysop ? "Anonymous" : usr.alias,
                     connection : NodeConnectionProper[e.connection] ? NodeConnectionProper[e.connection] : (e.connection + ' bps')
                 };
             }
