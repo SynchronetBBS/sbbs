@@ -520,6 +520,15 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(usermailaddr(&cfg, str
 			,cfg.inetmail_misc&NMAIL_ALIAS ? useron.alias : useron.name));
 
+	if(strcmp(sp, "NETMAIL") == 0)
+		return useron.netmail;
+
+	if(strcmp(sp, "FWD") == 0)
+		return (useron.misc & NETMAIL) ? text[On] : text[Off];
+
+	if(strcmp(sp, "TMP") == 0)
+		return useron.tmpext;
+
 	if(!strcmp(sp,"QWKID"))
 		return(cfg.sys_id);
 
@@ -1131,8 +1140,8 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(str);
 	}
 
-	if(!strcmp(sp,"MEMO1"))
-		return(useron.note);
+	if(strcmp(sp, "NOTE") == 0 || strcmp(sp, "MEMO1") == 0)
+		return useron.note;
 
 	if(strcmp(sp,"REALNAME") == 0 || !strcmp(sp,"MEMO2") || !strcmp(sp,"COMPANY"))
 		return(useron.name);
@@ -1212,6 +1221,9 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"HANDLE"))
 		return(useron.handle);
+
+	if(strcmp(sp, "LASTIP") == 0)
+		return useron.ipaddr;
 
 	if(!strcmp(sp,"CID") || !strcmp(sp,"IP"))
 		return(cid);
