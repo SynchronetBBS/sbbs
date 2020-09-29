@@ -12,11 +12,9 @@
         http_reply.header['Location'] = page;
         exit();
     }
-
-    if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
-        page = '000-home.xjs';
-    }
-	var page_ctrl = getCtrlLine(settings.web_pages + page);
+	var pagePath = getPagePath(page);
+	if (pagePath == null) page = '000-home.xjs';
+	var page_ctrl = getCtrlLine(pagePath);
 ?>
 
 <?xjs
@@ -25,6 +23,23 @@
 ?>
 		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
 <?xjs
+	}
+?>
+
+<?xjs
+	function loadComponent(fn) {
+		return (function () {
+			const cdir = backslash(fullpath(settings.web_mods + 'components'));
+			if (file_isdir(cdir) && file_exists(cdir + fn)) {
+				load(xjs_compile(cdir + fn));
+				return true;
+			}
+			if (file_exists(settings.web_components + fn)) {
+				load(xjs_compile(settings.web_components + fn));
+				return true;
+			}
+			return false;
+		})();
 	}
 ?>
 
@@ -51,19 +66,9 @@
 		<script src="./js/common.js"></script>
 
 		<?xjs
-			(function () {
-				load(xjs_compile(settings.web_components + 'modal.xjs'));
-			})();
-
-			if (file_exists(settings.web_components + 'header.xjs')) {
-				(function () {
-					load(xjs_compile(settings.web_components + 'header.xjs'));
-				})();
-			}
-
-			(function () {
-				load(xjs_compile(settings.web_components + 'navbar.xjs'));
-			})();
+			loadComponent('modal.xjs');
+			loadComponent('header.xjs');
+			loadComponent('navbar.xjs');
 		?>
 
 		<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
@@ -81,17 +86,9 @@
 			</div>
 		  	<hr>
 			<footer>
-				<?xjs
-					if (file_exists(settings.web_components + 'footer.xjs')) {
-						(function () {
-							load(xjs_compile(settings.web_components + 'footer.xjs'));
-						})();
-					} else {
-				?>
-						<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
-				<?xjs
-					}
-				?>
+				<?xjs if (!loadComponent('footer.xjs')) { ?>
+					<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs } ?>
 			</footer>
 		</div>
 

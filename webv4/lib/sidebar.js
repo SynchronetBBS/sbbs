@@ -6,10 +6,41 @@ function getFileContents(file) {
 	return ret;
 }
 
-function getSidebarModules() {
-	return directory(settings.web_sidebar + '*').filter(function (e) {
+function moduleName(m) {
+	return file_getname(m).replace(/^\d*-/, '');
+}
+
+function mergeModuleLists(stock, mods) {
+	return mods.reduce(function (a, c) {
+		const idx = a.findIndex(function (e) {
+			return moduleName(e) == moduleName(c);
+		});
+		if (idx < 0) {
+			a.push(c);
+		} else {
+			a[idx] = c;
+		}
+		return a;
+	}, stock).sort(function (a, b) {
+		const fna = file_getname(a);
+		const fnb = file_getname(b);
+		if (fna < fnb) return -1;
+		if (fna > fnb) return 1;
+		return 0;
+	});
+}
+
+function _getSidebarModules(dir) {
+	if (!file_isdir(dir)) return [];
+	return directory(dir + '*').filter(function (e) {
 		return (!file_isdir(e));
 	});
+}
+
+function getSidebarModules() {
+	const stock = _getSidebarModules(settings.web_sidebar);
+	const mods = _getSidebarModules(settings.web_mods_sidebar);
+	return mergeModuleLists(stock, mods);
 }
 
 function getSidebarModule(module) {
