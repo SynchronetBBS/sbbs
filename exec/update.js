@@ -58,6 +58,7 @@ function move_laston_address()
 
 function install_logonlist()
 {
+	var maint_event = "?logonlist -m";
 	var cnflib = load({}, "cnflib.js");
 	var main_cnf = cnflib.read("main.cnf");
 	if(!main_cnf)
