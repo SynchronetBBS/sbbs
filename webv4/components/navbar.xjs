@@ -11,19 +11,19 @@
 <?xjs } ?>
 
 <?xjs
-	function menu(obj, path) {
-		Object.keys(obj).forEach(function (e) {
-			if (obj[e].type == 'list') {
-				subMenu(obj[e], e, (path || '') + e + '/');
+	function menu(arr, path) {
+		arr.forEach(function (e) {
+			if (e.type == 'list') {
+				subMenu(e, e.title, (path || '') + e.title + '/');
 			} else {
 ?>
                 <li>
-                    <?xjs if (obj[e].type == 'link') { ?>
-                        <a class="dropdown-item" href="./?page=<?xjs write(obj[e].page); ?>" target="_blank">
+                    <?xjs if (e.type == 'link') { ?>
+                        <a class="dropdown-item" href="./?page=<?xjs write(e.page); ?>" target="_blank">
                     <?xjs } else { ?>
-                        <a class="dropdown-item" href="./?page=<?xjs write((path || '') + obj[e].page); ?>">
+                        <a class="dropdown-item" href="./?page=<?xjs write((path || '') + e.page); ?>">
                     <?xjs } ?>
-                            <? write(e); ?>
+                            <? write(e.title); ?>
                         </a>
                 </li>
 <?xjs
