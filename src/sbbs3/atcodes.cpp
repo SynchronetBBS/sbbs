@@ -698,6 +698,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		sp += 5;
 		long margin = centered ? column : 1;
 		if(margin < 1) margin = 1;
+		c_unescape_str(sp);
 		while(*sp && online && column < cols - margin)
 			bputs(sp, P_TRUNCATE);
 		return nulstr;
