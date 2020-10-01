@@ -499,7 +499,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 				i = userdatdupe(cfg, 0, U_NAME, LEN_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
 			else
 				i = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
-			if(i > 0 && (client == NULL || i != client->usernum)) {
+			if(i > 0 && (client == NULL || i != (int)client->usernum)) {
 				char str[256];
 				if(smb->subnum == INVALID_SUB) {
 					safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
