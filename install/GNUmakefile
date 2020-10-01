@@ -40,7 +40,7 @@ endif
 ifdef SYMLINK
  INSBIN	:=	ln -sf
 else
- INSBIN	:=	cp
+ INSBIN	:=	cp -r
 endif
 
 ifdef bcc
@@ -253,28 +253,31 @@ endif
 
 src: $(REPODIR)
 
-run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/node1 $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/xtrn
+run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/node1 $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn
 
 $(SBBSDIR)/ctrl: $(REPODIR)
 	cp -r $(REPODIR)/ctrl $(SBBSDIR)
 
 $(SBBSDIR)/docs: $(REPODIR)
-	cp -r $(REPODIR)/docs $(SBBSDIR)
+	$(INSBIN) $(REPODIR)/docs $(SBBSDIR)
 
 $(SBBSDIR)/exec: $(REPODIR)
-	cp -r $(REPODIR)/exec $(SBBSDIR)
+	$(INSBIN) $(REPODIR)/exec $(SBBSDIR)
 
 $(SBBSDIR)/node1: $(REPODIR)
 	cp -r $(REPODIR)/node1 $(SBBSDIR)
 
 $(SBBSDIR)/text: $(REPODIR)
-	cp -r $(REPODIR)/text $(SBBSDIR)
+	$(INSBIN) $(REPODIR)/text $(SBBSDIR)
 
 $(SBBSDIR)/web: $(REPODIR)
-	cp -r $(REPODIR)/web $(SBBSDIR)
+	$(INSBIN) $(REPODIR)/web $(SBBSDIR)
+
+$(SBBSDIR)/webv4: $(REPODIR)
+	$(INSBIN) $(REPODIR)/webv4 $(SBBSDIR)
 
 $(SBBSDIR)/xtrn: $(REPODIR)
-	cp -r $(REPODIR)/xtrn $(SBBSDIR)
+	$(INSBIN) $(REPODIR)/xtrn $(SBBSDIR)
 
 $(SBBSDIR):
 	@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);
