@@ -336,6 +336,20 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
 
+	if(!(msgattr & MSG_ANONYMOUS)) {
+		if(cfg.sub[subnum]->misc&SUB_NAME)
+			i = userdatdupe(0, U_NAME, LEN_NAME, touser);
+		else
+			i = matchuser(&cfg, touser, TRUE /* sysop_alias */);
+		if(i > 0 && i != useron.number) {
+			SAFEPRINTF4(str, text[MsgPostedToYouVia]
+				,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
+				,connection
+				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
+			putsmsg(&cfg, i, str);
+		}
+	}
+
 	signal_sub_sem(&cfg,subnum);
 
 	user_event(EVENT_POST);
@@ -477,6 +491,32 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 				ftouch(cmdstr(cfg,NULL,cfg->netmail_sem,nulstr,nulstr,NULL));
 		} else
 			signal_sub_sem(cfg,smb->subnum);
+
+		if(msg->to_net.type == NET_NONE && !(msg->hdr.attr & MSG_ANONYMOUS) && cfg->text != NULL) {
+			if(msg->to_ext != NULL)
+				i = atoi(msg->to_ext);
+			else if(smb->subnum != INVALID_SUB && (cfg->sub[smb->subnum]->misc & SUB_NAME))
+				i = userdatdupe(cfg, 0, U_NAME, LEN_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
+			else
+				i = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
+			if(i > 0 && (client == NULL || i != client->usernum)) {
+				char str[256];
+				if(smb->subnum == INVALID_SUB) {
+					safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
+					putsmsg(cfg, i, str);
+				} else {
+					char fido_buf[64];
+					const char* via = smb_netaddrstr(&msg->from_net, fido_buf);
+					if(via == NULL)
+						via = (client == NULL) ? "" : client->protocol;
+					safe_snprintf(str, sizeof(str), cfg->text[MsgPostedToYouVia]
+						,msg->from
+						,via
+						,cfg->grp[cfg->sub[smb->subnum]->grp]->sname,cfg->sub[smb->subnum]->lname);
+					putsmsg(cfg, i, str);
+				}
+			}
+		}
 	}
 	return(i);
 }
