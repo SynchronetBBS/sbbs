@@ -398,7 +398,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 //	console.clear();
 	msg.lines = lines.length;
 	
-	while(!js.terminated) {
+	while(bbs.online && !js.terminated) {
 		if(show_hdr) {
 			console.home();
 			console.status |= CON_CR_CLREOL;
@@ -422,7 +422,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 		var i = line_num;
 		var row = hdr_len;
 		var pmode = msg_pmode(msgbase, msg);
-		while(row < (console.screen_rows - 2)) {
+		while(row < (console.screen_rows - 2) && bbs.online) {
 			console.line_counter = 0;
 			if(i < lines.length)
 				console.putmsg(lines[i++].trimRight(), pmode);
@@ -747,7 +747,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 
 	console.line_counter = 0;
 	console.status |= CON_MOUSE_SCROLL;
-	while(!js.terminated) {
+	while(bbs.online && !js.terminated) {
 		if(!last_msg)
 			last_msg = msgbase.last_msg;
 		else if(msgbase.last_msg != last_msg)
@@ -974,7 +974,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			case '\r':
 				console.clear();
 				var viewed_msg = current;
-				while(!js.terminated && list[current]
+				while(bbs.online && !js.terminated && list[current]
 					&& (key = view_msg(msgbase, list[current]
 						,get_msg_lines(msgbase, list[current], view_hdr, view_source, view_hex, view_wrapped)
 						,orglist.length
@@ -1060,7 +1060,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case 'O':
 							if(!is_operator)
 								break;
-							while(bbs.online) {
+							while(bbs.online && !js.terminated) {
 								if(!(user.settings & USER_EXPERT)) {
 									console.clear(LIGHTGRAY);
 									bbs.menu("sysmscan");
@@ -1624,6 +1624,6 @@ do {
 		curmsg = msg_area.sub[msgbase.cfg.code].last_read;
 	else
 		curmsg = userprops.last_read_mail;
-} while(list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name) === true);
+} while(list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name) === true && bbs.online && !js.terminated);
 
 userprops_lib.set(userprops_section, userprops);
