@@ -1026,6 +1026,7 @@ public:
 	bool	user_event(user_event_t);			/* Executes user event(s) */
 	char	xtrn_access(uint xnum);			/* Does useron have access to xtrn? */
 	void	moduserdat(uint xtrnnum);
+	const char* xtrn_dropdir(const xtrn_t*, char* buf, size_t);
 
 	/* logfile.cpp */
 	void	logentry(const char *code,const char *entry);

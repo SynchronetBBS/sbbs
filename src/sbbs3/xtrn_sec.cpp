@@ -1237,8 +1237,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 
 	sprintf(startup,"%s/",cfg.xtrn[xtrnnum]->path);
 	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS || cfg.xtrn[xtrnnum]->type==XTRN_RBBS1) {
-		sprintf(path,"%sEXITINFO.BBS"
-			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+		SAFEPRINTF(path, "%sEXITINFO.BBS", xtrn_dropdir(cfg.xtrn[xtrnnum], startup, sizeof(startup)));
 		fexistcase(path);
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,361,SEEK_SET);
@@ -1256,8 +1255,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		return; 
 	}
 	else if(cfg.xtrn[xtrnnum]->type==XTRN_GAP) {
-		sprintf(path,"%sDOOR.SYS"
-			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+		SAFEPRINTF(path,"%sDOOR.SYS", xtrn_dropdir(cfg.xtrn[xtrnnum], startup, sizeof(startup)));
 		fexistcase(path);
 		if((stream=fopen(path,"rb"))!=NULL) {
 			for(i=0;i<15;i++)			/* skip first 14 lines */
@@ -1324,8 +1322,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	}
 
 	else if(cfg.xtrn[xtrnnum]->type==XTRN_PCBOARD) {
-		sprintf(path,"%sUSERS.SYS"
-			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+		SAFEPRINTF(path, "%sUSERS.SYS", xtrn_dropdir(cfg.xtrn[xtrnnum], startup, sizeof(startup)));
 		fexistcase(path);
 		if((file=nopen(path,O_RDONLY))!=-1) {
 			lseek(file,39,SEEK_SET);
@@ -1347,8 +1344,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		return; 
 	}
 
-	sprintf(path,"%sMODUSER.DAT"
-			,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? startup : cfg.node_dir);
+	SAFEPRINTF(path,"%sMODUSER.DAT", xtrn_dropdir(cfg.xtrn[xtrnnum], startup, sizeof(startup)));
 	fexistcase(path);
 	if((stream=fopen(path,"rb"))!=NULL) {			/* File exists */
 		if(fgets(str,81,stream) && (mod=atol(str))!=0) {
@@ -1463,6 +1459,20 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	}
 }
 
+const char* sbbs_t::xtrn_dropdir(const xtrn_t* xtrn, char* buf, size_t maxlen)
+{
+	const char* p = cfg.node_dir;
+	if(xtrn->misc & STARTUPDIR)
+		p = xtrn->path;
+	else if(xtrn->misc & XTRN_TEMP_DIR)
+		p = cfg.temp_dir;
+	char path[MAX_PATH + 1];
+	SAFECOPY(path, p);
+	backslash(path);
+	strncpy(buf, path, maxlen);
+	buf[maxlen - 1] = 0;
+	return buf;
+}
 
 /****************************************************************************/
 /* This function handles configured external program execution. 			*/
@@ -1515,10 +1525,10 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 			return(false); 
 	}
 
-	SAFECOPY(str,cfg.xtrn[xtrnnum]->path);
-	backslash(str);
-	SAFECOPY(path,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
-	SAFECOPY(dropdir,cfg.xtrn[xtrnnum]->misc&STARTUPDIR ? str : cfg.node_dir);
+	if(cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
+		delfiles(cfg.temp_dir, ALLFILES);
+	xtrn_dropdir(cfg.xtrn[xtrnnum], dropdir, sizeof(dropdir));
+	SAFECOPY(path, dropdir);
 
 	switch(cfg.xtrn[xtrnnum]->type) {
 		case XTRN_WWIV:
