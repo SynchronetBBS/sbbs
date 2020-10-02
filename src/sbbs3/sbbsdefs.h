@@ -415,7 +415,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QUOTEWRAP		(1<<21)		/* Word-wrap quoted message text		*/
 #define SAVECOLUMNS		(1<<22)		/* Save/share current terminal width	*/
 #define XTRN_UTF8		(1<<23)		/* External program supports UTF-8		*/
-#define XTRN_JS_CX		(1<<24)		/* New JavaScript Context				*/
+#define XTRN_TEMP_DIR	(1<<24)		/* Place drop files in temp dir			*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in cfg.xtrn_misc				*/

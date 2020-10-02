@@ -1062,7 +1062,7 @@ void xtrn_cfg(uint section)
 				,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
 				,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
 			sprintf(opt[k++],"%-27.27s%s","Place Drop File In"
-				,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":"Node Directory");
+				,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc&XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
 			sprintf(opt[k++],"Time Options...");
 			opt[k][0]=0;
 			uifc.helpbuf=
@@ -1450,24 +1450,41 @@ void xtrn_cfg(uint section)
 					}
 					break;
 				case 16:
-					k=0;
+					k = (cfg.xtrn[i]->misc & STARTUPDIR) ? 1 : (cfg.xtrn[i]->misc & XTRN_TEMP_DIR) ? 2 : 0;
 					strcpy(opt[0],"Node Directory");
 					strcpy(opt[1],"Start-up Directory");
-					opt[2][0]=0;
+					strcpy(opt[2],"Temporary Directory");
+					opt[3][0]=0;
 					uifc.helpbuf=
 						"`Directory for Drop File:`\n"
 						"\n"
-						"You can have the data file created in the current `Node Directory` or the\n"
-						"`Start-up Directory` (if one is specified).\n"
+						"You can have the data (drop) file created in the current `Node Directory`,\n"
+						"current `Temporary Directory`, or the `Start-up Directory` (if specified).\n"
+						"\n"
+						"For multi-user doors, you usually will `not` want the drop files placed\n"
+						"in the start-up directory due to potential conflict with other nodes.\n"
+						"\n"
+						"The safest option is the `Temp Directory`, as this directory is unique per\n"
+						"terminal server node and is automatically cleared-out for each logon.\n"
+						"\n"
+						"`Note:`\n"
+						"Many classic Synchronet (XSDK) doors assume the drop file will be\n"
+						"located in the `Node Directory`.\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Create Drop File In"
 						,opt);
-					if(!k && cfg.xtrn[i]->misc&STARTUPDIR) {
-						cfg.xtrn[i]->misc&=~STARTUPDIR;
+					if(!k && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != 0) {
+						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
 						uifc.changes=TRUE; 
 					}
-					else if(k==1 && !(cfg.xtrn[i]->misc&STARTUPDIR)) {
-						cfg.xtrn[i]->misc|=STARTUPDIR;
+					else if(k==1 && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != STARTUPDIR) {
+						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
+						cfg.xtrn[i]->misc |= STARTUPDIR;
+						uifc.changes=TRUE; 
+					}
+					else if(k==2 && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != XTRN_TEMP_DIR) {
+						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
+						cfg.xtrn[i]->misc |= XTRN_TEMP_DIR;
 						uifc.changes=TRUE; 
 					}
 					break;
