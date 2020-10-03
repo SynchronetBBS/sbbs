@@ -144,7 +144,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsval idval;
 	char*		s=NULL;
 	char		tmp[128];
-	uint64_t	val=0;
+	int64_t		val=0;
     jsint       tiny;
 	JSString*	js_str;
 	private_t*	p;
