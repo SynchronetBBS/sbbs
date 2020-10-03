@@ -66,7 +66,10 @@ enum {
 	,USER_PROP_ZIPCODE
 	,USER_PROP_PASS
 	,USER_PROP_PHONE  	
-	,USER_PROP_BIRTH  
+	,USER_PROP_BIRTH
+	,USER_PROP_BIRTHYEAR
+	,USER_PROP_BIRTHMONTH
+	,USER_PROP_BIRTHDAY
 	,USER_PROP_AGE		/* READ ONLY */
 	,USER_PROP_MODEM     
 	,USER_PROP_LASTON	
@@ -208,6 +211,15 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_BIRTH:
 			s=p->user->birth;
+			break;
+		case USER_PROP_BIRTHYEAR:
+			val = getbirthyear(p->user->birth);
+			break;
+		case USER_PROP_BIRTHMONTH:
+			val = getbirthmonth(scfg, p->user->birth);
+			break;
+		case USER_PROP_BIRTHDAY:
+			val = getbirthday(scfg, p->user->birth);
 			break;
 		case USER_PROP_AGE:
 			val=getage(scfg,p->user->birth);
@@ -506,6 +518,18 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			SAFECOPY(p->user->birth,str);
 			putuserrec(scfg,p->user->number,U_BIRTH,LEN_BIRTH,str);
 			break;
+		case USER_PROP_BIRTHYEAR:
+			SAFEPRINTF(tmp, "%04u", atoi(str));
+			putuserrec(scfg,p->user->number, U_BIRTH, 4, tmp);
+			break;
+		case USER_PROP_BIRTHMONTH:
+			SAFEPRINTF(tmp, "%02u", atoi(str));
+			putuserrec(scfg,p->user->number, U_BIRTH + 4, 2, tmp);
+			break;
+		case USER_PROP_BIRTHDAY:
+			SAFEPRINTF(tmp, "%02u", atoi(str));
+			putuserrec(scfg,p->user->number, U_BIRTH + 6, 2, tmp);
+			break;
 		case USER_PROP_MODEM:     
 			SAFECOPY(p->user->modem,str);
 			putuserrec(scfg,p->user->number,U_MODEM,LEN_MODEM,str);
@@ -754,6 +778,9 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"zipcode"			,USER_PROP_ZIPCODE	 	,USER_PROP_FLAGS,		310},
 	{	"phone"				,USER_PROP_PHONE  	 	,USER_PROP_FLAGS,		310},
 	{	"birthdate"			,USER_PROP_BIRTH  	 	,USER_PROP_FLAGS,		310},
+	{	"birthyear"			,USER_PROP_BIRTHYEAR   	,USER_PROP_FLAGS,		31802},
+	{	"birthmonth"		,USER_PROP_BIRTHMONTH  	,USER_PROP_FLAGS,		31802},
+	{	"birthday"			,USER_PROP_BIRTHDAY  	,USER_PROP_FLAGS,		31802},
 	{	"age"				,USER_PROP_AGE			,USER_PROP_FLAGS|JSPROP_READONLY,		310},
 	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
 	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
@@ -795,7 +822,10 @@ static char* user_prop_desc[] = {
 	,"location (e.g. city, state)"
 	,"zip/postal code"
 	,"phone number"
-	,"birth date in either MM/DD/YY or DD/MM/YY format depending on system configuration"
+	,"birth date in 'YYYYMMDD' format or legacy format: 'MM/DD/YY' or 'DD/MM/YY', depending on system configuration"
+	,"birth year"
+	,"birth month (1-12)"
+	,"birth day of month (1-31)"
 	,"calculated age in years - <small>READ ONLY</small>"
 	,"connection type (protocol)"
 	,"AKA connection"
