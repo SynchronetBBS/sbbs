@@ -202,10 +202,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 
 	if(type==XTRN_SBBS) {	/* SBBS XTRN.DAT file */
-		strcpy(tmp,"XTRN.DAT");
+		SAFECOPY(tmp,"XTRN.DAT");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
@@ -263,28 +263,28 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n",cfg.total_xtrns);
+		SAFEPRINTF(str,"%u\n",cfg.total_xtrns);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));			/* Total external programs */
 
 		for(i=0;i<cfg.total_xtrns;i++) {		/* Each program's name */
-			if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron,&client))
-				strcpy(str,cfg.xtrn[i]->name);
-			else
+			if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron,&client)) {
+				SAFECOPY(str,cfg.xtrn[i]->name);
+			} else
 				str[0]=0;						/* Blank if no access */
 			SAFECAT(str,"\n");
 			lfexpand(str,misc);
 			write(file,str,strlen(str)); 
 		}
 
-		sprintf(str,"%s\n%s\n"
+		SAFEPRINTF2(str,"%s\n%s\n"
 			,ltoaf(useron.flags1,tmp)			/* Main flags */
 			,ltoaf(useron.flags2,tmp2)			/* Transfer flags */
 			);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%s\n%s\n%lx\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%lx\n%s\n%s\n%s\n"
 			,ltoaf(useron.exempt,tmp)			/* Exemptions */
 			,ltoaf(useron.rest,tmp2)			/* Restrictions */
 			,(long)useron.expire				/* Expiration date in unix form */
@@ -316,10 +316,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_WWIV) {	/*	WWIV CHAIN.TXT File */
-		strcpy(tmp,"CHAIN.TXT");
+		SAFECOPY(tmp,"CHAIN.TXT");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
@@ -377,10 +377,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_GAP) {	/* Gap DOOR.SYS File */
-		strcpy(tmp,"DOOR.SYS");
+		SAFECOPY(tmp,"DOOR.SYS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
@@ -390,25 +390,9 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(tleft>0x7fff)	/* Reduce time-left for broken 16-bit doors		*/
 			tleft=0x7fff;	/* That interpret this value as a signed short	*/
 
-#if 0
-		if(misc&XTRN_NATIVE) {
-			if(misc&(XTRN_STDIO|XTRN_CONIO)) {
-				strcpy(str,"COM0:STDIO\n");
-			}
-			else {
-				sprintf(str,"COM0:SOCKET%d\n",
-					client_socket_dup
-				);
-			}
-		}
-		else {
-			sprintf(str,"COM%d:\n"
-				,online==ON_REMOTE ? cfg.com_port:0);	/* 01: COM port - 0 if Local */
-		}
-#else
-		sprintf(str,"COM%d:\n"
+		SAFEPRINTF(str,"COM%d:\n"
 			,online==ON_REMOTE ? cfg.com_port:0);	/* 01: COM port - 0 if Local */
-#endif
+
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 		/* Note about door.sys, line 2 (April-24-2005):
@@ -419,7 +403,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		   changing this value to the DTE rate until/unless some other doors
 		   have an issue with that. <sigh>
 		*/
-		sprintf(str,"%lu\n%u\n%u\n%lu\n%c\n%c\n%c\n%c\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%u\n%u\n%lu\n%c\n%c\n%c\n%c\n"
 			,dte_rate /* was cur_rate */		/* 02: DCE rate, see note above */
 			,8									/* 03: Data bits */
 			,cfg.node_num						/* 04: Node number */
@@ -431,7 +415,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%s\n%s\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%s\n%s\n"
 			,name								/* 10: User name */
 			,useron.location					/* 11: User location */
 			,useron.phone						/* 12: User home phone */
@@ -440,7 +424,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n%u\n%s\n%lu\n%lu\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%s\n%lu\n%lu\n%s\n"
 			,useron.level						/* 15: User security level */
 			,useron.logons						/* 16: User total logons */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* 17: User last on date */
@@ -451,7 +435,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%lu\n%c\n%s\n%u\n%s\n%u\n%c\n%u\n%u\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%c\n%s\n%u\n%s\n%u\n%c\n%u\n%u\n"
 			,rows								/* 21: User screen length */
 			,(useron.misc&EXPERT) ? 'Y':'N'     /* 22: Expert? (Y/N) */
 			,ltoaf(useron.flags1,tmp2)			/* 23: Registered conferences */
@@ -480,7 +464,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,strlen(str));
 
 		localtime_r(&ns_time,&tm);
-		sprintf(str,"%c\n%c\n%u\n%lu\n%02d/%02d/%02d\n"
+		safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%lu\n%02d/%02d/%02d\n"
 			,(useron.misc&(NO_EXASCII|ANSI|COLOR))==ANSI
 				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			,'Y'                                /* 40: Use record locking */
@@ -494,7 +478,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		localtime_r(&logontime,&tm);
 		localtime32(&useron.laston,&tl);
-		sprintf(str,"%02d:%02d\n%02d:%02d\n%u\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%02d:%02d\n%02d:%02d\n%u\n%u\n%lu\n"
 			"%lu\n%s\n%u\n%u\n"
 			,tm.tm_hour							/* 44: Time of this call */
 			,tm.tm_min
@@ -514,27 +498,28 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_RBBS || type==XTRN_RBBS1) {
-		if(type==XTRN_RBBS)
-			sprintf(tmp,"DORINFO%X.DEF",cfg.node_num);   /* support 1-F */
-		else
-			sprintf(tmp,"DORINFO1.DEF");
+		if(type==XTRN_RBBS) {
+			SAFEPRINTF(tmp,"DORINFO%X.DEF",cfg.node_num);   /* support 1-F */
+		} else {
+			SAFECOPY(tmp,"DORINFO1.DEF");
+		}
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
 
-		strcpy(tmp,cfg.sys_op);
+		SAFECOPY(tmp,cfg.sys_op);
 		p=strchr(tmp,' ');
 		if(p)
 			*(p++)=0;
 		else
 			p=nulstr;
 
-		sprintf(str,"%s\n%s\n%s\nCOM%d\n%lu BAUD,N,8,1\n%u\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\nCOM%d\n%lu BAUD,N,8,1\n%u\n"
 			,cfg.sys_name						/* Name of BBS */
 			,tmp								/* Sysop's firstname */
 			,p									/* Sysop's lastname */
@@ -545,13 +530,13 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		strcpy(tmp,name);
+		SAFECOPY(tmp,name);
 		p=strchr(tmp,' ');
 		if(p)
 			*(p++)=0;
 		else
 			p=nulstr;
-		sprintf(str,"%s\n%s\n%s\n%ld\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%ld\n%u\n%lu\n"
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */
 			,useron.location					/* User's city */
@@ -564,10 +549,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		close(file);
 
-		strcpy(tmp,"EXITINFO.BBS");
+		SAFECOPY(tmp,"EXITINFO.BBS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
@@ -596,7 +581,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,13); 					/* DataPhone */
 		write(file,str,13); 					/* HomePhone */
 		localtime32(&useron.laston,&tm);
-		sprintf(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
+		SAFEPRINTF2(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		str2pas(tmp,str);
 		write(file,str,6);						/* LastTime */
 		unixtodstr(&cfg,useron.laston,tmp);
@@ -657,7 +642,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&c,1);						/* EchoMailEntered */
 
 		localtime_r(&logontime,&tm);
-		sprintf(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
+		SAFEPRINTF2(tmp,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		str2pas(tmp,str);
 		write(file,str,6);						/* LoginTime */
 		unixtodstr(&cfg,(time32_t)logontime,tmp);
@@ -701,10 +686,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_WILDCAT) { /* WildCat CALLINFO.BBS File */
-		strcpy(tmp,"CALLINFO.BBS");
+		SAFECOPY(tmp,"CALLINFO.BBS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
@@ -736,7 +721,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 					i=7;
 					break; 
 		}
-		sprintf(str,"%s\n%u\n%s\n%u\n%lu\n%s\n%s\n%u\n"
+		safe_snprintf(str, sizeof(str), "%s\n%u\n%s\n%u\n%lu\n%s\n%s\n%u\n"
 			,name								/* User name */
 			,i									/* DTE rate */
 			,useron.location					/* User location */
@@ -749,7 +734,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,strlen(str));
 
 		localtime_r(&now,&tm);
-		sprintf(str,"%lu\n%02d:%02d\n%02d:%02d %02d/%02d/%02d\n%s\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%02d:%02d\n%02d:%02d %02d/%02d/%02d\n%s\n"
 			,tleft								/* Time left in seconds */
 			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
 			,tm.tm_hour,tm.tm_min 			/* Current time and date HH:MM */
@@ -760,7 +745,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,strlen(str));
 
 		localtime32(&useron.laston,&tm);
-		sprintf(str,"%u\n%u\n%u\n%u\n%s\n%s %02u:%02u\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%s\n%s %02u:%02u\n"
 			,0									/* Daily download total */
 			,0									/* Max download files */
 			,0									/* Daily download k total */
@@ -773,7 +758,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,strlen(str));
 
 		localtime_r(&ns_time,&tm);
-		sprintf(str,"%s\n%s\n%02d/%02d/%02d\n%u\n%lu\n%u"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%02d/%02d/%02d\n%u\n%lu\n%u"
 			"\n%u\n%u\n"
 			,useron.misc&EXPERT 				/* Expert or Novice mode */
 				? "EXPERT":"NOVICE"
@@ -788,7 +773,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n%s\nCOM%u\n%s\n%lu\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\nCOM%u\n%s\n%lu\n%s\n%s\n"
 			,8									/* Data bits */
 			,online==ON_LOCAL?"LOCAL":"REMOTE"  /* Online local or remote */
 			,cfg.com_port						/* COMx port */
@@ -800,7 +785,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,strlen(str));
 
 		localtime_r(&now,&tm);
-		sprintf(str,"%02d/%02d/%02d %02d:%02d\n%u\n%u\n"
+		safe_snprintf(str, sizeof(str), "%02d/%02d/%02d %02d:%02d\n%u\n%u\n"
 			,tm.tm_mon+1,tm.tm_mday			/* Current date MM/DD/YY */
 			,TM_YEAR(tm.tm_year)
 			,tm.tm_hour,tm.tm_min 			/* Current time HH:MM */
@@ -813,17 +798,17 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_PCBOARD) { /* PCBoard Files */
-		strcpy(tmp,"PCBOARD.SYS");
+		SAFECOPY(tmp,"PCBOARD.SYS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
 		}
 
-		sprintf(str,"%2d%2d%2d%2d%c%2d%c%c%5u%-5.5s"
+		safe_snprintf(str, sizeof(str), "%2d%2d%2d%2d%c%2d%c%c%5u%-5.5s"
 			,-1 								/* Display on/off */
 			,0									/* Printer on/off */
 			,sys_status&SS_SYSPAGE ? -1:0		/* Page Bell on/off */
@@ -840,10 +825,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		write(file,&useron.number,2);			/* User record number */
 
-		strcpy(tmp,name);
+		SAFECOPY(tmp,name);
 		p=strchr(tmp,' ');
 		if(p) *p=0;
-		sprintf(str,"%-15.15s%-12s"
+		SAFEPRINTF2(str,"%-15.15s%-12s"
 			,tmp								/* User's first name */
 			,useron.pass);						/* User's password */
 		write(file,str,27);
@@ -858,7 +843,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		i=-(int16_t)(((now-starttime)/60)+(time_t)useron.ttoday);/* Negative minutes used */
 		write(file,&i,2);
 
-		sprintf(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
+		SAFEPRINTF2(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		write(file,str,5);
 
 		i=cfg.level_timepercall[useron.level];	/* Time allowed on */
@@ -876,10 +861,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&i,2);						/* Conference add time */
 		write(file,&i,2);						/* Upload/Sysop Chat time min */
 
-		strcpy(str,"    ");
+		SAFECOPY(str,"    ");
 		write(file,str,4);						/* Language extension */
 
-		sprintf(str,"%-25.25s",name);           /* User's full name */
+		SAFEPRINTF(str,"%-25.25s",name);           /* User's full name */
 		write(file,str,25);
 
 		i=(int16_t)(tleft/60);
@@ -887,7 +872,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		write(file,&cfg.node_num,1);			/* Node number */
 
-		sprintf(str,"%02d:%02d%2d%2d"           /* Scheduled Event time */
+		safe_snprintf(str, sizeof(str), "%02d:%02d%2d%2d"           /* Scheduled Event time */
 			,0 // sys_eventtime/60
 			,0 // sys_eventtime%60
 			,0 // sys_timed[0] ? -1:0				 /* Event active ? */
@@ -898,7 +883,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		l=0L;
 		write(file,&l,4);						/* Memorized message number */
 
-		sprintf(str,"%d%c%c%ld%s%c%c%d%d%d%c%c"
+		safe_snprintf(str, sizeof(str), "%d%c%c%ld%s%c%c%d%d%d%c%c"
 			,cfg.com_port						/* COM Port number */
 			,' ' 								/* Reserved */
 			,' ' 								/* "" */
@@ -914,10 +899,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		close(file);			/* End of PCBOARD.SYS creation */
 
-		strcpy(tmp,"USERS.SYS");
+		SAFECOPY(tmp,"USERS.SYS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		safe_snprintf(str, sizeof(str), "%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC);
@@ -952,7 +937,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		/* Write fixed record portion */
 
 		write(file,name,26);			/* Name */
-		sprintf(str,"%.24s",useron.location);
+		SAFEPRINTF(str,"%.24s",useron.location);
 		write(file,str,25); 			/* Location */
 		write(file,useron.pass, 9); 	/* Password */
 		l=0;
@@ -965,7 +950,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		i=unixtojulian(useron.laston);
 		write(file,&i,2);				/* Date last on */
 		localtime32(&useron.laston,&tm);
-		sprintf(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
+		SAFEPRINTF2(str,"%02d:%02d",tm.tm_hour,tm.tm_min);
 		write(file,str,6);				/* Last time on */
 		if(useron.misc&EXPERT)
 			i=1;
@@ -1021,10 +1006,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_SPITFIRE) {	 /* SpitFire SFDOORS.DAT File */
-		strcpy(tmp,"SFDOORS.DAT");
+		SAFECOPY(tmp,"SFDOORS.DAT");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
@@ -1038,11 +1023,11 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
 				+(long)tm.tm_sec;
 
-		strcpy(tmp,name);
+		SAFECOPY(tmp,name);
 		if((p=strchr(tmp,' '))!=NULL)
 			*p=0;
 
-		sprintf(str,"%u\n%s\n%s\n%s\n%lu\n%u\n%lu\n%" PRId32 "\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%lu\n%u\n%lu\n%" PRId32 "\n"
 			,useron.number						/* User number */
 			,name								/* User name */
 			,useron.pass						/* Password */
@@ -1061,7 +1046,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			l=((((long)tm.tm_hour*60L)+(long)tm.tm_min)*60L)
 				+(long)tm.tm_sec;
 
-		sprintf(str,"%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%lu\n%s\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%lu\n%s\n"
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%lu\n%lu\n%s\n%s\n"
 			,dropdir
@@ -1096,19 +1081,19 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_UTI) { /* UTI v2.1 - UTIDOOR.TXT */
-		strcpy(tmp,"UTIDOOR.TXT");
+		SAFECOPY(tmp,"UTIDOOR.TXT");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
 
-		strcpy(tmp,name);
+		SAFECOPY(tmp,name);
 		strupr(tmp);
-		sprintf(str,"%s\n%lu\n%u\n%lu\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%lu\n%u\n%lu\n%lu\n"
 			,tmp								/* User name */
 			,cur_rate							/* Actual BPS rate */
 			,online==ON_LOCAL ? 0: cfg.com_port /* COM Port */
@@ -1121,17 +1106,17 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_SR) { /* Solar Realms DOORFILE.SR */
-		strcpy(tmp,"DOORFILE.SR");
+		SAFECOPY(tmp,"DOORFILE.SR");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
 
-		sprintf(str,"%s\n%ld\n%d\n%lu\n%lu\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%ld\n%d\n%lu\n%lu\n%u\n%lu\n"
 			,name								/* Complete name of user */
 			,term_supports(ANSI)	 			/* ANSI ? */
 			,term_supports(NO_EXASCII) ? 0:1	/* IBM characters ? */
@@ -1146,17 +1131,17 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_TRIBBS) { /* TRIBBS.SYS */
-		strcpy(tmp,"TRIBBS.SYS");
+		SAFECOPY(tmp,"TRIBBS.SYS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
 
-		sprintf(str,"%u\n%s\n%s\n%u\n%c\n%c\n%lu\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%u\n%c\n%c\n%lu\n%s\n%s\n%s\n"
 			,useron.number						/* User's record number */
 			,name								/* User's name */
 			,useron.pass						/* User's password */
@@ -1171,7 +1156,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		sprintf(str,"%u\n%u\n%lu\n%lu\n%c\n%c\n%s\n%s\n%s\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%lu\n%lu\n%c\n%c\n%s\n%s\n%s\n"
 			,cfg.node_num						/* Node number */
 			,cfg.com_port						/* Serial port */
 			,online==ON_LOCAL ? 0L:cur_rate 	/* Baud rate */
@@ -1188,17 +1173,17 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	}
 
 	else if(type==XTRN_DOOR32) { /* DOOR32.SYS */
-		strcpy(tmp,"DOOR32.SYS");
+		SAFECOPY(tmp,"DOOR32.SYS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
-		sprintf(str,"%s%s",dropdir,tmp);
+		SAFEPRINTF2(str, "%s%s",dropdir,tmp);
 		removecase(str);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
 			return; 
 		}
 
-		sprintf(str,"%d\n%d\n%lu\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
+		safe_snprintf(str, sizeof(str), "%d\n%d\n%lu\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
 			"%ld\n%d\n"
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? 0 /* Local */ : 2 /* Telnet */
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? INVALID_SOCKET : client_socket_dup
@@ -1227,7 +1212,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 /****************************************************************************/
 void sbbs_t::moduserdat(uint xtrnnum)
 {
-	char	str[256],path[256],c,startup[128];
+	char	str[256],path[256],c,startup[MAX_PATH + 1];
 	char 	tmp[512];
 	/* TODO: I don't really like a 16-bit i */
 	uint16_t	i;
@@ -1235,7 +1220,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
     int		file;
     FILE *	stream;
 
-	sprintf(startup,"%s/",cfg.xtrn[xtrnnum]->path);
+	SAFEPRINTF(startup,"%s/",cfg.xtrn[xtrnnum]->path);
 	if(cfg.xtrn[xtrnnum]->type==XTRN_RBBS || cfg.xtrn[xtrnnum]->type==XTRN_RBBS1) {
 		SAFEPRINTF(path, "%sEXITINFO.BBS", xtrn_dropdir(cfg.xtrn[xtrnnum], startup, sizeof(startup)));
 		fexistcase(path);
@@ -1349,14 +1334,15 @@ void sbbs_t::moduserdat(uint xtrnnum)
 	if((stream=fopen(path,"rb"))!=NULL) {			/* File exists */
 		if(fgets(str,81,stream) && (mod=atol(str))!=0) {
 			ultoac(mod>0L ? mod : -mod,tmp);		/* put commas in the # */
-			strcpy(str,"Credit Adjustment: ");
+			SAFECOPY(str,"Credit Adjustment: ");
 			if(mod<0L)
 				SAFECAT(str,"-");                    /* negative, put '-' */
 			SAFECAT(str,tmp);
-			if(mod>0L)
-				strcpy(tmp,"$+");
-			else
-				strcpy(tmp,"$-");
+			if(mod>0L) {
+				SAFECOPY(tmp,"$+");
+			} else {
+				SAFECOPY(tmp,"$-");
+			}
 			logline(tmp,str);
 			if(mod>0L)			/* always add to real cdt */
 				useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10,mod);
@@ -1408,7 +1394,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		if(fgets(str,81,stream)) {		/* additional minutes */
 			mod=atol(str);
 			if(mod) {
-				sprintf(str,"Minute Adjustment: %s",ultoac(mod,tmp));
+				SAFEPRINTF(str,"Minute Adjustment: %s",ultoac(mod,tmp));
 				logline("*+",str);
 				useron.min=adjustuserrec(&cfg,useron.number,U_MIN,10,mod); 
 			} 
@@ -1511,9 +1497,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 					SAFECOPY(str,cfg.sys_guru);
 					c=cfg.sys_nodes+1; 
 				}
-				else if(node.misc&NODE_ANON)
+				else if(node.misc&NODE_ANON) {
 					SAFECOPY(str,text[UNKNOWN_USER]);
-				else
+				} else
 					username(&cfg,node.useron,str);
 				bprintf(text[UserRunningXtrn],str
 					,cfg.xtrn[xtrnnum]->name,c);
@@ -1538,8 +1524,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 			SAFECOPY(name,"DOOR.SYS");
 			break;
 		case XTRN_RBBS:
-			sprintf(str,"DORINFO%X.DEF",cfg.node_num);
-			SAFECOPY(name,str);
+			SAFEPRINTF(name,"DORINFO%X.DEF",cfg.node_num);
 			break;
 		case XTRN_RBBS1:
 			SAFECOPY(name,"DORINFO1.DEF");
@@ -1577,11 +1562,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	}
 	putuserrec(&cfg,useron.number,U_CURXTRN,8,cfg.xtrn[xtrnnum]->code);
 
-	if(cfg.xtrn[xtrnnum]->misc&REALNAME)
+	if(cfg.xtrn[xtrnnum]->misc&REALNAME) {
 		SAFECOPY(name,useron.name);
-	else
+	} else {
 		SAFECOPY(name,useron.alias);
-
+	}
 	gettimeleft(cfg.xtrn[xtrnnum]->misc&XTRN_CHKTIME ? true:false);
 	tleft=timeleft+(cfg.xtrn[xtrnnum]->textra*60);
 	if(cfg.xtrn[xtrnnum]->maxtime && tleft>(cfg.xtrn[xtrnnum]->maxtime*60))
@@ -1589,16 +1574,16 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	xtrndat(name,dropdir,cfg.xtrn[xtrnnum]->type,tleft,cfg.xtrn[xtrnnum]->misc);
 	if(!online)
 		return(false);
-	sprintf(str, "running external program: %s", cfg.xtrn[xtrnnum]->name);
+	SAFEPRINTF(str, "running external program: %s", cfg.xtrn[xtrnnum]->name);
 	logline("X-",str);
 	if(cfg.xtrn[xtrnnum]->cmd[0]!='*' && logfile_fp!=NULL) {
 		fclose(logfile_fp);
 		logfile_fp=NULL;
 	}
 
-	sprintf(str,"%shangup.now",cfg.node_dir);
+	SAFEPRINTF(str,"%shangup.now",cfg.node_dir);
 	removecase(str);
-	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
+	SAFEPRINTF2(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	removecase(str);
 
 	mode=0; 	
@@ -1629,15 +1614,15 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	}
 	/* Re-open the logfile */
 	if(logfile_fp==NULL) {
-		sprintf(str,"%snode.log",cfg.node_dir);
+		SAFEPRINTF(str,"%snode.log",cfg.node_dir);
 		if((logfile_fp=fopen(str,"a+b"))==NULL)
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 	}
 
-	sprintf(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
+	SAFEPRINTF2(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
 	batch_add_list(str);
 
-	sprintf(str,"%shangup.now",cfg.node_dir);
+	SAFEPRINTF(str,"%shangup.now",cfg.node_dir);
 	if(fexistcase(str)) {
 		lprintf(LOG_NOTICE,"Node %d External program requested hangup (%s signaled)"
 			,cfg.node_num, str);
@@ -1645,7 +1630,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		hangup(); 
 	}
 	else if(!online) {
-		sprintf(str,"%shungup.log",cfg.logs_dir);
+		SAFEPRINTF(str,"%shungup.log",cfg.logs_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 			return(false); 
