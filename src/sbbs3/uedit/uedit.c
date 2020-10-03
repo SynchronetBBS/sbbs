@@ -1506,7 +1506,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 5:
 			    /* D.O.B */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B.",user->birth,LEN_BIRTH,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B. (YYYYMMDD)",user->birth,LEN_BIRTH,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_BIRTH,LEN_BIRTH,user->birth);
 				break;
@@ -1804,7 +1804,7 @@ int createdefaults(scfg_t* cfg)
     SAFECOPY(user.name,"New User");
     SAFECOPY(user.handle,"Handle");
     SAFECOPY(user.pass,"PASSWORD");
-    SAFECOPY(user.birth,"01/01/80");
+    SAFECOPY(user.birth,"19800101");
 
     SAFECOPY(user.address,"123 My Street");
     SAFECOPY(user.location,"City, St");
