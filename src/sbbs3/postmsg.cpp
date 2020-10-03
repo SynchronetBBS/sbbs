@@ -493,17 +493,18 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 			signal_sub_sem(cfg,smb->subnum);
 
 		if(msg->to_net.type == NET_NONE && !(msg->hdr.attr & MSG_ANONYMOUS) && cfg->text != NULL) {
+			int usernum = 0;
 			if(msg->to_ext != NULL)
-				i = atoi(msg->to_ext);
+				usernum = atoi(msg->to_ext);
 			else if(smb->subnum != INVALID_SUB && (cfg->sub[smb->subnum]->misc & SUB_NAME))
-				i = userdatdupe(cfg, 0, U_NAME, LEN_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
+				usernum = userdatdupe(cfg, 0, U_NAME, LEN_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
 			else
-				i = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
-			if(i > 0 && (client == NULL || i != (int)client->usernum)) {
+				usernum = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
+			if(usernum > 0 && (client == NULL || usernum != (int)client->usernum)) {
 				char str[256];
 				if(smb->subnum == INVALID_SUB) {
 					safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
-					putsmsg(cfg, i, str);
+					putsmsg(cfg, usernum, str);
 				} else {
 					char fido_buf[64];
 					const char* via = smb_netaddrstr(&msg->from_net, fido_buf);
@@ -513,7 +514,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 						,msg->from
 						,via
 						,cfg->grp[cfg->sub[smb->subnum]->grp]->sname,cfg->sub[smb->subnum]->lname);
-					putsmsg(cfg, i, str);
+					putsmsg(cfg, usernum, str);
 				}
 			}
 		}
