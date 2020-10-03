@@ -321,7 +321,7 @@ BOOL sbbs_t::newuser()
 			if(gettmplt(str, "nnnn/nn/nn", K_EDIT) < 10)
 				continue;
 			int age = getage(&cfg, str);
-			if(age >= 1 && age <= 150) {
+			if(age >= 0 && age <= 200) {
 				SAFEPRINTF3(useron.birth, "%.4s%.2s%.2s", str, str + 5, str + 8);
 				break;
 			}
