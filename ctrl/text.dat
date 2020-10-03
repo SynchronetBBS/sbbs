@@ -413,7 +413,7 @@
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your sex (M/F)\1\\: \1w"              342 EnterYourSex
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your street address\1\\: \1w"         343 EnterYourAddress
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your voice phone number\1\\: \1w"     344 EnterYourPhoneNumber
-"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (@DATEFMT@)\1\\: \1w"   345 EnterYourBirthday
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (YYYY/MM/DD)\1\\: \1w"  345 EnterYourBirthday
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
 "\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
@@ -512,7 +512,7 @@
 "\1n\1cReal Name : \1h%-30.30s  \1n\1cPhone number : "\      422 UeditRealNamePhone
 	"\1h%s\r\n"
 "\1n\1cAddress   : \1h%-30.30s  \1n\1cAge/Sex/BDay : "\      423 UeditAddressBirthday
-	"\1h%2d %c %s\r\n"
+	"\1h%2d %c %.0s%04u/%02u/%02u\r\n"
 "\1n\1cLocation  : \1h%-30.30s  \1n\1cZip Code     : "\      424 UeditLocationZipcode
 	"\1h%s\r\n"
 "\1n\1cNote      : \1h%-30.30s  \1n\1cHandle       : "\      425 UeditNoteHandle
