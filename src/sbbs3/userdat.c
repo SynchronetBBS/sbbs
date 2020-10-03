@@ -734,12 +734,55 @@ int putusername(scfg_t* cfg, int number, char *name)
 	return(0);
 }
 
-/****************************************************************************/
-/* Returns the age derived from the string 'birth' in the format MM/DD/YY	*/
-/****************************************************************************/
-uint getage(scfg_t* cfg, char *birth)
+#define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
+
+int getbirthyear(const char *birth)
 {
-	uint	age;
+	if(isdigit(birth[2]))				// CCYYMMYY format
+		return DECVAL(birth[0], 1000)
+				+ DECVAL(birth[1], 100)
+				+ DECVAL(birth[2], 10)
+				+ DECVAL(birth[3], 1);
+	// DD/MM/YY or MM/DD/YY format
+	time_t now = time(NULL);
+	struct	tm tm;
+	if(localtime_r(&now, &tm) == NULL)
+		return 0;
+	tm.tm_year += 1900;
+	int year = 1900 + DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
+	if(tm.tm_year - year > 105)
+		year += 100;
+	return year;
+}
+
+int getbirthmonth(scfg_t* cfg, const char *birth)
+{
+	if(isdigit(birth[5]))				// CCYYMMYY format
+		return DECVAL(birth[4], 10)	+ DECVAL(birth[5], 1);
+	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
+		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
+	} else {							// MM/DD/YY format
+		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+	}
+}
+
+int getbirthday(scfg_t* cfg, const char *birth)
+{
+	if(isdigit(birth[5]))				// CCYYMMYY format
+		return DECVAL(birth[6], 10)	+ DECVAL(birth[7], 1);
+	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
+		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+	} else {							// MM/DD/YY format
+		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
+	}
+}
+
+/****************************************************************************/
+/* Returns the age derived from the string 'birth' in the format CCYYMMDD	*/
+/* or legacy: MM/DD/YY or DD/MM/YY											*/
+/****************************************************************************/
+int getage(scfg_t* cfg, const char *birth)
+{
 	struct	tm tm;
 	time_t	now;
 
@@ -752,26 +795,14 @@ uint getage(scfg_t* cfg, char *birth)
 	now=time(NULL);
 	if(localtime_r(&now,&tm)==NULL)
 		return(0);
-	age=(tm.tm_year)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
-	if(age>105)
-		age-=100;
+
 	tm.tm_mon++;	/* convert to 1 based */
-	if(cfg->sys_misc&SM_EURODATE) {		/* DD/MM/YY format */
-		if(atoi(birth)>31 || atoi(birth+3)>12)
-			return(0);
-		if(((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mon ||
-			(((birth[3]&0xf)*10)+(birth[4]&0xf)==tm.tm_mon &&
-			((birth[0]&0xf)*10)+(birth[1]&0xf)>tm.tm_mday))
-			age--;
-	} else {							/* MM/DD/YY format */
-		if(atoi(birth)>12 || atoi(birth+3)>31)
-			return(0);
-		if(((birth[0]&0xf)*10)+(birth[1]&0xf)>tm.tm_mon ||
-			(((birth[0]&0xf)*10)+(birth[1]&0xf)==tm.tm_mon &&
-			((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mday))
-			age--;
-	}
-	return(age);
+	int year = getbirthyear(birth);
+	int age = (1900 + tm.tm_year) - year;
+	int mon = getbirthmonth(cfg, birth);
+	if(mon > tm.tm_mon || (mon == tm.tm_mon && getbirthday(cfg, birth) > tm.tm_mday))
+		age--;
+	return age;
 }
 
 /****************************************************************************/
