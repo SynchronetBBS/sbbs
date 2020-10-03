@@ -315,11 +315,20 @@ BOOL sbbs_t::newuser()
 			bputs(text[EnterYourSex]);
 			useron.sex=(char)getkeys("MF",0); 
 		}
+		str[0] = 0;
 		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
-			bprintf(text[EnterYourBirthday]
-				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
-			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
-				break; 
+			bprintf(text[EnterYourBirthday], "YYYY/MM/DD");
+			if(gettmplt(str, "nnnn/nn/nn", K_EDIT) < 10)
+				continue;
+			int age = getage(&cfg, str);
+			if(age >= 1 && age <= 150) {
+				SAFEPRINTF3(useron.birth, "%.4s%.2s%.2s", str, str + 5, str + 8);
+				break;
+			}
+			SAFEPRINTF3(str, "%04u/%02u/%02u"
+				,getbirthyear(useron.birth)
+				,getbirthmonth(&cfg, useron.birth)
+				,getbirthday(&cfg, useron.birth));
 		}
 		if(!online) return(FALSE);
 		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
