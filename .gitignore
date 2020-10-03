@@ -27,3 +27,4 @@ node4
 *.?.cnf
 ctrl/recycle
 exec/*.bin
+exec/*.so
