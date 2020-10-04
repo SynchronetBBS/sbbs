@@ -822,7 +822,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(client_name);
 
 	if(!strcmp(sp,"BDATE"))
-		return(useron.birth);
+		return getbirthdstr(&cfg, useron.birth, str, sizeof(str));
 
 	if(!strcmp(sp,"AGE")) {
 		safe_snprintf(str,maxlen,"%u",getage(&cfg,useron.birth));

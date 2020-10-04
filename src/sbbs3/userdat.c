@@ -736,7 +736,7 @@ int putusername(scfg_t* cfg, int number, char *name)
 
 #define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
 
-int getbirthyear(const char *birth)
+int getbirthyear(const char* birth)
 {
 	if(isdigit(birth[2]))				// CCYYMMYY format
 		return DECVAL(birth[0], 1000)
@@ -755,7 +755,7 @@ int getbirthyear(const char *birth)
 	return year;
 }
 
-int getbirthmonth(scfg_t* cfg, const char *birth)
+int getbirthmonth(scfg_t* cfg, const char* birth)
 {
 	if(isdigit(birth[5]))				// CCYYMMYY format
 		return DECVAL(birth[4], 10)	+ DECVAL(birth[5], 1);
@@ -766,7 +766,7 @@ int getbirthmonth(scfg_t* cfg, const char *birth)
 	}
 }
 
-int getbirthday(scfg_t* cfg, const char *birth)
+int getbirthday(scfg_t* cfg, const char* birth)
 {
 	if(isdigit(birth[5]))				// CCYYMMYY format
 		return DECVAL(birth[6], 10)	+ DECVAL(birth[7], 1);
@@ -775,6 +775,35 @@ int getbirthday(scfg_t* cfg, const char *birth)
 	} else {							// MM/DD/YY format
 		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
 	}
+}
+
+// Always returns string in MM/DD/YY format
+char* getbirthmmddyy(scfg_t* cfg, const char* birth, char* buf, size_t max)
+{
+	safe_snprintf(buf, max, "%02u/%02u/%02u"
+		, getbirthmonth(cfg, birth)
+		, getbirthday(cfg, birth)
+		, getbirthyear(birth) % 100);
+	return buf;
+}
+
+// Always returns string in DD/MM/YY format
+char* getbirthddmmyy(scfg_t* cfg, const char* birth, char* buf, size_t max)
+{
+	safe_snprintf(buf, max, "%02u/%02u/%02u"
+		, getbirthday(cfg, birth)
+		, getbirthmonth(cfg, birth)
+		, getbirthyear(birth) % 100);
+	return buf;
+}
+
+char* getbirthdstr(scfg_t* cfg, const char* birth, char* buf, size_t max)
+{
+	if(cfg->sys_misc & SM_EURODATE)
+		getbirthddmmyy(cfg, birth, buf, max);
+	else
+		getbirthmmddyy(cfg, birth, buf, max);
+	return buf;
 }
 
 /****************************************************************************/
