@@ -233,7 +233,7 @@ function add_outbound_files(addrs, bp)
 					case '.ilo':
 						flo = new File(file);
 						if (!flo.open("r")) {
-							log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"'.");
+							log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"': " + flo.error);
 							break;
 						}
 						if (bp.cb_data.binkit_flow_contents[flo.name] === undefined)
@@ -554,7 +554,7 @@ function callout_done(bp)
 			// We have some unsent files in here... re-write the flo file...
 			f = new File(key);
 			if (!f.open("r+")) {
-				log(LOG_ERROR, "Unable to update flow file '"+key+"'.");
+				log(LOG_ERROR, "Unable to update flow file '"+key+"': " + f.error);
 				return;
 			}
 			lines = f.readAll(2048);
@@ -679,7 +679,7 @@ function check_held(addr, scfg, myaddr)
 	if (!f.exists)
 		return false;
 	if (!f.open("r")) {
-		log(LOG_ERROR, "Unable to open hold file '"+f.name+"'");
+		log(LOG_ERROR, "Unable to open hold file '"+f.name+"': " + f.error);
 		return true;
 	}
 	until = f.readln();
