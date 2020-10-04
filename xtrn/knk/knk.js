@@ -113,7 +113,7 @@ function show_intro()
 	dk.console.println("");
 	dk.console.center("Copyright (c) 2009 by Stephen Hurd. All Rights Reserved.");
 	dk.console.println("");
-	dk.console.center("Running on "+system.name+" courtesy of "+dk.system.sysop_name+".");
+	dk.console.center("Running on "+dk.system.name+" courtesy of "+dk.system.sysop_name+".");
 	dk.console.println("");
 	check_syncterm_music();
 	dk.console.gotoxy(0,dk.console.rows-1);
