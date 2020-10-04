@@ -139,6 +139,7 @@ dk.user.expert_mode = (user.settings & USER_EXPERT) === USER_EXPERT;
 dk.system.main_dir = system.node_dir;
 dk.system.gen_dir = system.data_dir;
 dk.system.sysop_name = system.operator;
+dk.system.name = system.name;
 
 // TODO: cfg->color array not available.
 delete dk.system.default_attr;
