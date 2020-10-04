@@ -1657,7 +1657,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case 'B':
 							if(sys_status&SS_USERON) {
-								SAFECAT(theanswer,useron.birth);
+								getbirthdstr(&cfg, useron.birth, theanswer, sizeof(theanswer));
 							} else {
 								SAFECAT(theanswer,"00/00/00");
 							}

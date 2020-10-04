@@ -237,7 +237,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		safe_snprintf(str, sizeof(str), "%u\n%u\n%s\n%c\n%u\n%s\n"
 			,useron.level						/* User main level */
 			,useron.level						/* User transfer level */
-			,useron.birth						/* User birthday */
+			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp)) /* User birthday (MM/DD/YY) */
 			,useron.sex ? useron.sex : '?'		/* User sex (M/F) */
 			,useron.number						/* User number */
 			,useron.phone); 					/* User phone number */
@@ -452,7 +452,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			"\n%s\n%02d:%02d\n%c\n"
 			,0									/* 30: Kbytes downloaded today */
 			,(useron.cdt+useron.freecdt)/1024UL /* 31: Max Kbytes to download today */
-			,useron.birth						/* 32: User birthday */
+			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* 32: User birthday (MM/DD/YY) */
 			,node_dir							/* 33: Path to MAIN directory */
 			,data_dir							/* 34: Path to GEN directory */
 			,cfg.sys_op 						/* 35: Sysop name */
@@ -617,7 +617,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&w,sizeof(w)); 			/* Len */
 		write(file,&w,sizeof(w)); 			/* CombinedPtr */
 		write(file,&w,sizeof(w)); 			/* AliasPtr */
-		l=0;
+		l = strtol(useron.birth, NULL, 10);
 		write(file,&l,sizeof(l));			/* Birthday (as a long?) */
 		/* EventInfo */
 		c=0;
@@ -777,7 +777,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,8									/* Data bits */
 			,online==ON_LOCAL?"LOCAL":"REMOTE"  /* Online local or remote */
 			,cfg.com_port						/* COMx port */
-			,useron.birth						/* User birthday */
+			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* User birthday (MM/DD/YY) */
 			,dte_rate							/* DTE rate */
 			,"FALSE"                            /* Already connected? */
 			,"Normal Connection");              /* Normal or ARQ connect */
@@ -1151,7 +1151,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,tleft/60							/* Minutes left */
 			,useron.phone						/* User's phone number */
 			,useron.location					/* User's city and state */
-			,useron.birth						/* User's birth date */
+			,getbirthmmddyy(&cfg, useron.birth, tmp, sizeof(tmp))	/* User's birth date (MM/DD/YY) */
 			);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));

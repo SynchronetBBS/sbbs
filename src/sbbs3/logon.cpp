@@ -217,8 +217,8 @@ bool sbbs_t::logon()
 	bputs(text[LoggingOn]);
 	if(useron.rows)
 		rows=useron.rows;
-	unixtodstr(&cfg,(time32_t)logontime,str);
-	if(!strncmp(str,useron.birth,5) && !(useron.rest&FLAG('Q'))) {
+	if(tm.tm_mon == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
+		&& !(useron.rest&FLAG('Q'))) {
 		if(text[HappyBirthday][0]) {
 			bputs(text[HappyBirthday]);
 			pause();
