@@ -1,5 +1,3 @@
-// TODO: dk.system.name doesn't get populated...
-
 load("dorkit.js");
 load("lockfile.js");
 var game_dir='.';
