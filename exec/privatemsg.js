@@ -14,10 +14,6 @@ require("text.js", 'PrivateMsgPrompt');
 if(!(bbs.sys_status&SS_USERON))	// Don't allow use until logged-on
 	exit();
 
-bbs.replace_text(PrivateMsgPrompt, 
-    "\r\n\1b\1hPrivate: \1g~T\1n\1gelegram, " +
-	"\1h~M\1n\1gessage, \1h~C\1n\1ghat, \1h~I\1n\1gnterBBS, or \1h~Q\1n\1guit: \1c\1h");
-
 var saved_node_action = bbs.node_action;
 
 outer_loop:
@@ -27,7 +23,8 @@ while(bbs.online && !(console.aborted)) {
 		break; 
 	}
 	bbs.nodesync();
-	console.mnemonics(bbs.text(PrivateMsgPrompt));
+	console.print("\1n\r\n\xfe \1b\1h\Private \1n\xfe ");
+	console.mnemonics("~Telegram, ~Message, ~Chat, ~InterBBS, or ~Quit: ");
 	bbs.sys_status&=~SS_ABORT;
 	var ch;
 	while(bbs.online && !console.aborted) {  /* Watch for incoming messages */
