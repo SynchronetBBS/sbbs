@@ -500,7 +500,7 @@
                           <object class="GtkEntry" id="eRealName">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="max_length">24</property>
+                            <property name="max_length">25</property>
                             <property name="width_chars">25</property>
                             <property name="primary_icon_activatable">False</property>
                             <property name="secondary_icon_activatable">False</property>
@@ -784,7 +784,7 @@
                           <object class="GtkEntry" id="ePassword">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="max_length">8</property>
+                            <property name="max_length">40</property>
                             <property name="width_chars">8</property>
                             <property name="primary_icon_activatable">False</property>
                             <property name="secondary_icon_activatable">False</property>
