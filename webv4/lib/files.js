@@ -2,9 +2,8 @@ require('filebase.js', 'FileBase');
 require('file_size.js', 'file_size_str');
 
 function count_files(dir) {
-    var n = 0;
     const fn = format("%s%s.ixb", file_area.dir[dir].data_dir, dir);
-    if (!file_exists(fn)) return n;
+    if (!file_exists(fn)) return 0;
     return Math.floor(file_size(fn) / 22); // ixb record length is 22 bytes
 }
 
