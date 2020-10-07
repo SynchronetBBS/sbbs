@@ -20,6 +20,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 file_area.dir[http_request.query.dir[0]].index >= 0 &&
 				file_area.dir[http_request.query.dir[0]].can_download &&
 				typeof http_request.query.file !== 'undefined'
+				&& user.compare_ars(file_area.dir[http_request.query.dir[0]].download_ars)
 			) {
 				var dircode = file_area.dir[http_request.query.dir[0]].code;
 				var fileBase = new FileBase(dircode);
