@@ -8,20 +8,25 @@ function count_files(dir) {
     return Math.floor(file_size(fn) / 22); // ixb record length is 22 bytes
 }
 
-function listLibraries() {
-	return file_area.lib_list.filter(function (library) {
-        return library.dir_list.length >= 1;
+function libHasFiles(lib) {
+    return lib.dir_list.some(function (e) {
+        return count_files(e.code) > 0;
     });
 }
 
-function listDirectories(library) {
-	var dirs = [];
-	file_area.lib_list[library].dir_list.forEach(function (dir) {
-        const fc = count_files(dir.code);
-        if (fc < 1) return;
-		dirs.push({ dir: dir, fileCount: fc });
-	});
-	return dirs;
+function listLibraries() {
+	return file_area.lib_list.filter(function (lib) {
+        return lib.dir_list.length >= 1 && libHasFiles(lib);
+    });
+}
+
+function listDirectories(lib) {
+    return file_area.lib_list[lib].dir_list.reduce(function (a, c) {
+        const fc = count_files(c.code);
+        if (fc < 1) return a;
+        a.push({ dir: c, fileCount: fc });
+        return a;
+    }, []);
 }
 
 function listFiles(dir) {
