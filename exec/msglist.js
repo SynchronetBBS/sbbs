@@ -1044,6 +1044,15 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case 'M':
 							mail_reply(list[current]);
 							break;
+						case 'D':
+							console.clearline();
+							if(!console.noyes("Download message source", P_NOCRLF)) {
+								if(!download_msg_source(list[current], msgbase))
+									alert("failed");
+							}
+							console.creturn();
+							bbs.download_msg_attachments(list[current]);
+							break;
 						case 'S':
 							view_source = !view_source;
 							view_hex = false;
@@ -1071,7 +1080,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 									case '?':
 										if(user.settings & USER_EXPERT) {
 											console.line_counter = 0;
-											bbs.menu("sysmscan");
+											bbs.menu("sysmscan", P_NOCRLF);
 											console.crlf();
 										}
 										continue;
