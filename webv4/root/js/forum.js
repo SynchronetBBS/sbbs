@@ -352,18 +352,19 @@ function onThreadStats(data) {
 /*  Fetch a private mail message's body (with links to attachments) where 'id'
 	is the message number.	Output it to an element with id 'message-<id>'. */
 async function getMailBody(id) {
-	if (!$('#message-' + id).attr('hidden')) {
-		$('#message-' + id).attr('hidden', true);
-	} else if ($('#message-' + id).html() != '') {
-		$('#message-' + id).attr('hidden', false);
+	const tgt = `#message-${id}`;
+	if (!$(tgt).attr('hidden')) {
+		$(tgt).attr('hidden', true);
+	} else if ($(tgt).html() != '') {
+		$(tgt).attr('hidden', false);
 	} else {
-		const data = await v4_get('./api/forum.ssjs?call=get-mail-body&number=' + id);
+		const data = await v4_get(`./api/forum.ssjs?call=get-mail-body&number=${id}`);
 		var str = data.body;
 		if (data.inlines && data.inlines.length > 0) {
-			str += '<br>Inline attachments: ' + data.inlines.join('<br>') + '<br>';
+			str += `<br>Inline attachments: ${data.inlines.join('<br>')}<br>`;
 		}
 		if (data.attachments && data.attachments.length > 0) {
-			str += '<br>Attachments: ' + data.attachments.join('<br>') + '<br>';
+			str += `<br>Attachments: ${data.attachments.join('<br>')}<br>`;
 		}
 		str +=
 			'<button class="btn btn-default icon" ' +
@@ -377,9 +378,15 @@ async function getMailBody(id) {
 			'title="Delete this message" onclick="deleteMessage(\'mail\',' + id + ')">' +
 			'<span class="glyphicon glyphicon-trash"></span>' +
 			'</button>';
-		$('#message-' + id).html(str);
-		$('#message-' + id).attr('hidden', false);
+		if (data.buttons) str += data.buttons.join('');
+		$(tgt).html(str);
+		$(tgt).attr('hidden', false);
 	}
+}
+
+async function blockSender(id, from, from_net) {
+	const data = await v4_get(`./api/forum.ssjs?call=block-sender&from=${from}&from_net=${from_net}`);
+	if (!data.err) $(`#bsb-${id}`).attr('disabled', true);
 }
 
 async function setScanCfg(sub, cfg) {
