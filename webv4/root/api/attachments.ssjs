@@ -1,6 +1,6 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 
-var settings = load('modopts.js', 'web');
+var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
