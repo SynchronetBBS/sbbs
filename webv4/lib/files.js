@@ -2,26 +2,30 @@ require('filebase.js', 'FileBase');
 require('file_size.js', 'file_size_str');
 
 function count_files(dir) {
-    var n = 0;
     const fn = format("%s%s.ixb", file_area.dir[dir].data_dir, dir);
-    if (!file_exists(fn)) return n;
+    if (!file_exists(fn)) return 0;
     return Math.floor(file_size(fn) / 22); // ixb record length is 22 bytes
 }
 
-function listLibraries() {
-	return file_area.lib_list.filter(function (library) {
-        return library.dir_list.length >= 1;
+function libHasFiles(lib) {
+    return lib.dir_list.some(function (e) {
+        return count_files(e.code) > 0;
     });
 }
 
-function listDirectories(library) {
-	var dirs = [];
-	file_area.lib_list[library].dir_list.forEach(function (dir) {
-        const fc = count_files(dir.code);
-        if (fc < 1) return;
-		dirs.push({ dir: dir, fileCount: fc });
-	});
-	return dirs;
+function listLibraries() {
+	return file_area.lib_list.filter(function (lib) {
+        return lib.dir_list.length >= 1 && libHasFiles(lib);
+    });
+}
+
+function listDirectories(lib) {
+    return file_area.lib_list[lib].dir_list.reduce(function (a, c) {
+        const fc = count_files(c.code);
+        if (fc < 1) return a;
+        a.push({ dir: c, fileCount: fc });
+        return a;
+    }, []);
 }
 
 function listFiles(dir) {
