@@ -193,10 +193,6 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 				l+=2;
 			}
 		}
-		else if((str[l]=='`' || str[l]=='ú') && str[l+1]=='[') {
-			outchar(ESC); /* Convert `[ and ú[ to ESC[ */
-			l++;
-		}
 		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_PCBOARD) && str[l]=='@' && str[l+1]=='X'
 			&& isxdigit((unsigned char)str[l+2]) && isxdigit((unsigned char)str[l+3])) {
@@ -348,7 +344,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 			}
 
 			/* ansi escape sequence */
-			if(outchar_esc) {
+			if(outchar_esc >= ansiState_csi) {
 				if(str[l]=='A' || str[l]=='B' || str[l]=='H' || str[l]=='J'
 					|| str[l]=='f' || str[l]=='u')    /* ANSI anim */
 					lncntr=0;			/* so defeat pause */
