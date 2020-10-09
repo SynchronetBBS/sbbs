@@ -348,8 +348,8 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 				if(str[l]=='A' || str[l]=='B' || str[l]=='H' || str[l]=='J'
 					|| str[l]=='f' || str[l]=='u')    /* ANSI anim */
 					lncntr=0;			/* so defeat pause */
-				if(str[l]=='"') {
-					l++;				/* don't pass on keyboard reassignment */
+				if(str[l]=='"' || str[l]=='c') {
+					l++;				/* don't pass on keyboard reassignment or Device Attributes (DA) requests */
 					continue;
 				}
 			}
