@@ -566,57 +566,46 @@ const char* sbbs_t::term_charset(long term)
 /****************************************************************************/
 int sbbs_t::outchar(char ch)
 {
-	/*
-	 * outchar_esc values:
-	 * 0: No sequence
-	 * 1: ESC
-	 * 2: CSI
-	 * 3: Final byte
-     * 4: APS, DCS, PM, or OSC
-     * 5: SOS
-     * 6: ESC inside of SOS
-     */
-
 	if(console&CON_ECHO_OFF)
 		return 0;
-	if(ch==ESC && outchar_esc < 4)
-		outchar_esc=1;
-	else if(outchar_esc==1) {
-		if(ch=='[')
-			outchar_esc++;
-		else if(ch=='_' || ch=='P' || ch == '^' || ch == ']')
-			outchar_esc=4;
+	if(ch == ESC && outchar_esc < ansiState_string)
+		outchar_esc = ansiState_esc;
+	else if(outchar_esc == ansiState_esc) {
+		if(ch == '[')
+			outchar_esc = ansiState_csi;
+		else if(ch == '_' || ch == 'P' || ch == '^' || ch == ']')
+			outchar_esc = ansiState_string;
 		else if(ch=='X')
-			outchar_esc=5;
-		else if(ch >= 0x40 && ch <= 0x5f)
-			outchar_esc=3;
+			outchar_esc = ansiState_sos;
+		else if(ch >= '@' && ch <= '_')
+			outchar_esc = ansiState_final;
 		else
-			outchar_esc=0;
+			outchar_esc = ansiState_none;
 	}
-	else if(outchar_esc==2) {
-		if(ch>='@' && ch<='~')
-			outchar_esc++;
+	else if(outchar_esc == ansiState_csi) {
+		if(ch >= '@' && ch <= '~')
+			outchar_esc = ansiState_final;
 	}
-	else if(outchar_esc==4) {	// APS, DCS, PM, or OSC
+	else if(outchar_esc == ansiState_string) {	// APS, DCS, PM, or OSC
 		if (ch == ESC)
-			outchar_esc = 1;
-		if (!((ch >= 0x08 && ch <= 0x0d) || (ch >= 0x20 && ch <= 0x7e)))
-			outchar_esc = 0;
+			outchar_esc = ansiState_esc;
+		if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
+			outchar_esc = ansiState_none;
 	}
-	else if(outchar_esc==5) {	// SOS
+	else if(outchar_esc == ansiState_sos) {	// SOS
 		if (ch == ESC)
-			outchar_esc++;
+			outchar_esc = ansiState_sos_esc;
 	}
-	else if(outchar_esc==6) {	// ESC inside SOS
+	else if(outchar_esc == ansiState_sos_esc) {	// ESC inside SOS
 		if (ch == '\\')
-			outchar_esc = 1;
+			outchar_esc = ansiState_esc;
 		else if (ch == 'X')
-			outchar_esc = 0;
+			outchar_esc = ansiState_none;
 		else
-			outchar_esc = 5;
+			outchar_esc = ansiState_sos;
 	}
 	else
-		outchar_esc=0;
+		outchar_esc = ansiState_none;
 	long term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	if(!(term&PETSCII)) {
@@ -642,7 +631,7 @@ int sbbs_t::outchar(char ch)
 	if(!(console&CON_R_ECHO))
 		return 0;
 
-	if((console&CON_R_ECHOX) && (uchar)ch>=' ' && !outchar_esc) {
+	if((console&CON_R_ECHOX) && (uchar)ch>=' ' && outchar_esc == ansiState_none) {
 		ch=text[YNQP][3];
 		if(text[YNQP][2]==0 || ch==0) ch='X';
 	}
@@ -677,7 +666,7 @@ int sbbs_t::outchar(char ch)
 				outcom(ch);
 		}
 	}
-	if(!outchar_esc) {
+	if(outchar_esc == ansiState_none) {
 		/* Track cursor position locally */
 		switch(ch) {
 			case '\a':	// 7
@@ -718,8 +707,8 @@ int sbbs_t::outchar(char ch)
 				break;
 		}
 	}
-	if(outchar_esc==3)
-		outchar_esc=0;
+	if(outchar_esc == ansiState_final)
+		outchar_esc = ansiState_none;
 
 	if(lncntr==rows-1 && ((useron.misc&(UPAUSE^(console&CON_PAUSEOFF))) || sys_status&SS_PAUSEON)
 		&& !(sys_status&(SS_PAUSEOFF|SS_ABORT))) {
