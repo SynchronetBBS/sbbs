@@ -389,8 +389,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				size=msgtoqwk(&msg, qwk, mode|QM_REPLYTO, &smb, /* confnum: */0, hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
+				msgndx++;
 				if(ndx && size) {
-					msgndx++;
 					f=ltomsbin(msgndx); 	/* Record number */
 					ch=0;					/* Sub number, not used */
 					if(personal) {
@@ -529,8 +529,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 					size=msgtoqwk(&msg, qwk, mode, &smb, conf, hdrs, voting);
 					smb_unlockmsghdr(&smb,&msg);
 
+					msgndx++;
 					if(ndx && size) {
-						msgndx++;
 						f=ltomsbin(msgndx); 	/* Record number */
 						ch=0;					/* Sub number, not used */
 						if(personal
