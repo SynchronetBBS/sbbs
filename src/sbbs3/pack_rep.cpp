@@ -152,8 +152,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 			mode |= (cfg.qhub[hubnum]->misc&(QHUB_EXT | QHUB_CTRL_A | QHUB_UTF8));
 			/* For an unclear reason, kludge lines (including @VIA and @TZ) were not included in NetMail previously */
 			if(!(cfg.qhub[hubnum]->misc&QHUB_NOHEADERS)) mode|=(QM_VIA|QM_TZ|QM_MSGID|QM_REPLYTO);
-			msgtoqwk(&msg, rep, mode, &smb, /* confnum: */0, hdrs);
-			packedmail++;
+			if(msgtoqwk(&msg, rep, mode, &smb, /* confnum: */0, hdrs) > 0)
+				packedmail++;
 			smb_unlockmsghdr(&smb,&msg);
 			smb_freemsgmem(&msg); 
 			YIELD();	/* yield */
@@ -228,12 +228,13 @@ bool sbbs_t::pack_rep(uint hubnum)
 			if(msg.from_net.type!=NET_QWK)
 				mode|=QM_TAGLINE;
 
-			msgtoqwk(&msg, rep, mode, &smb, cfg.qhub[hubnum]->conf[i], hdrs, voting);
+			if(msgtoqwk(&msg, rep, mode, &smb, cfg.qhub[hubnum]->conf[i], hdrs, voting) > 0) {
+				msgcnt++;
+				submsgs++; 
+			}
 
 			smb_freemsgmem(&msg);
 			smb_unlockmsghdr(&smb,&msg);
-			msgcnt++;
-			submsgs++; 
 			if(!(u%50))
 				YIELD(); /* yield */
 		}

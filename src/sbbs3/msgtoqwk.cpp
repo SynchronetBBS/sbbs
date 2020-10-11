@@ -44,8 +44,9 @@
 /* Converts message 'msg' to QWK format, writing to file 'qwk_fp'.          */
 /* mode determines how to handle Ctrl-A codes								*/
 /* Returns the number of bytes used for the body-text (multiple of 128)		*/
+/* or negative on error.													*/
 /****************************************************************************/
-ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
+long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	, int conf, FILE* hdrs, FILE* voting)
 {
 	char	str[512],ch=0,tear=0,tearwatch=0,*buf,*p;
@@ -75,7 +76,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 
 	if(msg->hdr.type != SMB_MSG_TYPE_NORMAL) {
 		if(voting == NULL)
-			return 0;
+			return -1;
 		fprintf(voting,"[%lx]\n",offset);
 		switch(msg->hdr.type) {
 		case SMB_MSG_TYPE_BALLOT:
@@ -257,7 +258,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 		getmsgtxt_mode |= GETMSGTXT_PLAIN;
 	buf=smb_getmsgtxt(smb, msg, getmsgtxt_mode);
 	if(!buf)
-		return(0);
+		return -2;
 
 	char qwk_newline = QWK_NEWLINE;
 	if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) {
