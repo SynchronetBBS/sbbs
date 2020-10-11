@@ -348,7 +348,15 @@ public:
 
 	scfg_t	cfg;
 
-	int		outchar_esc;		   // track ANSI escape seq output
+	enum ansiState {
+		 ansiState_none		// No sequence
+		,ansiState_esc		// Escape
+		,ansiState_csi		// CSI
+		,ansiState_final	// Final byte
+		,ansiState_string	// APS, DCS, PM, or OSC
+		,ansiState_sos		// SOS
+		,ansiState_sos_esc	// ESC inside SOS
+	} outchar_esc;			// track ANSI escape seq output
 
 	int 	rioctl(ushort action); // remote i/o control
 	bool	rio_abortable;
