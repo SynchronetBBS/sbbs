@@ -136,7 +136,7 @@ function lock_flow(file)
 		}
 		if (!f.open("wb")) {
 			f.date = orig_date;
-			log(LOG_WARNING, "Error " + f.error + " opening " + f.name);
+			log(LOG_WARNING, "Error " + f.error + " opening lock file: " + f.name);
 			return false;
 		}
 		f.date = now;
@@ -146,7 +146,7 @@ function lock_flow(file)
 	if(!mkpath(ret.bsy.name.slice(0, -file_getname(ret.bsy.name).length)))
 		log(LOG_WARNING, "MKPATH ERROR " + errno + " (" + errno_str + "): " + ret.bsy.name);
 	if (!ret.bsy.open("wb")) {	// Used to include 'e' mode flag (which never worked)
-		log(LOG_WARNING, "Error " + ret.bsy.error + " creating " + ret.bsy.name);
+		log(LOG_WARNING, "Error " + ret.bsy.error + " creating lock file: " + ret.bsy.name);
 		if (!take_lockfile(ret.bsy)) {
 			log(LOG_NOTICE, "Lock on "+ret.bsy.name+" failed.");
 			return undefined;
@@ -219,7 +219,7 @@ function add_outbound_files(addrs, bp)
 				var fnchars = '0123456789abcdefghijklmnopqrstuvwxyz';
 				var fname;
 
-				if(file_isdir(file))
+				if(file_isdir(file) || !file_exists(file))
 					return;
 				var ext = file_getext(file);
 				if (ext !== undefined)
@@ -233,7 +233,7 @@ function add_outbound_files(addrs, bp)
 					case '.ilo':
 						flo = new File(file);
 						if (!flo.open("r")) {
-							log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"': " + flo.error);
+							log(LOG_ERROR, "Error " + flo.error + " opening FLO file: " + flo.name);
 							break;
 						}
 						if (bp.cb_data.binkit_flow_contents[flo.name] === undefined)
@@ -337,7 +337,7 @@ function remove_file(fname)
 	if (file_remove(fname))
 		log(LOG_INFO, "Deleted file: " + fname);
 	else
-		log(LOG_ERROR, "Unable to delete file: " + fname);
+		log(LOG_ERROR, "Error " + errno + " (" + errno_str + ") deleting file: " + fname);
 }
 
 
@@ -406,12 +406,12 @@ function rename_or_move(src, dst_dir, dst_fname)
 		return true;
 	sf = new File(src);
 	if (!sf.open("rb")) {
-		log(LOG_ERR, "Error " + sf.error + " opening " + sf.name);
+		log(LOG_ERR, "Error " + sf.error + " opening source file for move: " + sf.name);
 		return false;
 	}
 	df = new File(dst);
 	if (!df.open("wb")) {		// Used to include 'e' mode flag (which never worked)
-		log(LOG_ERR, "Error " + df.error + " opening " + df.name);
+		log(LOG_ERR, "Error " + df.error + " opening destination file for move: " + df.name);
 		sf.close();
 		return false;
 	}
@@ -554,7 +554,7 @@ function callout_done(bp)
 			// We have some unsent files in here... re-write the flo file...
 			f = new File(key);
 			if (!f.open("r+")) {
-				log(LOG_ERROR, "Unable to update flow file '"+key+"': " + f.error);
+				log(LOG_ERROR, "Error " + f.error + " opening flow file for update: " + key);
 				return;
 			}
 			lines = f.readAll(2048);
@@ -679,7 +679,7 @@ function check_held(addr, scfg, myaddr)
 	if (!f.exists)
 		return false;
 	if (!f.open("r")) {
-		log(LOG_ERROR, "Unable to open hold file '"+f.name+"': " + f.error);
+		log(LOG_ERROR, "Error " + f.error + " opening hold file: " + f.name);
 		return true;
 	}
 	until = f.readln();
