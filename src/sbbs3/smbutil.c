@@ -526,8 +526,8 @@ void listmsgs(ulong start, ulong count)
 				,beep,i,smb.last_error);
 			break; 
 		}
-		printf("%4"PRIu32" %-25.25s %-25.25s %s\n"
-			,msg.hdr.number,msg.from,msg.to,msg.subj);
+		printf("%4lu/#%-4"PRIu32" %-25.25s %-25.25s %s\n"
+			,start + l, msg.hdr.number,msg.from,msg.to,msg.subj);
 		smb_freemsgmem(&msg);
 		l++; 
 	}
@@ -1381,10 +1381,11 @@ int setmsgattr(smb_t* smb, ulong number, uint16_t attr)
 /****************************************************************************/
 /* Read messages in message base											*/
 /****************************************************************************/
-void readmsgs(ulong start)
+void readmsgs(ulong start, ulong count)
 {
 	char	*inbuf;
 	int 	i,done=0,domsg=1;
+	ulong	rd = 0;
 	smbmsg_t msg;
 
 	if(start)
@@ -1426,6 +1427,8 @@ void readmsgs(ulong start)
 			printf("\n\n");
 
 			if((inbuf=smb_getmsgtxt(&smb,&msg, msgtxtmode))!=NULL) {
+				char* p;
+				REPLACE_CHARS(inbuf, ESC, '.', p);
 				printf("%s",remove_ctrl_a(inbuf, inbuf));
 				free(inbuf); 
 			}
@@ -1436,9 +1439,16 @@ void readmsgs(ulong start)
 					,beep,i,smb.last_error);
 				break; 
 			}
-			smb_freemsgmem(&msg); 
+			smb_freemsgmem(&msg);
+			rd++;
 		}
 		domsg=1;
+		if(count) {
+			if(rd >= count)
+				break;
+			msg.offset++;
+			continue;
+		}
 		printf("\nReading %s (?=Menu): ",smb.file);
 		switch(toupper(getch())) {
 			case '?':
@@ -1816,7 +1826,7 @@ int main(int argc, char **argv)
 								fprintf(errfp, "\nError %d (%s) unlocking %s\n", i, smb.last_error, smb.file);
 							break;
 						case 'r':
-							readmsgs(getmsgnum(cmd+1));
+							readmsgs(getmsgnum(cmd+1), count);
 							y=strlen(cmd)-1;
 							break;
 						case 'R':
