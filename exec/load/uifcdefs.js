@@ -45,9 +45,10 @@ const MSK_ON	= 0xf0000000;
 const MSK_OFF 	= 0x0fffffff;
 const MSK_INS 	= 0x10000000;
 const MSK_DEL 	= 0x20000000;
-const MSK_GET 	= 0x30000000;
-const MSK_PUT 	= 0x40000000;
-const MSK_EDIT 	= 0x50000000;
+const MSK_COPY 	= 0x30000000;
+const MSK_CUT 	= 0x40000000;
+const MSK_PASTE = 0x50000000;
+const MSK_EDIT 	= 0x60000000;
 /* Dont forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 const MAX_OPLN	= 75;	/* Maximum length of each option per menu call */
 const MAX_BUFS	= 7;	/* Maximum number of screen buffers to save */
