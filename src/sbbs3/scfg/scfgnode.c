@@ -37,6 +37,16 @@
 static char* errLevelStringList[]
 	= {"Emergency", "Alert", "Critical", "Error", NULL};
 
+static char* node_path_help =
+	"`Node Directory:`\n"
+	"\n"
+	"This is the path to this node's private directory where its separate\n"
+	"configuration and data files are stored.\n"
+	"\n"
+	"The drive and directory of this path can be set to any valid directory\n"
+	"that can be accessed by `ALL` nodes of the BBS.\n"
+;
+
 void node_menu()
 {
 	char	str[81],savnode=0;
@@ -109,19 +119,8 @@ void node_menu()
 			i=cfg.sys_nodes+1;
 			load_node_cfg(&cfg,error);
 			sprintf(str,"../node%d/",i);
-			sprintf(tmp,"Node %d Path",i);
-			uifc.helpbuf=
-				"`Node Path:`\n"
-				"\n"
-				"This is the path to this node's private directory where its separate\n"
-				"configuration and data files are stored.\n"
-				"\n"
-				"The drive and directory of this path can be set to any valid DOS\n"
-				"directory that can be accessed by `ALL` nodes and `MUST NOT` be on a RAM disk\n"
-				"or other volatile media.\n"
-				"\n"
-				"If you want to abort the creation of this new node, hit ~ ESC ~.\n"
-			;
+			sprintf(tmp,"Node %d Directory",i);
+			uifc.helpbuf=node_path_help;
 			j=uifc.input(WIN_MID,0,0,tmp,str,50,K_EDIT);
 			uifc.changes=0;
 			if(j<2)
@@ -203,6 +202,7 @@ void node_cfg()
 				i=save_changes(WIN_MID|WIN_SAV);
 				if(!i) {
 					save_node_cfg(&cfg,backup_level);
+					save_main_cfg(&cfg,backup_level);
 					refresh_cfg(&cfg);
 				}
 				if(i!=-1)
@@ -391,6 +391,7 @@ void node_cfg()
 					sprintf(opt[i++],"%-27.27s%u seconds","Inactivity Disconnection"
 						,cfg.sec_hangup);
 					sprintf(opt[i++],"%-27.27s%.40s","Daily Event",cfg.node_daily);
+					sprintf(opt[i++],"%-27.27s%.40s","Node Directory",cfg.node_path[cfg.node_num-1]);
 					sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
 					opt[i][0]=0;
 					uifc.helpbuf=
@@ -518,6 +519,11 @@ void node_cfg()
 							;
 							uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
 								,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
+							break;
+						case __COUNTER__:
+							uifc.helpbuf = node_path_help;
+							uifc.input(WIN_MID|WIN_SAV,0,10,"Node Directory"
+								,cfg.node_path[cfg.node_num-1],sizeof(cfg.node_path[0])-1,K_EDIT);
 							break;
 						case __COUNTER__:
 							uifc.helpbuf=
