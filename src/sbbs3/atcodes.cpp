@@ -577,7 +577,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY";
 	}
 
-	if(strcmp(sp, "BDATEFMT") == 0) {
+	if(strcmp(sp, "BDATEFMT") == 0 || strcmp(sp, "BIRTHFMT") == 0) {
 		return birthdate_format(&cfg);
 	}
 
@@ -838,7 +838,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(!strcmp(sp,"BDATE"))
 		return getbirthdstr(&cfg, useron.birth, str, maxlen);
 
-	if(strncmp(sp, "BDATE:", 6) == 0) {
+	if(strcmp(sp, "BIRTH") == 0)
+		return format_birthdate(&cfg, useron.birth, str, maxlen);
+
+	if(strncmp(sp, "BDATE:", 6) == 0 || strncmp(sp, "BIRTH:", 6) == 0) {
 		sp += 6;
 		c_unescape_str(sp);
 		memset(&tm,0,sizeof(tm));
