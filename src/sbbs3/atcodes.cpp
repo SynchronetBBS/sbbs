@@ -577,6 +577,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY";
 	}
 
+	if(strcmp(sp, "BDATEFMT") == 0) {
+		return birthdate_format(&cfg);
+	}
+
 	if(!strcmp(sp,"TMSG")) {
 		l=0;
 		for(i=0;i<cfg.total_subs;i++)

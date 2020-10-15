@@ -315,20 +315,16 @@ BOOL sbbs_t::newuser()
 			bputs(text[EnterYourSex]);
 			useron.sex=(char)getkeys("MF",0); 
 		}
-		str[0] = 0;
 		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
-			bprintf(text[EnterYourBirthday], "YYYY/MM/DD");
-			if(gettmplt(str, "nnnn/nn/nn", K_EDIT) < 10)
+			bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
+			format_birthdate(&cfg, useron.birth, str, sizeof(str));
+			if(gettmplt(str, "nn/nn/nnnn", K_EDIT) < 10)
 				continue;
-			int age = getage(&cfg, str);
-			if(age >= 0 && age <= 200) {
-				SAFEPRINTF3(useron.birth, "%.4s%.2s%.2s", str, str + 5, str + 8);
+			int age = getage(&cfg, parse_birthdate(&cfg, str, tmp, sizeof(tmp)));
+			if(age >= 0 && age <= 200) { // TODO: Configurable min/max user age
+				SAFECOPY(useron.birth, tmp);
 				break;
 			}
-			SAFEPRINTF3(str, "%04u/%02u/%02u"
-				,getbirthyear(useron.birth)
-				,getbirthmonth(&cfg, useron.birth)
-				,getbirthday(&cfg, useron.birth));
 		}
 		if(!online) return(FALSE);
 		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
