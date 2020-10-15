@@ -803,7 +803,7 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("prompt for a string input")
 	,314
 	},
-	{"list",			js_uifc_list,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [string title] [string array options] [uifc.list.CTX object]")
+	{"list",			js_uifc_list,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode,] string title, array options [,uifc.list.CTX object]")
 	,JSDOCSTR("select from a list of options.<br>"
 		"The context object can be created using new uifc.list.CTX() and if the same object is passed, allows WIN_SAV to work correctly.<br>"
 		"The context object has the following properties:<br>cur, bar, top, left, width"
