@@ -101,6 +101,7 @@ function Viewer(item, disp, settings) {
 		settings.colors.text,
 		frames.top
 	);
+    frames.content.atcodes = true;
 
 	if (typeof item === 'number') {
 
