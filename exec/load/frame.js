@@ -348,6 +348,15 @@ Frame.prototype.__defineSetter__("h_scroll", function(bool) {
 Frame.prototype.__defineGetter__("is_open",function() {
 	return this.__properties__.open;
 });
+Frame.prototype.__defineGetter__("atcodes", function() {
+	return this.__settings__.atcodes;
+});
+Frame.prototype.__defineSetter__("atcodes", function(bool) {
+	if(typeof bool == "boolean")
+		this.__settings__.atcodes=bool;
+	else
+		throw("non-boolean atcode: " + bool);
+});
 
 /* public methods */
 Frame.prototype.getData = function(x,y,use_offset) {
@@ -604,13 +613,7 @@ Frame.prototype.load = function(filename,width,height) {
 		while(lines.length > 0) {
 			var x = 0;
 			var line = lines.shift();
-			/* parse 'ATCODES'??
-			line = line.replace(/@(.*)@/g,
-				function (str, code, offset, s) {
-					return bbs.atcode(code);
-				}
-			);
-			*/
+
 			while(line.length > 0) {
 				/* parse an attribute sequence*/
 				var m = line.match(/^\x1b\[(\d*);?(\d*);?(\d*)m/);
@@ -961,8 +964,8 @@ Frame.prototype.erase = function(ch, attr) {
 			if(!this.__properties__.data[py + y][px + x]) {
 				continue;
 			}
-			if((this.__properties__.data[py + y][px + x].ch === undefined || 
-				this.__properties__.data[py + y][px + x].ch === ch) && 
+			if((this.__properties__.data[py + y][px + x].ch === undefined ||
+				this.__properties__.data[py + y][px + x].ch === ch) &&
 				this.__properties__.data[py + y][px + x].attr == attr) {
 				continue;
 			}
@@ -1006,17 +1009,73 @@ Frame.prototype.cleartoeol = function(attr) {
 		}
 	}
 }
+
 Frame.prototype.crlf = function() {
 	this.__position__.cursor.x = 0;
 	if(this.__position__.cursor.y < this.height-1)
 		this.__position__.cursor.y += 1;
 	else {}
 }
+
+Frame.prototype.__parseAtCodes__ = function(str) {
+	return str.replace(/(?:@(.+?)@)/g, function (match, code, rinput) {
+		// Don't allow ATCODES incompatible with the Frame system (things that take over the cursor,
+		// mess up the output, etc.) or atcodes that will require special support (which can be added later)
+		switch (code) {
+			case 'CLS':
+			case 'CLEAR':
+			case 'PAUSE':
+			case 'EOF':
+			case 'PON':
+			case 'POFF':
+			case 'RESETPAUSE':
+			case 'HOME':
+			case 'CLRLINE':
+			case 'CLR2EOL':
+			case 'CLR2EOS':
+			case 'PUSHXY':
+			case 'POPXY':
+			case 'HANGUP':
+			case 'WORDWRAP':
+			case 'WRAPOFF':
+			case 'CENTER':
+				return '';
+			case 'SYSONLY':
+				return '@SYSONLY@'; // make it obvious this doesn't work
+		}
+
+		if (code.indexOf('DELAY:') == 0) return;
+		if (code.indexOf('UP:') == 0) return;
+		if (code.indexOf('DOWN:') == 0) return;
+		if (code.indexOf('LEFT:') == 0) return;
+		if (code.indexOf('RIGHT:') == 0) return;
+		if (code.indexOf('GOTOXY:') == 0) return;
+		if (code.indexOf('POS:x') == 0) return;
+		if (code.indexOf('MENU:') == 0) return;
+		if (code.indexOf('CONDMENU:') == 0) return;
+		if (code.indexOf('TYPE:') == 0) return;
+		if (code.indexOf('INCLUDE:') == 0) return;
+		if (code.indexOf('EXEC:') == 0) return;
+		if (code.indexOf('EXEC_XTRN:') == 0) return;
+		if (code.indexOf('JS:') == 0) return;
+		if (code.indexOf('FILL:') == 0) return;
+		if (code.indexOf('WIDE:') == 0) return;
+
+		// parse remaining valid codes
+		return bbs.atcode(code);
+	});
+}
+
 Frame.prototype.write = function(str,attr) {
 	if(str == undefined)
 		return;
 	if(this.__settings__.word_wrap)
 		str = word_wrap(str, this.width,str.length, false);
+
+	if (this.__settings__.atcodes) {
+		str = this.__parseAtCodes__(str);
+	}
+
 	str = str.toString().split('');
 
 	if(attr)
@@ -1042,6 +1101,11 @@ Frame.prototype.putmsg = function(str,attr) {
 			if(!trailing_newline) str = str.trimRight();
 		}
 	}
+
+	if (this.__settings__.atcodes) {
+		str = this.__parseAtCodes__(str);
+	}
+
 	str = str.toString().split('');
 
 	if(attr)
