@@ -208,7 +208,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	if(uppercase && align == none)
 		align = left;
 
-	if(truncated) {
+	if(truncated && strchr(cp, '\n') == NULL) {
 		if(column + disp_len > cols - 1) {
 			if(column >= cols - 1)
 				disp_len = 0;
@@ -554,6 +554,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(unixtodstr(&cfg,time32(NULL),str));
 	}
 
+	if(strncmp(sp, "DATE:", 5) == 0 || strncmp(sp, "TIME:", 5) == 0) {
+		sp += 5;
+		c_unescape_str(sp);
+		now = time(NULL);
+		memset(&tm, 0, sizeof(tm));
+		localtime_r(&now, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
+
 	if(!strcmp(sp,"DATETIME"))
 		return(timestr(time(NULL)));
 
@@ -565,6 +575,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	
 	if(strcmp(sp, "DATEFMT") == 0) {
 		return cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY";
+	}
+
+	if(strcmp(sp, "BDATEFMT") == 0 || strcmp(sp, "BIRTHFMT") == 0) {
+		return birthdate_format(&cfg);
 	}
 
 	if(!strcmp(sp,"TMSG")) {
@@ -738,6 +752,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return nulstr;
 	}
 
+	if(strncmp(sp, "TEXT:", 5) == 0) {
+		i = atoi(sp + 5);
+		if(i >= 1 && i <= TOTAL_TEXT)
+			return text[i - 1];
+		return nulstr;
+	}
+
 	/* NOSTOP */
 
 	/* STOP */
@@ -824,6 +845,21 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(!strcmp(sp,"BDATE"))
 		return getbirthdstr(&cfg, useron.birth, str, maxlen);
 
+	if(strcmp(sp, "BIRTH") == 0)
+		return format_birthdate(&cfg, useron.birth, str, maxlen);
+
+	if(strncmp(sp, "BDATE:", 6) == 0 || strncmp(sp, "BIRTH:", 6) == 0) {
+		sp += 6;
+		c_unescape_str(sp);
+		memset(&tm,0,sizeof(tm));
+		tm.tm_year = getbirthyear(useron.birth) - 1900;
+		tm.tm_mon = getbirthmonth(&cfg, useron.birth) - 1;
+		tm.tm_mday = getbirthday(&cfg, useron.birth);
+		mktime(&tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
+
 	if(!strcmp(sp,"AGE")) {
 		safe_snprintf(str,maxlen,"%u",getage(&cfg,useron.birth));
 		return(str);
@@ -843,6 +879,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(strcmp(sp, "PWDATE") == 0 || strcmp(sp, "MEMO") == 0)
 		return(unixtodstr(&cfg,useron.pwmod,str));
 
+	if(strncmp(sp, "PWDATE:", 7) == 0) {
+		sp += 7;
+		c_unescape_str(sp);
+		memset(&tm, 0, sizeof(tm));
+		time_t date = useron.pwmod;
+		localtime_r(&date, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
+
 	if(!strcmp(sp,"SEC") || !strcmp(sp,"SECURITY")) {
 		safe_snprintf(str,maxlen,"%u",useron.level);
 		return(str);
@@ -850,6 +896,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"SINCE"))
 		return(unixtodstr(&cfg,useron.firston,str));
+
+	if(strncmp(sp, "SINCE:", 6) == 0) {
+		sp += 6;
+		c_unescape_str(sp);
+		memset(&tm, 0, sizeof(tm));
+		time_t date = useron.firston;
+		localtime_r(&date, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
 
 	if(!strcmp(sp,"TIMEON") || !strcmp(sp,"TIMEUSED")) {
 		now=time(NULL);
@@ -915,6 +971,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(!strcmp(sp,"LASTDATEON"))
 		return(unixtodstr(&cfg,useron.laston,str));
 
+	if(strncmp(sp, "LASTON:", 7) == 0) {
+		sp += 7;
+		c_unescape_str(sp);
+		memset(&tm, 0, sizeof(tm));
+		time_t date = useron.laston;
+		localtime_r(&date, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
+
 	if(!strcmp(sp,"LASTTIMEON")) {
 		memset(&tm,0,sizeof(tm));
 		localtime32(&useron.laston,&tm);
@@ -934,6 +1000,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"FIRSTDATEON"))
 		return(unixtodstr(&cfg,useron.firston,str));
+
+	if(strncmp(sp, "FIRSTON:", 8) == 0) {
+		sp += 8;
+		c_unescape_str(sp);
+		memset(&tm, 0, sizeof(tm));
+		time_t date = useron.firston;
+		localtime_r(&date, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
 
 	if(!strcmp(sp,"FIRSTTIMEON")) {
 		memset(&tm,0,sizeof(tm));
@@ -1072,6 +1148,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(!strcmp(sp,"LASTNEW"))
 		return(unixtodstr(&cfg,(time32_t)ns_time,str));
 
+	if(strncmp(sp, "LASTNEW:", 8) == 0) {
+		sp += 8;
+		c_unescape_str(sp);
+		memset(&tm, 0, sizeof(tm));
+		time_t date = ns_time;
+		localtime_r(&date, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
+
 	if(!strcmp(sp,"NEWFILETIME"))
 		return(timestr(ns_time));
 
@@ -1131,6 +1217,18 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"EXDATE") || !strcmp(sp,"EXPDATE"))
 		return(unixtodstr(&cfg,useron.expire,str));
+
+	if(strncmp(sp, "EXPDATE:", 8) == 0) {
+		if(!useron.expire)
+			return nulstr;
+		sp += 8;
+		c_unescape_str(sp);
+		memset(&tm, 0, sizeof(tm));
+		time_t date = useron.expire;
+		localtime_r(&date, &tm);
+		strftime(str, maxlen, sp, &tm);
+		return str;
+	}
 
 	if(!strcmp(sp,"EXPDAYS")) {
 		now=time(NULL);

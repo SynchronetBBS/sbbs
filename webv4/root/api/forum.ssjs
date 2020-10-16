@@ -3,7 +3,7 @@
     is done here; otherwise all permission checking is done at the function
     level. */
 
-var settings = load('modopts.js', 'web');
+var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
@@ -12,9 +12,7 @@ load(settings.web_lib + 'forum.js');
 var reply = {};
 
 // There must be an API call, and the user must not be a guest or unknown
-if ((http_request.method === 'GET' || http_request.method === 'POST') &&
-    typeof http_request.query.call !== 'undefined'
-) {
+if (http_request.query.call !== undefined && (http_request.method === 'GET' || http_request.method === 'POST')) {
 
     var handled = false;
 
@@ -149,6 +147,14 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                         http_request.query.answer,
                         http_request.query.comment || []
                     );
+                }
+                break;
+
+            case 'block-sender':
+                if (user.is_sysop) {
+                    if (http_request.query.from) addTwit(decodeURIComponent(http_request.query.from[0]));
+                    if (http_request.query.from_net) addTwit(decodeURIComponent(http_request.query.from_net[0]));
+                    reply.err = null;
                 }
                 break;
 

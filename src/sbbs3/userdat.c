@@ -835,6 +835,42 @@ int getage(scfg_t* cfg, const char *birth)
 }
 
 /****************************************************************************/
+/* Converts from either MM/DD/YYYYY or DD/MM/YYYY to YYYYMMDD				*/
+/****************************************************************************/
+char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
+{
+	if(cfg->sys_misc & SM_EURODATE)
+		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate + 3, birthdate);
+	else
+		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate, birthdate + 3);
+	return out;
+}
+
+/****************************************************************************/
+/* Converts from user birth date to either MM/DD/YYYYY or DD/MM/YYYY		*/
+/****************************************************************************/
+char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
+{
+	if(maxlen < 1)
+		return NULL;
+	*out = '\0';
+	if(*birthdate) {
+		if(cfg->sys_misc & SM_EURODATE)
+			safe_snprintf(out, maxlen, "%02u/%02u/%04u"
+				,getbirthday(cfg, birthdate), getbirthmonth(cfg, birthdate), getbirthyear(birthdate));
+		else
+			safe_snprintf(out, maxlen, "%02u/%02u/%04u"
+				,getbirthmonth(cfg, birthdate), getbirthday(cfg, birthdate), getbirthyear(birthdate));
+	}
+	return out;
+}
+
+const char* birthdate_format(scfg_t* cfg)
+{
+	return cfg->sys_misc&SM_EURODATE ? "DD/MM/YYYY" : "MM/DD/YYYY";
+}
+
+/****************************************************************************/
 /****************************************************************************/
 int opennodedat(scfg_t* cfg)
 {

@@ -473,7 +473,7 @@ void sub_cfg(uint grpnum)
 						"A value of `0` means no maximum number of stored messages will be\n"
 						"imposed during message-base maintenance."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages"
+					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages (0=Unlimited)"
 						,str,9,K_EDIT|K_NUMBER);
 					cfg.sub[i]->maxmsgs=atoi(str);
 					cfg.sub[i]->misc|=SUB_HDRMOD;

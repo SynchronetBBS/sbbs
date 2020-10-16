@@ -348,7 +348,15 @@ public:
 
 	scfg_t	cfg;
 
-	int		outchar_esc;		   // track ANSI escape seq output
+	enum ansiState {
+		 ansiState_none		// No sequence
+		,ansiState_esc		// Escape
+		,ansiState_csi		// CSI
+		,ansiState_final	// Final byte
+		,ansiState_string	// APS, DCS, PM, or OSC
+		,ansiState_sos		// SOS
+		,ansiState_sos_esc	// ESC inside SOS
+	} outchar_esc;			// track ANSI escape seq output
 
 	int 	rioctl(ushort action); // remote i/o control
 	bool	rio_abortable;
@@ -1073,7 +1081,7 @@ public:
 	bool	unpack_rep(char* repfile=NULL);
 
 	/* msgtoqwk.cpp */
-	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
+	long	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
 
 	/* qwktomsg.cpp */
 	bool	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);

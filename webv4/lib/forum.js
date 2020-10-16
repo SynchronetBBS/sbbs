@@ -1,4 +1,5 @@
 require('sbbsdefs.js', 'MSG_DELETE');
+require('xjs.js', 'xjs_compile');
 load(settings.web_lib + 'mime-decode.js');
 
 function listGroups() {
@@ -404,8 +405,23 @@ function getMailBody(number) {
     ret.body = formatMessage(pt_body == body ? decoded.body : pt_body); // See above re: pt_body
     ret.inlines = decoded.inlines;
     ret.attachments = decoded.attachments;
+    if (user.is_sysop) {
+        ret.buttons = [
+            format(xjs_eval(settings.web_components + 'twit-button.xjs', true), number, number, header.from, header.from_net_addr),
+        ];
+    }
 
     return ret;
+}
+
+function addTwit(str) {
+    const f = new File(system.ctrl_dir + 'twitlist.cfg');
+    if (!f.open('a')) {
+        log(LOG_ERR, 'Failed to add ' + str + ' to twitlist');
+        return;
+    }
+    f.writeln(str);
+    f.close();
 }
 
 // Returns the user's signature, or an empty String

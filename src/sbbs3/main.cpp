@@ -3369,7 +3369,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	pause_hotspot = NULL;
 	console = 0;
 	online = 0;
-	outchar_esc = 0;
+	outchar_esc = ansiState_none;
 	nodemsg_inside = 0;	/* allows single nest */
 	hotkey_inside = 0;	/* allows single nest */
 	event_time = 0;
