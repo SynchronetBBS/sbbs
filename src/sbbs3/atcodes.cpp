@@ -208,7 +208,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	if(uppercase && align == none)
 		align = left;
 
-	if(truncated) {
+	if(truncated && strchr(cp, '\n') == NULL) {
 		if(column + disp_len > cols - 1) {
 			if(column >= cols - 1)
 				disp_len = 0;
@@ -749,6 +749,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(strncmp(sp, "BPS:", 4) == 0) {
 		set_output_rate((enum output_rate)atoi(sp + 4));
+		return nulstr;
+	}
+
+	if(strncmp(sp, "TEXT:", 5) == 0) {
+		i = atoi(sp + 5);
+		if(i >= 1 && i <= TOTAL_TEXT)
+			return text[i - 1];
 		return nulstr;
 	}
 
