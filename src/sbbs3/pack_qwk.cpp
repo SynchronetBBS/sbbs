@@ -389,18 +389,20 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				size=msgtoqwk(&msg, qwk, mode|QM_REPLYTO, &smb, /* confnum: */0, hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
-				if(ndx && size) {
+				if(size >= 0) {
 					msgndx++;
-					f=ltomsbin(msgndx); 	/* Record number */
-					ch=0;					/* Sub number, not used */
-					if(personal) {
-						fwrite(&f,4,1,personal);
-						fwrite(&ch,1,1,personal); 
+					if(ndx && size > 0) {
+						f=ltomsbin(msgndx); 	/* Record number */
+						ch=0;					/* Sub number, not used */
+						if(personal) {
+							fwrite(&f,4,1,personal);
+							fwrite(&ch,1,1,personal); 
+						}
+						fwrite(&f,4,1,ndx);
+						fwrite(&ch,1,1,ndx);
+						msgndx+=size/QWK_BLOCK_LEN; 
 					}
-					fwrite(&f,4,1,ndx);
-					fwrite(&ch,1,1,ndx);
-					msgndx+=size/QWK_BLOCK_LEN; 
-				} 
+				}
 				YIELD();	/* yield */
 			}
 			if(online == ON_REMOTE)
@@ -528,24 +530,24 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 					size=msgtoqwk(&msg, qwk, mode, &smb, conf, hdrs, voting);
 					smb_unlockmsghdr(&smb,&msg);
-
-					if(ndx && size) {
+					if(size >= 0) {
 						msgndx++;
-						f=ltomsbin(msgndx); 	/* Record number */
-						ch=0;					/* Sub number, not used */
-						if(personal
-							&& (!stricmp(msg.to,useron.alias)
-								|| !stricmp(msg.to,useron.name))) {
-							fwrite(&f,4,1,personal);
-							fwrite(&ch,1,1,personal); 
+						if(ndx && size > 0) {
+							f=ltomsbin(msgndx); 	/* Record number */
+							ch=0;					/* Sub number, not used */
+							if(personal
+								&& (!stricmp(msg.to,useron.alias)
+									|| !stricmp(msg.to,useron.name))) {
+								fwrite(&f,4,1,personal);
+								fwrite(&ch,1,1,personal); 
+							}
+							fwrite(&f,4,1,ndx);
+							fwrite(&ch,1,1,ndx);
+							msgndx+=size/QWK_BLOCK_LEN; 
 						}
-						fwrite(&f,4,1,ndx);
-						fwrite(&ch,1,1,ndx);
-						msgndx+=size/QWK_BLOCK_LEN; 
 					}
-
 					smb_freemsgmem(&msg);
-					if(size) {
+					if(size > 0) {
 						(*msgcnt)++;
 						submsgs++;
 					}

@@ -55,13 +55,6 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	for(i=0;i<cfg->sys_nodes;i++) {
-		if(cfg->node_path[i][0]==0) 
-			sprintf(cfg->node_path[i],"../node%d",i+1);
-		cfg->node_num=i+1;
-		if(!write_node_cfg(cfg,backup_level))
-			return(FALSE);
-	}
 	if(!write_main_cfg(cfg,backup_level))
 		return(FALSE);
 	if(!write_msgs_cfg(cfg,backup_level))
@@ -72,6 +65,12 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 		return(FALSE);
 	if(!write_xtrn_cfg(cfg,backup_level))
 		return(FALSE);
+
+	for(i=0;i<cfg->sys_nodes;i++) {
+		cfg->node_num=i+1;
+		if(!write_node_cfg(cfg,backup_level))
+			return(FALSE);
+	}
 
 	return(TRUE);
 }
@@ -172,8 +171,11 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->sys_guru,stream);
 	put_str(cfg->sys_pass,stream);
 	put_int(cfg->sys_nodes,stream);
-	for(i=0;i<cfg->sys_nodes;i++) 
+	for(i=0;i<cfg->sys_nodes;i++) {
+		if(cfg->node_path[i][0] == 0)
+			SAFEPRINTF(cfg->node_path[i], "../node%u", i + 1);
 		put_str(cfg->node_path[i],stream);
+	}
 	backslash(cfg->data_dir);
 	put_str(cfg->data_dir,stream);
 

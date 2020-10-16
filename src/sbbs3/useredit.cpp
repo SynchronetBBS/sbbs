@@ -101,8 +101,8 @@ void sbbs_t::useredit(int usernumber)
 			,user.level>useron.level && console&CON_R_ECHO
 			? "XXX-XXX-XXXX" : user.phone);
 		bprintf(text[UeditAddressBirthday]
-			,user.address,getage(&cfg,user.birth),user.sex,user.birth
-			,getbirthyear(user.birth), getbirthmonth(&cfg, user.birth), getbirthday(&cfg, user.birth));
+			,user.address,getage(&cfg,user.birth),user.sex
+			,format_birthdate(&cfg, user.birth, tmp, sizeof(tmp)));
 		bprintf(text[UeditLocationZipcode],user.location,user.zipcode);
 		bprintf(text[UeditNoteHandle],user.note,user.handle);
 		bprintf(text[UeditComputerModem],user.comp,user.modem);
@@ -187,10 +187,10 @@ void sbbs_t::useredit(int usernumber)
 				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
 				break;
 			case 'B':
-				bprintf(text[EnterYourBirthday], "YYYY/MM/DD");
-				SAFEPRINTF3(str, "%04u/%02u/%02u", getbirthyear(user.birth), getbirthmonth(&cfg, user.birth), getbirthday(&cfg, user.birth));
-				if(gettmplt(str, "nnnn/nn/nn", kmode) == 10) {
-					SAFEPRINTF3(user.birth, "%.4s%.2s%.2s", str, str + 5, str + 8);
+				bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
+				format_birthdate(&cfg, user.birth, str, sizeof(str));
+				if(gettmplt(str, "nn/nn/nnnn", kmode) == 10) {
+					parse_birthdate(&cfg, str, user.birth, sizeof(user.birth));
 					putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
 				}
 				break;

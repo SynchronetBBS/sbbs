@@ -24,19 +24,28 @@
 		</li>
 	</ol>
 
-	<?xjs function writeFileDetails(file) { ?>
-		<a href="./api/files.ssjs?call=download-file&amp;dir=<? Request.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
-			<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
-			<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
-			<?xjs if (typeof file.extdesc === 'undefined') { ?>
-				<p><? write(file.desc); ?></p>
-			<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) { ?>
-				<pre class="ansi"><? write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
-			<?xjs } else { ?>
-				<pre class="list"><? write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?></pre>
-			<?xjs } ?>
-		</a>
-	<?xjs } ?>
+	<? function writeFileDetails(file) { ?>
+		<? const cd = file_area.dir[Request.get_param('dir')].can_download && user.compare_ars(file_area.dir[Request.get_param('dir')].download_ars); ?>
+		<? if (cd) { ?>
+			<a href="./api/files.ssjs?call=download-file&amp;dir=<? Request.write_param('dir'); ?>&amp;file=<? write(file.name); ?>" target="_blank" class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+		<? } else { ?>
+			<li class="list-group-item striped" data-file-list-element data-size="<? write(file._size); ?>" data-uploaded="<? write(file.uldate); ?>" data-name="<? write(file.name); ?>">
+		<? } ?>
+		<strong><? write(file.name); ?></strong> (<? write(file.size); ?>)
+		<p><em>Uploaded <? write(system.timestr(file.uldate)); ?></em></p>
+		<?xjs if (typeof file.extdesc === 'undefined') { ?>
+			<p><? write(file.desc); ?></p>
+		<?xjs } else if (file.extdesc.search(/(\x1B\[|[\xA8-\xFE])/) > -1) { ?>
+			<pre class="ansi"><? write(html_encode(file.extdesc, true, false, true, true)); ?></pre>
+		<?xjs } else { ?>
+			<pre class="list"><? write(file.extdesc.replace(/[^\r,\n\x20-\x7E]/g, '')); ?></pre>
+		<?xjs } ?>
+		<? if (cd) { ?>
+			</a>
+		<? } else { ?>
+			</li>
+		<? } ?>
+	<? } ?>
 
 	<div class="clearfix" style="margin-bottom:1em;">
 		<div class="dropdown pull-right">
