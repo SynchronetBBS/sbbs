@@ -1044,20 +1044,22 @@ Frame.prototype.__parseAtCodes__ = function(str) {
 				return '@SYSONLY@'; // make it obvious this doesn't work
 		}
 
-		if (code.indexOf('DELAY:') !== -1) return;
-		if (code.indexOf('UP:') !== -1) return;
-		if (code.indexOf('DOWN:') !== -1) return;
-		if (code.indexOf('RIGHT:') !== -1) return;
-		if (code.indexOf('LEFT:') !== -1) return;
-		if (code.indexOf('GOTOXY:') !== -1) return;
-		if (code.indexOf('POS:x') !== -1) return;
-		if (code.indexOf('FILL:') !== -1) return;
-		if (code.indexOf('MENU:') !== -1) return;
-		if (code.indexOf('CONDMENU:') !== -1) return;
-		if (code.indexOf('TYPE:') !== -1) return;
-		if (code.indexOf('INCLUDE:') !== -1) return;
-		if (code.indexOf('EXEC:') !== -1) return;
-		if (code.indexOf('EXEC_XTRN:') !== -1) return;
+		if (code.indexOf('DELAY:') == 0) return;
+		if (code.indexOf('UP:') == 0) return;
+		if (code.indexOf('DOWN:') == 0) return;
+		if (code.indexOf('LEFT:') == 0) return;
+		if (code.indexOf('RIGHT:') == 0) return;
+		if (code.indexOf('GOTOXY:') == 0) return;
+		if (code.indexOf('POS:x') == 0) return;
+		if (code.indexOf('MENU:') == 0) return;
+		if (code.indexOf('CONDMENU:') == 0) return;
+		if (code.indexOf('TYPE:') == 0) return;
+		if (code.indexOf('INCLUDE:') == 0) return;
+		if (code.indexOf('EXEC:') == 0) return;
+		if (code.indexOf('EXEC_XTRN:') == 0) return;
+		if (code.indexOf('JS:') == 0) return;
+		if (code.indexOf('FILL:') == 0) return;
+		if (code.indexOf('WIDE:') == 0) return;
 
 		// parse remaining valid codes
 		return bbs.atcode(code);
