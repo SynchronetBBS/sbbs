@@ -2779,6 +2779,8 @@ static BOOL parse_headers(http_session_t * session)
 								else {
 									if (session->req.vary_list)
 										strcat(p, ", ");
+									else
+										*p = '\0';
 									strcat(p, get_header(HEAD_UPGRADEINSECURE));
 									session->req.vary_list = p;
 
