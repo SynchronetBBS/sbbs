@@ -4933,6 +4933,9 @@ static void cleanup(int code)
 
 void DLLCALL bbs_thread(void* arg)
 {
+	struct addrinfo *res;
+	unsigned char	hapstr[108];
+
 	char			host_name[256];
 	char*			identity;
 	char*			p;
@@ -4942,7 +4945,7 @@ void DLLCALL bbs_thread(void* arg)
 	union xp_sockaddr	client_addr;
 	socklen_t		client_addr_len;
 	SOCKET			client_socket=INVALID_SOCKET;
-	int				i;
+	int				i,l;
     int				file;
 	int				result;
 	time_t			t;
@@ -5449,7 +5452,132 @@ NO_SSH:
 		}
 		char host_ip[INET6_ADDRSTRLEN];
 
-		inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
+		// Set host_ip from haproxy protocol, if its used
+		// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+		if(startup->options&BBS_OPT_HAPROXY_PROTO) {
+			lprintf(LOG_INFO,"%04d Working out client address from HAPROXY PROTO",client_socket);
+			memset(hapstr,'\0',sizeof(hapstr));
+			memset(host_ip,'\0',sizeof(host_ip));
+
+			// Read the first 5 chars to work out what we are dealing with
+			recv(client_socket,hapstr,5,0);
+			lprintf(LOG_DEBUG,"%04d * GOT (%s) [%x]",client_socket,hapstr,i);
+
+			if (strcmp((char *)hapstr,"PROXY") == 0) {
+				lprintf(LOG_DEBUG,"%04d * HAPROXY PROTO v1",client_socket);
+				recv(client_socket,hapstr,1,0);	// \x20
+
+				// Get Protocol
+				memset(hapstr,'\0',sizeof(hapstr));
+				recv(client_socket,hapstr,4,0);
+				lprintf(LOG_DEBUG,"%04d * GOT (%s) [%x]",client_socket,hapstr,i);
+
+				// IPV4
+				if (strcmp((char *)hapstr,"TCP4") == 0) {
+					lprintf(LOG_DEBUG,"%04d * Proto [%s]",client_socket,hapstr);
+					recv(client_socket,hapstr,1,0);	// \x20
+
+					// Source Address
+					recv(client_socket,hapstr,16,0);
+
+				// IPV6
+				} else if (strcmp((char *)hapstr,"TCP6") == 0) {
+					lprintf(LOG_DEBUG,"%04d * Proto %s",client_socket,hapstr);
+					i=recv(client_socket,hapstr,1,0);	// \x20
+
+					// Source Address
+					recv(client_socket,hapstr,40,0);
+
+				// Unknown?
+				} else if (strcmp((char *)hapstr,"UNKN") == 0) {
+					lprintf(LOG_DEBUG,"%04d * Unknown Protocol",client_socket);
+					close_socket(client_socket);
+					continue;
+				}
+
+				// Look for the space between the next IP
+				for(i=0;i<sizeof(hapstr);i++) {
+					if (hapstr[i] == 0x20)
+						break;
+				}
+
+				hapstr[i]='\0';
+				memcpy(host_ip,hapstr,i);
+
+			} else if (strcmp((char *)hapstr,"\x0d\x0a\x0d\x0a\x00") == 0) {
+				lprintf(LOG_DEBUG,"%04d * HAPROXY PROTO v2",client_socket);
+				recv(client_socket,hapstr,7,0);	// \x0d\x0aQUIT\x0a
+				memset(hapstr,'\0',sizeof(hapstr));
+
+				// Command and Version
+				recv(client_socket,hapstr,1,0);
+				i = hapstr[0];
+				lprintf(LOG_DEBUG,"%04d * Version [%x]",client_socket,(i>>0)&((1<<4)-1)); //Should be 2
+				lprintf(LOG_DEBUG,"%04d * Command [%x]",client_socket,(i>>4)&((1<<4)-1)); //0=Local/1=Proxy
+
+				// Protocol and Family
+				recv(client_socket,hapstr,1,0);
+				i = hapstr[0];
+				lprintf(LOG_DEBUG,"%04d * Protocol [%x]",client_socket,(i>>0)&((1<<4)-1)); //0=Unspec/1=AF_INET/2=AF_INET6/3=AF_UNIX
+				l = (i>>4)&((1<<4)-1);
+				lprintf(LOG_DEBUG,"%04d * Family [%x]",client_socket,l); //0=UNSPEC/1=STREAM/2=DGRAM
+
+				// Address Length
+				recv(client_socket,hapstr,2,0);
+				sscanf((char *)hapstr,"%x",&i);
+				lprintf(LOG_DEBUG,"%04d * Address Length [%d]",client_socket,i);
+
+				recv(client_socket,hapstr,i,0);
+
+				switch (l) {
+					// IPv4 - AF_INET
+					case 0x1:
+						sprintf(host_ip,"%d.%d.%d.%d",hapstr[0],hapstr[1],hapstr[2],hapstr[3]);
+						break;
+
+					// IPv6 - AF_INET6
+					case 0x2:
+						// IPv4 address in IPv6 ::ffff:n.n.n.n
+						// 0000:0000:0000:0000:0000:ffff:0a01:039c
+						for(i=0;i<10;i++) {
+							if (hapstr[i] != 0x00)
+								break;
+						}
+
+						if ((i==10) && (hapstr[i] == 0xff) && (hapstr[i+1] == 0xff)) {
+							sprintf(host_ip,"%d.%d.%d.%d",hapstr[12],hapstr[13],hapstr[14],hapstr[15]);
+							lprintf(LOG_DEBUG,"%04d * IPv4 address in IPv6 [%s]",client_socket,host_ip);
+
+						} else {
+							sprintf(host_ip,"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
+								hapstr[0],hapstr[1],hapstr[2],hapstr[3],
+								hapstr[4],hapstr[5],hapstr[6],hapstr[7],
+								hapstr[8],hapstr[9],hapstr[10],hapstr[11],
+								hapstr[12],hapstr[13],hapstr[14],hapstr[15]
+							);
+						}
+						break;
+
+					default:
+						lprintf(LOG_DEBUG,"%04d * Unknown Family",client_socket);
+						close_socket(client_socket);
+						continue;
+				}
+
+
+			} else {
+				lprintf(LOG_ERR,"%04d Unknown HAProxy Initialisation - is HAProxy used?",client_socket);
+				close_socket(client_socket);
+				continue;
+			}
+
+			lprintf(LOG_DEBUG,"%04d * Source [%s]",client_socket,host_ip);
+			getaddrinfo(host_ip,NULL,NULL,&res);
+			client_addr.addr = *res->ai_addr;
+
+		} else {
+			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
+		}
 
 		if(trashcan(&scfg,host_ip,"ip-silent")) {
 			close_socket(client_socket);
