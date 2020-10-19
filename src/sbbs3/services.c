@@ -2129,12 +2129,6 @@ void DLLCALL services_thread(void* arg)
 					}
 					inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
-					// Set host_ip from haproxy protocol, if its used
-					if(startup->options&BBS_OPT_HAPROXY_PROTO) {
-						lprintf(LOG_INFO,"** Working out address from HAPROXY PROTO");
-					}
-					lprintf(LOG_INFO,"** Startup options %d (%d)",startup->options,BBS_OPT_HAPROXY_PROTO);
-
 					if(trashcan(&scfg,host_ip,"ip-silent")) {
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
