@@ -379,29 +379,29 @@ static int read_socket(SOCKET sock,unsigned char *buffer,int len)
 		tv.tv_usec=0;
 
 #ifdef _DEBUG
-		lprintf(LOG_INFO,"%04d Read Socket - select (%d of %d)",sock,i,len);
+		lprintf(LOG_DEBUG,"%04d Read Socket - select (%d of %d)",sock,i,len);
 #endif
 		if((j=select(sock+1,&socket_set,NULL,NULL,&tv))>0) {
 #ifdef _DEBUG
-			lprintf(LOG_INFO,"%04d Read Socket - read",sock);
+			lprintf(LOG_DEBUG,"%04d Read Socket - read",sock);
 #endif
    		 	rd = recv(sock,ch,1,0);
 #ifdef _DEBUG
-			lprintf(LOG_INFO,"%04d Read Socket - got [%s] (%x)",sock,ch,rd);
+			lprintf(LOG_DEBUG,"%04d Read Socket - got [%s] (%x)",sock,ch,rd);
 #endif
 
 			if(FD_ISSET(sock,&socket_set) && rd) {
 				buffer[i] = *ch;
 			} else {
-				lprintf(LOG_INFO,"%04d Read Socket - Something went wrong?",sock);
+				lprintf(LOG_ERR,"%04d Read Socket - Something went wrong?",sock);
 				return false;
 			}
 
 		} else if (j==0) {
-			lprintf(LOG_INFO,"%04d Read Socket - No data?",sock);
+			lprintf(LOG_ERR,"%04d Read Socket - No data?",sock);
 			return false;
 		} else {
-			lprintf(LOG_INFO,"%04d Read Socket - Something else [%d].",sock,j);
+			lprintf(LOG_ERR,"%04d Read Socket - Something else [%d].",sock,j);
 			return false;
 		}
 	}
