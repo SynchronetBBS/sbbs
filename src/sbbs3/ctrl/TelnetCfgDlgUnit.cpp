@@ -83,7 +83,10 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
 
 	FirstNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.first_node);
 	LastNodeEdit->Text=AnsiString((int)MainForm->bbs_startup.last_node);
-    MaxConConEdit->Text=AnsiString((int)MainForm->bbs_startup.max_concurrent_connections);
+    if(MainForm->bbs_startup.max_concurrent_connections == 0)
+        MaxConConEdit->Text="N/A";
+    else
+        MaxConConEdit->Text=AnsiString((int)MainForm->bbs_startup.max_concurrent_connections);
     AutoStartCheckBox->Checked=MainForm->SysAutoStart;
     AnswerSoundEdit->Text=AnsiString(MainForm->bbs_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->bbs_startup.hangup_sound);

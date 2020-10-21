@@ -112,8 +112,8 @@ __published:
 	TEdit *BLHeaderEdit;
 	TLabel *BLSubjectLabel;
 	TLabel *BLHeaderLabel;
-	TEdit *LinesPerYieldEdit;
-	TLabel *LinesPerYieldLabel;
+    TEdit *MaxConConEdit;
+    TLabel *MaxConConLabel;
 	TLabel *MaxRecipientsLabel;
 	TEdit *MaxRecipientsEdit;
 	TButton *DNSBLExemptionsButton;
