@@ -3253,7 +3253,7 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 	if((node=login_attempted(list, addr)) != NULL) {
 		attempt=node->data;
 		/* Don't count consecutive duplicate attempts (same name and password): */
-		if((user!=NULL && strcmp(attempt->user,user)==0) && (pass==NULL || strcmp(attempt->pass,pass)==0))
+		if((user!=NULL && strcmp(attempt->user,user)==0) && (pass!=NULL && strcmp(attempt->pass,pass)==0))
 			attempt->dupes++;
 	}
 	SAFECOPY(attempt->prot,prot);
