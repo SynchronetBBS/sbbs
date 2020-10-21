@@ -1267,13 +1267,12 @@ static void pop3_thread(void* arg)
 		if((i=getuserdat(&scfg, &user))!=0) {
 			lprintf(LOG_ERR,"%04d %s [%s] !ERROR %d getting data on user (%s)"
 				,socket, client.protocol, host_ip, i, username);
-			badlogin(socket, session, client.protocol, pop_err, NULL, NULL, NULL, NULL);
 			break;
 		}
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf(LOG_NOTICE,"%04d %s [%s] !DELETED or INACTIVE user #%u (%s)"
 				,socket, client.protocol, host_ip, user.number, username);
-			badlogin(socket, session, client.protocol, pop_err, NULL, NULL, NULL, NULL);
+			badlogin(socket, session, client.protocol, pop_err, username, password, NULL, NULL);
 			break;
 		}
 		if(apop) {
@@ -4115,7 +4114,7 @@ static void smtp_thread(void* arg)
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
-				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
+				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1 || str_has_ctrl(user_name)) {
 					lprintf(LOG_WARNING,"%04d %s !bad AUTH LOGIN username argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
@@ -4128,7 +4127,7 @@ static void smtp_thread(void* arg)
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
-				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
+				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1 || str_has_ctrl(user_pass)) {
 					lprintf(LOG_WARNING,"%04d %s !bad AUTH LOGIN password argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
@@ -4142,7 +4141,7 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 				ZERO_VAR(tmp);
-				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1) {
+				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1 || str_has_ctrl(tmp)) {
 					lprintf(LOG_WARNING,"%04d %s !bad AUTH PLAIN argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
@@ -4229,7 +4228,7 @@ static void smtp_thread(void* arg)
 			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
 				lprintf(LOG_DEBUG,"%04d %s RX: %s",socket, client.protocol, buf);
 
-			if(b64_decode(response,sizeof(response),buf,rd)<1) {
+			if(b64_decode(response,sizeof(response),buf,rd)<1 || str_has_ctrl(response)) {
 				lprintf(LOG_WARNING,"%04d %s !Bad AUTH CRAM-MD5 response", socket, client.protocol);
 				sockprintf(socket,client.protocol,session,badarg_rsp);
 				continue;
