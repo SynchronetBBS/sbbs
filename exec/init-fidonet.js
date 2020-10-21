@@ -500,7 +500,7 @@ while((!sysop || !confirm("Your name is '" + sysop + "'")) && !aborted())
 /* Get/Confirm passwords */
 while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixPwd + "'")) && !aborted())
 	link.AreaFixPwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
-while((!link.SessionPwd || !confirm("Your BinkP Session Passowrd is '" + link.SessionPwd + "'")) && !aborted())
+while((!link.SessionPwd || !confirm("Your BinkP Session Password is '" + link.SessionPwd + "'")) && !aborted())
 	link.SessionPwd = prompt("Your BinkP Session Password (case sensitive)");
 
 /***********************************************/
