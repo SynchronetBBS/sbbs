@@ -71,11 +71,11 @@ static const char*	server_name="Synchronet Mail Server";
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
-#define pop_err			"-ERR"
+#define pop_error		"-ERR System Error: %s, try again later"
+#define pop_auth_error	"-ERR Authentication failure"
 #define ok_rsp			"250 OK"
 #define auth_ok			"235 User Authenticated"
-#define sys_error		"421 System error"
-#define sys_unavail		"421 System unavailable, try again later"
+#define smtp_error		"421 System Error: %s, try again later"
 #define insuf_stor		"452 Insufficient system storage"
 #define badarg_rsp 		"501 Bad argument"
 #define badseq_rsp		"503 Bad sequence of commands"
@@ -105,11 +105,19 @@ static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
 static js_server_props_t js_server_props;
+static link_list_t current_connections;
+
+static const char* servprot_smtp = "SMTP";
+static const char* servprot_submission = "SMTP";
+static const char* servprot_submissions = "SMTPS";
+static const char* servprot_pop3 = "POP3";
+static const char* servprot_pop3s = "POP3S";
 
 struct {
 	volatile ulong	sockets;
 	volatile ulong	errors;
 	volatile ulong	crit_errors;
+	volatile ulong	connections_exceeded;
 	volatile ulong	connections_ignored;
 	volatile ulong	connections_refused;
 	volatile ulong	connections_served;
@@ -250,12 +258,15 @@ static void update_clients(void)
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
+	if(!update)
+		listAddNodeData(&current_connections, client->addr, strlen(client->addr)+1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
+	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
@@ -1261,7 +1272,7 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d %s [%s] !UNKNOWN USER: '%s'"
 					,socket, client.protocol, host_ip, username);
-			badlogin(socket, session, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
+			badlogin(socket, session, client.protocol, pop_auth_error, username, password, host_name, &pop3.client_addr);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
@@ -1272,7 +1283,7 @@ static void pop3_thread(void* arg)
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf(LOG_NOTICE,"%04d %s [%s] !DELETED or INACTIVE user #%u (%s)"
 				,socket, client.protocol, host_ip, user.number, username);
-			badlogin(socket, session, client.protocol, pop_err, username, password, NULL, NULL);
+			badlogin(socket, session, client.protocol, pop_auth_error, username, password, NULL, NULL);
 			break;
 		}
 		if(apop) {
@@ -1288,7 +1299,7 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d !POP3 calc digest: %s",socket,str);
 				lprintf(LOG_DEBUG,"%04d !POP3 resp digest: %s",socket,response);
 #endif
-				badlogin(socket, session, client.protocol, pop_err, username, response, host_name, &pop3.client_addr);
+				badlogin(socket, session, client.protocol, pop_auth_error, username, response, host_name, &pop3.client_addr);
 				break;
 			}
 		} else if(stricmp(password,user.pass)) {
@@ -1298,7 +1309,7 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d %s [%s] !FAILED Password attempt for user %s"
 					,socket, client.protocol, host_ip, username);
-			badlogin(socket, session, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
+			badlogin(socket, session, client.protocol, pop_auth_error, username, password, host_name, &pop3.client_addr);
 			break;
 		}
 
@@ -3011,7 +3022,7 @@ static void smtp_thread(void* arg)
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
 		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting address/port"
 			,socket, client.protocol, i, ERROR_VALUE);
-		sockprintf(socket,client.protocol,session,sys_error);
+		sockprintf(socket,client.protocol,session,smtp_error, "getsockname failure");
 		mail_close_socket(&socket, &session);
 		thread_down();
 		return;
@@ -3019,7 +3030,7 @@ static void smtp_thread(void* arg)
 
 	if((mailproc_to_match=malloc(sizeof(BOOL)*mailproc_count))==NULL) {
 		lprintf(LOG_CRIT,"%04d %s !ERROR allocating memory for mailproc_to_match", socket, client.protocol);
-		sockprintf(socket,client.protocol,session,sys_error);
+		sockprintf(socket,client.protocol,session,smtp_error, "malloc failure");
 		mail_close_socket(&socket, &session);
 		thread_down();
 		return;
@@ -3123,7 +3134,7 @@ static void smtp_thread(void* arg)
 	if(smb_islocked(&smb)) {
 		lprintf(LOG_WARNING,"%04d %s !MAIL BASE LOCKED: %s"
 			,socket, client.protocol, smb.last_error);
-		sockprintf(socket,client.protocol,session,sys_unavail);
+		sockprintf(socket,client.protocol,session, smtp_error, "mail base locked");
 		mail_close_socket(&socket, &session);
 		thread_down();
 		protected_uint32_adjust(&active_clients, -1);
@@ -3147,7 +3158,7 @@ static void smtp_thread(void* arg)
 	if(rcptlst==NULL) {
 		lprintf(LOG_CRIT,"%04d %s !ERROR %d creating recipient list: %s"
 			,socket, client.protocol, errno, rcptlst_fname);
-		sockprintf(socket,client.protocol,session,sys_error);
+		sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 		mail_close_socket(&socket, &session);
 		thread_down();
 		protected_uint32_adjust(&active_clients, -1);
@@ -3446,7 +3457,7 @@ static void smtp_thread(void* arg)
 					lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening recipient list: %s"
 						,socket, client.protocol, errno, rcptlst_fname);
 					if(!msg_handled)
-						sockprintf(socket,client.protocol,session,sys_error);
+						sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 					continue;
 				}
 			
@@ -3473,7 +3484,7 @@ static void smtp_thread(void* arg)
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
 					lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening message file: %s"
 						,socket, client.protocol, errno, msgtxt_fname);
-					sockprintf(socket,client.protocol,session,sys_error);
+					sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 					continue;
 				}
 
@@ -4337,7 +4348,7 @@ static void smtp_thread(void* arg)
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
 				lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening %s"
 					,socket, client.protocol, errno, rcptlst_fname);
-				sockprintf(socket,client.protocol,session,sys_error);
+				sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 				break;
 			}
 			rcpt_count=0;
@@ -4395,7 +4406,7 @@ static void smtp_thread(void* arg)
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
 				lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening %s"
 					,socket, client.protocol, errno, rcptlst_fname);
-				sockprintf(socket,client.protocol,session,sys_error);
+				sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 				break;
 			}
 			rcpt_count=0;
@@ -5888,6 +5899,8 @@ static void cleanup(int code)
 
 	update_clients();	/* active_clients is destroyed below */
 
+	listFree(&current_connections);
+
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
@@ -5902,6 +5915,8 @@ static void cleanup(int code)
 	if(terminate_server || code) {
 		char str[1024];
 		sprintf(str,"%lu connections served", stats.connections_served);
+		if(stats.connections_exceeded)
+			sprintf(str+strlen(str),", %lu exceeded max", stats.connections_exceeded);
 		if(stats.connections_refused)
 			sprintf(str+strlen(str),", %lu refused", stats.connections_refused);
 		if(stats.connections_ignored)
@@ -5970,7 +5985,7 @@ void DLLCALL mail_server(void* arg)
 	smtp_t*			smtp;
 	FILE*			fp;
 	str_list_t		sec_list;
-	void			*cbdata;
+	char*			servprot = "N/A";
 	CRYPT_SESSION	session = -1;
 
 	mail_ver();
@@ -6011,6 +6026,7 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
+	listInit(&current_connections, LINK_LIST_MUTEX);
 
 	do {
 		protected_uint32_init(&active_clients, 0);
@@ -6159,30 +6175,30 @@ void DLLCALL mail_server(void* arg)
 		}
 		terminated=FALSE;
 		if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-			, startup->smtp_port, "SMTP Transfer Agent", mail_open_socket, startup->seteuid, "smtp"))
+			, startup->smtp_port, "SMTP Transfer Agent", mail_open_socket, startup->seteuid, (void*)servprot_smtp))
 			lprintf(LOG_INFO,"SMTP No extra interfaces listening");
 
 		if(startup->options&MAIL_OPT_USE_SUBMISSION_PORT) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-				, startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, "submission");
+				, startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, (void*)servprot_submission);
 		}
 
 		if(startup->options&MAIL_OPT_TLS_SUBMISSION) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port
-				, "SMTPS Submission Agent", mail_open_socket, startup->seteuid, "submissions");
+				, "SMTPS Submission Agent", mail_open_socket, startup->seteuid, (void*)servprot_submissions);
 		}
 
 		if(startup->options&MAIL_OPT_ALLOW_POP3) {
 			/* open a socket and wait for a client */
 			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port
-				, "POP3 Server", mail_open_socket, startup->seteuid, "pop3"))
+				, "POP3 Server", mail_open_socket, startup->seteuid, (void*)servprot_pop3))
 				lprintf(LOG_INFO,"POP3 No extra interfaces listening");
 		}
 
 		if(startup->options&MAIL_OPT_TLS_POP3) {
 			/* open a socket and wait for a client */
 			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces
-				, startup->pop3s_port, "POP3S Server", mail_open_socket, startup->seteuid, "pop3s"))
+				, startup->pop3s_port, "POP3S Server", mail_open_socket, startup->seteuid, (void*)servprot_pop3s))
 				lprintf(LOG_INFO,"POP3S No extra interfaces listening");
 		}
 
@@ -6241,13 +6257,29 @@ void DLLCALL mail_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(mail_set,&client_addr, &client_addr_len, startup->sem_chk_freq*1000, &cbdata);
+			client_socket = xpms_accept(mail_set,&client_addr, &client_addr_len, startup->sem_chk_freq*1000, &servprot);
 			if(client_socket != INVALID_SOCKET) {
+				bool is_smtp = (servprot != servprot_pop3 && servprot != servprot_pop3s);
 				if(startup->socket_open!=NULL)
 					startup->socket_open(startup->cbdata,TRUE);
 				stats.sockets++;
 
 				inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
+
+				if(startup->max_concurrent_connections > 0) {
+					int ip_len = strlen(host_ip)+1;
+					int connections = listCountMatches(&current_connections, host_ip, ip_len);
+
+					if(connections >= (int)startup->max_concurrent_connections
+						&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
+						lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections (%u) exceeded by host: %s (%lu total)"
+ 							,client_socket, servprot, startup->max_concurrent_connections, host_ip, ++stats.connections_exceeded);
+						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
+						mail_close_socket(&client_socket, &session);
+						continue;
+					}
+				}
+
 				if(trashcan(&scfg,host_ip,"ip-silent")) {
 					mail_close_socket(&client_socket, &session);
 					stats.connections_ignored++;
@@ -6256,8 +6288,8 @@ void DLLCALL mail_server(void* arg)
 
 				if(protected_uint32_value(active_clients)>=startup->max_clients) {
 					lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
-						,client_socket, (char *)cbdata, startup->max_clients, ++stats.connections_refused);
-					sockprintf(client_socket, cbdata, session,"-ERR Maximum active clients reached, please try again later.");
+						,client_socket, servprot, startup->max_clients, ++stats.connections_refused);
+					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum active clients reached");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);
 					continue;
@@ -6267,17 +6299,18 @@ void DLLCALL mail_server(void* arg)
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
 					lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) disabling blocking on socket"
-						,client_socket, (char *)cbdata, i, ERROR_VALUE);
-					sockprintf(client_socket, cbdata, session,"-ERR System error, please try again later.");
+						,client_socket, servprot, i, ERROR_VALUE);
+					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "ioctlsocket error");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);
 					continue;
 				}
 
-				if(strcmp((char *)cbdata, "pop3") && strcmp((char *)cbdata, "pop3s")) { /* Not POP3 */
+				if(is_smtp) {
 					if((smtp=malloc(sizeof(smtp_t)))==NULL) {
 						lprintf(LOG_CRIT,"%04d SMTP !ERROR allocating %lu bytes of memory for smtp_t"
 							,client_socket, (ulong)sizeof(smtp_t));
+						sockprintf(client_socket, servprot, session, smtp_error, "malloc failure");
 						mail_close_socket(&client_socket, &session);
 						continue;
 					}
@@ -6285,7 +6318,7 @@ void DLLCALL mail_server(void* arg)
 					smtp->socket=client_socket;
 					memcpy(&smtp->client_addr, &client_addr, client_addr_len);
 					smtp->client_addr_len=client_addr_len;
-					smtp->tls_port = (strcmp((char *)cbdata, "submissions") == 0);
+					smtp->tls_port = (servprot == servprot_submissions);
 					protected_uint32_adjust(&thread_count,1);
 					_beginthread(smtp_thread, 0, smtp);
 					stats.connections_served++;
@@ -6303,7 +6336,7 @@ void DLLCALL mail_server(void* arg)
 					pop3->socket=client_socket;
 					memcpy(&pop3->client_addr, &client_addr, client_addr_len);
 					pop3->client_addr_len=client_addr_len;
-					pop3->tls_port = (strcmp((char *)cbdata, "pop3s") == 0);
+					pop3->tls_port = (servprot == servprot_pop3s);
 					protected_uint32_adjust(&thread_count,1);
 					_beginthread(pop3_thread, 0, pop3);
 					stats.connections_served++;

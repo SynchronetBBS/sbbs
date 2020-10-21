@@ -591,6 +591,7 @@ void sbbs_read_ini(
 		mail->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		mail->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
+		mail->max_concurrent_connections = iniGetInteger(list, section, "MaxConcurrentConnections", 0);
 	}
 
 	/***********************************************************************/
@@ -1041,6 +1042,8 @@ BOOL sbbs_write_ini(
 		if(!iniSetInteger(lp,section,"MaxMsgsWaiting",mail->max_msgs_waiting,&style))
 			break;
 		if(!iniSetInteger(lp,section,"ConnectTimeout",mail->connect_timeout,&style))
+			break;
+		if(!iniSetInteger(lp,section,"MaxConcurrentConnections",mail->max_concurrent_connections,&style))
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)==0
