@@ -155,6 +155,14 @@ const Channel = function (c) {
 
 }
 
+function toLocal(x) {
+    for each(var e in x) {
+        e.setName(e.localName());
+        toLocal(e);
+    }
+    return x;
+}
+
 const Feed = function (url, follow_redirects) {
 
 	this.channels = [];
@@ -176,8 +184,8 @@ const Feed = function (url, follow_redirects) {
 			}
 			httpRequest = undefined;
 		}
-		var feed = new XML(doc.replace(/^<\?xml.*\?>/g, ""));
-		doc = undefined;
+        var feed = toLocal(new XML(doc.replace(/^<\?xml.*\?>/g, "")));
+        doc = undefined;
 		switch (feed.localName()) {
 			case "rss":
 				var channels = feed.channel.length();
