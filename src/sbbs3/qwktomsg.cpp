@@ -366,10 +366,9 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 			if(!bodylen && !taillen)		/* Ignore blank lines at top of message */
 				continue;
 			if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
-				&& body[bodylen-2]=='-' && body[bodylen-1]=='-') {
+				&& body[bodylen-2]=='-' && (body[bodylen-1]=='-' || body[bodylen-1]==' ')) {
+				taillen = sprintf(tail, "--%c", body[bodylen-1]); /* DO NOT USE SAFECOPY */
 				bodylen-=3;
-				strcpy(tail,"---");	/* DO NOT USE SAFECOPY */
-				taillen=3; 
 			}
 			col=0;
 			if(taillen) {
