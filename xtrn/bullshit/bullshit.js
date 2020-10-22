@@ -276,9 +276,7 @@ function main() {
 	// if you set newOnly to logon, then on login time, it will treat it as newOnly=true and
 	// only show if new bulletins, but at all other times, treat it as newOnly=false
 	// (so always display them when called from external program menu context)
-	if ((settings.newOnly == "logon") && (bbs.node_action == NODE_LOGN)) {
-		settings.newOnly = true;
-	} else {
+	if ((settings.newOnly == "logon") && (bbs.node_action != NODE_LOGN)) {
 		settings.newOnly = false;
 	}
 	
