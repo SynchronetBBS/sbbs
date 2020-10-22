@@ -2282,7 +2282,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 		}
 	}
 
-	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL) &&
+	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL || (tp=strstr(p,"-- \r"))!=NULL) &&
 		(*(tp-1)=='\r' || *(tp-1)=='\n'))
 		*tp=0;
 
@@ -3503,7 +3503,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		if(ch == '\n')
 			continue;
 		if(cr && (!strncmp(fbuf+l,"--- ",4)
-			|| !strncmp(fbuf+l,"---\r",4)))
+			|| !strncmp(fbuf+l,"---\r",4)
+			|| !strncmp(fbuf+l,"-- \r",4)))
 			done=1; 			/* tear line and down go into tail */
 		else if(cr && !strncmp(fbuf+l," * Origin: ",11) && subnum != INVALID_SUB) {
 			p=(char*)fbuf+l+11;
