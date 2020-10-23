@@ -158,7 +158,7 @@ bool sbbs_t::answer()
 							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
 						}
-						lprintf(LOG_WARNING,"!CLIENT IP NOT LISTED in %s", path);
+						lprintf(LOG_DEBUG,"!CLIENT IP (%s) NOT LISTED in %s", client.addr, path);
 						useron.number=0;
 						hangup();
 					}
