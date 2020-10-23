@@ -5170,7 +5170,7 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 	msg->hdr.netattr&=~MSG_INTRANSIT;
 	i=smb_putmsghdr(smb,msg);
 	smb_unlockmsghdr(smb,msg);
-	
+
 	if(i!=0)
 		lprintf(LOG_ERR,"0000 SEND !ERROR %d (%s) writing message header #%u"
 			,i, smb->last_error, msg->idx.number);
@@ -5245,9 +5245,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 	ulong nb = 0;
 	int status;
 	char		buf[512];
-	char		err[1024];
-
-	strcpy(err,"UNKNOWN ERROR");
+	char		err[1024] = "UNKNOWN ERROR";
 
 	for (tls_retry = 0; tls_retry < 2; tls_retry++) {
 		if (!sendmail_open_socket(&sock, session))
@@ -5766,9 +5764,9 @@ static void sendmail_thread(void* arg)
 
 			/* MAIL */
 			if(fromaddr[0]=='<')
-				sockprintf(sock,prot,session,"MAIL FROM: %s",fromaddr);
+				sockprintf(sock,prot,session,"MAIL FROM:%s",fromaddr);
 			else
-				sockprintf(sock,prot,session,"MAIL FROM: <%s>",fromaddr);
+				sockprintf(sock,prot,session,"MAIL FROM:<%s>",fromaddr);
 			if(!sockgetrsp(sock,prot,session,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
@@ -5790,9 +5788,9 @@ static void sendmail_thread(void* arg)
 					*tp=0;	/* Remove ":port" designation from envelope */
 			}
 			if(*toaddr == '<')
-				sockprintf(sock,prot,session,"RCPT TO: %s", toaddr);
+				sockprintf(sock,prot,session,"RCPT TO:%s", toaddr);
 			else
-				sockprintf(sock,prot,session,"RCPT TO: <%s>", toaddr);
+				sockprintf(sock,prot,session,"RCPT TO:<%s>", toaddr);
 			if(!sockgetrsp(sock,prot,session,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"25*");
