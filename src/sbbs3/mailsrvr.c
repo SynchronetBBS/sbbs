@@ -3816,7 +3816,7 @@ static void smtp_thread(void* arg)
 
 						smb_freehashes(hashes);
 					} else
-						lprintf(LOG_ERR,"%04d %s [%] smb_msghashes returned NULL", socket, client.protocol, client_id);
+						lprintf(LOG_ERR,"%04d %s %s !smb_msghashes returned NULL", socket, client.protocol, client_id);
 
 					if(is_spam || ((startup->options&MAIL_OPT_DNSBL_IGNORE) && (dnsbl_recvhdr || dnsbl_result.s_addr))) {
 						free(msgbuf);
