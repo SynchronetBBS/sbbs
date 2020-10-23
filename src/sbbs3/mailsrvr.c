@@ -106,6 +106,7 @@ static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
 static js_server_props_t js_server_props;
+static link_list_t current_logins;
 static link_list_t current_connections;
 
 static const char* servprot_smtp = "SMTP";
@@ -1314,8 +1315,10 @@ static void pop3_thread(void* arg)
 			break;
 		}
 
-		if(user.pass[0])
+		if(user.pass[0]) {
 			loginSuccess(startup->login_attempt_list, &pop3.client_addr);
+			listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
+		}
 
 		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
 		putuserrec(&scfg,user.number,U_IPADDR,LEN_IPADDR,host_ip);
@@ -1713,6 +1716,7 @@ static void pop3_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
+	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
 	protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
@@ -2830,7 +2834,6 @@ static void smtp_thread(void* arg)
 	char		sender_addr[128];
 	char		hello_name[128];
 	char		user_name[128];
-	char		user_pass[128];
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
 	char		spam_bait[MAX_PATH+1];
@@ -4129,9 +4132,11 @@ static void smtp_thread(void* arg)
 			subnum=INVALID_SUB;
 			continue;
 		}
-		ZERO_VAR(user_pass);
 		if((auth_login=(stricmp(buf,"AUTH LOGIN")==0))==TRUE 
 			|| strnicmp(buf,"AUTH PLAIN",10)==0) {
+			char user_pass[128] = "";
+			ZERO_VAR(relay_user);
+			listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
 			if(auth_login) {
 				sockprintf(socket,client.protocol,session,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
 				if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
@@ -4225,8 +4230,10 @@ static void smtp_thread(void* arg)
 				break;
 			}
 
-			if(relay_user.pass[0])
+			if(relay_user.pass[0]) {
 				loginSuccess(startup->login_attempt_list, &smtp.client_addr);
+				listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
+			}
 
 			/* Update client display */
 			client.user=relay_user.alias;
@@ -4240,6 +4247,9 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
+			ZERO_VAR(relay_user);
+			listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
+
 			safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%s>"
 				,rand(),socket,(ulong)time(NULL),(ulong)clock(),server_host_name());
 #if 0
@@ -4314,8 +4324,10 @@ static void smtp_thread(void* arg)
 				break;
 			}
 
-			if(relay_user.pass[0])
+			if(relay_user.pass[0]) {
 				loginSuccess(startup->login_attempt_list, &smtp.client_addr);
+				listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
+			}
 
 			/* Update client display */
 			client.user=relay_user.alias;
@@ -5030,6 +5042,7 @@ static void smtp_thread(void* arg)
 
 	status(STATUS_WFC);
 
+	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
 	protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
@@ -5272,7 +5285,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			ip_addr=resolve_ip(server);
 			if(ip_addr==INADDR_NONE) {
 				SAFEPRINTF(err, "Error resolving hostname %s", server);
-				lprintf(LOG_WARNING,"%04d SEND !failure resolving hostname: %s", sock, server);
+				lprintf(LOG_WARNING,"%04d SEND !Failure resolving hostname: %s", sock, server);
 				continue;
 			}
 
@@ -5918,6 +5931,7 @@ static void cleanup(int code)
 
 	update_clients();	/* active_clients is destroyed below */
 
+	listFree(&current_logins);
 	listFree(&current_connections);
 
 	if(protected_uint32_value(active_clients))
@@ -6045,6 +6059,7 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
+	listInit(&current_logins, LINK_LIST_MUTEX);
 	listInit(&current_connections, LINK_LIST_MUTEX);
 
 	do {
@@ -6288,10 +6303,11 @@ void DLLCALL mail_server(void* arg)
 				if(startup->max_concurrent_connections > 0) {
 					int ip_len = strlen(host_ip)+1;
 					int connections = listCountMatches(&current_connections, host_ip, ip_len);
+					int logins = listCountMatches(&current_logins, host_ip, ip_len);
 
-					if(connections >= (int)startup->max_concurrent_connections
+					if(connections - logins >= (int)startup->max_concurrent_connections
 						&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
-						lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections (%u) exceeded by host: %s (%lu total)"
+						lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections without login (%u) exceeded by host: %s (%lu total)"
  							,client_socket, servprot, startup->max_concurrent_connections, host_ip, ++stats.connections_exceeded);
 						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
 						mail_close_socket(&client_socket, &session);
