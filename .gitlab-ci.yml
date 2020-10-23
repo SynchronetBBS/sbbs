@@ -19,8 +19,9 @@ build-sbbs:
   artifacts:
     name: sbbs
     paths:
-      - "src/sbbs3/*.release/*"
-      - "src/sbbs3/*/*.release/*"
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
 
 build-sexpots:
   stage: build
@@ -34,7 +35,7 @@ build-sexpots:
   artifacts:
     name: sexpots
     paths:
-      - "src/sexpots/*.release/*"
+      - "src/sexpots/*.exe.release/*"
 
 build-syncterm:
   stage: build
@@ -48,7 +49,7 @@ build-syncterm:
   artifacts:
     name: syncterm
     paths:
-      - "src/syncterm/*.release/*"
+      - "src/syncterm/*.exe.release/*"
 
 # run tests using the binary built before
 #test:
