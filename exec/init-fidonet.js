@@ -618,7 +618,7 @@ if(echolist_fname && file_size(echolist_fname) > 0) {
 	}
 	if(network.areatitle_prefix) {
 		print("Removing " + network.areatitle_prefix + " Title Prefixes from " + echolist_fname);
-		var result = remove_prefix_from_titles(echolist_fname, network.areatitle_prefix);
+		var result = remove_prefix_from_title(echolist_fname, network.areatitle_prefix);
 		if(result !== true)
 			alert(result);
 	}
