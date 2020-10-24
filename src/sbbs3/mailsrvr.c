@@ -217,7 +217,7 @@ static int lprintf(int level, const char *fmt, ...)
 		return(0);
 #endif
 
-    return(startup->lputs(startup->cbdata,level,sbuf));
+    return(startup->lputs(startup->cbdata, level, condense_whitespace(sbuf)));
 }
 
 #ifdef _WINSOCKAPI_
@@ -643,6 +643,23 @@ void originator_info(SOCKET socket, const char* protocol, CRYPT_SESSION sess, sm
 			);
 }
 
+char* angle_bracket(char* buf, size_t max, const char* addr)
+{
+	if(*addr == '<')
+		safe_snprintf(buf, max, "%s", addr);
+	else
+		safe_snprintf(buf, max, "<%s>", addr);
+	return buf;
+}
+
+int compare_addrs(const char* addr1, const char* addr2)
+{
+	char tmp1[256];
+	char tmp2[256];
+
+	return strcmp(angle_bracket(tmp1, sizeof(tmp1), addr1), angle_bracket(tmp2, sizeof(tmp2), addr2));
+}
+
 /* RFC822: The maximum total length of a text line including the
    <CRLF> is 1000 characters (but not counting the leading
    dot duplicated for transparency). 
@@ -658,6 +675,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	char		fromaddr[256]="";
 	char		fromhost[256];
 	char		msgid[256];
+	char		tmp[256];
 	char		date[64];
 	char*		p;
 	char*		np;
@@ -705,10 +723,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
 		else 
 			usermailaddr(&scfg,fromaddr,msg->from);
-		if(fromaddr[0]=='<')
-			s=sockprintf(socket,prot,sess,"From: %s %s",fromname,fromaddr);
-		else
-			s=sockprintf(socket,prot,sess,"From: %s <%s>",fromname,fromaddr);
+		s = sockprintf(socket,prot,sess,"From: %s %s", fromname, angle_bracket(tmp, sizeof(tmp), fromaddr));
 	}
 	if(!s)
 		return(0);
@@ -982,6 +997,7 @@ static void pop3_thread(void* arg)
 	char		buf[512];
 	char		host_name[128];
 	char		host_ip[INET6_ADDRSTRLEN];
+	char		server_ip[INET6_ADDRSTRLEN];
 	char		username[128];
 	char		password[128];
 	char		challenge[256];
@@ -1014,6 +1030,7 @@ static void pop3_thread(void* arg)
 	char *estr;
 	int level;
 	int stat;
+	union xp_sockaddr	server_addr;
 
 	SetThreadName("sbbs/pop3");
 	thread_up(TRUE /* setuid */);
@@ -1032,22 +1049,32 @@ static void pop3_thread(void* arg)
 		PlaySound(startup->pop3_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
+	socklen_t addr_len = sizeof(server_addr);
+	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
+		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting address/port"
+			,socket, client.protocol, i, ERROR_VALUE);
+		mail_close_socket(&socket, &session);
+		thread_down();
+		return;
+	}
+
 	inet_addrtop(&pop3.client_addr, host_ip, sizeof(host_ip));
+	inet_addrtop(&server_addr, server_ip, sizeof(server_ip));
 
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
-		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
-			,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr));
+		lprintf(LOG_INFO,"%04d %s [%s] connection accepted on %s port %u from port %u"
+			,socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&pop3.client_addr));
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&pop3.client_addr.addr, pop3.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]", socket, client.protocol, host_name, host_ip);
+			lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s", socket, client.protocol, host_ip, host_name);
 	}
 	if (pop3.tls_port) {
 		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 			if (estr) {
-				lprintf(level, "%04d %s !Failure getting certificate: %s", socket, client.protocol, estr);
+				lprintf(level, "%04d %s [%s] !Failure getting certificate: %s", socket, client.protocol, host_ip, estr);
 				free_crypt_attrstr(estr);
 			}
 			mail_close_socket(&socket, &session);
@@ -1107,11 +1134,11 @@ static void pop3_thread(void* arg)
 	if(banned || trashcan(&scfg,host_ip,"ip")) {
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		}
 		else
-			lprintf(LOG_NOTICE,"%04d %s !CLIENT IP ADDRESS BLOCKED: %s",socket, client.protocol, host_ip);
+			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT IP ADDRESS BLOCKED",socket, client.protocol, host_ip);
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		mail_close_socket(&socket, &session);
 		thread_down();
@@ -1119,8 +1146,8 @@ static void pop3_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s !CLIENT HOSTNAME BLOCKED: %s"
-			,socket, client.protocol, host_name);
+		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT HOSTNAME BLOCKED: %s"
+			,socket, client.protocol, host_ip, host_name);
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		mail_close_socket(&socket, &session);
 		thread_down();
@@ -1145,7 +1172,7 @@ static void pop3_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &pop3.client_addr)) > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
+		lprintf(LOG_DEBUG,"%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
 			,socket, client.protocol, host_ip, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -1185,7 +1212,7 @@ static void pop3_thread(void* arg)
 			else if (!stricmp(buf, "STLS")) {
 				if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 					if (estr) {
-						lprintf(level, "%04d %s !TLS Failure getting certificate: %s", socket, client.protocol, estr);
+						lprintf(level, "%04d %s [%s] !TLS Failure getting certificate: %s", socket, client.protocol, host_ip, estr);
 						free_crypt_attrstr(estr);
 					}
 					sockprintf(socket,client.protocol,session,"-ERR STLS command not supported");
@@ -1329,8 +1356,8 @@ static void pop3_thread(void* arg)
 		client_on(socket,&client,TRUE /* update */);
 		activity=FALSE;
 
-		if(startup->options&MAIL_OPT_DEBUG_POP3)		
-			lprintf(LOG_INFO,"%04d %s [%s] %s logged in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
+		if(startup->options&MAIL_OPT_DEBUG_POP3)
+			lprintf(LOG_INFO,"%04d %s [%s] %s logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
 		SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
 		status(str);
 
@@ -1390,6 +1417,12 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d %s RX: %s", socket, client.protocol, buf);
 			if(!stricmp(buf, "NOOP")) {
 				sockprintf(socket,client.protocol,session,"+OK");
+				continue;
+			}
+			if(!stricmp(buf, "CAPA")) {
+				// Capabilities
+				sockprintf(socket,client.protocol,session, "+OK Capability list follows");
+				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s-%s\r\n.", revision, PLATFORM_DESC);
 				continue;
 			}
 			if(!stricmp(buf, "QUIT")) {
@@ -1700,11 +1733,11 @@ static void pop3_thread(void* arg)
 
 	if(activity) {
 		if(user.number)
-			lprintf(LOG_INFO,"%04d %s <%s> logged out from port %u on %s [%s]"
+			lprintf(LOG_INFO,"%04d %s <%s> logged-out from port %u on %s [%s]"
 				,socket, client.protocol, user.alias, inet_addrport(&pop3.client_addr), host_name, host_ip);
 		else
-			lprintf(LOG_INFO,"%04d %s client disconnected from port %u on %s [%s]"
-				,socket, client.protocol, inet_addrport(&pop3.client_addr), host_name, host_ip);
+			lprintf(LOG_INFO,"%04d %s [%s] client disconnected from port %u on %s"
+				,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr), host_name);
 	}
 
 	status(STATUS_WFC);
@@ -1724,8 +1757,8 @@ static void pop3_thread(void* arg)
 	{ 
 		int32_t remain = thread_down();
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_DEBUG,"%04d %s session thread terminated (%u threads remain, %lu clients served)"
-				,socket, client.protocol, remain, ++stats.pop3_served);
+			lprintf(LOG_DEBUG,"%04d %s [%s] session thread terminated (%u threads remain, %lu clients served)"
+				,socket, client.protocol, host_ip, remain, ++stats.pop3_served);
 	}
 
 	/* Must be last */
@@ -1871,8 +1904,8 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	if(!trashcan(&scfg,addr,"email"))
 		return(TRUE);
 
-	lprintf(LOG_NOTICE,"%04d %s !BLOCKED %s e-mail address: %s"
-		,socket, prot, source, addr);
+	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s"
+		,socket, prot, host_ip, source, addr);
 	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
 	spamlog(&scfg, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
 
@@ -1902,14 +1935,11 @@ static void exempt_email_addr(const char* comment
 							  ,const char* toaddr)
 {
 	char	fname[MAX_PATH+1];
-	char	to[128];
+	char	to[256];
 	char	tmp[128];
 	FILE*	fp;
 
-	if(*toaddr == '<')
-		SAFECOPY(to, toaddr);
-	else
-		SAFEPRINTF(to,"<%s>",toaddr);
+	angle_bracket(to, sizeof(to), toaddr);
 	if(!email_addr_is_exempt(to)) {
 		SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 		if((fp=fopen(fname,"a"))==NULL)
@@ -2657,8 +2687,8 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 		}
 
 		if((dnsbl_result->s_addr=dns_blacklisted(socket,prot,&addr,host_name,dnsbl,dnsbl_ip))!=0)
-				lprintf(LOG_NOTICE,"%04d %s BLACKLISTED SERVER on %s: %s [%s] = %s"
-					,socket, prot, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
+				lprintf(LOG_NOTICE,"%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
+					,socket, prot, ip, dnsbl, host_name, inet_ntoa(*dnsbl_result));
 	} while(0);
 	free(fromstr);
 	return(dnsbl_result->s_addr);
@@ -3045,15 +3075,16 @@ static void smtp_thread(void* arg)
 	memset(&relay_user,0,sizeof(relay_user));
 
 	inet_addrtop(&smtp.client_addr,host_ip,sizeof(host_ip));
+	inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
 
-	lprintf(LOG_INFO,"%04d %s Connection accepted on port %u from: %s port %u"
-		,socket, client.protocol, inet_addrport(&server_addr), host_ip, inet_addrport(&smtp.client_addr));
+	lprintf(LOG_INFO,"%04d %s [%s] Connection accepted on %s port %u from port %u"
+		,socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&smtp.client_addr));
 	SAFEPRINTF(client_id, "[%s]", host_ip);
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&smtp.client_addr.addr, smtp.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]", socket, client.protocol, host_name, host_ip);
+		lprintf(LOG_INFO,"%04d %s %s Hostname: %s", socket, client.protocol, client_id, host_name);
 	}
 	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
@@ -3063,8 +3094,6 @@ static void smtp_thread(void* arg)
 	SAFEPRINTF(spam_bait,"%sspambait.cfg",scfg.ctrl_dir);
 	SAFEPRINTF(spam_block,"%sspamblock.cfg",scfg.ctrl_dir);
 	SAFEPRINTF(spam_block_exemptions,"%sspamblock_exempt.cfg",scfg.ctrl_dir);
-
-	inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
 
 	if(strcmp(server_ip, host_ip)==0) {
 		/* local connection */
@@ -3628,15 +3657,15 @@ static void smtp_thread(void* arg)
 					subnum=INVALID_SUB;
 					continue;
 				}
-				char sender_info[256];
+				char sender_info[512];
 				if(relay_user.number) {
 					SAFEPRINTF(str,"%u",relay_user.number);
 					smb_hfield_str(&msg, SENDEREXT, str);
 					SAFEPRINTF2(sender_info, "'%s' #%u", sender, relay_user.number);
-				} else if(strcmp(sender, sender_addr) == 0) {
-					SAFEPRINTF(sender_info, "<%s>", sender_addr);
+				} else if(compare_addrs(sender, sender_addr) == 0) {
+					angle_bracket(sender_info, sizeof(sender_info), sender_addr);
 				} else {
-					SAFEPRINTF2(sender_info, "'%s' <%s>", sender, sender_addr);
+					safe_snprintf(sender_info, sizeof(sender_info), "'%s' %s", sender, angle_bracket(tmp, sizeof(tmp), sender_addr));
 				}
 				if(relay_user.number && subnum!=INVALID_SUB) {
 					nettype=NET_NONE;
@@ -3837,11 +3866,11 @@ static void smtp_thread(void* arg)
 					}
 				}
 
-				char rcpt_info[256];
-				if(strcmp(rcpt_name, rcpt_addr) == 0)
-					SAFEPRINTF(rcpt_info, "<%s>", rcpt_addr);
+				char rcpt_info[512];
+				if(compare_addrs(rcpt_name, rcpt_addr) == 0)
+					angle_bracket(rcpt_info, sizeof(rcpt_info), rcpt_addr);
 				else
-					SAFEPRINTF2(rcpt_info, "'%s' <%s>", rcpt_name, rcpt_addr);
+					safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", rcpt_name, angle_bracket(tmp, sizeof(tmp), rcpt_addr));
 				lprintf(LOG_DEBUG,"%04d %s %s Saving message data from %s to %s"
 					,socket, client.protocol, client_id, sender_info, rcpt_info);
 
@@ -3879,10 +3908,10 @@ static void smtp_thread(void* arg)
 					SAFEPRINTF(str,"#%u",usernum);
 					SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
 					SAFECOPY(forward_path, iniReadString(rcptlst, section, smb_hfieldtype(SMTPFORWARDPATH), "", value));
-					if(strcmp(rcpt_to, rcpt_addr) == 0)
-						SAFEPRINTF(rcpt_info, "<%s>", rcpt_addr);
+					if(compare_addrs(rcpt_to, rcpt_addr) == 0)
+						angle_bracket(rcpt_info, sizeof(rcpt_info), rcpt_addr);
 					else
-						SAFEPRINTF2(rcpt_info, "'%s' <%s>", rcpt_to, rcpt_addr);
+						safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", rcpt_to, angle_bracket(tmp, sizeof(tmp), rcpt_addr));
 
 					if(nettype==NET_NONE /* Local destination */ && usernum==0) {
 						lprintf(LOG_ERR,"%04d %s %s !Can't deliver mail from %s to user #0"
@@ -4240,7 +4269,7 @@ static void smtp_thread(void* arg)
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d %s %s %s authenticated using %s authentication"
+			lprintf(LOG_INFO,"%04d %s %s %s logged-in using %s authentication"
 				,socket,client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN");
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
@@ -4282,7 +4311,7 @@ static void smtp_thread(void* arg)
 			SAFECOPY(user_name,response);
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s'"
-					,socket, client.protocol, user_name, client_id);
+					,socket, client.protocol, client_id, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, user_name, NULL, host_name, &smtp.client_addr);
 				break;
 			}
@@ -4334,7 +4363,7 @@ static void smtp_thread(void* arg)
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d %s %s %s authenticated using CRAM-MD5 authentication"
+			lprintf(LOG_INFO,"%04d %s %s %s logged-in using CRAM-MD5 authentication"
 				,socket, client.protocol, client_id, relay_user.alias);
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
@@ -5446,6 +5475,7 @@ static void sendmail_thread(void* arg)
 	char		err[1024];
 	char		buf[512];
 	char		str[128];
+	char		tmp[256];
 	char		resp[512];
 	char		toaddr[256];
 	char		fromaddr[256];
@@ -5582,7 +5612,7 @@ static void sendmail_thread(void* arg)
 			else 
 				SAFEPRINTF(fromaddr, "<%s>", usermailaddr(&scfg, str, msg.from));
 
-			char sender_info[256];
+			char sender_info[512];
 			if(msg.from_ext != NULL)
 				SAFEPRINTF2(sender_info, "'%s' #%s", msg.from, msg.from_ext);
 			else if(strstr(fromaddr, msg.from) == fromaddr + 1)
@@ -5590,11 +5620,11 @@ static void sendmail_thread(void* arg)
 			else
 				SAFEPRINTF2(sender_info, "'%s' %s", msg.from, fromaddr);
 
-			char rcpt_info[256];
-			if(strcmp(msg.to, (char*)msg.to_net.addr) == 0)
-				SAFEPRINTF(rcpt_info, "<%s>", msg.to);
+			char rcpt_info[512];
+			if(compare_addrs(msg.to, (char*)msg.to_net.addr) == 0)
+				angle_bracket(rcpt_info, sizeof(rcpt_info), msg.to);
 			else
-				SAFEPRINTF2(rcpt_info, "'%s' <%s>", msg.to, (char*)msg.to_net.addr);
+				safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", msg.to, angle_bracket(tmp, sizeof(tmp), (char*)msg.to_net.addr));
 
 			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&MSG_INTRANSIT) {
 				smb_unlockmsghdr(&smb,&msg);
@@ -5812,10 +5842,7 @@ static void sendmail_thread(void* arg)
 					&& tp > p)
 					*tp=0;	/* Remove ":port" designation from envelope */
 			}
-			if(*toaddr == '<')
-				sockprintf(sock,prot,session,"RCPT TO:%s", toaddr);
-			else
-				sockprintf(sock,prot,session,"RCPT TO:<%s>", toaddr);
+			sockprintf(sock, prot, session, "RCPT TO:%s", angle_bracket(tmp, sizeof(tmp), toaddr));
 			if(!sockgetrsp(sock,prot,session,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"25*");
