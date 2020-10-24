@@ -643,6 +643,25 @@ char* ascii_str(uchar* str)
 	return((char*)str);
 }
 
+/****************************************************************************/
+/* Condense consecutive white-space chars in a string to single spaces		*/
+/****************************************************************************/
+char* condense_whitespace(char* str)
+{
+	char* s = str;
+	char* d = str;
+	while(*s != '\0') {
+		if(isspace((unsigned char)*s)) {
+			*(d++) = ' ';
+			SKIP_WHITESPACE(s);
+		} else {
+			*(d++) = *(s++);
+		}
+	}
+	*d = '\0';
+	return str;
+}
+
 uint32_t str_to_bits(uint32_t val, const char *str)
 {
 	/* op can be 0 for replace, + for add, or - for remove */
