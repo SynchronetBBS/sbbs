@@ -70,7 +70,7 @@ function getCtrlLine(file) {
 			f.close();
 			break;
 		default:
-			ctrl = file_getname(file);
+			ctrl = pageName(file_getname(file));
 			break;
 	}
 
@@ -153,7 +153,7 @@ function _getPageList(dir) {
 }
 
 function pageName(p) {
-	return p.replace(/^\d*-/, '');
+	return p.replace(/^\d*-/, '').replace(/\..*$/, '');
 }
 
 function mergePageLists(stock, mods) {
