@@ -496,7 +496,7 @@ uint hptoi(const char *str)
 
 	if(!str[1] || toupper(str[0])<='F')
 		return(ahtoul(str));
-	strcpy(tmp,str);
+	SAFECOPY(tmp,str);
 	tmp[0]='F';
 	i=ahtoul(tmp)+((toupper(str[0])-'F')*0x10);
 	return(i);
