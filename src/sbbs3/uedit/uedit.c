@@ -235,9 +235,9 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(10+1)))==NULL)
-		allocfail(sizeof(char *)*(10+1));
-	for(i=0;i<(10+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(11+1)))==NULL)
+		allocfail(sizeof(char *)*(11+1));
+	for(i=0;i<11;i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -258,7 +258,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Screen Columns   %s",user->cols?str:"Auto");
 		sprintf(str,"%u",user->rows);
 		sprintf(opt[i++],"Screen Rows      %s",user->rows?str:"Auto");
-		opt[i][0]=0;
+		opt[i] = NULL;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Terminal Settings",opt)) {
 			case -1:
 				return(0);
