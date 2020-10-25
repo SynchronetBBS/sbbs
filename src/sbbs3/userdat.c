@@ -338,9 +338,15 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_FLAGS4,8,str); user->flags4=ahtoul(str);
 	getrec(userdat,U_EXEMPT,8,str); user->exempt=ahtoul(str);
 	getrec(userdat,U_REST,8,str); user->rest=ahtoul(str);
-	getrec(userdat,U_ROWS,2,str); user->rows=atoi(str);
-	if(user->rows && user->rows<10)
-		user->rows=10;
+	if(getrec(userdat,U_OLDROWS,2,str) <= 0) // Moved to new location
+		getrec(userdat, U_ROWS, LEN_ROWS, str);
+	user->rows = atoi(str);
+	if(user->rows && user->rows < TERM_ROWS_MIN)
+		user->rows = TERM_ROWS_MIN;
+	getrec(userdat, U_COLS, LEN_COLS, str);
+	user->cols = atoi(str);
+	if(user->cols && user->cols < TERM_COLS_MIN)
+		user->cols = TERM_COLS_MIN;
 	user->sex=userdat[U_SEX];
 	if(!user->sex)
 		user->sex=' ';	 /* fix for v1b04 that could save as 0 */
@@ -574,7 +580,8 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_REST,8,ultoa(user->rest,str,16));
 	putrec(userdat,U_REST+8,2,crlf);
 
-	putrec(userdat,U_ROWS,2,ultoa(user->rows,str,10));
+	putrec(userdat, U_ROWS, LEN_ROWS, ultoa(user->rows,str,10));
+	putrec(userdat, U_COLS, LEN_COLS, ultoa(user->cols,str,10));
 	userdat[U_SEX]=user->sex;
 	userdat[U_PROT]=user->prot;
 	putrec(userdat,U_MISC,8,ultoa(user->misc,str,16));
@@ -2868,12 +2875,15 @@ int user_rec_len(int offset)
 		/* 3 char strings */
 		case U_TMPEXT:
 			return(3);
+		case U_ROWS:
+			return LEN_ROWS;
+		case U_COLS:
+			return LEN_COLS;
 
-		/* 2 digits integers (0-99) */
+		/* 2 digit integers (0-99 or 00-FF) */
 		case U_LEVEL:
 		case U_TL:
-		case U_ROWS:
-		case U_LEECH:	/* actually, 2 hex digits */
+		case U_LEECH:
 			return(2);
 
 		/* Single digits chars */
