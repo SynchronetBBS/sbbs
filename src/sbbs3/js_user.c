@@ -102,7 +102,8 @@ enum {
 	,USER_PROP_FLAGS4	
 	,USER_PROP_EXEMPT	
 	,USER_PROP_REST		
-	,USER_PROP_ROWS		
+	,USER_PROP_ROWS
+	,USER_PROP_COLS
 	,USER_PROP_SEX		
 	,USER_PROP_MISC		
 	,USER_PROP_LEECH 	
@@ -313,6 +314,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_ROWS:
 			val=p->user->rows;
+			break;
+		case USER_PROP_COLS:
+			val=p->user->cols;
 			break;
 		case USER_PROP_SEX:
 			sprintf(tmp,"%c",p->user->sex);
@@ -537,6 +541,10 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_ROWS:	
 			p->user->rows=atoi(str);
 			putuserrec(scfg,p->user->number,U_ROWS,0,str);	/* base 10 */
+			break;
+		case USER_PROP_COLS:	
+			p->user->cols=atoi(str);
+			putuserrec(scfg,p->user->number,U_COLS,0,str);	/* base 10 */
 			break;
 		case USER_PROP_SEX:		 
 			p->user->sex=toupper(str[0]);
@@ -785,6 +793,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
 	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
 	{	"screen_rows"		,USER_PROP_ROWS		 	,USER_PROP_FLAGS,		310},
+	{	"screen_columns"	,USER_PROP_COLS		 	,USER_PROP_FLAGS,		31802},
 	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		310},
 	{	"cursub"			,USER_PROP_CURSUB	 	,USER_PROP_FLAGS,		310},
 	{	"curdir"			,USER_PROP_CURDIR	 	,USER_PROP_FLAGS,		310},
@@ -829,8 +838,9 @@ static char* user_prop_desc[] = {
 	,"calculated age in years - <small>READ ONLY</small>"
 	,"connection type (protocol)"
 	,"AKA connection"
-	,"terminal rows (lines)"
-	,"gender type (e.g. M or F)"
+	,"terminal rows (0 = auto-detect)"
+	,"terminal columns (0 = auto-detect)"
+	,"gender type (e.g. M or F or any single-character)"
 	,"current/last message sub-board (internal code)"
 	,"current/last file directory (internal code)"
 	,"current/last external program (internal code) run"

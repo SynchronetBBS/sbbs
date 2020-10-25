@@ -336,7 +336,7 @@ void sbbs_t::useredit(int usernumber)
 							putuserrec(&cfg,user.number,U_FLAGS4,8
 								,ultoa(user.flags4,tmp,16));
 							break; 
-					} 
+					}
 				}
 				break;
 			case 'G':
@@ -597,7 +597,7 @@ void sbbs_t::useredit(int usernumber)
 					user.min+=l;
 				putuserrec(&cfg,user.number,U_MIN,10,ultoa(user.min,tmp,10));
 				break;
-			case '#': /* read new user questionaire */
+			case '#': /* read new user questionnaire */
 				SAFEPRINTF2(str,"%suser/%4.4u.dat", cfg.data_dir,user.number);
 				if(!cfg.new_sof[0] || !fexist(str))
 					break;
@@ -805,14 +805,15 @@ void sbbs_t::maindflts(user_t* user)
 	while(online) {
 		CLS;
 		getuserdat(&cfg,user);
-		if(user->rows)
-			rows=user->rows;
+		if(user->rows != TERM_ROWS_AUTO)
+			rows = user->rows;
+		if(user->cols != TERM_COLS_AUTO)
+			cols = user->cols;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
 		long term = (user == &useron) ? term_supports() : user->misc;
 		if(term&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sPETSCII %lu %s"
-							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
-							,cols, text[TerminalColumns]);
+			safe_snprintf(str,sizeof(str),"%sCBM/PETSCII"
+							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr);
 		else
 			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s%s"
 							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
@@ -823,12 +824,10 @@ void sbbs_t::maindflts(user_t* user)
 							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
 		add_hotspot('T');
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
-		if(user->rows)
-			ultoa(user->rows,tmp,10);
-		else
-			SAFEPRINTF2(tmp,"%s%ld", text[TerminalAutoDetect], rows);
+		safe_snprintf(str, sizeof(str), "%s%ld %s,", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
+		safe_snprintf(tmp, sizeof(tmp), "%s%ld %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
 		add_hotspot('L');
-		bprintf(text[UserDefaultsRows], tmp, text[TerminalRows]);
+		bprintf(text[UserDefaultsRows], str, tmp);
 		if(cfg.total_shells>1) {
 			add_hotspot('K');
 			bprintf(text[UserDefaultsCommandSet]
@@ -1030,13 +1029,21 @@ void sbbs_t::maindflts(user_t* user)
 					putuserrec(&cfg,user->number,U_TMPEXT,3,cfg.fcomp[i]->ext);
 				break;
 			case 'L':
+				bputs(text[HowManyColumns]);
+				if((i = getnum(TERM_COLS_MAX)) < 0)
+					break;
+				putuserrec(&cfg,user->number,U_COLS,0,ultoa(i,tmp,10));
+				if(user==&useron) {
+					useron.cols = i;
+					ansi_getlines();
+				}
 				bputs(text[HowManyRows]);
-				if((ch=(char)getnum(99))!=-1) {
-					putuserrec(&cfg,user->number,U_ROWS,2,ultoa(ch,tmp,10));
-					if(user==&useron) {
-						useron.rows=ch;
-						ansi_getlines();
-					}
+				if((i = getnum(TERM_ROWS_MAX)) < 0)
+					break;
+				putuserrec(&cfg,user->number,U_ROWS,0,ultoa(i,tmp,10));
+				if(user==&useron) {
+					useron.rows = i;
+					ansi_getlines();
 				}
 				break;
 			case 'P':

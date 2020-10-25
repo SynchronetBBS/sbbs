@@ -210,7 +210,8 @@ char* sbbs_t::ansi(int atr, int curatr, char* str)
 
 void sbbs_t::ansi_getlines()
 {
-	if(sys_status&SS_USERON && useron.misc&ANSI && !useron.rows /* Auto-detect rows */
+	if(sys_status&SS_USERON && useron.misc&ANSI
+		&& (useron.rows == TERM_ROWS_AUTO || useron.cols == TERM_COLS_AUTO)
 		&& online==ON_REMOTE) {									/* Remote */
 		SYNC;
 		putcom("\x1b[s\x1b[255B\x1b[255C\x1b[6n\x1b[u");

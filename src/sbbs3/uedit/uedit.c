@@ -254,8 +254,10 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Pause            %s",user->misc & UPAUSE?"Yes":"No");
 		sprintf(opt[i++],"Hot Keys         %s",user->misc & COLDKEYS?"No":"Yes");
 		sprintf(opt[i++],"Spinning Cursor  %s",user->misc & SPIN?"Yes":"No");
+		sprintf(str,"%u",user->cols);
+		sprintf(opt[i++],"Screen Columns   %s",user->cols?str:"Auto");
 		sprintf(str,"%u",user->rows);
-		sprintf(opt[i++],"Number of Rows   %s",user->rows?str:"Auto");
+		sprintf(opt[i++],"Screen Rows      %s",user->rows?str:"Auto");
 		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Terminal Settings",opt)) {
 			case -1:
@@ -307,12 +309,21 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 9:
+				/* Columns */
+				SAFEPRINTF(str,"%u",user->cols);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, LEN_COLS, K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					user->cols=strtoul(str,NULL,10);
+					putuserrec(cfg,user->number,U_COLS,0,ultoa(user->cols,str,10));
+				}
+				break;
+			case 10:
 				/* Rows */
-				sprintf(str,"%u",user->rows);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Rows",str,2,K_EDIT|K_NUMBER);
+				SAFEPRINTF(str,"%u",user->rows);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, LEN_ROWS, K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->rows=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ROWS,2,ultoa(user->rows,str,10));
+					putuserrec(cfg,user->number,U_ROWS,0,ultoa(user->rows,str,10));
 				}
 				break;
 		}

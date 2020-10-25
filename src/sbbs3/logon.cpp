@@ -79,7 +79,8 @@ bool sbbs_t::logon()
 
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
-		useron.rows=0;
+		useron.rows = TERM_ROWS_AUTO;
+		useron.cols = TERM_COLS_AUTO;
 		useron.misc &= ~TERM_FLAGS;
 		useron.misc|=autoterm;
 		if(!(useron.misc&(ANSI|PETSCII)) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
@@ -215,8 +216,10 @@ bool sbbs_t::logon()
 	}
 
 	bputs(text[LoggingOn]);
-	if(useron.rows)
-		rows=useron.rows;
+	if(useron.rows != TERM_ROWS_AUTO)
+		rows = useron.rows;
+	if(useron.cols != TERM_COLS_AUTO)
+		cols = useron.cols;
 	if(tm.tm_mon + 1 == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
 		&& !(useron.rest&FLAG('Q'))) {
 		if(text[HappyBirthday][0]) {

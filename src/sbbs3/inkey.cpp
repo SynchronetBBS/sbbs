@@ -533,15 +533,15 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					return(ESC); 
 				}
 				if(ch=='R') {       /* cursor position report */
-					if(mode&K_ANSI_CPR && i && !(useron.rows)) {	/* auto-detect rows */
+					if(mode&K_ANSI_CPR && i) {	/* auto-detect rows */
 						int	x,y;
 						str[i]=0;
 						if(sscanf(str,"%u;%u",&y,&x)==2) {
 							lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u"
 								,x, y);
 							/* Sanity check the coordinates in the response: */
-							if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
-							if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+							if(useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
+							if(useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
 						}
 					}
 					return(0); 
