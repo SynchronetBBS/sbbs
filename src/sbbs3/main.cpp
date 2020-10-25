@@ -42,6 +42,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
+#include "haproxy.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -4986,7 +4987,7 @@ static void cleanup(int code)
 void DLLCALL bbs_thread(void* arg)
 {
 	struct addrinfo *res;
-	unsigned char	hapstr[108];
+	unsigned char	hapstr[128];
 
 	char			host_name[256];
 	char*			identity;
@@ -5626,7 +5627,7 @@ NO_SSH:
 
 				switch (l) {
 					// IPv4 - AF_INET
-					case 0x1:
+					case HAPROXY_AFINET:
 						if (i < 4) {
 							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small [%s]",client_socket,hapstr);
 							close_socket(client_socket);
@@ -5643,7 +5644,7 @@ NO_SSH:
 						break;
 
 					// IPv6 - AF_INET6
-					case 0x2:
+					case HAPROXY_AFINET6:
 						if (i < 16) {
 							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv6 address length too small [%s]",client_socket,hapstr);
 							close_socket(client_socket);
