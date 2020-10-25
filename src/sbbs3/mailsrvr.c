@@ -3102,7 +3102,7 @@ static void smtp_thread(void* arg)
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 			mail_close_socket(&socket, &session);
 			thread_down();
@@ -3141,8 +3141,8 @@ static void smtp_thread(void* arg)
 		/*  SPAM Filters (mail-abuse.org) */
 		dnsbl_result.s_addr = dns_blacklisted(socket,client.protocol,&smtp.client_addr,host_name,dnsbl,dnsbl_ip);
 		if(dnsbl_result.s_addr) {
-			lprintf(LOG_NOTICE,"%04d %s BLACKLISTED SERVER on %s: %s [%s] = %s"
-				,socket, client.protocol, dnsbl, host_name, dnsbl_ip, inet_ntoa(dnsbl_result));
+			lprintf(LOG_NOTICE,"%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
+				,socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntoa(dnsbl_result));
 			if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 				spamlog(&scfg, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
@@ -3723,7 +3723,7 @@ static void smtp_thread(void* arg)
 				length=filelength(fileno(msgtxt))-ftell(msgtxt);
 
 				if(startup->max_msg_size && length>startup->max_msg_size) {
-					lprintf(LOG_WARNING,"%04d %s %s !Message size (%lu) from %s to %s exceeds maximum: %u bytes"
+					lprintf(LOG_WARNING,"%04d %s %s !Message size (%lu) from %s to <%s> exceeds maximum: %u bytes"
 						,socket, client.protocol, client_id, length, sender_info, rcpt_addr, startup->max_msg_size);
 					sockprintf(socket,client.protocol,session, "552 Message size (%lu) exceeds maximum: %u bytes"
 						,length,startup->max_msg_size);
@@ -3850,11 +3850,11 @@ static void smtp_thread(void* arg)
 					if(is_spam || ((startup->options&MAIL_OPT_DNSBL_IGNORE) && (dnsbl_recvhdr || dnsbl_result.s_addr))) {
 						free(msgbuf);
 						if(is_spam)
-							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED SPAM MESSAGE from %s to %s (%lu total)"
+							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED SPAM MESSAGE from %s to <%s> (%lu total)"
 								,socket, client.protocol, client_id, sender_info, rcpt_addr, ++stats.msgs_ignored);
 						else {
 							SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED MAIL from %s to %s from server: %s (%lu total)"
+							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED MAIL from %s to <%s> from server: %s (%lu total)"
 								,socket, client.protocol, client_id, sender_info, rcpt_addr, str, ++stats.msgs_ignored);
 							spamlog(&scfg, (char*)client.protocol, "IGNORED"
 								,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
@@ -6334,8 +6334,8 @@ void DLLCALL mail_server(void* arg)
 
 					if(connections - logins >= (int)startup->max_concurrent_connections
 						&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
-						lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections without login (%u) exceeded by host: %s (%lu total)"
- 							,client_socket, servprot, startup->max_concurrent_connections, host_ip, ++stats.connections_exceeded);
+						lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
+ 							,client_socket, servprot, host_ip, startup->max_concurrent_connections, ++stats.connections_exceeded);
 						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
 						mail_close_socket(&client_socket, &session);
 						continue;
