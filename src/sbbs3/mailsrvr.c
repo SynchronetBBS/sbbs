@@ -108,7 +108,7 @@ static int		mailproc_count;
 static js_server_props_t js_server_props;
 static link_list_t current_logins;
 static link_list_t current_connections;
-static savemsg_mutex_created = false;
+static bool savemsg_mutex_created = false;
 static pthread_mutex_t savemsg_mutex;
 
 static const char* servprot_smtp = "SMTP";
