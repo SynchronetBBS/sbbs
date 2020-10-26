@@ -108,6 +108,8 @@ static int		mailproc_count;
 static js_server_props_t js_server_props;
 static link_list_t current_logins;
 static link_list_t current_connections;
+static savemsg_mutex_created = false;
+static pthread_mutex_t savemsg_mutex;
 
 static const char* servprot_smtp = "SMTP";
 static const char* servprot_submission = "SMTP";
@@ -3873,7 +3875,7 @@ static void smtp_thread(void* arg)
 					safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", rcpt_name, angle_bracket(tmp, sizeof(tmp), rcpt_addr));
 				lprintf(LOG_DEBUG,"%04d %s %s Saving message data from %s to %s"
 					,socket, client.protocol, client_id, sender_info, rcpt_info);
-
+				pthread_mutex_lock(&savemsg_mutex);
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
 				/* creates message data, but no header or index records (since msg.to==NULL) */
@@ -3884,6 +3886,7 @@ static void smtp_thread(void* arg)
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
+					pthread_mutex_unlock(&savemsg_mutex);
 					lprintf(LOG_CRIT,"%04d %s %s !ERROR %d (%s) saving message from %s to %s"
 						,socket, client.protocol, client_id, i, smb.last_error, sender_info, rcpt_info);
 					sockprintf(socket,client.protocol,session, "452 ERROR %d (%s) saving message"
@@ -4045,6 +4048,7 @@ static void smtp_thread(void* arg)
 				smb_close_da(&smb);
 #endif
 				smb_close(&smb);
+				pthread_mutex_unlock(&savemsg_mutex);
 				continue;
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
@@ -5956,6 +5960,10 @@ static void cleanup(int code)
 	mail_set=NULL;
 	terminated=TRUE;
 
+	while(savemsg_mutex_created && pthread_mutex_destroy(&savemsg_mutex)==EBUSY)
+		mswait(1);
+	savemsg_mutex_created = false;
+
 	update_clients();	/* active_clients is destroyed below */
 
 	listFree(&current_logins);
@@ -6284,6 +6292,9 @@ void DLLCALL mail_server(void* arg)
 			semfile_list_check(&initialized,recycle_semfiles);
 			semfile_list_check(&initialized,shutdown_semfiles);
 		}
+
+		pthread_mutex_init(&savemsg_mutex, NULL);
+		savemsg_mutex_created = true;
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
