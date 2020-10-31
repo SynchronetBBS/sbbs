@@ -312,7 +312,6 @@ function update_sbbsecho_ini(hub, link, domain, echolist_fname, areamgr)
 	var section = "node:" + fidoaddr.to_str(hub);
 
 	if (domain) {
-		writeln("IF " + section);
 		if (file.iniGetObject(section)) {
 			if (confirm("Migrate " + section + " to " + section + "@" + domain)) {
 				if (!file.iniSetObject(section + "@" + domain, link)) {
