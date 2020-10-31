@@ -42,14 +42,15 @@ if(options.email_validation == true) {
 // Check if we're being asked to auto-run an external (web interface external programs section uses this)
 if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
     var external_code = console.terminal.substring(5);
-    if (!bbs.exec_xtrn(external_code)) {
-        alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
-    }
+    load('xtrn_sec.js', external_code);
+    //if (!bbs.exec_xtrn(external_code)) {
+    //    alert(log(LOG_ERR,"!ERROR Unable to launch external: '" + external_code + "'"));
+    //}
     bbs.hangup();
 	exit();
 }
 //Disable spinning cursor at pause prompts
-//bbs.node_settings|=NM_NOPAUSESPIN	
+//bbs.node_settings|=NM_NOPAUSESPIN
 
 if(user.security.restrictions&UFLAG_G) {
 	while(bbs.online) {
@@ -190,7 +191,7 @@ if(options.rlogin_xtrn_menu
 	bbs.xtrn_sec();
 	bbs.hangup();
 } else if(!(user.security.restrictions&UFLAG_G)
-	&& console.term_supports(USER_ANSI) 
+	&& console.term_supports(USER_ANSI)
 	&& options.set_avatar == true) {
 	var avatar = bbs.mods.avatar_lib.read(user.number);
 	if(!avatar || (!avatar.data && !avatar.disabled)) {
