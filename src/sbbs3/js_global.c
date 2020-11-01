@@ -1116,6 +1116,37 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_strip_ansi(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		buf = NULL;
+	JSString*	js_str;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
+	HANDLE_PENDING(cx, buf);
+	if(buf==NULL) 
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	strip_ansi(buf);
+	JS_RESUMEREQUEST(cx, rc);
+
+	js_str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
+	if(js_str==NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
 js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -4573,6 +4604,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"strip_ctrl",		js_strip_ctrl,		1,	JSTYPE_STRING,	JSDOCSTR("text")
 	,JSDOCSTR("strip control characters from string, returns modified string")
 	,310
+	},		
+	{"strip_ansi",		js_strip_ansi,		1,	JSTYPE_STRING,	JSDOCSTR("text")
+	,JSDOCSTR("strip all ANSI terminal control sequences from string, returns modified string")
+	,31802
 	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("text")
 	,JSDOCSTR("strip all extended-ASCII characters from string, returns modified string")
