@@ -700,8 +700,11 @@ if(network.echolist
 			file.write(contents);
 			file.close();
 
-			// try to extract on linux,
-			if (system.exec("%@unzip -CLo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
+			// try to extract
+			var prefix = "";
+			if(system.platform == "Win32")
+				prefix = system.exec_dir;
+			if (system.exec(prefix + "unzip -CLjo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
 				print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
 			}
 
