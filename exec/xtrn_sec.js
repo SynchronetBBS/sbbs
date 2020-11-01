@@ -91,7 +91,18 @@ function exec_xtrn(prog)
 	load('fonts.js', 'xtrn:' + prog.code);
 
 	// execute external program
-	bbs.exec_xtrn(prog.code);
+	// if doorscan exists, run it
+	if (file_exists("../xtrn/doorscan/doorscan.js")) {
+		try {
+			// when running multiple times, it loses the cwd so explicitly set system.exec_dir
+			js.exec(system.exec_dir + "../xtrn/doorscan/doorscan.js", {}, "run", prog.code);
+		} catch(e) {
+			log("Error running " + prog.code + " " + e);
+		}
+	} else {
+		// no doorscan, launch door normally
+		bbs.exec_xtrn(prog.code);
+	}
 
 	// reset console attributes after program is done
 	console.attributes = 0;
@@ -504,16 +515,17 @@ function external_section_menu_custom(menuid)
 				console.clear();
 				break;
 			}
-			for (i in menuitemsfiltered) {
-				var menutarget = menuitemsfiltered[i].target.toLowerCase();
-				var menuinput = menuitemsfiltered[i].input.toString().toLowerCase();
+
+			menuitemsfiltered.some(function (menuitemfiltered) {
+				var menutarget = menuitemfiltered.target.toLowerCase();
+				var menuinput = menuitemfiltered.input.toString().toLowerCase();
 
 				if (menuinput == keyin) {
-					switch (menuitemsfiltered[i].type) {
+					switch (menuitemfiltered.type) {
 						// custom menu, defined in xtrnmenu.json
 						case 'custommenu':
 							external_section_menu_custom(menutarget);
-							break;
+							return true;
 						// external program section
 						case 'xtrnmenu':
 							var n;
@@ -522,7 +534,7 @@ function external_section_menu_custom(menuid)
 								if (xtrn_area.sec_list[n].code.toLowerCase() == menutarget) {
 									menufound = true;
 									external_program_menu(n);
-									break;
+									return true;
 								}
 							}
 
@@ -535,13 +547,14 @@ function external_section_menu_custom(menuid)
 							// run the external program
 							if (typeof xtrn_area.prog[menutarget] !== "undefined") {
 								exec_xtrn(xtrn_area.prog[menutarget]);
+								return true;
 							} else {
 								doerror(options.custom_menu_program_not_found_msg.replace('%PROGRAMID%', menutarget));
 							}
 							break;
 					} //switch
 				} // if menu item matched keyin
-			} // foreach menu item
+			}); // foreach menu item
 		} // if keyin
 	} // main bbs.online loop
 }
