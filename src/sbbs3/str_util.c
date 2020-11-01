@@ -155,6 +155,7 @@ char* prep_file_desc(const char *str, char* dest)
 
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
+	strip_ansi(dest);
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0) {
 			i++;
