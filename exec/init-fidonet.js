@@ -24,13 +24,14 @@
 
 const REVISION = "$Revision: 1.30 $".split(' ')[1];
 require('sbbsdefs.js', 'SUB_NAME');
+const temp_node = 9999;
 var netname;
 var netdns;
 var netzone = parseInt(argv[0], 10);
 if(!netzone)
 	netname = argv[0];
 var echolist_url = argv[1];
-// If you want your Othernet listed here, please provide information
+// If you want your Othernet listed in init-fidonet.ini, please provide information
 // and an http[s] URL to your official EchoList
 var network;
 var fidoaddr = load({}, 'fidoaddr.js');
@@ -457,7 +458,8 @@ if(netname) {
 	print("Network name: " + netname);
 	print("Network zone: " + netzone);
 	print("Network info: " + network.info);
-	print("Network domain: " + domain);
+	if(domain)
+		print("Network domain: " + domain);
 	if (network.pack) {
 		print("Network pack: " + network.pack);
 	}
@@ -478,7 +480,7 @@ if(!msgs_cnf) {
 	exit(1);
 }
 
-var your = {zone: NaN, net: NaN, node: 9999, point: 0};
+var your = {zone: NaN, net: NaN, node: temp_node, point: 0};
 for(var i = 0; i < system.fido_addr_list.length; i++) {
 	var addr = fidoaddr.parse(system.fido_addr_list[i]);
 	if(!addr || addr.zone != netzone)
@@ -551,7 +553,7 @@ while(!confirm("Your node address is " + fidoaddr.to_str(your)) && !aborted()) {
 	while((isNaN(your.net) || your.net < 1) && !aborted())
 		your.net = parseInt(prompt("Your network number (e.g. " + hub.net + ")"));
 	while((isNaN(your.node) || your.node < 1) && !aborted())
-		your.node = parseInt(prompt("Your node number (e.g. 9999 for temporary node)"));
+		your.node = parseInt(prompt("Your node number (e.g. " + temp_node + " for temporary node)"));
 	while((isNaN(your.point)) && !aborted())
 		your.point = parseInt(prompt("Your point number (i.e. 0 for a normal node)"));
 }
@@ -578,7 +580,7 @@ while(((!link.TicFilePwd && (link.TicFilePwd !== "")) || !confirm("Your TIC File
 /***********************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (Internet) */
 /***********************************************/
-if(your.node === 9999 && network.email && network.email.indexOf('@') > 0
+if(your.node === temp_node && network.email && network.email.indexOf('@') > 0
 	&& confirm("Send a node number application to " + network.email)) {
 	var result = send_app_netmail(network.email);
 	if(typeof result !== 'boolean') {
@@ -789,7 +791,7 @@ if(!file_touch(system.ctrl_dir + "recycle"))
 /******************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (FTN) */
 /******************************************/
-if(your.node === 9999) {
+if(your.node === temp_node) {
 	if(confirm("Send a node number application to "	+ fidoaddr.to_str(hub))) {
 		var result = send_app_netmail(fidoaddr.to_str(hub));
 		if(typeof result !== 'boolean') {
@@ -812,7 +814,7 @@ if(your.node === 9999) {
 /************************/
 /* SEND AREAFIX NETMAIL */
 /************************/
-if(your.node !== 9999
+if(your.node !== temp_node
 	&& confirm("Send an AreaFix request to link EchoMail areas with "
 		+ fidoaddr.to_str(hub))) {
 	var msgbase = new MsgBase("mail");
@@ -877,7 +879,7 @@ add_gfile("binkstats.ini", "Detailed BinkP (mail/file transfer) statistics");
 /***********************/
 print(netname + " initial setup completely successfully.");
 print();
-if(your.node == 9999) {
+if(your.node == temp_node) {
 	print("You used a temporary node address (" + fidoaddr.to_str(your) +
 		"). You will need to update your");
 	print("SCFG->Networks->FidoNet->Address once your permanent node address has been");
