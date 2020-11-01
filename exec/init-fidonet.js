@@ -273,15 +273,11 @@ function get_linked_node(addr, domain)
 	var file = new File("sbbsecho.ini");
 	if(!file.open("r"))
 		return false;
-	var result;
-	if(domain) {
+	var result = false;
+	if(domain)
 		result = file.iniGetObject("node:" + addr + "@" + domain);
-		if (!result) {
-			result = file.iniGetObject("node:" + addr);
-		}
-	} else {
+	if (!result)
 		result = file.iniGetObject("node:" + addr);
-	}
 	file.close();
 	return result;
 }
