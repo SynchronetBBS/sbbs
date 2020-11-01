@@ -39,7 +39,7 @@ if (typeof argv[0] !== "undefined") {
 			external_program_menu(sec.index);
 			return true;
 		}
-		
+
 		sec.prog_list.some( function(prog) {
 			if (argv[0].toLowerCase() == prog.code) {
 				exec_xtrn(prog);
@@ -49,16 +49,16 @@ if (typeof argv[0] !== "undefined") {
 	});
 } else {
 	//if (xtrn_area.sec_list.length == 1) {
-		// if only one section defined, display it
+	// if only one section defined, display it
 	//	external_program_menu(0);
 	//} else {
-		// display all sections menu
+	// display all sections menu
 
-		//if (typeof menuconfig.menus !== "undefined") {
-			external_section_menu_custom();
-		//} else {
-		//	external_section_menu();
-		//s}
+	//if (typeof menuconfig.menus !== "undefined") {
+	external_section_menu_custom();
+	//} else {
+	//	external_section_menu();
+	//s}
 	//}
 }
 
@@ -73,9 +73,11 @@ function exec_xtrn(prog)
 			if (!confirm(options.prompt_on_info_fmt)) {
 				return;
 			}
+		} else {
+			console.pause();
 		}
 	}
-	
+
 	console.attributes = LIGHTGRAY;
 
 	if (options.clear_screen_on_exec) {
@@ -87,12 +89,10 @@ function exec_xtrn(prog)
 	}
 
 	load('fonts.js', 'xtrn:' + prog.code);
-	
-	console.pause();
-	
+
 	// execute external program
 	bbs.exec_xtrn(prog.code);
-	
+
 	// reset console attributes after program is done
 	console.attributes = 0;
 	console.attributes = LIGHTGRAY;
@@ -111,15 +111,15 @@ function exec_xtrn(prog)
 // Display a specific section menu, listing all of the external programs in it
 function external_program_menu(xsec)
 {
-    var i, j;
+	var i, j;
 
 	while (bbs.online) {
 
 		console.aborted = false;
-	    if (user.security.restrictions&UFLAG_X) {
-		    write(options.restricted_user_msg);
-		    break;
-	    }
+		if (user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
@@ -144,13 +144,13 @@ function external_program_menu(xsec)
 		if (bbs.menu_exists("xtrn" + secnum + "_head")) {
 			bbs.menu("xtrn" + secnum + "_head");
 		} else if (bbs.menu_exists("xtrn_" + xsec + "_head")) {
-            bbs.menu("xtrn_" + xsec + "_head");
-        }
+			bbs.menu("xtrn_" + xsec + "_head");
+		}
 
-        if (bbs.menu_exists("xtrn" + secnum)) {
-            bbs.menu("xtrn" + secnum);
-        } else if (bbs.menu_exists("xtrn_" + xsec)) {
-            bbs.menu("xtrn_" + xsec);
+		if (bbs.menu_exists("xtrn" + secnum)) {
+			bbs.menu("xtrn" + secnum);
+		} else if (bbs.menu_exists("xtrn_" + xsec)) {
+			bbs.menu("xtrn_" + xsec);
 		} else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
 
@@ -162,22 +162,22 @@ function external_program_menu(xsec)
 
 			// title line
 			if (options.title_fmt != "none") {
-                write(options.title_fmt);
-                if (multicolumn) {
-                    write(options.multicolumn_separator);
-                    write(options.title_fmt);
-                }
-                console.crlf();
-            }
+				write(options.title_fmt);
+				if (multicolumn) {
+					write(options.multicolumn_separator);
+					write(options.title_fmt);
+				}
+				console.crlf();
+			}
 
 			// underline line
 			if (options.underline_fmt != "none") {
-                write(options.underline_fmt);
-                if (multicolumn) {
-                    write(options.multicolumn_separator);
-                    write(options.underline_fmt);
-                }
-                console.crlf();
+				write(options.underline_fmt);
+				if (multicolumn) {
+					write(options.multicolumn_separator);
+					write(options.underline_fmt);
+				}
+				console.crlf();
 			}
 
 			var n;
@@ -288,7 +288,7 @@ function external_section_menu()
 function external_section_menu_custom(menuid)
 {
 	var i, menucheck, menuobj, item_multicolumn_format, item_singlecolumn_format,
-        cost, multicolumn, menuitemsfiltered = [];
+		cost, multicolumn, menuitemsfiltered = [];
 	var keylimit = 1; // max chars allowed on menu selection
 
 	menuobj = ExternalMenus.getMenu(menuid);
@@ -342,7 +342,7 @@ function external_section_menu_custom(menuid)
 	} else {
 		which = options.which;
 	}
-	
+
 	if ((typeof menuobj.singlecolumn_height !== "undefined") && menuobj.singlecolumn_height) {
 		singlecolumn_height = menuobj.singlecolumn_height;
 	} else {
@@ -377,8 +377,8 @@ function external_section_menu_custom(menuid)
 		bbs.node_action = NODE_XTRN;
 		bbs.node_sync();
 
-        menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
-        
+		menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
+
 		if (bbs.menu_exists("xtrn_custom_" + menuid)) {
 			// if file exists text/menu/xtern_custom_(menuid).[rip|ans|mon|msg|asc], then display that instead
 			bbs.menu("xtrn_custom_" + menuid);
@@ -391,23 +391,23 @@ function external_section_menu_custom(menuid)
 
 			// title line
 			if (title_format != "none") {
-                write(title_format);
-                if (multicolumn) {
-                    write(multicolumn_separator);
-                    write(title_format);
-                }
-                console.crlf();
-            }
+				write(title_format);
+				if (multicolumn) {
+					write(multicolumn_separator);
+					write(title_format);
+				}
+				console.crlf();
+			}
 
 			// underline line
 			if (underline_format != "none") {
-                write(underline_format);
-                if (multicolumn) {
-                    write(multicolumn_separator);
-                    write(underline_format);
-                }
-                console.crlf();
-            }
+				write(underline_format);
+				if (multicolumn) {
+					write(multicolumn_separator);
+					write(underline_format);
+				}
+				console.crlf();
+			}
 
 			// n is the number of items for the 1st column
 			var n;
@@ -416,54 +416,54 @@ function external_section_menu_custom(menuid)
 			} else {
 				n = menuitemsfiltered.length;
 			}
-			
-            // j is the index for each menu item on 2nd column
+
+			// j is the index for each menu item on 2nd column
 			var j = n; // start j at the first item for 2nd column
 			for (i = 0; i < n && !console.aborted; i++) {
-			    cost = "";
+				cost = "";
 
-			    if (menuitemsfiltered[i].type == "xtrnprog") {
-			        // if its an external program, get the cost
-                    cost = xtrn_area.prog[menuitemsfiltered[i].target.toLowerCase()].cost;
-                }
+				if (menuitemsfiltered[i].type == "xtrnprog") {
+					// if its an external program, get the cost
+					cost = xtrn_area.prog[menuitemsfiltered[i].target.toLowerCase()].cost;
+				}
 
-                console.add_hotspot(menuitemsfiltered[i].input);
-				
+				console.add_hotspot(menuitemsfiltered[i].input);
+
 				if (menuitemsfiltered[i].input.toString().length > keylimit) {
-				    keylimit = menuitemsfiltered[i].input.toString().length;
-                }
+					keylimit = menuitemsfiltered[i].input.toString().length;
+				}
 
 				// allow overriding format on a per-item basis
-                // great for featuring a specific game
+				// great for featuring a specific game
 				item_multicolumn_format = menuitemsfiltered[i].multicolumn_fmt
-                    ? convert_input_literals_to_js(menuitemsfiltered[i].multicolumn_fmt) : multicolumn_format;
-                item_singlecolumn_format = menuitemsfiltered[i].singlecolumn_fmt
-                    ? convert_input_literals_to_js(menuitemsfiltered[i].singlecolumn_fmt) : singlecolumn_format;
+					? convert_input_literals_to_js(menuitemsfiltered[i].multicolumn_fmt) : multicolumn_format;
+				item_singlecolumn_format = menuitemsfiltered[i].singlecolumn_fmt
+					? convert_input_literals_to_js(menuitemsfiltered[i].singlecolumn_fmt) : singlecolumn_format;
 
 				printf(multicolumn ? item_multicolumn_format : item_singlecolumn_format,
-                    menuitemsfiltered[i].input.toString().toUpperCase(),
-                    menuitemsfiltered[i].title,
-                    cost
+					menuitemsfiltered[i].input.toString().toUpperCase(),
+					menuitemsfiltered[i].title,
+					cost
 				);
 
 				if (multicolumn) {
 					if ((typeof(menuitemsfiltered[j]) !== "undefined")) {
-                        // allow overriding format on a per-item basis
-                        // great for featuring a specific game
-                        item_multicolumn_format = menuitemsfiltered[j].multicolumn_fmt
-                            ? convert_input_literals_to_js(menuitemsfiltered[j].multicolumn_fmt) : multicolumn_format;
-                        item_singlecolumn_format = menuitemsfiltered[j].singlecolumn_fmt
-                            ? convert_input_literals_to_js(menuitemsfiltered[j].singlecolumn_fmt) : singlecolumn_format;
+						// allow overriding format on a per-item basis
+						// great for featuring a specific game
+						item_multicolumn_format = menuitemsfiltered[j].multicolumn_fmt
+							? convert_input_literals_to_js(menuitemsfiltered[j].multicolumn_fmt) : multicolumn_format;
+						item_singlecolumn_format = menuitemsfiltered[j].singlecolumn_fmt
+							? convert_input_literals_to_js(menuitemsfiltered[j].singlecolumn_fmt) : singlecolumn_format;
 
-                        if (menuitemsfiltered[i].input.length > keylimit) {
-                            keylimit = menuitemsfiltered[i].input.length;
-                        }
-                        write(multicolumn_separator);
+						if (menuitemsfiltered[i].input.length > keylimit) {
+							keylimit = menuitemsfiltered[i].input.length;
+						}
+						write(multicolumn_separator);
 						console.add_hotspot(menuitemsfiltered[j].input);
 						printf(item_multicolumn_format,
-                            menuitemsfiltered[j].input.toString().toUpperCase(),
+							menuitemsfiltered[j].input.toString().toUpperCase(),
 							menuitemsfiltered[j].title,
-                            cost
+							cost
 						);
 					} else {
 						write(multicolumn_separator);
@@ -485,17 +485,17 @@ function external_section_menu_custom(menuid)
 
 		keyin = console.getkey(K_NONE);
 		// if there are 2 or 3 letter input options, then give the user a chance to type the 2nd and third chars
-        // unfortunately, this will introduce latency for the single key options
-        // and if the typist is slow, they are going to get the single key menu option selected instead if one exists
+		// unfortunately, this will introduce latency for the single key options
+		// and if the typist is slow, they are going to get the single key menu option selected instead if one exists
 		if (keylimit > 1) {
-            // check for possible second digit (on 2 and 3 char inputs)
-            var keyin2 = console.inkey(K_NONE, 1000);
-            keyin = keyin + keyin2;
-        } else if (keylimit == 3) {
-		    // check for possible third digit
-		    var keyin3 = console.inkey(K_NONE, 1000);
-		    keyin = keyin + keyin3;
-        }
+			// check for possible second digit (on 2 and 3 char inputs)
+			var keyin2 = console.inkey(K_NONE, 1000);
+			keyin = keyin + keyin2;
+		} else if (keylimit == 3) {
+			// check for possible third digit
+			var keyin3 = console.inkey(K_NONE, 1000);
+			keyin = keyin + keyin3;
+		}
 		keyin = keyin.toLowerCase();
 
 		if (keyin) {
