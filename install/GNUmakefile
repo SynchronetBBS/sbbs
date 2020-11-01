@@ -160,13 +160,13 @@ baja:	run sbbs3
 	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
 
 sbj:	run
-	$(MAKE) -C $(REPODIR)/xtrn/sbj $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
 
 dpoker:	run
-	$(MAKE) -C $(REPODIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(SBBSDIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 tbd:	run
-	$(MAKE) -C $(REPODIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 gtkuseredit:	src
 ifdef USE_GLADE
