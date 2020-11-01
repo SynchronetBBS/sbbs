@@ -705,11 +705,7 @@ if(network.echolist
 			file.close();
 
 			// try to extract on linux,
-			if (system.platform == 'Linux') {
-				if (system.exec("unzip -CLo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
-					print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
-				}
-			} else if (system.platform == 'Win32') {
+			if (system.exec("%@unzip -CLo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
 				print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
 			}
 
