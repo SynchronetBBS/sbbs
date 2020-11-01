@@ -1,0 +1,264 @@
+
+[About]
+
+The enhanced custom menus for external programs gives you more power and flexibility than the built-in
+synchronet external menu system. The custom menus lets you:
+-Have any number of levels of menus
+-Specify formatting and other options for each custom menu independently
+-Specify alpha-numeric input keys for custom menu items
+-Link to any other menu, external program section, or external program from a menu (mix and match)
+-Sort by input, title, or manual-order
+
+The display logic for displaying to the end user is contained within the xtrn_sec.js, while the configuration
+is contained in ctrl/xtrnmenu.json. A program in exec called xtrnmenucfg.js can be used to manage the menus
+(you can also edit the json file by hand).
+
+To get started, go to your exec folder and run: ./jsexec ./xtrnmenucfg.js
+
+The main top-level menu is configured with the key "main".
+
+All options are inherited from modopts.ini, but you can override any of these on a per-custom menu basis.
+
+Custom menus can contain and point to other custom menus (type custommenu), the built-in
+synchronet external program section menus (type xtrnsection), or an external program (type xtrnprog).
+
+Input keys can be 1-3 chars and can be anything but "Q" (which is used for quit). You can also leave
+the keys blank and it will use auto-incrementing numbers like the built-in synchronet external menus.
+
+Custom menus can also be configured with access strings. To configure access strings for section menus
+or external programs, use scfg.
+
+NOTE: The custom menus are not compatible with Deuce's Lightbar Shell as it does not use xtrn_sec.js.
+
+[Customizing Custom Menus]
+
+For Custom Menus, its pretty obvious to change any of the settings using xtrnmenucfg.js. You can also
+create files as:
+
+text/menu/xtern_custom_(menuid).[utf8|rip|ans|mon|msg|asc]
+
+If you do not have custom menus setup, you can use for the main menu:
+text/menu/xtern_sec.[rip|ans|mon|msg|asc]
+
+NOTE: If you use your own file, you will have to modify it every time you add or remove a menu item.
+
+[Customizing Section Menus]
+
+For Section Menus, everything is done in scfg. You simply point to a section menu from a custom menu.
+You are limited to using the auto-generated number inputs, and cannot change any formatting other than
+the default system (modopts.ini). You can however use your own file at:
+
+text/menu/xtern(secnum)_head.[utf8|rip|ans|mon|msg|asc]
+text/menu/xtern(secnum).[utf8|rip|ans|mon|msg|asc]
+
+-or-
+
+text/menu/xtern_(seccode)_head.[utf8|rip|ans|mon|msg|asc]
+text/menu/xtern_(seccode).[utf8|rip|ans|mon|msg|asc]
+
+NOTE: If you use your own file, you will have to modify it every time you add or remove an external program.
+
+[Customizing External Programs]
+
+External program options including access string and cost is done in scfg.
+
+You can set an option clear_screen_on_exec to clear the screen when the door is run.
+
+You can display a custom file before launching an external program by creating the file:
+text/menu/xtrn/(code).[utf8|rip|ans|mon|msg|asc]
+
+
+[Cost]
+
+To display execution cost, you just need to modify the format options to include it:
+
+title_fmt
+"\u0001n\u0001cKey \u0001h\u00b3\u0001n\u0001c Name                       Cost "
+
+custom_menu_multicolumn_fmt AND multicolumn_fmt
+"\u0001h\u0001c%3.3s \u00b3 \u0001n\u0001c%-26.26s\u0001h %5u"
+
+custom_menu_singlecolumn_fmt AND singlecolumn_fmt
+"\u0001h\u0001c%3.3s \u00b3 \u0001n\u0001c%-26.26s\u0001h %5u"
+
+
+[Options]
+
+In you opt to use the built-in menu generation, you can alter the look by setting the following in modopts.ini or
+by setting settings on a specific custom menu with xtrenmenucfg.js. Note if you set it on a specific menu, it will only
+apply to that menu only (and no target menus), and you can thus have a different look for each menu. However,
+you are not able to apply formatting to the synchronet built-in section menus except by using modopts.ini
+
+Here are the defaults, so you can copy these and then customize them as you wish.
+
+If you place these into modopts.ini, do not use surrounding quotes.
+Tip: If you use an editor that trims ending whitespace, add a color code to the end of your string like "\u0001h\u0001c"
+ to preserve the whitespace.
+
+multicolumn
+// this will display options in two columns...if off, it will only do a single column
+true
+
+multicolumn_separator
+// this is the character that is printed between the columns
+" "
+
+multicolumn_fmt
+// this is used to print each column (except the header)
+// defaults to XtrnProgLstFmt from text.dat
+// it contains ctrl-a (\u0001) color codes, see http://wiki.synchro.net/custom:ctrl-a_codes
+//    \u0001h\u0001c = high-intensity cyan
+//    %3u = printf syntax: 3 char unsigned decimal integer
+//    \u00b3 = ascii 179/hex b3 = vertical line
+//    \u0001n\u0001c = normal cyan
+//    -32.32s = printf syntax: -32 (left justify) .32 (32 char max) s (string)
+//    \u0001h = high intensity
+"\u0001h\u0001c%3u \u00b3 \u0001n\u0001c%-32.32s\u0001h "
+
+singlecolumn_fmt
+// like the multicolumn format, only single
+// does not use any default from text.dat
+//    \u0001h\u0001c = high-intensity cyan
+//    %3u = printf syntax: 3 char unsigned decimal integer
+//    \u00b3 = ascii 179/hex b3 = vertical line
+//    \u0001n\u0001c = normal cyan
+//    %s = printf syntax: string
+//    \u0001h = high intensity
+"\u0001h\u0001c%3u \u00b3 \u0001n\u0001c%s\u0001h "
+
+singlecolumn_margin
+// this is solely used to calculate the singlecolumn height
+7
+
+singlecolumn_height
+
+// if not specified, defaults to console.screen_rows - singlecolumn_margin
+
+restricted_user_msg
+// defaults to R_ExternalPrograms from text.dat
+"\r\n\r\nYou can't use the external programs.\r\n"
+
+restricted_user_msg_noconsole
+// Like restricted_user_msg, but for non-console (web)
+
+no_programs_msg
+// defaults to NoXtrnPrograms from text.dat
+"\r\n\r\nNo external programs available.\r\n"
+
+no_programs_msg_noconsole
+// Like no_programs_msg, but for non-console (web)
+
+header_fmt
+// defaults to XtrnProgLstHdr from text.dat
+// this is the top of the menu
+// it contains ctrl-a (\u0001) color codes, see http://wiki.synchro.net/custom:ctrl-a_codes
+//    \u0001n\u0001c = normal cyan, then high-intensity
+//    %s = printf format: string
+//    \u0001n\u0001c = normal cyan
+//    text
+//    \r\n\r\n = two line feeds
+"\u0001n\u0001c\u001h%s \u0001n\u0001cExternal Programs:\r\n\r\n"
+
+sort
+// if true, sorts the external programs alphabetically by name
+// if false, sorts by the order they are defined
+// you can override this with more options for custom menus (by input, by name, or by order) in the xtrnmenucfg.js
+false
+
+title_fmt
+(previously called titles)
+// the column headers
+// defaults to XtrnProgLstTitles from text.dat
+// note the use of white space to fill the column width
+// if you don't want to have a title, just put the word none (ie title_format=none)
+// it contains ctrl-a (\u0001) color codes, see http://wiki.synchro.net/custom:ctrl-a_codes
+//    \u0001n\u0001c = normal cyan
+//    Num text for column header
+//    \u0001h = high intensity (cyan)
+//    \u00b3 = ascii 179/hex b3 = vertical line
+//    \u0001n\u0001c = normal cyan
+//    Name text for column header
+"\u0001n\u0001cNum \u0001h\u00b3\u0001n\u0001c Name                             "
+
+underline_fmt
+(previously underline)
+// this is the line between the column header and program/menu item list
+// defaults to XtrnProgLstUnderline from text.dat
+// if you don't want to have an underline, just put the word none (ie underline_fmt=none)
+// it contains ctrl-a (\u0001) color codes, see http://wiki.synchro.net/custom:ctrl-a_codes
+//    \u0001h\u0001c = high intensity cyan
+//    \u00c4 = (repeated 4 times) = ascii 196/hex c4 = horizontal line
+//    \u00c5 = ascii 197/c5 = cross
+//    \u00c4 = (repeated 34 times) = ascii 196/hex c4 = horizontal line
+"\u0001h\u0001c\u00c4\u00c4\u00c4\u00c4\u00c5\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4\u00c4",
+
+which
+// this is the selection prompt at the bottom of the menu
+// defaults to WhichXtrnProg from text.dat
+// it contains ctrl-a (\u0001) codes, see http://wiki.synchro.net/custom:ctrl-a_codes
+//    \r\n = line feed
+//    \u0001- = pop attr (restore attributes from stack, or optimized normal if no attribs saved/pushed)
+//    \u0001c = cyan
+//    Which or
+//    \u0001h = high intensity (cyan)
+//    ~Q = hungry-hotspot, letter Q
+//    \u0001n\u0001c = normal cyan
+//    uit:
+//    \u0001h = high intensity
+"\r\n\u0001-\u0001cWhich or \u0001h~Q\u0001n\u0001cuit: \u0001h"
+
+autoexec
+// auto-execute the only available program when entering a program section
+
+clear_screen
+// clear screen on menu display
+true
+
+clear_screen_on_exec
+// Clear the (remote) terminal screen before executing a program
+false
+
+prompt_on_info
+// If displaying an info file (text/menu/xtrn/CODE.[ext]), prompt if they wish to continue (to enter the game)
+false
+
+prompt_on_info_fmt
+// Formatting for the continue prompt
+\r\n\u0001n\u0001cDo you wish to continue
+
+
+custom_menu_not_found_msg
+// Text to display when a menu item is not found
+"Menu %MENUID% not found"
+
+custom_menu_program_not_found_msg === undefined) {
+// Text to display when a program is not found from a custom menu
+"Program %PROGRAMID% not found"
+
+custom_menu_multicolumn_fmt
+// this is different than multicolumn_fmt because multicolumn_fmt has a built-in
+// printf for number and thus wouldn't be able to display alpha inputs
+// it contains ctrl-a (\u0001) color codes, see http://wiki.synchro.net/custom:ctrl-a_codes
+//    \u0001h\u0001c = high-intensity cyan
+//    %3.3s = printf syntax: 3 char string max
+//    \u00b3 = ascii 179/hex b3 = vertical line
+//    \u0001n\u0001c = normal cyan
+//    -32.32s = printf syntax: -32 (left justify) .32 (32 char max) s (string)
+//    \u0001h = high intensity
+"\u0001h\u0001c%3.3s \u00b3 \u0001n\u0001c%-32.32s\u0001h "
+
+custom_menu_singlecolumn_fmt
+// this is different than singlecolumn_fmt because singlecolumn_fmt has a built-in
+// printf for number and thus wouldn't be able to display alpha inputs
+//    \u0001h\u0001c = high-intensity cyan
+//    %3.3s = printf syntax: 3 char string max
+//    \u00b3 = ascii 179/hex b3 = vertical line
+//    \u0001n\u0001c = normal cyan
+//    s = printf syntax: s (string)
+//    \u0001h = high intensity
+"\u0001h\u0001c%3.3s \u00b3 \u0001n\u0001c%s\u0001h "
+
+[Access Level Requirements]
+
+The access level (access_string) in the menu config only applies to the custom menu items.
+For section menus or external programs, you should set the permissions in the program areas using scfg.
