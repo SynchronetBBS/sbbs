@@ -89,6 +89,25 @@ char* strip_ctrl(const char *str, char* dest)
 	return dest;
 }
 
+char* strip_ansi(char* str)
+{
+	char* s = str;
+	char* d = str;
+	while(*s != '\0') {
+		if(*s == ESC && *(s + 1) == '[') {
+			s += 2;
+			while(*s != '\0' && (*s < '@' || *s > '~'))
+				s++;
+			if(*s != '\0') // Skip "final byte""
+				s++;
+		} else {
+			*(d++) = *(s++);
+		}
+	}
+	*d = '\0';
+	return str;
+}
+
 char* strip_exascii(const char *str, char* dest)
 {
 	int	i,j;
