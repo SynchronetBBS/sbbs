@@ -42,7 +42,7 @@ print("*************************************************************************
 
 var network_list = {};
 var file = new File(js.exec_dir + "init-fidonet.ini");
-if (file.open("r")) {
+if(file.open("r")) {
 	var list = file.iniGetSections("zone:", "zone");
 	for(var i in list)
 		network_list[list[i].substr(5)] = file.iniGetObject(list[i]);
@@ -59,15 +59,15 @@ function aborted()
 function exclude_strings(list, patterns, flags)
 {
 	patterns = [].concat(patterns);
-	if (flags === undefined)
+	if(flags === undefined)
 		flags = 'i';
 	return list.reduce(function (a, c) {
 		var matched = patterns.some(function (e) {
-			if (typeof e == 'string')
+			if(typeof e == 'string')
 				e = new RegExp(e, flags);
 			return c.match(e);
 		});
-		if (!matched)
+		if(!matched)
 			a.push(c);
 		return a;
 	}, []);
@@ -155,8 +155,8 @@ function send_app_netmail(destaddr)
 	body_text += "\r\n";
 	body_text += "My requested AreaFix password is: '" + link.AreaFixPwd + "'\r\n";
 	body_text += "My requested BinkP Session password is: '" + link.SessionPwd + "'\r\n";
-	body_text += "My requested TIC Password is: '" + link.TicFilePwd + "'\r\n";
-	body_text += "My requested Packet Password is: '" + link.PacketPwd + "'\r\n";
+	if(link.TicFilePwd)
+		body_text += "My requested TIC Password is: '" + link.TicFilePwd  + "'\r\n";
 	body_text += "\r\n";
 	body_text += "I will be using 'Type-2+' (FSC-39) packets with no password.\r\n";
 	body_text += "Uncompressed or PKZIP-archived EchoMail bundles will work fine.\r\n";
@@ -191,7 +191,7 @@ function lookup_network(info)
 	}
 
 	var file = new File("sbbsecho.ini");
-	if (!file.open("r")) {
+	if(!file.open("r")) {
 		alert("Error " + file.error + " opening " + file.name);
 		return false;
 	}
@@ -232,13 +232,49 @@ function lookup_network(info)
 	return result;
 }
 
+function get_domain(zone)
+{
+	var file = new File("sbbsecho.ini");
+	if(!file.open("r")) {
+		alert("Error " + file.error + " opening " + file.name);
+		return false;
+	}
+
+	var domain_list = file.iniGetSections("domain:");
+	if(domain_list) {
+		var zonemap = {};
+		for(var i = 0; i < domain_list.length && !result; i++) {
+			var section = domain_list[i];
+			var netname = section.substr(7)
+			var zones = file.iniGetValue(section, "Zones");
+			if(!zones)
+				continue;
+			if(typeof zones == 'number') {
+				if(zone == zones) {
+					return netname;
+				}
+				continue;
+			}
+			zones = zones.split(',');
+			for(var j = 0; j < zones.length; j++) {
+				if(zone == zones[j]) {
+					return netname;
+				}
+			}
+		}
+		file.close();
+		return result;
+	}
+	return "";
+}
+
 function get_linked_node(addr, domain)
 {
 	var file = new File("sbbsecho.ini");
-	if (!file.open("r"))
+	if(!file.open("r"))
 		return false;
 	var result;
-	if (domain) {
+	if(domain) {
 		result = file.iniGetObject("node:" + addr + "@" + domain);
 		if (!result) {
 			result = file.iniGetObject("node:" + addr);
@@ -253,7 +289,7 @@ function get_linked_node(addr, domain)
 function get_binkp_sysop()
 {
 	var file = new File("sbbsecho.ini");
-	if (!file.open("r"))
+	if(!file.open("r"))
 		return false;
 	var result = file.iniGetValue("Binkp", "Sysop");
 	file.close();
@@ -311,25 +347,25 @@ function update_sbbsecho_ini(hub, link, domain, echolist_fname, areamgr)
 	var prefnode;
 	var section = "node:" + fidoaddr.to_str(hub);
 
-	if (domain) {
-		if (file.iniGetObject(section)) {
-			if (confirm("Migrate " + section + " to " + section + "@" + domain)) {
-				if (!file.iniSetObject(section + "@" + domain, link)) {
+	if(domain) {
+		if(file.iniGetObject(section)) {
+			if(confirm("Migrate " + section + " to " + section + "@" + domain)) {
+				if(!file.iniSetObject(section + "@" + domain, link)) {
 					return "Error " + file.error + " writing to " + file.name;
 				} else {
 					file.iniRemoveSection(section);
 				}
 			}
 		} else {
-			if (!file.iniGetObject(section) || confirm("Overwrite hub [" + section + "@" + domain + "] configuration in " + file.name)) {
-				if (!file.iniSetObject(section + "@" + domain, link)) {
+			if(!file.iniGetObject(section) || confirm("Overwrite hub [" + section + "@" + domain + "] configuration in " + file.name)) {
+				if(!file.iniSetObject(section + "@" + domain, link)) {
 					return "Error " + file.error + " writing to " + file.name;
 				}
 			}
 		}
 	} else {
-		if (!file.iniGetObject(section) || confirm("Overwrite hub [" + section + "] configuration in " + file.name)) {
-			if (!file.iniSetObject(section, link)) {
+		if(!file.iniGetObject(section) || confirm("Overwrite hub [" + section + "] configuration in " + file.name)) {
+			if(!file.iniSetObject(section, link)) {
 				return "Error " + file.error + " writing to " + file.name;
 			}
 		}
@@ -374,7 +410,6 @@ else if(netname) {
 	netzone = lookup_network(netname);
 	network = network_list[netzone];
 }
-
 if(!netzone) {
 	for(var zone in network_list) {
 		var desc = "";
@@ -409,6 +444,9 @@ if(network)
 else
 	network = {};
 
+
+var domain = get_domain(netzone);
+
 if(netzone <= 6)
 	netname = "FidoNet";
 else {
@@ -423,8 +461,9 @@ if(netname) {
 	print("Network name: " + netname);
 	print("Network zone: " + netzone);
 	print("Network info: " + network.info);
-	if (network.infopack) {
-		print("Network infopack: " + network.infopack);
+	print("Network domain: " + domain);
+	if (network.pack) {
+		print("Network pack: " + network.pack);
 	}
 	print("Network coordinator: " + network.coord
 		+ (network.email ? (" <" + network.email + ">") : "")
@@ -438,7 +477,7 @@ if(netname) {
 print("Reading Message Area configuration file: msgs.cnf");
 var cnflib = load({}, "cnflib.js");
 var msgs_cnf = cnflib.read("msgs.cnf");
-if (!msgs_cnf) {
+if(!msgs_cnf) {
 	alert("Failed to read msgs.cnf");
 	exit(1);
 }
@@ -458,7 +497,7 @@ for(var i = 0; i < system.fido_addr_list.length; i++) {
 /* DETERMINE YOUR HUB'S ADDRESSS */
 /*********************************/
 var hub = {zone: netzone ? netzone : NaN, net: NaN, node: NaN};
-if (network.addr)
+if(network.addr)
 	hub = fidoaddr.parse(network.addr);
 while(((isNaN(hub.zone) || hub.zone < 1)
 	|| (isNaN(hub.net)  || hub.net < 1)
@@ -467,7 +506,6 @@ while(((isNaN(hub.zone) || hub.zone < 1)
 	hub = fidoaddr.parse(prompt("Your hub's address (zone:net/node)"));
 }
 
-var domain = typeof network.domain !== "undefined" ? network.domain : '';
 var link = get_linked_node(fidoaddr.to_str(hub), domain);
 if(!link)
 	link = {};
@@ -538,10 +576,8 @@ while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixP
 	link.AreaFixPwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
 while((!link.SessionPwd || !confirm("Your BinkP Session Password is '" + link.SessionPwd + "'")) && !aborted())
 	link.SessionPwd = prompt("Your BinkP Session Password (case sensitive)");
-while(((!link.TicFilePwd && (link.TicFilePwd !== "")) || !confirm("Your TIC File Password is '" + link.TicFilePwd + "'")) && !aborted())
-	link.TicFilePwd = prompt("Your TIC File Password (case sensitive)");
-while(((!link.PacketPwd && (link.PacketPwd !== "")) || !confirm("Your Packet Password is '" + link.PacketPwd + "'")) && !aborted())
-	link.PacketPwd = prompt("Your Packet Password (case sensitive)");
+while(((!link.TicFilePwd && (link.TicFilePwd !== "")) || !confirm("Your TIC File Password is '" + (link.TicFilePwd ? link.TicFilePwd : "(not set)") + "'")) && !aborted())
+	link.TicFilePwd = prompt("Your TIC File Password (case sensitive) (optional)");
 
 /***********************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (Internet) */
@@ -604,16 +640,17 @@ if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
 /* DOWNLOAD ECHOLIST */
 /*********************/
 var echolist_fname = file_getname(network.echolist);
+load("http.js");
 if(network.echolist
 	&& (network.echolist.indexOf("http://") == 0 || network.echolist.indexOf("https://") == 0)
 	&& confirm("Download " + netname + " EchoList: " + file_getname(network.echolist))) {
 	var echolist_url = network.echolist;
-	load("http.js");
+
 	while(!aborted()) {
 		while((!echolist_url || !confirm("Download from: " + echolist_url)) && !aborted()) {
 			echolist_url = prompt("Echolist URL");
 		}
-		var file = new File(system.ctrl_dir + echolist_fname);
+		var file = new File(echolist_fname);
 		if(!file.open("w")) {
 			alert("Error " + file.error + " opening " + file.name);
 			exit(1);
@@ -624,37 +661,36 @@ if(network.echolist
 		} catch(e) {
 			alert(e);
 			file.close();
-			file_remove(system.ctrl_dir + file.name);
+			file_remove(file.name);
 			if(!confirm("Try again"))
 				break;
 			continue;
 		}
-		if(http_request.response_code == 200) {
+		if(http_request.response_code == http_request.status.ok) {
 			print("Downloaded " + echolist_url + " to " + system.ctrl_dir + file.name);
 			file.write(contents);
 			file.close();
 			break;
 		}
 		file.close();
-		file_remove(system.ctrl_dir + file.name);
+		file_remove(file.name);
 		alert("Error " + http_request.response_code + " downloading " + echolist_url);
 		if(!confirm("Try again"))
 			break;
 	}
-} else if (network.infopack
-	&& (network.infopack.indexOf("http://") == 0 || network.infopack.indexOf("https://") == 0)
-	&& confirm("Download " + netname + " Info Pack: " + network.infopack)) {
-	load("http.js");
+} else if (network.pack
+	&& (network.pack.indexOf("http://") == 0 || network.pack.indexOf("https://") == 0)
+	&& confirm("Download " + netname + " Info Pack: " + network.pack)) {
 	while(!aborted()) {
-		var infopackdlfilename = file_getname(network.infopack)
-		var file = new File(system.ctrl_dir + infopackdlfilename);
+		var packdlfilename = file_getname(network.pack)
+		var file = new File(packdlfilename);
 		if(!file.open("w")) {
 			alert("Error " + file.error + " opening " + file.name);
 			exit(1);
 		}
 		var http_request = new HTTPRequest();
 		try {
-			var contents = http_request.Get(network.infopack);
+			var contents = http_request.Get(network.pack);
 		} catch(e) {
 			alert(e);
 			file.close();
@@ -663,25 +699,30 @@ if(network.echolist
 				break;
 			continue;
 		}
-		if(http_request.response_code == 200) {
-			print("Downloaded " + network.infopack + " to " + system.ctrl_dir + file.name);
+		if(http_request.response_code == http_request.status.ok) {
+			print("Downloaded " + network.pack + " to " + system.ctrl_dir + file.name);
 			file.write(contents);
 			file.close();
-			print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
+
+			// try to extract on linux,
+			if (system.exec("%@unzip -CLo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
+				print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
+			}
+
 			break;
 		}
 		file.close();
-		file_remove(system.ctrl_dir + file.name);
-		alert("Error " + http_request.response_code + " downloading " + network.infopack);
+		file_remove(file.name);
+		alert("Error " + http_request.response_code + " downloading " + network.pack);
 		if(!confirm("Try again"))
 			break;
 	}
 }
-while(echolist_fname && !file_getcase(system.ctrl_dir + echolist_fname) && !aborted()) {
+while(echolist_fname && !file_getcase(echolist_fname) && !aborted()) {
 	alert(system.ctrl_dir + echolist_fname + " does not exist");
 	if ((network.echolist.indexOf("http://") == -1) && (network.echolist.indexOf("https://") == -1)
-		&& (network.infopack)) {
-		if (!confirm("Please extract the " + echolist_fname + " file from the infopack " + file_getname(network.infopack) + " into " + system.ctrl_dir + ". Continue?")) {
+		&& (network.pack)) {
+		if (!confirm("Please extract the " + echolist_fname + " file from the pack " + file_getname(network.pack) + " into " + system.ctrl_dir + ". Continue?")) {
 			break;
 		}
 	} else {
