@@ -666,7 +666,7 @@ if(network.echolist
 				break;
 			continue;
 		}
-		if(http_request.response_code == 200) {
+		if(http_request.response_code == http_request.status.ok) {
 			print("Downloaded " + echolist_url + " to " + system.ctrl_dir + file.name);
 			file.write(contents);
 			file.close();
@@ -699,7 +699,7 @@ if(network.echolist
 				break;
 			continue;
 		}
-		if(http_request.response_code == 200) {
+		if(http_request.response_code == http_request.status.ok) {
 			print("Downloaded " + network.pack + " to " + system.ctrl_dir + file.name);
 			file.write(contents);
 			file.close();
