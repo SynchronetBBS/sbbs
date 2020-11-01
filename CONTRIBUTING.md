@@ -1,7 +1,7 @@
 ## Contributing changes to the Synchronet Source Repository
 
 Merge requests are considered and accepted at [gitlab.synchro.net](https://gitlab.synchro.net).
-Do not submit pull/merge requests in the Synchronet //mirror projects// on github.com or gitlab.com; they won't be considered.
+Do not submit pull/merge requests in the Synchronet *mirror projects* on github.com or gitlab.com; they won't be considered.
 
 When submitting merge requests to existing files, unless you have prior agreement with the maintainers:
 * Use the dominant coding style of the file(s) being modified
