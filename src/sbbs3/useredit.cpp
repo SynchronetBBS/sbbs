@@ -38,6 +38,7 @@
 /*******************************************************************/
 
 #include "sbbs.h"
+#include "petdefs.h"
 
 #define SEARCH_TXT 0
 #define SEARCH_ARS 1
@@ -974,15 +975,21 @@ void sbbs_t::maindflts(user_t* user)
 					else
 						user->misc&=~NO_EXASCII;
 					user->misc &= ~SWAP_DELETE;
-					while(text[HitYourBackspaceKey][0] && !(user->misc&SWAP_DELETE) && online) {
+					while(text[HitYourBackspaceKey][0] && !(user->misc&(PETSCII|SWAP_DELETE)) && online) {
 						bputs(text[HitYourBackspaceKey]);
-						uchar key = getkey(K_NONE);
+						uchar key = getkey(K_CTRLKEYS);
 						bprintf(text[CharacterReceivedFmt], key, key);
 						if(key == '\b')
 							break;
 						if(key == DEL) {
 							if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
 								user->misc |= SWAP_DELETE;
+						}
+						else if(key == PETSCII_DELETE) {
+							autoterm |= PETSCII;
+							user->misc |= PETSCII;
+							outcom(PETSCII_UPPERLOWER);
+							bputs(text[PetTerminalDetected]);
 						}
 						else
 							bprintf(text[InvalidBackspaceKeyFmt], key, key);
