@@ -109,7 +109,6 @@ bool sbbs_t::answer()
 				useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
-				useron.misc&=~TERM_FLAGS;
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
 				if(!findstr(client.addr,path)) {
 					SAFECOPY(tmp, rlogin_pass);
@@ -213,7 +212,6 @@ bool sbbs_t::answer()
 		useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
-			useron.misc&=~TERM_FLAGS;
 			for(i=0;i<3 && online;i++) {
 				if(stricmp(tmp,useron.pass)) {
 					if(cfg.sys_misc&SM_ECHO_PW)
