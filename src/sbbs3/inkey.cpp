@@ -116,7 +116,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 	this->timeout=time(NULL);
 
 	/* Is this a control key */
-	if(ch<' ') {
+	if(!(mode & K_CTRLKEYS) && ch < ' ') {
 		if(cfg.ctrlkey_passthru&(1<<ch))	/*  flagged as passthru? */
 			return(ch);						/* do not handle here */
 		return(handle_ctrlkey(ch,mode));
