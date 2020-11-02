@@ -220,7 +220,7 @@ function external_section_menu()
 
 			if(options.sort)
 				sec_list.sort(sort_by_name);
-			for(i in sec_list)
+			for(var i in sec_list)
 				console.uselect(Number(i),"External Program Section"
 					,sec_list[i].name);
 			xsec=console.uselect();
@@ -234,7 +234,6 @@ function external_section_menu()
 
 /* main: */
 {
-	var i,j;
 	if (argv.length) {
 		if(argv[0] == 'program') {
 			// if passed as "program" PROGRAMCODE, launch program
