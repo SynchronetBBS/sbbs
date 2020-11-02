@@ -89,6 +89,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 	char 	tmp2[256],tmp3[128];
 	char*	str=(char*)buf;
 	uchar	exatr=0;
+	char	mark = '\0';
 	int 	i;
 	ulong	l=0;
 	uint	lines_printed = 0;
@@ -157,6 +158,43 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 					}
 				}
 				break;
+		}
+		if((*mode) & P_MARKUP) {
+			if(((mark == 0) && (str[l] == '*' || str[l] == '/' || str[l] == '_' || str[l] == '#')) || str[l] == mark) {
+				char* next= NULL;
+				if(mark == 0)
+					next = strchr(str + l + 1, str[l]);
+				char *blank = strstr(str + l + 1, "\n\r");
+				if(((l < 1 || isspace(str[l - 1]))
+					&& isalnum(str[l + 1]) && mark == 0 && next != NULL	&& (*(next + 1) == '\0' || isspace(*(next + 1))) && (blank == NULL || next < blank))
+					|| (l > 0 && (isalnum(str[l - 1]) || ispunct(str[l - 1])) && str[l] == mark)) {
+					if(mark == 0)
+						mark = str[l];
+					else {
+						mark = 0;
+						if(!((*mode) & P_HIDEMARKS))
+							outchar(str[l]);
+					}
+					switch(str[l]) {
+						case '*':
+							attr(curatr ^ HIGH);
+							break;
+						case '/':
+							attr(curatr ^ BLINK);
+							break;							
+						case '_':
+							attr(curatr ^ (HIGH|BLINK));
+							break;
+						case '#':
+							attr(((curatr&0x0f) << 4) | ((curatr&0xf0) >> 4));
+							break;
+					}
+					if(mark != 0 && !((*mode) & P_HIDEMARKS))
+						outchar(str[l]);
+					l++;
+					continue;
+				}
+			}
 		}
 		if(str[l]==CTRL_A && str[l+1]!=0) {
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF) && !((*mode)&P_NOATCODES)) {  /* Quote a file */
