@@ -412,7 +412,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host, tls
 	this.in_keys = undefined;
 	this.out_keys = undefined;
 	if (addr === undefined)
-		throw("No address specified!");
+		throw new Error("No address specified!");
 	addr = FIDO.parse_addr(addr, this.default_zone, this.default_domain);
 
 	if (!password)
@@ -1041,7 +1041,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		ret = new this.Frame();
 		i = this.sock.recv(1, timeout);
 		if (i === null) {
-			log(LOG_INFO, "Error in recv() of first byte of packet header");
+			log(LOG_INFO, "Error in recv() of first byte of packet header, timeout = " + timeout);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;

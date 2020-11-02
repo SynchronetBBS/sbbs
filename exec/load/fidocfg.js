@@ -66,7 +66,7 @@ function TickITCfg() {
 	}
 
 	if (!tcfg.open("r"))
-		throw("Unable to open '"+tcfg.name+"'");
+		throw new Error("Unable to open '"+tcfg.name+"'");
 	this.gcfg = tcfg.iniGetObject();
 	lcprops(this.gcfg);
 	if (this.gcfg.handler !== undefined) {

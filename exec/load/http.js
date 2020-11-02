@@ -114,39 +114,39 @@ HTTPRequest.prototype.SendRequest=function() {
 	port = this.url.port?this.url.port:(this.url.scheme=='http'?80:443);
 	if (js.global.ConnectedSocket != undefined) {
 		if ((this.sock = new ConnectedSocket(this.url.host, port)) == null)
-			throw(format("Unable to connect to %s:%u", this.url.host, this.url.port));
+			throw new Error(format("Unable to connect to %s:%u", this.url.host, this.url.port));
 	}
 	else {
 		if((this.sock=new Socket(SOCK_STREAM))==null)
-			throw("Unable to create socket");
+			throw new Error("Unable to create socket");
 		if(!this.sock.connect(this.url.host, port)) {
 			this.sock.close();
-			throw(format("Unable to connect to %s:%u", this.url.host, this.url.port));
+			throw new Error(format("Unable to connect to %s:%u", this.url.host, this.url.port));
 		}
 	}
 	if(this.url.scheme=='https')
 		this.sock.ssl_session=true;
 	if(!do_send(this.sock, this.request+"\r\n"))
-		throw("Unable to send request: " + this.request);
+		throw new Error("Unable to send request: " + this.request);
 	for(i in this.request_headers) {
 		if(!do_send(this.sock, this.request_headers[i]+"\r\n"))
-			throw("Unable to send headers");
+			throw new Error("Unable to send headers");
 	}
 	if(!do_send(this.sock, "\r\n"))
-		throw("Unable to terminate headers");
+		throw new Error("Unable to terminate headers");
 	if(this.body != undefined) {
 		if(!do_send(this.sock, this.body))
-			throw("Unable to send body");
+			throw new Error("Unable to send body");
 	}
 };
 
 HTTPRequest.prototype.ReadStatus=function() {
 	this.status_line=this.sock.recvline(4096);
 	if(this.status_line==null)
-		throw("Unable to read status");
+		throw new Error("Unable to read status");
 	var m = this.status_line.match(/^HTTP\/[0-9]+\.[0-9]+ ([0-9]{3})/);
 	if (m === null)
-		throw("Unable to parse status line '"+this.status_line+"'");
+		throw new Error("Unable to parse status line '"+this.status_line+"'");
 	this.response_code = parseInt(m[1], 10);
 };
 
@@ -159,7 +159,7 @@ HTTPRequest.prototype.ReadHeaders=function() {
 	for(;;) {
 		header=this.sock.recvline(4096, 120);
 		if(header==null)
-			throw("Unable to receive headers");
+			throw new Error("Unable to receive headers");
 		if(header=='')
 			return;
 		this.response_headers.push(header);
