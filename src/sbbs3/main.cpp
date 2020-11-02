@@ -366,7 +366,8 @@ static int read_socket(SOCKET sock,unsigned char *buffer,int len)
 	fd_set		socket_set;
 	struct timeval	tv;
     int			i,j,rd;
-	char	ch[1];
+	char	ch;
+	char    err[128];
 
 	// Clear our buffer
 	memset(buffer,'\0',len);
@@ -386,23 +387,24 @@ static int read_socket(SOCKET sock,unsigned char *buffer,int len)
 #ifdef _DEBUG
 			lprintf(LOG_DEBUG,"%04d Read Socket - read",sock);
 #endif
-   		 	rd = recv(sock,ch,1,0);
+   		 	rd = recv(sock,&ch,1,0);
 #ifdef _DEBUG
 			lprintf(LOG_DEBUG,"%04d Read Socket - got [%s] (%x)",sock,ch,rd);
 #endif
 
 			if(FD_ISSET(sock,&socket_set) && rd) {
-				buffer[i] = *ch;
+				buffer[i] = ch;
 			} else {
-				lprintf(LOG_ERR,"%04d Read Socket - Something went wrong?",sock);
+				lprintf(LOG_WARNING,"%04d Read Socket - failed to read from socket. Got [%s] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
 				return false;
 			}
 
 		} else if (j==0) {
-			lprintf(LOG_ERR,"%04d Read Socket - No data?",sock);
+			lprintf(LOG_WARNING,"%04d Read Socket - No data?",sock);
 			return false;
+
 		} else {
-			lprintf(LOG_ERR,"%04d Read Socket - Something else [%d].",sock,j);
+			lprintf(LOG_WARNING,"%04d Read Socket - Something else [%d].",sock,j);
 			return false;
 		}
 	}
@@ -5522,6 +5524,8 @@ NO_SSH:
 			lprintf(LOG_DEBUG,"%04d * HAPROXY, looking for version - received [%s]",client_socket,hapstr);
 #endif
 
+			// v1 of the protocol uses plain text, starting with "PROXY "
+			// eg: "PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\n"
 			if (strcmp((char *)hapstr,"PROXY ") == 0) {
 				lprintf(LOG_DEBUG,"%04d * HAPROXY PROTO v1",client_socket);
 
@@ -5589,10 +5593,14 @@ NO_SSH:
 					memcpy(host_ip,hapstr,i);
 				}
 
-			} else if (strcmp((char *)hapstr,"\x0d\x0a\x0d\x0a\x00\x0d") == 0) {
+			// v2 is in binary with the first 12 bytes "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A"
+			// we'll compare the 1st 6 bytes here, since we are determining if we are v1 or v2.
+			} else if (memcmp((char *)hapstr,"\r\n\r\n\x00\r",6) == 0) {
 				lprintf(LOG_DEBUG,"%04d * HAPROXY PROTO v2",client_socket);
-				if (read_socket(client_socket,hapstr,6)==false || strcmp((char *)hapstr,"\x0aQUIT\x0a") != 0) {
-					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s]",client_socket,hapstr);
+
+				// OK, just for sanity, our next 6 chars should be v2...
+				if (read_socket(client_socket,hapstr,6)==false || strcmp((char *)hapstr,"\nQUIT\n") != 0) {
+					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s] incomplete v2 setup",client_socket,hapstr);
 					close_socket(client_socket);
 					continue;
 				}
