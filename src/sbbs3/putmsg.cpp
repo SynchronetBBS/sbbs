@@ -165,9 +165,10 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 				if(mark == 0)
 					next = strchr(str + l + 1, str[l]);
 				char *blank = strstr(str + l + 1, "\n\r");
-				if(((l < 1 || isspace(str[l - 1]))
-					&& isalnum(str[l + 1]) && mark == 0 && next != NULL	&& (*(next + 1) == '\0' || isspace(*(next + 1))) && (blank == NULL || next < blank))
-					|| (l > 0 && (isalnum(str[l - 1]) || ispunct(str[l - 1])) && str[l] == mark)) {
+				if(((l < 1 || isspace(str[l - 1]) || ispunct(str[l - 1]))
+						&& isalnum(str[l + 1]) && mark == 0 && next != NULL	&& (*(next + 1) == '\0' || isspace(*(next + 1)) || ispunct(*(next+1)))
+						&& (blank == NULL || next < blank))
+					|| str[l] == mark) {
 					if(mark == 0)
 						mark = str[l];
 					else {
