@@ -41,9 +41,9 @@ if(options.email_validation == true) {
 
 // Check if we're being asked to auto-run an external (web interface external programs section uses this)
 if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.terminal.indexOf("xtrn=") === 0)) {
-	var external_code = console.terminal.substring(5);
-	load('xtrn_sec.js', "program", external_code);
-	bbs.hangup();
+    var external_code = console.terminal.substring(5);
+    load('xtrn_sec.js', "program", external_code);
+    bbs.hangup();
 	exit();
 }
 //Disable spinning cursor at pause prompts
