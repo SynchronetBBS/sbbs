@@ -3,7 +3,11 @@
 // Synchronet External Program Section
 // Menus displayed to users via Terminal Server (Telnet/RLogin/SSH)
 
-// To jump straight to a specific xtrn section, pass the section code as an argument
+// To jump straight to a specific xtrn section, pass the section code as an argument like: xtrn_sec.js operator
+// Alternatively, call it like: xtrn_sec.js section operator
+
+// To execute an external program, pass "program" (program code) like:
+// xtrn_sec.js program boggle
 
 // $Id: xtrn_sec.js,v 1.29 2020/05/09 10:11:23 rswindell Exp $
 
@@ -13,19 +17,6 @@ load("sbbsdefs.js");
 
 /* text.dat entries */
 load("text.js");
-
-/* See if an xtrn section code was passed as an argument */
-/* must parse argv before calling load() */
-var xsec=-1;
-{
-    var i,j;
-    for(i in argv) {
-        for(j in xtrn_area.sec_list) {
-            if(argv[i].toLowerCase()==xtrn_area.sec_list[j].code)
-                xsec=j;
-        }
-    }
-}
 
 var options;
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
@@ -244,11 +235,38 @@ function external_section_menu()
 }
 
 /* main: */
-if(xsec >= 0)
-    external_program_menu(xsec);
-else {
-    if(xtrn_area.sec_list.length == 1)
-        external_program_menu(0);
-    else
-        external_section_menu();
+{
+	var i,j;
+	if (argv.length) {
+		if(argv[0] == 'program') {
+			// if passed as "program" PROGRAMCODE, launch program
+			xtrn_area.sec_list.some(function(sec) {
+				sec.prog_list.some(function (prog) {
+					if (prog.code.toLowerCase() == argv[1]) {
+						exec_xtrn(prog);
+						return true;
+					}
+				});
+			});
+		} else if ((argv[0] == 'section') || (typeof(argv[1] === "undefined"))) {
+			// if passed as section SECTIONCODE or just SECTIONCODE, launch section menu
+			var xtrnsearch = argv[0] == 'section' ? argv[1] : argv[0];
+			xtrn_area.sec_list.some(function(sec) {
+				if(sec.code == xtrnsearch.toLowerCase()) {
+					external_program_menu(sec.index);
+					return true;
+				}
+			});
+		}
+	} else {
+		// no arguments passed, default behavior
+		if (xtrn_area.sec_list.length == 1) {
+			// if only one section defined, jump straight to that menu
+			external_program_menu(0);
+		} else {
+			// main menu of all program sections
+			external_section_menu();
+		}
+	}
 }
+
