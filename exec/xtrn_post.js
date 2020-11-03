@@ -15,7 +15,7 @@ load("text.js");
 var options, program;
 
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
-	options = {multicolumn: true, sort: false};	// default values
+	options = {};	// default values
 
 if(options.restricted_user_msg === undefined)
 	options.restricted_user_msg = bbs.text(R_ExternalPrograms);
@@ -23,7 +23,7 @@ if(options.restricted_user_msg === undefined)
 if(options.clear_screen === undefined)
 	options.clear_screen = true;
 
-function exec_xtrn_post(prog)
+function exec_xtrn_post(program)
 {
 	console.attributes = 0;
 	console.attributes = LIGHTGRAY;
@@ -33,7 +33,7 @@ function exec_xtrn_post(prog)
 	if(options.eval_after_exec)
 		eval(options.eval_after_exec);
 
-	if(prog.settings&XTRN_PAUSE)
+	if(program.settings&XTRN_PAUSE)
 		console.pause();
 	else
 		console.line_counter=0;
@@ -57,7 +57,7 @@ function exec_xtrn_post(prog)
 		if (!program) {
 			write(bbs.text(NoXtrnProgram));
 		} else {
-			exec_xtrn_pre(prog);
+			exec_xtrn_pre(program);
 		}
 	}
 }

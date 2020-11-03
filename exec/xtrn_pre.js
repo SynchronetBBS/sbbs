@@ -15,10 +15,10 @@ load("text.js");
 var options, program;
 
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
-	options = {multicolumn: true, sort: false};	// default values
+	options = {};	// default values
 
 
-function exec_xtrn_pre(prog)
+function exec_xtrn_pre(program)
 {
 	if(options.restricted_user_msg === undefined)
 		options.restricted_user_msg = bbs.text(R_ExternalPrograms);
@@ -28,8 +28,8 @@ function exec_xtrn_pre(prog)
 		return;
 	}
 
-	if(bbs.menu_exists("xtrn/" + prog.code)) {
-		bbs.menu("xtrn/" + prog.code);
+	if(bbs.menu_exists("xtrn/" + program.code)) {
+		bbs.menu("xtrn/" + program.code);
 		console.pause();
 		console.line_counter=0;
 	}
@@ -42,7 +42,7 @@ function exec_xtrn_pre(prog)
 	if(options.eval_before_exec)
 		eval(options.eval_before_exec);
 
-	load('fonts.js', 'xtrn:' + prog.code);
+	load('fonts.js', 'xtrn:' + proggram.code);
 }
 
 
@@ -63,7 +63,7 @@ function exec_xtrn_pre(prog)
 		if (!program) {
 			write(bbs.text(NoXtrnProgram));
 		} else {
-			exec_xtrn_pre(prog);
+			exec_xtrn_pre(progeam);
 		}
 	}
 }
