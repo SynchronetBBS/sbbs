@@ -276,6 +276,10 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	if(!cfg->automsg_mod[0]) SAFECOPY(cfg->automsg_mod,"automsg");
 	get_str(cfg->xtrnsec_mod,instream);
 	if(!cfg->xtrnsec_mod[0]) SAFECOPY(cfg->xtrnsec_mod,"xtrn_sec");
+	get_str(cfg->xtrnpre_mod,instream);
+	if(!cfg->xtrnpre_mod[0]) SAFECOPY(cfg->xtrnpre_mod,"xtrn_pre");
+	get_str(cfg->xtrnpost_mod,instream);
+	if(!cfg->xtrnpost_mod[0]) SAFECOPY(cfg->xtrnpost_mod,"xtrn_post");
 
 	for(i=0;i<17;i++)					/* unused - initialized to NULL */
 		get_int(n,instream);

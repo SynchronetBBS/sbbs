@@ -253,6 +253,8 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->textsec_mod,stream);
 	put_str(cfg->automsg_mod,stream);
 	put_str(cfg->xtrnsec_mod,stream);
+	put_str(cfg->xtrnpre_mod,stream);
+	put_str(cfg->xtrnpost_mod,stream);
 
 	n=0;
 	for(i=0;i<17;i++)
