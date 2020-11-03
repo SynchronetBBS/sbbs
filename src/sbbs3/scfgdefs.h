@@ -610,8 +610,8 @@ typedef struct
 	char			whosonline_mod[LEN_CMD+1];
 	char			privatemsg_mod[LEN_CMD+1];
 	char			logonlist_mod[LEN_CMD+1];
-    char			xtrnsec_pre[LEN_MODNAME+1];			/* External Program pre-execution module */
-    char			xtrnsec_post[LEN_MODNAME+1];		/* External Program post-execution module */
+    char			xtrnpre_mod[LEN_MODNAME+1];			/* External Program pre-execution module */
+    char			xtrnpost_modt[LEN_MODNAME+1];		/* External Program post-execution module */
 	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line - unused! */
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */
