@@ -174,7 +174,7 @@ function external_program_menu(xsec)
 
 function external_section_menu()
 {
-	var i,j;
+    var i,j;
 
 	while(bbs.online) {
 
