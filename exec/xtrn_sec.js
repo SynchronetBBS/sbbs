@@ -3,11 +3,7 @@
 // Synchronet External Program Section
 // Menus displayed to users via Terminal Server (Telnet/RLogin/SSH)
 
-// To jump straight to a specific xtrn section, pass the section code as an argument like: xtrn_sec.js operator
-// Alternatively, call it like: xtrn_sec.js section operator
-
-// To execute an external program, pass "program" (program code) like:
-// xtrn_sec.js program boggle
+// To jump straight to a specific xtrn section, pass the section code as an argument
 
 // $Id: xtrn_sec.js,v 1.29 2020/05/09 10:11:23 rswindell Exp $
 
@@ -17,6 +13,19 @@ load("sbbsdefs.js");
 
 /* text.dat entries */
 load("text.js");
+
+/* See if an xtrn section code was passed as an argument */
+/* must parse argv before calling load() */
+var xsec=-1;
+{
+	var i,j;
+	for(i in argv) {
+		for(j in xtrn_area.sec_list) {
+			if(argv[i].toLowerCase()==xtrn_area.sec_list[j].code)
+				xsec=j;
+		}
+	}
+}
 
 var options;
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
@@ -71,38 +80,17 @@ function sort_by_name(a, b)
 	return 0;
 }
 
-function exec_xtrn(prog)
-{
-	console.attributes = LIGHTGRAY;
-	if(options.clear_screen_on_exec)
-		console.clear();
-	if(options.eval_before_exec)
-		eval(options.eval_before_exec);
-	load('fonts.js', 'xtrn:' + prog.code);
-	bbs.exec_xtrn(prog.code);
-	console.attributes = 0;
-	console.attributes = LIGHTGRAY;
-	load('fonts.js', 'default');
-	if(options.eval_after_exec)
-		eval(options.eval_after_exec);
-
-	if(prog.settings&XTRN_PAUSE)
-		console.pause();
-	else
-		console.line_counter=0;
-}
-
 function external_program_menu(xsec)
 {
-    var i,j;
+	var i,j;
 
 	while(bbs.online) {
 
 		console.aborted = false;
-	    if(user.security.restrictions&UFLAG_X) {
-		    write(options.restricted_user_msg);
-		    break;
-	    }
+		if(user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
@@ -114,10 +102,10 @@ function external_program_menu(xsec)
 
 		// If there's only one program available to the user in the section, just run it (or try to)
 		if(options.autoexec && prog_list.length == 1) {
-			exec_xtrn(prog_list[0]);
+			bbs.exec_xtrn(prog_list[0].code);
 			break;
 		}
-		
+
 		if(options.clear_screen)
 			console.clear(LIGHTGRAY);
 
@@ -179,33 +167,30 @@ function external_program_menu(xsec)
 		if((i=console.getnum(prog_list.length))<1)
 			break;
 		i--;
-		if(bbs.menu_exists("xtrn/" + prog_list[i].code)) {
-			bbs.menu("xtrn/" + prog_list[i].code);
-			console.line_counter=0;
-		}
-		exec_xtrn(prog_list[i]);
+
+		bbs.exec_xtrn(prog_list[i].code);
 	}
 }
 
 function external_section_menu()
 {
-    var i,j;
+	var i,j;
 
-    while(bbs.online) {
+	while(bbs.online) {
 
 		console.aborted = false;
-	    if(user.security.restrictions&UFLAG_X) {
-		    write(options.restricted_user_msg);
-		    break;
-	    }
+		if(user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
 
-	    if(!xtrn_area.sec_list.length) {
-		    write(options.no_programs_msg);
-		    break;
-	    }
+		if(!xtrn_area.sec_list.length) {
+			write(options.no_programs_msg);
+			break;
+		}
 
-	    var xsec=0;
-	    var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
+		var xsec=0;
+		var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
 
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
@@ -227,46 +212,19 @@ function external_section_menu()
 					,sec_list[i].name);
 			xsec=console.uselect();
 		}
-	    if(xsec<0)
-		    break;
+		if(xsec<0)
+			break;
 
-        external_program_menu(sec_list[xsec].index);
-    }
-}
-
-/* main: */
-{
-	var i,j;
-	if (argv.length) {
-		if(argv[0] == 'program') {
-			// if passed as "program" PROGRAMCODE, launch program
-			xtrn_area.sec_list.some(function(sec) {
-				sec.prog_list.some(function (prog) {
-					if (prog.code.toLowerCase() == argv[1]) {
-						exec_xtrn(prog);
-						return true;
-					}
-				});
-			});
-		} else if ((argv[0] == 'section') || (typeof(argv[1] === "undefined"))) {
-			// if passed as section SECTIONCODE or just SECTIONCODE, launch section menu
-			var xtrnsearch = argv[0] == 'section' ? argv[1] : argv[0];
-			xtrn_area.sec_list.some(function(sec) {
-				if(sec.code == xtrnsearch.toLowerCase()) {
-					external_program_menu(sec.index);
-					return true;
-				}
-			});
-		}
-	} else {
-		// no arguments passed, default behavior
-		if (xtrn_area.sec_list.length == 1) {
-			// if only one section defined, jump straight to that menu
-			external_program_menu(0);
-		} else {
-			// main menu of all program sections
-			external_section_menu();
-		}
+		external_program_menu(sec_list[xsec].index);
 	}
 }
 
+/* main: */
+if(xsec >= 0)
+	external_program_menu(xsec);
+else {
+	if(xtrn_area.sec_list.length == 1)
+		external_program_menu(0);
+	else
+		external_section_menu();
+}
