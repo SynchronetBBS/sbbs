@@ -1,9 +1,9 @@
 "\1n\1h\1c\xda\xc4\xc4\xc4\xc4\xc4\xc4"\                        001 MsgSubj
-    "\1n\xc4\xc4\xc4\xc4\xc4\xc4"\
+    "\1n\xc4\xc4\xc4\xc4\xc4\xc4"\ 
     "\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
     "\1n\1c\xc4\xc4\xc4\xc4\xc4"\
     "\xfa\xfa\xfa\xfa"\
-    "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"
+    "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"       
 "\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s" 002 MsgAttr
 "\r\n\xb3 \1bTo  \1n\1b: \1h\1c%.70s"                           003 MsgTo
 " #%s"                                                          004 MsgToExt
@@ -60,14 +60,14 @@
 "\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
 "\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %s\r\n"              047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
-"\r\n\1n\1cï¿½ \1b\1hReading E-mail \1n\1cï¿½ \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
+"\r\n\1n\1cþ \1b\1hReading E-mail \1n\1cþ \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
 	" (\1w%u\1b of \1w%u\1b): \1n\1~"
 "\1n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
 "  \1h\1bRe\1n\1b: \1h\1c%s\1n\r\n\r\n"                        051 Regarding
 "  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\				   052 RegardingByOn
-	"\1bBy\1n\1b: \1h\1c%s \1bon \1c%s\1n\r\n\r\n"
-"  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\  				   053 RegardingByToOn
-	"\1bBy\1n\1b: \1h\1c%s \1bto \1c%s \1bon "\
+	"\1bBy\1n\1b: \1h\1c%s \1bon \1c%s\1n\r\n\r\n"    	
+"  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\  				   053 RegardingByToOn	
+	"\1bBy\1n\1b: \1h\1c%s \1bto \1c%s \1bon "\       
 	"\1c%s\1n\r\n\r\n"
 "Delete mail from %s"                                   054 DeleteMailQ
 "OK"                                                    055 OK
@@ -77,13 +77,13 @@
 "\1n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
 "\r\n\1q\1g\1hMail that you've sent still pending (%s first):"\ 060 MailSentLstHdr
 	"\r\n\r\n\1n"
-"\1n\r\n\1cï¿½ \1h\1bReading Sent E-mail \1n\1cï¿½ \1h\1b"\		061 ReadingSentMail
+"\1n\r\n\1cþ \1h\1bReading Sent E-mail \1n\1cþ \1h\1b"\		061 ReadingSentMail
 	"(\1w\1`?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n\1~"
 "\1h\1?\1mInternet Mail To: \1w%s\1m\r\n"\         062 InternetMailing
 	"            From: \1w%s\r\n"
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
-"\1n\r\n\1cï¿½ \1h\1bReading All E-mail \1n\1cï¿½ \1h\1b"\		064 ReadingAllMail
-	"(\1w%u \1bof \1w%u\1b): \1n"
+"\1n\r\n\1cþ \1h\1bReading All E-mail \1n\1cþ \1h\1b"\		064 ReadingAllMail
+	"(\1w%u \1bof \1w%u\1b): \1n" 
 "\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
 	"To                     A Subject\r\n\1n"
 "\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"     066 MailOnSystemLstFmt
@@ -92,23 +92,23 @@
 "\1-\r\n\1c%-20s \1y\1h%-50s \1w%6u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
 "\r\n\1n\1cPost : [\1h%u\1n\1c][\1h%u\1n\1c] \1h%u\1n\1c/\1h%u"   070 ZScanPostHdr
-"\1n\r\n\1cï¿½ \1h\1bReading \1n\1cï¿½ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
+"\1n\r\n\1cþ \1h\1bReading \1n\1cþ %4u\b\b\b\b%s\1\\"\           071 ReadingSub
 	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\1?Delete message #%u '%s'"                          073 DeletePostQ
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address      "\     074 UserDefaultsAutoLogon
-	"\1n\1b: \1c%s\r\n"
+	"\1n\1b: \1c%s\r\n"	 
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "\1_\r\n\1y\1hText to search for: "                      076 SearchStringPrompt
-"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4ï¿½ "\                    077 PrivateChatSeparator
+"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    077 PrivateChatSeparator
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
-	" ï¿½\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
+	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
 "\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"    078 SubMsgLstFmt
-"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4ï¿½ "\                    079 SysopChatSeparator
+"\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4´ "\                    079 SysopChatSeparator
 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
 	"Time Left: \1g%-8s\1w"\
-	" ï¿½\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
+	" Ã\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
 "\r\n\r\nNo text file sections available.\r\n"          080 NoTextSections
 "\1l\1_\1c\1hGeneral Text File Sections:\r\n\r\n"           081 TextSectionLstHdr
 "\1n\1c<\1h%d\1n\1c> %s\r\n"                                082 TextSectionLstFmt
@@ -197,7 +197,7 @@
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
 "\1n\1?\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
-	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"
+	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"  
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\r\n\r\nYou can't download.\r\n"                       165 R_Download
@@ -462,7 +462,7 @@
 "\r\n\r\nNo external programs available.\r\n"           379 NoXtrnPrograms
 "\1n\1c\1h%s \1n\1cExternal Programs:\r\n\r\n"             380 XtrnProgLstHdr
 "\1n\1cNum \1h\xb3\1n\1c Name                             "       381 XtrnProgLstTitles
-"\1h\xc4\xc4\xc4\xc4ï¿½\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
+"\1h\xc4\xc4\xc4\xc4Å\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\ 382 XtrnProgLstUnderline
 	"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
 	"\xc4\xc4\xc4\xc4\xc4\xc4 "
 "\1h\1c%3u \xb3 \1n\1c%-32.32s\1h "                        383 XtrnProgLstFmt
@@ -505,8 +505,8 @@
 "Amiga"                                                 416 ComputerTypeD
 "Other"                                                 417 ComputerTypeE
 "\7\r\nNo user data defined.\r\n"                       418 NoUserData
-"\1r\1hï¿½ï¿½ï¿½ \1iDELETED\1n\1r\1h ï¿½ï¿½ï¿½\r\n"                       419 Deleted
-"\1b\1hï¿½ï¿½ï¿½ \1iINACTIVE\1n\1b\1h ï¿½ï¿½ï¿½\r\n"                      420 Inactive
+"\1r\1h®®® \1iDELETED\1n\1r\1h ¯¯¯\r\n"                       419 Deleted
+"\1b\1h®®® \1iINACTIVE\1n\1b\1h ¯¯¯\r\n"                      420 Inactive
 "\1n\1cAlias     : \1h%-30.30s  \1n\1cPassword     : "\      421 UeditAliasPassword
 	"\1h%-8.8s  %s\r\n"
 "\1n\1cReal Name : \1h%-30.30s  \1n\1cPhone number : "\      422 UeditRealNamePhone
@@ -1007,7 +1007,7 @@
     "@RESETPAUSE@"
 "\1n\1b[\1h\1wU\1n\1b] \1hInclude UTF-8 Characters     \1n\1b: \1c%s\r\n"	827 QWKSettingsUtf8
 "\1n\1m\1h%s\1n\1m%.0s posted to you "\                                     828 MsgPostedToYouVia
-    "on \1h%s \1n\1m%s\r\n"
+    "on \1h%s \1n\1m%s\r\n" 
 "unlimited"                                               829 Unlimited
 " via raw"						                          830 NodeConnectionRaw
 "Does your terminal support mouse reporting"              831 MouseTerminalQ
