@@ -18,13 +18,13 @@ load("text.js");
 /* must parse argv before calling load() */
 var xsec=-1;
 {
-	var i,j;
-	for(i in argv) {
-		for(j in xtrn_area.sec_list) {
-			if(argv[i].toLowerCase()==xtrn_area.sec_list[j].code)
-				xsec=j;
-		}
-	}
+    var i,j;
+    for(i in argv) {
+        for(j in xtrn_area.sec_list) {
+            if(argv[i].toLowerCase()==xtrn_area.sec_list[j].code)
+                xsec=j;
+        }
+    }
 }
 
 var options;
@@ -82,15 +82,15 @@ function sort_by_name(a, b)
 
 function external_program_menu(xsec)
 {
-	var i,j;
+    var i,j;
 
 	while(bbs.online) {
 
 		console.aborted = false;
-		if(user.security.restrictions&UFLAG_X) {
-			write(options.restricted_user_msg);
-			break;
-		}
+	    if(user.security.restrictions&UFLAG_X) {
+		    write(options.restricted_user_msg);
+		    break;
+	    }
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
@@ -105,7 +105,7 @@ function external_program_menu(xsec)
 			bbs.exec_xtrn(prog_list[0].code);
 			break;
 		}
-
+		
 		if(options.clear_screen)
 			console.clear(LIGHTGRAY);
 
@@ -176,21 +176,21 @@ function external_section_menu()
 {
     var i,j;
 
-	while(bbs.online) {
+    while(bbs.online) {
 
 		console.aborted = false;
-		if(user.security.restrictions&UFLAG_X) {
-			write(options.restricted_user_msg);
-			break;
-		}
+	    if(user.security.restrictions&UFLAG_X) {
+		    write(options.restricted_user_msg);
+		    break;
+	    }
 
-		if(!xtrn_area.sec_list.length) {
-			write(options.no_programs_msg);
-			break;
-		}
+	    if(!xtrn_area.sec_list.length) {
+		    write(options.no_programs_msg);
+		    break;
+	    }
 
-		var xsec=0;
-		var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
+	    var xsec=0;
+	    var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
 
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
@@ -212,19 +212,19 @@ function external_section_menu()
 					,sec_list[i].name);
 			xsec=console.uselect();
 		}
-		if(xsec<0)
-			break;
+	    if(xsec<0)
+		    break;
 
-		external_program_menu(sec_list[xsec].index);
-	}
+        external_program_menu(sec_list[xsec].index);
+    }
 }
 
 /* main: */
 if(xsec >= 0)
-	external_program_menu(xsec);
+    external_program_menu(xsec);
 else {
-	if(xtrn_area.sec_list.length == 1)
-		external_program_menu(0);
-	else
-		external_section_menu();
+    if(xtrn_area.sec_list.length == 1)
+        external_program_menu(0);
+    else
+        external_section_menu();
 }
