@@ -94,11 +94,6 @@ function exec_xtrn(prog)
 	load('fonts.js', 'default');
 	if(options.eval_after_exec)
 		eval(options.eval_after_exec);
-
-	if(prog.settings&XTRN_PAUSE)
-		console.pause();
-	else
-		console.line_counter=0;
 }
 
 function external_program_menu(xsec)
