@@ -1647,6 +1647,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	thisnode.aux=0;
 	putnodedat(cfg.node_num,&thisnode);
 
+	if(cfg.xtrn[xtrnnum]->misc & XTRN_PAUSE)
+		pause();
+	else
+		lncntr = 0;
+
 	return(true);
 }
 
