@@ -4662,7 +4662,7 @@ bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
 	if(!fexist(fname))
 		return false;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, flength(fname));
+	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (long)flength(fname));
 	return ::backup(fname, backup_level, rename) ? true : false;
 }
 
