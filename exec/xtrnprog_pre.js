@@ -1,4 +1,4 @@
-// xtrn_pre.js
+// xtrnprog_pre.js
 
 // External Program Pre Module
 // These actions execute before an external program is launched via bbs.exec_xtrn()

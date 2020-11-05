@@ -1669,8 +1669,8 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
-					sprintf(opt[i++],"%-16.16s%s","Xtrn Pre",cfg.xtrnpre_mod);
-					sprintf(opt[i++],"%-16.16s%s","Xtrn Post",cfg.xtrnpost_mod);
+					sprintf(opt[i++],"%-16.16s%s","Xtrn Prog Pre",cfg.xtrnprogpre_mod);
+					sprintf(opt[i++],"%-16.16s%s","Xtrn Prog Post",cfg.xtrnprogpost_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
@@ -1698,8 +1698,8 @@ void sys_cfg(void)
 						"`Auto Message` Executed when a user chooses to edit the auto-message\n"
 						"`Text Section` Executed to handle general text file (viewing) section\n"
 						"`Xtrn Section` Executed to handle external programs (doors) section\n"
-						"`Xtrn Pre` Executed before external programs (doors) run\n"
-						"`Xtrn Post` Executed after external programs (doors) run\n"
+						"`Xtrn Prog Pre` Executed before external programs (doors) run\n"
+						"`Xtrn Prog Post` Executed after external programs (doors) run\n"
 						"\n"
 						"Full module command-lines may be used for the operations listed below:\n"
 						"\n"
@@ -1764,11 +1764,11 @@ void sys_cfg(void)
 							break;
 						case 10:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Pre Module"
-								,cfg.xtrnpre_mod,sizeof(cfg.xtrnpre_mod)-1,K_EDIT);
+								,cfg.xtrnprogpre_mod,sizeof(cfg.xtrnprogpre_mod)-1,K_EDIT);
 							break;
 						case 11:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Post Module"
-								,cfg.xtrnpost_mod,sizeof(cfg.xtrnpost_mod)-1,K_EDIT);
+								,cfg.xtrnprogpost_mod,sizeof(cfg.xtrnprogpost_mod)-1,K_EDIT);
 							break;														
 						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"

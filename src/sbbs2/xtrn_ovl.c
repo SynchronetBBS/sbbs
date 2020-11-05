@@ -1266,7 +1266,7 @@ return(0);
 /****************************************************************************/
 void exec_xtrn(uint xtrnnum)
 {
-	char strpre[MAX_PATH+1],strpost[MAX_PATH+1],str[256],str2[256],path[256],dropdir[128],name[32],c,e,mode;
+	char str[256],str2[256],path[256],dropdir[128],name[32],c,e,mode;
     int file;
 	uint i;
 	long mod;
@@ -1275,9 +1275,9 @@ void exec_xtrn(uint xtrnnum)
     node_t node;
 	time_t start,end;
 
-if(cfg.xtrnpre_mod[0] != '\0') {
-	SAFEPRINTF2(strpre, "%s %s", cfg.xtrnpre_mod,xtrn[xtrnnum]->code);
-	exec_bin(strpre, &main_csi);
+if(cfg.xtrnprogpre_mod[0] != '\0') {
+	SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,xtrn[xtrnnum]->code);
+	exec_bin(str, &main_csi);
 }
 
 if(!chk_ar(xtrn[xtrnnum]->run_ar,useron)
@@ -1438,9 +1438,9 @@ if(xtrn[xtrnnum]->misc&MODUSERDAT) {	/* Modify user data */
 	moduserdat(xtrnnum);
 	statusline(); }
 
-if(cfg.xtrnpost_mod[0] != '\0') {
-    SAFEPRINTF2(strpost, "%s %s", cfg.xtrnpost_mod,xtrn[xtrnnum]->code);
-    exec_bin(strpost, &main_csi);
+if(cfg.xtrnprogpost_mod[0] != '\0') {
+    SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpost_mod,xtrn[xtrnnum]->code);
+    exec_bin(str, &main_csi);
  }
 
 getnodedat(node_num,&thisnode,1);

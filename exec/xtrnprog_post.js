@@ -1,4 +1,4 @@
-// xtrn_post.js
+// xtrnprog_post.js
 
 // External Program Post Module
 // These actions execute after an external program is launched via bbs.exec_xtrn()
