@@ -290,7 +290,7 @@ enum {								/* Node Action */
 #define KEY_BUFSIZE 256
 #endif
 
-#ifndef CTRL_A
+#ifndef USE_XPDEV
 enum {
 	 CTRL_AT						// NUL
 	,CTRL_A							// SOH
