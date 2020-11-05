@@ -2247,7 +2247,7 @@ uint usernumber(char *username)
 char *ultoac(ulong l, char *string)
 {
 	char str[81];
-	char i,j,k;
+	int i,j,k;
 
 	sprintf(str,"%lu",l);
 	i=strlen(str)-1;

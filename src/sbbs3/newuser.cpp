@@ -154,7 +154,7 @@ BOOL sbbs_t::newuser()
 
 		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
 			bputs(text[HitYourBackspaceKey]);
-			uchar key = getkey(K_NONE);
+			uchar key = getkey(K_CTRLKEYS);
 			bprintf(text[CharacterReceivedFmt], key, key);
 			if(key == '\b')
 				break;

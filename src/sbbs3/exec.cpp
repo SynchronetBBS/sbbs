@@ -696,13 +696,11 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	sys_status &=~ SS_ABORT;
 
-	if(scope==NULL) {
-		JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
-		if(rval!=JSVAL_VOID)
-			JS_ValueToInt32(js_cx,rval,&result);
+	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
+	if(rval!=JSVAL_VOID)
+		JS_ValueToInt32(js_cx,rval,&result);
 
-		js_EvalOnExit(js_cx, js_scope, &js_callback);
-	}
+	js_EvalOnExit(js_cx, js_scope, &js_callback);
 
 	JS_ReportPendingException(js_cx);	/* Added Dec-4-2005, rswindell */
 

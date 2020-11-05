@@ -3659,6 +3659,15 @@ static void smtp_thread(void* arg)
 					subnum=INVALID_SUB;
 					continue;
 				}
+				if(relay_user.number == 0
+					&& strchr(sender, '@') != NULL
+					&& compare_addrs(sender, sender_addr) != 0) {
+					lprintf(LOG_WARNING,"%04d %s %s !FORGED mail header 'FROM' field (%lu total)"
+						,socket, client.protocol, client_id, ++stats.msgs_refused);
+					sockprintf(socket,client.protocol,session, "554 Mail header contains mismatched 'FROM' field");
+					subnum=INVALID_SUB;
+					continue;
+				}
 				char sender_info[512];
 				if(relay_user.number) {
 					SAFEPRINTF(str,"%u",relay_user.number);

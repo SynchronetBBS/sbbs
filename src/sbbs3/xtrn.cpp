@@ -1673,8 +1673,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					timeout.tv_sec=0;
 					timeout.tv_usec=1000;
 				}
-				if(i && !(mode&EX_NOLOG))
-					lprintf(LOG_NOTICE,"%.*s",i,buf);		/* lprintf mangles i? */
+				if(i > 0) {
+					buf[i] = '\0';
+					truncsp((char*)buf);
+					if(*buf)
+						lprintf(LOG_NOTICE, "%s", buf);
+				}
 
 				/* Eat stderr if mode is EX_BIN */
 				if(mode&EX_BIN)  {
@@ -1782,7 +1786,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				if((rd=read(err_pipe[0],bp,1))>0)  {
 					i+=rd;
 					if(*bp=='\n') {
-						lprintf(LOG_NOTICE,"%.*s",i-1,buf);
+						buf[i] = '\0';
+						truncsp((char*)buf);
+						if(*buf)
+							lprintf(LOG_NOTICE, "%s", buf);
 						i=0;
 						bp=buf;
 					}
@@ -1792,8 +1799,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				else
 					break;
 			}
-			if(i)
-				lprintf(LOG_NOTICE,"%.*s",i,buf);
+			if(i > 0) {
+				buf[i] = '\0';
+				truncsp((char*)buf);
+				if(*buf)
+					lprintf(LOG_NOTICE, "%s", buf);
+			}
 		}
 	}
 	if(!(mode&EX_OFFLINE)) {	/* !off-line execution */

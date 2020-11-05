@@ -475,13 +475,14 @@ void sbbs_t::pause()
 /****************************************************************************/
 void sbbs_t::ungetkey(char ch, bool insert)
 {
+	char dbg[2] = {};
 #if 0	/* this way breaks ansi_getxy() */
 	RingBufWrite(&inbuf,(uchar*)&ch,sizeof(uchar));
 #else
 	if(keybuf_space()) {
 		char* p = c_escape_char(ch);
 		if(p == NULL) {
-			char dbg[2] = { ch, 0 };
+			dbg[0] = ch;
 			p = dbg;
 		}
 		lprintf(LOG_DEBUG, "%s key into keybuf: %02X (%s)", insert ? "insert" : "append", ch, p);

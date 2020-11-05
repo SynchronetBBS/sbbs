@@ -7,7 +7,7 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	var ret;
 
 	if (host === undefined)
-		throw("No hostname specified");
+		throw new Error("No hostname specified");
 	
 	this.revision = "JSFTP v" + "$Revision: 1.23 $".split(' ')[1];
 
@@ -40,19 +40,19 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	}
 	if (parseInt(response, 10) !== 220) {
 		this.socket.close();
-		throw("Invalid response from server: " + response);
+		throw new Error("Invalid response from server: " + response);
 	}
 	ret = parseInt(response = this.cmd("USER "+this.user, true), 10)
 	if (ret === 331)
 		ret = parseInt(response = this.cmd("PASS "+this.pass, true), 10);
 	if (ret === 332) {
 		if (this.account === undefined)
-			throw("Account required");
+			throw new Error("Account required");
 		ret = parseInt(response = this.cmd("ACCT "+this.account, true), 10);
 	}
 	if (ret !== 230 && ret != 202) {
 		this.socket.close();
-		throw("Login failed: " + response);
+		throw new Error("Login failed: " + response);
 	}
 	this.ascii = false;
 	this.passive = true;
@@ -298,7 +298,7 @@ FTP.prototype.do_sendfile = function(src, data_socket)
 	var f = new File(src);
 	if (!f.open("rb")) {
 		data_socket.close();
-		throw("Error " + f.error + " opening file '" + f.name + "'");
+		throw new Error("Error " + f.error + " opening file '" + f.name + "'");
 	}
 
 	do {
@@ -315,7 +315,7 @@ FTP.prototype.do_sendfile = function(src, data_socket)
 
 	rstr = this.cmd(undefined, true);
 	if (parseInt(rstr, 10) !== 226) {
-		throw("Data connection not closed: "+rstr);
+		throw new Error("Data connection not closed: "+rstr);
 	}
 	if (!error)
 		log(LOG_DEBUG, "Sent "+total+" bytes.");
@@ -333,7 +333,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 	var done = false;
 
 	if (!this.socket.is_connected)
-		throw("Socket disconnected");
+		throw new Error("Socket disconnected");
 
 	if (cmd !== undefined) {
 		while (this.socket.data_waiting) {
@@ -343,7 +343,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 		cmdline = cmd.replace(/\xff/g, "\xff\xff") + '\r\n';
 		log(LOG_DEBUG, "CMD: '"+cmd+"'");
 		if (this.socket.send(cmdline) != cmdline.length)
-			throw("Error " + this.socket.error + " sending command: '" + cmd + "'");
+			throw new Error("Error " + this.socket.error + " sending command: '" + cmd + "'");
 	}
 
 	if (needresp === true) {
@@ -355,7 +355,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 				m = rd.match(/^([0-9]{3})([- ])/);
 				if (rsp === undefined) {
 					if (m === null) {
-						throw("Invalid response: "+rd);
+						throw new Error("Invalid response: "+rd);
 					}
 					rsp = m[1];
 					if (m[2] === ' ')
@@ -373,9 +373,9 @@ FTP.prototype.cmd = function(cmd, needresp)
 			}
 			else {
 				if(cmd)
-					throw("recvline timeout waiting for response to command: '" + cmd + "'");
+					throw new Error("recvline timeout waiting for response to command: '" + cmd + "'");
 				else
-					throw("recvline timeout waiting for additional response");
+					throw new Error("recvline timeout waiting for additional response");
 			}
 		} while(this.socket.is_connected && !done);
 		return ret;
@@ -399,7 +399,7 @@ FTP.prototype.data_socket = function(cmd)
 	else
 		rstr = this.cmd("TYPE I", true);
 	if (parseInt(rstr, 10) !== 200)
-		throw("Unable to create data socket: " + rstr);
+		throw new Error("Unable to create data socket: " + rstr);
 
 	ip6 = this.socket.local_ip_address.indexOf(':') !== -1;
 	if (this.passive) {
@@ -407,20 +407,20 @@ FTP.prototype.data_socket = function(cmd)
 		if (ip6) {
 			rstr = this.cmd("EPSV", true);
 			if (parseInt(rstr, 10) !== 229)
-				throw("EPSV Failed: " + rstr);
+				throw new Error("EPSV Failed: " + rstr);
 			m = rstr.match(/\(\|\|\|([0-9]+)\|\)/);
 			if (m === null)
-				throw("Unable to parse EPSV reply: " + rstr);
+				throw new Error("Unable to parse EPSV reply: " + rstr);
 			rhost = this.host;
 			rport = parseInt(m[1], 10);
 		}
 		else {
 			rstr = this.cmd("PASV", true);
 			if (parseInt(rstr, 10) !== 227)
-				throw("PASV Failed: " + rstr);
+				throw new Error("PASV Failed: " + rstr);
 			m = rstr.match(/\(([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+),([0-9]+)\)/);
 			if (m === null)
-				throw("Unable to parse PASV reply: " + rstr);
+				throw new Error("Unable to parse PASV reply: " + rstr);
 			rhost = m[1] + '.' + m[2] + '.' + m[3] + '.' + m[4];
 			rport = (parseInt(m[5], 10) << 8) | parseInt(m[6], 10);
 		}
@@ -443,11 +443,11 @@ FTP.prototype.data_socket = function(cmd)
 			}
 		} catch(e) {
 			ds.close();
-			throw(e);
+			throw new Error(e);
 		}
 		if (parseInt(rstr, 10) !== 200) {
 			ds.close();
-			throw("EPRT/PORT rejected: " + rstr);
+			throw new Error("EPRT/PORT rejected: " + rstr);
 		}
 	}
 
@@ -461,14 +461,14 @@ FTP.prototype.data_socket = function(cmd)
 			// Fall-through
 		default:
 			ds.close();
-			throw(cmd+" failed: " + rstr);
+			throw new Error(cmd+" failed: " + rstr);
 	}
 
 	if (!this.passive) {
 		selret = socket_select([ds], this.timeout);
 		if (selret === null || selret.length === 0) {
 			ds.close();
-			throw("Timeout waiting for remote to connect");
+			throw new Error("Timeout waiting for remote to connect");
 		}
 		ts = ds.accept();
 		ds.close();
@@ -496,7 +496,7 @@ FTP.prototype.do_get = function(cmd, dest)
 		f = new File(dest);
 		if (!f.open("wb")) {
 			data_socket.close();
-			throw("Error " + f.error + " opening file '" + f.name + "'");
+			throw new Error("Error " + f.error + " opening file '" + f.name + "'");
 		}
 	}
 
@@ -510,14 +510,14 @@ FTP.prototype.do_get = function(cmd, dest)
 				f.write(rbuf);
 		}
 		else {
-			throw("recv timeout");
+			throw new Error("recv timeout");
 		}
 	} while(data_socket.is_connected && this.socket.is_connected);
 	data_socket.close();
 	if (f !== undefined)
 		f.close();
 	if (parseInt(this.cmd(undefined, true), 10) !== 226)
-		throw("Data connection not closed");
+		throw new Error("Data connection not closed");
 	log(LOG_DEBUG, "Received "+total+" bytes.");
 	if (dest === undefined)
 		return ret;

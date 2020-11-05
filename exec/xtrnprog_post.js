@@ -32,11 +32,6 @@ function exec_xtrn_post(program)
 
 	if(options.eval_after_exec)
 		eval(options.eval_after_exec);
-
-	if(program.settings&XTRN_PAUSE)
-		console.pause();
-	else
-		console.line_counter=0;
 }
 
 
