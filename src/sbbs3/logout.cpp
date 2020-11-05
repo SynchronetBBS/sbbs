@@ -181,7 +181,7 @@ void sbbs_t::backout()
 	file_t f;
 
 	SAFEPRINTF(path,"%sbackout.dab",cfg.node_dir);
-	if(flength(path)<1L) {
+	if(flength(path) < 1) {
 		remove(path);
 		return; 
 	}
