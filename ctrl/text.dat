@@ -1024,3 +1024,4 @@
 "\xfa\xf9\xfe\xf9"                                        842 SpinningCursor9
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal columns "\      843 HowManyColumns
 	"[\1wAuto\1y]: \1n"
+"\r\nExternal program not found\r\n"           844 NoXtrnProgram

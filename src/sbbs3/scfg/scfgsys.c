@@ -1669,6 +1669,8 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
+					sprintf(opt[i++],"%-16.16s%s","Xtrn Prog Pre",cfg.xtrnprogpre_mod);
+					sprintf(opt[i++],"%-16.16s%s","Xtrn Prog Post",cfg.xtrnprogpost_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
@@ -1696,6 +1698,8 @@ void sys_cfg(void)
 						"`Auto Message` Executed when a user chooses to edit the auto-message\n"
 						"`Text Section` Executed to handle general text file (viewing) section\n"
 						"`Xtrn Section` Executed to handle external programs (doors) section\n"
+						"`Xtrn Prog Pre` Executed before external programs (doors) run\n"
+						"`Xtrn Prog Post` Executed after external programs (doors) run\n"
 						"\n"
 						"Full module command-lines may be used for the operations listed below:\n"
 						"\n"
@@ -1759,34 +1763,42 @@ void sys_cfg(void)
 								,cfg.xtrnsec_mod,sizeof(cfg.xtrnsec_mod)-1,K_EDIT);
 							break;
 						case 10:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Pre Module"
+								,cfg.xtrnprogpre_mod,sizeof(cfg.xtrnprogpre_mod)-1,K_EDIT);
+							break;
+						case 11:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Post Module"
+								,cfg.xtrnprogpost_mod,sizeof(cfg.xtrnprogpost_mod)-1,K_EDIT);
+							break;														
+						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"
 								,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
 							break;
-						case 11:
+						case 13:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Command"
 								,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
 							break;
-						case 12:
+						case 14:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Command"
 								,cfg.scansubs_mod,sizeof(cfg.scansubs_mod)-1,K_EDIT);
 							break;
-						case 13:
+						case 15:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Command"
 								,cfg.listmsgs_mod,sizeof(cfg.listmsgs_mod)-1,K_EDIT);
 							break;
-						case 14:
+						case 16:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Logons Command"
 								,cfg.logonlist_mod,sizeof(cfg.logonlist_mod)-1,K_EDIT);
 							break;
-						case 15:
+						case 17:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Nodes Command"
 								,cfg.nodelist_mod,sizeof(cfg.nodelist_mod)-1,K_EDIT);
 							break;
-						case 16:
+						case 18:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Command"
 								,cfg.whosonline_mod,sizeof(cfg.whosonline_mod)-1,K_EDIT);
 							break;
-						case 17:
+						case 19:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Command"
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;

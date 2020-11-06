@@ -291,7 +291,15 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->logonlist_mod,instream);
 	if(cfg->logonlist_mod[0] == '\xff')
 		SAFECOPY(cfg->logonlist_mod, "logonlist");
-	for(i=0;i<126;i++)					/* unused - initialized to 0xff */
+
+	get_str(cfg->xtrnprogpre_mod,instream);
+	if(cfg->xtrnprogpre_mod[0] == '\xff') 
+	    SAFECOPY(cfg->xtrnprogpre_mod, "xtrnprog_pre");
+	get_str(cfg->xtrnprogpost_mod,instream);
+	if(cfg->xtrnprogpost_mod[0] == '\xff') 
+	    SAFECOPY(cfg->xtrnprogpost_mod, "xtrnprog_post");		
+		
+	for(i=0;i<118;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);

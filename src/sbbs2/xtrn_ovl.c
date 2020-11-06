@@ -1275,6 +1275,10 @@ void exec_xtrn(uint xtrnnum)
     node_t node;
 	time_t start,end;
 
+if(cfg.xtrnprogpre_mod[0] != '\0') {
+	SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,xtrn[xtrnnum]->code);
+	exec_bin(str, &main_csi);
+}
 
 if(!chk_ar(xtrn[xtrnnum]->run_ar,useron)
 	|| !chk_ar(xtrnsec[xtrn[xtrnnum]->sec]->ar,useron)) {
@@ -1433,6 +1437,11 @@ if(online==ON_REMOTE) {
 if(xtrn[xtrnnum]->misc&MODUSERDAT) {	/* Modify user data */
 	moduserdat(xtrnnum);
 	statusline(); }
+
+if(cfg.xtrnprogpost_mod[0] != '\0') {
+    SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpost_mod,xtrn[xtrnnum]->code);
+    exec_bin(str, &main_csi);
+ }
 
 getnodedat(node_num,&thisnode,1);
 thisnode.aux=0; /* aux is 0, only if at menu */
