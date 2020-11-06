@@ -1246,7 +1246,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			for(i=0;i<15;i++)			/* skip first 14 lines */
 				if(!fgets(str,128,stream))
 					break;
-			if(i==15 && isdigit(str[0])) {
+			if(i==15 && IS_DIGIT(str[0])) {
 				mod=atoi(str);
 				if(mod<SYSOP_LEVEL) {
 					useron.level=(char)mod;
@@ -1265,11 +1265,11 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			for(;i<25;i++)
 				if(!fgets(str,128,stream))
 					break;
-			if(i==25 && isdigit(str[0]) && isdigit(str[1])
+			if(i==25 && IS_DIGIT(str[0]) && IS_DIGIT(str[1])
 				&& (str[2]=='/' || str[2]=='-') /* xx/xx/xx or xx-xx-xx */
-				&& isdigit(str[3]) && isdigit(str[4])
+				&& IS_DIGIT(str[3]) && IS_DIGIT(str[4])
 				&& (str[5]=='/' || str[5]=='-')
-				&& isdigit(str[6]) && isdigit(str[7])) { /* valid expire date */
+				&& IS_DIGIT(str[6]) && IS_DIGIT(str[7])) { /* valid expire date */
 				useron.expire=(ulong)dstrtounix(&cfg,str);
 				putuserrec(&cfg,useron.number,U_EXPIRE,8,ultoa((ulong)useron.expire,tmp,16)); 
 			}
@@ -1296,7 +1296,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			for(;i<42;i++)
 				if(!fgets(str,128,stream))
 					break;
-			if(i==42 && isdigit(str[0])) {	/* Time Credits in Minutes */
+			if(i==42 && IS_DIGIT(str[0])) {	/* Time Credits in Minutes */
 				useron.min=atol(str);
 				putuserrec(&cfg,useron.number,U_MIN,10,ultoa(useron.min,tmp,10)); 
 			}
@@ -1351,7 +1351,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		}
 		if(fgets(str,81,stream)) {		/* main level */
 			mod=atoi(str);
-			if(isdigit(str[0]) && mod<SYSOP_LEVEL) {
+			if(IS_DIGIT(str[0]) && mod<SYSOP_LEVEL) {
 				useron.level=(uchar)mod;
 				putuserrec(&cfg,useron.number,U_LEVEL,2,ultoa(useron.level,tmp,10)); 
 			} 

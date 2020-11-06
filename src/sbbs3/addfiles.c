@@ -91,7 +91,7 @@ void prep_desc(char *str)
 			tmp[j++]=str[i];
 		else if(j && str[i]<=' ' && str[i] > 0&& tmp[j-1]==' ')
 			continue;
-		else if(i && !isalnum((uchar)str[i]) && str[i]==str[i-1])
+		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
 			continue;
 		else if(str[i]>=' ' || str[i]<0)
 			tmp[j++]=str[i];
@@ -248,7 +248,7 @@ bool get_file_diz(file_t* f, const char* filepath, char* ext)
 		sprintf(tmpext,"%.256s",ext);
 		prep_desc(tmpext);
 		for(i=0;tmpext[i];i++)
-			if(isalpha((uchar)tmpext[i]))
+			if(IS_ALPHA(tmpext[i]))
 				break;
 		sprintf(f->desc,"%.*s",LEN_FDESC,tmpext+i);
 		for(i=0;(f->desc[i]>=' ' || f->desc[i]<0) && i<LEN_FDESC;i++)
@@ -411,7 +411,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		else				   /* no space after filename? */
 			continue;
 #endif
-		if(!isalnum(*fname)) {	// filename doesn't begin with an alpha-numeric char?
+		if(!IS_ALPHANUMERIC(*fname)) {	// filename doesn't begin with an alpha-numeric char?
 			continue;
 		}
 		SAFEPRINTF2(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
@@ -756,7 +756,7 @@ int main(int argc, char **argv)
 		mode|=AUTO_ADD;
 		i=0;
 	} else {
-		if(!isalnum((uchar)argv[1][0]) && argc==2) {
+		if(!IS_ALPHANUMERIC(argv[1][0]) && argc==2) {
 			puts(usage);
 			return(1);
 		}
@@ -862,7 +862,7 @@ int main(int argc, char **argv)
 						return(1);
 			}
 		}
-		else if(isdigit((uchar)argv[j][0])) {
+		else if(IS_DIGIT(argv[j][0])) {
 			if(desc_offset==0)
 				desc_offset=atoi(argv[j]);
 			else
@@ -872,9 +872,9 @@ int main(int argc, char **argv)
 		else if(argv[j][0]=='+') {      /* filelist - FILES.BBS */
 			listgiven=1;
 			if(argc > j+1
-				&& isdigit((uchar)argv[j+1][0])) { /* skip x characters before description */
+				&& IS_DIGIT(argv[j+1][0])) { /* skip x characters before description */
 				if(argc > j+2
-					&& isdigit((uchar)argv[j+2][0])) { /* skip x characters before size */
+					&& IS_DIGIT(argv[j+2][0])) { /* skip x characters before size */
 					addlist(argv[j]+1,f,atoi(argv[j+1]),atoi(argv[j+2]));
 					j+=2;
 				}

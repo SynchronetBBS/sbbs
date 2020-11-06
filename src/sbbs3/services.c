@@ -44,7 +44,6 @@
 #include <stdlib.h>			/* ltoa in GNU C lib */
 #include <stdarg.h>			/* va_list */
 #include <string.h>			/* strrchr */
-#include <ctype.h>			/* isdigit */
 #include <fcntl.h>			/* Open flags */
 #include <errno.h>			/* errno */
 
@@ -386,7 +385,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			putmsgptrs(&scfg, &client->user, client->subscan);
 	}
 
-	if(isdigit(*user))
+	if(IS_DIGIT(*user))
 		client->user.number=atoi(user);
 	else if(*user)
 		client->user.number=matchuser(&scfg,user,FALSE);
@@ -1575,7 +1574,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
 
 		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
-		if(isdigit(*p))
+		if(IS_DIGIT(*p))
 			serv.port=(ushort)strtol(p,NULL,0);
 		else {
 			struct servent* servent = getservbyname(p,serv.options&SERVICE_OPT_UDP ? "udp":"tcp");

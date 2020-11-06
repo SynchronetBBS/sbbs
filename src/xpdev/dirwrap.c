@@ -612,7 +612,7 @@ BOOL DLLCALL fexistcase(char *path)
 	SAFECOPY(fname,p);
 	*p=0;
 	for(i=0;fname[i];i++)  {
-		if(isalpha(fname[i]))
+		if(IS_ALPHA(fname[i]))
 			sprintf(tmp,"[%c%c]",toupper(fname[i]),tolower(fname[i]));
 		else
 			sprintf(tmp,"%c",fname[i]);
@@ -733,7 +733,7 @@ int removecase(const char *path)
 	p=getfname(inpath);
 	fname[0]=0;
 	for(i=0;p[i];i++)  {
-		if(isalpha(p[i]))
+		if(IS_ALPHA(p[i]))
 			sprintf(tmp,"[%c%c]",toupper(p[i]),tolower(p[i]));
 		else
 			sprintf(tmp,"%c",p[i]);
@@ -1099,7 +1099,7 @@ BOOL DLLCALL isfullpath(const char* filename)
 {
 	return(filename[0]=='/'
 #ifdef WIN32
-		|| filename[0]=='\\' || (isalpha(filename[0]) && filename[1]==':')
+		|| filename[0]=='\\' || (IS_ALPHA(filename[0]) && filename[1]==':')
 #endif
 		);
 }

@@ -165,8 +165,8 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 				if(mark == 0)
 					next = strchr(str + l + 1, str[l]);
 				char *blank = strstr(str + l + 1, "\n\r");
-				if(((l < 1 || isspace(str[l - 1]) || ispunct(str[l - 1]))
-						&& isalnum(str[l + 1]) && mark == 0 && next != NULL	&& (*(next + 1) == '\0' || isspace(*(next + 1)) || ispunct(*(next+1)))
+				if(((l < 1 || IS_WHITESPACE(str[l - 1]) || IS_PUNCTUATION(str[l - 1]))
+						&& IS_ALPHANUMERIC(str[l + 1]) && mark == 0 && next != NULL	&& (*(next + 1) == '\0' || IS_WHITESPACE(*(next + 1)) || IS_PUNCTUATION(*(next+1)))
 						&& (blank == NULL || next < blank))
 					|| str[l] == mark) {
 					if(mark == 0)
@@ -201,7 +201,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 			if(str[l+1]=='"' && !(sys_status&SS_NEST_PF) && !((*mode)&P_NOATCODES)) {  /* Quote a file */
 				l+=2;
 				i=0;
-				while(i<(int)sizeof(tmp2)-1 && isprint((unsigned char)str[l]) && str[l]!='\\' && str[l]!='/')
+				while(i<(int)sizeof(tmp2)-1 && IS_PRINTABLE(str[l]) && str[l]!='\\' && str[l]!='/')
 					tmp2[i++]=str[l++];
 				if(i > 0) {
 					tmp2[i]=0;
@@ -234,7 +234,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 		}
 		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_PCBOARD) && str[l]=='@' && str[l+1]=='X'
-			&& isxdigit((unsigned char)str[l+2]) && isxdigit((unsigned char)str[l+3])) {
+			&& IS_HEXDIGIT(str[l+2]) && IS_HEXDIGIT(str[l+3])) {
 			sprintf(tmp2,"%.2s",str+l+2);
 			ulong val = ahtoul(tmp2);
 			// @X00 saves the current color and @XFF restores that saved color
@@ -255,15 +255,15 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 		}
 		else if(!((*mode)&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_WILDCAT) && str[l]=='@' && str[l+3]=='@'
-			&& isxdigit((unsigned char)str[l+1]) && isxdigit((unsigned char)str[l+2])) {
+			&& IS_HEXDIGIT(str[l+1]) && IS_HEXDIGIT(str[l+2])) {
 			sprintf(tmp2,"%.2s",str+l+1);
 			attr(ahtoul(tmp2));
 			// exatr=1;
 			l+=4;
 		}
 		else if(!((*mode)&P_NOXATTRS)
-			&& (cfg.sys_misc&SM_RENEGADE) && str[l]=='|' && isdigit((unsigned char)str[l+1])
-			&& isdigit((unsigned char)str[l+2]) && !(useron.misc&RIP)) {
+			&& (cfg.sys_misc&SM_RENEGADE) && str[l]=='|' && IS_DIGIT(str[l+1])
+			&& IS_DIGIT(str[l+2]) && !(useron.misc&RIP)) {
 			sprintf(tmp2,"%.2s",str+l+1);
 			i=atoi(tmp2);
 			if(i>=16) { 				/* setting background */
@@ -278,7 +278,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 			l+=3;	/* Skip |xx */
 		}
 		else if(!((*mode)&P_NOXATTRS)
-			&& (cfg.sys_misc&SM_CELERITY) && str[l]=='|' && isalpha((unsigned char)str[l+1])
+			&& (cfg.sys_misc&SM_CELERITY) && str[l]=='|' && IS_ALPHA(str[l+1])
 			&& !(useron.misc&RIP)) {
 			switch(str[l+1]) {
 				case 'k':
@@ -337,7 +337,7 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 			l+=2;	/* Skip |x */
 		}  /* Skip second digit if it exists */
 		else if(!((*mode)&P_NOXATTRS)
-			&& (cfg.sys_misc&SM_WWIV) && str[l]==CTRL_C && isdigit((unsigned char)str[l+1])) {
+			&& (cfg.sys_misc&SM_WWIV) && str[l]==CTRL_C && IS_DIGIT(str[l+1])) {
 			exatr=1;
 			switch(str[l+1]) {
 				default:

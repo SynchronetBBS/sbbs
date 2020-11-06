@@ -53,7 +53,6 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #endif
 
 #if defined(_WIN32)
-	#include <ctype.h>	/* isdigit() */
 	#include <conio.h>	/* getch() */
 #endif
 
@@ -447,7 +446,7 @@ void config(void)
 	printf("Last Message  =%-6"PRIu32" New Value (CR=No Change): "
 		,smb.status.last_msg);
 	gets(str);
-	if(isdigit(str[0]))
+	if(IS_DIGIT(str[0]))
 		last_msg = atol(str);
 	printf("Header offset =%-5"PRIu32"  New value (CR=No Change): "
 		,smb.status.header_offset);
@@ -479,15 +478,15 @@ void config(void)
 	}
 	if(last_msg != 0)
 		smb.status.last_msg = last_msg;
-	if(isdigit(max_msgs[0]))
+	if(IS_DIGIT(max_msgs[0]))
 		smb.status.max_msgs=atol(max_msgs);
-	if(isdigit(max_crcs[0]))
+	if(IS_DIGIT(max_crcs[0]))
 		smb.status.max_crcs=atol(max_crcs);
-	if(isdigit(max_age[0]))
+	if(IS_DIGIT(max_age[0]))
 		smb.status.max_age=atoi(max_age);
-	if(isdigit(header_offset[0]))
+	if(IS_DIGIT(header_offset[0]))
 		smb.status.header_offset=atol(header_offset);
-	if(isdigit(attr[0]))
+	if(IS_DIGIT(attr[0]))
 		smb.status.attr=atoi(attr);
 	i=smb_putstatus(&smb);
 	smb_unlocksmbhdr(&smb);
@@ -1511,7 +1510,7 @@ short str2tzone(const char* str)
 	char tmp[32];
 	short zone;
 
-	if(isdigit(*str) || *str=='-' || *str=='+') { /* [+|-]HHMM format */
+	if(IS_DIGIT(*str) || *str=='-' || *str=='+') { /* [+|-]HHMM format */
 		if(*str=='+') str++;
 		sprintf(tmp,"%.*s",*str=='-'? 3:2,str);
 		zone=atoi(tmp)*60;
@@ -1626,7 +1625,7 @@ int main(int argc, char **argv)
 			argv[x][0]=='/' ||		/* for backwards compatibilty */
 #endif
 			argv[x][0]=='-') {
-			if(isdigit(argv[x][1])) {
+			if(IS_DIGIT(argv[x][1])) {
 				count=strtol(argv[x]+1,NULL,10);
 				continue;
 			}

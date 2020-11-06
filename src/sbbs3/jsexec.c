@@ -1111,7 +1111,7 @@ int parseLogLevel(const char* p)
 	str_list_t logLevelStringList=iniLogLevelStringList();
 	int i;
 
-	if(isdigit(*p))
+	if(IS_DIGIT(*p))
 		return strtol(p,NULL,0);
 
 	/* Exact match */

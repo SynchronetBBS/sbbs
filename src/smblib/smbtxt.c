@@ -234,7 +234,7 @@ char* qp_decode(char* buf)
 				break;
 			if(*p == '\n')
 				continue;
-			if(isxdigit(*p) && isxdigit(*(p+1))) {
+			if(IS_HEXDIGIT(*p) && IS_HEXDIGIT(*(p+1))) {
 				uchar ch = HEX_CHAR_TO_INT(*p) << 4;
 				p++;
 				ch |= HEX_CHAR_TO_INT(*p);

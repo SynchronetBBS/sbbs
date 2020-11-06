@@ -243,7 +243,7 @@ bool sbbs_t::logon()
 			c=0;
 			while(c < RAND_PASS_LEN) { 				/* Create random password */
 				str[c]=sbbs_random(43)+'0';
-				if(isalnum(str[c]))
+				if(IS_ALPHANUMERIC(str[c]))
 					c++; 
 			}
 			str[c]=0;

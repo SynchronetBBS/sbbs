@@ -1656,7 +1656,7 @@ int main(int argc, char **argv)
 
 	for(i=1;i<argc;i++) {
 
-		if(sock==INVALID_SOCKET && isdigit(argv[i][0])) {
+		if(sock==INVALID_SOCKET && IS_DIGIT(argv[i][0])) {
 			sock=atoi(argv[i]);
 			continue;
 		}

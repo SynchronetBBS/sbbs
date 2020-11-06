@@ -293,7 +293,7 @@ void sbbs_t::useredit(int usernumber)
 						menu(str);
 						continue; 
 					}
-					if(isdigit(c)) {
+					if(IS_DIGIT(c)) {
 						i=c&0xf;
 						continue; 
 					}
@@ -343,7 +343,7 @@ void sbbs_t::useredit(int usernumber)
 			case 'G':
 				bputs(text[GoToUser]);
 				if(getstr(str,LEN_ALIAS,K_UPPER|K_LINE)) {
-					if(isdigit(str[0])) {
+					if(IS_DIGIT(str[0])) {
 						i=atoi(str);
 						if(i>lastuser(&cfg))
 							break;
@@ -503,7 +503,7 @@ void sbbs_t::useredit(int usernumber)
 				ASYNC;
 				bputs(text[QuickValidatePrompt]);
 				c=getkey(0);
-				if(!isdigit(c))
+				if(!IS_DIGIT(c))
 					break;
 				i=c&0xf;
 				user.level=cfg.val_level[i];

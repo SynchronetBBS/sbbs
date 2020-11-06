@@ -11,6 +11,9 @@ When submitting merge requests to existing files, unless you have prior agreemen
 
 In general, if it's a large set of changes, your best bet of getting it accepted and merged into the repo would be to discuss the concept of the change with the developers in the [Synchronet Programming conference](http://web.synchro.net/?page=001-forum.ssjs&sub=syncprog) **first**.
 
-If you were intereseted in contributing money, not code, then paypal to rob at synchro dot net.
+When modifying the C/C++ source files:
+* Do not call functions from `ctype.h` (e.g. `isprint`, `isspace`, `isdigit`, etc.) - use the `gen_defs.h IS_*` macros instead.
+
+If you were interested in contributing money, not code, then paypal to rob at synchro dot net.
 
 Thank you for contributing!

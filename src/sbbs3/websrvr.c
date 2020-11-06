@@ -2279,7 +2279,7 @@ static void unescape(char *p)
 
 	dst=p;
 	for(;*p;p++) {
-		if(*p=='%' && isxdigit((uchar)*(p+1)) && isxdigit((uchar)*(p+2))) {
+		if(*p=='%' && IS_HEXDIGIT(*(p+1)) && IS_HEXDIGIT(*(p+2))) {
 			sprintf(code,"%.2s",p+1);
 			*(dst++)=(char)strtol(code,NULL,16);
 			p+=2;
@@ -2528,7 +2528,7 @@ static char *get_token_value(char **p)
 		}
 	}
 end_of_text:
-	while(*pos==',' || isspace(*pos))
+	while(*pos==',' || IS_WHITESPACE(*pos))
 		pos++;
 	*out=0;
 	*p=pos;
@@ -2602,7 +2602,7 @@ static BOOL parse_headers(http_session_t * session)
 								session->req.auth.type=AUTHENTICATION_DIGEST;
 								/* Parse out values one at a time and store */
 								while(p != NULL && *p) {
-									while(isspace(*p))
+									while(IS_WHITESPACE(*p))
 										p++;
 									if(strnicmp(p,"username=",9)==0) {
 										p+=9;
@@ -2865,7 +2865,7 @@ static BOOL parse_js_headers(http_session_t * session)
 
 						p=value;
 						while((key=strtok_r(p,"=",&last))!=NULL) {
-							while(isspace(*key))
+							while(IS_WHITESPACE(*key))
 								key++;
 							p=NULL;
 							if((val=strtok_r(p,";\t\n\v\f\r ",&last))!=NULL) {	/* Whitespace */
@@ -2954,7 +2954,7 @@ static char * split_port_part(char *host)
 	char *ret = NULL;
 	char *p=strchr(host, 0)-1;
 
-	if (isdigit(*p)) {
+	if (IS_DIGIT(*p)) {
 		/*
 		 * If the first and last : are not the same, and it doesn't
 		 * start with '[', there's no port part.
@@ -2969,7 +2969,7 @@ static char * split_port_part(char *host)
 				ret = p+1;
 				break;
 			}
-			if (!isdigit(*p))
+			if (!IS_DIGIT(*p))
 				break;
 		}
 	}
@@ -5460,7 +5460,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	memset(&user,0,sizeof(user));
 
-	if(isdigit((uchar)*username))
+	if(IS_DIGIT(*username))
 		user.number=atoi(username);
 	else if(*username)
 		user.number=matchuser(&scfg,username,FALSE);

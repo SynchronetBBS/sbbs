@@ -178,7 +178,7 @@ size_t sbbs_t::bstrlen(const char *str, long mode)
 /* Perform PETSCII terminal output translation (from ASCII/CP437) */
 unsigned char cp437_to_petscii(unsigned char ch)
 {
-	if(isalpha(ch))
+	if(IS_ALPHA(ch))
 		return ch ^ 0x20;	/* swap upper/lower case */
 	switch(ch) {
 		case '\1':		return '@';
@@ -260,7 +260,7 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 {
 	if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
 		ch = 0x60 | (ch&0x1f);
-	if(isalpha(ch))
+	if(IS_ALPHA(ch))
 		return outchar(ch ^ 0x20);	/* swap upper/lower case */
 	switch(ch) {
 		case '\r':					newline();		break;
@@ -1038,7 +1038,7 @@ void sbbs_t::ctrl_a(char x)
 		cursor_right((uchar)x-0x7f);
 		return;
 	}
-	if(isdigit(x)) {	/* background color */
+	if(IS_DIGIT(x)) {	/* background color */
 		atr &= (BG_BRIGHT|BLINK|0x0f);
 	}
 	switch(toupper(x)) {

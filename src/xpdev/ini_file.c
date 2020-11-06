@@ -1358,7 +1358,7 @@ static BOOL isTrue(const char* value)
 	char*	p;
 	BOOL	is_true;
 
-	if(!isalpha(*value))
+	if(!IS_ALPHA(*value))
 		return FALSE;
 
 	if((str=strdup(value)) == NULL)
@@ -1933,7 +1933,7 @@ static unsigned parseEnum(const char* value, str_list_t names, unsigned deflt)
 			return(i);
 
     i=strtoul(val, &endptr, 0);
-	if(*endptr != 0 && !isspace(*endptr))
+	if(*endptr != 0 && !IS_WHITESPACE(*endptr))
 		return deflt;
 	if(i>=count)
 		i=count-1;

@@ -1887,8 +1887,8 @@ static void receive_thread(void* arg)
 							SAFECOPY(desc,ext);
 							strip_exascii(desc, desc);	/* strip extended ASCII chars */
 							prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
-							for(i=0;desc[i];i++)	/* find approprate first char */
-								if(isalnum(desc[i]))
+							for(i=0;desc[i];i++)	/* find appropriate first char */
+								if(IS_ALPHANUMERIC(desc[i]))
 									break;
 							SAFECOPY(f.desc,desc+i); 
 						}

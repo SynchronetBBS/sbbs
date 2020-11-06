@@ -1842,7 +1842,7 @@ const char* quoted_string(const char* str, char* buf, size_t maxlen)
 }
 
 #define QUOTED_STRING(ch, str, buf, maxlen) \
-	((isalpha(ch) && isupper(ch)) ? str : quoted_string(str,buf,maxlen))
+	((IS_ALPHA(ch) && IS_UPPERCASE(ch)) ? str : quoted_string(str,buf,maxlen))
 
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacements            */
@@ -1864,7 +1864,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
             cmd[j]=0;
 			int avail = maxlen - j;
 			char ch=instr[i];
-			if(isalpha(ch))
+			if(IS_ALPHA(ch))
 				ch=toupper(ch);
             switch(ch) {
                 case 'A':   /* User alias */
@@ -2000,7 +2000,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					strncat(cmd, ARCHITECTURE_DESC, avail);
 					break;
                 default:    /* unknown specification */
-                    if(isdigit(instr[i])) {
+                    if(IS_DIGIT(instr[i])) {
                         sprintf(str,"%0*d",instr[i]&0xf,useron.number);
                         strncat(cmd,str, avail); }
                     break; }
@@ -2033,7 +2033,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
             cmd[j]=0;
 			int avail = maxlen - j;
 			char ch=instr[i];
-			if(isalpha(ch))
+			if(IS_ALPHA(ch))
 				ch=toupper(ch);
             switch(ch) {
                 case 'A':   /* User alias */
@@ -2168,7 +2168,7 @@ char* DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* f
 					strncat(cmd, ARCHITECTURE_DESC, avail);
 					break;
                 default:    /* unknown specification */
-                    if(isdigit(instr[i]) && user!=NULL) {
+                    if(IS_DIGIT(instr[i]) && user!=NULL) {
                         sprintf(str,"%0*d",instr[i]&0xf,user->number);
                         strncat(cmd,str, avail);
 					}
