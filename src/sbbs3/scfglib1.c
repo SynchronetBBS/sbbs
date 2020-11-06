@@ -294,10 +294,10 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 
 	get_str(cfg->xtrnprogpre_mod,instream);
 	if(cfg->xtrnprogpre_mod[0] == '\xff') 
-	    SAFECOPY(cfg->xtrnprogpre_mod, "xtrnprog_pre");
+	    SAFECOPY(cfg->xtrnprogpre_mod, "prextrn");
 	get_str(cfg->xtrnprogpost_mod,instream);
 	if(cfg->xtrnprogpost_mod[0] == '\xff') 
-	    SAFECOPY(cfg->xtrnprogpost_mod, "xtrnprog_post");		
+	    SAFECOPY(cfg->xtrnprogpost_mod, "postxtrn");		
 		
 	for(i=0;i<118;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
