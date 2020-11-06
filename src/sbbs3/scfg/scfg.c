@@ -233,7 +233,7 @@ int main(int argc, char **argv)
 					umask(strtoul(argv[i]+2,NULL,8));
 					break;
 				case 'G':
-					if(isalpha(argv[i][2]))
+					if(IS_ALPHA(argv[i][2]))
 						grpname = argv[i]+2;
 					else
 						grpnum = atoi(argv[i]+2);

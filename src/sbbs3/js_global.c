@@ -1886,7 +1886,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 				ansi_seq[MAX_ANSI_SEQ]=0;
 				for(lastparam=ansi_seq;*lastparam;lastparam++)
 				{
-					if(isalpha(*lastparam))
+					if(IS_ALPHA(*lastparam))
 					{
 						*(++lastparam)=0;
 						break;
@@ -1896,16 +1896,16 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 				param=ansi_seq;
 				if(*param=='?')		/* This is to fix ESC[?7 whatever that is */
 					param++;
-				if(isdigit(*param))
+				if(IS_DIGIT(*param))
 					ansi_param[k++]=atoi(ansi_seq);
-				while(isspace(*param) || isdigit(*param))
+				while(IS_WHITESPACE(*param) || IS_DIGIT(*param))
 					param++;
 				lastparam=param;
 				while((param=strchr(param,';'))!=NULL)
 				{
 					param++;
 					ansi_param[k++]=atoi(param);
-					while(isspace(*param) || isdigit(*param))
+					while(IS_WHITESPACE(*param) || IS_DIGIT(*param))
 						param++;
 					lastparam=param;
 				}

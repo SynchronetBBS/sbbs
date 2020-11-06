@@ -74,7 +74,7 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 			}
 			if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
 				ch = 0x60 | (ch&0x1f);
-			if(isalpha((unsigned char)ch))
+			if(IS_ALPHA(ch))
 				ch ^= 0x20;	/* Swap upper/lower case */
 		}
 
@@ -416,7 +416,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							return 0;
 						}
 						str[i++] = byte;
-						if(isalpha(byte))
+						if(IS_ALPHA(byte))
 							break;
 					}
 					str[i] = 0;
@@ -487,7 +487,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	#endif
 					return 0;
 				}
-				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
+				if(ch!=';' && !IS_DIGIT(ch) && ch!='R') {    /* other ANSI */
 					str[i]=0;
 					switch(ch) {
 						case 'A':

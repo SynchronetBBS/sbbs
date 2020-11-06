@@ -422,7 +422,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 					continue; 
 				}
 
-				if(!isdigit(quote[0]))
+				if(!IS_DIGIT(quote[0]))
 					break;
 				p=quote;
 				while(p) {

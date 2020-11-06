@@ -40,7 +40,6 @@
 #include <stdlib.h>			/* ltoa in GNU C lib */
 #include <stdarg.h>			/* va_list */
 #include <string.h>			/* strrchr */
-#include <ctype.h>			/* isdigit */
 #include <fcntl.h>			/* Open flags */
 #include <errno.h>			/* errno */
 
@@ -946,7 +945,7 @@ static u_long resolve_ip(const char *inaddr)
 		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
-		if(*p!='.' && !isdigit((uchar)*p))
+		if(*p!='.' && !IS_DIGIT(*p))
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
@@ -1478,7 +1477,7 @@ static void pop3_thread(void* arg)
 			if(!strnicmp(buf, "LIST",4) || !strnicmp(buf,"UIDL",4)) {
 				p=buf+4;
 				SKIP_WHITESPACE(p);
-				if(isdigit((uchar)*p)) {
+				if(IS_DIGIT(*p)) {
 					msgnum=strtoul(p, NULL, 10);
 					if(msgnum<1 || msgnum>msgs) {
 						lprintf(LOG_NOTICE,"%04d %s <%s> !INVALID message #%" PRIu32
@@ -2428,7 +2427,7 @@ char* mimehdr_q_decode(char* buf)
 	for(;*p != 0; p++) {
 		if(*p == '=') {
 			p++;
-			if(isxdigit(*p) && isxdigit(*(p + 1))) {
+			if(IS_HEXDIGIT(*p) && IS_HEXDIGIT(*(p + 1))) {
 				uchar ch = HEX_CHAR_TO_INT(*p) << 4;
 				p++;
 				ch |= HEX_CHAR_TO_INT(*p);
@@ -2655,7 +2654,7 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 		if(*p==0)
 			break;
 		p2=host_name;
-		for(;*p && !isspace((unsigned char)*p) && p2<host_name+126;p++)  {
+		for(;*p && !IS_WHITESPACE(*p) && p2<host_name+126;p++)  {
 			*p2++=*p;
 		}
 		*p2=0;
@@ -2754,7 +2753,7 @@ static char* qp_decode(char* buf)
 			p++;
 			if(*p==0) 	/* soft link break */
 				break;
-			if(isxdigit(*p) && isxdigit(*(p+1))) {
+			if(IS_HEXDIGIT(*p) && IS_HEXDIGIT(*(p+1))) {
 				char hex[3];
 				hex[0]=*p;
 				hex[1]=*(p+1);
@@ -4836,7 +4835,7 @@ static void smtp_thread(void* arg)
 			}
 
 			if((p==alias_buf || p==name_alias_buf || startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER)
-				&& isdigit((uchar)*p)) {
+				&& IS_DIGIT(*p)) {
 				usernum=atoi(p);			/* RX by user number */
 				/* verify usernum */
 				username(&scfg,usernum,str);
@@ -5247,7 +5246,7 @@ void get_dns_server(char* dns_server, size_t len)
 	size_t		count;
 
 	sprintf(dns_server,"%.*s",(int)len-1,startup->dns_server);
-	if(!isalnum(dns_server[0])) {
+	if(!IS_ALPHANUMERIC(dns_server[0])) {
 		if((list=getNameServerList())!=NULL) {
 			if((count=strListCount(list))>0) {
 				sprintf(dns_server,"%.*s",(int)len,list[xp_random(count)]);

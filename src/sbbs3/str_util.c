@@ -128,7 +128,7 @@ char* strip_space(const char *str, char* dest)
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++)
-		if(!isspace((unsigned char)str[i]))
+		if(!IS_WHITESPACE(str[i]))
 			dest[j++]=str[i];
 	dest[j]=0;
 	return dest;
@@ -167,7 +167,7 @@ char* prep_file_desc(const char *str, char* dest)
 		}
 		else if(j && str[i]<=' ' && dest[j-1]==' ')
 			continue;
-		else if(i && !isalnum((unsigned char)str[i]) && str[i]==str[i-1])
+		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
 			continue;
 		else if((uchar)str[i]>=' ')
 			dest[j++]=str[i];
@@ -671,7 +671,7 @@ char* condense_whitespace(char* str)
 	char* s = str;
 	char* d = str;
 	while(*s != '\0') {
-		if(isspace((unsigned char)*s)) {
+		if(IS_WHITESPACE(*s)) {
 			*(d++) = ' ';
 			SKIP_WHITESPACE(s);
 		} else {

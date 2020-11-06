@@ -623,7 +623,7 @@ void tevents_cfg()
 						SAFEPRINTF(str, "%u", cfg.event[i]->node);
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Execution Node Number (or Any)"
 						,str,3,K_EDIT) > 0) {
-						if(isdigit(*str))
+						if(IS_DIGIT(*str))
 							cfg.event[i]->node=atoi(str);
 						else
 							cfg.event[i]->node = NODE_ANY;
@@ -643,7 +643,7 @@ void tevents_cfg()
 					for(p=str;*p;p++) {
 						if(atoi(p)) {
 							cfg.event[i]->months|=(1<<(atoi(p)-1));
-							while(*p && isdigit(*p))
+							while(*p && IS_DIGIT(*p))
 								p++;
 						} else {
 							for(j=0;j<12;j++)
@@ -672,7 +672,7 @@ void tevents_cfg()
 						if(!isdigit(*p))
 							continue;
 						cfg.event[i]->mdays|=(1<<atoi(p));
-						while(*p && isdigit(*p))
+						while(*p && IS_DIGIT(*p))
 							p++;
 					}
 					break;

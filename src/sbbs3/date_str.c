@@ -54,18 +54,18 @@ time32_t DLLCALL dstrtounix(scfg_t* cfg, const char *instr)
 	if(!instr[0] || !strncmp(instr,"00/00/00",8))
 		return(0);
 
-	if(isdigit(instr[0]) && isdigit(instr[1])
-		&& isdigit(instr[3]) && isdigit(instr[4])
-		&& isdigit(instr[6]) && isdigit(instr[7]))
+	if(IS_DIGIT(instr[0]) && IS_DIGIT(instr[1])
+		&& IS_DIGIT(instr[3]) && IS_DIGIT(instr[4])
+		&& IS_DIGIT(instr[6]) && IS_DIGIT(instr[7]))
 		p=instr;	/* correctly formatted */
 	else {
 		p=instr;	/* incorrectly formatted */
-		while(*p && isdigit(*p)) p++;
+		while(*p && IS_DIGIT(*p)) p++;
 		if(*p==0)
 			return(0);
 		p++;
 		day=p;
-		while(*p && isdigit(*p)) p++;
+		while(*p && IS_DIGIT(*p)) p++;
 		if(*p==0)
 			return(0);
 		p++;

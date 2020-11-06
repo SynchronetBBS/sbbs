@@ -383,7 +383,7 @@ BOOL sbbs_t::newuser()
 		c=0;
 		while(c < RAND_PASS_LEN) { 				/* Create random password */
 			useron.pass[c]=sbbs_random(43)+'0';
-			if(isalnum(useron.pass[c]))
+			if(IS_ALPHANUMERIC(useron.pass[c]))
 				c++; 
 		}
 		useron.pass[c]=0;

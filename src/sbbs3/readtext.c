@@ -50,10 +50,10 @@ char *readtext(long *line,FILE *stream,long dflt)
 	for(i=1,j=0;i<k && j<sizeof(str)-1;j++) {
 		if(buf[i]=='\\')	{ /* escape */
 			i++;
-			if(isdigit(buf[i])) {
+			if(IS_DIGIT(buf[i])) {
 				str[j]=atoi(buf+i); 	/* decimal, NOT octal */
-				if(isdigit(buf[++i]))	/* skip up to 3 digits */
-					if(isdigit(buf[++i]))
+				if(IS_DIGIT(buf[++i]))	/* skip up to 3 digits */
+					if(IS_DIGIT(buf[++i]))
 						i++;
 				continue; 
 			}

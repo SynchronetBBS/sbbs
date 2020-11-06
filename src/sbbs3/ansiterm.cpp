@@ -243,7 +243,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             	rsp++;
 				start=time(NULL);
 			}
-            else if(isdigit(ch) && rsp==2) {
+            else if(IS_DIGIT(ch) && rsp==2) {
 				if(y!=NULL) {
                		(*y)*=10;
 					(*y)+=(ch&0xf);
@@ -254,7 +254,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             	rsp++;
 				start=time(NULL);
 			}
-            else if(isdigit(ch) && rsp==3) {
+            else if(IS_DIGIT(ch) && rsp==3) {
 				if(x!=NULL) {
             		(*x)*=10;
 					(*x)+=(ch&0xf);

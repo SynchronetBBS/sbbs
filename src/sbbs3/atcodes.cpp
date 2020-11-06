@@ -52,7 +52,7 @@ static char* separate_thousands(const char* src, char *dest, size_t maxlen, char
 	if(strlen(src) * 1.3 > maxlen)
 		return (char*)src;
 	const char* tail = src;
-	while(*tail && isdigit(*tail))
+	while(*tail && IS_DIGIT(*tail))
 		tail++;
 	if(tail == src)
 		return (char*)src;
@@ -174,13 +174,13 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	if(p!=NULL) {
 		char* lp = p;
 		lp++;	// skip the '|' or '-'
-		while(*lp == '>'|| isalpha((uchar)*lp))
+		while(*lp == '>'|| IS_ALPHA(*lp))
 			lp++;
 		if(*lp)
 			width_specified = true;
-		while(*lp && !isdigit((uchar)*lp))
+		while(*lp && !IS_DIGIT(*lp))
 			lp++;
-		if(*lp && isdigit((uchar)*lp)) {
+		if(*lp && IS_DIGIT(*lp)) {
 			disp_len=atoi(lp);
 			width_specified = true;
 		}

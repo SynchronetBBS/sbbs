@@ -40,7 +40,6 @@
 #include "netwrap.h"	/* verify prototypes */
 
 #include <stdlib.h>		/* malloc() */
-#include <ctype.h>		/* isspace() */
 
 #if defined(_WIN32)
 	#include <iphlpapi.h>	/* GetNetworkParams */

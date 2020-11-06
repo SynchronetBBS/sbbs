@@ -1521,9 +1521,9 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic=*csi->ip++;
 				return(0);
 			case CS_CMDKEY:
-				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
+				if( ((*csi->ip)==CS_DIGIT && IS_DIGIT(csi->cmd))
 					|| ((*csi->ip)==CS_EDIGIT && csi->cmd&0x80
-					&& isdigit(csi->cmd&0x7f))) {
+					&& IS_DIGIT(csi->cmd&0x7f))) {
 					csi->ip++;
 					return(0); 
 				}
@@ -1597,9 +1597,9 @@ int sbbs_t::exec(csi_t *csi)
 					memmove(csi->str,csi->str+i,j+1);
 				return(0);
 			case CS_COMPARE_KEY:
-				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
+				if( ((*csi->ip)==CS_DIGIT && IS_DIGIT(csi->cmd))
 					|| ((*csi->ip)==CS_EDIGIT && csi->cmd&0x80
-					&& isdigit(csi->cmd&0x7f))) {
+					&& IS_DIGIT(csi->cmd&0x7f))) {
 					csi->ip++;
 					csi->logic=LOGIC_TRUE; 
 				}
@@ -1628,7 +1628,7 @@ int sbbs_t::exec(csi_t *csi)
 				}
 				switch(*(csi->ip++)) {
 					case USER_STRING_ALIAS:
-						if(!isalpha(csi->str[0]) || trashcan(csi->str,"name"))
+						if(!IS_ALPHA(csi->str[0]) || trashcan(csi->str,"name"))
 							break;
 						i=matchuser(&cfg,csi->str,TRUE /*sysop_alias*/);
 						if(i && i!=useron.number)

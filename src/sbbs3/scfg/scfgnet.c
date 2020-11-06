@@ -980,7 +980,7 @@ void qhub_edit(int num)
 				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Node to Perform Call-out",str,3,K_EDIT) > 0) {
-					if(isdigit(*str))
+					if(IS_DIGIT(*str))
 						cfg.qhub[num]->node=atoi(str);
 					else
 						cfg.qhub[num]->node = NODE_ANY;
