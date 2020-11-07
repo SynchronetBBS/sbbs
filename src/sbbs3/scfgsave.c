@@ -266,7 +266,7 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
     put_str(cfg->xtrnprogpost_mod,stream);
     
 	n=0xffff;
-	for(i=0;i<118;i++)
+	for(i=0;i<110;i++)
 		put_int(n,stream);
 
 	put_int(cfg->user_backup_level,stream);

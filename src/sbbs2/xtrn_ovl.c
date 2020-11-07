@@ -1275,7 +1275,7 @@ void exec_xtrn(uint xtrnnum)
     node_t node;
 	time_t start,end;
 
-if(cfg.xtrnprogpre_mod[0] != '\0') {
+if(cfg.xtrnprogpre_mod[0] != '\xff') {
 	SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,xtrn[xtrnnum]->code);
 	exec_bin(str, &main_csi);
 }
