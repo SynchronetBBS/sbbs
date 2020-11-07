@@ -20,6 +20,10 @@ if((options=load({}, "modopts.js","xtrn_sec")) == null)
 
 function exec_xtrn_pre(program)
 {
+	if ((options.disable_xtrnpre_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
+		return;
+	}
+	
 	if(options.restricted_user_msg === undefined)
 		options.restricted_user_msg = bbs.text(R_ExternalPrograms);
 
@@ -48,7 +52,7 @@ function exec_xtrn_pre(program)
 
 /* main: */
 {
-	if(!$argv[0]) {
+	if(!argv[0]) {
 		write(bbs.text(NoXtrnProgram));
 	} else {
 		xtrn_area.sec_list.some(function(sec) {

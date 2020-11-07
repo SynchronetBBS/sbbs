@@ -25,6 +25,10 @@ if(options.clear_screen === undefined)
 
 function exec_xtrn_post(program)
 {
+	if ((options.disable_xtrnpost_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
+		return;
+	}
+
 	console.attributes = 0;
 	console.attributes = LIGHTGRAY;
 
@@ -37,7 +41,7 @@ function exec_xtrn_post(program)
 
 /* main: */
 {
-	if(!$argv[0]) {
+	if(!argv[0]) {
 		write(bbs.text(NoXtrnProgram));
 	} else {
 		xtrn_area.sec_list.some(function(sec) {
