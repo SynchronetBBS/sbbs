@@ -299,7 +299,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	if(cfg->xtrnprogpost_mod[0] == '\xff') 
 	    SAFECOPY(cfg->xtrnprogpost_mod, "postxtrn");		
 		
-	for(i=0;i<110;i++)					/* unused - initialized to 0xff */
+	for(i=0;i<118;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);
