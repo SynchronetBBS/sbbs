@@ -67,7 +67,7 @@ function exec_xtrn_pre(program)
 		if (!program) {
 			write(bbs.text(NoXtrnProgram));
 		} else {
-			exec_xtrn_pre(progeam);
+			exec_xtrn_pre(program);
 		}
 	}
 }
