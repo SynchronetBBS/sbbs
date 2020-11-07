@@ -659,6 +659,7 @@ void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 	char str[MAX_PATH+1],nulbuf[F_EXBSIZE];
 	int file;
 
+	strip_ansi(ext);
 	strip_invalid_attr(ext);	/* eliminate bogus ctrl-a codes */
 	memset(nulbuf,0,sizeof(nulbuf));
 	SAFEPRINTF2(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);

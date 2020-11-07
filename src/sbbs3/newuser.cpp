@@ -154,7 +154,7 @@ BOOL sbbs_t::newuser()
 
 		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
 			bputs(text[HitYourBackspaceKey]);
-			uchar key = getkey(K_NONE);
+			uchar key = getkey(K_CTRLKEYS);
 			bprintf(text[CharacterReceivedFmt], key, key);
 			if(key == '\b')
 				break;
@@ -179,7 +179,8 @@ BOOL sbbs_t::newuser()
 		}
 
 		if(useron.misc&ANSI) {
-			useron.rows=0;	/* Auto-rows */
+			useron.rows = TERM_ROWS_AUTO;
+			useron.cols = TERM_COLS_AUTO;
 			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
@@ -382,7 +383,7 @@ BOOL sbbs_t::newuser()
 		c=0;
 		while(c < RAND_PASS_LEN) { 				/* Create random password */
 			useron.pass[c]=sbbs_random(43)+'0';
-			if(isalnum(useron.pass[c]))
+			if(IS_ALPHANUMERIC(useron.pass[c]))
 				c++; 
 		}
 		useron.pass[c]=0;

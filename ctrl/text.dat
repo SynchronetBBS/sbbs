@@ -583,7 +583,7 @@
 "\1h\1bUser Settings for \1w%s #%d\1b:\r\n\r\n"                474 UserDefaultsHdr
 "\1n\1b[\1h\1wT\1n\1b] \1hTerminal Mode                \1n\1b\1\\: \1c%s\r\n"   475 UserDefaultsTerminal
 "\1n\1b[\1h\1wE\1n\1b] \1hExternal Editor              \1n\1b\1\\: \1c%s\r\n"   476 UserDefaultsXeditor
-"\1n\1b[\1h\1wL\1n\1b] \1hScreen Length                \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
+"\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
 "\1n\1b[\1h\1wX\1n\1b] \1hExpert Menu Mode             \1n\1b: \1c%s\r\n"   478 UserDefaultsMenuMode
 "\1n\1b[\1h\1wP\1n\1b] \1hScreen Pause                 \1n\1b: \1c%s\r\n"   479 UserDefaultsPause
 "\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
@@ -604,8 +604,8 @@
 "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   494 UserDefaultsWhich
 "On"                                                    495 On
 "Off"                                                   496 Off
-"\r\n\1_\1b\1h[\1c@CHECKMARK@\1b] \1yHow many rows on your monitor "\   497 HowManyRows
-	"[\1wAuto Detect\1y]: "
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal rows "\       497 HowManyRows
+	"[\1wAuto\1y]: \1n"
 "\r\n\1_\1y\1hCurrent Password: \1w"                        498 CurrentPassword
 "Forward personal e-mail to network mail address"       499 ForwardMailQ
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
@@ -1022,3 +1022,5 @@
 "\xdc\xde\xdf\xdd"                                        840 SpinningCursor7
 "\xdc\xdd\xdf\xde"                                        841 SpinningCursor8
 "\xfa\xf9\xfe\xf9"                                        842 SpinningCursor9
+"\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal columns "\      843 HowManyColumns
+	"[\1wAuto\1y]: \1n"

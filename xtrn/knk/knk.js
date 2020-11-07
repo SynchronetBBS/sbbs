@@ -1424,7 +1424,7 @@ function update_userfile(player, computer, won)
 	var lines=[];
 	var line;
 	var now=new Date();
-	var nowmonth=['January','February','March','April','May','June','July','August','September','Optober','November','December'][now.getMonth()];
+	var nowmonth=['January','February','March','April','May','June','July','August','September','October','November','December'][now.getMonth()];
 	var all_ud=[];
 
 	if(!Lock(f.name, dk.connection.node, true, 1))

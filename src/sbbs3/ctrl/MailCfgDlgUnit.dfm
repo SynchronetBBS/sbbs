@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 1213
-  Top = 393
+  Left = 1274
+  Top = 822
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 246
@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = POP3TabSheet
-    TabIndex = 2
+    ActivePage = GeneralTabSheet
+    TabIndex = 0
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -84,13 +84,13 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Max Inactivity'
       end
-      object LinesPerYieldLabel: TLabel
+      object MaxConConLabel: TLabel
         Left = 7
         Top = 140
         Width = 85
         Height = 19
         AutoSize = False
-        Caption = 'Lines Per Yield'
+        Caption = 'Max Con-Conn'
       end
       object MaxMsgsLabel: TLabel
         Left = 7
@@ -178,14 +178,12 @@ object MailCfgDlg: TMailCfgDlg
         ShowHint = True
         TabOrder = 10
       end
-      object LinesPerYieldEdit: TEdit
+      object MaxConConEdit: TEdit
         Left = 92
         Top = 140
         Width = 39
         Height = 21
-        Hint = 
-          'Number of lines of message text sent/received between time-slice' +
-          ' yields'
+        Hint = 'Maximum Concurrent Connections from same IP (0=unlimited)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6

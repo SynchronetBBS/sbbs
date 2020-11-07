@@ -530,7 +530,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_FDESC		58	/* File description 							*/
 #define LEN_FCDT		 9	/* 9 digits for file credit values				*/
 #define LEN_TITLE		70	/* Message title								*/
-#define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
+#define LEN_MAIN_CMD	28	/* Unused Storage in user.dat					*/
+#define LEN_COLS		3
+#define LEN_ROWS		3
 #define LEN_PASS		40
 #define MIN_PASS_LEN	 4
 #define RAND_PASS_LEN	 8
@@ -592,14 +594,16 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_FLAGS2	U_TL+2
 #define U_EXEMPT	U_FLAGS2+8
 #define U_REST		U_EXEMPT+8
-#define U_ROWS		U_REST+8+2 	/* Number of Rows on user's monitor */
-#define U_SEX		U_ROWS+2 		/* Sex, Del, ANSI, color etc.		*/
+#define U_OLDROWS	U_REST+8+2 	/* Number of Rows on user's monitor */
+#define U_SEX		U_OLDROWS+2 	/* Sex, Del, ANSI, color etc.		*/
 #define U_MISC		U_SEX+1 		/* Miscellaneous flags in 8byte hex */
 #define U_OLDXEDIT	U_MISC+8 		/* External editor (Version 1 method  */
 #define U_LEECH 	U_OLDXEDIT+2 	/* two hex digits - leech attempt count */
 #define U_CURSUB	U_LEECH+2  	/* Current sub (internal code)  */
 #define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
-#define U_MAIN_CMD	U_CURXTRN+8+2 	/* unused */
+#define U_ROWS		U_CURXTRN+8+2
+#define U_COLS		U_ROWS+LEN_ROWS
+#define U_MAIN_CMD	U_COLS+LEN_COLS	/* unused */
 #define U_PASS		U_MAIN_CMD+LEN_MAIN_CMD
 #define U_SCAN_CMD	U_PASS+LEN_PASS+2  				/* unused */
 #define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
@@ -690,11 +694,13 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define TERM_KEY_PAGEUP	CTRL_P
 #define TERM_KEY_PAGEDN	CTRL_N
 
+#define TERM_COLS_AUTO		0
 #define TERM_COLS_MIN		40
-#define TERM_COLS_MAX		255
+#define TERM_COLS_MAX		999
 #define TERM_COLS_DEFAULT	80
+#define TERM_ROWS_AUTO		0
 #define TERM_ROWS_MIN		8	// Amstrad NC100 has an 8-line display
-#define TERM_ROWS_MAX		255
+#define TERM_ROWS_MAX		999
 #define TERM_ROWS_DEFAULT	24
 
 							/* Online status (online)						*/
@@ -761,6 +767,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_NOSPIN	(1L<<21)	/* Do not honor the user's spinning cursor	*/
 #define K_ANSI_CPR	(1L<<22)	/* Expect ANSI Cursor Position Report		*/
 #define K_TRIM		(1L<<23)	/* Trimmed white-space						*/
+#define K_CTRLKEYS	(1L<<24)	/* No control-key handling/eating in inkey()*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/
@@ -781,6 +788,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_UTF8		(1<<13)		/* Message is UTF-8							*/
 #define P_AUTO_UTF8	(1<<14)		/* Message may be UTF-8, auto-detect		*/
 #define P_NOXATTRS	(1<<15)		/* No "Extra Attribute Codes" supported		*/
+#define P_MARKUP	(1<<16)		/* Support StyleCodes/Rich/StructuredText	*/
+#define P_HIDEMARKS	(1<<17)		/* Hide the mark-up characters				*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */
@@ -1026,9 +1035,11 @@ typedef struct {						/* Users information */
 
 	uchar	level,						/* Security level */
 			sex,						/* Sex - M or F */
-			rows,               		/* Rows of text */
 			prot,						/* Default transfer protocol */
 			leech;						/* Leech attempt counter */
+
+	int		rows,               		/* Rows on terminal (0 = auto-detect) */
+			cols;						/* Columns on terminal (0 = auto-detect) */
 
 	ulong	misc,						/* Misc. bits - ANSI, Deleted etc. */
 			qwk,						/* QWK settings */

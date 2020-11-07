@@ -474,7 +474,7 @@ char* prep_code(char *str, const char* prefix)
 	strcpy(str,tmp);
 	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
 		for(i=j=0;str[i];i++)
-			if(isalnum(str[i]))
+			if(IS_ALPHANUMERIC(str[i]))
 				tmp[j++]=str[i];
 		tmp[j]=0;
 		strcpy(str,tmp);

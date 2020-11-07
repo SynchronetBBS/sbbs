@@ -86,10 +86,10 @@ when_t DLLCALL rfc822date(char* date)
 	memset(&when,0,sizeof(when));
 
 	while(*p && *p<=' ') p++;
-	while(*p && !isdigit(*p)) p++;
+	while(*p && !IS_DIGIT(*p)) p++;
 	/* DAY */
 	tm.tm_mday=atoi(p);
-	while(*p && isdigit(*p)) p++;
+	while(*p && IS_DIGIT(*p)) p++;
 	/* MONTH */
 	while(*p && *p<=' ') p++;
 	sprintf(month,"%3.3s",p);
@@ -125,23 +125,23 @@ when_t DLLCALL rfc822date(char* date)
 	else if(tm.tm_year>1900)
 		tm.tm_year-=1900;
 
-	while(*p && isdigit(*p)) p++;
+	while(*p && IS_DIGIT(*p)) p++;
 	/* HOUR */
 	while(*p && *p<=' ') p++;
 	tm.tm_hour=atoi(p);
-	while(*p && isdigit(*p)) p++;
+	while(*p && IS_DIGIT(*p)) p++;
 	/* MINUTE */
 	if(*p) p++;
 	tm.tm_min=atoi(p);
-	while(*p && isdigit(*p)) p++;
+	while(*p && IS_DIGIT(*p)) p++;
 	/* SECONDS */
 	if(*p) p++;
 	tm.tm_sec=atoi(p);
-	while(*p && isdigit(*p)) p++;
+	while(*p && IS_DIGIT(*p)) p++;
 	/* TIME ZONE */
 	while(*p && *p<=' ') p++;
 	if(*p) {
-		if(isdigit(*p) || *p=='-' || *p=='+') { /* [+|-]HHMM format */
+		if(IS_DIGIT(*p) || *p=='-' || *p=='+') { /* [+|-]HHMM format */
 			if(*p=='+') p++;
 			sprintf(str,"%.*s",*p=='-'? 3:2,p);
 			when.zone=atoi(str)*60;

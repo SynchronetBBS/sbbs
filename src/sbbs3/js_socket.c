@@ -458,7 +458,7 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
 		JSSTRING_TO_ASTRING(cx, str, cp, 16, NULL);
-		if(isdigit(*cp))
+		if(IS_DIGIT(*cp))
 			return((ushort)strtol(cp,NULL,0));
 		rc=JS_SUSPENDREQUEST(cx);
 		serv = getservbyname(cp,type==SOCK_STREAM ? "tcp":"udp");

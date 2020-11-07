@@ -1887,8 +1887,8 @@ static void receive_thread(void* arg)
 							SAFECOPY(desc,ext);
 							strip_exascii(desc, desc);	/* strip extended ASCII chars */
 							prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
-							for(i=0;desc[i];i++)	/* find approprate first char */
-								if(isalnum(desc[i]))
+							for(i=0;desc[i];i++)	/* find appropriate first char */
+								if(IS_ALPHANUMERIC(desc[i]))
 									break;
 							SAFECOPY(f.desc,desc+i); 
 						}
@@ -5080,9 +5080,14 @@ static void ctrl_thread(void* arg)
 				if(!fexistcase(qwkfile)) {
 					lprintf(LOG_INFO,"%04d <%s> creating QWK packet...",sock,user.alias);
 					sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
-					if(!ftouch(str))
-						lprintf(LOG_ERR,"%04d <%s> !ERROR creating semaphore file: %s"
-							,sock, user.alias, str);
+					if(!fmutex(str, startup->host_name, /* max_age: */60 * 60)) {
+						lprintf(LOG_WARNING, "%04d <%s> !ERROR %d creating mutex-semaphore file: %s"
+							,sock, user.alias, errno, str);
+						sockprintf(sock,sess,"451 Packet creation already in progress (are you logged-in concurrently?)");
+						filepos=0;
+						continue;
+					}
+
 					t=time(NULL);
 					while(fexist(str) && !terminate_server) {
 						if(!socket_check(sock,NULL,NULL,0))

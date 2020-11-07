@@ -178,7 +178,7 @@ size_t sbbs_t::bstrlen(const char *str, long mode)
 /* Perform PETSCII terminal output translation (from ASCII/CP437) */
 unsigned char cp437_to_petscii(unsigned char ch)
 {
-	if(isalpha(ch))
+	if(IS_ALPHA(ch))
 		return ch ^ 0x20;	/* swap upper/lower case */
 	switch(ch) {
 		case '\1':		return '@';
@@ -260,7 +260,7 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 {
 	if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
 		ch = 0x60 | (ch&0x1f);
-	if(isalpha(ch))
+	if(IS_ALPHA(ch))
 		return outchar(ch ^ 0x20);	/* swap upper/lower case */
 	switch(ch) {
 		case '\r':					newline();		break;
@@ -554,6 +554,32 @@ const char* sbbs_t::term_charset(long term)
 	if(term&NO_EXASCII)
 		return "US-ASCII";
 	return "CP437";
+}
+
+/****************************************************************************/
+/* For node spying purposes													*/
+/****************************************************************************/
+bool sbbs_t::update_nodeterm(void)
+{
+	str_list_t	ini = strListInit();
+	iniSetInteger(&ini, ROOT_SECTION, "cols", cols, NULL);
+	iniSetInteger(&ini, ROOT_SECTION, "rows", rows, NULL);
+	iniSetString(&ini, ROOT_SECTION, "type", term_type(), NULL);
+	iniSetString(&ini, ROOT_SECTION, "chars", term_charset(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "flags", term_supports(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "mouse", mouse_mode, NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "console", console, NULL);
+
+	char path[MAX_PATH + 1];
+	SAFEPRINTF(path, "%sterminal.ini", cfg.node_dir);
+	FILE* fp = iniOpenFile(path, /* create: */TRUE);
+	bool result = false;
+	if(fp != NULL) {
+		result = iniWriteFile(fp, ini);
+		iniCloseFile(fp);
+	}
+	strListFree(&ini);
+	return result;
 }
 
 /****************************************************************************/
@@ -1038,7 +1064,7 @@ void sbbs_t::ctrl_a(char x)
 		cursor_right((uchar)x-0x7f);
 		return;
 	}
-	if(isdigit(x)) {	/* background color */
+	if(IS_DIGIT(x)) {	/* background color */
 		atr &= (BG_BRIGHT|BLINK|0x0f);
 	}
 	switch(toupper(x)) {
