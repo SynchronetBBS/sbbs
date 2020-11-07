@@ -542,6 +542,8 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							/* Sanity check the coordinates in the response: */
 							if(useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
 							if(useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+							if(useron.cols == TERM_COLS_AUTO || useron.rows == TERM_ROWS_AUTO)
+								update_nodeterm();
 						}
 					}
 					return(0); 

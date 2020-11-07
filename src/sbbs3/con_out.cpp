@@ -557,6 +557,32 @@ const char* sbbs_t::term_charset(long term)
 }
 
 /****************************************************************************/
+/* For node spying purposes													*/
+/****************************************************************************/
+bool sbbs_t::update_nodeterm(void)
+{
+	str_list_t	ini = strListInit();
+	iniSetInteger(&ini, ROOT_SECTION, "cols", cols, NULL);
+	iniSetInteger(&ini, ROOT_SECTION, "rows", rows, NULL);
+	iniSetString(&ini, ROOT_SECTION, "type", term_type(), NULL);
+	iniSetString(&ini, ROOT_SECTION, "chars", term_charset(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "flags", term_supports(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "mouse", mouse_mode, NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "console", console, NULL);
+
+	char path[MAX_PATH + 1];
+	SAFEPRINTF(path, "%sterminal.ini", cfg.node_dir);
+	FILE* fp = iniOpenFile(path, /* create: */TRUE);
+	bool result = false;
+	if(fp != NULL) {
+		result = iniWriteFile(fp, ini);
+		iniCloseFile(fp);
+	}
+	strListFree(&ini);
+	return result;
+}
+
+/****************************************************************************/
 /* Outputs character														*/
 /* Performs terminal translations (e.g. EXASCII-to-ASCII, FF->ESC[2J)		*/
 /* Performs Telnet IAC escaping												*/
