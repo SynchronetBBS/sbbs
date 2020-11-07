@@ -42,7 +42,7 @@ function exec_xtrn_pre(program)
 	if(options.eval_before_exec)
 		eval(options.eval_before_exec);
 
-	load('fonts.js', 'xtrn:' + proggram.code);
+	load('fonts.js', 'xtrn:' + program.code);
 }
 
 
