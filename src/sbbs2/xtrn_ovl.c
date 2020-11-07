@@ -1275,7 +1275,6 @@ void exec_xtrn(uint xtrnnum)
     node_t node;
 	time_t start,end;
 
-
 if(!chk_ar(xtrn[xtrnnum]->run_ar,useron)
 	|| !chk_ar(xtrnsec[xtrn[xtrnnum]->sec]->ar,useron)) {
 	bputs(text[CantRunThatProgram]);

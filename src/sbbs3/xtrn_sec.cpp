@@ -1487,6 +1487,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		subtract_cdt(&cfg,&useron,cfg.xtrn[xtrnnum]->cost); 
 	}
 
+    if(cfg.xtrnprogpre_mod[0] != '\0') {
+        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,cfg.xtrn[xtrnnum]->code);
+        exec_bin(str, &main_csi);
+    }
+
 	if(!(cfg.xtrn[xtrnnum]->misc&MULTIUSER)) {
 		for(i=1;i<=cfg.sys_nodes;i++) {
 			getnodedat(i,&node,0);
@@ -1652,6 +1657,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	else
 		lncntr = 0;
 
+    if(cfg.xtrnprogpost_mod[0] != '\0') {
+        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpost_mod,cfg.xtrn[xtrnnum]->code);
+        exec_bin(str, &main_csi);
+    }
+    
 	return(true);
 }
 
