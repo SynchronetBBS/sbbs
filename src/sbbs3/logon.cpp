@@ -220,6 +220,7 @@ bool sbbs_t::logon()
 		rows = useron.rows;
 	if(useron.cols != TERM_COLS_AUTO)
 		cols = useron.cols;
+	update_nodeterm();
 	if(tm.tm_mon + 1 == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
 		&& !(useron.rest&FLAG('Q'))) {
 		if(text[HappyBirthday][0]) {

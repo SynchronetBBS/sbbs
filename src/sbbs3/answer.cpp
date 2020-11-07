@@ -388,6 +388,7 @@ bool sbbs_t::answer()
 		else
 			SAFECOPY(terminal,"DUMB");
 	}
+	update_nodeterm();
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)

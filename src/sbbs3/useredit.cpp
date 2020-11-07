@@ -811,6 +811,8 @@ void sbbs_t::maindflts(user_t* user)
 		if(user->cols != TERM_COLS_AUTO)
 			cols = user->cols;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
+		if(user == &useron)
+			update_nodeterm();
 		long term = (user == &useron) ? term_supports() : user->misc;
 		if(term&PETSCII)
 			safe_snprintf(str,sizeof(str),"%sCBM/PETSCII"
@@ -1189,7 +1191,7 @@ void sbbs_t::maindflts(user_t* user)
 			default:
 				clear_hotspots();
 				return; 
-		} 
+		}
 	}
 }
 
