@@ -560,6 +560,8 @@ void sub_cfg(uint grpnum)
 	#endif
 						sprintf(opt[n++],"%-27.27s%s","Compress Messages (LZH)"
 							,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
+						sprintf(opt[n++],"%-27.27s%s","Apply Markup Codes"
+							,cfg.sub[i]->pmode&P_MARKUP ? ((cfg.sub[i]->pmode&P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
 						sprintf(opt[n++],"%-27.27s%s","Extra Attribute Codes"
 							,cfg.sub[i]->pmode&P_NOXATTRS ? "No" : "Yes");
 						sprintf(opt[n++],"%-27.27s%s","Word-wrap Messages"
@@ -581,7 +583,7 @@ void sub_cfg(uint grpnum)
 						if(n==-1)
 							break;
 						switch(n) {
-							case 0:
+							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_PONLY)
 									n=2;
 								else 
@@ -620,7 +622,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY); 
 								}
 								break;
-							case 1:
+							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_AONLY)
 									n=2;
 								else 
@@ -659,7 +661,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY); 
 								}
 								break;
-							case 2:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_NAME) ? 0:1;
 								uifc.helpbuf=
 									"`User Real Names in Posts on Sub-board:`\n"
@@ -682,7 +684,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_NAME; 
 								}
 								break;
-							case 3:
+							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_EDITLAST)
 									n=2;
 								else
@@ -727,7 +729,7 @@ void sub_cfg(uint grpnum)
 									break;
 								}
 								break;
-							case 4:
+							case __COUNTER__:
 								if(cfg.sub[i]->misc&SUB_DELLAST)
 									n=2;
 								else 
@@ -768,7 +770,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST); 
 								}
 								break;
-							case 5:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_NSDEF) ? 0:1;
 								uifc.helpbuf=
 									"`Default On for New Scan:`\n"
@@ -790,7 +792,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_NSDEF; 
 								}
 								break;
-							case 6:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_FORCED) ? 0:1;
 								uifc.helpbuf=
 									"`Forced On for New Scan:`\n"
@@ -813,7 +815,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_FORCED; 
 								}
 								break;
-							case 7:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_SSDEF) ? 0:1;
 								uifc.helpbuf=
 									"`Default On for Your Scan:`\n"
@@ -835,7 +837,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_SSDEF; 
 								}
 								break;
-							case 8:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_TOUSER) ? 0:1;
 								uifc.helpbuf=
 									"`Prompt for 'To' User on Public Posts:`\n"
@@ -858,7 +860,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_TOUSER; 
 								}
 								break;
-							case 9:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_NOVOTING) ? 1:0;
 								uifc.helpbuf=
 									"`Allow Message Voting:`\n"
@@ -880,7 +882,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc ^= SUB_NOVOTING; 
 								}
 								break;
-							case 10:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_QUOTE) ? 0:1;
 								uifc.helpbuf=
 									"`Allow Message Quoting:`\n"
@@ -902,7 +904,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_QUOTE; 
 								}
 								break;
-							case 11:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_MSGTAGS) ? 0:1;
 								uifc.helpbuf=
 									"`Allow Message Tagging:`\n"
@@ -924,7 +926,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_MSGTAGS; 
 								}
 								break;
-							case 12:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_NOUSERSIG) ? 0:1;
 								uifc.helpbuf=
 									"Suppress User Signatures:\n"
@@ -946,7 +948,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_NOUSERSIG; 
 								}
 								break;
-							case 13:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_SYSPERM) ? 0:1;
 								uifc.helpbuf=
 									"`Operator Messages Automatically Permanent:`\n"
@@ -1008,7 +1010,7 @@ void sub_cfg(uint grpnum)
 								}
 								break;
 	#endif
-							case 14:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_LZH) ? 0:1;
 								uifc.helpbuf=
 									"`Compress Messages with LZH Encoding:`\n"
@@ -1037,7 +1039,44 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->misc&=~SUB_LZH; 
 								}
 								break;
-							case 15:
+							case __COUNTER__:
+								n = (cfg.sub[i]->pmode&P_MARKUP) ? (cfg.sub[i]->pmode&P_HIDEMARKS ? 1 : 0) : 2;
+								uifc.helpbuf=
+									"`Interpret/Display Markup Codes in Messages:`\n"
+									"\n"
+									"Markup codes are called 'StyleCodes' in GoldEd, 'Rich Text' in SemPoint,\n"
+									"and 'Structured Text' in Mozilla/Thunderbird.\n"
+									"\n"
+									"`*Bold Text*`\n"
+									"/Italic Text/\n"
+									"~#Inverse Text#~\n"
+									"_Underlined Text_\n"
+									"\n"
+									"Markup character cannot be combined.\n"
+								;
+								strcpy(opt[0],"Yes");
+								strcpy(opt[1],"Yes and Hide the Markup Characters");
+								strcpy(opt[2],"No");
+								opt[3][0]=0;
+								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
+									,"Interpret/Display Markup Codes in Messages", opt);
+								if(n==-1)
+									break;
+								if(n == 0 && (cfg.sub[i]->pmode&(P_MARKUP|P_HIDEMARKS)) != P_MARKUP) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode |= P_MARKUP;
+									cfg.sub[i]->pmode &= ~P_HIDEMARKS;
+								}
+								else if(n == 1 && (cfg.sub[i]->pmode&(P_MARKUP|P_HIDEMARKS)) != (P_MARKUP|P_HIDEMARKS)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode |= (P_MARKUP|P_HIDEMARKS);
+								}
+								else if(n == 2 && (cfg.sub[i]->pmode&(P_MARKUP|P_HIDEMARKS)) != 0) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode &= ~(P_MARKUP|P_HIDEMARKS);
+								}
+								break;
+							case __COUNTER__:
 								n=(cfg.sub[i]->pmode&P_NOXATTRS) ? 1:0;
 								uifc.helpbuf=
 									"`Extra Attribute Codes:`\n"
@@ -1059,7 +1098,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->pmode ^= P_NOXATTRS;
 								}
 								break;
-							case 16:
+							case __COUNTER__:
 								n=(cfg.sub[i]->n_pmode&P_WORDWRAP) ? 1:0;
 								uifc.helpbuf=
 									"`Word-wrap Message Text:`\n"
@@ -1081,7 +1120,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->n_pmode ^= P_WORDWRAP;
 								}
 								break;
-							case 17:
+							case __COUNTER__:
 								n=(cfg.sub[i]->pmode&P_AUTO_UTF8) ? 0:1;
 								uifc.helpbuf=
 									"`Automatically Detect UTF-8 Message Text:`\n"
@@ -1105,7 +1144,7 @@ void sub_cfg(uint grpnum)
 									cfg.sub[i]->pmode ^= P_AUTO_UTF8;
 								}
 								break;
-							case 18:
+							case __COUNTER__:
 								n=(cfg.sub[i]->misc&SUB_TEMPLATE) ? 0:1;
 								uifc.helpbuf=
 									"`Use this Sub-board as a Template for New Subs:`\n"

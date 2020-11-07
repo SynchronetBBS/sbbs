@@ -63,6 +63,16 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, lon
 	return i;
 }
 
+static uchar* findsig(char* msgbuf)
+{
+	char* tail = strstr(msgbuf, "\n-- \r\n");
+	if(tail != NULL) {
+		*tail = '\0';
+		tail++;
+		truncsp(msgbuf);
+	}
+	return (uchar*)tail;
+}
 
 /****************************************************************************/
 /* Posts a message on sub-board number 'subnum'								*/
@@ -313,7 +323,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	if(tags[0])
 		smb_hfield_str(&msg, SMB_TAGS, tags);
 
-	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL);
+	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf, findsig(msgbuf));
 	free(msgbuf);
 
 	if(i==SMB_DUPE_MSG) {
@@ -402,7 +412,7 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 	return SMB_SUCCESS;
 }
 
-/* Note: support MSG_BODY only, no tails or other data fields (dfields) */
+/* Note: finds signature delimiter automatically and (if applicable) separates msgbuf into body and tail */
 /* Adds/generates Message-IDs when needed */
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, const char* server, char* msgbuf, smbmsg_t* remsg)
 {
@@ -484,7 +494,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 		|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj)))
 		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
 
-	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, /* tail: */NULL))==SMB_SUCCESS
+	msgbuf = strdup(msgbuf);
+	if(msgbuf == NULL)
+		return SMB_FAILURE;
+	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, findsig(msgbuf)))==SMB_SUCCESS
 		&& msg->to!=NULL	/* no recipient means no header created at this stage */) {
 		if(smb->subnum == INVALID_SUB) {
 			if(msg->to_net.type == NET_FIDO && cfg->netmail_sem[0])
@@ -519,6 +532,7 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 			}
 		}
 	}
+	free(msgbuf);
 	return(i);
 }
 

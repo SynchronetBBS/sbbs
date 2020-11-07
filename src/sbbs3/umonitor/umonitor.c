@@ -643,57 +643,53 @@ int run_events(scfg_t *cfg)
 
 int recycle_servers(scfg_t *cfg)
 {
-	char str[1024];
+	char str[MAX_PATH + 1];
 	char **opt;
 	int i=0;
+	const int opt_count = 6;
 
-	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
-		allocfail(sizeof(char *)*(5+1));
-	for(i=0;i<(5+1);i++)
-		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
-			allocfail(MAX_OPLN);
+	if((opt=(char **)alloca(sizeof(char *)*(opt_count+1)))==NULL)
+		allocfail(sizeof(char *)*(opt_count+1));
 
-	i=0;
-	strcpy(opt[i++],"FTP server");
-	strcpy(opt[i++],"Mail server");
-	strcpy(opt[i++],"Services");
-	strcpy(opt[i++],"Telnet server");
-	strcpy(opt[i++],"Web server");
-	opt[i][0]=0;
+	opt[i++] = "All Servers";
+	opt[i++] = "Terminal Server";
+	opt[i++] = "Mail Server";
+	opt[i++] = "FTP Server";
+	opt[i++] = "Web Server";
+	opt[i++] = "Services";
+	opt[i] = NULL;
 
 	uifc.helpbuf=	"`Recycle Servers\n"
 					"`---------------\n\n"
-					"To rerun a server, highlight it and press Enter.\n"
+					"To recycle a server, highlight it and press Enter.\n"
 					"This will reload the configuration files for selected\n"
 					"server.";
 
 	i=0;
 	while(1) {
+		const char* ext = "";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Recycle Servers",opt))  {
 			case -1:
 				return(0);
 				break;
-			case 0:
-				sprintf(str,"%sftpsrvr.rec",cfg->ctrl_dir);
-				ftouch(str);
-				break;
 			case 1:
-				sprintf(str,"%smailsrvr.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".term";
 				break;
 			case 2:
-				sprintf(str,"%sservices.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".mail";
 				break;
 			case 3:
-				sprintf(str,"%stelnet.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".ftp";
 				break;
 			case 4:
-				sprintf(str,"%swebsrvr.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".web";
+				break;
+			case 5:
+				ext = ".services";
 				break;
 		}
+		SAFEPRINTF2(str, "%srecycle%s", cfg->ctrl_dir, ext);
+		ftouch(str);
 	}
 	return(0);
 }

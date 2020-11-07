@@ -425,7 +425,7 @@ u_long resolve_ip(char *addr)
 		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
-		if(*p!='.' && !isdigit((uchar)*p))
+		if(*p!='.' && !IS_DIGIT(*p))
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
@@ -4538,7 +4538,8 @@ void node_thread(void* arg)
 	if(sbbs->answer()) {
 
 		login_success = true;
-		listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
+		if(sbbs->useron.pass[0])
+			listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
 		if(sbbs->sys_status&SS_QWKLOGON) {
 			sbbs->getsmsg(sbbs->useron.number);
 			sbbs->qwk_sec();
@@ -4716,7 +4717,7 @@ bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
 	if(!fexist(fname))
 		return false;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, flength(fname));
+	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (long)flength(fname));
 	return ::backup(fname, backup_level, rename) ? true : false;
 }
 

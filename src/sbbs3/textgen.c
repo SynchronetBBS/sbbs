@@ -27,7 +27,7 @@ char *readtext(FILE *stream, char **comment_ret)
 	}
 	comment[0]=0;
 	if(*(p+1)=='\\') {	/* merge multiple lines */
-		for(cp=p+2; *cp && isspace(*cp); cp++);
+		for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
 		truncsp(cp);
 		strcat(comment, cp);
 		while(strlen(buf)<2000) {
@@ -39,7 +39,7 @@ char *readtext(FILE *stream, char **comment_ret)
 			strcpy(p,p2+1);
 			p=strrchr(p,'"');
 			if(p && *(p+1)=='\\') {
-				for(cp=p+2; *cp && isspace(*cp); cp++);
+				for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
 				truncsp(cp);
 				strcat(comment, cp);
 				continue;
@@ -48,7 +48,7 @@ char *readtext(FILE *stream, char **comment_ret)
 		}
 	}
 	else {
-		for(cp=p+2; *cp && isspace(*cp); cp++);
+		for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
 		strcat(comment, cp);
 		truncsp(comment);
 	}
@@ -57,10 +57,10 @@ char *readtext(FILE *stream, char **comment_ret)
 	for(i=1,j=0;i<k;j++) {
 		if(buf[i]=='\\')	{ /* escape */
 			i++;
-			if(isdigit(buf[i])) {
+			if(IS_DIGIT(buf[i])) {
 				str[j]=atoi(buf+i); 	/* decimal, NOT octal */
-				if(isdigit(buf[++i]))	/* skip up to 3 digits */
-					if(isdigit(buf[++i]))
+				if(IS_DIGIT(buf[++i]))	/* skip up to 3 digits */
+					if(IS_DIGIT(buf[++i]))
 						i++;
 				continue; 
 			}
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 				fprintf(stderr,"Error creating C string! for %d\n", i+1);
 			}
 			lno=strtoul(comment, &macro, 10);
-			while(isspace(*macro))
+			while(IS_WHITESPACE(*macro))
 				macro++;
 			if((int)lno != i) {
 				fprintf(stderr,"Mismatch! %s has %ld... should be %d\n", comment, lno, i);

@@ -95,10 +95,10 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         MaxMsgsWaitingEdit->Text="N/A";
     else
         MaxMsgsWaitingEdit->Text=AnsiString(MainForm->mail_startup.max_msgs_waiting);
-    if(MainForm->mail_startup.lines_per_yield == 0)
-        LinesPerYieldEdit->Text="N/A";
+    if(MainForm->mail_startup.max_concurrent_connections == 0)
+        MaxConConEdit->Text="N/A";
     else
-        LinesPerYieldEdit->Text=AnsiString(MainForm->mail_startup.lines_per_yield);
+        MaxConConEdit->Text=AnsiString((int)MainForm->mail_startup.max_concurrent_connections);
 
     AutoStartCheckBox->Checked=MainForm->MailAutoStart;
     LogFileCheckBox->Checked=MainForm->MailLogFile;
@@ -234,7 +234,7 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.max_msgs_waiting=MaxMsgsWaitingEdit->Text.ToIntDef(0);
     MainForm->mail_startup.max_delivery_attempts=DeliveryAttemptsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(MAIL_DEFAULT_RESCAN_FREQUENCY);
-    MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(0);
+    MainForm->mail_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);
 
     SAFECOPY(MainForm->mail_startup.default_charset
         ,DefCharsetEdit->Text.c_str());

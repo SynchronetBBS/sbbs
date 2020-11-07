@@ -74,7 +74,7 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 			}
 			if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
 				ch = 0x60 | (ch&0x1f);
-			if(isalpha((unsigned char)ch))
+			if(IS_ALPHA(ch))
 				ch ^= 0x20;	/* Swap upper/lower case */
 		}
 
@@ -116,7 +116,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 	this->timeout=time(NULL);
 
 	/* Is this a control key */
-	if(ch<' ') {
+	if(!(mode & K_CTRLKEYS) && ch < ' ') {
 		if(cfg.ctrlkey_passthru&(1<<ch))	/*  flagged as passthru? */
 			return(ch);						/* do not handle here */
 		return(handle_ctrlkey(ch,mode));
@@ -416,7 +416,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							return 0;
 						}
 						str[i++] = byte;
-						if(isalpha(byte))
+						if(IS_ALPHA(byte))
 							break;
 					}
 					str[i] = 0;
@@ -487,7 +487,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	#endif
 					return 0;
 				}
-				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
+				if(ch!=';' && !IS_DIGIT(ch) && ch!='R') {    /* other ANSI */
 					str[i]=0;
 					switch(ch) {
 						case 'A':
@@ -533,15 +533,17 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					return(ESC); 
 				}
 				if(ch=='R') {       /* cursor position report */
-					if(mode&K_ANSI_CPR && i && !(useron.rows)) {	/* auto-detect rows */
+					if(mode&K_ANSI_CPR && i) {	/* auto-detect rows */
 						int	x,y;
 						str[i]=0;
 						if(sscanf(str,"%u;%u",&y,&x)==2) {
 							lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u"
 								,x, y);
 							/* Sanity check the coordinates in the response: */
-							if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
-							if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+							if(useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
+							if(useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+							if(useron.cols == TERM_COLS_AUTO || useron.rows == TERM_ROWS_AUTO)
+								update_nodeterm();
 						}
 					}
 					return(0); 

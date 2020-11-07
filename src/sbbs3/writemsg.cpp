@@ -422,7 +422,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 					continue; 
 				}
 
-				if(!isdigit(quote[0]))
+				if(!IS_DIGIT(quote[0]))
 					break;
 				p=quote;
 				while(p) {
@@ -716,7 +716,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				while(!feof(sig)) {
 					if(!fgets(str,sizeof(str),sig))
 						break;
-					truncsp(str);
+					truncnl(str);
 					if(utf8) {
 						char buf[sizeof(str)*4];
 						cp437_to_utf8_str(str, buf, sizeof(buf) - 1, /* minval: */'\x02');

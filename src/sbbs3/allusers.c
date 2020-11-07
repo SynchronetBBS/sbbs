@@ -182,22 +182,22 @@ int main(int argc, char **argv)
 				case 'F':                       /* Set required flags */
 					j=3;
 					set=1;
-					if(isdigit(argv[i][2]))
+					if(IS_DIGIT(argv[i][2]))
 						set=argv[i][2]&0xf;
 					else
 						j=2;
 					for(;argv[i][j];j++)
-						if(isalpha(argv[i][j]))
+						if(IS_ALPHA(argv[i][j]))
 							reqflags[set-1]|=FLAG(toupper(argv[i][j]));
 					break;
 				case 'R':                       /* Set required restrictions */
 					for(j=2;argv[i][j];j++)
-						if(isalpha(argv[i][j]))
+						if(IS_ALPHA(argv[i][j]))
 							reqrest|=FLAG(toupper(argv[i][j]));
 					break;
 				case 'E':                       /* Set required exemptions */
 					for(j=2;argv[i][j];j++)
-						if(isalpha(argv[i][j]))
+						if(IS_ALPHA(argv[i][j]))
 							reqexempt|=FLAG(toupper(argv[i][j]));
 					break;
 				default:						/* Unrecognized include */
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 				case 'F':   /* flags */
 					j=3;
 					set=1;
-					if(isdigit(argv[i][2]))
+					if(IS_DIGIT(argv[i][2]))
 						set=argv[i][2]&0xf;
 					else
 						j=2;
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 						sub=1; 
 					}
 					for(;argv[i][j];j++)
-						if(isalpha(argv[i][j]))
+						if(IS_ALPHA(argv[i][j]))
 							flags|=FLAG(toupper(argv[i][j]));
 					SAFEPRINTF(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 						sub=1; 
 					}
 					for(;argv[i][j];j++)
-						if(isalpha(argv[i][j]))
+						if(IS_ALPHA(argv[i][j]))
 							flags|=FLAG(toupper(argv[i][j]));
 					SAFEPRINTF(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {

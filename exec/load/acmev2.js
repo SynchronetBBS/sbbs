@@ -40,7 +40,7 @@ require("http.js", "HTTPRequest");
 function ACMEv2(opts)
 {
 	if (opts.key === undefined)
-		throw('Need "key"!');
+		throw new Error('Need "key"!');
 
 	this.key = opts.key;
 	this.key_id = opts.key_id;
@@ -70,9 +70,9 @@ ACMEv2.prototype.get_terms_of_service = function()
 {
 	var dir = this.get_directory();
 	if (dir.meta === undefined)
-		throw('No "meta" in directory!');
+		throw new Error('No "meta" in directory!');
 	if (dir.meta.termsOfService === undefined)
-		throw('No "termsOfService" in directory metadata');
+		throw new Error('No "termsOfService" in directory metadata');
 	return dir.meta.termsOfService;
 };
 
@@ -84,7 +84,7 @@ ACMEv2.prototype.get_directory = function()
 		this.log_headers();
 		if (this.ua.response_code != 200) {
 			log(LOG_DEBUG, ret);
-			throw("Error fetching directory");
+			throw new Error("Error fetching directory");
 		}
 		this.update_nonce();
 		this.directory = JSON.parse(ret);
@@ -98,12 +98,12 @@ ACMEv2.prototype.create_new_account = function(opts)
 
 	if (this.ua.response_code != 201 && this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("newAccount returned "+this.ua.response_code+", not a 200 or 201 status!");
+		throw new Error("newAccount returned "+this.ua.response_code+", not a 200 or 201 status!");
 	}
 
 	if (this.ua.response_headers_parsed.Location === undefined) {
 		log(LOG_DEBUG, this.ua.response_headers.join("\n"));
-		throw("No Location header in newAccount response.");
+		throw new Error("No Location header in newAccount response.");
 	}
 	this.key_id = this.ua.response_headers_parsed.Location[0];
 	return JSON.parse(ret);
@@ -117,7 +117,7 @@ ACMEv2.prototype.update_account = function(opts)
 
 	if (this.ua.response_code != 201 && this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("update_account returned "+this.ua.response_code+", not a 200 or 201 status!");
+		throw new Error("update_account returned "+this.ua.response_code+", not a 200 or 201 status!");
 	}
 	return JSON.parse(ret);
 };
@@ -132,17 +132,17 @@ ACMEv2.prototype.create_new_order = function(opts)
 	var ret;
 
 	if (opts.identifiers === undefined)
-		throw("create_new_order() requires an identifier in opts");
+		throw new Error("create_new_order() requires an identifier in opts");
 	ret = this.post('newOrder', opts);
 	if (this.ua.response_code != 201) {
 		log(LOG_DEBUG, ret);
-		throw("newOrder responded with "+this.ua.response_code+" not 201");
+		throw new Error("newOrder responded with "+this.ua.response_code+" not 201");
 	}
 	ret = JSON.parse(ret);
 
 	if (this.ua.response_headers_parsed.Location === undefined) {
 		log(LOG_DEBUG, this.ua.response_headers.join("\n"));
-		throw("No Location header in 201 response.");
+		throw new Error("No Location header in 201 response.");
 	}
 	ret.Location=this.ua.response_headers_parsed.Location[0];
 
@@ -156,7 +156,7 @@ ACMEv2.prototype.accept_challenge = function(challenge)
 	var ret = this.post_url(challenge.url, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("accept_challenge did not return 200");
+		throw new Error("accept_challenge did not return 200");
 	}
 	return JSON.parse(ret);
 };
@@ -187,18 +187,18 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 	var opts = {};
 
 	if (order === undefined)
-		throw("Missing order");
+		throw new Error("Missing order");
 	if (csr === undefined)
-		throw("Missing csr");
+		throw new Error("Missing csr");
 	if (typeof(csr) != 'object' || csr.export_cert === undefined)
-		throw("Invalid csr");
+		throw new Error("Invalid csr");
 	opts.csr = this.base64url(csr.export_cert(CryptCert.FORMAT.CERTIFICATE));
 
 	log(LOG_DEBUG, "Finalizing order.");
 	var ret = this.post_url(order.finalize, opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("finalize_order did not return 200");
+		throw new Error("finalize_order did not return 200");
 	}
 
 	return JSON.parse(ret);
@@ -208,13 +208,13 @@ ACMEv2.prototype.poll_order = function(order)
 {
 	var loc = order.Location;
 	if (loc === undefined)
-		throw("No order location!");
+		throw new Error("No order location!");
 	log(LOG_DEBUG, "Polling oder.");
 	var ret = this.ua.Get(loc);
 	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("order poll did not return 200");
+		throw new Error("order poll did not return 200");
 	}
 	this.update_nonce();
 
@@ -245,7 +245,7 @@ ACMEv2.prototype.get_jwk = function(key)
 	var ret = {};
 
 	if (key === undefined)
-		throw("change_key() requires a new key.");
+		throw new Error("change_key() requires a new key.");
 	/* Create the inner object signed with old key */
 	switch(key.algo) {
 		case CryptContext.ALGO.RSA:
@@ -271,13 +271,13 @@ ACMEv2.prototype.get_jwk = function(key)
 					ret.shalen = 512;
 					break;
 				default:
-					throw("Unhandled ECC curve size "+key.keysize);
+					throw new Error("Unhandled ECC curve size "+key.keysize);
 			}
 			ret.jwk.x = key.public_key.x;
 			ret.jwk.y = key.public_key.y;
 			break;
 		default:
-			throw("Unknown algorithm in new key");
+			throw new Error("Unknown algorithm in new key");
 	}
 	return ret;
 };
@@ -290,7 +290,7 @@ ACMEv2.prototype.change_key = function(new_key)
 	var jwk;
 
 	if (new_key === undefined)
-		throw("change_key() requires a new key.");
+		throw new Error("change_key() requires a new key.");
 	/* Create the inner object signed with old key */
 	jwk = this.get_jwk(new_key);
 	inner.protected.alg = jwk.alg;
@@ -304,7 +304,7 @@ ACMEv2.prototype.change_key = function(new_key)
 	ret = this.post('keyChange', inner);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("keyChange did not return 200");
+		throw new Error("keyChange did not return 200");
 	}
 	this.key = new_key;
 	return JSON.parse(ret);
@@ -357,7 +357,7 @@ ACMEv2.prototype.revoke = function(cert, reason)
 	ret = this.post('revokeCert', opts);
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("revokeCert did not return 200");
+		throw new Error("revokeCert did not return 200");
 	}
 	return;
 };
@@ -392,13 +392,13 @@ ACMEv2.prototype.create_pkcs7 = function(cert)
 ACMEv2.prototype.get_cert = function(order)
 {
 	if (order.certificate === undefined)
-		throw("Order has no certificate!");
+		throw new Error("Order has no certificate!");
 	log(LOG_DEBUG, "Getting certificate.");
 	var cert = this.ua.Get(order.certificate);
 	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, cert);
-		throw("get_cert request did not return 200");
+		throw new Error("get_cert request did not return 200");
 	}
 	this.update_nonce();
 
@@ -417,7 +417,7 @@ ACMEv2.prototype.post = function(link, data)
 		post_method = 'post_full_jwt';
 	url = this.get_directory()[link];
 	if (url === undefined)
-		throw('Unknown link name: "'+link+'"');
+		throw new Error('Unknown link name: "'+link+'"');
 	log(LOG_DEBUG, "Calling "+link+".");
 	return this.post_url(url, data, post_method);
 };
@@ -444,7 +444,7 @@ ACMEv2.prototype.get_authorization = function(url)
 	this.log_headers();
 	if (this.ua.response_code != 200) {
 		log(LOG_DEBUG, ret);
-		throw("get_authorization request did not return 200");
+		throw new Error("get_authorization request did not return 200");
 	}
 	this.update_nonce();
 
@@ -588,7 +588,7 @@ ACMEv2.prototype.post_url = function(url, data, post_method)
 			protected.alg = jwk.alg;
 			protected.kid = this.key_id;
 			if (protected.kid === undefined)
-				throw("No key_id available!");
+				throw new Error("No key_id available!");
 			break;
 		case 'post_full_jwt':
 			protected.nonce = this.get_nonce();

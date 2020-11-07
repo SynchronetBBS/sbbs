@@ -131,7 +131,7 @@ uint16_t SMBCALL smb_hfieldtypelookup(const char* str)
 {
 	uint16_t type;
 
-	if(isdigit(*str))
+	if(IS_DIGIT(*str))
 		return((uint16_t)strtol(str,NULL,0));
 
 	for(type=0;type<=UNUSED;type++)
@@ -395,13 +395,13 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 	char* colon = strchr(p,':');
 	char* slash = strchr(p,'/');
 
-	if(at == NULL && isalpha(*p) && dot == NULL && colon == NULL)
+	if(at == NULL && IS_ALPHA(*p) && dot == NULL && colon == NULL)
 		return NET_QWK;
 
 	char last = 0;
 	for(tp = p; *tp != '\0'; tp++) {
 		last = *tp;
-		if(isdigit(*tp))
+		if(IS_DIGIT(*tp))
 			continue;
 		if(*tp == ':') {
 			if(tp != colon)
@@ -426,7 +426,7 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 		}
 		break;
 	}
-	if(at == NULL && isdigit(*p) && *tp == '\0' && isdigit(last))
+	if(at == NULL && IS_DIGIT(*p) && *tp == '\0' && IS_DIGIT(last))
 		return NET_FIDO;
 	if(slash == NULL && (isalnum(*p) || p == colon))
 		return NET_INTERNET;

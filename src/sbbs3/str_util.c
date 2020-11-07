@@ -89,6 +89,25 @@ char* strip_ctrl(const char *str, char* dest)
 	return dest;
 }
 
+char* strip_ansi(char* str)
+{
+	char* s = str;
+	char* d = str;
+	while(*s != '\0') {
+		if(*s == ESC && *(s + 1) == '[') {
+			s += 2;
+			while(*s != '\0' && (*s < '@' || *s > '~'))
+				s++;
+			if(*s != '\0') // Skip "final byte""
+				s++;
+		} else {
+			*(d++) = *(s++);
+		}
+	}
+	*d = '\0';
+	return str;
+}
+
 char* strip_exascii(const char *str, char* dest)
 {
 	int	i,j;
@@ -109,7 +128,7 @@ char* strip_space(const char *str, char* dest)
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++)
-		if(!isspace((unsigned char)str[i]))
+		if(!IS_WHITESPACE(str[i]))
 			dest[j++]=str[i];
 	dest[j]=0;
 	return dest;
@@ -136,6 +155,7 @@ char* prep_file_desc(const char *str, char* dest)
 
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
+	strip_ansi(dest);
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0) {
 			i++;
@@ -147,7 +167,7 @@ char* prep_file_desc(const char *str, char* dest)
 		}
 		else if(j && str[i]<=' ' && dest[j-1]==' ')
 			continue;
-		else if(i && !isalnum((unsigned char)str[i]) && str[i]==str[i-1])
+		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
 			continue;
 		else if((uchar)str[i]>=' ')
 			dest[j++]=str[i];
@@ -496,7 +516,7 @@ uint hptoi(const char *str)
 
 	if(!str[1] || toupper(str[0])<='F')
 		return(ahtoul(str));
-	strcpy(tmp,str);
+	SAFECOPY(tmp,str);
 	tmp[0]='F';
 	i=ahtoul(tmp)+((toupper(str[0])-'F')*0x10);
 	return(i);
@@ -641,6 +661,25 @@ char* ascii_str(uchar* str)
 		p++;
 	}
 	return((char*)str);
+}
+
+/****************************************************************************/
+/* Condense consecutive white-space chars in a string to single spaces		*/
+/****************************************************************************/
+char* condense_whitespace(char* str)
+{
+	char* s = str;
+	char* d = str;
+	while(*s != '\0') {
+		if(IS_WHITESPACE(*s)) {
+			*(d++) = ' ';
+			SKIP_WHITESPACE(s);
+		} else {
+			*(d++) = *(s++);
+		}
+	}
+	*d = '\0';
+	return str;
 }
 
 uint32_t str_to_bits(uint32_t val, const char *str)

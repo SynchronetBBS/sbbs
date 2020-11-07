@@ -126,6 +126,7 @@ typedef struct {
 	/* Login Attempt parameters */
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
+	uint	max_concurrent_connections;
 
 } mail_startup_t;
 

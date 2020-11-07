@@ -849,7 +849,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 		infile++;
 
 #ifdef __unix__
-	if(isalpha(infile[0]) && infile[1] == ':')	// Ignore "C:" prefix
+	if(IS_ALPHA(infile[0]) && infile[1] == ':')	// Ignore "C:" prefix
 		infile += 2;
 #endif
 	SAFECOPY(attachment, infile);
@@ -2282,7 +2282,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 		}
 	}
 
-	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL) &&
+	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL || (tp=strstr(p,"-- \r"))!=NULL) &&
 		(*(tp-1)=='\r' || *(tp-1)=='\n'))
 		*tp=0;
 
@@ -2317,7 +2317,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 	add_area=strListInit();
 	del_area=strListInit();
 	for(l=0;l<m;l++) {
-		while(*(p+l) && isspace((uchar)*(p+l))) l++;
+		while(*(p+l) && IS_WHITESPACE(*(p+l))) l++;
 		while(*(p+l)==CTRL_A) {				/* Ignore kludge lines June-13-2004 */
 			while(*(p+l) && *(p+l)!='\r') l++;
 			continue;
@@ -3107,7 +3107,7 @@ time32_t fmsgtime(const char *str)
 	memset(&tm,0,sizeof(tm));
 	tm.tm_isdst=-1;	/* Do not adjust for DST */
 
-	if(isdigit((uchar)str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
+	if(IS_DIGIT(str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
 		tm.tm_mday=atoi(str);
 		sprintf(month,"%3.3s",str+3);
 		if(!stricmp(month,"jan"))
@@ -3503,7 +3503,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		if(ch == '\n')
 			continue;
 		if(cr && (!strncmp(fbuf+l,"--- ",4)
-			|| !strncmp(fbuf+l,"---\r",4)))
+			|| !strncmp(fbuf+l,"---\r",4)
+			|| !strncmp(fbuf+l,"-- \r",4)))
 			done=1; 			/* tear line and down go into tail */
 		else if(cr && !strncmp(fbuf+l," * Origin: ",11) && subnum != INVALID_SUB) {
 			p=(char*)fbuf+l+11;
@@ -6207,7 +6208,7 @@ int main(int argc, char **argv)
 		else {
 			if(strchr(argv[i],'.')!=NULL && fexist(argv[i]))
 				SAFECOPY(cfg.cfgfile,argv[i]);
-			else if(isdigit((uchar)argv[i][0]))
+			else if(IS_DIGIT(argv[i][0]))
 				nodeaddr = atofaddr(argv[i]);
 			else
 				sub_code = argv[i];
@@ -6399,7 +6400,7 @@ int main(int argc, char **argv)
 			SKIP_WHITESPACE(p);		/* Skip white space */
 
 			while(*p && *p!=';') {
-				if(!isdigit(*p)) {
+				if(!IS_DIGIT(*p)) {
 					printf("\n");
 					lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
 					break;

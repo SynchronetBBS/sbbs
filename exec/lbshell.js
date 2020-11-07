@@ -715,15 +715,9 @@ while(bbs.online) {
     						console.writeln("DOORSCAN ERROR: "+e);
     						log("Error running "+xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].code+" "+e);
 						}
-
-						if(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].settings & XTRN_PAUSE) {
-							console.pause();
-						}
 					}
 					else {
 						bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
-						if(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].settings & XTRN_PAUSE)
-							console.pause();
 					}
 					start_mouse();
 					draw_main(true);

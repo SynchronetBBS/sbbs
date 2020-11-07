@@ -1723,7 +1723,7 @@ int main(int argc, char** argv)
 						mail_startup.options=strtoul(arg,NULL,0);
 						break;
 					case 'S':	/* SMTP/SendMail */
-						if(isdigit(*arg)) {
+						if(IS_DIGIT(*arg)) {
 							mail_startup.smtp_port=atoi(arg);
 							break;
 						}
@@ -1737,7 +1737,7 @@ int main(int argc, char** argv)
 						}
 						break;
 					case 'P':	/* POP3 */
-						if(isdigit(*arg)) {
+						if(IS_DIGIT(*arg)) {
 							mail_startup.pop3_port=atoi(arg);
 							break;
 						}

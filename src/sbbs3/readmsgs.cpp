@@ -802,7 +802,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			domsg = true;
 			continue; 
 		}
-		if(thread_mode && (isalpha(l) || l=='?')) {
+		if(thread_mode && (IS_ALPHA(l) || l=='?')) {
 			thread_mode = false;
 			domsg = true;
 		}

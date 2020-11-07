@@ -38,7 +38,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 			
 		if(!this.client) {
 			if(!host || isNaN(port))
-				throw("invalid client arguments");
+				throw new Error("invalid client arguments");
 			this.client = new JSONClient(host,port);
 		}
 		if(!this.client.connect()) {
@@ -48,7 +48,7 @@ function JSONChat(usernum,jsonclient,host,port) {
 		if(this.nick)
 			this.client.subscribe("chat","channels." + this.nick.name + ".messages");
 		else
-			throw("invalid user number");
+			throw new Error("invalid user number");
 		for(var c in this.channels) 
 			this.join(c.name);
 		return true;

@@ -784,6 +784,7 @@ public:
 	long	term_supports(long cmp_flags=0);
 	const char* term_type(long term_supports = -1);
 	const char* term_charset(long term_supports = -1);
+	bool	update_nodeterm(void);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval=1);
 	bool	saveline(void);
@@ -893,7 +894,7 @@ public:
 	char*	parse_login(char*);
 
 	/* answer.cpp */
-	bool	answer();
+	bool	answer(void);
 
 	/* logon.ccp */
 	bool	logon(void);
@@ -1212,6 +1213,7 @@ extern "C" {
 	DLLEXPORT char 		ctrl_a_to_ascii_char(char code);
 	DLLEXPORT char *	truncstr(char* str, const char* set);
 	DLLEXPORT char *	ascii_str(uchar* str);
+	DLLEXPORT char *	condense_whitespace(char* str);
 	DLLEXPORT char		exascii_to_ascii_char(uchar ch);
 	DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
 	DLLEXPORT BOOL		findstr_in_string(const char* insearchof, char* string);
@@ -1220,6 +1222,7 @@ extern "C" {
 	DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
 	DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
 	DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
+	DLLEXPORT char *	strip_ansi(char* str);
 	DLLEXPORT char *	strip_exascii(const char *str, char* dest);
 	DLLEXPORT char *	strip_space(const char *str, char* dest);
 	DLLEXPORT char *	prep_file_desc(const char *str, char* dest);

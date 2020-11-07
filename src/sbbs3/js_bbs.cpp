@@ -1662,7 +1662,7 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 	else if((p=strstr(instr,"-R"))!=NULL)
 		padded_right=true;
 	if(p!=NULL) {
-		if(*(p+2) && isdigit(*(p+2)))
+		if(*(p+2) && IS_DIGIT(*(p+2)))
 			disp_len=atoi(p+2);
 		*p=0;
 	}

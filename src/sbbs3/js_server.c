@@ -150,7 +150,7 @@ static void remove_port_part(char *host)
 {
 	char *p=strchr(host, 0)-1;
 
-	if (isdigit(*p)) {
+	if (IS_DIGIT(*p)) {
 		/*
 		 * If the first and last : are not the same, and it doesn't
 		 * start with '[', there's no port part.
@@ -164,7 +164,7 @@ static void remove_port_part(char *host)
 				*p = 0;
 				break;
 			}
-			if (!isdigit(*p))
+			if (!IS_DIGIT(*p))
 				break;
 		}
 	}

@@ -94,11 +94,6 @@ function exec_xtrn(prog)
 	load('fonts.js', 'default');
 	if(options.eval_after_exec)
 		eval(options.eval_after_exec);
-
-	if(prog.settings&XTRN_PAUSE)
-		console.pause();
-	else
-		console.line_counter=0;
 }
 
 function external_program_menu(xsec)
@@ -130,12 +125,19 @@ function external_program_menu(xsec)
 		if(options.clear_screen)
 			console.clear(LIGHTGRAY);
 
-		var secnum = xtrn_area.sec_list[xsec].number+1
+		var secnum = xtrn_area.sec_list[xsec].number+1;
+		var seccode = xtrn_area.sec_list[xsec].code;
 		if(bbs.menu_exists("xtrn" + secnum + "_head")) {
 			bbs.menu("xtrn" + secnum + "_head");
 		}
+		else if(bbs.menu_exists("xtrn" + seccode + "_head")) {
+			bbs.menu("xtrn" + seccode + "_head");
+		}
 		if(bbs.menu_exists("xtrn" + secnum)) {
 			bbs.menu("xtrn" + secnum);
+		}
+		else if(bbs.menu_exists("xtrn" + seccode)) {
+			bbs.menu("xtrn" + seccode);
 		}
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;

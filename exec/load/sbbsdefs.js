@@ -198,6 +198,7 @@ var   K_USEOFFSET	=(1<<20);	/* Use console.getstr_offset with getstr()	*/
 var   K_NOSPIN      =(1<<21);	/* Do not honor user's spinning cursor		*/
 var   K_ANSI_CPR	=(1<<22);	/* ANSI Cursor Position Report expected		*/
 var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
+var   K_CTRLKEYS	=(1<<24);	/* No control-key handling/eating in inkey()*/
 					    		/********************************************/
 
 						    	/********************************************/
@@ -205,7 +206,7 @@ var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
 							    /********************************************/
 var   P_NONE		=0;			/* No special behavior						*/
 var   P_NOABORT  	=(1<<0);	/* Disallows abortion of a message          */
-var   P_SAVEATR		=(1<<1);	/* Save the new current attributres after	*/
+var   P_SAVEATR		=(1<<1);	/* Save the new current attributes after	*/
 					    		/* msg has printed							*/
 var   P_NOATCODES	=(1<<2);	/* Don't allow @ codes                      */
 var   P_OPENCLOSE	=(1<<3);	/* Open and close the file					*/
@@ -221,6 +222,8 @@ var   P_WRAP        =(1<<12);   /* Wrap/split long-lines, ungracefully      */
 var   P_UTF8        =(1<<13);	/* Message is UTF-8 encoded                 */
 var   P_AUTO_UTF8	=(1<<14);	/* Message may be UTF-8, auto-detect		*/
 var   P_NOXATTRS	=(1<<15);	/* No "Extra Attribute Codes" supported		*/
+var   P_MARKUP		=(1<<16);	/* Support StyleCodes/Rich/StructuredText	*/
+var   P_HIDEMARKS	=(1<<17);	/* Hide the mark-up tags					*/
 							    /********************************************/
 
     							/********************************************/

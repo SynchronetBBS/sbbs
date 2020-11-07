@@ -264,7 +264,8 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 /****************************************************************************/
 void sbbs_t::autohangup()
 {
-    char	a,c,k;
+    int		a,c;
+	char	k;
 	char 	tmp[512];
 
 	if(online!=ON_REMOTE)

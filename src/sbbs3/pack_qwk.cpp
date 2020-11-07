@@ -712,7 +712,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
 			padfname(fname,str);
-			if(isdigit(str[4]) && isdigit(str[9])) {
+			if(IS_DIGIT(str[4]) && IS_DIGIT(str[9])) {
 				SAFEPRINTF2(str,"%sQWK/%s",cfg.text_dir,fname);
 				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,fname);
 				mv(str,tmp2,/* copy: */TRUE); 

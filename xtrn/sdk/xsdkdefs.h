@@ -290,6 +290,44 @@ enum {								/* Node Action */
 #define KEY_BUFSIZE 256
 #endif
 
+#ifndef USE_XPDEV
+enum {
+	 CTRL_AT						// NUL
+	,CTRL_A							// SOH
+	,CTRL_B							// STX
+	,CTRL_C							// ETX
+	,CTRL_D							// EOT
+	,CTRL_E							// ENQ
+	,CTRL_F							// ACK
+	,CTRL_G							// BEL
+	,CTRL_H							// BS
+	,CTRL_I							// HT
+	,CTRL_J							// LF
+	,CTRL_K							// VT
+	,CTRL_L							// FF
+	,CTRL_M							// CR
+	,CTRL_N							// SO
+	,CTRL_O							// SI
+	,CTRL_P							// DLE
+	,CTRL_Q							// DC1
+	,CTRL_R							// DC2
+	,CTRL_S							// DC3
+	,CTRL_T							// DC4
+	,CTRL_U							// NAK
+	,CTRL_V							// SYN
+	,CTRL_W							// ETB
+	,CTRL_X							// CAN
+	,CTRL_Y							// EM
+	,CTRL_Z							// SUB
+	,CTRL_OPEN_BRACKET				// ESC
+	,CTRL_BACKSLASH					// FS
+	,CTRL_CLOSE_BRACKET				// GS
+	,CTRL_CARET						// RS
+	,CTRL_UNDERSCORE				// US
+	,CTRL_QUESTION_MARK	= 0x7f		// DEL
+};
+#endif
+
 									/* Special terminal key mappings */
 #define TERM_KEY_HOME	CTRL_B
 #define TERM_KEY_END	CTRL_E

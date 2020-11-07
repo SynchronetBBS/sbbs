@@ -99,7 +99,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 	if(mode&K_AUTODEL && str1[0] && !(mode&K_NOECHO)) {
 		ch=getkey(mode|K_GETSTR);
 		attr(atr);
-		if(isprint(ch) || ch==DEL) {
+		if(IS_PRINTABLE(ch) || ch==DEL) {
 			for(i=0;i<l;i++)
 				backspace();
 			i=l=0; 
@@ -689,7 +689,7 @@ long sbbs_t::getnum(ulong max, ulong dflt)
 			i/=10;
 			n--; 
 		}
-		else if(isdigit(ch) && (i*10UL)+(ch&0xf)<=max && (dflt || ch!='0' || n)) {
+		else if(IS_DIGIT(ch) && (i*10UL)+(ch&0xf)<=max && (dflt || ch!='0' || n)) {
 			i*=10L;
 			n++;
 			i+=ch&0xf;
