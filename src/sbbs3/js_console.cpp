@@ -2102,7 +2102,6 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_term_updated(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
