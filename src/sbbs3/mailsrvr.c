@@ -5620,9 +5620,9 @@ static void sendmail_thread(void* arg)
 				continue;
 			}
 			if(msg.from_net.type==NET_INTERNET && msg.reverse_path!=NULL)
-				SAFECOPY(fromaddr, msg.reverse_path);
+				angle_bracket(fromaddr, sizeof(fromaddr), msg.reverse_path);
 			else 
-				SAFEPRINTF(fromaddr, "<%s>", usermailaddr(&scfg, str, msg.from));
+				angle_bracket(fromaddr, sizeof(fromaddr), usermailaddr(&scfg, str, msg.from));
 
 			char sender_info[512];
 			if(msg.from_ext != NULL)
