@@ -1488,7 +1488,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	}
 
     if(cfg.xtrnprogpre_mod[0] != '\0') {
-        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,xtrn[xtrnnum]->code);
+        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,cfg.xtrn[xtrnnum]->code);
         exec_bin(str, &main_csi);
     }
 
@@ -1658,7 +1658,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		lncntr = 0;
 
     if(cfg.xtrnprogpost_mod[0] != '\0') {
-        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpost_mod,xtrn[xtrnnum]->code);
+        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpost_mod,cfg.xtrn[xtrnnum]->code);
         exec_bin(str, &main_csi);
     }
     
