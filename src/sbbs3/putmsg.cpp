@@ -160,13 +160,19 @@ char sbbs_t::putmsgfrag(const char* buf, long* mode, long org_cols, JSObject* ob
 				break;
 		}
 		if((*mode) & P_MARKUP) {
-			if(((mark == 0) && (str[l] == '*' || str[l] == '/' || str[l] == '_' || str[l] == '#')) || str[l] == mark) {
-				char* next= NULL;
-				if(mark == 0)
+			const char* marks = "*/_#";
+			if(((mark == 0) && strchr(marks, str[l]) != NULL) || str[l] == mark) {
+				char* next = NULL;
+				char following = '\0';
+				if(mark == 0) {
 					next = strchr(str + l + 1, str[l]);
+					if(next != NULL)
+						following = *(next + 1);
+				}
 				char *blank = strstr(str + l + 1, "\n\r");
-				if(((l < 1 || ((IS_WHITESPACE(str[l - 1]) || IS_PUNCTUATION(str[l - 1])) && str[l - 1] != str[l]))
-						&& IS_ALPHANUMERIC(str[l + 1]) && mark == 0 && next != NULL	&& (*(next + 1) == '\0' || IS_WHITESPACE(*(next + 1)) || IS_PUNCTUATION(*(next+1)))
+				if(((l < 1 || ((IS_WHITESPACE(str[l - 1]) || IS_PUNCTUATION(str[l - 1])) && strchr(marks, str[l - 1]) == NULL))
+						&& IS_ALPHANUMERIC(str[l + 1]) && mark == 0 && next != NULL
+						&& (following == '\0' || IS_WHITESPACE(following) || (IS_PUNCTUATION(following) && strchr(marks, following) == NULL))
 						&& (blank == NULL || next < blank))
 					|| str[l] == mark) {
 					if(mark == 0)
