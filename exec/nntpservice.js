@@ -53,6 +53,8 @@ var impose_limit = true;
 var sysop_login = false;
 var add_tag = true;
 var ex_ascii = true;
+var force_newsgroups = false;
+var filter_newsgroups = false;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -70,6 +72,10 @@ for(i=0;i<argc;i++) {
 		add_tag = false;
 	else if(argv[i].toLowerCase()=="-ascii")
 		ex_ascii = false;
+	else if(argv[i].toLowerCase()=="-force")
+		force_newsgroups = true;
+	else if(argv[i].toLowerCase()=="-filter")
+		filter_newsgroups = true;
 	else if(argv[i].toLowerCase()=="-auto") {
 		no_anonymous = true;
 		auto_login = true;
@@ -279,6 +285,17 @@ while(client.socket.is_connected && !quit) {
 			writeln("502 Authentication required");
 			log(LOG_WARNING,"!Authentication required");
 			continue;
+		}
+	}
+
+	// list of newsgroup names the logged-in user has access to
+	var newsgroup_list = [];
+	if(include_mail) {
+		newsgroup_list.push("mail");
+	}
+	for(g in msg_area.grp_list) {
+		for(s in msg_area.grp_list[g].sub_list) {
+			newsgroup_list.push(msg_area.grp_list[g].sub_list[s].newsgroup);
 		}
 	}
 
@@ -758,17 +775,19 @@ while(client.socket.is_connected && !quit) {
 				if(hdr.path==undefined)
 					hdr.path="not-for-mail";
 
-				if(hdr.newsgroups==undefined)
+				if(hdr.newsgroups==undefined || force_newsgroups)
 					hdr.newsgroups = selected.newsgroup;
-				else {	/* Tracker1's mod for adding the correct newsgroup name		*/
-					var ng_found = false;					/* Requires sbbs v3.13	*/
+				else {
 					var ng_list = hdr.newsgroups.split(',');
-					for(n in ng_list)
-						if(ng_list[n].toLowerCase() == selected.newsgroup.toLowerCase()) {
-							ng_found = true;
-							break;
-						}
-					if(!ng_found)
+					var filtered_list = [];
+					for(n in ng_list) {
+						if(filter_newsgroups && newsgroup_list.indexOf(ng_list[n]) < 0)
+							continue;
+						filtered_list.push(ng_list[n]);
+					}
+					hdr.newsgroups = filtered_list.join(',');
+					/* Tracker1's mod for adding the correct newsgroup name		*/
+					if(filtered_list.indexOf(selected.newsgroup) < 0)
 						hdr.newsgroups = selected.newsgroup + ',' + hdr.newsgroups;
 				}
 
