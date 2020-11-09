@@ -3,8 +3,6 @@
 // External Program Pre Module
 // These actions execute before an external program is launched via bbs.exec_xtrn()
 
-// $Id: xtrn_sec.js,v 1.29 2020/05/09 10:11:23 rswindell Exp $
-
 "use strict";
 
 load("sbbsdefs.js");
