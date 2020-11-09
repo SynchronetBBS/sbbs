@@ -292,12 +292,12 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	if(cfg->logonlist_mod[0] == '\xff')
 		SAFECOPY(cfg->logonlist_mod, "logonlist");
 
-	get_str(cfg->xtrnprogpre_mod,instream);
-	if(cfg->xtrnprogpre_mod[0] == '\xff') 
-	    SAFECOPY(cfg->xtrnprogpre_mod, "prextrn");
-	get_str(cfg->xtrnprogpost_mod,instream);
-	if(cfg->xtrnprogpost_mod[0] == '\xff') 
-	    SAFECOPY(cfg->xtrnprogpost_mod, "postxtrn");		
+	get_str(cfg->prextrn_mod,instream);
+	if(cfg->prextrn_mod[0] == '\xff') 
+	    SAFECOPY(cfg->postxtrn_mod, "prextrn");
+	get_str(cfg->postxtrn_mod,instream);
+	if(cfg->postxtrn_mod[0] == '\xff') 
+	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");		
 		
 	for(i=0;i<117;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);

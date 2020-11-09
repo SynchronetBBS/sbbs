@@ -17,16 +17,13 @@ var options, program;
 if((options=load({}, "modopts.js","xtrn_sec")) == null)
 	options = {};	// default values
 
-if(options.restricted_user_msg === undefined)
-	options.restricted_user_msg = bbs.text(R_ExternalPrograms);
-
 if(options.clear_screen === undefined)
 	options.clear_screen = true;
 
 function exec_xtrn_post(program)
 {
-	if ((options.disable_xtrnpost_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
-		return;
+	if ((options.disable_post_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
+		exit(1);
 	}
 
 	console.attributes = 0;
@@ -34,29 +31,13 @@ function exec_xtrn_post(program)
 
 	load('fonts.js', 'default');
 
-	if(options.eval_after_exec)
+	if (options.eval_after_exec) {
 		eval(options.eval_after_exec);
+	}
 }
 
 
 /* main: */
 {
-	if(!argv[0]) {
-		write(bbs.text(NoXtrnProgram));
-	} else {
-		xtrn_area.sec_list.some(function(sec) {
-			sec.prog_list.some(function (prog) {
-				if (prog.code.toLowerCase() == argv[0]) {
-					program = prog;
-					return true;
-				}
-			});
-		});
-
-		if (!program) {
-			write(bbs.text(NoXtrnProgram));
-		} else {
-			exec_xtrn_post(program);
-		}
-	}
+	exec_xtrn_post(xtrn_area.prog[argv[0].toLowerCase()] );
 }

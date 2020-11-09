@@ -20,19 +20,20 @@ if((options=load({}, "modopts.js","xtrn_sec")) == null)
 
 function exec_xtrn_pre(program)
 {
-	if ((options.disable_xtrnpre_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
-		return;
+	if ((options.disable_pre_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
+		exit(1);
 	}
 	
-	if(options.restricted_user_msg === undefined)
+	if (options.restricted_user_msg === undefined) {
 		options.restricted_user_msg = bbs.text(R_ExternalPrograms);
-
-	if(user.security.restrictions&UFLAG_X) {
-		write(options.restricted_user_msg);
-		return;
 	}
 
-	if(bbs.menu_exists("xtrn/" + program.code)) {
+	if (user.security.restrictions&UFLAG_X) {
+		write(options.restricted_user_msg);
+		exit(1);
+	}
+
+	if (bbs.menu_exists("xtrn/" + program.code)) {
 		bbs.menu("xtrn/" + program.code);
 		console.pause();
 		console.line_counter=0;
@@ -40,11 +41,13 @@ function exec_xtrn_pre(program)
 
 	console.attributes = LIGHTGRAY;
 
-	if(options.clear_screen_on_exec)
+	if (options.clear_screen_on_exec) {
 		console.clear();
+	}
 
-	if(options.eval_before_exec)
+	if (options.eval_before_exec) {
 		eval(options.eval_before_exec);
+	}
 
 	load('fonts.js', 'xtrn:' + program.code);
 }
@@ -52,22 +55,5 @@ function exec_xtrn_pre(program)
 
 /* main: */
 {
-	if(!argv[0]) {
-		write(bbs.text(NoXtrnProgram));
-	} else {
-		xtrn_area.sec_list.some(function(sec) {
-			sec.prog_list.some(function (prog) {
-				if (prog.code.toLowerCase() == argv[0]) {
-					program = prog;
-					return true;
-				}
-			});
-		});
-
-		if (!program) {
-			write(bbs.text(NoXtrnProgram));
-		} else {
-			exec_xtrn_pre(program);
-		}
-	}
+	status = exec_xtrn_pre(xtrn_area.prog[argv[0].toLowerCase()]);
 }

@@ -262,8 +262,8 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->privatemsg_mod, stream);
 	put_str(cfg->logonlist_mod, stream);
 	
-    put_str(cfg->xtrnprogpre_mod,stream);
-    put_str(cfg->xtrnprogpost_mod,stream);
+    put_str(cfg->prextrn_mod,stream);
+    put_str(cfg->postxtrn_mod,stream);
     
 	n=0xffff;
 	for(i=0;i<117;i++)

@@ -1669,8 +1669,8 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
-					sprintf(opt[i++],"%-16.16s%s","Xtrn Prog Pre",cfg.xtrnprogpre_mod);
-					sprintf(opt[i++],"%-16.16s%s","Xtrn Prog Post",cfg.xtrnprogpost_mod);
+					sprintf(opt[i++],"%-16.16s%s","Pre Xtrn Prog",cfg.prextrn_mod);
+					sprintf(opt[i++],"%-16.16s%s","Post Xtrn Prog",cfg.postxtrn_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
@@ -1763,12 +1763,12 @@ void sys_cfg(void)
 								,cfg.xtrnsec_mod,sizeof(cfg.xtrnsec_mod)-1,K_EDIT);
 							break;
 						case 10:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Pre Module"
-								,cfg.xtrnprogpre_mod,sizeof(cfg.xtrnprogpre_mod)-1,K_EDIT);
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Pre External Program Module"
+								,cfg.prextrn_mod,sizeof(cfg.prextrn_mod)-1,K_EDIT);
 							break;
 						case 11:
-							uifc.input(WIN_MID|WIN_SAV,0,0,"External Program Post Module"
-								,cfg.xtrnprogpost_mod,sizeof(cfg.xtrnprogpost_mod)-1,K_EDIT);
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Post External Program Module"
+								,cfg.postxtrn_mod,sizeof(cfg.postxtrn_mod)-1,K_EDIT);
 							break;														
 						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"

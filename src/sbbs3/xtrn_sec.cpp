@@ -1487,9 +1487,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		subtract_cdt(&cfg,&useron,cfg.xtrn[xtrnnum]->cost); 
 	}
 
-    if(cfg.xtrnprogpre_mod[0] != '\0') {
-        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpre_mod,cfg.xtrn[xtrnnum]->code);
-        exec_bin(str, &main_csi);
+    if(cfg.prextrn_mod[0] != '\0') {
+        SAFEPRINTF2(str, "%s %s", cfg.prextrn_mod,cfg.xtrn[xtrnnum]->code);
+        if (exec_bin(str, &main_csi) != 0) {
+            return(false);
+        }
     }
 
 	if(!(cfg.xtrn[xtrnnum]->misc&MULTIUSER)) {
@@ -1657,8 +1659,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	else
 		lncntr = 0;
 
-    if(cfg.xtrnprogpost_mod[0] != '\0') {
-        SAFEPRINTF2(str, "%s %s", cfg.xtrnprogpost_mod,cfg.xtrn[xtrnnum]->code);
+    if(cfg.postxtrn_mod[0] != '\0') {
+        SAFEPRINTF2(str, "%s %s", cfg.postxtrn_mod,cfg.xtrn[xtrnnum]->code);
         exec_bin(str, &main_csi);
     }
     
