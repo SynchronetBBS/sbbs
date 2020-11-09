@@ -55,5 +55,5 @@ function exec_xtrn_pre(program)
 
 /* main: */
 {
-	status = exec_xtrn_pre(xtrn_area.prog[argv[0].toLowerCase()]);
+	exec_xtrn_pre(xtrn_area.prog[argv[0].toLowerCase()]);
 }
