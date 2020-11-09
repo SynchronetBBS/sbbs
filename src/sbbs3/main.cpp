@@ -5590,7 +5590,6 @@ NO_SSH:
 					lprintf(LOG_DEBUG,"%04d * HAPROXY IPv4 address in IPv6 [%s]",client_socket,host_ip);
 
 				} else {
-					sprintf(host_ip,"%.*s",i,hapstr);
 					memcpy(host_ip,hapstr,i);
 				}
 
