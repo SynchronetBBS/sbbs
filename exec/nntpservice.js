@@ -53,6 +53,8 @@ var impose_limit = true;
 var sysop_login = false;
 var add_tag = true;
 var ex_ascii = true;
+var force_newsgroups = false;
+var filter_newsgroups = false;
 
 // Parse arguments
 for(i=0;i<argc;i++) {
@@ -70,6 +72,10 @@ for(i=0;i<argc;i++) {
 		add_tag = false;
 	else if(argv[i].toLowerCase()=="-ascii")
 		ex_ascii = false;
+	else if(argv[i].toLowerCase()=="-force")
+		force_newsgroups = true;
+	else if(argv[i].toLowerCase()=="-filter")
+		filter_newsgroups = true;
 	else if(argv[i].toLowerCase()=="-auto") {
 		no_anonymous = true;
 		auto_login = true;
@@ -140,6 +146,21 @@ function count_msgs(msgbase)
 		count++;
 	}
 	return { total: count, first: first, last: last };
+}
+
+function get_newsgroup_list()
+{
+	// list of newsgroup names the logged-in user has access to
+	var newsgroup_list = [];
+	if(include_mail) {
+		newsgroup_list.push("mail");
+	}
+	for(var g in msg_area.grp_list) {
+		for(var s in msg_area.grp_list[g].sub_list) {
+			newsgroup_list.push(msg_area.grp_list[g].sub_list[s].newsgroup);
+		}
+	}
+	return newsgroup_list;
 }
 
 function bogus_cmd(cmdline)
@@ -758,18 +779,20 @@ while(client.socket.is_connected && !quit) {
 				if(hdr.path==undefined)
 					hdr.path="not-for-mail";
 
-				if(hdr.newsgroups==undefined)
+				if(hdr.newsgroups==undefined || force_newsgroups)
 					hdr.newsgroups = selected.newsgroup;
-				else {	/* Tracker1's mod for adding the correct newsgroup name		*/
-					var ng_found = false;					/* Requires sbbs v3.13	*/
-					var ng_list = hdr.newsgroups.split(',');
-					for(n in ng_list)
-						if(ng_list[n].toLowerCase() == selected.newsgroup.toLowerCase()) {
-							ng_found = true;
-							break;
-						}
-					if(!ng_found)
-						hdr.newsgroups = selected.newsgroup + ',' + hdr.newsgroups;
+				else {
+					var nghdr_list = hdr.newsgroups.split(',');
+					var newsgroup_list = get_newsgroup_list();
+					var filtered_list = [];
+					for(var n in nghdr_list) {
+						if(filter_newsgroups && newsgroup_list.indexOf(nghdr_list[n]) < 0)
+							continue;
+						filtered_list.push(nghdr_list[n]);
+					}
+					if(filtered_list.indexOf(selected.newsgroup) < 0)
+						filtered_list.push(selected.newsgroup);
+					hdr.newsgroups = filtered_list.join(',');
 				}
 
 				if(hdr.from_org==undefined && !hdr.from_net_type)

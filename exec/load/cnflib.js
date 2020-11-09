@@ -42,13 +42,12 @@ var CNF = new (function() {
 
 	/* get record padding */
 	function getPadding(file,bytes) {
-		file.position += bytes;
-		return false;
+		return file.read(bytes);
 	}
 
 	/* set record padding */
-	function setPadding(file,bytes) {
-		setStr(file,bytes,"");
+	function setPadding(file,struct) {
+		file.write(struct.data,struct.bytes);
 	}
 
 	/* read a set of records from *.cnf */
@@ -70,7 +69,7 @@ var CNF = new (function() {
 			if(file.eof)
 				break;
 			if(p.match(/__PADDING\d*__/))
-				getPadding(file,struct[p]);
+				struct[p].data = getPadding(file,struct[p].bytes);
 			else {
 				switch(struct[p].type) {
 				case "int":
