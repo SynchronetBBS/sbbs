@@ -148,6 +148,21 @@ function count_msgs(msgbase)
 	return { total: count, first: first, last: last };
 }
 
+function get_newsgroup_list()
+{
+	// list of newsgroup names the logged-in user has access to
+	var newsgroup_list = [];
+	if(include_mail) {
+		newsgroup_list.push("mail");
+	}
+	for(var g in msg_area.grp_list) {
+		for(var s in msg_area.grp_list[g].sub_list) {
+			newsgroup_list.push(msg_area.grp_list[g].sub_list[s].newsgroup);
+		}
+	}
+	return newsgroup_list;
+}
+
 function bogus_cmd(cmdline)
 {
 	log(LOG_DEBUG, "Received bogus command: '" + cmdline + "'");
@@ -285,17 +300,6 @@ while(client.socket.is_connected && !quit) {
 			writeln("502 Authentication required");
 			log(LOG_WARNING,"!Authentication required");
 			continue;
-		}
-	}
-
-	// list of newsgroup names the logged-in user has access to
-	var newsgroup_list = [];
-	if(include_mail) {
-		newsgroup_list.push("mail");
-	}
-	for(g in msg_area.grp_list) {
-		for(s in msg_area.grp_list[g].sub_list) {
-			newsgroup_list.push(msg_area.grp_list[g].sub_list[s].newsgroup);
 		}
 	}
 
@@ -778,17 +782,17 @@ while(client.socket.is_connected && !quit) {
 				if(hdr.newsgroups==undefined || force_newsgroups)
 					hdr.newsgroups = selected.newsgroup;
 				else {
-					var ng_list = hdr.newsgroups.split(',');
+					var nghdr_list = hdr.newsgroups.split(',');
+					var newsgroup_list = get_newsgroup_list();
 					var filtered_list = [];
-					for(n in ng_list) {
-						if(filter_newsgroups && newsgroup_list.indexOf(ng_list[n]) < 0)
+					for(var n in nghdr_list) {
+						if(filter_newsgroups && newsgroup_list.indexOf(nghdr_list[n]) < 0)
 							continue;
-						filtered_list.push(ng_list[n]);
+						filtered_list.push(nghdr_list[n]);
 					}
-					hdr.newsgroups = filtered_list.join(',');
-					/* Tracker1's mod for adding the correct newsgroup name		*/
 					if(filtered_list.indexOf(selected.newsgroup) < 0)
-						hdr.newsgroups = selected.newsgroup + ',' + hdr.newsgroups;
+						filtered_list.push(selected.newsgroup);
+					hdr.newsgroups = filtered_list.join(',');
 				}
 
 				if(hdr.from_org==undefined && !hdr.from_net_type)
