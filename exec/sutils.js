@@ -45,7 +45,7 @@ while((!which || which < 1) && !aborted()) {
     if (which && (typeof categoryitems[which] !== "undefined")) {
         docategorymenu(categoryitems[which], categories[categoryitems[which]]);
     }
-    
+
     which = -1; // redisplay menu
 }
 
@@ -57,24 +57,26 @@ function docategorymenu(catid, catname) {
     if (file.open("r")) {
         utilitemids = file.iniGetSections(catid);
     }
-    
+
     for (var i in utilitemids) {
         utilitems[utilitemids[i]] = file.iniGetObject(utilitemids[i]);
     }
-    
+
     file.close();
-    
+
     while ((!which || which < 1) && !aborted()) {
         print("");
         print(">>>> " + catname);
         print("");
-        
+
         if (typeof utilitems !== "undefined") {
             var x = 1;
             for (var iniid in utilitems) {
-                printf("%2d. %-20s %s\n", x, utilitems[iniid].name, utilitems[iniid].desc);
-                menuitems[x] = iniid;
-                x++;
+                if (file_exists(js.exec_dir + utilitems[iniid].filename)) {
+                    printf("%2d. %-20s %s\n", x, utilitems[iniid].name, utilitems[iniid].desc);
+                    menuitems[x] = iniid;
+                    x++;
+                }
             }
             print("");
             print(" Q. Return to Prior Menu");
@@ -121,7 +123,7 @@ function docategorymenu(catid, catname) {
 
         which = -1; // redisplay menu4
     }
-    
+
 }
 
 function aborted()
