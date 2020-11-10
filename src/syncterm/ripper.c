@@ -1,7 +1,6 @@
 /*
  * The RIPper... interposes on the connection and handles RIP sequences
  */
-#include <arpa/inet.h>
 #include <sys/stat.h>
 
 #include <math.h>
@@ -16,6 +15,8 @@
 #include <dirwrap.h>
 #include <gen_defs.h>
 #include <genwrap.h>
+#include <sockwrap.h>
+#include <strwrap.h>
 #include <unistd.h>
 #include <vidmodes.h>
 #include <xpbeep.h>
