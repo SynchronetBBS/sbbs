@@ -38,5 +38,36 @@ char* ltoa(long val, char* str, int radix)
 	}
 	return(str);
 }
+#endif
 
+#ifdef _WIN32
+/* From FreeBSD */
+size_t
+strnlen(const char *s, size_t maxlen)
+{
+	size_t len;
+
+	for (len = 0; len < maxlen; len++, s++) {
+		if (!*s)
+			break;
+	}
+	return (len);
+}
+
+/* From FreeBSD */
+char *
+strndup(const char *str, size_t maxlen)
+{
+	char *copy;
+	size_t len;
+
+	len = strnlen(str, maxlen);
+	copy = malloc(len + 1);
+	if (copy != NULL) {
+		(void)memcpy(copy, str, len);
+		copy[len] = '\0';
+	}
+
+	return copy;
+}
 #endif
