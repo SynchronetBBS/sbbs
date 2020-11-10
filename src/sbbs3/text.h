@@ -854,7 +854,6 @@ enum {
 	,SpinningCursor8
 	,SpinningCursor9
 	,HowManyColumns
-	,NoXtrnProgram
 
 	,TOTAL_TEXT
 };
