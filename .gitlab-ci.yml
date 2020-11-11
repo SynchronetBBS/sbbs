@@ -4,8 +4,6 @@ sbbs-linux:
   stage: build
   script:
     - cd src/sbbs3
-    - make all
-    - make gtkutils
     - make RELEASE=1 all
     - make RELEASE=1 gtkutils
   artifacts:
@@ -20,10 +18,10 @@ sexpots-linux:
   image: gcc
   stage: build
   script:
-    - cd src/sexpots-x64
+    - cd src/sexpots
     - make RELEASE=1
   artifacts:
-    name: sexpots-linux
+    name: sexpots-linux-x64
     paths:
       - "src/sexpots/*.exe.release/*"
 
@@ -53,3 +51,15 @@ sbbs-windows:
       - "src/sbbs3/*.exe.release/*.exe"
       - "src/sbbs3/*.dll.release/*.dll"
       - "src/sbbs3/*/*.exe.release/*.exe"
+
+sexpots-windows:
+  tags: [windows]
+
+  stage: build
+  script:
+    - cd src/sexpots
+    - .\release.bat
+  artifacts:
+    name: sexpots-win32
+    paths:
+      - "src/sexpots/Release/*.exe"
