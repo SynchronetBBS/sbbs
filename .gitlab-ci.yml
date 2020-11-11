@@ -1,4 +1,4 @@
-build-sbbs-linux:
+sbbs-linux:
   tags: [linux]
   image: gcc
   stage: build
@@ -9,13 +9,12 @@ build-sbbs-linux:
     - make RELEASE=1 all
     - make RELEASE=1 gtkutils
   artifacts:
-    name: sbbs
     paths:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.lib.release/*"
       - "src/sbbs3/*/*.exe.release/*"
 
-build-sexpots-linux:
+sexpots-linux:
   tags: [linux]
   image: gcc
   stage: build
@@ -23,11 +22,10 @@ build-sexpots-linux:
     - cd src/sexpots
     - make RELEASE=1
   artifacts:
-    name: sexpots
     paths:
       - "src/sexpots/*.exe.release/*"
 
-build-syncterm-linux:
+syncterm-linux:
   tags: [linux]
   image: gcc
   stage: build
@@ -35,12 +33,11 @@ build-syncterm-linux:
     - cd src/syncterm
     - make RELEASE=1
   artifacts:
-    name: syncterm
     paths:
       - "src/syncterm/*.exe.release/*"
 
 
-build-sbbs-windows:
+sbbs-windows:
   tags: [windows]
 
   stage: build
@@ -48,8 +45,7 @@ build-sbbs-windows:
     - cd src/sbbs3
     - .\release.bat
   artifacts:
-    name: sbbs
     paths:
-      - "src/sbbs3/*.exe.release/*"
-      - "src/sbbs3/*.dll.release/*"
-      - "src/sbbs3/*/*.exe.release/*"
+      - "src/sbbs3/*.exe.release/*.exe"
+      - "src/sbbs3/*.dll.release/*.dll"
+      - "src/sbbs3/*/*.exe.release/*.exe"
