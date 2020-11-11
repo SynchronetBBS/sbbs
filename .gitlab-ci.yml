@@ -9,6 +9,7 @@ sbbs-linux:
     - make RELEASE=1 all
     - make RELEASE=1 gtkutils
   artifacts:
+    name: sbbs-linux-x64
     paths:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.lib.release/*"
@@ -19,9 +20,10 @@ sexpots-linux:
   image: gcc
   stage: build
   script:
-    - cd src/sexpots
+    - cd src/sexpots-x64
     - make RELEASE=1
   artifacts:
+    name: sexpots-linux
     paths:
       - "src/sexpots/*.exe.release/*"
 
@@ -33,6 +35,7 @@ syncterm-linux:
     - cd src/syncterm
     - make RELEASE=1
   artifacts:
+    name: syncterm-linux-x64
     paths:
       - "src/syncterm/*.exe.release/*"
 
@@ -45,6 +48,7 @@ sbbs-windows:
     - cd src/sbbs3
     - .\release.bat
   artifacts:
+    name: sbbs-win32
     paths:
       - "src/sbbs3/*.exe.release/*.exe"
       - "src/sbbs3/*.dll.release/*.dll"
