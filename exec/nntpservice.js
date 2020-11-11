@@ -317,6 +317,8 @@ while(client.socket.is_connected && !quit) {
 				pattern=cmd[2];
  				writeln("215 list of newsgroups follows");
 				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern)) {
+					if(msgbase && msgbase.is_open)
+						msgbase.close();
 					msgbase=new MsgBase("mail");
 					if(msgbase.open()==true) {
 						writeln(format("mail %u %u n", msgbase.last_msg, msgbase.first_msg));
@@ -327,6 +329,8 @@ while(client.socket.is_connected && !quit) {
 					for(s in msg_area.grp_list[g].sub_list) {
 						if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
 							continue;
+						if(msgbase && msgbase.is_open)
+							msgbase.close();
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 						if(msgbase.open!=undefined && msgbase.open()==false)
 							continue;
@@ -443,6 +447,8 @@ while(client.socket.is_connected && !quit) {
 			writeln("231 list of new newsgroups since " + compare.toISOString() + " follows");
 			for(g in msg_area.grp_list) {
 				for(s in msg_area.grp_list[g].sub_list) {
+					if(msgbase && msgbase.is_open)
+						msgbase.close();
 					msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
 					var ini_file = new File(msgbase.file + ".ini");
 					if(ini_file.open("r")) {
@@ -481,6 +487,8 @@ while(client.socket.is_connected && !quit) {
 				found=true;
 			}
 			else if(include_mail && user.security.level==99 && cmd[1].toLowerCase()=="mail") {
+				if(msgbase && msgbase.is_open)
+					msgbase.close();
 				msgbase=new MsgBase("mail");
 				if(msgbase.open()==true) {
 					selected = { newsgroup: "mail" };
@@ -488,6 +496,8 @@ while(client.socket.is_connected && !quit) {
 				}
 			}
 			if(!found) {
+				if(msgbase && msgbase.is_open)
+					msgbase.close();
 				for(g in msg_area.grp_list)
 					for(s in msg_area.grp_list[g].sub_list)
 						if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==cmd[1].toLowerCase()) {
