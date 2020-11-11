@@ -295,7 +295,10 @@ struct.main={
 	whosonline_mod:		{bytes:LEN_CMD+1,			type:"str"},
 	privatemsg_mod:		{bytes:LEN_CMD+1,			type:"str"},
 	logonlist_mod:		{bytes:LEN_CMD+1,			type:"str"},
-	__PADDING3__:		{bytes:252},
+	prextrn_mod:        {bytes:LEN_MODNAME+1,       type:"str"},
+	postxtrn_mod:       {bytes:LEN_MODNAME+1,       type:"str"},
+	
+	__PADDING3__:		{bytes:234},
 	user_backup_level:	{bytes:UINT16_T,			type:"int"},
 	mail_backup_level:	{bytes:UINT16_T,			type:"int"},
 	validation_set:		{bytes:struct.validation_set_t, type:"lst", length: 10},
