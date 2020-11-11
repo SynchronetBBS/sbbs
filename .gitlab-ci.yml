@@ -1,66 +1,55 @@
-linux_job:
+build-sbbs-linux:
   tags: linux
   image: gcc
+  stage: build
+  script:
+    - cd src/sbbs3
+    - make all
+    - make gtkutils
+    - make RELEASE=1 all
+    - make RELEASE=1 gtkutils
+  artifacts:
+    name: sbbs
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
 
-  build-sbbs:
-    stage: build
-    # instead of calling g++ directly you can also use some build toolkit like make
-    # install the necessary build tools when needed
-    # before_script:
-    #   - apt update && apt -y install make autoconf
-    script:
-      - cd src/sbbs3
-      - make all
-      - make gtkutils
-      - make RELEASE=1 all
-      - make RELEASE=1 gtkutils
-    artifacts:
-      name: sbbs
-      paths:
-        - "src/sbbs3/*.exe.release/*"
-        - "src/sbbs3/*.lib.release/*"
-        - "src/sbbs3/*/*.exe.release/*"
+build-sexpots-linux:
+  tags: linux
+  image: gcc
+  stage: build
+  script:
+    - cd src/sexpots
+    - make RELEASE=1
+  artifacts:
+    name: sexpots
+    paths:
+      - "src/sexpots/*.exe.release/*"
 
-  build-sexpots:
-    stage: build
-    # instead of calling g++ directly you can also use some build toolkit like make
-    # install the necessary build tools when needed
-    # before_script:
-    #   - apt update && apt -y install make autoconf
-    script:
-      - cd src/sexpots
-      - make RELEASE=1
-    artifacts:
-      name: sexpots
-      paths:
-        - "src/sexpots/*.exe.release/*"
-
-  build-syncterm:
-    stage: build
-    # instead of calling g++ directly you can also use some build toolkit like make
-    # install the necessary build tools when needed
-    # before_script:
-    #   - apt update && apt -y install make autoconf
-    script:
-      - cd src/syncterm
-      - make RELEASE=1
-    artifacts:
-      name: syncterm
-      paths:
-        - "src/syncterm/*.exe.release/*"
+build-syncterm-linux:
+  tags: linux
+  image: gcc
+  stage: build
+  script:
+    - cd src/syncterm
+    - make RELEASE=1
+  artifacts:
+    name: syncterm
+    paths:
+      - "src/syncterm/*.exe.release/*"
 
 
-window_job:
+build-sbbs-windows:
   tags: windows
 
-  build-sbbs:
-    stage: build
-    script:
-      - cd src/sbbs3
-      - build.bat
-    artifacts:
-      name: sbbs
-      paths:
-        - "src/sbbs3/*.exe.release/*"
-        - "src/sbbs3/*.lib.release/*"
-        - "src/sbbs3/*/*.exe.release/*"
+  stage: build
+  script:
+    - cd src/sbbs3
+    - build.bat
+  artifacts:
+    name: sbbs
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.dll.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
