@@ -1,4 +1,4 @@
-linux job:
+linux_job:
   tags: linux
   image: gcc
 
@@ -50,7 +50,7 @@ linux job:
         - "src/syncterm/*.exe.release/*"
 
 
-window job:
+window_job:
   tags: windows
 
   build-sbbs:
