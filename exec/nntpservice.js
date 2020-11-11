@@ -106,7 +106,10 @@ function getReferenceTo(hdr) {
 		    for(s in msg_area.grp_list[g].sub_list)
 			    if (msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase() == newsgroups[n].toLowerCase()) {
 				    var mb=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-				    if (mb.open() != true) continue;
+				    if (!mb.open() ) {
+						log(LOG_ERR, "Error " + mb.error + " opening " + mb.file);
+						continue;
+					}
 				    var hdr2 = mb.get_msg_header(hdr.reply_id);
 				    if (hdr2 != null) to = hdr2.from;
 				    mb.close();
@@ -323,7 +326,8 @@ while(client.socket.is_connected && !quit) {
 					if(msgbase.open()==true) {
 						writeln(format("mail %u %u n", msgbase.last_msg, msgbase.first_msg));
 						msgbase.close();
-					}
+					} else
+						log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
 				}
 				for(g in msg_area.grp_list)
 					for(s in msg_area.grp_list[g].sub_list) {
@@ -332,8 +336,10 @@ while(client.socket.is_connected && !quit) {
 						if(msgbase && msgbase.is_open)
 							msgbase.close();
 						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-						if(msgbase.open!=undefined && msgbase.open()==false)
+						if(!msgbase.open()) {
+							log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
 							continue;
+						}
 						var count = count_msgs(msgbase);
 						writeln(format("%s %u %u %s"
 							,msg_area.grp_list[g].sub_list[s].newsgroup
@@ -454,16 +460,19 @@ while(client.socket.is_connected && !quit) {
 					if(ini_file.open("r")) {
 						var created = ini_file.iniGetValue(null, "Created", 0);
 						ini_file.close();
-						if(created >= compare.getTime() / 1000 
-							&& msgbase.open()) {
-							var count = count_msgs(msgbase);	
-							writeln(format("%s %u %u %s"
-								,msg_area.grp_list[g].sub_list[s].newsgroup
-								,count.last
-								,count.first
-								,msg_area.grp_list[g].sub_list[s].is_moderated ? "m" : (msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n")
-								));
-							msgbase.close();
+						if(created >= compare.getTime() / 1000) {
+							if(msgbase.open()) {
+								var count = count_msgs(msgbase);
+								writeln(format("%s %u %u %s"
+									,msg_area.grp_list[g].sub_list[s].newsgroup
+									,count.last
+									,count.first
+									,msg_area.grp_list[g].sub_list[s].is_moderated ? "m" : (msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n")
+									));
+								msgbase.close();
+							} else {
+								log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+							}
 						}
 					}
 				}
@@ -493,6 +502,8 @@ while(client.socket.is_connected && !quit) {
 				if(msgbase.open()==true) {
 					selected = { newsgroup: "mail" };
 					found=true;
+				} else {
+					log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
 				}
 			}
 			if(!found) {
@@ -502,8 +513,10 @@ while(client.socket.is_connected && !quit) {
 					for(s in msg_area.grp_list[g].sub_list)
 						if(msg_area.grp_list[g].sub_list[s].newsgroup.toLowerCase()==cmd[1].toLowerCase()) {
 							msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-							if(msgbase.open!=undefined && msgbase.open()==false)
+							if(!msgbase.open()) {
+								log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
 								continue;
+							}
 							found=true;
 							selected=msg_area.grp_list[g].sub_list[s];
 							break;
@@ -951,8 +964,10 @@ while(client.socket.is_connected && !quit) {
 						    }
 
 						    msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-							if(msgbase.open!=undefined && msgbase.open()==false)
+							if(!msgbase.open()) {
+								log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
 								continue;
+							}
 
 							/* NNTP Control Message? */
 							if(hdr.control!=undefined) {
