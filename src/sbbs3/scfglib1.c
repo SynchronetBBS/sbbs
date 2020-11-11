@@ -294,7 +294,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 
 	get_str(cfg->prextrn_mod,instream);
 	if(cfg->prextrn_mod[0] == '\xff') 
-	    SAFECOPY(cfg->postxtrn_mod, "prextrn");
+	    SAFECOPY(cfg->prextrn_mod, "prextrn");
 	get_str(cfg->postxtrn_mod,instream);
 	if(cfg->postxtrn_mod[0] == '\xff') 
 	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");		
