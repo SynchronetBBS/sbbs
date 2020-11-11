@@ -1,5 +1,5 @@
 build-sbbs-linux:
-  tags: linux
+  tags: [linux]
   image: gcc
   stage: build
   script:
@@ -16,7 +16,7 @@ build-sbbs-linux:
       - "src/sbbs3/*/*.exe.release/*"
 
 build-sexpots-linux:
-  tags: linux
+  tags: [linux]
   image: gcc
   stage: build
   script:
@@ -28,7 +28,7 @@ build-sexpots-linux:
       - "src/sexpots/*.exe.release/*"
 
 build-syncterm-linux:
-  tags: linux
+  tags: [linux]
   image: gcc
   stage: build
   script:
@@ -41,7 +41,7 @@ build-syncterm-linux:
 
 
 build-sbbs-windows:
-  tags: windows
+  tags: [windows]
 
   stage: build
   script:
