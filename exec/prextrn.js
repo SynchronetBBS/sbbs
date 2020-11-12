@@ -1,34 +1,34 @@
 // prextrn.js
 
-// External Program Pre Module
+// External Program Pre-execution Module
 // These actions execute before an external program is launched via bbs.exec_xtrn()
 
 "use strict";
 
-load("sbbsdefs.js");
-
-/* text.dat entries */
-load("text.js");
-
-var options, program;
-
-if((options=load({}, "modopts.js","xtrn_sec")) == null)
-	options = {};	// default values
-
-
 function exec_xtrn_pre(program)
 {
-	if ((options.disable_pre_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
-		exit(1);
-	}
-	
-	if (options.restricted_user_msg === undefined) {
-		options.restricted_user_msg = bbs.text(R_ExternalPrograms);
+	var options;
+
+	if ((options = load({}, "modopts.js","xtrn:" + program.code)) == null) {
+		if ((options = load({}, "modopts.js","xtrn_sec")) == null)
+			options = {};	// default values
 	}
 
-	if (user.security.restrictions&UFLAG_X) {
-		write(options.restricted_user_msg);
-		exit(1);
+	require("nodedefs.js", "NODE_LOGN");
+	if (bbs.node_action == NODE_LOGN) {
+		if (options.disable_pre_on_logon_event) {
+			exit(1);
+		}
+	} else {
+		if (options.restricted_user_msg === undefined) {
+			require("text.js", "R_ExternalPrograms");
+			options.restricted_user_msg = bbs.text(R_ExternalPrograms);
+		}
+		require("userdefs.js", "UFLAG_X");
+		if (user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			exit(1);
+		}
 	}
 
 	if (bbs.menu_exists("xtrn/" + program.code)) {
@@ -37,6 +37,7 @@ function exec_xtrn_pre(program)
 		console.line_counter=0;
 	}
 
+	require("cga_defs.js", "LIGHTGRAY");
 	console.attributes = LIGHTGRAY;
 
 	if (options.clear_screen_on_exec) {
