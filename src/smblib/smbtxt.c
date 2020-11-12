@@ -367,7 +367,8 @@ void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, ch
 				*tp = 0;
 			}
 		}
-		if(charset != NULL && ((p = strcasestr(p, " charset=")) != NULL || (p = strcasestr(p, ";charset=")) != NULL)) {
+		char* parms = p;
+		if(charset != NULL && ((p = strcasestr(parms, " charset=")) != NULL || (p = strcasestr(parms, ";charset=")) != NULL)) {
 			BOOL quoted = FALSE;
 			p += 9;
 			if(*p == '"') {
