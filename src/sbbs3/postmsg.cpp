@@ -346,7 +346,9 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
 
-	if(!(msgattr & MSG_ANONYMOUS)) {
+	if(!(msgattr & MSG_ANONYMOUS)
+		&& stricmp(touser, "All") != 0
+		&& (remsg == NULL || remsg->from_net.type == NET_NONE)) {
 		if(cfg.sub[subnum]->misc&SUB_NAME)
 			i = userdatdupe(0, U_NAME, LEN_NAME, touser);
 		else
@@ -414,6 +416,8 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 
 /* Note: finds signature delimiter automatically and (if applicable) separates msgbuf into body and tail */
 /* Adds/generates Message-IDs when needed */
+/* Auto-sets the UTF-8 indicators for UTF-8 encoded header fields and body text */
+/* If you want to save a message body with CP437 chars that also happen to be valid UTF-8 sequences, you'll need to preset the ftn_charset header */
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, const char* server, char* msgbuf, smbmsg_t* remsg)
 {
 	ushort	xlat=XLAT_NONE;
@@ -493,6 +497,9 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 		|| (msg->from != NULL && !str_is_ascii(msg->from) && utf8_str_is_valid(msg->from))
 		|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj)))
 		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
+
+	if(msg->ftn_charset == NULL && !str_is_ascii(msgbuf) && utf8_str_is_valid(msgbuf))
+		smb_hfield_str(msg, FIDOCHARSET, FIDO_CHARSET_UTF8);
 
 	msgbuf = strdup(msgbuf);
 	if(msgbuf == NULL)
