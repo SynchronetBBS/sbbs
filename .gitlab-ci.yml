@@ -47,12 +47,19 @@ sbbs-windows:
     - make
     - cd ../../src/sbbs3
     - .\release.bat
+    - cd ctrl
+    - .\build.bat
+    - cd ../chat
+    - .\build.bat
+    - cd ../useredit
+    - .\build.bat
   artifacts:
     name: sbbs-win32
     paths:
       - "src/sbbs3/*.exe.release/*.exe"
       - "src/sbbs3/*.dll.release/*.dll"
       - "src/sbbs3/*/*.exe.release/*.exe"
+      - "src/sbbs3/*/*.exe"
 
 sexpots-windows:
   tags: [windows]
