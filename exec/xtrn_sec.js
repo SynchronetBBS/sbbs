@@ -73,6 +73,16 @@ if(options.which === undefined)
 if(options.clear_screen === undefined)
 	options.clear_screen = true;
 
+if (options.section_fmt === undefined)
+	options.section_fmt = "\x01y\x01g%3d:\x01n\x01g %s"
+
+if (options.section_header_fmt === undefined)
+	options.section_header_fmt = "\x01-\x01gSelect \x01hExternal Program Section\x01-\x01g:"
+
+if(options.section_which === undefined)
+	options.section_which = "\r\n\x01-\x01gWhich, \x01w\x01h~Q\x01n\x01guit or [1]: \x01h"
+
+
 function sort_by_name(a, b)
 {
 	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
@@ -87,10 +97,10 @@ function external_program_menu(xsec)
 	while(bbs.online) {
 
 		console.aborted = false;
-	    if(user.security.restrictions&UFLAG_X) {
-		    write(options.restricted_user_msg);
-		    break;
-	    }
+		if(user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
@@ -211,16 +221,32 @@ function external_section_menu()
 			xsec--;
 		}
 		else {
+			if(options.clear_screen)
+				console.clear(LIGHTGRAY);
 
 			if(options.sort)
 				sec_list.sort(sort_by_name);
-			for(i in sec_list)
-				console.uselect(Number(i),"External Program Section"
-					,sec_list[i].name);
-			xsec=console.uselect();
+
+			printf(options.section_header_fmt);
+			console.crlf();
+			console.crlf();
+
+			for (i in sec_list) {
+				printf(options.section_fmt, parseInt(i) + 1, sec_list[i].name);
+				console.crlf();
+			}
+
+			bbs.node_sync();
+			console.mnemonics(options.section_which);
+
+			xsec = console.getnum(sec_list.length);
+			xsec--; // match array index
+
+			if(xsec == -1)
+				xsec = 0; // default option
+			else if(xsec == -2)
+				break;
 		}
-	    if(xsec<0)
-		    break;
 
         external_program_menu(sec_list[xsec].index);
     }
