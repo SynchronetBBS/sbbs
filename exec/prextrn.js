@@ -17,7 +17,7 @@ function exec_xtrn_pre(program)
 	require("nodedefs.js", "NODE_LOGN");
 	if (bbs.node_action == NODE_LOGN) {
 		if (options.disable_pre_on_logon_event) {
-			exit(1);
+			exit(0);
 		}
 	} else {
 		if (options.restricted_user_msg === undefined) {
