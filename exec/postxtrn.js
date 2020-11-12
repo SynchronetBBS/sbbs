@@ -16,7 +16,7 @@ function exec_xtrn_post(program)
 
 	require("nodedefs.js", "NODE_LOGN");
 	if ((options.disable_post_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
-		exit(1);
+		exit(0);
 	}
 
 	require("cga_defs.js", "LIGHTGRAY");
