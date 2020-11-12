@@ -10,7 +10,7 @@ print("*                         Synchronet Utilities v" + format("%-28s", REVIS
 print("*                 Use Ctrl-C to abort the process if desired                 *");
 print("******************************************************************************");
 
-var file = new File("sutils.ini");
+var file = new File(system.exec_dir + "sutils.ini");
 var categories;
 if(file.open("r")) {
     categories = file.iniGetObject('categories');
