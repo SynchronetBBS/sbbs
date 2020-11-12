@@ -43,7 +43,9 @@ sbbs-windows:
 
   stage: build
   script:
-    - cd src/sbbs3
+    - cd src/xpdev
+    - make
+    - cd ../../src/sbbs3
     - .\release.bat
   artifacts:
     name: sbbs-win32
