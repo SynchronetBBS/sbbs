@@ -1,29 +1,25 @@
 // postxtrn.js
 
-// External Program Post Module
+// External Program Post-execution Module
 // These actions execute after an external program is launched via bbs.exec_xtrn()
 
 "use strict";
 
-load("sbbsdefs.js");
-
-/* text.dat entries */
-load("text.js");
-
-var options, program;
-
-if((options=load({}, "modopts.js","xtrn_sec")) == null)
-	options = {};	// default values
-
-if(options.clear_screen === undefined)
-	options.clear_screen = true;
-
 function exec_xtrn_post(program)
 {
+	var options;
+
+	if ((options = load({}, "modopts.js","xtrn:" + program.code)) == null) {
+		if ((options = load({}, "modopts.js","xtrn_sec")) == null)
+			options = {};	// default values
+	}
+
+	require("nodedefs.js", "NODE_LOGN");
 	if ((options.disable_post_on_logon_event) && (bbs.node_action == NODE_LOGN)) {
 		exit(1);
 	}
 
+	require("cga_defs.js", "LIGHTGRAY");
 	console.attributes = 0;
 	console.attributes = LIGHTGRAY;
 
@@ -34,8 +30,7 @@ function exec_xtrn_post(program)
 	}
 }
 
-
 /* main: */
 {
-	exec_xtrn_post(xtrn_area.prog[argv[0].toLowerCase()] );
+	exec_xtrn_post(xtrn_area.prog[argv[0].toLowerCase()]);
 }
