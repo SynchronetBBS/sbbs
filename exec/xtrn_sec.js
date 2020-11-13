@@ -128,20 +128,20 @@ function external_program_menu(xsec)
 			if(options.sort)
 				prog_list.sort(sort_by_name);
 			printf(options.header_fmt, xtrn_area.sec_list[xsec].name);
-			if (options.titles != 'none')
+			if (options.titles != ' ')
 				write(options.titles);
 			if(multicolumn) {
 				write(options.multicolumn_separator);
-				if (options.titles != 'none')
+				if (options.titles != ' ')
 					write(options.titles);
 			}
-			if (options.underline != 'none') {
+			if (options.underline != ' ') {
 				console.crlf();
 				write(options.underline);
 			}
 			if(multicolumn) {
 				write(options.multicolumn_separator);
-				if (options.underline != 'none')
+				if (options.underline != ' ')
 					write(options.underline);
 			}
 			console.crlf();
