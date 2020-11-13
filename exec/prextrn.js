@@ -5,11 +5,11 @@
 
 "use strict";
 
-function exec_xtrn_pre(program)
+function exec_xtrn_pre(prog)
 {
 	var options;
 
-	if ((options = load({}, "modopts.js","xtrn:" + program.code)) == null) {
+	if ((options = load({}, "modopts.js","xtrn:" + prog.code)) == null) {
 		if ((options = load({}, "modopts.js","xtrn_sec")) == null)
 			options = {};	// default values
 	}
@@ -31,8 +31,8 @@ function exec_xtrn_pre(program)
 		}
 	}
 
-	if (bbs.menu_exists("xtrn/" + program.code)) {
-		bbs.menu("xtrn/" + program.code);
+	if (bbs.menu_exists("xtrn/" + prog.code)) {
+		bbs.menu("xtrn/" + prog.code);
 		console.pause();
 		console.line_counter=0;
 	}
@@ -48,7 +48,7 @@ function exec_xtrn_pre(program)
 		eval(options.eval_before_exec);
 	}
 
-	load('fonts.js', 'xtrn:' + program.code);
+	load('fonts.js', 'xtrn:' + prog.code);
 }
 
 
