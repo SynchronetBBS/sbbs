@@ -5,11 +5,11 @@
 
 "use strict";
 
-function exec_xtrn_post(program)
+function exec_xtrn_post(prog)
 {
 	var options;
 
-	if ((options = load({}, "modopts.js","xtrn:" + program.code)) == null) {
+	if ((options = load({}, "modopts.js","xtrn:" + prog.code)) == null) {
 		if ((options = load({}, "modopts.js","xtrn_sec")) == null)
 			options = {};	// default values
 	}
