@@ -3490,6 +3490,7 @@ bool sbbs_t::init()
 {
 	char		str[MAX_PATH+1];
 	char		tmp[128];
+	char		tmp2[128];
 	int			result;
 	uint		i,j,k,l;
 	node_t		node;
@@ -3592,11 +3593,13 @@ bool sbbs_t::init()
 			now=time(NULL);
 			struct tm tm;
 			localtime_r(&now,&tm);
+			time_t ftime = fdate(str);
 			safe_snprintf(str,sizeof(str),"%s  %s %s %02d %u  "
-				"End of preexisting log entry (possible crash)"
+				"End of preexisting log entry (possible crash on %.24s)"
 				,hhmmtostr(&cfg,&tm,tmp)
 				,wday[tm.tm_wday]
-				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
+				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900
+				,ctime_r(&ftime, tmp2));
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(TRUE);
