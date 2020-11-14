@@ -9224,7 +9224,7 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 	long crit1 = -(a2/4 + a%2 + b2);
 	long crit2 = -(b2/4 + b%2 + a2);
 	long crit3 = -(b2/4 + b%2);
-	long t = -a2*y; /* t = e(x+1/2,y-1/2) - (aˆ2+bˆ2)/4 */
+	long t = -a2*y; /* t = e(x+1/2,y-1/2) - (a²+b²)/4 */
 	long dxt = 2*b2*x, dyt = -2*a2*y;
 	long d2xt = 2*b2, d2yt = 2*a2;
 	int fy;
