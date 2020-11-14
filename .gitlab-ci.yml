@@ -72,3 +72,28 @@ sexpots-windows:
     name: sexpots-win32
     paths:
       - "src/sexpots/Release/*.exe"
+
+sbbs-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 all
+  artifacts:
+    name: sbbs-freebsd-x64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+
+syncterm-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  script:
+    - cd src/syncterm
+    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
+  artifacts:
+    name: syncterm-freebsd-x64
+    paths:
+      - "src/syncterm/*.exe.release/*"
+ 
