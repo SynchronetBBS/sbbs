@@ -38,8 +38,7 @@ syncterm-linux:
       - "src/syncterm/*.exe.release/*"
 
 sbbs-windows:
-  tags: [windows]
-
+  tags: [Windows]
   stage: build
   script:
     - cd src/xpdev
@@ -61,8 +60,7 @@ sbbs-windows:
       - "src/sbbs3/*/*.exe"
 
 sexpots-windows:
-  tags: [windows]
-
+  tags: [Windows]
   stage: build
   script:
     - cd src/sexpots
