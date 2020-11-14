@@ -1,5 +1,5 @@
 sbbs-linux:
-  tags: [linux]
+  tags: [Linux]
   image: gcc
   stage: build
   script:
@@ -14,7 +14,7 @@ sbbs-linux:
       - "src/sbbs3/*/*.exe.release/*"
 
 sexpots-linux:
-  tags: [linux]
+  tags: [Linux]
   image: gcc
   stage: build
   script:
@@ -26,7 +26,7 @@ sexpots-linux:
       - "src/sexpots/*.exe.release/*"
 
 syncterm-linux:
-  tags: [linux]
+  tags: [Linux]
   image: gcc
   stage: build
   script:
@@ -36,7 +36,6 @@ syncterm-linux:
     name: syncterm-linux-x64
     paths:
       - "src/syncterm/*.exe.release/*"
-
 
 sbbs-windows:
   tags: [windows]
@@ -91,9 +90,20 @@ syncterm-freebsd:
   stage: build
   script:
     - cd src/syncterm
-    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
+    - gmake RELEASE=1
   artifacts:
     name: syncterm-freebsd-x64
+    paths:
+      - "src/syncterm/*.exe.release/*"
+
+syncterm-windows:
+  tags: [FreeBSD]
+  stage: build
+  script:
+    - cd src/syncterm
+    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
+  artifacts:
+    name: syncterm-win32
     paths:
       - "src/syncterm/*.exe.release/*"
  
