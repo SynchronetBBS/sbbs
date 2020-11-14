@@ -29,7 +29,7 @@ function get_mod_options(modname, optname, default_optval)
 	if(optname)	// Get a specific option value (optionally, with default value)
 		val = ini_file.iniGetValue(modname, optname, default_optval);
 	else // Get all options
-		val = ini_file.iniGetObject(modname);
+		val = ini_file.iniGetObject(modname, /* lowercase */false, /* blanks: */true);
 	ini_file.close();
 	return val;
 }
