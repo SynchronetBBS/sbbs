@@ -138,14 +138,14 @@ function external_program_menu(xsec)
 			if(options.sort)
 				prog_list.sort(sort_by_name);
 			printf(options.header_fmt, xtrn_area.sec_list[xsec].name);
-			if (options.titles.trimRight() != '')
+			if(options.titles.trimRight() != '')
 				write(options.titles);
 			if(multicolumn) {
 				write(options.multicolumn_separator);
 				if (options.titles.trimRight() != '')
 					write(options.titles);
 			}
-			if (options.underline.trimRight() != '')
+			if(options.underline.trimRight() != '') {
 				console.crlf();
 				write(options.underline);
 			}
