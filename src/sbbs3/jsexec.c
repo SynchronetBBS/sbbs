@@ -1431,6 +1431,7 @@ int main(int argc, char **argv, char** env)
 #if defined(__unix__)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");
+		cooked_tty();
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
 			fprintf(statfp,"!ERROR %d (%s) running as daemon\n", errno, strerror(errno));
 			daemonize=FALSE;
