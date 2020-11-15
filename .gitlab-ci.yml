@@ -4,10 +4,6 @@ sbbs-linux:
   stage: build
   cache:
     paths:
-      - "**/*.o"
-      - "**/*.d"
-      - "**/*.a"
-      - "**/*.so"
       - "3rdp/gcc.linux.x64.release/"
   script:
     - cd src/sbbs3
