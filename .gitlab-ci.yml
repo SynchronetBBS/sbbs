@@ -40,6 +40,12 @@ syncterm-linux:
 sbbs-windows:
   tags: [Windows]
   stage: build
+  cache:
+      paths:
+          - "**/*.obj"
+          - "**/*.lib"
+          - "**/*.release/*"
+          - "**/*.release_mt/*
   script:
     - cd src/xpdev
     - make
