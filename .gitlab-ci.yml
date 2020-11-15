@@ -2,6 +2,13 @@ sbbs-linux:
   tags: [Linux]
   image: gcc
   stage: build
+  cache:
+    paths:
+      - "**/*.o"
+      - "**/*.d"
+      - "**/*.a"
+      - "**/*.so"
+      - "3rdp/gcc.linux.x64.release/"
   script:
     - cd src/sbbs3
     - make RELEASE=1 all
@@ -44,8 +51,8 @@ sbbs-windows:
     paths:
       - "**/*.obj"
       - "**/*.lib"
-      - "**/*.release/*"
-      - "**/*.release_mt/*"
+      - "**/*.release/"
+      - "**/*.release_mt/"
   script:
     - cd src/xpdev
     - make
