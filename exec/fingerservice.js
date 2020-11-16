@@ -537,7 +537,7 @@ write("\r\n");
 
 write(format("From: %-36s Handle: %s\r\n", options.include_location ? u.location : "undisclosed" ,u.handle));
 if(options.include_age)
-	write(format("%-42s ", format("Birth: %s (Age: %u years)" , u.birthdate,u.age)));
+	write(format("%-42s ", format("Age: %u years" , u.age)));
 if(options.include_gender)
 	write(format("Gender: %s", u.gender));
 if(options.include_age || options.include_gender)
