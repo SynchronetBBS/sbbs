@@ -815,7 +815,7 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	int i;
 	FILE*	fp;
 	struct file_pick fpick;
-	char	*opts[6]={
+	char	*opts[7]={
 			 "ZMODEM"
 			,"YMODEM"
 			,"XMODEM-1K"
@@ -912,7 +912,7 @@ void begin_download(struct bbslist *bbs)
 {
 	char	path[MAX_PATH+1];
 	int i;
-	char	*opts[5]={
+	char	*opts[6]={
 			 "ZMODEM"
 			,"YMODEM-g"
 			,"YMODEM"
