@@ -2479,7 +2479,7 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 	int ooii_mode=0;
 	recv_byte_buffer_len=recv_byte_buffer_pos=0;
-	struct mouse_state ms = {};
+	struct mouse_state ms = {0};
 	int speedwatch = 0;
 
 	gettextinfo(&txtinfo);
