@@ -361,7 +361,7 @@ int close_socket(SOCKET sock)
 	return(result);
 }
 
-static int read_socket(SOCKET sock,unsigned char *buffer,int len)
+static bool read_socket(SOCKET sock,unsigned char *buffer,int len)
 {
 	fd_set		socket_set;
 	struct timeval	tv;
@@ -389,13 +389,13 @@ static int read_socket(SOCKET sock,unsigned char *buffer,int len)
 #endif
    		 	rd = recv(sock,&ch,1,0);
 #ifdef _DEBUG
-			lprintf(LOG_DEBUG,"%04d Read Socket - got [%s] (%x)",sock,ch,rd);
+			lprintf(LOG_DEBUG,"%04d Read Socket - got [%02x] (%x)",sock,ch,rd);
 #endif
 
 			if(FD_ISSET(sock,&socket_set) && rd) {
 				buffer[i] = ch;
 			} else {
-				lprintf(LOG_WARNING,"%04d Read Socket - failed to read from socket. Got [%s] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
+				lprintf(LOG_WARNING,"%04d Read Socket - failed to read from socket. Got [%d] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
 				return false;
 			}
 
@@ -404,15 +404,25 @@ static int read_socket(SOCKET sock,unsigned char *buffer,int len)
 			return false;
 
 		} else {
-			lprintf(LOG_WARNING,"%04d Read Socket - Something else [%d].",sock,j);
+			lprintf(LOG_WARNING,"%04d Read Socket - Something else [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
 			return false;
 		}
 	}
 
 #ifdef _DEBUG
-	lprintf(LOG_DEBUG,"%04d Read Socket - Returning [%s]",sock,buffer);
+	lprintf(LOG_DEBUG,"%04d Read Socket - Returning [%.*s]",sock,i,buffer);
 #endif
 	return true;
+}
+
+/* Convert a binary variable into a hex string - used for printing in the debug log */
+void btox(char *xp, const unsigned char *bb, int n) 
+{
+	const char xx[]= "0123456789ABCDEF";
+	int nn = n;
+	while (--n >= 0) xp[n] = xx[(bb[n>>1] >> ((1 - (n&1)) << 2)) & 0xF];
+
+	xp[nn] = 0; // null terminate the sting
 }
 
 /* TODO: IPv6 */
@@ -4991,6 +5001,7 @@ void DLLCALL bbs_thread(void* arg)
 {
 	struct addrinfo *res;
 	unsigned char	hapstr[128];
+	char	haphex[256];
 
 	char			host_name[256];
 	char*			identity;
@@ -5600,14 +5611,16 @@ NO_SSH:
 
 				// OK, just for sanity, our next 6 chars should be v2...
 				if (read_socket(client_socket,hapstr,6)==false || strcmp((char *)hapstr,"\nQUIT\n") != 0) {
-					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s] incomplete v2 setup",client_socket,hapstr);
+					btox(haphex,hapstr,12);
+					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%.*s] incomplete v2 setup",client_socket,12,haphex);
 					close_socket(client_socket);
 					continue;
 				}
 
 				// Command and Version
 				if (read_socket(client_socket,hapstr,1)==false) {
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Verson/Command - failed [%s]",client_socket,hapstr);
+					btox(haphex,hapstr,2);
+					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Verson/Command - failed [%.*s]",client_socket,2,haphex);
 					close_socket(client_socket);
 					continue;
 				}
@@ -5616,7 +5629,8 @@ NO_SSH:
 
 				// Protocol and Family
 				if (read_socket(client_socket,hapstr,1)==false) {
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Protocol/Family - failed [%s]",client_socket,hapstr);
+					btox(haphex,hapstr,2);
+					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Protocol/Family - failed [%.*s]",client_socket,2,haphex);
 					close_socket(client_socket);
 					continue;
 				}
@@ -5626,41 +5640,44 @@ NO_SSH:
 
 				// Address Length - 2 bytes
 				if (read_socket(client_socket,hapstr,2)==false) {
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for address length - failed [%s]",client_socket,hapstr);
+					btox(haphex,hapstr,4);
+					lprintf(LOG_ERR,"%04d * HAPROXY, looking for address length - failed [%.*s]",client_socket,4,haphex);
 					close_socket(client_socket);
 					continue;
 				}
-				i = hapstr[0]*256+hapstr[1];
+				i = ntohs(*(uint16_t*)hapstr);
 				lprintf(LOG_DEBUG,"%04d * HAPROXY Address Length [%d]",client_socket,i);
 
 				switch (l) {
 					// IPv4 - AF_INET
 					case HAPROXY_AFINET:
 						if (i < 4) {
-							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small [%s]",client_socket,hapstr);
+							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small.",client_socket);
 							close_socket(client_socket);
 							continue;
 						}
 
 						if (read_socket(client_socket,hapstr,i)==false) {
-							lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv4 address - failed [%s]",client_socket,hapstr);
+							btox(haphex,hapstr,i*2);
+							lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv4 address - failed [%.*s]",client_socket,i*2,haphex);
 							close_socket(client_socket);
 							continue;
 						}
 
-						safe_snprintf(host_ip,sizeof(host_ip),"%d.%d.%d.%d",hapstr[0],hapstr[1],hapstr[2],hapstr[3]);
+						inet_ntop(AF_INET,hapstr,host_ip,sizeof(host_ip));
 						break;
 
 					// IPv6 - AF_INET6
 					case HAPROXY_AFINET6:
 						if (i < 16) {
-							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv6 address length too small [%s]",client_socket,hapstr);
+							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv6 address length too small.",client_socket);
 							close_socket(client_socket);
 							continue;
 						}
 
 						if (read_socket(client_socket,hapstr,i)==false) {
-							lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv6 address - failed [%s]",client_socket,hapstr);
+							btox(haphex,hapstr,i*2);
+							lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv6 address - failed [%.*s]",client_socket,i*2,haphex);
 							close_socket(client_socket);
 							continue;
 						}
@@ -5672,16 +5689,11 @@ NO_SSH:
 						}
 
 						if ((i==10) && (hapstr[i] == 0xff) && (hapstr[i+1] == 0xff)) {
-							safe_snprintf(host_ip,sizeof(host_ip),"%d.%d.%d.%d",hapstr[12],hapstr[13],hapstr[14],hapstr[15]);
+							inet_ntop(AF_INET,&hapstr[12],host_ip,sizeof(host_ip));
 							lprintf(LOG_DEBUG,"%04d * HAPROXY IPv4 address in IPv6 [%s]",client_socket,host_ip);
 
 						} else {
-							safe_snprintf(host_ip,sizeof(host_ip),"%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
-								hapstr[0],hapstr[1],hapstr[2],hapstr[3],
-								hapstr[4],hapstr[5],hapstr[6],hapstr[7],
-								hapstr[8],hapstr[9],hapstr[10],hapstr[11],
-								hapstr[12],hapstr[13],hapstr[14],hapstr[15]
-							);
+							inet_ntop(AF_INET6,hapstr,host_ip,sizeof(host_ip));
 						}
 
 						break;
