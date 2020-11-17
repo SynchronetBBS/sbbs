@@ -1,6 +1,15 @@
 // $Id: xtrn-setup.js,v 1.10 2020/05/09 03:37:35 echicken Exp $
 // vi: tabstop=4
 
+// Locate/copy 3rd party door installer files
+{
+	var lib = load({}, 'install-3rdp-xtrn.js');
+	var out = lib.scan();
+	for(var i in out) {
+		alert(out[i]);
+	}
+}
+
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
