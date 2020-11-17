@@ -1062,7 +1062,6 @@ main(int argnum, char *args[])
 	CharSet[9] = NCharSet[9];
 	CharSet[10] = NCharSet[10];
 	CharSet[11] = NCharSet[11];
-	CharSet[12] = NCharSet[12];
 
 	for (a = 0; a < 4; a++)
 		for (y = 0; y <= MaxLines; y++) {
