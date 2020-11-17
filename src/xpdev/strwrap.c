@@ -1,6 +1,8 @@
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
+#if defined(_WIN32) && !defined(_MSC_VER)
+	#include <malloc.h>
+#endif
 
 #if !defined _MSC_VER && !defined __BORLANDC__
 char* itoa(int val, char* str, int radix)
