@@ -3,6 +3,9 @@
  */
 #include <sys/stat.h>
 
+#if defined(_MSC_VER)
+	#define _USE_MATH_DEFINES // for C
+#endif
 #include <math.h>
 #include <string.h>
 #include <stdbool.h>
@@ -17,7 +20,9 @@
 #include <genwrap.h>
 #include <sockwrap.h>
 #include <strwrap.h>
-#include <unistd.h>
+#if defined(__unix__)
+	#include <unistd.h>
+#endif
 #include <vidmodes.h>
 #include <xpbeep.h>
 

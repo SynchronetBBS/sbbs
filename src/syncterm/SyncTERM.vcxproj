@@ -123,6 +123,7 @@
     <ClCompile Include="ooii_cmenus.c" />
     <ClCompile Include="ooii_logons.c" />
     <ClCompile Include="ooii_sounds.c" />
+    <ClCompile Include="ripper.c" />
     <ClCompile Include="rlogin.c" />
     <ClCompile Include="syncterm.c" />
     <ClCompile Include="telnet_io.c" />
