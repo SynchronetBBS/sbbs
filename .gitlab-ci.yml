@@ -122,8 +122,42 @@ syncdraw-linux:
   stage: build
   script:
     - cd src/syncdraw
-    - gmake RELEASE=1
+    - make RELEASE=1
   artifacts:
     name: syncdraw-linux-x64
     paths:
       - "src/syncdraw/*.exe.release/*"
+
+jsdoor-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 jsdoor
+  artifacts:
+    name: jsdoor-freebsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+
+jsdoor-linux:
+  tags: [Linux]
+  image: gcc
+  stage: build
+  script:
+    - cd src/sbbs3
+    - make RELEASE=1 jsdoor
+  artifacts:
+    name: jsdoor-linux-x64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+
+sexpots-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  script:
+    - cd src/sexpots
+    - gmake RELEASE=1
+  artifacts:
+    name: sexpots-freebsd-amd64
+    paths:
+      - "src/sexpots/*.exe.release/*"
