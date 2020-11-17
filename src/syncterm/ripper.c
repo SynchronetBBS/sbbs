@@ -10723,7 +10723,6 @@ setpixel(x1, y1, xx);
 										fclose(icn);
 										unlink(cache_path);
 										FREE_AND_NULL(planes);
-										fclose(icn);
 										break;
 									}
 								}
