@@ -77,7 +77,7 @@ sbbs-freebsd:
     - cd src/sbbs3
     - gmake RELEASE=1 all
   artifacts:
-    name: sbbs-freebsd-x64
+    name: sbbs-freebsd-amd64
     paths:
       - "src/sbbs3/*.exe.release/*"
       - "src/sbbs3/*.lib.release/*"
@@ -90,7 +90,7 @@ syncterm-freebsd:
     - cd src/syncterm
     - gmake RELEASE=1
   artifacts:
-    name: syncterm-freebsd-x64
+    name: syncterm-freebsd-amd64
     paths:
       - "src/syncterm/*.exe.release/*"
 
@@ -104,4 +104,26 @@ syncterm-windows:
     name: syncterm-win32
     paths:
       - "src/syncterm/*.exe.release/*"
- 
+
+syncdraw-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  script:
+    - cd src/syncdraw
+    - gmake RELEASE=1
+  artifacts:
+    name: syncdraw-freebsd-amd64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+
+syncdraw-linux:
+  tags: [Linux]
+  image: gcc
+  stage: build
+  script:
+    - cd src/syncdraw
+    - gmake RELEASE=1
+  artifacts:
+    name: syncdraw-linux-x64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
