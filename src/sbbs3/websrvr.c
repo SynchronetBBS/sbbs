@@ -3243,8 +3243,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				/* FREE()d in http_logging_thread() */
 				session->req.ld->vhost=strdup(session->req.vhost);
 			session->req.dynamic=is_dynamic_req(session);
-			if(session->req.query_str[0])
-				add_env(session,"QUERY_STRING",session->req.query_str);
+			add_env(session,"QUERY_STRING",session->req.query_str);
 
 			add_env(session,"REQUEST_METHOD",methods[session->req.method]);
 			add_env(session,"SERVER_PROTOCOL",session->http_ver ?
