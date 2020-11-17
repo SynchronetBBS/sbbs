@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <malloc.h>
+#include <string.h>
 
 #if !defined _MSC_VER && !defined __BORLANDC__
 char* itoa(int val, char* str, int radix)
@@ -40,7 +42,7 @@ char* ltoa(long val, char* str, int radix)
 }
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_MSC_VER)
 /* From FreeBSD */
 size_t
 strnlen(const char *s, size_t maxlen)
@@ -53,7 +55,9 @@ strnlen(const char *s, size_t maxlen)
 	}
 	return (len);
 }
+#endif
 
+#ifdef _WIN32
 /* From FreeBSD */
 char *
 strndup(const char *str, size_t maxlen)
