@@ -82,7 +82,7 @@ sexpots-windows:
     paths:
       - "src/sexpots/Release/*.exe"
 
-syncterm-msvc:
+.syncterm-msvc:
   tags: [Windows]
   stage: build
   extends: .rules
