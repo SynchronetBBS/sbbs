@@ -82,6 +82,18 @@ sexpots-windows:
     paths:
       - "src/sexpots/Release/*.exe"
 
+syncterm-msvc:
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - .\release.bat
+  artifacts:
+    name: syncterm-msvc
+    paths:
+      - "src/syncterm/Release/*.exe"
+
 sbbs-freebsd:
   tags: [FreeBSD]
   stage: build
