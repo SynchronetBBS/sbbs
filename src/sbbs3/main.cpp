@@ -416,7 +416,7 @@ static bool read_socket(SOCKET sock,unsigned char *buffer,int len)
 }
 
 /* Convert a binary variable into a hex string - used for printing in the debug log */
-void btox(char *hexstr, const unsigned char *srcbuf, int srcbuflen) 
+static void btox(char *hexstr, const unsigned char *srcbuf, int srcbuflen) 
 {
 	int i;
 	for (i=0;i<srcbuflen;i++) sprintf(hexstr+i*2,"%02X",srcbuf[i]);
