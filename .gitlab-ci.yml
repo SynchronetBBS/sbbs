@@ -1,7 +1,15 @@
+.rules:
+  rules:
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
+
 sbbs-linux:
   tags: [Linux]
   image: gcc
   stage: build
+  extends: .rules
   script:
     - cd src/sbbs3
     - make RELEASE=1 all
@@ -17,6 +25,7 @@ sexpots-linux:
   tags: [Linux]
   image: gcc
   stage: build
+  extends: .rules
   script:
     - cd src/sexpots
     - make RELEASE=1
@@ -29,6 +38,7 @@ syncterm-linux:
   tags: [Linux]
   image: gcc
   stage: build
+  extends: .rules
   script:
     - cd src/syncterm
     - make RELEASE=1
@@ -40,6 +50,7 @@ syncterm-linux:
 sbbs-windows:
   tags: [Windows]
   stage: build
+  extends: .rules
   script:
     - cd src/xpdev
     - make
@@ -62,6 +73,7 @@ sbbs-windows:
 sexpots-windows:
   tags: [Windows]
   stage: build
+  extends: .rules
   script:
     - cd src/sexpots
     - .\release.bat
@@ -73,6 +85,7 @@ sexpots-windows:
 sbbs-freebsd:
   tags: [FreeBSD]
   stage: build
+  extends: .rules
   script:
     - cd src/sbbs3
     - gmake RELEASE=1 all
@@ -86,6 +99,7 @@ sbbs-freebsd:
 syncterm-freebsd:
   tags: [FreeBSD]
   stage: build
+  extends: .rules
   script:
     - cd src/syncterm
     - gmake RELEASE=1
@@ -97,6 +111,7 @@ syncterm-freebsd:
 syncterm-windows:
   tags: [FreeBSD]
   stage: build
+  extends: .rules
   script:
     - cd src/syncterm
     - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
@@ -108,6 +123,7 @@ syncterm-windows:
 syncdraw-freebsd:
   tags: [FreeBSD]
   stage: build
+  extends: .rules
   script:
     - cd src/syncdraw
     - gmake RELEASE=1
@@ -120,6 +136,7 @@ syncdraw-linux:
   tags: [Linux]
   image: gcc
   stage: build
+  extends: .rules
   script:
     - cd src/syncdraw
     - make RELEASE=1
@@ -131,6 +148,7 @@ syncdraw-linux:
 jsdoor-freebsd:
   tags: [FreeBSD]
   stage: build
+  extends: .rules
   script:
     - cd src/sbbs3
     - gmake RELEASE=1 jsdoor
@@ -143,6 +161,7 @@ jsdoor-linux:
   tags: [Linux]
   image: gcc
   stage: build
+  extends: .rules
   script:
     - cd src/sbbs3
     - make RELEASE=1 jsdoor
@@ -154,6 +173,7 @@ jsdoor-linux:
 sexpots-freebsd:
   tags: [FreeBSD]
   stage: build
+  extends: .rules
   script:
     - cd src/sexpots
     - gmake RELEASE=1
