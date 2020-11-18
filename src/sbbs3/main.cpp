@@ -5711,8 +5711,16 @@ NO_SSH:
 			}
 
 			lprintf(LOG_INFO,"%04d * HAPROXY Source [%s]",client_socket,host_ip);
-			getaddrinfo(host_ip,NULL,NULL,&res);
-			client_addr.addr = *res->ai_addr;
+
+			if ((i=getaddrinfo(host_ip,NULL,NULL,&res)) !=0) {
+				lprintf(LOG_ERR,"!ERROR resolve_ip %s failed with error %d",host_ip,i);
+				freeaddrinfo(res);
+				close_socket(client_socket);
+				continue;
+			}
+
+			memcpy(&client_addr.addr,res->ai_addr,res->ai_addrlen);
+			freeaddrinfo(res);
 
 		} else {
 			inet_addrtop(&client_addr,host_ip,sizeof(host_ip));
