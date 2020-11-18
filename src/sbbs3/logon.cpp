@@ -536,9 +536,9 @@ bool sbbs_t::logon()
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */
 	if(text[ReadYourMailNowQ][0] && mailw) {
-		if((mailw == mailr && noyes(text[ReadYourMailNowQ]))
+		if((mailw == mailr && !noyes(text[ReadYourMailNowQ]))
 			|| (mailw != mailr && yesno(text[ReadYourMailNowQ])))
-			readmail(useron.number,MAIL_YOUR); 
+			readmail(useron.number,MAIL_YOUR);
 	}
 	if(usrgrps && useron.misc&ASK_NSCAN && text[NScanAllGrpsQ][0] && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);
