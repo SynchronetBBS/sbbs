@@ -422,7 +422,7 @@
 "\1bUser #\1c%-4d      \1b: \1c%s\r\n"                      351 LiUserNumberName
 "\1bLogons Today    : \1c%-5u \1b(Max \1c%u\1b)\r\n"         352 LiLogonsToday
 "\1bTime on Today   : \1c%-5u \1b(Max \1c%u\1b)\r\n"        353 LiTimeonToday
-"\1bMail Waiting    : \1c%u\r\n"                          354 LiMailWaiting
+"\1bMail Waiting    : \1c%-5u \1b(Unread \1c%u\1b)\r\n"      354 LiMailWaiting
 "\1b\1hSysop is        : \1c%s\r\n"                     355 LiSysopIs
 "Available"                                             356 LiSysopAvailable
 "Not Available"                                         357 LiSysopNotAvailable
