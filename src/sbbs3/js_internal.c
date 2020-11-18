@@ -634,12 +634,12 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else {
 			if (oep->signature[0] != 'o'
-			    || oep->signature[0] != 'n'
-			    || oep->signature[0] != 'e'
-			    || oep->signature[0] != 'x'
-			    || oep->signature[0] != 'i'
-			    || oep->signature[0] != 't'
-			    || oep->signature[0] != 0) {
+			    || oep->signature[1] != 'n'
+			    || oep->signature[2] != 'e'
+			    || oep->signature[3] != 'x'
+			    || oep->signature[4] != 'i'
+			    || oep->signature[5] != 't'
+			    || oep->signature[6] != 0) {
 				JS_ReportError(cx, "on_exit not available in %s scopes", JS_GetClass(cx, scope)->name);
 				return JS_FALSE;
 			 }
