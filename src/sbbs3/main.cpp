@@ -416,13 +416,11 @@ static bool read_socket(SOCKET sock,unsigned char *buffer,int len)
 }
 
 /* Convert a binary variable into a hex string - used for printing in the debug log */
-void btox(char *xp, const unsigned char *bb, int n) 
+void btox(char *hexstr, const unsigned char *srcbuf, int srcbuflen) 
 {
-	const char xx[]= "0123456789ABCDEF";
-	int nn = n;
-	while (--n >= 0) xp[n] = xx[(bb[n>>1] >> ((1 - (n&1)) << 2)) & 0xF];
-
-	xp[nn] = 0; // null terminate the sting
+	int i;
+	for (i=0;i<srcbuflen;i++) sprintf(hexstr+i*2,"%02X",srcbuf[i]);
+	hexstr[i*2] = 0; // null terminate the string
 }
 
 /* TODO: IPv6 */
@@ -5611,16 +5609,16 @@ NO_SSH:
 
 				// OK, just for sanity, our next 6 chars should be v2...
 				if (read_socket(client_socket,hapstr,6)==false || strcmp((char *)hapstr,"\nQUIT\n") != 0) {
-					btox(haphex,hapstr,12);
-					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%.*s] incomplete v2 setup",client_socket,12,haphex);
+					btox(haphex,hapstr,6);
+					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s] incomplete v2 setup",client_socket,haphex);
 					close_socket(client_socket);
 					continue;
 				}
 
 				// Command and Version
 				if (read_socket(client_socket,hapstr,1)==false) {
-					btox(haphex,hapstr,2);
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Verson/Command - failed [%.*s]",client_socket,2,haphex);
+					btox(haphex,hapstr,1);
+					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Verson/Command - failed [%s]",client_socket,haphex);
 					close_socket(client_socket);
 					continue;
 				}
@@ -5629,8 +5627,8 @@ NO_SSH:
 
 				// Protocol and Family
 				if (read_socket(client_socket,hapstr,1)==false) {
-					btox(haphex,hapstr,2);
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Protocol/Family - failed [%.*s]",client_socket,2,haphex);
+					btox(haphex,hapstr,1);
+					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Protocol/Family - failed [%s]",client_socket,haphex);
 					close_socket(client_socket);
 					continue;
 				}
@@ -5640,8 +5638,8 @@ NO_SSH:
 
 				// Address Length - 2 bytes
 				if (read_socket(client_socket,hapstr,2)==false) {
-					btox(haphex,hapstr,4);
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for address length - failed [%.*s]",client_socket,4,haphex);
+					btox(haphex,hapstr,2);
+					lprintf(LOG_ERR,"%04d * HAPROXY, looking for address length - failed [%s]",client_socket,haphex);
 					close_socket(client_socket);
 					continue;
 				}
@@ -5658,8 +5656,8 @@ NO_SSH:
 						}
 
 						if (read_socket(client_socket,hapstr,i)==false) {
-							btox(haphex,hapstr,i*2);
-							lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv4 address - failed [%.*s]",client_socket,i*2,haphex);
+							btox(haphex,hapstr,i);
+							lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv4 address - failed [%s]",client_socket,haphex);
 							close_socket(client_socket);
 							continue;
 						}
@@ -5676,8 +5674,8 @@ NO_SSH:
 						}
 
 						if (read_socket(client_socket,hapstr,i)==false) {
-							btox(haphex,hapstr,i*2);
-							lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv6 address - failed [%.*s]",client_socket,i*2,haphex);
+							btox(haphex,hapstr,i);
+							lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv6 address - failed [%s]",client_socket,haphex);
 							close_socket(client_socket);
 							continue;
 						}
