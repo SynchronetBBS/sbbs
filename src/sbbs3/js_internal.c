@@ -799,7 +799,7 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	BOOL	auto_terminate=cb->auto_terminate;
 	JSObject	*glob=JS_GetGlobalObject(cx);
 	global_private_t *pt;
-	str_list_t	list;
+	str_list_t	list = NULL;
 
 	if(glob==obj) {
 		pt=(global_private_t *)JS_GetPrivate(cx,JS_GetGlobalObject(cx));		
@@ -807,11 +807,17 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	}
 	else {
 		struct onexit_private *oep = JS_GetPrivate(cx,obj);
-		if (oep == NULL)
-			list = NULL;
-		else {
-			list = oep->list;
-			free(oep);
+		if (oep != NULL) {
+			if (oep->signature[0] == 'o'
+			    || oep->signature[1] == 'n'
+			    || oep->signature[2] == 'e'
+			    || oep->signature[3] == 'x'
+			    || oep->signature[4] == 'i'
+			    || oep->signature[5] == 't'
+			    || oep->signature[6] == 0) {
+				list = oep->list;
+				free(oep);
+			}
 		}
 	}
 
