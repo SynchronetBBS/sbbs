@@ -1656,8 +1656,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	if(cfg.xtrn[xtrnnum]->misc & XTRN_PAUSE)
 		pause();
-	else
-		lncntr = 0;
 
     if(cfg.postxtrn_mod[0] != '\0') {
         SAFEPRINTF2(str, "%s %s", cfg.postxtrn_mod,cfg.xtrn[xtrnnum]->code);
