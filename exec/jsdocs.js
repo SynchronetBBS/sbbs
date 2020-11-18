@@ -341,6 +341,10 @@ if(js.global.CryptKeyset != undefined) {
 	var cks = new CryptKeyset(system.temp_dir + "tmpkeyset", CryptKeyset.KEYOPT.CREATE);
 	if(cks != undefined)			document_object("CryptKeyset",cks, "class");
 }
+if(js.global.CryptCert != undefined) {
+	var ccert = new CryptCert(CryptCert.TYPE.CERTIFICATE);
+	if(ccert != undefined)			document_object("CryptCert",ccert, "class");
+}
 if(js.global.conio != undefined) {
 	document_object("conio",js.global.conio);
 }
