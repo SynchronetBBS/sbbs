@@ -1327,7 +1327,7 @@ extern "C" {
 
 	typedef struct {
 		const char      *name;
-		int8_t          tinyid;
+		int             tinyid;
 		uint8_t         flags;
 		int				ver;		/* version added/modified */
 	} jsSyncPropertySpec;
