@@ -10,6 +10,7 @@
 #include "ssl.h"
 
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
+static jsSyncPropertySpec js_cryptcert_properties[];
 
 // Helpers
 
@@ -1193,7 +1194,23 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 
 	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	if (JSVAL_IS_INT(idval))
+		tiny = JSVAL_TO_INT(idval);
+	else {
+		size_t i;
+		char *name;
+
+		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
+		HANDLE_PENDING(cx, name);
+		for (i = 0; js_cryptcert_properties[i].name; i++) {
+			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
+				tiny = js_cryptcert_properties[i].tinyid;
+				break;
+			}
+		}
+		if (!js_cryptcert_properties[i].name)
+			return JS_TRUE;
+	}
 
 	switch (tiny) {
 		case CRYPTCERT_PROP_SELFSIGNED:
@@ -1955,7 +1972,23 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 	}
 
 	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	if (JSVAL_IS_INT(idval))
+		tiny = JSVAL_TO_INT(idval);
+	else {
+		size_t i;
+		char *name;
+
+		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
+		HANDLE_PENDING(cx, name);
+		for (i = 0; js_cryptcert_properties[i].name; i++) {
+			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
+				tiny = js_cryptcert_properties[i].tinyid;
+				break;
+			}
+		}
+		if (!js_cryptcert_properties[i].name)
+			return JS_TRUE;
+	}
 
 	switch (tiny) {
 		case CRYPTCERT_PROP_SELFSIGNED:
@@ -2604,10 +2637,414 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 
 #ifdef BUILD_JSDOCS
 static char* cryptcert_prop_desc[] = {
-	 "Keyopt constant (CryptCert.KEYOPT.XXX):<ul class=\"showList\">\n"
-	 "<li>CryptCert.KEYOPT.NONE</li>\n"
-	 "<li>CryptCert.KEYOPT.READONLY</li>\n"
-	 "<li>CryptCert.KEYOPT.CREATE</li>\n"
+	"Cert is self-signed",
+	"Cert is signed and immutable",
+	"Cert is a magic just-works cert",
+	"Certificate object type",
+	"Certificate SHA1 fingerprint",
+	"Certificate SHA2 fingerprint",
+	"Certificate SHA fingerprint",
+	"Cursor mgt: Rel.pos in chain/CRL/OCSP",
+	"Usage that cert is trusted for",
+	"Whether cert is implicitly trusted",
+	"Amount of detail to include in sigs",
+
+	/* General certificate object information */
+	"Cert.format version",
+	"Serial number",
+	"Public key",
+	"User certificate",
+	"CA certificate",
+	"Issuer DN",
+	"Cert valid-from time",
+	"Cert valid-to time",
+	"Subject DN",
+	"Issuer unique ID",
+	"Subject unique ID",
+	"Cert.request (DN + public key)",
+	"CRL/OCSP current-update time",
+	"CRL/OCSP next-update time",
+	"CRL/OCSP cert-revocation time",
+	"OCSP revocation status",
+	"RTCS certificate status",
+	"Currently selected DN in string form",
+	"PKI user ID",
+	"PKI user issue password",
+	"PKI user revocation password",
+	"PKI user is an RA",
+
+	/* X.520 Distinguished Name components.  This is a composite field, the
+	   DN to be manipulated is selected through the addition of a
+	   pseudocomponent, and then one of the following is used to access the
+	   DN components directly */
+	"countryName",
+	"stateOrProvinceName",
+	"localityName",
+	"organizationName",
+	"organizationalUnitName",
+	"commonName",
+
+	/* X.509 General Name components.  These are handled in the same way as
+	   the DN composite field, with the current GeneralName being selected by
+	   a pseudo-component after which the individual components can be
+	   modified through one of the following */
+	"otherName.typeID",
+	"otherName.value",
+	"rfc822Name",
+	"dNSName",
+#if 0	/* Not supported, these are never used in practice and have an
+		   insane internal structure */
+	"x400Address",
+#endif /* 0 */
+	"directoryName",
+	"ediPartyName.nameAssigner",
+	"ediPartyName.partyName",
+	"uniformResourceIdentifier",
+	"iPAddress",
+	"registeredID",
+
+	/* X.509 certificate extensions.  Although it would be nicer to use names
+	   that match the extensions more closely (e.g.
+	   CRYPTCERT_PROP_BASICCONSTRAINTS_PATHLENCONSTRAINT), these exceed the
+	   32-character ANSI minimum length for unique names, and get really
+	   hairy once you get into the weird policy constraints extensions whose
+	   names wrap around the screen about three times.
+
+	   The following values are defined in OID order, this isn't absolutely
+	   necessary but saves an extra layer of processing when encoding them */
+
+	"1 2 840 113549 1 9 7 challengePassword.  This is here even though it's a CMS attribute because SCEP stuffs it into PKCS #10 requests",
+	"1 3 6 1 4 1 3029 3 1 4 cRLExtReason",
+	"1 3 6 1 4 1 3029 3 1 5 keyFeatures",
+	"1 3 6 1 5 5 7 1 1 authorityInfoAccess",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+
+	"1 3 6 1 5 5 7 1 2 biometricInfo",
+	"biometricData.typeOfData",
+	"biometricData.hashAlgorithm",
+	"biometricData.dataHash",
+	"biometricData.sourceDataUri",
+
+	"1 3 6 1 5 5 7 1 3 qcStatements",
+	"qcStatement.statementInfo.semanticsIdentifier",
+	"qcStatement.statementInfo.nameRegistrationAuthorities",
+
+	"1 3 6 1 5 5 7 1 7 ipAddrBlocks",
+	"addressFamily",
+/*	CRYPTCERT_PROP_IPADDRESSBLOCKS_INHERIT,	// ipAddress.inherit */
+	"ipAddress.addressPrefix",
+	"ipAddress.addressRangeMin",
+	"ipAddress.addressRangeMax",
+
+	"1 3 6 1 5 5 7 1 8 autonomousSysIds",
+/*	"asNum.inherit", */
+	"asNum.id",
+	"asNum.min",
+	"asNum.max",
+
+	/* 1 3 6 1 5 5 7 48 1 2 ocspNonce */
+	"nonce",
+
+	"1 3 6 1 5 5 7 48 1 4 ocspAcceptableResponses",
+	"OCSP standard response",
+
+	"1 3 6 1 5 5 7 48 1 5 ocspNoCheck",
+	"1 3 6 1 5 5 7 48 1 6 ocspArchiveCutoff",
+	"1 3 6 1 5 5 7 48 1 11 subjectInfoAccess",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+
+	"1 3 36 8 3 1 siggDateOfCertGen",
+	"1 3 36 8 3 2 siggProcuration",
+	"country",
+	"typeOfSubstitution",
+	"signingFor.thirdPerson",
+
+	"1 3 36 8 3 3 siggAdmissions",
+	"authority",
+	"namingAuth.iD",
+	"namingAuth.uRL",
+	"namingAuth.text",
+	"professionItem",
+	"professionOID",
+	"registrationNumber",
+
+	"1 3 36 8 3 4 siggMonetaryLimit",
+	"currency",
+	"amount",
+	"exponent",
+
+	"1 3 36 8 3 5 siggDeclarationOfMajority",
+	"fullAgeAtCountry",
+
+	"1 3 36 8 3 8 siggRestriction",
+	"1 3 36 8 3 13 siggCertHash",
+	"1 3 36 8 3 15 siggAdditionalInformation",
+	"1 3 101 1 4 1 strongExtranet",
+	"sxNetIDList.sxNetID.zone",
+	"sxNetIDList.sxNetID.id",
+
+	"2 5 29 9 subjectDirectoryAttributes",
+	"attribute.type",
+	"attribute.values",
+
+	"2 5 29 14 subjectKeyIdentifier",
+	"2 5 29 15 keyUsage",
+	"2 5 29 16 privateKeyUsagePeriod",
+	"notBefore",
+	"notAfter",
+
+	"2 5 29 17 subjectAltName",
+	"2 5 29 18 issuerAltName",
+	"2 5 29 19 basicConstraints",
+	"cA",
+	"pathLenConstraint",
+
+	"2 5 29 20 cRLNumber",
+	"2 5 29 21 cRLReason",
+	"2 5 29 23 holdInstructionCode",
+	"2 5 29 24 invalidityDate",
+	"2 5 29 27 deltaCRLIndicator",
+	"2 5 29 28 issuingDistributionPoint",
+	"distributionPointName.fullName",
+	"onlyContainsUserCerts",
+	"onlyContainsCACerts",
+	"onlySomeReasons",
+	"indirectCRL",
+
+	"2 5 29 29 certificateIssuer",
+	"2 5 29 30 nameConstraints",
+	"permittedSubtrees",
+	"excludedSubtrees",
+
+	"2 5 29 31 cRLDistributionPoint",
+	"distributionPointName.fullName",
+	"reasons",
+	"cRLIssuer",
+
+	"2 5 29 32 certificatePolicies",
+	"policyInformation.policyIdentifier",
+	"policyInformation.policyQualifiers.qualifier.cPSuri",
+	"policyInformation.policyQualifiers.qualifier.userNotice.noticeRef.organization",
+	"policyInformation.policyQualifiers.qualifier.userNotice.noticeRef.noticeNumbers",
+	"policyInformation.policyQualifiers.qualifier.userNotice.explicitText",
+
+	"2 5 29 33 policyMappings",
+	"policyMappings.issuerDomainPolicy",
+	"policyMappings.subjectDomainPolicy",
+
+	"2 5 29 35 authorityKeyIdentifier",
+	"keyIdentifier",
+	"authorityCertIssuer",
+	"authorityCertSerialNumber",
+
+	"2 5 29 36 policyConstraints",
+	"policyConstraints.requireExplicitPolicy",
+	"policyConstraints.inhibitPolicyMapping",
+
+	"2 5 29 37 extKeyUsage",
+	"individualCodeSigning",
+	"commercialCodeSigning",
+	"certTrustListSigning",
+	"timeStampSigning",
+	"serverGatedCrypto",
+	"encrypedFileSystem",
+	"serverAuth",
+	"clientAuth",
+	"codeSigning",
+	"emailProtection",
+	"ipsecEndSystem",
+	"ipsecTunnel",
+	"ipsecUser",
+	"timeStamping",
+	"ocspSigning",
+	"directoryService",
+	"anyExtendedKeyUsage",
+	"serverGatedCrypto",
+	"serverGatedCrypto CA",
+
+	"2 5 29 40 crlStreamIdentifier",
+	"2 5 29 46 freshestCRL",
+	"distributionPointName.fullName",
+	"reasons",
+	"cRLIssuer",
+
+	"2 5 29 47 orderedList",
+	"2 5 29 51 baseUpdateTime",
+	"2 5 29 53 deltaInfo",
+	"deltaLocation",
+	"nextDelta",
+
+	"2 5 29 54 inhibitAnyPolicy",
+	"2 5 29 58 toBeRevoked",
+	"certificateIssuer",
+	"reasonCode",
+	"revocationTime",
+	"certSerialNumber",
+
+	"2 5 29 59 revokedGroups",
+	"certificateIssuer",
+	"reasonCode",
+	"invalidityDate",
+	"startingNumber",
+	"endingNumber",
+
+	"2 5 29 60 expiredCertsOnCRL",
+	"2 5 29 63 aaIssuingDistributionPoint",
+	"distributionPointName.fullName",
+	"onlySomeReasons",
+	"indirectCRL",
+	"containsUserAttributeCerts",
+	"containsAACerts",
+	"containsSOAPublicKeyCerts",
+
+	"netscape-cert-type",
+	"netscape-base-url",
+	"netscape-revocation-url",
+	"netscape-ca-revocation-url",
+	"netscape-cert-renewal-url",
+	"netscape-ca-policy-url",
+	"netscape-ssl-server-name",
+	"netscape-comment",
+
+	"2 23 42 7 0 SET hashedRootKey",
+	"rootKeyThumbPrint",
+
+	"2 23 42 7 1 SET certificateType",
+	"2 23 42 7 2 SET merchantData",
+	"merID",
+	"merAcquirerBIN",
+	"merNames.language",
+	"merNames.name",
+	"merNames.city",
+	"merNames.stateProvince",
+	"merNames.postalCode",
+	"merNames.countryName",
+	"merCountry",
+	"merAuthFlag",
+
+	"2 23 42 7 3 SET certCardRequired",
+	"2 23 42 7 4 SET tunneling",
+	"tunneling",
+	"tunnelingAlgID",
+
+	/* S/MIME attributes */
+
+	"1 2 840 113549 1 9 3 contentType",
+	"1 2 840 113549 1 9 4 messageDigest",
+	"1 2 840 113549 1 9 5 signingTime",
+	"counterSignature",
+
+	"1 2 840 113549 1 9 13 signingDescription",
+	"1 2 840 113549 1 9 15 sMIMECapabilities",
+	"3DES encryption",
+	"AES encryption",
+	"CAST-128 encryption",
+	"SHA2-ng hash",
+	"SHA2-256 hash",
+	"SHA1 hash",
+	"HMAC-SHA2-ng MAC",
+	"HMAC-SHA2-256 MAC",
+	"HMAC-SHA1 MAC",
+	"AuthEnc w.256-bit key",
+	"AuthEnc w.128-bit key",
+	"RSA with SHA-ng signing",
+	"RSA with SHA2-256 signing",
+	"RSA with SHA1 signing",
+	"DSA with SHA-1 signing",
+	"ECDSA with SHA-ng signing",
+	"ECDSA with SHA2-256 signing",
+	"ECDSA with SHA-1 signing",
+	"preferSignedData",
+	"canNotDecryptAny",
+	"preferBinaryInside",
+
+	"1 2 840 113549 1 9 16 2 1 receiptRequest",
+	"contentIdentifier",
+	"receiptsFrom",
+	"receiptsTo",
+
+	"1 2 840 113549 1 9 16 2 2 essSecurityLabel",
+	"securityPolicyIdentifier",
+	"securityClassification",
+	"privacyMark",
+	"securityCategories.securityCategory.type",
+	"securityCategories.securityCategory.value",
+
+	"1 2 840 113549 1 9 16 2 3 mlExpansionHistory",
+	"mlData.mailListIdentifier.issuerAndSerialNumber",
+	"mlData.expansionTime",
+	"mlData.mlReceiptPolicy.none",
+	"mlData.mlReceiptPolicy.insteadOf.generalNames.generalName",
+	"mlData.mlReceiptPolicy.inAdditionTo.generalNames.generalName",
+
+	"1 2 840 113549 1 9 16 2 4 contentHints",
+	"contentDescription",
+	"contentType",
+
+	"1 2 840 113549 1 9 16 2 9 equivalentLabels",
+	"securityPolicyIdentifier",
+	"securityClassification",
+	"privacyMark",
+	"securityCategories.securityCategory.type",
+	"securityCategories.securityCategory.value",
+
+	"1 2 840 113549 1 9 16 2 12 signingCertificate",
+	"certs.essCertID",
+	"policies.policyInformation.policyIdentifier",
+
+	"1 2 840 113549 1 9 16 2 47 signingCertificateV2",
+	"certs.essCertID",
+	"policies.policyInformation.policyIdentifier",
+
+	"1 2 840 113549 1 9 16 2 15 signaturePolicyID",
+	"sigPolicyID",
+	"sigPolicyHash",
+	"sigPolicyQualifiers.sigPolicyQualifier.cPSuri",
+	"sigPolicyQualifiers.sigPolicyQualifier.userNotice.noticeRef.organization",
+	"sigPolicyQualifiers.sigPolicyQualifier.userNotice.noticeRef.noticeNumbers",
+	"sigPolicyQualifiers.sigPolicyQualifier.userNotice.explicitText",
+
+	"1 2 840 113549 1 9 16 9 signatureTypeIdentifier",
+	"originatorSig",
+	"domainSig",
+	"additionalAttributesSig",
+	"reviewSig",
+
+	"randomNonce",
+
+	/* SCEP attributes:
+	   2 16 840 1 113733 1 9 2 messageType
+	   2 16 840 1 113733 1 9 3 pkiStatus
+	   2 16 840 1 113733 1 9 4 failInfo
+	   2 16 840 1 113733 1 9 5 senderNonce
+	   2 16 840 1 113733 1 9 6 recipientNonce
+	   2 16 840 1 113733 1 9 7 transID */
+	"messageType",
+	"pkiStatus",
+	"failInfo",
+	"senderNonce",
+	"recipientNonce",
+	"transID",
+
+	"1 3 6 1 4 1 311 2 1 10 spcAgencyInfo",
+	"spcAgencyInfo.url",
+
+	"1 3 6 1 4 1 311 2 1 11 spcStatementType",
+	"individualCodeSigning",
+	"commercialCodeSigning",
+
+	"1 3 6 1 4 1 311 2 1 12 spcOpusInfo",
+	"spcOpusInfo.name",
+	"spcOpusInfo.url"
+
 	,NULL
 };
 #endif
@@ -2870,7 +3307,6 @@ static jsSyncPropertySpec js_cryptcert_properties[] = {
 	{"cms_smimecap_rsa_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHA2	,JSPROP_ENUMERATE	,316},
 	{"cms_smimecap_rsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHA1	,JSPROP_ENUMERATE	,316},
 	{"cms_smimecap_dsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_DSA_SHA1	,JSPROP_ENUMERATE	,316},
-#if 0	// TODO: TinyID only goes to 255!
 	{"cms_smimecap_ecdsa_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHAng	,JSPROP_ENUMERATE	,316},
 	{"cms_smimecap_ecdsa_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHA2	,JSPROP_ENUMERATE	,316},
 	{"cms_smimecap_ecdsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHA1	,JSPROP_ENUMERATE	,316},
@@ -2935,7 +3371,6 @@ static jsSyncPropertySpec js_cryptcert_properties[] = {
 	{"cms_spcopusinfo"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO	,JSPROP_ENUMERATE	,316},
 	{"cms_spcopusinfo_name"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO_NAME	,JSPROP_ENUMERATE	,316},
 	{"cms_spcopusinfo_url"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO_URL	,JSPROP_ENUMERATE	,316},
-#endif
 	{0}
 };
 
