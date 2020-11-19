@@ -358,6 +358,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					// Set host_ip from haproxy protocol, if its used
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
 					if (flags & XPMS_ACCEPT_FLAG_HAPROXY) {
+						memset(addr, 0, sizeof(*addr));
 						xpms_set->lprintf(LOG_INFO,"%04d Working out client address from HAPROXY PROTO",ret);
 
 						// Read the first line
@@ -379,14 +380,16 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								tok += 5;
 								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto [TCP4]",ret,hapstr);
 								addr->addr.sa_family = AF_INET;
-								addr->addr.sa_len = sizeof(struct sockaddr_in);
+								if (addrlen)
+									addrlen = sizeof(struct sockaddr_in);
 								vp = &addr->in.sin_addr;
 							// IPV6
 							} else if (strncmp(tok,"TCP6 ",5) == 0) {
 								tok += 5;
 								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto TCP6",ret,hapstr);
 								addr->addr.sa_family = AF_INET6;
-								addr->addr.sa_len = sizeof(struct sockaddr_in6);
+								if (addrlen)
+									addrlen = sizeof(struct sockaddr_in6);
 								vp = &addr->in.sin6_addr;
 							// Unknown?
 							} else {
@@ -485,7 +488,6 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 										closesocket(ret);
 										return INVALID_SOCKET;
 									}
-									addr->in.sin_len = sizeof(struct sockaddr_in);
 									addr->in.sin_family = AF_INET;
 									if (read_socket(ret, hapstr, i, xpms_set->lprintf)) {
 										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv4 address - failed",ret);
@@ -494,6 +496,8 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 									}
 									memcpy(&addr->in.sin_addr.s_addr, hapstr, 4);
 									memcpy(&addr->in.sin_port, &hapstr[8], 2);
+									if (addrlen)
+										addrlen = sizeof(struct sockaddr_in);
 
 									break;
 
@@ -504,7 +508,6 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 										closesocket(ret);
 										return INVALID_SOCKET;
 									}
-									addr->in6.sin6_len = sizeof(struct sockaddr_in6);
 									addr->in6.sin6_family = AF_INET6;
 									if (read_socket(ret,hapstr,i,xpms_set->lprintf)) {
 										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv6 address - failed",ret);
@@ -513,6 +516,8 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 									}
 									memcpy(&addr->in.sin_addr.s_addr, hapstr, 16);
 									memcpy(&addr->in.sin_port, &hapstr[32], 2);
+									if (addrlen)
+										addrlen = sizeof(struct sockaddr_in6);
 
 									break;
 
