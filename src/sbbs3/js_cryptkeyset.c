@@ -510,6 +510,16 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+#ifdef BUILD_JSDOCS
+static char* cryptkeyset_keyopt_prop_desc[] = {
+	"No special access options (this option implies read/write access).",
+	"<p>Read-only keyset access. This option is automatically enabled by cryptlib for keyset types that have read-only restrictions enforced by the nature of the keyset, the operating system, or user access rights.</p>"
+          "<p>Unless you specifically require write access to the keyset, you should use this option since it allows cryptlib to optimise its buffering and access strategies for the keyset.</p>",
+	"Create a new keyset. This option is only valid for writeable keyset types, which includes keysets implemented as databases and cryptlib key files.",
+	NULL
+};
+#endif
+
 JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	cksobj;
@@ -535,6 +545,10 @@ JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, opts, "CREATE", INT_TO_JSVAL(CRYPT_KEYOPT_CREATE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, opts, "_property_desc_list", cryptkeyset_keyopt_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, opts, "Associative array of keyset option constants",318);
+#endif
 			JS_DeepFreezeObject(cx, opts);
 		}
 	}
