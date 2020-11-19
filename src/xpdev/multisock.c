@@ -321,6 +321,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	char           haphex[256];
 	char           *p, *tok;
 	long           l;
+	void           *vp;
 
 	FD_ZERO(&read_fs);
 	for(i=0; i<xpms_set->sock_count; i++) {
@@ -379,12 +380,14 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto [TCP4]",ret,hapstr);
 								addr->addr.sa_family = AF_INET;
 								addr->addr.sa_len = sizeof(struct sockaddr_in);
+								vp = &addr->in.sin_addr;
 							// IPV6
 							} else if (strncmp(tok,"TCP6 ",5) == 0) {
 								tok += 5;
 								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto TCP6",ret,hapstr);
 								addr->addr.sa_family = AF_INET6;
 								addr->addr.sa_len = sizeof(struct sockaddr_in6);
+								vp = &addr->in.sin6_addr;
 							// Unknown?
 							} else {
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Unknown Protocol",ret);
@@ -400,7 +403,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								return INVALID_SOCKET;
 							}
 							*p = 0;
-							if (inet_pton(addr->addr.sa_family, tok, addr->addr.sa_data) != 1) {
+							if (inet_pton(addr->addr.sa_family, tok, vp) != 1) {
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Unable to parse %s address [%s]",addr->addr.sa_family == AF_INET ? "IPv4" : "IPv6", tok);
 								closesocket(ret);
 								return INVALID_SOCKET;
