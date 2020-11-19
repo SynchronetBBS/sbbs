@@ -193,3 +193,15 @@ sexpots-freebsd:
     name: sexpots-freebsd-amd64
     paths:
       - "src/sexpots/*.exe.release/*"
+
+jsdoor-windows:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ RANLIB=mingw32-ranlib RELEASE=1 VERBOSE=please WINDRES=mingw32-windres
+  artifacts:
+    name: jsdoor-win32
+    paths:
+      - "src/sbbs3/*.exe.release/*"
