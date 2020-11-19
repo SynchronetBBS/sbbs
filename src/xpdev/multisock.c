@@ -381,7 +381,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto [TCP4]",ret,hapstr);
 								addr->addr.sa_family = AF_INET;
 								if (addrlen)
-									addrlen = sizeof(struct sockaddr_in);
+									*addrlen = sizeof(struct sockaddr_in);
 								vp = &addr->in.sin_addr;
 							// IPV6
 							} else if (strncmp(tok,"TCP6 ",5) == 0) {
@@ -389,8 +389,8 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto TCP6",ret,hapstr);
 								addr->addr.sa_family = AF_INET6;
 								if (addrlen)
-									addrlen = sizeof(struct sockaddr_in6);
-								vp = &addr->in.sin6_addr;
+									*addrlen = sizeof(struct sockaddr_in6);
+								vp = &addr->in6.sin6_addr;
 							// Unknown?
 							} else {
 								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Unknown Protocol",ret);
@@ -497,7 +497,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 									memcpy(&addr->in.sin_addr.s_addr, hapstr, 4);
 									memcpy(&addr->in.sin_port, &hapstr[8], 2);
 									if (addrlen)
-										addrlen = sizeof(struct sockaddr_in);
+										*addrlen = sizeof(struct sockaddr_in);
 
 									break;
 
@@ -517,7 +517,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 									memcpy(&addr->in.sin_addr.s_addr, hapstr, 16);
 									memcpy(&addr->in.sin_port, &hapstr[32], 2);
 									if (addrlen)
-										addrlen = sizeof(struct sockaddr_in6);
+										*addrlen = sizeof(struct sockaddr_in6);
 
 									break;
 
