@@ -241,12 +241,12 @@ BOOL DLLCALL xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int 
 static void btox(char *hexstr, const char *srcbuf, int srcbuflen, int hexstrlen, int (*lprintf)(int level, const char *fmt, ...)) 
 {
 	if (hexstrlen < srcbuflen*2) {
-		lprintf(LOG_WARNING,"btox Hexstr buffer too small [%d] - not all data will be shown",hexstrlen);
+		lprintf(LOG_WARNING,"btox hexstr buffer too small [%d] - not all data will be processed",hexstrlen);
 		srcbuflen = hexstrlen/2;
 	}
 
 	*hexstr = '\0';
-	for (int i=0;i<srcbuflen;i++) sprintf(hexstr+strlen(hexstr),"%02X",srcbuf[i]);
+	for (int i=0;i<srcbuflen;i++) sprintf(hexstr+strlen(hexstr),"%02x",(unsigned char)srcbuf[i]);
 }
 
 static BOOL read_socket(SOCKET sock, char *buffer, int len, int (*lprintf)(int level, const char *fmt, ...))
@@ -254,7 +254,7 @@ static BOOL read_socket(SOCKET sock, char *buffer, int len, int (*lprintf)(int l
 	fd_set         socket_set;
 	struct timeval tv;
 	int            i,j,rd;
-	char           ch;
+	unsigned char           ch;
 	char           err[128];
 
 	for (i=0;i<len;i++) {
@@ -268,17 +268,18 @@ static BOOL read_socket(SOCKET sock, char *buffer, int len, int (*lprintf)(int l
 		if((j=select(sock+1,&socket_set,NULL,NULL,&tv))>0) {
 			rd = recv(sock,&ch,1,0);
 			if (rd == 1) {
+				/* lprintf(LOG_DEBUG,"%04d multisock read_socket() - Got [%02x]",sock,ch); */
 				buffer[i] = ch;
 			} else {
 				lprintf(LOG_WARNING,"%04d multisock read_socket() - failed to read from socket. Got [%d] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
-				return TRUE;
+				return FALSE;
 			}
 		} else if (j==0) {
 			lprintf(LOG_WARNING,"%04d multisock read_socket() - No data?",sock);
-			return TRUE;
+			return FALSE;
 		} else {
 			lprintf(LOG_WARNING,"%04d multisock read_socket() - select() returned [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
-			return TRUE;
+			return FALSE;
 		}
 	}
 
@@ -293,17 +294,18 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, int buflen, int (*lprint
 		if (read_socket(sock, &buffer[i], 1, lprintf)) {
 			switch(buffer[i]) {
 				case 0:
-					return TRUE;
+					return (strlen(buffer) > 0);
 				case '\n':
 					buffer[i+1] = '\0';
 					return TRUE;
 			}
-		}
-		else {
+
+		} else {
 			buffer[i] = 0;
-			return TRUE;
+			return (strlen(buffer) > 0);
 		}
 	}
+
 	buffer[i] = 0;
 	return TRUE;
 }
@@ -359,15 +361,18 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
 					if (flags & XPMS_ACCEPT_FLAG_HAPROXY) {
 						memset(addr, 0, sizeof(*addr));
-						xpms_set->lprintf(LOG_INFO,"%04d Working out client address from HAPROXY PROTO",ret);
+						xpms_set->lprintf(LOG_INFO,"%04d Working out client address from HAProxy PROTO",ret);
 
 						// Read the first line
-						if (read_socket_line(ret, hapstr, 108, xpms_set->lprintf)) {
-							xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY, looking for version - failed [%s]",ret,hapstr);
+						if (! read_socket_line(ret, hapstr, 108, xpms_set->lprintf)) {
+							btox(haphex,hapstr,108,sizeof(haphex), xpms_set->lprintf);
+							xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for version - failed [%s]",ret,hapstr);
 							closesocket(ret);
 							return INVALID_SOCKET;
 						}
-						xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY, looking for version - received [%s]",ret,hapstr);
+
+						btox(haphex,hapstr,strlen(hapstr)>16 ? 16 : strlen(hapstr),sizeof(haphex), xpms_set->lprintf);
+						xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY looking for version - 1st %d bytes received [%s] of (%d)",ret,strlen(hapstr)>16 ? 16 : strlen(hapstr),haphex,strlen(hapstr));
 
 						// v1 of the protocol uses plain text, starting with "PROXY "
 						// eg: "PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\n"
@@ -378,7 +383,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							// IPV4
 							if (strncmp(tok, "TCP4 ", 5) == 0) {
 								tok += 5;
-								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto [TCP4]",ret,hapstr);
+								xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Proto TCP4",ret,hapstr);
 								addr->addr.sa_family = AF_INET;
 								if (addrlen)
 									*addrlen = sizeof(struct sockaddr_in);
@@ -401,7 +406,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							// Look for the space between the next IP
 							p = strchr(tok, ' ');
 							if (p == NULL) {
-								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong",ret);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Couldnt find IP address",ret);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
@@ -415,14 +420,14 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							// Look for the space before the port number
 							p = strchr(tok, ' ');
 							if (p == NULL) {
-								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong",ret);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Couldnt find port",ret);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
 							tok = p + 1;
 							l = strtol(tok, NULL, 10);
 							if (l <= 0 || l > UINT16_MAX) {
-								xpms_set->lprintf(LOG_ERR,"%04d * Source port out of range",ret);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Source port out of range",ret);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
@@ -442,17 +447,17 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 
 							// OK, just for sanity, our next 10 chars should be v2...
 							memset(hapstr, 0, 10);
-							if (read_socket(ret,hapstr,10,xpms_set->lprintf) || memcmp(hapstr, "\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A", 10) != 0) {
-								btox(haphex,hapstr,6,sizeof(haphex), xpms_set->lprintf);
-								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s] incomplete v2 setup",ret,haphex);
+							if (read_socket(ret,hapstr,10,xpms_set->lprintf)==FALSE || memcmp(hapstr, "\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A", 10) != 0) {
+								btox(haphex,hapstr,10,sizeof(haphex), xpms_set->lprintf);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - incomplete v2 setup [%s]",ret,haphex);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
 
 							// Command and Version
-							if (read_socket(ret,hapstr,1,xpms_set->lprintf)) {
+							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==FALSE) {
 								btox(haphex,hapstr,1,sizeof(haphex), xpms_set->lprintf);
-								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY, looking for Verson/Command - failed [%s]",ret,haphex);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for Verson/Command - failed [%s]",ret,haphex);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
@@ -460,9 +465,9 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Command [%x]",ret,(hapstr[0]>>4)&0x0f); //0=Local/1=Proxy
 
 							// Protocol and Family
-							if (read_socket(ret,hapstr,1,xpms_set->lprintf)) {
+							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==FALSE) {
 								btox(haphex,hapstr,1,sizeof(haphex), xpms_set->lprintf);
-								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY, looking for Protocol/Family - failed [%s]",ret,haphex);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for Protocol/Family - failed [%s]",ret,haphex);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
@@ -471,9 +476,9 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Family [%x]",ret,l); //0=UNSPEC/1=STREAM/2=DGRAM
 
 							// Address Length - 2 bytes
-							if (read_socket(ret,hapstr,2,xpms_set->lprintf)) {
+							if (read_socket(ret,hapstr,2,xpms_set->lprintf)==FALSE) {
 								btox(haphex,hapstr,2,sizeof(haphex), xpms_set->lprintf);
-								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY, looking for address length - failed [%s]",ret,haphex);
+								xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for address length - failed [%s]",ret,haphex);
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
@@ -484,12 +489,12 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								// IPv4 - AF_INET
 								case HAPROXY_AFINET:
 									if (i != 12) {
-										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small.",ret);
+										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small",ret);
 										closesocket(ret);
 										return INVALID_SOCKET;
 									}
 									addr->in.sin_family = AF_INET;
-									if (read_socket(ret, hapstr, i, xpms_set->lprintf)) {
+									if (read_socket(ret, hapstr, i, xpms_set->lprintf)==FALSE) {
 										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv4 address - failed",ret);
 										closesocket(ret);
 										return INVALID_SOCKET;
@@ -509,13 +514,13 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 										return INVALID_SOCKET;
 									}
 									addr->in6.sin6_family = AF_INET6;
-									if (read_socket(ret,hapstr,i,xpms_set->lprintf)) {
+									if (read_socket(ret,hapstr,i,xpms_set->lprintf)==FALSE) {
 										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv6 address - failed",ret);
 										closesocket(ret);
 										return INVALID_SOCKET;
 									}
-									memcpy(&addr->in.sin_addr.s_addr, hapstr, 16);
-									memcpy(&addr->in.sin_port, &hapstr[32], 2);
+									memcpy(&addr->in6.sin6_addr.s6_addr, hapstr, 16);
+									memcpy(&addr->in6.sin6_port, &hapstr[32], 2);
 									if (addrlen)
 										*addrlen = sizeof(struct sockaddr_in6);
 
