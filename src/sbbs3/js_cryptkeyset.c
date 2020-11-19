@@ -379,7 +379,7 @@ static jsSyncPropertySpec js_cryptkeyset_properties[] = {
 
 static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	{"add_private_key",	js_add_private_key,	0,	JSTYPE_VOID,	"CryptContext, password"
-	,JSDOCSTR("Add a private key to the keyset, encrypting it with <password>.")
+	,JSDOCSTR("Add a private key to the keyset, encrypting it with &lt;password&gt;.")
 	,316
 	},
 	{"add_public_key",	js_add_public_key,	0,	JSTYPE_VOID,	"CryptCert"
@@ -391,15 +391,15 @@ static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	,316
 	},
 	{"delete_key",		js_delete_key,		0,	JSTYPE_VOID,	"label"
-	,JSDOCSTR("Delete the key with <label> from the keyset.")
+	,JSDOCSTR("Delete the key with &lt;label&gt; from the keyset.")
 	,316
 	},
 	{"get_private_key",	js_get_private_key,	0,	JSTYPE_OBJECT,	"label, password"
-	,JSDOCSTR("Returns a CryptContext from the private key with <label> encrypted with <password>.")
+	,JSDOCSTR("Returns a CryptContext from the private key with <label> encrypted with &lt;password&gt;.")
 	,316
 	},
 	{"get_public_key",	js_get_public_key,	0,	JSTYPE_OBJECT,	"label"
-	,JSDOCSTR("Returns a CryptCert from the public key with <label>.")
+	,JSDOCSTR("Returns a CryptCert from the public key with &lt;label&gt;.")
 	,316
 	},
 	{0}
