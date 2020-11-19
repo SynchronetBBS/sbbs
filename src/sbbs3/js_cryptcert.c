@@ -3557,6 +3557,45 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+#ifdef BUILD_JSDOCS
+static char* cryptcert_cursor_prop_desc[] = {
+	"Move the cursor to the first group or attribute.",
+	"Move the cursor to the last group or attribute.",
+	"Move the cursor to the next group or attribute.",
+	"Move the cursor to the previous group or attribute.",
+	NULL
+};
+
+static char* cryptcert_type_prop_desc[] = {
+	"No certificate type",
+	"Certificate.",
+	"Attribute certificate.",
+	"PKCS #7 certificate chain.",
+	"PKCS #10 certification request.",
+	"CRMF certificate request",
+	"CRMF certificate revocation request",
+	"CRL",
+	"PKCS #7/CMS attributes.",
+	"RTCS request",
+	"RTCS response",
+	"OCSP request",
+	"OCSP response",
+	"PKI user information.",
+	NULL
+};
+
+static char* cryptcert_format_prop_desc[] = {
+	"No certificate format",
+	"A certification request, certificate, or CRL in binary data format. The certificate object is encoded according to the ASN.1 distinguished encoding rules. This is the normal certificate encoding format.",
+	"A certificate encoded as a PKCS #7 certificate chain.",
+	"As CERTIFICATE but with base64 armouring of the binary data.",
+	"As CERTCHAIN but with base64 armouring of the binary data.",
+	"XML wrapped cert",
+	"XML wrapped certchain",
+	NULL
+};
+#endif
+
 JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	cksobj;
@@ -3587,6 +3626,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, cursor, "LAST", INT_TO_JSVAL(CRYPT_CURSOR_LAST), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, cursor, "_property_desc_list", cryptcert_cursor_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, cursor, "Associative array of cursor constants",318);
+#endif
 			JS_DeepFreezeObject(cx, cursor);
 		}
 		type = JS_DefineObject(cx, constructor, "TYPE", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3619,6 +3662,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, type, "PKIUSER", INT_TO_JSVAL(CRYPT_CERTTYPE_PKIUSER), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, type, "_property_desc_list", cryptcert_type_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, type, "Associative array of certificate type constants",318);
+#endif
 			JS_DeepFreezeObject(cx, type);
 		}
 		format = JS_DefineObject(cx, constructor, "FORMAT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3637,6 +3684,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, format, "XML_CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_XML_CERTCHAIN), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, format, "_property_desc_list", cryptcert_format_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, format, "Associative array of certificate format constants",318);
+#endif
 			JS_DeepFreezeObject(cx, format);
 		}
 		attr = JS_DefineObject(cx, constructor, "ATTR", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -4281,6 +4332,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, attr, "CMS_SPCOPUSINFO_URL", INT_TO_JSVAL(CRYPT_CERTINFO_CMS_SPCOPUSINFO_URL), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, attr, "_property_desc_list", cryptcert_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, attr, "Associative array of certificate attribute constants",318);
+#endif
 			JS_DeepFreezeObject(cx, attr);
 		}
 	}
