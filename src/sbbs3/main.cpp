@@ -42,7 +42,6 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
-#include "haproxy.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -359,72 +358,6 @@ int close_socket(SOCKET sock)
 	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
 		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
 	return(result);
-}
-
-static bool read_socket(SOCKET sock,unsigned char *buffer,int len)
-{
-	fd_set		socket_set;
-	struct timeval	tv;
-    int			i,j,rd;
-	char	ch;
-	char    err[128];
-
-	// Clear our buffer
-	memset(buffer,'\0',len);
-
-	for (i=0;i<len;i++) {
-		FD_ZERO(&socket_set);
-		FD_SET(sock,&socket_set);
-
-		// We'll wait 1 secs to read from the socket.
-		tv.tv_sec=1;
-		tv.tv_usec=0;
-
-#ifdef _DEBUG
-		lprintf(LOG_DEBUG,"%04d Read Socket - select (%d of %d)",sock,i,len);
-#endif
-		if((j=select(sock+1,&socket_set,NULL,NULL,&tv))>0) {
-#ifdef _DEBUG
-			lprintf(LOG_DEBUG,"%04d Read Socket - read",sock);
-#endif
-   		 	rd = recv(sock,&ch,1,0);
-#ifdef _DEBUG
-			lprintf(LOG_DEBUG,"%04d Read Socket - got [%02x] (%x)",sock,ch,rd);
-#endif
-
-			if(FD_ISSET(sock,&socket_set) && rd) {
-				buffer[i] = ch;
-			} else {
-				lprintf(LOG_WARNING,"%04d Read Socket - failed to read from socket. Got [%d] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
-				return false;
-			}
-
-		} else if (j==0) {
-			lprintf(LOG_WARNING,"%04d Read Socket - No data?",sock);
-			return false;
-
-		} else {
-			lprintf(LOG_WARNING,"%04d Read Socket - Something else [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
-			return false;
-		}
-	}
-
-#ifdef _DEBUG
-	lprintf(LOG_DEBUG,"%04d Read Socket - Returning [%.*s]",sock,i,buffer);
-#endif
-	return true;
-}
-
-/* Convert a binary variable into a hex string - used for printing in the debug log */
-static void btox(char *hexstr, const unsigned char *srcbuf, int srcbuflen, int hexstrlen) 
-{
-	if (hexstrlen < srcbuflen*2) {
-		lprintf(LOG_WARNING,"btox Hexstr buffer too small [%d] - not all data will be shown",hexstrlen);
-		srcbuflen = hexstrlen/2;
-	}
-
-	*hexstr = '\0';
-	for (int i=0;i<srcbuflen;i++) sprintf(hexstr+strlen(hexstr),"%02X",srcbuf[i]);
 }
 
 /* TODO: IPv6 */
@@ -5001,10 +4934,6 @@ static void cleanup(int code)
 
 void DLLCALL bbs_thread(void* arg)
 {
-	struct addrinfo *res;
-	unsigned char	hapstr[128];
-	char	haphex[256];
-
 	char			host_name[256];
 	char*			identity;
 	char*			p;
@@ -5014,7 +4943,7 @@ void DLLCALL bbs_thread(void* arg)
 	union xp_sockaddr	client_addr;
 	socklen_t		client_addr_len;
 	SOCKET			client_socket=INVALID_SOCKET;
-	int				i,l;
+	int				i;
     int				file;
 	int				result;
 	time_t			t;
@@ -5433,7 +5362,7 @@ NO_SSH:
 		/* now wait for connection */
 		client_addr_len = sizeof(client_addr);
 		client_socket=xpms_accept(ts_set, &client_addr
-	        	,&client_addr_len, startup->sem_chk_freq*1000, &ts_cb);
+	        	,&client_addr_len, startup->sem_chk_freq*1000, (startup->options & BBS_OPT_HAPROXY_PROTO) ? XPMS_ACCEPT_FLAG_HAPROXY : 0, &ts_cb);
 
 		if(terminate_server)	/* terminated */
 			break;
@@ -5521,212 +5450,7 @@ NO_SSH:
 		}
 		char host_ip[INET6_ADDRSTRLEN];
 
-		// Set host_ip from haproxy protocol, if its used
-		// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
-		if(startup->options&BBS_OPT_HAPROXY_PROTO) {
-			lprintf(LOG_INFO,"%04d Working out client address from HAPROXY PROTO",client_socket);
-			memset(hapstr,'\0',sizeof(hapstr));
-			memset(host_ip,'\0',sizeof(host_ip));
-
-			// Read the first 5 chars to work out what we are dealing with
-			if (read_socket(client_socket,hapstr,6)==false) {
-				lprintf(LOG_ERR,"%04d * HAPROXY, looking for version - failed [%s]",client_socket,hapstr);
-				close_socket(client_socket);
-				continue;
-			}
-#ifdef _DEBUG
-			lprintf(LOG_DEBUG,"%04d * HAPROXY, looking for version - received [%s]",client_socket,hapstr);
-#endif
-
-			// v1 of the protocol uses plain text, starting with "PROXY "
-			// eg: "PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535\r\n"
-			if (strcmp((char *)hapstr,"PROXY ") == 0) {
-				lprintf(LOG_DEBUG,"%04d * HAPROXY PROTO v1",client_socket);
-
-				// Get Protocol
-				memset(hapstr,'\0',sizeof(hapstr));
-				if (read_socket(client_socket,hapstr,5)==false) {
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for protocol - failed [%s]",client_socket,hapstr);
-					close_socket(client_socket);
-					continue;
-				}
-#ifdef _DEBUG
-				lprintf(LOG_DEBUG,"%04d * HAPROXY, looking for protocol - received [%s]",client_socket,hapstr);
-#endif
-
-				// IPV4
-				if (strcmp((char *)hapstr,"TCP4 ") == 0) {
-					lprintf(LOG_DEBUG,"%04d * HAPROXY Proto [%s]",client_socket,hapstr);
-
-					// Source Address
-					if (read_socket(client_socket,hapstr,16)==false) {
-						lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv4 source - failed [%s]",client_socket,hapstr);
-						close_socket(client_socket);
-						continue;
-					}
-
-				// IPV6
-				} else if (strcmp((char *)hapstr,"TCP6 ") == 0) {
-					lprintf(LOG_DEBUG,"%04d * HAPROXY Proto %s",client_socket,hapstr);
-
-					// Source Address
-					if (read_socket(client_socket,hapstr,40)==false) {
-						lprintf(LOG_ERR,"%04d * HAPROXY, looking for IPv6 source - failed [%s]",client_socket,hapstr);
-						close_socket(client_socket);
-						continue;
-					}
-
-				// Unknown?
-				} else if (strcmp((char *)hapstr,"UNKNO") == 0) {
-					lprintf(LOG_ERR,"%04d * HAPROXY Unknown Protocol [%s]",client_socket,hapstr);
-					close_socket(client_socket);
-					continue;
-				}
-
-				// Look for the space between the next IP
-				for(i=0;i<sizeof(hapstr);i++) {
-					if (hapstr[i] == ' ')
-						break;
-				}
-
-				// If we didnt find our space...
-				if (i == sizeof(hapstr)) {
-					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s]",client_socket,hapstr);
-					close_socket(client_socket);
-					continue;
-				}
-
-				// IPv4 address in IPv6 ::ffff:n.n.n.n
-				if (hapstr[0] == ':' && hapstr[1] == ':' && i>7) {
-					sprintf(host_ip,"%.*s",i-7,hapstr+7);
-
-					lprintf(LOG_DEBUG,"%04d * HAPROXY IPv4 address in IPv6 [%s]",client_socket,host_ip);
-
-				} else {
-					memcpy(host_ip,hapstr,i);
-				}
-
-			// v2 is in binary with the first 12 bytes "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A"
-			// we'll compare the 1st 6 bytes here, since we are determining if we are v1 or v2.
-			} else if (memcmp((char *)hapstr,"\r\n\r\n\x00\r",6) == 0) {
-				lprintf(LOG_DEBUG,"%04d * HAPROXY PROTO v2",client_socket);
-
-				// OK, just for sanity, our next 6 chars should be v2...
-				if (read_socket(client_socket,hapstr,6)==false || strcmp((char *)hapstr,"\nQUIT\n") != 0) {
-					btox(haphex,hapstr,6,sizeof(haphex));
-					lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong [%s] incomplete v2 setup",client_socket,haphex);
-					close_socket(client_socket);
-					continue;
-				}
-
-				// Command and Version
-				if (read_socket(client_socket,hapstr,1)==false) {
-					btox(haphex,hapstr,1,sizeof(haphex));
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Verson/Command - failed [%s]",client_socket,haphex);
-					close_socket(client_socket);
-					continue;
-				}
-				lprintf(LOG_DEBUG,"%04d * HAPROXY Version [%x]",client_socket,hapstr[0]&0x0f); //Should be 2
-				lprintf(LOG_DEBUG,"%04d * HAPROXY Command [%x]",client_socket,(hapstr[0]>>4)&0x0f); //0=Local/1=Proxy
-
-				// Protocol and Family
-				if (read_socket(client_socket,hapstr,1)==false) {
-					btox(haphex,hapstr,1,sizeof(haphex));
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for Protocol/Family - failed [%s]",client_socket,haphex);
-					close_socket(client_socket);
-					continue;
-				}
-				lprintf(LOG_DEBUG,"%04d * HAPROXY Protocol [%x]",client_socket,hapstr[0]&0x0f); //0=Unspec/1=AF_INET/2=AF_INET6/3=AF_UNIX
-				l = (hapstr[0]>>4)&0x0f;
-				lprintf(LOG_DEBUG,"%04d * HAPROXY Family [%x]",client_socket,l); //0=UNSPEC/1=STREAM/2=DGRAM
-
-				// Address Length - 2 bytes
-				if (read_socket(client_socket,hapstr,2)==false) {
-					btox(haphex,hapstr,2,sizeof(haphex));
-					lprintf(LOG_ERR,"%04d * HAPROXY, looking for address length - failed [%s]",client_socket,haphex);
-					close_socket(client_socket);
-					continue;
-				}
-				i = ntohs(*(uint16_t*)hapstr);
-				lprintf(LOG_DEBUG,"%04d * HAPROXY Address Length [%d]",client_socket,i);
-
-				switch (l) {
-					// IPv4 - AF_INET
-					case HAPROXY_AFINET:
-						if (i < 4) {
-							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small.",client_socket);
-							close_socket(client_socket);
-							continue;
-						}
-
-						if (read_socket(client_socket,hapstr,i)==false) {
-							btox(haphex,hapstr,i,sizeof(haphex));
-							lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv4 address - failed [%s]",client_socket,haphex);
-							close_socket(client_socket);
-							continue;
-						}
-
-						inet_ntop(AF_INET,hapstr,host_ip,sizeof(host_ip));
-						break;
-
-					// IPv6 - AF_INET6
-					case HAPROXY_AFINET6:
-						if (i < 16) {
-							lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv6 address length too small.",client_socket);
-							close_socket(client_socket);
-							continue;
-						}
-
-						if (read_socket(client_socket,hapstr,i)==false) {
-							btox(haphex,hapstr,i,sizeof(haphex));
-							lprintf(LOG_ERR,"%04d * HAPROXY looking for IPv6 address - failed [%s]",client_socket,haphex);
-							close_socket(client_socket);
-							continue;
-						}
-						// IPv4 address in IPv6 ::ffff:n.n.n.n
-						// 0000:0000:0000:0000:0000:ffff:0a01:039c
-						for(i=0;i<10;i++) {
-							if (hapstr[i] != 0x00)
-								break;
-						}
-
-						if ((i==10) && (hapstr[i] == 0xff) && (hapstr[i+1] == 0xff)) {
-							inet_ntop(AF_INET,&hapstr[12],host_ip,sizeof(host_ip));
-							lprintf(LOG_DEBUG,"%04d * HAPROXY IPv4 address in IPv6 [%s]",client_socket,host_ip);
-
-						} else {
-							inet_ntop(AF_INET6,hapstr,host_ip,sizeof(host_ip));
-						}
-
-						break;
-
-					default:
-						lprintf(LOG_ERR,"%04d * HAPROXY Unknown Family [%x]",client_socket,l);
-						close_socket(client_socket);
-						continue;
-				}
-
-			} else {
-				lprintf(LOG_ERR,"%04d Unknown HAProxy Initialisation - is HAProxy used?",client_socket);
-				close_socket(client_socket);
-				continue;
-			}
-
-			lprintf(LOG_INFO,"%04d * HAPROXY Source [%s]",client_socket,host_ip);
-
-			if ((i=getaddrinfo(host_ip,NULL,NULL,&res)) !=0) {
-				lprintf(LOG_ERR,"!ERROR resolve_ip %s failed with error %d",host_ip,i);
-				freeaddrinfo(res);
-				close_socket(client_socket);
-				continue;
-			}
-
-			memcpy(&client_addr.addr,res->ai_addr,res->ai_addrlen);
-			freeaddrinfo(res);
-
-		} else {
-			inet_addrtop(&client_addr,host_ip,sizeof(host_ip));
-		}
+		inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
 		if(trashcan(&scfg,host_ip,"ip-silent")) {
 			close_socket(client_socket);

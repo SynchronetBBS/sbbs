@@ -6233,7 +6233,7 @@ void DLLCALL ftp_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(ftp_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, NULL);
+			client_socket = xpms_accept(ftp_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, 0, NULL);
 
 			if(client_socket == INVALID_SOCKET)
 				continue;
