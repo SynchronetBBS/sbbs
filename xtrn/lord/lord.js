@@ -16042,6 +16042,7 @@ function main()
 		sln('');
 		player.on_now = false;
 		player.put();
+		generate_rankings(gamedir('scores.lrd'), true)
 		exit(0);
 	}
 
