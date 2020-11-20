@@ -293,7 +293,7 @@ static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 	return TRUE;
 }
 
-static BOOL read_socket_line(SOCKET sock, char *buffer, int buflen, int (*lprintf)(int level, const char *fmt, ...))
+static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lprintf)(int level, const char *fmt, ...))
 {
 	int            i;
 
@@ -368,7 +368,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
 					if (flags & XPMS_ACCEPT_FLAG_HAPROXY) {
 						memset(addr, 0, sizeof(*addr));
-						xpms_set->lprintf(LOG_INFO,"%04d Working out client address from HAProxy PROTO",ret);
+						xpms_set->lprintf(LOG_DEBUG,"%04d Working out client address from HAProxy PROTO",ret);
 
 						// Read the first line
 						if (! read_socket_line(ret, hapstr, 108, xpms_set->lprintf)) {
