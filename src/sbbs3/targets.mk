@@ -53,6 +53,20 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 
 all:	dlls utils console scfg uedit umonitor
 
+# These include sbbs.h, so need JS_DEPS filled before they can build.
+$(ADDFILES}: $(JS_DEPS)
+${ALLUSERS}: $(JS_DEPS)
+${DELFILES}: $(JS_DEPS)
+$(DSTSEDIT): $(JS_DEPS)
+$(DUPEFIND): $(JS_DEPS)
+$(ECHOCFG): $(JS_DEPS)
+$(FILELIST): $(JS_DEPS)
+$(MAKEUSER): $(JS_DEPS)
+$(QWKNODES): $(JS_DEPS)
+$(SBBSECHO): $(JS_DEPS)
+$(SMBACTIV): $(JS_DEPS)
+$(SMBUTIL): $(JS_DEPS)
+
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
 		dlls \
