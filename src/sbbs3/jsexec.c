@@ -148,8 +148,12 @@ void usage(FILE* fp)
 		"    -i<path_list>  set load() comma-sep search path list (default=\"%s\")\n"
 		"    -f             use non-buffered stream for console messages\n"
 		"    -a             append instead of overwriting message output files\n"
+		"    -A             send all message to stdout\n"
+		"    -A<filename>   send all message to file instead of stdout/stderr\n"
 		"    -e<filename>   send error messages to file in addition to stderr\n"
 		"    -o<filename>   send console messages to file instead of stdout\n"
+		"    -S<filename>   send status messages to file instead of stderr\n"
+		"    -S             send status messages to stdout\n"
 		"    -n             send status messages to %s instead of stderr\n"
 		"    -q             send console messages to %s instead of stdout\n"
 		"    -v             display version details and exit\n"
@@ -1306,6 +1310,22 @@ int main(int argc, char **argv, char** env)
 				case 'a':
 					omode="a";
 					break;
+				case 'A':
+					if (errfp != stderr)
+						fclose(errfp);
+					if(*p == '\0') {
+						errfp = stdout;
+						confp = stdout;
+						statfp = stdout;
+					} else {
+						if((errfp = fopen(p, omode)) == NULL) {
+							perror(p);
+							return(do_bail(1));
+						}
+						statfp = errfp;
+						confp = errfp;
+					}
+					break;
 				case 'C':
 					change_cwd = FALSE;
 					break;
@@ -1328,6 +1348,16 @@ int main(int argc, char **argv, char** env)
 					break;
 				case 'l':
 					loop=TRUE;
+					break;
+				case 'S':
+					if(*p == '\0')
+						statfp = stdout;
+					else {
+						if((statfp = fopen(p,omode))==NULL) {
+							perror(p);
+							return(do_bail(1));
+						}
+					}
 					break;
 				case 'n':
 					statfp=nulfp;
@@ -1401,6 +1431,7 @@ int main(int argc, char **argv, char** env)
 #if defined(__unix__)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");
+		cooked_tty();
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
 			fprintf(statfp,"!ERROR %d (%s) running as daemon\n", errno, strerror(errno));
 			daemonize=FALSE;

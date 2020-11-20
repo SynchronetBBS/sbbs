@@ -167,15 +167,18 @@ int main(int argc, char **argv)
 	FILE			*text_js;
 	FILE			*text_defaults_c;
 
-	p = get_ctrl_dir(/* warn: */TRUE);
+	if(argc > 1)
+		p = argv[1];
+	else
+		p = get_ctrl_dir(/* warn: */TRUE);
 	SAFEPRINTF(path,"%s/text.dat",p);
 	if((text_dat=fopen(path,"r"))==NULL) {
 		perror(path);
-		return(1);
+		return __LINE__;
 	}
 	if((text_h=fopen("text.h", "w"))==NULL) {
 		perror("text.h");
-		return(1);
+		return __LINE__;
 	}
 	fputs("/* text.h */\n",text_h);
 	fputs("\n",text_h);
@@ -191,12 +194,16 @@ int main(int argc, char **argv)
 	fputs("\n",text_h);
 	fputs("enum {\n",text_h);
 
-	if((p=getenv("SBBSEXEC"))==NULL)
-		p="/sbbs/exec";
+	if(argc > 2)
+		p = argv[2];
+	else
+		p = getenv("SBBSEXEC");
+	if(p==NULL)
+		p = "/sbbs/exec";
 	sprintf(path,"%s/load/text.js",p);
 	if((text_js=fopen(path, "w"))==NULL) {
 		perror(path);
-		return(1);
+		return __LINE__;
 	}
 	fputs("/* Synchronet static text string constants */\n",text_js);
 	fputs("\n",text_js);
@@ -209,7 +216,7 @@ int main(int argc, char **argv)
 	fputs("\n",text_js);
 	if((text_defaults_c=fopen("text_defaults.c","w"))==NULL) {
 		fprintf(stderr,"Can't open text_defaults.c!\n");
-		return(1);
+		return __LINE__;
 	}
 	fputs("/* Synchronet default text strings */\n",text_defaults_c);
 	fputs("\n",text_defaults_c);

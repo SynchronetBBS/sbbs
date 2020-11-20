@@ -132,10 +132,18 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
-	for(i=0;props[i].name;i++) 
-		if(!JS_DefinePropertyWithTinyId(cx, obj, 
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-			return(JS_FALSE);
+	for(i=0;props[i].name;i++) {
+		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+			if(!JS_DefinePropertyWithTinyId(cx, obj, 
+			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+		else {
+			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+
+	}
 
 	return(JS_TRUE);
 }
@@ -161,9 +169,15 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	if(props) {
 		for(i=0;props[i].name;i++) {
 			if(name==NULL || strcmp(name, props[i].name)==0) {
-				if(!JS_DefinePropertyWithTinyId(cx, obj, 
-						props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-					return(JS_FALSE);
+				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+					if(!JS_DefinePropertyWithTinyId(cx, obj, 
+					    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+						return(JS_FALSE);
+				}
+				else {
+					if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+						return(JS_FALSE);
+				}
 				if(name)
 					return(JS_TRUE);
 			}

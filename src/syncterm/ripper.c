@@ -1,9 +1,11 @@
 /*
  * The RIPper... interposes on the connection and handles RIP sequences
  */
-#include <arpa/inet.h>
 #include <sys/stat.h>
 
+#if defined(_MSC_VER)
+	#define _USE_MATH_DEFINES // for C
+#endif
 #include <math.h>
 #include <string.h>
 #include <stdbool.h>
@@ -16,7 +18,11 @@
 #include <dirwrap.h>
 #include <gen_defs.h>
 #include <genwrap.h>
-#include <unistd.h>
+#include <sockwrap.h>
+#include <strwrap.h>
+#if defined(__unix__)
+	#include <unistd.h>
+#endif
 #include <vidmodes.h>
 #include <xpbeep.h>
 
@@ -7252,6 +7258,7 @@ get_text_variable(const char * const var)
 	vardef = bsearch(var, builtins, sizeof(builtins) / sizeof(builtins[0]), sizeof(builtins[0]), bicmp);
 	if (vardef == NULL) {
 		puts("TODO: User variables");
+		return(calloc(1, 1));
 	}
 	return vardef->func(var, vardef->data);
 }
@@ -7285,6 +7292,7 @@ rv_date(const char * const var, const void * const data)
 									ctime_r(&now, str);
 									return strdup(str);
 							}
+							break;
 						case 'Y':
 							snprintf(str, sizeof(str), "%02d", nlt.tm_mday);
 							return strdup(str);
@@ -7725,10 +7733,9 @@ parse_string(const char *buf)
 	char *p;
 	int ch;
 
-	char *ret = malloc(strlen(buf));
+	char *ret = malloc(strlen(buf) + 1);
 	if (ret == NULL)
 		return ret;
-	p = ret;
 	for (p = ret; (ch = next_char(buf, &inpos)) > 0; inpos++)
 		*(p++) = ch;
 	*p = 0;
@@ -8721,6 +8728,12 @@ add_button(int x1, int y1, int x2, int y2, int hotkey, int flags, char *text)
 	}
 
 	draw_button(but, false);
+	if (!but->flags.mouse) {
+		free(but->command);
+		free(but->icon);
+		free(but->label);
+		free(but);
+	}
 }
 
 static void append_str(uint8_t **resp, size_t *size, size_t *pos, const char *str)
@@ -8789,6 +8802,8 @@ do_popup(const char * const str)
 	if (soo == NULL)
 		return NULL;
 	question = strndup(p, soo - p);
+	if (question == NULL)
+		return NULL;
 	soo += 2;
 	p = soo;
 	opts = 0;
@@ -8908,6 +8923,7 @@ do_popup(const char * const str)
 	rip.x = x;
 	rip.y = y;
 	write_text(question);
+	free(question);
 
 	for (i = 0; i < opts; i++) {
 		set_pixel(x1 + 13, y1 + 27 + (i * 13), light);
@@ -9018,13 +9034,11 @@ handle_command_str(const char *incmd)
 {
 	const char *p, *p2, *p3, *p4;
 	char str[2];
-	const char *cmd;
 
 	if (incmd == NULL)
 		return;
-	cmd = strdup(incmd);
 
-	for (p = cmd; *p; p++) {
+	for (p = incmd; *p; p++) {
 		// TODO: No way to send a ^ or a $ or a [
 		if (*p == '^' || *p == '`') {	// CTRL char
 			p++;
@@ -9223,7 +9237,7 @@ full_ellipse(int xc, int yc, int a, int b, bool fill)
 	long crit1 = -(a2/4 + a%2 + b2);
 	long crit2 = -(b2/4 + b%2 + a2);
 	long crit3 = -(b2/4 + b%2);
-	long t = -a2*y; /* t = e(x+1/2,y-1/2) - (aˆ2+bˆ2)/4 */
+	long t = -a2*y; /* t = e(x+1/2,y-1/2) - (a²+b²)/4 */
 	long dxt = 2*b2*x, dyt = -2*a2*y;
 	long d2xt = 2*b2, d2yt = 2*a2;
 	int fy;
@@ -10124,6 +10138,7 @@ setpixel(x1, y1, xx);
 								}
 								draw_line(argv[arg1 - 1].x, argv[arg1 - 1].y, argv[0].x, argv[0].y);
 							}
+							free(argv);
 							break;
 						case 's':	// RIP_FILL_PATTERN
 							handled = true;
@@ -10504,7 +10519,7 @@ setpixel(x1, y1, xx);
 									if (fread(planes, row, 4, icn) != 4) {
 										free(planes);
 										free(pix->pixels);
-										free(pix);
+										FREE_AND_NULL(pix);
 										fclose(icn);
 										break;
 									}
@@ -10516,18 +10531,20 @@ setpixel(x1, y1, xx);
 										*(op++) = ega_colours[co];
 									}
 								}
-								fclose(icn);
-								free(planes);
+								if (pix) {
+									fclose(icn);
+									free(planes);
 
-								struct text_info ti;
-								gettextinfo(&ti);
-								setpixels(x1 + rip.viewport.sx, y1 + rip.viewport.sy, x1 + rip.viewport.sx + pix->width - 1, y1 + rip.viewport.sy + pix->height - 1, 0, 0, pix, NULL);
-								if (arg2) {
-									freepixels(rip.clipboard);
-									rip.clipboard = pix;
-								}
-								else {
-									freepixels(pix);
+									struct text_info ti;
+									gettextinfo(&ti);
+									setpixels(x1 + rip.viewport.sx, y1 + rip.viewport.sy, x1 + rip.viewport.sx + pix->width - 1, y1 + rip.viewport.sy + pix->height - 1, 0, 0, pix, NULL);
+									if (arg2) {
+										freepixels(rip.clipboard);
+										rip.clipboard = pix;
+									}
+									else {
+										freepixels(pix);
+									}
 								}
 							}
 							break;
@@ -10705,14 +10722,15 @@ setpixel(x1, y1, xx);
 									if (fwrite(planes, row, 4, icn) != 4) {
 										fclose(icn);
 										unlink(cache_path);
-										free(planes);
-										fclose(icn);
+										FREE_AND_NULL(planes);
 										break;
 									}
 								}
-								fwrite("F", 1, 1, icn);
-								fclose(icn);
-								free(planes);
+								if (planes) {
+									fwrite("F", 1, 1, icn);
+									fclose(icn);
+									free(planes);
+								}
 							}
 							break;
 					}
@@ -11095,6 +11113,11 @@ do_skypix(char *buf, size_t len)
 			}
 			strlwr(fnt->entry[i].std.name);
 			flen = flength(fnt->entry[i].std.name);
+			if (flen < 0) {
+				printf("TODO: Unable to read font %s size\n", fnt->entry[i].std.name);
+				free(fnt);
+				break;
+			}
 			font = fopen(fnt->entry[i].std.name, "rb");
 			if (font == NULL) {
 				printf("TODO: Unable to open font %s\n", fnt->entry[i].std.name);
@@ -11104,6 +11127,7 @@ do_skypix(char *buf, size_t len)
 			free(fnt);
 			amiga_font = malloc(flen);
 			if (amiga_font == NULL) {
+				fclose(font);
 				break;
 			}
 			fread(amiga_font, 1, flen, font);
@@ -11488,10 +11512,10 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						if (buf[pos] == '\b') {
 							if (rip.lchars > 0)
 								rip.lchars--;
-								if (rip.lchars == 0) {
-									rip.state = RIP_STATE_BOL;
-									break;
-								}
+							if (rip.lchars == 0) {
+								rip.state = RIP_STATE_BOL;
+								break;
+							}
 						}
 						else if (buf[pos] < 32)
 							rip.lchars = -1;

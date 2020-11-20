@@ -552,9 +552,15 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 		return(JS_FALSE);
 
 	for(i=0;props[i].name;i++) {
-		if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-			return(JS_FALSE);
+		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+			if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
+			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+		else {
+			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
 		if(props[i].flags&JSPROP_ENUMERATE) {	/* No need to version invisible props */
 			if((ver=props[i].ver) < 10000)		/* auto convert 313 to 31300 */
 				ver*=100;
@@ -698,10 +704,17 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
-	for(i=0;props[i].name;i++)
-		if(!JS_DefinePropertyWithTinyId(cx, obj,
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-			return(JS_FALSE);
+	for(i=0;props[i].name;i++) {
+		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+			if(!JS_DefinePropertyWithTinyId(cx, obj,
+			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+		else {
+			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+	}
 
 	return(JS_TRUE);
 }
@@ -727,9 +740,15 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	if(props) {
 		for(i=0;props[i].name;i++) {
 			if(name==NULL || strcmp(name, props[i].name)==0) {
-				if(!JS_DefinePropertyWithTinyId(cx, obj,
-						props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-					return(JS_FALSE);
+				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+					if(!JS_DefinePropertyWithTinyId(cx, obj,
+					    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+						return(JS_FALSE);
+				}
+				else {
+					if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+						return(JS_FALSE);
+				}
 				if(name)
 					return(JS_TRUE);
 			}
@@ -3490,6 +3509,7 @@ bool sbbs_t::init()
 {
 	char		str[MAX_PATH+1];
 	char		tmp[128];
+	char		tmp2[128];
 	int			result;
 	uint		i,j,k,l;
 	node_t		node;
@@ -3592,11 +3612,13 @@ bool sbbs_t::init()
 			now=time(NULL);
 			struct tm tm;
 			localtime_r(&now,&tm);
+			time_t ftime = fdate(str);
 			safe_snprintf(str,sizeof(str),"%s  %s %s %02d %u  "
-				"End of preexisting log entry (possible crash)"
+				"End of preexisting log entry (possible crash on %.24s)"
 				,hhmmtostr(&cfg,&tm,tmp)
 				,wday[tm.tm_wday]
-				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
+				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900
+				,ctime_r(&ftime, tmp2));
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(TRUE);

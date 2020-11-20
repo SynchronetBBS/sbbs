@@ -34,16 +34,20 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\build\target_ia32.props" />
-    <Import Project="..\build\sdl.props" />
     <Import Project="..\smblib\smblib.props" />
+    <Import Project="..\build\sdl2.props" />
+    <Import Project="..\encode\encode.props" />
+    <Import Project="..\hash\hash.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\build\target_ia32.props" />
-    <Import Project="..\build\sdl.props" />
     <Import Project="..\smblib\smblib.props" />
+    <Import Project="..\build\sdl2.props" />
+    <Import Project="..\encode\encode.props" />
+    <Import Project="..\hash\hash.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

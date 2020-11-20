@@ -73,27 +73,21 @@ if(options.which === undefined)
 if(options.clear_screen === undefined)
 	options.clear_screen = true;
 
+if (options.section_fmt === undefined)
+	options.section_fmt = "\x01y\x01g%3d:\x01n\x01g %s"
+
+if (options.section_header_fmt === undefined)
+	options.section_header_fmt = "\x01-\x01gSelect \x01hExternal Program Section\x01-\x01g:"
+
+if(options.section_which === undefined)
+	options.section_which = "\r\n\x01-\x01gWhich, \x01w\x01h~Q\x01n\x01guit or [1]: \x01h"
+
+
 function sort_by_name(a, b)
 {
 	if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
 	if(a.name.toLowerCase()<b.name.toLowerCase()) return -1;
 	return 0;
-}
-
-function exec_xtrn(prog)
-{
-	console.attributes = LIGHTGRAY;
-	if(options.clear_screen_on_exec)
-		console.clear();
-	if(options.eval_before_exec)
-		eval(options.eval_before_exec);
-	load('fonts.js', 'xtrn:' + prog.code);
-	bbs.exec_xtrn(prog.code);
-	console.attributes = 0;
-	console.attributes = LIGHTGRAY;
-	load('fonts.js', 'default');
-	if(options.eval_after_exec)
-		eval(options.eval_after_exec);
 }
 
 function external_program_menu(xsec)
@@ -103,10 +97,10 @@ function external_program_menu(xsec)
 	while(bbs.online) {
 
 		console.aborted = false;
-	    if(user.security.restrictions&UFLAG_X) {
-		    write(options.restricted_user_msg);
-		    break;
-	    }
+		if(user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
 
 		var prog_list=xtrn_area.sec_list[xsec].prog_list.slice();   /* prog_list is a possibly-sorted copy of xtrn_area.sec_list[x].prog_list */
 
@@ -118,7 +112,7 @@ function external_program_menu(xsec)
 
 		// If there's only one program available to the user in the section, just run it (or try to)
 		if(options.autoexec && prog_list.length == 1) {
-			exec_xtrn(prog_list[0]);
+			bbs.exec_xtrn(prog_list[0].code);
 			break;
 		}
 		
@@ -144,16 +138,21 @@ function external_program_menu(xsec)
 			if(options.sort)
 				prog_list.sort(sort_by_name);
 			printf(options.header_fmt, xtrn_area.sec_list[xsec].name);
-			write(options.titles);
-			if(multicolumn) {
-				write(options.multicolumn_separator);
+			if(options.titles.trimRight() != '')
 				write(options.titles);
-			}
-			console.crlf();
-			write(options.underline);
 			if(multicolumn) {
 				write(options.multicolumn_separator);
+				if (options.titles.trimRight() != '')
+					write(options.titles);
+			}
+			if(options.underline.trimRight() != '') {
+				console.crlf();
 				write(options.underline);
+			}
+			if(multicolumn) {
+				write(options.multicolumn_separator);
+				if (options.underline.trimRight() != '')
+					write(options.underline);
 			}
 			console.crlf();
 			var n;
@@ -190,11 +189,8 @@ function external_program_menu(xsec)
 		if((i=console.getnum(prog_list.length))<1)
 			break;
 		i--;
-		if(bbs.menu_exists("xtrn/" + prog_list[i].code)) {
-			bbs.menu("xtrn/" + prog_list[i].code);
-			console.line_counter=0;
-		}
-		exec_xtrn(prog_list[i]);
+
+		bbs.exec_xtrn(prog_list[i].code);
 	}
 }
 
@@ -230,16 +226,32 @@ function external_section_menu()
 			xsec--;
 		}
 		else {
+			if(options.clear_screen)
+				console.clear(LIGHTGRAY);
 
 			if(options.sort)
 				sec_list.sort(sort_by_name);
-			for(i in sec_list)
-				console.uselect(Number(i),"External Program Section"
-					,sec_list[i].name);
-			xsec=console.uselect();
+
+			printf(options.section_header_fmt);
+			console.crlf();
+			console.crlf();
+
+			for (i in sec_list) {
+				printf(options.section_fmt, parseInt(i) + 1, sec_list[i].name);
+				console.crlf();
+			}
+
+			bbs.node_sync();
+			console.mnemonics(options.section_which);
+
+			xsec = console.getnum(sec_list.length);
+			xsec--; // match array index
+
+			if(xsec == -1)
+				xsec = 0; // default option
+			else if(xsec == -2)
+				break;
 		}
-	    if(xsec<0)
-		    break;
 
         external_program_menu(sec_list[xsec].index);
     }

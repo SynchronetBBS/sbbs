@@ -367,15 +367,23 @@ void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, ch
 				*tp = 0;
 			}
 		}
-		if(charset != NULL && (p = strcasestr(p, "charset=")) != NULL) {
-			p += 8;
-			if(*p == '"')
+		char* parms = p;
+		if(charset != NULL && ((p = strcasestr(parms, " charset=")) != NULL || (p = strcasestr(parms, ";charset=")) != NULL)) {
+			BOOL quoted = FALSE;
+			p += 9;
+			if(*p == '"') {
+				quoted = TRUE;
 				p++;
+			}
 			char* tp = p;
 			FIND_WHITESPACE(tp);
 			*tp = 0;
 			tp = p;
-			FIND_CHAR(tp, '"');
+			if(quoted) {
+				FIND_CHAR(tp, '"');
+			} else {
+				FIND_CHAR(tp, ';');
+			}
 			*tp = 0;
 			*charset = strdup(p);
 		}

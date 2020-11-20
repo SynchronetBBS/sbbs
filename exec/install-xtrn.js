@@ -443,6 +443,14 @@ for (var i = 0; i < argc; i++) {
 		ini_list.push(argv[i]);
 }
 
+if(!ini_list.length) {
+	var lib = load({}, "install-3rdp-xtrn.js");
+	var out = lib.scan(options);
+	for (var i in out) {
+		print(out[i]);
+	}
+}
+
 function find_startup_dir(dir)
 {
 	for (var i in xtrn_area.prog) {

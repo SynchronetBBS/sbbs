@@ -379,7 +379,7 @@ static jsSyncPropertySpec js_cryptkeyset_properties[] = {
 
 static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	{"add_private_key",	js_add_private_key,	0,	JSTYPE_VOID,	"CryptContext, password"
-	,JSDOCSTR("Add a private key to the keyset, encrypting it with <password>.")
+	,JSDOCSTR("Add a private key to the keyset, encrypting it with &lt;password&gt;.")
 	,316
 	},
 	{"add_public_key",	js_add_public_key,	0,	JSTYPE_VOID,	"CryptCert"
@@ -391,15 +391,15 @@ static jsSyncMethodSpec js_cryptkeyset_functions[] = {
 	,316
 	},
 	{"delete_key",		js_delete_key,		0,	JSTYPE_VOID,	"label"
-	,JSDOCSTR("Delete the key with <label> from the keyset.")
+	,JSDOCSTR("Delete the key with &lt;label&gt; from the keyset.")
 	,316
 	},
 	{"get_private_key",	js_get_private_key,	0,	JSTYPE_OBJECT,	"label, password"
-	,JSDOCSTR("Returns a CryptContext from the private key with <label> encrypted with <password>.")
+	,JSDOCSTR("Returns a CryptContext from the private key with <label> encrypted with &lt;password&gt;.")
 	,316
 	},
 	{"get_public_key",	js_get_public_key,	0,	JSTYPE_OBJECT,	"label"
-	,JSDOCSTR("Returns a CryptCert from the public key with <label>.")
+	,JSDOCSTR("Returns a CryptCert from the public key with &lt;label&gt;.")
 	,316
 	},
 	{0}
@@ -510,6 +510,16 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+#ifdef BUILD_JSDOCS
+static char* cryptkeyset_keyopt_prop_desc[] = {
+	"No special access options (this option implies read/write access).",
+	"<p>Read-only keyset access. This option is automatically enabled by cryptlib for keyset types that have read-only restrictions enforced by the nature of the keyset, the operating system, or user access rights.</p>"
+          "<p>Unless you specifically require write access to the keyset, you should use this option since it allows cryptlib to optimise its buffering and access strategies for the keyset.</p>",
+	"Create a new keyset. This option is only valid for writeable keyset types, which includes keysets implemented as databases and cryptlib key files.",
+	NULL
+};
+#endif
+
 JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	cksobj;
@@ -535,6 +545,10 @@ JSObject* DLLCALL js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, opts, "CREATE", INT_TO_JSVAL(CRYPT_KEYOPT_CREATE), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, opts, "_property_desc_list", cryptkeyset_keyopt_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, opts, "Associative array of keyset option constants",318);
+#endif
 			JS_DeepFreezeObject(cx, opts);
 		}
 	}
