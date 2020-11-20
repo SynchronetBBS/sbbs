@@ -16,6 +16,7 @@
 PWD	:=	$(shell pwd)
 SRC_ROOT	?=	${PWD}/..
 include $(SRC_ROOT)/build/Common.gmake
+include extdeps.mk
 
 UTIL_LDFLAGS	:=	$(LDFLAGS)
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS) $(ENCODE_LDFLAGS)

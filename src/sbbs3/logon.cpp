@@ -49,7 +49,7 @@ bool sbbs_t::logon()
 	char	str[256],c;
 	char 	tmp[512];
 	int 	file;
-	uint	i,j,mailw;
+	uint	i,j,mailw,mailr;
 	long	kmode;
 	ulong	totallogons;
 	node_t	node;
@@ -460,7 +460,8 @@ bool sbbs_t::logon()
 		return(true);
 
 	sys_status|=SS_PAUSEON;	/* always force pause on during this section */
-	mailw=getmail(&cfg,useron.number,/* Sent: */FALSE, /* SPAM: */FALSE);
+	mailw=getmail(&cfg,useron.number,/* Sent: */FALSE, /* attr: */0);
+	mailr=getmail(&cfg,useron.number,/* Sent: */FALSE, /* attr: */MSG_READ);
 
 	if(!(cfg.sys_misc&SM_NOSYSINFO)) {
 		bprintf(text[SiSysName],cfg.sys_name);
@@ -470,7 +471,7 @@ bool sbbs_t::logon()
 			,cfg.level_callsperday[useron.level]);
 		bprintf(text[LiTimeonToday],useron.ttoday
 			,cfg.level_timeperday[useron.level]+useron.min);
-		bprintf(text[LiMailWaiting],mailw);
+		bprintf(text[LiMailWaiting],mailw, mailw-mailr);
 		bprintf(text[LiSysopIs]
 			, text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
 		newline();
@@ -535,8 +536,9 @@ bool sbbs_t::logon()
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */
 	if(text[ReadYourMailNowQ][0] && mailw) {
-		if(yesno(text[ReadYourMailNowQ]))
-			readmail(useron.number,MAIL_YOUR); 
+		if((mailw == mailr && !noyes(text[ReadYourMailNowQ]))
+			|| (mailw != mailr && yesno(text[ReadYourMailNowQ])))
+			readmail(useron.number,MAIL_YOUR);
 	}
 	if(usrgrps && useron.misc&ASK_NSCAN && text[NScanAllGrpsQ][0] && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);

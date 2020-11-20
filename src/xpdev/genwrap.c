@@ -877,7 +877,7 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 
 #if defined(_MSC_VER)
 	strerror_s(buf, buflen, errnum);
-#elif defined(__BORLANDC__)
+#elif defined(_WIN32)
 	strncpy(buf, strerror(errnum), buflen);
 	buf[buflen - 1] = 0;
 #elif defined(_GNU_SOURCE)

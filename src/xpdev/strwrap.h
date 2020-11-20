@@ -18,4 +18,17 @@ char* ltoa(long val, char* str, int radix);
 
 #endif
 
+#ifdef _MSVC
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+char *strndup(const char *str, size_t maxlen);
+size_t strnlen(const char *s, size_t maxlen);
+
+#if defined(__cplusplus)
+}
+#endif
+#endif
+
 #endif

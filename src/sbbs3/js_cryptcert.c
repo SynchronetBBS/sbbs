@@ -1179,6 +1179,379 @@ enum {
 
 };
 
+static jsSyncPropertySpec js_cryptcert_properties[] = {
+/*	name						,tinyid									,flags,				ver	*/
+	{"selfsigned"				,CRYPTCERT_PROP_SELFSIGNED	,JSPROP_ENUMERATE	,316},
+	{"immutable"				,CRYPTCERT_PROP_IMMUTABLE	,JSPROP_ENUMERATE	,316},
+	{"xyzzy"					,CRYPTCERT_PROP_XYZZY	,JSPROP_ENUMERATE	,316},
+	{"certtype"					,CRYPTCERT_PROP_CERTTYPE	,JSPROP_ENUMERATE	,316},
+	{"fingerprint_sha1"			,CRYPTCERT_PROP_FINGERPRINT_SHA1	,JSPROP_ENUMERATE	,316},
+	{"fingerprint_sha2"			,CRYPTCERT_PROP_FINGERPRINT_SHA2	,JSPROP_ENUMERATE	,316},
+	{"fingerprint_shang"		,CRYPTCERT_PROP_FINGERPRINT_SHAng	,JSPROP_ENUMERATE	,316},
+	{"current_certificate"		,CRYPTCERT_PROP_CURRENT_CERTIFICATE	,JSPROP_ENUMERATE	,316},
+	{"trusted_usage"			,CRYPTCERT_PROP_TRUSTED_USAGE	,JSPROP_ENUMERATE	,316},
+	{"trusted_implicit"			,CRYPTCERT_PROP_TRUSTED_IMPLICIT	,JSPROP_ENUMERATE	,316},
+	{"signaturelevel"			,CRYPTCERT_PROP_SIGNATURELEVEL	,JSPROP_ENUMERATE	,316},
+	{"version"					,CRYPTCERT_PROP_VERSION	,JSPROP_ENUMERATE	,316},
+	{"serialnumber"				,CRYPTCERT_PROP_SERIALNUMBER	,JSPROP_ENUMERATE	,316},
+	{"subjectpublickeyinfo"		,CRYPTCERT_PROP_SUBJECTPUBLICKEYINFO	,JSPROP_ENUMERATE	,316},
+	{"certificate"				,CRYPTCERT_PROP_CERTIFICATE	,JSPROP_ENUMERATE	,316},
+	{"cacertificate"			,CRYPTCERT_PROP_CACERTIFICATE	,JSPROP_ENUMERATE	,316},
+	{"issuername"				,CRYPTCERT_PROP_ISSUERNAME	,JSPROP_ENUMERATE	,316},
+	{"validfrom"				,CRYPTCERT_PROP_VALIDFROM	,JSPROP_ENUMERATE	,316},
+	{"validto"					,CRYPTCERT_PROP_VALIDTO	,JSPROP_ENUMERATE	,316},
+	{"subjectname"				,CRYPTCERT_PROP_SUBJECTNAME	,JSPROP_ENUMERATE	,316},
+	{"issueruniqueid"			,CRYPTCERT_PROP_ISSUERUNIQUEID	,JSPROP_ENUMERATE	,316},
+	{"subjectuniqueid"			,CRYPTCERT_PROP_SUBJECTUNIQUEID	,JSPROP_ENUMERATE	,316},
+	{"certrequest"				,CRYPTCERT_PROP_CERTREQUEST	,JSPROP_ENUMERATE	,316},
+	{"thisupdate"				,CRYPTCERT_PROP_THISUPDATE	,JSPROP_ENUMERATE	,316},
+	{"nextupdate"				,CRYPTCERT_PROP_NEXTUPDATE	,JSPROP_ENUMERATE	,316},
+	{"revocationdate"			,CRYPTCERT_PROP_REVOCATIONDATE	,JSPROP_ENUMERATE	,316},
+	{"revocationstatus"			,CRYPTCERT_PROP_REVOCATIONSTATUS	,JSPROP_ENUMERATE	,316},
+	{"certstatus"				,CRYPTCERT_PROP_CERTSTATUS	,JSPROP_ENUMERATE	,316},
+	{"dn"						,CRYPTCERT_PROP_DN	,JSPROP_ENUMERATE	,316},
+	{"pkiuser_id"				,CRYPTCERT_PROP_PKIUSER_ID	,JSPROP_ENUMERATE	,316},
+	{"pkiuser_issuepassword"	,CRYPTCERT_PROP_PKIUSER_ISSUEPASSWORD	,JSPROP_ENUMERATE	,316},
+	{"pkiuser_revpassword"		,CRYPTCERT_PROP_PKIUSER_REVPASSWORD	,JSPROP_ENUMERATE	,316},
+	{"pkiuser_ra"				,CRYPTCERT_PROP_PKIUSER_RA	,JSPROP_ENUMERATE	,316},
+	{"countryname"				,CRYPTCERT_PROP_COUNTRYNAME	,JSPROP_ENUMERATE	,316},
+	{"stateorprovincename"		,CRYPTCERT_PROP_STATEORPROVINCENAME	,JSPROP_ENUMERATE	,316},
+	{"localityname"				,CRYPTCERT_PROP_LOCALITYNAME	,JSPROP_ENUMERATE	,316},
+	{"organizationname"			,CRYPTCERT_PROP_ORGANIZATIONNAME	,JSPROP_ENUMERATE	,316},
+	{"organizationalunitname"	,CRYPTCERT_PROP_ORGANIZATIONALUNITNAME	,JSPROP_ENUMERATE	,316},
+	{"commonname"				,CRYPTCERT_PROP_COMMONNAME	,JSPROP_ENUMERATE	,316},
+	{"othername_typeid"			,CRYPTCERT_PROP_OTHERNAME_TYPEID	,JSPROP_ENUMERATE	,316},
+	{"othername_value"			,CRYPTCERT_PROP_OTHERNAME_VALUE	,JSPROP_ENUMERATE	,316},
+	{"rfc822name"				,CRYPTCERT_PROP_RFC822NAME	,JSPROP_ENUMERATE	,316},
+	{"dnsname"					,CRYPTCERT_PROP_DNSNAME	,JSPROP_ENUMERATE	,316},
+	{"directoryname"			,CRYPTCERT_PROP_DIRECTORYNAME	,JSPROP_ENUMERATE	,316},
+	{"edipartyname_nameassigner",CRYPTCERT_PROP_EDIPARTYNAME_NAMEASSIGNER	,JSPROP_ENUMERATE	,316},
+	{"edipartyname_partyname"	,CRYPTCERT_PROP_EDIPARTYNAME_PARTYNAME	,JSPROP_ENUMERATE	,316},
+	{"uniformresourceidentifier",CRYPTCERT_PROP_UNIFORMRESOURCEIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"ipaddress"				,CRYPTCERT_PROP_IPADDRESS	,JSPROP_ENUMERATE	,316},
+	{"registeredid"				,CRYPTCERT_PROP_REGISTEREDID	,JSPROP_ENUMERATE	,316},
+	{"challengepassword"		,CRYPTCERT_PROP_CHALLENGEPASSWORD	,JSPROP_ENUMERATE	,316},
+	{"crlextreason"				,CRYPTCERT_PROP_CRLEXTREASON	,JSPROP_ENUMERATE	,316},
+	{"keyfeatures"				,CRYPTCERT_PROP_KEYFEATURES	,JSPROP_ENUMERATE	,316},
+	{"authorityinfoaccess"		,CRYPTCERT_PROP_AUTHORITYINFOACCESS	,JSPROP_ENUMERATE	,316},
+	{"authorityinfo_rtcs"		,CRYPTCERT_PROP_AUTHORITYINFO_RTCS	,JSPROP_ENUMERATE	,316},
+	{"authorityinfo_ocsp"		,CRYPTCERT_PROP_AUTHORITYINFO_OCSP	,JSPROP_ENUMERATE	,316},
+	{"authorityinfo_caissuers"	,CRYPTCERT_PROP_AUTHORITYINFO_CAISSUERS	,JSPROP_ENUMERATE	,316},
+	{"authorityinfo_certstore"	,CRYPTCERT_PROP_AUTHORITYINFO_CERTSTORE	,JSPROP_ENUMERATE	,316},
+	{"authorityinfo_crls"		,CRYPTCERT_PROP_AUTHORITYINFO_CRLS	,JSPROP_ENUMERATE	,316},
+	{"biometricinfo"			,CRYPTCERT_PROP_BIOMETRICINFO	,JSPROP_ENUMERATE	,316},
+	{"biometricinfo_type"		,CRYPTCERT_PROP_BIOMETRICINFO_TYPE	,JSPROP_ENUMERATE	,316},
+	{"biometricinfo_hashalgo"	,CRYPTCERT_PROP_BIOMETRICINFO_HASHALGO	,JSPROP_ENUMERATE	,316},
+	{"biometricinfo_hash"		,CRYPTCERT_PROP_BIOMETRICINFO_HASH	,JSPROP_ENUMERATE	,316},
+	{"biometricinfo_url"		,CRYPTCERT_PROP_BIOMETRICINFO_URL	,JSPROP_ENUMERATE	,316},
+	{"qcstatement"				,CRYPTCERT_PROP_QCSTATEMENT	,JSPROP_ENUMERATE	,316},
+	{"qcstatement_semantics"	,CRYPTCERT_PROP_QCSTATEMENT_SEMANTICS	,JSPROP_ENUMERATE	,316},
+	{"qcstatement_registrationauthority",CRYPTCERT_PROP_QCSTATEMENT_REGISTRATIONAUTHORITY	,JSPROP_ENUMERATE	,316},
+	{"ipaddressblocks"			,CRYPTCERT_PROP_IPADDRESSBLOCKS	,JSPROP_ENUMERATE	,316},
+	{"ipaddressblocks_addressfamily",CRYPTCERT_PROP_IPADDRESSBLOCKS_ADDRESSFAMILY	,JSPROP_ENUMERATE	,316},
+	{"ipaddressblocks_prefix"	,CRYPTCERT_PROP_IPADDRESSBLOCKS_PREFIX	,JSPROP_ENUMERATE	,316},
+	{"ipaddressblocks_min"		,CRYPTCERT_PROP_IPADDRESSBLOCKS_MIN	,JSPROP_ENUMERATE	,316},
+	{"ipaddressblocks_max"		,CRYPTCERT_PROP_IPADDRESSBLOCKS_MAX	,JSPROP_ENUMERATE	,316},
+	{"autonomoussysids"			,CRYPTCERT_PROP_AUTONOMOUSSYSIDS	,JSPROP_ENUMERATE	,316},
+	{"autonomoussysids_asnum_id",CRYPTCERT_PROP_AUTONOMOUSSYSIDS_ASNUM_ID	,JSPROP_ENUMERATE	,316},
+	{"autonomoussysids_asnum_min",CRYPTCERT_PROP_AUTONOMOUSSYSIDS_ASNUM_MIN	,JSPROP_ENUMERATE	,316},
+	{"autonomoussysids_asnum_max",CRYPTCERT_PROP_AUTONOMOUSSYSIDS_ASNUM_MAX	,JSPROP_ENUMERATE	,316},
+	{"ocsp_nonce"				,CRYPTCERT_PROP_OCSP_NONCE	,JSPROP_ENUMERATE	,316},
+	{"ocsp_response"			,CRYPTCERT_PROP_OCSP_RESPONSE	,JSPROP_ENUMERATE	,316},
+	{"ocsp_response_ocsp"		,CRYPTCERT_PROP_OCSP_RESPONSE_OCSP	,JSPROP_ENUMERATE	,316},
+	{"ocsp_nocheck"				,CRYPTCERT_PROP_OCSP_NOCHECK	,JSPROP_ENUMERATE	,316},
+	{"ocsp_archivecutoff"		,CRYPTCERT_PROP_OCSP_ARCHIVECUTOFF	,JSPROP_ENUMERATE	,316},
+	{"subjectinfoaccess"		,CRYPTCERT_PROP_SUBJECTINFOACCESS	,JSPROP_ENUMERATE	,316},
+	{"subjectinfo_timestamping"	,CRYPTCERT_PROP_SUBJECTINFO_TIMESTAMPING	,JSPROP_ENUMERATE	,316},
+	{"subjectinfo_carepository"	,CRYPTCERT_PROP_SUBJECTINFO_CAREPOSITORY	,JSPROP_ENUMERATE	,316},
+	{"subjectinfo_signedobjectrepository",CRYPTCERT_PROP_SUBJECTINFO_SIGNEDOBJECTREPOSITORY	,JSPROP_ENUMERATE	,316},
+	{"subjectinfo_rpkimanifest"	,CRYPTCERT_PROP_SUBJECTINFO_RPKIMANIFEST	,JSPROP_ENUMERATE	,316},
+	{"subjectinfo_signedobject"	,CRYPTCERT_PROP_SUBJECTINFO_SIGNEDOBJECT	,JSPROP_ENUMERATE	,316},
+	{"sigg_dateofcertgen"		,CRYPTCERT_PROP_SIGG_DATEOFCERTGEN	,JSPROP_ENUMERATE	,316},
+	{"sigg_procuration"			,CRYPTCERT_PROP_SIGG_PROCURATION	,JSPROP_ENUMERATE	,316},
+	{"sigg_procure_country"		,CRYPTCERT_PROP_SIGG_PROCURE_COUNTRY	,JSPROP_ENUMERATE	,316},
+	{"sigg_procure_typeofsubstitution",CRYPTCERT_PROP_SIGG_PROCURE_TYPEOFSUBSTITUTION	,JSPROP_ENUMERATE	,316},
+	{"sigg_procure_signingfor"	,CRYPTCERT_PROP_SIGG_PROCURE_SIGNINGFOR	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions"			,CRYPTCERT_PROP_SIGG_ADMISSIONS	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_authority",CRYPTCERT_PROP_SIGG_ADMISSIONS_AUTHORITY	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_namingauthid",CRYPTCERT_PROP_SIGG_ADMISSIONS_NAMINGAUTHID	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_namingauthurl",CRYPTCERT_PROP_SIGG_ADMISSIONS_NAMINGAUTHURL	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_namingauthtext",CRYPTCERT_PROP_SIGG_ADMISSIONS_NAMINGAUTHTEXT	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_professionitem",CRYPTCERT_PROP_SIGG_ADMISSIONS_PROFESSIONITEM	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_professionoid",CRYPTCERT_PROP_SIGG_ADMISSIONS_PROFESSIONOID	,JSPROP_ENUMERATE	,316},
+	{"sigg_admissions_registrationnumber",CRYPTCERT_PROP_SIGG_ADMISSIONS_REGISTRATIONNUMBER	,JSPROP_ENUMERATE	,316},
+	{"sigg_monetarylimit"		,CRYPTCERT_PROP_SIGG_MONETARYLIMIT	,JSPROP_ENUMERATE	,316},
+	{"sigg_monetary_currency"	,CRYPTCERT_PROP_SIGG_MONETARY_CURRENCY	,JSPROP_ENUMERATE	,316},
+	{"sigg_monetary_amount"		,CRYPTCERT_PROP_SIGG_MONETARY_AMOUNT	,JSPROP_ENUMERATE	,316},
+	{"sigg_monetary_exponent"	,CRYPTCERT_PROP_SIGG_MONETARY_EXPONENT	,JSPROP_ENUMERATE	,316},
+	{"sigg_declarationofmajority",CRYPTCERT_PROP_SIGG_DECLARATIONOFMAJORITY	,JSPROP_ENUMERATE	,316},
+	{"sigg_declarationofmajority_country",CRYPTCERT_PROP_SIGG_DECLARATIONOFMAJORITY_COUNTRY	,JSPROP_ENUMERATE	,316},
+	{"sigg_restriction"			,CRYPTCERT_PROP_SIGG_RESTRICTION	,JSPROP_ENUMERATE	,316},
+	{"sigg_certhash"			,CRYPTCERT_PROP_SIGG_CERTHASH	,JSPROP_ENUMERATE	,316},
+	{"sigg_additionalinformation",CRYPTCERT_PROP_SIGG_ADDITIONALINFORMATION	,JSPROP_ENUMERATE	,316},
+	{"strongextranet"			,CRYPTCERT_PROP_STRONGEXTRANET	,JSPROP_ENUMERATE	,316},
+	{"strongextranet_zone"		,CRYPTCERT_PROP_STRONGEXTRANET_ZONE	,JSPROP_ENUMERATE	,316},
+	{"strongextranet_id"		,CRYPTCERT_PROP_STRONGEXTRANET_ID	,JSPROP_ENUMERATE	,316},
+	{"subjectdirectoryattributes",CRYPTCERT_PROP_SUBJECTDIRECTORYATTRIBUTES	,JSPROP_ENUMERATE	,316},
+	{"subjectdir_type"			,CRYPTCERT_PROP_SUBJECTDIR_TYPE	,JSPROP_ENUMERATE	,316},
+	{"subjectdir_values"		,CRYPTCERT_PROP_SUBJECTDIR_VALUES	,JSPROP_ENUMERATE	,316},
+	{"subjectkeyidentifier"		,CRYPTCERT_PROP_SUBJECTKEYIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"keyusage"					,CRYPTCERT_PROP_KEYUSAGE	,JSPROP_ENUMERATE	,316},
+	{"privatekeyusageperiod"	,CRYPTCERT_PROP_PRIVATEKEYUSAGEPERIOD	,JSPROP_ENUMERATE	,316},
+	{"privatekey_notbefore"		,CRYPTCERT_PROP_PRIVATEKEY_NOTBEFORE	,JSPROP_ENUMERATE	,316},
+	{"privatekey_notafter"		,CRYPTCERT_PROP_PRIVATEKEY_NOTAFTER	,JSPROP_ENUMERATE	,316},
+	{"subjectaltname"			,CRYPTCERT_PROP_SUBJECTALTNAME	,JSPROP_ENUMERATE	,316},
+	{"issueraltname"			,CRYPTCERT_PROP_ISSUERALTNAME	,JSPROP_ENUMERATE	,316},
+	{"basicconstraints"			,CRYPTCERT_PROP_BASICCONSTRAINTS	,JSPROP_ENUMERATE	,316},
+	{"ca"						,CRYPTCERT_PROP_CA	,JSPROP_ENUMERATE	,316},
+	{"pathlenconstraint"		,CRYPTCERT_PROP_PATHLENCONSTRAINT	,JSPROP_ENUMERATE	,316},
+	{"crlnumber"				,CRYPTCERT_PROP_CRLNUMBER	,JSPROP_ENUMERATE	,316},
+	{"crlreason"				,CRYPTCERT_PROP_CRLREASON	,JSPROP_ENUMERATE	,316},
+	{"holdinstructioncode"		,CRYPTCERT_PROP_HOLDINSTRUCTIONCODE	,JSPROP_ENUMERATE	,316},
+	{"invaliditydate"			,CRYPTCERT_PROP_INVALIDITYDATE	,JSPROP_ENUMERATE	,316},
+	{"deltacrlindicator"		,CRYPTCERT_PROP_DELTACRLINDICATOR	,JSPROP_ENUMERATE	,316},
+	{"issuingdistributionpoint"	,CRYPTCERT_PROP_ISSUINGDISTRIBUTIONPOINT	,JSPROP_ENUMERATE	,316},
+	{"issuingdist_fullname"		,CRYPTCERT_PROP_ISSUINGDIST_FULLNAME	,JSPROP_ENUMERATE	,316},
+	{"issuingdist_usercertsonly",CRYPTCERT_PROP_ISSUINGDIST_USERCERTSONLY	,JSPROP_ENUMERATE	,316},
+	{"issuingdist_cacertsonly"	,CRYPTCERT_PROP_ISSUINGDIST_CACERTSONLY	,JSPROP_ENUMERATE	,316},
+	{"issuingdist_somereasonsonly",CRYPTCERT_PROP_ISSUINGDIST_SOMEREASONSONLY	,JSPROP_ENUMERATE	,316},
+	{"issuingdist_indirectcrl"	,CRYPTCERT_PROP_ISSUINGDIST_INDIRECTCRL	,JSPROP_ENUMERATE	,316},
+	{"certificateissuer"		,CRYPTCERT_PROP_CERTIFICATEISSUER	,JSPROP_ENUMERATE	,316},
+	{"nameconstraints"			,CRYPTCERT_PROP_NAMECONSTRAINTS	,JSPROP_ENUMERATE	,316},
+	{"permittedsubtrees"		,CRYPTCERT_PROP_PERMITTEDSUBTREES	,JSPROP_ENUMERATE	,316},
+	{"excludedsubtrees"			,CRYPTCERT_PROP_EXCLUDEDSUBTREES	,JSPROP_ENUMERATE	,316},
+	{"crldistributionpoint"		,CRYPTCERT_PROP_CRLDISTRIBUTIONPOINT	,JSPROP_ENUMERATE	,316},
+	{"crldist_fullname"			,CRYPTCERT_PROP_CRLDIST_FULLNAME	,JSPROP_ENUMERATE	,316},
+	{"crldist_reasons"			,CRYPTCERT_PROP_CRLDIST_REASONS	,JSPROP_ENUMERATE	,316},
+	{"crldist_crlissuer"		,CRYPTCERT_PROP_CRLDIST_CRLISSUER	,JSPROP_ENUMERATE	,316},
+	{"certificatepolicies"		,CRYPTCERT_PROP_CERTIFICATEPOLICIES	,JSPROP_ENUMERATE	,316},
+	{"certpolicyid"				,CRYPTCERT_PROP_CERTPOLICYID	,JSPROP_ENUMERATE	,316},
+	{"certpolicy_cpsuri"		,CRYPTCERT_PROP_CERTPOLICY_CPSURI	,JSPROP_ENUMERATE	,316},
+	{"certpolicy_organization"	,CRYPTCERT_PROP_CERTPOLICY_ORGANIZATION	,JSPROP_ENUMERATE	,316},
+	{"certpolicy_noticenumbers"	,CRYPTCERT_PROP_CERTPOLICY_NOTICENUMBERS	,JSPROP_ENUMERATE	,316},
+	{"certpolicy_explicittext"	,CRYPTCERT_PROP_CERTPOLICY_EXPLICITTEXT	,JSPROP_ENUMERATE	,316},
+	{"policymappings"			,CRYPTCERT_PROP_POLICYMAPPINGS	,JSPROP_ENUMERATE	,316},
+	{"issuerdomainpolicy"		,CRYPTCERT_PROP_ISSUERDOMAINPOLICY	,JSPROP_ENUMERATE	,316},
+	{"subjectdomainpolicy"		,CRYPTCERT_PROP_SUBJECTDOMAINPOLICY	,JSPROP_ENUMERATE	,316},
+	{"authoritykeyidentifier"	,CRYPTCERT_PROP_AUTHORITYKEYIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"authority_keyidentifier"	,CRYPTCERT_PROP_AUTHORITY_KEYIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"authority_certissuer"		,CRYPTCERT_PROP_AUTHORITY_CERTISSUER	,JSPROP_ENUMERATE	,316},
+	{"authority_certserialnumber",CRYPTCERT_PROP_AUTHORITY_CERTSERIALNUMBER	,JSPROP_ENUMERATE	,316},
+	{"policyconstraints"		,CRYPTCERT_PROP_POLICYCONSTRAINTS	,JSPROP_ENUMERATE	,316},
+	{"requireexplicitpolicy"	,CRYPTCERT_PROP_REQUIREEXPLICITPOLICY	,JSPROP_ENUMERATE	,316},
+	{"inhibitpolicymapping"		,CRYPTCERT_PROP_INHIBITPOLICYMAPPING	,JSPROP_ENUMERATE	,316},
+	{"extkeyusage"				,CRYPTCERT_PROP_EXTKEYUSAGE	,JSPROP_ENUMERATE	,316},
+	{"extkey_ms_individualcodesigning",CRYPTCERT_PROP_EXTKEY_MS_INDIVIDUALCODESIGNING	,JSPROP_ENUMERATE	,316},
+	{"extkey_ms_commercialcodesigning",CRYPTCERT_PROP_EXTKEY_MS_COMMERCIALCODESIGNING	,JSPROP_ENUMERATE	,316},
+	{"extkey_ms_certtrustlistsigning",CRYPTCERT_PROP_EXTKEY_MS_CERTTRUSTLISTSIGNING	,JSPROP_ENUMERATE	,316},
+	{"extkey_ms_timestampsigning",CRYPTCERT_PROP_EXTKEY_MS_TIMESTAMPSIGNING	,JSPROP_ENUMERATE	,316},
+	{"extkey_ms_servergatedcrypto",CRYPTCERT_PROP_EXTKEY_MS_SERVERGATEDCRYPTO	,JSPROP_ENUMERATE	,316},
+	{"extkey_ms_encryptedfilesystem",CRYPTCERT_PROP_EXTKEY_MS_ENCRYPTEDFILESYSTEM	,JSPROP_ENUMERATE	,316},
+	{"extkey_serverauth"		,CRYPTCERT_PROP_EXTKEY_SERVERAUTH	,JSPROP_ENUMERATE	,316},
+	{"extkey_clientauth"		,CRYPTCERT_PROP_EXTKEY_CLIENTAUTH	,JSPROP_ENUMERATE	,316},
+	{"extkey_codesigning"		,CRYPTCERT_PROP_EXTKEY_CODESIGNING	,JSPROP_ENUMERATE	,316},
+	{"extkey_emailprotection"	,CRYPTCERT_PROP_EXTKEY_EMAILPROTECTION	,JSPROP_ENUMERATE	,316},
+	{"extkey_ipsecendsystem"	,CRYPTCERT_PROP_EXTKEY_IPSECENDSYSTEM	,JSPROP_ENUMERATE	,316},
+	{"extkey_ipsectunnel"		,CRYPTCERT_PROP_EXTKEY_IPSECTUNNEL	,JSPROP_ENUMERATE	,316},
+	{"extkey_ipsecuser"			,CRYPTCERT_PROP_EXTKEY_IPSECUSER	,JSPROP_ENUMERATE	,316},
+	{"extkey_timestamping"		,CRYPTCERT_PROP_EXTKEY_TIMESTAMPING	,JSPROP_ENUMERATE	,316},
+	{"extkey_ocspsigning"		,CRYPTCERT_PROP_EXTKEY_OCSPSIGNING	,JSPROP_ENUMERATE	,316},
+	{"extkey_directoryservice"	,CRYPTCERT_PROP_EXTKEY_DIRECTORYSERVICE	,JSPROP_ENUMERATE	,316},
+	{"extkey_anykeyusage"		,CRYPTCERT_PROP_EXTKEY_ANYKEYUSAGE	,JSPROP_ENUMERATE	,316},
+	{"extkey_ns_servergatedcrypto",CRYPTCERT_PROP_EXTKEY_NS_SERVERGATEDCRYPTO	,JSPROP_ENUMERATE	,316},
+	{"extkey_vs_servergatedcrypto_ca",CRYPTCERT_PROP_EXTKEY_VS_SERVERGATEDCRYPTO_CA	,JSPROP_ENUMERATE	,316},
+	{"crlstreamidentifier"		,CRYPTCERT_PROP_CRLSTREAMIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"freshestcrl"				,CRYPTCERT_PROP_FRESHESTCRL	,JSPROP_ENUMERATE	,316},
+	{"freshestcrl_fullname"		,CRYPTCERT_PROP_FRESHESTCRL_FULLNAME	,JSPROP_ENUMERATE	,316},
+	{"freshestcrl_reasons"		,CRYPTCERT_PROP_FRESHESTCRL_REASONS	,JSPROP_ENUMERATE	,316},
+	{"freshestcrl_crlissuer"	,CRYPTCERT_PROP_FRESHESTCRL_CRLISSUER	,JSPROP_ENUMERATE	,316},
+	{"orderedlist"				,CRYPTCERT_PROP_ORDEREDLIST	,JSPROP_ENUMERATE	,316},
+	{"baseupdatetime"			,CRYPTCERT_PROP_BASEUPDATETIME	,JSPROP_ENUMERATE	,316},
+	{"deltainfo"				,CRYPTCERT_PROP_DELTAINFO	,JSPROP_ENUMERATE	,316},
+	{"deltainfo_location"	,CRYPTCERT_PROP_DELTAINFO_LOCATION	,JSPROP_ENUMERATE	,316},
+	{"deltainfo_nextdelta"	,CRYPTCERT_PROP_DELTAINFO_NEXTDELTA	,JSPROP_ENUMERATE	,316},
+	{"inhibitanypolicy"	,CRYPTCERT_PROP_INHIBITANYPOLICY	,JSPROP_ENUMERATE	,316},
+	{"toberevoked"	,CRYPTCERT_PROP_TOBEREVOKED	,JSPROP_ENUMERATE	,316},
+	{"toberevoked_certissuer"	,CRYPTCERT_PROP_TOBEREVOKED_CERTISSUER	,JSPROP_ENUMERATE	,316},
+	{"toberevoked_reasoncode"	,CRYPTCERT_PROP_TOBEREVOKED_REASONCODE	,JSPROP_ENUMERATE	,316},
+	{"toberevoked_revocationtime"	,CRYPTCERT_PROP_TOBEREVOKED_REVOCATIONTIME	,JSPROP_ENUMERATE	,316},
+	{"toberevoked_certserialnumber"	,CRYPTCERT_PROP_TOBEREVOKED_CERTSERIALNUMBER	,JSPROP_ENUMERATE	,316},
+	{"revokedgroups"	,CRYPTCERT_PROP_REVOKEDGROUPS	,JSPROP_ENUMERATE	,316},
+	{"revokedgroups_certissuer"	,CRYPTCERT_PROP_REVOKEDGROUPS_CERTISSUER	,JSPROP_ENUMERATE	,316},
+	{"revokedgroups_reasoncode"	,CRYPTCERT_PROP_REVOKEDGROUPS_REASONCODE	,JSPROP_ENUMERATE	,316},
+	{"revokedgroups_invaliditydate"	,CRYPTCERT_PROP_REVOKEDGROUPS_INVALIDITYDATE	,JSPROP_ENUMERATE	,316},
+	{"revokedgroups_startingnumber"	,CRYPTCERT_PROP_REVOKEDGROUPS_STARTINGNUMBER	,JSPROP_ENUMERATE	,316},
+	{"revokedgroups_endingnumber"	,CRYPTCERT_PROP_REVOKEDGROUPS_ENDINGNUMBER	,JSPROP_ENUMERATE	,316},
+	{"expiredcertsoncrl"	,CRYPTCERT_PROP_EXPIREDCERTSONCRL	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdistributionpoint"	,CRYPTCERT_PROP_AAISSUINGDISTRIBUTIONPOINT	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdist_fullname"	,CRYPTCERT_PROP_AAISSUINGDIST_FULLNAME	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdist_somereasonsonly"	,CRYPTCERT_PROP_AAISSUINGDIST_SOMEREASONSONLY	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdist_indirectcrl"	,CRYPTCERT_PROP_AAISSUINGDIST_INDIRECTCRL	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdist_userattrcerts"	,CRYPTCERT_PROP_AAISSUINGDIST_USERATTRCERTS	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdist_aacerts"	,CRYPTCERT_PROP_AAISSUINGDIST_AACERTS	,JSPROP_ENUMERATE	,316},
+	{"aaissuingdist_soacerts"	,CRYPTCERT_PROP_AAISSUINGDIST_SOACERTS	,JSPROP_ENUMERATE	,316},
+	{"ns_certtype"	,CRYPTCERT_PROP_NS_CERTTYPE	,JSPROP_ENUMERATE	,316},
+	{"ns_baseurl"	,CRYPTCERT_PROP_NS_BASEURL	,JSPROP_ENUMERATE	,316},
+	{"ns_revocationurl"	,CRYPTCERT_PROP_NS_REVOCATIONURL	,JSPROP_ENUMERATE	,316},
+	{"ns_carevocationurl"	,CRYPTCERT_PROP_NS_CAREVOCATIONURL	,JSPROP_ENUMERATE	,316},
+	{"ns_certrenewalurl"	,CRYPTCERT_PROP_NS_CERTRENEWALURL	,JSPROP_ENUMERATE	,316},
+	{"ns_capolicyurl"	,CRYPTCERT_PROP_NS_CAPOLICYURL	,JSPROP_ENUMERATE	,316},
+	{"ns_sslservername"	,CRYPTCERT_PROP_NS_SSLSERVERNAME	,JSPROP_ENUMERATE	,316},
+	{"ns_comment"	,CRYPTCERT_PROP_NS_COMMENT	,JSPROP_ENUMERATE	,316},
+	{"set_hashedrootkey"	,CRYPTCERT_PROP_SET_HASHEDROOTKEY	,JSPROP_ENUMERATE	,316},
+	{"set_rootkeythumbprint"	,CRYPTCERT_PROP_SET_ROOTKEYTHUMBPRINT	,JSPROP_ENUMERATE	,316},
+	{"set_certificatetype"	,CRYPTCERT_PROP_SET_CERTIFICATETYPE	,JSPROP_ENUMERATE	,316},
+	{"set_merchantdata"	,CRYPTCERT_PROP_SET_MERCHANTDATA	,JSPROP_ENUMERATE	,316},
+	{"set_merid"	,CRYPTCERT_PROP_SET_MERID	,JSPROP_ENUMERATE	,316},
+	{"set_meracquirerbin"	,CRYPTCERT_PROP_SET_MERACQUIRERBIN	,JSPROP_ENUMERATE	,316},
+	{"set_merchantlanguage"	,CRYPTCERT_PROP_SET_MERCHANTLANGUAGE	,JSPROP_ENUMERATE	,316},
+	{"set_merchantname"	,CRYPTCERT_PROP_SET_MERCHANTNAME	,JSPROP_ENUMERATE	,316},
+	{"set_merchantcity"	,CRYPTCERT_PROP_SET_MERCHANTCITY	,JSPROP_ENUMERATE	,316},
+	{"set_merchantstateprovince"	,CRYPTCERT_PROP_SET_MERCHANTSTATEPROVINCE	,JSPROP_ENUMERATE	,316},
+	{"set_merchantpostalcode"	,CRYPTCERT_PROP_SET_MERCHANTPOSTALCODE	,JSPROP_ENUMERATE	,316},
+	{"set_merchantcountryname"	,CRYPTCERT_PROP_SET_MERCHANTCOUNTRYNAME	,JSPROP_ENUMERATE	,316},
+	{"set_mercountry"	,CRYPTCERT_PROP_SET_MERCOUNTRY	,JSPROP_ENUMERATE	,316},
+	{"set_merauthflag"	,CRYPTCERT_PROP_SET_MERAUTHFLAG	,JSPROP_ENUMERATE	,316},
+	{"set_certcardrequired"	,CRYPTCERT_PROP_SET_CERTCARDREQUIRED	,JSPROP_ENUMERATE	,316},
+	{"set_tunneling"	,CRYPTCERT_PROP_SET_TUNNELING	,JSPROP_ENUMERATE	,316},
+	{"set_tunnelingflag"	,CRYPTCERT_PROP_SET_TUNNELINGFLAG	,JSPROP_ENUMERATE	,316},
+	{"set_tunnelingalgid"	,CRYPTCERT_PROP_SET_TUNNELINGALGID	,JSPROP_ENUMERATE	,316},
+	{"cms_contenttype"	,CRYPTCERT_PROP_CMS_CONTENTTYPE	,JSPROP_ENUMERATE	,316},
+	{"cms_messagedigest"	,CRYPTCERT_PROP_CMS_MESSAGEDIGEST	,JSPROP_ENUMERATE	,316},
+	{"cms_signingtime"	,CRYPTCERT_PROP_CMS_SIGNINGTIME	,JSPROP_ENUMERATE	,316},
+	{"cms_countersignature"	,CRYPTCERT_PROP_CMS_COUNTERSIGNATURE	,JSPROP_ENUMERATE	,316},
+	{"cms_signingdescription"	,CRYPTCERT_PROP_CMS_SIGNINGDESCRIPTION	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecapabilities"	,CRYPTCERT_PROP_CMS_SMIMECAPABILITIES	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_3des"	,CRYPTCERT_PROP_CMS_SMIMECAP_3DES	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_aes"	,CRYPTCERT_PROP_CMS_SMIMECAP_AES	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_cast128"	,CRYPTCERT_PROP_CMS_SMIMECAP_CAST128	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_SHAng	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_SHA2	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_SHA1	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_hmac_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_HMAC_SHAng	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_hmac_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_HMAC_SHA2	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_hmac_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_HMAC_SHA1	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_authenc256"	,CRYPTCERT_PROP_CMS_SMIMECAP_AUTHENC256	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_authenc128"	,CRYPTCERT_PROP_CMS_SMIMECAP_AUTHENC128	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_rsa_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHAng	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_rsa_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHA2	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_rsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHA1	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_dsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_DSA_SHA1	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_ecdsa_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHAng	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_ecdsa_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHA2	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_ecdsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHA1	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_prefersigneddata"	,CRYPTCERT_PROP_CMS_SMIMECAP_PREFERSIGNEDDATA	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_cannotdecryptany"	,CRYPTCERT_PROP_CMS_SMIMECAP_CANNOTDECRYPTANY	,JSPROP_ENUMERATE	,316},
+	{"cms_smimecap_preferbinaryinside"	,CRYPTCERT_PROP_CMS_SMIMECAP_PREFERBINARYINSIDE	,JSPROP_ENUMERATE	,316},
+	{"cms_receiptrequest"	,CRYPTCERT_PROP_CMS_RECEIPTREQUEST	,JSPROP_ENUMERATE	,316},
+	{"cms_receipt_contentidentifier"	,CRYPTCERT_PROP_CMS_RECEIPT_CONTENTIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"cms_receipt_from"	,CRYPTCERT_PROP_CMS_RECEIPT_FROM	,JSPROP_ENUMERATE	,316},
+	{"cms_receipt_to"	,CRYPTCERT_PROP_CMS_RECEIPT_TO	,JSPROP_ENUMERATE	,316},
+	{"cms_securitylabel"	,CRYPTCERT_PROP_CMS_SECURITYLABEL	,JSPROP_ENUMERATE	,316},
+	{"cms_seclabel_policy"	,CRYPTCERT_PROP_CMS_SECLABEL_POLICY	,JSPROP_ENUMERATE	,316},
+	{"cms_seclabel_classification"	,CRYPTCERT_PROP_CMS_SECLABEL_CLASSIFICATION	,JSPROP_ENUMERATE	,316},
+	{"cms_seclabel_privacymark"	,CRYPTCERT_PROP_CMS_SECLABEL_PRIVACYMARK	,JSPROP_ENUMERATE	,316},
+	{"cms_seclabel_cattype"	,CRYPTCERT_PROP_CMS_SECLABEL_CATTYPE	,JSPROP_ENUMERATE	,316},
+	{"cms_seclabel_catvalue"	,CRYPTCERT_PROP_CMS_SECLABEL_CATVALUE	,JSPROP_ENUMERATE	,316},
+	{"cms_mlexpansionhistory"	,CRYPTCERT_PROP_CMS_MLEXPANSIONHISTORY	,JSPROP_ENUMERATE	,316},
+	{"cms_mlexp_entityidentifier"	,CRYPTCERT_PROP_CMS_MLEXP_ENTITYIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"cms_mlexp_time"	,CRYPTCERT_PROP_CMS_MLEXP_TIME	,JSPROP_ENUMERATE	,316},
+	{"cms_mlexp_none"	,CRYPTCERT_PROP_CMS_MLEXP_NONE	,JSPROP_ENUMERATE	,316},
+	{"cms_mlexp_insteadof"	,CRYPTCERT_PROP_CMS_MLEXP_INSTEADOF	,JSPROP_ENUMERATE	,316},
+	{"cms_mlexp_inadditionto"	,CRYPTCERT_PROP_CMS_MLEXP_INADDITIONTO	,JSPROP_ENUMERATE	,316},
+	{"cms_contenthints"	,CRYPTCERT_PROP_CMS_CONTENTHINTS	,JSPROP_ENUMERATE	,316},
+	{"cms_contenthint_description"	,CRYPTCERT_PROP_CMS_CONTENTHINT_DESCRIPTION	,JSPROP_ENUMERATE	,316},
+	{"cms_contenthint_type"	,CRYPTCERT_PROP_CMS_CONTENTHINT_TYPE	,JSPROP_ENUMERATE	,316},
+	{"cms_equivalentlabel"	,CRYPTCERT_PROP_CMS_EQUIVALENTLABEL	,JSPROP_ENUMERATE	,316},
+	{"cms_eqvlabel_policy"	,CRYPTCERT_PROP_CMS_EQVLABEL_POLICY	,JSPROP_ENUMERATE	,316},
+	{"cms_eqvlabel_classification"	,CRYPTCERT_PROP_CMS_EQVLABEL_CLASSIFICATION	,JSPROP_ENUMERATE	,316},
+	{"cms_eqvlabel_privacymark"	,CRYPTCERT_PROP_CMS_EQVLABEL_PRIVACYMARK	,JSPROP_ENUMERATE	,316},
+	{"cms_eqvlabel_cattype"	,CRYPTCERT_PROP_CMS_EQVLABEL_CATTYPE	,JSPROP_ENUMERATE	,316},
+	{"cms_eqvlabel_catvalue"	,CRYPTCERT_PROP_CMS_EQVLABEL_CATVALUE	,JSPROP_ENUMERATE	,316},
+	{"cms_signingcertificate"	,CRYPTCERT_PROP_CMS_SIGNINGCERTIFICATE	,JSPROP_ENUMERATE	,316},
+	{"cms_signingcert_esscertid"	,CRYPTCERT_PROP_CMS_SIGNINGCERT_ESSCERTID	,JSPROP_ENUMERATE	,316},
+	{"cms_signingcert_policies"	,CRYPTCERT_PROP_CMS_SIGNINGCERT_POLICIES	,JSPROP_ENUMERATE	,316},
+	{"cms_signingcertificatev2"	,CRYPTCERT_PROP_CMS_SIGNINGCERTIFICATEV2	,JSPROP_ENUMERATE	,316},
+	{"cms_signingcertv2_esscertidv2"	,CRYPTCERT_PROP_CMS_SIGNINGCERTV2_ESSCERTIDV2	,JSPROP_ENUMERATE	,316},
+	{"cms_signingcertv2_policies"	,CRYPTCERT_PROP_CMS_SIGNINGCERTV2_POLICIES	,JSPROP_ENUMERATE	,316},
+	{"cms_signaturepolicyid"	,CRYPTCERT_PROP_CMS_SIGNATUREPOLICYID	,JSPROP_ENUMERATE	,316},
+	{"cms_sigpolicyid"	,CRYPTCERT_PROP_CMS_SIGPOLICYID	,JSPROP_ENUMERATE	,316},
+	{"cms_sigpolicyhash"	,CRYPTCERT_PROP_CMS_SIGPOLICYHASH	,JSPROP_ENUMERATE	,316},
+	{"cms_sigpolicy_cpsuri"	,CRYPTCERT_PROP_CMS_SIGPOLICY_CPSURI	,JSPROP_ENUMERATE	,316},
+	{"cms_sigpolicy_organization"	,CRYPTCERT_PROP_CMS_SIGPOLICY_ORGANIZATION	,JSPROP_ENUMERATE	,316},
+	{"cms_sigpolicy_noticenumbers"	,CRYPTCERT_PROP_CMS_SIGPOLICY_NOTICENUMBERS	,JSPROP_ENUMERATE	,316},
+	{"cms_sigpolicy_explicittext"	,CRYPTCERT_PROP_CMS_SIGPOLICY_EXPLICITTEXT	,JSPROP_ENUMERATE	,316},
+	{"cms_sigtypeidentifier"	,CRYPTCERT_PROP_CMS_SIGTYPEIDENTIFIER	,JSPROP_ENUMERATE	,316},
+	{"cms_sigtypeid_originatorsig"	,CRYPTCERT_PROP_CMS_SIGTYPEID_ORIGINATORSIG	,JSPROP_ENUMERATE	,316},
+	{"cms_sigtypeid_domainsig"	,CRYPTCERT_PROP_CMS_SIGTYPEID_DOMAINSIG	,JSPROP_ENUMERATE	,316},
+	{"cms_sigtypeid_additionalattributes"	,CRYPTCERT_PROP_CMS_SIGTYPEID_ADDITIONALATTRIBUTES	,JSPROP_ENUMERATE	,316},
+	{"cms_sigtypeid_reviewsig"	,CRYPTCERT_PROP_CMS_SIGTYPEID_REVIEWSIG	,JSPROP_ENUMERATE	,316},
+	{"cms_nonce"	,CRYPTCERT_PROP_CMS_NONCE	,JSPROP_ENUMERATE	,316},
+	{"scep_messagetype"	,CRYPTCERT_PROP_SCEP_MESSAGETYPE	,JSPROP_ENUMERATE	,316},
+	{"scep_pkistatus"	,CRYPTCERT_PROP_SCEP_PKISTATUS	,JSPROP_ENUMERATE	,316},
+	{"scep_failinfo"	,CRYPTCERT_PROP_SCEP_FAILINFO	,JSPROP_ENUMERATE	,316},
+	{"scep_sendernonce"	,CRYPTCERT_PROP_SCEP_SENDERNONCE	,JSPROP_ENUMERATE	,316},
+	{"scep_recipientnonce"	,CRYPTCERT_PROP_SCEP_RECIPIENTNONCE	,JSPROP_ENUMERATE	,316},
+	{"scep_transactionid"	,CRYPTCERT_PROP_SCEP_TRANSACTIONID	,JSPROP_ENUMERATE	,316},
+	{"cms_spcagencyinfo"	,CRYPTCERT_PROP_CMS_SPCAGENCYINFO	,JSPROP_ENUMERATE	,316},
+	{"cms_spcagencyurl"	,CRYPTCERT_PROP_CMS_SPCAGENCYURL	,JSPROP_ENUMERATE	,316},
+	{"cms_spcstatementtype"	,CRYPTCERT_PROP_CMS_SPCSTATEMENTTYPE	,JSPROP_ENUMERATE	,316},
+	{"cms_spcstmt_individualcodesigning"	,CRYPTCERT_PROP_CMS_SPCSTMT_INDIVIDUALCODESIGNING	,JSPROP_ENUMERATE	,316},
+	{"cms_spcstmt_commercialcodesigning"	,CRYPTCERT_PROP_CMS_SPCSTMT_COMMERCIALCODESIGNING	,JSPROP_ENUMERATE	,316},
+	{"cms_spcopusinfo"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO	,JSPROP_ENUMERATE	,316},
+	{"cms_spcopusinfo_name"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO_NAME	,JSPROP_ENUMERATE	,316},
+	{"cms_spcopusinfo_url"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO_URL	,JSPROP_ENUMERATE	,316},
+	{0}
+};
+
+static jsSyncMethodSpec js_cryptcert_functions[] = {
+	{"add_extension", js_add_extension, 0, JSTYPE_VOID, "oid, critical, extension"
+	,JSDOCSTR("Adds a DER encoded certificate extension.")
+	,316
+	},
+	{"check",	js_check,	0,	JSTYPE_BOOLEAN,	""
+	,JSDOCSTR("Checks the certificate for validity.")
+	,316
+	},
+	{"destroy",	js_destroy,	0,	JSTYPE_VOID,	""
+	,JSDOCSTR("Destroys the certificate.")
+	,316
+	},
+	{"export_cert",	js_export,	0,	JSTYPE_STRING,	"format"
+	,JSDOCSTR("Exports the certificate in the format chosen from CryptCert.CERTFORMAT.")
+	,316
+	},
+	{"get_attribute", js_get_attribute,	0,	JSTYPE_VOID,	"attr, value"
+	,JSDOCSTR("Sets the specified attribute to the specified value")
+	,316
+	},
+	{"get_attribute_string", js_get_attribute_string,	0,	JSTYPE_VOID,	"attr, value"
+	,JSDOCSTR("Sets the specified attribute to the specified value")
+	,316
+	},
+	{"get_attribute_time", js_get_attribute_time,	0,	JSTYPE_VOID,	"attr, value"
+	,JSDOCSTR("Sets the specified attribute to the specified value")
+	,316
+	},
+	{"set_attribute", js_set_attribute,	0,	JSTYPE_VOID,	"attr, value"
+	,JSDOCSTR("Sets the specified attribute to the specified value")
+	,316
+	},
+	{"set_attribute_string", js_set_attribute_string,	0,	JSTYPE_VOID,	"attr, value"
+	,JSDOCSTR("Sets the specified attribute to the specified value")
+	,316
+	},
+	{"set_attribute_time", js_set_attribute_time,	0,	JSTYPE_VOID,	"attr, value"
+	,JSDOCSTR("Sets the specified attribute to the specified value")
+	,316
+	},
+	{"sign",	js_sign,	0,	JSTYPE_VOID,	"key"
+	,JSDOCSTR("Signs the certificate with the specified CryptContext")
+	,316
+	},
+	{0}
+};
+
 static JSBool
 js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
@@ -1193,7 +1566,23 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 
 	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	if (JSVAL_IS_INT(idval))
+		tiny = JSVAL_TO_INT(idval);
+	else {
+		size_t i;
+		char *name;
+
+		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
+		HANDLE_PENDING(cx, name);
+		for (i = 0; js_cryptcert_properties[i].name; i++) {
+			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
+				tiny = js_cryptcert_properties[i].tinyid;
+				break;
+			}
+		}
+		if (!js_cryptcert_properties[i].name)
+			return JS_TRUE;
+	}
 
 	switch (tiny) {
 		case CRYPTCERT_PROP_SELFSIGNED:
@@ -1955,7 +2344,23 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 	}
 
 	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
+	if (JSVAL_IS_INT(idval))
+		tiny = JSVAL_TO_INT(idval);
+	else {
+		size_t i;
+		char *name;
+
+		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
+		HANDLE_PENDING(cx, name);
+		for (i = 0; js_cryptcert_properties[i].name; i++) {
+			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
+				tiny = js_cryptcert_properties[i].tinyid;
+				break;
+			}
+		}
+		if (!js_cryptcert_properties[i].name)
+			return JS_TRUE;
+	}
 
 	switch (tiny) {
 		case CRYPTCERT_PROP_SELFSIGNED:
@@ -2604,388 +3009,417 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 
 #ifdef BUILD_JSDOCS
 static char* cryptcert_prop_desc[] = {
-	 "Keyopt constant (CryptCert.KEYOPT.XXX):<ul class=\"showList\">\n"
-	 "<li>CryptCert.KEYOPT.NONE</li>\n"
-	 "<li>CryptCert.KEYOPT.READONLY</li>\n"
-	 "<li>CryptCert.KEYOPT.CREATE</li>\n"
+	"Cert is self-signed",
+	"Cert is signed and immutable",
+	"Cert is a magic just-works cert",
+	"Certificate object type",
+	"Certificate SHA1 fingerprint",
+	"Certificate SHA2 fingerprint",
+	"Certificate SHA fingerprint",
+	"Cursor mgt: Rel.pos in chain/CRL/OCSP",
+	"Usage that cert is trusted for",
+	"Whether cert is implicitly trusted",
+	"Amount of detail to include in sigs",
+
+	/* General certificate object information */
+	"Cert.format version",
+	"Serial number",
+	"Public key",
+	"User certificate",
+	"CA certificate",
+	"Issuer DN",
+	"Cert valid-from time",
+	"Cert valid-to time",
+	"Subject DN",
+	"Issuer unique ID",
+	"Subject unique ID",
+	"Cert.request (DN + public key)",
+	"CRL/OCSP current-update time",
+	"CRL/OCSP next-update time",
+	"CRL/OCSP cert-revocation time",
+	"OCSP revocation status",
+	"RTCS certificate status",
+	"Currently selected DN in string form",
+	"PKI user ID",
+	"PKI user issue password",
+	"PKI user revocation password",
+	"PKI user is an RA",
+
+	/* X.520 Distinguished Name components.  This is a composite field, the
+	   DN to be manipulated is selected through the addition of a
+	   pseudocomponent, and then one of the following is used to access the
+	   DN components directly */
+	"countryName",
+	"stateOrProvinceName",
+	"localityName",
+	"organizationName",
+	"organizationalUnitName",
+	"commonName",
+
+	/* X.509 General Name components.  These are handled in the same way as
+	   the DN composite field, with the current GeneralName being selected by
+	   a pseudo-component after which the individual components can be
+	   modified through one of the following */
+	"otherName.typeID",
+	"otherName.value",
+	"rfc822Name",
+	"dNSName",
+#if 0	/* Not supported, these are never used in practice and have an
+		   insane internal structure */
+	"x400Address",
+#endif /* 0 */
+	"directoryName",
+	"ediPartyName.nameAssigner",
+	"ediPartyName.partyName",
+	"uniformResourceIdentifier",
+	"iPAddress",
+	"registeredID",
+
+	/* X.509 certificate extensions.  Although it would be nicer to use names
+	   that match the extensions more closely (e.g.
+	   CRYPTCERT_PROP_BASICCONSTRAINTS_PATHLENCONSTRAINT), these exceed the
+	   32-character ANSI minimum length for unique names, and get really
+	   hairy once you get into the weird policy constraints extensions whose
+	   names wrap around the screen about three times.
+
+	   The following values are defined in OID order, this isn't absolutely
+	   necessary but saves an extra layer of processing when encoding them */
+
+	"1 2 840 113549 1 9 7 challengePassword.  This is here even though it's a CMS attribute because SCEP stuffs it into PKCS #10 requests",
+	"1 3 6 1 4 1 3029 3 1 4 cRLExtReason",
+	"1 3 6 1 4 1 3029 3 1 5 keyFeatures",
+	"1 3 6 1 5 5 7 1 1 authorityInfoAccess",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+
+	"1 3 6 1 5 5 7 1 2 biometricInfo",
+	"biometricData.typeOfData",
+	"biometricData.hashAlgorithm",
+	"biometricData.dataHash",
+	"biometricData.sourceDataUri",
+
+	"1 3 6 1 5 5 7 1 3 qcStatements",
+	"qcStatement.statementInfo.semanticsIdentifier",
+	"qcStatement.statementInfo.nameRegistrationAuthorities",
+
+	"1 3 6 1 5 5 7 1 7 ipAddrBlocks",
+	"addressFamily",
+/*	CRYPTCERT_PROP_IPADDRESSBLOCKS_INHERIT,	// ipAddress.inherit */
+	"ipAddress.addressPrefix",
+	"ipAddress.addressRangeMin",
+	"ipAddress.addressRangeMax",
+
+	"1 3 6 1 5 5 7 1 8 autonomousSysIds",
+/*	"asNum.inherit", */
+	"asNum.id",
+	"asNum.min",
+	"asNum.max",
+
+	/* 1 3 6 1 5 5 7 48 1 2 ocspNonce */
+	"nonce",
+
+	"1 3 6 1 5 5 7 48 1 4 ocspAcceptableResponses",
+	"OCSP standard response",
+
+	"1 3 6 1 5 5 7 48 1 5 ocspNoCheck",
+	"1 3 6 1 5 5 7 48 1 6 ocspArchiveCutoff",
+	"1 3 6 1 5 5 7 48 1 11 subjectInfoAccess",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+	"accessDescription.accessLocation",
+
+	"1 3 36 8 3 1 siggDateOfCertGen",
+	"1 3 36 8 3 2 siggProcuration",
+	"country",
+	"typeOfSubstitution",
+	"signingFor.thirdPerson",
+
+	"1 3 36 8 3 3 siggAdmissions",
+	"authority",
+	"namingAuth.iD",
+	"namingAuth.uRL",
+	"namingAuth.text",
+	"professionItem",
+	"professionOID",
+	"registrationNumber",
+
+	"1 3 36 8 3 4 siggMonetaryLimit",
+	"currency",
+	"amount",
+	"exponent",
+
+	"1 3 36 8 3 5 siggDeclarationOfMajority",
+	"fullAgeAtCountry",
+
+	"1 3 36 8 3 8 siggRestriction",
+	"1 3 36 8 3 13 siggCertHash",
+	"1 3 36 8 3 15 siggAdditionalInformation",
+	"1 3 101 1 4 1 strongExtranet",
+	"sxNetIDList.sxNetID.zone",
+	"sxNetIDList.sxNetID.id",
+
+	"2 5 29 9 subjectDirectoryAttributes",
+	"attribute.type",
+	"attribute.values",
+
+	"2 5 29 14 subjectKeyIdentifier",
+	"2 5 29 15 keyUsage",
+	"2 5 29 16 privateKeyUsagePeriod",
+	"notBefore",
+	"notAfter",
+
+	"2 5 29 17 subjectAltName",
+	"2 5 29 18 issuerAltName",
+	"2 5 29 19 basicConstraints",
+	"cA",
+	"pathLenConstraint",
+
+	"2 5 29 20 cRLNumber",
+	"2 5 29 21 cRLReason",
+	"2 5 29 23 holdInstructionCode",
+	"2 5 29 24 invalidityDate",
+	"2 5 29 27 deltaCRLIndicator",
+	"2 5 29 28 issuingDistributionPoint",
+	"distributionPointName.fullName",
+	"onlyContainsUserCerts",
+	"onlyContainsCACerts",
+	"onlySomeReasons",
+	"indirectCRL",
+
+	"2 5 29 29 certificateIssuer",
+	"2 5 29 30 nameConstraints",
+	"permittedSubtrees",
+	"excludedSubtrees",
+
+	"2 5 29 31 cRLDistributionPoint",
+	"distributionPointName.fullName",
+	"reasons",
+	"cRLIssuer",
+
+	"2 5 29 32 certificatePolicies",
+	"policyInformation.policyIdentifier",
+	"policyInformation.policyQualifiers.qualifier.cPSuri",
+	"policyInformation.policyQualifiers.qualifier.userNotice.noticeRef.organization",
+	"policyInformation.policyQualifiers.qualifier.userNotice.noticeRef.noticeNumbers",
+	"policyInformation.policyQualifiers.qualifier.userNotice.explicitText",
+
+	"2 5 29 33 policyMappings",
+	"policyMappings.issuerDomainPolicy",
+	"policyMappings.subjectDomainPolicy",
+
+	"2 5 29 35 authorityKeyIdentifier",
+	"keyIdentifier",
+	"authorityCertIssuer",
+	"authorityCertSerialNumber",
+
+	"2 5 29 36 policyConstraints",
+	"policyConstraints.requireExplicitPolicy",
+	"policyConstraints.inhibitPolicyMapping",
+
+	"2 5 29 37 extKeyUsage",
+	"individualCodeSigning",
+	"commercialCodeSigning",
+	"certTrustListSigning",
+	"timeStampSigning",
+	"serverGatedCrypto",
+	"encrypedFileSystem",
+	"serverAuth",
+	"clientAuth",
+	"codeSigning",
+	"emailProtection",
+	"ipsecEndSystem",
+	"ipsecTunnel",
+	"ipsecUser",
+	"timeStamping",
+	"ocspSigning",
+	"directoryService",
+	"anyExtendedKeyUsage",
+	"serverGatedCrypto",
+	"serverGatedCrypto CA",
+
+	"2 5 29 40 crlStreamIdentifier",
+	"2 5 29 46 freshestCRL",
+	"distributionPointName.fullName",
+	"reasons",
+	"cRLIssuer",
+
+	"2 5 29 47 orderedList",
+	"2 5 29 51 baseUpdateTime",
+	"2 5 29 53 deltaInfo",
+	"deltaLocation",
+	"nextDelta",
+
+	"2 5 29 54 inhibitAnyPolicy",
+	"2 5 29 58 toBeRevoked",
+	"certificateIssuer",
+	"reasonCode",
+	"revocationTime",
+	"certSerialNumber",
+
+	"2 5 29 59 revokedGroups",
+	"certificateIssuer",
+	"reasonCode",
+	"invalidityDate",
+	"startingNumber",
+	"endingNumber",
+
+	"2 5 29 60 expiredCertsOnCRL",
+	"2 5 29 63 aaIssuingDistributionPoint",
+	"distributionPointName.fullName",
+	"onlySomeReasons",
+	"indirectCRL",
+	"containsUserAttributeCerts",
+	"containsAACerts",
+	"containsSOAPublicKeyCerts",
+
+	"netscape-cert-type",
+	"netscape-base-url",
+	"netscape-revocation-url",
+	"netscape-ca-revocation-url",
+	"netscape-cert-renewal-url",
+	"netscape-ca-policy-url",
+	"netscape-ssl-server-name",
+	"netscape-comment",
+
+	"2 23 42 7 0 SET hashedRootKey",
+	"rootKeyThumbPrint",
+
+	"2 23 42 7 1 SET certificateType",
+	"2 23 42 7 2 SET merchantData",
+	"merID",
+	"merAcquirerBIN",
+	"merNames.language",
+	"merNames.name",
+	"merNames.city",
+	"merNames.stateProvince",
+	"merNames.postalCode",
+	"merNames.countryName",
+	"merCountry",
+	"merAuthFlag",
+
+	"2 23 42 7 3 SET certCardRequired",
+	"2 23 42 7 4 SET tunneling",
+	"tunneling",
+	"tunnelingAlgID",
+
+	/* S/MIME attributes */
+
+	"1 2 840 113549 1 9 3 contentType",
+	"1 2 840 113549 1 9 4 messageDigest",
+	"1 2 840 113549 1 9 5 signingTime",
+	"counterSignature",
+
+	"1 2 840 113549 1 9 13 signingDescription",
+	"1 2 840 113549 1 9 15 sMIMECapabilities",
+	"3DES encryption",
+	"AES encryption",
+	"CAST-128 encryption",
+	"SHA2-ng hash",
+	"SHA2-256 hash",
+	"SHA1 hash",
+	"HMAC-SHA2-ng MAC",
+	"HMAC-SHA2-256 MAC",
+	"HMAC-SHA1 MAC",
+	"AuthEnc w.256-bit key",
+	"AuthEnc w.128-bit key",
+	"RSA with SHA-ng signing",
+	"RSA with SHA2-256 signing",
+	"RSA with SHA1 signing",
+	"DSA with SHA-1 signing",
+	"ECDSA with SHA-ng signing",
+	"ECDSA with SHA2-256 signing",
+	"ECDSA with SHA-1 signing",
+	"preferSignedData",
+	"canNotDecryptAny",
+	"preferBinaryInside",
+
+	"1 2 840 113549 1 9 16 2 1 receiptRequest",
+	"contentIdentifier",
+	"receiptsFrom",
+	"receiptsTo",
+
+	"1 2 840 113549 1 9 16 2 2 essSecurityLabel",
+	"securityPolicyIdentifier",
+	"securityClassification",
+	"privacyMark",
+	"securityCategories.securityCategory.type",
+	"securityCategories.securityCategory.value",
+
+	"1 2 840 113549 1 9 16 2 3 mlExpansionHistory",
+	"mlData.mailListIdentifier.issuerAndSerialNumber",
+	"mlData.expansionTime",
+	"mlData.mlReceiptPolicy.none",
+	"mlData.mlReceiptPolicy.insteadOf.generalNames.generalName",
+	"mlData.mlReceiptPolicy.inAdditionTo.generalNames.generalName",
+
+	"1 2 840 113549 1 9 16 2 4 contentHints",
+	"contentDescription",
+	"contentType",
+
+	"1 2 840 113549 1 9 16 2 9 equivalentLabels",
+	"securityPolicyIdentifier",
+	"securityClassification",
+	"privacyMark",
+	"securityCategories.securityCategory.type",
+	"securityCategories.securityCategory.value",
+
+	"1 2 840 113549 1 9 16 2 12 signingCertificate",
+	"certs.essCertID",
+	"policies.policyInformation.policyIdentifier",
+
+	"1 2 840 113549 1 9 16 2 47 signingCertificateV2",
+	"certs.essCertID",
+	"policies.policyInformation.policyIdentifier",
+
+	"1 2 840 113549 1 9 16 2 15 signaturePolicyID",
+	"sigPolicyID",
+	"sigPolicyHash",
+	"sigPolicyQualifiers.sigPolicyQualifier.cPSuri",
+	"sigPolicyQualifiers.sigPolicyQualifier.userNotice.noticeRef.organization",
+	"sigPolicyQualifiers.sigPolicyQualifier.userNotice.noticeRef.noticeNumbers",
+	"sigPolicyQualifiers.sigPolicyQualifier.userNotice.explicitText",
+
+	"1 2 840 113549 1 9 16 9 signatureTypeIdentifier",
+	"originatorSig",
+	"domainSig",
+	"additionalAttributesSig",
+	"reviewSig",
+
+	"randomNonce",
+
+	/* SCEP attributes:
+	   2 16 840 1 113733 1 9 2 messageType
+	   2 16 840 1 113733 1 9 3 pkiStatus
+	   2 16 840 1 113733 1 9 4 failInfo
+	   2 16 840 1 113733 1 9 5 senderNonce
+	   2 16 840 1 113733 1 9 6 recipientNonce
+	   2 16 840 1 113733 1 9 7 transID */
+	"messageType",
+	"pkiStatus",
+	"failInfo",
+	"senderNonce",
+	"recipientNonce",
+	"transID",
+
+	"1 3 6 1 4 1 311 2 1 10 spcAgencyInfo",
+	"spcAgencyInfo.url",
+
+	"1 3 6 1 4 1 311 2 1 11 spcStatementType",
+	"individualCodeSigning",
+	"commercialCodeSigning",
+
+	"1 3 6 1 4 1 311 2 1 12 spcOpusInfo",
+	"spcOpusInfo.name",
+	"spcOpusInfo.url"
+
 	,NULL
 };
 #endif
-
-static jsSyncPropertySpec js_cryptcert_properties[] = {
-/*	name						,tinyid									,flags,				ver	*/
-	{"selfsigned"				,CRYPTCERT_PROP_SELFSIGNED	,JSPROP_ENUMERATE	,316},
-	{"immutable"				,CRYPTCERT_PROP_IMMUTABLE	,JSPROP_ENUMERATE	,316},
-	{"xyzzy"					,CRYPTCERT_PROP_XYZZY	,JSPROP_ENUMERATE	,316},
-	{"certtype"					,CRYPTCERT_PROP_CERTTYPE	,JSPROP_ENUMERATE	,316},
-	{"fingerprint_sha1"			,CRYPTCERT_PROP_FINGERPRINT_SHA1	,JSPROP_ENUMERATE	,316},
-	{"fingerprint_sha2"			,CRYPTCERT_PROP_FINGERPRINT_SHA2	,JSPROP_ENUMERATE	,316},
-	{"fingerprint_shang"		,CRYPTCERT_PROP_FINGERPRINT_SHAng	,JSPROP_ENUMERATE	,316},
-	{"current_certificate"		,CRYPTCERT_PROP_CURRENT_CERTIFICATE	,JSPROP_ENUMERATE	,316},
-	{"trusted_usage"			,CRYPTCERT_PROP_TRUSTED_USAGE	,JSPROP_ENUMERATE	,316},
-	{"trusted_implicit"			,CRYPTCERT_PROP_TRUSTED_IMPLICIT	,JSPROP_ENUMERATE	,316},
-	{"signaturelevel"			,CRYPTCERT_PROP_SIGNATURELEVEL	,JSPROP_ENUMERATE	,316},
-	{"version"					,CRYPTCERT_PROP_VERSION	,JSPROP_ENUMERATE	,316},
-	{"serialnumber"				,CRYPTCERT_PROP_SERIALNUMBER	,JSPROP_ENUMERATE	,316},
-	{"subjectpublickeyinfo"		,CRYPTCERT_PROP_SUBJECTPUBLICKEYINFO	,JSPROP_ENUMERATE	,316},
-	{"certificate"				,CRYPTCERT_PROP_CERTIFICATE	,JSPROP_ENUMERATE	,316},
-	{"cacertificate"			,CRYPTCERT_PROP_CACERTIFICATE	,JSPROP_ENUMERATE	,316},
-	{"issuername"				,CRYPTCERT_PROP_ISSUERNAME	,JSPROP_ENUMERATE	,316},
-	{"validfrom"				,CRYPTCERT_PROP_VALIDFROM	,JSPROP_ENUMERATE	,316},
-	{"validto"					,CRYPTCERT_PROP_VALIDTO	,JSPROP_ENUMERATE	,316},
-	{"subjectname"				,CRYPTCERT_PROP_SUBJECTNAME	,JSPROP_ENUMERATE	,316},
-	{"issueruniqueid"			,CRYPTCERT_PROP_ISSUERUNIQUEID	,JSPROP_ENUMERATE	,316},
-	{"subjectuniqueid"			,CRYPTCERT_PROP_SUBJECTUNIQUEID	,JSPROP_ENUMERATE	,316},
-	{"certrequest"				,CRYPTCERT_PROP_CERTREQUEST	,JSPROP_ENUMERATE	,316},
-	{"thisupdate"				,CRYPTCERT_PROP_THISUPDATE	,JSPROP_ENUMERATE	,316},
-	{"nextupdate"				,CRYPTCERT_PROP_NEXTUPDATE	,JSPROP_ENUMERATE	,316},
-	{"revocationdate"			,CRYPTCERT_PROP_REVOCATIONDATE	,JSPROP_ENUMERATE	,316},
-	{"revocationstatus"			,CRYPTCERT_PROP_REVOCATIONSTATUS	,JSPROP_ENUMERATE	,316},
-	{"certstatus"				,CRYPTCERT_PROP_CERTSTATUS	,JSPROP_ENUMERATE	,316},
-	{"dn"						,CRYPTCERT_PROP_DN	,JSPROP_ENUMERATE	,316},
-	{"pkiuser_id"				,CRYPTCERT_PROP_PKIUSER_ID	,JSPROP_ENUMERATE	,316},
-	{"pkiuser_issuepassword"	,CRYPTCERT_PROP_PKIUSER_ISSUEPASSWORD	,JSPROP_ENUMERATE	,316},
-	{"pkiuser_revpassword"		,CRYPTCERT_PROP_PKIUSER_REVPASSWORD	,JSPROP_ENUMERATE	,316},
-	{"pkiuser_ra"				,CRYPTCERT_PROP_PKIUSER_RA	,JSPROP_ENUMERATE	,316},
-	{"countryname"				,CRYPTCERT_PROP_COUNTRYNAME	,JSPROP_ENUMERATE	,316},
-	{"stateorprovincename"		,CRYPTCERT_PROP_STATEORPROVINCENAME	,JSPROP_ENUMERATE	,316},
-	{"localityname"				,CRYPTCERT_PROP_LOCALITYNAME	,JSPROP_ENUMERATE	,316},
-	{"organizationname"			,CRYPTCERT_PROP_ORGANIZATIONNAME	,JSPROP_ENUMERATE	,316},
-	{"organizationalunitname"	,CRYPTCERT_PROP_ORGANIZATIONALUNITNAME	,JSPROP_ENUMERATE	,316},
-	{"commonname"				,CRYPTCERT_PROP_COMMONNAME	,JSPROP_ENUMERATE	,316},
-	{"othername_typeid"			,CRYPTCERT_PROP_OTHERNAME_TYPEID	,JSPROP_ENUMERATE	,316},
-	{"othername_value"			,CRYPTCERT_PROP_OTHERNAME_VALUE	,JSPROP_ENUMERATE	,316},
-	{"rfc822name"				,CRYPTCERT_PROP_RFC822NAME	,JSPROP_ENUMERATE	,316},
-	{"dnsname"					,CRYPTCERT_PROP_DNSNAME	,JSPROP_ENUMERATE	,316},
-	{"directoryname"			,CRYPTCERT_PROP_DIRECTORYNAME	,JSPROP_ENUMERATE	,316},
-	{"edipartyname_nameassigner",CRYPTCERT_PROP_EDIPARTYNAME_NAMEASSIGNER	,JSPROP_ENUMERATE	,316},
-	{"edipartyname_partyname"	,CRYPTCERT_PROP_EDIPARTYNAME_PARTYNAME	,JSPROP_ENUMERATE	,316},
-	{"uniformresourceidentifier",CRYPTCERT_PROP_UNIFORMRESOURCEIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"ipaddress"				,CRYPTCERT_PROP_IPADDRESS	,JSPROP_ENUMERATE	,316},
-	{"registeredid"				,CRYPTCERT_PROP_REGISTEREDID	,JSPROP_ENUMERATE	,316},
-	{"challengepassword"		,CRYPTCERT_PROP_CHALLENGEPASSWORD	,JSPROP_ENUMERATE	,316},
-	{"crlextreason"				,CRYPTCERT_PROP_CRLEXTREASON	,JSPROP_ENUMERATE	,316},
-	{"keyfeatures"				,CRYPTCERT_PROP_KEYFEATURES	,JSPROP_ENUMERATE	,316},
-	{"authorityinfoaccess"		,CRYPTCERT_PROP_AUTHORITYINFOACCESS	,JSPROP_ENUMERATE	,316},
-	{"authorityinfo_rtcs"		,CRYPTCERT_PROP_AUTHORITYINFO_RTCS	,JSPROP_ENUMERATE	,316},
-	{"authorityinfo_ocsp"		,CRYPTCERT_PROP_AUTHORITYINFO_OCSP	,JSPROP_ENUMERATE	,316},
-	{"authorityinfo_caissuers"	,CRYPTCERT_PROP_AUTHORITYINFO_CAISSUERS	,JSPROP_ENUMERATE	,316},
-	{"authorityinfo_certstore"	,CRYPTCERT_PROP_AUTHORITYINFO_CERTSTORE	,JSPROP_ENUMERATE	,316},
-	{"authorityinfo_crls"		,CRYPTCERT_PROP_AUTHORITYINFO_CRLS	,JSPROP_ENUMERATE	,316},
-	{"biometricinfo"			,CRYPTCERT_PROP_BIOMETRICINFO	,JSPROP_ENUMERATE	,316},
-	{"biometricinfo_type"		,CRYPTCERT_PROP_BIOMETRICINFO_TYPE	,JSPROP_ENUMERATE	,316},
-	{"biometricinfo_hashalgo"	,CRYPTCERT_PROP_BIOMETRICINFO_HASHALGO	,JSPROP_ENUMERATE	,316},
-	{"biometricinfo_hash"		,CRYPTCERT_PROP_BIOMETRICINFO_HASH	,JSPROP_ENUMERATE	,316},
-	{"biometricinfo_url"		,CRYPTCERT_PROP_BIOMETRICINFO_URL	,JSPROP_ENUMERATE	,316},
-	{"qcstatement"				,CRYPTCERT_PROP_QCSTATEMENT	,JSPROP_ENUMERATE	,316},
-	{"qcstatement_semantics"	,CRYPTCERT_PROP_QCSTATEMENT_SEMANTICS	,JSPROP_ENUMERATE	,316},
-	{"qcstatement_registrationauthority",CRYPTCERT_PROP_QCSTATEMENT_REGISTRATIONAUTHORITY	,JSPROP_ENUMERATE	,316},
-	{"ipaddressblocks"			,CRYPTCERT_PROP_IPADDRESSBLOCKS	,JSPROP_ENUMERATE	,316},
-	{"ipaddressblocks_addressfamily",CRYPTCERT_PROP_IPADDRESSBLOCKS_ADDRESSFAMILY	,JSPROP_ENUMERATE	,316},
-	{"ipaddressblocks_prefix"	,CRYPTCERT_PROP_IPADDRESSBLOCKS_PREFIX	,JSPROP_ENUMERATE	,316},
-	{"ipaddressblocks_min"		,CRYPTCERT_PROP_IPADDRESSBLOCKS_MIN	,JSPROP_ENUMERATE	,316},
-	{"ipaddressblocks_max"		,CRYPTCERT_PROP_IPADDRESSBLOCKS_MAX	,JSPROP_ENUMERATE	,316},
-	{"autonomoussysids"			,CRYPTCERT_PROP_AUTONOMOUSSYSIDS	,JSPROP_ENUMERATE	,316},
-	{"autonomoussysids_asnum_id",CRYPTCERT_PROP_AUTONOMOUSSYSIDS_ASNUM_ID	,JSPROP_ENUMERATE	,316},
-	{"autonomoussysids_asnum_min",CRYPTCERT_PROP_AUTONOMOUSSYSIDS_ASNUM_MIN	,JSPROP_ENUMERATE	,316},
-	{"autonomoussysids_asnum_max",CRYPTCERT_PROP_AUTONOMOUSSYSIDS_ASNUM_MAX	,JSPROP_ENUMERATE	,316},
-	{"ocsp_nonce"				,CRYPTCERT_PROP_OCSP_NONCE	,JSPROP_ENUMERATE	,316},
-	{"ocsp_response"			,CRYPTCERT_PROP_OCSP_RESPONSE	,JSPROP_ENUMERATE	,316},
-	{"ocsp_response_ocsp"		,CRYPTCERT_PROP_OCSP_RESPONSE_OCSP	,JSPROP_ENUMERATE	,316},
-	{"ocsp_nocheck"				,CRYPTCERT_PROP_OCSP_NOCHECK	,JSPROP_ENUMERATE	,316},
-	{"ocsp_archivecutoff"		,CRYPTCERT_PROP_OCSP_ARCHIVECUTOFF	,JSPROP_ENUMERATE	,316},
-	{"subjectinfoaccess"		,CRYPTCERT_PROP_SUBJECTINFOACCESS	,JSPROP_ENUMERATE	,316},
-	{"subjectinfo_timestamping"	,CRYPTCERT_PROP_SUBJECTINFO_TIMESTAMPING	,JSPROP_ENUMERATE	,316},
-	{"subjectinfo_carepository"	,CRYPTCERT_PROP_SUBJECTINFO_CAREPOSITORY	,JSPROP_ENUMERATE	,316},
-	{"subjectinfo_signedobjectrepository",CRYPTCERT_PROP_SUBJECTINFO_SIGNEDOBJECTREPOSITORY	,JSPROP_ENUMERATE	,316},
-	{"subjectinfo_rpkimanifest"	,CRYPTCERT_PROP_SUBJECTINFO_RPKIMANIFEST	,JSPROP_ENUMERATE	,316},
-	{"subjectinfo_signedobject"	,CRYPTCERT_PROP_SUBJECTINFO_SIGNEDOBJECT	,JSPROP_ENUMERATE	,316},
-	{"sigg_dateofcertgen"		,CRYPTCERT_PROP_SIGG_DATEOFCERTGEN	,JSPROP_ENUMERATE	,316},
-	{"sigg_procuration"			,CRYPTCERT_PROP_SIGG_PROCURATION	,JSPROP_ENUMERATE	,316},
-	{"sigg_procure_country"		,CRYPTCERT_PROP_SIGG_PROCURE_COUNTRY	,JSPROP_ENUMERATE	,316},
-	{"sigg_procure_typeofsubstitution",CRYPTCERT_PROP_SIGG_PROCURE_TYPEOFSUBSTITUTION	,JSPROP_ENUMERATE	,316},
-	{"sigg_procure_signingfor"	,CRYPTCERT_PROP_SIGG_PROCURE_SIGNINGFOR	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions"			,CRYPTCERT_PROP_SIGG_ADMISSIONS	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_authority",CRYPTCERT_PROP_SIGG_ADMISSIONS_AUTHORITY	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_namingauthid",CRYPTCERT_PROP_SIGG_ADMISSIONS_NAMINGAUTHID	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_namingauthurl",CRYPTCERT_PROP_SIGG_ADMISSIONS_NAMINGAUTHURL	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_namingauthtext",CRYPTCERT_PROP_SIGG_ADMISSIONS_NAMINGAUTHTEXT	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_professionitem",CRYPTCERT_PROP_SIGG_ADMISSIONS_PROFESSIONITEM	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_professionoid",CRYPTCERT_PROP_SIGG_ADMISSIONS_PROFESSIONOID	,JSPROP_ENUMERATE	,316},
-	{"sigg_admissions_registrationnumber",CRYPTCERT_PROP_SIGG_ADMISSIONS_REGISTRATIONNUMBER	,JSPROP_ENUMERATE	,316},
-	{"sigg_monetarylimit"		,CRYPTCERT_PROP_SIGG_MONETARYLIMIT	,JSPROP_ENUMERATE	,316},
-	{"sigg_monetary_currency"	,CRYPTCERT_PROP_SIGG_MONETARY_CURRENCY	,JSPROP_ENUMERATE	,316},
-	{"sigg_monetary_amount"		,CRYPTCERT_PROP_SIGG_MONETARY_AMOUNT	,JSPROP_ENUMERATE	,316},
-	{"sigg_monetary_exponent"	,CRYPTCERT_PROP_SIGG_MONETARY_EXPONENT	,JSPROP_ENUMERATE	,316},
-	{"sigg_declarationofmajority",CRYPTCERT_PROP_SIGG_DECLARATIONOFMAJORITY	,JSPROP_ENUMERATE	,316},
-	{"sigg_declarationofmajority_country",CRYPTCERT_PROP_SIGG_DECLARATIONOFMAJORITY_COUNTRY	,JSPROP_ENUMERATE	,316},
-	{"sigg_restriction"			,CRYPTCERT_PROP_SIGG_RESTRICTION	,JSPROP_ENUMERATE	,316},
-	{"sigg_certhash"			,CRYPTCERT_PROP_SIGG_CERTHASH	,JSPROP_ENUMERATE	,316},
-	{"sigg_additionalinformation",CRYPTCERT_PROP_SIGG_ADDITIONALINFORMATION	,JSPROP_ENUMERATE	,316},
-	{"strongextranet"			,CRYPTCERT_PROP_STRONGEXTRANET	,JSPROP_ENUMERATE	,316},
-	{"strongextranet_zone"		,CRYPTCERT_PROP_STRONGEXTRANET_ZONE	,JSPROP_ENUMERATE	,316},
-	{"strongextranet_id"		,CRYPTCERT_PROP_STRONGEXTRANET_ID	,JSPROP_ENUMERATE	,316},
-	{"subjectdirectoryattributes",CRYPTCERT_PROP_SUBJECTDIRECTORYATTRIBUTES	,JSPROP_ENUMERATE	,316},
-	{"subjectdir_type"			,CRYPTCERT_PROP_SUBJECTDIR_TYPE	,JSPROP_ENUMERATE	,316},
-	{"subjectdir_values"		,CRYPTCERT_PROP_SUBJECTDIR_VALUES	,JSPROP_ENUMERATE	,316},
-	{"subjectkeyidentifier"		,CRYPTCERT_PROP_SUBJECTKEYIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"keyusage"					,CRYPTCERT_PROP_KEYUSAGE	,JSPROP_ENUMERATE	,316},
-	{"privatekeyusageperiod"	,CRYPTCERT_PROP_PRIVATEKEYUSAGEPERIOD	,JSPROP_ENUMERATE	,316},
-	{"privatekey_notbefore"		,CRYPTCERT_PROP_PRIVATEKEY_NOTBEFORE	,JSPROP_ENUMERATE	,316},
-	{"privatekey_notafter"		,CRYPTCERT_PROP_PRIVATEKEY_NOTAFTER	,JSPROP_ENUMERATE	,316},
-	{"subjectaltname"			,CRYPTCERT_PROP_SUBJECTALTNAME	,JSPROP_ENUMERATE	,316},
-	{"issueraltname"			,CRYPTCERT_PROP_ISSUERALTNAME	,JSPROP_ENUMERATE	,316},
-	{"basicconstraints"			,CRYPTCERT_PROP_BASICCONSTRAINTS	,JSPROP_ENUMERATE	,316},
-	{"ca"						,CRYPTCERT_PROP_CA	,JSPROP_ENUMERATE	,316},
-	{"pathlenconstraint"		,CRYPTCERT_PROP_PATHLENCONSTRAINT	,JSPROP_ENUMERATE	,316},
-	{"crlnumber"				,CRYPTCERT_PROP_CRLNUMBER	,JSPROP_ENUMERATE	,316},
-	{"crlreason"				,CRYPTCERT_PROP_CRLREASON	,JSPROP_ENUMERATE	,316},
-	{"holdinstructioncode"		,CRYPTCERT_PROP_HOLDINSTRUCTIONCODE	,JSPROP_ENUMERATE	,316},
-	{"invaliditydate"			,CRYPTCERT_PROP_INVALIDITYDATE	,JSPROP_ENUMERATE	,316},
-	{"deltacrlindicator"		,CRYPTCERT_PROP_DELTACRLINDICATOR	,JSPROP_ENUMERATE	,316},
-	{"issuingdistributionpoint"	,CRYPTCERT_PROP_ISSUINGDISTRIBUTIONPOINT	,JSPROP_ENUMERATE	,316},
-	{"issuingdist_fullname"		,CRYPTCERT_PROP_ISSUINGDIST_FULLNAME	,JSPROP_ENUMERATE	,316},
-	{"issuingdist_usercertsonly",CRYPTCERT_PROP_ISSUINGDIST_USERCERTSONLY	,JSPROP_ENUMERATE	,316},
-	{"issuingdist_cacertsonly"	,CRYPTCERT_PROP_ISSUINGDIST_CACERTSONLY	,JSPROP_ENUMERATE	,316},
-	{"issuingdist_somereasonsonly",CRYPTCERT_PROP_ISSUINGDIST_SOMEREASONSONLY	,JSPROP_ENUMERATE	,316},
-	{"issuingdist_indirectcrl"	,CRYPTCERT_PROP_ISSUINGDIST_INDIRECTCRL	,JSPROP_ENUMERATE	,316},
-	{"certificateissuer"		,CRYPTCERT_PROP_CERTIFICATEISSUER	,JSPROP_ENUMERATE	,316},
-	{"nameconstraints"			,CRYPTCERT_PROP_NAMECONSTRAINTS	,JSPROP_ENUMERATE	,316},
-	{"permittedsubtrees"		,CRYPTCERT_PROP_PERMITTEDSUBTREES	,JSPROP_ENUMERATE	,316},
-	{"excludedsubtrees"			,CRYPTCERT_PROP_EXCLUDEDSUBTREES	,JSPROP_ENUMERATE	,316},
-	{"crldistributionpoint"		,CRYPTCERT_PROP_CRLDISTRIBUTIONPOINT	,JSPROP_ENUMERATE	,316},
-	{"crldist_fullname"			,CRYPTCERT_PROP_CRLDIST_FULLNAME	,JSPROP_ENUMERATE	,316},
-	{"crldist_reasons"			,CRYPTCERT_PROP_CRLDIST_REASONS	,JSPROP_ENUMERATE	,316},
-	{"crldist_crlissuer"		,CRYPTCERT_PROP_CRLDIST_CRLISSUER	,JSPROP_ENUMERATE	,316},
-	{"certificatepolicies"		,CRYPTCERT_PROP_CERTIFICATEPOLICIES	,JSPROP_ENUMERATE	,316},
-	{"certpolicyid"				,CRYPTCERT_PROP_CERTPOLICYID	,JSPROP_ENUMERATE	,316},
-	{"certpolicy_cpsuri"		,CRYPTCERT_PROP_CERTPOLICY_CPSURI	,JSPROP_ENUMERATE	,316},
-	{"certpolicy_organization"	,CRYPTCERT_PROP_CERTPOLICY_ORGANIZATION	,JSPROP_ENUMERATE	,316},
-	{"certpolicy_noticenumbers"	,CRYPTCERT_PROP_CERTPOLICY_NOTICENUMBERS	,JSPROP_ENUMERATE	,316},
-	{"certpolicy_explicittext"	,CRYPTCERT_PROP_CERTPOLICY_EXPLICITTEXT	,JSPROP_ENUMERATE	,316},
-	{"policymappings"			,CRYPTCERT_PROP_POLICYMAPPINGS	,JSPROP_ENUMERATE	,316},
-	{"issuerdomainpolicy"		,CRYPTCERT_PROP_ISSUERDOMAINPOLICY	,JSPROP_ENUMERATE	,316},
-	{"subjectdomainpolicy"		,CRYPTCERT_PROP_SUBJECTDOMAINPOLICY	,JSPROP_ENUMERATE	,316},
-	{"authoritykeyidentifier"	,CRYPTCERT_PROP_AUTHORITYKEYIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"authority_keyidentifier"	,CRYPTCERT_PROP_AUTHORITY_KEYIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"authority_certissuer"		,CRYPTCERT_PROP_AUTHORITY_CERTISSUER	,JSPROP_ENUMERATE	,316},
-	{"authority_certserialnumber",CRYPTCERT_PROP_AUTHORITY_CERTSERIALNUMBER	,JSPROP_ENUMERATE	,316},
-	{"policyconstraints"		,CRYPTCERT_PROP_POLICYCONSTRAINTS	,JSPROP_ENUMERATE	,316},
-	{"requireexplicitpolicy"	,CRYPTCERT_PROP_REQUIREEXPLICITPOLICY	,JSPROP_ENUMERATE	,316},
-	{"inhibitpolicymapping"		,CRYPTCERT_PROP_INHIBITPOLICYMAPPING	,JSPROP_ENUMERATE	,316},
-	{"extkeyusage"				,CRYPTCERT_PROP_EXTKEYUSAGE	,JSPROP_ENUMERATE	,316},
-	{"extkey_ms_individualcodesigning",CRYPTCERT_PROP_EXTKEY_MS_INDIVIDUALCODESIGNING	,JSPROP_ENUMERATE	,316},
-	{"extkey_ms_commercialcodesigning",CRYPTCERT_PROP_EXTKEY_MS_COMMERCIALCODESIGNING	,JSPROP_ENUMERATE	,316},
-	{"extkey_ms_certtrustlistsigning",CRYPTCERT_PROP_EXTKEY_MS_CERTTRUSTLISTSIGNING	,JSPROP_ENUMERATE	,316},
-	{"extkey_ms_timestampsigning",CRYPTCERT_PROP_EXTKEY_MS_TIMESTAMPSIGNING	,JSPROP_ENUMERATE	,316},
-	{"extkey_ms_servergatedcrypto",CRYPTCERT_PROP_EXTKEY_MS_SERVERGATEDCRYPTO	,JSPROP_ENUMERATE	,316},
-	{"extkey_ms_encryptedfilesystem",CRYPTCERT_PROP_EXTKEY_MS_ENCRYPTEDFILESYSTEM	,JSPROP_ENUMERATE	,316},
-	{"extkey_serverauth"		,CRYPTCERT_PROP_EXTKEY_SERVERAUTH	,JSPROP_ENUMERATE	,316},
-	{"extkey_clientauth"		,CRYPTCERT_PROP_EXTKEY_CLIENTAUTH	,JSPROP_ENUMERATE	,316},
-	{"extkey_codesigning"		,CRYPTCERT_PROP_EXTKEY_CODESIGNING	,JSPROP_ENUMERATE	,316},
-	{"extkey_emailprotection"	,CRYPTCERT_PROP_EXTKEY_EMAILPROTECTION	,JSPROP_ENUMERATE	,316},
-	{"extkey_ipsecendsystem"	,CRYPTCERT_PROP_EXTKEY_IPSECENDSYSTEM	,JSPROP_ENUMERATE	,316},
-	{"extkey_ipsectunnel"		,CRYPTCERT_PROP_EXTKEY_IPSECTUNNEL	,JSPROP_ENUMERATE	,316},
-	{"extkey_ipsecuser"			,CRYPTCERT_PROP_EXTKEY_IPSECUSER	,JSPROP_ENUMERATE	,316},
-	{"extkey_timestamping"		,CRYPTCERT_PROP_EXTKEY_TIMESTAMPING	,JSPROP_ENUMERATE	,316},
-	{"extkey_ocspsigning"		,CRYPTCERT_PROP_EXTKEY_OCSPSIGNING	,JSPROP_ENUMERATE	,316},
-	{"extkey_directoryservice"	,CRYPTCERT_PROP_EXTKEY_DIRECTORYSERVICE	,JSPROP_ENUMERATE	,316},
-	{"extkey_anykeyusage"		,CRYPTCERT_PROP_EXTKEY_ANYKEYUSAGE	,JSPROP_ENUMERATE	,316},
-	{"extkey_ns_servergatedcrypto",CRYPTCERT_PROP_EXTKEY_NS_SERVERGATEDCRYPTO	,JSPROP_ENUMERATE	,316},
-	{"extkey_vs_servergatedcrypto_ca",CRYPTCERT_PROP_EXTKEY_VS_SERVERGATEDCRYPTO_CA	,JSPROP_ENUMERATE	,316},
-	{"crlstreamidentifier"		,CRYPTCERT_PROP_CRLSTREAMIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"freshestcrl"				,CRYPTCERT_PROP_FRESHESTCRL	,JSPROP_ENUMERATE	,316},
-	{"freshestcrl_fullname"		,CRYPTCERT_PROP_FRESHESTCRL_FULLNAME	,JSPROP_ENUMERATE	,316},
-	{"freshestcrl_reasons"		,CRYPTCERT_PROP_FRESHESTCRL_REASONS	,JSPROP_ENUMERATE	,316},
-	{"freshestcrl_crlissuer"	,CRYPTCERT_PROP_FRESHESTCRL_CRLISSUER	,JSPROP_ENUMERATE	,316},
-	{"orderedlist"				,CRYPTCERT_PROP_ORDEREDLIST	,JSPROP_ENUMERATE	,316},
-	{"baseupdatetime"			,CRYPTCERT_PROP_BASEUPDATETIME	,JSPROP_ENUMERATE	,316},
-	{"deltainfo"				,CRYPTCERT_PROP_DELTAINFO	,JSPROP_ENUMERATE	,316},
-	{"deltainfo_location"	,CRYPTCERT_PROP_DELTAINFO_LOCATION	,JSPROP_ENUMERATE	,316},
-	{"deltainfo_nextdelta"	,CRYPTCERT_PROP_DELTAINFO_NEXTDELTA	,JSPROP_ENUMERATE	,316},
-	{"inhibitanypolicy"	,CRYPTCERT_PROP_INHIBITANYPOLICY	,JSPROP_ENUMERATE	,316},
-	{"toberevoked"	,CRYPTCERT_PROP_TOBEREVOKED	,JSPROP_ENUMERATE	,316},
-	{"toberevoked_certissuer"	,CRYPTCERT_PROP_TOBEREVOKED_CERTISSUER	,JSPROP_ENUMERATE	,316},
-	{"toberevoked_reasoncode"	,CRYPTCERT_PROP_TOBEREVOKED_REASONCODE	,JSPROP_ENUMERATE	,316},
-	{"toberevoked_revocationtime"	,CRYPTCERT_PROP_TOBEREVOKED_REVOCATIONTIME	,JSPROP_ENUMERATE	,316},
-	{"toberevoked_certserialnumber"	,CRYPTCERT_PROP_TOBEREVOKED_CERTSERIALNUMBER	,JSPROP_ENUMERATE	,316},
-	{"revokedgroups"	,CRYPTCERT_PROP_REVOKEDGROUPS	,JSPROP_ENUMERATE	,316},
-	{"revokedgroups_certissuer"	,CRYPTCERT_PROP_REVOKEDGROUPS_CERTISSUER	,JSPROP_ENUMERATE	,316},
-	{"revokedgroups_reasoncode"	,CRYPTCERT_PROP_REVOKEDGROUPS_REASONCODE	,JSPROP_ENUMERATE	,316},
-	{"revokedgroups_invaliditydate"	,CRYPTCERT_PROP_REVOKEDGROUPS_INVALIDITYDATE	,JSPROP_ENUMERATE	,316},
-	{"revokedgroups_startingnumber"	,CRYPTCERT_PROP_REVOKEDGROUPS_STARTINGNUMBER	,JSPROP_ENUMERATE	,316},
-	{"revokedgroups_endingnumber"	,CRYPTCERT_PROP_REVOKEDGROUPS_ENDINGNUMBER	,JSPROP_ENUMERATE	,316},
-	{"expiredcertsoncrl"	,CRYPTCERT_PROP_EXPIREDCERTSONCRL	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdistributionpoint"	,CRYPTCERT_PROP_AAISSUINGDISTRIBUTIONPOINT	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdist_fullname"	,CRYPTCERT_PROP_AAISSUINGDIST_FULLNAME	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdist_somereasonsonly"	,CRYPTCERT_PROP_AAISSUINGDIST_SOMEREASONSONLY	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdist_indirectcrl"	,CRYPTCERT_PROP_AAISSUINGDIST_INDIRECTCRL	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdist_userattrcerts"	,CRYPTCERT_PROP_AAISSUINGDIST_USERATTRCERTS	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdist_aacerts"	,CRYPTCERT_PROP_AAISSUINGDIST_AACERTS	,JSPROP_ENUMERATE	,316},
-	{"aaissuingdist_soacerts"	,CRYPTCERT_PROP_AAISSUINGDIST_SOACERTS	,JSPROP_ENUMERATE	,316},
-	{"ns_certtype"	,CRYPTCERT_PROP_NS_CERTTYPE	,JSPROP_ENUMERATE	,316},
-	{"ns_baseurl"	,CRYPTCERT_PROP_NS_BASEURL	,JSPROP_ENUMERATE	,316},
-	{"ns_revocationurl"	,CRYPTCERT_PROP_NS_REVOCATIONURL	,JSPROP_ENUMERATE	,316},
-	{"ns_carevocationurl"	,CRYPTCERT_PROP_NS_CAREVOCATIONURL	,JSPROP_ENUMERATE	,316},
-	{"ns_certrenewalurl"	,CRYPTCERT_PROP_NS_CERTRENEWALURL	,JSPROP_ENUMERATE	,316},
-	{"ns_capolicyurl"	,CRYPTCERT_PROP_NS_CAPOLICYURL	,JSPROP_ENUMERATE	,316},
-	{"ns_sslservername"	,CRYPTCERT_PROP_NS_SSLSERVERNAME	,JSPROP_ENUMERATE	,316},
-	{"ns_comment"	,CRYPTCERT_PROP_NS_COMMENT	,JSPROP_ENUMERATE	,316},
-	{"set_hashedrootkey"	,CRYPTCERT_PROP_SET_HASHEDROOTKEY	,JSPROP_ENUMERATE	,316},
-	{"set_rootkeythumbprint"	,CRYPTCERT_PROP_SET_ROOTKEYTHUMBPRINT	,JSPROP_ENUMERATE	,316},
-	{"set_certificatetype"	,CRYPTCERT_PROP_SET_CERTIFICATETYPE	,JSPROP_ENUMERATE	,316},
-	{"set_merchantdata"	,CRYPTCERT_PROP_SET_MERCHANTDATA	,JSPROP_ENUMERATE	,316},
-	{"set_merid"	,CRYPTCERT_PROP_SET_MERID	,JSPROP_ENUMERATE	,316},
-	{"set_meracquirerbin"	,CRYPTCERT_PROP_SET_MERACQUIRERBIN	,JSPROP_ENUMERATE	,316},
-	{"set_merchantlanguage"	,CRYPTCERT_PROP_SET_MERCHANTLANGUAGE	,JSPROP_ENUMERATE	,316},
-	{"set_merchantname"	,CRYPTCERT_PROP_SET_MERCHANTNAME	,JSPROP_ENUMERATE	,316},
-	{"set_merchantcity"	,CRYPTCERT_PROP_SET_MERCHANTCITY	,JSPROP_ENUMERATE	,316},
-	{"set_merchantstateprovince"	,CRYPTCERT_PROP_SET_MERCHANTSTATEPROVINCE	,JSPROP_ENUMERATE	,316},
-	{"set_merchantpostalcode"	,CRYPTCERT_PROP_SET_MERCHANTPOSTALCODE	,JSPROP_ENUMERATE	,316},
-	{"set_merchantcountryname"	,CRYPTCERT_PROP_SET_MERCHANTCOUNTRYNAME	,JSPROP_ENUMERATE	,316},
-	{"set_mercountry"	,CRYPTCERT_PROP_SET_MERCOUNTRY	,JSPROP_ENUMERATE	,316},
-	{"set_merauthflag"	,CRYPTCERT_PROP_SET_MERAUTHFLAG	,JSPROP_ENUMERATE	,316},
-	{"set_certcardrequired"	,CRYPTCERT_PROP_SET_CERTCARDREQUIRED	,JSPROP_ENUMERATE	,316},
-	{"set_tunneling"	,CRYPTCERT_PROP_SET_TUNNELING	,JSPROP_ENUMERATE	,316},
-	{"set_tunnelingflag"	,CRYPTCERT_PROP_SET_TUNNELINGFLAG	,JSPROP_ENUMERATE	,316},
-	{"set_tunnelingalgid"	,CRYPTCERT_PROP_SET_TUNNELINGALGID	,JSPROP_ENUMERATE	,316},
-	{"cms_contenttype"	,CRYPTCERT_PROP_CMS_CONTENTTYPE	,JSPROP_ENUMERATE	,316},
-	{"cms_messagedigest"	,CRYPTCERT_PROP_CMS_MESSAGEDIGEST	,JSPROP_ENUMERATE	,316},
-	{"cms_signingtime"	,CRYPTCERT_PROP_CMS_SIGNINGTIME	,JSPROP_ENUMERATE	,316},
-	{"cms_countersignature"	,CRYPTCERT_PROP_CMS_COUNTERSIGNATURE	,JSPROP_ENUMERATE	,316},
-	{"cms_signingdescription"	,CRYPTCERT_PROP_CMS_SIGNINGDESCRIPTION	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecapabilities"	,CRYPTCERT_PROP_CMS_SMIMECAPABILITIES	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_3des"	,CRYPTCERT_PROP_CMS_SMIMECAP_3DES	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_aes"	,CRYPTCERT_PROP_CMS_SMIMECAP_AES	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_cast128"	,CRYPTCERT_PROP_CMS_SMIMECAP_CAST128	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_SHAng	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_SHA2	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_SHA1	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_hmac_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_HMAC_SHAng	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_hmac_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_HMAC_SHA2	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_hmac_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_HMAC_SHA1	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_authenc256"	,CRYPTCERT_PROP_CMS_SMIMECAP_AUTHENC256	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_authenc128"	,CRYPTCERT_PROP_CMS_SMIMECAP_AUTHENC128	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_rsa_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHAng	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_rsa_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHA2	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_rsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_RSA_SHA1	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_dsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_DSA_SHA1	,JSPROP_ENUMERATE	,316},
-#if 0	// TODO: TinyID only goes to 255!
-	{"cms_smimecap_ecdsa_shang"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHAng	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_ecdsa_sha2"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHA2	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_ecdsa_sha1"	,CRYPTCERT_PROP_CMS_SMIMECAP_ECDSA_SHA1	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_prefersigneddata"	,CRYPTCERT_PROP_CMS_SMIMECAP_PREFERSIGNEDDATA	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_cannotdecryptany"	,CRYPTCERT_PROP_CMS_SMIMECAP_CANNOTDECRYPTANY	,JSPROP_ENUMERATE	,316},
-	{"cms_smimecap_preferbinaryinside"	,CRYPTCERT_PROP_CMS_SMIMECAP_PREFERBINARYINSIDE	,JSPROP_ENUMERATE	,316},
-	{"cms_receiptrequest"	,CRYPTCERT_PROP_CMS_RECEIPTREQUEST	,JSPROP_ENUMERATE	,316},
-	{"cms_receipt_contentidentifier"	,CRYPTCERT_PROP_CMS_RECEIPT_CONTENTIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"cms_receipt_from"	,CRYPTCERT_PROP_CMS_RECEIPT_FROM	,JSPROP_ENUMERATE	,316},
-	{"cms_receipt_to"	,CRYPTCERT_PROP_CMS_RECEIPT_TO	,JSPROP_ENUMERATE	,316},
-	{"cms_securitylabel"	,CRYPTCERT_PROP_CMS_SECURITYLABEL	,JSPROP_ENUMERATE	,316},
-	{"cms_seclabel_policy"	,CRYPTCERT_PROP_CMS_SECLABEL_POLICY	,JSPROP_ENUMERATE	,316},
-	{"cms_seclabel_classification"	,CRYPTCERT_PROP_CMS_SECLABEL_CLASSIFICATION	,JSPROP_ENUMERATE	,316},
-	{"cms_seclabel_privacymark"	,CRYPTCERT_PROP_CMS_SECLABEL_PRIVACYMARK	,JSPROP_ENUMERATE	,316},
-	{"cms_seclabel_cattype"	,CRYPTCERT_PROP_CMS_SECLABEL_CATTYPE	,JSPROP_ENUMERATE	,316},
-	{"cms_seclabel_catvalue"	,CRYPTCERT_PROP_CMS_SECLABEL_CATVALUE	,JSPROP_ENUMERATE	,316},
-	{"cms_mlexpansionhistory"	,CRYPTCERT_PROP_CMS_MLEXPANSIONHISTORY	,JSPROP_ENUMERATE	,316},
-	{"cms_mlexp_entityidentifier"	,CRYPTCERT_PROP_CMS_MLEXP_ENTITYIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"cms_mlexp_time"	,CRYPTCERT_PROP_CMS_MLEXP_TIME	,JSPROP_ENUMERATE	,316},
-	{"cms_mlexp_none"	,CRYPTCERT_PROP_CMS_MLEXP_NONE	,JSPROP_ENUMERATE	,316},
-	{"cms_mlexp_insteadof"	,CRYPTCERT_PROP_CMS_MLEXP_INSTEADOF	,JSPROP_ENUMERATE	,316},
-	{"cms_mlexp_inadditionto"	,CRYPTCERT_PROP_CMS_MLEXP_INADDITIONTO	,JSPROP_ENUMERATE	,316},
-	{"cms_contenthints"	,CRYPTCERT_PROP_CMS_CONTENTHINTS	,JSPROP_ENUMERATE	,316},
-	{"cms_contenthint_description"	,CRYPTCERT_PROP_CMS_CONTENTHINT_DESCRIPTION	,JSPROP_ENUMERATE	,316},
-	{"cms_contenthint_type"	,CRYPTCERT_PROP_CMS_CONTENTHINT_TYPE	,JSPROP_ENUMERATE	,316},
-	{"cms_equivalentlabel"	,CRYPTCERT_PROP_CMS_EQUIVALENTLABEL	,JSPROP_ENUMERATE	,316},
-	{"cms_eqvlabel_policy"	,CRYPTCERT_PROP_CMS_EQVLABEL_POLICY	,JSPROP_ENUMERATE	,316},
-	{"cms_eqvlabel_classification"	,CRYPTCERT_PROP_CMS_EQVLABEL_CLASSIFICATION	,JSPROP_ENUMERATE	,316},
-	{"cms_eqvlabel_privacymark"	,CRYPTCERT_PROP_CMS_EQVLABEL_PRIVACYMARK	,JSPROP_ENUMERATE	,316},
-	{"cms_eqvlabel_cattype"	,CRYPTCERT_PROP_CMS_EQVLABEL_CATTYPE	,JSPROP_ENUMERATE	,316},
-	{"cms_eqvlabel_catvalue"	,CRYPTCERT_PROP_CMS_EQVLABEL_CATVALUE	,JSPROP_ENUMERATE	,316},
-	{"cms_signingcertificate"	,CRYPTCERT_PROP_CMS_SIGNINGCERTIFICATE	,JSPROP_ENUMERATE	,316},
-	{"cms_signingcert_esscertid"	,CRYPTCERT_PROP_CMS_SIGNINGCERT_ESSCERTID	,JSPROP_ENUMERATE	,316},
-	{"cms_signingcert_policies"	,CRYPTCERT_PROP_CMS_SIGNINGCERT_POLICIES	,JSPROP_ENUMERATE	,316},
-	{"cms_signingcertificatev2"	,CRYPTCERT_PROP_CMS_SIGNINGCERTIFICATEV2	,JSPROP_ENUMERATE	,316},
-	{"cms_signingcertv2_esscertidv2"	,CRYPTCERT_PROP_CMS_SIGNINGCERTV2_ESSCERTIDV2	,JSPROP_ENUMERATE	,316},
-	{"cms_signingcertv2_policies"	,CRYPTCERT_PROP_CMS_SIGNINGCERTV2_POLICIES	,JSPROP_ENUMERATE	,316},
-	{"cms_signaturepolicyid"	,CRYPTCERT_PROP_CMS_SIGNATUREPOLICYID	,JSPROP_ENUMERATE	,316},
-	{"cms_sigpolicyid"	,CRYPTCERT_PROP_CMS_SIGPOLICYID	,JSPROP_ENUMERATE	,316},
-	{"cms_sigpolicyhash"	,CRYPTCERT_PROP_CMS_SIGPOLICYHASH	,JSPROP_ENUMERATE	,316},
-	{"cms_sigpolicy_cpsuri"	,CRYPTCERT_PROP_CMS_SIGPOLICY_CPSURI	,JSPROP_ENUMERATE	,316},
-	{"cms_sigpolicy_organization"	,CRYPTCERT_PROP_CMS_SIGPOLICY_ORGANIZATION	,JSPROP_ENUMERATE	,316},
-	{"cms_sigpolicy_noticenumbers"	,CRYPTCERT_PROP_CMS_SIGPOLICY_NOTICENUMBERS	,JSPROP_ENUMERATE	,316},
-	{"cms_sigpolicy_explicittext"	,CRYPTCERT_PROP_CMS_SIGPOLICY_EXPLICITTEXT	,JSPROP_ENUMERATE	,316},
-	{"cms_sigtypeidentifier"	,CRYPTCERT_PROP_CMS_SIGTYPEIDENTIFIER	,JSPROP_ENUMERATE	,316},
-	{"cms_sigtypeid_originatorsig"	,CRYPTCERT_PROP_CMS_SIGTYPEID_ORIGINATORSIG	,JSPROP_ENUMERATE	,316},
-	{"cms_sigtypeid_domainsig"	,CRYPTCERT_PROP_CMS_SIGTYPEID_DOMAINSIG	,JSPROP_ENUMERATE	,316},
-	{"cms_sigtypeid_additionalattributes"	,CRYPTCERT_PROP_CMS_SIGTYPEID_ADDITIONALATTRIBUTES	,JSPROP_ENUMERATE	,316},
-	{"cms_sigtypeid_reviewsig"	,CRYPTCERT_PROP_CMS_SIGTYPEID_REVIEWSIG	,JSPROP_ENUMERATE	,316},
-	{"cms_nonce"	,CRYPTCERT_PROP_CMS_NONCE	,JSPROP_ENUMERATE	,316},
-	{"scep_messagetype"	,CRYPTCERT_PROP_SCEP_MESSAGETYPE	,JSPROP_ENUMERATE	,316},
-	{"scep_pkistatus"	,CRYPTCERT_PROP_SCEP_PKISTATUS	,JSPROP_ENUMERATE	,316},
-	{"scep_failinfo"	,CRYPTCERT_PROP_SCEP_FAILINFO	,JSPROP_ENUMERATE	,316},
-	{"scep_sendernonce"	,CRYPTCERT_PROP_SCEP_SENDERNONCE	,JSPROP_ENUMERATE	,316},
-	{"scep_recipientnonce"	,CRYPTCERT_PROP_SCEP_RECIPIENTNONCE	,JSPROP_ENUMERATE	,316},
-	{"scep_transactionid"	,CRYPTCERT_PROP_SCEP_TRANSACTIONID	,JSPROP_ENUMERATE	,316},
-	{"cms_spcagencyinfo"	,CRYPTCERT_PROP_CMS_SPCAGENCYINFO	,JSPROP_ENUMERATE	,316},
-	{"cms_spcagencyurl"	,CRYPTCERT_PROP_CMS_SPCAGENCYURL	,JSPROP_ENUMERATE	,316},
-	{"cms_spcstatementtype"	,CRYPTCERT_PROP_CMS_SPCSTATEMENTTYPE	,JSPROP_ENUMERATE	,316},
-	{"cms_spcstmt_individualcodesigning"	,CRYPTCERT_PROP_CMS_SPCSTMT_INDIVIDUALCODESIGNING	,JSPROP_ENUMERATE	,316},
-	{"cms_spcstmt_commercialcodesigning"	,CRYPTCERT_PROP_CMS_SPCSTMT_COMMERCIALCODESIGNING	,JSPROP_ENUMERATE	,316},
-	{"cms_spcopusinfo"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO	,JSPROP_ENUMERATE	,316},
-	{"cms_spcopusinfo_name"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO_NAME	,JSPROP_ENUMERATE	,316},
-	{"cms_spcopusinfo_url"	,CRYPTCERT_PROP_CMS_SPCOPUSINFO_URL	,JSPROP_ENUMERATE	,316},
-#endif
-	{0}
-};
-
-static jsSyncMethodSpec js_cryptcert_functions[] = {
-	{"add_extension", js_add_extension, 0, JSTYPE_VOID, "oid, critical, extension"
-	,JSDOCSTR("Adds a DER encoded certificate extension.")
-	,316
-	},
-	{"check",	js_check,	0,	JSTYPE_BOOLEAN,	""
-	,JSDOCSTR("Checks the certificate for validity.")
-	,316
-	},
-	{"destroy",	js_destroy,	0,	JSTYPE_VOID,	""
-	,JSDOCSTR("Destroys the certificate.")
-	,316
-	},
-	{"export_cert",	js_export,	0,	JSTYPE_STRING,	"format"
-	,JSDOCSTR("Exports the certificate in the format chosen from CryptCert.CERTFORMAT.")
-	,316
-	},
-	{"get_attribute", js_get_attribute,	0,	JSTYPE_VOID,	"attr, value"
-	,JSDOCSTR("Sets the specified attribute to the specified value")
-	,316
-	},
-	{"get_attribute_string", js_get_attribute_string,	0,	JSTYPE_VOID,	"attr, value"
-	,JSDOCSTR("Sets the specified attribute to the specified value")
-	,316
-	},
-	{"get_attribute_time", js_get_attribute_time,	0,	JSTYPE_VOID,	"attr, value"
-	,JSDOCSTR("Sets the specified attribute to the specified value")
-	,316
-	},
-	{"set_attribute", js_set_attribute,	0,	JSTYPE_VOID,	"attr, value"
-	,JSDOCSTR("Sets the specified attribute to the specified value")
-	,316
-	},
-	{"set_attribute_string", js_set_attribute_string,	0,	JSTYPE_VOID,	"attr, value"
-	,JSDOCSTR("Sets the specified attribute to the specified value")
-	,316
-	},
-	{"set_attribute_time", js_set_attribute_time,	0,	JSTYPE_VOID,	"attr, value"
-	,JSDOCSTR("Sets the specified attribute to the specified value")
-	,316
-	},
-	{"sign",	js_sign,	0,	JSTYPE_VOID,	"key"
-	,JSDOCSTR("Signs the certificate with the specified CryptContext")
-	,316
-	},
-	{0}
-};
 
 static JSBool js_cryptcert_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
@@ -3122,6 +3556,45 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+#ifdef BUILD_JSDOCS
+static char* cryptcert_cursor_prop_desc[] = {
+	"Move the cursor to the first group or attribute.",
+	"Move the cursor to the last group or attribute.",
+	"Move the cursor to the next group or attribute.",
+	"Move the cursor to the previous group or attribute.",
+	NULL
+};
+
+static char* cryptcert_type_prop_desc[] = {
+	"No certificate type",
+	"Certificate.",
+	"Attribute certificate.",
+	"PKCS #7 certificate chain.",
+	"PKCS #10 certification request.",
+	"CRMF certificate request",
+	"CRMF certificate revocation request",
+	"CRL",
+	"PKCS #7/CMS attributes.",
+	"RTCS request",
+	"RTCS response",
+	"OCSP request",
+	"OCSP response",
+	"PKI user information.",
+	NULL
+};
+
+static char* cryptcert_format_prop_desc[] = {
+	"No certificate format",
+	"A certification request, certificate, or CRL in binary data format. The certificate object is encoded according to the ASN.1 distinguished encoding rules. This is the normal certificate encoding format.",
+	"A certificate encoded as a PKCS #7 certificate chain.",
+	"As CERTIFICATE but with base64 armouring of the binary data.",
+	"As CERTCHAIN but with base64 armouring of the binary data.",
+	"XML wrapped cert",
+	"XML wrapped certchain",
+	NULL
+};
+#endif
+
 JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	cksobj;
@@ -3152,6 +3625,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, cursor, "LAST", INT_TO_JSVAL(CRYPT_CURSOR_LAST), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, cursor, "_property_desc_list", cryptcert_cursor_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, cursor, "Associative array of cursor constants",318);
+#endif
 			JS_DeepFreezeObject(cx, cursor);
 		}
 		type = JS_DefineObject(cx, constructor, "TYPE", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3184,6 +3661,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, type, "PKIUSER", INT_TO_JSVAL(CRYPT_CERTTYPE_PKIUSER), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, type, "_property_desc_list", cryptcert_type_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, type, "Associative array of certificate type constants",318);
+#endif
 			JS_DeepFreezeObject(cx, type);
 		}
 		format = JS_DefineObject(cx, constructor, "FORMAT", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3202,6 +3683,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, format, "XML_CERTCHAIN", INT_TO_JSVAL(CRYPT_CERTFORMAT_XML_CERTCHAIN), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, format, "_property_desc_list", cryptcert_format_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, format, "Associative array of certificate format constants",318);
+#endif
 			JS_DeepFreezeObject(cx, format);
 		}
 		attr = JS_DefineObject(cx, constructor, "ATTR", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -3846,6 +4331,10 @@ JSObject* DLLCALL js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, attr, "CMS_SPCOPUSINFO_URL", INT_TO_JSVAL(CRYPT_CERTINFO_CMS_SPCOPUSINFO_URL), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+#ifdef BUILD_JSDOCS
+			js_CreateArrayOfStrings(cx, attr, "_property_desc_list", cryptcert_prop_desc, JSPROP_READONLY);
+			js_DescribeSyncObject(cx, attr, "Associative array of certificate attribute constants",318);
+#endif
 			JS_DeepFreezeObject(cx, attr);
 		}
 	}

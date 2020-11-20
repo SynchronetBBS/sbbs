@@ -77,11 +77,11 @@ scfg:
 	$(MAKE) -C scfg $(MAKEFLAGS)
 
 .PHONY: uedit
-uedit:
+uedit: uifc-mt
 	$(MAKE) -C uedit $(MAKEFLAGS)
 
 .PHONY: umonitor
-umonitor:
+umonitor: uifc-mt
 	$(MAKE) -C umonitor $(MAKEFLAGS)
 
 .PHONY: gtkmonitor

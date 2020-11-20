@@ -1013,7 +1013,7 @@ int ansi_initciolib(long inmode)
 
 void ansi_suspend(void)
 {
-#if defined _WIN32
+#if defined _MSC_VER
 	// Prevents the wait for a key press when exit() is called and the stdin stream is flushed
 	_unlock_file(stdin);
 #endif
