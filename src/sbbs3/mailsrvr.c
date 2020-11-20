@@ -2719,6 +2719,9 @@ static void parse_mail_address(char* p
 	if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
 		p=tp+1;
 		tp=strchr(p,'"');
+	} else if(*p == '\'') {	/* MS Outlook will put names in single-quotes */
+		p++;
+		tp=strchr(p, '\'');
 	} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
 		p=tp+1;
 		tp=strchr(p,')');
