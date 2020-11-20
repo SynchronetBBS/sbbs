@@ -5362,7 +5362,7 @@ NO_SSH:
 		/* now wait for connection */
 		client_addr_len = sizeof(client_addr);
 		client_socket=xpms_accept(ts_set, &client_addr
-	        	,&client_addr_len, startup->sem_chk_freq*1000, (startup->options & BBS_OPT_HAPROXY_PROTO) ? XPMS_ACCEPT_FLAG_HAPROXY : 0, &ts_cb);
+	        	,&client_addr_len, startup->sem_chk_freq*1000, (startup->options & BBS_OPT_HAPROXY_PROTO) ? XPMS_ACCEPT_FLAG_HAPROXY : XPMS_FLAGS_NONE, &ts_cb);
 
 		if(terminate_server)	/* terminated */
 			break;

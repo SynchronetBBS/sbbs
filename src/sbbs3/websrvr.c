@@ -7189,7 +7189,7 @@ void DLLCALL web_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(ws_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, 0, &acc_type);
+			client_socket = xpms_accept(ws_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, XPMS_FLAGS_NONE, &acc_type);
 
 			if(client_socket == INVALID_SOCKET)
 				continue;

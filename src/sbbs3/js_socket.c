@@ -691,7 +691,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(p->set) {
-		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,0,NULL))==INVALID_SOCKET) {
+		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,XPMS_FLAGS_NONE,NULL))==INVALID_SOCKET) {
 			p->last_error=ERROR_VALUE;
 			dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 			JS_RESUMEREQUEST(cx, rc);
