@@ -26,6 +26,7 @@ struct xpms_set {
 };
 
 #define XPMS_FOREVER	UINT_MAX
+#define XPMS_FLAGS_NONE 0
 #define XPMS_ACCEPT_FLAG_HAPROXY	(1<<0)
 
 #ifdef __cplusplus

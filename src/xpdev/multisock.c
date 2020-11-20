@@ -238,22 +238,23 @@ BOOL DLLCALL xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int 
 }
 
 /* Convert a binary variable into a hex string - used for printing in the debug log */
-static void btox(char *hexstr, const char *srcbuf, int srcbuflen, int hexstrlen, int (*lprintf)(int level, const char *fmt, ...)) 
+static void btox(char *hexstr, const char *srcbuf, size_t srcbuflen, size_t hexstrlen, int (*lprintf)(int level, const char *fmt, ...)) 
 {
-	if (hexstrlen < srcbuflen*2) {
+	if (hexstrlen < srcbuflen*2+1) {
 		lprintf(LOG_WARNING,"btox hexstr buffer too small [%d] - not all data will be processed",hexstrlen);
-		srcbuflen = hexstrlen/2;
+		srcbuflen = hexstrlen/2-1;
 	}
 
 	*hexstr = '\0';
 	for (int i=0;i<srcbuflen;i++) sprintf(hexstr+strlen(hexstr),"%02x",(unsigned char)srcbuf[i]);
 }
 
-static BOOL read_socket(SOCKET sock, char *buffer, int len, int (*lprintf)(int level, const char *fmt, ...))
+static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(int level, const char *fmt, ...))
 {
 	fd_set         socket_set;
 	struct timeval tv;
-	int            i,j,rd;
+	size_t            i;
+	int            j,rd;
 	unsigned char           ch;
 	char           err[128];
 
@@ -267,16 +268,22 @@ static BOOL read_socket(SOCKET sock, char *buffer, int len, int (*lprintf)(int l
 
 		if((j=select(sock+1,&socket_set,NULL,NULL,&tv))>0) {
 			rd = recv(sock,&ch,1,0);
-			if (rd == 1) {
-				/* lprintf(LOG_DEBUG,"%04d multisock read_socket() - Got [%02x]",sock,ch); */
+			if (rd == 0) {
+				lprintf(LOG_WARNING,"%04d multisock read_socket() - remote closed the connection",sock);
+				return FALSE;
+
+			} else if (rd == 1) {
 				buffer[i] = ch;
+
 			} else {
 				lprintf(LOG_WARNING,"%04d multisock read_socket() - failed to read from socket. Got [%d] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
 				return FALSE;
 			}
+
 		} else if (j==0) {
 			lprintf(LOG_WARNING,"%04d multisock read_socket() - No data?",sock);
 			return FALSE;
+
 		} else {
 			lprintf(LOG_WARNING,"%04d multisock read_socket() - select() returned [%d] with error [%s].",sock,j,socket_strerror(socket_errno,err,sizeof(err)));
 			return FALSE;
@@ -514,7 +521,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								// IPv4 - AF_INET
 								case HAPROXY_AFINET:
 									if (i != 12) {
-										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length too small",ret);
+										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv4 address length is incorrect",ret);
 										closesocket(ret);
 										return INVALID_SOCKET;
 									}
@@ -534,7 +541,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								// IPv6 - AF_INET6
 								case HAPROXY_AFINET6:
 									if (i != 36) {
-										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv6 address length too small.",ret);
+										xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY Something went wrong - IPv6 address length is incorrect.",ret);
 										closesocket(ret);
 										return INVALID_SOCKET;
 									}
@@ -566,6 +573,7 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 						hapstr[0] = 0;
 						inet_addrtop(addr, hapstr, sizeof(hapstr));
 						xpms_set->lprintf(LOG_INFO,"%04d * HAPROXY Source [%s]",ret,hapstr);
+
 						return ret;
 					} else {
 						return ret;
