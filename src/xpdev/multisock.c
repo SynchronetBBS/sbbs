@@ -461,8 +461,33 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 								closesocket(ret);
 								return INVALID_SOCKET;
 							}
-							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Version [%x]",ret,hapstr[0]&0x0f); //Should be 2
-							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Command [%x]",ret,(hapstr[0]>>4)&0x0f); //0=Local/1=Proxy
+							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Version [%x]",ret,(hapstr[0]>>4)&0x0f); //Should be 2
+
+							// Check the version
+							switch((hapstr[0]>>4)&0x0f) {
+								case 0x02:
+									break;
+								default:
+									xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY invalid version [%x]",ret,(hapstr[0]>>4)&0x0f);
+									closesocket(ret);
+									return INVALID_SOCKET;
+							}
+
+							xpms_set->lprintf(LOG_DEBUG,"%04d * HAPROXY Command [%x]",ret,hapstr[0]&0x0f); //0=Local/1=Proxy
+
+							// Check the command
+							switch(hapstr[0]&0x0f) {
+								case HAPROXY_LOCAL:
+									xpms_set->lprintf(LOG_INFO,"%04d * HAPROXY health check - we are alive!",ret);
+									closesocket(ret);
+									return INVALID_SOCKET;
+								case HAPROXY_PROXY:
+									break;
+								default:
+									xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY invalid command [%x]",ret,hapstr[0]&0x0f);
+									closesocket(ret);
+									return INVALID_SOCKET;
+							}
 
 							// Protocol and Family
 							if (read_socket(ret,hapstr,1,xpms_set->lprintf)==FALSE) {
