@@ -20,13 +20,13 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 CFLAGS += -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 
 # UIFC Library Link Rule
-$(UIFCLIB_BUILD): $(OBJS)
+$(UIFCLIB_BUILD): ciolib $(OBJS)
 	@echo Creating $@ ...
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
 # MT-UIFC Library Link Rule
-$(UIFCLIB-MT_BUILD): $(MT_OBJS)
+$(UIFCLIB-MT_BUILD): ciolib-mt $(MT_OBJS)
 	@echo Creating $@ ...
 	$(QUIET)$(AR) rc $@ $(MT_OBJS)
 	$(QUIET)$(RANLIB) $@
