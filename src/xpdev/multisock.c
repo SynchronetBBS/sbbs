@@ -301,7 +301,7 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 		if (read_socket(sock, &buffer[i], 1, lprintf)) {
 			switch(buffer[i]) {
 				case 0:
-					return (strlen(buffer) > 0);
+					return TRUE;
 				case '\n':
 					buffer[i+1] = '\0';
 					return TRUE;
@@ -309,12 +309,12 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 
 		} else {
 			buffer[i] = 0;
-			return (strlen(buffer) > 0);
+			return FALSE;
 		}
 	}
 
 	buffer[i] = 0;
-	return TRUE;
+	return FALSE;
 }
 
 SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr, 
@@ -371,9 +371,12 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 						xpms_set->lprintf(LOG_DEBUG,"%04d Working out client address from HAProxy PROTO",ret);
 
 						// Read the first line
+						// In normal proxy usage, we shouldnt fail here - but if there is a badly implemented HAPROXY PROTO
+						// or the user attempts to connect direct to the BBS (not via the proxy) there could be anything 
+						// received (IAC sequences, SSH setup, or just badness)
 						if (! read_socket_line(ret, hapstr, 108, xpms_set->lprintf)) {
-							btox(haphex,hapstr,108,sizeof(haphex), xpms_set->lprintf);
-							xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for version - failed [%s]",ret,hapstr);
+							btox(haphex,hapstr,strlen(hapstr),sizeof(haphex), xpms_set->lprintf);
+							xpms_set->lprintf(LOG_ERR,"%04d * HAPROXY looking for version - failed [%s]",ret,haphex);
 							closesocket(ret);
 							return INVALID_SOCKET;
 						}
