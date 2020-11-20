@@ -2856,6 +2856,7 @@ function daily_maint()
 				}
 				else if (settings.del_1xp && pl.exp === 1 && pl.drag_kills === 0) {
 					pl.name = 'X';
+					pl.real_name = 'X';
 					pl.put();
 					killmail(pl.Record);
 					if (state.married_to_seth === i) {
@@ -2879,6 +2880,7 @@ function daily_maint()
 				}
 				else if (settings.delete_days > 0 && pl.time < (state.days - settings.delete_days)) {
 					pl.name = 'X';
+					pl.real_name = 'X';
 					pl.put();
 					killmail(pl.Record);
 					if (state.married_to_seth === i) {
