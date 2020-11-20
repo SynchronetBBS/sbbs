@@ -16577,6 +16577,7 @@ function start() {
 		sclrscr();
 		sln('');
 		sln('');
+		generate_rankings(gamedir('scores.lrd'), true)
 		sln('  Leaving the realm.');
 	}
 }
