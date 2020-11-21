@@ -19,6 +19,8 @@
 
 */
 
+"use strict";
+
 /* Synchronet libraries */
 load("sbbsdefs.js");
 load("sockdefs.js");
@@ -105,11 +107,11 @@ Local_Sockets_Map = new Object;
 Selectable_Sockets = new Object;
 Selectable_Sockets_Map = new Object;
 
-Global_CommandLine = ""; // We use this to track if a cmdline causes a crash.
-
+/* Highest Connection Count tracking */
 hcc_total = 0;
 hcc_users = 0;
 hcc_counter = 0;
+
 server_uptime = time();
 
 WhoWas = new Object;	/* Stores uppercase nicks */
@@ -117,13 +119,12 @@ WhoWasMap = new Array;	/* A true push/pop array pointing to WhoWas entries */
 WhoWas_Buffer = 1000;	/* Maximum number of WhoWas entries to keep track of */
 
 NickHistory = new Array;	/* A true array using push and pop */
-nick_buffer = 1000;
-nick_pointer = 0;
+NickHistorySize = 1000;
 
 /* Keep track of commands and how long they take to execute. */
 Profile = new Object;
 
-// This is where our unique ID for each client comes from for unreg'd clients.
+/* This is where our unique ID for each client comes from for unreg'd clients. */
 next_client_id = 0;
 
 // An array containing all the objects containing local sockets that we need
@@ -162,7 +163,8 @@ for (cmdarg=0;cmdarg<argc;cmdarg++) {
 
 read_config_file();
 
-if(this.server==undefined) {		// Running from JSexec?
+/* This tests if we're running from JSexec or not */
+if(this.server==undefined) {
 	if (!jsexec_revision_detail)
 		jsexec_revision_detail = "JSexec";
 	if (cmdline_port)
@@ -170,9 +172,15 @@ if(this.server==undefined) {		// Running from JSexec?
 	else if (mline_port)
 		default_port = mline_port;
 
-	server = { socket: false, terminated: false,
-		version_detail: jsexec_revision_detail, interface_ip_addr_list: ["0.0.0.0","::"] };
+	server = {
+		socket: false,
+		terminated: false,
+		version_detail: jsexec_revision_detail,
+		interface_ip_addr_list: ["0.0.0.0","::"]
+	};
+
 	server.socket = create_new_socket(default_port)
+
 	if (!server.socket)
 		exit();
 }
@@ -196,13 +204,13 @@ for (pl in PLines) {
 js.branch_limit=0; // we're not an infinite loop.
 js.auto_terminate=false; // we handle our own termination requests
 
-///// Main Loop /////
+/*** Main Loop ***/
 while (!js.terminated) {
 
 	if(file_date(system.ctrl_dir + "ircd.rehash") > time_config_read)
 		read_config_file();
 
-	// Setup a new socket if a connection is accepted.
+	/* Setup a new socket if a connection is accepted. */
 	for (pl in open_plines) {
 		if (open_plines[pl].poll()) {
 			var client_sock=open_plines[pl].accept();
@@ -280,9 +288,8 @@ while (!js.terminated) {
 				}
 			}
 		} catch(e) {
-			gnotice("FATAL ERROR: " + e + " CMDLINE: " + Global_CommandLine);
-			log(LOG_ERR,"JavaScript exception: " + e + " CMDLINE: "
-				+ Global_CommandLine);
+			gnotice("FATAL ERROR: " + e);
+			log(LOG_ERR,"JavaScript exception: " + e);
 			terminate_everything("A fatal error occured!", /* ERROR? */true);
 		}
 	} else {
@@ -298,16 +305,19 @@ while (!js.terminated) {
 		    (search_server_only(my_cline.servername) < 1) &&
 		     ((time() - my_cline.lastconnect) >
 		     YLines[my_cline.ircclass].connfreq)
-		   ) {
-			umode_notice(USERMODE_ROUTING,"Routing",
-				"Auto-connecting to " +
-				CLines[thisCL].servername + " ("+CLines[thisCL].host+")");
+		) {
+			umode_notice(
+				USERMODE_ROUTING,
+				"Routing",
+				format("Auto-connecting to %s (%s)",
+					CLines[thisCL].servername,
+					CLines[thisCL].host
+				)
+			);
 			connect_to_server(CLines[thisCL]);
 		}
 	}
-
 }
 
-// End of our run, so terminate everything before we go.
+/* We've exited the main loop, so terminate everything. */
 terminate_everything("Terminated.");
-
