@@ -163,11 +163,38 @@ enum {
 #if !defined(HAS_STDINT_H)
 
 typedef char    int8_t;
+#ifndef INT8_MAX
+#define INT8_MAX 0x7f
+#endif
+#ifndef INT16_MAX
+#define INT16_MAX (-0x7f-1)
+#endif
 typedef short   int16_t;
+#ifndef INT16_MAX
+#define INT16_MAX 0x7fff
+#endif
+#ifndef INT16_MIN
+#define INT16_MIN (-0x7fff-1)
+#endif
 typedef long    int32_t;
+#ifndef INT32_MAX
+#define INT32_MAX 0x7fffffff
+#endif
+#ifndef INT32_MIN
+#define INT32_MIN (-0x7fffffff-1)
+#endif
 typedef uchar   uint8_t;
+#ifndef UINT8_MAX
+#define UINT8_MAX 0xff
+#endif
 typedef ushort  uint16_t;
+#ifndef UINT16_MAX
+#define UINT16_MAX 0xffff
+#endif
 typedef ulong   uint32_t;
+#ifndef UINT16_MAX
+#define UINT16_MAX 0xffffffff
+#endif
 
 #endif
 
