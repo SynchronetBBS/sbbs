@@ -1,27 +1,23 @@
-// $Id: ircd_server.js,v 1.60 2020/04/03 22:21:51 deuce Exp $
-//
-// ircd_channel.js                
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details:
-// http://www.gnu.org/licenses/gpl.txt
-//
-// Synchronet IRC Daemon as per RFC 1459, link compatible with Bahamut 1.4
-//
-// Copyright 2003-2009 Randolph Erwin Sommerfeld <sysop@rrx.ca>
-//
-// ** Server to server operation is governed here.
-//
+/*
 
-////////// Constants / Defines //////////
-const SERVER_REVISION = "$Revision: 1.60 $".split(' ')[1];
+ ircd/server.js
+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details:
+ http://www.gnu.org/licenses/gpl.txt
+
+ IRCd inter-server communication.
+
+ Copyright 2003-2020 Randy Sommerfeld <cyan@rrx.ca>
+
+*/
 
 // Various N:Line permission bits
 const NLINE_CHECK_QWKPASSWD		=(1<<0);	// q
