@@ -377,7 +377,7 @@ function wallopers(str) {
 
 function push_nickbuf(oldnick,newnick) {
 	NickHistory.unshift(new NickBuf(oldnick,newnick));
-	if(NickHistory.length >= nick_buffer)
+	if(NickHistory.length >= NickHistorySize)
 		NickHistory.pop();
 }
 
@@ -2696,7 +2696,6 @@ function IRCClient_check_queues() {
 	this.sendq.send(this.socket);
 	while (this.recvq.queue.length) {
 		cmd = this.recvq.del();
-		Global_CommandLine = cmd;
 		this.work(cmd);
 		if (this.replaced_with !== undefined) {
 			this.replaced_with.check_queues();
