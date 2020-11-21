@@ -240,7 +240,7 @@ BOOL DLLCALL xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int 
 /* Convert a binary variable into a hex string - used for printing in the debug log */
 static void btox(char *hexstr, const char *srcbuf, size_t srcbuflen, size_t hexstrlen, int (*lprintf)(int level, const char *fmt, ...)) 
 {
-	int            i;
+	size_t         i;
 
 	if (hexstrlen < srcbuflen*2+1) {
 		lprintf(LOG_WARNING,"btox hexstr buffer too small [%d] - not all data will be processed",hexstrlen);
@@ -299,7 +299,7 @@ static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 
 static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lprintf)(int level, const char *fmt, ...))
 {
-	int            i;
+	size_t         i;
 
 	for (i = 0; i < buflen - 1; i++) {
 		if (read_socket(sock, &buffer[i], 1, lprintf)) {
@@ -447,10 +447,10 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							}
 							switch(addr->addr.sa_family) {
 								case AF_INET:
-									addr->in.sin_port = htons(l);
+									addr->in.sin_port = htons((unsigned short)l);
 									break;
 								case AF_INET6:
-									addr->in6.sin6_port = htons(l);
+									addr->in6.sin6_port = htons((unsigned short)l);
 									break;
 							}
 
