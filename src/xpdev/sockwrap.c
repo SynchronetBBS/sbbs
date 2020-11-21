@@ -523,3 +523,39 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 	return safe_strerror(error_number, buf, buflen);
 #endif
 }
+
+#ifdef _WIN32
+DLLEXPORT int inet_pton(int af, const char *src, void *dst)
+{
+	struct addrinfo hints = {0};
+	struct addrinfo *res, *cur;
+
+	if (af != AF_INET && af != AF_INET6) {
+		// TODO: Should set socket_errno to EAFNOSUPPORT
+		return -1;
+	}
+
+	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
+	if(getaddrinfo(addr_str, NULL, &hints, &res))
+		return -1;
+
+	for(cur = res; cur; cur++) {
+		if(cur->ai_addr->sa_family == af)
+			break;
+	}
+	if(!cur) {
+		freeaddrinfo(res);
+		return 0;
+	}
+	switch(af) {
+		case AF_INET:
+			memcpy(dst, ((struct sockaddr_in *)(cur->sin_addr)), sizeof((struct sockaddr_in *)cur->sin_addr));
+			break;
+		case AF_INET6:
+			memcpy(dst, ((struct sockaddr_in6 *)(cur->sin6_addr)), sizeof((struct sockaddr_in6 *)cur->sin6_addr));
+			break;
+	}
+	freeaddrinfo(res);
+	return addr;
+}
+#endif
