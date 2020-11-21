@@ -524,7 +524,7 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 #endif
 }
 
-#if defined(_WIN32) && !defined(_MSVC_VER)
+#if defined(_WIN32) && !defined(_MSC_VER)
 DLLEXPORT int inet_pton(int af, const char *src, void *dst)
 {
 	struct addrinfo hints = {0};
