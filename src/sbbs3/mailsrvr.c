@@ -3961,7 +3961,7 @@ static void smtp_thread(void* arg)
 						,server_name
 						,revision,PLATFORM_DESC
 						,with_clauses[with_val]
-						,rcpt_to,msgdate(msg.hdr.when_imported,date)
+						,forward_path,msgdate(msg.hdr.when_imported,date)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
