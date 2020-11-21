@@ -3322,8 +3322,9 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 			lprintf(LOG_ERR, "Error %d reading user #%u", i, usernumber);
 			return SMB_FAILURE;
 		}
-		if((scfg.sys_misc&SM_FWDTONET) && (user.misc&NETMAIL) && is_supported_netmail_addr(&scfg, user.netmail)) {
-			uint16_t nettype = NET_UNKNOWN;
+		uint16_t nettype;
+		if((scfg.sys_misc&SM_FWDTONET) && (user.misc&NETMAIL)
+			&& (nettype = smb_netaddr_type(user.netmail)) >= NET_UNKNOWN) {
 			smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
 			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
 		} else {
