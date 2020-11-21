@@ -192,8 +192,8 @@ typedef ushort  uint16_t;
 #define UINT16_MAX 0xffff
 #endif
 typedef ulong   uint32_t;
-#ifndef UINT16_MAX
-#define UINT16_MAX 0xffffffff
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffff
 #endif
 
 #endif
