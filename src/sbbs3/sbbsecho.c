@@ -3257,7 +3257,7 @@ enum {
 /* Returns 0 on success, 1 dupe, 2 filtered, 3 empty, 4 too-old				*/
 /* or other SMB error														*/
 /****************************************************************************/
-int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
+int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 {
 	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
 	char	msg_id[256],str[128],*p;
@@ -3315,9 +3315,22 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 	smb_hfield_str(&msg,SENDER,hdr->from);
 	smb_hfield_str(&msg,RECIPIENT,hdr->to);
 
-	if(user) {
-		sprintf(str,"%u",user);
-		smb_hfield_str(&msg,RECIPIENTEXT,str);
+	if(usernumber) {
+		user_t user = { .number = usernumber };
+		i = getuserdat(&scfg, &user);
+		if(i != 0) {
+			lprintf(LOG_ERR, "Error %d reading user #%u", i, usernumber);
+			return SMB_FAILURE;
+		}
+		uint16_t nettype;
+		if((scfg.sys_misc&SM_FWDTONET) && (user.misc&NETMAIL)
+			&& (nettype = smb_netaddr_type(user.netmail)) >= NET_UNKNOWN) {
+			smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
+			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
+		} else {
+			sprintf(str,"%u",usernumber);
+			smb_hfield_str(&msg,RECIPIENTEXT,str);
+		}
 	}
 
 	smb_hfield_str(&msg,SUBJECT,hdr->subj);
@@ -3605,7 +3618,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		get_msgid(&scfg,subnum,&msg,msg_id,sizeof(msg_id));
 		smb_hfield_str(&msg,RFC822MSGID,msg_id);
 	}
-	if(smbfile->status.max_crcs==0 || (subnum == INVALID_SUB && user == 0))
+	if(smbfile->status.max_crcs==0 || (subnum == INVALID_SUB && usernumber == 0))
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 	/* Bad echo area collects a *lot* of messages, and thus, hashes - so no dupe checking */
 	if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
