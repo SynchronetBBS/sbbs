@@ -301,9 +301,9 @@ static BOOL read_socket_line(SOCKET sock, char *buffer, size_t buflen, int (*lpr
 		if (read_socket(sock, &buffer[i], 1, lprintf)) {
 			switch(buffer[i]) {
 				case 0:
-					return TRUE;
+					return FALSE;
 				case '\n':
-					buffer[i+1] = '\0';
+					buffer[i+1] = 0;
 					return TRUE;
 			}
 
