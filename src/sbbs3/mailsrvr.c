@@ -2719,9 +2719,6 @@ static void parse_mail_address(char* p
 	if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
 		p=tp+1;
 		tp=strchr(p,'"');
-	} else if(*p == '\'') {	/* MS Outlook will put names in single-quotes */
-		p++;
-		tp=strchr(p, '\'');
 	} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
 		p=tp+1;
 		tp=strchr(p,')');
@@ -3976,6 +3973,10 @@ static void smtp_thread(void* arg)
 							*tp = 0;
 							truncsp(rcpt_name);
 						}
+						if(!matchusername(&scfg, rcpt_name, rcpt_to)) {
+							SAFECOPY(rcpt_name, rcpt_to);
+							truncstr(rcpt_name, "@");
+						}
 					}
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 					if(forward_path[0] != 0)
@@ -4663,10 +4664,9 @@ static void smtp_thread(void* arg)
 							faddr.zone = zone;
 
 							lprintf(LOG_INFO,"%04d %s %s %s relaying to FidoNet address: %s (%s)"
-								,socket, client.protocol, client_id, relay_user.alias, tp+1, smb_faddrtoa(&faddr, NULL));
-
+								,socket, client.protocol, client_id, relay_user.alias, p, smb_faddrtoa(&faddr, NULL));
 							fprintf(rcptlst,"[%u]\n",rcpt_count++);
-							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
+							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT), p);
 							fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_FIDO);
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),smb_faddrtoa(&faddr,NULL));
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
