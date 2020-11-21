@@ -549,13 +549,13 @@ DLLEXPORT int inet_pton(int af, const char *src, void *dst)
 	}
 	switch(af) {
 		case AF_INET:
-			memcpy(dst, (((struct sockaddr_in *)cur)->sin_addr), sizeof(((struct sockaddr_in *)cur)->sin_addr));
+			memcpy(dst, &(((struct sockaddr_in *)cur)->sin_addr), sizeof(((struct sockaddr_in *)cur)->sin_addr));
 			break;
 		case AF_INET6:
-			memcpy(dst, (((struct sockaddr_in6 *)cur)->sin6_addr), sizeof(((struct sockaddr_in6 *)cur)->sin6_addr));
+			memcpy(dst, &(((struct sockaddr_in6 *)cur)->sin6_addr), sizeof(((struct sockaddr_in6 *)cur)->sin6_addr));
 			break;
 	}
 	freeaddrinfo(res);
-	return addr;
+	return 1;
 }
 #endif
