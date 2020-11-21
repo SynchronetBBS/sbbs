@@ -241,7 +241,7 @@ DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 DLLEXPORT BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
 DLLEXPORT char* socket_strerror(int, char*, size_t);
 
-#if defined(_WIN32) && !defined(_MSVC_VER)
+#if defined(_WIN32) && !defined(_MSC_VER)
 DLLEXPORT int inet_pton(int af, const char *src, void *dst);
 #endif
 
