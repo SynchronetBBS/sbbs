@@ -240,13 +240,17 @@ BOOL DLLCALL xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int 
 /* Convert a binary variable into a hex string - used for printing in the debug log */
 static void btox(char *hexstr, const char *srcbuf, size_t srcbuflen, size_t hexstrlen, int (*lprintf)(int level, const char *fmt, ...)) 
 {
+	int            i;
+
 	if (hexstrlen < srcbuflen*2+1) {
 		lprintf(LOG_WARNING,"btox hexstr buffer too small [%d] - not all data will be processed",hexstrlen);
 		srcbuflen = hexstrlen/2-1;
 	}
 
 	*hexstr = '\0';
-	for (int i=0;i<srcbuflen;i++) sprintf(hexstr+strlen(hexstr),"%02x",(unsigned char)srcbuf[i]);
+	for (i=0;i<srcbuflen;i++) {
+		sprintf(hexstr+strlen(hexstr),"%02x",(unsigned char)srcbuf[i]);
+	}
 }
 
 static BOOL read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(int level, const char *fmt, ...))
