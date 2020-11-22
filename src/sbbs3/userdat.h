@@ -75,6 +75,7 @@ DLLEXPORT int	fgetuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT int	putuserdat(scfg_t*, user_t*);	/* Put userdat struct into user file	*/
 DLLEXPORT int	newuserdat(scfg_t*, user_t*);	/* Create new userdat in user file */
 DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); /* Checks for a username match */
+DLLEXPORT BOOL	matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
 DLLEXPORT int	putusername(scfg_t*, int number, char * name);
 DLLEXPORT uint	total_users(scfg_t*);
