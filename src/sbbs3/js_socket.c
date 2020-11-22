@@ -3058,6 +3058,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
+	(void)csockobj;
 	lsockobj = JS_InitClass(cx, parent, sockproto
 		,&js_listening_socket_class
 		,js_listening_socket_constructor
@@ -3065,6 +3066,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
+	(void)lsockobj;
 
 	return(sockobj);
 }
