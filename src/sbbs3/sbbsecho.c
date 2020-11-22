@@ -3325,6 +3325,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 		uint16_t nettype;
 		if((scfg.sys_misc&SM_FWDTONET) && (user.misc&NETMAIL)
 			&& (nettype = smb_netaddr_type(user.netmail)) >= NET_UNKNOWN) {
+			lprintf(LOG_INFO, "Forwarding message from %s to %s", hdr->from, user.netmail);
 			smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
 			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
 		} else {
@@ -3596,7 +3597,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 
 	if(subnum==INVALID_SUB) {
 		smbfile=email;
-		if(net) {
+		if(net && msg.to_net.type == NET_NONE) {
 			smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(ushort),&net);
 			smb_hfield(&msg,RECIPIENTNETADDR,sizeof(fidoaddr_t),&destaddr);
 		}
