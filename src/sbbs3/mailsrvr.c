@@ -6340,7 +6340,7 @@ void DLLCALL mail_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(mail_set,&client_addr, &client_addr_len, startup->sem_chk_freq*1000, (void**)&servprot);
+			client_socket = xpms_accept(mail_set,&client_addr, &client_addr_len, startup->sem_chk_freq*1000, XPMS_FLAGS_NONE, (void**)&servprot);
 			if(client_socket != INVALID_SOCKET) {
 				bool is_smtp = (servprot != servprot_pop3 && servprot != servprot_pop3s);
 				if(startup->socket_open!=NULL)
