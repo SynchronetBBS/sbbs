@@ -56,10 +56,8 @@ static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 {
 	int		file,c;
-	char*	p;
 	char	dat[LEN_ALIAS+2];
 	char	str[256];
-	char	tmp[256];
 	ulong	l,length;
 	FILE*	stream;
 
@@ -79,48 +77,40 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 		for(c=0;c<LEN_ALIAS;c++)
 			if(dat[c]==ETX) break;
 		dat[c]=0;
-		if(!stricmp(dat,name))
-			break;
-		/* convert dots to spaces */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'.',' ',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert spaces to dots */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,' ','.',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert dots to underscores */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'.','_',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert underscores to dots */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'_','.',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert spaces to underscores */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,' ','_',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert underscores to spaces */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'_',' ',p);
-		if(!stricmp(str,name))
-			break;
-		/* strip spaces (from both) */
-		strip_space(dat,str);
-		strip_space(name,tmp);
-		if(!stricmp(str,tmp))
+		if(matchusername(cfg, dat, name))
 			break;
 	}
 	fclose(stream);
 	if(l<length)
 		return((l/(LEN_ALIAS+2))+1);
 	return(0);
+}
+
+/****************************************************************************/
+/* Return TRUE if the user 'name' (or alias) matches with 'comp'			*/
+/* ... ignoring non-alpha-numeric chars in either string					*/
+/* and terminating the comparison string at an '@'							*/
+/****************************************************************************/
+BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
+{
+	(void)cfg; // in case we want this matching logic to be configurable in the future
+
+	const char* np = name;
+	const char* cp = comp;
+	while(*np != '\0' && *cp != '\0' && *cp != '@') {
+		if(!isalnum(*np)) {
+			np++;
+			continue;
+		}
+		if(!isalnum(*cp)) {
+			cp++;
+			continue;
+		}
+		if(toupper(*np) != toupper(*cp))
+			break;
+		np++, cp++;
+	}
+	return *np == '\0' && (*cp == '\0' || *cp == '@');
 }
 
 /****************************************************************************/
@@ -2625,7 +2615,6 @@ char* usermailaddr(scfg_t* cfg, char* addr, const char* name)
 		for(i=0;addr[i];i++)
 			if(addr[i]==' ' || addr[i]&0x80)
 				addr[i]='.';
-		strlwr(addr);
 	}
 	if(VALID_CFG(cfg)) {
 		strcat(addr,"@");
@@ -3653,11 +3642,11 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 		close(userdat);
 	}
 	for(list_node_t* node = listFirstNode(list); node != NULL; node = node->next) {
-		if(stricmp(((user_t*)node->data)->alias, inname) == 0)
+		if(matchusername(cfg, ((user_t*)node->data)->alias, inname))
 			return ((user_t*)node->data)->number;
 	}
 	for(list_node_t* node = listFirstNode(list); node != NULL; node = node->next) {
-		if(stricmp(((user_t*)node->data)->name, inname) == 0)
+		if(matchusername(cfg, ((user_t*)node->data)->name, inname))
 			return ((user_t*)node->data)->number;
 	}
 	return 0;
