@@ -317,6 +317,8 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 	else {
 		backslash(menu_dir);
 		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
+		FULLPATH(path, prefix, MAX_PATH);
+		SAFECOPY(prefix, path);
 	}
 	safe_snprintf(path, MAX_PATH, "%s.%lucol.%s", prefix, cols, ext);
 	if(fexistcase(path))
