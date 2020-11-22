@@ -3464,6 +3464,7 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 			js_DescribeSyncObject(cx, pobj, "Prototype for all header objects.  Can be used to extend these objects.",317);
 		}
 #endif
+		(void)pobj;
 	}
 
 	return(obj);
