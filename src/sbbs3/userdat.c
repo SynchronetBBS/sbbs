@@ -98,11 +98,11 @@ BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
 	const char* np = name;
 	const char* cp = comp;
 	while(*np != '\0' && *cp != '\0' && *cp != '@') {
-		if(!isalnum(*np)) {
+		if(!IS_ALPHANUMERIC(*np)) {
 			np++;
 			continue;
 		}
-		if(!isalnum(*cp)) {
+		if(!IS_ALPHANUMERIC(*cp)) {
 			cp++;
 			continue;
 		}
