@@ -37,11 +37,12 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "sbbs.h"
+#include "str_util.h"
 #include "dirwrap.h"
 #include "nopen.h"
-#include "sbbsdefs.h"
+#include "scfgdefs.h"
 #include "conwrap.h"
+#include "date_str.h"
 
 int 
 main(int argc, char **argv)
