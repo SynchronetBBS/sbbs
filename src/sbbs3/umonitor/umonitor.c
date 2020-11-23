@@ -66,6 +66,8 @@
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 const char *YesStr="Yes";
 const char *NoStr="No";
+char* app_title = "Synchronet UNIX Monitor v" VERSION " " PLATFORM_DESC;
+int	ciolib_mode=CIOLIB_MODE_AUTO;
 
 int lprintf(char *fmt, ...)
 {
@@ -482,7 +484,7 @@ int view_logs(scfg_t *cfg)
 	                "`Hack log            : `View the Hack attempt log.";
 
 	while(1) {
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"View Logs",opt))  {
+		switch(uifc.list(WIN_MID,0,0,0,&i,0,"View Logs",opt))  {
 			case -1:
 				return(0);
 			case 0:
@@ -550,8 +552,12 @@ int do_cmd(char *cmd)
 	gettextinfo(&ti);
 	p=alloca(ti.screenheight*ti.screenwidth*2);
 	gettext(1,1,ti.screenwidth,ti.screenheight,p);
+	suspendciolib();
 	i=system(cmd);
+	initciolib(ciolib_mode);
+	clrscr();
 	puttext(1,1,ti.screenwidth,ti.screenheight,p);
+	uifc.scrn(app_title);
 	return(i);
 }
 
@@ -805,16 +811,15 @@ int main(int argc, char** argv)  {
 	char**	mopt;
 	int		main_dflt=0;
 	int		main_bar=0;
+	int		sys_cur=0;
 	char	revision[16];
 	char	str[256],ctrl_dir[MAX_PATH + 1];
-	char	title[256];
 	int		i,j;
 	node_t	node;
 	int		nodefile = -1;
 	box_t	boxch;
 	scfg_t	cfg;
 	int		done;
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	time_t	last_semfile_check = time(NULL);
 	int		idle_sleep=100;
 
@@ -981,8 +986,7 @@ USAGE:
 		if((mopt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	sprintf(title,"Synchronet UNIX Monitor %s-%s",revision,PLATFORM_DESC);
-	if(uifc.scrn(title)) {
+	if(uifc.scrn(app_title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
@@ -1038,7 +1042,7 @@ USAGE:
 		}
 
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
-			,title,mopt);
+			,app_title,mopt);
 
 		if(j == -2) {
 			SLEEP(idle_sleep);
@@ -1089,10 +1093,9 @@ USAGE:
 			                "`Edit Filter Files     : `Edit the various filter files, e.g. ip.can.";
 
 			done=0;
-			i=0;
 			while(!done) {
 				sprintf(opt[sysop_chat_opt], "Turn Sysop Chat availability %s", sysop_avail ? "Off" : "On");
-				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+				switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT|WIN_ORG,0,0,0,&sys_cur,0,"System Options",opt))  {
 					case -1:
 						done=1;
 						break;
@@ -1283,7 +1286,7 @@ USAGE:
 						"`View crash log       : `View the crash log for current node.";
 				done=0;
 				while(!done) {
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
 						case 0:  /* Edit Users */
 							sprintf(str,"%suedit %d",cfg.exec_dir,node.useron);
@@ -1358,7 +1361,7 @@ USAGE:
 				             "`View crash log : `View the crash log for current node.";
 				done=0;
 				while(!done) {
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
 						case 0: /* Node Toggles */
 							node_toggles(&cfg, j);
