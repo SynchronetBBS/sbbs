@@ -5080,6 +5080,7 @@ BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec*
 	p->methods = methods;
 	p->startup = startup;
 	p->exit_func=NULL;
+	p->onexit = NULL;
 
 	if((*glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL) {
 		free(p);

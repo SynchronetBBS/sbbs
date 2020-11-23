@@ -1295,6 +1295,12 @@ extern "C" {
 										,js_server_props_t* props);
 
 	/* js_global.c */
+	struct js_onexit_scope {
+		JSObject *scope;
+		str_list_t onexit;
+		struct js_onexit_scope *next;
+	};
+
 	typedef struct {
 		scfg_t*				cfg;
 		jsSyncMethodSpec*	methods;
@@ -1302,6 +1308,7 @@ extern "C" {
 		unsigned			bg_count;
 		sem_t				bg_sem;
 		str_list_t			exit_func;
+		struct js_onexit_scope	*onexit;
 	} global_private_t;
 	DLLEXPORT BOOL DLLCALL js_argc(JSContext *cx, unsigned argc, unsigned min);
 	DLLEXPORT BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
