@@ -290,8 +290,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #include "smblib.h"
 #include "ars_defs.h"
-#include "scfgdefs.h"
 #include "scfglib.h"
+#include "scfgsave.h"
 #include "userdat.h"
 #include "riodefs.h"
 #include "cmdshell.h"
@@ -302,6 +302,14 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "telnet.h"
 #include "nopen.h"
 #include "text.h"
+#include "str_util.h"
+#include "date_str.h"
+#include "load_cfg.h"
+#include "filedat.h"
+#include "getstats.h"
+#include "msgdate.h"
+#include "getmail.h"
+#include "msg_id.h"
 
 /* Synchronet Node Instance class definition */
 #if defined(__cplusplus) && defined(JAVASCRIPT)
@@ -1167,20 +1175,6 @@ extern "C" {
 	DLLEXPORT int		DLLCALL sbbs_random(int);
 	DLLEXPORT void		DLLCALL sbbs_srand(void);
 
-	/* getstats.c */
-	DLLEXPORT BOOL		DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
-	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);
-	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
-	DLLEXPORT BOOL		DLLCALL inc_sys_upload_stats(scfg_t*, ulong files, ulong bytes);
-	DLLEXPORT BOOL		DLLCALL inc_sys_download_stats(scfg_t*, ulong files, ulong bytes);
-
-	/* getmail.c */
-	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr);
-	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
-										,int which, long mode);
-	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
-	DLLEXPORT BOOL		DLLCALL delfattach(scfg_t*, smbmsg_t*);
-
 	/* postmsg.cpp */
 	DLLEXPORT int		DLLCALL savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);
 	DLLEXPORT int		DLLCALL votemsg(scfg_t*, smb_t*, smbmsg_t*, const char* msgfmt, const char* votefmt);
@@ -1189,101 +1183,6 @@ extern "C" {
 	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t*, uint subnum);
 	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		DLLCALL notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
-
-	/* filedat.c */
-	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);
-	DLLEXPORT BOOL		DLLCALL putfileixb(scfg_t* cfg, file_t* f);
-	DLLEXPORT BOOL		DLLCALL getfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT BOOL		DLLCALL putfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT void		DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
-	DLLEXPORT void		DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
-	DLLEXPORT char*		DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path);
-
-	DLLEXPORT BOOL		DLLCALL removefiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT BOOL		DLLCALL addfiledat(scfg_t* cfg, file_t* f);
-	DLLEXPORT BOOL		DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
-	DLLEXPORT char *	DLLCALL padfname(const char *filename, char *str);
-	DLLEXPORT char *	DLLCALL unpadfname(const char *filename, char *str);
-	DLLEXPORT BOOL		DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
-
-	DLLEXPORT int		DLLCALL update_uldate(scfg_t* cfg, file_t* f);
-
-	/* str_util.c */
-	DLLEXPORT char *	remove_ctrl_a(const char* instr, char* outstr);
-	DLLEXPORT char 		ctrl_a_to_ascii_char(char code);
-	DLLEXPORT char *	truncstr(char* str, const char* set);
-	DLLEXPORT char *	ascii_str(uchar* str);
-	DLLEXPORT char *	condense_whitespace(char* str);
-	DLLEXPORT char		exascii_to_ascii_char(uchar ch);
-	DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
-	DLLEXPORT BOOL		findstr_in_string(const char* insearchof, char* string);
-	DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
-	DLLEXPORT str_list_t findstr_list(const char* fname);
-	DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
-	DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
-	DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
-	DLLEXPORT char *	strip_ansi(char* str);
-	DLLEXPORT char *	strip_exascii(const char *str, char* dest);
-	DLLEXPORT char *	strip_space(const char *str, char* dest);
-	DLLEXPORT char *	prep_file_desc(const char *str, char* dest);
-	DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
-	DLLEXPORT char *	strip_char(const char* str, char* dest, char);
-	DLLEXPORT char *	net_addr(net_t* net);
-	DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
-	DLLEXPORT BOOL		valid_ctrl_a_code(char a);
-	DLLEXPORT size_t	strip_invalid_attr(char *str);
-	DLLEXPORT char *	ultoac(ulong l,char *str);
-	DLLEXPORT char *	rot13(char* str);
-	DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
-	DLLEXPORT BOOL		str_has_ctrl(const char*);
-	DLLEXPORT BOOL		str_is_ascii(const char*);
-	DLLEXPORT char *	utf8_to_cp437_str(char* str);
-	DLLEXPORT char *	subnewsgroupname(scfg_t*, sub_t*, char*, size_t);
-	DLLEXPORT char * 	get_ctrl_dir(BOOL warn);
-
-	/* msg_id.c */
-	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);
-	DLLEXPORT char *	DLLCALL get_msgid(scfg_t*, uint subnum, smbmsg_t*, char* msgid, size_t);
-	DLLEXPORT char *	DLLCALL get_replyid(scfg_t*, smb_t*, smbmsg_t*, char* msgid, size_t maxlen);
-	DLLEXPORT uint32_t	DLLCALL get_new_msg_number(smb_t*);
-	DLLEXPORT BOOL		DLLCALL add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
-	DLLEXPORT BOOL		DLLCALL add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
-	DLLEXPORT char*		DLLCALL msg_program_id(char* pid, size_t);
-	DLLEXPORT uint		nearest_sysfaddr(scfg_t*, faddr_t* dest_addr);
-
-	/* date_str.c */
-	DLLEXPORT char *	DLLCALL zonestr(short zone);
-	DLLEXPORT time32_t	DLLCALL dstrtounix(scfg_t*, const char *str);
-	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time32_t, char *str);
-	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);
-	DLLEXPORT char *	DLLCALL seconds_to_str(uint, char*);
-	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
-	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time32_t intime, char* str);
-
-	/* msgdate.c */
-	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
-	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
-	DLLEXPORT BOOL		DLLCALL newmsgs(smb_t*, time_t);
-
-	/* load_cfg.c */
-	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
-	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
-	DLLEXPORT void		DLLCALL free_text(char* text[]);
-	DLLEXPORT ushort	DLLCALL sys_timezone(scfg_t* cfg);
-	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
-	DLLEXPORT int 		DLLCALL md(const char *path);
-
-	/* scfgsave.c */
-	DLLEXPORT BOOL		DLLCALL save_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL write_node_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL write_main_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL write_file_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
-	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
-	DLLEXPORT int		DLLCALL smb_storage_mode(scfg_t*, smb_t*);
-	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 
 	/* logfile.cpp */
 	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text);
@@ -1506,17 +1405,6 @@ extern "C" {
 
 #endif
 
-/* str_util.c */
-char*	backslashcolon(char *str);
-ulong	ahtoul(const char *str);	/* Converts ASCII hex to ulong */
-char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
-uint	hptoi(const char *str);
-int		pstrcmp(const char **str1, const char **str2);  /* Compares pointers to pointers */
-int		strsame(const char *str1, const char *str2);	/* Compares number of same chars */
-
-/* load_cfg.c */
-char*	prep_code(char *str, const char* prefix);
-
 #ifdef SBBS /* These aren't exported */
 
 	/* main.c */
@@ -1553,8 +1441,6 @@ char*	prep_code(char *str, const char* prefix);
 
 #endif /* SBBS */
 
-extern const char* wday[];	/* abbreviated weekday names */
-extern const char* mon[];	/* abbreviated month names */
 extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 
 #ifdef __cplusplus
