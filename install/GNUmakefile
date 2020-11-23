@@ -160,13 +160,13 @@ baja:	run sbbs3
 	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
 
 sbj:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS)
+	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
 
 dpoker:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(SBBSDIR)/xtrn/dpoker $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
 
 tbd:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
 
 gtkuseredit:	src
 ifdef USE_GLADE
@@ -245,8 +245,8 @@ endif
 $(REPODIR):
 	git clone https://gitlab.com/SynchronetBBS/sbbs.git $(REPODIR) \
 		|| git clone https://github.com/SynchronetBBS/sbbs.git $(REPODIR) \
-		|| git clone https://gitlab.synchro.net/sbbs/sbbs.git $(REPODIR)
-	git -C $(REPODIR) remote set-url origin https://gitlab.synchro.net/sbbs/sbbs.git
+		|| git clone https://gitlab.synchro.net/main/sbbs.git $(REPODIR)
+	git -C $(REPODIR) remote set-url origin https://gitlab.synchro.net/main/sbbs.git
 ifdef TAG
 	git -C $(REPODIR) checkout tags/$(TAG)
 endif
