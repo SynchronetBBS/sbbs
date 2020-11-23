@@ -14,6 +14,15 @@ function exec_xtrn_pre(prog)
 			options = {};	// default values
 	}
 
+	// If displaying CODE.ans file, prompt the user to continue to enter the game or not
+	if (typeof options.prompt_on_info === "undefined") {
+		options.prompt_on_info = false;
+	}
+
+	if (typeof options.prompt_on_info_fmt === "undefined") {
+		options.prompt_on_info_fmt = "\r\n\x01n\x01cDo you wish to continue";
+	}
+
 	require("nodedefs.js", "NODE_LOGN");
 	if (bbs.node_action == NODE_LOGN) {
 		if (options.disable_pre_on_logon_event) {
@@ -33,7 +42,15 @@ function exec_xtrn_pre(prog)
 
 	if (bbs.menu_exists("xtrn/" + prog.code)) {
 		bbs.menu("xtrn/" + prog.code);
-		console.pause();
+
+		// If displaying CODE.ans file, prompt the user to continue to enter the game or not
+		if (options.prompt_on_info) {
+			if (!console.yesno(options.prompt_on_info_fmt)) {
+				exit(1);
+			}
+		} else {
+			console.pause();
+		}
 		console.line_counter=0;
 	}
 
