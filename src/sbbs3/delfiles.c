@@ -24,6 +24,7 @@
 #include "filedat.h"
 #include "nopen.h"
 #include "str_util.h"
+#include <stdarg.h>
 
 #define DELFILES_VER "1.01"
 

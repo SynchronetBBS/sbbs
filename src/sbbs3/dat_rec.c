@@ -21,6 +21,7 @@
 
 #include "dat_rec.h"
 #include "gen_defs.h"
+#include <string.h>
 
 /****************************************************************************/
 /* Places into 'strout' CR or ETX terminated string starting at             */

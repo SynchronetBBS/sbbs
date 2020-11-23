@@ -27,6 +27,7 @@
 #include "crc16.h"
 #include "crc32.h"
 #include "conwrap.h"	/* kbhit */
+#include <stdarg.h>
 
 unsigned _stklen=10000;
 smb_t		smb;

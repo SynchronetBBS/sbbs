@@ -27,6 +27,7 @@
 #include "filedat.h"
 #include "load_cfg.h"
 #include <stdbool.h>
+#include <stdarg.h>
 
 #define ADDFILES_VER "3.04"
 

@@ -22,6 +22,7 @@
 #include "load_cfg.h"
 #include "nopen.h"
 #include "crc32.h"
+#include <stdarg.h>
 
 #define DUPEFIND_VER "1.02"
 

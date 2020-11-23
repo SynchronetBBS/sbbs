@@ -21,6 +21,7 @@
 #include "smblib.h"
 #include "str_util.h"
 #include "nopen.h"
+#include <stdarg.h>
 
 #define SMBACTIV_VER "1.01"
 

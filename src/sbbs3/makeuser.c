@@ -23,6 +23,7 @@
 #include "str_util.h"
 #include "userdat.h"
 #include "scfglib.h"
+#include <stdarg.h>
 
 scfg_t scfg;
 
