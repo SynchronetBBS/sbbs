@@ -1077,7 +1077,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 									console.crlf();
 								}
 								console.putmsg(options.operator_prompt || "\x01[\x01>\x01y\x01hOperator: ", K_NOCRLF);
-								switch(console.getkeys("?QHC", 0, K_NOCRLF|K_UPPER)) {
+								switch(console.getkeys("?QHC\r", 0, K_NOCRLF|K_UPPER)) {
 									case '?':
 										if(user.settings & USER_EXPERT) {
 											console.line_counter = 0;
