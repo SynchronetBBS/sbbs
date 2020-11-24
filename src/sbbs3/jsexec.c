@@ -1,8 +1,5 @@
 /* Execute a Synchronet JavaScript module from the command-line */
 
-/* $Id: jsexec.c,v 1.217 2020/08/17 00:48:28 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -68,7 +53,6 @@ js_callback_t	cb;
 scfg_t		scfg;
 char*		text[TOTAL_TEXT];
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
-ulong		js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
@@ -133,7 +117,6 @@ void usage(FILE* fp)
 		"    -d             run in background (daemonize)\n"
 #endif
 		"    -m<bytes>      set maximum heap size (default=%u bytes)\n"
-		"    -s<bytes>      set context stack size (default=%u bytes)\n"
 		"    -t<limit>      set time limit (default=%u, 0=unlimited)\n"
 		"    -y<interval>   set yield interval (default=%u, 0=never)\n"
 		"    -g<interval>   set garbage collection interval (default=%u, 0=never)\n"
@@ -163,7 +146,6 @@ void usage(FILE* fp)
 		"    -!             wait for keypress (pause) on error\n"
 		"    -D             debugs the script\n"
 		,JAVASCRIPT_MAX_BYTES
-		,JAVASCRIPT_CONTEXT_STACK
 		,JAVASCRIPT_TIME_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
 		,JAVASCRIPT_GC_INTERVAL
@@ -830,10 +812,7 @@ static BOOL js_init(char** env)
 	if((js_runtime = jsrt_GetNew(js_max_bytes, 5000, __FILE__, __LINE__))==NULL)
 		return(FALSE);
 
-	fprintf(statfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
-		,js_cx_stack);
-
-    if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(FALSE);
 #ifdef JSDOOR
 	JS_SetOptions(js_cx, JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING);
@@ -1141,7 +1120,6 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 	umask_val = iniGetInteger(ini, section, "umask", umask_val);
 
 	js_max_bytes		= (ulong)iniGetBytes(ini, section, strJavaScriptMaxBytes	,/* unit: */1, js_max_bytes);
-	js_cx_stack			= (ulong)iniGetBytes(ini, section, strJavaScriptContextStack,/* unit: */1, js_cx_stack);
 	cb->limit			= iniGetInteger(ini, section, strJavaScriptTimeLimit		, cb->limit);
 	cb->gc_interval		= iniGetInteger(ini, section, strJavaScriptGcInterval		, cb->gc_interval);
 	cb->yield_interval	= iniGetInteger(ini, section, strJavaScriptYieldInterval	, cb->yield_interval);
@@ -1291,9 +1269,6 @@ int main(int argc, char **argv, char** env)
 								perror(p);
 								return(do_bail(1));
 							}
-							break;
-						case 's':
-							js_cx_stack=(ulong)parse_byte_count(p, /* units: */1);
 							break;
 						case 't':
 							cb.limit=strtoul(p,NULL,0);
