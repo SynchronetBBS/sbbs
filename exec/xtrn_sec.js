@@ -74,14 +74,16 @@ if(options.clear_screen === undefined)
 	options.clear_screen = true;
 
 if (options.section_fmt === undefined)
-	options.section_fmt = "\x01y\x01g%3d:\x01n\x01g %s"
+	options.section_fmt = bbs.text(SelectItemFmt);
 
 if (options.section_header_fmt === undefined)
-	options.section_header_fmt = "\x01-\x01gSelect \x01hExternal Program Section\x01-\x01g:"
+	options.section_header_fmt = bbs.text(SelectItemHdr);
 
 if(options.section_which === undefined)
-	options.section_which = "\r\n\x01-\x01gWhich, \x01w\x01h~Q\x01n\x01guit or [1]: \x01h"
+	options.section_which = bbs.text(SelectItemWhich);
 
+if(options.section_header_title === undefined)
+	options.section_header_title = "External Program Section";
 
 function sort_by_name(a, b)
 {
@@ -197,6 +199,7 @@ function external_program_menu(xsec)
 function external_section_menu()
 {
     var i,j;
+    var xsec=0;
 
     while(bbs.online) {
 
@@ -211,7 +214,6 @@ function external_section_menu()
 		    break;
 	    }
 
-	    var xsec=0;
 	    var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
 
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
@@ -232,25 +234,20 @@ function external_section_menu()
 			if(options.sort)
 				sec_list.sort(sort_by_name);
 
-			printf(options.section_header_fmt);
-			console.crlf();
-			console.crlf();
+			printf(options.section_header_fmt, options.section_header_title);
 
-			for (i in sec_list) {
-				printf(options.section_fmt, parseInt(i) + 1, sec_list[i].name);
-				console.crlf();
+			for (i = 0; i < sec_list.length; i++) {
+				console.add_hotspot(i+1);
+				printf(options.section_fmt, i + 1, sec_list[i].name);
 			}
 
 			bbs.node_sync();
-			console.mnemonics(options.section_which);
+			console.mnemonics(format(options.section_which, xsec + 1));
 
-			xsec = console.getnum(sec_list.length);
-			xsec--; // match array index
-
-			if(xsec == -1)
-				xsec = 0; // default option
-			else if(xsec == -2)
+			xsec = console.getnum(sec_list.length, xsec + 1);
+			if(xsec < 1)
 				break;
+			xsec--;
 		}
 
         external_program_menu(sec_list[xsec].index);
