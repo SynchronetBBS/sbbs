@@ -200,11 +200,14 @@ void sbbs_t::nodesync(bool clearline)
 	if(thisnode.misc&NODE_FCHAT) { // forced into private chat
 		int n = getpagingnode(&cfg);
 		if(n) {
+			uint save_action = action;
 			SAVELINE;
 			privchat(true, n);
+			action = save_action;
 			RESTORELINE;
 		}
 		if(getnodedat(cfg.node_num, &thisnode, true)==0) {
+			thisnode.action = action;
 			thisnode.misc &= ~NODE_FCHAT;
 			putnodedat(cfg.node_num, &thisnode); 
 		}
