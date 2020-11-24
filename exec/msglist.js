@@ -660,7 +660,7 @@ function mail_reply(msg, reply_all)
 	}
 }
 
-function download_msg_source(msg)
+function download_msg(msg, plain_text)
 {
 	var fname = system.temp_dir + "msg_" + msg.number + ".txt";
 	var f = new File(fname);
@@ -670,8 +670,9 @@ function download_msg_source(msg)
 				,/* strip ctrl-a */false
 				,/* dot-stuffing */false
 				,/* tails */true
-				,/* plain-text */false);	
-	f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false));
+				,plain_text);
+	f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false
+		,/* default_content_type */!plain_text));
 	f.writeln(text);
 	f.close();
 	return bbs.send_file(fname);
@@ -1046,8 +1047,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case 'D':
 							console.clearline();
-							if(!console.noyes("Download message source", P_NOCRLF)) {
-								if(!download_msg_source(list[current], msgbase))
+							if(!console.noyes("Download message", P_NOCRLF)) {
+								if(!download_msg(list[current], msgbase, console.yesno("Plain-text only")))
 									alert("failed");
 							}
 							console.creturn();
@@ -1124,8 +1125,8 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				break;
 			case 'D':
 				console.clearline();
-				if(!console.noyes("Download message source", P_NOCRLF)) {
-					if(!download_msg_source(list[current], msgbase))
+				if(!console.noyes("Download message", P_NOCRLF)) {
+					if(!download_msg(list[current], msgbase, console.yesno("Plain-text only")))
 						alert("failed");
 					continue;
 				}
