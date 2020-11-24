@@ -1,8 +1,5 @@
 /* Synchronet FTP server */
 
-/* $Id: ftpsrvr.c,v 1.501 2020/08/15 19:15:39 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -568,10 +553,7 @@ js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_c
 	BOOL		success=FALSE;
 	BOOL		rooted=FALSE;
 
-	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,sock,startup->js.cx_stack);
-
-    if((js_cx = JS_NewContext(runtime, startup->js.cx_stack))==NULL)
+    if((js_cx = JS_NewContext(runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 	JS_BEGINREQUEST(js_cx);
 
@@ -6071,7 +6053,6 @@ void DLLCALL ftp_server(void* arg)
 		else
 			startup->options|=FTP_OPT_NO_JAVASCRIPT;
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 		protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);

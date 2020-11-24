@@ -1,8 +1,5 @@
 /* Synchronet Web Server */
 
-/* $Id: websrvr.c,v 1.720 2020/08/08 19:04:57 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -5754,10 +5739,7 @@ js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
 
-	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,session->socket,startup->js.cx_stack);
-
-    if((js_cx = JS_NewContext(session->js_runtime, startup->js.cx_stack))==NULL)
+    if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 	JS_BEGINREQUEST(js_cx);
 
@@ -6971,7 +6953,6 @@ void DLLCALL web_server(void* arg)
 		if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=WEB_DEFAULT_MAX_CGI_INACTIVITY; /* seconds */
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ; /* seconds */
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 		if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
 
 		protected_uint32_adjust(&thread_count,1);

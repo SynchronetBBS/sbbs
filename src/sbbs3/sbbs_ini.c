@@ -1,8 +1,5 @@
 /* Synchronet initialization (.ini) file routines */
 
-/* $Id: sbbs_ini.c,v 1.170 2019/07/24 04:41:49 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -68,7 +53,6 @@ static const char*	strLoginAttemptTempBanThreshold="LoginAttemptTempBanThreshold
 static const char*	strLoginAttemptTempBanDuration="LoginAttemptTempBanDuration";
 static const char*	strLoginAttemptFilterThreshold="LoginAttemptFilterThreshold";
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
-static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
@@ -104,7 +88,6 @@ static void sbbs_fix_js_settings(js_startup_t* js)
 {
 	/* Some sanity checking here */
 	if(js->max_bytes==0)	js->max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(js->cx_stack==0)		js->cx_stack=JAVASCRIPT_CONTEXT_STACK;
 }
 
 void sbbs_get_js_settings(
@@ -117,7 +100,6 @@ void sbbs_get_js_settings(
     char*   p;
 
 	js->max_bytes		= (ulong)iniGetBytes(list,section,strJavaScriptMaxBytes		,/* unit: */1,defaults->max_bytes);
-	js->cx_stack		= (ulong)iniGetBytes(list,section,strJavaScriptContextStack	,/* unit: */1,defaults->cx_stack);
 	js->time_limit		= iniGetInteger(list,section,strJavaScriptTimeLimit		,defaults->time_limit);
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
@@ -142,7 +124,6 @@ BOOL sbbs_set_js_settings(
 	BOOL	failure=FALSE;
 	js_startup_t global_defaults = {
 			 JAVASCRIPT_MAX_BYTES
-			,JAVASCRIPT_CONTEXT_STACK
 			,JAVASCRIPT_TIME_LIMIT
 			,JAVASCRIPT_GC_INTERVAL
 			,JAVASCRIPT_YIELD_INTERVAL
@@ -159,11 +140,6 @@ BOOL sbbs_set_js_settings(
 		iniRemoveValue(lp,section,strJavaScriptMaxBytes);
 	else
 		failure|=iniSetBytes(lp,section,strJavaScriptMaxBytes,/*unit: */1, js->max_bytes,style)==NULL;
-
-	if(js->cx_stack==defaults->cx_stack)
-		iniRemoveValue(lp,section,strJavaScriptContextStack);
-	else 
-		failure|=iniSetBytes(lp,section,strJavaScriptContextStack,/*unit: */1,js->cx_stack,style)==NULL;
 
 	if(js->time_limit==defaults->time_limit)
 		iniRemoveValue(lp,section,strJavaScriptTimeLimit);
@@ -246,7 +222,6 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 
 	/* Setup default values here */
 	global->js.max_bytes		= JAVASCRIPT_MAX_BYTES;
-	global->js.cx_stack			= JAVASCRIPT_CONTEXT_STACK;
 	global->js.time_limit		= JAVASCRIPT_TIME_LIMIT;
 	global->js.gc_interval		= JAVASCRIPT_GC_INTERVAL;
 	global->js.yield_interval	= JAVASCRIPT_YIELD_INTERVAL;

@@ -1,8 +1,5 @@
 /* Synchronet terminal server thread and related functions */
 
-/* $Id: main.cpp,v 1.794 2020/08/08 20:17:02 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -1271,17 +1256,13 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 	JSContext* js_cx;
 
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %lu bytes"
 		,desc, startup->js.max_bytes);
 	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__)) == NULL)
 		return NULL;
 
-	lprintf(LOG_DEBUG,"JavaScript: Initializing %s context (stack: %lu bytes)"
-		,desc, startup->js.cx_stack);
-
-    if((js_cx = JS_NewContext(*runtime, startup->js.cx_stack))==NULL)
+    if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return NULL;
 	JS_BEGINREQUEST(js_cx);
 
