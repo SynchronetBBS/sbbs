@@ -144,6 +144,7 @@ var   NODE_RPCHT  	=(1<<10);   /* Reset private chat						*/
 var   NODE_NMSG   	=(1<<11);   /* Node message waiting (new way)			*/
 var   NODE_EXT    	=(1<<12);   /* Extended info on node action				*/
 var   NODE_LCHAT	=(1<<13);   /* Being pulled into local chat				*/
+var   NODE_FCHAT	=(1<<14);	/* Being forced into private chat			*/
 								/********************************************/
 								
 /* Values for bbs.node_connection			*/
