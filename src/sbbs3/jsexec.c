@@ -40,7 +40,6 @@
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
 
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
-static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
