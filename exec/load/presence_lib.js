@@ -88,6 +88,8 @@ function node_misc(node, is_sysop)
 			flags += 'D';
 		if(node_misc&NODE_LCHAT)
 			flags += 'C';
+		if(node_misc&NODE_FCHAT)
+			flags += 'F';
 		if(node.status == NODE_QUIET)
 			flags += 'Q';
 		if(flags)
