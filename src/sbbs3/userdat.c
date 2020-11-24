@@ -1276,6 +1276,8 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
             strcat(str,"D");
         if(node->misc&NODE_LCHAT)
             strcat(str,"C");
+        if(node->misc&NODE_FCHAT)
+            strcat(str,"F");
         strcat(str,"]");
 	}
 	if(node->errors)
