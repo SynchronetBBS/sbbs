@@ -1,6 +1,5 @@
 # These C objects include sbbs.h, jsapi.h, or cryptlib.h so need JS_DEPS and/or CRYPT_DEPS filled before they can build.
 $(MTOBJODIR)$(DIRSEP)ftpsrvr$(OFILE): $(JS_LIB) $(CRYPT_LIB)
-$(MTOBJODIR)$(DIRSEP)getstats$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)$(DIRSEP)ident$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)$(DIRSEP)js_client$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)$(DIRSEP)js_com$(OFILE): $(JS_LIB) $(CRYPT_LIB)
