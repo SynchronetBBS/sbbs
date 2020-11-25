@@ -1,6 +1,3 @@
-/* $Id: scfgxtrn.c,v 1.71 2020/08/08 20:18:07 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -14,33 +11,18 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-/****************************************************************************/
-/* Synchronet configuration utility 										*/
-/****************************************************************************/
 
 #include "scfg.h"
 
 char *daystr(char days);
 static void hotkey_cfg(void);
 
-static char* use_shell_opt = "Use Shell / New Context";
+static char* use_shell_opt = "Use Shell or New Context";
 static char* use_shell_help =
 	"`Use System Shell or New JavaScript Context to Execute:`\n"
 	"\n"
@@ -54,6 +36,12 @@ static char* use_shell_help =
 	"context for it to execute within, for every invocation."
 	;
 static char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
+static char* native_help =
+	"`Native Executable/Script:`\n"
+	"\n"
+	"If this program is `16-bit MS-DOS` executable, set this option to `No`,\n"
+	"otherwise (it is a native program or script) set this option to `Yes`.\n"
+	;
 
 #define CUT_XTRNSEC_NUM	USHRT_MAX
 
@@ -525,7 +513,7 @@ void tevents_cfg()
 				,cfg.event[i]->misc&EVENT_EXCL ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","Force Users Off-line For Event"
 				,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
-			sprintf(opt[k++],"%-32.32s%s","Native Executable"
+			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
 				,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -797,14 +785,9 @@ void tevents_cfg()
 
 				case 11:
 					k=(cfg.event[i]->misc&EX_NATIVE) ? 0:1;
-					uifc.helpbuf=
-						"`Native Executable:`\n"
-						"\n"
-						"If this event program is a native (e.g. non-DOS) executable, set this\n"
-						"option to `Yes`.\n"
-					;
+					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native Executable",uifcYesNoOpts);
+						,"Native Executable/Script",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
 						cfg.event[i]->misc|=EX_NATIVE;
 						uifc.changes=TRUE;
@@ -1018,7 +1001,7 @@ void xtrn_cfg(uint section)
 					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr
 				,(cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_NOECHO))
 					==(XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : nulstr);
-			sprintf(opt[k++],"%-27.27s%s","Native Executable"
+			sprintf(opt[k++],"%-27.27s%s","Native Executable/Script"
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-27.27s%s",use_shell_opt
 				,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -1266,12 +1249,7 @@ void xtrn_cfg(uint section)
 					break;
 				case 10:
 					k=(cfg.xtrn[i]->misc&XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf=
-						"`Native Executable:`\n"
-						"\n"
-						"If this online program is a native (e.g. non-DOS) executable,\n"
-						"set this option to `Yes`.\n"
-					;
+					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 						,"Native",uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
@@ -1697,7 +1675,7 @@ void xedit_cfg()
 					:cfg.xedit[i]->misc&XTRN_CONIO ? "Console":"No"
 				,(cfg.xedit[i]->misc&(XTRN_STDIO|WWIVCOLOR))
 					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr);
-			sprintf(opt[k++],"%-32.32s%s","Native Executable"
+			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -1867,11 +1845,7 @@ void xedit_cfg()
 					break;
 				case 5:
 					k=(cfg.xedit[i]->misc&XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf=
-						"`Native Executable:`\n"
-						"\n"
-						"If this editor is a native (non-DOS) executable, set this option to `Yes`.\n"
-					;
+					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 						,"Native",uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
@@ -2194,10 +2168,10 @@ int natvpgm_cfg()
 		uifc.helpbuf=
 			"`Native Program List:`\n"
 			"\n"
-			"This is a list of all native (non-DOS) external program (executable file)\n"
-			"names that you may execute under `Synchronet`. This list is not\n"
-			"used in Synchronet for DOS. Any programs not listed here will be assumed\n"
-			"to be DOS programs and executed accordingly.\n"
+			"This is a list of all native (non-DOS) external program names that\n"
+			"you may execute in the Terminal Server. Any programs `not` listed\n"
+			"here will be assumed to be DOS programs (unless otherwise flagged as\n"
+			"'`Native`') and executed accordingly, or not, depending on the system.\n"
 			"\n"
 			"Use ~ INS ~ and ~ DELETE ~ to add and remove native program names.\n"
 			"\n"
