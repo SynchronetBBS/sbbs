@@ -1439,7 +1439,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		safe_snprintf(fullcmdline, sizeof(fullcmdline),
 		// remove unneeded redirection and fix faulty keystroke command -wk42
-		"/usr/bin/env %s HOME=%s QUIET=1 DOSDRIVE_D=%s %s -I\"video { none }\" -I'keystroke \"\\r\"' %s -f%s -E%s -o%sdosemu_boot.log %s",
+		"/usr/bin/env %s HOME=%s QUIET=1 DOSDRIVE_D=%s %s -I\"video { none }\" -I\"keystroke '\\r'\" %s -f%s -E%s -o%sdosemu_boot.log %s",
 			dosterm,cfg.ctrl_dir,cfg.node_dir,dosemubinloc,virtualconf,dosemuconf,str,cfg.node_dir,log_external);
 
 		fprintf(dosemubat,"REM For debugging: %s\r\n",fullcmdline);
