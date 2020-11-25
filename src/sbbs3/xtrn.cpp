@@ -1884,7 +1884,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'F':   /* File path */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE)
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE)
 						&& strncmp(fpath, cfg.node_dir, strlen(cfg.node_dir)) == 0) {
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 						strncat(cmd, fpath + strlen(cfg.node_dir), avail);
@@ -1895,7 +1895,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'G':   /* Temp directory */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
 						strncat(cmd, DOSEMU_TEMP_DIR, avail);
 					else
 #endif
@@ -1909,7 +1909,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'J':
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
 						strncat(cmd, DOSEMU_DATA_DIR, avail);
 					else
 #endif
@@ -1917,7 +1917,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'K':
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
 						strncat(cmd, DOSEMU_CTRL_DIR, avail);
 					else
 #endif
@@ -1931,7 +1931,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 					else
 #endif
@@ -1976,7 +1976,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'Z':
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
 						strncat(cmd, DOSEMU_TEXT_DIR, avail);
 					else
 #endif
@@ -1994,7 +1994,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					break;
                 case '!':   /* EXEC Directory */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
 						strncat(cmd, DOSEMU_EXEC_DIR, avail);
 					else
 #endif
