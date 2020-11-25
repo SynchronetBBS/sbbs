@@ -1610,12 +1610,12 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	char startup_dir[MAX_PATH + 1];
 #if defined(__linux__) && defined(USE_DOSEMU)
 	if(!(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
-		SAFEPRINTF(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
+		SAFEPRINTF2(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
 		backslash(startup_dir);
 		if(cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
-			SAFEPRINTF(drop_file, "%s%s", startup_dir, getfname(path));
+			SAFEPRINTF2(drop_file, "%s%s", startup_dir, getfname(path));
 		else
-			SAFEPRINTF(drop_file, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(path));
+			SAFEPRINTF2(drop_file, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(path));
 	}
 	else
 #endif
