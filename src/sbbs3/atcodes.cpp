@@ -269,6 +269,22 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	str[0]=0;
 
+	if(strcmp(sp, "SHOW") == 0) {
+		console &= ~CON_ECHO_OFF;
+		return nulstr;
+	}
+	if(strncmp(sp, "SHOW:", 5) == 0) {
+		uchar* ar = arstr(NULL, sp + 5, &cfg, NULL);
+		if(ar != NULL) {
+			if(!chk_ar(ar, &useron, &client))
+				console |= CON_ECHO_OFF;
+			else
+				console &= ~CON_ECHO_OFF;
+			free(ar);
+		}
+		return nulstr;
+	}
+
 	if(strcmp(sp, "HOT") == 0) { // Auto-mouse hot-spot attribute
 		hot_attr = curatr;
 		return nulstr;
