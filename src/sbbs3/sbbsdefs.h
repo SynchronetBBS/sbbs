@@ -850,11 +850,19 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_WILDCARD	0
 #endif
 
+/* Linux-DOSemu path/drive hackeroo */
 #define DOSEMU_NODE_DRIVE	"D:"
 #define DOSEMU_XTRN_DRIVE	"E:"	// Parent of xtrn's startup-dir
 #define DOSEMU_CTRL_DRIVE	"F:"
 #define DOSEMU_DATA_DRIVE	"G:"
 #define DOSEMU_EXEC_DRIVE	"H:"
+#define DOSEMU_NODE_DIR		DOSEMU_NODE_DRIVE "\\"
+#define DOSEMU_XTRN_DIR		DOSEMU_XTRN_DRIVE "\\"
+#define DOSEMU_CTRL_DIR		DOSEMU_CTRL_DRIVE "\\"
+#define DOSEMU_DATA_DIR		DOSEMU_DATA_DRIVE "\\"
+#define DOSEMU_EXEC_DIR		DOSEMU_EXEC_DRIVE "\\"
+#define DOSEMU_TEMP_DIR		DOSEMU_NODE_DRIVE "\\TEMP\\"
+#define DOSEMU_TEXT_DIR		DOSEMU_CTRL_DRIVE "\\..\\TEXT\\"
 
 								/* telnet_gate() mode bits					*/
 #define TG_ECHO			(1<<0)	/* Turn on telnet echo						*/
