@@ -459,6 +459,9 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(strcmp(sp, "SYSAVAIL") == 0)
 		return text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable];
 
+	if(strcmp(sp, "SYSAVAILYN") == 0)
+		return text[sysop_available(&cfg) ? Yes : No];
+
 	if(!strcmp(sp,"LOCATION"))
 		return(cfg.sys_location);
 
