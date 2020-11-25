@@ -1430,7 +1430,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if (online==ON_LOCAL) {
 			SAFECOPY(dosterm,"TERM=linux");
-			sprintf(log_external,">> %sdosevent_%s.log",cfg.logs_dir,fname);
+			safe_snprintf(log_external, sizeof(log_external), ">> %sdosevent_%s.log",cfg.logs_dir,fname);
 		}
 		else {
 			dosterm[0]='\0';
@@ -1439,7 +1439,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		/* Drum roll. */
 
-		sprintf(fullcmdline,
+		safe_snprintf(fullcmdline, sizeof(fullcmdline),
 		// remove unneeded redirection and fix faulty keystroke command -wk42
 		"/usr/bin/env %s HOME=%s QUIET=1 DOSDRIVE_D=%s %s -I\"video { none }\" -I'keystroke \"\\r\"' %s -f%s -E%s -o%sdosemu_boot.log %s",
 			dosterm,cfg.ctrl_dir,cfg.node_dir,dosemubinloc,virtualconf,dosemuconf,str,cfg.node_dir,log_external);
