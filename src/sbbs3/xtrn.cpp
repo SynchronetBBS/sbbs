@@ -1081,9 +1081,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	struct timeval timeout;
     BYTE 	wwiv_buf[XTRN_IO_BUF_LEN*2];
     bool	wwiv_flag=false;
-#if defined(__FreeBSD__) || (defined(__linux__) && defined(USE_DOSEMU))
  	char* p;
-#endif
 
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
@@ -1787,9 +1785,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 					i+=rd;
 					if(*bp=='\n') {
 						buf[i] = '\0';
-						truncsp((char*)buf);
-						if(*buf)
-							lprintf(LOG_NOTICE, "%s", buf);
+						p = (char*)buf;
+						truncsp(p);
+						SKIP_WHITESPACE(p);
+						if(*p)
+							lprintf(LOG_NOTICE, "%s", p);
 						i=0;
 						bp=buf;
 					}
