@@ -1847,7 +1847,7 @@ const char* quoted_string(const char* str, char* buf, size_t maxlen)
 /*****************************************************************************/
 /* Returns command line generated from instr with %c replacements            */
 /*****************************************************************************/
-char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr)
+char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, long mode)
 {
 	char	str[MAX_PATH+1],*cmd;
     int		i,j,len;
@@ -1895,10 +1895,20 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,cid, avail);
                     break;
                 case 'J':
-                    strncat(cmd,cfg.data_dir, avail);
+#if defined(__linux__) && defined(USE_DOSEMU)
+					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+						strncat(cmd, DOSEMU_DATA_DRIVE "\\", avail);
+					else
+#endif
+						strncat(cmd,cfg.data_dir, avail);
                     break;
                 case 'K':
-                    strncat(cmd,cfg.ctrl_dir, avail);
+#if defined(__linux__) && defined(USE_DOSEMU)
+					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+						strncat(cmd, DOSEMU_CTRL_DRIVE "\\", avail);
+					else
+#endif
+	                    strncat(cmd,cfg.ctrl_dir, avail);
                     break;
                 case 'L':   /* Lines per message */
                     strncat(cmd,ultoa(cfg.level_linespermsg[useron.level],str,10), avail);
@@ -1907,7 +1917,12 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,ultoa(useron.min,str,10), avail);
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-                    strncat(cmd,cfg.node_dir, avail);
+#if defined(__linux__) && defined(USE_DOSEMU)
+					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+						strncat(cmd, DOSEMU_NODE_DRIVE "\\", avail);
+					else
+#endif
+	                    strncat(cmd,cfg.node_dir, avail);
                     break;
                 case 'O':   /* SysOp */
                     strncat(cmd,QUOTED_STRING(instr[i],cfg.sys_op,str,sizeof(str)), avail);
@@ -1960,7 +1975,12 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 #endif
 					break;
                 case '!':   /* EXEC Directory */
-                    strncat(cmd,cfg.exec_dir, avail);
+#if defined(__linux__) && defined(USE_DOSEMU)
+					if(mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+						strncat(cmd, DOSEMU_EXEC_DRIVE "\\", avail);
+					else
+#endif
+	                    strncat(cmd,cfg.exec_dir, avail);
                     break;
                 case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
 #ifndef __unix__

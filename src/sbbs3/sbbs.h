@@ -675,7 +675,7 @@ public:
 	bool	inputnstime32(time32_t *dt);
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique);
-	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr);
+	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, long mode = EX_UNSPECIFIED);
 	char	cmdstr_output[512];
 
 	void	subinfo(uint subnum);
