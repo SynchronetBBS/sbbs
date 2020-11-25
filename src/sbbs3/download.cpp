@@ -219,13 +219,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		p=cfg.temp_dir;
 	else
 		p=NULL;
-	cmdline=cmdstr(protcmdline(prot,type),fpath,fspec,NULL);
-	SAFEPRINTF(msg,"Transferring %s",cmdline);
-	spymsg(msg);
-	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
-	/* enable telnet binary transmission in both directions */
-	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
-	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
+
 	ex_mode = EX_BIN;
 	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
@@ -233,6 +227,14 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	if(!(prot->misc&PROT_SOCKET))
 		ex_mode|=EX_STDIO;
 #endif
+
+	cmdline=cmdstr(protcmdline(prot,type), fpath, fspec, NULL, ex_mode);
+	SAFEPRINTF(msg,"Transferring %s",cmdline);
+	spymsg(msg);
+	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
+	/* enable telnet binary transmission in both directions */
+	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
+	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
 
 	i=external(cmdline,ex_mode,p);
 	/* Got back to Text/NVT mode */

@@ -723,7 +723,7 @@ bool sbbs_t::sysop_page(void)
 				mode|= EX_NATIVE;
 			if(cfg.page[i]->misc&XTRN_SH)
 				mode |= EX_SH;
-			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL), mode); 
+			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL,mode), mode); 
 		}
 		else if(cfg.sys_misc&SM_SHRTPAGE) {
 			bprintf(text[PagingGuru],cfg.sys_op);

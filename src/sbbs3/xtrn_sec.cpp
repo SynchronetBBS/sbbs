@@ -1625,14 +1625,14 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	}
 
 	start=time(NULL);
-	external(cmdstr(cfg.xtrn[xtrnnum]->cmd, drop_file, startup_dir, NULL)
+	external(cmdstr(cfg.xtrn[xtrnnum]->cmd, drop_file, startup_dir, NULL, mode)
 		,mode
 		,cfg.xtrn[xtrnnum]->path);
 	end=time(NULL);
 	if(cfg.xtrn[xtrnnum]->misc&FREETIME)
 		starttime+=end-start;
 	if(cfg.xtrn[xtrnnum]->clean[0]) {
-		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL)
+		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL, mode)
 			,mode&~(EX_STDIN|EX_CONIO), cfg.xtrn[xtrnnum]->path); 
 	}
 	/* Re-open the logfile */
