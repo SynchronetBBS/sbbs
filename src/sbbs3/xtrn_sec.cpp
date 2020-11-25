@@ -193,10 +193,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		GetShortPathName(cfg.temp_dir,temp_dir,sizeof(temp_dir));
 #elif defined(__linux__) && defined(USE_DOSEMU)
 		/* These drive mappings must match the Linux/DOSEMU patch in xtrn.cpp: */
-		SAFECOPY(node_dir, "D:");
-		SAFECOPY(ctrl_dir, "F:");
-		SAFECOPY(data_dir, "G:");
-		SAFECOPY(exec_dir, "H:");
+		SAFECOPY(node_dir, DOSEMU_NODE_DRIVE);
+		SAFECOPY(ctrl_dir, DOSEMU_CTRL_DRIVE);
+		SAFECOPY(data_dir, DOSEMU_DATA_DRIVE);
+		SAFECOPY(exec_dir, DOSEMU_EXEC_DRIVE);
 #endif
 	}
 
@@ -1606,17 +1606,33 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		removecase(str);							/* reason it's there  */
 	}
 
+	char drop_file[MAX_PATH + 1];
+	char startup_dir[MAX_PATH + 1];
+#if defined(__linux__) && defined(USE_DOSEMU)
+	if(!(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
+		SAFEPRINTF(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
+		backslash(startup_dir);
+		if(cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
+			SAFEPRINTF(drop_file, "%s%s", startup_dir, getfname(path));
+		else
+			SAFEPRINTF(drop_file, "%s\\%s", DOSEMU_NODE_DRIVE, getfname(path));
+	}
+	else
+#endif
+	{
+		SAFECOPY(startup_dir, cfg.xtrn[xtrnnum]->path);
+		SAFECOPY(drop_file, path);
+	}
+
 	start=time(NULL);
-	external(cmdstr(cfg.xtrn[xtrnnum]->cmd,path
-		,cfg.xtrn[xtrnnum]->path
-		,NULL)
+	external(cmdstr(cfg.xtrn[xtrnnum]->cmd, drop_file, startup_dir, NULL)
 		,mode
 		,cfg.xtrn[xtrnnum]->path);
 	end=time(NULL);
 	if(cfg.xtrn[xtrnnum]->misc&FREETIME)
 		starttime+=end-start;
 	if(cfg.xtrn[xtrnnum]->clean[0]) {
-		external(cmdstr(cfg.xtrn[xtrnnum]->clean,path,nulstr,NULL)
+		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL)
 			,mode&~(EX_STDIN|EX_CONIO), cfg.xtrn[xtrnnum]->path); 
 	}
 	/* Re-open the logfile */

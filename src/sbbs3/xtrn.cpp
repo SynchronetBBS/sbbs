@@ -1216,11 +1216,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* Default locations that can be overridden by
 		 * the sysop in emusetup.bat */
 
-		const char nodedrive[] = "D:";
-		const char xtrndrive[] = "E:";
-		const char ctrldrive[] = "F:";
-		const char datadrive[] = "G:";
-		const char execdrive[] = "H:";
+		const char nodedrive[] = DOSEMU_NODE_DRIVE;
+		const char xtrndrive[] = DOSEMU_XTRN_DRIVE;
+		const char ctrldrive[] = DOSEMU_CTRL_DRIVE;
+		const char datadrive[] = DOSEMU_DATA_DRIVE;
+		const char execdrive[] = DOSEMU_EXEC_DRIVE;
 
 		SAFECOPY(str,startup_dir);
 		if(*(p=lastchar(str))=='/')		/* kill trailing slash */

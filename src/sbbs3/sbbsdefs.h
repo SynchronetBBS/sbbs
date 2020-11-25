@@ -849,6 +849,12 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_WILDCARD	0
 #endif
 
+#define DOSEMU_NODE_DRIVE	"D:"
+#define DOSEMU_XTRN_DRIVE	"E:"	// Parent of xtrn's startup-dir
+#define DOSEMU_CTRL_DRIVE	"F:"
+#define DOSEMU_DATA_DRIVE	"G:"
+#define DOSEMU_EXEC_DRIVE	"H:"
+
 								/* telnet_gate() mode bits					*/
 #define TG_ECHO			(1<<0)	/* Turn on telnet echo						*/
 #define TG_CRLF			(1<<1)	/* Expand sole CR to CRLF					*/
