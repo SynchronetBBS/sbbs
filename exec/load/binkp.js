@@ -1022,6 +1022,8 @@ BinkP.prototype.recvFrame = function(timeout)
 	var avail;
 	var nullpos;
 	var buf;
+	var m;
+	var binkp_ver;
 
 	// Avoid warning from syncjslint by putting this in a closure.
 	function hex2ascii(hex)
@@ -1208,11 +1210,11 @@ BinkP.prototype.recvFrame = function(timeout)
 							}
 							break;
 						case 'VER':
-							this.remote_ver = args.slice(1).join(' ');
-							log(LOG_INFO, "Peer version: " + this.remote_ver);
-							var binkp_ver = this.remote_ver.indexOf('binkp/');
-							if(binkp_ver >= 0) {
-								binkp_ver = parseFloat(this.remote_ver.substr(binkp_ver + 6));
+							m = ret.data.match(/^VER (.*) ([^ ]*?)$/);
+							if (m !== null) {
+								this.remote_ver = m[1];
+								log(LOG_INFO, "Peer version: " + this.remote_ver);
+								binkp_ver = parseFloat(m[2].substr(m[2].indexOf('binkp/') + 6));
 								log(LOG_DEBUG, "Parsed BinkP version: " + binkp_ver);
 								this.ver_1_1 = binkp_ver >= 1.1;
 							}
