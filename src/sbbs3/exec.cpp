@@ -801,6 +801,10 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 		SAFEPRINTF2(str,"%s%s",cfg.exec_dir,modname);
 		fexistcase(str);
 	}
+	if(!fexist(str)) {
+		errormsg(WHERE, ERR_EXEC, mod, 0, "module doesn't exist");
+		return -1;
+	}
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return(-1); 
