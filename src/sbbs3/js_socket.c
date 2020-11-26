@@ -1515,8 +1515,8 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			opt;
-	int			level;
-	int			val;
+	int			level = 0;
+	int			val = 0;
 	js_socket_private_t*	p;
 	LINGER		linger;
 	void*		vp=&val;
