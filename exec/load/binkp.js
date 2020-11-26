@@ -1215,6 +1215,7 @@ BinkP.prototype.recvFrame = function(timeout)
 								this.remote_ver = m[1];
 								log(LOG_INFO, "Peer version: " + this.remote_ver);
 								binkp_ver = parseFloat(m[2].substr(m[2].indexOf('binkp/') + 6));
+								// Note: Internet Rex sends "VER Internet Rex 2.67 beta 1a OS/2 (binkp/1.1)"
 								if (m[2] !== 'binkp/1.1' && binkp_ver > 1.0) {
 									log(LOG_WARNING, 'Peer ended their VER with " '+m[2]+'" instead of the required " binkp/1.1", but we\'re assuming binkp 1.1 anyway');
 								}
