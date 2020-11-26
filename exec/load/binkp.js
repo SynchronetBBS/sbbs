@@ -1208,28 +1208,13 @@ BinkP.prototype.recvFrame = function(timeout)
 							}
 							break;
 						case 'VER':
-							log(LOG_INFO, "Peer version: " + args.slice(1).join(' '));
-							tmp = ret.data.split(/ /);
-							if (tmp.length >= 3) {
-								this.remote_ver = tmp[1];
-								if (tmp[2].substr(0, 6) === 'binkp/') {
-									ver = tmp[2].substr(6).split(/\./);
-									if (ver.length >= 2) {
-										tmp = parseInt(ver[0], 10);
-										switch(tmp) {
-											case NaN:
-												break;
-											case 1:
-												if (parseInt(ver[1], 10) > 0)
-													this.ver1_1 = true;
-												break;
-											default:
-												if (tmp > 1)
-													this.ver1_1 = true;
-												break;
-										}
-									}
-								}
+							this.remote_ver = args.slice(1).join(' ');
+							log(LOG_INFO, "Peer version: " + this.remote_ver);
+							var binkp_ver = this.remote_ver.indexOf('binkp/');
+							if(binkp_ver >= 0) {
+								binkp_ver = parseFloat(this.remote_ver.substr(binkp_ver + 6));
+								log(LOG_DEBUG, "Parsed BinkP version: " + binkp_ver);
+								this.ver_1_1 = binkp_ver >= 1.1;
 							}
 							break;
 						case 'ZYZ':
