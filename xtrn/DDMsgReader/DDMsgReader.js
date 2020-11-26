@@ -1,4 +1,4 @@
-// $Id: DDMsgReader.js,v 1.144 2020/07/11 23:07:46 nightfox Exp $
+// $Id: DDMsgReader.js,v 1.143 2020/05/23 23:30:28 nightfox Exp $
 
 /* This is a message reader/lister door for Synchronet.  Features include:
  * - Listing messages in the user's current message area with the ability to
@@ -69,6 +69,10 @@
  *                              Added mouse support to the scrollable reader interface.
  *                              The integrated area changer functionality doesn't have mouse
  *                              support yet.
+ * 2020-11-26 Eric Oulashin     Verison 1.38
+ *                              Bug fix: When forwarding a message, it now correctly
+ *                              sets the to_net_type property in the message header to
+ *                              FidoNet or internet for those types of message destinations
  */
 
 
@@ -180,8 +184,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.37";
-var READER_DATE = "2020-07-11";
+var READER_VERSION = "1.38";
+var READER_DATE = "2020-11-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -13303,7 +13307,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 		return "Invalid message header given";
 
 	var retStr = "";
-	
+
 	console.print("\1n");
 	console.crlf();
 	console.print("\1cUser name/number/email address\1h:\1n");
@@ -13356,9 +13360,13 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			var destMsgHdr = { to_net_type: NET_NONE, from: user.name,
 							   replyto: user.name, subject: "Fwd: " + pMsgHdr.subject };
 			if (user.netmail.length > 0)
+			{
 				destMsgHdr.replyto_net_addr = user.netmail;
+			}
 			else
+			{
 				destMsgHdr.replyto_net_addr = user.email;
+			}
 			//destMsgHdr.when_written_time = 
 			//destMsgHdr.when_written_zone = system.timezone;
 			//destMsgHdr.when_written_zone_offset = 
@@ -13380,7 +13388,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 					console.crlf();
 					destMsgHdr.to = msgDest;
 					destMsgHdr.to_net_addr = msgDest;
-					destMsgHdr.to_net_type = NET_INTERNET;
+					destMsgHdr.to_net_type = msgNetTypeFromAddr(msgDest);
 				}
 			}
 			else
@@ -13430,6 +13438,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 							console.print("\1n\1cForwarding to " + destUser.alias + "\1n");
 							console.crlf();
 							destMsgHdr.to_ext = destUser.number;
+							destMsgHdr.to_net_type = NET_NONE;
 						}
 					}
 				}
@@ -13470,6 +13479,89 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 	}
 
 	return retStr;
+}
+
+// Determines a network type from a message address, for username@dest addresses
+//
+// Parameters:
+//  pMsgDestAddr: A destination message address to test
+//
+// Return value: The message network type (numeric)
+function msgNetTypeFromAddr(pMsgDestAddr)
+{
+	if (typeof(pMsgDestAddr) != "string")
+		return NET_NONE;
+	if (pMsgDestAddr.length == 0)
+		return NET_NONE;
+
+	netType = NET_NONE;
+	if (/^.*@.*$/.test(pMsgDestAddr))
+	{
+		var dest = pMsgDestAddr.substr(pMsgDestAddr.indexOf("@")+1);
+		if (/^[0-9]+:[0-9]+\/[0-9]+$/.test(dest))
+			netType = NET_FIDO;
+		else if (/^[a-zA-Z0-9]+$/.test(dest) || /^[a-zA-Z0-9]+(\/[a-zA-Z0-9]+)*$/.test(dest))
+			netType = NET_QWK;
+		else if (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(pMsgDestAddr))
+			netType = NET_INTERNET;
+		else
+			netType = NET_INTERNET;
+	}
+	return netType;
+}
+
+function printMsgHdrInfo(pMsgHdr)
+{
+	if (typeof(pMsgHdr) != "object")
+		return;
+
+	for (var prop in pMsgHdr)
+	{
+		if (prop == "to_net_type")
+			print(prop + ": " + toNetTypeToStr(pMsgHdr[prop]));
+		else
+			console.print(prop + ": " + pMsgHdr[prop]);
+		console.crlf();
+	}
+}
+
+function toNetTypeToStr(toNetType)
+{
+	var toNetTypeStr = "Unknown";
+	if (typeof(toNetType) == "number")
+	{
+		switch (toNetType)
+		{
+			case NET_NONE:
+				toNetTypeStr = "Local";
+				break;
+			case NET_UNKNOWN:
+				toNetTypeStr = "Unknown networked";
+				break;
+			case NET_FIDO:
+				toNetTypeStr = "FidoNet";
+				break;
+			case NET_POSTLINK:
+				toNetTypeStr = "PostLink";
+				break;
+			case NET_QWK:
+				toNetTypeStr = "QWK";
+				break;
+			case NET_INTERNET:
+				toNetTypeStr = "Internet (NNTP)";
+				break;
+			case NET_WWIV:
+				toNetTypeStr = "WWIV";
+				break;
+			case NET_MHS:
+				toNetTypeStr = "MHS";
+				break;
+			default:
+				toNetTypeStr = "Unknown";
+				break;
+		}
+	}
+	return toNetTypeStr;
 }
 
 // For the DigDistMsgReader class: Lets the user vote on a message
