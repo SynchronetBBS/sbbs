@@ -190,7 +190,7 @@ static int lputs(void* unused, int level, const char* str)
 #if defined(_WIN32) && defined(_DEBUG)
 	if(log_level==LOG_DEBUG) {
 		char dbgstr[1024];
-		SAFEPRINTF(dbgstr, "SEXYZ: %s", str);
+		SAFEPRINTF(dbgstr, "SEXYZ: %s\n", str);
 		OutputDebugString(dbgstr);
 	}
 #endif
@@ -1528,6 +1528,7 @@ int main(int argc, char **argv)
 	BOOL	tcp_nodelay;
 	char	compiler[32];
 	BOOL	telnet_requested=FALSE;
+	str_list_t ini = strListInit();
 	str_list_t fname_list;
 
 	fname_list=strListInit();
@@ -1562,68 +1563,68 @@ int main(int argc, char **argv)
 	*p=0;
 	if((p=getfext(fname))!=NULL) 
 		*p=0;
-	strcat(fname,".ini");
+	SAFECAT(fname,".ini");
 	
 	iniFileName(ini_fname,sizeof(ini_fname),str,fname);
-	if((fp=fopen(ini_fname,"r"))!=NULL)
+	if((fp=fopen(ini_fname,"r"))!=NULL) {
 		fprintf(statfp,"Reading %s\n",ini_fname);
+		ini = iniReadFile(fp);
+		fclose(fp);
+	}
 
-	tcp_nodelay				=iniReadBool(fp,ROOT_SECTION,"TCP_NODELAY",TRUE);
+	tcp_nodelay				=iniGetBool(ini, ROOT_SECTION,"TCP_NODELAY",TRUE);
 
-	telnet					=iniReadBool(fp,ROOT_SECTION,"Telnet",TRUE);
-	debug_tx				=iniReadBool(fp,ROOT_SECTION,"DebugTx",FALSE);
-	debug_rx				=iniReadBool(fp,ROOT_SECTION,"DebugRx",FALSE);
-	debug_telnet			=iniReadBool(fp,ROOT_SECTION,"DebugTelnet",FALSE);
+	telnet					=iniGetBool(ini, ROOT_SECTION,"Telnet",TRUE);
+	debug_tx				=iniGetBool(ini, ROOT_SECTION,"DebugTx",FALSE);
+	debug_rx				=iniGetBool(ini, ROOT_SECTION,"DebugRx",FALSE);
+	debug_telnet			=iniGetBool(ini, ROOT_SECTION,"DebugTelnet",FALSE);
 
-	pause_on_exit			=iniReadBool(fp,ROOT_SECTION,"PauseOnExit",FALSE);
-	pause_on_abend			=iniReadBool(fp,ROOT_SECTION,"PauseOnAbend",FALSE);
+	pause_on_exit			=iniGetBool(ini, ROOT_SECTION,"PauseOnExit",FALSE);
+	pause_on_abend			=iniGetBool(ini, ROOT_SECTION,"PauseOnAbend",FALSE);
 
-	log_level				=iniReadLogLevel(fp,ROOT_SECTION,"LogLevel",log_level);
-	use_syslog				=iniReadBool(fp,ROOT_SECTION,"SysLog",use_syslog);
+	log_level				=iniGetLogLevel(ini, ROOT_SECTION,"LogLevel",log_level);
+	use_syslog				=iniGetBool(ini, ROOT_SECTION,"SysLog",use_syslog);
 
-	outbuf.highwater_mark	=(ulong)iniReadBytes(fp,ROOT_SECTION,"OutbufHighwaterMark",1,1100);
-	outbuf_drain_timeout	=iniReadInteger(fp,ROOT_SECTION,"OutbufDrainTimeout",10);
-	outbuf_size				=(ulong)iniReadBytes(fp,ROOT_SECTION,"OutbufSize",1,16*1024);
+	outbuf.highwater_mark	=(ulong)iniGetBytes(ini, ROOT_SECTION,"OutbufHighwaterMark",1,1100);
+	outbuf_drain_timeout	=iniGetInteger(ini, ROOT_SECTION,"OutbufDrainTimeout",10);
+	outbuf_size				=(ulong)iniGetBytes(ini, ROOT_SECTION,"OutbufSize",1,16*1024);
 
-	progress_interval		=iniReadInteger(fp,ROOT_SECTION,"ProgressInterval",1);
-	max_file_size 			=iniReadBytes(fp,ROOT_SECTION,"MaxFileSize",/* unit: */1,MAX_FILE_SIZE);
+	progress_interval		=iniGetInteger(ini, ROOT_SECTION,"ProgressInterval",1);
+	max_file_size 			=iniGetBytes(ini, ROOT_SECTION,"MaxFileSize",/* unit: */1,MAX_FILE_SIZE);
 
-	if(iniReadBool(fp,ROOT_SECTION,"Debug",FALSE))
+	if(iniGetBool(ini, ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 
-	xm.send_timeout			=iniReadInteger(fp,"Xmodem","SendTimeout",xm.send_timeout);	/* seconds */
-	xm.recv_timeout			=iniReadInteger(fp,"Xmodem","RecvTimeout",xm.recv_timeout);	/* seconds */
-	xm.byte_timeout			=iniReadInteger(fp,"Xmodem","ByteTimeout",xm.byte_timeout);	/* seconds */
-	xm.ack_timeout			=iniReadInteger(fp,"Xmodem","AckTimeout",xm.ack_timeout);	/* seconds */
-	xm.block_size			=(ulong)iniReadBytes(fp,"Xmodem","BlockSize",1,xm.block_size);			/* 128 or 1024 */
-	xm.max_block_size		=(ulong)iniReadBytes(fp,"Xmodem","MaxBlockSize",1,xm.max_block_size);	/* 128 or 1024 */
-	xm.max_errors			=iniReadInteger(fp,"Xmodem","MaxErrors",xm.max_errors);
-	xm.g_delay				=iniReadInteger(fp,"Xmodem","G_Delay",xm.g_delay);
-	xm.crc_mode_supported	=iniReadBool(fp,"Xmodem","SendCRC",xm.crc_mode_supported);
-	xm.g_mode_supported		=iniReadBool(fp,"Xmodem","SendG",xm.g_mode_supported);
+	xm.send_timeout			=iniGetInteger(ini, "Xmodem","SendTimeout",xm.send_timeout);	/* seconds */
+	xm.recv_timeout			=iniGetInteger(ini, "Xmodem","RecvTimeout",xm.recv_timeout);	/* seconds */
+	xm.byte_timeout			=iniGetInteger(ini, "Xmodem","ByteTimeout",xm.byte_timeout);	/* seconds */
+	xm.ack_timeout			=iniGetInteger(ini, "Xmodem","AckTimeout",xm.ack_timeout);	/* seconds */
+	xm.block_size			=(ulong)iniGetBytes(ini, "Xmodem","BlockSize",1,xm.block_size);			/* 128 or 1024 */
+	xm.max_block_size		=(ulong)iniGetBytes(ini, "Xmodem","MaxBlockSize",1,xm.max_block_size);	/* 128 or 1024 */
+	xm.max_errors			=iniGetInteger(ini, "Xmodem","MaxErrors",xm.max_errors);
+	xm.g_delay				=iniGetInteger(ini, "Xmodem","G_Delay",xm.g_delay);
+	xm.crc_mode_supported	=iniGetBool(ini, "Xmodem","SendCRC",xm.crc_mode_supported);
+	xm.g_mode_supported		=iniGetBool(ini, "Xmodem","SendG",xm.g_mode_supported);
 
-	xm.fallback_to_xmodem	=iniReadInteger(fp,"Ymodem","FallbackToXmodem", xm.fallback_to_xmodem);
+	xm.fallback_to_xmodem	=iniGetInteger(ini, "Ymodem","FallbackToXmodem", xm.fallback_to_xmodem);
 
-	zm.init_timeout			=iniReadInteger(fp,"Zmodem","InitTimeout",zm.init_timeout);	/* seconds */
-	zm.send_timeout			=iniReadInteger(fp,"Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
-	zm.recv_timeout			=iniReadInteger(fp,"Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
-	zm.crc_timeout			=iniReadInteger(fp,"Zmodem","CrcTimeout",zm.crc_timeout);	/* seconds */
-	zm.block_size			=(ulong)iniReadBytes(fp,"Zmodem","BlockSize",1,zm.block_size);	/* 1024  */
-	zm.max_block_size		=(ulong)iniReadBytes(fp,"Zmodem","MaxBlockSize",1,zm.max_block_size); /* 1024 or 8192 */
-	zm.max_errors			=iniReadInteger(fp,"Zmodem","MaxErrors",zm.max_errors);
-	zm.recv_bufsize			=(ulong)iniReadBytes(fp,"Zmodem","RecvBufSize",1,0);
-	zm.no_streaming			=!iniReadBool(fp,"Zmodem","Streaming",TRUE);
-	zm.want_fcs_16			=!iniReadBool(fp,"Zmodem","CRC32",TRUE);
-	zm.escape_telnet_iac	=iniReadBool(fp,"Zmodem","EscapeTelnetIAC",TRUE);
-	zm.escape_8th_bit		=iniReadBool(fp,"Zmodem","Escape8thBit",FALSE);
-	zm.escape_ctrl_chars	=iniReadBool(fp,"Zmodem","EscapeCtrlChars",FALSE);
+	zm.init_timeout			=iniGetInteger(ini, "Zmodem","InitTimeout",zm.init_timeout);	/* seconds */
+	zm.send_timeout			=iniGetInteger(ini, "Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
+	zm.recv_timeout			=iniGetInteger(ini, "Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
+	zm.crc_timeout			=iniGetInteger(ini, "Zmodem","CrcTimeout",zm.crc_timeout);	/* seconds */
+	zm.block_size			=(ulong)iniGetBytes(ini, "Zmodem","BlockSize",1,zm.block_size);	/* 1024  */
+	zm.max_block_size		=(ulong)iniGetBytes(ini, "Zmodem","MaxBlockSize",1,zm.max_block_size); /* 1024 or 8192 */
+	zm.max_errors			=iniGetInteger(ini, "Zmodem","MaxErrors",zm.max_errors);
+	zm.recv_bufsize			=(ulong)iniGetBytes(ini, "Zmodem","RecvBufSize",1,0);
+	zm.no_streaming			=!iniGetBool(ini, "Zmodem","Streaming",TRUE);
+	zm.want_fcs_16			=!iniGetBool(ini, "Zmodem","CRC32",TRUE);
+	zm.escape_telnet_iac	=iniGetBool(ini, "Zmodem","EscapeTelnetIAC",TRUE);
+	zm.escape_8th_bit		=iniGetBool(ini, "Zmodem","Escape8thBit",FALSE);
+	zm.escape_ctrl_chars	=iniGetBool(ini, "Zmodem","EscapeCtrlChars",FALSE);
 
-	dszlog_path				=iniReadBool(fp,"DSZLOG","Path",TRUE);
-	dszlog_short			=iniReadBool(fp,"DSZLOG","Short",FALSE);
-	dszlog_quotes			=iniReadBool(fp,"DSZLOG","Quotes",FALSE);
-
-	if(fp!=NULL)
-		fclose(fp);
+	dszlog_path				=iniGetBool(ini, "DSZLOG","Path",TRUE);
+	dszlog_short			=iniGetBool(ini, "DSZLOG","Short",FALSE);
+	dszlog_quotes			=iniGetBool(ini, "DSZLOG","Quotes",FALSE);
 
 	if(zm.recv_bufsize > 0xffff)
 		zm.recv_bufsize = 0xffff;
@@ -1887,8 +1888,10 @@ int main(int argc, char **argv)
 #ifdef __unix__
 	if(!stdio) {
 #endif
-		lprintf(LOG_DEBUG,"Setting TCP_NODELAY to %d",tcp_nodelay);
-		(void)setsockopt(sock,IPPROTO_TCP,TCP_NODELAY,(char*)&tcp_nodelay,sizeof(tcp_nodelay));
+		char error[256] = "";
+		lprintf(LOG_DEBUG, "Setting socket options");
+		if(iniGetSocketOptions(ini, "sockopts", sock, error, sizeof(error)) != 0)
+			lprintf(LOG_ERR, "ERROR %s", error);
 #ifdef __unix__
 	}
 #endif
