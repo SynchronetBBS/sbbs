@@ -1060,13 +1060,6 @@ void sbbs_t::ctrl_a(char x)
 			console^=(CON_ECHO_OFF);
 		return;
 	}
-	if((uchar)x>0x7f) {
-		cursor_right((uchar)x-0x7f);
-		return;
-	}
-	if(IS_DIGIT(x)) {	/* background color */
-		atr &= (BG_BRIGHT|BLINK|0x0f);
-	}
 	switch(toupper(x)) {
 		case '!':   /* level 10 or higher */
 			if(useron.level<10)
@@ -1107,6 +1100,18 @@ void sbbs_t::ctrl_a(char x)
 		case ')':   /* turn echo back on */
 			console&=~CON_ECHO_OFF;
 			break;
+	}
+	if(console & CON_ECHO_OFF)
+		return;
+
+	if((uchar)x>0x7f) {
+		cursor_right((uchar)x-0x7f);
+		return;
+	}
+	if(IS_DIGIT(x)) {	/* background color */
+		atr &= (BG_BRIGHT|BLINK|0x0f);
+	}
+	switch(toupper(x)) {
 		case '+':	/* push current attribute */
 			if(attr_sp<(int)sizeof(attr_stack))
 				attr_stack[attr_sp++]=curatr;
