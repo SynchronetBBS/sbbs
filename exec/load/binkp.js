@@ -1096,28 +1096,33 @@ BinkP.prototype.recvFrame = function(timeout)
 	else
 		ret = this.partialFrame;
 
-	i = this.recv_buf(this.sock.recv(ret.length - ret.data.length, timeout));
-	if (i == null) {
-		log(LOG_INFO, "Error in recv() of packet data");
-		this.sock.close();
-		this.sock = undefined;
-		return undefined;
+	if (ret.length == 0) {
+		log(LOG_WARNING, "Remote illegally sent a "+(ret.is_cmd ? 'Command' : 'Data')+" packet with data length of zero.  This isn't even allowed in protocol 1.0.");
 	}
-	if (i.length == 0) {
-		if (!this.sock.is_connected) {
-			log(LOG_DEBUG, "Remote host closed socket");
+	else {
+		i = this.recv_buf(this.sock.recv(ret.length - ret.data.length, timeout));
+		if (i == null) {
+			log(LOG_INFO, "Error in recv() of packet data");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
 		}
-		else if (timeout) {
-			log(LOG_WARNING, "Timed out receiving packet data from remote: " + this.remote_addrs);
-			this.sock.close();
-			this.sock = undefined;
-			return undefined;
+		if (i.length == 0) {
+			if (!this.sock.is_connected) {
+				log(LOG_DEBUG, "Remote host closed socket");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			else if (timeout) {
+				log(LOG_WARNING, "Timed out receiving packet data from remote: " + this.remote_addrs);
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
 		}
+		ret.data += i;
 	}
-	ret.data += i;
 
 	if (ret.data.length < ret.length)
 		this.partialFrame = ret;
