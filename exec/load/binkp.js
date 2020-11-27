@@ -1,4 +1,4 @@
-const binkp_revision = 1.124;
+const binkp_revision = 2;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
