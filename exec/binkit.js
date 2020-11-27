@@ -1,4 +1,3 @@
-// $Id: binkit.js,v 2.39 2020/05/04 22:58:33 rswindell Exp $
 // vi: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 /*
  * Intentionally simple "Advanced BinkleyTerm Style Outbound"
@@ -22,7 +21,7 @@ load('fidocfg.js');
 load('binkp.js');
 load('freqit_common.js');
 
-var REVISION = "$Revision: 2.39 $".split(' ')[1];
+var REVISION = 2.40;
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 // data/binkstats.ini

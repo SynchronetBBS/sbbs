@@ -1,4 +1,4 @@
-// $Id: binkp.js,v 1.123 2020/04/10 07:01:24 rswindell Exp $
+const binkp_revision = 1.124;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -56,7 +56,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	if (name_ver === undefined)
 		name_ver = 'UnknownScript/0.0';
 	this.name_ver = name_ver;
-	this.revision = "JSBinkP/" + "$Revision: 1.123 $".split(' ')[1];
+	this.revision = "JSBinkP/" + binkp_revision;
 	this.full_ver = name_ver + "," + this.revision + ',sbbs' + system.version + system.revision + '/' + system.platform;
 
 	if (inbound === undefined)
