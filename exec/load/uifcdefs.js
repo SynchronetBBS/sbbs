@@ -1,14 +1,10 @@
-/* uifcdefs.js */
-
 /* Synchronet User Interface constants */
-
-/* $Id: uifcdefs.js,v 1.3 2009/01/30 06:46:34 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -17,29 +13,14 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 /* This file must remain in-sync with src/uifc/uifc.h */
 
-/* Would rather use const than var, but end up with redeclaration errors.	*/
-
-							    
 const MAX_OPTS	= 10000;
 const MSK_ON	= 0xf0000000;
 const MSK_OFF 	= 0x0fffffff;
@@ -100,7 +81,12 @@ const WIN_FIXEDHEIGHT= (1<<25);	/* Use list_height from uifc struct */
 const WIN_UNGETMOUSE= (1<<26);	/* If the mouse is clicked outside the window, */
 								/* Put the mouse event back into the event queue */
 const WIN_EDIT		= (1<<27);	/* Allow F2 to edit a menu item */
-const WIN_EDITACT	= (1<<28);	/* Remain active after edit key */
+const WIN_PASTEXTR	= (1<<28);	/* Allow paste into extra (blank) item */
+const WIN_INACT		= (1<<29);	/* Draw window inactive... intended for use with WIN_IMM */
+const WIN_POP		= (1<<30);	/* Exit the list. Act as though ESC was pressed. */
+								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
+const WIN_SEL		= (1<<31);	/* Exit the list. Act as though ENTER was pressed. */
+								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
 
 const WIN_MID		= WIN_L2R|WIN_T2B;/* Place window in middle of screen */
 
@@ -119,4 +105,6 @@ const K_DEUCEEXIT	= (1<<14);	/* Return whenever Deuce wants to exit		*/
 const K_MOUSEEXIT	= (1<<15);	/* Returns when mouse is clicked outside of */
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
+const K_PASSWORD	= (1<<16);	/* Does not display text while editing		*/
+const K_FIND		= (1<<17);	/* Don't set the "changes" flag				*/
 								/********************************************/
