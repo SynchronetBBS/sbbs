@@ -1693,8 +1693,11 @@ void xedit_cfg()
 			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 					? "None" : "Prompt User");
-			sprintf(opt[k++],"%-32.32s%s","Editor Information Files"
-				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS MSGINF/MSGTMP":"WWIV EDITOR.INF/RESULT.ED");
+			SAFECOPY(str, cfg.xedit[i]->misc&QUICKBBS ? "MSGINF/MSGTMP ": "EDITOR.INF/RESULT.ED");
+			if(cfg.xedit[i]->misc&XTRN_LWRCASE)
+				strlwr(str);
+			sprintf(opt[k++],"%-32.32s%s %s","Editor Information Files"
+				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS":"WWIV", str);
 			sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
 			const char* p;
@@ -2008,6 +2011,7 @@ void xedit_cfg()
 						cfg.xedit[i]->misc&=~QUICKBBS;
 						uifc.changes=TRUE; 
 					}
+					goto lowercase_filename;
 					break;
 				case 11:
 					k=(cfg.xedit[i]->misc&EXPANDLF) ? 0:1;
@@ -2132,6 +2136,7 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					if(cfg.xedit[i]->type) {
+						lowercase_filename:
 						k=(cfg.xedit[i]->misc&XTRN_LWRCASE) ? 0:1;
 						k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Lowercase Filename",uifcYesNoOpts);
 						if(k==0 && !(cfg.xedit[i]->misc&XTRN_LWRCASE)) {
