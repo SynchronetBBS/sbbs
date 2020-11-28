@@ -405,7 +405,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 #define DEBUG_TELNET FALSE
 
 /*
- * Returns -1 on disconnect or the number of bytes read.
+ * Returns -1 on disconnect, 0 on timeout, or the number of bytes read.
  * Does not muck around with ERROR_VALUE (hopefully)
  */
 static int recv_buffer(int timeout /* seconds */)
