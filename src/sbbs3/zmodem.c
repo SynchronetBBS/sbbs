@@ -213,9 +213,13 @@ ulong frame_pos(zmodem_t* zm, int type)
  * more data is available.
  */
 
-void zmodem_recv_purge(zmodem_t* zm)
+void zmodem_recv_purge(zmodem_t* zm, unsigned timeout)
 {
-	while(zm->recv_byte(zm->cbdata,0)>=0);
+	int c;
+
+	while((c = zm->recv_byte(zm->cbdata, timeout)) >= 0) {
+		lprintf(zm, LOG_DEBUG, "Purging data in receive buffer: %s", chr(c));
+	}
 }
 
 /*
@@ -236,10 +240,10 @@ int zmodem_send_raw(zmodem_t* zm, unsigned char ch)
 {
 	int	result;
 
-	if((result=zm->send_byte(zm->cbdata,ch,zm->send_timeout))!=0)
-		lprintf(zm,LOG_ERR, "%s ERROR: %d", __FUNCTION__, result);
-
-	zm->last_sent = ch;
+	if((result = zm->send_byte(zm->cbdata, ch, zm->send_timeout)) != 0)
+		lprintf(zm, LOG_ERR, "%s ERROR: %d", __FUNCTION__, result);
+	else
+		zm->last_sent = ch;
 
 	return result;
 }
@@ -252,8 +256,10 @@ int zmodem_send_esc(zmodem_t* zm, unsigned char c)
 {
 	int	result;
 
-	if((result=zmodem_send_raw(zm, ZDLE))!=0)
-		return(result);
+	if((result = zmodem_send_raw(zm, ZDLE)) != 0) {
+		lprintf(zm, LOG_ERR, "%s ERROR: %d", __FUNCTION__, result);
+		return result;
+	}
 	/*
 	 * exclusive or; not an or so ZDLE becomes ZDLEE
 	 */
@@ -655,11 +661,12 @@ int zmodem_recv_raw(zmodem_t* zm)
 			return(ZCAN);
 		if(!is_connected(zm))
 			return(ABORTED);
-		lprintf(zm, LOG_DEBUG, "%lu %s Received NO INPUT (attempt %u of %u)",
-			(ulong)zm->current_file_pos, __FUNCTION__, attempt, zm->recv_timeout);
+		lprintf(zm, LOG_DEBUG, "%s Received NO INPUT (attempt %u of %u)"
+			,__FUNCTION__, attempt + 1, zm->recv_timeout);
 	}
 	if(attempt >= zm->recv_timeout) {
-		lprintf(zm, LOG_WARNING, "%lu %s TIMEOUT", (ulong)zm->current_file_pos, __FUNCTION__);
+		lprintf(zm, LOG_WARNING, "%lu %s TIMEOUT (%u seconds)"
+			,(ulong)zm->current_file_pos, __FUNCTION__, attempt);
 		return TIMEOUT;
 	}
 
@@ -1192,14 +1199,12 @@ BOOL zmodem_recv_bin32_header(zmodem_t* zm)
 
 /*
  * receive any style header
- * if the errors flag is set than whenever an invalid header packet is
- * received INVHDR will be returned. otherwise we wait for a good header
- * also; a flag (receive_32bit_data) will be set to indicate whether data
+ * a flag (receive_32bit_data) will be set to indicate whether data
  * packets following this header will have 16 or 32 bit data attached.
  * variable headers are not implemented.
  */
 
-int zmodem_recv_header_raw(zmodem_t* zm, int errors)
+int zmodem_recv_header_raw(zmodem_t* zm)
 {
 	int c;
 	int type = INVALIDSUBPKT;
@@ -1230,7 +1235,7 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 		 */
 
 		if(c != ZDLE) {
-//			lprintf(zm,LOG_WARNING, __FUNCTION__ " Expected ZDLE, received: %s", chr(c));
+			lprintf(zm,LOG_DEBUG, "%s Expected ZDLE, received: %s", __FUNCTION__, chr(c));
 			continue;
 		}
 
@@ -1267,14 +1272,7 @@ int zmodem_recv_header_raw(zmodem_t* zm, int errors)
 				 */
 				lprintf(zm,LOG_ERR, "%lu %s UNRECOGNIZED header: %s"
 					,(ulong)zm->current_file_pos, __FUNCTION__, chr(c));
-				if(errors) {
-					return INVHDR;
-				}
-
 				continue;
-		}
-		if(errors && zm->rxd_header_len == 0) {
-			return INVHDR;
 		}
 
 	} while(zm->rxd_header_len == 0 && !is_cancelled(zm));
@@ -1330,7 +1328,7 @@ int zmodem_recv_header(zmodem_t* zm)
 {
 	int ret;
 
-	switch(ret = zmodem_recv_header_raw(zm, FALSE)) {
+	switch(ret = zmodem_recv_header_raw(zm)) {
 		case TIMEOUT:
 			lprintf(zm,LOG_WARNING, "%s TIMEOUT", __FUNCTION__);
 			break;
@@ -1350,34 +1348,9 @@ int zmodem_recv_header(zmodem_t* zm)
 	return ret;
 }
 
-int zmodem_recv_header_and_check(zmodem_t* zm)
-{
-	int type=ABORTED;
-
-	while(is_connected(zm) && !is_cancelled(zm)) {
-		type = zmodem_recv_header_raw(zm,TRUE);
-
-		if(type == TIMEOUT)
-			break;
-
-		if(type != INVHDR && (type&BADSUBPKT) == 0)
-			break;
-
-		zmodem_send_znak(zm);
-	}
-
-	lprintf(zm,LOG_DEBUG, "%lu %s returning: %s"
-		,frame_pos(zm, type), __FUNCTION__, frame_desc(type));
-
-	if(type==ZCAN)
-		zm->cancelled=TRUE;
-
-	return type;
-}
-
 BOOL zmodem_request_crc(zmodem_t* zm, int32_t length)
 {
-	zmodem_recv_purge(zm);
+	zmodem_recv_purge(zm, /* timeout: */0);
 	zmodem_send_pos_header(zm,ZCRC,length,TRUE);
 	return TRUE;
 }
@@ -1519,6 +1492,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 			lprintf(zm, LOG_INFO, "%lu Resuming transfer from offset: %"PRIu64
 				,(ulong)zm->current_file_pos, *pos);
 		}
+		zmodem_recv_purge(zm, /* timeout: */1);
 		return TRUE;
 	}
 	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZRPOS offset: %lu"
@@ -1528,9 +1502,11 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 
 BOOL zmodem_handle_zack(zmodem_t* zm)
 {
-	if(zm->rxd_header_pos == zm->current_file_pos)
+	if(zm->rxd_header_pos == zm->current_file_pos) {
+		lprintf(zm, LOG_DEBUG, "%lu Received valid ZACK", zm->rxd_header_pos);
 		return TRUE;
-	lprintf(zm, LOG_WARNING, "%lu ZACK for INVALID OFFSET: %lu"
+	}
+	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZACK, offset: %lu"
 		, (ulong)zm->current_file_pos, zm->rxd_header_pos);
 	return FALSE;
 }
@@ -1570,7 +1546,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 		/*
 		 * read a block from the file
 		 */
-
+		pos = zm->current_file_pos;
 		n = fread(zm->tx_data_subpacket,sizeof(BYTE),zm->block_size,fp);
 
 		if(zm->progress!=NULL)
@@ -1604,7 +1580,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 
 		/* Note: No support for sending ZCRCQ data subpackets here */
 
-		if(zmodem_send_data(zm, type, zm->tx_data_subpacket, n)!=0)
+		if(zmodem_send_data(zm, type, zm->tx_data_subpacket, n) != 0)
 			return(TIMEOUT);
 
 		zm->current_file_pos += n;
@@ -1613,10 +1589,9 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 		subpkts_sent++;
 
 		if(type == ZCRCW || type == ZCRCE) {
-			lprintf(zm, LOG_DEBUG, "%lu Sent end-of-frame (%s subpacket)"
-				,(ulong)zm->current_file_pos, chr(type));
+			lprintf(zm, LOG_DEBUG, "%lu Sent end-of-frame (%s subpacket)",(ulong)pos, chr(type));
 			if(type == ZCRCW) {	/* ZACK expected */
-				lprintf(zm, LOG_DEBUG, "%lu Waiting for ZACK", (ulong)zm->current_file_pos);
+				lprintf(zm, LOG_DEBUG, "%lu Waiting for ZACK", (ulong)pos);
 				while(is_connected(zm)) {
 					int ack;
 					if((ack = zmodem_recv_header(zm)) != ZACK)
@@ -1669,7 +1644,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 					return rx_type;
 				}
 			} else
-				lprintf(zm,LOG_DEBUG, "Unexpected back-channel data received: %s", chr(c));
+				lprintf(zm,LOG_INFO, "Unexpected back-channel data received: %s", chr(c));
 		}
 		if(is_cancelled(zm))
 			return(ZCAN);
@@ -1823,9 +1798,9 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 	p += strlen((char*)p) + 1;
 
-	for(attempts=0;;attempts++) {
+	for(type = INVALIDSUBPKT, attempts=0; type != ZRPOS; attempts++) {
 
-		if(attempts > zm->max_errors)
+		if(attempts >= zm->max_errors)
 			return(FALSE);
 
 		/*
@@ -1875,9 +1850,6 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			lprintf(zm,LOG_WARNING,"File skipped by receiver");
 			return(TRUE);
 		}
-
-		if(type == ZRPOS)
-			break;
 	}
 
 	if(!zmodem_handle_zrpos(zm, &pos))
@@ -1923,7 +1895,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 		if(type == ZRINIT)
 			return(TRUE);	/* Success */
 
-		if(type==ZACK && zmodem_handle_zack(zm)) {
+		if(type == ZACK && zmodem_handle_zack(zm)) {
 			pos += sent_bytes;
 			continue;
 		}
@@ -2267,7 +2239,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 			break;
 		}
 		if(zmodem_waits_for_ack(type))
-			zmodem_recv_purge(zm);
+			zmodem_recv_purge(zm, /* timeout: */1);
 		lprintf(zm, LOG_NOTICE, "%lu Repositioning sender (sending ZRPOS)", (ulong)pos);
 		zmodem_send_pos_header(zm, ZRPOS, (uint32_t)pos, /* Hex? */ TRUE);
 	}
