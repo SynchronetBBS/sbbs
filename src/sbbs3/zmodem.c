@@ -139,7 +139,8 @@ static char *chr(int ch)
 		case ZCRCG:				return("ZCRCG");
 		case ZCRCQ:				return("ZCRCQ");
 		case ZCRCW:				return("ZCRCW");
-
+		case XON:				return "XON";
+		case XOFF:				return "XOFF";
 	}
 	if(ch<0)
 		sprintf(str,"%d",ch);
@@ -818,7 +819,7 @@ int zmodem_rx(zmodem_t* zm)
  * data subpacket reception
  */
 
-int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigned* l, int* type)
+int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigned* len, int* type)
 {
 	int c;
 	uint32_t rxd_crc;
@@ -839,13 +840,13 @@ int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigne
 		if(c > 0xff)
 			break;
 
-		if(*l >= maxlen) {
-			lprintf(zm, LOG_ERR, "%lu Subpacket OVERFLOW (%u > %u)",(ulong)zm->ack_file_pos, *l, maxlen);
+		if(*len >= maxlen) {
+			lprintf(zm, LOG_ERR, "%lu Subpacket OVERFLOW (%u > %u)",(ulong)zm->ack_file_pos, *len, maxlen);
 			return SUBPKTOVERFLOW;
 		}
 		crc = ucrc32(c,crc);
 		*p++ = c;
-		(*l)++;
+		(*len)++;
 	} while(1);
 
 	subpkt_type = c & 0xff;
@@ -862,18 +863,18 @@ int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigne
 
 	if(rxd_crc != crc) {
 		lprintf(zm,LOG_WARNING, "%lu %s CRC ERROR (%08lX, expected: %08lX) Bytes=%u, subpacket type=%s"
-			,(ulong)zm->ack_file_pos, __FUNCTION__, rxd_crc, crc, *l, chr(subpkt_type));
+			,(ulong)zm->ack_file_pos, __FUNCTION__, rxd_crc, crc, *len, chr(subpkt_type));
 		return CRCFAILED;
 	}
 //	lprintf(zm,LOG_DEBUG, "%lu %s GOOD CRC: %08lX (Bytes=%u, subpacket type=%s)"
-//		,(ulong)zm->ack_file_pos, __FUNCTION__, crc, *l, chr(subpkt_type));
+//		,(ulong)zm->ack_file_pos, __FUNCTION__, crc, *len, chr(subpkt_type));
 
-	zm->ack_file_pos += *l;
+	zm->ack_file_pos += *len;
 
 	return subpkt_type;
 }
 
-int zmodem_recv_data16(zmodem_t* zm, register unsigned char* p, unsigned maxlen, unsigned* l, int* type)
+int zmodem_recv_data16(zmodem_t* zm, register unsigned char* p, unsigned maxlen, unsigned* len, int* type)
 {
 	int c;
 	int subpkt_type;
@@ -894,11 +895,11 @@ int zmodem_recv_data16(zmodem_t* zm, register unsigned char* p, unsigned maxlen,
 		if(c > 0xff)
 			break;
 
-		if(*l >= maxlen)
+		if(*len >= maxlen)
 			return SUBPKTOVERFLOW;
 		crc = ucrc16(c,crc);
 		*p++ = c;
-		(*l)++;
+		(*len)++;
 	} while(1);
 
 	subpkt_type = c & 0xff;
@@ -911,24 +912,24 @@ int zmodem_recv_data16(zmodem_t* zm, register unsigned char* p, unsigned maxlen,
 
 	if(rxd_crc != crc) {
 		lprintf(zm,LOG_WARNING, "%lu %s CRC ERROR (%04hX, expected: %04hX) Bytes=%u, subpacket type=%s"
-			,(ulong)zm->ack_file_pos, __FUNCTION__, rxd_crc, crc, *l, chr(subpkt_type));
+			,(ulong)zm->ack_file_pos, __FUNCTION__, rxd_crc, crc, *len, chr(subpkt_type));
 		return CRCFAILED;
 	}
 //	lprintf(zm,LOG_DEBUG, "%lu %s GOOD CRC: %04hX (Bytes=%d, subpacket type=%s)"
-//		,(ulong)zm->ack_file_pos, __FUNCTION__, crc, *l, chr(subpkt_type));
+//		,(ulong)zm->ack_file_pos, __FUNCTION__, crc, *len, chr(subpkt_type));
 
-	zm->ack_file_pos += *l;
+	zm->ack_file_pos += *len;
 
 	return subpkt_type;
 }
 
-int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l, BOOL ack, int* type)
+int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* len, BOOL ack, int* type)
 {
 	int subpkt_type;
 	unsigned n=0;
 
-	if(l==NULL)
-		l=&n;
+	if(len == NULL)
+		len = &n;
 
 //	lprintf(zm,LOG_DEBUG, __FUNCTION__ " (%u-bit)", zm->receive_32bit_data ? 32:16);
 
@@ -936,21 +937,23 @@ int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l,
 	 * receive the right type of frame
 	 */
 
-	*l = 0;
+	*len = 0;
 
 	if(zm->receive_32bit_data) {
-		subpkt_type = zmodem_recv_data32(zm, p, maxlen, l, type);
+		subpkt_type = zmodem_recv_data32(zm, p, maxlen, len, type);
 	}
 	else {
-		subpkt_type = zmodem_recv_data16(zm, p, maxlen, l, type);
+		subpkt_type = zmodem_recv_data16(zm, p, maxlen, len, type);
 	}
 
 	if(subpkt_type <= 0) {	/* e.g. TIMEOUT, SUBPKTOVERFLOW, CRCFAILED */
-		lprintf(zm, LOG_WARNING, "%lu %s ERROR: %s",(ulong)zm->ack_file_pos, __FUNCTION__, chr(subpkt_type));
+		lprintf(zm, LOG_WARNING, "%lu %s ERROR: %s (after %u bytes)"
+			,(ulong)zm->ack_file_pos, __FUNCTION__, chr(subpkt_type), *len);
 		return(subpkt_type);
 	}
 
-	lprintf(zm, LOG_DEBUG, "%lu Successful receipt of subpacket type: %s", (ulong)zm->ack_file_pos, chr(subpkt_type));
+	lprintf(zm, LOG_DEBUG, "%lu Successful receipt of subpacket type: %s (%u bytes)"
+		,(ulong)zm->ack_file_pos, chr(subpkt_type), *len);
 
 	switch(subpkt_type)  {
 		/*
@@ -979,7 +982,8 @@ int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l,
 			return ENDOFFRAME;
 	}
 
-	lprintf(zm,LOG_WARNING, "%lu INVALID subpacket type: %s", (ulong)zm->ack_file_pos, chr(subpkt_type));
+	lprintf(zm,LOG_WARNING, "%lu INVALID subpacket type: %s (%u bytes)"
+		,(ulong)zm->ack_file_pos, chr(subpkt_type), *len);
 
 	return INVALIDSUBPKT;
 }
@@ -987,11 +991,12 @@ int zmodem_recv_data(zmodem_t* zm, unsigned char* p, size_t maxlen, unsigned* l,
 BOOL zmodem_recv_subpacket(zmodem_t* zm, BOOL ack, int* type)
 {
 	int	result;
+	unsigned len = 0;
 
-	result = zmodem_recv_data(zm,zm->rx_data_subpacket,sizeof(zm->rx_data_subpacket),NULL,ack, type);
+	result = zmodem_recv_data(zm,zm->rx_data_subpacket, sizeof(zm->rx_data_subpacket), &len, ack, type);
 	if(result != FRAMEOK && result != ENDOFFRAME) {
-		lprintf(zm, LOG_ERR, "%lu %s ERROR: %s (subpacket type: %s)"
-			,(ulong)zm->ack_file_pos, __FUNCTION__, chr(result), chr(*type));
+		lprintf(zm, LOG_ERR, "%lu %s ERROR: %s (subpacket type: %s, %u bytes)"
+			,(ulong)zm->ack_file_pos, __FUNCTION__, chr(result), chr(*type), len);
 		zmodem_send_znak(zm);
 		return(FALSE);
 	}
@@ -1154,7 +1159,12 @@ BOOL zmodem_recv_hex_header(zmodem_t* zm)
 		/*
 		 * both are expected with CR
 		 */
-		zmodem_rx(zm);	/* drop LF */
+		c = zmodem_rx(zm);	/* drop LF */
+	}
+	if(c != '\n') {
+		lprintf(zm, LOG_ERR, "%s HEX header not terminated with LF: %s"
+			,__FUNCTION__, chr(c));
+		return FALSE;
 	}
 
 	return TRUE;
@@ -1351,7 +1361,7 @@ int zmodem_recv_header(zmodem_t* zm)
 BOOL zmodem_request_crc(zmodem_t* zm, int32_t length)
 {
 	zmodem_recv_purge(zm, /* timeout: */0);
-	zmodem_send_pos_header(zm,ZCRC,length,TRUE);
+	zmodem_send_pos_header(zm, ZCRC, length, /* HEX: */TRUE);
 	return TRUE;
 }
 
@@ -1841,7 +1851,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			else
 				lprintf(zm,LOG_NOTICE,"Receiver requested CRC of first %lu bytes of file"
 					,zm->crc_request);
-			zmodem_send_pos_header(zm,ZCRC,fcrc32(fp,zm->crc_request),TRUE);
+			zmodem_send_pos_header(zm, ZCRC, fcrc32(fp,zm->crc_request), /* Hex: */TRUE);
 			type = zmodem_recv_header(zm);
 		}
 
@@ -2251,7 +2261,6 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, int* type)
 {
 	int			result;
-	unsigned	n;
 	unsigned	attempt;
 
 	/*
@@ -2294,21 +2303,22 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, int* type)
 	}
 
 	do {
-		result = zmodem_recv_data(zm,zm->rx_data_subpacket,sizeof(zm->rx_data_subpacket), &n, /* ack */TRUE, type);
+		unsigned len = 0;
+		result = zmodem_recv_data(zm,zm->rx_data_subpacket,sizeof(zm->rx_data_subpacket), &len, /* ack */TRUE, type);
 
 /*		fprintf(stderr,"packet len %d type %d\n",n,type);
 */
 		if (result == ENDOFFRAME || result == FRAMEOK) {
-			if(fwrite(zm->rx_data_subpacket,1,n,fp)!=n) {
+			if(fwrite(zm->rx_data_subpacket, sizeof(uint8_t), len, fp) != len) {
 				lprintf(zm,LOG_ERR,"ERROR %d writing %u bytes at file offset %"PRIu64
-						,errno, n,(uint64_t)ftello(fp));
+						,errno, len, (uint64_t)ftello(fp));
 				zmodem_send_pos_header(zm, ZFERR, (uint32_t)ftello(fp), /* Hex? */ TRUE);
 				return FALSE;
 			}
 		}
 
 		if(result == FRAMEOK)
-			zm->block_size = n;
+			zm->block_size = len;
 
 		if(zm->progress!=NULL)
 			zm->progress(zm->cbdata, ftello(fp));
