@@ -1673,9 +1673,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 				}
 				if(i > 0) {
 					buf[i] = '\0';
-					truncsp((char*)buf);
-					if(*buf)
-						lprintf(LOG_NOTICE, "%s", buf);
+					p = (char*)buf;
+					truncsp(p);
+					SKIP_WHITESPACE(p);
+					if(*p)
+						lprintf(LOG_NOTICE, "%s: %s", fname, p);
 				}
 
 				/* Eat stderr if mode is EX_BIN */
@@ -1789,7 +1791,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 						truncsp(p);
 						SKIP_WHITESPACE(p);
 						if(*p)
-							lprintf(LOG_NOTICE, "%s", p);
+							lprintf(LOG_NOTICE, "%s: %s", fname, p);
 						i=0;
 						bp=buf;
 					}
@@ -1801,9 +1803,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			}
 			if(i > 0) {
 				buf[i] = '\0';
-				truncsp((char*)buf);
-				if(*buf)
-					lprintf(LOG_NOTICE, "%s", buf);
+				p = (char*)buf;
+				truncsp(p);
+				SKIP_WHITESPACE(p);
+				if(*p)
+					lprintf(LOG_NOTICE, "%s: %s", fname, p);
 			}
 		}
 	}
