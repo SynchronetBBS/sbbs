@@ -65,7 +65,7 @@ var editMenu = function(menuid) {
         menuconfig.menus[menuindex] = {
             'id': menuid,
             'title': "New Generated Menu " + menuid,
-            "sort_type": "name",
+            "sort_type": "title",
             'items': []
         };
         menu = menuconfig.menus[menuindex];
