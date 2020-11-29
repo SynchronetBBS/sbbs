@@ -1,5 +1,3 @@
-/* $Id: scfgmsg.c,v 1.74 2020/08/18 06:03:09 rswindell Exp $ */
-
 /* Configuring Message Options and Message Groups (but not sub-boards) */
 
 /****************************************************************************
@@ -642,7 +640,7 @@ void msgs_cfg()
 			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.grp[grpnum]->lname);
 			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.grp[grpnum]->sname);
 			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.grp[grpnum]->code_prefix);
-			sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
+			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
 				,cfg.grp[grpnum]->arstr);
 			sprintf(opt[j++],"%-27.27s%s","Sort Group by Sub-board", area_sort_desc[cfg.grp[grpnum]->sort]);
 			strcpy(opt[j++],"Clone Options");
