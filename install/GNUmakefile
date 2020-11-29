@@ -12,6 +12,7 @@
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
 # SBBSDIR = Directory to do install to
 # REPODIR = Directory where source files are cloned
+# NOCAP = Set to defeat sbbs3 bind-capabilities (setcap) build target on Linux
 # bcc = Set to use Borland compiler
 # os = Set to the OS name (Not required)
 # SBBSUSER = Owner for the installed files
@@ -78,6 +79,12 @@ else
 endif
 
 MKFLAGS	+=	os=$(os)
+
+ifndef NOCAP
+ifeq (($os),linux)
+	SETCAP 	:=	setcap
+endif
+endif
 
 ifdef DEBUG
  BUILD  :=  debug
@@ -147,11 +154,7 @@ binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 externals:	sbj dpoker tbd
 
 sbbs3:	src
-ifeq ($(os),linux)
-	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) setcap
-else
-	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS)
-endif
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) $(SETCAP)
 
 sexpots:	src
 	$(MAKE) -C $(REPODIR)/src/sexpots $(MKFLAGS)
