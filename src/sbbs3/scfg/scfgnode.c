@@ -56,9 +56,6 @@ void node_menu()
 			"This is the list of configured terminal server nodes. A node is required\n"
 			"for each supported simultaneous 'caller'.\n"
 			"\n"
-			"`Note:` The `FirstNode` (e.g. Node 1) configuration settings are used for\n"
-			"      all the nodes supported by a single terminal server instance.\n"
-			"\n"
 			"`Note:` When nodes are added to this list, the `LastNode` value must be\n"
 			"      adjusted accordingly. See the `ctrl/sbbs.ini` file for more details.\n"
 			"\n"
@@ -178,9 +175,7 @@ void node_cfg()
 		uifc.helpbuf=
 			"`Node Configuration:`\n"
 			"\n"
-			"The configuration settings of the `FirstNode` will determine the behavior\n"
-			"of all nodes of a single terminal server instance  (through `LastNode`).\n"
-			"See the `ctrl/sbbs.ini` file for details.\n"
+			"Configuration settings specific to the selected node.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 			,str,opt)) {
