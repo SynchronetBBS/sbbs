@@ -5716,16 +5716,20 @@ NO_SSH:
 			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
 			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
-				lprintf(LOG_CRIT,"!ERROR %s",logstr);
-				lprintf(LOG_CRIT,"!FAILED to load configuration files");
-				sbbs->bprintf(" FAILED: %s", logstr);
-				client_off(client_socket);
-				SSH_END(client_socket);
-				close_socket(client_socket);
-				sbbs->getnodedat(cfg->node_num,&node,true);
-				node.status = NODE_WFC;
-				sbbs->putnodedat(cfg->node_num,&node);
-				continue;
+				cfg->node_num = first_node;
+				if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+					lprintf(LOG_CRIT,"!ERROR %s",logstr);
+					lprintf(LOG_CRIT,"!FAILED to load configuration files");
+					sbbs->bprintf("\r\nFAILED: %s", logstr);
+					client_off(client_socket);
+					SSH_END(client_socket);
+					close_socket(client_socket);
+					sbbs->getnodedat(cfg->node_num,&node,true);
+					node.status = NODE_WFC;
+					sbbs->putnodedat(cfg->node_num,&node);
+					continue;
+				}
+				cfg->node_num = i; // correct the node number
 			}
 			if(node.misc & NODE_RRUN) {
 				sbbs->getnodedat(cfg->node_num,&node,true);
