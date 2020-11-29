@@ -13388,7 +13388,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 					console.crlf();
 					destMsgHdr.to = msgDest;
 					destMsgHdr.to_net_addr = msgDest;
-					destMsgHdr.to_net_type = msgNetTypeFromAddr(msgDest);
+					destMsgHdr.to_net_type = netaddr_type(msgDest);
 				}
 			}
 			else
@@ -13481,35 +13481,6 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 	return retStr;
 }
 
-// Determines a network type from a message address, for username@dest addresses
-//
-// Parameters:
-//  pMsgDestAddr: A destination message address to test
-//
-// Return value: The message network type (numeric)
-function msgNetTypeFromAddr(pMsgDestAddr)
-{
-	if (typeof(pMsgDestAddr) != "string")
-		return NET_NONE;
-	if (pMsgDestAddr.length == 0)
-		return NET_NONE;
-
-	netType = NET_NONE;
-	if (/^.*@.*$/.test(pMsgDestAddr))
-	{
-		var dest = pMsgDestAddr.substr(pMsgDestAddr.indexOf("@")+1);
-		if (/^[0-9]+:[0-9]+\/[0-9]+$/.test(dest))
-			netType = NET_FIDO;
-		else if (/^[a-zA-Z0-9]+$/.test(dest) || /^[a-zA-Z0-9]+(\/[a-zA-Z0-9]+)*$/.test(dest))
-			netType = NET_QWK;
-		else if (/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(pMsgDestAddr))
-			netType = NET_INTERNET;
-		else
-			netType = NET_INTERNET;
-	}
-	return netType;
-}
-
 function printMsgHdrInfo(pMsgHdr)
 {
 	if (typeof(pMsgHdr) != "object")
@@ -13548,13 +13519,7 @@ function toNetTypeToStr(toNetType)
 				toNetTypeStr = "QWK";
 				break;
 			case NET_INTERNET:
-				toNetTypeStr = "Internet (NNTP)";
-				break;
-			case NET_WWIV:
-				toNetTypeStr = "WWIV";
-				break;
-			case NET_MHS:
-				toNetTypeStr = "MHS";
+				toNetTypeStr = "Internet";
 				break;
 			default:
 				toNetTypeStr = "Unknown";
