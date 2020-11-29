@@ -357,6 +357,7 @@ var editItem = function(menuid, itemindex) {
             "access_string": null,
         });
         itemindex = menu.items.length - 1;
+        present_select_targettype(menu.items[itemindex]);
     }
     item = menu.items[itemindex];
 
@@ -411,6 +412,7 @@ var editItem = function(menuid, itemindex) {
         }
 
         switch (displayoptionids[selection]) {
+            
             case 'input':
                 uifc.help_text = word_wrap("The input key to access this item. Can be anything except Q. Leave blank to auto-generate a number.");
                 selection2 = uifc.input(WIN_MID, "Input Key", item.input, 3, K_EDIT);
@@ -460,182 +462,11 @@ var editItem = function(menuid, itemindex) {
                 break;
 
             case 'type':
-                uifc.help_text = word_wrap(
-                    "This is the type of target this item points to.\r\n\r\n"
-                    + "custommenu is a custom menu defined in this tool.\r\n\r\n"
-                    + "xtrnmenu is a standard Syncrhonet External Section Menu (refer to the scfg tool).\r\n\r\n"
-                    + "xtrnprog is a direct link to an external program (refer to the scfg tool)");
-
-                var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
-                if (typeof item.type !== "undefined") {
-                    switch (item.type) {
-                        case 'custommenu':
-                            targetypectx.cur = 0;
-                            targetypectx.bar = 0;
-                            break;
-                        case 'xtrnmenu':
-                            targetypectx.cur = 1;
-                            targetypectx.bar = 1;
-                            break;
-                        case 'xtrnprog':
-                            targetypectx.cur = 2;
-                            targetypectx.bar = 2;
-                            break;
-                    }
-                }
-                switch (uifc.list(WIN_ORG | WIN_MID | WIN_SAV, 
-                    "Target Type", ["custommenu", "xtrnmenu", "xtrnprog"], targetypectx)) {
-                    case 0:
-                        item.type = "custommenu";
-                        break;
-                    case 1:
-                        item.type = "xtrnmenu"
-                        break;
-                    case 2:
-                        item.type = "xtrnprog";
-                        break;
-                    default:
-                        // includes escape key
-                        break;
-                }
+                present_select_targettype(item);
                 break;
 
             case 'target':
-                uifc.help_text = word_wrap("This is the ID of the custom menu, external program section, or external program to link to.");
-
-                var targetctx = uifc.list.CTX(0, 0, 0, 0, 0);
-
-                switch (item.type) {
-                    case "custommenu":
-                        // present list of custom menus
-                        custommenuitems = [];
-                        custommenuitemsids = [];
-                        custommenunames = [];
-                        for (i in menuconfig.menus) {
-                            custommenuitems.push(format("%23s: %s", menuconfig.menus[i].id, menuconfig.menus[i].title));
-                            custommenuitemsids.push(menuconfig.menus[i].id);
-                            custommenunames.push(menuconfig.menus[i].title);
-                        }
-                        
-                        if ((typeof item.target !== "undefined") && item.target) {
-                            for (var p in custommenuitemsids) {
-                                if (custommenuitemsids[p] == item.target) {
-                                    targetctx.cur = p;
-                                    targetctx.bar = p;
-                                }
-                            }
-                        }
-
-                        selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
-                        if ((selection2 < 0) || (selection2 == null)) {
-                            // escape key
-                            break;
-                        }
-
-                        item.target = custommenuitemsids[selection2];
-
-                        while(1) {
-                            if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["No", "Yes"]) == 1) {
-                                item.title = custommenunames[selection2]; // for external program, change title to program name
-                            }
-                            break;
-                        }
-                        break;
-                        break;
-
-                    case "xtrnmenu":
-                        // present list of external program sections
-                        var seclist = [];
-                        for (i in xtrn_area.sec_list) {
-                            seclist.push({ code: xtrn_area.sec_list[i].code, name: xtrn_area.sec_list[i].name});
-                        };
-                        seclist.sort(sort_by_code);
-
-                        custommenuitems = [];
-                        custommenuitemsids = [];
-                        custommenunames = [];
-                        for (i in seclist) {
-                            custommenuitems.push(format("%23s: %s", seclist[i].code, seclist[i].name));
-                            custommenuitemsids.push(seclist[i].code);
-                            custommenunames.push(seclist[i].name);
-                        }
-
-                        if ((typeof item.target !== "undefined") && item.target) {
-                            for (var p in custommenuitemsids) {
-                                if (custommenuitemsids[p].toLowerCase() == item.target.toLowerCase()) {
-                                    targetctx.cur = p;
-                                    targetctx.bar = p;
-                                }
-                            }
-                        }
-                        
-                        selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
-                        if ((selection2 < 0) || (selection2 == null)) {
-                            // escape key
-                            break;
-                        }
-
-                        item.target = custommenuitemsids[selection2];
-
-                        while(1) {
-                            if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["No", "Yes"]) == 1) {
-                                item.title = custommenunames[selection2]; // for external program, change title to program name
-                            }
-                            break;
-                        }
-                        break;
-
-                    case "xtrnprog":
-                    	
-                        // present list of external programs
-                        // create sorted list
-                        var proglist = [];
-                        custommenunames = [];
-                        for (i in xtrn_area.prog) {
-                            proglist.push({ code: xtrn_area.prog[i].code, name: xtrn_area.prog[i].name});
-                        };
-                        proglist.sort(sort_by_code);
-                        for (i in proglist) {
-                            custommenuitems.push(format("%23s: %s", proglist[i].code, proglist[i].name));
-                            custommenuitemsids.push(proglist[i].code);
-                            custommenunames.push(proglist[i].name);
-                        }
-
-                        if ((typeof item.target !== "undefined") && item.target) {
-                            for (var p in custommenuitemsids) {
-                                if (custommenuitemsids[p].toLowerCase() == item.target.toLowerCase()) {
-                                    targetctx.cur = p;
-                                    targetctx.bar = p;
-                                }
-                            }
-                        }
-                        
-                        selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
-                        if ((selection2 < 0) || (selection2 == null)) {
-                            // escape key
-                            break;
-                        }
-                        if (selection2 || selection2 === 0) {
-                            item.target = custommenuitemsids[selection2];
-                            while(1) {
-                                if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with program's name?", ["No", "Yes"]) == 1) {
-                                    item.title = custommenunames[selection2]; // for external program, change title to program name
-                                }
-                                break;
-                            }
-                        }
-                        break;
-
-                    default:
-                        selection2 = uifc.input(WIN_ORG | WIN_MID, "Target", item.target, 50, K_EDIT);
-                        if ((selection2 < 0) || (selection2 == null)) {
-                            // escape key
-                            break;
-                        }
-
-                        item.target = selection2;
-                        break;
-                }
+                present_select_target(item);
                 break;
 
             case 'access_string':
@@ -651,6 +482,189 @@ var editItem = function(menuid, itemindex) {
         }
         last = Math.max(selection, 0);
     }
+}
+
+function present_select_targettype(item)
+{
+    uifc.help_text = word_wrap(
+        "This is the type of target this item points to.\r\n\r\n"
+        + "custommenu is a custom menu defined in this tool.\r\n\r\n"
+        + "xtrnmenu is a standard Syncrhonet External Section Menu (refer to the scfg tool).\r\n\r\n"
+        + "xtrnprog is a direct link to an external program (refer to the scfg tool)");
+
+    var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
+    if (typeof item.type !== "undefined") {
+        switch (item.type) {
+            case 'custommenu':
+                targetypectx.cur = 0;
+                targetypectx.bar = 0;
+                break;
+            case 'xtrnmenu':
+                targetypectx.cur = 1;
+                targetypectx.bar = 1;
+                break;
+            case 'xtrnprog':
+                targetypectx.cur = 2;
+                targetypectx.bar = 2;
+                break;
+        }
+    }
+    switch (uifc.list(WIN_ORG | WIN_MID | WIN_SAV,
+        "Target Type", ["custommenu", "xtrnmenu", "xtrnprog"], targetypectx)) {
+        case 0:
+            item.type = "custommenu";
+            break;
+        case 1:
+            item.type = "xtrnmenu"
+            break;
+        case 2:
+            item.type = "xtrnprog";
+            break;
+        default:
+            // includes escape key
+            break;
+    }
+
+    // convienence... enter target selection
+    present_select_target(item)    
+}
+
+function present_select_target(item)
+{
+    uifc.help_text = word_wrap("This is the ID of the custom menu, external program section, or external program to link to.");
+
+    var targetctx = uifc.list.CTX(0, 0, 0, 0, 0);
+
+    var custommenuitems = [];
+    var custommenuitemsids = [];
+    var custommenunames = [];
+    
+    var selection2;
+    
+    switch (item.type) {
+        case "custommenu":
+            // present list of custom menus
+            for (i in menuconfig.menus) {
+                custommenuitems.push(format("%23s: %s", menuconfig.menus[i].id, menuconfig.menus[i].title));
+                custommenuitemsids.push(menuconfig.menus[i].id);
+                custommenunames.push(menuconfig.menus[i].title);
+            }
+
+            if ((typeof item.target !== "undefined") && item.target) {
+                for (var p in custommenuitemsids) {
+                    if (custommenuitemsids[p] == item.target) {
+                        targetctx.cur = p;
+                        targetctx.bar = p;
+                    }
+                }
+            }
+
+            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
+            if ((selection2 < 0) || (selection2 == null)) {
+                // escape key
+                break;
+            }
+
+            item.target = custommenuitemsids[selection2];
+
+            while(1) {
+                if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
+                    item.title = custommenunames[selection2]; // for external program, change title to program name
+                }
+                break;
+            }
+            break;
+
+        case "xtrnmenu":
+            // present list of external program sections
+            var seclist = [];
+            for (i in xtrn_area.sec_list) {
+                seclist.push({ code: xtrn_area.sec_list[i].code, name: xtrn_area.sec_list[i].name});
+            };
+            seclist.sort(sort_by_code);
+            
+            for (i in seclist) {
+                custommenuitems.push(format("%23s: %s", seclist[i].code, seclist[i].name));
+                custommenuitemsids.push(seclist[i].code);
+                custommenunames.push(seclist[i].name);
+            }
+
+            if ((typeof item.target !== "undefined") && item.target) {
+                for (var p in custommenuitemsids) {
+                    if (custommenuitemsids[p].toLowerCase() == item.target.toLowerCase()) {
+                        targetctx.cur = p;
+                        targetctx.bar = p;
+                    }
+                }
+            }
+
+            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
+            if ((selection2 < 0) || (selection2 == null)) {
+                // escape key
+                break;
+            }
+
+            item.target = custommenuitemsids[selection2];
+
+            while(1) {
+                if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
+                    item.title = custommenunames[selection2]; // for external program, change title to program name
+                }
+                break;
+            }
+            break;
+
+        case "xtrnprog":
+
+            // present list of external programs
+            // create sorted list
+            var proglist = [];
+
+            for (i in xtrn_area.prog) {
+                proglist.push({ code: xtrn_area.prog[i].code, name: xtrn_area.prog[i].name});
+            };
+            proglist.sort(sort_by_code);
+            for (i in proglist) {
+                custommenuitems.push(format("%23s: %s", proglist[i].code, proglist[i].name));
+                custommenuitemsids.push(proglist[i].code);
+                custommenunames.push(proglist[i].name);
+            }
+
+            if ((typeof item.target !== "undefined") && item.target) {
+                for (var p in custommenuitemsids) {
+                    if (custommenuitemsids[p].toLowerCase() == item.target.toLowerCase()) {
+                        targetctx.cur = p;
+                        targetctx.bar = p;
+                    }
+                }
+            }
+
+            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
+            if ((selection2 < 0) || (selection2 == null)) {
+                // escape key
+                break;
+            }
+            if (selection2 || selection2 === 0) {
+                item.target = custommenuitemsids[selection2];
+                while(1) {
+                    if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
+                        item.title = custommenunames[selection2]; // for external program, change title to program name
+                    }
+                    break;
+                }
+            }
+            break;
+
+        default:
+            selection2 = uifc.input(WIN_ORG | WIN_MID, "Target", item.target, 50, K_EDIT);
+            if ((selection2 < 0) || (selection2 == null)) {
+                // escape key
+                break;
+            }
+
+            item.target = selection2;
+            break;
+    }    
 }
 
 function sort_by_name(a, b)
