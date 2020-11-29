@@ -1,5 +1,12 @@
 <!--HIDDEN:Games-->
 <?xjs
+/**
+ * Web Display for Custom External Program Menus
+ * by Michael Long mlong  innerrealmbbs.us
+ * 
+ * See wiki at http://wiki.synchro.net/module:xtrnmenumod
+ */
+
     load("ftelnethelper.js");
     load('sbbsdefs.js');
     load("xtrnmenulib.js");

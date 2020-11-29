@@ -1,13 +1,16 @@
-// xtrnmenu.js
-// Custom External Program Menu Mod
-// Menus displayed to users via Terminal Server (Telnet/RLogin/SSH)
-
-// To jump straight to a specific xtrn section, pass the section code as an
-// argument
-
-// To set options, add to modopts.ini [xtrn_sec]
-
-// To install, go to scfg, System, Loadable Modules and set Xtrn Section to xtrnmenu
+/**
+ * Custom External Program Menus
+ * by Michael Long mlong  innerrealmbbs.us
+ *
+ * This is the loadable module that displays the custom external menus
+ * in terminal server (telnet/rlogin/ssh)
+ * 
+ * To jump to a specific menu, pass the ID as an argument
+ * 
+ * To set options, add to modopts.ini [xtrn_custommenu]
+ * 
+ * See instructions at http://wiki.synchro.net/module:xtrnmenumod
+ */
 
 "use strict";
 
@@ -217,7 +220,7 @@ function external_section_menu_custom(menuid)
 			// q for quit
 			if (keyin == "q") {
 				console.clear();
-				break;
+				break; 
 			}
 			
 			menuitemsfiltered.some(function (menuitemfiltered) {

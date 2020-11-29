@@ -1,4 +1,11 @@
-// Custom External Program Menu Library
+/**
+ * Custom External Program Menu Library for Custom External Program Menus
+ * by Michael Long mlong  innerrealmbbs.us
+ * 
+ * This provides common functionality for retrieving menus used by 
+ * the loadable module xtrnmenu.js and by the web interface
+ * 099-xtrnmenu-games.xjs
+ */
 
 "use strict";
 

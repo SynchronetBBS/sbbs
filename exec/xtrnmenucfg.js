@@ -1,7 +1,8 @@
 "use strict"
 
 /**
- * Menu editor for Custom External Menu mod
+ * Menu editor for Custom External Program Menus
+ * by Michael Long mlong  innerrealmbbs.us
  *
  * This edits the file xtrnmenu.cfg
  */
@@ -181,6 +182,12 @@ var editItems = function(menuid) {
             }
         }
     }
+    
+    if ((typeof menu.items == "undefined") || (menu.items.length == 0)) {
+        // no items, prompt them to make one
+        editItem(menu.id, 0);
+    }
+    
 
     uifc.help_text = word_wrap("This menu allows editing the various items in this menu.\r\n\r\n"
         + "If you leave input key blank, it will use an auto-generated number at display time.\r\n\r\n"
@@ -687,6 +694,10 @@ try {
         }
     }
     config_file.close();
+    
+    if (typeof menuconfig.menus === "undefined") {
+        menuconfig.menus = [];
+    }
 
     uifc.init("Enhanced External Program Menus Configurator");
     uifc.lightbar_color = 120;
