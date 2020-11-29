@@ -872,7 +872,7 @@ void xfer_opts()
 						"don't wish it to be available for a certain method of transfer, leave\n"
 						"the command line for that method blank.\n"
 					;
-					i=uifc.list(i,0,0,50,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
+					i=uifc.list(i,0,0,34,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
