@@ -253,7 +253,8 @@ endif
 
 src: $(REPODIR)
 
-run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/node1 $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn
+run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn \
+	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 
 $(SBBSDIR)/ctrl: $(REPODIR)
 	cp -r $(REPODIR)/ctrl $(SBBSDIR)
@@ -265,7 +266,16 @@ $(SBBSDIR)/exec: $(REPODIR)
 	$(INSBIN) $(REPODIR)/exec $(SBBSDIR)
 
 $(SBBSDIR)/node1: $(REPODIR)
-	cp -r $(REPODIR)/node1 $(SBBSDIR)
+	cp -r $(REPODIR)/node1 $@
+
+$(SBBSDIR)/node2: $(REPODIR)
+	cp -r $(REPODIR)/node1 $@
+
+$(SBBSDIR)/node3: $(REPODIR)
+	cp -r $(REPODIR)/node1 $@
+
+$(SBBSDIR)/node4: $(REPODIR)
+	cp -r $(REPODIR)/node1 $@
 
 $(SBBSDIR)/text: $(REPODIR)
 	$(INSBIN) $(REPODIR)/text $(SBBSDIR)
