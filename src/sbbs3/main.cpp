@@ -90,6 +90,8 @@ struct xpms_set				*ts_set;
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	char *	text[TOTAL_TEXT];
+static	scfg_t	node_scfg[MAX_NODES];
+static	char *	node_text[MAX_NODES][TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 static	bool	terminate_server=false;
@@ -4917,6 +4919,12 @@ static void cleanup(int code)
 	free_cfg(&scfg);
 	free_text(text);
 
+	for(int i = 0; i < MAX_NODES; i++) {
+		free_text(node_text[i]);
+		free_cfg(&node_scfg[i]);
+		memset(&node_scfg[i], 0, sizeof(node_scfg[i]));
+	}
+
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
 	semfile_list_free(&clear_attempts_semfiles);
@@ -5317,23 +5325,6 @@ NO_SSH:
 		YIELD();
 		if(protected_uint32_value(node_threads_running)==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-
-				bool rerun=false;
-				for(i=first_node;i<=last_node;i++) {
-					if(sbbs->getnodedat(i,&node,0)!=0)
-						continue;
-					if(node.misc&NODE_RRUN) {
-						sbbs->getnodedat(i,&node,1);
-						if(!rerun)
-							lprintf(LOG_INFO,"Node %d flagged for re-run",i);
-						rerun=true;
-						node.misc&=~NODE_RRUN;
-						sbbs->putnodedat(i,&node);
-					}
-				}
-				if(rerun)
-					break;
-
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected"
 						,p);
@@ -5715,11 +5706,42 @@ NO_SSH:
 			continue;
 		}
 
+		// Load the configuration files for this node, only if/when needed/updated
+		scfg_t* cfg = &node_scfg[i - 1];
+		if(cfg->size != sizeof(*cfg) || (node.misc & NODE_RRUN)) {
+			sbbs->bprintf("Loading configuration...");
+			free_cfg(cfg);
+			free_text(node_text[i - 1]);
+			cfg->size = sizeof(*cfg);
+			cfg->node_num = i;
+		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
+			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
+			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
+			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+				lprintf(LOG_CRIT,"!ERROR %s",logstr);
+				lprintf(LOG_CRIT,"!FAILED to load configuration files");
+				sbbs->bprintf(" FAILED: %s", logstr);
+				client_off(client_socket);
+				SSH_END(client_socket);
+				close_socket(client_socket);
+				sbbs->getnodedat(cfg->node_num,&node,true);
+				node.status = NODE_WFC;
+				sbbs->putnodedat(cfg->node_num,&node);
+				continue;
+			}
+			if(node.misc & NODE_RRUN) {
+				sbbs->getnodedat(cfg->node_num,&node,true);
+				node.misc &= ~NODE_RRUN;
+				sbbs->putnodedat(cfg->node_num,&node);
+			}
+			sbbs->bputs(crlf);
+		}
+
         node_socket[i-1]=client_socket;
 
 		sbbs_t* new_node = new sbbs_t(/* node_num: */i, &client_addr, client_addr_len, host_name
         	,client_socket
-			,&scfg, text, &client);
+			,cfg, node_text[i-1], &client);
 
 		new_node->client=client;
 #ifdef USE_CRYPTLIB
