@@ -5710,8 +5710,6 @@ NO_SSH:
 		scfg_t* cfg = &node_scfg[i - 1];
 		if(cfg->size != sizeof(*cfg) || (node.misc & NODE_RRUN)) {
 			sbbs->bprintf("Loading configuration...");
-			free_cfg(cfg);
-			free_text(node_text[i - 1]);
 			cfg->size = sizeof(*cfg);
 			cfg->node_num = i;
 		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
@@ -5736,6 +5734,9 @@ NO_SSH:
 			}
 			sbbs->bputs(crlf);
 		}
+		// Copy event last-run info from global config
+		for(int e=0; e < cfg->total_events && e < scfg.total_events; e++)
+			cfg->event[e]->last = scfg.event[e]->last;
 
         node_socket[i-1]=client_socket;
 
