@@ -5716,6 +5716,7 @@ NO_SSH:
 			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
 			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 				cfg->node_num = first_node;
 				if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
 					lprintf(LOG_CRIT,"!ERROR %s",logstr);
