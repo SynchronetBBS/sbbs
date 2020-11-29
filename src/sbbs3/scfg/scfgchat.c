@@ -1,5 +1,3 @@
-/* $Id: scfgchat.c,v 1.23 2018/06/21 20:22:07 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -114,8 +112,8 @@ void page_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.page[i]->cmd);
-			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.page[i]->arstr);
+			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.page[i]->cmd);
+			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.page[i]->arstr);
 			sprintf(opt[k++],"%-27.27s%s","Intercept I/O"
 				,(cfg.page[i]->misc&XTRN_STDIO) ? "Standard"
 					:cfg.page[i]->misc&XTRN_CONIO ? "Console":"No");
