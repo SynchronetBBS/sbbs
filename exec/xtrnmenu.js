@@ -52,7 +52,8 @@ function external_section_menu_custom(menuid)
 {
 	var i, menucheck, menuobj, item_multicolumn_fmt, item_singlecolumn_fmt,
         cost, multicolumn, menuitemsfiltered = [];
-	var keylimit = 1; // max chars allowed on menu selection
+	var validkeys = []; // valid chars on menu selection
+	var keymax = 0; // max integer allowed on menu selection
 
 	var options = ExternalMenus.getOptions('custommenu', menuid);
 	
@@ -93,7 +94,7 @@ function external_section_menu_custom(menuid)
         menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
         
 		if (bbs.menu_exists("xtrn_custom_" + menuid)) {
-			// if file exists text/menu/xtern_custom_(menuid).[rip|ans|mon|msg|asc], then display that instead
+			// if file exists text/menu/xtrn_custom_(menuid).[rip|ans|mon|msg|asc], then display that instead
 			bbs.menu("xtrn_custom_" + menuid);
 		} else {
 			// if no custom menu file in text/menu, create a dynamic one
@@ -138,10 +139,14 @@ function external_section_menu_custom(menuid)
                 }
 
                 console.add_hotspot(menuitemsfiltered[i].input.toString());
-				
-				if (menuitemsfiltered[i].input.toString().length > keylimit) {
-				    keylimit = menuitemsfiltered[i].input.toString().length;
-                }
+			    
+				validkeys.push(menuitemsfiltered[i].input.toString());
+				var intCheck = Number(menuitemsfiltered[i].input);
+				if (!intCheck.isNaN) {
+					if (intCheck > keymax) {
+						keymax = menuitemsfiltered[i].input;
+					}
+				}
 
 				// allow overriding format on a per-item basis
                 // great for featuring a specific game
@@ -169,10 +174,15 @@ function external_section_menu_custom(menuid)
                             ? convert_input_literals_to_js(menuitemsfiltered[j].multicolumn_fmt) : multicolumn_fmt;
                         item_singlecolumn_fmt = menuitemsfiltered[j].singlecolumn_fmt
                             ? convert_input_literals_to_js(menuitemsfiltered[j].singlecolumn_fmt) : singlecolumn_fmt;
+                        
+						validkeys.push(menuitemsfiltered[j].input.toString());
 
-                        if (menuitemsfiltered[j].input.toString().length > keylimit) {
-                            keylimit = menuitemsfiltered[j].input.toString().length;
-                        }
+						var intCheck = Number(menuitemsfiltered[j].input);
+						if (!intCheck.isNaN) {
+							if (intCheck > keymax) {
+								keymax = menuitemsfiltered[j].input;
+							}
+						}
 
                         write(options.multicolumn_separator);
 						console.add_hotspot(menuitemsfiltered[j].input.toString());
@@ -199,20 +209,9 @@ function external_section_menu_custom(menuid)
 			console.mnemonics(options.which);
 		}
 
-		keyin = console.getkey(K_NONE);
-		// if there are 2 or 3 letter input options, then give the user a chance to type the 2nd and third chars
-        // unfortunately, this will introduce latency for the single key options
-        // and if the typist is slow, they are going to get the single key menu option selected instead if one exists
-		if (keylimit > 1) {
-            // check for possible second digit (on 2 and 3 char inputs)
-            var keyin2 = console.inkey(K_NONE, 1000);
-            keyin = keyin + keyin2;
-        } else if (keylimit == 3) {
-		    // check for possible third digit
-		    var keyin3 = console.inkey(K_NONE, 1000);
-		    keyin = keyin + keyin3;
-        }
-		keyin = keyin.toLowerCase();
+		validkeys.push('q');
+		keyin = console.getkeys(validkeys, keymax, K_NONE);
+		keyin = keyin.toString().toLowerCase();
 
 		if (keyin) {
 			// q for quit
