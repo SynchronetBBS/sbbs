@@ -1,8 +1,4 @@
-/* xtrn_sec.cpp */
-
 /* Synchronet external program/door section and drop file routines */
-
-/* $Id: xtrn_sec.cpp,v 1.91 2020/08/01 18:34:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -1611,7 +1595,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 	char drop_file[MAX_PATH + 1];
 	char startup_dir[MAX_PATH + 1];
 #if defined(__linux__) && defined(USE_DOSEMU)
-	if(!(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
+	if(cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'	&& !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
 		SAFEPRINTF2(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
 		backslash(startup_dir);
 		if(cfg.xtrn[xtrnnum]->misc & STARTUPDIR)
