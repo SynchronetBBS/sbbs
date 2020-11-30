@@ -9,7 +9,7 @@
  * 
  * To set options, add to modopts.ini [xtrn_custommenu]
  * 
- * See instructions at http://wiki.synchro.net/module:xtrnmenumod
+ * See instructions at http://wiki.synchro.net/module:xtrnmenu
  */
 
 "use strict";
