@@ -168,56 +168,15 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 			for (var m in menuoptions) {
 				this.options[m] = menuoptions[m];
 			}
-			/*
-			this.options.multicolumn_fmt = (typeof menuoptions.multicolumn_fmt !== "undefined")
-				? menuoptions.multicolumn_fmt : this.options.multicolumn_fmt;
-
-			this.options.singlecolumn_fmt = (typeof menuoptions.singlecolumn_fmt !== "undefined")
-				? menuoptions.singlecolumn_fmt : this.options.singlecolumn_fmt;
-
-			this.options.header_fmt = (typeof menuoptions.header_fmt !== "undefined")
-				? menuoptions.header_fmt : this.options.header_fmt;
-
-			this.options.titles = (typeof menuoptions.titles !== "undefined")
-				? menuoptions.titles : this.options.titles;
-
-			this.options.which = (typeof menuoptions.which !== "undefined")
-				? menuoptions.which : this.options.which;
-
-			this.options.underline = (typeof menuoptions.underline !== "undefined")
-				? menuoptions.underline : this.options.underline;
-
-			this.options.multicolumn_separator = (typeof menuoptions.multicolumn_separator !== "undefined")
-				? menuoptions.multicolumn_separator : this.options.multicolumn_separator;
-
-			this.options.multicolumn = (typeof menuoptions.multicolumn !== "undefined")
-				? menuoptions.multicolumn : this.options.multicolumn;
-
-			this.options.sort = (typeof menuoptions.sort !== "undefined")
-				? menuoptions.sort : this.options.sort;
-
-			this.options.clear_screen = (typeof menuoptions.clear_screen !== "undefined")
-				? menuoptions.clear_screen : this.options.clear_screen;
-
-			this.options.singlecolumn_margin = (typeof menuoptions.singlecolumn_margin !== "undefined")
-				? menuoptions.singlecolumn_margin : this.options.singlecolumn_margin;
-
-			if (typeof bbs !== "undefined") {
-				this.options.singlecolumn_height = (typeof menuoptions.singlecolumn_height !== "undefined")
-					? menuoptions.singlecolumn_height : this.options.singlecolumn_height;
-			}
-			 */
 		}
 	}
 	
-
 	// these options only apply to terminals/consoles
 	
 	// the intention is to obtain all the mod_opts options for xtrn_sec, and
 	// override if a custom menu global setting is set
-//TEMP
+
 	//// The following are used for the enhanced custom menu functionality
-	
 	if (this.options.custom_menu_not_found_msg === undefined) {
 		this.options.custom_menu_not_found_msg = "Menu %MENUID% not found";
 	}
@@ -227,19 +186,6 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	}
 	
 	return this.options;
-}
-
-//@TODO deprecated
-ExternalMenus.prototype.convert_input_literals_to_js = function(val) {
-	if (val === undefined) {
-		throw "incorrect configuration, please check modopts.ini";
-	}
-
-	var newString = val.replace(/\\x([0-9A-F][0-9A-F])/g, function(m, g1) {
-		return String.fromCharCode(parseInt(g1, 16));
-	});
-	
-	return newString.replace(/\\u/g, '%u').replace(/\\r/g, "\r").replace(/\\n/g, "\n");
 }
 
 // return a custom menu object

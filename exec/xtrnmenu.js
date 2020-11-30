@@ -104,7 +104,7 @@ function external_section_menu_custom(menuid)
 			console.crlf();
 
 			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
-
+			
 			printf(options.header_fmt, menuobj.title);
 			if(options.titles.trimRight() != '')
 				write(options.titles);
@@ -171,13 +171,6 @@ function external_section_menu_custom(menuid)
 
 				if (multicolumn) {
 					if ((typeof(menuitemsfiltered[j]) !== "undefined")) {
-                        // allow overriding format on a per-item basis
-                        // great for featuring a specific game
-                        item_multicolumn_fmt = menuitemsfiltered[j].multicolumn_fmt
-                            ? convert_input_literals_to_js(menuitemsfiltered[j].multicolumn_fmt) : multicolumn_fmt;
-                        item_singlecolumn_fmt = menuitemsfiltered[j].singlecolumn_fmt
-                            ? convert_input_literals_to_js(menuitemsfiltered[j].singlecolumn_fmt) : singlecolumn_fmt;
-                        
 						validkeys.push(menuitemsfiltered[j].input.toString());
 
 						var intCheck = Number(menuitemsfiltered[j].input);
@@ -186,6 +179,16 @@ function external_section_menu_custom(menuid)
 								keymax = menuitemsfiltered[j].input;
 							}
 						}
+
+						// allow overriding format on a per-item basis
+						// great for featuring a specific game
+						var checkkey = menuitemsfiltered[j].target + '-multicolumn_fmt';
+						checkkey = checkkey.toLowerCase();
+						item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
+							options[checkkey] : options.multicolumn_fmt;
+
+						checkkey = menuitemsfiltered[j].target + '-singlecolumn_fmt'
+						checkkey = checkkey.toLowerCase();
 
                         write(options.multicolumn_separator);
 						console.add_hotspot(menuitemsfiltered[j].input.toString());
