@@ -842,7 +842,6 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_JS_CX	(1<<24)		/* New JavaScript context */
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
-#define EX_UNSPECIFIED	-1
 
 #if defined(__unix__)
 #define EX_WILDCARD	EX_SH		/* Expand wildcards using 'sh' on Unix		*/
