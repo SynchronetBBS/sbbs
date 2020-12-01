@@ -9,10 +9,10 @@
 
 "use strict";
 
-load("sbbsdefs.js");
+require("sbbsdefs.js", "P_NOERROR");
 
 /* text.dat entries */
-load("text.js");
+require("text.js", "XtrnProgLstFmt");
 
 /* See if an xtrn section code was passed as an argument */
 /* must parse argv before calling load() */
@@ -123,17 +123,11 @@ function external_program_menu(xsec)
 
 		var secnum = xtrn_area.sec_list[xsec].number+1;
 		var seccode = xtrn_area.sec_list[xsec].code;
-		if(bbs.menu_exists("xtrn" + secnum + "_head")) {
-			bbs.menu("xtrn" + secnum + "_head");
-		}
-		else if(bbs.menu_exists("xtrn" + seccode + "_head")) {
-			bbs.menu("xtrn" + seccode + "_head");
-		}
-		if(bbs.menu_exists("xtrn" + secnum)) {
-			bbs.menu("xtrn" + secnum);
-		}
-		else if(bbs.menu_exists("xtrn" + seccode)) {
-			bbs.menu("xtrn" + seccode);
+		if(!bbs.menu("xtrn" + secnum + "_head", P_NOERROR))
+			bbs.menu("xtrn" + seccode + "_head", P_NOERROR);
+		if(bbs.menu("xtrn" + secnum, P_NOERROR) || bbs.menu("xtrn" + seccode, P_NOERROR)) {
+			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR))
+				bbs.menu("xtrn" + seccode + "_tail", P_NOERROR);
 		}
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
@@ -182,12 +176,8 @@ function external_program_menu(xsec)
 				}
 				console.crlf();
 			}
-			if(bbs.menu_exists("xtrn" + secnum + "_tail")) {
-				bbs.menu("xtrn" + secnum + "_tail");
-			}
-			else if(bbs.menu_exists("xtrn" + seccode + "_tail")) {
-				bbs.menu("xtrn" + seccode + "_tail");
-			}
+			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR))
+				bbs.menu("xtrn" + seccode + "_tail", P_NOERROR);
 			bbs.node_sync();
 			console.mnemonics(options.which);
 		}
