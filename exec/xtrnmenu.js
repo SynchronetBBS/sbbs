@@ -1,4 +1,5 @@
 /**
+ * Xtrn Menu Mod
  * Custom External Program Menus
  * by Michael Long mlong  innerrealmbbs.us
  *
@@ -95,14 +96,20 @@ function external_section_menu_custom(menuid)
 		bbs.node_sync();
 
         menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
+
+        if (bbs.menu_exists("xtrnmenu_head_" + menuid)) {
+        	bbs.menu("xtrnmenu_head_" + menuid);
+		} else if (bbs.menu_exists("xtrn_head")) {
+			bbs.menu("xtrn_head");
+	    } else if (!bbs.menu_exists("xtrnmenu_head_" + menuid)) {
+			console.crlf();
+		}
         
-		if (bbs.menu_exists("xtrn_custom_" + menuid)) {
-			// if file exists text/menu/xtrn_custom_(menuid).[rip|ans|mon|msg|asc], then display that instead
-			bbs.menu("xtrn_custom_" + menuid);
+		if (bbs.menu_exists("xtrnmenu_" + menuid)) {
+			// if file exists text/menu/xtrnmenu_(menuid).[rip|ans|mon|msg|asc], then display that instead
+			bbs.menu("xtrnmenu_" + menuid);
 		} else {
 			// if no custom menu file in text/menu, create a dynamic one
-			console.crlf();
-
 			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
 			
 			printf(options.header_fmt, menuobj.title);
@@ -203,6 +210,12 @@ function external_section_menu_custom(menuid)
 					j++;
 				}
 				console.crlf();
+			}
+
+			if (bbs.menu_exists("xtrnmenu_tail_" + menuid)) {
+				bbs.menu("xtrnmenu_tail_" + menuid);
+			} else if(bbs.menu_exists("xtrn_tail")) {
+				bbs.menu("xtrn_tail");
 			}
 
 			// synchronize with node database, checks for messages,
