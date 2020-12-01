@@ -1761,7 +1761,7 @@ int main(int argc, char **argv)
 						pause_on_abend=TRUE;
 						break;
 					case 'M':	/* MaxFileSize */
-						max_file_size=strtoul(arg++,NULL,0);	/* TODO: use strtoull() ? */
+						max_file_size=strtoul(arg + 1,NULL,0);	/* TODO: use strtoull() ? */
 						break;
 					case 'L':	/* Lowercase received filenames */
 						lc_filenames=TRUE;
