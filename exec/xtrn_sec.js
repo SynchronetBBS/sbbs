@@ -182,6 +182,12 @@ function external_program_menu(xsec)
 				}
 				console.crlf();
 			}
+			if(bbs.menu_exists("xtrn" + secnum + "_tail")) {
+				bbs.menu("xtrn" + secnum + "_tail");
+			}
+			else if(bbs.menu_exists("xtrn" + seccode + "_tail")) {
+				bbs.menu("xtrn" + seccode + "_tail");
+			}
 			bbs.node_sync();
 			console.mnemonics(options.which);
 		}
