@@ -7294,19 +7294,19 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	var numChars = console.screen_columns - lbHelpLineLen - 1;
 	if (numChars > 0)
 	{
-		// Gradient block characters: °±²Û
+		// Gradient block characters: Â°Â±Â²Ã›
 		// Add characters on the left and right of the line so that the
 		// text is centered.
 		var numLeft = Math.floor(numChars / 2);
 		var numRight = numChars - numLeft;
 		for (var i = 0; i < numLeft; ++i)
-			this.msgListLightbarModeHelpLine = "Û" + this.msgListLightbarModeHelpLine;
+			this.msgListLightbarModeHelpLine = " " + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine = "\1n"
 		                             + this.colors.lightbarMsgListHelpLineBkgColor
 		                             + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine += "\1n" + this.colors.lightbarMsgListHelpLineBkgColor;
 		for (var i = 0; i < numRight; ++i)
-			this.msgListLightbarModeHelpLine += "Û";
+			this.msgListLightbarModeHelpLine += " ";
 	}
 }
 // For the DigDistMsgReader Class: Sets the hotkey help line for the enhanced
@@ -8027,17 +8027,17 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 		// Generate a string describing the message attributes, then output the default
 		// header.
 		var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
-		console.print("\1n\1w°±²ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ²±°");
+		console.print("\1n\1wÂ°Â±Â²Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Ã›Â²Â±Â°");
 		console.crlf();
-		console.print("\1n\1w°±²ÛÝ\1cFrom\1w\1h: \1b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
+		console.print("\1n\1wÂ°Â±Â²Ã›Ã\1cFrom\1w\1h: \1b" + pMsgHdr["from"].substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\1n\1w°±²ÛÝ\1cTo  \1w\1h: \1b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
+		console.print("\1n\1wÂ°Â±Â²Ã›Ã\1cTo  \1w\1h: \1b" + pMsgHdr["to"].substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\1n\1w°±²ÛÝ\1cSubj\1w\1h: \1b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
+		console.print("\1n\1wÂ°Â±Â²Ã›Ã\1cSubj\1w\1h: \1b" + pMsgHdr["subject"].substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\1n\1w°±²ÛÝ\1cDate\1w\1h: \1b" + dateTimeStr.substr(0, console.screen_columns-12));
+		console.print("\1n\1wÂ°Â±Â²Ã›Ã\1cDate\1w\1h: \1b" + dateTimeStr.substr(0, console.screen_columns-12));
 		console.crlf();
-		console.print("\1n\1w°±²ÛÝ\1cAttr\1w\1h: \1b" + allMsgAttrStr.substr(0, console.screen_columns-12));
+		console.print("\1n\1wÂ°Â±Â²Ã›Ã\1cAttr\1w\1h: \1b" + allMsgAttrStr.substr(0, console.screen_columns-12));
 		console.crlf();
 	}
 }
@@ -10811,7 +10811,7 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 		//console.crlf();
 		this.ListMsgGrps(grpSearchText);
 		console.crlf();
-		console.print("\1n\1b\1hþ \1n\1cWhich, \1h/\1n\1c or \1hCTRL-F\1n\1c, \1hQ\1n\1cuit, or [\1h" +
+		console.print("\1n\1b\1hÃ¾ \1n\1cWhich, \1h/\1n\1c or \1hCTRL-F\1n\1c, \1hQ\1n\1cuit, or [\1h" +
 		              +(msg_area.sub[this.subBoardCode].grp_index+1) + "\1n\1c]: \1h");
 		// Accept Q (quit), / or CTRL_F (Search) or a file library number
 		selectedGrp = console.getkeys("Q/" + CTRL_F, msg_area.grp_list.length);
@@ -10866,7 +10866,7 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 					this.DisplayAreaChgHdr();
 					this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1, null, subSearchText);
 					console.crlf();
-					console.print("\1n\1b\1hþ \1n\1cWhich, \1h/\1n\1c or \1hCTRL-F\1n\1c, \1hQ\1n\1cuit, or [\1h" +
+					console.print("\1n\1b\1hÃ¾ \1n\1cWhich, \1h/\1n\1c or \1hCTRL-F\1n\1c, \1hQ\1n\1cuit, or [\1h" +
 					              defaultSubBoard + "\1n\1c]: \1h");
 					// Accept Q (quit), / or CTRL_F (Search) or a sub-board number
 					selectedSubBoard = console.getkeys("Q/" + CTRL_F, msg_area.grp_list[selectedGrp - 1].sub_list.length);
@@ -11366,7 +11366,7 @@ function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 	console.print("\1n\1c\1hMessage area (sub-board) chooser");
 	console.crlf();
-	console.print("\1kÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\1n");
+	console.print("\1kÃ„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„\1n");
 	console.crlf();
 	console.print("\1cFirst, a listing of message groups is displayed.  One can be chosen by typing");
 	console.crlf();
@@ -11378,7 +11378,7 @@ function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
 	console.crlf();
 	console.print("Keyboard commands:");
 	console.crlf();
-	console.print("\1k\1hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\1n");
+	console.print("\1k\1hÃ„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„\1n");
 	console.crlf();
 	console.print("\1n\1c\1h/\1n\1c or \1hCTRL-F\1n\1c: Find group/sub-board");
 	console.crlf();
@@ -11392,7 +11392,7 @@ function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
 		console.crlf();
 		console.print("\1n\1cThe lightbar interface also allows up & down navigation through the lists:");
 		console.crlf();
-		console.print("\1k\1hÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+		console.print("\1k\1hÃ„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„Ã„");
 		console.crlf();
 		console.print("\1n\1c\1hUp\1n\1c/\1hdown arrow\1n\1c: Move the cursor up/down one line");
 		console.crlf();
@@ -14626,7 +14626,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		var solidLine = "";
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			solidLine += "Ä";
+			solidLine += "Ã„";
 		console.center(lineColor + solidLine);
 	}
 	else
@@ -14636,7 +14636,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		console.print(lineColor);
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			console.print("Ä");
+			console.print("Ã„");
 		console.crlf();
 	}
 }
