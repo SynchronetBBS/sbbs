@@ -123,11 +123,15 @@ function external_program_menu(xsec)
 
 		var secnum = xtrn_area.sec_list[xsec].number+1;
 		var seccode = xtrn_area.sec_list[xsec].code;
-		if(!bbs.menu("xtrn" + secnum + "_head", P_NOERROR))
-			bbs.menu("xtrn" + seccode + "_head", P_NOERROR);
+		if(!bbs.menu("xtrn" + secnum + "_head", P_NOERROR) &&
+			!bbs.menu("xtrn" + seccode + "_head", P_NOERROR)) {
+			bbs.menu("xtrn_head", P_NOERROR);
+		}
 		if(bbs.menu("xtrn" + secnum, P_NOERROR) || bbs.menu("xtrn" + seccode, P_NOERROR)) {
-			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR))
-				bbs.menu("xtrn" + seccode + "_tail", P_NOERROR);
+			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR) &&
+				!bbs.menu("xtrn" + seccode + "_tail", P_NOERROR)) {
+				bbs.menu("xtrn_tail", P_NOERROR);
+			}
 		}
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
@@ -176,8 +180,10 @@ function external_program_menu(xsec)
 				}
 				console.crlf();
 			}
-			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR))
-				bbs.menu("xtrn" + seccode + "_tail", P_NOERROR);
+			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR)
+				&& !bbs.menu("xtrn" + seccode + "_tail", P_NOERROR)) {
+				bbs.menu("xtrn_tail", P_NOERROR);
+			}
 			bbs.node_sync();
 			console.mnemonics(options.which);
 		}
@@ -216,37 +222,38 @@ function external_section_menu()
 		bbs.node_action=NODE_XTRN;
 		bbs.node_sync();
 
+		if(options.clear_screen)
+			console.clear(LIGHTGRAY);
+
+		bbs.menu("xtrn_sec_head", P_NOERROR);
+
 		if(bbs.menu_exists("xtrn_sec")) {
 			bbs.menu("xtrn_sec");
-			xsec=console.getnum(sec_list.length);
-			if(xsec<=0)
-				break;
-			xsec--;
+			bbs.menu("xtrn_sec_tail", P_NOERROR);
 		}
 		else {
-			if(options.clear_screen)
-				console.clear(LIGHTGRAY);
-
 			if(options.sort)
 				sec_list.sort(sort_by_name);
 
-			printf(options.section_header_fmt, options.section_header_title);
-
+			printf(options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
 			for (i = 0; i < sec_list.length; i++) {
 				console.add_hotspot(i+1);
 				printf(options.section_fmt, i + 1, sec_list[i].name);
 			}
 
+			bbs.menu("xtrn_sec_tail", P_NOERROR);
+			
 			bbs.node_sync();
 			console.mnemonics(format(options.section_which, xsec + 1));
-
-			xsec = console.getnum(sec_list.length, xsec + 1);
-			if(xsec < 1)
-				break;
-			xsec--;
 		}
 
-        external_program_menu(sec_list[xsec].index);
+		bbs.node_sync();
+		xsec=console.getnum(sec_list.length);
+		if(xsec<=0)
+			break;
+		xsec--;
+		
+		external_program_menu(sec_list[xsec].index);
     }
 }
 
