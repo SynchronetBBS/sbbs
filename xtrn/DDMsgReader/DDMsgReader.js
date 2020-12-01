@@ -7300,13 +7300,13 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 		var numLeft = Math.floor(numChars / 2);
 		var numRight = numChars - numLeft;
 		for (var i = 0; i < numLeft; ++i)
-			this.msgListLightbarModeHelpLine = "Û" + this.msgListLightbarModeHelpLine;
+			this.msgListLightbarModeHelpLine = " " + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine = "\1n"
 		                             + this.colors.lightbarMsgListHelpLineBkgColor
 		                             + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine += "\1n" + this.colors.lightbarMsgListHelpLineBkgColor;
 		for (var i = 0; i < numRight; ++i)
-			this.msgListLightbarModeHelpLine += "Û";
+			this.msgListLightbarModeHelpLine += ' ';
 	}
 }
 // For the DigDistMsgReader Class: Sets the hotkey help line for the enhanced
