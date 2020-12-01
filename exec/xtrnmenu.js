@@ -15,10 +15,7 @@
 
 "use strict";
 
-load("sbbsdefs.js");
-
-/* text.dat entries */
-load("text.js");
+require("sbbsdefs.js", "K_NONE");
 
 load("xtrnmenulib.js");
 
@@ -97,18 +94,14 @@ function external_section_menu_custom(menuid)
 
         menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
 
-        if (bbs.menu_exists("xtrnmenu_head_" + menuid)) {
-        	bbs.menu("xtrnmenu_head_" + menuid);
-		} else if (bbs.menu_exists("xtrn_head")) {
-			bbs.menu("xtrn_head");
-	    } else if (!bbs.menu_exists("xtrnmenu_head_" + menuid)) {
-			console.crlf();
-		}
-        
-		if (bbs.menu_exists("xtrnmenu_" + menuid)) {
-			// if file exists text/menu/xtrnmenu_(menuid).[rip|ans|mon|msg|asc], then display that instead
-			bbs.menu("xtrnmenu_" + menuid);
-		} else {
+		if (!bbs.menu("xtrnmenu_head_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_head", P_NOERROR)) {
+			bbs.menu("xtrn_head", P_NOERROR);
+	    }
+
+		// if file exists text/menu/xtrnmenu_(menuid).[rip|ans|mon|msg|asc], 
+		// then display that, otherwise dynamiic
+	    if (!bbs.menu("xtrnmenu_" + menuid, P_NOERROR)) {
+
 			// if no custom menu file in text/menu, create a dynamic one
 			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
 			
@@ -212,19 +205,11 @@ function external_section_menu_custom(menuid)
 				console.crlf();
 			}
 
-			if (bbs.menu_exists("xtrnmenu_tail_" + menuid)) {
-				bbs.menu("xtrnmenu_tail_" + menuid);
-			} else if(bbs.menu_exists("xtrn_tail")) {
-				bbs.menu("xtrn_tail");
+			if (!bbs.menu("xtrnmenu_tail_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_tail", P_NOERROR)) {
+				bbs.menu("xtrn_tail", P_NOERROR);
 			}
 
-			// synchronize with node database, checks for messages,
-			// interruption, etc. (AKA node_sync), clears the current console
-			// line if there's a message to print when clearline is true.
 			bbs.node_sync();
-
-			// print a mnemonics string, command keys highlighted with
-			// tilde (~) characters; prints "Which or Quit"
 			console.mnemonics(options.which);
 		}
 

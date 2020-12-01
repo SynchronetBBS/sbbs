@@ -9,10 +9,10 @@
 
 "use strict";
 
-load("sbbsdefs.js");
+load("sbbsdefs.js", "K_NONE");
 
 /* text.dat entries */
-load("text.js");
+require("text.js", "XtrnProgLstFmt");
 
 function ExternalMenus() {
 	this.options = {};
