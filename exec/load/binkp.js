@@ -1,4 +1,4 @@
-const binkp_revision = 2;
+const binkp_revision = 3;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -916,6 +916,8 @@ BinkP.prototype.session = function()
 BinkP.prototype.close = function()
 {
 	var i;
+	var end;
+	var remain;
 
 	// Send an ERR and close.
 	this.ack_file();
@@ -937,6 +939,16 @@ BinkP.prototype.close = function()
 			if (this.senteob < 1)
 				this.sendCmd(this.command.M_EOB);
 		}
+		// Attempt a super-duper graceful shutdown to prevent RST...
+		this.sock.is_writeable = false;
+		remain = this.timeout;
+		end = time() + remain;
+		do {
+			if (this.sock.recv(2048, remain) == 0)
+				break;
+			remain = end - time();
+		} while (remain > 0);
+		this.sock.close();
 	}
 	this.tx_queue.forEach(function(file) {
 		file.file.close();
