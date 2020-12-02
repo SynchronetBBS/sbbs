@@ -1351,24 +1351,25 @@ js_exec_xtrn(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if(argc) {
-		if(JSVAL_IS_STRING(argv[0])) {
-			JSVALUE_TO_ASTRING(cx,argv[0],code, LEN_CODE+2, NULL);
-			if(code==NULL)
-				return(JS_FALSE);
+	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
 
-			for(i=0;i<sbbs->cfg.total_xtrns;i++)
-				if(!stricmp(sbbs->cfg.xtrn[i]->code,code))
-					break;
-		} else if(JSVAL_IS_NUMBER(argv[0])) {
-			if(!JS_ValueToECMAUint32(cx,argv[0],&i))
-				return JS_FALSE;
-		}
+	if(JSVAL_IS_STRING(argv[0])) {
+		JSVALUE_TO_ASTRING(cx,argv[0],code, LEN_CODE+2, NULL);
+		if(code==NULL)
+			return(JS_FALSE);
+
+		for(i=0;i<sbbs->cfg.total_xtrns;i++)
+			if(!stricmp(sbbs->cfg.xtrn[i]->code,code))
+				break;
+	} else if(JSVAL_IS_NUMBER(argv[0])) {
+		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
+			return JS_FALSE;
 	}
 
 	if(i>=sbbs->cfg.total_xtrns) {
-		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		return(JS_TRUE);
+		JS_ReportError(cx, "Invalid external program specified");
+		return JS_FALSE;
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);

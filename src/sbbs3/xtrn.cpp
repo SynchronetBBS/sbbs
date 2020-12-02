@@ -1,9 +1,4 @@
-/* xtrn.cpp */
-// vi: tabstop=4
-
 /* Synchronet external program support routines */
-
-/* $Id: xtrn.cpp,v 1.263 2020/08/02 20:23:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -18,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -243,7 +226,10 @@ static bool native_executable(scfg_t* cfg, const char* cmdline, long mode)
 	unsigned i;
 
 	if(mode&EX_NATIVE)
-		return(TRUE);
+		return true;
+
+	if(*cmdline == '?' || *cmdline == '*')
+		return true;
 
     SAFECOPY(str,cmdline);				/* Set str to program name only */
 	truncstr(str," ");
@@ -1855,6 +1841,8 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 {
 	char	str[MAX_PATH+1],*cmd;
     int		i,j,len;
+	bool	native = (mode == EX_UNSPECIFIED) || native_executable(&cfg, instr, mode);
+	(void) native;
 
     if(outstr==NULL)
         cmd=cmdstr_output;
@@ -1888,8 +1876,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'F':   /* File path */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE)
-						&& strncmp(fpath, cfg.node_dir, strlen(cfg.node_dir)) == 0) {
+					if(!native && strncmp(fpath, cfg.node_dir, strlen(cfg.node_dir)) == 0) {
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 						strncat(cmd, fpath + strlen(cfg.node_dir), avail);
 					}
@@ -1899,7 +1886,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'G':   /* Temp directory */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(!native)
 						strncat(cmd, DOSEMU_TEMP_DIR, avail);
 					else
 #endif
@@ -1913,7 +1900,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'J':
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(!native)
 						strncat(cmd, DOSEMU_DATA_DIR, avail);
 					else
 #endif
@@ -1921,7 +1908,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'K':
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(!native)
 						strncat(cmd, DOSEMU_CTRL_DIR, avail);
 					else
 #endif
@@ -1935,7 +1922,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(!native)
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 					else
 #endif
@@ -1980,7 +1967,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     break;
                 case 'Z':
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(!native)
 						strncat(cmd, DOSEMU_TEXT_DIR, avail);
 					else
 #endif
@@ -1998,7 +1985,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					break;
                 case '!':   /* EXEC Directory */
 #if defined(__linux__) && defined(USE_DOSEMU)
-					if(*instr != '?' && mode != EX_UNSPECIFIED && !(mode & EX_NATIVE))
+					if(!native)
 						strncat(cmd, DOSEMU_EXEC_DIR, avail);
 					else
 #endif

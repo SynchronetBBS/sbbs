@@ -346,9 +346,9 @@ void fevents_cfg()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-32.32s%.40s","Logon Event",cfg.sys_logon);
-		sprintf(opt[i++],"%-32.32s%.40s","Logout Event",cfg.sys_logout);
-		sprintf(opt[i++],"%-32.32s%.40s","Daily Event",cfg.sys_daily);
+		sprintf(opt[i++],"%-32.32s%s","Logon Event",cfg.sys_logon);
+		sprintf(opt[i++],"%-32.32s%s","Logout Event",cfg.sys_logout);
+		sprintf(opt[i++],"%-32.32s%s","Daily Event",cfg.sys_daily);
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`External Events:`\n"
@@ -420,7 +420,7 @@ void tevents_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_events && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-8.8s      %.50s",cfg.event[i]->code,cfg.event[i]->cmd);
+			sprintf(opt[i],"%-8.8s      %s",cfg.event[i]->code,cfg.event[i]->cmd);
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_events)
@@ -487,8 +487,8 @@ void tevents_cfg()
 		while(!done) {
 			k=0;
 			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.event[i]->code);
-			sprintf(opt[k++],"%-32.32s%.40s","Start-up Directory",cfg.event[i]->dir);
-			sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
+			sprintf(opt[k++],"%-32.32s%s","Start-up Directory",cfg.event[i]->dir);
+			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.event[i]->cmd);
 			sprintf(opt[k++],"%-32.32s%s","Enabled"
 				,cfg.event[i]->misc&EVENT_DISABLED ? "No":"Yes");
 			if(cfg.event[i]->node == NODE_ANY)
@@ -981,16 +981,16 @@ void xtrn_cfg(uint section)
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.xtrn[i]->name);
 			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrn[i]->code);
-			sprintf(opt[k++],"%-27.27s%.40s","Start-up Directory",cfg.xtrn[i]->path);
-			sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.xtrn[i]->cmd);
-			sprintf(opt[k++],"%-27.27s%.40s","Clean-up Command Line",cfg.xtrn[i]->clean);
+			sprintf(opt[k++],"%-27.27s%s","Start-up Directory",cfg.xtrn[i]->path);
+			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.xtrn[i]->cmd);
+			sprintf(opt[k++],"%-27.27s%s","Clean-up Command Line",cfg.xtrn[i]->clean);
 			if(cfg.xtrn[i]->cost)
 				sprintf(str,"%"PRIu32" credits",cfg.xtrn[i]->cost);
 			else
 				strcpy(str,"None");
 			sprintf(opt[k++],"%-27.27s%s","Execution Cost",str);
-			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.xtrn[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%.40s","Execution Requirements"
+			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.xtrn[i]->arstr);
+			sprintf(opt[k++],"%-27.27s%s","Execution Requirements"
 				,cfg.xtrn[i]->run_arstr);
 			sprintf(opt[k++],"%-27.27s%s","Multiple Concurrent Users"
 				,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
@@ -1583,7 +1583,7 @@ void xedit_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_xedits && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-8.8s    %.40s",cfg.xedit[i]->code,cfg.xedit[i]->rcmd);
+			sprintf(opt[i],"%-8.8s    %s",cfg.xedit[i]->code,cfg.xedit[i]->rcmd);
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_xedits)
@@ -1668,8 +1668,8 @@ void xedit_cfg()
 			k=0;
 			sprintf(opt[k++],"%-32.32s%s","Name",cfg.xedit[i]->name);
 			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
-			sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.xedit[i]->rcmd);
-			sprintf(opt[k++],"%-32.32s%.40s","Access Requirements",cfg.xedit[i]->arstr);
+			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.xedit[i]->rcmd);
+			sprintf(opt[k++],"%-32.32s%s","Access Requirements",cfg.xedit[i]->arstr);
 			sprintf(opt[k++],"%-32.32s%s%s","Intercept I/O"
 				,cfg.xedit[i]->misc&XTRN_STDIO ? "Standard"
 					:cfg.xedit[i]->misc&XTRN_CONIO ? "Console":"No"
@@ -2368,7 +2368,7 @@ void xtrnsec_cfg()
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.xtrnsec[i]->name);
 			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrnsec[i]->code);
-			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements"
+			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
 				,cfg.xtrnsec[i]->arstr);
 			sprintf(opt[k++],"%s","Available Online Programs...");
 			opt[k][0]=0;
@@ -2431,7 +2431,7 @@ void hotkey_cfg(void)
 
 	while(1) {
 		for(i=0;i<cfg.total_hotkeys && i<MAX_OPTS;i++)
-			sprintf(opt[i],"Ctrl-%c    %.40s"
+			sprintf(opt[i],"Ctrl-%c    %s"
 				,cfg.hotkey[i]->key+'@'
 				,cfg.hotkey[i]->cmd);
 		opt[i][0]=0;
@@ -2516,7 +2516,7 @@ void hotkey_cfg(void)
 			k=0;
 			sprintf(opt[k++],"%-27.27sCtrl-%c","Global Hot Key"
 				,cfg.hotkey[i]->key+'@');
-			sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.hotkey[i]->cmd);
+			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.hotkey[i]->cmd);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Global Hot Key Event:`\n"

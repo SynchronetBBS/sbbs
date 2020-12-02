@@ -12,6 +12,7 @@
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
 # SBBSDIR = Directory to do install to
 # REPODIR = Directory where source files are cloned
+# NOCAP = Set to defeat sbbs3 bind-capabilities (setcap) build target on Linux
 # bcc = Set to use Borland compiler
 # os = Set to the OS name (Not required)
 # SBBSUSER = Owner for the installed files
@@ -78,6 +79,12 @@ else
 endif
 
 MKFLAGS	+=	os=$(os)
+
+ifndef NOCAP
+ifeq (($os),linux)
+	SETCAP 	:=	setcap
+endif
+endif
 
 ifdef DEBUG
  BUILD  :=  debug
@@ -147,11 +154,7 @@ binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 externals:	sbj dpoker tbd
 
 sbbs3:	src
-ifeq ($(os),linux)
-	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) setcap
-else
-	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS)
-endif
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) $(SETCAP)
 
 sexpots:	src
 	$(MAKE) -C $(REPODIR)/src/sexpots $(MKFLAGS)
@@ -253,7 +256,8 @@ endif
 
 src: $(REPODIR)
 
-run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/node1 $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn
+run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn \
+	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 
 $(SBBSDIR)/ctrl: $(REPODIR)
 	cp -r $(REPODIR)/ctrl $(SBBSDIR)
@@ -265,7 +269,16 @@ $(SBBSDIR)/exec: $(REPODIR)
 	$(INSBIN) $(REPODIR)/exec $(SBBSDIR)
 
 $(SBBSDIR)/node1: $(REPODIR)
-	cp -r $(REPODIR)/node1 $(SBBSDIR)
+	cp -r $(REPODIR)/node1 $@
+
+$(SBBSDIR)/node2: $(REPODIR)
+	cp -r $(REPODIR)/node1 $@
+
+$(SBBSDIR)/node3: $(REPODIR)
+	cp -r $(REPODIR)/node1 $@
+
+$(SBBSDIR)/node4: $(REPODIR)
+	cp -r $(REPODIR)/node1 $@
 
 $(SBBSDIR)/text: $(REPODIR)
 	$(INSBIN) $(REPODIR)/text $(SBBSDIR)

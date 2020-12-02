@@ -1,5 +1,3 @@
-/* $Id: scfgsub.c,v 1.62 2020/05/27 02:49:22 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -344,15 +330,15 @@ void sub_cfg(uint grpnum)
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
 			sprintf(opt[n++],"%-27.27s%s","Newsgroup Name",cfg.sub[i]->newsgroup);
-			sprintf(opt[n++],"%-27.27s%.40s","Access Requirements"
+			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
 				,cfg.sub[i]->arstr);
-			sprintf(opt[n++],"%-27.27s%.40s","Reading Requirements"
+			sprintf(opt[n++],"%-27.27s%s","Reading Requirements"
 				,cfg.sub[i]->read_arstr);
-			sprintf(opt[n++],"%-27.27s%.40s","Posting Requirements"
+			sprintf(opt[n++],"%-27.27s%s","Posting Requirements"
 				,cfg.sub[i]->post_arstr);
-			sprintf(opt[n++],"%-27.27s%.40s","Operator Requirements"
+			sprintf(opt[n++],"%-27.27s%s","Operator Requirements"
 				,cfg.sub[i]->op_arstr);
-			sprintf(opt[n++],"%-27.27s%.40s","Moderated Posting User"
+			sprintf(opt[n++],"%-27.27s%s","Moderated Posting User"
 				,cfg.sub[i]->mod_arstr);
 			if(cfg.sub[i]->maxmsgs)
 				sprintf(str, "%"PRIu32, cfg.sub[i]->maxmsgs);
@@ -1421,8 +1407,8 @@ void sub_cfg(uint grpnum)
 							sprintf(str,"%ssubs/",cfg.data_dir);
 						else
 							strcpy(str,cfg.sub[i]->data_dir);
-						sprintf(opt[n++],"%-27.27s%.40s","Storage Directory",str);
-						sprintf(opt[n++],"%-27.27s%.40s","Semaphore File",cfg.sub[i]->post_sem);
+						sprintf(opt[n++],"%-27.27s%s","Storage Directory",str);
+						sprintf(opt[n++],"%-27.27s%s","Semaphore File",cfg.sub[i]->post_sem);
 						sprintf(opt[n++],"%-27.27s%u","Pointer File Index",cfg.sub[i]->ptridx);
 						sprintf(opt[n++],"%-27.27sNow %u / Was %u","Sub-board Index", i, cfg.sub[i]->subnum);
 						opt[n][0]=0;

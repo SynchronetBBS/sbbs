@@ -1,5 +1,3 @@
-/* $Id: scfgnode.c,v 1.37 2020/08/08 19:24:27 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,24 +11,12 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
- ****************************************************************************/
- 
+ ****************************************************************************/ 
+
 #include "scfg.h"
 
 /* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
@@ -69,9 +55,6 @@ void node_menu()
 			"\n"
 			"This is the list of configured terminal server nodes. A node is required\n"
 			"for each supported simultaneous 'caller'.\n"
-			"\n"
-			"`Note:` The `FirstNode` (e.g. Node 1) configuration settings are used for\n"
-			"      all the nodes supported by a single terminal server instance.\n"
 			"\n"
 			"`Note:` When nodes are added to this list, the `LastNode` value must be\n"
 			"      adjusted accordingly. See the `ctrl/sbbs.ini` file for more details.\n"
@@ -184,7 +167,7 @@ void node_cfg()
 	while(1) {
 		i=0;
 		sprintf(opt[i++],"%-27.27s%s","Phone Number",cfg.node_phone);
-		sprintf(opt[i++],"%-27.27s%.40s","Logon Requirements",cfg.node_arstr);
+		sprintf(opt[i++],"%-27.27s%s","Logon Requirements",cfg.node_arstr);
 		strcpy(opt[i++],"Toggle Options...");
 		strcpy(opt[i++],"Advanced Options...");
 		opt[i][0]=0;
@@ -192,9 +175,7 @@ void node_cfg()
 		uifc.helpbuf=
 			"`Node Configuration:`\n"
 			"\n"
-			"The configuration settings of the `FirstNode` will determine the behavior\n"
-			"of all nodes of a single terminal server instance  (through `LastNode`).\n"
-			"See the `ctrl/sbbs.ini` file for details.\n"
+			"Configuration settings specific to the selected node.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&node_dflt,0
 			,str,opt)) {
@@ -390,9 +371,9 @@ void node_cfg()
 						,cfg.sec_warn);
 					sprintf(opt[i++],"%-27.27s%u seconds","Inactivity Disconnection"
 						,cfg.sec_hangup);
-					sprintf(opt[i++],"%-27.27s%.40s","Daily Event",cfg.node_daily);
-					sprintf(opt[i++],"%-27.27s%.40s","Node Directory",cfg.node_path[cfg.node_num-1]);
-					sprintf(opt[i++],"%-27.27s%.40s","Text Directory",cfg.text_dir);
+					sprintf(opt[i++],"%-27.27s%s","Daily Event",cfg.node_daily);
+					sprintf(opt[i++],"%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
+					sprintf(opt[i++],"%-27.27s%s","Text Directory",cfg.text_dir);
 					opt[i][0]=0;
 					uifc.helpbuf=
 						"`Node Advanced Options:`\n"

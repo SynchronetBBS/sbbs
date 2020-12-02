@@ -460,8 +460,10 @@ static int lputs(void* cbdata, int level, const char* str)
 	OutputDebugString(msg);
 #endif
 
-	if(log_fp!=NULL && level <= log_level)
-		fprintf(log_fp,"Xfer %s: %s\n",log_levels[level], str);
+	if(log_fp!=NULL && level <= log_level) {
+		time_t t = time(NULL);
+		fprintf(log_fp,"%.15s %s\n", ctime(&t) + 4, str);
+	}
 
 	if(level > LOG_INFO)
 		return 0;

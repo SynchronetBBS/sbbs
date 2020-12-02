@@ -167,13 +167,13 @@ int xmodem_cancel(xmodem_t* xm)
 	int result;
 
 	if(!is_cancelled(xm) && is_connected(xm)) {
+		xm->cancelled=TRUE;
 		for(i=0;i<8 && is_connected(xm);i++)
 			if((result=putcom(CAN))!=0)
 				return result;
 		for(i=0;i<10 && is_connected(xm);i++)
 			if((result=putcom('\b'))!=0)
 				return result;
-		xm->cancelled=TRUE;
 	}
 
 	xmodem_flush(xm);
