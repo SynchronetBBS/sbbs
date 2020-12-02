@@ -21,7 +21,7 @@ load('fidocfg.js');
 load('binkp.js');
 load('freqit_common.js');
 
-var REVISION = 2.40;
+var REVISION = 2.41;
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 // data/binkstats.ini
@@ -387,6 +387,7 @@ function handle_freq(reqfname, bp)
 		// Now, check for the file...
 		FREQIT.handle_regular(fname, bp, bp.authenticated === 'secure', pw, cfg);
 	}
+	req.close();
 }
 
 function rename_or_move(src, dst_dir, dst_fname)
@@ -582,6 +583,7 @@ function callout_done(bp)
 						break;
 				}
 			});
+			f.close();
 		}
 	});
 
