@@ -59,8 +59,8 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	if (this.options.multicolumn_separator === undefined)
 		this.options.multicolumn_separator = " ";
 
-	if ((this.options.multicolumn_fmt === undefined) && (typeof bbs !== "undefined"))
-		this.options.multicolumn_fmt = bbs.text(XtrnProgLstFmt);
+	if (this.options.multicolumn_fmt === undefined)
+		this.options.multicolumn_fmt = system.text(XtrnProgLstFmt);
 	
 	if (this.options.singlecolumn_fmt === undefined)
 		this.options.singlecolumn_fmt = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
@@ -77,27 +77,23 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 			options.multicolumn = false;
 	}
 	
-	if (this.options.restricted_user_msg === undefined) {
-		this.options.restricted_user_msg = typeof bbs !== "undefined" ? bbs.text(R_ExternalPrograms)
-		: "You do not have access to this program.";
-	}
+	if (this.options.restricted_user_msg === undefined)
+		this.options.restricted_user_msg = system.text(R_ExternalPrograms);
 	
-	if (this.options.no_programs_msg === undefined) {
-		this.options.no_programs_msg = typeof bbs !== "undefined" ? bbs.text(NoXtrnPrograms)
-			: "No programs found.";
-	}
+	if (this.options.no_programs_msg === undefined) 
+		this.options.no_programs_msg =  system.text(NoXtrnPrograms);
 	
-	if ((this.options.header_fmt === undefined) && (typeof bbs !== "undefined"))
-		this.options.header_fmt = bbs.text(XtrnProgLstHdr);
+	if (this.options.header_fmt === undefined)
+		this.options.header_fmt = system.text(XtrnProgLstHdr);
 
-	if ((this.options.titles === undefined) && (typeof bbs !== "undefined"))
-		this.options.titles = bbs.text(XtrnProgLstTitles);
+	if (this.options.titles === undefined)
+		this.options.titles = system.text(XtrnProgLstTitles);
 
-	if ((this.options.underline === undefined) && (typeof bbs !== "undefined"))
-		this.options.underline = bbs.text(XtrnProgLstUnderline);
+	if (this.options.underline === undefined)
+		this.options.underline = system.text(XtrnProgLstUnderline);
 
-	if ((this.options.which === undefined) && (typeof bbs !== "undefined"))
-		this.options.which = bbs.text(WhichXtrnProg);
+	if (this.options.which === undefined) 
+		this.options.which = system.text(WhichXtrnProg);
 
 	if (this.options.clear_screen === undefined)
 		this.options.clear_screen = true;
@@ -324,16 +320,9 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 					// no access string defined, everyone gets access
 					menuitemsfiltered.push(menuobj.items[i]);
 				} else {
-					if (typeof bbs !== "undefined") {
-						if (bbs.compare_ars(menuobj.items[i].access_string)) {
-							// they have access
-							menuitemsfiltered.push(menuobj.items[i]);
-						}
-					} else {
-						if (user.compare_ars(menuobj.items[i].access_string)) {
-							// they have access
-							menuitemsfiltered.push(menuobj.items[i]);
-						}
+					if (user.compare_ars(menuobj.items[i].access_string)) {
+						// they have access
+						menuitemsfiltered.push(menuobj.items[i]);
 					}
 				}
 				break;
