@@ -288,6 +288,7 @@ int main(int argc, char **argv)
 						"-c  =  force color mode\n"
 						"-m  =  force monochrome mode\n"
                         "-e# =  set escape delay to #msec\n"
+						"-insert = enable keyboard insert mode by default\n"
 						"-import=<filename> = import a message area list file\n"
 						"-faddr=<addr> = specify your FTN address for imported subs\n"
 						"-misc=<value> = specify option flags for imported subs\n"

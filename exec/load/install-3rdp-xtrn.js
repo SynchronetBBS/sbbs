@@ -18,9 +18,9 @@ function scan(options)
 	if(options === undefined)
 		options = {};
 	if(!options.src_dir)
-		options.src_dir = "../xtrn/3rdp-install/";
+		options.src_dir = fullpath(system.ctrl_dir + "../xtrn/3rdp-install/");
 	if(!options.xtrn_dir)
-		options.xtrn_dir = "../xtrn/";
+		options.xtrn_dir = fullpath(system.ctrl_dir + "../xtrn/");
 	
 	var out = [];
 	var exe_list = {};
