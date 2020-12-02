@@ -1842,6 +1842,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 	char	str[MAX_PATH+1],*cmd;
     int		i,j,len;
 	bool	native = (mode == EX_UNSPECIFIED) || native_executable(&cfg, instr, mode);
+	(void) native;
 
     if(outstr==NULL)
         cmd=cmdstr_output;
