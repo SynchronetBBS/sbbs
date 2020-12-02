@@ -1975,7 +1975,7 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject* obj=JS_THIS_OBJECT(cx, arglist);
 	jsval* argv=JS_ARGV(cx, arglist);
-	int32		i=0;
+	uint32		i=0;
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
  	if(!js_argc(cx, argc, 1))
