@@ -114,19 +114,24 @@ var   SS_FASTLOGON  =(1<<31);	/* Fast logon                               */
 						    	/********************************************/
 								/* bbs.startup_options						*/
 						    	/********************************************/
-var   BBS_OPT_KEEP_ALIVE		=(1<<0); /* Send keep-alives				*/
 var   BBS_OPT_XTRN_MINIMIZED	=(1<<1); /* Run externals minimized			*/
 var   BBS_OPT_AUTO_LOGON		=(1<<2); /* Auto-logon via IP				*/
 var   BBS_OPT_DEBUG_TELNET		=(1<<3); /* Debug telnet commands			*/
 var   BBS_OPT_SYSOP_AVAILABLE	=(1<<4); /* Available for chat				*/
 var   BBS_OPT_ALLOW_RLOGIN		=(1<<5); /* Allow logins via BSD RLogin		*/
-var   BBS_OPT_USE_2ND_RLOGIN	=(1<<6); /* Use 2nd username in BSD RLogin	*/
 var   BBS_OPT_NO_QWK_EVENTS		=(1<<7); /* Don't run QWK-related events	*/
+var   BBS_OPT_NO_TELNET_GA		=(1<<8); /* Don't send periodic Telnet GAs	*/
+var   BBS_OPT_NO_EVENTS			=(1<<9); /* Don't run event thread			*/
+var   BBS_OPT_NO_SPY_SOCKETS	=(1<<10);/* Don't create spy sockets		*/
 var   BBS_OPT_NO_HOST_LOOKUP	=(1<<11);/* Don't lookup hostname			*/
-var   BBS_OPT_NO_JAVASCRIPT		=(1<<29);/* JavaScript disabled				*/
-var   BBS_OPT_LOCAL_TIMEZONE	=(1<<30);/* Don't force UCT/GMT				*/
+var   BBS_OPT_ALLOW_SSH			=(1<<12);/* Allow logins via BSD SSH		*/
+var   BBS_OPT_NO_DOS			=(1<<13);/* Can't to run 16-bit DOS prog	*/
+var   BBS_OPT_NO_NEWDAY_EVENTS	=(1<<14);/* Don't check for a new day 		*/
+var   BBS_OPT_HAPROXY_PROTO   	=(1<<26);/* Incoming requests via HAproxy 	*/
+var   BBS_OPT_NO_RECYCLE		=(1<<27);/* Disable recycling of server		*/
+var   BBS_OPT_GET_IDENT			=(1<<28);/* Get Identity (RFC 1413)			*/
 var   BBS_OPT_MUTE				=(1<<31);/* Mute sounds						*/
-						    	/*******************************************/
+								/********************************************/
 
 						    	/********************************************/
 								/* bbs.online								*/
