@@ -25,7 +25,6 @@ var options, xsec = -1;
 var ExternalMenus = new ExternalMenus();
 const menuconfig = ExternalMenus.menuconfig;
 
-var xsec=-1;
 {
 	var i,j;
 	for(i in argv) {
