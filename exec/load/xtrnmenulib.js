@@ -159,7 +159,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 		// will be the same for both types of menus
 		
 		// Allow overriding on a per-menu basis
-		var menuoptions = load({}, "modopts.js", "xtrn_custommenu:" + menuid);
+		var menuoptions = load({}, "modopts.js", "xtrnmenu:" + menuid);
 		if ((typeof menuid !== "undefined") && (menuoptions != null)) {
 			for (var m in menuoptions) {
 				this.options[m] = menuoptions[m];
