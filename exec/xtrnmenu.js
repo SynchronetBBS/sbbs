@@ -19,11 +19,11 @@ require("sbbsdefs.js", "K_NONE");
 
 load("xtrnmenulib.js");
 
-var options, menuconfig, xsec = -1;
+var options, xsec = -1;
 
 //// Main
 var ExternalMenus = new ExternalMenus();
-var menuconfig = ExternalMenus.menuconfig;
+const menuconfig = ExternalMenus.menuconfig;
 
 var xsec=-1;
 {
