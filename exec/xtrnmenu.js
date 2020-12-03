@@ -8,7 +8,7 @@
  * 
  * To jump to a specific menu, pass the ID as an argument
  * 
- * To set options, add to modopts.ini [xtrn_custommenu]
+ * To set options, add to modopts.ini [xtrnmenu]
  * 
  * See instructions at http://wiki.synchro.net/module:xtrnmenu
  */
