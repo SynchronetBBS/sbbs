@@ -48,7 +48,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	}
 
 	// Get xtrn_custommenu options from modopts.ini [xtrn_custommenu]
-	if ((this.xtrn_custommenu_options = load({}, "modopts.js", "xtrn_custommenu")) == null) {
+	if ((this.xtrn_custommenu_options = load({}, "modopts.js", "xtrnmenu")) == null) {
 		this.xtrn_custommenu_options = { };
 	}
 
