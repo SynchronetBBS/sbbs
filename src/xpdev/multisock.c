@@ -330,11 +330,6 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 	struct timeval *tvp;
 	SOCKET         max_sock=0;
 	SOCKET         ret;
-	char           hapstr[128];
-	char           haphex[256];
-	char           *p, *tok;
-	long           l;
-	void           *vp;
 
 	FD_ZERO(&read_fs);
 	for(i=0; i<xpms_set->sock_count; i++) {
@@ -367,10 +362,16 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					ret =  accept(xpms_set->socks[i].sock, &addr->addr, addrlen);
 					if (ret == INVALID_SOCKET)
 						return ret;
-
+#if defined(HAPROXY_SUPPORT)
 					// Set host_ip from haproxy protocol, if its used
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
 					if (flags & XPMS_ACCEPT_FLAG_HAPROXY) {
+						char	hapstr[128];
+						char	haphex[256];
+						char	*p, *tok;
+						long	l;
+						void	*vp;
+
 						memset(addr, 0, sizeof(*addr));
 						xpms_set->lprintf(LOG_DEBUG,"%04d Working out client address from HAProxy PROTO",ret);
 
@@ -582,7 +583,9 @@ SOCKET DLLCALL xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 						xpms_set->lprintf(LOG_INFO,"%04d * HAPROXY Source [%s]",ret,hapstr);
 
 						return ret;
-					} else {
+					} else
+#endif /* HAPPROX_SUPPORT - currently doesn't work on WinXP */
+					{
 						return ret;
 					}
 				}
