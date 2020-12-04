@@ -1603,7 +1603,7 @@ int main(int argc, char **argv)
 	zm.escape_8th_bit		=iniGetBool(ini, section,"Escape8thBit",FALSE);
 	zm.escape_ctrl_chars	=iniGetBool(ini, section,"EscapeCtrlChars",FALSE);
 	zm.max_window_size		=(uint32_t)iniGetBytes(ini, section,"MaxWindowSize",1,0);
-	zm.target_window_size	=iniGetDuration(ini, section,"TargetWindowSize",0);
+	zm.target_window_size	=(unsigned)iniGetDuration(ini, section,"TargetWindowSize",0);
 
 	section = "DSZLOG";
 	dszlog_path				=iniGetBool(ini, section, "Path",TRUE);

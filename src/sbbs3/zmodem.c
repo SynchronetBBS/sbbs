@@ -1505,7 +1505,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 	if(zm->rxd_header_pos < zm->current_file_size) {
 		if(*pos != zm->rxd_header_pos) {
 			*pos = zm->rxd_header_pos;
-			zm->ack_file_pos = *pos;
+			zm->ack_file_pos = (int32_t)*pos;
 			lprintf(zm, LOG_INFO, "%lu Resuming transfer from offset: %"PRIu64
 				,(ulong)zm->current_file_pos, *pos);
 		}
@@ -1534,7 +1534,7 @@ static unsigned new_window_size(zmodem_t* zm, time_t start, unsigned pos)
 	time_t elapsed = time(NULL) - start;
 	if(elapsed < 1)
 		elapsed = 1;
-	unsigned cps = pos / elapsed;
+	unsigned cps = (unsigned)(pos / elapsed);
 	if(cps < 1)
 		cps = 1;
 	return cps * zm->target_window_size;
@@ -1591,7 +1591,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 			if(c == ZPAD) {
 				rx_type = zmodem_recv_header(zm);
 				lprintf(zm,LOG_DEBUG, "Received back-channel data: %s", chr(rx_type));
-				if(rx_type == ZACK && zmodem_handle_zack(zm, zm->ack_file_pos, zm->current_file_pos)) {
+				if(rx_type == ZACK && zmodem_handle_zack(zm, zm->ack_file_pos, (uint32_t)zm->current_file_pos)) {
 					zm->current_window_size = zm->current_file_pos - zm->ack_file_pos;
 					lprintf(zm, LOG_DEBUG, "%lu Asynchronous acknowledgment (ZACK) of %lu bytes, new window: %lu"
 						,(ulong)zm->current_file_pos, (ulong)zm->ack_file_pos, (ulong)zm->current_window_size);
@@ -1683,7 +1683,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 					if(is_cancelled(zm))
 						return(ZCAN);
 
-					if(zmodem_handle_zack(zm, zm->current_file_pos, zm->current_file_pos)) {
+					if(zmodem_handle_zack(zm, (uint32_t)zm->current_file_pos, (uint32_t)zm->current_file_pos)) {
 						zm->current_window_size = 0;
 						break;
 					}
@@ -1951,7 +1951,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 
 		pos = zm->ack_file_pos;
 
-		if(type == ZACK && zmodem_handle_zack(zm, pos, zm->current_file_pos)) {
+		if(type == ZACK && zmodem_handle_zack(zm, (uint32_t)pos, (uint32_t)zm->current_file_pos)) {
 			continue;
 		}
 
