@@ -940,15 +940,18 @@ BinkP.prototype.close = function()
 				this.sendCmd(this.command.M_EOB);
 		}
 		// Attempt a super-duper graceful shutdown to prevent RST...
-		this.sock.is_writeable = false;
-		remain = this.timeout;
-		end = time() + remain;
-		do {
-			if (this.sock.recv(2048, remain) == 0)
-				break;
-			remain = end - time();
-		} while (remain > 0);
-		this.sock.close();
+		if (this.sock !== undefined) {
+			this.sock.is_writeable = false;
+			remain = this.timeout;
+			end = time() + remain;
+			do {
+				if (this.sock.recv(2048, remain) == 0)
+					break;
+				remain = end - time();
+			} while (remain > 0);
+			this.sock.close();
+			this.sock = undefined;
+		}
 	}
 	this.tx_queue.forEach(function(file) {
 		file.file.close();
