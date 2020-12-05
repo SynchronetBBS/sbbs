@@ -1,8 +1,4 @@
-/* sockwrap.c */
-
 /* Berkley/WinSock socket API wrappers */
-
-/* $Id: sockwrap.c,v 1.74 2020/08/09 02:13:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -10,27 +6,15 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This library is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU Lesser General Public License		*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU Lesser General Public License for more details: lgpl.txt or	*
- * http://www.fsf.org/copyleft/lesser.html									*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -524,8 +508,7 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 #endif
 }
 
-#if defined(_WIN32) && !defined(_MSC_VER)
-DLLEXPORT int inet_pton(int af, const char *src, void *dst)
+DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 {
 	struct addrinfo hints = {0};
 	struct addrinfo *res, *cur;
@@ -558,4 +541,3 @@ DLLEXPORT int inet_pton(int af, const char *src, void *dst)
 	freeaddrinfo(res);
 	return 1;
 }
-#endif
