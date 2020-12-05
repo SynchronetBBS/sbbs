@@ -1240,7 +1240,7 @@ BinkP.prototype.recvFrame = function(timeout)
 									log(LOG_WARNING, 'Peer ended their VER with " '+m[2]+'" instead of the required " binkp/1.1", but we\'re assuming binkp 1.1 anyway');
 								}
 								log(LOG_DEBUG, "Parsed BinkP version: " + binkp_ver);
-								this.ver_1_1 = binkp_ver >= 1.1;
+								this.ver1_1 = binkp_ver >= 1.1;
 							}
 							break;
 						case 'ZYZ':
