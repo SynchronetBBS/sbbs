@@ -1701,9 +1701,12 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	if(client!=NULL) {
-		SAFECOPY(user.modem,client->protocol);
-		SAFECOPY(user.comp,client->host);
-		SAFECOPY(user.ipaddr,client->addr);
+		if(client->protocol != NULL)
+			SAFECOPY(user.modem,client->protocol);
+		if(client->host != NULL)
+			SAFECOPY(user.comp,client->host);
+		if(client->addr != NULL)
+			SAFECOPY(user.ipaddr,client->addr);
 	}
 
 	user.sex=' ';
