@@ -508,13 +508,22 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 #endif
 }
 
+DLLEXPORT void set_socket_errno(int err)
+{
+#if defined(_WINSOCKAPI_)
+	WSASetLastError(err);
+#else
+	errno = err;
+#endif
+}
+
 DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 {
 	struct addrinfo hints = {0};
 	struct addrinfo *res, *cur;
 
 	if (af != AF_INET && af != AF_INET6) {
-		// TODO: Should set socket_errno to EAFNOSUPPORT
+		set_socket_errno(EAFNOSUPPORT);
 		return -1;
 	}
 
