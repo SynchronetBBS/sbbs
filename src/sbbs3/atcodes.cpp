@@ -1126,6 +1126,21 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(str);
 	}
 
+	if(strcmp(sp,"FREESPACEM") == 0) {
+		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024));
+		return(str);
+	}
+
+	if(strcmp(sp,"FREESPACEG") == 0) {
+		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024));
+		return(str);
+	}
+
+	if(strcmp(sp,"FREESPACET") == 0) {
+		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024) / 1024);
+		return(str);
+	}
+
 	if(!strcmp(sp,"UPBYTES")) {
 		safe_snprintf(str,maxlen,"%lu",useron.ulb);
 		return(str);
