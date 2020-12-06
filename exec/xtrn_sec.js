@@ -215,6 +215,10 @@ function external_section_menu()
 {
     var i,j;
     var xsec=0;
+	var longest = 0;
+	for(i = 0; i < xtrn_area.sec_list.length; i++)
+		longest = Math.max(xtrn_area.sec_list[i].name.length, longest);
+	var margin = options.center ? format("%*s", ((console.screen_columns - longest)/2) - 5, "") : "";
 
     while(bbs.online) {
 
@@ -238,7 +242,7 @@ function external_section_menu()
 		if(options.clear_screen)
 			console.clear(LIGHTGRAY);
 
-		bbs.menu("xtrn_sec_head", P_NOERROR);
+		var show_header = !bbs.menu("xtrn_sec_head", P_NOERROR);
 
 		if(bbs.menu_exists("xtrn_sec")) {
 			bbs.menu("xtrn_sec");
@@ -248,16 +252,23 @@ function external_section_menu()
 			if(options.sort)
 				sec_list.sort(sort_by_name);
 
-			printf(options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
+			if(show_header)
+				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
 			for (i = 0; i < sec_list.length; i++) {
 				console.add_hotspot(i+1);
-				printf(options.section_fmt, i + 1, sec_list[i].name);
+				printf(margin + options.section_fmt, i + 1, sec_list[i].name);
 			}
 
 			bbs.menu("xtrn_sec_tail", P_NOERROR);
 			
 			bbs.node_sync();
-			console.mnemonics(format(options.section_which, xsec + 1));
+			if(options.center) {
+				console.crlf();
+				write(margin);
+				console.mnemonics(format(options.section_which, xsec + 1).trimLeft());
+			}
+			else
+				console.mnemonics(format(options.section_which, xsec + 1));
 		}
 
 		bbs.node_sync();
