@@ -1821,7 +1821,22 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return (current_msg != NULL && current_msg->user_voted == 1) ? text[PollAnswerChecked] : nulstr;
 	if(!strcmp(sp,"MSG_DOWNVOTED"))
 		return (current_msg != NULL && current_msg->user_voted == 2) ? text[PollAnswerChecked] : nulstr;
-
+	if(strcmp(sp, "MSG_THREAD_ID") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_id);
+		return str;
+	}
+	if(strcmp(sp, "MSG_THREAD_BACK") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_back);
+		return str;
+	}
+	if(strcmp(sp, "MSG_THREAD_NEXT") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_next);
+		return str;
+	}
+	if(strcmp(sp, "MSG_THREAD_FIRST") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_first);
+		return str;
+	}
 	if(!strcmp(sp,"SMB_AREA")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
 			safe_snprintf(str,maxlen,"%s %s"
