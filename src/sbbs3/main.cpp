@@ -1289,7 +1289,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 					,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 					,&js_callback								/* js */
 					,&startup->js
-					,&client, client_socket, -1					/* client */
+					,client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
 					,&js_server_props							/* server */
 					,glob
 			))
