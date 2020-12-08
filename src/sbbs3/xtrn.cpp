@@ -1286,7 +1286,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			return(-1);
 		}
 
-		fprintf(dosemubatfp,"@@ECHO OFF\r\n",nodedrive);
+		fprintf(dosemubatfp,"@ECHO OFF\r\n");
 		fprintf(dosemubatfp,"@SET DSZLOG=%s\\PROTOCOL.LOG\r\n",nodedrive);
 		fprintf(dosemubatfp,"@SET SBBSNODE=%s\r\n",nodedrive);
 		fprintf(dosemubatfp,"@SET SBBSNNUM=%d\r\n",cfg.node_num);
