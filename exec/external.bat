@@ -1,4 +1,3 @@
-@ECHO OFF
 @unix -s NODEDIR
 @lredir D: linux\fs%NODEDIR% >NUL
 @lredir E: linux\fs%XTRNDIR% >NUL
