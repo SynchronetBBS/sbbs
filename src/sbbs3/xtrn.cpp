@@ -1182,12 +1182,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		FILE *externalbatfp;
 		FILE *de_launch_inifp;
 		char tok[MAX_PATH+1];
-		char buf[MAX_PATH+1];
-		char bufout[MAX_PATH+1];
+		char buf[1024];
+		char bufout[1024];
 
 		char cmdlinebatch[MAX_PATH+1];
 		char externalbatsrc[MAX_PATH+1];
-		char externalbat [MAX_PATH+1];
+		char externalbat[MAX_PATH+1];
 		char dosemuconf[MAX_PATH+1];
 		char de_launch_cmd[INI_MAX_VALUE_LEN];
 		char dosemubinloc[MAX_PATH+1];
@@ -1287,20 +1287,20 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 
 		fprintf(dosemubatfp,"@ECHO OFF\r\n");
-		fprintf(dosemubatfp,"@SET DSZLOG=%s\\PROTOCOL.LOG\r\n",nodedrive);
-		fprintf(dosemubatfp,"@SET SBBSNODE=%s\r\n",nodedrive);
-		fprintf(dosemubatfp,"@SET SBBSNNUM=%d\r\n",cfg.node_num);
-		fprintf(dosemubatfp,"@SET SBBSCTRL=%s\r\n",ctrldrive);
-		fprintf(dosemubatfp,"@SET SBBSDATA=%s\r\n",datadrive);
-		fprintf(dosemubatfp,"@SET SBBSEXEC=%s\r\n",execdrive);
-		fprintf(dosemubatfp,"@SET PCBNODE=%d\r\n",cfg.node_num);
-		fprintf(dosemubatfp,"@SET PCBDRIVE=%s\r\n",nodedrive);
-		fprintf(dosemubatfp,"@SET PCBDIR=\\\r\n");
-		fprintf(dosemubatfp,"@SET XTRNDIR=%s\r\n",xtrndir_dos);
-		fprintf(dosemubatfp,"@SET CTRLDIR=%s\r\n",ctrldir_dos);
-		fprintf(dosemubatfp,"@SET DATADIR=%s\r\n",datadir_dos);
-		fprintf(dosemubatfp,"@SET EXECDIR=%s\r\n",execdir_dos);
-		fprintf(dosemubatfp,"@SET NODEDIR=%s\r\n",nodedir_dos);
+		fprintf(dosemubatfp,"SET DSZLOG=%s\\PROTOCOL.LOG\r\n",nodedrive);
+		fprintf(dosemubatfp,"SET SBBSNODE=%s\r\n",nodedrive);
+		fprintf(dosemubatfp,"SET SBBSNNUM=%d\r\n",cfg.node_num);
+		fprintf(dosemubatfp,"SET SBBSCTRL=%s\r\n",ctrldrive);
+		fprintf(dosemubatfp,"SET SBBSDATA=%s\r\n",datadrive);
+		fprintf(dosemubatfp,"SET SBBSEXEC=%s\r\n",execdrive);
+		fprintf(dosemubatfp,"SET PCBNODE=%d\r\n",cfg.node_num);
+		fprintf(dosemubatfp,"SET PCBDRIVE=%s\r\n",nodedrive);
+		fprintf(dosemubatfp,"SET PCBDIR=\\\r\n");
+		fprintf(dosemubatfp,"SET XTRNDIR=%s\r\n",xtrndir_dos);
+		fprintf(dosemubatfp,"SET CTRLDIR=%s\r\n",ctrldir_dos);
+		fprintf(dosemubatfp,"SET DATADIR=%s\r\n",datadir_dos);
+		fprintf(dosemubatfp,"SET EXECDIR=%s\r\n",execdir_dos);
+		fprintf(dosemubatfp,"SET NODEDIR=%s\r\n",nodedir_dos);
 
 		const char* gamedir = "";
 		if(startup_dir!=NULL && startup_dir[0]) {
@@ -1313,7 +1313,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			return -1;
 		}
 		if (startup_dir[0]) {
-			fprintf(dosemubatfp,"@SET STARTDIR=%s\r\n",gamedir);
+			fprintf(dosemubatfp,"SET STARTDIR=%s\r\n",gamedir);
 		}
 		
 		/* now append exec/external.bat (which is editable) to this 
@@ -1461,7 +1461,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if (virtualconf[0] == '\0') {
 				iniGetString(de_launch_ini, "stdio", "cmd", de_launch_cmd, de_launch_cmd);
 			}
-            strListFree(&de_launch_ini);
+            iniFreeStringList(&de_launch_ini);
 
 			named_string_t de_launch_ini_replacements[] = 
 			{
