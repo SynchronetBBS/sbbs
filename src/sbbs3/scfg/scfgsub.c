@@ -166,6 +166,7 @@ void sub_cfg(uint grpnum)
 		if(uifc.changes && cfg.grp[grpnum]->sort)
 			sort_subs(grpnum);
 		int maxlen = 0;
+		bool template_shown = false;
 		for(i=0,j=0;i<cfg.total_subs && j<MAX_OPTS;i++)
 			if(cfg.sub[i]->grp==grpnum) {
 				subnum[j]=i;
@@ -187,7 +188,9 @@ void sub_cfg(uint grpnum)
 					default:	/* Defeat stupid GCC warning */
 						break;
 				}
-				sprintf(str, "%-*s %c", name_len, name, cfg.sub[i]->misc&SUB_TEMPLATE ? '*' : ' ');
+				sprintf(str, "%-*s %c", name_len, name, (cfg.sub[i]->misc&SUB_TEMPLATE && !template_shown) ? '*' : ' ');
+				if(cfg.sub[i]->misc&SUB_TEMPLATE)
+					template_shown = true;
 				truncsp(str);
 				len += sprintf(opt[j] + strlen(opt[j]), "%s", str);
 				if(len > maxlen)

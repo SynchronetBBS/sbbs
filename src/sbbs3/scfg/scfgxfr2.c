@@ -979,6 +979,7 @@ void dir_cfg(uint libnum)
 		if(uifc.changes && cfg.lib[libnum]->sort)
 			sort_dirs(libnum);
 		int maxlen = 0;
+		bool template_shown = false;
 		for(i=0,j=0;i<cfg.total_dirs && j<MAX_OPTS;i++) {
 			if(cfg.dir[i]->lib != libnum)
 				continue;
@@ -996,7 +997,9 @@ void dir_cfg(uint libnum)
 				default:	/* Defeat stupid GCC warning */
 					break;
 			}
-			sprintf(str, "%-*s %c", name_len, name, cfg.dir[i]->misc&DIR_TEMPLATE ? '*' : ' ');
+			sprintf(str, "%-*s %c", name_len, name, (cfg.dir[i]->misc&DIR_TEMPLATE && !template_shown) ? '*' : ' ');
+			if(cfg.dir[i]->misc&DIR_TEMPLATE)
+				template_shown = true;
 			truncsp(str);
 			int len = sprintf(opt[j], "%s", str);
 			if(len > maxlen)
