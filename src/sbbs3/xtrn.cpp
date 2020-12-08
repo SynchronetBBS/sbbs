@@ -1461,7 +1461,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			if (virtualconf[0] == '\0') {
 				iniGetString(de_launch_ini, "stdio", "cmd", de_launch_cmd, de_launch_cmd);
 			}
-            iniFreeStringList(&de_launch_ini);
+            iniFreeStringList(de_launch_ini);
 
 			named_string_t de_launch_ini_replacements[] = 
 			{
