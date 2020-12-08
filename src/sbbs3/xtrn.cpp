@@ -1255,11 +1255,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 *
 		 * First check startup_dir, then check cfg.ctrl_dir
 		 */
-		SAFEPRINTF(str,"%sdosemu.conf",startup_dir);
+		sprintf(str,"%sdosemu.conf",startup_dir);
 		if (!fexist(str)) {
 			/* If we can't find it in the door dir, look for a global one
 			 * in the ctrl dir. */
-			SAFEPRINTF(str,"%sdosemu.conf",cfg.ctrl_dir);
+			sprintf(str,"%sdosemu.conf",cfg.ctrl_dir);
 			if (!fexist(str)) {
 				/* If we couldn't find either, try for the system one, then
 				 * error out. */
@@ -1403,7 +1403,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		/* Attempt to keep dosemu from prompting for a disclaimer. */
 
-		SAFEPRINTF(str, "%s/.dosemu", cfg.ctrl_dir);
+		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
 		if (!isdir(str)) {
 			mkdir(str, 0755);
 		}
