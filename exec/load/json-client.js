@@ -19,7 +19,7 @@ load("json-sock.js");
 	-	JSONClient.shift(scope,location,lock);
 	-	JSONClient.write(scope,location,data,lock);
 	-	JSONClient.push(scope,location,data,lock);
-	-   JSONClient.remove(scope,location,lock);
+	-	JSONClient.remove(scope,location,lock);
 	-	JSONClient.unshift(scope,location,lock);
 	-	JSONClient.splice(scope,location,start,end,data,lock)
 	-	JSONClient.slice(scope,location,start,end,lock)
