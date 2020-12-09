@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-DLLEXPORT int		getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr);
+DLLEXPORT int		getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr);
 DLLEXPORT mail_t *	loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 							,int which, long mode);
 DLLEXPORT void		freemail(mail_t* mail);
