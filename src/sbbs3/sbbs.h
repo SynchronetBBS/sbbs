@@ -623,7 +623,7 @@ public:
 
 	void	reset_logon_vars(void);
 
-	uint	finduser(char *str, bool silent_failure = false);
+	uint	finduser(const char* str, bool silent_failure = false);
 
 	int 	sub_op(uint subnum);
 
@@ -681,7 +681,7 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	void	forwardmail(smbmsg_t* msg, int usernum);
+	bool	forwardmail(smbmsg_t* msg, const char* to);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
