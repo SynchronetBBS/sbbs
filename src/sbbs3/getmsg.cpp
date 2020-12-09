@@ -97,7 +97,8 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 	uint32_t auxattr = msg->hdr.auxattr;
 	uint32_t netattr = msg->hdr.netattr;
 
-	bprintf(text[MsgAttr]
+	char attr_str[64];
+	safe_snprintf(attr_str, sizeof(attr_str), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
 		,attr&MSG_SPAM		? "SPAM  "      :nulstr
 		,attr&MSG_READ		? "Read  "      :nulstr
@@ -112,11 +113,35 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,poll == MSG_POLL	? "Poll  "		:nulstr
 		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
-		,auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH) ? "Attach  "   :nulstr
-		,netattr&MSG_SENT						 ? "Sent  "		:nulstr
-		,netattr&MSG_INTRANSIT					 ? "InTransit  ":nulstr
-		,netattr&MSG_KILLSENT					 ? "KillSent  " :nulstr
+	);
+
+	char auxattr_str[64];
+	safe_snprintf(auxattr_str, sizeof(auxattr_str), "%s%s%s%s%s%s%s"
+		,auxattr&MSG_FILEREQUEST? "FileRequest  "   :nulstr
+		,auxattr&MSG_FILEATTACH	? "FileAttach  "    :nulstr
+		,auxattr&MSG_MIMEATTACH	? "MimeAttach  "	:nulstr
+		,auxattr&MSG_KILLFILE	? "KillFile  "      :nulstr
+		,auxattr&MSG_RECEIPTREQ	? "ReceiptReq  "	:nulstr
+		,auxattr&MSG_CONFIRMREQ	? "ConfirmReq  "    :nulstr
+		,auxattr&MSG_NODISP		? "DontDisplay  "	:nulstr
 		);
+
+	char netattr_str[64];
+	safe_snprintf(netattr_str, sizeof(netattr_str), "%s%s%s%s%s%s%s%s"
+		,netattr&MSG_LOCAL		? "Local  "			:nulstr
+		,netattr&MSG_INTRANSIT	? "InTransit  "     :nulstr
+		,netattr&MSG_SENT		? "Sent  "			:nulstr
+		,netattr&MSG_KILLSENT	? "KillSent  "      :nulstr
+		,netattr&MSG_HOLD		? "Hold  "			:nulstr
+		,netattr&MSG_CRASH		? "Crash  "			:nulstr
+		,netattr&MSG_IMMEDIATE	? "Immediate  "		:nulstr
+		,netattr&MSG_DIRECT		? "Direct  "		:nulstr
+		);
+
+	bprintf(text[MsgAttr], attr_str, auxattr_str, netattr_str
+		,nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr
+		,nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr
+		,nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr);
 }
 
 /* Returns a CP437 text.dat string converted to UTF-8, when appropriate */
