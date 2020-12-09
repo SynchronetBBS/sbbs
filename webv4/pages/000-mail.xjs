@@ -1,4 +1,5 @@
 <!--HIDDEN:Mail-->
+
 <?xjs
     if (user.number == 0 || user.alias == settings.guest) exit();
     load('sbbsdefs.js');
