@@ -783,11 +783,13 @@ try {
 
         } else if ((selection & MSK_ON) == MSK_DEL) {
             selection &= MSK_OFF;
+            var menus2 = [];
             for (var m in menuconfig.menus) {
-                if (menuconfig.menus[m].id == menus[selection]) {
-                    delete menuconfig.menus[m];
+                if (menuconfig.menus[m].id != menus[selection]) {
+                    menus2.push(menuconfig.menus[m]);
                 }
             }
+            menuconfig.menus = menus2;
             //selection--;
         } else if (((selection & MSK_ON) == MSK_INS) || (selection >= menuconfig.menus.length)) {
             // new menu
