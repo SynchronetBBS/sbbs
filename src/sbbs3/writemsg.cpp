@@ -1,7 +1,4 @@
 /* Synchronet message creation routines */
-// vi: tabstop=4
-
-/* $Id: writemsg.cpp,v 1.175 2020/05/24 19:34:02 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -1338,10 +1323,9 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 
 
 /****************************************************************************/
-/* Forwards mail (fname) to usernumber                                      */
-/* Called from function readmail											*/
+/* Forwards mail 'msg' to 'to'												*/
 /****************************************************************************/
-void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
+bool sbbs_t::forwardmail(smbmsg_t* msg, const char* to)
 {
 	char		str[256],touser[128];
 	char 		tmp[512];
@@ -1350,27 +1334,44 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	msghdr_t	hdr=msg->hdr;
 	idxrec_t	idx=msg->idx;
 	time32_t	now32;
+	uint usernumber = 0;
+
+	if(to == NULL)
+		return false;
+
+	uint16_t net_type = smb_netaddr_type(to);
+	if(net_type == NET_NONE || net_type == NET_UNKNOWN) {
+		usernumber = finduser(to);
+		if(usernumber < 1)
+			return false;
+		net_type = NET_NONE;
+	} else if(!is_supported_netmail_addr(&cfg, to)) {
+		bprintf(text[InvalidNetMailAddr], to);
+		return false;
+	}
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
-		return; 
+		return false; 
 	}
 	if(useron.rest&FLAG('F')) {
 		bputs(text[R_Forward]);
-		return; 
+		return false;
 	}
 	if(usernumber==1 && useron.rest&FLAG('S')) {
 		bprintf(text[R_Feedback],cfg.sys_op);
-		return; 
+		return false;
 	}
 	if(usernumber!=1 && useron.rest&FLAG('E')) {
 		bputs(text[R_Email]);
-		return; 
+		return false;
 	}
 
 	msg->idx.attr&=~(MSG_READ|MSG_DELETE);
 	msg->hdr.attr=msg->idx.attr;
 
+	now32=time32(NULL);
+	smb_hfield(msg,FORWARDED,sizeof(now32),&now32);
 
 	smb_hfield_str(msg,SENDER,useron.alias);
 	SAFEPRINTF(str,"%u",useron.number);
@@ -1380,44 +1381,42 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 	msg_client_hfields(msg,&client);
 	smb_hfield_str(msg,SENDERSERVER, server_host_name());
 
-	username(&cfg,usernumber,touser);
-	smb_hfield_str(msg,RECIPIENT,touser);
-	SAFEPRINTF(str,"%u",usernumber);
-	smb_hfield_str(msg,RECIPIENTEXT,str);
-	msg->idx.to=usernumber;
-
-	now32=time32(NULL);
-	smb_hfield(msg,FORWARDED,sizeof(time32_t),&now32);
-
+	if(usernumber > 0) {
+		username(&cfg,usernumber,touser);
+		smb_hfield_str(msg,RECIPIENT,touser);
+		SAFEPRINTF(str,"%u",usernumber);
+		smb_hfield_str(msg,RECIPIENTEXT,str);
+		msg->idx.to=usernumber;
+	} else {
+		SAFECOPY(touser, to);
+		smb_hfield_netaddr(msg, RECIPIENTNETADDR, to, NULL);
+		msg->idx.to=0;
+	}
 
 	if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		return; 
+		return false;
 	}
 	if((i=smb_incmsg_dfields(&smb,msg,1))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i);
-		return; 
+		return false;
 	}
 	smb_close_da(&smb);
-
 
 	if((i=smb_addmsghdr(&smb,msg,smb_storage_mode(&cfg, &smb)))!=SMB_SUCCESS) {
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 		smb_freemsg_dfields(&smb,msg,1);
-		return; 
+		return false;
 	}
 
 	if(msg->hdr.auxattr&MSG_FILEATTACH)
 		copyfattach(usernumber,useron.number,msg->subj);
 
-	bprintf(text[Forwarded],username(&cfg,usernumber,str),usernumber);
-	SAFEPRINTF2(str,"forwarded mail to %s #%d"
-		,username(&cfg,usernumber,tmp)
-		,usernumber);
+	bprintf(text[Forwarded], touser, usernumber);
+	SAFEPRINTF(str, "forwarded mail to %s", touser);
 	logline("E+",str);
 	msg->idx=idx;
 	msg->hdr=hdr;
-
 
 	if(usernumber==1) {
 		useron.fbacks++;
@@ -1445,6 +1444,7 @@ void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 		SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
 		putsmsg(&cfg,usernumber,str); 
 	}
+	return true;
 }
 
 /****************************************************************************/
