@@ -1,5 +1,4 @@
 <!--HIDDEN:Mail-->
-
 <?xjs
     if (user.number == 0 || user.alias == settings.guest) exit();
     load('sbbsdefs.js');
@@ -18,20 +17,21 @@
 				<div class="checkbox">
 					<label class="checkbox-inline">
 						<input id="check-<? write(header.number); ?>" type="checkbox" class="mail-select">
+<? write(header.attr&MSG_READ ? '' : '<span class="badge new">New</span>') ?>
 					</label>
 				</div>
 			</div>
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<? write(header.number); ?>)">
                 <? write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_to : locale.strings.page_mail.label_message_from); ?>:
                 <strong><? write(_mail_tab == 'sent' ? header.to : header.from); ?></strong>
-                <? if (header.from_net_type != NET_NONE) { ?>
+                <? if ((header.from_net_type != NET_NONE) && (typeof header.from_net_type !== "undefined")) { ?>
                     &lt;<? write(_mail_tab == 'sent' ? (header.to + '@' + header.to_net_addr) : (header.from + '@' + header.from_net_addr)); ?>&gt;
                 <? } ?>
 				<? write(locale.strings.page_mail.label_message_date); ?>
 				<? write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
 					<? write(locale.strings.page_mail.label_message_subject); ?>:
-					<strong><? write(header.subject); ?></strong>
+					<strong><? write(header.subject); ?>!!!!</strong>
 				</p>
 			</div>
         </div>
