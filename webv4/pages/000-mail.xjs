@@ -31,7 +31,7 @@
 				<? write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
 				<p>
 					<? write(locale.strings.page_mail.label_message_subject); ?>:
-					<strong><? write(header.subject); ?>!!!!</strong>
+					<strong><? write(header.subject); ?></strong>
 				</p>
 			</div>
         </div>
