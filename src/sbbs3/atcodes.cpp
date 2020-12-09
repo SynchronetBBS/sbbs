@@ -1593,6 +1593,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(tp);
 	}
 
+	if(!strcmp(sp,"MAILR")) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */MSG_READ));
+		return(str);
+	}
+
+	if(!strcmp(sp,"MAILU")) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */~MSG_READ));
+		return(str);
+	}
+
 	if(!strcmp(sp,"MAILW")) {
 		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */0));
 		return(str);
@@ -1605,6 +1615,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"SPAMW")) {
 		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */MSG_SPAM));
+		return(str);
+	}
+
+	if(!strncmp(sp,"MAILR:",6) || !strncmp(sp,"MAILR#",6)) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */FALSE, /* attr: */MSG_READ));
+		return(str);
+	}
+
+	if(!strncmp(sp,"MAILU:",6) || !strncmp(sp,"MAILU#",6)) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */FALSE, /* attr: */~MSG_READ));
 		return(str);
 	}
 
