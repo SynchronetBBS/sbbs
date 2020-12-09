@@ -1389,7 +1389,15 @@ bool sbbs_t::forwardmail(smbmsg_t* msg, const char* to)
 		msg->idx.to=usernumber;
 	} else {
 		SAFECOPY(touser, to);
-		smb_hfield_netaddr(msg, RECIPIENTNETADDR, to, NULL);
+		char* addr = touser;
+		char* p = strchr(addr, '@');
+		if(net_type != NET_INTERNET && p != NULL)
+			addr = p + 1;
+		smb_hfield_netaddr(msg, RECIPIENTNETADDR, addr, NULL);
+		if(p != NULL)
+			*p = '\0';
+		smb_hfield_str(msg, RECIPIENT, touser);
+		SAFECOPY(touser, to);
 		msg->idx.to=0;
 	}
 
@@ -1431,18 +1439,23 @@ bool sbbs_t::forwardmail(smbmsg_t* msg, const char* to)
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
-		getnodedat(i,&node,0);
-		if(node.useron==usernumber && !(node.misc&NODE_POFF)
-			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
-			SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
-			putnmsg(&cfg,i,str);
-			break; 
-		} 
-	}
-	if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
-		SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
-		putsmsg(&cfg,usernumber,str); 
+	if(usernumber > 0) {
+		for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
+			getnodedat(i,&node,0);
+			if(node.useron==usernumber && !(node.misc&NODE_POFF)
+				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
+				SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
+				putnmsg(&cfg,i,str);
+				break; 
+			} 
+		}
+		if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
+			SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
+			putsmsg(&cfg,usernumber,str); 
+		}
+	} else {
+		if(net_type == NET_FIDO && cfg.netmail_sem[0])
+			ftouch(cmdstr(cfg.netmail_sem, nulstr, nulstr, NULL));
 	}
 	return true;
 }
