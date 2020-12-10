@@ -681,7 +681,7 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	bool	forwardmail(smbmsg_t* msg, const char* to, const char* comment = NULL);
+	bool	forwardmail(smbmsg_t* msg, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
