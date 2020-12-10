@@ -1297,11 +1297,12 @@ bool sbbs_t::editfile(char *fname, bool msg)
 /*************************/
 /* Copy file attachments */
 /*************************/
-void sbbs_t::copyfattach(uint to, uint from, char *title)
+bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 {
 	char str[128],str2[128],str3[128],*tp,*sp,*p;
+	bool result = false;
 
-	strcpy(str,title);
+	strcpy(str, subj);
 	tp=str;
 	while(1) {
 		p=strchr(tp,' ');
@@ -1313,38 +1314,42 @@ void sbbs_t::copyfattach(uint to, uint from, char *title)
 			,cfg.data_dir,to,tp);
 		SAFEPRINTF3(str3,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,from,tp);
-		if(strcmp(str2,str3))
-			mv(str3,str2,1);
+		if(strcmp(str2,str3)) {
+			if(mv(str3, str2, /* copy */true) != 0)
+				return false;
+			result = true;
+		}
 		if(!p)
 			break;
 		tp=p+1; 
 	}
+	return result;
 }
 
-
 /****************************************************************************/
-/* Forwards mail 'msg' to 'to'												*/
+/* Forwards mail 'orgmsg' to 'to' with optional 'comment'.					*/
+/* If comment is NULL, comment lines will be prompted for.					*/
+/* If comment is a zero-length string, no comments will be included.		*/
 /****************************************************************************/
-bool sbbs_t::forwardmail(smbmsg_t* msg, const char* to)
+bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* comment)
 {
 	char		str[256],touser[128];
 	char 		tmp[512];
-	int			i;
+	int			result;
+	smbmsg_t	msg;
 	node_t		node;
-	msghdr_t	hdr=msg->hdr;
-	idxrec_t	idx=msg->idx;
-	time32_t	now32;
 	uint usernumber = 0;
 
 	if(to == NULL)
 		return false;
 
-	uint16_t net_type = smb_netaddr_type(to);
-	if(net_type == NET_NONE || net_type == NET_UNKNOWN) {
+	uint16_t net_type = NET_NONE;
+	if(strchr(to, '@') != NULL)
+		net_type = smb_netaddr_type(to);
+	if(net_type == NET_NONE) {
 		usernumber = finduser(to);
 		if(usernumber < 1)
 			return false;
-		net_type = NET_NONE;
 	} else if(!is_supported_netmail_addr(&cfg, to)) {
 		bprintf(text[InvalidNetMailAddr], to);
 		return false;
@@ -1367,64 +1372,114 @@ bool sbbs_t::forwardmail(smbmsg_t* msg, const char* to)
 		return false;
 	}
 
-	msg->idx.attr&=~(MSG_READ|MSG_DELETE);
-	msg->hdr.attr=msg->idx.attr;
+	memset(&msg, 0, sizeof(msg));
+	msg.hdr.auxattr = orgmsg->hdr.auxattr & (MSG_HFIELDS_UTF8 | MSG_MIMEATTACH);
+	msg.hdr.when_imported.time = time32(NULL);
+	msg.hdr.when_imported.zone = sys_timezone(&cfg);
+	msg.hdr.when_written = msg.hdr.when_imported;
 
-	now32=time32(NULL);
-	smb_hfield(msg,FORWARDED,sizeof(now32),&now32);
+	smb_hfield_str(&msg, SUBJECT, orgmsg->subj);
+	add_msg_ids(&cfg, &smb, &msg, orgmsg);
 
-	smb_hfield_str(msg,SENDER,useron.alias);
+	smb_hfield_str(&msg,SENDER,useron.alias);
 	SAFEPRINTF(str,"%u",useron.number);
-	smb_hfield_str(msg,SENDEREXT,str);
+	smb_hfield_str(&msg,SENDEREXT,str);
 
 	/* Security logging */
-	msg_client_hfields(msg,&client);
-	smb_hfield_str(msg,SENDERSERVER, server_host_name());
+	msg_client_hfields(&msg,&client);
+	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
 	if(usernumber > 0) {
 		username(&cfg,usernumber,touser);
-		smb_hfield_str(msg,RECIPIENT,touser);
+		smb_hfield_str(&msg, RECIPIENT,touser);
 		SAFEPRINTF(str,"%u",usernumber);
-		smb_hfield_str(msg,RECIPIENTEXT,str);
-		msg->idx.to=usernumber;
+		smb_hfield_str(&msg, RECIPIENTEXT,str);
 	} else {
 		SAFECOPY(touser, to);
 		char* addr = touser;
 		char* p = strchr(addr, '@');
 		if(net_type != NET_INTERNET && p != NULL)
 			addr = p + 1;
-		smb_hfield_netaddr(msg, RECIPIENTNETADDR, addr, NULL);
+		smb_hfield_netaddr(&msg, RECIPIENTNETADDR, addr, NULL);
 		if(p != NULL)
 			*p = '\0';
-		smb_hfield_str(msg, RECIPIENT, touser);
+		smb_hfield_str(&msg, RECIPIENT, touser);
 		SAFECOPY(touser, to);
-		msg->idx.to=0;
 	}
+	if(orgmsg->mime_version != NULL) {
+		safe_snprintf(str, sizeof(str), "MIME-Version: %s", orgmsg->mime_version);
+		smb_hfield_str(&msg, RFC822HEADER, str);
+	}
+	if(orgmsg->content_type != NULL) {
+		safe_snprintf(str, sizeof(str), "Content-type: %s", orgmsg->content_type);
+		smb_hfield_str(&msg, RFC822HEADER, str);
+	}
+	// This header field not strictly required any more:
+	time32_t now32 = time32(NULL);
+	smb_hfield(&msg, FORWARDED, sizeof(now32), &now32);
 
-	if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+	if(comment == NULL) {
+		while(online) {
+			bputs(text[UeditComment]);
+			if(!getstr(str, 70, K_WRAP))
+				break;
+			smb_hfield_str(&msg, SMB_COMMENT, str);
+		}
+	} else {
+		if(*comment)
+			smb_hfield_str(&msg, SMB_COMMENT, comment);
+	}
+	smb_hfield_str(&msg, SMB_COMMENT, "-----Forwarded Message-----");
+	if(orgmsg->from_net.addr != NULL)
+		safe_snprintf(str, sizeof(str), "From: %s <%s>",orgmsg->from, smb_netaddrstr(&orgmsg->from_net, tmp));
+	else
+		safe_snprintf(str, sizeof(str), "From: %s", orgmsg->from);
+	smb_hfield_str(&msg, SMB_COMMENT, str);
+	safe_snprintf(str, sizeof(str), "Date: %s", msgdate(orgmsg->hdr.when_written, tmp));
+	smb_hfield_str(&msg, SMB_COMMENT, str);
+	if(orgmsg->to_net.addr != NULL)
+		safe_snprintf(str, sizeof(str), "To: %s <%s>", orgmsg->to, smb_netaddrstr(&orgmsg->to_net, tmp));
+	else
+		safe_snprintf(str, sizeof(str), "To: %s", orgmsg->to);
+	smb_hfield_str(&msg, SMB_COMMENT, str);
+	safe_snprintf(str, sizeof(str), "Subject: %s", orgmsg->subj);
+	smb_hfield_str(&msg, SMB_COMMENT, str);
+	smb_hfield_str(&msg, SMB_COMMENT, nulstr);
+
+	// Re-use the original message's data
+	if((result = smb_open_da(&smb)) != SMB_SUCCESS) {
+		smb_freemsgmem(&msg);
+		errormsg(WHERE, ERR_OPEN, smb.file, result, smb.last_error);
 		return false;
 	}
-	if((i=smb_incmsg_dfields(&smb,msg,1))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_WRITE,smb.file,i);
+	if((result = smb_incmsg_dfields(&smb, orgmsg, 1)) != SMB_SUCCESS) {
+		smb_freemsgmem(&msg);
+		errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
 		return false;
 	}
 	smb_close_da(&smb);
 
-	if((i=smb_addmsghdr(&smb,msg,smb_storage_mode(&cfg, &smb)))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
-		smb_freemsg_dfields(&smb,msg,1);
-		return false;
+	msg.dfield = orgmsg->dfield;
+	msg.hdr.offset = orgmsg->hdr.offset;
+	msg.hdr.total_dfields = orgmsg->hdr.total_dfields;
+
+	if(orgmsg->hdr.auxattr&MSG_FILEATTACH) {
+		copyfattach(usernumber, useron.number, orgmsg->subj);
+		msg.hdr.auxattr |= MSG_FILEATTACH;
 	}
 
-	if(msg->hdr.auxattr&MSG_FILEATTACH)
-		copyfattach(usernumber,useron.number,msg->subj);
+	result = smb_addmsghdr(&smb, &msg, smb_storage_mode(&cfg, &smb));
+	msg.dfield = NULL;
+	smb_freemsgmem(&msg);
+	if(result != SMB_SUCCESS) {
+		errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		smb_freemsg_dfields(&smb, orgmsg, 1);
+		return false;
+	}
 
 	bprintf(text[Forwarded], touser, usernumber);
 	SAFEPRINTF(str, "forwarded mail to %s", touser);
 	logline("E+",str);
-	msg->idx=idx;
-	msg->hdr=hdr;
 
 	if(usernumber==1) {
 		useron.fbacks++;
@@ -1440,6 +1495,7 @@ bool sbbs_t::forwardmail(smbmsg_t* msg, const char* to)
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
 	if(usernumber > 0) {
+		int i;
 		for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
 			getnodedat(i,&node,0);
 			if(node.useron==usernumber && !(node.misc&NODE_POFF)
