@@ -17,13 +17,9 @@ a.unread {
 	background: #FFFFFF;
 }
 
-li.unread {
-	background: #88CAFF !important;
-}
-
 span.badge.new {
-	background: white;
-	color: #88CAFF;
+        background: #2E9AFE;
+        color: #FFFFFF;
 }
 
 /* A read mail message in the list view. */
