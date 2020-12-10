@@ -50,9 +50,9 @@
 "\1[\1n\1mPosted on \1h%s\1n\1m %s.\r\n"                      037 Posted
 "\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you E-mail.\r\n"       038 EmailNodeMsg
 "\1n\r\nYou can't forward mail.\r\n"                     039 R_Forward
-"\1n\1m\r\nForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
+"\1n\1mForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
 	"\1h%s\1n\r\n"
-"\1n\1m\r\nMail forwarded to \1h%s \1n\1m#%d.\1n\r\n"         041 Forwarded
+"\1n\1m\r\nMail forwarded to \1h%s\1n\r\n"                    041 Forwarded
 "\1b\1hAuto message by: \1c%s\1b on %s\1n\r\n\r\n"            042 AutoMsgBy
 "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
