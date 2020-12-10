@@ -713,34 +713,25 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 {
 	switch(hfield_type) {	/* convenience variables */
 		case SENDER:
-			if(msg->from==NULL || *(msg->from)==0) {
-				msg->from=(char*)hfield_dat;
-				break; 
-			}
-		case FORWARDED: 	/* fall through */
+			msg->from=(char*)hfield_dat;
+			break; 
+		case FORWARDED:
 			msg->forwarded = TRUE;
-			msg->to_ext = NULL;
-			memset(&msg->to_net, 0, sizeof(msg->to_net));
 			break;
 		case SENDERAGENT:
-			if(!msg->forwarded)
-				msg->from_agent=*(uint16_t *)hfield_dat;
+			msg->from_agent=*(uint16_t *)hfield_dat;
 			break;
 		case SENDEREXT:
-			if(!msg->forwarded)
-				msg->from_ext=(char*)hfield_dat;
+			msg->from_ext=(char*)hfield_dat;
 			break;
 		case SENDERORG:
-			if(!msg->forwarded)
-				msg->from_org=(char*)hfield_dat;
+			msg->from_org=(char*)hfield_dat;
 			break;
 		case SENDERNETTYPE:
-			if(!msg->forwarded)
-				msg->from_net.type=*(uint16_t *)hfield_dat;
+			msg->from_net.type=*(uint16_t *)hfield_dat;
 			break;
 		case SENDERNETADDR:
-			if(!msg->forwarded)
-				msg->from_net.addr=(char*)hfield_dat;
+			msg->from_net.addr=(char*)hfield_dat;
 			break;
 		case SENDERIPADDR:
 			msg->from_ip=(char*)hfield_dat;

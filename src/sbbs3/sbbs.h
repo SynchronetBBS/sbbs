@@ -681,7 +681,7 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	bool	forwardmail(smbmsg_t* msg, const char* to);
+	bool	forwardmail(smbmsg_t* msg, const char* to, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
@@ -690,7 +690,7 @@ public:
 	void	editmsg(smbmsg_t* msg, uint subnum);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
 				,uint subnum, const char* tagfile);
-	void	copyfattach(uint to, uint from, char *title);
+	bool	copyfattach(uint to, uint from, const char* subj);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
 	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
