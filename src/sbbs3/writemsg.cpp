@@ -1331,10 +1331,11 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 /* If comment is NULL, comment lines will be prompted for.					*/
 /* If comment is a zero-length string, no comments will be included.		*/
 /****************************************************************************/
-bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* comment)
+bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, const char* comment)
 {
 	char		str[256],touser[128];
 	char 		tmp[512];
+	char		subj[LEN_TITLE + 1];
 	int			result;
 	smbmsg_t	msg;
 	node_t		node;
@@ -1372,13 +1373,21 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* comment)
 		return false;
 	}
 
+	if(subject == NULL) {
+		subject = subj;
+		SAFECOPY(subj, orgmsg->subj);
+		bputs(text[SubjectPrompt]);
+		if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM))
+			return false;
+	}
+
 	memset(&msg, 0, sizeof(msg));
 	msg.hdr.auxattr = orgmsg->hdr.auxattr & (MSG_HFIELDS_UTF8 | MSG_MIMEATTACH);
 	msg.hdr.when_imported.time = time32(NULL);
 	msg.hdr.when_imported.zone = sys_timezone(&cfg);
 	msg.hdr.when_written = msg.hdr.when_imported;
 
-	smb_hfield_str(&msg, SUBJECT, orgmsg->subj);
+	smb_hfield_str(&msg, SUBJECT, subject);
 	add_msg_ids(&cfg, &smb, &msg, orgmsg);
 
 	smb_hfield_str(&msg,SENDER,useron.alias);
@@ -1396,15 +1405,29 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* comment)
 		smb_hfield_str(&msg, RECIPIENTEXT,str);
 	} else {
 		SAFECOPY(touser, to);
-		char* addr = touser;
-		char* p = strchr(addr, '@');
-		if(net_type != NET_INTERNET && p != NULL)
-			addr = p + 1;
-		smb_hfield_netaddr(&msg, RECIPIENTNETADDR, addr, NULL);
-		if(p != NULL)
+		char* p;
+		if((p = strchr(touser, '@')) != NULL)
 			*p = '\0';
 		smb_hfield_str(&msg, RECIPIENT, touser);
 		SAFECOPY(touser, to);
+		const char* addr = touser;
+		if(net_type != NET_INTERNET && p != NULL)
+			addr = p + 1;
+		char fulladdr[128];
+		if(net_type == NET_QWK) {
+			usernumber = qwk_route(&cfg, addr, fulladdr, sizeof(fulladdr) - 1);
+			if(*fulladdr == '\0') {
+				bprintf(text[InvalidNetMailAddr], addr);
+				smb_freemsgmem(&msg);
+				return false; 
+			}
+			addr = fulladdr;
+			SAFEPRINTF(str, "%u", usernumber);
+			smb_hfield_str(&msg, RECIPIENTEXT, str);
+			usernumber = 0;
+		}
+		smb_hfield_bin(&msg, RECIPIENTNETTYPE, net_type);
+		smb_hfield_netaddr(&msg, RECIPIENTNETADDR, addr, &net_type);
 	}
 	if(orgmsg->mime_version != NULL) {
 		safe_snprintf(str, sizeof(str), "MIME-Version: %s", orgmsg->mime_version);
