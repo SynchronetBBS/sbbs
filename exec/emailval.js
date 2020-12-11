@@ -1,4 +1,4 @@
-// $Id: emailval.js,v 1.7 2019/07/15 04:41:35 rswindell Exp $
+
 /*******************************************************************************
 Originally based on:
 FILE: emailval.js v0.2
@@ -21,7 +21,7 @@ STEP 2:
 Edit ctrl/modopts.ini in a text editor and edit the following values in the
 [emailval] section (create if it necessary) to match your pre-validation and
 post-validation security levels.
-        level_before_validation (default: 50)
+		level_before_validation (default: 50)
 		level_after_validation (default: 60)
 		flags1_after_validation (default: no change)
 		flags2_after_validation (default: no change)
@@ -31,6 +31,8 @@ post-validation security levels.
 		restrictions_after_validation (default: no change)
 		expiration_after_validation (default: false)
 		expiration_days_after_validation (default: no change)
+		valid_chars=ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*
+		code_length=16
 
 Note: the flags, exemptions, and restrictions .ini values support 'A' through
       'Z' with the optional '+' (add) and '-' (remove) modifiers.
@@ -65,9 +67,10 @@ if(options.level_after_validation === undefined)
 	options.level_after_validation = 60;
 
 //other constants, shouldn't need changing.
-var cValChars='ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*';
+var cValChars = options.valid_chars !== undefined ? options.valid_chars :
+    'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*';
 var cPrevalText = "telvalcode";
-var cValCodeLen = 16;
+var cValCodeLen = options.code_length !== undefined ? options.code_length : 16;
 
 //include SBBS Definition constants
 require("sbbsdefs.js", 'NET_NONE'); 
