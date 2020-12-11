@@ -495,7 +495,6 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 	const char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
-	FREE_AND_NULL(msg->text_subtype);
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
 	txt = mime_getcontent(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset
@@ -505,9 +504,12 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 			,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
 		if(txt == NULL)
 			return NULL;
+		free(msg->text_subtype);
 		msg->text_subtype = strdup("html");
-	} else
+	} else {
+		free(msg->text_subtype);
 		msg->text_subtype = strdup("plain");
+	}
 
 	memmove(buf, txt, strlen(txt)+1);
 	if(*buf == 0)	/* No decoding necessary */

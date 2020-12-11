@@ -1218,11 +1218,21 @@ int	SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hf
 }
 
 /****************************************************************************/
-/* Convenience function to add an ASCIIZ string header field				*/
+/* Convenience function to add an ASCIIZ string header field (or blank)		*/
 /****************************************************************************/
 int SMBCALL smb_hfield_add_str(smbmsg_t* msg, uint16_t type, const char* str, BOOL insert)
 {
 	return smb_hfield_add(msg, type, str==NULL ? 0:strlen(str), (void*)str, insert);
+}
+
+/****************************************************************************/
+/* Convenience function to add an ASCIIZ string header field (NULL ignored)	*/
+/****************************************************************************/
+int SMBCALL smb_hfield_string(smbmsg_t* msg, uint16_t type, const char* str)
+{
+	if(str == NULL)
+		return SMB_ERR_HDR_FIELD;
+	return smb_hfield_add(msg, type, strlen(str), (void*)str, /* insert */FALSE);
 }
 
 /****************************************************************************/

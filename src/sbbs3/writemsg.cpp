@@ -743,11 +743,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* charset)
 {
-	if(editor != NULL)
-		smb_hfield_str(msg, SMB_EDITOR, editor);
-
-	if(charset != NULL)
-		smb_hfield_str(msg, FIDOCHARSET, charset);
+	smb_hfield_string(msg, SMB_EDITOR, editor);
+	smb_hfield_string(msg, FIDOCHARSET, charset);
 
 	ushort useron_xedit = useron.xedit;
 
@@ -1375,7 +1372,7 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, 
 
 	if(subject == NULL) {
 		subject = subj;
-		SAFECOPY(subj, orgmsg->subj);
+		SAFEPRINTF(subj, "Fwd: %s", orgmsg->subj);
 		bputs(text[SubjectPrompt]);
 		if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM))
 			return false;
@@ -1441,33 +1438,57 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, 
 	time32_t now32 = time32(NULL);
 	smb_hfield(&msg, FORWARDED, sizeof(now32), &now32);
 
+	char* br = NULL;
+	char* pg = nulstr;
+	char* lt = "<";
+	char* gt = ">";
+	if(orgmsg->text_subtype != NULL && stricmp(orgmsg->text_subtype, "html") == 0) {
+		lt = "&lt;";
+		gt = "&gt;";
+		br = "<br>";
+		pg = "<p>";
+	}
+
 	if(comment == NULL) {
-		while(online) {
+		while(online && !msgabort()) {
 			bputs(text[UeditComment]);
 			if(!getstr(str, 70, K_WRAP))
 				break;
-			smb_hfield_str(&msg, SMB_COMMENT, str);
+			smb_hfield_string(&msg, SMB_COMMENT, str);
+			smb_hfield_string(&msg, SMB_COMMENT, br);
+		}
+		if(!online || msgabort()) {
+			smb_freemsgmem(&msg);
+			return false; 
 		}
 	} else {
 		if(*comment)
-			smb_hfield_str(&msg, SMB_COMMENT, comment);
+			smb_hfield_string(&msg, SMB_COMMENT, comment);
 	}
-	smb_hfield_str(&msg, SMB_COMMENT, "-----Forwarded Message-----");
+	if(smb_get_hfield(&msg, SMB_COMMENT, NULL) != NULL)
+		smb_hfield_string(&msg, SMB_COMMENT, pg);
+	smb_hfield_string(&msg, SMB_COMMENT, "-----Forwarded Message-----");
+	smb_hfield_string(&msg, SMB_COMMENT, br);
 	if(orgmsg->from_net.addr != NULL)
-		safe_snprintf(str, sizeof(str), "From: %s <%s>",orgmsg->from, smb_netaddrstr(&orgmsg->from_net, tmp));
+		safe_snprintf(str, sizeof(str), "From: %s %s%s%s"
+			,orgmsg->from, lt, smb_netaddrstr(&orgmsg->from_net, tmp), gt);
 	else
 		safe_snprintf(str, sizeof(str), "From: %s", orgmsg->from);
-	smb_hfield_str(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, br);
 	safe_snprintf(str, sizeof(str), "Date: %s", msgdate(orgmsg->hdr.when_written, tmp));
-	smb_hfield_str(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, br);
 	if(orgmsg->to_net.addr != NULL)
-		safe_snprintf(str, sizeof(str), "To: %s <%s>", orgmsg->to, smb_netaddrstr(&orgmsg->to_net, tmp));
+		safe_snprintf(str, sizeof(str), "To: %s %s%s%s"
+			,orgmsg->to, lt, smb_netaddrstr(&orgmsg->to_net, tmp), gt);
 	else
 		safe_snprintf(str, sizeof(str), "To: %s", orgmsg->to);
-	smb_hfield_str(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, br);
 	safe_snprintf(str, sizeof(str), "Subject: %s", orgmsg->subj);
-	smb_hfield_str(&msg, SMB_COMMENT, str);
-	smb_hfield_str(&msg, SMB_COMMENT, nulstr);
+	smb_hfield_string(&msg, SMB_COMMENT, str);
+	smb_hfield_string(&msg, SMB_COMMENT, pg);
 
 	// Re-use the original message's data
 	if((result = smb_open_da(&smb)) != SMB_SUCCESS) {
