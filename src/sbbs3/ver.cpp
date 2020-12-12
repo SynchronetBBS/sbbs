@@ -38,6 +38,8 @@
 
 #include "sbbs.h"
 #include "ssl.h"
+#include "git_hash.h"
+#include "git_branch.h"
 
 const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 
@@ -96,7 +98,10 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-	sprintf(str,"%s - http://www.synchro.net", COPYRIGHT_NOTICE);
+	center("https://gitlab.synchro.net - " GIT_BRANCH " " GIT_HASH); 
+	CRLF;
+
+	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);
 	center(str);
 	CRLF;
 
