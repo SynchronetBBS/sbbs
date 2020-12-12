@@ -652,7 +652,7 @@ char* ascii_str(uchar* str)
 char* replace_named_values(const char* src	 
     ,char* buf	 
     ,size_t buflen       /* includes '\0' terminator */	 
-    ,char* escape_seq	 
+    ,const char* escape_seq	 
     ,named_string_t* string_list	 
     ,named_int_t* int_list	 
     ,BOOL case_sensitive)	 

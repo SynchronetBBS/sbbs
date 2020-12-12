@@ -1,20 +1,23 @@
-@unix -s NODEDIR
-@lredir D: linux\fs%NODEDIR% >NUL
-@lredir E: linux\fs%XTRNDIR% >NUL
-@lredir F: linux\fs%CTRLDIR% >NUL
-@lredir G: linux\fs%DATADIR% >NUL
-@lredir H: linux\fs%EXECDIR% >NUL
+@lredir D: linux\fs$NODEDIR >NUL
+@lredir E: linux\fs$XTRNDIR >NUL
+@lredir F: linux\fs$CTRLDIR >NUL
+@lredir G: linux\fs$DATADIR >NUL
+@lredir H: linux\fs$EXECDIR >NUL
 
 E:
 
-IF NOT "" == "%STARTDIR%" CD %STARTDIR%
+REM Switch to game dir, unless its not defined
+REM If not defined, go to node dir (external editors use this)
+IF "%STARTDIR%"=="" D:
+IF NOT "%STARTDIR%"=="" CD %STARTDIR%
 
 REM Optionally call emusetup.bat or put that stuff here for global (in NOEMU)
 REM Looks in startup dir, then ctrl dir
 IF EXIST EMUSETUP.BAT GOTO EMULOCAL
 IF EXIST F:\EMUSETUP.BAT GOTO EMUGLOBAL
 IF EXIST E:\DOSUTILS\NUL GOTO NOEMU
-ECHO ERROR: No emusetup.bat in E:\%STARTDIR% or F, or E:\DOSUTILS\ is missing
+IF EXIST H:\DOSUTILS\NUL GOTO NOEMU
+ECHO ERROR: No emusetup.bat in E:\%STARTDIR% or F, or DOSUTILS is missing
 GOTO EXEC
 
 :EMULOCAL
@@ -26,7 +29,7 @@ CALL F:\EMUSETUP.BAT
 GOTO EXEC
 
 :NOEMU
-@set PATH=%PATH%;E:\dosutils
+@set PATH=%PATH%;E:\dosutils;H:\dosutils
 unix -s RUNTYPE
 REM fossil driver, such as x00, bnu, or dosemu fossil.com
 rem IF "%RUNTYPE%" == "FOSSIL" @fossil.com >NUL
