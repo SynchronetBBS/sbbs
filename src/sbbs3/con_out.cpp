@@ -787,7 +787,7 @@ void sbbs_t::inc_row(int count)
 	}
 }
 
-void sbbs_t::center(char *instr, unsigned int columns)
+void sbbs_t::center(const char *instr, unsigned int columns)
 {
 	char str[256];
 	size_t len;
