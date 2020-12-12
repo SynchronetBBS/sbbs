@@ -51,7 +51,9 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(SEXYZ) $(DSTSEDIT) $(READSAUCE) $(SHOWSTAT) \
 			  $(PKTDUMP) $(FMSGDUMP)
 
-all:	git_hash.h git_branch.h dlls utils console scfg uedit umonitor
+GIT_INFO	= git_hash.h git_branch.h
+
+all:	$(GIT_INFO) dlls utils console scfg uedit umonitor
 
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
@@ -146,7 +148,7 @@ $(SERVICES):
 $(SBBSCON): $(XPDEV-MT_LIB) $(SMBLIB)
 $(SBBSMONO): $(XPDEV-MT_LIB) $(SMBLIB)
 $(JSEXEC): $(XPDEV-MT_LIB) $(SMBLIB)
-$(JSDOOR): $(XPDEV-MT_LIB)
+$(JSDOOR): $(XPDEV-MT_LIB) $(GIT_INFO)
 $(NODE): $(XPDEV_LIB)
 $(BAJA): $(XPDEV_LIB) $(SMBLIB)
 $(UNBAJA): $(XPDEV_LIB)
