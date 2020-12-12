@@ -272,18 +272,18 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 
 	show_msghdr(smb, msg);
 
+	int comments=0;
+	for(int i = 0; i < msg->total_hfields; i++)
+		if(msg->hfield[i].type == SMB_COMMENT) {
+			bprintf("%s\r\n", (char*)msg->hfield_dat[i]);
+			comments++;
+		}
+	if(comments)
+		CRLF;
+
 	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb->subnum < cfg.total_subs) {
 		char* answer;
 		int longest_answer = 0;
-
-		int comments=0;
-		for(int i = 0; i < msg->total_hfields; i++)
-			if(msg->hfield[i].type == SMB_COMMENT) {
-				bprintf("%s\r\n", (char*)msg->hfield_dat[i]);
-				comments++;
-			}
-		if(comments)
-			CRLF;
 
 		for(int i = 0; i < msg->total_hfields; i++) {
 			if(msg->hfield[i].type != SMB_POLL_ANSWER)
@@ -332,7 +332,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 			mnemonics(text[VoteInThisPollNow]);
 		return true;
 	}
-	if((txt=smb_getmsgtxt(smb, msg, 0)) == NULL)
+	if((txt=smb_getmsgtxt(smb, msg, GETMSGTXT_BODY_ONLY)) == NULL)
 		return false;
 	char* p = txt;
 	if(!(console&CON_RAW_IN)) {

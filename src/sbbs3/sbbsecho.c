@@ -1262,10 +1262,6 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		fprintf(fp, "\1CHRS: %s\r", charset);
 		if(msg->editor != NULL)
 			fprintf(fp, "\1NOTE: %s\r", msg->editor);
-		/* comment headers are part of text */
-		for(i=0; i<msg->total_hfields; i++)
-			if(msg->hfield[i].type == SMB_COMMENT)
-				fprintf(fp, "%s\r", (char*)msg->hfield_dat[i]);
 		if(subject != msg->subj)
 			fprintf(fp, "Subject: %s\r\r", msg->subj);
 	}
@@ -5142,7 +5138,7 @@ bool retoss_bad_echomail(void)
 			continue;
 		}
 
-		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_BODY_ONLY);
+		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_NO_TAILS);
 		if(body == NULL) {
 			smb_unlockmsghdr(&badsmb,&badmsg);
 			smb_freemsgmem(&badmsg);

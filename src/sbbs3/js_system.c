@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "js_request.h"
+#include "ver.h"
 
 #ifdef JAVASCRIPT
 
@@ -529,6 +530,8 @@ static char* sys_prop_desc[] = {
 	,"Synchronet version notice (includes version and platform)"
 	,"Synchronet version number in decimal (e.g. 31301 for v3.13b)"
 	,"Synchronet version number in hexadecimal (e.g. 0x31301 for v3.13b)"
+	,"Synchronet Git repository branch name"
+	,"Synchronet Git repository commit hash"
 	,"platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
 	,"architecture description (e.g. 'i386', 'i686', 'x86_64')"
 	,"message base library version information"
@@ -2474,6 +2477,10 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 	/* Numeric version properties */
 	LAZY_INTEGER("version_num", VERSION_NUM);
 	LAZY_INTEGER("version_hex", VERSION_HEX);
+
+	/* Git repo details */
+	LAZY_STRING("git_branch", git_branch);
+	LAZY_STRING("git_hash", git_hash);
 
 	LAZY_STRING("platform", PLATFORM_DESC);
 	LAZY_STRING("architecture", ARCHITECTURE_DESC);

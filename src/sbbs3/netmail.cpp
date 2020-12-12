@@ -480,7 +480,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				l+=strlen(str)+1;
 				cp=str;
 				while(*cp && *cp<=' ') cp++;
-				sprintf(senderaddr,"%s/%s",sender_id,cp);
+				safe_snprintf(senderaddr, sizeof(senderaddr), "%s/%s",sender_id,cp);
 				strupr(senderaddr);
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); 
 			}
