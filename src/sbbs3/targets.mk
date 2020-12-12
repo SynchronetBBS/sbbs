@@ -51,7 +51,7 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(SEXYZ) $(DSTSEDIT) $(READSAUCE) $(SHOWSTAT) \
 			  $(PKTDUMP) $(FMSGDUMP)
 
-all:	dlls utils console scfg uedit umonitor
+all:	git_hash.h git_branch.h dlls utils console scfg uedit umonitor
 
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
