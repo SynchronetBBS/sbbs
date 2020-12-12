@@ -1439,12 +1439,6 @@ extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 }
 #endif
 
-extern
-#ifdef __cplusplus
- "C"
-#endif
-	const char* beta_version;
-
 /* Global data */
 
 /* ToDo: These should be hunted down and killed */

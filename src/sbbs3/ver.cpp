@@ -1,9 +1,4 @@
-/* ver.cpp */
-// vi: tabstop=4
-
-/* Synchronet version display */
-
-/* $Id: ver.cpp,v 1.31 2019/10/08 02:07:26 rswindell Exp $ */
+/* Synchronet version info */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -18,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -40,8 +23,11 @@
 #include "ssl.h"
 #include "git_hash.h"
 #include "git_branch.h"
+#include "ver.h"
 
-const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+extern "C" const char* git_hash = GIT_HASH;
+extern "C" const char* git_branch = GIT_BRANCH;
+extern "C" const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
