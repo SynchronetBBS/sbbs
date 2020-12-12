@@ -114,6 +114,17 @@ symlinks: all
 	ln -sfr */$(EXEODIR)/* $(SBBSEXEC)
 endif
 
+.PHONY: FORCE
+FORCE:
+
+ifneq ($(GIT), NO)
+git_hash.h: FORCE ../../.git
+	echo '#define GIT_HASH "'`git log -1 HEAD --format=%h`\" > $@
+
+git_branch.h: FORCE ../../.git
+	echo '#define GIT_BRANCH "'`git rev-parse --abbrev-ref HEAD`\" > $@
+endif
+
 ifeq ($(os),linux)
 .PHONY: setcap
 setcap: all
