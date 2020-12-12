@@ -25,9 +25,17 @@
 #include "git_branch.h"
 #include "ver.h"
 
-extern "C" const char* git_hash = GIT_HASH;
-extern "C" const char* git_branch = GIT_BRANCH;
-extern "C" const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char* git_hash = GIT_HASH;
+const char* git_branch = GIT_BRANCH;
+const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+
+#ifdef __cplusplus
+}
+#endif
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
