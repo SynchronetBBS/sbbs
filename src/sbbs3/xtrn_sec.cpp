@@ -327,7 +327,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		safe_snprintf(str, sizeof(str), "%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%ld\n%u\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
 			,useron.cdt+useron.freecdt			/* Gold */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* User last on date */
 			,cols 								/* User screen width */
@@ -523,7 +523,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			*(p++)=0;
 		else
 			p=nulstr;
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%ld\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%d\n%u\n%lu\n"
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */
 			,useron.location					/* User's city */
@@ -870,7 +870,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		l=0L;
 		write(file,&l,4);						/* Memorized message number */
 
-		safe_snprintf(str, sizeof(str), "%d%c%c%ld%s%c%c%d%d%d%c%c"
+		safe_snprintf(str, sizeof(str), "%d%c%c%d%s%c%c%d%d%d%c%c"
 			,cfg.com_port						/* COM Port number */
 			,' ' 								/* Reserved */
 			,' ' 								/* "" */
@@ -1103,7 +1103,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			return; 
 		}
 
-		safe_snprintf(str, sizeof(str), "%s\n%ld\n%d\n%lu\n%lu\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%lu\n%lu\n%u\n%lu\n"
 			,name								/* Complete name of user */
 			,INT_TO_BOOL(term & ANSI)			/* ANSI ? */
 			,!INT_TO_BOOL(term & NO_EXASCII)	/* IBM characters ? */
@@ -1171,7 +1171,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		}
 
 		safe_snprintf(str, sizeof(str), "%d\n%d\n%lu\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
-			"%ld\n%d\n"
+			"%d\n%d\n"
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? 0 /* Local */ : 2 /* Telnet */
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? INVALID_SOCKET : client_socket_dup
 			,dte_rate

@@ -1438,10 +1438,10 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, 
 	time32_t now32 = time32(NULL);
 	smb_hfield(&msg, FORWARDED, sizeof(now32), &now32);
 
-	char* br = NULL;
-	char* pg = nulstr;
-	char* lt = "<";
-	char* gt = ">";
+	const char* br = NULL;
+	const char* pg = nulstr;
+	const char* lt = "<";
+	const char* gt = ">";
 	if(orgmsg->text_subtype != NULL && stricmp(orgmsg->text_subtype, "html") == 0) {
 		lt = "&lt;";
 		gt = "&gt;";
