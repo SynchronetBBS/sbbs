@@ -114,6 +114,9 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\msvc.win32.dll.debug/sbbs.bsc</OutputFile>
     </Bscmake>
+    <PreBuildEvent>
+      <Command>gitinfo.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -163,6 +166,9 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\msvc.win32.dll.release/sbbs.bsc</OutputFile>
     </Bscmake>
+    <PreBuildEvent>
+      <Command>gitinfo.bat</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\comio\comio.c" />

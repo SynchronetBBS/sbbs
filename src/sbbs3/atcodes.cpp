@@ -1,7 +1,4 @@
 /* Synchronet "@code" functions */
-// vi: tabstop=4
-
-/* $Id: atcodes.cpp,v 1.142 2020/05/10 20:12:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,6 +24,7 @@
 #include "utf8.h"
 #include "unicode.h"
 #include "cp437defs.h"
+#include "ver.h"
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -410,6 +396,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		strncpy(str, compiler, maxlen);
 		return(str);
 	}
+
+	if(strcmp(sp, "GIT_HASH") == 0)
+		return git_hash;
+
+	if(strcmp(sp, "GIT_BRANCH") == 0)
+		return git_branch;
 
 	if(!strcmp(sp,"UPTIME")) {
 		extern volatile time_t uptime;
