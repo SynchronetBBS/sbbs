@@ -1373,8 +1373,10 @@ void sub_cfg(uint grpnum)
 								}
 								opt[n][0]=0;
 								n = uifc.list(WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT, 0, 0, 0, &k, NULL, "FidoNet Address", opt);
-								if(n >= 0 && n < cfg.total_faddrs)
+								if(n >= 0 && n < cfg.total_faddrs) {
 									cfg.sub[i]->faddr = cfg.faddr[n];
+									uifc.changes = TRUE;
+								}
 								break;
 							}
 							case 8:
