@@ -1308,9 +1308,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			return -1;
 		}
 
-        /* external editors use node dir so unset this */
+		/* external editors use node dir so unset this */
 		if (startup_dir == cfg.node_dir) {
-		    SAFECOPY(gamedir, "");
+			SAFECOPY(gamedir, "");
 		}
 		
 		fprintf(dosemubatfp,"SET STARTDIR=%s\r\n",gamedir);
