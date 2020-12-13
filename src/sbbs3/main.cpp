@@ -4571,7 +4571,9 @@ void node_thread(void* arg)
 	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
 	FILE* fp = fopen(str, "at");
 	if(fp != NULL) {
-		fprintf(fp, "hangup=%lu", (ulong)time(NULL));
+		fprintf(fp, "user=%u\n", sbbs->useron.number);
+		fprintf(fp, "name=%s\n", sbbs->useron.alias);
+		fprintf(fp, "done=%lu\n", (ulong)time(NULL));
 		fclose(fp);
 	}
 
