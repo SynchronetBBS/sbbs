@@ -1539,7 +1539,7 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 }
 
 /* Return node's client's socket descriptor or negative on error */
-int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* hangup)
+int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 {
 	SOCKET sock = INVALID_SOCKET;
 	char path[MAX_PATH + 1];
@@ -1551,8 +1551,10 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* hangup)
 		|| client == NULL || number < 1 || number > cfg->sys_nodes)
 		return -1;
 
-	if(client->size == sizeof(client))
+	if(client->size == sizeof(client)) {
 		free((char*)client->protocol);
+		free((char*)client->user);
+	}
 	memset(client, 0, sizeof(*client));
 	client->size = sizeof(client);
 	SAFEPRINTF(path, "%sclient.ini", cfg->node_path[number - 1]);
@@ -1562,11 +1564,14 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* hangup)
 	sock = iniReadShortInt(fp, ROOT_SECTION, "sock", 0);
 	client->port = iniReadShortInt(fp, ROOT_SECTION, "port", 0);
 	client->time = iniReadInteger(fp, ROOT_SECTION, "time", 0);
+	client->usernum = iniReadInteger(fp, ROOT_SECTION, "user", 0);
 	SAFECOPY(client->addr, iniReadString(fp, ROOT_SECTION, "addr", "<none>", value));
 	SAFECOPY(client->host, iniReadString(fp, ROOT_SECTION, "host", "<none>", value));
 	if((p = iniReadString(fp, ROOT_SECTION, "prot", NULL, value)) != NULL)
 		client->protocol = strdup(p);
-	*hangup = iniReadInteger(fp, ROOT_SECTION, "hangup", client->time);
+	if((p = iniReadString(fp, ROOT_SECTION, "name", NULL, value)) != NULL)
+		client->user = strdup(p);
+	*done = iniReadInteger(fp, ROOT_SECTION, "done", client->time);
 	fclose(fp);
 	return sock;
 }
