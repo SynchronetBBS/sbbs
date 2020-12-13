@@ -43,6 +43,7 @@
 #include "cryptlib.h"
 #include "xpprintf.h"		// vasprintf
 #include "md5.h"
+#include "ver.h"
 
 /* Constants */
 
@@ -82,7 +83,6 @@ static protected_uint32_t thread_count;
 static volatile time_t	uptime=0;
 static volatile ulong	served=0;
 static volatile BOOL	terminate_server=FALSE;
-static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
@@ -3112,8 +3112,8 @@ static void ctrl_thread(void* arg)
 	}
 
 	sockprintf(sock,sess,"220-%s (%s)",scfg.sys_name, server_host_name());
-	sockprintf(sock,sess," Synchronet FTP Server %s-%s Ready"
-		,revision,PLATFORM_DESC);
+	sockprintf(sock,sess," Synchronet FTP Server %s%c-%s Ready"
+		,VERSION, REVISION, PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
 	if((fp=fopen(str,"rb"))!=NULL) {
 		while(!feof(fp)) {
@@ -5965,17 +5965,16 @@ const char* DLLCALL ftp_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.501 $", "%*s %s", revision);
-
-	sprintf(ver,"%s %s%s  "
-		"Compiled %s %s with %s"
+	safe_snprintf(ver, sizeof(ver), "%s %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
 		,FTP_SERVER
-		,revision
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler);
 
 	return(ver);
@@ -5998,8 +5997,6 @@ void DLLCALL ftp_server(void* arg)
 	ftp_t*			ftp;
 	char			client_ip[INET6_ADDRSTRLEN];
 	CRYPT_SESSION		none = -1;
-
-	ftp_ver();
 
 	startup=(ftp_startup_t*)arg;
 	SetThreadName("sbbs/ftpServer");
@@ -6024,7 +6021,7 @@ void DLLCALL ftp_server(void* arg)
 	}
 
 	ZERO_VAR(js_server_props);
-	SAFEPRINTF2(js_server_props.version,"%s %s",FTP_SERVER,revision);
+	SAFEPRINTF3(js_server_props.version,"%s %s%c", FTP_SERVER, VERSION, REVISION);
 	js_server_props.version_detail=ftp_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
@@ -6061,8 +6058,8 @@ void DLLCALL ftp_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"Synchronet FTP Server Revision %s%s"
-			,revision
+		lprintf(LOG_INFO,"Synchronet FTP Server Version %s%c%s"
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -6072,7 +6069,7 @@ void DLLCALL ftp_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		sbbs_srand();	/* Seed random number generator */
 

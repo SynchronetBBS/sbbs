@@ -20,7 +20,9 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#ifdef SBBS
 #include "ssl.h"
+#endif
 #include "git_hash.h"
 #include "git_branch.h"
 #include "ver.h"
@@ -67,7 +69,7 @@ char* socklib_version(char* str, char* winsock_ver)
 	return(str);
 }
 
-#ifndef JSDOOR
+#if defined(SBBS) && !defined(JSDOOR)
 void sbbs_t::ver()
 {
 	char str[128],compiler[32];
