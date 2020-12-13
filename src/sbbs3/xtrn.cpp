@@ -1194,6 +1194,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		char virtualconf[75];
 		char dosterm[15];
 		char log_external[MAX_PATH+1];
+		char runtype[7];
 		str_list_t de_launch_ini;
 		
 		/*  on the Unix side. xtrndir is the parent of the door's startup dir. */
@@ -1315,6 +1316,19 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		
 		fprintf(dosemubatfp,"SET STARTDIR=%s\r\n",gamedir);
 
+		/* Check the "Stdio Interception" flag from scfg for this door.  If it's
+		 * enabled, we enable doorway mode.  Else, it's vmodem for us, unless
+		 * it's a timed event.
+		 */
+
+		if (!(mode&(EX_STDIO)) && online!=ON_LOCAL) {
+			SAFECOPY(virtualconf,"-I\"serial { virtual com 1 }\"");
+			SAFECOPY(runtype, "FOSSIL");
+		} else {
+			virtualconf[0] = '\0';
+			SAFECOPY(runtype, "STDIO");
+		}
+
 		/* now append exec/external.bat (which is editable) to this 
 		 generated file */
 		SAFEPRINTF(str,"%sexternal.bat",startup_dir);
@@ -1346,18 +1360,19 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 
 		named_string_t externalbat_replacements[] = {
-			{(char*)"CMDLINE",cmdlinebatch },
-			{(char*)"DSZLOG",(char*)nodedrive },
-			{(char*)"SBBSNODE",(char*)nodedrive },
-			{(char*)"SBBSCTRL",(char*)ctrldrive },
-			{(char*)"SBBSDATA",(char*)datadrive },
-			{(char*)"SBBSEXEC",(char*)execdrive },
-			{(char*)"XTRNDIR",xtrndir_dos },
-			{(char*)"CTRLDIR",ctrldir_dos },
-			{(char*)"DATADIR",datadir_dos },
-			{(char*)"EXECDIR",execdir_dos },
-			{(char*)"NODEDIR",nodedir_dos },
-			{(char*)"STARTDIR",(char*)gamedir },
+			{(char*)"CMDLINE", cmdlinebatch },
+			{(char*)"DSZLOG", (char*)nodedrive },
+			{(char*)"SBBSNODE", (char*)nodedrive },
+			{(char*)"SBBSCTRL", (char*)ctrldrive },
+			{(char*)"SBBSDATA", (char*)datadrive },
+			{(char*)"SBBSEXEC", (char*)execdrive },
+			{(char*)"XTRNDIR", xtrndir_dos },
+			{(char*)"CTRLDIR", ctrldir_dos },
+			{(char*)"DATADIR", datadir_dos },
+			{(char*)"EXECDIR", execdir_dos },
+			{(char*)"NODEDIR", nodedir_dos },
+			{(char*)"STARTDIR", (char*)gamedir },
+			{(char*)"RUNTYPE", runtype },
 			{NULL, NULL }
 		};
 
@@ -1374,16 +1389,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 
 		fclose(externalbatfp);
-
-		/* Check the "Stdio Interception" flag from scfg for this door.  If it's
-		 * enabled, we enable doorway mode.  Else, it's vmodem for us, unless
-		 * it's a timed event.
-		 */
-
-		if (!(mode&(EX_STDIO)) && online!=ON_LOCAL)
-			SAFECOPY(virtualconf,"-I\"serial { virtual com 1 }\"");
-		else
-			virtualconf[0] = '\0';
 
 		/* Set the interception bits, since we are always going to want Synchronet
 		 * to intercept dos programs under Unix.
@@ -1469,6 +1474,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
              {(char*)"DOSEMUCONF", dosemuconf},
              {(char*)"EXTBAT", externalbat},
              {(char*)"EXTLOG", log_external},
+             {(char*)"RUNTYPE", runtype },
              {NULL, NULL}
         };
         replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$", 

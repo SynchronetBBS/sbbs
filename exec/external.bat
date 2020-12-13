@@ -30,11 +30,10 @@ GOTO EXEC
 
 :NOEMU
 @set PATH=%PATH%;E:\dosutils;H:\dosutils
-unix -s RUNTYPE
 REM fossil driver, such as x00, bnu, or dosemu fossil.com
-rem IF "%RUNTYPE%" == "FOSSIL" @fossil.com >NUL
-rem IF "%RUNTYPE%" == "FOSSIL" bnu.com /P1 /L0=11520 >NUL
-IF "%RUNTYPE%" == "FOSSIL" x00.exe eliminate >NUL
+rem IF "$RUNTYPE" == "FOSSIL" @fossil.com >NUL
+rem IF "$RUNTYPE" == "FOSSIL" bnu.com /P1 /L0=11520 >NUL
+IF "$RUNTYPE" == "FOSSIL" x00.exe eliminate >NUL
 REM share.exe for multinode file locking
 @share >NUL
 
