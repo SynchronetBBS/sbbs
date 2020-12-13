@@ -94,7 +94,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-	center("https://gitlab.synchro.net - " GIT_BRANCH " " GIT_HASH); 
+	center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH); 
 	CRLF;
 
 	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);
