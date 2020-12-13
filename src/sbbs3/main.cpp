@@ -3533,6 +3533,19 @@ bool sbbs_t::init()
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
+		SAFEPRINTF(str, "%sclient.ini", cfg.node_dir);
+		FILE* fp = fopen(str, "wt");
+		if(fp != NULL) {
+			fprintf(fp, "sock=%d\n", client_socket);
+			fprintf(fp, "addr=%s\n", client.addr);
+			fprintf(fp, "host=%s\n", client.host);
+			fprintf(fp, "port=%u\n", (uint)client.port);
+			fprintf(fp, "time=%lu\n", (ulong)client.time);
+			fprintf(fp, "prot=%s\n", client.protocol);
+			fprintf(fp, "local_addr=%s\n", local_addr);
+			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
+			fclose(fp);
+		}
 		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
 			,client_socket, local_addr, inet_addrport(&addr));
 		spymsg("Connected");
