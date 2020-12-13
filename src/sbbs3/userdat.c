@@ -1539,7 +1539,7 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 }
 
 /* Return node's client's socket descriptor or negative on error */
-int getnodeclient(scfg_t* cfg, uint number, client_t* client)
+int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* hangup)
 {
 	SOCKET sock = INVALID_SOCKET;
 	char path[MAX_PATH + 1];
@@ -1566,6 +1566,7 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client)
 	SAFECOPY(client->host, iniReadString(fp, ROOT_SECTION, "host", "<none>", value));
 	if((p = iniReadString(fp, ROOT_SECTION, "prot", NULL, value)) != NULL)
 		client->protocol = strdup(p);
+	*hangup = iniReadInteger(fp, ROOT_SECTION, "hangup", client->time);
 	fclose(fp);
 	return sock;
 }
