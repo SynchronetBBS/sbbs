@@ -1538,6 +1538,38 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 	return(0);
 }
 
+/* Return node's client's socket descriptor or negative on error */
+int getnodeclient(scfg_t* cfg, uint number, client_t* client)
+{
+	SOCKET sock = INVALID_SOCKET;
+	char path[MAX_PATH + 1];
+	char value[INI_MAX_VALUE_LEN];
+	char* p;
+	FILE* fp;
+
+	if(!VALID_CFG(cfg)
+		|| client == NULL || number < 1 || number > cfg->sys_nodes)
+		return -1;
+
+	if(client->size == sizeof(client))
+		free((char*)client->protocol);
+	memset(client, 0, sizeof(*client));
+	client->size = sizeof(client);
+	SAFEPRINTF(path, "%sclient.ini", cfg->node_path[number - 1]);
+	fp = iniOpenFile(path, /* create: */FALSE);
+	if(fp == NULL)
+		return -2;
+	sock = iniReadShortInt(fp, ROOT_SECTION, "sock", 0);
+	client->port = iniReadShortInt(fp, ROOT_SECTION, "port", 0);
+	client->time = iniReadInteger(fp, ROOT_SECTION, "time", 0);
+	SAFECOPY(client->addr, iniReadString(fp, ROOT_SECTION, "addr", "<none>", value));
+	SAFECOPY(client->host, iniReadString(fp, ROOT_SECTION, "host", "<none>", value));
+	if((p = iniReadString(fp, ROOT_SECTION, "prot", NULL, value)) != NULL)
+		client->protocol = strdup(p);
+	fclose(fp);
+	return sock;
+}
+
 static int getdirnum(scfg_t* cfg, char* code)
 {
 	size_t i;
