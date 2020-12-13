@@ -4467,7 +4467,7 @@ void sbbs_t::logoffstats()
 
 void node_thread(void* arg)
 {
-	char			str[128];
+	char			str[MAX_PATH + 1];
 	int				file;
 	uint			curshell=0;
 	node_t			node;
@@ -4567,6 +4567,13 @@ void node_thread(void* arg)
 
 	sbbs->logout();
 	sbbs->logoffstats();	/* Updates both system and node dsts.dab files */
+
+	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
+	FILE* fp = fopen(str, "at");
+	if(fp != NULL) {
+		fprintf(fp, "hangup=%lu", (ulong)time(NULL));
+		fclose(fp);
+	}
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
 		sbbs->daily_maint();
