@@ -27,6 +27,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
+#include "ver.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -4877,7 +4878,7 @@ const char* DLLCALL bbs_ver(void)
 	if(ver[0]==0) {	/* uninitialized */
 		DESCRIBE_COMPILER(compiler);
 
-		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
+		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  Compiled %s/%s %s %s with %s"
 			,TELNET_SERVER
 			,VERSION, REVISION
 #ifdef _DEBUG
@@ -4885,7 +4886,7 @@ const char* DLLCALL bbs_ver(void)
 #else
 			,""
 #endif
-			,smb_lib_ver()
+			,git_branch, git_hash
 			,__DATE__, __TIME__, compiler
 			);
 	}
@@ -5048,18 +5049,17 @@ void DLLCALL bbs_thread(void* arg)
 	char compiler[32];
 	DESCRIBE_COMPILER(compiler);
 
-	lprintf(LOG_INFO,"%s Version %s Revision %c%s"
+	lprintf(LOG_INFO,"%s Version %s%c%s"
 		,TELNET_SERVER
 		,VERSION
-		,toupper(REVISION)
+		,REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
 		);
-	lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-	lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+	lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"
