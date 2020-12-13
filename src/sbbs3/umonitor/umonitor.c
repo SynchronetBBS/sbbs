@@ -340,9 +340,9 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	getstats(cfg, 0, &sstats);
 	t=time(NULL);
 	strftime(str[0][0],12,"%b %e",localtime(&t));
-	free=getfreediskspace(cfg->temp_dir,1024);
+	free=getfreediskspace(cfg->data_dir,1024);
 	if(free<1000) {
-		free=getfreediskspace(cfg->temp_dir,0);
+		free=getfreediskspace(cfg->data_dir,0);
 		getsizestr(str[0][1],free,TRUE);
 	}
 	else
@@ -875,7 +875,7 @@ int main(int argc, char** argv)  {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
-	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
+	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 
 	memset(&uifc,0,sizeof(uifc));
 	uifc.mode|=UIFC_NOCTRL;
