@@ -20,14 +20,24 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#ifdef SBBS
 #include "ssl.h"
+#endif
 #include "git_hash.h"
 #include "git_branch.h"
 #include "ver.h"
 
-extern "C" const char* git_hash = GIT_HASH;
-extern "C" const char* git_branch = GIT_BRANCH;
-extern "C" const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const char* git_hash = GIT_HASH;
+const char* git_branch = GIT_BRANCH;
+const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+
+#ifdef __cplusplus
+}
+#endif
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -59,7 +69,7 @@ char* socklib_version(char* str, char* winsock_ver)
 	return(str);
 }
 
-#ifndef JSDOOR
+#if defined(SBBS) && !defined(JSDOOR)
 void sbbs_t::ver()
 {
 	char str[128],compiler[32];
@@ -84,7 +94,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-	center("https://gitlab.synchro.net - " GIT_BRANCH " " GIT_HASH); 
+	center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH); 
 	CRLF;
 
 	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);

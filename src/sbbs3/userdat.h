@@ -76,6 +76,7 @@ DLLEXPORT char* getsmsg(scfg_t*, int usernumber);
 DLLEXPORT int	putsmsg(scfg_t*, int usernumber, char *strin);
 DLLEXPORT char* getnmsg(scfg_t*, int node_num);
 DLLEXPORT int	putnmsg(scfg_t*, int num, char *strin);
+DLLEXPORT int	getnodeclient(scfg_t*, uint number, client_t*, time_t*);
 
 DLLEXPORT uint	userdatdupe(scfg_t*, uint usernumber, uint offset, uint datlen, char *dat
 					,BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata);
