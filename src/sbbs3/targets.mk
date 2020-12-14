@@ -121,10 +121,14 @@ FORCE:
 
 ifneq ($(GIT), NO)
 git_hash.h: FORCE ../../.git
-	echo '#define GIT_HASH "'`git log -1 HEAD --format=%h`\" > $@
+	$(QUIET)echo '#define GIT_HASH "'`git log -1 HEAD --format=%h`\" > $@.tmp
+	$(QUIET)diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)rm -f $@.tmp
 
 git_branch.h: FORCE ../../.git
-	echo '#define GIT_BRANCH "'`git rev-parse --abbrev-ref HEAD`\" > $@
+	$(QUIET)echo '#define GIT_BRANCH "'`git rev-parse --abbrev-ref HEAD`\" > $@.tmp
+	$(QUIET)diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)rm -f $@.tmp
 endif
 
 ifeq ($(os),linux)
