@@ -1174,7 +1174,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFECOPY(str,fullcmdline);
 		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
 
-#elif defined(__linux__) && defined(USE_DOSEMU)
+#elif defined(__linux__)
 
 		/* dosemu integration  --  originally by Ryan Underwood, <nemesis @ icequake.net> */
 
@@ -1250,6 +1250,27 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		p=lastchar(nodedir_dos);
 		if (*p=='\\') *p=0;
 
+		/* must have sbbs.ini bbs useDOSemu=1 (or empty), cannot be =0 */
+		if (!startup->usedosemu) {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU disabled, program not run");
+			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			return -1;
+		}
+
+		/* must have sbbs.ini bbs DOSemuPath set to valid path */
+		SAFECOPY(dosemubinloc,(cmdstr(startup->dosemu_path,nulstr,nulstr,tok)));
+		if (dosemubinloc[0] == '\0') {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU invalid DOSEmuPath, program not run");
+			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			return -1;
+		}
+
+		if (!fexist(dosemubinloc)) {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU not found: %s", dosemubinloc);
+			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			return -1;
+		}
+
 		/* check for existence of a dosemu.conf in the door directory.
 		 * It is a good idea to be able to use separate configs for each
 		 * door. 
@@ -1258,9 +1279,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 */
 		sprintf(str,"%sdosemu.conf",startup_dir);
 		if (!fexist(str)) {
-			/* If we can't find it in the door dir, look for a global one
-			 * in the ctrl dir. */
-			sprintf(str,"%sdosemu.conf",cfg.ctrl_dir);
+			/* If we can't find it in the door dir, look for the configured one */
+			SAFECOPY(str,(cmdstr(startup->dosemuconf_path,nulstr,nulstr,tok)));
 			if (!fexist(str)) {
 				/* If we couldn't find either, try for the system one, then
 				 * error out. */
@@ -1395,18 +1415,6 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 */
 
 		mode |= EX_STDIO;
-
-		/* See if we have the dosemu link in the door's dir.  If so, use the dosemu
-		 * that it points to as our command to execute.  If not, use DOSemuPath.
-		 */
-
-		sprintf(str,"%sdosemu.bin",startup_dir);
-		if (!fexist(str)) {
-			SAFECOPY(dosemubinloc,(cmdstr(startup->dosemu_path,nulstr,nulstr,tok)));
-		}
-		else {
-			SAFECOPY(dosemubinloc,str);
-		}
 
 		/* Attempt to keep dosemu from prompting for a disclaimer. */
 
@@ -1928,7 +1936,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,ultoa((ulong)cur_cps*10,str,10), avail);
                     break;
                 case 'F':   /* File path */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native && strncmp(fpath, cfg.node_dir, strlen(cfg.node_dir)) == 0) {
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 						strncat(cmd, fpath + strlen(cfg.node_dir), avail);
@@ -1938,7 +1946,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 						strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
                     break;
                 case 'G':   /* Temp directory */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_TEMP_DIR, avail);
 					else
@@ -1952,7 +1960,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,cid, avail);
                     break;
                 case 'J':
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_DATA_DIR, avail);
 					else
@@ -1960,7 +1968,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 						strncat(cmd,cfg.data_dir, avail);
                     break;
                 case 'K':
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_CTRL_DIR, avail);
 					else
@@ -1974,7 +1982,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,ultoa(useron.min,str,10), avail);
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 					else
@@ -2019,7 +2027,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,comspec, avail);
                     break;
                 case 'Z':
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_TEXT_DIR, avail);
 					else
@@ -2037,7 +2045,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 #endif
 					break;
                 case '!':   /* EXEC Directory */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_EXEC_DIR, avail);
 					else

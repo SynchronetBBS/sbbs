@@ -223,7 +223,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				result=_not;
 				if(startup->options&BBS_OPT_NO_DOS)
 					break;
-				#if defined(_WIN32) || (defined(__linux__) && defined(USE_DOSEMU)) || defined(__FreeBSD__)
+				#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__)
 					result=!_not;
 				#endif
 				break;
