@@ -84,10 +84,6 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 		sys_status&=~SS_ABORT; 
 	}
 
-	if(!(mode&P_NOCRLF) && row > 0 && !rip) {
-		newline();
-	}
-
 	if((stream=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
 			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
@@ -107,6 +103,10 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 			return false;
 		}
 		return true;
+	}
+
+	if(!(mode&P_NOCRLF) && row > 0 && !rip) {
+		newline();
 	}
 
 	if((mode&P_OPENCLOSE) && length <= PRINTFILE_MAX_FILE_LEN) {
@@ -196,9 +196,6 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 		}
 		sys_status&=~SS_ABORT; 
 	}
-	if(!(mode&P_NOCRLF) && row > 0) {
-		newline();
-	}
 	if((fp=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
 			lprintf(LOG_NOTICE,"!Error %d (%s) opening: %s"
@@ -208,6 +205,9 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 			CRLF;
 		}
 		return false; 
+	}
+	if(!(mode&P_NOCRLF) && row > 0) {
+		newline();
 	}
 	length=(long)filelength(file);
 	if(length<0) {

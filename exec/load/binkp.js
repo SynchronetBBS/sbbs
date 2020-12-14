@@ -1,4 +1,4 @@
-const binkp_revision = 3;
+const binkp_revision = 4;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -940,15 +940,18 @@ BinkP.prototype.close = function()
 				this.sendCmd(this.command.M_EOB);
 		}
 		// Attempt a super-duper graceful shutdown to prevent RST...
-		this.sock.is_writeable = false;
-		remain = this.timeout;
-		end = time() + remain;
-		do {
-			if (this.sock.recv(2048, remain) == 0)
-				break;
-			remain = end - time();
-		} while (remain > 0);
-		this.sock.close();
+		if (this.sock !== undefined) {
+			this.sock.is_writeable = false;
+			remain = this.timeout;
+			end = time() + remain;
+			do {
+				if (this.sock.recv(2048, remain) == 0)
+					break;
+				remain = end - time();
+			} while (remain > 0);
+			this.sock.close();
+			this.sock = undefined;
+		}
 	}
 	this.tx_queue.forEach(function(file) {
 		file.file.close();
@@ -1237,7 +1240,7 @@ BinkP.prototype.recvFrame = function(timeout)
 									log(LOG_WARNING, 'Peer ended their VER with " '+m[2]+'" instead of the required " binkp/1.1", but we\'re assuming binkp 1.1 anyway');
 								}
 								log(LOG_DEBUG, "Parsed BinkP version: " + binkp_ver);
-								this.ver_1_1 = binkp_ver >= 1.1;
+								this.ver1_1 = binkp_ver >= 1.1;
 							}
 							break;
 						case 'ZYZ':

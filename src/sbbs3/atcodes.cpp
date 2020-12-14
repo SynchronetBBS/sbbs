@@ -1,7 +1,4 @@
 /* Synchronet "@code" functions */
-// vi: tabstop=4
-
-/* $Id: atcodes.cpp,v 1.142 2020/05/10 20:12:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -39,6 +24,7 @@
 #include "utf8.h"
 #include "unicode.h"
 #include "cp437defs.h"
+#include "ver.h"
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -410,6 +396,12 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		strncpy(str, compiler, maxlen);
 		return(str);
 	}
+
+	if(strcmp(sp, "GIT_HASH") == 0)
+		return git_hash;
+
+	if(strcmp(sp, "GIT_BRANCH") == 0)
+		return git_branch;
 
 	if(!strcmp(sp,"UPTIME")) {
 		extern volatile time_t uptime;
@@ -1126,6 +1118,21 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(str);
 	}
 
+	if(strcmp(sp,"FREESPACEM") == 0) {
+		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024));
+		return(str);
+	}
+
+	if(strcmp(sp,"FREESPACEG") == 0) {
+		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024));
+		return(str);
+	}
+
+	if(strcmp(sp,"FREESPACET") == 0) {
+		safe_snprintf(str,maxlen,"%lu",getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024) / 1024);
+		return(str);
+	}
+
 	if(!strcmp(sp,"UPBYTES")) {
 		safe_snprintf(str,maxlen,"%lu",useron.ulb);
 		return(str);
@@ -1578,6 +1585,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(tp);
 	}
 
+	if(!strcmp(sp,"MAILR")) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */MSG_READ));
+		return(str);
+	}
+
+	if(!strcmp(sp,"MAILU")) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */~MSG_READ));
+		return(str);
+	}
+
 	if(!strcmp(sp,"MAILW")) {
 		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */0));
 		return(str);
@@ -1590,6 +1607,16 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 
 	if(!strcmp(sp,"SPAMW")) {
 		safe_snprintf(str,maxlen,"%u",getmail(&cfg,useron.number, /* Sent: */FALSE, /* attr: */MSG_SPAM));
+		return(str);
+	}
+
+	if(!strncmp(sp,"MAILR:",6) || !strncmp(sp,"MAILR#",6)) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */FALSE, /* attr: */MSG_READ));
+		return(str);
+	}
+
+	if(!strncmp(sp,"MAILU:",6) || !strncmp(sp,"MAILU#",6)) {
+		safe_snprintf(str,maxlen,"%u",getmail(&cfg,atoi(sp+6), /* Sent: */FALSE, /* attr: */~MSG_READ));
 		return(str);
 	}
 
@@ -1821,7 +1848,22 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return (current_msg != NULL && current_msg->user_voted == 1) ? text[PollAnswerChecked] : nulstr;
 	if(!strcmp(sp,"MSG_DOWNVOTED"))
 		return (current_msg != NULL && current_msg->user_voted == 2) ? text[PollAnswerChecked] : nulstr;
-
+	if(strcmp(sp, "MSG_THREAD_ID") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_id);
+		return str;
+	}
+	if(strcmp(sp, "MSG_THREAD_BACK") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_back);
+		return str;
+	}
+	if(strcmp(sp, "MSG_THREAD_NEXT") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_next);
+		return str;
+	}
+	if(strcmp(sp, "MSG_THREAD_FIRST") == 0 && current_msg != NULL) {
+		safe_snprintf(str, maxlen, "%lu", (ulong)current_msg->hdr.thread_first);
+		return str;
+	}
 	if(!strcmp(sp,"SMB_AREA")) {
 		if(smb.subnum!=INVALID_SUB && smb.subnum<cfg.total_subs)
 			safe_snprintf(str,maxlen,"%s %s"

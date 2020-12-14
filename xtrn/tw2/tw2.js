@@ -41,7 +41,7 @@ var LOCK_READ=1;
 
 Settings=new GameSettings();
 if(db==undefined) {
-	alert("ERROR: Configuation invalid");
+	alert("ERROR: Configuration invalid");
 	exit(1);
 }
 

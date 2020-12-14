@@ -121,12 +121,15 @@ function external_program_menu(xsec)
 		if(options.clear_screen)
 			console.clear(LIGHTGRAY);
 
+		var show_header = true;
 		var secnum = xtrn_area.sec_list[xsec].number+1;
 		var seccode = xtrn_area.sec_list[xsec].code;
 		if(!bbs.menu("xtrn" + secnum + "_head", P_NOERROR) &&
 			!bbs.menu("xtrn" + seccode + "_head", P_NOERROR)) {
-			bbs.menu("xtrn_head", P_NOERROR);
+			show_header = !bbs.menu("xtrn_head", P_NOERROR);
 		}
+		else
+			show_header = false;
 		if(bbs.menu("xtrn" + secnum, P_NOERROR) || bbs.menu("xtrn" + seccode, P_NOERROR)) {
 			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR) &&
 				!bbs.menu("xtrn" + seccode + "_tail", P_NOERROR)) {
@@ -135,11 +138,14 @@ function external_program_menu(xsec)
 		}
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
+			var center = options.center && !multicolumn;
+			var margin = center ? format("%*s", (console.screen_columns * 0.25) - 1, "") : "";
 			if(options.sort)
 				prog_list.sort(sort_by_name);
-			printf(options.header_fmt, xtrn_area.sec_list[xsec].name);
+			if(show_header)
+				write(margin, format(options.header_fmt, xtrn_area.sec_list[xsec].name));
 			if(options.titles.trimRight() != '')
-				write(options.titles);
+				write(margin, options.titles);
 			if(multicolumn) {
 				write(options.multicolumn_separator);
 				if (options.titles.trimRight() != '')
@@ -147,7 +153,7 @@ function external_program_menu(xsec)
 			}
 			if(options.underline.trimRight() != '') {
 				console.crlf();
-				write(options.underline);
+				write(margin, options.underline);
 			}
 			if(multicolumn) {
 				write(options.multicolumn_separator);
@@ -162,6 +168,7 @@ function external_program_menu(xsec)
 				n=prog_list.length;
 
 			for(i=0;i<n && !console.aborted;i++) {
+				write(margin);
 				console.add_hotspot(i+1);
 				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
 					,i+1
@@ -185,7 +192,13 @@ function external_program_menu(xsec)
 				bbs.menu("xtrn_tail", P_NOERROR);
 			}
 			bbs.node_sync();
-			console.mnemonics(options.which);
+			if(margin) {
+				console.crlf();
+				write(margin);
+				console.mnemonics(options.which.trimLeft());
+			}
+			else
+				console.mnemonics(options.which);
 		}
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
@@ -202,6 +215,10 @@ function external_section_menu()
 {
     var i,j;
     var xsec=0;
+	var longest = 0;
+	for(i = 0; i < xtrn_area.sec_list.length; i++)
+		longest = Math.max(xtrn_area.sec_list[i].name.length, longest);
+	var margin = options.center ? format("%*s", ((console.screen_columns - longest)/2) - 5, "") : "";
 
     while(bbs.online) {
 
@@ -225,7 +242,7 @@ function external_section_menu()
 		if(options.clear_screen)
 			console.clear(LIGHTGRAY);
 
-		bbs.menu("xtrn_sec_head", P_NOERROR);
+		var show_header = !bbs.menu("xtrn_sec_head", P_NOERROR);
 
 		if(bbs.menu_exists("xtrn_sec")) {
 			bbs.menu("xtrn_sec");
@@ -235,16 +252,23 @@ function external_section_menu()
 			if(options.sort)
 				sec_list.sort(sort_by_name);
 
-			printf(options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
+			if(show_header)
+				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
 			for (i = 0; i < sec_list.length; i++) {
 				console.add_hotspot(i+1);
-				printf(options.section_fmt, i + 1, sec_list[i].name);
+				printf(margin + options.section_fmt, i + 1, sec_list[i].name);
 			}
 
 			bbs.menu("xtrn_sec_tail", P_NOERROR);
 			
 			bbs.node_sync();
-			console.mnemonics(format(options.section_which, xsec + 1));
+			if(options.center) {
+				console.crlf();
+				write(margin);
+				console.mnemonics(format(options.section_which, xsec + 1).trimLeft());
+			}
+			else
+				console.mnemonics(format(options.section_which, xsec + 1));
 		}
 
 		bbs.node_sync();

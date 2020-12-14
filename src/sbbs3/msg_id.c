@@ -21,6 +21,7 @@
 
 #include "msg_id.h"
 #include "smblib.h"
+#include "ver.h"
 
 static ulong msg_number(smbmsg_t* msg)
 {
@@ -242,8 +243,9 @@ char* DLLCALL msg_program_id(char* pid, size_t maxlen)
 	char compiler[64];
 
 	DESCRIBE_COMPILER(compiler);
-	snprintf(pid, maxlen, "%.10s %s%c-%s  %s %s"
+	snprintf(pid, maxlen, "%.10s %s%c-%s %s/%s %s %s"
 		,VERSION_NOTICE,VERSION,REVISION,PLATFORM_DESC
+		,git_branch, git_hash
 		,__DATE__,compiler);
 	return pid;
 }
