@@ -1214,6 +1214,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		const char datadrive[] = DOSEMU_DATA_DRIVE;
 		const char execdrive[] = DOSEMU_EXEC_DRIVE;
 		const char nodedrive[] = DOSEMU_NODE_DRIVE;
+		
+		const char external_bat_fn[] = "external.bat";
+		const char dosemu_cnf_fn[] = "dosemu.conf";
 
 		SAFECOPY(str,startup_dir);
 		if(*(p=lastchar(str))=='/')		/* kill trailing slash */
@@ -1246,7 +1249,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		SAFECOPY(nodedir_dos,cfg.node_dir);
 		REPLACE_CHARS(nodedir_dos,'/','\\',p);
-
+ 
 		p=lastchar(nodedir_dos);
 		if (*p=='\\') *p=0;
 
@@ -1277,16 +1280,16 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 *
 		 * First check startup_dir, then check cfg.ctrl_dir
 		 */
-		sprintf(str,"%sdosemu.conf",startup_dir);
+		SAFEPRINTF2(str,"%s%s",startup_dir, dosemu_cnf_fn);
 		if (!fexist(str)) {
 			/* If we can't find it in the door dir, look for the configured one */
 			SAFECOPY(str,(cmdstr(startup->dosemuconf_path,nulstr,nulstr,tok)));
 			if (!fexist(str)) {
 				/* If we couldn't find either, try for the system one, then
 				 * error out. */
-				SAFECOPY(str,"/etc/dosemu/dosemu.conf");
+				SAFEPRINTF(str,"/etc/dosemu/%s", dosemu_cnf_fn);
 				if (!fexist(str)) {
-					SAFECOPY(str,"/etc/dosemu.conf");
+					SAFEPRINTF(str,"/etc/%s", dosemu_cnf_fn);
 					if (!fexist(str)) {
 						errormsg(WHERE,ERR_READ,str,0);
 						return(-1);
@@ -1300,7 +1303,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		else SAFECOPY(dosemuconf,str);  /* using door-specific conf */
 
 		/* Create the external bat here to be placed in the node dir. */
-		SAFEPRINTF(str,"%sexternal.bat",cfg.node_dir);
+		SAFEPRINTF2(str,"%s%s",cfg.node_dir,external_bat_fn);
 		if(!(dosemubatfp=fopen(str,"w+"))) {
 			errormsg(WHERE,ERR_CREATE,str,0);
 			return(-1);
@@ -1351,10 +1354,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		/* now append exec/external.bat (which is editable) to this 
 		 generated file */
-		SAFEPRINTF(str,"%sexternal.bat",startup_dir);
+		SAFEPRINTF2(str,"%s%s",startup_dir,external_bat_fn);
 
 		if ((startup_dir == cfg.node_dir) || !fexist(str)) {
-			SAFEPRINTF(str,"%sexternal.bat",cfg.exec_dir);
+			SAFEPRINTF2(str,"%s%s",cfg.exec_dir, external_bat_fn);
 			if (!fexist(str)) {
 				errormsg(WHERE,ERR_READ,str,0);
 				return(-1);
@@ -1422,13 +1425,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		if (!isdir(str)) {
 			mkdir(str, 0755);
 		}
-
 		strcat(str, "/disclaimer");
 		ftouch(str);
 
 		/* Set up the command for dosemu to execute with 'unix -e'. */
-
-		SAFEPRINTF(externalbat,"%sexternal.bat",nodedrive);
+		SAFEPRINTF2(externalbat,"%s%s",nodedrive, external_bat_fn);
 
 		/* need TERM=linux for maintenance programs to work
 		 * (dosemu won't start with no controlling terminal)
@@ -1448,12 +1449,12 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		 * Get the global emu launch command
 		 */
 		 /* look for file in startup dir */
-		SAFEPRINTF(str,"%sdosemulaunch.ini",startup_dir);
+		SAFEPRINTF(str,"%sdosemu.ini",startup_dir);
 		if (!fexist(str)) {
 	    	/* look for file in ctrl dir */        
-    		SAFEPRINTF(str,"%sdosemulaunch.ini",cfg.exec_dir);
+    		SAFEPRINTF(str,"%sdosemu.ini",cfg.exec_dir);
 			if (!fexist(str)) {
-                errormsg(WHERE,ERR_OPEN,"dosemulaunch.ini", 0);
+                errormsg(WHERE,ERR_OPEN,"dosemu.ini", 0);
                 return(-1);
 			}
 		}

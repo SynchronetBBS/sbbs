@@ -6,7 +6,7 @@
 
 E:
 
-REM Switch to game dir, unless its not defined
+REM Switch to startup dir, unless its not defined
 REM If not defined, go to node dir (external editors use this)
 IF "%STARTDIR%"=="" D:
 IF NOT "%STARTDIR%"=="" CD %STARTDIR%
