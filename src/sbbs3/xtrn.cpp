@@ -1194,7 +1194,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		char virtualconf[75];
 		char dosterm[15];
 		char log_external[MAX_PATH+1];
-		char runtype[7];
+		const char* runtype;
 		str_list_t de_launch_ini;
 		
 		/*  on the Unix side. xtrndir is the parent of the door's startup dir. */
@@ -1283,7 +1283,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFEPRINTF2(str,"%s%s",startup_dir, dosemu_cnf_fn);
 		if (!fexist(str)) {
 			/* If we can't find it in the door dir, look for the configured one */
-			SAFECOPY(str,(cmdstr(startup->dosemuconf_path,nulstr,nulstr,tok)));
+			SAFECOPY(str,startup->dosemuconf_path);
+			if (!isabspath(str)) {
+				SAFEPRINTF2(str,"%s%s", cfg.ctrl_dir, startup->dosemuconf_path);
+			}
 			if (!fexist(str)) {
 				/* If we couldn't find either, try for the system one, then
 				 * error out. */
@@ -1334,7 +1337,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		/* external editors use node dir so unset this */
 		if (startup_dir == cfg.node_dir) {
-			SAFECOPY(gamedir, "");
+			*gamedir = '\0';
 		}
 		
 		fprintf(dosemubatfp,"SET STARTDIR=%s\r\n",gamedir);
@@ -1346,10 +1349,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		if (!(mode&(EX_STDIO)) && online!=ON_LOCAL) {
 			SAFECOPY(virtualconf,"-I\"serial { virtual com 1 }\"");
-			SAFECOPY(runtype, "FOSSIL");
+			runtype = "FOSSIL";
 		} else {
 			virtualconf[0] = '\0';
-			SAFECOPY(runtype, "STDIO");
+			runtype = "STDIO";
 		}
 
 		/* now append exec/external.bat (which is editable) to this 
@@ -1383,20 +1386,20 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 
 		named_string_t externalbat_replacements[] = {
-			{(char*)"CMDLINE", cmdlinebatch },
-			{(char*)"DSZLOG", (char*)nodedrive },
-			{(char*)"SBBSNODE", (char*)nodedrive },
-			{(char*)"SBBSCTRL", (char*)ctrldrive },
-			{(char*)"SBBSDATA", (char*)datadrive },
-			{(char*)"SBBSEXEC", (char*)execdrive },
-			{(char*)"XTRNDIR", xtrndir_dos },
-			{(char*)"CTRLDIR", ctrldir_dos },
-			{(char*)"DATADIR", datadir_dos },
-			{(char*)"EXECDIR", execdir_dos },
-			{(char*)"NODEDIR", nodedir_dos },
-			{(char*)"STARTDIR", (char*)gamedir },
-			{(char*)"RUNTYPE", runtype },
-			{NULL, NULL }
+			{(char*)"CMDLINE", cmdlinebatch},
+			{(char*)"DSZLOG", (char*)nodedrive},
+			{(char*)"SBBSNODE", (char*)nodedrive},
+			{(char*)"SBBSCTRL", (char*)ctrldrive},
+			{(char*)"SBBSDATA", (char*)datadrive},
+			{(char*)"SBBSEXEC", (char*)execdrive},
+			{(char*)"XTRNDIR", xtrndir_dos},
+			{(char*)"CTRLDIR", ctrldir_dos},
+			{(char*)"DATADIR", datadir_dos},
+			{(char*)"EXECDIR", execdir_dos},
+			{(char*)"NODEDIR", nodedir_dos},
+			{(char*)"STARTDIR", (char*)gamedir},
+			{(char*)"RUNTYPE", (char *)runtype},
+			{NULL, NULL}
 		};
 
 		named_int_t externalbat_int_replacements[] = {
@@ -1406,7 +1409,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		while(!feof(externalbatfp)) {
 			if (fgets(buf, sizeof(buf), externalbatfp)!=NULL) {
 				replace_named_values(buf, bufout, sizeof(bufout), "$", externalbat_replacements, 
-				externalbat_int_replacements, FALSE);
+					externalbat_int_replacements, FALSE);
 				fprintf(dosemubatfp,"%s",bufout);
 			}
 		}
@@ -1444,50 +1447,53 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			dosterm[0]='\0';
 			log_external[0] = '\0';
 		}
-		
+
 		/*
 		 * Get the global emu launch command
 		 */
 		 /* look for file in startup dir */
 		SAFEPRINTF(str,"%sdosemu.ini",startup_dir);
 		if (!fexist(str)) {
-	    	/* look for file in ctrl dir */        
+			/* look for file in exec dir */        
     		SAFEPRINTF(str,"%sdosemu.ini",cfg.exec_dir);
 			if (!fexist(str)) {
-                errormsg(WHERE,ERR_OPEN,"dosemu.ini", 0);
-                return(-1);
+				errormsg(WHERE,ERR_OPEN,"dosemu.ini", 0);
+				return(-1);
 			}
 		}
-		
-		/* if file found, then open and process it */
-        if ((de_launch_inifp=iniOpenFile(str, false))==NULL) {
-            errormsg(WHERE,ERR_OPEN,str, 0);
-            return(-1);
-        }         
-        de_launch_ini = iniReadFile(de_launch_inifp);
-        iniCloseFile(de_launch_inifp);
-        SAFECOPY(de_launch_cmd, "");
-        iniGetString(de_launch_ini, ROOT_SECTION, "cmd", nulstr, de_launch_cmd);
-        if (virtualconf[0] == '\0') {
-            iniGetString(de_launch_ini, "stdio", "cmd", de_launch_cmd, de_launch_cmd);
-        }
-        iniFreeStringList(de_launch_ini);
 
-        named_string_t de_launch_ini_replacements[] = 
-        {
-             {(char*)"TERM", dosterm}, 
-             {(char*)"CTRLDIR", cfg.ctrl_dir},
-             {(char*)"NODEDIR", cfg.node_dir},
-             {(char*)"DOSEMUBIN", dosemubinloc},
-             {(char*)"VIRTUALCONF", virtualconf},
-             {(char*)"DOSEMUCONF", dosemuconf},
-             {(char*)"EXTBAT", externalbat},
-             {(char*)"EXTLOG", log_external},
-             {(char*)"RUNTYPE", runtype },
-             {NULL, NULL}
+		/* if file found, then open and process it */
+		if ((de_launch_inifp=iniOpenFile(str, false))==NULL) {
+			errormsg(WHERE,ERR_OPEN,str, 0);
+			return(-1);
+		}         
+		de_launch_ini = iniReadFile(de_launch_inifp);
+		iniCloseFile(de_launch_inifp);
+		SAFECOPY(de_launch_cmd, "");
+		iniGetString(de_launch_ini, ROOT_SECTION, "cmd", nulstr, de_launch_cmd);
+		if (virtualconf[0] == '\0') {
+			iniGetString(de_launch_ini, "stdio", "cmd", de_launch_cmd, de_launch_cmd);
+		}
+		iniFreeStringList(de_launch_ini);
+
+		named_string_t de_ini_replacements[] = 
+		{
+			{(char*)"TERM", dosterm}, 
+			{(char*)"CTRLDIR", cfg.ctrl_dir},
+			{(char*)"NODEDIR", cfg.node_dir},
+			{(char*)"DOSEMUBIN", dosemubinloc},
+			{(char*)"VIRTUALCONF", virtualconf},
+			{(char*)"DOSEMUCONF", dosemuconf},
+			{(char*)"EXTBAT", externalbat},
+			{(char*)"EXTLOG", log_external},
+			{(char*)"RUNTYPE", (char *)runtype},
+			{NULL, NULL}
+		};
+		named_int_t de_ini_int_replacements[] = {
+            {(char*)"NNUM", cfg.node_num },
         };
-        replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$", 
-        de_launch_ini_replacements, NULL, FALSE);
+		replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$", 
+			de_ini_replacements, de_ini_int_replacements, FALSE);
 
 		/* Drum roll. */      
 		fprintf(dosemubatfp,"REM For debugging: %s\r\n",fullcmdline);
