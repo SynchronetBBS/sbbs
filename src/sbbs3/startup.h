@@ -113,12 +113,14 @@ typedef struct {
 	/* Paths */
     char    ctrl_dir[128];
     char	dosemu_path[128];
+    char    dosemuconf_path[128];
     char	temp_dir[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
 	char	ini_fname[128];
 
 	/* Miscellaneous */
+	BOOL    usedosemu;
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
 	char	host_name[128];
