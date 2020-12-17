@@ -11,8 +11,6 @@
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
-# $Id: GNUmakefile,v 1.248 2020/04/03 19:54:31 rswindell Exp $
-
 PWD	:=	$(shell pwd)
 SRC_ROOT	?=	${PWD}/..
 include $(SRC_ROOT)/build/Common.gmake
@@ -41,10 +39,6 @@ endif
 
 ifdef PREFIX
  CFLAGS += -DPREFIX=$(PREFIX)
-endif
-
-ifdef USE_DOSEMU
- CFLAGS += -DUSE_DOSEMU
 endif
 
 ifdef DONT_BLAME_SYNCHRONET
