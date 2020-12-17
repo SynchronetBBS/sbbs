@@ -121,9 +121,6 @@ struct {
 	struct utsname	name;	
 	char	sbbsuser[9];		/* Historical UName limit of 8 chars */
 	char	sbbsgroup[17];		/* Can't find historical limit for group names */
-#ifdef __linux__
-	BOOL	use_dosemu;
-#endif
 } params; /* Build parameters */
 
 #define MAKEFILE "/tmp/SBBSmakefile"
@@ -230,9 +227,6 @@ int main(int argc, char **argv)
 		SAFECOPY(params.sbbsuser,p);
 	if((p=getenv("GROUP"))!=NULL)
 		SAFECOPY(params.sbbsgroup,p);
-#ifdef __linux__
-	params.use_dosemu=FALSE;
-#endif
 
 	sscanf("$Revision: 1.100 $", "%*s %s", revision);
 	umask(077);
@@ -380,9 +374,7 @@ int main(int argc, char **argv)
 		sprintf(mopt[i++],"%-27.27s%s","Make Command-line",params.make_cmdline);
 		sprintf(mopt[i++],"%-27.27s%s","File Owner",params.sbbsuser);
 		sprintf(mopt[i++],"%-27.27s%s","File Group",params.sbbsgroup);
-#ifdef __linux__
-		sprintf(mopt[i++],"%-27.27s%s","Integrate DOSEmu support",params.use_dosemu?"Yes":"No");
-#endif
+
 		sprintf(mopt[i++],"%-27.27s","Start Installation...");
 		mopt[i][0]=0;
 
@@ -488,26 +480,8 @@ int main(int argc, char **argv)
 								"\n";
 				uifc.input(WIN_MID,0,0,"",params.sbbsgroup,32,K_EDIT);
 				break;
-#ifdef __linux__
+
 			case 11:
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
-				i=params.use_dosemu?0:1;
-				uifc.helpbuf=	"`Include DOSEmu Support`\n"
-								"\nToDo: Add help.";
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0
-					,"Integrate DOSEmu support into Synchronet?",opt);
-				if(!i)
-					params.use_dosemu=TRUE;
-				else if(i==1)
-					params.use_dosemu=FALSE;
-				i=0;
-				break;
-			case 12:
-#else
-			case 11:
-#endif
 				install_sbbs(distlist[dist],distlist[dist]->type==LOCAL_FILE?NULL:distlist[dist]->servers[server]);
 				bail(0);
 				break;
@@ -754,11 +728,6 @@ void install_sbbs(dist_t *dist,struct server_ent_t *server)  {
 		sprintf(sbbsgroup,"SBBSGROUP=%s",params.sbbsgroup);
 		putenv(sbbsgroup);
 	}
-#ifdef __linux__
-	if(params.use_dosemu==TRUE) {
-		putenv("USE_DOSEMU=1");
-	}
-#endif
 
 	if(params.usebcc)
 		putenv("bcc=1");

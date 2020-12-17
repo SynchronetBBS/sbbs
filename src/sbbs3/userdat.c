@@ -1763,7 +1763,7 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				#endif
 				break;
 			case AR_DOS:
-				#if defined(_WIN32) || (defined(__linux__) && defined(USE_DOSEMU)) || defined(__FreeBSD__)
+				#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__)
 					result=!not;
 				#else
 					result=not;
