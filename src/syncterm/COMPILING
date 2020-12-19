@@ -49,4 +49,4 @@ Release builds for Win32 using MinGW32 use the following command line:
 gmake CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres
 
 Release builds of jsdoor (not related at all)
-gmake jsdoor CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs
+gmake jsdoor NO_LD_RUN_PATH=dumbass CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs
