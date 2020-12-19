@@ -1498,12 +1498,12 @@ function update_userfile(player, computer, won)
 		}
 		f.writeln("--------------------------------------------------------------------");
 		f.writeln("");
-		f.writeln("* Kannons and Katapults Total Score for the Month of January *");
+		f.writeln("* Kannons and Katapults Total Score for the Month of "+nowmonth+" *");
 		f.writeln("");
 		f.writeln("Rank  Name                   Games  Wins  Losses  Win %       Score");
 		f.writeln("--------------------------------------------------------------------");
 		for(line=0; line<2; line++) {
-			if((computer_total <= player_total && line==0) || (computer_total > player_total && line==1)) {
+			if((computer_total <= player_total && line==1) || (computer_total > player_total && line==0)) {
 				f.writeln(format("%3u   %-22s %5u  %4u  %6u  %3u %% %11s"
 								,line+1
 								,'All Users'
