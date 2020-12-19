@@ -53,7 +53,7 @@ function update_stats(stats, addr, bp, host)
 	if(bp.sent_files.length)
 		stats[addr].sent_files = bp.sent_files;
 	if(bp.failed_sent_files.length)
-		stats[addr].failed_sent_files = bp.failed_sent_files;
+		stats[addr].failed_sent_files = bp.failed_sent_files.map(function(i) { return i.path; });
 	if(bp.received_files.length)
 		stats[addr].received_files = bp.received_files;
 	if(bp.failed_received_files.length)
