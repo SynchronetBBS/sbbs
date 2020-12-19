@@ -64,23 +64,25 @@ endif
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS)
 
-# Set up LD_RUN_PATH for run-time locating of the .so files
-ifdef SBBSDIR
- ifeq ($(os),sunos)
-  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
+ifndef NO_LD_RUN_PATH
+ # Set up LD_RUN_PATH for run-time locating of the .so files
+ ifdef SBBSDIR
+  ifeq ($(os),sunos)
+   LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
+  else
+   LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
+  endif
  else
-  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
+  ifeq ($(os),sunos)
+   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
+  else
+   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
+  endif
  endif
-else
- ifeq ($(os),sunos)
-  LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
- else
-  LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
+ export LD_RUN_PATH
+ ifeq ($(CCPRE),clang)
+  LDFLAGS += -rpath $(LD_RUN_PATH)
  endif
-endif
-export LD_RUN_PATH
-ifeq ($(CCPRE),clang)
- LDFLAGS += -rpath $(LD_RUN_PATH)
 endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
