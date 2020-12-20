@@ -1109,11 +1109,12 @@ static JSBool
 js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char		instr[81];
+	char		instr[128] = "";
     JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
     char*		prompt=NULL;
+	int32		mode = K_EDIT;
 	size_t		result;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1121,16 +1122,22 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JSVALUE_TO_MSTRING(cx, argv[0], prompt, NULL);
+	uintN argn = 0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_MSTRING(cx, argv[argn], prompt, NULL);
 		if(prompt==NULL)
 			return(JS_FALSE);
+		argn++;
 	}
-
-	if(argc>1) {
-		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
-	} else
-		instr[0]=0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_STRBUF(cx, argv[argn], instr, sizeof(instr), NULL);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn], &mode))
+			return JS_FALSE;
+		argn++;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(prompt != NULL) {
@@ -1138,7 +1145,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		free(prompt);
 	}
 
-	result = sbbs->getstr(instr,sizeof(instr)-1,K_EDIT);
+	result = sbbs->getstr(instr, sizeof(instr)-1, mode);
 	sbbs->attr(LIGHTGRAY);
 	if(!result) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -1191,8 +1198,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("print an alert message (ala client-side JS)")
 	,310
 	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[value]")
-	,JSDOCSTR("displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)")
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[text] [,value] [,mode=K_EDIT]")
+	,JSDOCSTR("displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
 	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
