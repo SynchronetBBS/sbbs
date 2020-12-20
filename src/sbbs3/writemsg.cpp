@@ -1324,11 +1324,11 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 }
 
 /****************************************************************************/
-/* Forwards mail 'orgmsg' to 'to' with optional 'comment'.					*/
+/* Forwards msg 'orgmsg' to 'to' with optional 'comment'					*/
 /* If comment is NULL, comment lines will be prompted for.					*/
 /* If comment is a zero-length string, no comments will be included.		*/
 /****************************************************************************/
-bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, const char* comment)
+bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char* subject, const char* comment)
 {
 	char		str[256],touser[128];
 	char 		tmp[512];
@@ -1385,7 +1385,7 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, 
 	msg.hdr.when_written = msg.hdr.when_imported;
 
 	smb_hfield_str(&msg, SUBJECT, subject);
-	add_msg_ids(&cfg, &smb, &msg, orgmsg);
+	add_msg_ids(&cfg, smb, &msg, orgmsg);
 
 	smb_hfield_str(&msg,SENDER,useron.alias);
 	SAFEPRINTF(str,"%u",useron.number);
@@ -1491,17 +1491,17 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, 
 	smb_hfield_string(&msg, SMB_COMMENT, pg);
 
 	// Re-use the original message's data
-	if((result = smb_open_da(&smb)) != SMB_SUCCESS) {
+	if((result = smb_open_da(smb)) != SMB_SUCCESS) {
 		smb_freemsgmem(&msg);
-		errormsg(WHERE, ERR_OPEN, smb.file, result, smb.last_error);
+		errormsg(WHERE, ERR_OPEN, smb->file, result, smb->last_error);
 		return false;
 	}
-	if((result = smb_incmsg_dfields(&smb, orgmsg, 1)) != SMB_SUCCESS) {
+	if((result = smb_incmsg_dfields(smb, orgmsg, 1)) != SMB_SUCCESS) {
 		smb_freemsgmem(&msg);
-		errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
+		errormsg(WHERE, ERR_WRITE, smb->file, result, smb->last_error);
 		return false;
 	}
-	smb_close_da(&smb);
+	smb_close_da(smb);
 
 	msg.dfield = orgmsg->dfield;
 	msg.hdr.offset = orgmsg->hdr.offset;
@@ -1512,12 +1512,12 @@ bool sbbs_t::forwardmail(smbmsg_t* orgmsg, const char* to, const char* subject, 
 		msg.hdr.auxattr |= MSG_FILEATTACH;
 	}
 
-	result = smb_addmsghdr(&smb, &msg, smb_storage_mode(&cfg, &smb));
+	result = smb_addmsghdr(smb, &msg, smb_storage_mode(&cfg, smb));
 	msg.dfield = NULL;
 	smb_freemsgmem(&msg);
 	if(result != SMB_SUCCESS) {
-		errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
-		smb_freemsg_dfields(&smb, orgmsg, 1);
+		errormsg(WHERE, ERR_WRITE, smb->file, result, smb->last_error);
+		smb_freemsg_dfields(smb, orgmsg, 1);
 		return false;
 	}
 
@@ -1574,7 +1574,7 @@ void sbbs_t::automsg()
 /****************************************************************************/
 /* Edits messages															*/
 /****************************************************************************/
-void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
+bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 {
 	char	buf[SDT_BLOCK_LEN];
 	char	msgtmp[MAX_PATH+1];
@@ -1584,36 +1584,36 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	FILE	*instream;
 
 	if(!msg->hdr.total_dfields)
-		return;
+		return false;
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	removecase(msgtmp);
-	msgtotxt(&smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
+	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
 	if(!editfile(msgtmp, /* msg: */true))
-		return;
+		return false;
 	length=(long)flength(msgtmp);
 	if(length<1L)
-		return;
+		return false;
 
 	length+=2;	 /* +2 for translation string */
 
-	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
-		return; 
+	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_LOCK,smb->file,i,smb->last_error);
+		return false;
 	}
 
-	if((i=smb_getstatus(&smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
-		return; 
+	if((i=smb_getstatus(smb))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_READ,smb->file,i,smb->last_error);
+		return false;
 	}
 
-	if(!(smb.status.attr&SMB_HYPERALLOC)) {
-		if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
-			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-			return; 
+	if(!(smb->status.attr&SMB_HYPERALLOC)) {
+		if((i=smb_open_da(smb))!=SMB_SUCCESS) {
+			errormsg(WHERE,ERR_OPEN,smb->file,i,smb->last_error);
+			return false;
 		}
-		if((i=smb_freemsg_dfields(&smb,msg,1))!=SMB_SUCCESS)
-			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
+		if((i=smb_freemsg_dfields(smb,msg,1))!=SMB_SUCCESS)
+			errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error); 
 	}
 
 	msg->dfield[0].type=TEXT_BODY;				/* Make one single data field */
@@ -1626,30 +1626,30 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 	}
 
 
-	if(smb.status.attr&SMB_HYPERALLOC)
-		offset=smb_hallocdat(&smb); 
+	if(smb->status.attr&SMB_HYPERALLOC)
+		offset=smb_hallocdat(smb); 
 	else {
-		if((subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_FAST)
-			|| (subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL))
-			offset=smb_fallocdat(&smb,length,1);
+		if((smb->subnum!=INVALID_SUB && cfg.sub[smb->subnum]->misc&SUB_FAST)
+			|| (smb->subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL))
+			offset=smb_fallocdat(smb,length,1);
 		else
-			offset=smb_allocdat(&smb,length,1);
-		smb_close_da(&smb); 
+			offset=smb_allocdat(smb,length,1);
+		smb_close_da(smb);
 	}
 
 	msg->hdr.offset=offset;
 	if((file=open(msgtmp,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
-		smb_unlocksmbhdr(&smb);
-		smb_freemsgdat(&smb,offset,length,1);
+		smb_unlocksmbhdr(smb);
+		smb_freemsgdat(smb,offset,length,1);
 		errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY|O_BINARY);
-		return; 
+		return false;
 	}
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
-	fseek(smb.sdt_fp,offset,SEEK_SET);
+	fseek(smb->sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
-	fwrite(&xlat,2,1,smb.sdt_fp);
+	fwrite(&xlat,2,1,smb->sdt_fp);
 	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
 	while(!feof(instream)) {
 		memset(buf,0,x);
@@ -1658,16 +1658,17 @@ void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 			break;
 		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
-		fwrite(buf,j,1,smb.sdt_fp);
+		fwrite(buf,j,1,smb->sdt_fp);
 		x=SDT_BLOCK_LEN; 
 	}
-	fflush(smb.sdt_fp);
+	fflush(smb->sdt_fp);
 	fclose(instream);
 
-	smb_unlocksmbhdr(&smb);
+	smb_unlocksmbhdr(smb);
 	msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
-	if((i=smb_putmsghdr(&smb,msg))!=SMB_SUCCESS)
-		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+	if((i=smb_putmsghdr(smb,msg))!=SMB_SUCCESS)
+		errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error);
+	return i == SMB_SUCCESS;
 }
 
 /****************************************************************************/
