@@ -681,13 +681,13 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	bool	forwardmail(smbmsg_t* msg, const char* to, const char* subject = NULL, const char* comment = NULL);
+	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
 	ushort	chmsgattr(smbmsg_t);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
-	void	editmsg(smbmsg_t* msg, uint subnum);
+	bool	editmsg(smb_t*, smbmsg_t*);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
 				,uint subnum, const char* tagfile);
 	bool	copyfattach(uint to, uint from, const char* subj);

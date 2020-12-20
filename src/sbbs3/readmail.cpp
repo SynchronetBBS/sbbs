@@ -422,7 +422,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 				if(!getstr(str, sizeof(str) - 1, K_TRIM))
 					break;
 				smb_getmsgidx(&smb,&msg);
-				if(!forwardmail(&msg, str))
+				if(!forwardmsg(&smb, &msg, str))
 					break;
 				domsg=1;
 				if(smb.curmsg<smb.msgs-1) smb.curmsg++;
@@ -642,7 +642,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					msgtotxt(&smb, &msg, str, /* header: */true, /* mode: */GETMSGTXT_ALL);
 				break;
 			case 'E':
-				editmsg(&msg,INVALID_SUB);
+				editmsg(&smb, &msg);
 				break;
 			case 'T':
 				domsg=0;
