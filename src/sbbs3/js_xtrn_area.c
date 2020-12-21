@@ -1,8 +1,4 @@
-/* js_xtrn_area.c */
-
 /* Synchronet JavaScript "External Program Area" Object */
-
-/* $Id: js_xtrn_area.c,v 1.31 2019/01/05 06:33:39 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -83,12 +67,14 @@ static char* event_prop_desc[] = {
 	 "command-line"
 	,"startup directory"
 	,"node number"
-	,"time to execute"
+	,"time to execute (minutes since midnight)"
 	,"frequency to execute"
 	,"days of week to execute (bitfield)"
 	,"days of month to execute (bitfield)"
 	,"months of year to execute (bitfield)"
-	,"date/time last run (in time_t format)"
+	,"date/time of last run (in time_t format)"
+	,"date/time of next run (in time_t format)"
+	,"error log level"
 	,"toggle options (bitfield)"
 	,NULL
 };
@@ -104,6 +90,40 @@ static char* xedit_prop_desc[] = {
 };
 
 #endif
+
+/* Event Object Properties */
+enum {
+	 EVENT_PROP_CMD,
+	 EVENT_PROP_STARTUP_DIR,
+	 EVENT_PROP_NODE_NUM,
+	 EVENT_PROP_TIME,
+	 EVENT_PROP_FREQ,
+	 EVENT_PROP_DAYS,
+	 EVENT_PROP_MDAYS,
+	 EVENT_PROP_MONTHS,
+	 EVENT_PROP_LAST_RUN,
+	 EVENT_PROP_NEXT_RUN,
+	 EVENT_PROP_ERRLEVEL,
+	 EVENT_PROP_MISC
+};
+
+static jsSyncPropertySpec js_event_properties[] = {
+/*		 name				,tinyid					,flags								,ver	*/
+
+	{	"cmd"				,EVENT_PROP_CMD			,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"startup_dir"		,EVENT_PROP_STARTUP_DIR	,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"node_num"			,EVENT_PROP_NODE_NUM	,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"time"				,EVENT_PROP_TIME		,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"freq"				,EVENT_PROP_FREQ		,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"days"				,EVENT_PROP_DAYS		,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"mdays"				,EVENT_PROP_MDAYS		,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"months"			,EVENT_PROP_MONTHS		,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"last_run"			,EVENT_PROP_LAST_RUN	,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{	"next_run"			,EVENT_PROP_NEXT_RUN	,JSPROP_ENUMERATE|JSPROP_READONLY	,31802},
+	{	"error_level"		,EVENT_PROP_ERRLEVEL	,JSPROP_ENUMERATE|JSPROP_READONLY	,31802},
+	{	"settings"			,EVENT_PROP_MISC		,JSPROP_ENUMERATE|JSPROP_READONLY	,311},
+	{ NULL }
+};
 
 BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
 {
@@ -182,6 +202,79 @@ BOOL DLLCALL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* x
 	return(TRUE);
 }
 
+static JSBool js_event_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+	const char* p = NULL;
+	JSString*	js_str;
+	jsval		idval;
+    jsint       tiny;
+	event_t*	event;
+
+	if((event = JS_GetPrivate(cx, obj)) == NULL)
+		return JS_FALSE;
+
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
+
+	switch(tiny) {
+		case EVENT_PROP_CMD:
+			p = event->cmd;
+			break;
+		case EVENT_PROP_STARTUP_DIR:
+			p = event->dir;
+			break;
+		case EVENT_PROP_NODE_NUM:
+			*vp = UINT_TO_JSVAL(event->node);
+			break;
+		case EVENT_PROP_TIME:
+			*vp = UINT_TO_JSVAL(event->time);
+			break;
+		case EVENT_PROP_FREQ:
+			*vp = UINT_TO_JSVAL(event->freq);
+			break;
+		case EVENT_PROP_DAYS:
+			*vp = UINT_TO_JSVAL(event->days);
+			break;
+		case EVENT_PROP_MDAYS:
+			*vp = UINT_TO_JSVAL(event->mdays);
+			break;
+		case EVENT_PROP_MONTHS:
+			*vp = UINT_TO_JSVAL(event->months);
+			break;
+		case EVENT_PROP_LAST_RUN:
+			*vp = UINT_TO_JSVAL(event->last);
+			break;
+		case EVENT_PROP_NEXT_RUN:
+			*vp = UINT_TO_JSVAL((uint32)getnexteventtime(event));
+			break;
+		case EVENT_PROP_ERRLEVEL:
+			*vp = UINT_TO_JSVAL(event->errlevel);
+			break;
+		case EVENT_PROP_MISC:
+			*vp = UINT_TO_JSVAL(event->misc);
+			break;
+	}
+
+	if(p != NULL) {	/* string property */
+		if((js_str = JS_NewStringCopyZ(cx, p)) == NULL)
+			return JS_FALSE;
+		*vp = STRING_TO_JSVAL(js_str);
+	}
+	return JS_TRUE;
+}
+
+static JSClass js_event_class = {
+     "Event"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_event_get			/* getProperty	*/
+	,JS_StrictPropertyStub	/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,JS_FinalizeStub		/* finalize		*/
+};
 
 struct js_xtrn_area_priv {
 	scfg_t		*cfg;
@@ -407,55 +500,16 @@ JSBool DLLCALL js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 		for(l=0;l<p->cfg->total_events;l++) {
 
-			if((eventobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+			if((eventobj=JS_NewObject(cx, &js_event_class, NULL, NULL))==NULL)
+				return JS_FALSE;
+
+			JS_SetPrivate(cx, eventobj, p->cfg->event[l]);
+
+			if(!js_DefineSyncProperties(cx, eventobj, js_event_properties))
 				return JS_FALSE;
 
 			if(!JS_DefineProperty(cx, event_array, p->cfg->event[l]->code, OBJECT_TO_JSVAL(eventobj)
 				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
-				return JS_FALSE;
-
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->event[l]->cmd))==NULL)
-				return JS_FALSE;
-			if(!JS_DefineProperty(cx, eventobj, "cmd", STRING_TO_JSVAL(js_str)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->event[l]->dir))==NULL)
-				return JS_FALSE;
-			if(!JS_DefineProperty(cx, eventobj, "startup_dir", STRING_TO_JSVAL(js_str)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "node_num", INT_TO_JSVAL(p->cfg->event[l]->node)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "time", INT_TO_JSVAL(p->cfg->event[l]->time)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "freq", INT_TO_JSVAL(p->cfg->event[l]->freq)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "days", INT_TO_JSVAL(p->cfg->event[l]->days)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "mdays", INT_TO_JSVAL(p->cfg->event[l]->mdays)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "months", INT_TO_JSVAL(p->cfg->event[l]->months)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "last_run", INT_TO_JSVAL(p->cfg->event[l]->last)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-				return JS_FALSE;
-
-			if(!JS_DefineProperty(cx, eventobj, "settings", INT_TO_JSVAL(p->cfg->event[l]->misc)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
 				return JS_FALSE;
 
 #ifdef BUILD_JSDOCS
