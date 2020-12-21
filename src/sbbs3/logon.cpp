@@ -242,7 +242,7 @@ bool sbbs_t::logon()
 			bprintf(text[TimeToChangePw],cfg.sys_pwdays);
 
 			c=0;
-			while(c < RAND_PASS_LEN) { 				/* Create random password */
+			while(c < max(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
 				str[c]=sbbs_random(43)+'0';
 				if(IS_ALPHANUMERIC(str[c]))
 					c++; 
