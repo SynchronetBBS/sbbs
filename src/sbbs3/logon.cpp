@@ -37,7 +37,6 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
-#include <nspr.h>
 
 extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
 
@@ -243,10 +242,10 @@ bool sbbs_t::logon()
 			bprintf(text[TimeToChangePw],cfg.sys_pwdays);
 
 			c=0;
-			while(c < PR_MAX(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
+			while(c < MAX(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
 				str[c]=sbbs_random(43)+'0';
 				if(IS_ALPHANUMERIC(str[c]))
-					c++; 
+					c++;
 			}
 			str[c]=0;
 			bprintf(text[YourPasswordIs],str);
