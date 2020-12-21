@@ -33,6 +33,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	char		hubid_upper[LEN_QWKID+1];
 	char		hubid_lower[LEN_QWKID+1];
 	int 		mode;
+	const char* fmode;
 	uint		i,j,k;
 	long		msgcnt,submsgs,packedmail,netfiles=0,deleted;
 	uint32_t	u;
@@ -67,11 +68,15 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/* Create SYSID.MSG, write header and leave open */
 	/*************************************************/
 	SAFEPRINTF2(str,"%s%s.MSG",cfg.temp_dir,hubid_upper);
-	fexistcase(str);
-	if((rep=fopen(str, "ab"))==NULL) {
-		errormsg(WHERE, ERR_CREATE, str, 0);
+	if(fexistcase(str))
+		fmode="r+b";
+	else
+		fmode="w+b";
+	if((rep=fopen(str, fmode))==NULL) {
+		errormsg(WHERE, ERR_CREATE, str, 0, fmode);
 		return false;
 	}
+	fseek(rep, 0, SEEK_END);
 	if(ftell(rep) < 1) { 						/* New REP packet */
 		fprintf(rep, "%-*s"
 			,QWK_BLOCK_LEN, hubid_upper);		/* So write header */
