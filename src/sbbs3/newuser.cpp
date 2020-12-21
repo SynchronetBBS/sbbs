@@ -38,6 +38,7 @@
 #include "sbbs.h"
 #include "petdefs.h"
 #include "cmdshell.h"
+#include <nspr.h>
 
 /****************************************************************************/
 /* This function is invoked when a user enters "NEW" at the NN: prompt		*/
@@ -381,7 +382,7 @@ BOOL sbbs_t::newuser()
 	}
 	else {
 		c=0;
-		while(c < max(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
+		while(c < PR_MAX(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
 			useron.pass[c]=sbbs_random(43)+'0';
 			if(IS_ALPHANUMERIC(useron.pass[c]))
 				c++; 
