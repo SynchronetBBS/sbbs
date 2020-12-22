@@ -19,7 +19,6 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <ctype.h>		/* isdigit */
 #include <stdlib.h>		/* alloca/free on FreeBSD */
 #include <string.h>		/* bzero (for FD_ZERO) on FreeBSD */
 #include <errno.h>		/* ENOMEM */
@@ -144,7 +143,7 @@ int getSocketOptionByName(const char* name, int* level)
 			return(socket_options[i].value);
 		}
 	}
-	if(!isdigit(*name))	/* unknown option name */
+	if(!IS_DIGIT(*name))	/* unknown option name */
 		return(-1);
 	return(strtol(name,NULL,0));
 }
