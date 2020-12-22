@@ -473,8 +473,8 @@ int main(int argc, char **argv)
 		}
 
 		if(msg.hdr.type != smb_msg_type(msg.hdr.attr)) {
-				,beep, msg.hdr.type, smb_msg_type(msg.hdr.attr));
 			fprintf(stderr,"%sMessage type mismatch (%d, expected %d)\n"
+				,beep, msg.hdr.type, smb_msg_type(msg.hdr.attr));
 			msgerr=TRUE;
 			types++;
 		}
