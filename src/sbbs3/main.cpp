@@ -1284,7 +1284,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
 		/* Global Objects (including system, js, client, Socket, MsgBase, File, User, etc. */
 		if(!js_CreateCommonObjects(js_cx, &scfg, &cfg, js_global_functions
-					,uptime, startup->host_name, SOCKLIB_DESC	/* system */
+					,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 					,&js_callback								/* js */
 					,&startup->js
 					,&client, client_socket, -1					/* client */
@@ -1768,14 +1768,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		putcom(buf,2);
+		sendsocket(client_socket, buf, 2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		putcom(buf,3);
+		sendsocket(client_socket, buf, 3);
 	}
 }
 
@@ -2783,7 +2783,7 @@ void event_thread(void* arg)
 						sbbs->online=FALSE;
 					}
 				}
-				close(userfile);
+				closeuserdat(userfile);
 				lastprepack=(time32_t)now;
 				SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 				if((file=sbbs->nopen(str,O_WRONLY))==-1) {
@@ -3075,7 +3075,7 @@ void event_thread(void* arg)
 					&& (now_tm.tm_hour*60)+now_tm.tm_min>=sbbs->cfg.event[i]->time
 				&& (now_tm.tm_mday!=tm.tm_mday || now_tm.tm_mon!=tm.tm_mon)))
 				&& sbbs->cfg.event[i]->days&(1<<now_tm.tm_wday)
-				&& (sbbs->cfg.event[i]->mdays==0
+				&& (sbbs->cfg.event[i]->mdays < 2
 					|| sbbs->cfg.event[i]->mdays&(1<<now_tm.tm_mday))
 				&& (sbbs->cfg.event[i]->months==0
 					|| sbbs->cfg.event[i]->months&(1<<now_tm.tm_mon))))
@@ -3310,7 +3310,8 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		else
 			SAFECOPY(cfg.temp_dir,"../temp");
     	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
-		md(cfg.temp_dir);
+		if((i = md(cfg.temp_dir)) != 0)
+			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
 		if(sd==INVALID_SOCKET) {	/* events thread */
 			if(startup->first_node==1)
 				SAFEPRINTF(path,"%sevent",cfg.temp_dir);
@@ -3480,8 +3481,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	/* used by update_qwkroute(): */
 	qwknode=NULL;
 	total_qwknodes=0;
-
-	spymsg("Connected");
 }
 
 //****************************************************************************
@@ -3530,7 +3529,7 @@ bool sbbs_t::init()
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
 		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
 			,client_socket, local_addr, inet_addrport(&addr));
-
+		spymsg("Connected");
 	}
 
 	if((comspec=os_cmdshell())==NULL) {
@@ -3538,7 +3537,10 @@ bool sbbs_t::init()
 		return(false);
 	}
 
-	md(cfg.temp_dir);
+	if((i = md(cfg.temp_dir)) != 0) {
+		lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
+		return false;
+	}
 
 	/* Shared NODE files */
 	SAFEPRINTF2(str,"%s%s",cfg.ctrl_dir,"node.dab");
@@ -4818,7 +4820,7 @@ void sbbs_t::daily_maint(void)
 			putuserrec(&cfg,user.number,U_MISC,8,ultoa(user.misc|DELETED,str,16));
 		}
 	}
-	close(userfile);
+	closeuserdat(userfile);
 
 	lputs(LOG_INFO,"DAILY: Purging deleted/expired e-mail");
 	SAFEPRINTF(smb.file,"%smail",cfg.data_dir);
@@ -5093,9 +5095,6 @@ void DLLCALL bbs_thread(void* arg)
 		return;
 	}
 
-	if(startup->host_name[0]==0)
-		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
-
 	if((t=checktime())!=0) {   /* Check binary time */
 		lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
 	}
@@ -5120,8 +5119,14 @@ void DLLCALL bbs_thread(void* arg)
 	/* Create missing node directories and dsts.dab files */
 	lprintf(LOG_INFO,"Verifying/creating node directories");
 	for(i=0;i<=scfg.sys_nodes;i++) {
-		if(i)
-			md(scfg.node_path[i-1]);
+		if(i) {
+			int err;
+			if((err = md(scfg.node_path[i-1])) != 0) {
+				lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", err, strerror(err), scfg.node_path[i-1]);
+				cleanup(1);
+				return;
+			}
+		}
 		SAFEPRINTF(str,"%sdsts.dab",i ? scfg.node_path[i-1] : scfg.ctrl_dir);
 		if(flength(str)<DSTSDABLEN) {
 			if((file=sopen(str,O_WRONLY|O_CREAT|O_APPEND, SH_DENYNO, DEFFILEMODE))==-1) {
@@ -5831,7 +5836,7 @@ NO_SSH:
 			new_node->client_socket_dup=accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
 
 			if(new_node->client_socket_dup == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"Node %d !ERROR (%d) connecting accept()ing on passthru socket"
+				lprintf(LOG_ERR,"Node %d !ERROR (%d) accepting on passthru socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				lprintf(LOG_WARNING,"Node %d !WARNING native doors which use sockets will not function"
 					,new_node->cfg.node_num);

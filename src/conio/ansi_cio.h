@@ -70,6 +70,7 @@ int ansi_getch(void);
 int ansi_getche(void);
 void ansi_beep(void);
 void ansi_textmode(int mode);
+void ansi_suspend(void);
 #ifdef __cplusplus
 }
 #endif

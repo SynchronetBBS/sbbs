@@ -68,7 +68,7 @@ function JSONdb (fileName, scope) {
 	/* database settings */
 	this.settings={
 		/* misc settings */
-		FILE:system.data_dir + "json-db.ini",
+		FILE:system.ctrl_dir + "json-db.ini",
 		FILE_BUFFER:524288,
 		LAST_SAVE:-1,
 		SAVE_INTERVAL:-1,

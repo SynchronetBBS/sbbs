@@ -27,6 +27,7 @@
 //
 // [prog:<code>]
 // 		name 			= program name or description (40 chars max)
+//      cats            = additional target installation categories (sections)
 //		cmd 			= command-line to execute (63 chars max)
 //		clean_cmd 		= clean-up command-line, if needed (63 chars max)
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
@@ -69,12 +70,15 @@
 // [ini:<filename.ini>[:section]]
 //      keys            = comma-separated list of keys to add/update in .ini
 //      values          = list of values to eval() and assign to keys[]
+//                        Note: string values must be enclosed in quotes!
 
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
 //		note			= note to sysop displayed before installation
 //      prompt          = confirmation prompt (or false if no prompting)
 //		required		= if true, this item must be installed to continue
+//      last            = if true, this item will be the last of its type
+//      done            = if true, no more installer items will be processed
 //
 // Notes:
 //
@@ -87,7 +91,7 @@
 
 "use strict";
 
-const REVISION = "$Revision: 1.14 $".split(' ')[1];
+const REVISION = "3.18b";
 const ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");
@@ -105,14 +109,19 @@ function aborted()
 	return false;
 }
 
-function install_xtrn_item(cnf, type, name, desc, item)
+function install_xtrn_item(cnf, type, name, desc, item, cats)
 {
 	if (!item.code)
 		return false;
 
 	if (!item.name)
 		item.name = name || item.code;
-	
+
+	if(item.cats)
+		item.cats = item.cats.split(',').concat(cats);
+	else
+		item.cats = cats;
+
 	function find_code(objs, code)
 	{
 		if (!options.overwrite) {
@@ -155,20 +164,30 @@ function install_xtrn_item(cnf, type, name, desc, item)
 	if (type == "xtrn") {
 		if (!xtrn_area.sec_list.length)
 			return "No external program sections have been created";
-		
-		for (var i = 0; i < xtrn_area.sec_list.length; i++)
-			print(format("%2u: ", i + 1) + xtrn_area.sec_list[i].name);
 
-		var which;
-		while ((!which || which > xtrn_area.sec_list.length) && !aborted())
-			which = js.global.prompt("Install " + item.name  + " into which section");
-		if(aborted())
-			return false;
-		which = parseInt(which, 10);
-		if (!which)
-			return false;
-		
-		item.sec = xtrn_area.sec_list[which - 1].number;
+		for (var i = 0; i < item.cats.length; i++) {
+			var code = item.cats[i].toLowerCase();
+			if(xtrn_area.sec[code]
+				&& confirm("Install " + item.name + " into " + xtrn_area.sec[code].name + " section")) {
+				item.sec = xtrn_area.sec[code].number;
+				break;
+			}
+		}
+		if(item.sec === undefined) {
+			for (var i = 0; i < xtrn_area.sec_list.length; i++)
+				print(format("%2u: ", i + 1) + xtrn_area.sec_list[i].name);
+
+			var which;
+			while ((!which || which > xtrn_area.sec_list.length) && !aborted())
+				which = js.global.prompt("Install " + item.name  + " into which section");
+			if(aborted())
+				return false;
+			which = parseInt(which, 10);
+			if (!which)
+				return false;
+
+			item.sec = xtrn_area.sec_list[which - 1].number;
+		}
 	}
 
 
@@ -241,27 +260,72 @@ function install(ini_fname)
 		editor:	{ desc: "External Editor",		struct: "xedit" }
 	};
 	
+	var done = false;
 	for (var t in types) {
 		var list = ini_file.iniGetAllObjects("code", t + ":");
-		for (var i = 0; i < list.length; i++) {
+		for (var i = 0; i < list.length && !done; i++) {
 			var item = list[i];
 			if (item.startup_dir === undefined)
 				item.startup_dir = startup_dir;
-			var result = install_xtrn_item(xtrn_cnf, types[t].struct, name, types[t].desc, item);
+			var result = install_xtrn_item(xtrn_cnf, types[t].struct, name, types[t].desc, item, cats);
 			if (typeof result !== 'boolean')
 				return result;
 			if (result === true)
 				installed++;
 			else if(item.required)
 				return false;
+			if(item.last === true)
+				break;
+			done = item.done;
 		}
 	}
 	
+	var list = ini_file.iniGetAllObjects("filename", "ini:");
+	for (var i = 0; i < list.length && !done; i++) {
+		var item = list[i];
+		var a = item.filename.split(':');
+		item.filename = startup_dir + a[0];
+		if(!file_exists(item.filename))
+			item.filename = file_cfgname(system.ctrl_dir, a[0]);
+		item.section = a[1] || null;
+		item.keys = item.keys.split(',');
+		item.values = item.values.split(',');
+		var prompt = "Add/update the " + (item.section || "root") + " section of " + file_getname(item.filename);
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+		var file = new File(item.filename);
+		if(!file.open(file.exists ? 'r+':'w+'))
+			return "Error " + file.error + " opening " + file.name;
+		var result = true;
+		if (options.debug)
+			print(JSON.stringify(item));
+		for(var k in item.keys) {
+			try {
+				var value = eval(item.values[k]);
+			} catch(e) {
+				return e;
+			}
+			print("Setting " + item.keys[k] + " = " + value);
+			result = file.iniSetValue(item.section, item.keys[k], value);
+		}
+		file.close();
+		if(required && result !== true)
+			return false;
+		if(item.last === true)
+			break;
+		done = item.done;
+	}
+
 	var services_ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
 	var list = ini_file.iniGetAllObjects("protocol", "service:");
-	for (var i = 0; i < list.length; i++) {
+	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
-		var prompt = "Install/enable the " + item.protocol + " service in " + services_ini.name;
+		var prompt = "Install/enable the " + item.protocol + " service in " + file_getname(services_ini.name);
 		if (item.prompt !== undefined)
 			prompt = item.prompt;
 		if (prompt && !confirm(prompt)) {
@@ -292,41 +356,13 @@ function install(ini_fname)
 		services_ini.close();
 		if(required && result !== true)
 			return false;
-	}
-	
-	var list = ini_file.iniGetAllObjects("filename", "ini:");
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var a = item.filename.split(':');
-		item.filename = file_cfgname(system.ctrl_dir, a[0]);
-		item.section = a[1] || null;
-		item.keys = item.keys.split(',');
-		item.values = item.values.split(',');
-		var prompt = "Add/update the " + (item.section || "root") + " section of " + item.filename;
-		if (item.prompt !== undefined)
-			prompt = item.prompt;
-		if (prompt && !confirm(prompt)) {
-			if (item.required == true)
-				return prompt + " is required to continue";
-			continue;
-		}
-		var file = new File(item.filename);
-		if(!file.open(file.exists ? 'r+':'w+'))
-			return "Error " + file.error + " opening " + file.name;
-		var result = true;
-		if (options.debug)
-			print(JSON.stringify(item));
-		for(var k in item.keys) {
-			print("Setting " + item.keys[k] + " = " + eval(item.values[k]));
-			result = file.iniSetValue(item.section, item.keys[k], eval(item.values[k]));
-		}
-		file.close();
-		if(required && result !== true)
-			return false;
+		if(item.last === true)
+			break;
+		done = item.done;
 	}
 	
 	var list = ini_file.iniGetAllObjects("cmd", "exec:");
-	for (var i = 0; i < list.length; i++) {
+	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
 		var js_args = item.cmd.split(/\s+/);
 		var js_file = js_args.shift();
@@ -355,10 +391,13 @@ function install(ini_fname)
 			,[js_file, item.startup_dir, {}].concat(js_args));
 		if (result !== 0 && item.required)
 			return "Error " + result + " executing " + item.cmd;
+		if(item.last === true)
+			return true;
+		done = item.done;
 	}
 	
 	var list = ini_file.iniGetAllObjects("str", "eval:");
-	for (var i = 0; i < list.length; i++) {
+	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
 		if (!item.cmd)
 			item.cmd = item.str; // the str can't contain [], so allow cmd to override
@@ -370,10 +409,18 @@ function install(ini_fname)
 				return prompt + " is required to continue";
 			continue;
 		}
-		if (!eval(item.cmd)) {
+		try {
+			var result = eval(item.cmd);
+		} catch(e) {
+			return e;
+		}
+		if (!result) {
 			if (item.required == true)
 				return "Truthful evaluation of '" + item.cmd + "' is required to continue";
 		}
+		if(item.last === true)
+			return true;
+		done = item.done;
 	}
 
 	if (installed) {
@@ -396,14 +443,43 @@ for (var i = 0; i < argc; i++) {
 		ini_list.push(argv[i]);
 }
 
+function find_startup_dir(dir)
+{
+	for (var i in xtrn_area.prog) {
+		if(!xtrn_area.prog[i].startup_dir)
+			continue;
+		if (xtrn_area.prog[i].startup_dir.toLowerCase() == dir.toLowerCase())
+			return i;
+	}
+	return null;
+}
+
 var xtrn_dirs = fullpath(system.ctrl_dir + "../xtrn/*");
 if(!ini_list.length) {
 	var dir_list = directory(xtrn_dirs);
 	for(var d in dir_list) {
+		if(!options.overwrite && find_startup_dir(fullpath(dir_list[d])) != null)
+			continue;
 		var fname = file_getcase(dir_list[d] + ini_fname);
 		if(fname)
 			ini_list.push(fname);
 	}
+}
+
+if(!options.auto && ini_list.length > 1) {
+	for(var i = 0; i < ini_list.length; i++) {
+		printf("%3d: %s\r\n", i+1, ini_list[i].substr(0, ini_list[i].length - ini_fname.length));
+	}
+	var which;
+	while(!which || which < 1 || which > ini_list.length) {
+		var str = prompt("Which or [Q]uit");
+		if(aborted())
+			exit(0);
+		if(str && str.toUpperCase() == 'Q')
+			exit(0);
+		which = parseInt(str, 10);
+	}
+	ini_list = [ini_list[which - 1]];
 }
 
 if(!ini_list.length) {
@@ -414,6 +490,8 @@ if(!ini_list.length) {
 	var ini_path;
 	while (!ini_path || !file_exists(ini_path)) {
 		ini_path = prompt("Location of " + ini_fname);
+		if(aborted())
+			exit(0);
 		if (file_isdir(ini_path))
 			ini_path = backslash(ini_path) + ini_fname;
 	}

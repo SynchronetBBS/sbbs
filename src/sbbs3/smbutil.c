@@ -784,8 +784,12 @@ void maint(void)
 	}
 
 	printf("Scanning for read messages to be killed...\n");
+	uint32_t total_msgs = 0;
 	for(m=f=0;m<l;m++) {
 		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
+		enum smb_msg_type type = smb_msg_type(idx[m].attr);
+		if(type == SMB_MSG_TYPE_NORMAL || type == SMB_MSG_TYPE_POLL)
+			total_msgs++;
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx->attr&(MSG_PERMANENT|MSG_DELETE))
 			continue;
@@ -797,13 +801,13 @@ void maint(void)
 	}
 	printf("\r100%% (%lu flagged for deletion due to read status)\n",f);
 
-	if(smb.status.max_msgs && l-flagged>smb.status.max_msgs) {
+	if(smb.status.max_msgs && total_msgs - flagged > smb.status.max_msgs) {
 		printf("Flagging excess messages for deletion...\n");
 		for(m=n=0,f=flagged;l-flagged>smb.status.max_msgs && m<l;m++) {
 			idx = (idxrec_t*)(idxbuf + (m * idxreclen));
 			if(idx->attr&(MSG_PERMANENT|MSG_DELETE))
 				continue;
-			printf("%lu of %lu\r",++n,(l-f)-smb.status.max_msgs);
+			printf("%lu of %lu\r",++n,(total_msgs - f)-smb.status.max_msgs);
 			flagged++;
 			idx->attr|=MSG_DELETE; 
 		}			/* mark for deletion */

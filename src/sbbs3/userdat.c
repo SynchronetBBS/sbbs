@@ -207,6 +207,8 @@ int openuserdat(scfg_t* cfg, BOOL for_modify)
 
 int closeuserdat(int file)
 {
+	if(file < 1)
+		return -1;
 	return close(file);
 }
 

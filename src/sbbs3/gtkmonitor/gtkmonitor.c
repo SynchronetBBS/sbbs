@@ -264,7 +264,7 @@ int refresh_data(gpointer data)
 			sprintf(str,"Error reading node data (%d)!",j);
 			node.status=NODE_WFC;
 		}
-		j=(node.status==NODE_QUIET || node.status==NODE_INUSE);
+		j=(node.status >= NODE_LOGON && node.status <= NODE_QUIET);
 
 		w=GTK_WIDGET(gtk_builder_get_object (builder, "bChatWithUser"));
 		gtk_widget_set_sensitive(w, j);

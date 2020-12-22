@@ -330,16 +330,16 @@
 "\r\nDownload queue is empty.\r\n"                      273 DownloadQueueIsEmpty
 "\r\n\1-\1g\1hUpload Queue:\1n\1g"\                          274 UploadQueueLstHdr
 	"        Description\r\n\r\n\1n"
-"\1g\1h%2d: \1n\1g%s     %s\r\n"                            275 UploadQueueLstFmt
+"\1g\1h%2d: \1n\1g%-12s     %s\r\n"                          275 UploadQueueLstFmt
 "\r\n\1-\1g\1hDownload Queue:\1n\1g"\                        276 DownloadQueueLstHdr
 	"      Credits      Bytes        Time\r\n\r\n\1n"
-"\1g\1h%2d: \1n\1g%s %11.11s %11.11s     %s\r\n"            277 DownloadQueueLstFmt
+"\1g\1h%2d: \1n\1g%-12s %11.11s %11.11s     %s\r\n"       277 DownloadQueueLstFmt
 "\r\n\1w\1h         Totals: %11.11s %11.11s     %s\r\n"   278 DownloadQueueTotals
 "\r\n\1-\1gRemove which file from upload "\               279 RemoveWhichFromUlQueue
 	"queue (1-%d): \1n"
 "\r\n\1-\1gRemove which file from download "\             280 RemoveWhichFromDlQueue
 	"queue (1-%d): \1n"
-"\r\nUpload queue is empty\r\n"                         281 UploadQueueIsEmpty
+"\r\nUpload queue is empty.\r\n"                        281 UploadQueueIsEmpty
 "\r\nHang up after transfer"                            282 HangUpAfterXferQ
 "\r\n\1w\1hStart transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
 "\1_\r\n\1b\1hDisconnecting @ELLIPSIS@ \1wH\1bang up or \1wA\1bbort "  284 Disconnecting
@@ -423,7 +423,7 @@
 "\1bLogons Today    : \1c%-5u \1b(Max \1c%u\1b)\r\n"         352 LiLogonsToday
 "\1bTime on Today   : \1c%-5u \1b(Max \1c%u\1b)\r\n"        353 LiTimeonToday
 "\1bMail Waiting    : \1c%u\r\n"                          354 LiMailWaiting
-"\1bSysop is        : \1c"                                355 LiSysopIs
+"\1b\1hSysop is        : \1c%s\r\n"                     355 LiSysopIs
 "Available"                                             356 LiSysopAvailable
 "Not Available"                                         357 LiSysopNotAvailable
 "\1r\1h\1iYou can't possibly be in two places at the "\    358 UserOnTwoNodes

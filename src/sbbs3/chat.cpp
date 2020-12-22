@@ -771,7 +771,7 @@ bool sbbs_t::chan_access(uint cnum)
 /****************************************************************************/
 /* Private split-screen (or interspersed) chat with node or local sysop		*/
 /****************************************************************************/
-void sbbs_t::privchat(bool local)
+void sbbs_t::privchat(bool forced, int node_num)
 {
 	char	str[128],c,*p,localbuf[5][81],remotebuf[5][81]
 			,localline=0,remoteline=0,localchar=0,remotechar=0
@@ -787,8 +787,8 @@ void sbbs_t::privchat(bool local)
 	node_t	node;
 	time_t	last_nodechk=0;
 
-	if(local) 
-		n=0;
+	if(forced)
+		n = node_num;
 	else {
 
 		if(useron.rest&FLAG('C')) {
@@ -808,23 +808,28 @@ void sbbs_t::privchat(bool local)
 			bprintf(text[NodeNAlreadyInPChat],n);
 			return; 
 		}
-		if((node.action!=NODE_PAGE || node.aux!=cfg.node_num)
-			&& node.misc&NODE_POFF && !SYSOP) {
-			bprintf(text[CantPageNode],node.misc&NODE_ANON
-				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
-			return; 
-		}
-		if(node.action!=NODE_PAGE) {
-			bprintf(text[PagingUser]
-				,node.misc&NODE_ANON ? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp)
-				,node.misc&NODE_ANON ? 0 : node.useron);
-			sprintf(str,text[NodePChatPageMsg]
-				,cfg.node_num,thisnode.misc&NODE_ANON
-					? text[UNKNOWN_USER] : useron.alias);
-			putnmsg(&cfg,n,str);
-			sprintf(str,"paged %s on node %d to private chat"
-				,username(&cfg,node.useron,tmp),n);
-			logline("C",str); 
+		if(SYSOP && getnodedat(n, &node, true) == 0) {
+			node.misc |= NODE_FCHAT;
+			putnodedat(n, &node);
+		} else {
+			if((node.action!=NODE_PAGE || node.aux!=cfg.node_num)
+				&& node.misc&NODE_POFF) {
+				bprintf(text[CantPageNode],node.misc&NODE_ANON
+					? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
+				return;
+			}
+			if(node.action!=NODE_PAGE) {
+				bprintf(text[PagingUser]
+					,node.misc&NODE_ANON ? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp)
+					,node.misc&NODE_ANON ? 0 : node.useron);
+				sprintf(str,text[NodePChatPageMsg]
+					,cfg.node_num,thisnode.misc&NODE_ANON
+						? text[UNKNOWN_USER] : useron.alias);
+				putnmsg(&cfg,n,str);
+				sprintf(str,"paged %s on node %d to private chat"
+					,username(&cfg,node.useron,tmp),n);
+				logline("C",str);
+			}
 		}
 
 		if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -858,14 +863,14 @@ void sbbs_t::privchat(bool local)
 	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 		thisnode.action=action=NODE_PCHT;
 		thisnode.aux=n;
-		thisnode.misc&=~NODE_LCHAT;
+		thisnode.misc&=~ (NODE_LCHAT|NODE_FCHAT);
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-	if(!online || sys_status&SS_ABORT)
+	if(!online || (!forced && (sys_status&SS_ABORT)))
 		return;
 
-	if(local) {
+	if(forced && n == 0) {
 		/* If an external sysop chat event handler is installed, just run that and do nothing else */
 		if(user_event(EVENT_LOCAL_CHAT))
 			return;
@@ -882,7 +887,7 @@ void sbbs_t::privchat(bool local)
 	*/
 
 	if(!(sys_status&SS_SPLITP)) {
-		if(local)
+		if(forced)
 			bprintf(text[SysopIsHere],cfg.sys_op);
 		else
 			bputs(text[WelcomeToPrivateChat]);
@@ -894,7 +899,7 @@ void sbbs_t::privchat(bool local)
 		return; 
 	}
 
-	if(local)
+	if(forced && n == 0)
 		sprintf(inpath,"%slchat.dab",cfg.node_dir);
 	else
 		sprintf(inpath,"%schat.dab",cfg.node_path[n-1]);
@@ -924,7 +929,7 @@ void sbbs_t::privchat(bool local)
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-	if(!local) {
+	if(n) { // not local
 		if(getnodedat(n,&node,true)==0) {
 			node.misc|=NODE_RPCHT;				/* Set "reset pchat flag" */
 			putnodedat(n,&node); 				/* on other node */
@@ -955,15 +960,15 @@ void sbbs_t::privchat(bool local)
 		ansi_save();
 		ansi_gotoxy(1,13);
 		remote_y=1;
-		bprintf(local ? local_sep : sep
+		bprintf(forced ? local_sep : sep
 			,thisnode.misc&NODE_MSGW ? 'T':' '
 			,sectostr(timeleft,tmp)
 			,thisnode.misc&NODE_NMSG ? 'M':' ');
-		CRLF;
+		ansi_gotoxy(1,14);
 		local_y=14; 
 	}
 
-	while(online && (local || !(sys_status&SS_ABORT))) {
+	while(online && (forced || !(sys_status&SS_ABORT))) {
 		lncntr=0;
 		if(sys_status&SS_SPLITP)
 			lbuflen=0;
@@ -1007,11 +1012,11 @@ void sbbs_t::privchat(bool local)
 					bputs("\1i_\1n");  /* Fake cursor */
 					ansi_save();
 					ansi_gotoxy(1,13);
-					bprintf(local ? local_sep : sep
+					bprintf(forced ? local_sep : sep
 						,thisnode.misc&NODE_MSGW ? 'T':' '
 						,sectostr(timeleft,tmp)
 						,thisnode.misc&NODE_NMSG ? 'M':' ');
-					CRLF;
+					ansi_gotoxy(1,14);
 					attr(cfg.color[clr_chatlocal]);
 					localbuf[localline][localchar]=0;
 					for(i=0;i<=localline;i++) {
@@ -1035,9 +1040,9 @@ void sbbs_t::privchat(bool local)
 					localbuf[localline][localchar]=0;
 					localchar=0;
 
-					if(sys_status&SS_SPLITP && local_y==24) {
+					if(sys_status&SS_SPLITP && local_y >= rows) {
 						ansi_gotoxy(1,13);
-						bprintf(local ? local_sep : sep
+						bprintf(forced ? local_sep : sep
 							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
 							,thisnode.misc&NODE_NMSG ? 'M':' ');
@@ -1065,6 +1070,8 @@ void sbbs_t::privchat(bool local)
 					}
 					// SYNC;
 				} 
+			} else { // illegal key
+				continue;
 			}
 
 			read(out,&c,1);
@@ -1131,7 +1138,7 @@ void sbbs_t::privchat(bool local)
 
 					if(sys_status&SS_SPLITP && remote_y==12) {
 						CRLF;
-						bprintf(local ? local_sep : sep
+						bprintf(forced ? local_sep : sep
 							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
 							,thisnode.misc&NODE_NMSG ? 'M':' ');
@@ -1192,7 +1199,7 @@ void sbbs_t::privchat(bool local)
 					nodesync(); 
 			}
 
-			if(!local) {
+			if(n != 0) {
 				getnodedat(n,&node,0);
 				if((node.action!=NODE_PCHT && node.action!=NODE_PAGE)
 					|| node.aux!=cfg.node_num) {
@@ -1268,7 +1275,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		sprintf(str,text[NodeToPrivateChat],lastnodemsg);
 	mnemonics(str);
 
-	strcpy(str,lastnodemsguser);
+	SAFECOPY(str,lastnodemsguser);
 	getstr(str,LEN_ALIAS,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
 	if(sys_status&SS_ABORT) {
 		sys_status&= ~SS_ABORT;
@@ -1289,7 +1296,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
 			return(0); 
 		}
-		strcpy(lastnodemsguser,str);
+		SAFECOPY(lastnodemsguser,str);
 		if(telegram)
 			return(node.useron);
 		return(j); 
@@ -1330,7 +1337,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 			}
 			if(telegram)
 				return(j);
-			strcpy(lastnodemsguser,str);
+			SAFECOPY(lastnodemsguser,str);
 			return(i); 
 		} 
 	}
@@ -1429,7 +1436,7 @@ void sbbs_t::nodemsg()
 					bprintf("%4s",nulstr);
 					if(!getstr(line,70,K_WRAP|K_MSG))
 						break;
-					sprintf(str,"%4s%s\r\n",nulstr,line);
+					SAFEPRINTF2(str,"%4s%s\r\n",nulstr,line);
 					SAFECAT(buf,str);
 					if(line[0]) {
 						if(i)

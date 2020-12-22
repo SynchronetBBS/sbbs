@@ -1,0 +1,231 @@
+<!--HIDDEN:Registration-->
+
+<!--
+	Username/alias and password are always required. All other fields are set
+	as 'required' (or not) based on your New User Question Toggles as set in
+	the System Configuration section of scfg.  You can delete any fields of
+	this form that your system does not require.
+-->
+
+<?xjs
+	if (user.number > 0 && user.alias !== settings.guest) exit();
+
+	require('sbbsdefs.js', 'SYS_CLOSED');
+
+	function required(mask) {
+		return ((system.new_user_questions&mask) ? (' ' + locale.strings.page_register.stat_suffix_field_required) : '');
+	}
+
+	function notRequired(mask) {
+		return ((system.new_user_questions&mask) ? '' : (' ' + locale.strings.page_register.stat_suffix_field_required));
+	}
+
+
+	function iconRequired(mask) {
+		if (required(mask).length > 0) {
+?>
+			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+<?xjs
+		}
+	}
+
+	function iconNotRequired(mask) {
+		if (notRequired(mask).length > 0) {
+?>
+			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+<?xjs
+		}
+	}
+?>
+
+<script type="text/javascript" src="./js/validator.js"></script>
+
+<div class="well well-sm"><h3><?xjs write(locale.strings.page_register.title); ?></h3></div>
+
+<div id="errorbox" class="bg-danger" hidden></div>
+
+<div id="form-register-container">
+
+	<div style="margin-bottom:1em;">
+		<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+		<?xjs write(locale.strings.page_register.help_text_required); ?>
+	</div>
+
+	<form id="form-register" data-toggle="validator">
+
+		<div class="form-group">
+			<label for="alias"><?xjs write(locale.strings.page_register.input_alias); ?></label>
+			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_ALIAS); ?>" class="form-control" id="alias" name="alias" placeholder="<?xjs write(locale.strings.page_register.input_alias); ?>" required>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_ALIAS)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="password1" class="control-label">
+				<?xjs write(locale.strings.page_register.input_password); ?>
+			</label>
+			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+			<input type="password" data-minlength="<?xjs write(system.min_password_length) ?>" maxlength="<?xjs write(system.max_password_length) ?>" class="form-control" id="password1" name="password1" placeholder="<?xjs write(locale.strings.page_register.input_password); ?>" required>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_minimum_characters, system.min_password_length)); ?>,
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, system.max_password_length)); ?>
+			</span>
+		</div>
+			<div class="form-group">
+			<label for="password2" class="control-label">
+				<?xjs write(locale.strings.page_register.input_password_confirm); ?>
+			</label>
+			<span title="<?xjs write(locale.strings.page_register.label_field_required); ?>" class="glyphicon glyphicon-asterisk"></span>
+			<input type="password" data-minlength="<?xjs write(system.min_password_length) ?>" maxlength="<?xjs write(system.max_password_length) ?>" class="form-control" id="password2" name="password2" placeholder="<?xjs write(locale.strings.page_register.input_password_confirm); ?>" data-match="#password1" required>
+		</div>
+
+		<div class="form-group">
+			<label for="netmail"><?xjs write(locale.strings.page_register.input_email); ?></label>
+			<?xjs iconNotRequired(UQ_NONETMAIL); ?>
+			<input type="email" data-minlength="6" maxlength="<?xjs write(LEN_NETMAIL); ?>"class="form-control" id="netmail" name="netmail" placeholder="<?xjs write(locale.strings.page_register.placeholder_netmail); ?>"<?xjs write(notRequired(UQ_NONETMAIL)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_NETMAIL)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="realname"><?xjs write(locale.strings.page_register.input_name); ?></label>
+			<?xjs iconRequired(UQ_REALNAME); ?>
+			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_NAME); ?>" class="form-control" id="realname" name="realname" placeholder="<?xjs write(locale.strings.page_register.placeholder_name); ?>"<?xjs write(required(UQ_REALNAME)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_NAME)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="address">
+				<?xjs write(locale.strings.page_register.input_street_address); ?>
+			</label>
+			<?xjs iconRequired(UQ_ADDRESS); ?>
+			<input type="text" data-minlength="3" maxlength="<?xjs write(LEN_ADDRESS); ?>" class="form-control" id="address" name="address" placeholder="<?xjs write(locale.strings.page_register.placeholder_street_address); ?>"<?xjs write(required(UQ_ADDRESS)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_ADDRESS)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="zipcode"><?xjs write(locale.strings.page_register.input_zipcode); ?></label>
+			<?xjs iconRequired(UQ_ADDRESS); ?>
+			<input type="text" data-minlength="3" maxlength="<?xjs write(LEN_ADDRESS); ?>" class="form-control" id="zipcode" name="zipcode" placeholder="<?xjs write(locale.strings.page_register.placeholder_zipcode); ?>"<?xjs write(required(UQ_ADDRESS)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_ADDRESS)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="location"><?xjs write(locale.strings.page_register.input_location); ?></label>
+			<?xjs iconRequired(UQ_LOCATION); ?>
+			<input type="text" data-minlength="1" maxlength="<?xjs write(LEN_LOCATION); ?>" class="form-control" id="location" name="location" placeholder="<?xjs write(locale.strings.page_register.placeholder_location); ?>"<?xjs write(required(UQ_LOCATION)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_LOCATION)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="phone"><?xjs write(locale.strings.page_register.input_phone); ?></label>
+			<?xjs iconRequired(UQ_PHONE); ?>
+			<input type="text" data-minlength="3" maxlength="<?xjs write(LEN_PHONE); ?>" class="form-control" id="phone" name="phone" placeholder="<?xjs write(locale.strings.page_register.placeholder_phone); ?>"<?xjs write(required(UQ_PHONE)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_PHONE)); ?>
+			</span>
+		</div>
+
+		<div class="form-group">
+			<label for="birth"><?xjs write(locale.strings.page_register.input_birthdate); ?></label>
+			<?xjs iconRequired(UQ_BIRTH); ?>
+			<input type="text" data-minlength="<?xjs write(LEN_BIRTH); ?>" maxlength="<?xjs write(LEN_BIRTH); ?>" class="form-control" id="birth" name="birth" placeholder="<?xjs write(system.settings&SYS_EURODATE ? 'DD/MM/YY' : 'MM/DD/YY'); ?>" <?xjs write(required(UQ_BIRTH)); ?>>
+			<span class="help-block">
+				<?xjs write(format(locale.strings.page_register.help_text_maximum_characters, LEN_BIRTH)); ?>
+			</span>
+		</div>
+
+		<div class="form-inline">
+			<?xjs iconRequired(UQ_SEX); ?>
+			<label><?xjs write(locale.strings.page_register.input_gender); ?></label>&nbsp;
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-withheld" name="gender" value="X" checked>
+					<?xjs write(locale.strings.page_register.input_gender_withheld); ?>
+				</label>
+			</div>
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-male" name="gender" value="M">
+					<?xjs write(locale.strings.page_register.input_gender_male); ?>
+				</label>
+			</div>
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-female" name="gender" value="F">
+					<?xjs write(locale.strings.page_register.input_gender_female); ?>
+				</label>
+			</div>
+			<div class="radio">
+				<label>
+					<input type="radio" id="gender-other" name="gender" value="O">
+					<?xjs write(locale.strings.page_register.input_gender_other); ?>
+				</label>
+			</div>
+		</div>
+		<br>
+
+		<?xjs if(system.newuser_password !== '') { ?>
+		<div class="form-group">
+			<label for="newuser-password">
+				<?xjs write(locale.strings.page_register.input_registration_password); ?>
+			</label>
+			<input type="password" id="newuser-password" name="newuser-password" data-minlength="1" maxlength="8">
+		</div>
+		<?xjs } ?>
+
+		<!-- Traps - leave these here. They will be hidden from users. -->
+		<input id="send-me-free-stuff" title="Don't fill this field" name="send-me-free-stuff" type="text">
+		<input id="subscribe-to-newsletter" title="Don't check this box" name="subscribe-to-newsletter" value="1" type="checkbox">
+
+		<div class="pull-right">
+			<button class="btn btn-primary" type="submit">
+				<?xjs write(locale.strings.page_register.button_register); ?>
+			</button>
+		</div>
+
+	</form>
+
+</div>
+
+<script type="text/javascript">
+
+	function register() {
+		$.post('./api/register.ssjs', $('#form-register').serialize()).done(function (data) {
+			if (data.errors && data.errors.length > 0) {
+				$('#errorbox').html('');
+				data.errors.forEach(function (err) {
+					$('#errorbox').append('<p>' + err + '</p>');
+				});
+				$('#errorbox').attr('hidden', false);
+			} else {
+				$('#errorbox').attr('hidden', true);
+				$('#form-register-container').html(
+					'<?xjs write(locale.strings.page_register.message_account_created); ?>'
+				);
+			}
+		});
+	}
+
+	$('#form-register').validator().on('submit', function (evt) {
+		if (evt.isDefaultPrevented()) return;
+		evt.preventDefault();
+		register();
+	});
+
+	// Traps
+	$('#send-me-free-stuff').attr('hidden', true);
+	$('#subscribe-to-newsletter').attr('hidden', true);
+
+</script>

@@ -456,6 +456,9 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 	if(!strcmp(sp,"SYSOP"))
 		return(cfg.sys_op);
 
+	if(strcmp(sp, "SYSAVAIL") == 0)
+		return text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable];
+
 	if(!strcmp(sp,"LOCATION"))
 		return(cfg.sys_location);
 
@@ -505,7 +508,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 		return(cfg.sys_inetaddr);
 
 	if(!strcmp(sp,"HOSTNAME"))
-		return(startup->host_name);
+		return server_host_name();
 
 	if(!strcmp(sp,"FIDOADDR")) {
 		if(cfg.total_faddrs)

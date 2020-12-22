@@ -250,6 +250,10 @@ DLLEXPORT int DLLCALL removecase(const char *path);
 	#define	removecase(x)	remove(x)
 #endif
 
+#if !defined _WIN32
+DLLEXPORT BOOL		CopyFile(const char* src, const char* dest, BOOL failIfExists);
+#endif
+
 #if defined(__cplusplus)
 }
 #endif

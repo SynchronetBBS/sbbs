@@ -976,7 +976,6 @@ int main(int argc, char **argv)
 			sprintf(str,"%s%s.lst",scfg.dir[dirnum]->path, scfg.dir[dirnum]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
 				sprintf(str,"%s%s",scfg.dir[dirnum]->path, auto_name);
-			addlist(str, dirnum, uploader, desc_offset, size_offset);
 			if(mode&SYNC_LIST)
 				synclist(str, dirnum); 
 		} 

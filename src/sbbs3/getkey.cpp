@@ -44,10 +44,11 @@
 /****************************************************************************/
 char sbbs_t::getkey(long mode)
 {
-	uchar	ch, coldkey, spin = sbbs_random(10);
+	uchar	ch, coldkey;
 	ulong	c = sbbs_random(5);
 	time_t	last_telnet_cmd=0;
-	long	term = term_supports();
+	char* cursor = text[SpinningCursor0  + sbbs_random(10)];
+	size_t cursors = strlen(cursor);
 
 	if(online==ON_REMOTE && !input_thread_running)
 		online=FALSE;
@@ -60,20 +61,30 @@ char sbbs_t::getkey(long mode)
 		mode|=(useron.misc&SPIN);
 	lncntr=0;
 	timeout=time(NULL);
+#if !defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
 	if(mode&K_SPIN)
 		outchar(' ');
-
+#endif
 	do {
 		if(sys_status&SS_ABORT) {
-			if(mode&K_SPIN) /* back space once if on spinning cursor */
+			if(mode&K_SPIN) {
+#if defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
+				bputs(" \b");
+#else
 				backspace();
+#endif
+			}
 			return(0); 
 		}
 
 		if(mode&K_SPIN) {
-			char* cursor = text[SpinningCursor0  + spin];
+#if !defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
 			outchar('\b');
-			outchar(cursor[(c++) % strlen(cursor)]);
+#endif
+			outchar(cursor[(c++) % cursors]);
+#if defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
+			outchar('\b');
+#endif
 		}
 		ch=inkey(mode,mode&K_SPIN ? 200:1000);
 		if(sys_status&SS_ABORT)
@@ -86,8 +97,13 @@ char sbbs_t::getkey(long mode)
 				continue;
 			if(mode&K_NOEXASC && ch&0x80)
 				continue;
-			if(mode&K_SPIN)
+			if(mode&K_SPIN) {
+#if defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
+				bputs(" \b");
+#else
 				backspace();
+#endif
+			}
 			if(mode&K_COLD && ch>' ' && useron.misc&COLDKEYS) {
 				if(mode&K_UPPER)
 					outchar(toupper(ch));

@@ -352,7 +352,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			   ,int (*lprintf)(int level, const char *fmt, ...))
 {
 	char	port_str[128];
-	char	err[128];
+	char	err[256];
 	int		result=-1;
 	uint	i;
 
@@ -365,7 +365,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			break;
 		if(lprintf!=NULL)
 			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d (%s) binding %s socket%s", s, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), prot, port_str);
+				,"%04d !ERROR %d binding %s socket%s: %s", s, ERROR_VALUE, prot, port_str, socket_strerror(socket_errno, err, sizeof(err)));
 		if(i<retries) {
 			if(lprintf!=NULL)
 				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
@@ -509,13 +509,14 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 	buf[buflen - 1] = 0;
 	if(error_number > 0 && error_number < WSABASEERR)
 		error_number += WSABASEERR;
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
+	if(!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId
 		buf,
 		buflen,
-		NULL);
+		NULL))
+		safe_snprintf(buf, buflen, "Error %d getting error description", GetLastError());
 	truncsp(buf);
 	return buf;
 #else

@@ -1395,6 +1395,11 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
+	if(JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_ReportError(cx, "No filename specified");
+		return JS_FALSE;
+	}
+
 	str = JS_ValueToString(cx, argv[0]);
 	if (!str)
 		return(JS_FALSE);
@@ -1424,7 +1429,7 @@ js_printfile(JSContext *cx, uintN argc, jsval *arglist)
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SET_RVAL(cx, arglist, result ? JS_TRUE : JS_FALSE);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 
     return(JS_TRUE);
 }
@@ -1468,8 +1473,10 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if(js_str==NULL)
-		return(JS_FALSE);
+	if(js_str==NULL) {
+		JS_ReportError(cx, "No filename specified");
+		return JS_FALSE;
+	}
 
 	if(!lines)
 		lines=5;
@@ -1482,7 +1489,7 @@ js_printtail(JSContext *cx, uintN argc, jsval *arglist)
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SET_RVAL(cx, arglist, result ? JS_TRUE : JS_FALSE);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 
     return(JS_TRUE);
 }

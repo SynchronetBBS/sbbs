@@ -189,7 +189,7 @@ int dospy(int nodenum, bbs_startup_t *bbs_startup)  {
 			return(-1);
 
 		case SPY_NOCONNECT:
-			sprintf(str2,"Failed to connect to %s",str);
+			SAFEPRINTF(str2,"Failed to connect to %s",str);
 			uifc.msg(str2);
 			return(-1);
 
@@ -220,7 +220,7 @@ int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 	char str[80],str2[80];
 
 	uifc.input(WIN_MID|WIN_SAV,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
-	sprintf(str,"\1n\1y\1hMessage From Sysop:\1w %s\r\n",str2);
+	SAFEPRINTF(str,"\1n\1y\1hMessage From Sysop:\1w %s\r\n",str2);
 	if(getnodedat(cfg,nodenum,node,FALSE,NULL))
 		return(-1);
 	if(node->useron==0)
@@ -948,7 +948,7 @@ USAGE:
 #endif
 					         "       A = ANSI mode\n"
 					         "-l# =  set screen lines to #\n"
-					         "-s# =  set idle slsep to # milliseconds (defualt: %d)\n"
+					         "-s# =  set idle slsep to # milliseconds (default: %d)\n"
 					    ,argv[0]
 					    ,idle_sleep
 					);
@@ -1192,8 +1192,11 @@ USAGE:
 				uifc.msg("Error reading node data!");
 				continue;
 			}
-			if((node.status==NODE_INUSE) && node.useron)
-				chat(&cfg,main_dflt,&node,&boxch,NULL);
+			if(node.status >= NODE_LOGON && node.status <= NODE_QUIET && node.useron) {
+				int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
+				if(result != 0)
+					uifc.msgf("Chat error: %d (%s)", result, strerror(errno));
+			}
 			continue;
 		}
 
@@ -1258,7 +1261,7 @@ USAGE:
 			continue;
 
 		if(j<=cfg.sys_nodes && j>0) {
-			if((node.status==NODE_INUSE) && node.useron) {
+			if(node.status >= NODE_LOGON && node.status <= NODE_QUIET && node.useron) {
 				i=0;
 				strcpy(opt[i++],"Edit User");
 				strcpy(opt[i++],"Spy on node");
@@ -1305,9 +1308,12 @@ USAGE:
 							break;
 
 						case 3: /* Chat with User */
-							chat(&cfg,main_dflt,&node,&boxch,NULL);
+						{
+							int result = chat(&cfg,main_dflt,&node,&boxch,NULL);
+							if(result != 0)
+								uifc.msgf("Chat error %d (%s)", result, strerror(errno));
 							break;
-
+						}
 						case 4: /* Node Toggles */
 							node_toggles(&cfg, j);
 							break;

@@ -809,8 +809,10 @@ Frame.prototype.load = function(filename,width,height) {
     case "BIN":
         if (!this.load_bin(contents, width, height, 0)) return false;
 		break;
+	case "ASC":
+	case "MSG":
 	case "TXT":
-		var lines=contents.split(/\r\n/);
+		var lines=contents.split(/\r*\n/);
 		while(lines.length > 0)
 			this.putmsg(lines.shift() + "\r\n");
 		break;
@@ -1114,19 +1116,17 @@ Frame.prototype.putmsg = function(str,attr) {
 				this.__properties__.curr_attr|=BLINK;
 				break;
 			case 'N': 	/* Normal */
-				this.__properties__.curr_attr&=~HIGH;
-				this.__properties__.curr_attr&=~BLINK;
-				this.__properties__.curr_attr=((this.__properties__.curr_attr)&0x8f)|LIGHTGRAY;
+				this.__properties__.curr_attr=(this.attr);
 				break;
-      case '+':
-        this.__properties__.attr_stack.push(this.__properties__.curr_attr);
-        break;
+			case '+':
+				this.__properties__.attr_stack.push(this.__properties__.curr_attr);
+				break;
 			case '-':	/* Normal if High, Blink, or BG */
-        if (this.__properties__.attr_stack.length) {
-          this.__properties__.curr_attr = this.__properties__.attr_stack.pop();
-        } else if(this.__properties__.curr_attr & 0xf8) {
-					this.__properties__.curr_attr=this.attr;
-        }
+				if (this.__properties__.attr_stack.length) {
+				  this.__properties__.curr_attr = this.__properties__.attr_stack.pop();
+				} else if(this.__properties__.curr_attr & 0xf8) {
+							this.__properties__.curr_attr=this.attr;
+				}
 				break;
 			case '_':	/* Normal if blink/background */
 				if(this.__properties__.curr_attr & 0xf0)
@@ -1183,6 +1183,7 @@ Frame.prototype.putmsg = function(str,attr) {
 				pos.x++;
 				break;
 			}
+
 		}
 	}
 }

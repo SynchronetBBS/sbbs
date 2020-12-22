@@ -51,7 +51,7 @@ const char* fmsgattr_str(uint16_t attr)
 	if(str[0] == 0)
 		return "";
 
-	static char buf[64];
+	static char buf[128];
 	sprintf(buf, "(%s)", str);
 	return buf;
 }

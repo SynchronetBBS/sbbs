@@ -53,7 +53,6 @@
 char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 {
 	uint 	tmpatr;
-	uchar	exatr=0;
 	ulong 	orgcon=console;
 	ulong	sys_status_sav=sys_status;
 	enum output_rate output_rate = cur_output_rate;
@@ -64,7 +63,7 @@ char sbbs_t::putmsg(const char *buf, long mode, long org_cols, JSObject* obj)
 		attr(LIGHTGRAY);
 	if(mode&P_NOPAUSE)
 		sys_status|=SS_PAUSEOFF;
-	
+
 	char ret = putmsgfrag(buf, &mode, org_cols, obj);
 	if(!(mode&P_SAVEATR)) {
  		console=orgcon;

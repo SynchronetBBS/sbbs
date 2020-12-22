@@ -47,25 +47,34 @@
 
 #define SETHELP(where)  uifc.sethelp(where)
 
-#define SCFG_CMDLINE_SPEC_HELP 	"\n"																				\
-								"The following is a list of commonly-used command-line specifiers:\n"				\
+#define SCFG_CMDLINE_PREFIX_HELP "\n"																				\
+								"Command lines may begin with a special `prefix` character to indicate:\n"			\
 								"\n"																				\
-								"  `%f`  The path/filename of the file to act upon or door/game drop file\n"		\
+								"  `*`   Program is either a JavaScript (`.js`) or Baja (`.bin`) module\n"			\
+								"  `?`   Program is a JavaScript (`.js`) module\n"
+
+#define SCFG_CMDLINE_SPEC_HELP 	"\n"																				\
+								"The following is a list of commonly-used command line specifiers:\n"				\
+								"\n"																				\
+								"  `%f`  The path/filename of the file to act upon or door/game `drop file`\n"		\
 								"  `%s`  File specification (e.g. `*.txt`) or the current `Startup Directory`\n"	\
-								"  `%!`  The Synchronet `exec` directory (use `%@` for non-Unix only)\n"			\
 								"  `%.`  Executable file extension (`.exe`, or blank for Unix systems)\n"			\
-								"  `%n`  The current node directory\n"												\
-								"  `%#`  The current node number\n"													\
-								"  `%a`  The current user's alias\n"												\
-								"  `%1`  The current user's number (use `%2`, `%3`, etc. for 0-padded values)\n"	\
-								"  `%h`  The current TCP/IP socket descriptor (handle) value\n"						\
+								"  `%!`  The Synchronet `exec directory` (use `%@` for non-Unix only)\n"			\
+								"  `%g`  The Synchronet `temp directory`\n"											\
+								"  `%j`  The Synchronet `data directory`\n"											\
+								"  `%k`  The Synchronet `ctrl directory`\n"											\
+								"  `%z`  The Synchronet `text directory`\n"											\
+								"  `%n`  The current `node directory`\n"											\
+								"  `%#`  The current `node number`\n"												\
+								"  `%a`  The current `user's alias`\n"												\
+								"  `%1`  The current `user's number` (use `%2`, `%3`, etc. for 0-padded values)\n"	\
+								"  `%h`  The current TCP/IP `socket` descriptor (handle) value\n"					\
 								"  `%p`  The current connection type (protocol, e.g. `telnet`, `rlogin`, etc.)\n"	\
-								"  `%r`  The current user's terminal height (rows)\n"								\
-								"  `%w`  The current user's terminal width (columns)\n"								\
+								"  `%r`  The current user's terminal height (`rows`)\n"								\
+								"  `%w`  The current user's terminal width (`columns`)\n"							\
 								"\n"																				\
 								"For a complete list of the supported command-line specifiers, see:\n"				\
 								"`http://wiki.synchro.net/config:cmdline`\n"
-
 
 /*************/
 /* Constants */

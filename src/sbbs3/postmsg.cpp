@@ -297,7 +297,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
 	smb_hfield_str(&msg,SUBJECT,title);
 

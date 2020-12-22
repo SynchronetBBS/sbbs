@@ -969,7 +969,7 @@ void sbbs_t::maindflts(user_t* user)
 				if(sys_status&SS_ABORT)
 					break;
 				if(!(term&PETSCII)) {
-					if(!(user->misc&UTF8) && !yesno(text[ExAsciiTerminalQ]))
+					if(!(term&UTF8) && !yesno(text[ExAsciiTerminalQ]))
 						user->misc|=NO_EXASCII;
 					else
 						user->misc&=~NO_EXASCII;
@@ -1081,13 +1081,11 @@ void sbbs_t::maindflts(user_t* user)
 				getstr(user->netmail,LEN_NETMAIL,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 				if(sys_status&SS_ABORT)
 					break;
-				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
-				if(user->netmail[0] == 0 || noyes(text[ForwardMailQ]))
-					user->misc&=~NETMAIL;
-				else {
-					user->misc|=NETMAIL;
-				}
+				user->misc &= ~NETMAIL;
+				if(is_supported_netmail_addr(&cfg, user->netmail) && !noyes(text[ForwardMailQ]))
+					user->misc |= NETMAIL;
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
+				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
 				break;
 			case 'C':
 				user->misc^=CLRSCRN;
@@ -1114,7 +1112,7 @@ void sbbs_t::maindflts(user_t* user)
 						pause();
 						break; 
 					}
-					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
+					bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM))
 						break;
 					truncsp(str);

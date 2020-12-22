@@ -51,6 +51,7 @@ extern JSClass js_system_class;
 enum {
 	 SYS_PROP_NAME
 	,SYS_PROP_OP
+	,SYS_PROP_OP_AVAIL
 	,SYS_PROP_ID
 	,SYS_PROP_MISC
 	,SYS_PROP_INETADDR
@@ -146,6 +147,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_OP:
 			p=cfg->sys_op;
 			break;
+		case SYS_PROP_OP_AVAIL:
+			*vp=BOOLEAN_TO_JSVAL(sysop_available(cfg));
+			break;
 		case SYS_PROP_ID:
 			p=cfg->sys_id;
 			break;
@@ -172,7 +176,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(cfg->sys_pwdays);
 			break;
 		case SYS_PROP_MINPWLEN:
-			*vp = INT_TO_JSVAL(MIN_PASS_LEN);
+			*vp = INT_TO_JSVAL(cfg->min_pwlen);
 			break;
 		case SYS_PROP_MAXPWLEN:
 			*vp = INT_TO_JSVAL(LEN_PASS);
@@ -359,10 +363,16 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SYS_PROP_MISC:
 			JS_ValueToInt32(cx, *vp, &sys->cfg->sys_misc);
 			break;
+		case SYS_PROP_OP_AVAIL:
+			if(!set_sysop_availability(sys->cfg, JSVAL_TO_BOOLEAN(*vp))) {
+				JS_ReportError(cx, "%s: Failed to set sysop availability", __FUNCTION__);
+				return JS_FALSE;
+			}
+			break;
 	}
 #endif
 
-	return(TRUE);
+	return JS_TRUE;
 }
 
 
@@ -374,6 +384,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 #ifndef JSDOOR
 	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310  },
 	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
+	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801  },
 	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
 	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
 	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
@@ -452,6 +463,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"operator name"
+	,"operator is available for chat"
 	,"system QWK-ID (for QWK packets)"
 	,"settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Internet address (host or domain name)"
@@ -1590,6 +1602,59 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_notify(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
+	jsval *argv=JS_ARGV(cx, arglist);
+	int32		usernumber=1;
+	JSString*	js_subj;
+	JSString*	js_msg;
+	char*		subj;
+	char*		msg = NULL;
+	jsrefcount	rc;
+	BOOL		ret;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	js_system_private_t* sys;
+	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
+		return JS_FALSE;
+
+	JS_ValueToInt32(cx,argv[0],&usernumber);
+	if(usernumber<1)
+		usernumber=1;
+
+	if((js_subj=JS_ValueToString(cx, argv[1]))==NULL) 
+		return JS_FALSE;
+
+	if(argc > 2) {
+		if((js_msg=JS_ValueToString(cx, argv[2]))==NULL) 
+			return JS_FALSE;
+
+		JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
+		HANDLE_PENDING(cx, msg);
+		if(msg==NULL)
+			return JS_TRUE;
+	}
+
+	JSSTRING_TO_MSTRING(cx, js_subj, subj, NULL);
+	HANDLE_PENDING(cx,subj);
+	if(subj==NULL) {
+		free(msg);
+		return JS_TRUE;
+	}
+
+	rc=JS_SUSPENDREQUEST(cx);
+	ret=notify(sys->cfg, usernumber, subj, msg)==0;
+	free(subj);
+	free(msg);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
@@ -1905,7 +1970,7 @@ js_killpid(JSContext *cx, uintN argc, jsval *arglist)
 
 static jsSyncMethodSpec js_system_functions[] = {
 #ifndef JSDOOR
-	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("number")
+	{"username",		js_username,		1,	JSTYPE_STRING,	JSDOCSTR("user_number")
 	,JSDOCSTR("returns name of user in specified user record <i>number</i>, or empty string if not found")
 	,311
 	},
@@ -1986,6 +2051,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("sends a user a short text message, delivered immediately or during next logon")
 	,310
 	},		
+	{"notify",			js_notify,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number, subject [,message_text]")
+	,JSDOCSTR("notify a user or operator via both email and a short text message about an important event")
+	,31801
+	},
 	{"newuser",			js_new_user,		1,	JSTYPE_ALIAS },
 	{"new_user",		js_new_user,		1,	JSTYPE_OBJECT,	JSDOCSTR("name/alias [,client object]")
 	,JSDOCSTR("creates a new user record, returns a new <a href=#User>User</a> object representing the new user account, on success.<br>"
@@ -1993,7 +2062,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	"client object is used if the argument is omitted)")
 	,310
 	},
-	{"del_user",		js_del_user,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("number")
+	{"del_user",		js_del_user,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("user_number")
 	,JSDOCSTR("delete the specified user account")
 	,316
 	},

@@ -182,6 +182,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static ulong active_clients(void)
 {
 	ulong i;
@@ -265,7 +270,7 @@ static int close_socket(SOCKET sock)
 	if(startup!=NULL && startup->socket_open!=NULL) 
 		startup->socket_open(startup->cbdata,FALSE);
 	if(result!=0)
-		lprintf(LOG_WARNING,"%04d !ERROR %d (%s) closing socket",sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
+		lprintf(LOG_WARNING,"%04d !ERROR %d closing socket: %s",sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
 
 	return(result);
 }
@@ -824,7 +829,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(!js_CreateUserObjects(js_cx, *glob, &scfg, /*user: */NULL, service_client->client, NULL, service_client->subscan)) 
 			break;
 
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, startup->host_name, SOCKLIB_DESC)==NULL) 
+		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL) 
 			break;
 
 		if(service_client->service->js_server_props.version[0]==0) {
@@ -1123,9 +1128,9 @@ static void js_service_thread(void* arg)
 	/* RUN SCRIPT */
 	SAFECOPY(fname,service->cmd);
 	truncstr(fname," ");
-	sprintf(spath,"%s%s",scfg.mods_dir,fname);
+	SAFEPRINTF2(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,fname);
+		SAFEPRINTF2(spath,"%s%s",scfg.exec_dir,fname);
 
 	js_init_args(js_cx, js_glob, service->cmd);
 
@@ -1241,9 +1246,9 @@ static void js_static_service_thread(void* arg)
 
 	SAFECOPY(fname,service->cmd);
 	truncstr(fname," ");
-	sprintf(spath,"%s%s",scfg.mods_dir,fname);
+	SAFEPRINTF2(spath,"%s%s",scfg.mods_dir,fname);
 	if(scfg.mods_dir[0]==0 || !fexist(spath))
-		sprintf(spath,"%s%s",scfg.exec_dir,fname);
+		SAFEPRINTF2(spath,"%s%s",scfg.exec_dir,fname);
 
 	do {
 		if((js_cx=js_initcx(js_runtime,INVALID_SOCKET,&service_client,&js_glob))==NULL) {
@@ -1652,7 +1657,7 @@ static void cleanup(int code)
 	if(WSAInitialized) {
 		char err[128];
 		if(WSACleanup()!=0) 
-			lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d (%s)",ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
+			lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d: %s",ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)));
 		WSAInitialized = FALSE;
 	}
 #endif
@@ -1699,15 +1704,15 @@ void service_udp_sock_cb(SOCKET sock, void *cbdata)
 	/* We need to set the REUSE ADDRESS socket option */
 	optval=TRUE;
 	if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char*)&optval,sizeof(optval))!=0) {
-		lprintf(LOG_ERR,"%04d !ERROR %d (%s) setting %s socket option"
-			,sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), serv->protocol);
+		lprintf(LOG_ERR,"%04d !ERROR %d setting %s socket option: %s"
+			,sock, ERROR_VALUE, serv->protocol, socket_strerror(socket_errno, err, sizeof(err)));
 		close_socket(sock);
 		return;
 	}
    #ifdef BSD
 	if(setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (char*)&optval,sizeof(optval))!=0) {
-		lprintf(LOG_ERR,"%04d !ERROR %d (%s) setting %s socket option"
-			,sock, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), serv->protocol);
+		lprintf(LOG_ERR,"%04d !ERROR %d setting %s socket option: %s"
+			,sock, ERROR_VALUE, serv->protocol, socket_strerror(socket_errno, err, sizeof(err)));
 		close_socket(sock);
 		return;
 	}
@@ -1832,16 +1837,12 @@ void DLLCALL services_thread(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 	   	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		MKDIR(scfg.temp_dir);
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
-		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
-
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 
 		if((t=checktime())!=0) {   /* Check binary time */
 			lprintf(LOG_ERR,"!TIME PROBLEM (%ld)",t);
@@ -2009,7 +2010,8 @@ void DLLCALL services_thread(void* arg)
 				else if(ERROR_VALUE == ENOTSOCK)
             		lprintf(LOG_NOTICE,"0000 Services sockets closed");
 				else
-					lprintf(LOG_WARNING,"0000 !ERROR %d (%s) selecting sockets",ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
+					lprintf(LOG_WARNING,"0000 !ERROR %d selecting sockets: %s"
+						, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 				continue;
 			}
 
@@ -2040,7 +2042,7 @@ void DLLCALL services_thread(void* arg)
 							,&client_addr.addr, &client_addr_len);
 						if(udp_len<1) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) recvfrom failed"
+							lprintf(LOG_WARNING,"%04d %s !ERROR %d recvfrom failed: %s"
 								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							continue;
 						}
@@ -2048,7 +2050,7 @@ void DLLCALL services_thread(void* arg)
 						if((client_socket = open_socket(service[i].set->socks[j].domain, SOCK_DGRAM, &service[i]))
 							==INVALID_SOCKET) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) opening socket"
+							lprintf(LOG_ERR,"%04d %s !ERROR %d opening socket: %s"
 								,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							continue;
 						}
@@ -2061,7 +2063,7 @@ void DLLCALL services_thread(void* arg)
 						if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEADDR
 							,(char*)&optval,sizeof(optval))!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) setting socket option"
+							lprintf(LOG_ERR,"%04d %s !ERROR %d setting socket option: %s"
 								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
@@ -2070,7 +2072,7 @@ void DLLCALL services_thread(void* arg)
 						if(setsockopt(client_socket,SOL_SOCKET,SO_REUSEPORT
 							,(char*)&optval,sizeof(optval))!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) setting socket option"
+							lprintf(LOG_ERR,"%04d %s !ERROR %d setting socket option: %s"
 								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
@@ -2082,16 +2084,16 @@ void DLLCALL services_thread(void* arg)
 						result=bind(client_socket, &addr.addr, addr_len);
 						if(result==SOCKET_ERROR) {
 							/* Failed to re-bind to same port number, use user port */
-							lprintf(LOG_NOTICE,"%04d %s ERROR %d (%s) re-binding socket to port %u failed, "
-								"using user port"
-								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)), service[i].port);
+							lprintf(LOG_NOTICE,"%04d %s ERROR %d re-binding socket to port %u failed, "
+								"using user port: %s"
+								,client_socket, service[i].protocol, ERROR_VALUE, service[i].port, socket_strerror(socket_errno,error,sizeof(error)));
 							inet_setaddrport(&addr, 0);
 							result=bind(client_socket, (struct sockaddr *) &addr, addr_len);
 						}
 						if(result!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) re-binding socket to port %u"
-								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)), service[i].port);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d re-binding socket to port %u: %s"
+								,client_socket, service[i].protocol, ERROR_VALUE, service[i].port, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
 						}
@@ -2100,7 +2102,7 @@ void DLLCALL services_thread(void* arg)
 						if(connect(client_socket
 							,(struct sockaddr *)&client_addr, client_addr_len)!=0) {
 							FREE_AND_NULL(udp_buf);
-							lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) connect failed"
+							lprintf(LOG_ERR,"%04d %s !ERROR %d connect failed: %s"
 								,client_socket, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 							close_socket(client_socket);
 							continue;
@@ -2114,7 +2116,7 @@ void DLLCALL services_thread(void* arg)
 								lprintf(LOG_NOTICE,"%04d %s socket closed while listening"
 									,service[i].set->socks[j].sock, service[i].protocol);
 							else
-								lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) accepting connection" 
+								lprintf(LOG_WARNING,"%04d %s !ERROR %d accepting connection: %s" 
 									,service[i].set->socks[j].sock, service[i].protocol, ERROR_VALUE, socket_strerror(socket_errno,error,sizeof(error)));
 	#ifdef _WIN32
 							if(WSAGetLastError()==WSAENOBUFS)	/* recycle (re-init WinSock) on this error */

@@ -197,31 +197,31 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 							: strlen(cfg.dir[dirnum]->lname)+17;
 						if(i>8 || j>8) d++;
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("ÉÍ");            /* use to start with \r\n */
+						bputs("ï¿½ï¿½");            /* use to start with \r\n */
 						for(c=0;c<d;c++)
-							outchar('Í');
-						bputs("»\r\nº ");
+							outchar('ï¿½');
+						bputs("ï¿½\r\nï¿½ ");
 						sprintf(hdr,text[BoxHdrLib],i+1,cfg.lib[usrlib[i]]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("º\r\nº ");
+						bputs("ï¿½\r\nï¿½ ");
 						sprintf(hdr,text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("º\r\nº ");
+						bputs("ï¿½\r\nï¿½ ");
 						sprintf(hdr,text[BoxHdrFiles], file_count);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("º\r\nÈÍ");
+						bputs("ï¿½\r\nï¿½ï¿½");
 						for(c=0;c<d;c++)
-							outchar('Í');
-						bputs("¼\r\n"); 
+							outchar('ï¿½');
+						bputs("ï¿½\r\n"); 
 					}
 				}
 			}

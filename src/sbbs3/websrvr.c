@@ -740,6 +740,11 @@ static BOOL winsock_startup(void)
 
 #endif
 
+static char* server_host_name(void)
+{
+	return startup->host_name[0] ? startup->host_name : scfg.sys_inetaddr;
+}
+
 static void status(char* str)
 {
 	if(startup!=NULL && startup->status!=NULL)
@@ -1513,18 +1518,19 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 
 		if(session->req.error_dir) {
 			/* We have a custom error directory from webctrl.ini look there first */
-			sprintf(sbuf,"%s%s%s",session->req.error_dir,error_code,startup->ssjs_ext);
+			SAFEPRINTF3(sbuf,"%s%s%s",session->req.error_dir,error_code,startup->ssjs_ext);
 			if(stat(sbuf,&sb)) {
 				/* No custom .ssjs error message... check for custom .html */
-				sprintf(sbuf2,"%s%s.html",session->req.error_dir,error_code);
+				SAFEPRINTF2(sbuf2,"%s%s.html",session->req.error_dir,error_code);
 				if(stat(sbuf2,&sb)) {
 					/* Nope, no custom .html error either, check for global ssjs one */
-					sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+					SAFEPRINTF3(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
 				}
 			}
 		}
-		else
-			sprintf(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+		else {
+			SAFEPRINTF3(sbuf,"%s%s%s",error_dir,error_code,startup->ssjs_ext);
+		}
 		if(!stat(sbuf,&sb)) {
 			lprintf(LOG_INFO,"%04d Using SSJS error page",session->socket);
 			session->req.dynamic=IS_SSJS;
@@ -2797,7 +2803,7 @@ static BOOL parse_headers(http_session_t * session)
 	}
 	if(content_len)
 		session->req.post_len = content_len;
-	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : startup->host_name );
+	add_env(session,"SERVER_NAME",session->req.host[0] ? session->req.host : server_host_name() );
 	return TRUE;
 }
 
@@ -3125,12 +3131,12 @@ static BOOL get_request_headers(http_session_t * session)
 	}
 
 	if(!(session->req.vhost[0])) {
-		SAFECOPY(session->req.vhost, startup->host_name);
+		SAFECOPY(session->req.vhost, server_host_name());
 		/* Lower-case for normalization */
 		strlwr(session->req.vhost);
 	}
 	if(!(session->req.host[0])) {
-		SAFECOPY(session->req.host, startup->host_name);
+		SAFECOPY(session->req.host, server_host_name());
 		/* Lower-case for normalization */
 		strlwr(session->req.host);
 	}
@@ -3606,7 +3612,7 @@ static BOOL check_request(http_session_t * session)
 		p=last_slash;
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
-		sprintf(str,"%saccess.ars",curdir);
+		SAFEPRINTF(str,"%saccess.ars",curdir);
 		if(!stat(str,&sb)) {
 			/* NEVER serve up an access.ars file */
 			lprintf(LOG_WARNING,"%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.",session->socket);
@@ -3628,7 +3634,7 @@ static BOOL check_request(http_session_t * session)
 			/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
 			truncsp(session->req.ars);
 		}
-		sprintf(str,"%swebctrl.ini",curdir);
+		SAFEPRINTF(str,"%swebctrl.ini",curdir);
 		if(!stat(str,&sb)) {
 			/* NEVER serve up a webctrl.ini file */
 			if(!strcmp(path,str)) {
@@ -5764,7 +5770,7 @@ js_initcx(http_session_t *session)
 	if(!js_CreateCommonObjects(js_cx, &scfg, NULL
 									,NULL						/* global */
 									,uptime						/* system */
-									,startup->host_name			/* system */
+									,server_host_name()			/* system */
 									,SOCKLIB_DESC				/* system */
 									,&session->js_callback		/* js */
 									,&startup->js				/* js */
@@ -6909,7 +6915,8 @@ void DLLCALL web_server(void* arg)
 	http_session_t *	session=NULL;
 	void			*acc_type;
 	char			*ssl_estr;
-	int			lvl;
+	int				lvl;
+	int				i;
 
 	startup=(web_startup_t*)arg;
 
@@ -6950,6 +6957,8 @@ void DLLCALL web_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		protected_uint32_init(&active_clients,0);
+
 		/* Setup intelligent defaults */
 		if(startup->port==0)					startup->port=IPPORT_HTTP;
 		if(startup->root_dir[0]==0)				SAFECOPY(startup->root_dir,WEB_DEFAULT_ROOT_DIR);
@@ -7028,13 +7037,12 @@ void DLLCALL web_server(void* arg)
 		else
 			SAFECOPY(scfg.temp_dir,"../temp");
 		prep_dir(startup->ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
-		MKDIR(scfg.temp_dir);
-		if(!isdir(scfg.temp_dir)) {
-			lprintf(LOG_CRIT,"!Invalid temp directory: %s", scfg.temp_dir);
+		if((i = md(scfg.temp_dir)) != 0) {
+			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
+		lprintf(LOG_DEBUG,"Temporary file directory: %s", scfg.temp_dir);
 		lprintf(LOG_DEBUG,"Root directory: %s", root_dir);
 		lprintf(LOG_DEBUG,"Error directory: %s", error_dir);
 		lprintf(LOG_DEBUG,"CGI directory: %s", cgi_dir);
@@ -7067,13 +7075,9 @@ void DLLCALL web_server(void* arg)
 			iniCloseFile(fp);
 		}
 
-		if(startup->host_name[0]==0)
-			SAFECOPY(startup->host_name,scfg.sys_inetaddr);
-
 		if(uptime==0)
 			uptime=time(NULL);	/* this must be done *after* setting the timezone */
 
-		protected_uint32_init(&active_clients,0);
 		update_clients();
 
 		/* open a socket and wait for a client */

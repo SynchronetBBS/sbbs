@@ -549,7 +549,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	SYNC;
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {
-		sprintf(str,"%s%s",path,dirent->d_name);
+		SAFEPRINTF2(str,"%s%s",path,dirent->d_name);
 		if(isdir(str))
 			continue;
 #ifdef _WIN32

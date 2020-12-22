@@ -304,10 +304,16 @@ if(js.global.console != undefined)		document_object("console"	,console);
 if(js.global.msg_area != undefined)		document_object("msg_area"	,msg_area);
 if(js.global.file_area != undefined)	document_object("file_area"	,file_area);
 if(js.global.xtrn_area != undefined)	document_object("xtrn_area"	,xtrn_area);
-if(js.global.uifc != undefined)			document_object("uifc"		,uifc);
 if(js.global.MsgBase != undefined)		document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
 if(js.global.File != undefined)			document_object("File"		,new File(system.devnull), "class");
 if(js.global.Queue != undefined)		document_object("Queue"		,new Queue(), "class");
+if(js.global.Socket != undefined) {
+	var sock=new Socket();
+	sock.close();
+	if(js.global.client != undefined)
+		sock.descriptor=client.socket.descriptor;
+	if(sock != undefined)		document_object("Socket"	,sock, "class");
+}
 if(js.global.ConnectedSocket != undefined) {
 	var sock=new ConnectedSocket("www.google.com", 80);
 	sock.close();
@@ -317,13 +323,6 @@ if(js.global.ListeningSocket != undefined) {
 	var sock=new ListeningSocket("localhost", 0, "jsdocs");
 	sock.close();
 	if(sock != undefined)		document_object("ListeningSocket"	,sock, "class");
-}
-if(js.global.Socket != undefined) {
-	var sock=new Socket();
-	sock.close();
-	if(js.global.client != undefined)
-		sock.descriptor=client.socket.descriptor;
-	if(sock != undefined)		document_object("Socket"	,sock, "class");
 }
 if(js.global.COM != undefined) {
 	var com;
@@ -339,13 +338,13 @@ if(js.global.CryptContext != undefined) {
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
 }
 if(js.global.CryptKeyset != undefined) {
-	var cks = new CryptKeyset("/tmp/tmpkeyset", CryptKeyset.KEYOPT.CREATE);
+	var cks = new CryptKeyset(system.temp_dir + "tmpkeyset", CryptKeyset.KEYOPT.CREATE);
 	if(cks != undefined)			document_object("CryptKeyset",cks, "class");
 }
 if(js.global.conio != undefined) {
 	document_object("conio",js.global.conio);
 }
-
+if(js.global.uifc != undefined)			document_object("uifc"		,uifc);
 
 f.writeln("</ol>");
 

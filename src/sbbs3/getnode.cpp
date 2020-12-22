@@ -109,6 +109,18 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	return(0);
 }
 
+static int getpagingnode(scfg_t* cfg)
+{
+	for(int i = 1; i <= cfg->sys_nodes; i++) {
+		node_t node;
+		if(i == cfg->node_num)
+			continue;
+		if(getnodedat(cfg, i, &node, FALSE, NULL) == 0 && node.action == NODE_PAGE && node.aux == cfg->node_num)
+			return i;
+	}
+	return 0;
+}
+
 /****************************************************************************/
 /* Synchronizes all the nodes knowledge of the other nodes' actions, mode,  */
 /* status and other flags.                                                  */
@@ -183,6 +195,19 @@ void sbbs_t::nodesync(bool clearline)
 		SAVELINE;
 		privchat(true);
 		RESTORELINE;
+	}
+
+	if(thisnode.misc&NODE_FCHAT) { // forced into private chat
+		int n = getpagingnode(&cfg);
+		if(n) {
+			SAVELINE;
+			privchat(true, n);
+			RESTORELINE;
+		}
+		if(getnodedat(cfg.node_num, &thisnode, true)==0) {
+			thisnode.misc &= ~NODE_FCHAT;
+			putnodedat(cfg.node_num, &thisnode); 
+		}
 	}
 		
 	if(sys_status&SS_USERON && memcmp(&nodesync_user,&useron,sizeof(user_t))) {
@@ -644,7 +669,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 		outchar(')'); 
 	}
 	if(SYSOP && ((node->misc
-		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN|NODE_LCHAT))
+		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN|NODE_LCHAT|NODE_FCHAT))
 		|| node->status==NODE_QUIET)) {
 		bputs(" [");
 		if(node->misc&NODE_ANON)
@@ -663,6 +688,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('D');
 		if(node->misc&NODE_LCHAT)
 			outchar('C');
+		if(node->misc&NODE_FCHAT)
+			outchar('F');
 		outchar(']'); 
 	}
 	if(node->errors && SYSOP) {

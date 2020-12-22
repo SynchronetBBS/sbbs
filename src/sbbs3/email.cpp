@@ -91,11 +91,15 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		bputs(text[UnknownUser]);
 		return(false); 
 	}
-	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD)) {
+	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest&FLAG('M'))) {
 		getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str);
-		bprintf(text[UserNetMail],str);
-		if((mode & WM_FORCEFWD) || text[ForwardMailQ][0]==0 || yesno(text[ForwardMailQ])) /* Forward to netmail address */
-			return(netmail(str, subj, mode, resmb, remsg));
+		if(is_supported_netmail_addr(&cfg, str)) {
+			bprintf(text[UserNetMail],str);
+			if((mode & WM_FORCEFWD) || yesno(text[ForwardMailQ])) /* Forward to netmail address */
+				return(netmail(str, subj, mode, resmb, remsg));
+		} else {
+			bprintf(text[InvalidNetMailAddr], str);
+		}
 	}
 	if(sys_status&SS_ABORT) {
 		bputs(text[Aborted]);
@@ -303,7 +307,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER,startup->host_name);
+	smb_hfield_str(&msg,SENDERSERVER,server_host_name());
 
 	smb_hfield_str(&msg,SUBJECT,title);
 

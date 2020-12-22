@@ -1,0 +1,45 @@
+
+Subj : Synchronet v3.17b release
+To   : All
+From : Digital Man #1
+Date : Tue Jan 01 2019 02:45 pm PST
+
+Synchronet v3.17, under development since the release of v3.16c in 2015, has
+been officially released and dubbed v3.17b (no, the 'b' is not for beta).
+
+What changed (since v3.16)?
+
+- IPv6 support
+- TLS everywhere (HTTPS, FTPS, SMTPS, POP3S, NNTPS, etc.)
+- SSH server reliability and compatibility improvements
+- User avatars (across local and networked message bases)
+  http://wiki.synchro.net/module:avatars
+- Polls and message up/down voting (across local and networked message bases)
+- Integrated Fido/BinkP mailer (BinkIT.js)
+  http://wiki.synchro.net/module:binkit
+- Revamped inter-bbs instant messaging
+  http://wiki.synchro.net/module:privatemsg
+- Revamped BBS list module (sbbslist v4)
+  http://wiki.synchro.net/module:sbbslist
+- Custom/loadable/contextual terminal fonts
+  http://wiki.synchro.net/config:fonts.ini
+- Custom terminal palettes (full XBin support)
+  http://wiki.synchro.net/ref:xbin
+- CBM/PETSCII terminal support (including 40-column terminals)
+- echicken's web interface v4 included (current snapshot)
+- Numerous performance and usability improvements and bug-fixes
+
+The fresh installer for Windows is at ftp://ftp.synchro.net/sbbs317b.zip
+The upgrade package (e.g. from v3.16c) is at ftp://ftp.synchro.net/sbup317b.zip
+
+If you're already running v3.17a (development version), just update according
+to the instructions here: http://wiki.synchro.net/install:dev
+
+Many thanks to Deuce, echicken, Nelgin, and all the other active sysops, users,
+testers, contributors and providers of helpful feedback!
+
+                                            HYdigital mann
+
+Synchronet/BBS Terminology Definition #6:
+BinkD = Binkley Daemon
+Norco, CA WX: 53.4øF, 17.0% humidity, 7 mph SSE wind, 0.00 inches rain/24hrs

@@ -9,7 +9,7 @@ object ClientForm: TClientForm
   DragKind = dkDock
   DragMode = dmAutomatic
   Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
+  Font.Color = clWhite
   Font.Height = -10
   Font.Name = 'MS Sans Serif'
   Font.Style = []
@@ -23,6 +23,7 @@ object ClientForm: TClientForm
     Width = 615
     Height = 307
     Align = alClient
+    Color = clBlack
     Columns = <
       item
         Caption = 'Socket'

@@ -80,14 +80,25 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 /****************************************************************************/
 ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 {
-	char str[128];
-	ulong l;
+	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
+		char path[MAX_PATH + 1];
+		off_t l;
 
-	sprintf(str,"%s%s.sid",cfg->sub[subnum]->data_dir,cfg->sub[subnum]->code);
-	l=(long)flength(str);
-	if((long)l==-1)
-		return(0);
-	return(l/sizeof(idxrec_t));
+		SAFEPRINTF2(path, "%s%s.sid", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
+		l = flength(path);
+		if(l < sizeof(idxrec_t))
+			return 0;
+		return l / sizeof(idxrec_t);
+	}
+	smb_t smb = {{0}};
+	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
+	smb.retry_time = cfg->smb_retry_time;
+	smb.subnum = subnum;
+	if(smb_open_index(&smb) != SMB_SUCCESS)
+		return 0;
+	size_t result = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
+	smb_close(&smb);
+	return result;
 }
 
 BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)

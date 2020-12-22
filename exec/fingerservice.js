@@ -62,6 +62,8 @@ if(options.findfile === undefined)
 	options.findfile = false;
 if(options.bbslist === undefined)
 	options.bbslist = false;
+if(options.json_dbs === undefined)
+	options.json_dbs = true;
 
 load("nodedefs.js");
 load("sockdefs.js");
@@ -382,6 +384,18 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			}
 			break;
 
+		case "json-dbs":
+			var f = new File(system.ctrl_dir + "json-service.ini");
+			if(f.open("r")) {
+				var obj = f.iniGetAllObjects();
+				for(var i in obj) {
+					if(!obj[i].read && !obj[i].write)
+						writeln(obj[i].name);
+				}
+				f.close();
+			}
+			break;
+
 		default:
 			if(options.bbslist && request.indexOf("bbs:") == 0) {
 				var list = sbbslist.read_list();
@@ -406,6 +420,8 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 			writeln("\tsockopts");
 			writeln("\tnodelist");
 			writeln("\tactive-users.json");
+			if(options.json_dbs)
+				writeln("\tjson-dbs");
 			if(options.findfile)
 				writeln("\tfindfile");
 			if(options.bbslist) {

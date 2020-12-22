@@ -396,6 +396,8 @@ typedef struct _PACK {		/* Time with time-zone */
 
 } when_t;
 
+typedef uint16_t smb_msg_attr_t;
+
 typedef struct _PACK {		/* Index record */
 
 	union {
@@ -409,7 +411,7 @@ typedef struct _PACK {		/* Index record */
 			uint32_t	remsg;	/* number of message this vote is in response to */
 		};
 	};
-	uint16_t	attr;			/* attributes (read, permanent, etc.) */
+	smb_msg_attr_t	attr;		/* attributes (read, permanent, etc.) */
 	uint32_t	offset; 		/* byte-offset of msghdr in header file */
 	uint32_t	number; 		/* number of message (1 based) */
 	uint32_t	time;			/* time/date message was imported/posted */

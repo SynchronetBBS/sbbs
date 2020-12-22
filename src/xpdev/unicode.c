@@ -354,6 +354,7 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case UNICODE_ACUTE_ACCENT:								return '\'';
 
 		case UNICODE_BROKEN_BAR:								return '|';
+		case UNICODE_MACRON:									return '~';
 
 		case UNICODE_CENT_SIGN:									return CP437_CENT_SIGN;
 		case UNICODE_POUND_SIGN:								return CP437_POUND_SIGN;
@@ -686,6 +687,8 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 
 		case 0x2594: // Upper One Eighth Block
 			return '\xDF';
+
+		case UNICODE_KATAKANA_LETTER_TU:					return CP437_BLACK_SMILING_FACE;
 
 		case UNICODE_SMALL_COMMA:				
 		case UNICODE_SMALL_IDEOGRAPHIC_COMMA:				return ',';

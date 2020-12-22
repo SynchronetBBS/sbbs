@@ -218,6 +218,11 @@ static char* prop_desc[] = {
 #endif
 	,"global (top level) object - <small>READ ONLY</small>"
 	/* New properties go here... */
+	,"full path and filename of JS file executed"
+	,"JS filename executed (with no path)"
+	,"directory of executed JS file"
+	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
+	,"global scope for this script"
 	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
 		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
 		"and is searched accordingly. "
@@ -226,11 +231,6 @@ static char* prop_desc[] = {
 		"exec/load/somefile.js<br>"
 		"mods/somefile.js<br>"
 		"exec/somefile.js<br>"
-	,"full path and filename of JS file executed"
-	,"JS filename executed (with no path)"
-	,"directory of executed JS file"
-	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
-	,"global scope for this script"
 	,NULL
 };
 #endif

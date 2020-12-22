@@ -2192,4 +2192,46 @@ uint32_t SMBCALL smb_last_in_thread(smb_t* smb, smbmsg_t* remsg)
 	return smb_last_in_branch(smb, &msg);
 }
 
+SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t attr)
+{
+	switch (attr&MSG_POLL_VOTE_MASK) {
+		case 0:
+			return SMB_MSG_TYPE_NORMAL;
+		case MSG_POLL:
+			return SMB_MSG_TYPE_POLL;
+		case MSG_POLL_CLOSURE:
+			return SMB_MSG_TYPE_POLL_CLOSURE;
+		default:
+			return SMB_MSG_TYPE_BALLOT;
+	}
+}
+
+// Return count of messages of the desired types (bit-mask), as read from index
+// Does so as fast as possible, without locking
+SMBEXPORT size_t SMBCALL smb_msg_count(smb_t* smb, unsigned types)
+{
+	off_t index_length = filelength(fileno(smb->sid_fp));
+	if(index_length < sizeof(idxrec_t))
+		return 0;
+
+	uint32_t total = index_length / sizeof(idxrec_t);
+	if(total < 1)
+		return 0;
+
+	idxrec_t*	idx;
+	if((idx = calloc(total, sizeof(*idx))) == NULL)
+		return 0;
+
+	rewind(smb->sid_fp);
+	size_t result = fread(idx, sizeof(*idx), total, smb->sid_fp);
+
+	size_t count = 0;
+	for(size_t i = 0; i < result; i++) {
+		if(types & (1 << smb_msg_type(idx[i].attr)))
+			count++;
+	}
+	free(idx);
+	return count;
+}
+
 /* End of SMBLIB.C */

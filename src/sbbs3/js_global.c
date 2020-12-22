@@ -75,7 +75,7 @@ BOOL DLLCALL js_argc(JSContext *cx, uintN argc, uintN min)
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
-	char		err[128];
+	char		err[256];
     jsint       tiny;
 	JSString*	js_str;
 
@@ -3047,7 +3047,7 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=fcopy(src,dest);
+	ret = CopyFile(src, dest, /* failIfExists: */FALSE);
 	free(src);
 	free(dest);
 	JS_RESUMEREQUEST(cx, rc);
@@ -3819,6 +3819,46 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 
 		return(JS_TRUE);
 	}
+}
+
+static JSBool
+js_socket_strerror(JSContext *cx, uintN argc, jsval *arglist)
+{
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	jsval *argv = JS_ARGV(cx, arglist);
+	int32 err = 0;
+	if(!JS_ValueToInt32(cx, argv[0], &err))
+		return JS_FALSE;
+
+	char		str[256];
+	JSString*	js_str;
+	if((js_str = JS_NewStringCopyZ(cx, socket_strerror(err, str, sizeof(str)))) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
+js_strerror(JSContext *cx, uintN argc, jsval *arglist)
+{
+ 	if(!js_argc(cx, argc, 1))
+		return JS_FALSE;
+
+	jsval *argv = JS_ARGV(cx, arglist);
+	int32 err = 0;
+	if(!JS_ValueToInt32(cx, argv[0], &err))
+		return JS_FALSE;
+
+	char		str[256];
+	JSString*	js_str;
+	if((js_str = JS_NewStringCopyZ(cx, safe_strerror(err, str, sizeof(str)))) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
 }
 
 static JSBool
@@ -4702,10 +4742,18 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("checks an array of socket objects or descriptors for read or write ability (default is <i>read</i>), "
 		"default timeout value is 0.0 seconds (immediate timeout), "
 		"returns an array of 0-based index values into the socket array, representing the sockets that were ready for reading or writing, or <i>null</i> on error. "
-		"If multiple arrays of sockets are passed, they are presumet to be in the order of read, write, and except.  In this case, the write parameter is ignored "
+		"If multiple arrays of sockets are passed, they are presumed to be in the order of read, write, and except.  In this case, the write parameter is ignored "
 		"and an object is returned instead with up to three properties \"read\", \"write\", and \"except\", corresponding to the passed arrays.  Empty passed "
 		"arrays will not have a corresponding property in the returned object.")
 	,311
+	},
+	{"socket_strerror", js_socket_strerror,	1,	JSTYPE_STRING,	JSDOCSTR("error")
+		,JSDOCSTR("get the description(string representation) of a numeric socket error value (e.g. <tt>socket_errno</tt>)")
+		,31802
+	},
+	{"strerror",		js_strerror,		1,	JSTYPE_STRING,	JSDOCSTR("error")
+		,JSDOCSTR("get the description(string representation) of a numeric system error value (e.g. <tt>errno</tt>)")
+		,31802
 	},
 	{"mkdir",			js_mkdir,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("path/directory")
 	,JSDOCSTR("make a directory")

@@ -642,7 +642,10 @@ ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 		return(0);
 	}
-	total=(long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
+	if(cfg.sub[subnum]->misc & SUB_NOVOTING)
+		total = (long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
+	else
+		total = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);
 	if(ptr)

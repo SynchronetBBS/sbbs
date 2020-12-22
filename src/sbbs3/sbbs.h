@@ -643,6 +643,7 @@ public:
 	bool	gettimeleft_inside;
 
 	/* str.cpp */
+	char*	server_host_name(void);
 	char*	timestr(time_t);
 	char*	datestr(time_t);
     char	timestr_output[60];
@@ -926,7 +927,7 @@ public:
 	void	localguru(char *guru, int gurunum);
 	bool	sysop_page(void);
 	bool	guru_page(void);
-	void	privchat(bool local=false);
+	void	privchat(bool forced=false, int node_num=0);
 	bool	chan_access(uint cnum);
 	int		getnodetopage(int all, int telegram);
 
@@ -1285,6 +1286,7 @@ extern "C" {
 	DLLEXPORT void		DLLCALL free_text(char* text[]);
 	DLLEXPORT ushort	DLLCALL sys_timezone(scfg_t* cfg);
 	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
+	DLLEXPORT int 		DLLCALL md(const char *path);
 	DLLEXPORT int		DLLCALL smb_storage_mode(scfg_t*, smb_t*);
 	DLLEXPORT BOOL		DLLCALL smb_init_sub(scfg_t*, smb_t*, unsigned int dirnum);
 	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
@@ -1322,6 +1324,9 @@ extern "C" {
 
 	/* qwk.cpp */
 	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);
+
+	/* netmail.cpp */
+	DLLEXPORT BOOL		is_supported_netmail_addr(scfg_t*, const char* addr);
 
 	/* con_out.cpp */
 	unsigned char		cp437_to_petscii(unsigned char);
@@ -1528,7 +1533,6 @@ int		pstrcmp(const char **str1, const char **str2);  /* Compares pointers to poi
 int		strsame(const char *str1, const char *str2);	/* Compares number of same chars */
 
 /* load_cfg.c */
-BOOL 	md(char *path);
 char*	prep_code(char *str, const char* prefix);
 
 #ifdef SBBS /* These aren't exported */

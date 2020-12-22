@@ -1741,10 +1741,8 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* socket_prop_desc[] = {
-	/* statically-defined properties: */
-	 "array of socket option names supported by the current platform"
 	/* Regular properties */
-	,"error status for the last socket operation that failed - <small>READ ONLY</small>"
+	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"error description for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
 	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
@@ -1763,6 +1761,9 @@ static char* socket_prop_desc[] = {
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
 	,"set to <i>true</i> to enable SSL as a client on the socket"
 	,"set to <i>true</i> to enable SSL as a server on the socket"
+
+	/* statically-defined properties: */
+	,"array of socket option names supported by the current platform"
 	,NULL
 };
 #endif
@@ -2090,7 +2091,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	310 },
 	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	310 },
 	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	310 },
-	{	"family"			,SOCK_PROP_FAMILY		,SOCK_PROP_FAMILY,	318 },
+	{	"family"			,SOCK_PROP_FAMILY		,SOCK_PROP_FLAGS,	318 },
 	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311 },
 	{	"ssl_session"		,SOCK_PROP_SSL_SESSION	,JSPROP_ENUMERATE,	316	},
 	{	"ssl_server"		,SOCK_PROP_SSL_SERVER	,JSPROP_ENUMERATE,	316	},
@@ -2699,9 +2700,6 @@ connected:
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineSocketOptionsArray(cx, obj, type))
-		return(JS_FALSE);
-
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for outgoing TCP/IP socket communications",317);
 	js_DescribeSyncConstructor(cx,obj,"To create a new ConnectedSocket object: "
@@ -2716,6 +2714,9 @@ connected:
 		);
 	JS_DefineProperty(cx,obj,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
+
+	if(!js_DefineSocketOptionsArray(cx, obj, type))
+		return(JS_FALSE);
 
 	dbprintf(FALSE, p, "object constructed");
 	return(JS_TRUE);
@@ -3000,9 +3001,6 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineSocketOptionsArray(cx, obj, type))
-		return(JS_FALSE);
-
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for TCP/IP socket communications",310);
 	js_DescribeSyncConstructor(cx,obj,"To create a new Socket object: "
@@ -3015,6 +3013,9 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
 #endif
+
+	if(!js_DefineSocketOptionsArray(cx, obj, type))
+		return(JS_FALSE);
 
 	dbprintf(FALSE, p, "object constructed");
 	return(JS_TRUE);

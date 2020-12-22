@@ -47,7 +47,6 @@ int		nopen(const char* str, int access);
 FILE *	fnopen(int* file, const char* str, int access);
 BOOL	ftouch(const char* fname);
 BOOL	fmutex(const char* fname, const char* text, long max_age);
-BOOL	fcopy(const char* src, const char* dest);
 BOOL	fcompare(const char* fn1, const char* fn2);
 BOOL	backup(const char* org, int backup_level, BOOL ren);
 

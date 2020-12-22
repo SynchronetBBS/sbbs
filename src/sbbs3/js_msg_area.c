@@ -43,8 +43,8 @@
 
 static char* msg_area_prop_desc[] = {
 	  "message area settings (bitfield) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	  "FidoNet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	  "Internet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	 ,"FidoNet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	 ,"Internet NetMail settings (bitfield) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,NULL
 };
 
@@ -447,7 +447,7 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			grp_index=-1;
 			if(p->user==NULL || chk_ar(p->cfg,p->cfg->grp[l]->ar,p->user,p->client)) {
 
-				if(!JS_GetArrayLength(cx, grp_list, &grp_index))
+				if(!JS_GetArrayLength(cx, grp_list, (jsuint*)&grp_index))
 					return JS_FALSE;
 
 				if(!JS_SetElement(cx, grp_list, grp_index, &val))
@@ -538,7 +538,7 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				sub_index=-1;
 				if(p->user==NULL || can_user_access_sub(p->cfg,d,p->user,p->client)) {
 
-					if(!JS_GetArrayLength(cx, sub_list, &sub_index))
+					if(!JS_GetArrayLength(cx, sub_list, (jsuint*)&sub_index))
 						return JS_FALSE;
 
 					if(!JS_SetElement(cx, sub_list, sub_index, &val))

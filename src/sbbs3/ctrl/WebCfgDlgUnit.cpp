@@ -82,6 +82,10 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
         TlsEnableCheckBox->Checked = true;
     else
         TlsEnableCheckBox->Checked = false;
+    if(MainForm->web_startup.options&WEB_OPT_HSTS_SAFE)
+        HSTSEnableCheckBox->Checked = true;
+    else
+        HSTSEnableCheckBox->Checked = false;
 
     AuthTypesEdit->Text = AnsiString(MainForm->web_startup.default_auth_list);
     HtmlRootEdit->Text=AnsiString(MainForm->web_startup.root_dir);
@@ -135,6 +139,10 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
         MainForm->web_startup.options |= WEB_OPT_ALLOW_TLS;
     else
         MainForm->web_startup.options &= ~WEB_OPT_ALLOW_TLS;
+    if(HSTSEnableCheckBox->Checked)
+        MainForm->web_startup.options |= WEB_OPT_HSTS_SAFE;
+    else
+        MainForm->web_startup.options &= ~WEB_OPT_HSTS_SAFE;
 
     SAFECOPY(MainForm->web_startup.default_auth_list
         ,AuthTypesEdit->Text.c_str());
@@ -281,6 +289,7 @@ void __fastcall TWebCfgDlg::TlsEnableCheckBoxClick(TObject *Sender)
     TlsInterfaceLabel->Enabled = enabled;
     TlsPortEdit->Enabled = enabled;
     TlsPortLabel->Enabled = enabled;
+    HSTSEnableCheckBox->Enabled = enabled;
 }
 //---------------------------------------------------------------------------
 

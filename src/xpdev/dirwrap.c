@@ -1218,3 +1218,38 @@ int DLLCALL mkpath(const char* path)
 
 	return(result);
 }
+
+#if !defined _WIN32
+BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
+{
+	uint8_t	buf[256 * 1024];
+	FILE*	in;
+	FILE*	out;
+	BOOL	success=TRUE;
+
+	if(failIfExists && fexist(dest))
+		return FALSE;
+	if((in=fopen(src,"rb"))==NULL)
+		return FALSE;
+	if((out=fopen(dest,"wb"))==NULL) {
+		fclose(in);
+		return FALSE;
+	}
+
+	while(!feof(in)) {
+		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), in);
+		if(rd < 1)
+			break;
+		if(fwrite(buf, sizeof(uint8_t), rd, out) != rd) {
+			success = FALSE;
+			break;
+		}
+		MAYBE_YIELD();
+	}
+
+	fclose(in);
+	fclose(out);
+
+	return success;
+}
+#endif
