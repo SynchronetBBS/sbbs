@@ -949,7 +949,7 @@ public:
 	bool	backup(const char* fname, int backup_level, bool rename);
 
 	/* upload.cpp */
-	bool	uploadfile(file_t* f);
+	bool	uploadfile(smbfile_t* f);
 	char	sbbsfilename[128],sbbsfiledesc[128]; /* env vars */
 	bool	upload(uint dirnum);
     char	upload_lastdesc[LEN_FDESC+1];
@@ -982,6 +982,7 @@ public:
 	bool	checkfname(char *fname);
 	bool	addtobatdl(smbfile_t*);
 	bool	clearbatdl(void);
+	bool	clearbatul(void);
 	long	delfiles(const char *inpath, const char *spec, size_t keep = 0);
 
 	/* listfile.cpp */
@@ -989,15 +990,13 @@ public:
 	int		listfiles(uint dirnum, const char *filespec, int tofile, long mode);
 	int		listfileinfo(uint dirnum, char *filespec, long mode);
 	void	listfiletofile(smbfile_t*, uint dirnum, int file);
-	int		batchflagprompt(smb_t*, smbfile_t bf[], ulong row[], uint total, long totalfiles);
+	int		batchflagprompt(smb_t*, smbfile_t* bf[], ulong row[], uint total, long totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
-	void	batch_create_list(void);
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(bool native);
-	bool	create_bimodem_pth(void);
 	void	batch_upload(void);
 	void	batch_download(int xfrprot);
 	BOOL	start_batch_download(void);
@@ -1216,6 +1215,7 @@ extern "C" {
 	DLLEXPORT BOOL		 DLLCALL file_exists_in_dir(scfg_t*, uint dirnum, const char* filename);
 	DLLEXPORT BOOL		 DLLCALL renewfile(smb_t*, smbfile_t*);
 	DLLEXPORT BOOL		 DLLCALL removefile(smb_t*, smbfile_t*);
+	DLLEXPORT BOOL		 DLLCALL updatefile(scfg_t*, smbfile_t*);
 	DLLEXPORT char*		 DLLCALL getfullfilepath(scfg_t*, smbfile_t*, char* path);
 	DLLEXPORT off_t		 DLLCALL getfilesize(scfg_t*, smbfile_t*);
 	DLLEXPORT time_t	 DLLCALL getfiledate(scfg_t*, smbfile_t*);

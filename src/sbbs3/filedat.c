@@ -111,16 +111,16 @@ BOOL DLLCALL putfiledat(scfg_t* cfg, file_t* f)
 
 	putrec(buf,F_CDT,LEN_FCDT,ultoa(f->cdt,tmp,10));
 	putrec(buf,F_DESC,LEN_FDESC,f->desc);
-	putrec(buf,F_DESC+LEN_FDESC,2,crlf);
+	putrec(buf,F_DESC+LEN_FDESC,2, "\r\n");
 	putrec(buf,F_ULER,LEN_ALIAS+5,f->uler);
-	putrec(buf,F_ULER+LEN_ALIAS+5,2,crlf);
+	putrec(buf,F_ULER+LEN_ALIAS+5,2, "\r\n");
 	putrec(buf,F_TIMESDLED,5,ultoa(f->timesdled,tmp,10));
-	putrec(buf,F_TIMESDLED+5,2,crlf);
+	putrec(buf,F_TIMESDLED+5,2, "\r\n");
 	putrec(buf,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
-	putrec(buf,F_OPENCOUNT+3,2,crlf);
+	putrec(buf,F_OPENCOUNT+3,2, "\r\n");
 	buf[F_MISC]=(char)f->misc+' ';
 	putrec(buf,F_ALTPATH,2,hexplus(f->altpath,tmp));
-	putrec(buf,F_ALTPATH+2,2,crlf);
+	putrec(buf,F_ALTPATH+2,2, "\r\n");
 	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
 	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
 		return(FALSE); 
@@ -188,16 +188,16 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 	}
 	putrec(fdat,F_CDT,LEN_FCDT,ultoa(f->cdt,tmp,10));
 	putrec(fdat,F_DESC,LEN_FDESC,f->desc);
-	putrec(fdat,F_DESC+LEN_FDESC,2,crlf);
+	putrec(fdat,F_DESC+LEN_FDESC,2, "\r\n");
 	putrec(fdat,F_ULER,LEN_ALIAS+5,f->uler);
-	putrec(fdat,F_ULER+LEN_ALIAS+5,2,crlf);
+	putrec(fdat,F_ULER+LEN_ALIAS+5,2, "\r\n");
 	putrec(fdat,F_TIMESDLED,5,ultoa(f->timesdled,tmp,10));
-	putrec(fdat,F_TIMESDLED+5,2,crlf);
+	putrec(fdat,F_TIMESDLED+5,2, "\r\n");
 	putrec(fdat,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
-	putrec(fdat,F_OPENCOUNT+3,2,crlf);
+	putrec(fdat,F_OPENCOUNT+3,2, "\r\n");
 	fdat[F_MISC]=(char)f->misc+' ';
 	putrec(fdat,F_ALTPATH,2,hexplus(f->altpath,tmp));
-	putrec(fdat,F_ALTPATH+2,2,crlf);
+	putrec(fdat,F_ALTPATH+2,2, "\r\n");
 	f->datoffset=l;
 	idx[0]=(uchar)(l&0xff);          /* Get offset within DAT file for IXB file */
 	idx[1]=(uchar)((l>>8)&0xff);
@@ -493,40 +493,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 /****************************************************************************/
 BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
 {
-	char str[MAX_PATH+1],fname[13],*ixbbuf;
-    int i,file;
-    long length,l;
-
-	SAFECOPY(fname,filename);
-	strupr(fname);
-	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[i]=fname[i+1];
-	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
-	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) return(FALSE);
-	length=(long)filelength(file);
-	if(!length) {
-		close(file);
-		return(FALSE); 
-	}
-	if((ixbbuf=(char *)malloc(length))==NULL) {
-		close(file);
-		return(FALSE); 
-	}
-	if(lread(file,ixbbuf,length)!=length) {
-		close(file);
-		free(ixbbuf);
-		return(FALSE); 
-	}
-	close(file);
-	for(l=0;l<length;l+=F_IXBSIZE) {
-		for(i=0;i<11;i++)
-			if(toupper(fname[i])!=toupper(ixbbuf[l+i])) break;
-		if(i==11) break; 
-	}
-	free(ixbbuf);
-	if(l!=length)
-		return(TRUE);
-	return(FALSE);
+	return file_exists_in_dir(cfg, dirnum, filename);
 }
 
 /****************************************************************************/
@@ -782,7 +749,6 @@ smbfile_t* DLLCALL loadfiles(smb_t* smb, const char* filespec, time_t t, size_t*
 	fseek(smb->sid_fp, start * sizeof(smbfileidxrec_t), SEEK_SET);
 	while(!feof(smb->sid_fp)) {
 		smbfileidxrec_t fidx;
-		char filename[sizeof(fidx.filename) + 1];
 
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
@@ -790,9 +756,9 @@ smbfile_t* DLLCALL loadfiles(smb_t* smb, const char* filespec, time_t t, size_t*
 		if(fidx.idx.number==0)	/* invalid message number, ignore */
 			continue;
 
-		if(filespec != NULL) {
-			SAFECOPY(filename, fidx.filename);
-			if(!wildmatchi(filename, filespec, /* path: */FALSE))
+		if(filespec != NULL && *filespec != '\0') {
+//			SAFECOPY(filename, fidx.filename);
+			if(!wildmatchi(fidx.filename, filespec, /* path: */FALSE))
 				continue;
 		}
 		smbfile_t file = { .idx = fidx.idx };
@@ -950,6 +916,18 @@ BOOL DLLCALL loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t*
 	file->dir = dirnum;
 	smb_close(&smb);
 	return TRUE;
+}
+
+BOOL DLLCALL updatefile(scfg_t* cfg, smbfile_t* file)
+{
+	smb_t smb;
+
+	if(!smb_open_dir(cfg, &smb, file->dir) != SMB_SUCCESS)
+		return FALSE;
+
+	BOOL result = smb_updatemsg(&smb, file) == SMB_SUCCESS;
+	smb_close(&smb);
+	return result;
 }
 
 BOOL DLLCALL removefile(smb_t* smb, smbfile_t* file)

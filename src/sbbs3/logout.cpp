@@ -76,8 +76,6 @@ void sbbs_t::logout()
 		batdn_total=0; 
 	}
 
-	batch_create_list();
-
 	if(sys_status&SS_USERON && thisnode.status!=NODE_QUIET && !(useron.rest&FLAG('Q')))
 		for(i=1;i<=cfg.sys_nodes;i++)
 			if(i!=cfg.node_num) {

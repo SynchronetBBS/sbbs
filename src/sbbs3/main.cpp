@@ -2659,8 +2659,6 @@ void event_thread(void* arg)
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
-					sbbs->batch_create_list();	/* FREQs? */
-					sbbs->batdn_total=0;
 					sbbs->online=FALSE;
 					sbbs->console&=~CON_L_ECHO;
 
@@ -4428,8 +4426,8 @@ void sbbs_t::logoffstats()
 		}
 		stats.uls+=logon_uls;
 		stats.ulb+=logon_ulb;
-		stats.dls+=logon_dls;
-		stats.dlb+=logon_dlb;
+//		stats.dls+=logon_dls;	// Now handled in user_downloaded_file()
+//		stats.dlb+=logon_dlb;	// Now handled in user_downloaded_file()
 		stats.etoday+=logon_emails;
 		stats.ftoday+=logon_fbacks;
 

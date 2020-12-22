@@ -38,59 +38,50 @@
 #include "sbbs.h"
 
 /****************************************************************************/
-/* Adds file data in 'f' to DIR#.DAT and DIR#.IXB   and updates user        */
-/* info for uploader. Must have .name, .desc and .dir fields filled prior   */
-/* to a call to this function.                                              */
-/* Returns 1 if file uploaded sucessfully, 0 if not.                        */
 /****************************************************************************/
-bool sbbs_t::uploadfile(file_t *f)
+bool sbbs_t::uploadfile(smbfile_t* f)
 {
 	char	path[MAX_PATH+1];
-	char	str[MAX_PATH+1],fname[25];
-	char	ext[F_EXBSIZE+1];
+	char	str[MAX_PATH+1];
+	uchar	ext[F_EXBSIZE+1] = "";
 	char	desc[F_EXBSIZE+1];
 	char	tmp[MAX_PATH+1];
-	int		file;
     uint	i;
     long	length;
 	FILE*	stream;
 
-	// f->misc=0; Removed AUG-22-2001 - broken anonymous uploads
 	curdirnum=f->dir;
-	if(findfile(&cfg,f->dir,f->name)) {
-		errormsg(WHERE,ERR_CHK,f->name,f->dir);
-		return(0); 
+	if(findfile(&cfg, f->dir, f->filename)) {
+		errormsg(WHERE, ERR_CHK, f->filename, f->dir);
+		return false;
 	}
-	sprintf(path,"%s%s",f->altpath>0 && f->altpath<=cfg.altpaths
-		? cfg.altpath[f->altpath-1]
-		: cfg.dir[f->dir]->path,unpadfname(f->name,fname));
-	sprintf(tmp,"%s%s",cfg.temp_dir,fname);
+	getfullfilepath(&cfg, f, path);
+	SAFEPRINTF2(tmp, "%s%s", cfg.temp_dir, getfname(path));
 	if(!fexistcase(path) && fexistcase(tmp))
 		mv(tmp,path,0);
 	if(!fexistcase(path)) {
-		bprintf(text[FileNotReceived],f->name);
+		bprintf(text[FileNotReceived],f->filename);
 		sprintf(str,"attempted to upload %s to %s %s (Not received)"
-			,f->name
+			,f->filename
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
-		return(0); 
+		return false;
 	}
-	strcpy(tmp,f->name);
-	truncsp(tmp);
+	char* fext = getfext(f->filename);
 	for(i=0;i<cfg.total_ftests;i++)
-		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(tmp+9,cfg.ftest[i]->ext)) {
+		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(fext, cfg.ftest[i]->ext)) {
 			if(!chk_ar(cfg.ftest[i]->ar,&useron,&client))
 				continue;
 			attr(LIGHTGRAY);
 			bputs(cfg.ftest[i]->workstr);
 
-			sprintf(sbbsfilename,"SBBSFILENAME=%.64s",unpadfname(f->name,fname));
+			sprintf(sbbsfilename,"SBBSFILENAME=%.64s",f->filename);
 			putenv(sbbsfilename);
 			sprintf(sbbsfiledesc,"SBBSFILEDESC=%.*s",LEN_FDESC,f->desc);
 			putenv(sbbsfiledesc);
 			sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
-				fwrite(fname,1,strlen(fname),stream);
+				fprintf(stream, "%s", f->desc);
 				fclose(stream); 
 			}
 			sprintf(str,"%ssbbsfile.des",cfg.node_dir);
@@ -100,18 +91,19 @@ bool sbbs_t::uploadfile(file_t *f)
 			}
 			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
 				sprintf(str,"attempted to upload %s to %s %s (%s Errors)"
-					,f->name
+					,f->filename
 					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
 				logline(LOG_NOTICE,"U!",str);
 #if 0
 				sprintf(str,"Failed test: %s", cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL));
 				logline("  ",str);
 #endif
-				bprintf(text[FileHadErrors],f->name,cfg.ftest[i]->ext);
+				bprintf(text[FileHadErrors],f->filename,cfg.ftest[i]->ext);
 				if(!SYSOP || yesno(text[DeleteFileQ]))
 					remove(path);
 				return(0); 
 			} else {
+#if 0 // TODO - uploader tester changes filename or description
 				sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
@@ -133,22 +125,24 @@ bool sbbs_t::uploadfile(file_t *f)
 					}
 					fclose(stream); 
 				}
-				CRLF; 
-			} 
+				CRLF;
+#endif
+			}
 		}
 
 	if((length=(long)flength(path))==0L) {
-		bprintf(text[FileZeroLength],f->name);
+		bprintf(text[FileZeroLength],f->filename);
 		remove(path);
 		sprintf(str,"attempted to upload %s to %s %s (Zero length)"
-			,f->name
+			,f->filename
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
 		return(0); 
 	}
+#if 0 /* fix */
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		for(i=0;i<cfg.total_fextrs;i++)
-			if(!stricmp(cfg.fextr[i]->ext,tmp+9) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
+			if(!stricmp(cfg.fextr[i]->ext, ext) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
 				break;
 		if(i<cfg.total_fextrs) {
 			sprintf(str,"%sFILE_ID.DIZ",cfg.temp_dir);
@@ -184,34 +178,25 @@ bool sbbs_t::uploadfile(file_t *f)
 			} 
 		} 
 	}
-
+#endif
 	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
 		logon_ulb+=length;  /* Update 'this call' stats */
 		logon_uls++;
 	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
-		f->misc|=FM_ANON;
-	f->cdt=length;
-	f->dateuled=time32(NULL);
-	f->timesdled=0;
-	f->datedled=0L;
-	f->opencount=0;
-	strcpy(f->uler,useron.alias);
-	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
-	if(!f->desc[0]) {
-		if(stricmp(f->name,getfname(path)))
-			SAFECOPY(f->desc,getfname(path));
-		else
-			sprintf(f->desc,"%.*s",LEN_FDESC,text[NoDescription]);
+		f->hdr.attr |= MSG_ANONYMOUS;
+	smb_hfield_bin(f, SMB_COST, length);
+	smb_hfield_str(f, SENDER, useron.alias);
+	bprintf(text[FileNBytesReceived],f->filename,ultoac(length,tmp));
+	if(f->desc == NULL || *f->desc == '\0') {
+		smb_hfield_str(f, SMB_SUMMARY, text[NoDescription]);
 	}
-	if(!addfiledat(&cfg,f))
+	f->extdesc = ext;
+	if(!addfile_to_dir(&cfg, f->dir, f))
 		return(0);
 
-	if(f->misc&FM_EXTDESC)
-		putextdesc(&cfg,f->dir,f->datoffset,ext);
-
 	sprintf(str,"uploaded %s to %s %s"
-		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
+		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])
 		ftouch(cmdstr(cfg.dir[f->dir]->upload_sem,nulstr,nulstr,NULL));
@@ -226,7 +211,7 @@ bool sbbs_t::uploadfile(file_t *f)
 				,((ulong)(length*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60);
 		else
 			useron.cdt=adjustuserrec(&cfg,useron.number,U_CDT,10
-				,(ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0))); 
+				,(ulong)(f->cost * (cfg.dir[f->dir]->up_pct/100.0))); 
 	}
 
 	user_event(EVENT_UPLOAD);
@@ -240,16 +225,15 @@ bool sbbs_t::uploadfile(file_t *f)
 bool sbbs_t::upload(uint dirnum)
 {
 	char	descbeg[25]={""},descend[25]={""}
-				,fname[13],keys[256],ch,*p;
+				,fname[SMB_FILENAME_MAXLEN + 1],keys[256],ch,*p;
 	char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
-	char	spath[MAX_PATH+1];
 	char 	tmp[512];
     time_t	start,end;
     uint	i,j,k,destuser[MAX_USERXFER],destusers=0;
 	int		file;
 	ulong	space;
-    file_t	f;
+	smbfile_t	f = {{}};
     user_t	user;
     node_t	node;
 
@@ -276,10 +260,11 @@ bool sbbs_t::upload(uint dirnum)
 
 	if(sys_status&SS_EVENT && online==ON_REMOTE && !dir_op(dirnum))
 		bprintf(text[UploadBeforeEvent],timeleft/60);
+
 	if(altul)
-		strcpy(path,cfg.altpath[altul-1]);
+		SAFECOPY(path,cfg.altpath[altul-1]);
 	else
-		strcpy(path,cfg.dir[dirnum]->path);
+		SAFECOPY(path,cfg.dir[dirnum]->path);
 
 	if(!isdir(path)) {
 		bprintf(text[DirectoryDoesNotExist], path);
@@ -298,10 +283,9 @@ bool sbbs_t::upload(uint dirnum)
 	bprintf(text[DiskNBytesFree],ultoac(space,tmp));
 
 	f.dir=curdirnum=dirnum;
-	f.misc=0;
-	f.altpath=altul;
+	f.hdr.altpath=altul;
 	bputs(text[Filename]);
-	if(!getstr(fname,12,0) || strchr(fname,'?') || strchr(fname,'*')
+	if(getstr(fname, sizeof(fname) - 1, 0) < 1 || strchr(fname,'?') || strchr(fname,'*')
 		|| !checkfname(fname) || (trashcan(fname,"file") && !dir_op(dirnum))) {
 		if(fname[0])
 			bputs(text[BadFilename]);
@@ -316,14 +300,8 @@ bool sbbs_t::upload(uint dirnum)
 			,cfg.dir[dirnum]->sname);
 	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
-	sprintf(str,"%s%s",path,fname);
-	if(fexistcase(str)) {   /* File is on disk */
-#ifdef _WIN32
-		GetShortPathName(str, spath, sizeof(spath));
-#else
-		SAFECOPY(spath,str);
-#endif
-		SAFECOPY(fname,getfname(spath));
+	getfullfilepath(&cfg, &f, path);
+	if(fexistcase(path)) {   /* File is on disk */
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
 			bprintf(text[FileAlreadyThere],fname);
 			return(false); 
@@ -331,17 +309,15 @@ bool sbbs_t::upload(uint dirnum)
 		if(!yesno(text[FileOnDiskAddQ]))
 			return(false); 
 	}
-	padfname(fname,f.name);
-	strcpy(str,cfg.dir[dirnum]->exts);
-	strcpy(tmp,f.name);
-	truncsp(tmp);
+	char* ext = getfext(fname);
+	SAFECOPY(str,cfg.dir[dirnum]->exts);
 	j=strlen(str);
 	for(i=0;i<j;i+=ch+1) { /* Check extension of upload with allowable exts */
 		p=strchr(str+i,',');
 		if(p!=NULL)
 			*p=0;
 		ch=(char)strlen(str+i);
-		if(!stricmp(tmp+9,str+i))
+		if(!stricmp(ext, str+i))
 			break; 
 	}
 	if(j && i>=j) {
@@ -351,7 +327,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(!dir_op(dirnum)) return(false); 
 	}
 	bputs(text[SearchingForDupes]);
-	if(findfile(&cfg,dirnum,f.name)) {
+	if(findfile(&cfg,dirnum,f.filename)) {
 		bputs(text[SearchedForDupes]);
 		bprintf(text[FileAlreadyOnline],fname);
 		return(false); 	 /* File is already in database */
@@ -364,7 +340,7 @@ bool sbbs_t::upload(uint dirnum)
 			if(usrdir[i][j]==dirnum)
 				continue;	/* we already checked this dir */
 			if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
-				&& findfile(&cfg,usrdir[i][j],f.name)) {
+				&& findfile(&cfg,usrdir[i][j],f.filename)) {
 				bputs(text[SearchedForDupes]);
 				bprintf(text[FileAlreadyOnline],fname);
 				if(!dir_op(dirnum))
@@ -444,23 +420,27 @@ bool sbbs_t::upload(uint dirnum)
 	}
 	else
 		upload_lastdesc[0]=0;
+
+	char fdesc[LEN_FDESC + 1] = "";
 	bputs(text[EnterDescNow]);
 	i=LEN_FDESC-(strlen(descbeg)+strlen(descend));
 	getstr(upload_lastdesc,i,K_LINE|K_EDIT|K_AUTODEL);
 	if(sys_status&SS_ABORT)
 		return(false);
 	if(descend[0])      /* end of desc specified, so pad desc with spaces */
-		sprintf(f.desc,"%s%-*s%s",descbeg,i,upload_lastdesc,descend);
+		sprintf(fdesc,"%s%-*s%s",descbeg,i,upload_lastdesc,descend);
 	else                /* no end specified, so string ends at desc end */
-		sprintf(f.desc,"%s%s",descbeg,upload_lastdesc);
+		sprintf(fdesc,"%s%s",descbeg,upload_lastdesc);
 
 	if(cfg.dir[dirnum]->misc&DIR_ANON && !(cfg.dir[dirnum]->misc&DIR_AONLY)
 		&& (dir_op(dirnum) || useron.exempt&FLAG('A'))) {
 		if(!noyes(text[AnonymousQ]))
-			f.misc|=FM_ANON; 
+			f.hdr.attr |= MSG_ANONYMOUS;
 	}
-	sprintf(str,"%s%s",path,fname);
-	if(fexistcase(str)) {   /* File is on disk */
+
+	smb_hfield_str(&f, SMB_FILENAME, fname);
+	smb_hfield_str(&f, SMB_FILEDESC, fdesc);
+	if(fexistcase(path)) {   /* File is on disk */
 		if(!uploadfile(&f))
 			return(false); 
 	} else {
@@ -482,23 +462,19 @@ bool sbbs_t::upload(uint dirnum)
 		if(ch==text[YNQP][2] || (sys_status&SS_ABORT))
 			return(false);
 		if(ch=='B') {
-			if(batup_total>=cfg.max_batup)
+			batup_total = batchup_list_count(&cfg, useron.number);
+			if(batup_total >= cfg.max_batup) {
 				bputs(text[BatchUlQueueIsFull]);
-			else {
-				for(i=0;i<batup_total;i++)
-					if(!strcmp(batup_name[i],f.name)) {
-						bprintf(text[FileAlreadyInQueue],fname);
-						return(false); 
-					}
-				strcpy(batup_name[batup_total],f.name);
-				strcpy(batup_desc[batup_total],f.desc);
-				batup_dir[batup_total]=dirnum;
-				batup_misc[batup_total]=f.misc;
-				batup_alt[batup_total]=altul;
-				batup_total++;
+				return false;
+			}
+			if(batchup_file_exists(&cfg, useron.number, f.filename)) {
+				bprintf(text[FileAlreadyInQueue],fname);
+				return false;
+			}
+			if(batchup_file_add(&cfg, useron.number, &f)) {
 				bprintf(text[FileAddedToUlQueue]
-					,fname,batup_total,cfg.max_batup); 
-			} 
+					,fname, batup_total + 1, cfg.max_batup); 
+			}
 		} else {
 			for(i=0;i<cfg.total_prots;i++)
 				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
@@ -506,7 +482,7 @@ bool sbbs_t::upload(uint dirnum)
 					break;
 			if(i<cfg.total_prots) {
 				start=time(NULL);
-				protocol(cfg.prot[i],XFER_UPLOAD,str,nulstr,true);
+				protocol(cfg.prot[i],XFER_UPLOAD,path,nulstr,true);
 				end=time(NULL);
 				if(!(cfg.dir[dirnum]->misc&DIR_ULTIME)) /* Don't deduct upload time */
 					starttime+=end-start;
@@ -517,6 +493,7 @@ bool sbbs_t::upload(uint dirnum)
 			} 
 		} 
 	}
+#if 0
 	if(dirnum==cfg.user_dir) {  /* Add files to XFER.IXT in INDX dir */
 		sprintf(str,"%sxfer.ixt",cfg.data_dir);
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
@@ -543,7 +520,9 @@ bool sbbs_t::upload(uint dirnum)
 		}
 		close(file); 
 	}
-	return(true);
+#endif
+	freefile(&f);
+	return true;
 }
 
 /****************************************************************************/
@@ -555,14 +534,14 @@ bool sbbs_t::bulkupload(uint dirnum)
 {
     char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
-	char	spath[MAX_PATH+1];
-    file_t	f;
+	char	desc[LEN_FDESC + 1];
+    smbfile_t f;
 	DIR*	dir;
 	DIRENT*	dirent;
 
-	memset(&f,0,sizeof(file_t));
+	memset(&f,0,sizeof(f));
 	f.dir=dirnum;
-	f.altpath=altul;
+	f.hdr.altpath=altul;
 	bprintf(text[BulkUpload],cfg.lib[cfg.dir[dirnum]->lib]->sname,cfg.dir[dirnum]->sname);
 	strcpy(path,altul>0 && altul<=cfg.altpaths ? cfg.altpath[altul-1]
 		: cfg.dir[dirnum]->path);
@@ -578,24 +557,20 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(getfattr(str)&(_A_HIDDEN|_A_SYSTEM))
 			continue;
 #endif
-#ifdef _WIN32
-		GetShortPathName(str,spath,sizeof(spath));
-#else
-		strcpy(spath,str);
-#endif
-		padfname(getfname(spath),str);
-
 		if(findfile(&cfg,f.dir,str)==0) {
-			f.misc=0;
-			strcpy(f.name,str);
-			f.cdt=(long)flength(spath);
-			bprintf(text[BulkUploadDescPrompt],f.name,f.cdt/1024);
-			getstr(f.desc,LEN_FDESC,K_LINE);
+			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
+			long cdt = (long)flength(str);
+			smb_hfield_bin(&f, SMB_COST, cdt);
+			bprintf(text[BulkUploadDescPrompt], f.filename, cdt/1024);
+			if(!getstr(desc, LEN_FDESC, K_LINE))
+				break;
 			if(sys_status&SS_ABORT)
 				break;
-			if(strcmp(f.desc,"-")==0)	/* don't add this file */
+			if(strcmp(desc,"-")==0)	/* don't add this file */
 				continue;
-			uploadfile(&f); 
+			smb_hfield_str(&f, SMB_FILEDESC, desc);
+			uploadfile(&f);
+			smb_freemsgmem(&f);
 		}
 	}
 	if(dir!=NULL)

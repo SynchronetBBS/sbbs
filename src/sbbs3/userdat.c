@@ -1445,9 +1445,12 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 	return(0);
 }
 
-static int getdirnum(scfg_t* cfg, char* code)
+int getdirnum(scfg_t* cfg, const char* code)
 {
 	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
 
 	for(i=0;i<cfg->total_dirs;i++)
 		if(stricmp(cfg->dir[i]->code,code)==0)
@@ -1455,9 +1458,12 @@ static int getdirnum(scfg_t* cfg, char* code)
 	return(-1);
 }
 
-static int getlibnum(scfg_t* cfg, char* code)
+int getlibnum(scfg_t* cfg, const char* code)
 {
 	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
 
 	for(i=0;i<cfg->total_dirs;i++)
 		if(stricmp(cfg->dir[i]->code,code)==0)
@@ -1465,9 +1471,12 @@ static int getlibnum(scfg_t* cfg, char* code)
 	return(-1);
 }
 
-static int getsubnum(scfg_t* cfg, char* code)
+int getsubnum(scfg_t* cfg, const char* code)
 {
 	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
 
 	for(i=0;i<cfg->total_subs;i++)
 		if(stricmp(cfg->sub[i]->code,code)==0)
@@ -1475,9 +1484,12 @@ static int getsubnum(scfg_t* cfg, char* code)
 	return(-1);
 }
 
-static int getgrpnum(scfg_t* cfg, char* code)
+int getgrpnum(scfg_t* cfg, const char* code)
 {
 	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
 
 	for(i=0;i<cfg->total_subs;i++)
 		if(stricmp(cfg->sub[i]->code,code)==0)
@@ -2323,36 +2335,36 @@ BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes)
 BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	uint dirnum, const char* filename, ulong bytes)
 {
-	file_t f = {{0}};
+	smbfile_t f;
 
-	f.dir = dirnum;
-	padfname(getfname(filename), f.name);
-	if(!getfileixb(cfg, &f) || !getfiledat(cfg, &f))
+	if(!loadfile(cfg, dirnum, filename, &f))
 		return FALSE;
 
 	if(!bytes)
-		bytes = f.size;
+		bytes = getfilesize(cfg, &f);
 
-	f.timesdled++;
-	f.datedled=time32(NULL);
-	if(!putfiledat(cfg, &f) || !putfileixb(cfg, &f))
+	f.hdr.times_downloaded++;
+	f.hdr.last_downloaded = time32(NULL);
+	if(!updatefile(cfg, &f)) {
+		freefile(&f);
 		return FALSE;
+	}
 
 	/**************************/
 	/* Update Uploader's Info */
 	/**************************/
 	user_t uploader = {0};
-	uploader.number=matchuser(cfg, f.uler, TRUE /*sysop_alias*/);
+	uploader.number=matchuser(cfg, f.from, TRUE /*sysop_alias*/);
 	if(uploader.number
 		&& uploader.number != user->number 
 		&& getuserdat(cfg, &uploader) == 0
-		&& uploader.firston < f.dateuled) {
-		ulong l = f.cdt;
-		if(!(cfg->dir[f.dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
+		&& (uint32_t)uploader.firston < f.hdr.when_imported.time) {
+		ulong l = f.cost;
+		if(!(cfg->dir[dirnum]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
 			l=0;
-		ulong mod=(ulong)(l*(cfg->dir[f.dir]->dn_pct/100.0));
+		ulong mod=(ulong)(l*(cfg->dir[dirnum]->dn_pct/100.0));
 		adjustuserrec(cfg, uploader.number, U_CDT, 10, mod);
-		if(cfg->text != NULL && !(cfg->dir[f.dir]->misc&DIR_QUIET)) {
+		if(cfg->text != NULL && !(cfg->dir[dirnum]->misc&DIR_QUIET)) {
 			char str[256];
 			char tmp[128];
 			char prefix[128]="";
@@ -2365,7 +2377,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 					SAFEPRINTF2(username,"%s [%s]", user->alias, client->addr);
 			} else
 				SAFECOPY(username, user->alias);
-			if(strcmp(cfg->dir[f.dir]->code, "TEMP") == 0 || bytes < (ulong)f.size)
+			if(strcmp(cfg->dir[dirnum]->code, "TEMP") == 0 || bytes < (ulong)f.size)
 				SAFECOPY(prefix, cfg->text[Partially]);
 			if(client != NULL) {
 				SAFECAT(prefix, client->protocol);
@@ -2383,12 +2395,13 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	/* Update Downloader's Info */
 	/****************************/
 	user_downloaded(cfg, user, /* files: */1, bytes);
-	if(!is_download_free(cfg, f.dir, user, client))
-		subtract_cdt(cfg, user, f.cdt);
+	if(!is_download_free(cfg, dirnum, user, client))
+		subtract_cdt(cfg, user, f.cost);
 
-	if(!(cfg->dir[f.dir]->misc&DIR_NOSTAT))
+	if(!(cfg->dir[dirnum]->misc&DIR_NOSTAT))
 		inc_sys_download_stats(cfg, /* files: */1, bytes);
 
+	freefile(&f);
 	return TRUE;
 }
 #endif
@@ -2921,13 +2934,13 @@ BOOL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 
 char* DLLCALL batchdn_list_name(scfg_t* cfg, uint usernumber, char* fname, size_t size)
 {
-	snprintf(fname, size, "%suser/%04u.dload", cfg->data_dir, usernumber);
+	snprintf(fname, size, "%suser/%04u.dnload", cfg->data_dir, usernumber);
 	return fname;
 }
 
 char* DLLCALL batchup_list_name(scfg_t* cfg, uint usernumber, char* fname, size_t size)
 {
-	snprintf(fname, size, "%suser/%04u.uload", cfg->data_dir, usernumber);
+	snprintf(fname, size, "%suser/%04u.upload", cfg->data_dir, usernumber);
 	return fname;
 }
 
@@ -2961,6 +2974,99 @@ str_list_t DLLCALL batchup_list_read(scfg_t* cfg, uint usernumber)
 	str_list_t ini = iniReadFile(fp);
 	iniCloseFile(fp);
 	return ini;
+}
+
+BOOL batchdn_list_write(scfg_t* cfg, uint usernumber, str_list_t list)
+{
+	char path[MAX_PATH + 1];
+	FILE* fp = iniOpenFile(batchdn_list_name(cfg, usernumber, path, sizeof(path)), /* create: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	BOOL result = iniWriteFile(fp, list);
+	iniCloseFile(fp);
+	return result;
+}
+
+BOOL batchup_list_write(scfg_t* cfg, uint usernumber, str_list_t list)
+{
+	char path[MAX_PATH + 1];
+	FILE* fp = iniOpenFile(batchup_list_name(cfg, usernumber, path, sizeof(path)), /* create: */TRUE);
+	if(fp == NULL)
+		return FALSE;
+	BOOL result = iniWriteFile(fp, list);
+	iniCloseFile(fp);
+	return result;
+}
+
+BOOL batchdn_file_remove(scfg_t* cfg, uint usernumber, const char* filename)
+{
+	FILE* fp = batchdn_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return FALSE;
+	str_list_t ini = iniReadFile(fp);
+	BOOL result = iniRemoveSection(&ini, filename);
+	iniWriteFile(fp, ini);
+	iniCloseFile(fp);
+	iniFreeStringList(ini);
+	return result;
+}
+
+BOOL batchup_file_remove(scfg_t* cfg, uint usernumber, const char* filename)
+{
+	FILE* fp = batchup_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return FALSE;
+	str_list_t ini = iniReadFile(fp);
+	BOOL result = iniRemoveSection(&ini, filename);
+	iniWriteFile(fp, ini);
+	iniCloseFile(fp);
+	iniFreeStringList(ini);
+	return result;
+}
+
+BOOL batchup_file_exists(scfg_t* cfg, uint usernumber, const char* filename)
+{
+	FILE* fp = batchup_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return FALSE;
+	str_list_t ini = iniReadFile(fp);
+	BOOL result = iniSectionExists(ini, filename);
+	iniCloseFile(fp);
+	iniFreeStringList(ini);
+	return result;
+}
+
+BOOL batchup_file_add(scfg_t* cfg, uint usernumber, smbfile_t* f)
+{
+	FILE* fp = batchup_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return FALSE;
+	fprintf(fp, "\n[%s]\n", f->filename);
+	fprintf(fp, "dir=%u\n", f->dir);
+	fprintf(fp, "desc=%s\n", f->desc);
+	fprintf(fp, "altpath=%u\n", f->hdr.altpath);
+	fclose(fp);
+	return TRUE;
+}
+
+size_t batchdn_list_count(scfg_t* cfg, uint usernumber)
+{
+	FILE* fp = batchdn_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return 0;
+	size_t result = iniReadSectionCount(fp, /* prefix: */NULL);
+	iniCloseFile(fp);
+	return result;
+}
+
+size_t batchup_list_count(scfg_t* cfg, uint usernumber)
+{
+	FILE* fp = batchup_list_open(cfg, usernumber);
+	if(fp == NULL)
+		return 0;
+	size_t result = iniReadSectionCount(fp, /* prefix: */NULL);
+	iniCloseFile(fp);
+	return result;
 }
 
 

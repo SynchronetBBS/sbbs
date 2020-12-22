@@ -255,19 +255,7 @@ char * sbbs_t::getfilespec(char *str)
 /****************************************************************************/
 extern "C" BOOL filematch(const char *filename, const char *filespec)
 {
-    char c;
-
-	for(c=0;c<8;c++) /* Handle Name */
-		if(filespec[c]=='*') break;
-		else if(filespec[c]=='?') continue;
-		else if(toupper(filename[c])!=toupper(filespec[c])) return(FALSE);
-	if(filespec[8]==' ')	/* no extension specified */
-		return(TRUE);
-	for(c=9;c<12;c++)
-		if(filespec[c]=='*') break;
-		else if(filespec[c]=='?') continue;
-		else if(toupper(filename[c])!=toupper(filespec[c])) return(FALSE);
-	return(TRUE);
+	return wildmatchi(filename, filespec, /* path: */FALSE);
 }
 
 /*****************************************************************************/

@@ -47,15 +47,9 @@ void sbbs_t::downloadedfile(smbfile_t* f)
 {
     char		str[MAX_PATH+1];
 	char 		tmp[512];
-    int			i;
-	long		mod;
-	long		length;
-    ulong		l;
-	user_t		uploader;
+	off_t		length;
 
-//	getfiledat(&cfg,f); /* Get current data - right after download */
-	if((length=f->size)<0L)
-		length=0L;
+	length = getfilesize(&cfg, f);
 	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
 		logon_dlb+=length;  /* Update 'this call' stats */
 		logon_dls++;
@@ -65,96 +59,15 @@ void sbbs_t::downloadedfile(smbfile_t* f)
 		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
-	/****************************/
-	/* Update Downloader's Info */
-	/****************************/
-	user_downloaded(&cfg, &useron, 1, length);
-	if(!is_download_free(&cfg,f->dir,&useron,&client))
-		subtract_cdt(&cfg,&useron,f->cost);
-	/**************************/
-	/* Update Uploader's Info */
-	/**************************/
-	i=matchuser(&cfg,f->from,TRUE /*sysop_alias*/);
-	memset(&uploader, 0, sizeof(uploader));
-	uploader.number=i;
-	getuserdat(&cfg,&uploader);
-	if(i && i!=useron.number && uploader.firston < (time32_t)f->hdr.when_imported.time) {
-		l=f->cost;
-		if(!(cfg.dir[f->dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
-			l=0;
-		if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) { /* Give min instead of cdt */
-			mod=((ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
-			adjustuserrec(&cfg,i,U_MIN,10,mod);
-			SAFEPRINTF(tmp,"%lu minute",mod);
-		} else {
-			mod=(ulong)(l*(cfg.dir[f->dir]->dn_pct/100.0));
-			adjustuserrec(&cfg,i,U_CDT,10,mod);
-			ultoac(mod,tmp);
-		}
-		if(!(cfg.dir[f->dir]->misc&DIR_QUIET)) {
-			SAFEPRINTF4(str,text[DownloadUserMsg]
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? temp_file : f->filename
-				,!strcmp(cfg.dir[f->dir]->code,"TEMP") ? text[Partially] : nulstr
-				,useron.alias,tmp);
-			putsmsg(&cfg,i,str);
-		}
-	}
-#if 0 // TODO
-	/*******************/
-	/* Update IXB File */
-	/*******************/
-	f->datedled=time32(NULL);
-	SAFEPRINTF2(str,"%s%s.ixb",cfg.dir[f->dir]->data_dir,cfg.dir[f->dir]->code);
-	if((file=nopen(str,O_RDWR))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDWR);
-		return;
-	}
-	length=(long)filelength(file);
-	if(length%F_IXBSIZE) {
-		close(file);
-		errormsg(WHERE,ERR_LEN,str,length);
-		return;
-	}
-	strcpy(fname,f->name);
-	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[i]=fname[i+1];
-	for(l=0;l<(ulong)length;l+=F_IXBSIZE) {
-		read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
-		str[11]=0;
-		if(!stricmp(fname,str))
-			break;
-	}
-	if(l>=(ulong)length) {
-		close(file);
-		errormsg(WHERE,ERR_CHK,f->name,0);
-		return;
-	}
-	lseek(file,l+18,SEEK_SET);
-	write(file,&f->datedled,4);  /* Write the current time stamp for datedled */
-	close(file);
-	/*******************/
-	/* Update DAT File */
-	/*******************/
-	f->timesdled++;
-	putfiledat(&cfg,f);
-	/******************************************/
-	/* Update User to User index if necessary */
-	/******************************************/
-	if(f->dir==cfg.user_dir) {
-		rmuserxfers(&cfg,0,useron.number,f->name);
-		if(!getuserxfers(0,0,f->name)) { /* check if any ixt entries left */
-			remove(getfilepath(&cfg,f,str));
-			removefiledat(&cfg,f);
-		}
-	}
-#endif
+
+	user_downloaded_file(&cfg, &useron, &client, f->dir, f->filename, length);
 
 	user_event(EVENT_DOWNLOAD);
 }
 
 /****************************************************************************/
 /* This function is called when a file is unsuccessfully downloaded.        */
-/* It logs the tranfer time and checks for possible leech protocol use.     */
+/* It logs the transfer time and checks for possible leech protocol use.    */
 /****************************************************************************/
 void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
 {
@@ -405,6 +318,9 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
 		else if(f->dir==cfg.total_dirs+1)
 			SAFEPRINTF(str,"attempted to download attached file: %s"
 				,f->filename);
+		else
+			SAFEPRINTF2(str,"attempted to download file (%s) from unknown dir: %ld"
+				,f->filename, (long)f->dir);
 		logline(LOG_NOTICE,"D!",str);
 		return false; 
 	}

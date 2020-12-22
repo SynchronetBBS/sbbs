@@ -214,8 +214,10 @@
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
 
+#define SMB_FILENAME_MAXLEN	63
 #define SMB_FILENAME		SUBJECT
 #define	SMB_FILEDESC		SMB_SUMMARY
+#define SMB_FILEUPLOADER	SENDER
 
 #define FILEATTACH			0x70
 #define DESTFILE			0x71
@@ -418,7 +420,7 @@ typedef struct _PACK {		/* File index record */
 	union {
 		struct {
 			idxrec_t	idx;
-			char		filename[64];
+			char		filename[SMB_FILENAME_MAXLEN + 1];
 		};
 		uint8_t	padding[128];
 	};

@@ -49,10 +49,10 @@
 /* Constants */
 /*************/
 
-#define VERSION 	"3.18"  /* Version: Major.minor  */
+#define VERSION 	"3.19"  /* Version: Major.minor  */
 #define REVISION	'a'     /* Revision: lowercase letter */
-#define VERSION_NUM	(31800	 + (tolower(REVISION)-'a'))
-#define VERSION_HEX	(0x31800 + (tolower(REVISION)-'a'))
+#define VERSION_NUM	(31900	 + (tolower(REVISION)-'a'))
+#define VERSION_HEX	(0x31900 + (tolower(REVISION)-'a'))
 
 #define VERSION_NOTICE		"Synchronet BBS for " PLATFORM_DESC\
 								"  Version " VERSION
