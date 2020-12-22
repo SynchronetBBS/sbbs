@@ -434,19 +434,11 @@ void sbbs_read_ini(
 		ftp->pasv_port_high
 			=iniGetShortInt(list,section,"PasvPortHigh",0xffff);
 
-
-		/* JavaScript Operating Parameters */
-		sbbs_get_js_settings(list, section, &ftp->js, &global->js);
-
 		SAFECOPY(ftp->host_name
 			,iniGetString(list,section,strHostName,global->host_name,value));
 
 		SAFECOPY(ftp->index_file_name
 			,iniGetString(list,section,"IndexFileName","00index",value));
-		SAFECOPY(ftp->html_index_file
-			,iniGetString(list,section,"HtmlIndexFile","00index.html",value));
-		SAFECOPY(ftp->html_index_script
-			,iniGetString(list,section,"HtmlIndexScript","ftp-html.js",value));
 
 		SAFECOPY(ftp->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
@@ -462,7 +454,7 @@ void sbbs_read_ini(
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
 		ftp->options
 			=iniGetBitField(list,section,strOptions,ftp_options
-				,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
+				,FTP_OPT_INDEX_FILE | FTP_OPT_ALLOW_QWK);
 
 		ftp->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		ftp->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
@@ -921,10 +913,6 @@ BOOL sbbs_write_ini(
 		else if(!iniSetLogLevel(lp,section,strLogLevel,ftp->log_level,&style))
 			break;
 
-		/* JavaScript Operating Parameters */
-		if(!sbbs_set_js_settings(lp,section,&ftp->js,&global->js,&style))
-			break;
-
 		if(strcmp(ftp->host_name,global->host_name)==0
             || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
@@ -937,10 +925,6 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetString(lp,section,"IndexFileName",ftp->index_file_name,&style))
-			break;
-		if(!iniSetString(lp,section,"HtmlIndexFile",ftp->html_index_file,&style))
-			break;
-		if(!iniSetString(lp,section,"HtmlIndexScript",ftp->html_index_script,&style))
 			break;
 
 		if(!iniSetString(lp,section,strAnswerSound,ftp->answer_sound,&style))
