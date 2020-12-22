@@ -1,7 +1,5 @@
 /* Synchronet message base (SMB) library routines returning strings */
 
-/* $Id: smbstr.c,v 1.38 2020/05/25 19:17:06 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,25 +13,12 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <ctype.h>		/* is*() */
 #include <string.h>		/* strcpy, strcat, memset, strchr */
 #include <genwrap.h> 		/* stricmp */
 #include "smblib.h"
@@ -428,7 +413,7 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 	}
 	if(at == NULL && IS_DIGIT(*p) && *tp == '\0' && IS_DIGIT(last))
 		return NET_FIDO;
-	if(slash == NULL && (isalnum(*p) || p == colon))
+	if(slash == NULL && (IS_ALPHANUMERIC(*p) || p == colon))
 		return NET_INTERNET;
 
 	return NET_UNKNOWN;
