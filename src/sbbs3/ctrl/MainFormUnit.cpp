@@ -866,11 +866,9 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.client_on=client_on;
     ftp_startup.socket_open=socket_open;
 	ftp_startup.options
-        =FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK;
+        =FTP_OPT_INDEX_FILE | FTP_OPT_ALLOW_QWK;
     ftp_startup.max_clients=10;
     strcpy(ftp_startup.index_file_name,"00index");
-    strcpy(ftp_startup.html_index_file,"00index.html");
-    strcpy(ftp_startup.html_index_script,"ftp-html.js");
 	ftp_startup.login_attempt_list=&login_attempt_list;
 
     memset(&web_startup,0,sizeof(web_startup));
@@ -3038,7 +3036,6 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
 
         /* Copy global settings, if appropriate (not unique) */
         if(memcmp(&bbs_startup.js,&js,sizeof(js))==0)       bbs_startup.js=global.js;
-        if(memcmp(&ftp_startup.js,&js,sizeof(js))==0)       ftp_startup.js=global.js;
         if(memcmp(&web_startup.js,&js,sizeof(js))==0)       web_startup.js=global.js;
         if(memcmp(&mail_startup.js,&js,sizeof(js))==0)      mail_startup.js=global.js;
         if(memcmp(&services_startup.js,&js,sizeof(js))==0)  services_startup.js=global.js;

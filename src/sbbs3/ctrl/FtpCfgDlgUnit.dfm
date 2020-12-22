@@ -255,14 +255,6 @@ object FtpCfgDlg: TFtpCfgDlg
     object IndexTabSheet: TTabSheet
       Caption = 'Index'
       ImageIndex = 3
-      object HtmlJavaScriptLabel: TLabel
-        Left = 7
-        Top = 62
-        Width = 65
-        Height = 20
-        AutoSize = False
-        Caption = 'JavaScript'
-      end
       object AutoIndexCheckBox: TCheckBox
         Left = 7
         Top = 10
@@ -284,38 +276,6 @@ object FtpCfgDlg: TFtpCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-      end
-      object HtmlIndexCheckBox: TCheckBox
-        Left = 7
-        Top = 36
-        Width = 78
-        Height = 19
-        Hint = 'Automatically generate HTML index files for file descriptions'
-        Caption = 'HTML'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 2
-        OnClick = HtmlIndexCheckBoxClick
-      end
-      object HtmlFileNameEdit: TEdit
-        Left = 85
-        Top = 36
-        Width = 156
-        Height = 21
-        Hint = 'Name of HTML index file (default=00index.html)'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 3
-      end
-      object HtmlJavaScriptEdit: TEdit
-        Left = 85
-        Top = 62
-        Width = 156
-        Height = 21
-        Hint = 'JavaScript filename to execute to generate HTML index file'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 4
       end
     end
     object LogTabSheet: TTabSheet
