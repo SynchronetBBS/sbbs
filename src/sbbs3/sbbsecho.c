@@ -1,8 +1,5 @@
 /* Synchronet FidoNet EchoMail Scanning/Tossing and NetMail Tossing Utility */
 
-/* $Id: sbbsecho.c,v 3.177 2020/08/17 00:48:28 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -50,14 +35,25 @@
 #endif
 
 #include "conwrap.h"		/* getch() */
-#include "sbbs.h"			/* load_cfg() */
-#include "sbbsdefs.h"
+#include "load_cfg.h"		/* load_cfg() */
 #include "smblib.h"
 #include "scfglib.h"
 #include "sbbsecho.h"
 #include "genwrap.h"		/* PLATFORM_DESC */
 #include "xpendian.h"
 #include "utf8.h"
+#include "date_str.h"
+#include "link_list.h"
+#include "str_list.h"
+#include "str_util.h"
+#include "datewrap.h"
+#include "nopen.h"
+#include "crc32.h"
+#include "userdat.h"
+#include "msg_id.h"
+#include "scfgsave.h"
+#include "getmail.h"
+#include "ver.h"
 
 #define MAX_OPEN_SMBS	10
 
@@ -96,7 +92,6 @@ str_list_t bad_areas;
 fidoaddr_t		sys_faddr = {1,1,1,0};		/* Default system address: 1:1/1.0 */
 sbbsecho_cfg_t	cfg;
 scfg_t			scfg;
-char			revision[16];
 char			compiler[32];
 
 bool pause_on_exit=false;
@@ -121,8 +116,8 @@ const char* sbbsecho_pid(void)
 {
 	static char str[256];
 
-	sprintf(str, "SBBSecho %u.%02u-%s r%s %s %s"
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision,__DATE__,compiler);
+	sprintf(str, "SBBSecho %u.%02u-%s %s/%s %s %s"
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash,__DATE__,compiler);
 
 	return str;
 }
@@ -203,7 +198,7 @@ int fwrite_via_control_line(FILE* fp, fidoaddr_t* addr)
 	time_t t = time(NULL);
 	struct tm* tm = gmtime(&t);
 	return fprintf(fp,"\1Via %s @%04u%02u%02u.%02u%02u%02u.UTC "
-		"SBBSecho %u.%02u-%s r%s\r"
+		"SBBSecho %u.%02u-%s %s/%s\r"
 		,smb_faddrtoa(addr, NULL)
 		,tm->tm_year+1900
 		,tm->tm_mon+1
@@ -211,7 +206,7 @@ int fwrite_via_control_line(FILE* fp, fidoaddr_t* addr)
 		,tm->tm_hour
 		,tm->tm_min
 		,tm->tm_sec
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision);
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash);
 }
 
 int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
@@ -849,7 +844,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 		infile++;
 
 #ifdef __unix__
-	if(isalpha(infile[0]) && infile[1] == ':')	// Ignore "C:" prefix
+	if(IS_ALPHA(infile[0]) && infile[1] == ':')	// Ignore "C:" prefix
 		infile += 2;
 #endif
 	SAFECOPY(attachment, infile);
@@ -1267,10 +1262,6 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		fprintf(fp, "\1CHRS: %s\r", charset);
 		if(msg->editor != NULL)
 			fprintf(fp, "\1NOTE: %s\r", msg->editor);
-		/* comment headers are part of text */
-		for(i=0; i<msg->total_hfields; i++)
-			if(msg->hfield[i].type == SMB_COMMENT)
-				fprintf(fp, "%s\r", (char*)msg->hfield_dat[i]);
 		if(subject != msg->subj)
 			fprintf(fp, "Subject: %s\r\r", msg->subj);
 	}
@@ -2282,7 +2273,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 		}
 	}
 
-	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL) &&
+	if(((tp=strstr(p,"---\r"))!=NULL || (tp=strstr(p,"--- "))!=NULL || (tp=strstr(p,"-- \r"))!=NULL) &&
 		(*(tp-1)=='\r' || *(tp-1)=='\n'))
 		*tp=0;
 
@@ -2317,7 +2308,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 	add_area=strListInit();
 	del_area=strListInit();
 	for(l=0;l<m;l++) {
-		while(*(p+l) && isspace((uchar)*(p+l))) l++;
+		while(*(p+l) && IS_WHITESPACE(*(p+l))) l++;
 		while(*(p+l)==CTRL_A) {				/* Ignore kludge lines June-13-2004 */
 			while(*(p+l) && *(p+l)!='\r') l++;
 			continue;
@@ -3107,7 +3098,7 @@ time32_t fmsgtime(const char *str)
 	memset(&tm,0,sizeof(tm));
 	tm.tm_isdst=-1;	/* Do not adjust for DST */
 
-	if(isdigit((uchar)str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
+	if(IS_DIGIT(str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
 		tm.tm_mday=atoi(str);
 		sprintf(month,"%3.3s",str+3);
 		if(!stricmp(month,"jan"))
@@ -3257,7 +3248,7 @@ enum {
 /* Returns 0 on success, 1 dupe, 2 filtered, 3 empty, 4 too-old				*/
 /* or other SMB error														*/
 /****************************************************************************/
-int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
+int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 {
 	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
 	char	msg_id[256],str[128],*p;
@@ -3315,9 +3306,23 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 	smb_hfield_str(&msg,SENDER,hdr->from);
 	smb_hfield_str(&msg,RECIPIENT,hdr->to);
 
-	if(user) {
-		sprintf(str,"%u",user);
-		smb_hfield_str(&msg,RECIPIENTEXT,str);
+	if(usernumber) {
+		user_t user = { .number = usernumber };
+		i = getuserdat(&scfg, &user);
+		if(i != 0) {
+			lprintf(LOG_ERR, "Error %d reading user #%u", i, usernumber);
+			return SMB_FAILURE;
+		}
+		uint16_t nettype;
+		if((scfg.sys_misc&SM_FWDTONET) && (user.misc&NETMAIL)
+			&& (nettype = smb_netaddr_type(user.netmail)) >= NET_UNKNOWN) {
+			lprintf(LOG_INFO, "Forwarding message from %s to %s", hdr->from, user.netmail);
+			smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
+			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
+		} else {
+			sprintf(str,"%u",usernumber);
+			smb_hfield_str(&msg,RECIPIENTEXT,str);
+		}
 	}
 
 	smb_hfield_str(&msg,SUBJECT,hdr->subj);
@@ -3503,7 +3508,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		if(ch == '\n')
 			continue;
 		if(cr && (!strncmp(fbuf+l,"--- ",4)
-			|| !strncmp(fbuf+l,"---\r",4)))
+			|| !strncmp(fbuf+l,"---\r",4)
+			|| !strncmp(fbuf+l,"-- \r",4)))
 			done=1; 			/* tear line and down go into tail */
 		else if(cr && !strncmp(fbuf+l," * Origin: ",11) && subnum != INVALID_SUB) {
 			p=(char*)fbuf+l+11;
@@ -3582,7 +3588,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 
 	if(subnum==INVALID_SUB) {
 		smbfile=email;
-		if(net) {
+		if(net && msg.to_net.type == NET_NONE) {
 			smb_hfield(&msg,RECIPIENTNETTYPE,sizeof(ushort),&net);
 			smb_hfield(&msg,RECIPIENTNETADDR,sizeof(fidoaddr_t),&destaddr);
 		}
@@ -3604,7 +3610,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint user, uint subnum)
 		get_msgid(&scfg,subnum,&msg,msg_id,sizeof(msg_id));
 		smb_hfield_str(&msg,RFC822MSGID,msg_id);
 	}
-	if(smbfile->status.max_crcs==0 || (subnum == INVALID_SUB && user == 0))
+	if(smbfile->status.max_crcs==0 || (subnum == INVALID_SUB && usernumber == 0))
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_BODY);
 	/* Bad echo area collects a *lot* of messages, and thus, hashes - so no dupe checking */
 	if(cfg.badecho>=0 && subnum==cfg.area[cfg.badecho].sub)
@@ -5132,7 +5138,7 @@ bool retoss_bad_echomail(void)
 			continue;
 		}
 
-		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_BODY_ONLY);
+		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_NO_TAILS);
 		if(body == NULL) {
 			smb_unlockmsghdr(&badsmb,&badmsg);
 			smb_freemsgmem(&badmsg);
@@ -6112,14 +6118,12 @@ int main(int argc, char **argv)
 		memset(&smb[i],0,sizeof(smb_t));
 	memset(&cfg,0,sizeof(cfg));
 
-	sscanf("$Revision: 3.179 $", "%*s %s", revision);
-
 	DESCRIBE_COMPILER(compiler);
 
-	printf("\nSBBSecho v%u.%02u-%s (rev %s) - Synchronet FidoNet EchoMail Tosser\n"
+	printf("\nSBBSecho v%u.%02u-%s (%s/%s) - Synchronet FidoNet EchoMail Tosser\n"
 		,SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR
 		,PLATFORM_DESC
-		,revision
+		,git_branch, git_hash
 		);
 
 	cmdline[0]=0;
@@ -6207,7 +6211,7 @@ int main(int argc, char **argv)
 		else {
 			if(strchr(argv[i],'.')!=NULL && fexist(argv[i]))
 				SAFECOPY(cfg.cfgfile,argv[i]);
-			else if(isdigit((uchar)argv[i][0]))
+			else if(IS_DIGIT(argv[i][0]))
 				nodeaddr = atofaddr(argv[i]);
 			else
 				sub_code = argv[i];
@@ -6399,7 +6403,7 @@ int main(int argc, char **argv)
 			SKIP_WHITESPACE(p);		/* Skip white space */
 
 			while(*p && *p!=';') {
-				if(!isdigit(*p)) {
+				if(!IS_DIGIT(*p)) {
 					printf("\n");
 					lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
 					break;

@@ -235,9 +235,9 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(10+1)))==NULL)
-		allocfail(sizeof(char *)*(10+1));
-	for(i=0;i<(10+1);i++)
+	if((opt=(char **)alloca(sizeof(char *)*(11+1)))==NULL)
+		allocfail(sizeof(char *)*(11+1));
+	for(i=0;i<11;i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -254,9 +254,11 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Pause            %s",user->misc & UPAUSE?"Yes":"No");
 		sprintf(opt[i++],"Hot Keys         %s",user->misc & COLDKEYS?"No":"Yes");
 		sprintf(opt[i++],"Spinning Cursor  %s",user->misc & SPIN?"Yes":"No");
+		sprintf(str,"%u",user->cols);
+		sprintf(opt[i++],"Screen Columns   %s",user->cols?str:"Auto");
 		sprintf(str,"%u",user->rows);
-		sprintf(opt[i++],"Number of Rows   %s",user->rows?str:"Auto");
-		opt[i][0]=0;
+		sprintf(opt[i++],"Screen Rows      %s",user->rows?str:"Auto");
+		opt[i] = NULL;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Terminal Settings",opt)) {
 			case -1:
 				return(0);
@@ -307,12 +309,21 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 9:
+				/* Columns */
+				SAFEPRINTF(str,"%u",user->cols);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, LEN_COLS, K_EDIT|K_NUMBER);
+				if(uifc.changes) {
+					user->cols=strtoul(str,NULL,10);
+					putuserrec(cfg,user->number,U_COLS,0,ultoa(user->cols,str,10));
+				}
+				break;
+			case 10:
 				/* Rows */
-				sprintf(str,"%u",user->rows);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Rows",str,2,K_EDIT|K_NUMBER);
+				SAFEPRINTF(str,"%u",user->rows);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, LEN_ROWS, K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->rows=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ROWS,2,ultoa(user->rows,str,10));
+					putuserrec(cfg,user->number,U_ROWS,0,ultoa(user->rows,str,10));
 				}
 				break;
 		}
@@ -1506,7 +1517,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 5:
 			    /* D.O.B */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B.",user->birth,LEN_BIRTH,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B. (YYYYMMDD)",user->birth,LEN_BIRTH,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_BIRTH,LEN_BIRTH,user->birth);
 				break;
@@ -1804,7 +1815,7 @@ int createdefaults(scfg_t* cfg)
     SAFECOPY(user.name,"New User");
     SAFECOPY(user.handle,"Handle");
     SAFECOPY(user.pass,"PASSWORD");
-    SAFECOPY(user.birth,"01/01/80");
+    SAFECOPY(user.birth,"19800101");
 
     SAFECOPY(user.address,"123 My Street");
     SAFECOPY(user.location,"City, St");

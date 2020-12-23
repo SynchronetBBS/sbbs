@@ -1,7 +1,5 @@
 /* Synchronet string utility routines */
 
-/* $Id: str_util.c,v 1.68 2020/08/17 00:48:29 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,25 +13,13 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "str_util.h"
 #include "utf8.h"
 #include "unicode.h"
 #include "cp437defs.h"
@@ -89,6 +75,25 @@ char* strip_ctrl(const char *str, char* dest)
 	return dest;
 }
 
+char* strip_ansi(char* str)
+{
+	char* s = str;
+	char* d = str;
+	while(*s != '\0') {
+		if(*s == ESC && *(s + 1) == '[') {
+			s += 2;
+			while(*s != '\0' && (*s < '@' || *s > '~'))
+				s++;
+			if(*s != '\0') // Skip "final byte""
+				s++;
+		} else {
+			*(d++) = *(s++);
+		}
+	}
+	*d = '\0';
+	return str;
+}
+
 char* strip_exascii(const char *str, char* dest)
 {
 	int	i,j;
@@ -109,7 +114,7 @@ char* strip_space(const char *str, char* dest)
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
 	for(i=j=0;str[i];i++)
-		if(!isspace((unsigned char)str[i]))
+		if(!IS_WHITESPACE(str[i]))
 			dest[j++]=str[i];
 	dest[j]=0;
 	return dest;
@@ -136,6 +141,7 @@ char* prep_file_desc(const char *str, char* dest)
 
 	if(dest==NULL && (dest=strdup(str))==NULL)
 		return NULL;
+	strip_ansi(dest);
 	for(i=j=0;str[i];i++)
 		if(str[i]==CTRL_A && str[i+1]!=0) {
 			i++;
@@ -147,7 +153,7 @@ char* prep_file_desc(const char *str, char* dest)
 		}
 		else if(j && str[i]<=' ' && dest[j-1]==' ')
 			continue;
-		else if(i && !isalnum((unsigned char)str[i]) && str[i]==str[i-1])
+		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
 			continue;
 		else if((uchar)str[i]>=' ')
 			dest[j++]=str[i];
@@ -496,7 +502,7 @@ uint hptoi(const char *str)
 
 	if(!str[1] || toupper(str[0])<='F')
 		return(ahtoul(str));
-	strcpy(tmp,str);
+	SAFECOPY(tmp,str);
 	tmp[0]='F';
 	i=ahtoul(tmp)+((toupper(str[0])-'F')*0x10);
 	return(i);
@@ -641,6 +647,98 @@ char* ascii_str(uchar* str)
 		p++;
 	}
 	return((char*)str);
+}
+
+char* replace_named_values(const char* src	 
+    ,char* buf	 
+    ,size_t buflen       /* includes '\0' terminator */	 
+    ,const char* escape_seq	 
+    ,named_string_t* string_list	 
+    ,named_int_t* int_list	 
+    ,BOOL case_sensitive)	 
+ {	 
+     char    val[32];	 
+     size_t  i;	 
+     size_t  esc_len=0;	 
+     size_t  name_len;	 
+     size_t  value_len;	 
+     char*   p = buf;	 
+     int (*cmp)(const char*, const char*, size_t);	 
+ 
+     if(case_sensitive)	 
+         cmp=strncmp;	 
+     else	 
+         cmp=strnicmp;	 
+ 
+     if(escape_seq!=NULL)	 
+         esc_len = strlen(escape_seq);	 
+ 
+     while(*src && (size_t)(p-buf) < buflen-1) {	 
+         if(esc_len) {	 
+             if(cmp(src, escape_seq, esc_len)!=0) {	 
+                 *p++ = *src++;	 
+                 continue;	 
+             }	 
+             src += esc_len; /* skip the escape seq */	 
+         }	 
+         if(string_list) {	 
+             for(i=0; string_list[i].name!=NULL /* terminator */; i++) {	 
+                 name_len = strlen(string_list[i].name);	 
+                 if(cmp(src, string_list[i].name, name_len)==0) {	 
+                     value_len = strlen(string_list[i].value);	 
+                     if((p-buf)+value_len > buflen-1)        /* buffer overflow? */	 
+                         value_len = (buflen-1)-(p-buf); /* truncate value */	 
+                     memcpy(p, string_list[i].value, value_len);	 
+                     p += value_len;	 
+                     src += name_len;	 
+                     break;	 
+                 }	 
+             }	 
+             if(string_list[i].name!=NULL) /* variable match */	 
+                 continue;	 
+         }	 
+         if(int_list) {	 
+             for(i=0; int_list[i].name!=NULL /* terminator */; i++) {	 
+                 name_len = strlen(int_list[i].name);	 
+                 if(cmp(src, int_list[i].name, name_len)==0) {	 
+                     SAFEPRINTF(val,"%d",int_list[i].value);	 
+                     value_len = strlen(val);	 
+                     if((p-buf)+value_len > buflen-1)        /* buffer overflow? */	 
+                         value_len = (buflen-1)-(p-buf); /* truncate value */	 
+                     memcpy(p, val, value_len);	 
+                     p += value_len;	 
+                     src += name_len;	 
+                     break;	 
+                 }	 
+             }	 
+             if(int_list[i].name!=NULL) /* variable match */	 
+                 continue;	 
+         }	 
+
+         *p++ = *src++;	 
+     }	 
+     *p=0;   /* terminate string in destination buffer */	 
+ 
+     return(buf);	 
+ }	 
+ 
+/****************************************************************************/
+/* Condense consecutive white-space chars in a string to single spaces		*/
+/****************************************************************************/
+char* condense_whitespace(char* str)
+{
+	char* s = str;
+	char* d = str;
+	while(*s != '\0') {
+		if(IS_WHITESPACE(*s)) {
+			*(d++) = ' ';
+			SKIP_WHITESPACE(s);
+		} else {
+			*(d++) = *(s++);
+		}
+	}
+	*d = '\0';
+	return str;
 }
 
 uint32_t str_to_bits(uint32_t val, const char *str)

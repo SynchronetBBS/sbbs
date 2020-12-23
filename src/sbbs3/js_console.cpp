@@ -2099,6 +2099,22 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
+static JSBool
+js_term_updated(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->update_nodeterm()));
+	JS_RESUMEREQUEST(cx, rc);
+
+    return JS_TRUE;
+}
+
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
 	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
@@ -2313,6 +2329,10 @@ static jsSyncMethodSpec js_console_functions[] = {
 		"supports all the specified <i>terminal_flags</i>, or returns the current user/client's "
 		"<i>terminal_flags</i> (numeric bit-field) if no <i>terminal_flags</i> were specified")
 	,314
+	},
+	{"term_updated",	js_term_updated,	1, JSTYPE_BOOLEAN,	JSDOCSTR("")
+	,JSDOCSTR("update the node's <tt>terminal.ini</tt> file to match the current terminal settings")
+	,31802
 	},
 	{"backspace",		js_backspace,		0, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")
 	,JSDOCSTR("send a destructive backspace sequence")

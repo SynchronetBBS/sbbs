@@ -696,13 +696,11 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	sys_status &=~ SS_ABORT;
 
-	if(scope==NULL) {
-		JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
-		if(rval!=JSVAL_VOID)
-			JS_ValueToInt32(js_cx,rval,&result);
+	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
+	if(rval!=JSVAL_VOID)
+		JS_ValueToInt32(js_cx,rval,&result);
 
-		js_EvalOnExit(js_cx, js_scope, &js_callback);
-	}
+	js_EvalOnExit(js_cx, js_scope, &js_callback);
 
 	JS_ReportPendingException(js_cx);	/* Added Dec-4-2005, rswindell */
 
@@ -802,6 +800,10 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 		SAFEPRINTF2(str,"%s%s",cfg.exec_dir,modname);
 		fexistcase(str);
+	}
+	if(!fexist(str)) {
+		errormsg(WHERE, ERR_EXEC, mod, 0, "module doesn't exist");
+		return -1;
 	}
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -1523,9 +1525,9 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic=*csi->ip++;
 				return(0);
 			case CS_CMDKEY:
-				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
+				if( ((*csi->ip)==CS_DIGIT && IS_DIGIT(csi->cmd))
 					|| ((*csi->ip)==CS_EDIGIT && csi->cmd&0x80
-					&& isdigit(csi->cmd&0x7f))) {
+					&& IS_DIGIT(csi->cmd&0x7f))) {
 					csi->ip++;
 					return(0); 
 				}
@@ -1599,9 +1601,9 @@ int sbbs_t::exec(csi_t *csi)
 					memmove(csi->str,csi->str+i,j+1);
 				return(0);
 			case CS_COMPARE_KEY:
-				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
+				if( ((*csi->ip)==CS_DIGIT && IS_DIGIT(csi->cmd))
 					|| ((*csi->ip)==CS_EDIGIT && csi->cmd&0x80
-					&& isdigit(csi->cmd&0x7f))) {
+					&& IS_DIGIT(csi->cmd&0x7f))) {
 					csi->ip++;
 					csi->logic=LOGIC_TRUE; 
 				}
@@ -1630,7 +1632,7 @@ int sbbs_t::exec(csi_t *csi)
 				}
 				switch(*(csi->ip++)) {
 					case USER_STRING_ALIAS:
-						if(!isalpha(csi->str[0]) || trashcan(csi->str,"name"))
+						if(!IS_ALPHA(csi->str[0]) || trashcan(csi->str,"name"))
 							break;
 						i=matchuser(&cfg,csi->str,TRUE /*sysop_alias*/);
 						if(i && i!=useron.number)

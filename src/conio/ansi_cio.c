@@ -44,6 +44,16 @@
 	struct termios tio_default;				/* Initial term settings */
 #endif
 
+#ifdef _WIN32
+	#ifndef ENABLE_VIRTUAL_TERMINAL_INPUT
+	#define ENABLE_VIRTUAL_TERMINAL_INPUT 0x0200
+	#endif
+	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+	#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+	#endif
+#endif
+
+
 #include "ciolib.h"
 #include "ansi_cio.h"
 
@@ -931,10 +941,12 @@ int ansi_initio_cb(void)
 {
 #ifdef _WIN32
 	if(isatty(fileno(stdin))) {
-		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0))
+		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_INPUT))
 			return(0);
 
-		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), 0))
+		DWORD conmode = 0;
+		GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode);
+		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING))
 			return(0);
 	}
 	setmode(fileno(stdout),_O_BINARY);
@@ -1001,7 +1013,7 @@ int ansi_initciolib(long inmode)
 
 void ansi_suspend(void)
 {
-#if defined _WIN32
+#if defined _MSC_VER
 	// Prevents the wait for a key press when exit() is called and the stdin stream is flushed
 	_unlock_file(stdin);
 #endif

@@ -8,7 +8,8 @@
  * $Id: imapservice.js,v 1.76 2020/08/12 06:48:14 rswindell Exp $
  */
 
-load("smbdefs.js");
+require('sbbsdefs.js', 'SCAN_CFG_NEW');
+require('smbdefs.js', 'MSG_READ');
 load("822header.js");
 load("mime.js");
 
@@ -1864,7 +1865,7 @@ function do_search(args, uid)
 				break;
 			case 'FROM':
 				type="hdr";
-				search=(eval("function(hdr) { return(hdr.get_from()).toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
+				search=(eval("function(hdr) { return(hdr.get_from().toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 				break;
 			case 'KEYWORD':
 				type="hdr";

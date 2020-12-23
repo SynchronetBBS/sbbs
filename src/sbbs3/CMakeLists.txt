@@ -5,11 +5,6 @@ cmake_minimum_required(VERSION 2.8.11)
 INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckFunctionExists)
 
-if(UNIX)
-	set(SBBS_USE_DOSEMU FALSE
-		CACHE BOOL "Set if you intend on using dosemu on Linux"
-	)
-endif()
 set(SBBS_BUILD_JSDOCS FALSE
 	CACHE INTERNAL "DEVELOPER ONLY - Build only to run jsdocs.js (not a BBS)"
 )

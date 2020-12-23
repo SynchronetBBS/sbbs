@@ -1,8 +1,5 @@
 /* Synchronet constants, macros, and structure definitions */
 
-/* $Id: sbbsdefs.h,v 1.267 2020/08/14 02:00:47 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -74,8 +59,8 @@
 #define STR_UNKNOWN_USER	"<unknown user>"
 #define STR_NO_HOSTNAME		"<no name>"
 
-#define	JAVASCRIPT_MAX_BYTES		(8*1024*1024)
-#define JAVASCRIPT_CONTEXT_STACK	(16*1024)
+#define	JAVASCRIPT_MAX_BYTES		(16*1024*1024)
+#define JAVASCRIPT_CONTEXT_STACK	(8*1024)
 #define JAVASCRIPT_TIME_LIMIT		(24*60*600)			/* in 100ms ticks */
 #define JAVASCRIPT_YIELD_INTERVAL	10000
 #define JAVASCRIPT_GC_INTERVAL		100
@@ -97,6 +82,13 @@ typedef struct js_callback {
 } js_callback_t;
 
 #define JSVAL_NULL_OR_VOID(val)		(JSVAL_IS_NULL(val) || JSVAL_IS_VOID(val))
+
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
 
 /************/
 /* Maximums */
@@ -417,7 +409,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define QUOTEWRAP		(1<<21)		/* Word-wrap quoted message text		*/
 #define SAVECOLUMNS		(1<<22)		/* Save/share current terminal width	*/
 #define XTRN_UTF8		(1<<23)		/* External program supports UTF-8		*/
-#define XTRN_JS_CX		(1<<24)		/* New JavaScript Context				*/
+#define XTRN_TEMP_DIR	(1<<24)		/* Place drop files in temp dir			*/
 #define XTRN_CONIO		(1<<31)		/* Intercept Windows Console I/O (Drwy)	*/
 
 									/* Bits in cfg.xtrn_misc				*/
@@ -532,7 +524,9 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_FDESC		58	/* File description 							*/
 #define LEN_FCDT		 9	/* 9 digits for file credit values				*/
 #define LEN_TITLE		70	/* Message title								*/
-#define LEN_MAIN_CMD	34	/* Storage in user.dat for custom commands		*/
+#define LEN_MAIN_CMD	28	/* Unused Storage in user.dat					*/
+#define LEN_COLS		3
+#define LEN_ROWS		3
 #define LEN_PASS		40
 #define MIN_PASS_LEN	 4
 #define RAND_PASS_LEN	 8
@@ -594,14 +588,16 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_FLAGS2	U_TL+2
 #define U_EXEMPT	U_FLAGS2+8
 #define U_REST		U_EXEMPT+8
-#define U_ROWS		U_REST+8+2 	/* Number of Rows on user's monitor */
-#define U_SEX		U_ROWS+2 		/* Sex, Del, ANSI, color etc.		*/
+#define U_OLDROWS	U_REST+8+2 	/* Number of Rows on user's monitor */
+#define U_SEX		U_OLDROWS+2 	/* Sex, Del, ANSI, color etc.		*/
 #define U_MISC		U_SEX+1 		/* Miscellaneous flags in 8byte hex */
 #define U_OLDXEDIT	U_MISC+8 		/* External editor (Version 1 method  */
 #define U_LEECH 	U_OLDXEDIT+2 	/* two hex digits - leech attempt count */
 #define U_CURSUB	U_LEECH+2  	/* Current sub (internal code)  */
 #define U_CURXTRN	U_CURSUB+16 /* Current xtrn (internal code) */
-#define U_MAIN_CMD	U_CURXTRN+8+2 	/* unused */
+#define U_ROWS		U_CURXTRN+8+2
+#define U_COLS		U_ROWS+LEN_ROWS
+#define U_MAIN_CMD	U_COLS+LEN_COLS	/* unused */
 #define U_PASS		U_MAIN_CMD+LEN_MAIN_CMD
 #define U_SCAN_CMD	U_PASS+LEN_PASS+2  				/* unused */
 #define U_IPADDR	U_SCAN_CMD+LEN_SCAN_CMD 		/* unused */
@@ -692,11 +688,13 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define TERM_KEY_PAGEUP	CTRL_P
 #define TERM_KEY_PAGEDN	CTRL_N
 
+#define TERM_COLS_AUTO		0
 #define TERM_COLS_MIN		40
-#define TERM_COLS_MAX		255
+#define TERM_COLS_MAX		999
 #define TERM_COLS_DEFAULT	80
+#define TERM_ROWS_AUTO		0
 #define TERM_ROWS_MIN		8	// Amstrad NC100 has an 8-line display
-#define TERM_ROWS_MAX		255
+#define TERM_ROWS_MAX		999
 #define TERM_ROWS_DEFAULT	24
 
 							/* Online status (online)						*/
@@ -763,6 +761,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_NOSPIN	(1L<<21)	/* Do not honor the user's spinning cursor	*/
 #define K_ANSI_CPR	(1L<<22)	/* Expect ANSI Cursor Position Report		*/
 #define K_TRIM		(1L<<23)	/* Trimmed white-space						*/
+#define K_CTRLKEYS	(1L<<24)	/* No control-key handling/eating in inkey()*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/
@@ -783,6 +782,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_UTF8		(1<<13)		/* Message is UTF-8							*/
 #define P_AUTO_UTF8	(1<<14)		/* Message may be UTF-8, auto-detect		*/
 #define P_NOXATTRS	(1<<15)		/* No "Extra Attribute Codes" supported		*/
+#define P_MARKUP	(1<<16)		/* Support StyleCodes/Rich/StructuredText	*/
+#define P_HIDEMARKS	(1<<17)		/* Hide the mark-up characters				*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */
@@ -850,12 +851,27 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_JS_CX	(1<<24)		/* New JavaScript context */
 #define EX_NOLOG	(1<<30)		/* Don't log intercepted stdio				*/
 #define EX_CONIO	(1<<31)		/* Intercept Windows console I/O (doorway)	*/
+#define EX_UNSPECIFIED	-1
 
 #if defined(__unix__)
 #define EX_WILDCARD	EX_SH		/* Expand wildcards using 'sh' on Unix		*/
 #else
 #define EX_WILDCARD	0
 #endif
+
+/* Linux-DOSemu path/drive hackeroo */
+#define DOSEMU_NODE_DRIVE	"D:"
+#define DOSEMU_XTRN_DRIVE	"E:"	// Parent of xtrn's startup-dir
+#define DOSEMU_CTRL_DRIVE	"F:"
+#define DOSEMU_DATA_DRIVE	"G:"
+#define DOSEMU_EXEC_DRIVE	"H:"
+#define DOSEMU_NODE_DIR		DOSEMU_NODE_DRIVE "\\"
+#define DOSEMU_XTRN_DIR		DOSEMU_XTRN_DRIVE "\\"
+#define DOSEMU_CTRL_DIR		DOSEMU_CTRL_DRIVE "\\"
+#define DOSEMU_DATA_DIR		DOSEMU_DATA_DRIVE "\\"
+#define DOSEMU_EXEC_DIR		DOSEMU_EXEC_DRIVE "\\"
+#define DOSEMU_TEMP_DIR		DOSEMU_NODE_DRIVE "\\TEMP\\"
+#define DOSEMU_TEXT_DIR		DOSEMU_CTRL_DRIVE "\\..\\TEXT\\"
 
 								/* telnet_gate() mode bits					*/
 #define TG_ECHO			(1<<0)	/* Turn on telnet echo						*/
@@ -1028,9 +1044,11 @@ typedef struct {						/* Users information */
 
 	uchar	level,						/* Security level */
 			sex,						/* Sex - M or F */
-			rows,               		/* Rows of text */
 			prot,						/* Default transfer protocol */
 			leech;						/* Leech attempt counter */
+
+	int		rows,               		/* Rows on terminal (0 = auto-detect) */
+			cols;						/* Columns on terminal (0 = auto-detect) */
 
 	ulong	misc,						/* Misc. bits - ANSI, Deleted etc. */
 			qwk,						/* QWK settings */

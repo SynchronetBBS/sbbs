@@ -3438,6 +3438,7 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 {
 	JSObject*	obj;
 	JSObject*	constructor;
+	JSObject*	pobj;
 	jsval		val;
 
 	obj = JS_InitClass(cx, parent, NULL
@@ -3451,8 +3452,19 @@ JSObject* DLLCALL js_CreateMsgBaseClass(JSContext* cx, JSObject* parent, scfg_t*
 
 	if(JS_GetProperty(cx, parent, js_msgbase_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToObject(cx,val,&constructor);
-		JS_DefineObject(cx,constructor,"IndexPrototype",NULL,NULL,JSPROP_PERMANENT|JSPROP_ENUMERATE);
-		JS_DefineObject(cx,constructor,"HeaderPrototype",NULL,NULL,JSPROP_PERMANENT|JSPROP_ENUMERATE);
+		pobj = JS_DefineObject(cx,constructor,"IndexPrototype",NULL,NULL,JSPROP_PERMANENT|JSPROP_ENUMERATE);
+#ifdef BUILD_JSDOCS
+		if (pobj) {
+			js_DescribeSyncObject(cx, pobj, "Prototype for all index objects.  Can be used to extend these objects.",317);
+		}
+#endif
+		pobj = JS_DefineObject(cx,constructor,"HeaderPrototype",NULL,NULL,JSPROP_PERMANENT|JSPROP_ENUMERATE);
+#ifdef BUILD_JSDOCS
+		if (pobj) {
+			js_DescribeSyncObject(cx, pobj, "Prototype for all header objects.  Can be used to extend these objects.",317);
+		}
+#endif
+		(void)pobj;
 	}
 
 	return(obj);

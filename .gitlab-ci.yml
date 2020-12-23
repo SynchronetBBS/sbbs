@@ -1,57 +1,207 @@
-# This file is a template, and might need editing before it works on your project.
-# use the official gcc image, based on debian
-# can use verions as well, like gcc:5.2
-# see https://hub.docker.com/_/gcc/
-image: gcc
+.rules:
+  rules:
+    - changes:
+      - src/**/*
+      - 3rdp/**/*
+      - ctrl/text.dat
 
-build-sbbs:
+sbbs-linux:
+  tags: [Linux]
+  image: gcc
   stage: build
-  # instead of calling g++ directly you can also use some build toolkit like make
-  # install the necessary build tools when needed
-  # before_script:
-  #   - apt update && apt -y install make autoconf
+  extends: .rules
   script:
     - cd src/sbbs3
-    - make all
-    - make gtkutils
     - make RELEASE=1 all
     - make RELEASE=1 gtkutils
   artifacts:
-    name: sbbs
+    name: sbbs-linux-x64
     paths:
-      - "src/sbbs3/*.release/*"
-      - "src/sbbs3/*/*.release/*"
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
 
-build-sexpots:
+sexpots-linux:
+  tags: [Linux]
+  image: gcc
   stage: build
-  # instead of calling g++ directly you can also use some build toolkit like make
-  # install the necessary build tools when needed
-  # before_script:
-  #   - apt update && apt -y install make autoconf
+  extends: .rules
   script:
     - cd src/sexpots
     - make RELEASE=1
   artifacts:
-    name: sexpots
+    name: sexpots-linux-x64
     paths:
-      - "src/sexpots/*.release/*"
+      - "src/sexpots/*.exe.release/*"
 
-build-syncterm:
+syncterm-linux:
+  tags: [Linux]
+  image: gcc
   stage: build
-  # instead of calling g++ directly you can also use some build toolkit like make
-  # install the necessary build tools when needed
-  # before_script:
-  #   - apt update && apt -y install make autoconf
+  extends: .rules
   script:
     - cd src/syncterm
     - make RELEASE=1
   artifacts:
-    name: syncterm
+    name: syncterm-linux-x64
     paths:
-      - "src/syncterm/*.release/*"
+      - "src/syncterm/*.exe.release/*"
 
-# run tests using the binary built before
-#test:
-#  stage: test
-#  script:
-#    - ./runmytests.sh
+sbbs-windows:
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/xpdev
+    - make
+    - cd ../../src/sbbs3
+    - .\release.bat
+    - cd ctrl
+    - .\build.bat
+    - cd ../chat
+    - .\build.bat
+    - cd ../useredit
+    - .\build.bat
+  artifacts:
+    name: sbbs-win32
+    paths:
+      - "src/sbbs3/*.exe.release/*.exe"
+      - "src/sbbs3/*.dll.release/*.dll"
+      - "src/sbbs3/*/*.exe.release/*.exe"
+      - "src/sbbs3/*/*.exe"
+
+sexpots-windows:
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sexpots
+    - .\release.bat
+  artifacts:
+    name: sexpots-win32
+    paths:
+      - "src/sexpots/Release/*.exe"
+
+.syncterm-msvc:
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - .\release.bat
+  artifacts:
+    name: syncterm-msvc
+    paths:
+      - "src/syncterm/Release/*.exe"
+
+sbbs-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 all
+  artifacts:
+    name: sbbs-freebsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+      - "src/sbbs3/*.lib.release/*"
+      - "src/sbbs3/*/*.exe.release/*"
+
+syncterm-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - gmake RELEASE=1
+  artifacts:
+    name: syncterm-freebsd-amd64
+    paths:
+      - "src/syncterm/*.exe.release/*"
+
+syncterm-windows:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ RANLIB=mingw32-ranlib RELEASE=1 STATIC_CRYPTLIB=yes USE_SDL=1 VERBOSE=please WINDRES=mingw32-windres
+  artifacts:
+    name: syncterm-win32
+    paths:
+      - "src/syncterm/*.exe.release/*"
+
+syncdraw-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncdraw
+    - gmake RELEASE=1
+  artifacts:
+    name: syncdraw-freebsd-amd64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+
+syncdraw-linux:
+  tags: [Linux]
+  image: gcc
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncdraw
+    - make RELEASE=1
+  artifacts:
+    name: syncdraw-linux-x64
+    paths:
+      - "src/syncdraw/*.exe.release/*"
+
+jsdoor-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake RELEASE=1 jsdoor
+  artifacts:
+    name: jsdoor-freebsd-amd64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+
+jsdoor-linux:
+  tags: [Linux]
+  image: gcc
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - make RELEASE=1 jsdoor
+  artifacts:
+    name: jsdoor-linux-x64
+    paths:
+      - "src/sbbs3/*.exe.release/*"
+
+sexpots-freebsd:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sexpots
+    - gmake RELEASE=1
+  artifacts:
+    name: sexpots-freebsd-amd64
+    paths:
+      - "src/sexpots/*.exe.release/*"
+
+jsdoor-windows:
+  tags: [FreeBSD]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/sbbs3
+    - gmake AR=mingw32-ar CC=mingw32-gcc CXX=mingw32-g++ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ RANLIB=mingw32-ranlib RELEASE=1 VERBOSE=please WINDRES=mingw32-windres jsdoor
+  artifacts:
+    name: jsdoor-win32
+    paths:
+      - "src/sbbs3/*.exe.release/*"

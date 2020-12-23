@@ -1,8 +1,4 @@
-/* newuser.cpp */
-
 /* Synchronet new user routine */
-
-/* $Id: newuser.cpp,v 1.89 2020/08/04 04:26:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -154,7 +138,7 @@ BOOL sbbs_t::newuser()
 
 		while(text[HitYourBackspaceKey][0] && !(useron.misc&(PETSCII|SWAP_DELETE)) && online) {
 			bputs(text[HitYourBackspaceKey]);
-			uchar key = getkey(K_NONE);
+			uchar key = getkey(K_CTRLKEYS);
 			bprintf(text[CharacterReceivedFmt], key, key);
 			if(key == '\b')
 				break;
@@ -179,7 +163,8 @@ BOOL sbbs_t::newuser()
 		}
 
 		if(useron.misc&ANSI) {
-			useron.rows=0;	/* Auto-rows */
+			useron.rows = TERM_ROWS_AUTO;
+			useron.cols = TERM_COLS_AUTO;
 			if(!(cfg.uq&UQ_COLORTERM) || useron.misc&(RIP|WIP|HTML) || yesno(text[ColorTerminalQ]))
 				useron.misc|=COLOR; 
 			else
@@ -316,10 +301,15 @@ BOOL sbbs_t::newuser()
 			useron.sex=(char)getkeys("MF",0); 
 		}
 		while((cfg.uq&UQ_BIRTH) && online && text[EnterYourBirthday][0]) {
-			bprintf(text[EnterYourBirthday]
-				,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
-			if(gettmplt(useron.birth,"nn/nn/nn",K_EDIT)==8 && getage(&cfg,useron.birth))
-				break; 
+			bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
+			format_birthdate(&cfg, useron.birth, str, sizeof(str));
+			if(gettmplt(str, "nn/nn/nnnn", K_EDIT) < 10)
+				continue;
+			int age = getage(&cfg, parse_birthdate(&cfg, str, tmp, sizeof(tmp)));
+			if(age >= 0 && age <= 200) { // TODO: Configurable min/max user age
+				SAFECOPY(useron.birth, tmp);
+				break;
+			}
 		}
 		if(!online) return(FALSE);
 		while(!(cfg.uq&UQ_NONETMAIL) && online && text[EnterNetMailAddress][0]) {
@@ -375,9 +365,9 @@ BOOL sbbs_t::newuser()
 	}
 	else {
 		c=0;
-		while(c < RAND_PASS_LEN) { 				/* Create random password */
+		while(c < MAX(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
 			useron.pass[c]=sbbs_random(43)+'0';
-			if(isalnum(useron.pass[c]))
+			if(IS_ALPHANUMERIC(useron.pass[c]))
 				c++; 
 		}
 		useron.pass[c]=0;

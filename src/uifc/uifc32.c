@@ -770,7 +770,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_DYN && mode&WIN_NODRAW)
 		is_redraw=0;
 
-	if(mode&WIN_ORG) {		/* Clear all save buffers on WIN_ORG */
+	if(mode&WIN_ORG && !(mode&WIN_SAV)) {		/* Clear all save buffers on WIN_ORG */
 		for(i=0; i< MAX_BUFS; i++)
 			FREE_AND_NULL(sav[i].buf);
 		api->savnum=0;

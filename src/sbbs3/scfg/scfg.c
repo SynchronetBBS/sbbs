@@ -1,8 +1,5 @@
 /* Synchronet configuration utility 										*/
 
-/* $Id: scfg.c,v 1.118 2020/08/17 00:48:43 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -38,6 +23,8 @@
 #include "scfg.h"
 #undef BLINK
 #include "ciolib.h"
+#include "git_hash.h"
+#include "git_branch.h"
 
 /********************/
 /* Global Variables */
@@ -168,9 +155,13 @@ int main(int argc, char **argv)
 	char 	str[MAX_PATH+1];
 	BOOL    door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
+	char	compiler[32];
 
-    printf("\nSynchronet Configuration Utility (%s)  v%s  " COPYRIGHT_NOTICE
-        "\n",PLATFORM_DESC,VERSION);
+	DESCRIBE_COMPILER(compiler);
+
+    printf("\nSynchronet Configuration Utility (%s)  v%s%c  " COPYRIGHT_NOTICE
+        "\n",PLATFORM_DESC, VERSION, REVISION);
+	printf("\nCompiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 	xp_randomize();
 	cfg.size=sizeof(cfg);
@@ -233,7 +224,7 @@ int main(int argc, char **argv)
 					umask(strtoul(argv[i]+2,NULL,8));
 					break;
 				case 'G':
-					if(isalpha(argv[i][2]))
+					if(IS_ALPHA(argv[i][2]))
 						grpname = argv[i]+2;
 					else
 						grpnum = atoi(argv[i]+2);
@@ -303,6 +294,7 @@ int main(int argc, char **argv)
 						"-c  =  force color mode\n"
 						"-m  =  force monochrome mode\n"
                         "-e# =  set escape delay to #msec\n"
+						"-insert = enable keyboard insert mode by default\n"
 						"-import=<filename> = import a message area list file\n"
 						"-faddr=<addr> = specify your FTN address for imported subs\n"
 						"-misc=<value> = specify option flags for imported subs\n"

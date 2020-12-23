@@ -168,7 +168,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 					strip_exascii(desc, desc);
 					prep_file_desc(desc, desc);
 					for(i=0;desc[i];i++)
-						if(isalnum(desc[i]))
+						if(IS_ALPHANUMERIC(desc[i]))
 							break;
 					sprintf(f->desc,"%.*s",LEN_FDESC,desc+i); 
 				}
@@ -388,7 +388,7 @@ bool sbbs_t::upload(uint dirnum)
 		SYNC;
 		bputs(text[RateThisFile]);
 		ch=getkey(K_ALPHA);
-		if(!isalpha(ch) || sys_status&SS_ABORT)
+		if(!IS_ALPHA(ch) || sys_status&SS_ABORT)
 			return(false);
 		CRLF;
 		sprintf(descbeg,text[Rated],toupper(ch)); 

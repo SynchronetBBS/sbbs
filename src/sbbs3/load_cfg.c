@@ -1,7 +1,5 @@
 /* Synchronet configuration load routines (exported) */
 
-/* $Id: load_cfg.c,v 1.82 2020/05/26 01:49:22 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,25 +13,17 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "load_cfg.h"
+#include "scfglib.h"
+#include "str_util.h"
+#include "nopen.h"
+#include "datewrap.h"
 #include "text.h"	/* TOTAL_TEXT */
 #ifdef USE_CRYPTLIB
 #include "cryptlib.h"
@@ -43,6 +33,9 @@ static void prep_cfg(scfg_t* cfg);
 static void free_attr_cfg(scfg_t* cfg);
 
 int 	lprintf(int level, const char *fmt, ...);	/* log output */
+
+/* readtext.c */
+char *	readtext(long *line, FILE *stream, long dflt);
 
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
@@ -474,7 +467,7 @@ char* prep_code(char *str, const char* prefix)
 	strcpy(str,tmp);
 	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
 		for(i=j=0;str[i];i++)
-			if(isalnum(str[i]))
+			if(IS_ALPHANUMERIC(str[i]))
 				tmp[j++]=str[i];
 		tmp[j]=0;
 		strcpy(str,tmp);

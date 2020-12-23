@@ -1,8 +1,5 @@
-/* xmodem.c */
-
 /* Synchronet X/YMODEM Functions */
-
-/* $Id: xmodem.c,v 1.52 2019/08/31 22:39:24 rswindell Exp $ */
+/* Synchronet X/YMODEM Functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +14,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -167,13 +152,13 @@ int xmodem_cancel(xmodem_t* xm)
 	int result;
 
 	if(!is_cancelled(xm) && is_connected(xm)) {
+		xm->cancelled=TRUE;
 		for(i=0;i<8 && is_connected(xm);i++)
 			if((result=putcom(CAN))!=0)
 				return result;
 		for(i=0;i<10 && is_connected(xm);i++)
 			if((result=putcom('\b'))!=0)
 				return result;
-		xm->cancelled=TRUE;
 	}
 
 	xmodem_flush(xm);
@@ -622,9 +607,7 @@ const char* xmodem_source(void)
 
 char* xmodem_ver(char *buf)
 {
-	sscanf("$Revision: 1.52 $", "%*s %s", buf);
-
-	return(buf);
+	return strcpy(buf, "2.0");
 }
 
 void xmodem_init(xmodem_t* xm, void* cbdata, long* mode

@@ -1,8 +1,4 @@
-/* logon.cpp */
-
 /* Synchronet user logon routines */
-
-/* $Id: logon.cpp,v 1.81 2020/08/04 04:26:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -49,7 +33,7 @@ bool sbbs_t::logon()
 	char	str[256],c;
 	char 	tmp[512];
 	int 	file;
-	uint	i,j,mailw;
+	uint	i,j,mailw,mailr;
 	long	kmode;
 	ulong	totallogons;
 	node_t	node;
@@ -79,7 +63,8 @@ bool sbbs_t::logon()
 
 	if(useron.rest&FLAG('G')) {     /* Guest account */
 		useron.misc=(cfg.new_misc&(~ASK_NSCAN));
-		useron.rows=0;
+		useron.rows = TERM_ROWS_AUTO;
+		useron.cols = TERM_COLS_AUTO;
 		useron.misc &= ~TERM_FLAGS;
 		useron.misc|=autoterm;
 		if(!(useron.misc&(ANSI|PETSCII)) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
@@ -215,10 +200,13 @@ bool sbbs_t::logon()
 	}
 
 	bputs(text[LoggingOn]);
-	if(useron.rows)
-		rows=useron.rows;
-	unixtodstr(&cfg,(time32_t)logontime,str);
-	if(!strncmp(str,useron.birth,5) && !(useron.rest&FLAG('Q'))) {
+	if(useron.rows != TERM_ROWS_AUTO)
+		rows = useron.rows;
+	if(useron.cols != TERM_COLS_AUTO)
+		cols = useron.cols;
+	update_nodeterm();
+	if(tm.tm_mon + 1 == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
+		&& !(useron.rest&FLAG('Q'))) {
 		if(text[HappyBirthday][0]) {
 			bputs(text[HappyBirthday]);
 			pause();
@@ -255,10 +243,10 @@ bool sbbs_t::logon()
 			bprintf(text[TimeToChangePw],cfg.sys_pwdays);
 
 			c=0;
-			while(c < RAND_PASS_LEN) { 				/* Create random password */
+			while(c < MAX(RAND_PASS_LEN, cfg.min_pwlen)) { 				/* Create random password */
 				str[c]=sbbs_random(43)+'0';
-				if(isalnum(str[c]))
-					c++; 
+				if(IS_ALPHANUMERIC(str[c]))
+					c++;
 			}
 			str[c]=0;
 			bprintf(text[YourPasswordIs],str);
@@ -473,7 +461,8 @@ bool sbbs_t::logon()
 		return(true);
 
 	sys_status|=SS_PAUSEON;	/* always force pause on during this section */
-	mailw=getmail(&cfg,useron.number,/* Sent: */FALSE, /* SPAM: */FALSE);
+	mailw=getmail(&cfg,useron.number,/* Sent: */FALSE, /* attr: */0);
+	mailr=getmail(&cfg,useron.number,/* Sent: */FALSE, /* attr: */MSG_READ);
 
 	if(!(cfg.sys_misc&SM_NOSYSINFO)) {
 		bprintf(text[SiSysName],cfg.sys_name);
@@ -483,7 +472,7 @@ bool sbbs_t::logon()
 			,cfg.level_callsperday[useron.level]);
 		bprintf(text[LiTimeonToday],useron.ttoday
 			,cfg.level_timeperday[useron.level]+useron.min);
-		bprintf(text[LiMailWaiting],mailw);
+		bprintf(text[LiMailWaiting],mailw, mailw-mailr);
 		bprintf(text[LiSysopIs]
 			, text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
 		newline();
@@ -548,8 +537,9 @@ bool sbbs_t::logon()
 	if(online==ON_REMOTE)
 		rioctl(IOSM|ABORT);		/* Turn abort ability on */
 	if(text[ReadYourMailNowQ][0] && mailw) {
-		if(yesno(text[ReadYourMailNowQ]))
-			readmail(useron.number,MAIL_YOUR); 
+		if((mailw == mailr && !noyes(text[ReadYourMailNowQ]))
+			|| (mailw != mailr && yesno(text[ReadYourMailNowQ])))
+			readmail(useron.number,MAIL_YOUR);
 	}
 	if(usrgrps && useron.misc&ASK_NSCAN && text[NScanAllGrpsQ][0] && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);

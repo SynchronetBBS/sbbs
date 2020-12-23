@@ -178,7 +178,7 @@ size_t sbbs_t::bstrlen(const char *str, long mode)
 /* Perform PETSCII terminal output translation (from ASCII/CP437) */
 unsigned char cp437_to_petscii(unsigned char ch)
 {
-	if(isalpha(ch))
+	if(IS_ALPHA(ch))
 		return ch ^ 0x20;	/* swap upper/lower case */
 	switch(ch) {
 		case '\1':		return '@';
@@ -260,7 +260,7 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 {
 	if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
 		ch = 0x60 | (ch&0x1f);
-	if(isalpha(ch))
+	if(IS_ALPHA(ch))
 		return outchar(ch ^ 0x20);	/* swap upper/lower case */
 	switch(ch) {
 		case '\r':					newline();		break;
@@ -557,6 +557,32 @@ const char* sbbs_t::term_charset(long term)
 }
 
 /****************************************************************************/
+/* For node spying purposes													*/
+/****************************************************************************/
+bool sbbs_t::update_nodeterm(void)
+{
+	str_list_t	ini = strListInit();
+	iniSetInteger(&ini, ROOT_SECTION, "cols", cols, NULL);
+	iniSetInteger(&ini, ROOT_SECTION, "rows", rows, NULL);
+	iniSetString(&ini, ROOT_SECTION, "type", term_type(), NULL);
+	iniSetString(&ini, ROOT_SECTION, "chars", term_charset(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "flags", term_supports(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "mouse", mouse_mode, NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "console", console, NULL);
+
+	char path[MAX_PATH + 1];
+	SAFEPRINTF(path, "%sterminal.ini", cfg.node_dir);
+	FILE* fp = iniOpenFile(path, /* create: */TRUE);
+	bool result = false;
+	if(fp != NULL) {
+		result = iniWriteFile(fp, ini);
+		iniCloseFile(fp);
+	}
+	strListFree(&ini);
+	return result;
+}
+
+/****************************************************************************/
 /* Outputs character														*/
 /* Performs terminal translations (e.g. EXASCII-to-ASCII, FF->ESC[2J)		*/
 /* Performs Telnet IAC escaping												*/
@@ -566,57 +592,46 @@ const char* sbbs_t::term_charset(long term)
 /****************************************************************************/
 int sbbs_t::outchar(char ch)
 {
-	/*
-	 * outchar_esc values:
-	 * 0: No sequence
-	 * 1: ESC
-	 * 2: CSI
-	 * 3: Final byte
-     * 4: APS, DCS, PM, or OSC
-     * 5: SOS
-     * 6: ESC inside of SOS
-     */
-
 	if(console&CON_ECHO_OFF)
 		return 0;
-	if(ch==ESC && outchar_esc < 4)
-		outchar_esc=1;
-	else if(outchar_esc==1) {
-		if(ch=='[')
-			outchar_esc++;
-		else if(ch=='_' || ch=='P' || ch == '^' || ch == ']')
-			outchar_esc=4;
+	if(ch == ESC && outchar_esc < ansiState_string)
+		outchar_esc = ansiState_esc;
+	else if(outchar_esc == ansiState_esc) {
+		if(ch == '[')
+			outchar_esc = ansiState_csi;
+		else if(ch == '_' || ch == 'P' || ch == '^' || ch == ']')
+			outchar_esc = ansiState_string;
 		else if(ch=='X')
-			outchar_esc=5;
-		else if(ch >= 0x40 && ch <= 0x5f)
-			outchar_esc=3;
+			outchar_esc = ansiState_sos;
+		else if(ch >= '@' && ch <= '_')
+			outchar_esc = ansiState_final;
 		else
-			outchar_esc=0;
+			outchar_esc = ansiState_none;
 	}
-	else if(outchar_esc==2) {
-		if(ch>='@' && ch<='~')
-			outchar_esc++;
+	else if(outchar_esc == ansiState_csi) {
+		if(ch >= '@' && ch <= '~')
+			outchar_esc = ansiState_final;
 	}
-	else if(outchar_esc==4) {	// APS, DCS, PM, or OSC
+	else if(outchar_esc == ansiState_string) {	// APS, DCS, PM, or OSC
 		if (ch == ESC)
-			outchar_esc = 1;
-		if (!((ch >= 0x08 && ch <= 0x0d) || (ch >= 0x20 && ch <= 0x7e)))
-			outchar_esc = 0;
+			outchar_esc = ansiState_esc;
+		if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
+			outchar_esc = ansiState_none;
 	}
-	else if(outchar_esc==5) {	// SOS
+	else if(outchar_esc == ansiState_sos) {	// SOS
 		if (ch == ESC)
-			outchar_esc++;
+			outchar_esc = ansiState_sos_esc;
 	}
-	else if(outchar_esc==6) {	// ESC inside SOS
+	else if(outchar_esc == ansiState_sos_esc) {	// ESC inside SOS
 		if (ch == '\\')
-			outchar_esc = 1;
+			outchar_esc = ansiState_esc;
 		else if (ch == 'X')
-			outchar_esc = 0;
+			outchar_esc = ansiState_none;
 		else
-			outchar_esc = 5;
+			outchar_esc = ansiState_sos;
 	}
 	else
-		outchar_esc=0;
+		outchar_esc = ansiState_none;
 	long term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	if(!(term&PETSCII)) {
@@ -642,7 +657,7 @@ int sbbs_t::outchar(char ch)
 	if(!(console&CON_R_ECHO))
 		return 0;
 
-	if((console&CON_R_ECHOX) && (uchar)ch>=' ' && !outchar_esc) {
+	if((console&CON_R_ECHOX) && (uchar)ch>=' ' && outchar_esc == ansiState_none) {
 		ch=text[YNQP][3];
 		if(text[YNQP][2]==0 || ch==0) ch='X';
 	}
@@ -677,7 +692,7 @@ int sbbs_t::outchar(char ch)
 				outcom(ch);
 		}
 	}
-	if(!outchar_esc) {
+	if(outchar_esc == ansiState_none) {
 		/* Track cursor position locally */
 		switch(ch) {
 			case '\a':	// 7
@@ -718,8 +733,8 @@ int sbbs_t::outchar(char ch)
 				break;
 		}
 	}
-	if(outchar_esc==3)
-		outchar_esc=0;
+	if(outchar_esc == ansiState_final)
+		outchar_esc = ansiState_none;
 
 	if(lncntr==rows-1 && ((useron.misc&(UPAUSE^(console&CON_PAUSEOFF))) || sys_status&SS_PAUSEON)
 		&& !(sys_status&(SS_PAUSEOFF|SS_ABORT))) {
@@ -772,7 +787,7 @@ void sbbs_t::inc_row(int count)
 	}
 }
 
-void sbbs_t::center(char *instr, unsigned int columns)
+void sbbs_t::center(const char *instr, unsigned int columns)
 {
 	char str[256];
 	size_t len;
@@ -1045,13 +1060,6 @@ void sbbs_t::ctrl_a(char x)
 			console^=(CON_ECHO_OFF);
 		return;
 	}
-	if((uchar)x>0x7f) {
-		cursor_right((uchar)x-0x7f);
-		return;
-	}
-	if(isdigit(x)) {	/* background color */
-		atr &= (BG_BRIGHT|BLINK|0x0f);
-	}
 	switch(toupper(x)) {
 		case '!':   /* level 10 or higher */
 			if(useron.level<10)
@@ -1092,6 +1100,18 @@ void sbbs_t::ctrl_a(char x)
 		case ')':   /* turn echo back on */
 			console&=~CON_ECHO_OFF;
 			break;
+	}
+	if(console & CON_ECHO_OFF)
+		return;
+
+	if((uchar)x>0x7f) {
+		cursor_right((uchar)x-0x7f);
+		return;
+	}
+	if(IS_DIGIT(x)) {	/* background color */
+		atr &= (BG_BRIGHT|BLINK|0x0f);
+	}
+	switch(toupper(x)) {
 		case '+':	/* push current attribute */
 			if(attr_sp<(int)sizeof(attr_stack))
 				attr_stack[attr_sp++]=curatr;

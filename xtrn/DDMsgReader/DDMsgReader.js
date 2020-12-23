@@ -1,4 +1,4 @@
-// $Id: DDMsgReader.js,v 1.144 2020/07/11 23:07:46 nightfox Exp $
+// $Id: DDMsgReader.js,v 1.143 2020/05/23 23:30:28 nightfox Exp $
 
 /* This is a message reader/lister door for Synchronet.  Features include:
  * - Listing messages in the user's current message area with the ability to
@@ -69,6 +69,13 @@
  *                              Added mouse support to the scrollable reader interface.
  *                              The integrated area changer functionality doesn't have mouse
  *                              support yet.
+ * 2020-11-26 Eric Oulashin     Verison 1.38
+ *                              Bug fix: When forwarding a message, it now correctly
+ *                              sets the to_net_type property in the message header to
+ *                              FidoNet or internet for those types of message destinations
+ * 2020-12-01 Eric Oulashin     Version 1.39
+ *                              When forwarding a message, added the ability to
+ *                              optionally edit the message before forwarding it.
  */
 
 
@@ -180,8 +187,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.37";
-var READER_DATE = "2020-07-11";
+var READER_VERSION = "1.39";
+var READER_DATE = "2020-12-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -13303,7 +13310,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 		return "Invalid message header given";
 
 	var retStr = "";
-	
+
 	console.print("\1n");
 	console.crlf();
 	console.print("\1cUser name/number/email address\1h:\1n");
@@ -13329,6 +13336,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 				else
 					return "Unable to open the sub-board to get the message body";
 			}
+
 			// Prepend some lines to the message body to describe where
 			// the message came from originally.
 			var newMsgBody = "This is a forwarded message from " + system.name + "\n";
@@ -13350,15 +13358,69 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			newMsgBody += "==================================\n\n";
 			newMsgBody += pMsgBody;
 
+			// New - Editing the message
+			// TODO: Ask whether to edit the message before forwarding it,
+			// and use console.editfile(filename) to edit it.
+			if (!console.noyes("Edit the message before sending"))
+			{
+				var baseWorkDir = system.node_dir + "DDMsgReader_Temp";
+				deltree(baseWorkDir + "/");
+				if (mkdir(baseWorkDir))
+				{
+					// TODO: Let the user edit the message, then read it
+					// and set newMsgBody to it
+					var tmpMsgFilename = baseWorkDir + "/message.txt";
+					// Write the current message to the file
+					var wroteMsgToTmpFile = false;
+					var outFile = new File(tmpMsgFilename);
+					if (outFile.open("w"))
+					{
+						wroteMsgToTmpFile = outFile.write(newMsgBody, newMsgBody.length);
+						outFile.close();
+					}
+					if (wroteMsgToTmpFile)
+					{
+						// Let the user edit the file, and if successful,
+						// read it in to newMsgBody
+						if (console.editfile(tmpMsgFilename))
+						{
+							var inFile = new File(tmpMsgFilename);
+							if (inFile.open("r"))
+							{
+								newMsgBody = inFile.read(inFile.length);
+								inFile.close();
+							}
+						}
+					}
+					else
+					{
+						console.print("\1n\1cFailed to write message to a file for editing\1n");
+						console.crlf();
+						console.pause();
+					}
+				}
+				else
+				{
+					console.print("\1n\1cCouldn't create temporary directory\1n");
+					console.crlf();
+					console.pause();
+				}
+			}
+			// End New (editing message)
+
 			// Create part of a header object which will be used when saving/sending
 			// the message.  The destination ("to" informatoin) will be filled in
 			// according to the destination type.
 			var destMsgHdr = { to_net_type: NET_NONE, from: user.name,
 							   replyto: user.name, subject: "Fwd: " + pMsgHdr.subject };
 			if (user.netmail.length > 0)
+			{
 				destMsgHdr.replyto_net_addr = user.netmail;
+			}
 			else
+			{
 				destMsgHdr.replyto_net_addr = user.email;
+			}
 			//destMsgHdr.when_written_time = 
 			//destMsgHdr.when_written_zone = system.timezone;
 			//destMsgHdr.when_written_zone_offset = 
@@ -13380,7 +13442,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 					console.crlf();
 					destMsgHdr.to = msgDest;
 					destMsgHdr.to_net_addr = msgDest;
-					destMsgHdr.to_net_type = NET_INTERNET;
+					destMsgHdr.to_net_type = netaddr_type(msgDest);
 				}
 			}
 			else
@@ -13430,6 +13492,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 							console.print("\1n\1cForwarding to " + destUser.alias + "\1n");
 							console.crlf();
 							destMsgHdr.to_ext = destUser.number;
+							destMsgHdr.to_net_type = NET_NONE;
 						}
 					}
 				}
@@ -13470,6 +13533,54 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 	}
 
 	return retStr;
+}
+
+function printMsgHdrInfo(pMsgHdr)
+{
+	if (typeof(pMsgHdr) != "object")
+		return;
+
+	for (var prop in pMsgHdr)
+	{
+		if (prop == "to_net_type")
+			print(prop + ": " + toNetTypeToStr(pMsgHdr[prop]));
+		else
+			console.print(prop + ": " + pMsgHdr[prop]);
+		console.crlf();
+	}
+}
+
+function toNetTypeToStr(toNetType)
+{
+	var toNetTypeStr = "Unknown";
+	if (typeof(toNetType) == "number")
+	{
+		switch (toNetType)
+		{
+			case NET_NONE:
+				toNetTypeStr = "Local";
+				break;
+			case NET_UNKNOWN:
+				toNetTypeStr = "Unknown networked";
+				break;
+			case NET_FIDO:
+				toNetTypeStr = "FidoNet";
+				break;
+			case NET_POSTLINK:
+				toNetTypeStr = "PostLink";
+				break;
+			case NET_QWK:
+				toNetTypeStr = "QWK";
+				break;
+			case NET_INTERNET:
+				toNetTypeStr = "Internet";
+				break;
+			default:
+				toNetTypeStr = "Unknown";
+				break;
+		}
+	}
+	return toNetTypeStr;
 }
 
 // For the DigDistMsgReader class: Lets the user vote on a message

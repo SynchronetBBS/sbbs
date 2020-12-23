@@ -1,4 +1,4 @@
-// $Id: binkp.js,v 1.123 2020/04/10 07:01:24 rswindell Exp $
+const binkp_revision = 4;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -56,7 +56,7 @@ function BinkP(name_ver, inbound, rx_callback, tx_callback)
 	if (name_ver === undefined)
 		name_ver = 'UnknownScript/0.0';
 	this.name_ver = name_ver;
-	this.revision = "JSBinkP/" + "$Revision: 1.123 $".split(' ')[1];
+	this.revision = "JSBinkP/" + binkp_revision;
 	this.full_ver = name_ver + "," + this.revision + ',sbbs' + system.version + system.revision + '/' + system.platform;
 
 	if (inbound === undefined)
@@ -412,7 +412,7 @@ BinkP.prototype.connect = function(addr, password, auth_cb, port, inet_host, tls
 	this.in_keys = undefined;
 	this.out_keys = undefined;
 	if (addr === undefined)
-		throw("No address specified!");
+		throw new Error("No address specified!");
 	addr = FIDO.parse_addr(addr, this.default_zone, this.default_domain);
 
 	if (!password)
@@ -916,6 +916,8 @@ BinkP.prototype.session = function()
 BinkP.prototype.close = function()
 {
 	var i;
+	var end;
+	var remain;
 
 	// Send an ERR and close.
 	this.ack_file();
@@ -936,6 +938,19 @@ BinkP.prototype.close = function()
 		else {
 			if (this.senteob < 1)
 				this.sendCmd(this.command.M_EOB);
+		}
+		// Attempt a super-duper graceful shutdown to prevent RST...
+		if (this.sock !== undefined) {
+			this.sock.is_writeable = false;
+			remain = this.timeout;
+			end = time() + remain;
+			do {
+				if (this.sock.recv(2048, remain) == 0)
+					break;
+				remain = end - time();
+			} while (remain > 0);
+			this.sock.close();
+			this.sock = undefined;
 		}
 	}
 	this.tx_queue.forEach(function(file) {
@@ -1022,6 +1037,8 @@ BinkP.prototype.recvFrame = function(timeout)
 	var avail;
 	var nullpos;
 	var buf;
+	var m;
+	var binkp_ver;
 
 	// Avoid warning from syncjslint by putting this in a closure.
 	function hex2ascii(hex)
@@ -1041,7 +1058,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		ret = new this.Frame();
 		i = this.sock.recv(1, timeout);
 		if (i === null) {
-			log(LOG_INFO, "Error in recv() of first byte of packet header");
+			log(LOG_INFO, "Error in recv() of first byte of packet header, timeout = " + timeout);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
@@ -1094,28 +1111,33 @@ BinkP.prototype.recvFrame = function(timeout)
 	else
 		ret = this.partialFrame;
 
-	i = this.recv_buf(this.sock.recv(ret.length - ret.data.length, timeout));
-	if (i == null) {
-		log(LOG_INFO, "Error in recv() of packet data");
-		this.sock.close();
-		this.sock = undefined;
-		return undefined;
+	if (ret.length == 0) {
+		log(LOG_WARNING, "Remote illegally sent a "+(ret.is_cmd ? 'Command' : 'Data')+" packet with data length of zero.  This isn't even allowed in protocol 1.0.");
 	}
-	if (i.length == 0) {
-		if (!this.sock.is_connected) {
-			log(LOG_DEBUG, "Remote host closed socket");
+	else {
+		i = this.recv_buf(this.sock.recv(ret.length - ret.data.length, timeout));
+		if (i == null) {
+			log(LOG_INFO, "Error in recv() of packet data");
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
 		}
-		else if (timeout) {
-			log(LOG_WARNING, "Timed out receiving packet data from remote: " + this.remote_addrs);
-			this.sock.close();
-			this.sock = undefined;
-			return undefined;
+		if (i.length == 0) {
+			if (!this.sock.is_connected) {
+				log(LOG_DEBUG, "Remote host closed socket");
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
+			else if (timeout) {
+				log(LOG_WARNING, "Timed out receiving packet data from remote: " + this.remote_addrs);
+				this.sock.close();
+				this.sock = undefined;
+				return undefined;
+			}
 		}
+		ret.data += i;
 	}
-	ret.data += i;
 
 	if (ret.data.length < ret.length)
 		this.partialFrame = ret;
@@ -1208,28 +1230,17 @@ BinkP.prototype.recvFrame = function(timeout)
 							}
 							break;
 						case 'VER':
-							log(LOG_INFO, "Peer version: " + args.slice(1).join(' '));
-							tmp = ret.data.split(/ /);
-							if (tmp.length >= 3) {
-								this.remote_ver = tmp[1];
-								if (tmp[2].substr(0, 6) === 'binkp/') {
-									ver = tmp[2].substr(6).split(/\./);
-									if (ver.length >= 2) {
-										tmp = parseInt(ver[0], 10);
-										switch(tmp) {
-											case NaN:
-												break;
-											case 1:
-												if (parseInt(ver[1], 10) > 0)
-													this.ver1_1 = true;
-												break;
-											default:
-												if (tmp > 1)
-													this.ver1_1 = true;
-												break;
-										}
-									}
+							m = ret.data.match(/^VER (.*) ([^ ]*?)$/);
+							if (m !== null) {
+								this.remote_ver = m[1];
+								log(LOG_INFO, "Peer version: " + this.remote_ver);
+								binkp_ver = parseFloat(m[2].substr(m[2].indexOf('binkp/') + 6));
+								// Note: Internet Rex sends "VER Internet Rex 2.67 beta 1a OS/2 (binkp/1.1)"
+								if (m[2] !== 'binkp/1.1' && binkp_ver > 1.0) {
+									log(LOG_WARNING, 'Peer ended their VER with " '+m[2]+'" instead of the required " binkp/1.1", but we\'re assuming binkp 1.1 anyway');
 								}
+								log(LOG_DEBUG, "Parsed BinkP version: " + binkp_ver);
+								this.ver1_1 = binkp_ver >= 1.1;
 							}
 							break;
 						case 'ZYZ':

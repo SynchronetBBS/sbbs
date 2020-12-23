@@ -63,12 +63,12 @@ function NodeList(filename, warn)
 	});
 
 	if (!f.open("r"))
-		throw("Unable to open '"+f.name+"'.");
+		throw new Error("Unable to open '"+f.name+"'.");
 
 	// Validate first line...
 	var line = f.readln(2048);
 	if (line == undefined)
-		throw("Unable to read first line in '"+f.name+"'");
+		throw new Error("Unable to read first line in '"+f.name+"'");
 	var m;
 	if ((m=line.match(/^;A (.*) Nodelist for (.*) -- Day number ([0-9]+) : ([0-9]{5})$/)) !== null) {
 		this.domain = m[1];

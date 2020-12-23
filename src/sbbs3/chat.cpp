@@ -723,7 +723,7 @@ bool sbbs_t::sysop_page(void)
 				mode|= EX_NATIVE;
 			if(cfg.page[i]->misc&XTRN_SH)
 				mode |= EX_SH;
-			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL), mode); 
+			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL,mode), mode); 
 		}
 		else if(cfg.sys_misc&SM_SHRTPAGE) {
 			bprintf(text[PagingGuru],cfg.sys_op);
@@ -1571,7 +1571,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	j=strlen(line);
 	k=0;
 	for(i=0;i<j;i++) {
-		if(line[i]<0 || !isalnum((uchar)line[i])) {
+		if(line[i]<0 || !IS_ALPHANUMERIC(line[i])) {
 			if(!k)	/* beginning non-alphanumeric */
 				continue;
 			if(line[i]==line[i+1])	/* redundant non-alnum */
@@ -1584,7 +1584,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	cstr[k]=0;
 	while(k) {
 		k--;
-		if(!isalnum((uchar)cstr[k]))
+		if(!IS_ALPHANUMERIC(cstr[k]))
 			continue;
 		break; 
 	}
@@ -1657,7 +1657,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case 'B':
 							if(sys_status&SS_USERON) {
-								SAFECAT(theanswer,useron.birth);
+								getbirthdstr(&cfg, useron.birth, theanswer, sizeof(theanswer));
 							} else {
 								SAFECAT(theanswer,"00/00/00");
 							}
@@ -1786,8 +1786,8 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			if(action!=NODE_MCHT) {
 				for(i=0;i<k;i++) {
 					if(i && mistakes && theanswer[i]!=theanswer[i-1] &&
-						((!isalnum((uchar)theanswer[i]) && !sbbs_random(100))
-						|| (isalnum((uchar)theanswer[i]) && !sbbs_random(30)))) {
+						((!IS_ALPHANUMERIC(theanswer[i]) && !sbbs_random(100))
+						|| (IS_ALPHANUMERIC(theanswer[i]) && !sbbs_random(30)))) {
 						c=j=((uint)sbbs_random(3)+1);	/* 1 to 3 chars */
 						if(c<strcspn(theanswer+(i+1),"\0., "))
 							c=j=1;
@@ -1909,7 +1909,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		if((**ptrptr)==')')
 			break;
 		c=0;
-		while((**ptrptr) && isspace(**ptrptr))
+		while((**ptrptr) && IS_WHITESPACE(**ptrptr))
 			(*ptrptr)++;
 		while((**ptrptr)!='|' && (**ptrptr)!='&' && (**ptrptr)!=')' &&(**ptrptr)) {
 			str[c++]=(**ptrptr);
@@ -1948,13 +1948,13 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		else {
 			cp=strstr(line,str);
 			if(cp && c) {
-				if(cp!=line || isalnum((uchar)*(cp+strlen(str))))
+				if(cp!=line || IS_ALPHANUMERIC(*(cp+strlen(str))))
 					cp=0; 
 			}
 			else {	/* must be isolated word */
 				while(cp)
-					if((cp!=line && isalnum((uchar)*(cp-1)))
-						|| isalnum((uchar)*(cp+strlen(str))))
+					if((cp!=line && IS_ALPHANUMERIC(*(cp-1)))
+						|| IS_ALPHANUMERIC(*(cp+strlen(str))))
 						cp=strstr(cp+strlen(str),str);
 					else
 						break; 

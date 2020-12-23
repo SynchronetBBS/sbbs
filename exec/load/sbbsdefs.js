@@ -114,19 +114,24 @@ var   SS_FASTLOGON  =(1<<31);	/* Fast logon                               */
 						    	/********************************************/
 								/* bbs.startup_options						*/
 						    	/********************************************/
-var   BBS_OPT_KEEP_ALIVE		=(1<<0); /* Send keep-alives				*/
 var   BBS_OPT_XTRN_MINIMIZED	=(1<<1); /* Run externals minimized			*/
 var   BBS_OPT_AUTO_LOGON		=(1<<2); /* Auto-logon via IP				*/
 var   BBS_OPT_DEBUG_TELNET		=(1<<3); /* Debug telnet commands			*/
 var   BBS_OPT_SYSOP_AVAILABLE	=(1<<4); /* Available for chat				*/
 var   BBS_OPT_ALLOW_RLOGIN		=(1<<5); /* Allow logins via BSD RLogin		*/
-var   BBS_OPT_USE_2ND_RLOGIN	=(1<<6); /* Use 2nd username in BSD RLogin	*/
 var   BBS_OPT_NO_QWK_EVENTS		=(1<<7); /* Don't run QWK-related events	*/
+var   BBS_OPT_NO_TELNET_GA		=(1<<8); /* Don't send periodic Telnet GAs	*/
+var   BBS_OPT_NO_EVENTS			=(1<<9); /* Don't run event thread			*/
+var   BBS_OPT_NO_SPY_SOCKETS	=(1<<10);/* Don't create spy sockets		*/
 var   BBS_OPT_NO_HOST_LOOKUP	=(1<<11);/* Don't lookup hostname			*/
-var   BBS_OPT_NO_JAVASCRIPT		=(1<<29);/* JavaScript disabled				*/
-var   BBS_OPT_LOCAL_TIMEZONE	=(1<<30);/* Don't force UCT/GMT				*/
+var   BBS_OPT_ALLOW_SSH			=(1<<12);/* Allow logins via BSD SSH		*/
+var   BBS_OPT_NO_DOS			=(1<<13);/* Can't to run 16-bit DOS prog	*/
+var   BBS_OPT_NO_NEWDAY_EVENTS	=(1<<14);/* Don't check for a new day 		*/
+var   BBS_OPT_HAPROXY_PROTO   	=(1<<26);/* Incoming requests via HAproxy 	*/
+var   BBS_OPT_NO_RECYCLE		=(1<<27);/* Disable recycling of server		*/
+var   BBS_OPT_GET_IDENT			=(1<<28);/* Get Identity (RFC 1413)			*/
 var   BBS_OPT_MUTE				=(1<<31);/* Mute sounds						*/
-						    	/*******************************************/
+								/********************************************/
 
 						    	/********************************************/
 								/* bbs.online								*/
@@ -198,6 +203,7 @@ var   K_USEOFFSET	=(1<<20);	/* Use console.getstr_offset with getstr()	*/
 var   K_NOSPIN      =(1<<21);	/* Do not honor user's spinning cursor		*/
 var   K_ANSI_CPR	=(1<<22);	/* ANSI Cursor Position Report expected		*/
 var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
+var   K_CTRLKEYS	=(1<<24);	/* No control-key handling/eating in inkey()*/
 					    		/********************************************/
 
 						    	/********************************************/
@@ -205,7 +211,7 @@ var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
 							    /********************************************/
 var   P_NONE		=0;			/* No special behavior						*/
 var   P_NOABORT  	=(1<<0);	/* Disallows abortion of a message          */
-var   P_SAVEATR		=(1<<1);	/* Save the new current attributres after	*/
+var   P_SAVEATR		=(1<<1);	/* Save the new current attributes after	*/
 					    		/* msg has printed							*/
 var   P_NOATCODES	=(1<<2);	/* Don't allow @ codes                      */
 var   P_OPENCLOSE	=(1<<3);	/* Open and close the file					*/
@@ -221,6 +227,8 @@ var   P_WRAP        =(1<<12);   /* Wrap/split long-lines, ungracefully      */
 var   P_UTF8        =(1<<13);	/* Message is UTF-8 encoded                 */
 var   P_AUTO_UTF8	=(1<<14);	/* Message may be UTF-8, auto-detect		*/
 var   P_NOXATTRS	=(1<<15);	/* No "Extra Attribute Codes" supported		*/
+var   P_MARKUP		=(1<<16);	/* Support StyleCodes/Rich/StructuredText	*/
+var   P_HIDEMARKS	=(1<<17);	/* Hide the mark-up tags					*/
 							    /********************************************/
 
     							/********************************************/
@@ -637,7 +645,7 @@ var U_ADDRESS		=U_NETMAIL+LEN_NETMAIL+2;
 var U_LOCATION		=U_ADDRESS+LEN_ADDRESS;
 var U_ZIPCODE		=U_LOCATION+LEN_LOCATION;
 var U_OLDPASS		=U_ZIPCODE+LEN_ZIPCODE+2;
-var U_PHONE  		=U_PASS+LEN_OLDPASS;
+var U_PHONE  		=U_OLDPASS+LEN_OLDPASS;
 var U_BIRTH  		=U_PHONE+12;
 var U_MODEM     	=U_BIRTH+8;
 var U_LASTON		=U_MODEM+8;

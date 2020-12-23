@@ -22,15 +22,16 @@
 
 "use strict";
 
-const REVISION = "$Revision: 1.29 $".split(' ')[1];
+const REVISION = "$Revision: 1.30 $".split(' ')[1];
 require('sbbsdefs.js', 'SUB_NAME');
+const temp_node = 9999;
 var netname;
 var netdns;
 var netzone = parseInt(argv[0], 10);
 if(!netzone)
 	netname = argv[0];
 var echolist_url = argv[1];
-// If you want your Othernet listed here, please provide information
+// If you want your Othernet listed in init-fidonet.ini, please provide information
 // and an http[s] URL to your official EchoList
 var network;
 var fidoaddr = load({}, 'fidoaddr.js');
@@ -42,7 +43,7 @@ print("*************************************************************************
 
 var network_list = {};
 var file = new File(js.exec_dir + "init-fidonet.ini");
-if (file.open("r")) {
+if(file.open("r")) {
 	var list = file.iniGetSections("zone:", "zone");
 	for(var i in list)
 		network_list[list[i].substr(5)] = file.iniGetObject(list[i]);
@@ -59,15 +60,15 @@ function aborted()
 function exclude_strings(list, patterns, flags)
 {
 	patterns = [].concat(patterns);
-	if (flags === undefined)
+	if(flags === undefined)
 		flags = 'i';
 	return list.reduce(function (a, c) {
 		var matched = patterns.some(function (e) {
-			if (typeof e == 'string')
+			if(typeof e == 'string')
 				e = new RegExp(e, flags);
 			return c.match(e);
-			});
-		if (!matched)
+		});
+		if(!matched)
 			a.push(c);
 		return a;
 	}, []);
@@ -150,11 +151,13 @@ function send_app_netmail(destaddr)
 	body_text += "\r\n";
 	body_text += "My system is " + system.name + " at " + system.inet_addr + ".\r\n";
 	body_text += "\r\n";
-	body_text += "I am using Synchronet-" + system.platform + " v" + system.full_version 
+	body_text += "I am using Synchronet-" + system.platform + " v" + system.full_version
 		+ " with SBBSecho and BinkIT.\r\n";
 	body_text += "\r\n";
 	body_text += "My requested AreaFix password is: '" + link.AreaFixPwd + "'\r\n";
 	body_text += "My requested BinkP Session password is: '" + link.SessionPwd + "'\r\n";
+	if(link.TicFilePwd)
+		body_text += "My requested TIC Password is: '" + link.TicFilePwd  + "'\r\n";
 	body_text += "\r\n";
 	body_text += "I will be using 'Type-2+' (FSC-39) packets with no password.\r\n";
 	body_text += "Uncompressed or PKZIP-archived EchoMail bundles will work fine.\r\n";
@@ -187,13 +190,13 @@ function lookup_network(info)
 		if(result)
 			return result;
 	}
-	
+
 	var file = new File("sbbsecho.ini");
-	if (!file.open("r")) {
+	if(!file.open("r")) {
 		alert("Error " + file.error + " opening " + file.name);
 		return false;
 	}
-	
+
 	if(typeof info == "number") { // zone
 		var dns;
 		var domain_list = file.iniGetSections("domain:");
@@ -230,12 +233,52 @@ function lookup_network(info)
 	return result;
 }
 
-function get_linked_node(addr)
+function get_domain(zone)
 {
 	var file = new File("sbbsecho.ini");
-	if (!file.open("r"))
+	if(!file.open("r")) {
+		alert("Error " + file.error + " opening " + file.name);
 		return false;
-	var result = file.iniGetObject("node:" + addr);
+	}
+
+	var domain_list = file.iniGetSections("domain:");
+	if(domain_list) {
+		var zonemap = {};
+		for(var i = 0; i < domain_list.length && !result; i++) {
+			var section = domain_list[i];
+			var netname = section.substr(7)
+			var zones = file.iniGetValue(section, "Zones");
+			if(!zones)
+				continue;
+			if(typeof zones == 'number') {
+				if(zone == zones) {
+					return netname;
+				}
+				continue;
+			}
+			zones = zones.split(',');
+			for(var j = 0; j < zones.length; j++) {
+				if(zone == zones[j]) {
+					return netname;
+				}
+			}
+		}
+		file.close();
+		return result;
+	}
+	return "";
+}
+
+function get_linked_node(addr, domain)
+{
+	var file = new File("sbbsecho.ini");
+	if(!file.open("r"))
+		return false;
+	var result = false;
+	if(domain)
+		result = file.iniGetObject("node:" + addr + "@" + domain);
+	if (!result)
+		result = file.iniGetObject("node:" + addr);
 	file.close();
 	return result;
 }
@@ -243,14 +286,14 @@ function get_linked_node(addr)
 function get_binkp_sysop()
 {
 	var file = new File("sbbsecho.ini");
-	if (!file.open("r"))
+	if(!file.open("r"))
 		return false;
 	var result = file.iniGetValue("Binkp", "Sysop");
 	file.close();
 	return result;
 }
 
-function update_sbbsecho_ini(hub, link, echolist_fname, areamgr)
+function update_sbbsecho_ini(hub, link, domain, echolist_fname, areamgr)
 {
 	function makepath(path)
 	{
@@ -295,15 +338,36 @@ function update_sbbsecho_ini(hub, link, echolist_fname, areamgr)
 	if(!binkp) binkp = {};
 	binkp.sysop = sysop;
 	if(!file.iniSetObject("binkp", binkp)) {
-		return "Error" + file.error + " writign to " + file.name;
+		return "Error" + file.error + " writing to " + file.name;
 	}
+
+	var prefnode;
 	var section = "node:" + fidoaddr.to_str(hub);
-	if(!file.iniGetObject(section)
-		|| confirm("Overwrite hub [" + section + "] configuration in " + file.name)) {
-		if(!file.iniSetObject(section, link)) {
-			return "Error " + file.error + " writing to " + file.name;
+
+	if(domain) {
+		if(file.iniGetObject(section)) {
+			if(confirm("Migrate " + section + " to " + section + "@" + domain)) {
+				if(!file.iniSetObject(section + "@" + domain, link)) {
+					return "Error " + file.error + " writing to " + file.name;
+				} else {
+					file.iniRemoveSection(section);
+				}
+			}
+		} else {
+			if(!file.iniGetObject(section) || confirm("Overwrite hub [" + section + "@" + domain + "] configuration in " + file.name)) {
+				if(!file.iniSetObject(section + "@" + domain, link)) {
+					return "Error " + file.error + " writing to " + file.name;
+				}
+			}
+		}
+	} else {
+		if(!file.iniGetObject(section) || confirm("Overwrite hub [" + section + "] configuration in " + file.name)) {
+			if(!file.iniSetObject(section, link)) {
+				return "Error " + file.error + " writing to " + file.name;
+			}
 		}
 	}
+
 	var section = "node:" + hub.zone + ":ALL";
 	if(confirm("Route all zone " + hub.zone + " netmail through your hub")) {
 		if(!file.iniSetObject(section,
@@ -343,7 +407,6 @@ else if(netname) {
 	netzone = lookup_network(netname);
 	network = network_list[netzone];
 }
-
 if(!netzone) {
 	for(var zone in network_list) {
 		var desc = "";
@@ -358,7 +421,8 @@ if(!netzone) {
 				email = " <" + network_list[zone].email + ">";
 			if(network_list[zone].fido)
 				email += " " + network_list[zone].fido;
-			print("       coordinator: " + (network_list[zone].coord || "") + email);
+			// removed because screen is scrolling so much with so many networks
+			//print("       coordinator: " + (network_list[zone].coord || "") + email);
 		}
 	}
 	var which;
@@ -377,10 +441,13 @@ if(network)
 else
 	network = {};
 
+
+var domain = get_domain(netzone);
+
 if(netzone <= 6)
 	netname = "FidoNet";
 else {
-	while((!netname || netname.indexOf(' ') >= 0 || netname.length > 8 
+	while((!netname || netname.indexOf(' ') >= 0 || netname.length > 8
 		|| !confirm("Network name is '" + netname + "'")) && !aborted()) {
 		var str = prompt("Network name (no spaces or illegal filename chars) [" + netname + "]");
 		if(str)
@@ -391,7 +458,12 @@ if(netname) {
 	print("Network name: " + netname);
 	print("Network zone: " + netzone);
 	print("Network info: " + network.info);
-	print("Network coordinator: " + network.coord 
+	if(domain)
+		print("Network domain: " + domain);
+	if (network.pack) {
+		print("Network pack: " + network.pack);
+	}
+	print("Network coordinator: " + network.coord
 		+ (network.email ? (" <" + network.email + ">") : "")
 		+ (network.fido ? (" " + network.fido) : ""));
 	if(network.also)
@@ -403,12 +475,12 @@ if(netname) {
 print("Reading Message Area configuration file: msgs.cnf");
 var cnflib = load({}, "cnflib.js");
 var msgs_cnf = cnflib.read("msgs.cnf");
-if (!msgs_cnf) {
+if(!msgs_cnf) {
 	alert("Failed to read msgs.cnf");
 	exit(1);
 }
 
-var your = {zone: NaN, net: NaN, node: 9999, point: 0};
+var your = {zone: NaN, net: NaN, node: temp_node, point: 0};
 for(var i = 0; i < system.fido_addr_list.length; i++) {
 	var addr = fidoaddr.parse(system.fido_addr_list[i]);
 	if(!addr || addr.zone != netzone)
@@ -432,7 +504,7 @@ while(((isNaN(hub.zone) || hub.zone < 1)
 	hub = fidoaddr.parse(prompt("Your hub's address (zone:net/node)"));
 }
 
-var link = get_linked_node(fidoaddr.to_str(hub));
+var link = get_linked_node(fidoaddr.to_str(hub), domain);
 if(!link)
 	link = {};
 
@@ -477,11 +549,11 @@ while(!confirm("Your node address is " + fidoaddr.to_str(your)) && !aborted()) {
 	your.net = NaN;
 	your.node = NaN;
 	while((isNaN(your.zone) || your.zone < 1) && !aborted())
-		your.zone = parseInt(prompt("Your zone number (e.g. 1 for FidoNet North America)"));
+		your.zone = parseInt(prompt("Your zone number (e.g. " + hub.zone + ")"));
 	while((isNaN(your.net) || your.net < 1) && !aborted())
-		your.net = parseInt(prompt("Your network number (i.e. normally the same as your hub)"));
+		your.net = parseInt(prompt("Your network number (e.g. " + hub.net + ")"));
 	while((isNaN(your.node) || your.node < 1) && !aborted())
-		your.node = parseInt(prompt("Your node number (e.g. 9999 for temporary node)"));
+		your.node = parseInt(prompt("Your node number (e.g. " + temp_node + " for temporary node)"));
 	while((isNaN(your.point)) && !aborted())
 		your.point = parseInt(prompt("Your point number (i.e. 0 for a normal node)"));
 }
@@ -500,13 +572,15 @@ while((!sysop || !confirm("Your name is '" + sysop + "'")) && !aborted())
 /* Get/Confirm passwords */
 while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixPwd + "'")) && !aborted())
 	link.AreaFixPwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
-while((!link.SessionPwd || !confirm("Your BinkP Session Passowrd is '" + link.SessionPwd + "'")) && !aborted())
+while((!link.SessionPwd || !confirm("Your BinkP Session Password is '" + link.SessionPwd + "'")) && !aborted())
 	link.SessionPwd = prompt("Your BinkP Session Password (case sensitive)");
+while(((!link.TicFilePwd && (link.TicFilePwd !== "")) || !confirm("Your TIC File Password is '" + (link.TicFilePwd ? link.TicFilePwd : "(not set)") + "'")) && !aborted())
+	link.TicFilePwd = prompt("Your TIC File Password (case sensitive) (optional)");
 
 /***********************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (Internet) */
 /***********************************************/
-if(your.node === 9999 && network.email && network.email.indexOf('@') > 0 
+if(your.node === temp_node && network.email && network.email.indexOf('@') > 0
 	&& confirm("Send a node number application to " + network.email)) {
 	var result = send_app_netmail(network.email);
 	if(typeof result !== 'boolean') {
@@ -517,7 +591,7 @@ if(your.node === 9999 && network.email && network.email.indexOf('@') > 0
 		exit(0);
 	if(confirm("Come back when you have your permanently-assigned node address")) {
 		if(confirm("Save changes to FidoNet configuration file: sbbsecho.ini")) {
-			var result = update_sbbsecho_ini(hub, link);
+			var result = update_sbbsecho_ini(hub, link, domain);
 			if (result != true) {
 				alert(result);
 				exit(1);
@@ -545,12 +619,12 @@ if(!msg_area.grp[netname]
 	&& confirm("Create " + netname + " message group in SCFG->Message Areas")) {
 	print("Adding Message Group: " + netname);
 	msgs_cnf.grp.push( {
-			"name": netname,
-			"description": netname,
-			"ars": "",
-			"code_prefix": network.areatag_prefix === undefined 
-				? (netname.toUpperCase() + "_") : network.areatag_prefix
-			});
+		"name": netname,
+		"description": netname,
+		"ars": "",
+		"code_prefix": network.areatag_prefix === undefined
+			? (netname.toUpperCase() + "_") : network.areatag_prefix
+	});
 }
 if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
 	if(!cnflib.write("msgs.cnf", undefined, msgs_cnf)) {
@@ -564,11 +638,12 @@ if(confirm("Save Changes to Message Area configuration file: msgs.cnf")) {
 /* DOWNLOAD ECHOLIST */
 /*********************/
 var echolist_fname = file_getname(network.echolist);
-if(network.echolist 
+load("http.js");
+if(network.echolist
 	&& (network.echolist.indexOf("http://") == 0 || network.echolist.indexOf("https://") == 0)
 	&& confirm("Download " + netname + " EchoList: " + file_getname(network.echolist))) {
 	var echolist_url = network.echolist;
-	load("http.js");
+
 	while(!aborted()) {
 		while((!echolist_url || !confirm("Download from: " + echolist_url)) && !aborted()) {
 			echolist_url = prompt("Echolist URL");
@@ -589,8 +664,8 @@ if(network.echolist
 				break;
 			continue;
 		}
-		if(http_request.response_code == 200) {
-			print("Downloaded " + echolist_url + " to " + file.name);
+		if(http_request.response_code == http_request.status.ok) {
+			print("Downloaded " + echolist_url + " to " + system.ctrl_dir + file.name);
 			file.write(contents);
 			file.close();
 			break;
@@ -601,14 +676,65 @@ if(network.echolist
 		if(!confirm("Try again"))
 			break;
 	}
+} else if (network.pack
+	&& (network.pack.indexOf("http://") == 0 || network.pack.indexOf("https://") == 0)
+	&& confirm("Download " + netname + " Info Pack: " + network.pack)) {
+	while(!aborted()) {
+		var packdlfilename = file_getname(network.pack)
+		var file = new File(packdlfilename);
+		if(!file.open("w")) {
+			alert("Error " + file.error + " opening " + file.name);
+			exit(1);
+		}
+		var http_request = new HTTPRequest();
+		try {
+			var contents = http_request.Get(network.pack);
+		} catch(e) {
+			alert(e);
+			file.close();
+			file_remove(system.ctrl_dir + file.name);
+			if(!confirm("Try again"))
+				break;
+			continue;
+		}
+		if(http_request.response_code == http_request.status.ok) {
+			print("Downloaded " + network.pack + " to " + system.ctrl_dir + file.name);
+			file.write(contents);
+			file.close();
+
+			// try to extract
+			var prefix = "";
+			if(system.platform == "Win32")
+				prefix = system.exec_dir;
+			if (system.exec(prefix + "unzip -CLjo " + file_getname(network.pack) + " " + echolist_fname) !== 0) {
+				print("Please extract " + network.echolist + " from " + file.name + " into " + system.ctrl_dir);
+			}
+
+			break;
+		}
+		file.close();
+		file_remove(file.name);
+		alert("Error " + http_request.response_code + " downloading " + network.pack);
+		if(!confirm("Try again"))
+			break;
+	}
 }
 while(echolist_fname && !file_getcase(echolist_fname) && !aborted()) {
 	alert(system.ctrl_dir + echolist_fname + " does not exist");
-	if(!confirm("Install " + netname + " EchoList: " + echolist_fname))
-		break;
-	prompt("Download and extract " + echolist_fname + " now... Press enter to continue");
+	if ((network.echolist.indexOf("http://") == -1) && (network.echolist.indexOf("https://") == -1)
+		&& (network.pack)) {
+		if (!confirm("Please extract the " + echolist_fname + " file from the pack " + file_getname(network.pack) + " into " + system.ctrl_dir + ". Continue?")) {
+			break;
+		}
+	} else {
+		if (!confirm("Please place " + echolist_fname + " into " + system.ctrl_dir + ". Continue?")) {
+			break;
+		}
+	}
+
+	prompt(echolist_fname + " not found. Please put file into ctrl dir and press Enter.");
 }
-echolist_fname = file_getcase(echolist_fname)	
+echolist_fname = file_getcase(system.ctrl_dir + echolist_fname)
 if(echolist_fname && file_size(echolist_fname) > 0) {
 	if(network.areatag_exclude) {
 		print("Removing " + network.areatag_exclude + " from " + echolist_fname);
@@ -618,7 +744,7 @@ if(echolist_fname && file_size(echolist_fname) > 0) {
 	}
 	if(network.areatitle_prefix) {
 		print("Removing " + network.areatitle_prefix + " Title Prefixes from " + echolist_fname);
-		var result = remove_prefix_from_titles(echolist_fname, network.areatitle_prefix);
+		var result = remove_prefix_from_title(echolist_fname, network.areatitle_prefix);
 		if(result !== true)
 			alert(result);
 	}
@@ -628,11 +754,11 @@ if(echolist_fname && file_size(echolist_fname) > 0) {
 		if(!network.handles)
 			misc |= SUB_NAME;
 		system.exec(system.exec_dir + "scfg"
-			+ " -import=" + echolist_fname 
+			+ " -import=" + echolist_fname
 			+ " -g" + netname
 			+ " -faddr=" + fidoaddr.to_str(your)
 			+ " -misc=" + misc
-			);
+		);
 	}
 }
 
@@ -640,7 +766,7 @@ if(echolist_fname && file_size(echolist_fname) > 0) {
 /* UPDATE SBBSECHO.INI */
 /***********************/
 if(confirm("Save changes to FidoNet configuration file: sbbsecho.ini")) {
-	var result = update_sbbsecho_ini(hub, link, echolist_fname, network.areamgr);
+	var result = update_sbbsecho_ini(hub, link, domain, echolist_fname, network.areamgr);
 	if (result != true) {
 		alert(result);
 		exit(1);
@@ -665,7 +791,7 @@ if(!file_touch(system.ctrl_dir + "recycle"))
 /******************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (FTN) */
 /******************************************/
-if(your.node === 9999) {
+if(your.node === temp_node) {
 	if(confirm("Send a node number application to "	+ fidoaddr.to_str(hub))) {
 		var result = send_app_netmail(fidoaddr.to_str(hub));
 		if(typeof result !== 'boolean') {
@@ -682,13 +808,13 @@ if(your.node === 9999) {
 		}
 		if(aborted() || confirm("Come back when you have a permanently-assigned node address"))
 			exit(0);
-	}		
+	}
 }
 
 /************************/
 /* SEND AREAFIX NETMAIL */
 /************************/
-if(your.node !== 9999
+if(your.node !== temp_node
 	&& confirm("Send an AreaFix request to link EchoMail areas with "
 		+ fidoaddr.to_str(hub))) {
 	var msgbase = new MsgBase("mail");
@@ -701,12 +827,12 @@ if(your.node !== 9999
 		lines[i] = lines[i].split(/\s+/)[0];
 	}
 	if(!msgbase.save_msg({
-			to: network.areamgr || "AreaFix",
-			to_net_addr: fidoaddr.to_str(hub),
-			from: sysop,
-			from_ext: 1,
-			subject: link.AreaFixPwd
-		}, /* body text: */ lines.join('\r\n'))) {
+		to: network.areamgr || "AreaFix",
+		to_net_addr: fidoaddr.to_str(hub),
+		from: sysop,
+		from_ext: 1,
+		subject: link.AreaFixPwd
+	}, /* body text: */ lines.join('\r\n'))) {
 		alert("Error saving message: " + msgbase.last_error);
 		exit(1);
 	}
@@ -753,7 +879,7 @@ add_gfile("binkstats.ini", "Detailed BinkP (mail/file transfer) statistics");
 /***********************/
 print(netname + " initial setup completely successfully.");
 print();
-if(your.node == 9999) {
+if(your.node == temp_node) {
 	print("You used a temporary node address (" + fidoaddr.to_str(your) +
 		"). You will need to update your");
 	print("SCFG->Networks->FidoNet->Address once your permanent node address has been");

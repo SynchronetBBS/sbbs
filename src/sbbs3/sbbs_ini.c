@@ -1,8 +1,5 @@
 /* Synchronet initialization (.ini) file routines */
 
-/* $Id: sbbs_ini.c,v 1.170 2019/07/24 04:41:49 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -68,7 +53,6 @@ static const char*	strLoginAttemptTempBanThreshold="LoginAttemptTempBanThreshold
 static const char*	strLoginAttemptTempBanDuration="LoginAttemptTempBanDuration";
 static const char*	strLoginAttemptFilterThreshold="LoginAttemptFilterThreshold";
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
-static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
@@ -104,7 +88,6 @@ static void sbbs_fix_js_settings(js_startup_t* js)
 {
 	/* Some sanity checking here */
 	if(js->max_bytes==0)	js->max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(js->cx_stack==0)		js->cx_stack=JAVASCRIPT_CONTEXT_STACK;
 }
 
 void sbbs_get_js_settings(
@@ -117,7 +100,6 @@ void sbbs_get_js_settings(
     char*   p;
 
 	js->max_bytes		= (ulong)iniGetBytes(list,section,strJavaScriptMaxBytes		,/* unit: */1,defaults->max_bytes);
-	js->cx_stack		= (ulong)iniGetBytes(list,section,strJavaScriptContextStack	,/* unit: */1,defaults->cx_stack);
 	js->time_limit		= iniGetInteger(list,section,strJavaScriptTimeLimit		,defaults->time_limit);
 	js->gc_interval		= iniGetInteger(list,section,strJavaScriptGcInterval	,defaults->gc_interval);
 	js->yield_interval	= iniGetInteger(list,section,strJavaScriptYieldInterval	,defaults->yield_interval);
@@ -142,7 +124,6 @@ BOOL sbbs_set_js_settings(
 	BOOL	failure=FALSE;
 	js_startup_t global_defaults = {
 			 JAVASCRIPT_MAX_BYTES
-			,JAVASCRIPT_CONTEXT_STACK
 			,JAVASCRIPT_TIME_LIMIT
 			,JAVASCRIPT_GC_INTERVAL
 			,JAVASCRIPT_YIELD_INTERVAL
@@ -159,11 +140,6 @@ BOOL sbbs_set_js_settings(
 		iniRemoveValue(lp,section,strJavaScriptMaxBytes);
 	else
 		failure|=iniSetBytes(lp,section,strJavaScriptMaxBytes,/*unit: */1, js->max_bytes,style)==NULL;
-
-	if(js->cx_stack==defaults->cx_stack)
-		iniRemoveValue(lp,section,strJavaScriptContextStack);
-	else 
-		failure|=iniSetBytes(lp,section,strJavaScriptContextStack,/*unit: */1,js->cx_stack,style)==NULL;
 
 	if(js->time_limit==defaults->time_limit)
 		iniRemoveValue(lp,section,strJavaScriptTimeLimit);
@@ -246,7 +222,6 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 
 	/* Setup default values here */
 	global->js.max_bytes		= JAVASCRIPT_MAX_BYTES;
-	global->js.cx_stack			= JAVASCRIPT_CONTEXT_STACK;
 	global->js.time_limit		= JAVASCRIPT_TIME_LIMIT;
 	global->js.gc_interval		= JAVASCRIPT_GC_INTERVAL;
 	global->js.yield_interval	= JAVASCRIPT_YIELD_INTERVAL;
@@ -276,6 +251,7 @@ void sbbs_read_ini(
 	const char*	section;
 	const char* default_term_ansi;
 	const char*	default_dosemu_path;
+	const char*	default_dosemuconf_path;
 	char		value[INI_MAX_VALUE_LEN];
 	str_list_t	list;
 	global_startup_t global_buf;
@@ -391,10 +367,14 @@ void sbbs_read_ini(
 		default_dosemu_path="/usr/local/bin/doscmd";
 	#else
 		default_dosemu_path="/usr/bin/dosemu.bin";
+		default_dosemuconf_path="";
 	#endif
 
+		bbs->usedosemu=iniGetBool(list,section,"UseDOSemu",TRUE);
 		SAFECOPY(bbs->dosemu_path
 			,iniGetString(list,section,"DOSemuPath",default_dosemu_path,value));
+		SAFECOPY(bbs->dosemuconf_path
+			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));			
 
 		SAFECOPY(bbs->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
@@ -454,19 +434,11 @@ void sbbs_read_ini(
 		ftp->pasv_port_high
 			=iniGetShortInt(list,section,"PasvPortHigh",0xffff);
 
-
-		/* JavaScript Operating Parameters */
-		sbbs_get_js_settings(list, section, &ftp->js, &global->js);
-
 		SAFECOPY(ftp->host_name
 			,iniGetString(list,section,strHostName,global->host_name,value));
 
 		SAFECOPY(ftp->index_file_name
 			,iniGetString(list,section,"IndexFileName","00index",value));
-		SAFECOPY(ftp->html_index_file
-			,iniGetString(list,section,"HtmlIndexFile","00index.html",value));
-		SAFECOPY(ftp->html_index_script
-			,iniGetString(list,section,"HtmlIndexScript","ftp-html.js",value));
 
 		SAFECOPY(ftp->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
@@ -482,7 +454,7 @@ void sbbs_read_ini(
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
 		ftp->options
 			=iniGetBitField(list,section,strOptions,ftp_options
-				,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
+				,FTP_OPT_INDEX_FILE | FTP_OPT_ALLOW_QWK);
 
 		ftp->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		ftp->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
@@ -591,6 +563,7 @@ void sbbs_read_ini(
 		mail->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		mail->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
+		mail->max_concurrent_connections = iniGetInteger(list, section, "MaxConcurrentConnections", 0);
 	}
 
 	/***********************************************************************/
@@ -863,7 +836,10 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetString(lp,section,"DOSemuPath",bbs->dosemu_path,&style))
 			break;
-
+		if(!iniSetString(lp,section,"DOSemuConfPath",bbs->dosemuconf_path,&style))
+			break;
+		if(!iniSetBool(lp,section,"UseDOSemu",bbs->usedosemu,&style))
+			break;
 		if(!iniSetString(lp,section,strAnswerSound,bbs->answer_sound,&style))
 			break;
 		if(!iniSetString(lp,section,strHangupSound,bbs->hangup_sound,&style))
@@ -937,10 +913,6 @@ BOOL sbbs_write_ini(
 		else if(!iniSetLogLevel(lp,section,strLogLevel,ftp->log_level,&style))
 			break;
 
-		/* JavaScript Operating Parameters */
-		if(!sbbs_set_js_settings(lp,section,&ftp->js,&global->js,&style))
-			break;
-
 		if(strcmp(ftp->host_name,global->host_name)==0
             || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
@@ -953,10 +925,6 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetString(lp,section,"IndexFileName",ftp->index_file_name,&style))
-			break;
-		if(!iniSetString(lp,section,"HtmlIndexFile",ftp->html_index_file,&style))
-			break;
-		if(!iniSetString(lp,section,"HtmlIndexScript",ftp->html_index_script,&style))
 			break;
 
 		if(!iniSetString(lp,section,strAnswerSound,ftp->answer_sound,&style))
@@ -1041,6 +1009,8 @@ BOOL sbbs_write_ini(
 		if(!iniSetInteger(lp,section,"MaxMsgsWaiting",mail->max_msgs_waiting,&style))
 			break;
 		if(!iniSetInteger(lp,section,"ConnectTimeout",mail->connect_timeout,&style))
+			break;
+		if(!iniSetInteger(lp,section,"MaxConcurrentConnections",mail->max_concurrent_connections,&style))
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)==0

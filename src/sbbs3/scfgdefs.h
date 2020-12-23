@@ -1,7 +1,4 @@
 /* Synchronet configuration structure (scfg_t) definition */
-// vi: tabstop=4
-
-/* $Id: scfgdefs.h,v 1.62 2020/08/08 20:17:03 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -305,9 +290,9 @@ typedef struct {							/* External Editors */
 
 typedef struct {							/* Generic Timed Event */
 	char			code[LEN_CODE+1],		/* Internal code */
-					days,					/* Week days to run event */
 					dir[LEN_DIR+1], 		/* Start-up directory */
 					cmd[LEN_CMD+1]; 		/* Command line */
+	uint8_t			days;					/* Week days to run event */
 	uint16_t		node,					/* Node to execute event */
 					time,					/* Time to run event */
 					freq;					/* Frequency to run event */
@@ -610,6 +595,8 @@ typedef struct
 	char			whosonline_mod[LEN_CMD+1];
 	char			privatemsg_mod[LEN_CMD+1];
 	char			logonlist_mod[LEN_CMD+1];
+    char			prextrn_mod[LEN_MODNAME+1];			/* External Program pre-execution module */
+    char			postxtrn_mod[LEN_MODNAME+1];		/* External Program post-execution module */
 	char			scfg_cmd[LEN_CMD+1];	/* SCFG command line - unused! */
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uint16_t		sec_warn;				/* Seconds before inactivity warning */

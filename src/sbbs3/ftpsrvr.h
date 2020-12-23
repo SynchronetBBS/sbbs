@@ -1,7 +1,5 @@
 /* Synchronet FTP server */
 
-/* $Id: ftpsrvr.h,v 1.58 2019/03/22 21:28:27 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -79,8 +65,6 @@ typedef struct {
 	/* Paths */
     char    ctrl_dir[128];
     char	index_file_name[64];
-    char	html_index_file[64];
-    char	html_index_script[64];
     char	temp_dir[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
@@ -94,9 +78,6 @@ typedef struct {
 	int		log_level;
 	uint	bind_retry_count;		/* Number of times to retry bind() calls */
 	uint	bind_retry_delay;		/* Time to wait between each bind() retry */
-
-	/* JavaScript operating parameters */
-	js_startup_t js;
 
 	/* Login Attempt parameters */
 	struct login_attempt_settings login_attempt;
@@ -123,11 +104,9 @@ static struct init_field ftp_init_fields[] = {
 #define FTP_OPT_NO_LOCAL_FSYS		(1<<5)
 #define FTP_OPT_DIR_FILES			(1<<6)	/* Allow access to files in dir but not in database */
 #define FTP_OPT_KEEP_TEMP_FILES		(1<<7)	/* Don't delete temp files (for debugging) */
-#define FTP_OPT_HTML_INDEX_FILE		(1<<8)	/* Auto-generate HTML index files */
 #define FTP_OPT_LOOKUP_PASV_IP		(1<<9)	/* resolve public IP address for PASV response */
 #define FTP_OPT_NO_HOST_LOOKUP		(1<<11)
 #define FTP_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
-#define FTP_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
 #define FTP_OPT_MUTE				(1<<31)
 
 /* ftp_startup_t.options bits that require re-init/recycle when changed */
@@ -144,11 +123,9 @@ static ini_bitdesc_t ftp_options[] = {
 	{ FTP_OPT_NO_LOCAL_FSYS			,"NO_LOCAL_FSYS"		},
 	{ FTP_OPT_DIR_FILES				,"DIR_FILES"			},
 	{ FTP_OPT_KEEP_TEMP_FILES		,"KEEP_TEMP_FILES"		},
-	{ FTP_OPT_HTML_INDEX_FILE		,"HTML_INDEX_FILE"		},
 	{ FTP_OPT_LOOKUP_PASV_IP		,"LOOKUP_PASV_IP"		},
 	{ FTP_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ FTP_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
-	{ FTP_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
 	{ FTP_OPT_MUTE					,"MUTE"					},
 	/* terminator */										
 	{ 0 							,NULL					}

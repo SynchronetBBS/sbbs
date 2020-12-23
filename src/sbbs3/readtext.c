@@ -1,6 +1,29 @@
-#include "sbbs.h"
+/* Read a string (item) from ctrl/text.dat */
+
+/****************************************************************************
+ * @format.tab-size 4		(Plain Text/Source Code File Header)			*
+ * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
+ *																			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ *																			*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
+ * as published by the Free Software Foundation; either version 2			*
+ * of the License, or (at your option) any later version.					*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
+ *																			*
+ * For Synchronet coding style and modification guidelines, see				*
+ * http://www.synchro.net/source.html										*
+ *																			*
+ * Note: If this box doesn't appear square, then you need to fix your tabs.	*
+ ****************************************************************************/
+
+#include "sbbsdefs.h"
+#include "str_util.h"
 #include "text_defaults.h"	/* text_defaults */
 
+int lprintf(int level, const char *fmt, ...);       /* log output */
 /****************************************************************************/
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
 /* replacing escaped characters, and allocating the memory					*/
@@ -50,10 +73,10 @@ char *readtext(long *line,FILE *stream,long dflt)
 	for(i=1,j=0;i<k && j<sizeof(str)-1;j++) {
 		if(buf[i]=='\\')	{ /* escape */
 			i++;
-			if(isdigit(buf[i])) {
+			if(IS_DIGIT(buf[i])) {
 				str[j]=atoi(buf+i); 	/* decimal, NOT octal */
-				if(isdigit(buf[++i]))	/* skip up to 3 digits */
-					if(isdigit(buf[++i]))
+				if(IS_DIGIT(buf[++i]))	/* skip up to 3 digits */
+					if(IS_DIGIT(buf[++i]))
 						i++;
 				continue; 
 			}

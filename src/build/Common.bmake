@@ -142,8 +142,9 @@ CFLAGS	=	$(CFLAGS) -Od -D_DEBUG
 # Required for Embarcadero C++Builder 2010
 !if $(__MAKE__) >= 0x0540
 	CCPRE	=	ecc6
-	CFLAGS	=	$(CFLAGS) -DHAS_STDINT_H -D_WIN32_WINNT=0x502
+	CFLAGS	=	$(CFLAGS) -D_WIN32_WINNT=0x502
 !endif
+CFLAGS	=	$(CFLAGS) -DHAS_STDINT_H 
 
 # Debug or release build?
 !ifdef DEBUG

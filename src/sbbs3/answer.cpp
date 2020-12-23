@@ -109,7 +109,6 @@ bool sbbs_t::answer()
 				useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
-				useron.misc&=~TERM_FLAGS;
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
 				if(!findstr(client.addr,path)) {
 					SAFECOPY(tmp, rlogin_pass);
@@ -158,7 +157,7 @@ bool sbbs_t::answer()
 							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
 						}
-						lprintf(LOG_WARNING,"!CLIENT IP NOT LISTED in %s", path);
+						lprintf(LOG_DEBUG,"!CLIENT IP (%s) NOT LISTED in %s", client.addr, path);
 						useron.number=0;
 						hangup();
 					}
@@ -213,7 +212,6 @@ bool sbbs_t::answer()
 		useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
-			useron.misc&=~TERM_FLAGS;
 			for(i=0;i<3 && online;i++) {
 				if(stricmp(tmp,useron.pass)) {
 					if(cfg.sys_misc&SM_ECHO_PW)
@@ -390,6 +388,7 @@ bool sbbs_t::answer()
 		else
 			SAFECOPY(terminal,"DUMB");
 	}
+	update_nodeterm();
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)

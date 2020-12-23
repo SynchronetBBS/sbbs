@@ -65,8 +65,8 @@ function TickITCfg() {
 		}
 	}
 
-	if (!tcfg.open("r"))
-		throw("Unable to open '"+tcfg.name+"'");
+	if (!tcfg.open(tcfg.exists ? "r" : "w+"))
+		throw new Error(tcfg.error + " (" + strerror(tcfg.error) + ") opening '" + tcfg.name + "'");
 	this.gcfg = tcfg.iniGetObject();
 	lcprops(this.gcfg);
 	if (this.gcfg.handler !== undefined) {
@@ -147,9 +147,8 @@ TickITCfg.prototype.get_next_tic_filename = function()
 		val = f.readBin();
 	}
 	else {
-		if (!f.open("web+")) {
-			log(LOG_ERROR, "Unable to open file "+f.name+"!");
-			return undefined;
+		if (!f.open("wxb+")) {
+			throw new Error(f.error + " (" + strerror(f.error) + ") opening '" + f.name + "'");
 		}
 		val = -1;
 	}
@@ -233,7 +232,7 @@ TickITCfg.prototype.save = function()
 	}
 
 	if (!tcfg.open(tcfg.exists ? 'r+':'w+'))
-		return "Unable to open '"+tcfg.name+"'";
+		throw new Error(tcfg.error + " (" + strerror(tcfg.error) + ") opening '" + tcfg.name + "'");
 
 	writesect(null, this.gcfg);
 	sects = tcfg.iniGetSections().map(function(v){return v.toLowerCase();});
@@ -269,9 +268,8 @@ function FREQITCfg()
 	var key;
 	var sects;
 
-	if (!f.open('r')) {
-		log(LOG_ERROR, "Unable to open '"+f.name+"'");
-		return;
+	if (!f.open(f.exists ? 'r' : 'w+')) {
+		throw new Error(f.error + " (" + strerror(f.error) + ") opening '" + f.name + "'");
 	}
 	// TODO: Support requiring passwords for specific files/dirs
 	this.dirs = [];

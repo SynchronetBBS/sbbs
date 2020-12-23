@@ -2,8 +2,6 @@
 
 /* Synchronet "uifc" (user interface) object */
 
-/* $Id: js_uifc.c,v 1.46 2020/04/12 20:30:47 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -372,11 +370,11 @@ static jsSyncPropertySpec js_properties[] = {
 static char* uifc_prop_desc[] = {
 	 "uifc has been initialized"
 	,"current mode bits (see uifcdefs.js)"
-	,"a change has occured in an input call.  You are expected to set this to false before calling the input if you care about it."
+	,"a change has occurred in an input call.  You are expected to set this to false before calling the input if you care about it."
 	,"save buffer depth (advanced)"
 	,"current screen length"
 	,"current screen width"
-	,"when WIN_FIXEDHEIGHT is set, specifies the hight used by a list method"
+	,"when WIN_FIXEDHEIGHT is set, specifies the height used by a list method"
 	,"delay before a single ESC char is parsed and assumed to not be an ANSI sequence (advanced)"
 	,"text that will be displayed if F1 is pressed"
 	,"background colour"
@@ -803,7 +801,7 @@ static jsSyncMethodSpec js_functions[] = {
 	,JSDOCSTR("prompt for a string input")
 	,314
 	},
-	{"list",			js_uifc_list,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode] [string title] [string array options] [uifc.list.CTX object]")
+	{"list",			js_uifc_list,		0,	JSTYPE_STRING,	JSDOCSTR("[number mode,] string title, array options [,uifc.list.CTX object]")
 	,JSDOCSTR("select from a list of options.<br>"
 		"The context object can be created using new uifc.list.CTX() and if the same object is passed, allows WIN_SAV to work correctly.<br>"
 		"The context object has the following properties:<br>cur, bar, top, left, width"

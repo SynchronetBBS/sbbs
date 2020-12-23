@@ -1,7 +1,5 @@
 /* Synchronet user data access routines (exported) */
 
-/* $Id: userdat.h,v 1.77 2020/04/30 18:25:58 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -40,24 +26,8 @@
 #include "dat_rec.h"	/* getrec/putrec prototypes */
 #include "client.h"		/* client_t */
 #include "link_list.h"
-
-#ifdef DLLEXPORT
-#undef DLLEXPORT
-#endif
-
-#ifdef _WIN32
-	#ifdef __MINGW32__
-		#define DLLEXPORT
-	#else
-		#ifdef SBBS_EXPORTS
-			#define DLLEXPORT __declspec(dllexport)
-		#else
-			#define DLLEXPORT __declspec(dllimport)
-		#endif
-	#endif
-#else
-	#define DLLEXPORT
-#endif
+#include "startup.h"	/* struct login_attempt_settings */
+#include "dllexport.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,12 +45,22 @@ DLLEXPORT int	fgetuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT int	putuserdat(scfg_t*, user_t*);	/* Put userdat struct into user file	*/
 DLLEXPORT int	newuserdat(scfg_t*, user_t*);	/* Create new userdat in user file */
 DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); /* Checks for a username match */
+DLLEXPORT BOOL	matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
 DLLEXPORT int	putusername(scfg_t*, int number, char * name);
 DLLEXPORT uint	total_users(scfg_t*);
 DLLEXPORT uint	lastuser(scfg_t*);
 DLLEXPORT BOOL	del_lastuser(scfg_t*);
-DLLEXPORT uint	getage(scfg_t*, char *birthdate);
+DLLEXPORT int	getage(scfg_t*, const char* birthdate);
+DLLEXPORT int	getbirthmonth(scfg_t*, const char* birthdate);
+DLLEXPORT int	getbirthday(scfg_t*, const char* birthdate);
+DLLEXPORT int	getbirthyear(const char* birthdate);
+DLLEXPORT char* getbirthdstr(scfg_t*, const char* birthdate, char* buf, size_t);
+DLLEXPORT char* getbirthmmddyy(scfg_t*, const char* birthdate, char* buf, size_t);
+DLLEXPORT char* getbirthddmmyy(scfg_t*, const char* birthdate, char* buf, size_t);
+DLLEXPORT char* parse_birthdate(scfg_t*, const char* birthdate, char* out, size_t);
+DLLEXPORT char* format_birthdate(scfg_t*, const char* birthdate, char* out, size_t);
+DLLEXPORT const char* birthdate_format(scfg_t*);
 DLLEXPORT char*	username(scfg_t*, int usernumber, char * str);
 DLLEXPORT char* usermailaddr(scfg_t*, char* addr, const char* name);
 DLLEXPORT int	opennodedat(scfg_t*);
@@ -96,6 +76,7 @@ DLLEXPORT char* getsmsg(scfg_t*, int usernumber);
 DLLEXPORT int	putsmsg(scfg_t*, int usernumber, char *strin);
 DLLEXPORT char* getnmsg(scfg_t*, int node_num);
 DLLEXPORT int	putnmsg(scfg_t*, int num, char *strin);
+DLLEXPORT int	getnodeclient(scfg_t*, uint number, client_t*, time_t*);
 
 DLLEXPORT uint	userdatdupe(scfg_t*, uint usernumber, uint offset, uint datlen, char *dat
 					,BOOL del, BOOL next, void (*progress)(void*, int, int), void* cbdata);

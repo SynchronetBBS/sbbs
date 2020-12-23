@@ -1,7 +1,5 @@
 /* Synchronet message to QWK format conversion routine */
 
-/* $Id: msgtoqwk.cpp,v 1.67 2019/09/10 05:48:56 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -44,8 +30,9 @@
 /* Converts message 'msg' to QWK format, writing to file 'qwk_fp'.          */
 /* mode determines how to handle Ctrl-A codes								*/
 /* Returns the number of bytes used for the body-text (multiple of 128)		*/
+/* or negative on error.													*/
 /****************************************************************************/
-ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
+long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 	, int conf, FILE* hdrs, FILE* voting)
 {
 	char	str[512],ch=0,tear=0,tearwatch=0,*buf,*p;
@@ -75,7 +62,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 
 	if(msg->hdr.type != SMB_MSG_TYPE_NORMAL) {
 		if(voting == NULL)
-			return 0;
+			return -1;
 		fprintf(voting,"[%lx]\n",offset);
 		switch(msg->hdr.type) {
 		case SMB_MSG_TYPE_BALLOT:
@@ -257,7 +244,7 @@ ulong sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 		getmsgtxt_mode |= GETMSGTXT_PLAIN;
 	buf=smb_getmsgtxt(smb, msg, getmsgtxt_mode);
 	if(!buf)
-		return(0);
+		return -2;
 
 	char qwk_newline = QWK_NEWLINE;
 	if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) {

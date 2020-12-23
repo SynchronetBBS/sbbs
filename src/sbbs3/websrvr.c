@@ -1,8 +1,5 @@
 /* Synchronet Web Server */
 
-/* $Id: websrvr.c,v 1.720 2020/08/08 19:04:57 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -80,6 +65,7 @@
 #include "xpprintf.h"
 #include "ssl.h"
 #include "fastcgi.h"
+#include "ver.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
@@ -121,7 +107,6 @@ static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminated=FALSE;
 static volatile BOOL	terminate_http_logging_thread=FALSE;
 static struct xpms_set	*ws_set=NULL;
-static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
 static char		cgi_dir[MAX_PATH+1];
@@ -1421,7 +1406,7 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 			if(session->req.range_start || session->req.range_end) {
 				switch(stat_code) {
 					case 206:	/* Partial reply */
-						safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,stats.st_size);
+						safe_snprintf(header,sizeof(header),"%s: bytes %ld-%ld/%ld",get_header(HEAD_CONTENT_RANGE),session->req.range_start,session->req.range_end,(long)stats.st_size);
 						safecat(headers,header,MAX_HEADERS_SIZE);
 						break;
 					default:
@@ -2279,7 +2264,7 @@ static void unescape(char *p)
 
 	dst=p;
 	for(;*p;p++) {
-		if(*p=='%' && isxdigit((uchar)*(p+1)) && isxdigit((uchar)*(p+2))) {
+		if(*p=='%' && IS_HEXDIGIT(*(p+1)) && IS_HEXDIGIT(*(p+2))) {
 			sprintf(code,"%.2s",p+1);
 			*(dst++)=(char)strtol(code,NULL,16);
 			p+=2;
@@ -2528,7 +2513,7 @@ static char *get_token_value(char **p)
 		}
 	}
 end_of_text:
-	while(*pos==',' || isspace(*pos))
+	while(*pos==',' || IS_WHITESPACE(*pos))
 		pos++;
 	*out=0;
 	*p=pos;
@@ -2602,7 +2587,7 @@ static BOOL parse_headers(http_session_t * session)
 								session->req.auth.type=AUTHENTICATION_DIGEST;
 								/* Parse out values one at a time and store */
 								while(p != NULL && *p) {
-									while(isspace(*p))
+									while(IS_WHITESPACE(*p))
 										p++;
 									if(strnicmp(p,"username=",9)==0) {
 										p+=9;
@@ -2779,6 +2764,8 @@ static BOOL parse_headers(http_session_t * session)
 								else {
 									if (session->req.vary_list)
 										strcat(p, ", ");
+									else
+										*p = '\0';
 									strcat(p, get_header(HEAD_UPGRADEINSECURE));
 									session->req.vary_list = p;
 
@@ -2863,7 +2850,7 @@ static BOOL parse_js_headers(http_session_t * session)
 
 						p=value;
 						while((key=strtok_r(p,"=",&last))!=NULL) {
-							while(isspace(*key))
+							while(IS_WHITESPACE(*key))
 								key++;
 							p=NULL;
 							if((val=strtok_r(p,";\t\n\v\f\r ",&last))!=NULL) {	/* Whitespace */
@@ -2952,7 +2939,7 @@ static char * split_port_part(char *host)
 	char *ret = NULL;
 	char *p=strchr(host, 0)-1;
 
-	if (isdigit(*p)) {
+	if (IS_DIGIT(*p)) {
 		/*
 		 * If the first and last : are not the same, and it doesn't
 		 * start with '[', there's no port part.
@@ -2967,7 +2954,7 @@ static char * split_port_part(char *host)
 				ret = p+1;
 				break;
 			}
-			if (!isdigit(*p))
+			if (!IS_DIGIT(*p))
 				break;
 		}
 	}
@@ -3162,7 +3149,7 @@ static BOOL get_fullpath(http_session_t * session)
 	return(isabspath(session->req.physical_path));
 }
 
-static BOOL is_legal_hostname(const char *host, BOOL strip_port)
+static BOOL is_legal_host(const char *host, BOOL strip_port)
 {
 	char * stripped = NULL;
 
@@ -3175,7 +3162,7 @@ static BOOL is_legal_hostname(const char *host, BOOL strip_port)
 		FREE_AND_NULL(stripped);
 		return FALSE;
 	}
-	if (strspn(host, "abcdefghijklmnopqrstuvwxyz0123456789-.") != strlen(host)) {
+	if (strspn(host, ":abcdefghijklmnopqrstuvwxyz0123456789-.") != strlen(host)) {
 		FREE_AND_NULL(stripped);
 		return FALSE;
 	}
@@ -3225,11 +3212,11 @@ static BOOL get_req(http_session_t * session, char *request_line)
 			if(!is_redir) {
 				get_request_headers(session);
 			}
-			if (!is_legal_hostname(session->req.host, TRUE)) {
+			if (!is_legal_host(session->req.host, TRUE)) {
 				send_error(session,__LINE__,"400 Bad Request");
 				return FALSE;
 			}
-			if (!is_legal_hostname(session->req.vhost, FALSE)) {
+			if (!is_legal_host(session->req.vhost, FALSE)) {
 				send_error(session,__LINE__,"400 Bad Request");
 				return FALSE;
 			}
@@ -3241,8 +3228,7 @@ static BOOL get_req(http_session_t * session, char *request_line)
 				/* FREE()d in http_logging_thread() */
 				session->req.ld->vhost=strdup(session->req.vhost);
 			session->req.dynamic=is_dynamic_req(session);
-			if(session->req.query_str[0])
-				add_env(session,"QUERY_STRING",session->req.query_str);
+			add_env(session,"QUERY_STRING",session->req.query_str);
 
 			add_env(session,"REQUEST_METHOD",methods[session->req.method]);
 			add_env(session,"SERVER_PROTOCOL",session->http_ver ?
@@ -5458,7 +5444,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	memset(&user,0,sizeof(user));
 
-	if(isdigit((uchar)*username))
+	if(IS_DIGIT(*username))
 		user.number=atoi(username);
 	else if(*username)
 		user.number=matchuser(&scfg,username,FALSE);
@@ -5753,10 +5739,7 @@ js_initcx(http_session_t *session)
 {
 	JSContext*	js_cx;
 
-	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing context (stack: %lu bytes)"
-		,session->socket,startup->js.cx_stack);
-
-    if((js_cx = JS_NewContext(session->js_runtime, startup->js.cx_stack))==NULL)
+    if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 	JS_BEGINREQUEST(js_cx);
 
@@ -6216,7 +6199,7 @@ int read_post_data(http_session_t * session)
 			/* Read more headers! */
 			if(!get_request_headers(session))
 				return(FALSE);
-			if (!is_legal_hostname(session->req.vhost, FALSE)) {
+			if (!is_legal_host(session->req.vhost, FALSE)) {
 				send_error(session,__LINE__,"400 Bad Request");
 				return FALSE;
 			}
@@ -6775,17 +6758,16 @@ const char* DLLCALL web_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.720 $", "%*s %s", revision);
-
-	sprintf(ver,"%s %s%s  "
-		"Compiled %s %s with %s"
+	sprintf(ver,"%s %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
 		,server_name
-		,revision
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler);
 
 	return(ver);
@@ -6921,7 +6903,6 @@ void DLLCALL web_server(void* arg)
 	startup=(web_startup_t*)arg;
 
 	SetThreadName("sbbs/webServer");
-	web_ver();	/* get CVS revision */
 
     if(startup==NULL) {
     	sbbs_beep(100,500);
@@ -6943,7 +6924,7 @@ void DLLCALL web_server(void* arg)
 #endif
 
 	ZERO_VAR(js_server_props);
-	SAFEPRINTF2(js_server_props.version,"%s %s",server_name,revision);
+	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=web_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
@@ -6970,7 +6951,6 @@ void DLLCALL web_server(void* arg)
 		if(startup->max_cgi_inactivity==0) 		startup->max_cgi_inactivity=WEB_DEFAULT_MAX_CGI_INACTIVITY; /* seconds */
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ; /* seconds */
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 		if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
 
 		protected_uint32_adjust(&thread_count,1);
@@ -6994,9 +6974,9 @@ void DLLCALL web_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"%s Revision %s%s"
+		lprintf(LOG_INFO,"%s Version %s%c%s"
 			,server_name
-			,revision
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -7006,7 +6986,7 @@ void DLLCALL web_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		if(!winsock_startup()) {
 			cleanup(1);
@@ -7187,7 +7167,7 @@ void DLLCALL web_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(ws_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, &acc_type);
+			client_socket = xpms_accept(ws_set, &client_addr, &client_addr_len, startup->sem_chk_freq*1000, XPMS_FLAGS_NONE, &acc_type);
 
 			if(client_socket == INVALID_SOCKET)
 				continue;

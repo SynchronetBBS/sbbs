@@ -66,6 +66,8 @@
 uifcapi_t uifc; /* User Interface (UIFC) Library API */
 const char *YesStr="Yes";
 const char *NoStr="No";
+char app_title[128];
+int	ciolib_mode=CIOLIB_MODE_AUTO;
 
 int lprintf(char *fmt, ...)
 {
@@ -321,10 +323,12 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	stats_t	nstats;
 	char	statbuf[6*78];		/* Buffer to hold the stats for passing to uifc.showbuf() */
 	char	str[4][4][12];
+	char	heading[128];
 	char	usrname[128];
+	char	tmp[128];
 	ulong	free;
 	uint	i,l,m;
-	time_t	t;
+	time_t	t, now;
 	int		shownode=1;
 
 	if(getnodedat(cfg,nodenum,node,FALSE,NULL)) {
@@ -336,16 +340,25 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 	username(cfg,node->useron,usrname);
 
 	getstats(cfg, 0, &sstats);
-	t=time(NULL);
-	strftime(str[0][0],12,"%b %e",localtime(&t));
-	free=getfreediskspace(cfg->temp_dir,1024);
-	if(free<1000) {
-		free=getfreediskspace(cfg->temp_dir,0);
-		getsizestr(str[0][1],free,TRUE);
-	}
-	else
-		getsizestr(str[0][1],free,FALSE);
+	now = time(NULL);
 	if(shownode) {
+		static client_t client;
+		time_t hangup = now;
+		getnodeclient(cfg, nodenum, &client, &hangup);
+		t = client.time ? client.time : now;
+		if(node->status != NODE_WFC && node->status != NODE_OFFLINE)
+			safe_snprintf(heading, sizeof(heading), "`Node #`%-3d %s `%s`: %s"
+				,nodenum
+				,sectostr(now - t, tmp)
+				,client.protocol
+				,client.addr);
+		else
+			safe_snprintf(heading, sizeof(heading), "`Node #`%-3d %s `%s`: %s `on` %.12s"
+				,nodenum
+				,sectostr(hangup - t, tmp)
+				,client.protocol
+				,client.addr
+				,ctime(&hangup) + 4);
 		snprintf(str[1][0],12,"%s/%s",getnumstr(str[3][2],nstats.ltoday),getnumstr(str[3][3],sstats.ltoday));
 		getnumstr(str[1][1],sstats.logons);
 		snprintf(str[1][2],12,"%s/%s",getnumstr(str[3][2],nstats.ttoday),getnumstr(str[3][3],sstats.ttoday));
@@ -365,6 +378,14 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 		getnumstr(str[3][3],sstats.dls);
 	}
 	else {
+		free=getfreediskspace(cfg->data_dir,1024);
+		if(free<1000) {
+			free=getfreediskspace(cfg->data_dir,0);
+			getsizestr(str[0][0],free,TRUE);
+		}
+		else
+			getsizestr(str[0][0],free,FALSE);
+		sprintf(heading, "`Space`: %s `in` %s", str[0][0], cfg->data_dir);
 		snprintf(str[1][0],12,"%s",getnumstr(str[3][3],sstats.ltoday));
 		getnumstr(str[1][1],sstats.logons);
 		snprintf(str[1][2],12,"%s",getnumstr(str[3][3],sstats.ttoday));
@@ -383,11 +404,11 @@ int drawstats(scfg_t *cfg, int nodenum, node_t *node, int *curp, int *barp) {
 		getsizestr(str[3][2],sstats.dlb,TRUE);
 		getnumstr(str[3][3],sstats.dls);
 	}
-	snprintf(statbuf,sizeof(statbuf),"`Node #`: %-3d %6s  `Space`: %s"
+	snprintf(statbuf,sizeof(statbuf),"%s"
 			"\n`Logons`: %-11s `Total`: %-11s `Timeon`: %-11s `Total`: %-11s"
 			"\n`Emails`: %-11s `Posts`: %-11s `Fbacks`: %-11s `Users`: %-11s"
 			"\n`Uloads`: %-11s `Files`: %-11s `Dloads`: %-11s `Files`: %-11s",
-			nodenum,str[0][0],str[0][1],
+			heading,
 			str[1][0],str[1][1],str[1][2],str[1][3],
 			str[2][0],str[2][1],str[2][2],str[2][3],
 			str[3][0],str[3][1],str[3][2],str[3][3]);
@@ -482,7 +503,7 @@ int view_logs(scfg_t *cfg)
 	                "`Hack log            : `View the Hack attempt log.";
 
 	while(1) {
-		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"View Logs",opt))  {
+		switch(uifc.list(WIN_MID,0,0,0,&i,0,"View Logs",opt))  {
 			case -1:
 				return(0);
 			case 0:
@@ -550,8 +571,12 @@ int do_cmd(char *cmd)
 	gettextinfo(&ti);
 	p=alloca(ti.screenheight*ti.screenwidth*2);
 	gettext(1,1,ti.screenwidth,ti.screenheight,p);
+	suspendciolib();
 	i=system(cmd);
+	initciolib(ciolib_mode);
+	clrscr();
 	puttext(1,1,ti.screenwidth,ti.screenheight,p);
+	uifc.scrn(app_title);
 	return(i);
 }
 
@@ -643,57 +668,53 @@ int run_events(scfg_t *cfg)
 
 int recycle_servers(scfg_t *cfg)
 {
-	char str[1024];
+	char str[MAX_PATH + 1];
 	char **opt;
 	int i=0;
+	const int opt_count = 6;
 
-	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
-		allocfail(sizeof(char *)*(5+1));
-	for(i=0;i<(5+1);i++)
-		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
-			allocfail(MAX_OPLN);
+	if((opt=(char **)alloca(sizeof(char *)*(opt_count+1)))==NULL)
+		allocfail(sizeof(char *)*(opt_count+1));
 
-	i=0;
-	strcpy(opt[i++],"FTP server");
-	strcpy(opt[i++],"Mail server");
-	strcpy(opt[i++],"Services");
-	strcpy(opt[i++],"Telnet server");
-	strcpy(opt[i++],"Web server");
-	opt[i][0]=0;
+	opt[i++] = "All Servers";
+	opt[i++] = "Terminal Server";
+	opt[i++] = "Mail Server";
+	opt[i++] = "FTP Server";
+	opt[i++] = "Web Server";
+	opt[i++] = "Services";
+	opt[i] = NULL;
 
 	uifc.helpbuf=	"`Recycle Servers\n"
 					"`---------------\n\n"
-					"To rerun a server, highlight it and press Enter.\n"
+					"To recycle a server, highlight it and press Enter.\n"
 					"This will reload the configuration files for selected\n"
 					"server.";
 
 	i=0;
 	while(1) {
+		const char* ext = "";
 		switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Recycle Servers",opt))  {
 			case -1:
 				return(0);
 				break;
-			case 0:
-				sprintf(str,"%sftpsrvr.rec",cfg->ctrl_dir);
-				ftouch(str);
-				break;
 			case 1:
-				sprintf(str,"%smailsrvr.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".term";
 				break;
 			case 2:
-				sprintf(str,"%sservices.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".mail";
 				break;
 			case 3:
-				sprintf(str,"%stelnet.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".ftp";
 				break;
 			case 4:
-				sprintf(str,"%swebsrvr.rec",cfg->ctrl_dir);
-				ftouch(str);
+				ext = ".web";
+				break;
+			case 5:
+				ext = ".services";
 				break;
 		}
+		SAFEPRINTF2(str, "%srecycle%s", cfg->ctrl_dir, ext);
+		ftouch(str);
 	}
 	return(0);
 }
@@ -809,18 +830,19 @@ int main(int argc, char** argv)  {
 	char**	mopt;
 	int		main_dflt=0;
 	int		main_bar=0;
+	int		sys_cur=0;
 	char	revision[16];
 	char	str[256],ctrl_dir[MAX_PATH + 1];
-	char	title[256];
 	int		i,j;
 	node_t	node;
 	int		nodefile = -1;
 	box_t	boxch;
 	scfg_t	cfg;
 	int		done;
-	int		ciolib_mode=CIOLIB_MODE_AUTO;
 	time_t	last_semfile_check = time(NULL);
 	int		idle_sleep=100;
+
+	SAFEPRINTF2(app_title, "Synchronet UNIX Monitor v%s%c", VERSION, REVISION);
 
 	/******************/
 	/* Ini file stuff */
@@ -874,7 +896,7 @@ int main(int argc, char** argv)  {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
-	prep_dir(cfg.data_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
+	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 
 	memset(&uifc,0,sizeof(uifc));
 	uifc.mode|=UIFC_NOCTRL;
@@ -985,8 +1007,7 @@ USAGE:
 		if((mopt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	sprintf(title,"Synchronet UNIX Monitor %s-%s",revision,PLATFORM_DESC);
-	if(uifc.scrn(title)) {
+	if(uifc.scrn(app_title)) {
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
@@ -1042,7 +1063,7 @@ USAGE:
 		}
 
 		j=uifc.list(WIN_L2R|WIN_ESC|WIN_ACT|WIN_DYN,0,5,70,&main_dflt,&main_bar
-			,title,mopt);
+			,app_title,mopt);
 
 		if(j == -2) {
 			SLEEP(idle_sleep);
@@ -1093,10 +1114,9 @@ USAGE:
 			                "`Edit Filter Files     : `Edit the various filter files, e.g. ip.can.";
 
 			done=0;
-			i=0;
 			while(!done) {
 				sprintf(opt[sysop_chat_opt], "Turn Sysop Chat availability %s", sysop_avail ? "Off" : "On");
-				switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"System Options",opt))  {
+				switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT|WIN_ORG,0,0,0,&sys_cur,0,"System Options",opt))  {
 					case -1:
 						done=1;
 						break;
@@ -1287,7 +1307,7 @@ USAGE:
 						"`View crash log       : `View the crash log for current node.";
 				done=0;
 				while(!done) {
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
 						case 0:  /* Edit Users */
 							sprintf(str,"%suedit %d",cfg.exec_dir,node.useron);
@@ -1362,7 +1382,7 @@ USAGE:
 				             "`View crash log : `View the crash log for current node.";
 				done=0;
 				while(!done) {
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Node Options",opt))  {
+					switch(uifc.list(WIN_MID|WIN_SAV|WIN_ACT,0,0,0,&i,0,"Node Options",opt))  {
 
 						case 0: /* Node Toggles */
 							node_toggles(&cfg, j);

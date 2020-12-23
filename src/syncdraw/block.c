@@ -208,7 +208,7 @@ blockcenter(void)
 	blocklefttrim();
 	for (y = Y1; y <= Y2; y++) {
 		for (x = X1; x <= X2; x++)
-			if ((Screen[ActivePage][y][x << 1] == 32))
+			if (Screen[ActivePage][y][x << 1] == 32)
 				d++;
 		d /= 2;
 		while (d >= 1) {

@@ -1,8 +1,5 @@
 /* Functions to create and parse .ini files */
 
-/* $Id: ini_file.c,v 1.175 2020/08/08 23:26:38 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -37,7 +22,6 @@
 #include "ini_file.h"
 #include <stdlib.h>		/* strtol */
 #include <string.h>		/* strlen */
-#include <ctype.h>		/* isdigit */
 #include <math.h>		/* fmod */
 #include "xpdatetime.h"	/* isoDateTime_t */
 #include "datewrap.h"	/* ctime_r */
@@ -1361,7 +1345,7 @@ static BOOL isTrue(const char* value)
 	char*	p;
 	BOOL	is_true;
 
-	if(!isalpha(*value))
+	if(!IS_ALPHA(*value))
 		return FALSE;
 
 	if((str=strdup(value)) == NULL)
@@ -1936,7 +1920,7 @@ static unsigned parseEnum(const char* value, str_list_t names, unsigned deflt)
 			return(i);
 
     i=strtoul(val, &endptr, 0);
-	if(*endptr != 0 && !isspace(*endptr))
+	if(*endptr != 0 && !IS_WHITESPACE(*endptr))
 		return deflt;
 	if(i>=count)
 		i=count-1;

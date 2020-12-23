@@ -190,7 +190,7 @@ prompt:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
-	console.print("\1n\1h\1bInterBBS: ");
+	console.print("\1n\xfe \1h\1bInterBBS \1n\xfe ");
 	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~Quit: ");
 	console.aborted = false;
 	var key;

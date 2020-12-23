@@ -1,0 +1,124 @@
+<!--HIDDEN:Mail-->
+
+<?xjs
+    if (user.number == 0 || user.alias == settings.guest) exit();
+    load('sbbsdefs.js');
+    load(settings.web_lib + 'forum.js');
+    var _mail_tab = http_request.query.tab ? http_request.query.tab[0] : 'inbox';
+    var _mail = get_mail_headers(_mail_tab, true);
+    function _active_tab(tab) {
+        return tab == _mail_tab ? 'active' : '';
+    }
+?>
+
+<? function writeMessage(header) { ?>
+	<li id="li-<? write(header.number); ?>" class="list-group-item mail striped <? write(header.attr&MSG_READ ? 'read' : 'unread'); ?>">
+		<div class="row">
+			<div class="col-sm-1">
+				<div class="checkbox">
+					<label class="checkbox-inline">
+						<input id="check-<? write(header.number); ?>" type="checkbox" class="mail-select">
+                        <? write(header.attr&MSG_READ ? '' : '<span class="badge new">' + locale.strings.page_mail.label_new_message + '</span>') ?>
+					</label>
+				</div>
+			</div>
+			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<? write(header.number); ?>)">
+                <? write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_to : locale.strings.page_mail.label_message_from); ?>:
+                <strong><? write(_mail_tab == 'sent' ? header.to : header.from); ?></strong>
+                <? if (header.from_net_type != NET_NONE) { ?>
+                    &lt;<? write(_mail_tab == 'sent' ? (header.to + '@' + header.to_net_addr) : (header.from + '@' + header.from_net_addr)); ?>&gt;
+                <? } ?>
+				<? write(locale.strings.page_mail.label_message_date); ?>
+				<? write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
+				<p>
+					<? write(locale.strings.page_mail.label_message_subject); ?>:
+					<strong><? write(header.subject); ?></strong>
+				</p>
+			</div>
+        </div>
+		<div class="message" id="message-<? write(header.number); ?>" hidden></div>
+	</li>
+<? } ?>
+
+<?xjs
+    function _read_unread(tab) {
+        write('(');
+        if (_mail[tab].unread) {
+            write('<strong>' + _mail[tab].unread + '</strong>');
+        } else {
+            write(_mail[tab].unread);
+        }
+        write('/' + _mail[tab].read + ')');
+    }
+?>
+
+<script type="text/javascript" src="./js/forum.js"></script>
+
+<script type="text/javascript">
+
+    function selectAllMail() {
+        $('input.mail-select').each(function () {
+            $(this).prop('checked', $(this).prop('checked') ? false : true);
+        });
+    }
+
+    async function deleteSelectedMail() {
+        const numbers = [];
+        $('input.mail-select:checked').each(function () {
+            numbers.push($(this).attr('id').split('-')[1]);
+        });
+        const data = await v4_get('./api/forum.ssjs?call=delete-mail&number=' + numbers.join('&number='));
+        if (!data.success) return;
+        numbers.forEach(e => $('#li-' + e).remove());
+    }
+
+</script>
+
+<? if (typeof http_request.query.notice != "undefined") { ?>
+    <div id="noticebox" class="alert alert-warning">
+        <? write(http_request.query.notice[0]); ?>
+    </div>
+    <script type="text/javascript">
+        $("#noticebox").fadeOut(3000, function () {
+            $("#noticebox").remove();
+        });
+    </script>
+<? } ?>
+
+<? if (!(user.security.restrictions&UFLAG_E) && !(user.security.restrictions&UFLAG_M)) { ?>
+	<button class="btn btn-default icon" aria-label="<? write(locale.strings.page_mail.button_post_new); ?>" title="<? write(locale.strings.page_mail.button_post_new); ?>" onclick="addNew('mail')">
+		<span class="glyphicon glyphicon-pencil"></span>
+	</button>
+	<button class="btn btn-default icon" aria-label="<? write(locale.strings.page_mail.button_select_all); ?>" title="<? write(locale.strings.page_mail.button_select_all); ?>" onclick="selectAllMail()">
+		<span class="glyphicon glyphicon-check"></span>
+	</button>
+	<button class="btn btn-default icon" aria-label="<? write(locale.strings.page_mail.button_delete_selected); ?>" title="<? write(locale.strings.page_mail.button_delete_selected); ?>" onclick="deleteSelectedMail()">
+		<span class="glyphicon glyphicon-trash"></span>
+	</button>
+<? } ?>
+
+<ul class="nav nav-tabs">
+	<li role="presentation" class="<? write(_active_tab('inbox')); ?>">
+		<a href="./?page=<? write(page); ?>&amp;tab=inbox">
+			<? write(locale.strings.page_mail.label_tab_inbox); ?>
+            <? _read_unread('inbox'); ?>
+		</a>
+	</li>
+    <li role="presentation" class="<? write(_active_tab('spam')); ?>">
+		<a href="./?page=<? write(page); ?>&amp;tab=spam">
+			Spam
+            <? _read_unread('spam'); ?>
+		</a>
+	</li>
+	<li role="presentation" class="<? write(_active_tab('sent')); ?>">
+		<a href="./?page=<? write(page); ?>&amp;tab=sent">
+			<? write(locale.strings.page_mail.label_tab_sent); ?>
+            <? _read_unread('sent'); ?>
+		</a>
+	</li>
+</ul>
+<br>
+
+<ul id="forum-list-container" class="list-group">
+    <? _mail.headers.forEach(writeMessage); ?>
+</ul>

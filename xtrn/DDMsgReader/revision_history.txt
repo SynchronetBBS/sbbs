@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.39     2020-12-01   When forwarding a message, added the ability to optinally
+                      edit the message before forwarding it.
+1.38     2020-11-26   Bug fix: When forwarding a message, it now correctly sets
+                      sets the to_net_type property in the message header to
+                      FidoNet or internet for those types of message
+                      destinations
 1.37     2020-07-11   Added mouse support to the scrollable reader interface.
                       The integrated area changer functionality doesn't have
                       mouse support yet.

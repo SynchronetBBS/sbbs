@@ -1,5 +1,3 @@
-/* $Id: scfgsys.c,v 1.63 2020/08/18 06:03:09 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -1334,13 +1320,13 @@ void sys_cfg(void)
 				while(!done) {
 					i=0;
 					sprintf(opt[i++],"%-27.27s%s","New User Magic Word",cfg.new_magic);
-					sprintf(opt[i++],"%-27.27s%.40s","Data Directory"
+					sprintf(opt[i++],"%-27.27s%s","Data Directory"
 						,cfg.data_dir);
-					sprintf(opt[i++],"%-27.27s%.40s","Logs Directory"
+					sprintf(opt[i++],"%-27.27s%s","Logs Directory"
 						,cfg.logs_dir);
-					sprintf(opt[i++],"%-27.27s%.40s","Exec Directory"
+					sprintf(opt[i++],"%-27.27s%s","Exec Directory"
 						,cfg.exec_dir);
-					sprintf(opt[i++],"%-27.27s%.40s","Mods Directory"
+					sprintf(opt[i++],"%-27.27s%s","Mods Directory"
 						,cfg.mods_dir);
 					sprintf(opt[i++],"%-27.27s%s","Input SIF Questionnaire"
 						,cfg.new_sif);
@@ -1358,7 +1344,7 @@ void sys_cfg(void)
 						,cfg.sys_lastnode);
 					sprintf(opt[i++],"%-27.27s%s","Phone Number Format"
 						,cfg.sys_phonefmt);
-					sprintf(opt[i++],"%-27.27s%.40s","Sysop Chat Override"
+					sprintf(opt[i++],"%-27.27s%s","Sysop Chat Override"
 						,cfg.sys_chat_arstr);
 					if(cfg.user_backup_level)
 						sprintf(str,"%hu",cfg.user_backup_level);
@@ -1669,6 +1655,8 @@ void sys_cfg(void)
 					sprintf(opt[i++],"%-16.16s%s","Auto Message",cfg.automsg_mod);
 					sprintf(opt[i++],"%-16.16s%s","Text Section",cfg.textsec_mod);
 					sprintf(opt[i++],"%-16.16s%s","Xtrn Section",cfg.xtrnsec_mod);
+					sprintf(opt[i++],"%-16.16s%s","Pre Xtrn Prog",cfg.prextrn_mod);
+					sprintf(opt[i++],"%-16.16s%s","Post Xtrn Prog",cfg.postxtrn_mod);
 					sprintf(opt[i++],"%-16.16s%s","Read Mail",cfg.readmail_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Msgs",cfg.scanposts_mod);
 					sprintf(opt[i++],"%-16.16s%s","Scan Subs",cfg.scansubs_mod);
@@ -1696,6 +1684,8 @@ void sys_cfg(void)
 						"`Auto Message` Executed when a user chooses to edit the auto-message\n"
 						"`Text Section` Executed to handle general text file (viewing) section\n"
 						"`Xtrn Section` Executed to handle external programs (doors) section\n"
+						"`Xtrn Prog Pre` Executed before external programs (doors) run\n"
+						"`Xtrn Prog Post` Executed after external programs (doors) run\n"
 						"\n"
 						"Full module command-lines may be used for the operations listed below:\n"
 						"\n"
@@ -1759,34 +1749,42 @@ void sys_cfg(void)
 								,cfg.xtrnsec_mod,sizeof(cfg.xtrnsec_mod)-1,K_EDIT);
 							break;
 						case 10:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Pre External Program Module"
+								,cfg.prextrn_mod,sizeof(cfg.prextrn_mod)-1,K_EDIT);
+							break;
+						case 11:
+							uifc.input(WIN_MID|WIN_SAV,0,0,"Post External Program Module"
+								,cfg.postxtrn_mod,sizeof(cfg.postxtrn_mod)-1,K_EDIT);
+							break;														
+						case 12:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Read Mail Command"
 								,cfg.readmail_mod,sizeof(cfg.readmail_mod)-1,K_EDIT);
 							break;
-						case 11:
+						case 13:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Msgs Command"
 								,cfg.scanposts_mod,sizeof(cfg.scanposts_mod)-1,K_EDIT);
 							break;
-						case 12:
+						case 14:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Scan Subs Command"
 								,cfg.scansubs_mod,sizeof(cfg.scansubs_mod)-1,K_EDIT);
 							break;
-						case 13:
+						case 15:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Msgs Command"
 								,cfg.listmsgs_mod,sizeof(cfg.listmsgs_mod)-1,K_EDIT);
 							break;
-						case 14:
+						case 16:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Logons Command"
 								,cfg.logonlist_mod,sizeof(cfg.logonlist_mod)-1,K_EDIT);
 							break;
-						case 15:
+						case 17:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"List Nodes Command"
 								,cfg.nodelist_mod,sizeof(cfg.nodelist_mod)-1,K_EDIT);
 							break;
-						case 16:
+						case 18:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Who's Online Command"
 								,cfg.whosonline_mod,sizeof(cfg.whosonline_mod)-1,K_EDIT);
 							break;
-						case 17:
+						case 19:
 							uifc.input(WIN_MID|WIN_SAV,0,0,"Private Message Command"
 								,cfg.privatemsg_mod,sizeof(cfg.privatemsg_mod)-1,K_EDIT);
 							break;

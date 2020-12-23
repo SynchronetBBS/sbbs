@@ -1,8 +1,5 @@
 /* Synchronet terminal server thread and related functions */
 
-/* $Id: main.cpp,v 1.794 2020/08/08 20:17:02 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -42,6 +27,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
+#include "ver.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -105,6 +91,8 @@ struct xpms_set				*ts_set;
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	char *	text[TOTAL_TEXT];
+static	scfg_t	node_scfg[MAX_NODES];
+static	char *	node_text[MAX_NODES][TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 static	bool	terminate_server=false;
@@ -370,7 +358,7 @@ u_long resolve_ip(char *addr)
 		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
-		if(*p!='.' && !isdigit((uchar)*p))
+		if(*p!='.' && !IS_DIGIT(*p))
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
@@ -552,9 +540,15 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 		return(JS_FALSE);
 
 	for(i=0;props[i].name;i++) {
-		if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-			return(JS_FALSE);
+		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+			if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
+			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+		else {
+			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
 		if(props[i].flags&JSPROP_ENUMERATE) {	/* No need to version invisible props */
 			if((ver=props[i].ver) < 10000)		/* auto convert 313 to 31300 */
 				ver*=100;
@@ -698,10 +692,17 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
-	for(i=0;props[i].name;i++)
-		if(!JS_DefinePropertyWithTinyId(cx, obj,
-			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-			return(JS_FALSE);
+	for(i=0;props[i].name;i++) {
+		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+			if(!JS_DefinePropertyWithTinyId(cx, obj,
+			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+		else {
+			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+				return(JS_FALSE);
+		}
+	}
 
 	return(JS_TRUE);
 }
@@ -727,9 +728,15 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	if(props) {
 		for(i=0;props[i].name;i++) {
 			if(name==NULL || strcmp(name, props[i].name)==0) {
-				if(!JS_DefinePropertyWithTinyId(cx, obj,
-						props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-					return(JS_FALSE);
+				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
+					if(!JS_DefinePropertyWithTinyId(cx, obj,
+					    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+						return(JS_FALSE);
+				}
+				else {
+					if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+						return(JS_FALSE);
+				}
 				if(name)
 					return(JS_TRUE);
 			}
@@ -1102,11 +1109,12 @@ static JSBool
 js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char		instr[81];
+	char		instr[128] = "";
     JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
     char*		prompt=NULL;
+	int32		mode = K_EDIT;
 	size_t		result;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1114,16 +1122,22 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JSVALUE_TO_MSTRING(cx, argv[0], prompt, NULL);
+	uintN argn = 0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_MSTRING(cx, argv[argn], prompt, NULL);
 		if(prompt==NULL)
 			return(JS_FALSE);
+		argn++;
 	}
-
-	if(argc>1) {
-		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
-	} else
-		instr[0]=0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_STRBUF(cx, argv[argn], instr, sizeof(instr), NULL);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn], &mode))
+			return JS_FALSE;
+		argn++;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(prompt != NULL) {
@@ -1131,7 +1145,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		free(prompt);
 	}
 
-	result = sbbs->getstr(instr,sizeof(instr)-1,K_EDIT);
+	result = sbbs->getstr(instr, sizeof(instr)-1, mode);
 	sbbs->attr(LIGHTGRAY);
 	if(!result) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -1184,8 +1198,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("print an alert message (ala client-side JS)")
 	,310
 	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[value]")
-	,JSDOCSTR("displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)")
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[text] [,value] [,mode=K_EDIT]")
+	,JSDOCSTR("displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
 	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
@@ -1252,17 +1266,13 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 	JSContext* js_cx;
 
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %lu bytes"
 		,desc, startup->js.max_bytes);
 	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__)) == NULL)
 		return NULL;
 
-	lprintf(LOG_DEBUG,"JavaScript: Initializing %s context (stack: %lu bytes)"
-		,desc, startup->js.cx_stack);
-
-    if((js_cx = JS_NewContext(*runtime, startup->js.cx_stack))==NULL)
+    if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return NULL;
 	JS_BEGINREQUEST(js_cx);
 
@@ -1287,7 +1297,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 					,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 					,&js_callback								/* js */
 					,&startup->js
-					,&client, client_socket, -1					/* client */
+					,client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
 					,&js_server_props							/* server */
 					,glob
 			))
@@ -3367,7 +3377,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	pause_hotspot = NULL;
 	console = 0;
 	online = 0;
-	outchar_esc = 0;
+	outchar_esc = ansiState_none;
 	nodemsg_inside = 0;	/* allows single nest */
 	hotkey_inside = 0;	/* allows single nest */
 	event_time = 0;
@@ -3488,6 +3498,7 @@ bool sbbs_t::init()
 {
 	char		str[MAX_PATH+1];
 	char		tmp[128];
+	char		tmp2[128];
 	int			result;
 	uint		i,j,k,l;
 	node_t		node;
@@ -3527,6 +3538,19 @@ bool sbbs_t::init()
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
+		SAFEPRINTF(str, "%sclient.ini", cfg.node_dir);
+		FILE* fp = fopen(str, "wt");
+		if(fp != NULL) {
+			fprintf(fp, "sock=%d\n", client_socket);
+			fprintf(fp, "addr=%s\n", client.addr);
+			fprintf(fp, "host=%s\n", client.host);
+			fprintf(fp, "port=%u\n", (uint)client.port);
+			fprintf(fp, "time=%lu\n", (ulong)client.time);
+			fprintf(fp, "prot=%s\n", client.protocol);
+			fprintf(fp, "local_addr=%s\n", local_addr);
+			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
+			fclose(fp);
+		}
 		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
 			,client_socket, local_addr, inet_addrport(&addr));
 		spymsg("Connected");
@@ -3590,11 +3614,13 @@ bool sbbs_t::init()
 			now=time(NULL);
 			struct tm tm;
 			localtime_r(&now,&tm);
+			time_t ftime = fdate(str);
 			safe_snprintf(str,sizeof(str),"%s  %s %s %02d %u  "
-				"End of preexisting log entry (possible crash)"
+				"End of preexisting log entry (possible crash on %.24s)"
 				,hhmmtostr(&cfg,&tm,tmp)
 				,wday[tm.tm_wday]
-				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
+				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900
+				,ctime_r(&ftime, tmp2));
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(TRUE);
@@ -4446,7 +4472,7 @@ void sbbs_t::logoffstats()
 
 void node_thread(void* arg)
 {
-	char			str[128];
+	char			str[MAX_PATH + 1];
 	int				file;
 	uint			curshell=0;
 	node_t			node;
@@ -4481,7 +4507,8 @@ void node_thread(void* arg)
 	if(sbbs->answer()) {
 
 		login_success = true;
-		listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
+		if(sbbs->useron.pass[0])
+			listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
 		if(sbbs->sys_status&SS_QWKLOGON) {
 			sbbs->getsmsg(sbbs->useron.number);
 			sbbs->qwk_sec();
@@ -4545,6 +4572,15 @@ void node_thread(void* arg)
 
 	sbbs->logout();
 	sbbs->logoffstats();	/* Updates both system and node dsts.dab files */
+
+	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
+	FILE* fp = fopen(str, "at");
+	if(fp != NULL) {
+		fprintf(fp, "user=%u\n", sbbs->useron.number);
+		fprintf(fp, "name=%s\n", sbbs->useron.alias);
+		fprintf(fp, "done=%lu\n", (ulong)time(NULL));
+		fclose(fp);
+	}
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
 		sbbs->daily_maint();
@@ -4659,7 +4695,7 @@ bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
 	if(!fexist(fname))
 		return false;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, flength(fname));
+	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (long)flength(fname));
 	return ::backup(fname, backup_level, rename) ? true : false;
 }
 
@@ -4869,7 +4905,7 @@ const char* DLLCALL bbs_ver(void)
 	if(ver[0]==0) {	/* uninitialized */
 		DESCRIBE_COMPILER(compiler);
 
-		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
+		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  Compiled %s/%s %s %s with %s"
 			,TELNET_SERVER
 			,VERSION, REVISION
 #ifdef _DEBUG
@@ -4877,7 +4913,7 @@ const char* DLLCALL bbs_ver(void)
 #else
 			,""
 #endif
-			,smb_lib_ver()
+			,git_branch, git_hash
 			,__DATE__, __TIME__, compiler
 			);
 	}
@@ -4910,6 +4946,12 @@ static void cleanup(int code)
 
 	free_cfg(&scfg);
 	free_text(text);
+
+	for(int i = 0; i < MAX_NODES; i++) {
+		free_text(node_text[i]);
+		free_cfg(&node_scfg[i]);
+		memset(&node_scfg[i], 0, sizeof(node_scfg[i]));
+	}
 
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
@@ -5034,18 +5076,17 @@ void DLLCALL bbs_thread(void* arg)
 	char compiler[32];
 	DESCRIBE_COMPILER(compiler);
 
-	lprintf(LOG_INFO,"%s Version %s Revision %c%s"
+	lprintf(LOG_INFO,"%s Version %s%c%s"
 		,TELNET_SERVER
 		,VERSION
-		,toupper(REVISION)
+		,REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
 		);
-	lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-	lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+	lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"
@@ -5311,23 +5352,6 @@ NO_SSH:
 		YIELD();
 		if(protected_uint32_value(node_threads_running)==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
-
-				bool rerun=false;
-				for(i=first_node;i<=last_node;i++) {
-					if(sbbs->getnodedat(i,&node,0)!=0)
-						continue;
-					if(node.misc&NODE_RRUN) {
-						sbbs->getnodedat(i,&node,1);
-						if(!rerun)
-							lprintf(LOG_INFO,"Node %d flagged for re-run",i);
-						rerun=true;
-						node.misc&=~NODE_RRUN;
-						sbbs->putnodedat(i,&node);
-					}
-				}
-				if(rerun)
-					break;
-
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected"
 						,p);
@@ -5359,7 +5383,7 @@ NO_SSH:
 		/* now wait for connection */
 		client_addr_len = sizeof(client_addr);
 		client_socket=xpms_accept(ts_set, &client_addr
-	        	,&client_addr_len, startup->sem_chk_freq*1000, &ts_cb);
+	        	,&client_addr_len, startup->sem_chk_freq*1000, (startup->options & BBS_OPT_HAPROXY_PROTO) ? XPMS_ACCEPT_FLAG_HAPROXY : XPMS_FLAGS_NONE, &ts_cb);
 
 		if(terminate_server)	/* terminated */
 			break;
@@ -5709,11 +5733,48 @@ NO_SSH:
 			continue;
 		}
 
+		// Load the configuration files for this node, only if/when needed/updated
+		scfg_t* cfg = &node_scfg[i - 1];
+		if(cfg->size != sizeof(*cfg) || (node.misc & NODE_RRUN)) {
+			sbbs->bprintf("Loading configuration...");
+			cfg->size = sizeof(*cfg);
+			cfg->node_num = i;
+		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
+			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
+			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
+			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
+				cfg->node_num = first_node;
+				if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+					lprintf(LOG_CRIT,"!ERROR %s",logstr);
+					lprintf(LOG_CRIT,"!FAILED to load configuration files");
+					sbbs->bprintf("\r\nFAILED: %s", logstr);
+					client_off(client_socket);
+					SSH_END(client_socket);
+					close_socket(client_socket);
+					sbbs->getnodedat(cfg->node_num,&node,true);
+					node.status = NODE_WFC;
+					sbbs->putnodedat(cfg->node_num,&node);
+					continue;
+				}
+				cfg->node_num = i; // correct the node number
+			}
+			if(node.misc & NODE_RRUN) {
+				sbbs->getnodedat(cfg->node_num,&node,true);
+				node.misc &= ~NODE_RRUN;
+				sbbs->putnodedat(cfg->node_num,&node);
+			}
+			sbbs->bputs(crlf);
+		}
+		// Copy event last-run info from global config
+		for(int e=0; e < cfg->total_events && e < scfg.total_events; e++)
+			cfg->event[e]->last = scfg.event[e]->last;
+
         node_socket[i-1]=client_socket;
 
 		sbbs_t* new_node = new sbbs_t(/* node_num: */i, &client_addr, client_addr_len, host_name
         	,client_socket
-			,&scfg, text, &client);
+			,cfg, node_text[i-1], &client);
 
 		new_node->client=client;
 #ifdef USE_CRYPTLIB

@@ -1,8 +1,5 @@
 /* Synchronet vanilla/console-mode "front-end" */
 
-/* $Id: sbbscon.c,v 1.282 2020/08/17 00:48:28 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -55,6 +40,7 @@
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
+#include "ver.h"
 
 /* XPDEV headers */
 #include "conwrap.h"	/* kbhit/getch */
@@ -1570,8 +1556,6 @@ int main(int argc, char** argv)
 			continue;
 		}
 		if(stricmp(arg, "version") == 0) {
-			char revision[16];
-			sscanf("$Revision: 1.282 $", "%*s %s", revision);
 			char compiler[32];
 			DESCRIBE_COMPILER(compiler);
 			printf("%s\n", bbs_ver());
@@ -1579,13 +1563,14 @@ int main(int argc, char** argv)
 			printf("%s\n", ftp_ver());
 			printf("%s\n", web_ver());
 			printf("%s\n", services_ver());
-			printf("Synchronet Console %s%s  Compiled %s %s with %s\n"
-				,revision
+			printf("Synchronet Console %s%c%s  Compiled %s/%s %s %s with %s\n"
+				,VERSION, REVISION
 #ifdef _DEBUG
 				," Debug"
 #else
 				,""
 #endif
+				,git_branch, git_hash
 				,__DATE__, __TIME__, compiler);
 			return EXIT_SUCCESS;
 		}
@@ -1723,7 +1708,7 @@ int main(int argc, char** argv)
 						mail_startup.options=strtoul(arg,NULL,0);
 						break;
 					case 'S':	/* SMTP/SendMail */
-						if(isdigit(*arg)) {
+						if(IS_DIGIT(*arg)) {
 							mail_startup.smtp_port=atoi(arg);
 							break;
 						}
@@ -1737,7 +1722,7 @@ int main(int argc, char** argv)
 						}
 						break;
 					case 'P':	/* POP3 */
-						if(isdigit(*arg)) {
+						if(IS_DIGIT(*arg)) {
 							mail_startup.pop3_port=atoi(arg);
 							break;
 						}

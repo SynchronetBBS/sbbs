@@ -601,25 +601,41 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *glob=JS_GetGlobalObject(cx);
 	jsval *argv=JS_ARGV(cx, arglist);
 	global_private_t*	pd;
-	str_list_t	list;
+	struct js_onexit_scope *oes = NULL;
 	str_list_t	oldlist;
+	str_list_t	list;
 	char		*p = NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
+	if((pd=(global_private_t*)JS_GetPrivate(cx,glob))==NULL)
+		return(JS_FALSE);
 	if(glob==scope) {
-		if((pd=(global_private_t*)JS_GetPrivate(cx,glob))==NULL)
-			return(JS_FALSE);
 		if(pd->exit_func==NULL)
 			pd->exit_func=strListInit();
 		list=pd->exit_func;
 	}
 	else {
-		list=(str_list_t)JS_GetPrivate(cx,scope);
-		if(list==NULL) {
-			list=strListInit();
-			JS_SetPrivate(cx,scope,list);
+		/* First, look for an existing onexit scope for this scope */
+		for (oes = pd->onexit; oes; oes = oes->next) {
+			if (oes->scope == scope)
+				break;
 		}
+
+		/* If one isn't found, insert it */
+		if (oes == NULL) {
+			oes = malloc(sizeof(*oes));
+			if (oes == NULL) {
+				JS_ReportError(cx, "Unable to allocate memory for onexit scope");
+				return JS_FALSE;
+			}
+			oes->next = pd->onexit;
+			pd->onexit = oes;
+			oes->scope = scope;
+			oes->onexit = strListInit();
+			JS_AddObjectRoot(cx, &oes->scope);
+		}
+		list = oes->onexit;
 	}
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
@@ -633,7 +649,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		if(glob==scope)
 			pd->exit_func=list;
 		else
-			JS_SetPrivate(cx,scope,list);
+			oes->onexit = list;
 	}
 	return(JS_TRUE);
 }
@@ -774,14 +790,45 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	BOOL	auto_terminate=cb->auto_terminate;
 	JSObject	*glob=JS_GetGlobalObject(cx);
 	global_private_t *pt;
-	str_list_t	list;
+	str_list_t	list = NULL;
+	struct js_onexit_scope **prev_oes_next = NULL;
+	struct js_onexit_scope *oes = NULL;
 
+	pt=(global_private_t *)JS_GetPrivate(cx,JS_GetGlobalObject(cx));
 	if(glob==obj) {
-		pt=(global_private_t *)JS_GetPrivate(cx,JS_GetGlobalObject(cx));		
+		/* Yes, this is recursive to one level */
+		while (pt->onexit) {
+			if (pt->onexit->scope == glob) {
+				// This shouldn't happen, but let's not go inifinite eh?
+				JS_ReportError(cx, "js_EvalOnExit() extra scope is global");
+				return;
+			}
+			else {
+				oes = pt->onexit;
+				js_EvalOnExit(cx, pt->onexit->scope, cb);
+				if (oes == pt->onexit) {
+					// This *really* shouldn't happen...
+					JS_ReportError(cx, "js_EvalOnExit() did not pop on_exit stack");
+					return;
+				}
+			}
+		}
 		list=pt->exit_func;
 	}
-	else
-		list=JS_GetPrivate(cx,obj);
+	else {
+		/* Find this scope in onexit list */
+		for (prev_oes_next = &pt->onexit, oes = pt->onexit; oes; prev_oes_next = &(oes->next), oes = oes->next) {
+			if (oes->scope == obj) {
+				(*prev_oes_next) = oes->next;
+				list = oes->onexit;
+				JS_RemoveObjectRoot(cx, &oes->scope);
+				free(oes);
+				break;
+			}
+		}
+		if (oes == NULL)
+			return;
+	}
 
 	cb->auto_terminate=FALSE;
 
@@ -793,9 +840,7 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	}
 
 	strListFree(&list);
-	if(glob != obj)
-		JS_SetPrivate(cx,obj,NULL);
-	else
+	if(glob == obj)
 		pt->exit_func=NULL;
 
 	if(auto_terminate)

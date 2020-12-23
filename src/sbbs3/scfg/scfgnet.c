@@ -1,6 +1,3 @@
-/* $Id: scfgnet.c,v 1.49 2020/05/01 17:21:48 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -14,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -293,13 +278,13 @@ void net_cfg()
 					strcat(tmp, ", ...");
 				sprintf(opt[i++],"%-33.33s%s"
 					,"System Addresses",tmp);
-				sprintf(opt[i++],"%-33.33s%.40s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"Default Origin Line", cfg.origline);
-				sprintf(opt[i++],"%-33.33s%.40s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"NetMail Semaphore",cfg.netmail_sem);
-				sprintf(opt[i++],"%-33.33s%.40s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"EchoMail Semaphore",cfg.echomail_sem);
-				sprintf(opt[i++],"%-33.33s%.40s"
+				sprintf(opt[i++],"%-33.33s%s"
 					,"NetMail Directory",cfg.netmail_dir);
 				sprintf(opt[i++],"%-33.33s%s"
 					,"Allow Sending of NetMail"
@@ -652,9 +637,9 @@ void net_cfg()
 				i=0;
 				sprintf(opt[i++],"%-27.27s%s"
 					,"System Address",cfg.sys_inetaddr);
-				sprintf(opt[i++],"%-27.27s%.40s"
+				sprintf(opt[i++],"%-27.27s%s"
 					,"Inbound E-mail Semaphore",cfg.smtpmail_sem);
-				sprintf(opt[i++],"%-27.27s%.40s"
+				sprintf(opt[i++],"%-27.27s%s"
 					,"Outbound E-mail Semaphore",cfg.inetmail_sem);
 				sprintf(opt[i++],"%-27.27s%s"
 					,"Allow Sending of E-mail"
@@ -839,9 +824,9 @@ void qhub_edit(int num)
 	while(!done) {
 		i=0;
 		sprintf(opt[i++],"%-27.27s%s","Hub System ID",cfg.qhub[num]->id);
-		sprintf(opt[i++],"%-27.27s%.40s","Pack Command Line",cfg.qhub[num]->pack);
-		sprintf(opt[i++],"%-27.27s%.40s","Unpack Command Line",cfg.qhub[num]->unpack);
-		sprintf(opt[i++],"%-27.27s%.40s","Call-out Command Line",cfg.qhub[num]->call);
+		sprintf(opt[i++],"%-27.27s%s","Pack Command Line",cfg.qhub[num]->pack);
+		sprintf(opt[i++],"%-27.27s%s","Unpack Command Line",cfg.qhub[num]->unpack);
+		sprintf(opt[i++],"%-27.27s%s","Call-out Command Line",cfg.qhub[num]->call);
 		if(cfg.qhub[num]->node == NODE_ANY)
 			SAFECOPY(str, "Any");
 		else
@@ -980,7 +965,7 @@ void qhub_edit(int num)
 				;
 				if(uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Node to Perform Call-out",str,3,K_EDIT) > 0) {
-					if(isdigit(*str))
+					if(IS_DIGIT(*str))
 						cfg.qhub[num]->node=atoi(str);
 					else
 						cfg.qhub[num]->node = NODE_ANY;

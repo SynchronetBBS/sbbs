@@ -37,7 +37,9 @@ function getCtrlLine(file) {
         title: file_getname(file)
     };
 
-	if (fullpath(file).indexOf(fullpath(settings.web_pages)) != 0) return ret;
+	const _file = fullpath(file);
+
+	if (_file.indexOf(settings.web_pages) != 0 && _file.indexOf(settings.web_mods_pages) != 0) return ret;
 
     var ctrl = '';
 	const f = new File(file);
@@ -68,7 +70,7 @@ function getCtrlLine(file) {
 			f.close();
 			break;
 		default:
-			ctrl = file_getname(file);
+			ctrl = pageName(file_getname(file));
 			break;
 	}
 
@@ -88,57 +90,118 @@ function getCtrlLine(file) {
 
 }
 
-function getPageList(dir) {
+function _getPageList(dir) {
 
-	dir = backslash(fullpath(dir));
-	if (dir.indexOf(settings.web_pages) !== 0) return {};
+	if (!file_isdir(dir)) return [];
 
 	const webctrl = getWebCtrl(dir);
-
 	const sep = system.platform.search(/^win/i) == 0 ? '\\' : '/';
 
     const pages = directory(dir + '*').reduce(function (a, c) {
-        if (file_isdir(c)) {
-            const list = getPageList(c);
+
+		if (file_isdir(c)) {
+            const list = _getPageList(c);
             if (Object.keys(list).length) {
-            	a[c.replace(/\\*\/*$/, '').split(sep).slice(-1)] = { type: 'list', list: list };
+				const t = c.replace(/\\*\/*$/, '').split(sep).slice(-1)[0];
+            	a.push({
+					file: t,
+					name: pageName(t),
+					type: 'list',
+					title: t,
+					list: list
+				});
             }
             return a;
         }
-        const ext = file_getext(c).toUpperCase();
-        if (c.search(/(\.xjs\.ssjs|webctrl\.ini)$/i) < 0
-            && ['.HTML', '.SSJS', '.XJS', '.TXT', '.LINK'].indexOf(ext) > -1
-        ) {
-            const fn = file_getname(c);
-            if (webctrl && !webCtrlTest(webctrl, fn)) return a;
-            if (ext == '.LINK') {
-                const f = new File(c);
-                if (!f.open('r')) return a;
-                const l = f.readln().split(',');
-                f.close();
-                if (l.length < 2) return a;
-                a[l[1]] = { page: l[0], type: 'link' };
-            } else {
-                const ctrl = getCtrlLine(c);
-                if (!ctrl.options.hidden) {
-                    a[ctrl.title] = { page: file_getname(c), type: 'page' };
-                }
-            }
-        }
+
+		const ext = file_getext(c).toUpperCase();
+        if (c.search(/(\.xjs\.ssjs|webctrl\.ini)$/i) >= 0) return a;
+        if (['.HTML', '.SSJS', '.XJS', '.TXT', '.LINK'].indexOf(ext) < 0) return a;
+
+		const fn = file_getname(c);
+		if (webctrl && !webCtrlTest(webctrl, fn)) return a;
+		if (ext == '.LINK') {
+			const f = new File(c);
+			if (!f.open('r')) return a;
+			const l = f.readln().split(',');
+			f.close();
+			if (l.length < 2) return a;
+			a.push({
+				file: fn,
+				name: pageName(c),
+				title: l[1],
+				page: l[0],
+				type: 'link'
+			});
+		} else {
+			const ctrl = getCtrlLine(c);
+			if (!ctrl.options.hidden) {
+				a.push({
+					file: fn,
+					name: pageName(fn),
+					page: fn,
+					title: ctrl.title,
+					type: 'page',
+				});
+			}
+		}
         return a;
-    }, {});
+    }, []);
 
 	return pages;
 
+}
+
+function pageName(p) {
+	return p.replace(/^\d*-/, '').replace(/\..*$/, '');
+}
+
+function mergePageLists(stock, mods) {
+	return mods.reduce(function (a, c) {
+		const idx = a.findIndex(function (e) {
+			return e.name == c.name;
+		});
+		if (idx < 0) {
+			a.push(c);
+		} else if (a[idx].type != c.type) {
+			a[idx] = c;
+		} else if (a[idx].type == 'page' || a[idx].type == 'link') {
+			a[idx] = c;
+		} else if (a[idx].type == 'list') {
+			a[idx].list = mergePageLists(a[idx].list, c.list);
+		}
+		return a;
+	}, stock).sort(function (a, b) {
+		if (a.file < b.file) return -1;
+		if (a.file > b.file) return 1;
+		return 0;
+	});
+}
+
+function getPageList() {
+	var stock = _getPageList(settings.web_pages);
+	var mods = _getPageList(settings.web_mods_pages);
+	return mergePageLists(stock, mods);
+}
+
+function getPagePath(page) {
+	var ret = null;
+	if (file_exists(settings.web_mods_pages + page)) {
+		ret = fullpath(settings.web_mods_pages + page);
+		if (ret.indexOf(settings.web_mods_pages) != 0) ret = null;
+	} else if (file_exists(settings.web_pages + page)) {
+		ret = fullpath(settings.web_pages + page);
+		if (ret.indexOf(settings.web_pages) != 0) ret = null;
+	}
+	return ret;
 }
 
 function getPage(page) {
 
 	var ret = '';
 
-	var p = settings.web_pages + page;
-
-	if (!file_exists(p)) return ret;
+	var p = getPagePath(page);
+	if (p === null) return ret;
 
 	var ext = file_getext(p).toUpperCase();
 
@@ -186,7 +249,8 @@ function getPage(page) {
 }
 
 function writePage(page) {
-	var ini = getWebCtrl(settings.web_pages +  '/' + page.replace(file_getname(page), ''));
+	const pp = getPagePath(page);
+	var ini = getWebCtrl(pp.replace(file_getname(page), ''));
 	if ((typeof ini === "boolean" && !ini) || webCtrlTest(ini, page)) {
 		write(getPage(page));
 	}

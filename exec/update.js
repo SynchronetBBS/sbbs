@@ -48,8 +48,38 @@ function move_laston_address()
 		u = new User(i);
 //		print("User: "+i+" Note: "+u.note+" IP: "+u.ip_address);
 		if (u.ip_address.length == 0 && u.note.length > 0) {
-			print("\nMoving IP from note to ip_address for "+u.alias+" (#"+i+")");
+			if(!updated)
+				print();
+			print("Moving IP from note to ip_address for "+u.alias+" (#"+i+")");
 			u.ip_address = u.note;
+			updated++;
+		}
+	}
+	return updated;
+}
+
+function update_birthdates()
+{
+	var i;
+	var u;
+	var updated = 0;
+	var last_user = system.lastuser;
+
+	if(test)
+		return 0;
+
+	for (i=1; i < last_user; i++) {
+		u = new User(i);
+		if (u.birthdate.charAt(2) == '/') {
+			if(!updated)
+				print();
+			print("Updating birthdate format of "+u.alias+" (#"+i+")");
+			var year = u.birthyear;
+			var month = u.birthmonth;
+			var day = u.birthday;
+			u.birthyear = year;
+			u.birthmonth = month;
+			u.birthday = day;
 			updated++;
 		}
 	}
@@ -58,6 +88,7 @@ function move_laston_address()
 
 function install_logonlist()
 {
+	var maint_event = "?logonlist -m";
 	var cnflib = load({}, "cnflib.js");
 	var main_cnf = cnflib.read("main.cnf");
 	if(!main_cnf)
@@ -122,8 +153,10 @@ function update_gfile_indexes()
 printf("Synchronet update.js revision %u\n", REVISION);
 printf("Updating exec directory: ");
 printf("%s\n", update_exec_dir() ? "Success" : "FAILURE");
-printf("Updating ip_address field: ");
+printf("Updating users ip_address field: ");
 printf("%d records updated\n", move_laston_address());
+printf("Updating users birthdate field: ");
+printf("%d records updated\n", update_birthdates());
 
 var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
 var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";

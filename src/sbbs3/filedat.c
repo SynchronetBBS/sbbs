@@ -1,7 +1,5 @@
 /* Synchronet file database-related exported functions */
 
-/* $Id: filedat.c,v 1.40 2019/01/12 08:11:13 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,25 +13,19 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "filedat.h"
+#include "dat_rec.h"
+#include "datewrap.h"	// time32()
+#include "str_util.h"
+#include "nopen.h"
+
+static char* crlf = "\r\n";
 
 /****************************************************************************/
 /* Gets filedata from dircode.DAT file										*/
@@ -244,7 +236,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 			close(file);
 			return(FALSE); 
 		}
-		if(lread(file,ixbbuf,length)!=length) {
+		if(read(file,ixbbuf,length)!=length) {
 			close(file);
 			free(ixbbuf);
 			return(FALSE); 
@@ -291,7 +283,7 @@ BOOL DLLCALL addfiledat(scfg_t* cfg, file_t* f)
 		}
 		write(file,&f->dateuled,4);
 		write(file,&f->datedled,4);              /* Write 0 for datedled */
-		if(lwrite(file,&ixbbuf[l],length-l)!=length-l) { /* Write rest of IXB */
+		if(write(file,&ixbbuf[l],length-l)!=length-l) { /* Write rest of IXB */
 			close(file);
 			free(ixbbuf);
 			return(FALSE); 
@@ -340,7 +332,7 @@ BOOL DLLCALL getfileixb(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	if(lread(file,ixbbuf,length)!=length) {
+	if(read(file,ixbbuf,length)!=length) {
 		close(file);
 		free(ixbbuf);
 		return(FALSE); 
@@ -391,7 +383,7 @@ BOOL DLLCALL putfileixb(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	if(lread(file,ixbbuf,length)!=length) {
+	if(read(file,ixbbuf,length)!=length) {
 		close(file);
 		free(ixbbuf);
 		return(FALSE); 
@@ -447,7 +439,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 		close(file);
 		return(FALSE); 
 	}
-	if(lread(file,ixbbuf,length)!=length) {
+	if(read(file,ixbbuf,length)!=length) {
 		close(file);
 		free(ixbbuf);
 		return(FALSE); 
@@ -462,7 +454,7 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 			ixbname[i]=ixbbuf[l+i];
 		ixbname[i]=0;
 		if(stricmp(ixbname,fname))
-			if(lwrite(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
+			if(write(file,&ixbbuf[l],F_IXBSIZE)!=F_IXBSIZE) {
 				close(file);
 				free(ixbbuf);
 				return(FALSE); 
@@ -642,6 +634,7 @@ void DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 	char str[MAX_PATH+1],nulbuf[F_EXBSIZE];
 	int file;
 
+	strip_ansi(ext);
 	strip_invalid_attr(ext);	/* eliminate bogus ctrl-a codes */
 	memset(nulbuf,0,sizeof(nulbuf));
 	SAFEPRINTF2(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);

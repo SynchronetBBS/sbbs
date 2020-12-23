@@ -428,11 +428,11 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 
 	p=strrchr(to,'@');       /* Find '@' in name@addr */
-	if(p && !isdigit(*(p+1)) && !strchr(p,'.') && !strchr(p,':')) { /* QWKnet */
+	if(p && !IS_DIGIT(*(p+1)) && !strchr(p,'.') && !strchr(p,':')) { /* QWKnet */
 		qnet=1;
 		*p=0; 
 	}
-	else if(p==NULL || !isdigit(*(p+1)) || !cfg.total_faddrs) {
+	else if(p==NULL || !IS_DIGIT(*(p+1)) || !cfg.total_faddrs) {
 		if(cfg.inetmail_misc&NMAIL_ALLOW) {	/* Internet */
 			inet=1;
 		} else {
@@ -480,7 +480,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				l+=strlen(str)+1;
 				cp=str;
 				while(*cp && *cp<=' ') cp++;
-				sprintf(senderaddr,"%s/%s",sender_id,cp);
+				safe_snprintf(senderaddr, sizeof(senderaddr), "%s/%s",sender_id,cp);
 				strupr(senderaddr);
 				smb_hfield(&msg,SENDERNETADDR,strlen(senderaddr),senderaddr); 
 			}

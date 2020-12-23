@@ -1116,6 +1116,37 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_strip_ansi(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		buf = NULL;
+	JSString*	js_str;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if(argc==0 || JSVAL_IS_VOID(argv[0]))
+		return JS_TRUE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
+	HANDLE_PENDING(cx, buf);
+	if(buf==NULL) 
+		return JS_TRUE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	strip_ansi(buf);
+	JS_RESUMEREQUEST(cx, rc);
+
+	js_str = JS_NewStringCopyZ(cx, buf);
+	free(buf);
+	if(js_str==NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
 js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -1855,7 +1886,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 				ansi_seq[MAX_ANSI_SEQ]=0;
 				for(lastparam=ansi_seq;*lastparam;lastparam++)
 				{
-					if(isalpha(*lastparam))
+					if(IS_ALPHA(*lastparam))
 					{
 						*(++lastparam)=0;
 						break;
@@ -1865,16 +1896,16 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 				param=ansi_seq;
 				if(*param=='?')		/* This is to fix ESC[?7 whatever that is */
 					param++;
-				if(isdigit(*param))
+				if(IS_DIGIT(*param))
 					ansi_param[k++]=atoi(ansi_seq);
-				while(isspace(*param) || isdigit(*param))
+				while(IS_WHITESPACE(*param) || IS_DIGIT(*param))
 					param++;
 				lastparam=param;
 				while((param=strchr(param,';'))!=NULL)
 				{
 					param++;
 					ansi_param[k++]=atoi(param);
-					while(isspace(*param) || isdigit(*param))
+					while(IS_WHITESPACE(*param) || IS_DIGIT(*param))
 						param++;
 					lastparam=param;
 				}
@@ -4024,7 +4055,6 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 	hints.ai_socktype = SOCK_STREAM;
 	rc=JS_SUSPENDREQUEST(cx);
 	if((result=getaddrinfo(p, NULL, &hints, &res))!=0) {
-		lprintf(LOG_ERR, "!ERROR resolve_ip %s failed with error %d",p, result);
 		JS_RESUMEREQUEST(cx, rc);
 		free(p);
 		return JS_TRUE;
@@ -4574,6 +4604,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("strip control characters from string, returns modified string")
 	,310
 	},		
+	{"strip_ansi",		js_strip_ansi,		1,	JSTYPE_STRING,	JSDOCSTR("text")
+	,JSDOCSTR("strip all ANSI terminal control sequences from string, returns modified string")
+	,31802
+	},		
 	{"strip_exascii",	js_strip_exascii,	1,	JSTYPE_STRING,	JSDOCSTR("text")
 	,JSDOCSTR("strip all extended-ASCII characters from string, returns modified string")
 	,310
@@ -5045,6 +5079,7 @@ BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec*
 	p->methods = methods;
 	p->startup = startup;
 	p->exit_func=NULL;
+	p->onexit = NULL;
 
 	if((*glob = JS_NewCompartmentAndGlobalObject(cx, &js_global_class, NULL)) ==NULL) {
 		free(p);

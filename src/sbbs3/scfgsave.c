@@ -1,7 +1,5 @@
 /* Synchronet configuration file save routines */
 
-/* $Id: scfgsave.c,v 1.98 2020/08/08 20:17:03 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,25 +13,17 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "scfgsave.h"
+#include "load_cfg.h"
+#include "smblib.h"
+#include "userdat.h"
+#include "nopen.h"
 
 BOOL no_msghdr=FALSE,all_msghdr=FALSE;
 
@@ -55,13 +45,6 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 	if(cfg->prepped)
 		return(FALSE);
 
-	for(i=0;i<cfg->sys_nodes;i++) {
-		if(cfg->node_path[i][0]==0) 
-			sprintf(cfg->node_path[i],"../node%d",i+1);
-		cfg->node_num=i+1;
-		if(!write_node_cfg(cfg,backup_level))
-			return(FALSE);
-	}
 	if(!write_main_cfg(cfg,backup_level))
 		return(FALSE);
 	if(!write_msgs_cfg(cfg,backup_level))
@@ -72,6 +55,12 @@ BOOL DLLCALL save_cfg(scfg_t* cfg, int backup_level)
 		return(FALSE);
 	if(!write_xtrn_cfg(cfg,backup_level))
 		return(FALSE);
+
+	for(i=0;i<cfg->sys_nodes;i++) {
+		cfg->node_num=i+1;
+		if(!write_node_cfg(cfg,backup_level))
+			return(FALSE);
+	}
 
 	return(TRUE);
 }
@@ -172,8 +161,11 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->sys_guru,stream);
 	put_str(cfg->sys_pass,stream);
 	put_int(cfg->sys_nodes,stream);
-	for(i=0;i<cfg->sys_nodes;i++) 
+	for(i=0;i<cfg->sys_nodes;i++) {
+		if(cfg->node_path[i][0] == 0)
+			SAFEPRINTF(cfg->node_path[i], "../node%u", i + 1);
 		put_str(cfg->node_path[i],stream);
+	}
 	backslash(cfg->data_dir);
 	put_str(cfg->data_dir,stream);
 
@@ -259,8 +251,12 @@ BOOL DLLCALL write_main_cfg(scfg_t* cfg, int backup_level)
 	put_str(cfg->whosonline_mod, stream);
 	put_str(cfg->privatemsg_mod, stream);
 	put_str(cfg->logonlist_mod, stream);
+	
+    put_str(cfg->prextrn_mod,stream);
+    put_str(cfg->postxtrn_mod,stream);
+    
 	n=0xffff;
-	for(i=0;i<126;i++)
+	for(i=0;i<117;i++)
 		put_int(n,stream);
 
 	put_int(cfg->user_backup_level,stream);

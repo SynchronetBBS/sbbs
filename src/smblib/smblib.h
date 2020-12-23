@@ -161,6 +161,7 @@ SMBEXPORT int		SMBCALL smb_hfield_append(smbmsg_t* msg, uint16_t type, size_t le
 SMBEXPORT int		SMBCALL smb_hfield_append_str(smbmsg_t* msg, uint16_t type, const char* data);
 SMBEXPORT int		SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat, BOOL insert);
 SMBEXPORT int		SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* str, uint16_t* nettype, BOOL insert);
+SMBEXPORT int		SMBCALL	smb_hfield_string(smbmsg_t*, uint16_t type, const char*);
 /* Convenience macro: */
 #define smb_hfield_bin(msg, type, data) smb_hfield_add(msg, type, sizeof(data), &(data), /* insert: */FALSE)
 /* Backward compatibility macros: */

@@ -701,23 +701,23 @@ js_readall(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
-static jsval get_value(JSContext *cx, char* value)
+static jsval get_value(JSContext *cx, char* value, bool blanks)
 {
 	char*	p;
 	BOOL	f=FALSE;
 	jsval	val;
 
-	if(value==NULL || *value==0)
+	if(value==NULL || (*value==0 && !blanks))
 		return(JSVAL_VOID);
 
 	/* integer or float? */
 	for(p=value;*p;p++) {
 		if(*p=='.' && !f)
 			f=TRUE;
-		else if(!isdigit((uchar)*p))
+		else if(!IS_DIGIT(*p))
 			break;
 	}
-	if(*p==0) {
+	if(p!=value && *p==0) {
 		if(f)
 			val=DOUBLE_TO_JSVAL(atof(value));
 		else
@@ -806,7 +806,7 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 		FREE_AND_NULL(section);
 		FREE_AND_NULL(key);
 		JS_RESUMEREQUEST(cx, rc);
-		JS_SET_RVAL(cx, arglist, get_value(cx, cstr));
+		JS_SET_RVAL(cx, arglist, get_value(cx, cstr, /* blanks */false));
 		return(JS_TRUE);
 	}
 
@@ -1198,6 +1198,7 @@ js_iniGetObject(JSContext *cx, uintN argc, jsval *arglist)
 	named_string_t** list;
 	jsrefcount	rc;
 	bool		lowercase = false;
+	bool		blanks = false;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -1218,6 +1219,10 @@ js_iniGetObject(JSContext *cx, uintN argc, jsval *arglist)
 		lowercase = JSVAL_TO_BOOLEAN(argv[argn]);
 		argn++;
 	}
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		blanks = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	list = iniReadNamedStringList(p->fp,section);
@@ -1233,7 +1238,7 @@ js_iniGetObject(JSContext *cx, uintN argc, jsval *arglist)
 		if(lowercase)
 			strlwr(list[i]->name);
 		JS_DefineProperty(cx, object, list[i]->name
-			,get_value(cx,list[i]->value)
+			,get_value(cx,list[i]->value, blanks)
 			,NULL,NULL,JSPROP_ENUMERATE);
 
 	}
@@ -1346,6 +1351,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 	named_string_t** key_list;
 	jsrefcount	rc;
 	bool		lowercase = false;
+	bool		blanks = false;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -1372,6 +1378,10 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
 		lowercase = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		blanks = JSVAL_TO_BOOLEAN(argv[argn]);
 		argn++;
 	}
 
@@ -1406,7 +1416,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 			if(lowercase)
 				strlwr(key_list[k]->name);
 			JS_DefineProperty(cx, object, key_list[k]->name
-				,get_value(cx,key_list[k]->value)
+				,get_value(cx,key_list[k]->value,blanks)
 				,NULL,NULL,JSPROP_ENUMERATE);
 		}
 		rc=JS_SUSPENDREQUEST(cx);
@@ -2826,10 +2836,12 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"to set a key in the <i>root</i> section, pass <i>null</i> for <i>section</i>. ")
 	,312
 	},
-	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section=<i>root</i>] [lowercase=<tt>false</tt>]")
+	{"iniGetObject",	js_iniGetObject,	1,	JSTYPE_OBJECT,	JSDOCSTR("[section=<i>root</i>] [,lowercase=<tt>false</tt>] "
+		"[,blanks=<tt>false</tt>]")
 	,JSDOCSTR("parse an entire section from a .ini file "
 		"and return all of its keys (optionally lowercased) and values as properties of an object. "
-		"if <i>section</i> is <tt>null</tt> or <tt>undefined</tt>, returns keys and values from the <i>root</i> section. "
+		"If <i>section</i> is <tt>null</tt> or <tt>undefined</tt>, returns keys and values from the <i>root</i> section. "
+		"If <i>blanks</i> is <tt>true</tt> then empty string (instead of <tt>undefined</tt>) values may included in the returned object."
 		"Returns <i>null</i> if the specified <i>section</i> does not exist in the file or the file has not been opened.")
 	,311
 	},
@@ -2841,13 +2853,16 @@ static jsSyncMethodSpec js_file_functions[] = {
 		"If your intention is to <i>replace</i> an existing section, use the <tt>iniRemoveSection</tt> function first." )
 	,312
 	},
-	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix=<i>none</i>] [lowercase=<tt>false</tt>]")
+	{"iniGetAllObjects",js_iniGetAllObjects,1,	JSTYPE_ARRAY,	JSDOCSTR("[name_property] [,prefix=<i>none</i>] [,lowercase=<tt>false</tt>] "
+		"[,blanks=<tt>false</tt>]")
 	,JSDOCSTR("parse all sections from a .ini file and return all (non-<i>root</i>) sections "
 		"in an array of objects with each section's keys (optionally lowercased) as properties of each object. "
 		"<i>name_property</i> is the name of the property to create to contain the section's name "
 		"(optionally lowercased, default is <tt>\"name\"</tt>), "
-		"the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method, "
-		"if a <i>prefix</i> is specified, it is removed from each section's name" )
+		"the optional <i>prefix</i> has the same use as in the <tt>iniGetSections</tt> method. "
+		"If a (String) <i>prefix</i> is specified, it is removed from each section's name. "
+		"If <i>blanks</i> is <tt>true</tt> then empty string (instead of <tt>undefined</tt>) values may be included in the returned objects."
+	)
 	,311
 	},
 	{"iniSetAllObjects",js_iniSetAllObjects,1,	JSTYPE_BOOLEAN,	JSDOCSTR("object array [,name_property=<tt>\"name\"</tt>]")

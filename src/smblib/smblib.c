@@ -1,8 +1,5 @@
 /* Synchronet message base (SMB) library routines */
 
-/* $Id: smblib.c,v 1.209 2020/05/07 19:30:22 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -42,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>		/* malloc */
 #include <string.h>
-#include <ctype.h>		/* isdigit */
 #include <sys/types.h>
 #include <sys/stat.h>	/* must come after sys/types.h */
 
@@ -760,32 +744,25 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 {
 	switch(hfield_type) {	/* convenience variables */
 		case SENDER:
-			if(msg->from==NULL || *(msg->from)==0) {
-				msg->from=(char*)hfield_dat;
-				break; 
-			}
-		case FORWARDED: 	/* fall through */
-			msg->forwarded=TRUE;
+			msg->from=(char*)hfield_dat;
+			break; 
+		case FORWARDED:
+			msg->forwarded = TRUE;
 			break;
 		case SENDERAGENT:
-			if(!msg->forwarded)
-				msg->from_agent=*(uint16_t *)hfield_dat;
+			msg->from_agent=*(uint16_t *)hfield_dat;
 			break;
 		case SENDEREXT:
-			if(!msg->forwarded)
-				msg->from_ext=(char*)hfield_dat;
+			msg->from_ext=(char*)hfield_dat;
 			break;
 		case SENDERORG:
-			if(!msg->forwarded)
-				msg->from_org=(char*)hfield_dat;
+			msg->from_org=(char*)hfield_dat;
 			break;
 		case SENDERNETTYPE:
-			if(!msg->forwarded)
-				msg->from_net.type=*(uint16_t *)hfield_dat;
+			msg->from_net.type=*(uint16_t *)hfield_dat;
 			break;
 		case SENDERNETADDR:
-			if(!msg->forwarded)
-				msg->from_net.addr=(char*)hfield_dat;
+			msg->from_net.addr=(char*)hfield_dat;
 			break;
 		case SENDERIPADDR:
 			msg->from_ip=(char*)hfield_dat;
@@ -1276,11 +1253,21 @@ int	SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hf
 }
 
 /****************************************************************************/
-/* Convenience function to add an ASCIIZ string header field				*/
+/* Convenience function to add an ASCIIZ string header field (or blank)		*/
 /****************************************************************************/
 int SMBCALL smb_hfield_add_str(smbmsg_t* msg, uint16_t type, const char* str, BOOL insert)
 {
 	return smb_hfield_add(msg, type, str==NULL ? 0:strlen(str), (void*)str, insert);
+}
+
+/****************************************************************************/
+/* Convenience function to add an ASCIIZ string header field (NULL ignored)	*/
+/****************************************************************************/
+int SMBCALL smb_hfield_string(smbmsg_t* msg, uint16_t type, const char* str)
+{
+	if(str == NULL)
+		return SMB_ERR_HDR_FIELD;
+	return smb_hfield_add(msg, type, strlen(str), (void*)str, /* insert */FALSE);
 }
 
 /****************************************************************************/

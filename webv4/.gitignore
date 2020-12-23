@@ -1,17 +1,7 @@
 # Ignore processed XJS files
 *.xjs.ssjs
 
-# Ignore non-example pages
-pages/*
-!pages/.examples
-
-# Ignore non-example sidebar modules
-sidebar/*
-!sidebar/.examples
-
-# Ignore non-example components
-components/*
-!components/.examples
+mods/*
 
 root/css/custom.css
 root/logo.gif

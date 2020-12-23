@@ -53,11 +53,11 @@ while(1) {
 	write(bbs.text(ChatPrompt));
 
 	var keys = "ACDJPQST?\r";
-	if(options.imsg)
+	if(options.imsg && user.compare_ars(options.imsg_requirements))
 		keys += "I";
-	if(options.irc)
+	if(options.irc && user.compare_ars(options.irc_requirements))
 		keys += "R";
-	if(options.finger)
+	if(options.finger && user.compare_ars(options.finger_requirements))
 		keys += "F";
 	switch(console.getkeys(keys, K_UPPER)) {
 		case "S":

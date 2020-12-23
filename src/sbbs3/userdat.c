@@ -1,7 +1,4 @@
 /* Synchronet user data-related routines (exported) */
-// vi: tabstop=4
-
-/* $Id: userdat.c,v 1.230 2020/08/16 00:47:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,26 +13,25 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "str_util.h"
 #include "cmdshell.h"
+#include "userdat.h"
+#include "filedat.h"
+#include "ars_defs.h"
+#include "text.h"
+#include "nopen.h"
+#include "datewrap.h"
+#include "date_str.h"
+#include "smblib.h"
+#include "getstats.h"
+#include "msgdate.h"
+
 #ifndef USHRT_MAX
 	#define USHRT_MAX ((unsigned short)~0)
 #endif
@@ -56,10 +52,8 @@ static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 {
 	int		file,c;
-	char*	p;
 	char	dat[LEN_ALIAS+2];
 	char	str[256];
-	char	tmp[256];
 	ulong	l,length;
 	FILE*	stream;
 
@@ -79,48 +73,40 @@ uint matchuser(scfg_t* cfg, const char *name, BOOL sysop_alias)
 		for(c=0;c<LEN_ALIAS;c++)
 			if(dat[c]==ETX) break;
 		dat[c]=0;
-		if(!stricmp(dat,name))
-			break;
-		/* convert dots to spaces */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'.',' ',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert spaces to dots */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,' ','.',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert dots to underscores */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'.','_',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert underscores to dots */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'_','.',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert spaces to underscores */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,' ','_',p);
-		if(!stricmp(str,name))
-			break;
-		/* convert underscores to spaces */
-		strcpy(str,dat);
-		REPLACE_CHARS(str,'_',' ',p);
-		if(!stricmp(str,name))
-			break;
-		/* strip spaces (from both) */
-		strip_space(dat,str);
-		strip_space(name,tmp);
-		if(!stricmp(str,tmp))
+		if(matchusername(cfg, dat, name))
 			break;
 	}
 	fclose(stream);
 	if(l<length)
 		return((l/(LEN_ALIAS+2))+1);
 	return(0);
+}
+
+/****************************************************************************/
+/* Return TRUE if the user 'name' (or alias) matches with 'comp'			*/
+/* ... ignoring non-alpha-numeric chars in either string					*/
+/* and terminating the comparison string at an '@'							*/
+/****************************************************************************/
+BOOL matchusername(scfg_t* cfg, const char* name, const char* comp)
+{
+	(void)cfg; // in case we want this matching logic to be configurable in the future
+
+	const char* np = name;
+	const char* cp = comp;
+	while(*np != '\0' && *cp != '\0' && *cp != '@') {
+		if(!IS_ALPHANUMERIC(*np)) {
+			np++;
+			continue;
+		}
+		if(!IS_ALPHANUMERIC(*cp)) {
+			cp++;
+			continue;
+		}
+		if(toupper(*np) != toupper(*cp))
+			break;
+		np++, cp++;
+	}
+	return *np == '\0' && (*cp == '\0' || *cp == '@');
 }
 
 /****************************************************************************/
@@ -338,9 +324,15 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat,U_FLAGS4,8,str); user->flags4=ahtoul(str);
 	getrec(userdat,U_EXEMPT,8,str); user->exempt=ahtoul(str);
 	getrec(userdat,U_REST,8,str); user->rest=ahtoul(str);
-	getrec(userdat,U_ROWS,2,str); user->rows=atoi(str);
-	if(user->rows && user->rows<10)
-		user->rows=10;
+	if(getrec(userdat,U_OLDROWS,2,str) <= 0) // Moved to new location
+		getrec(userdat, U_ROWS, LEN_ROWS, str);
+	user->rows = atoi(str);
+	if(user->rows && user->rows < TERM_ROWS_MIN)
+		user->rows = TERM_ROWS_MIN;
+	getrec(userdat, U_COLS, LEN_COLS, str);
+	user->cols = atoi(str);
+	if(user->cols && user->cols < TERM_COLS_MIN)
+		user->cols = TERM_COLS_MIN;
 	user->sex=userdat[U_SEX];
 	if(!user->sex)
 		user->sex=' ';	 /* fix for v1b04 that could save as 0 */
@@ -574,7 +566,8 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	putrec(userdat,U_REST,8,ultoa(user->rest,str,16));
 	putrec(userdat,U_REST+8,2,crlf);
 
-	putrec(userdat,U_ROWS,2,ultoa(user->rows,str,10));
+	putrec(userdat, U_ROWS, LEN_ROWS, ultoa(user->rows,str,10));
+	putrec(userdat, U_COLS, LEN_COLS, ultoa(user->cols,str,10));
 	userdat[U_SEX]=user->sex;
 	userdat[U_PROT]=user->prot;
 	putrec(userdat,U_MISC,8,ultoa(user->misc,str,16));
@@ -734,12 +727,84 @@ int putusername(scfg_t* cfg, int number, char *name)
 	return(0);
 }
 
-/****************************************************************************/
-/* Returns the age derived from the string 'birth' in the format MM/DD/YY	*/
-/****************************************************************************/
-uint getage(scfg_t* cfg, char *birth)
+#define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
+
+int getbirthyear(const char* birth)
 {
-	uint	age;
+	if(IS_DIGIT(birth[2]))				// CCYYMMYY format
+		return DECVAL(birth[0], 1000)
+				+ DECVAL(birth[1], 100)
+				+ DECVAL(birth[2], 10)
+				+ DECVAL(birth[3], 1);
+	// DD/MM/YY or MM/DD/YY format
+	time_t now = time(NULL);
+	struct	tm tm;
+	if(localtime_r(&now, &tm) == NULL)
+		return 0;
+	tm.tm_year += 1900;
+	int year = 1900 + DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
+	if(tm.tm_year - year > 105)
+		year += 100;
+	return year;
+}
+
+int getbirthmonth(scfg_t* cfg, const char* birth)
+{
+	if(IS_DIGIT(birth[5]))				// CCYYMMYY format
+		return DECVAL(birth[4], 10)	+ DECVAL(birth[5], 1);
+	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
+		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
+	} else {							// MM/DD/YY format
+		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+	}
+}
+
+int getbirthday(scfg_t* cfg, const char* birth)
+{
+	if(IS_DIGIT(birth[5]))				// CCYYMMYY format
+		return DECVAL(birth[6], 10)	+ DECVAL(birth[7], 1);
+	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
+		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+	} else {							// MM/DD/YY format
+		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
+	}
+}
+
+// Always returns string in MM/DD/YY format
+char* getbirthmmddyy(scfg_t* cfg, const char* birth, char* buf, size_t max)
+{
+	safe_snprintf(buf, max, "%02u/%02u/%02u"
+		, getbirthmonth(cfg, birth)
+		, getbirthday(cfg, birth)
+		, getbirthyear(birth) % 100);
+	return buf;
+}
+
+// Always returns string in DD/MM/YY format
+char* getbirthddmmyy(scfg_t* cfg, const char* birth, char* buf, size_t max)
+{
+	safe_snprintf(buf, max, "%02u/%02u/%02u"
+		, getbirthday(cfg, birth)
+		, getbirthmonth(cfg, birth)
+		, getbirthyear(birth) % 100);
+	return buf;
+}
+
+char* getbirthdstr(scfg_t* cfg, const char* birth, char* buf, size_t max)
+{
+	if(cfg->sys_misc & SM_EURODATE)
+		getbirthddmmyy(cfg, birth, buf, max);
+	else
+		getbirthmmddyy(cfg, birth, buf, max);
+	return buf;
+}
+
+/****************************************************************************/
+/* Returns the age derived from the string 'birth' in the format CCYYMMDD	*/
+/* or legacy: MM/DD/YY or DD/MM/YY											*/
+/****************************************************************************/
+int getage(scfg_t* cfg, const char *birth)
+{
 	struct	tm tm;
 	time_t	now;
 
@@ -752,26 +817,50 @@ uint getage(scfg_t* cfg, char *birth)
 	now=time(NULL);
 	if(localtime_r(&now,&tm)==NULL)
 		return(0);
-	age=(tm.tm_year)-(((birth[6]&0xf)*10)+(birth[7]&0xf));
-	if(age>105)
-		age-=100;
+
 	tm.tm_mon++;	/* convert to 1 based */
-	if(cfg->sys_misc&SM_EURODATE) {		/* DD/MM/YY format */
-		if(atoi(birth)>31 || atoi(birth+3)>12)
-			return(0);
-		if(((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mon ||
-			(((birth[3]&0xf)*10)+(birth[4]&0xf)==tm.tm_mon &&
-			((birth[0]&0xf)*10)+(birth[1]&0xf)>tm.tm_mday))
-			age--;
-	} else {							/* MM/DD/YY format */
-		if(atoi(birth)>12 || atoi(birth+3)>31)
-			return(0);
-		if(((birth[0]&0xf)*10)+(birth[1]&0xf)>tm.tm_mon ||
-			(((birth[0]&0xf)*10)+(birth[1]&0xf)==tm.tm_mon &&
-			((birth[3]&0xf)*10)+(birth[4]&0xf)>tm.tm_mday))
-			age--;
+	int year = getbirthyear(birth);
+	int age = (1900 + tm.tm_year) - year;
+	int mon = getbirthmonth(cfg, birth);
+	if(mon > tm.tm_mon || (mon == tm.tm_mon && getbirthday(cfg, birth) > tm.tm_mday))
+		age--;
+	return age;
+}
+
+/****************************************************************************/
+/* Converts from either MM/DD/YYYYY or DD/MM/YYYY to YYYYMMDD				*/
+/****************************************************************************/
+char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
+{
+	if(cfg->sys_misc & SM_EURODATE)
+		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate + 3, birthdate);
+	else
+		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate, birthdate + 3);
+	return out;
+}
+
+/****************************************************************************/
+/* Converts from user birth date to either MM/DD/YYYYY or DD/MM/YYYY		*/
+/****************************************************************************/
+char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
+{
+	if(maxlen < 1)
+		return NULL;
+	*out = '\0';
+	if(*birthdate) {
+		if(cfg->sys_misc & SM_EURODATE)
+			safe_snprintf(out, maxlen, "%02u/%02u/%04u"
+				,getbirthday(cfg, birthdate), getbirthmonth(cfg, birthdate), getbirthyear(birthdate));
+		else
+			safe_snprintf(out, maxlen, "%02u/%02u/%04u"
+				,getbirthmonth(cfg, birthdate), getbirthday(cfg, birthdate), getbirthyear(birthdate));
 	}
-	return(age);
+	return out;
+}
+
+const char* birthdate_format(scfg_t* cfg)
+{
+	return cfg->sys_misc&SM_EURODATE ? "DD/MM/YYYY" : "MM/DD/YYYY";
 }
 
 /****************************************************************************/
@@ -1187,6 +1276,8 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
             strcat(str,"D");
         if(node->misc&NODE_LCHAT)
             strcat(str,"C");
+        if(node->misc&NODE_FCHAT)
+            strcat(str,"F");
         strcat(str,"]");
 	}
 	if(node->errors)
@@ -1447,7 +1538,45 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 	return(0);
 }
 
-int getdirnum(scfg_t* cfg, const char* code)
+/* Return node's client's socket descriptor or negative on error */
+int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
+{
+	SOCKET sock = INVALID_SOCKET;
+	char path[MAX_PATH + 1];
+	char value[INI_MAX_VALUE_LEN];
+	char* p;
+	FILE* fp;
+
+	if(!VALID_CFG(cfg)
+		|| client == NULL || number < 1 || number > cfg->sys_nodes)
+		return -1;
+
+	if(client->size == sizeof(client)) {
+		free((char*)client->protocol);
+		free((char*)client->user);
+	}
+	memset(client, 0, sizeof(*client));
+	client->size = sizeof(client);
+	SAFEPRINTF(path, "%sclient.ini", cfg->node_path[number - 1]);
+	fp = iniOpenFile(path, /* create: */FALSE);
+	if(fp == NULL)
+		return -2;
+	sock = iniReadShortInt(fp, ROOT_SECTION, "sock", 0);
+	client->port = iniReadShortInt(fp, ROOT_SECTION, "port", 0);
+	client->time = iniReadInteger(fp, ROOT_SECTION, "time", 0);
+	client->usernum = iniReadInteger(fp, ROOT_SECTION, "user", 0);
+	SAFECOPY(client->addr, iniReadString(fp, ROOT_SECTION, "addr", "<none>", value));
+	SAFECOPY(client->host, iniReadString(fp, ROOT_SECTION, "host", "<none>", value));
+	if((p = iniReadString(fp, ROOT_SECTION, "prot", NULL, value)) != NULL)
+		client->protocol = strdup(p);
+	if((p = iniReadString(fp, ROOT_SECTION, "name", NULL, value)) != NULL)
+		client->user = strdup(p);
+	*done = iniReadInteger(fp, ROOT_SECTION, "done", client->time);
+	fclose(fp);
+	return sock;
+}
+
+static int getdirnum(scfg_t* cfg, char* code)
 {
 	size_t i;
 
@@ -1646,7 +1775,11 @@ static BOOL ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				#endif
 				break;
 			case AR_DOS:
-				result=not;
+				#if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__)
+					result=!not;
+				#else
+					result=not;
+				#endif
 				break;
 			case AR_WIN32:
 				#ifndef _WIN32
@@ -2535,7 +2668,6 @@ char* usermailaddr(scfg_t* cfg, char* addr, const char* name)
 		for(i=0;addr[i];i++)
 			if(addr[i]==' ' || addr[i]&0x80)
 				addr[i]='.';
-		strlwr(addr);
 	}
 	if(VALID_CFG(cfg)) {
 		strcat(addr,"@");
@@ -2785,12 +2917,15 @@ int user_rec_len(int offset)
 		/* 3 char strings */
 		case U_TMPEXT:
 			return(3);
+		case U_ROWS:
+			return LEN_ROWS;
+		case U_COLS:
+			return LEN_COLS;
 
-		/* 2 digits integers (0-99) */
+		/* 2 digit integers (0-99 or 00-FF) */
 		case U_LEVEL:
 		case U_TL:
-		case U_ROWS:
-		case U_LEECH:	/* actually, 2 hex digits */
+		case U_LEECH:
 			return(2);
 
 		/* Single digits chars */
@@ -3173,7 +3308,7 @@ BOOL check_name(scfg_t* cfg, const char* name)
 		return FALSE;
 	if (   name[0] <= ' '			/* begins with white-space? */
 		|| name[len-1] <= ' '		/* ends with white-space */
-		|| !isalpha(name[0])
+		|| !IS_ALPHA(name[0])
 		|| !stricmp(name,cfg->sys_id)
 		|| strchr(name,0xff)
 		|| matchuser(cfg,name,TRUE /* sysop_alias */)
@@ -3308,7 +3443,7 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 	if((node=login_attempted(list, addr)) != NULL) {
 		attempt=node->data;
 		/* Don't count consecutive duplicate attempts (same name and password): */
-		if((user!=NULL && strcmp(attempt->user,user)==0) && (pass==NULL || strcmp(attempt->pass,pass)==0))
+		if((user!=NULL && strcmp(attempt->user,user)==0) && (pass!=NULL && strcmp(attempt->pass,pass)==0))
 			attempt->dupes++;
 	}
 	SAFECOPY(attempt->prot,prot);
@@ -3698,11 +3833,11 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 		close(userdat);
 	}
 	for(list_node_t* node = listFirstNode(list); node != NULL; node = node->next) {
-		if(stricmp(((user_t*)node->data)->alias, inname) == 0)
+		if(matchusername(cfg, ((user_t*)node->data)->alias, inname))
 			return ((user_t*)node->data)->number;
 	}
 	for(list_node_t* node = listFirstNode(list); node != NULL; node = node->next) {
-		if(stricmp(((user_t*)node->data)->name, inname) == 0)
+		if(matchusername(cfg, ((user_t*)node->data)->name, inname))
 			return ((user_t*)node->data)->number;
 	}
 	return 0;

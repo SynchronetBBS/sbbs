@@ -1,7 +1,5 @@
 /* Synchronet configuration library routines */
 
-/* $Id: scfglib1.c,v 1.86 2020/08/08 19:04:07 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,34 +13,16 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
 #include "scfglib.h"
-
-/***********************************************************/
-/* These functions are called from here and must be linked */
-/***********************************************************/
-/***
-	nopen()
-	truncsp()
-***/
+#include "load_cfg.h"
+#include "nopen.h"
+#include "ars_defs.h"
 
 BOOL allocerr(FILE* fp, char* error, long offset, char *fname, uint size)
 {
@@ -291,7 +271,15 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->logonlist_mod,instream);
 	if(cfg->logonlist_mod[0] == '\xff')
 		SAFECOPY(cfg->logonlist_mod, "logonlist");
-	for(i=0;i<126;i++)					/* unused - initialized to 0xff */
+
+	get_str(cfg->prextrn_mod,instream);
+	if(cfg->prextrn_mod[0] == '\xff') 
+	    SAFECOPY(cfg->prextrn_mod, "prextrn");
+	get_str(cfg->postxtrn_mod,instream);
+	if(cfg->postxtrn_mod[0] == '\xff') 
+	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");		
+		
+	for(i=0;i<117;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);

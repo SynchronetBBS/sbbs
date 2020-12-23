@@ -1,7 +1,4 @@
 /* Directory-related system-call wrappers */
-// vi: tabstop=4
-
-/* $Id: dirwrap.c,v 1.113 2020/05/25 22:15:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -612,7 +597,7 @@ BOOL DLLCALL fexistcase(char *path)
 	SAFECOPY(fname,p);
 	*p=0;
 	for(i=0;fname[i];i++)  {
-		if(isalpha(fname[i]))
+		if(IS_ALPHA(fname[i]))
 			sprintf(tmp,"[%c%c]",toupper(fname[i]),tolower(fname[i]));
 		else
 			sprintf(tmp,"%c",fname[i]);
@@ -733,7 +718,7 @@ int removecase(const char *path)
 	p=getfname(inpath);
 	fname[0]=0;
 	for(i=0;p[i];i++)  {
-		if(isalpha(p[i]))
+		if(IS_ALPHA(p[i]))
 			sprintf(tmp,"[%c%c]",toupper(p[i]),tolower(p[i]));
 		else
 			sprintf(tmp,"%c",p[i]);
@@ -1099,7 +1084,7 @@ BOOL DLLCALL isfullpath(const char* filename)
 {
 	return(filename[0]=='/'
 #ifdef WIN32
-		|| filename[0]=='\\' || (isalpha(filename[0]) && filename[1]==':')
+		|| filename[0]=='\\' || (IS_ALPHA(filename[0]) && filename[1]==':')
 #endif
 		);
 }

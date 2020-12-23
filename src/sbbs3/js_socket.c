@@ -458,7 +458,7 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
 		JSSTRING_TO_ASTRING(cx, str, cp, 16, NULL);
-		if(isdigit(*cp))
+		if(IS_DIGIT(*cp))
 			return((ushort)strtol(cp,NULL,0));
 		rc=JS_SUSPENDREQUEST(cx);
 		serv = getservbyname(cp,type==SOCK_STREAM ? "tcp":"udp");
@@ -691,7 +691,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(p->set) {
-		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,NULL))==INVALID_SOCKET) {
+		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,XPMS_FLAGS_NONE,NULL))==INVALID_SOCKET) {
 			p->last_error=ERROR_VALUE;
 			dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 			JS_RESUMEREQUEST(cx, rc);
@@ -1515,8 +1515,8 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			opt;
-	int			level;
-	int			val;
+	int			level = 0;
+	int			val = 0;
 	js_socket_private_t*	p;
 	LINGER		linger;
 	void*		vp=&val;
@@ -3058,6 +3058,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
+	(void)csockobj;
 	lsockobj = JS_InitClass(cx, parent, sockproto
 		,&js_listening_socket_class
 		,js_listening_socket_constructor
@@ -3065,6 +3066,7 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
+	(void)lsockobj;
 
 	return(sockobj);
 }

@@ -1,8 +1,5 @@
 /* Synchronet Services */
 
-/* $Id: services.c,v 1.336 2020/08/08 23:27:23 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -44,7 +29,6 @@
 #include <stdlib.h>			/* ltoa in GNU C lib */
 #include <stdarg.h>			/* va_list */
 #include <string.h>			/* strrchr */
-#include <ctype.h>			/* isdigit */
 #include <fcntl.h>			/* Open flags */
 #include <errno.h>			/* errno */
 
@@ -63,6 +47,7 @@
 #include "js_socket.h"
 #include "multisock.h"
 #include "ssl.h"
+#include "ver.h"
 
 /* Constants */
 
@@ -75,7 +60,6 @@ static char*	text[TOTAL_TEXT];
 static volatile BOOL	terminated=FALSE;
 static time_t	uptime=0;
 static ulong	served=0;
-static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static protected_uint32_t threads_pending_start;
@@ -386,7 +370,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			putmsgptrs(&scfg, &client->user, client->subscan);
 	}
 
-	if(isdigit(*user))
+	if(IS_DIGIT(*user))
 		client->user.number=atoi(user);
 	else if(*user)
 		client->user.number=matchuser(&scfg,user,FALSE);
@@ -760,7 +744,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 	BOOL		success=FALSE;
 	BOOL		rooted=FALSE;
 
-    if((js_cx = JS_NewContext(js_runtime, service_client->service->js.cx_stack))==NULL)
+    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
 	JS_BEGINREQUEST(js_cx);
 
@@ -833,8 +817,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		if(service_client->service->js_server_props.version[0]==0) {
-			SAFEPRINTF(service_client->service->js_server_props.version
-				,"Synchronet Services %s",revision);
+			SAFEPRINTF2(service_client->service->js_server_props.version
+				,"Synchronet Services %s%c", VERSION, REVISION);
 			service_client->service->js_server_props.version_detail=
 				services_ver();
 			service_client->service->js_server_props.clients=
@@ -1575,7 +1559,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
 
 		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
-		if(isdigit(*p))
+		if(IS_DIGIT(*p))
 			serv.port=(ushort)strtol(p,NULL,0);
 		else {
 			struct servent* servent = getservbyname(p,serv.options&SERVICE_OPT_UDP ? "udp":"tcp");
@@ -1677,16 +1661,15 @@ const char* DLLCALL services_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.336 $", "%*s %s", revision);
-
-	sprintf(ver,"Synchronet Services %s%s  "
-		"Compiled %s %s with %s"
-		,revision
+	sprintf(ver,"Synchronet Services %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -1751,8 +1734,6 @@ void DLLCALL services_thread(void* arg)
 	int			level;
 	BOOL			need_cert = FALSE;
 
-	services_ver();
-
 	startup=(services_startup_t*)arg;
 
     if(startup==NULL) {
@@ -1785,7 +1766,6 @@ void DLLCALL services_thread(void* arg)
 		/* Setup intelligent defaults */
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
-		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 		thread_up(FALSE /* setuid */);
 
@@ -1793,8 +1773,8 @@ void DLLCALL services_thread(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"Synchronet Services Revision %s%s"
-			,revision
+		lprintf(LOG_INFO,"Synchronet Services Version %s%c%s"
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -1804,7 +1784,7 @@ void DLLCALL services_thread(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		protected_uint32_init(&threads_pending_start,0);
 

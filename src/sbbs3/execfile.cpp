@@ -125,7 +125,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if((ch&0xf)*10U<=usrdirs[curlib] && (ch&0xf) && usrlibs) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
-				if(!isdigit(ch) && ch!=CR) {
+				if(!IS_DIGIT(ch) && ch!=CR) {
 					ungetkey(ch);
 					curdir[curlib]=(i/10)-1;
 					return(0); 
@@ -140,7 +140,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				if(i*10<=usrdirs[curlib]) { 	/* 100+ dirs */
 					i*=10;
 					ch=getkey(K_UPPER);
-					if(!isdigit(ch) && ch!=CR) {
+					if(!IS_DIGIT(ch) && ch!=CR) {
 						ungetkey(ch);
 						curdir[curlib]=(i/10)-1;
 						return(0); 
@@ -177,7 +177,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if((ch&0xf)*10U<=usrlibs && (ch&0xf)) {
 				i=(ch&0xf)*10;
 				ch=getkey(K_UPPER);
-				if(!isdigit(ch) && ch!=CR) {
+				if(!IS_DIGIT(ch) && ch!=CR) {
 					ungetkey(ch);
 					curlib=(i/10)-1;
 					return(0); 
