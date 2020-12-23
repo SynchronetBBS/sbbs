@@ -970,7 +970,7 @@ USAGE:
 #endif
 					         "       A = ANSI mode\n"
 					         "-l# =  set screen lines to #\n"
-					         "-s# =  set idle slsep to # milliseconds (default: %d)\n"
+					         "-s# =  set idle sleep to # milliseconds (default: %d)\n"
 					    ,argv[0]
 					    ,idle_sleep
 					);
