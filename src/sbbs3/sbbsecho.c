@@ -4925,6 +4925,8 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 			if(msg.ftn_bbsid != NULL)	/* use original BBSID */
 				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", msg.ftn_bbsid);
+			else if(msg.from_net.type == NET_QWK)
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", (char*)msg.from_net.addr);
 			else if(msg.from_net.type != NET_FIDO)
 				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", scfg.sys_id);
 
