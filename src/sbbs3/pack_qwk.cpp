@@ -575,7 +575,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				"(%lu messages/second)."
 				,(*msgcnt)+mailmsgs
 				,ftell(qwk)
-				,elapsed
+				,(ulong)elapsed
 				,((*msgcnt)+mailmsgs) / elapsed);
 		lprintf(LOG_INFO, "packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
 			,(*msgcnt)+mailmsgs
