@@ -1058,7 +1058,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		ret = new this.Frame();
 		i = this.sock.recv(1, timeout);
 		if (i === null) {
-			log(LOG_INFO, "Error in recv() of first byte of packet header, timeout = " + timeout);
+			log(LOG_INFO, "Error "+this.sock.error+" ("+this.sock.error_str+") in recv() of first byte of packet header, timeout = " + timeout);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
