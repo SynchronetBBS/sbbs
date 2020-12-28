@@ -16,6 +16,10 @@ When modifying the C/C++ source files:
 * Do not call functions from `ctype.h` (e.g. `isprint()`, `isspace()`, `isdigit()`, etc.) - use the `xpdev/gen_defs.h IS_*` macros instead.
 * Use safe string handling (e.g. xpdev's `SAFECOPY()` instead of `strcpy()`, `SAFEPRINTF()` or `safe_snprintf()` instead of `sprintf()`).
 
+When modifying JavaScript (`.js`) files:
+* Specify `"use strict"` when adding new files and write conforming code
+* Don't introduce/use 3rd party libraries unnecessarily
+
 ### Branches
 Only approved and authenticaed "developers" can create new branches in the `main/sbbs`repo. If, as a developer, you are creating a new branch in the `main/sbbs` repository, use the branch naming scheme: `<your-name>/<topic>`, where *your-name* is your abbreviated name, user-name, or alias and *topic* helps to identify the intended purpose of the branch. Branches created in user repositories (e.g. forks of main/sbbs) need not contain the `<your-name>/` prefix.
 
