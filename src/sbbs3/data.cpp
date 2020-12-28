@@ -144,7 +144,7 @@ extern "C" time_t DLLCALL getnexteventtime(event_t* event)
 	if(event->misc & EVENT_DISABLED)
 		return 0;
 
-	if(event->days == 0 || event->days == 128 || event->freq != 0)
+	if((event->days & 0x7f) == 0 || event->freq != 0)
 		return 0;
 
 	if(localtime_r(&t, &tm) == NULL)

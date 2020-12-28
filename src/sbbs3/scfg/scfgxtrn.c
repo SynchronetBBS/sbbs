@@ -683,7 +683,7 @@ void tevents_cfg()
 						if(k==-1)
 							break;
 						if(k==7)
-							cfg.event[i]->days=(uchar)0xff;
+							cfg.event[i]->days=0x7f;
 						else if(k==8)
 							cfg.event[i]->days=0;
 						else
