@@ -570,16 +570,17 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		time_t elapsed = time(NULL)-start;
 		if(elapsed < 1)
 			elapsed = 1;
+		byte_estimate_to_str(ftell(qwk), tmp, sizeof(tmp), 1024, 1);
 		if(online == ON_REMOTE)
-			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
+			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%s bytes) in %lu seconds "
 				"(%lu messages/second)."
 				,(*msgcnt)+mailmsgs
-				,ftell(qwk)
-				,elapsed
+				,tmp
+				,(ulong)elapsed
 				,((*msgcnt)+mailmsgs) / elapsed);
-		lprintf(LOG_INFO, "packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
+		lprintf(LOG_INFO, "packed %lu messages (%s bytes) in %lu seconds (%lu msgs/sec)"
 			,(*msgcnt)+mailmsgs
-			,ftell(qwk)
+			,tmp
 			,(ulong)elapsed
 			,((*msgcnt)+mailmsgs)/elapsed);
 	}
