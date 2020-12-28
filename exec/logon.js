@@ -65,7 +65,7 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 if(user.security.restrictions&UFLAG_G) {
 	while(bbs.online) {
 		printf("\x01y\x01hFor our records, please enter your full name: \x01w");
-		name=console.getstr(LEN_NAME,K_UPRLWR);
+		const name = console.getstr(LEN_NAME,K_UPRLWR);
 		if(!name || !name.length)
 			continue;
 		bbs.log_str("Guest: " + name);
@@ -75,7 +75,7 @@ if(user.security.restrictions&UFLAG_G) {
 
 	while(bbs.online) {
 		printf("\x01y\x01hPlease enter your e-mail address: \x01w");
-		email=console.getstr(LEN_NETMAIL);
+		const email = console.getstr(LEN_NETMAIL);
 		if(!email || !email.length)
 			continue;
 		if(bbs.trashcan("email", email)) {
@@ -90,7 +90,7 @@ if(user.security.restrictions&UFLAG_G) {
 
 	while(bbs.online) {
 		printf("\x01y\x01hPlease enter your location (City, State): \x01w");
-		location=console.getstr(LEN_LOCATION,K_UPRLWR);
+		const location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
 		if(bbs.trashcan("location", location)) {
@@ -106,7 +106,7 @@ if(user.security.restrictions&UFLAG_G) {
 		bbs.log_str("\r\n");
 	while(bbs.online) {
 		printf("\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w");
-		ref=console.getstr(70);
+		const ref=console.getstr(70);
 		if(!ref || !ref.length)
 			continue;
 		bbs.log_str(ref + "\r\n");
