@@ -24,6 +24,16 @@ if(options.draw_avatar_right === undefined)
 	options.draw_avatar_right = true;
 if(options.show_logon_list === undefined)
 	options.show_logon_list = true;
+if(options.sysop_available) {
+	require("text.js", 'LiSysopAvailable');
+	var list = options.sysop_available.split(',');
+	bbs.replace_text(LiSysopAvailable, list[random(list.length)].trim());
+}
+if(options.sysop_unavailable) {
+	require("text.js", 'LiSysopNotAvailable');
+	var list = options.sysop_unavailable.split(',');
+	bbs.replace_text(LiSysopNotAvailable, list[random(list.length)].trim());
+}
 
 if(options.eval_first)
 	eval(options.eval_first);
