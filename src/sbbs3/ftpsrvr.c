@@ -5325,7 +5325,6 @@ void DLLCALL ftp_server(void* arg)
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
 				sockprintf(client_socket,-1,"421 Maximum active clients reached, please try again later.");
-				mswait(3000);
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
 			}
@@ -5334,7 +5333,6 @@ void DLLCALL ftp_server(void* arg)
 				lprintf(LOG_CRIT,"%04d !ERROR allocating %d bytes of memory for ftp_t"
 					,client_socket,(int)sizeof(ftp_t));
 				sockprintf(client_socket,-1,"421 System error, please try again later.");
-				mswait(3000);
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
 			}
