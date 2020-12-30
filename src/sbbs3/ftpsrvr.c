@@ -84,6 +84,7 @@ static volatile BOOL	terminate_server=FALSE;
 static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
+static link_list_t current_connections;
 
 #ifdef SOCKET_DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
@@ -203,12 +204,15 @@ static void update_clients(void)
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
+	if(!update)
+		listAddNodeData(&current_connections, client->addr, strlen(client->addr) + 1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
+	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
@@ -5029,6 +5033,8 @@ static void cleanup(int code, int line)
 
 	update_clients();	/* active_clients is destroyed below */
 
+	listFree(&current_connections);
+
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
@@ -5117,6 +5123,7 @@ void DLLCALL ftp_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		listInit(&current_connections, LINK_LIST_MUTEX);
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
@@ -5295,6 +5302,20 @@ void DLLCALL ftp_server(void* arg)
 				startup->socket_open(startup->cbdata,TRUE);
 
 			inet_addrtop(&client_addr, client_ip, sizeof(client_ip));
+
+			if(startup->max_concurrent_connections > 0) {
+				int ip_len = strlen(client_ip) + 1;
+				uint connections = listCountMatches(&current_connections, client_ip, ip_len);
+				if(connections >= startup->max_concurrent_connections
+					&& !is_host_exempt(&scfg, client_ip, /* host_name */NULL)) {
+					lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
+ 						,client_socket, client_ip, startup->max_concurrent_connections);
+					sockprintf(client_socket, -1, "421 Maximum connections (%u) exceeded", startup->max_concurrent_connections);
+					ftp_close_socket(&client_socket,&none,__LINE__);
+					continue;
+				}
+			}
+
 			if(trashcan(&scfg,client_ip,"ip-silent")) {
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
