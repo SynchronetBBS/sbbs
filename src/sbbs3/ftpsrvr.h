@@ -83,6 +83,8 @@ typedef struct {
 	struct login_attempt_settings login_attempt;
 	link_list_t* login_attempt_list;
 
+	uint	max_concurrent_connections;
+
 } ftp_startup_t;
 
 /* startup options that requires re-initialization/recycle when changed */
