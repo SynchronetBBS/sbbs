@@ -952,7 +952,7 @@ BOOL DLLCALL addfile(scfg_t* cfg, uint dirnum, smbfile_t* file, const char* extd
 /* 'size' does not include the NUL-terminator */
 char* DLLCALL format_filename(const char* fname, char* buf, size_t size, BOOL pad)
 {
-	int fnlen = strlen(fname);
+	size_t fnlen = strlen(fname);
 	char* ext = getfext(fname);
 	if(ext != NULL) {
 		size_t extlen = strlen(ext);
@@ -962,7 +962,7 @@ char* DLLCALL format_filename(const char* fname, char* buf, size_t size, BOOL pa
 			fnlen -= extlen;
 			if(fnlen > size - extlen)
 				fnlen = size - extlen;
-			safe_snprintf(buf, size + 1, "%-*.*s%s", (int)(pad ? (size - extlen) : 0), fnlen, fname, ext);
+			safe_snprintf(buf, size + 1, "%-*.*s%s", (int)(pad ? (size - extlen) : 0), (int)fnlen, fname, ext);
 		}
 	} else	/* no extension */
 		snprintf(buf, size + 1, "%s", fname);
