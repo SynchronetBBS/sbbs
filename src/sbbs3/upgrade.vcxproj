@@ -89,22 +89,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>.\msvc.win32.exe.debug\</OutDir>
-    <IntDir>.\msvc.win32.debug\upgrade</IntDir>
+    <IntDir>.\msvc.win32.debug\upgrade\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>.\msvc.win32.exe.release\</OutDir>
-    <IntDir>.\msvc.win32.release\upgrade</IntDir>
+    <IntDir>.\msvc.win32.release\upgrade\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>.\msvc.win32.exe.debug\</OutDir>
-    <IntDir>.\msvc.win32.debug\upgrade</IntDir>
+    <IntDir>.\msvc.win32.debug\upgrade\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>.\msvc.win32.exe.release\</OutDir>
-    <IntDir>.\msvc.win32.release\upgrade</IntDir>
+    <IntDir>.\msvc.win32.release\upgrade\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
