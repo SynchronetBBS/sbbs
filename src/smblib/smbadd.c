@@ -39,6 +39,7 @@
 #include "genwrap.h"
 #include "crc32.h"
 #include "lzh.h"
+#include "datewrap.h"
 
 /****************************************************************************/
 /****************************************************************************/
@@ -474,4 +475,13 @@ int SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const uchar* e
 	file->hdr.type = SMB_MSG_TYPE_FILE;
 
 	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */extdesc, /* tail: */NULL);
+}
+
+int SMBCALL smb_renewfile(smb_t* smb, smbfile_t* file, int storage)
+{
+	int result;
+	if((result = smb_removefile(smb, file)) != SMB_SUCCESS)
+		return result;
+	file->hdr.when_imported.time = time32(NULL);
+	return smb_addfile(smb, file, storage, file->extdesc);
 }

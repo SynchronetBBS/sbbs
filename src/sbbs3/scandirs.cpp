@@ -41,7 +41,6 @@
 void sbbs_t::scandirs(long mode)
 {
 	char	ch,str[256];
-	char 	tmp[512];
 	int		s;
 	uint	i,k;
 
@@ -60,7 +59,6 @@ void sbbs_t::scandirs(long mode)
 		else if(mode==FL_NO_HDR) {		/* Search for a string */
 			if(!getfilespec(str))
 				return;
-//			padfname(tmp,str); 
 		}
 		else if(mode==FL_FINDDESC) {	/* Find text in description */
 			if(text[SearchExtendedQ][0] && !noyes(text[SearchExtendedQ]))
@@ -116,7 +114,6 @@ void sbbs_t::scandirs(long mode)
 void sbbs_t::scanalldirs(long mode)
 {
 	char	str[256];
-	char 	tmp[512];
 	int		s;
 	uint	i,j,k,d;
 
@@ -129,7 +126,6 @@ void sbbs_t::scanalldirs(long mode)
 	else if(mode==FL_NO_HDR) {		/* Search for a string */
 		if(!getfilespec(str))
 			return;
-//		padfname(tmp,str); 
 	}
 	else if(mode==FL_FINDDESC) {	/* Find text in description */
 		if(text[SearchExtendedQ][0] && !noyes(text[SearchExtendedQ]))

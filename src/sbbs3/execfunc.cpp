@@ -41,7 +41,6 @@
 int sbbs_t::exec_function(csi_t *csi)
 {
 	char	str[256];
-	char 	tmp[512];
 	uchar*	p;
 	int		s;
 	uint 	i,j,k;
@@ -405,7 +404,6 @@ int sbbs_t::exec_function(csi_t *csi)
 			if(!usrlibs) return(0);
 			if(!getfilespec(str))
 				return(0);
-//			padfname(tmp,str);
 			k=0;
 			bputs("\r\nSearching ");
 			if(!stricmp(csi->str,"ALL"))

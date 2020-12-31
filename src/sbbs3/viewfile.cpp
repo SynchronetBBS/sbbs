@@ -44,8 +44,6 @@
 int sbbs_t::viewfile(smbfile_t* f, bool ext)
 {
 	char	ch,str[256];
-	char 	tmp[512];
-
 	char	fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
 	format_filename(f->filename, fname, sizeof(fname)-1, /* pad: */FALSE);
 

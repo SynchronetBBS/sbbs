@@ -632,7 +632,6 @@ typedef struct {
 static void send_thread(void* arg)
 {
 	char		buf[8192];
-	char		fname[MAX_PATH+1];
 	char		str[256];
 	char		tmp[128];
 	char		username[128];
@@ -649,7 +648,7 @@ static void send_thread(void* arg)
 	off_t		length;
 	BOOL		error=FALSE;
 	FILE*		fp;
-	file_t		f;
+	smbfile_t	f;
 	xfer_t		xfer;
 	time_t		now;
 	time_t		start;
@@ -841,34 +840,29 @@ static void send_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
-#ifdef _WIN32
-			GetShortPathName(xfer.filename,fname,sizeof(fname));
-#else
-			SAFECOPY(fname,xfer.filename);
-#endif
-			padfname(getfname(fname),f.name);
-			f.dir=xfer.dir;
-			f.size=total;
-			if(getfileixb(&scfg,&f)==TRUE && getfiledat(&scfg,&f)==TRUE) {
-				f.timesdled++;
-				putfiledat(&scfg,&f);
-				f.datedled=time32(NULL);
-				putfileixb(&scfg,&f);
+			if(loadfile(&scfg, xfer.dir, xfer.filename, &f) == TRUE) {
+				f.hdr.times_downloaded++;
+				f.hdr.last_downloaded = time32(NULL);
+				updatefile(&scfg, &f);
 
 				lprintf(LOG_INFO,"%04d <%s> DATA downloaded: %s (%u times total)"
 					,xfer.ctrl_sock
 					,xfer.user->alias
 					,xfer.filename
-					,f.timesdled);
+					,f.hdr.times_downloaded);
 				/**************************/
 				/* Update Uploader's Info */
 				/**************************/
-				uploader.number=matchuser(&scfg,f.uler,TRUE /*sysop_alias*/);
+				uploader.number = 0;
+				if(f.from_ext != NULL)
+					uploader.number = atoi(f.from_ext);
+				if(uploader.number == 0)
+					uploader.number=matchuser(&scfg, f.from, TRUE /*sysop_alias*/);
 				if(uploader.number
 					&& uploader.number!=xfer.user->number 
 					&& getuserdat(&scfg,&uploader)==0
-					&& uploader.firston<f.dateuled) {
-					l=f.cdt;
+					&& uploader.firston < (time_t)f.hdr.when_imported.time) {
+					l=f.cost;
 					if(!(scfg.dir[f.dir]->misc&DIR_CDTDL))	/* Don't give credits on d/l */
 						l=0;
 					if(scfg.dir[f.dir]->misc&DIR_CDTMIN && cps) { /* Give min instead of cdt */
@@ -930,11 +924,10 @@ static void receive_thread(void* arg)
 	char*		p;
 	char		str[128];
 	char		buf[8192];
-	char		ext[F_EXBSIZE+1];
-	char		desc[F_EXBSIZE+1];
+	char		ext[1024] = "";
+	char		desc[1024] = "";
 	char		cmd[MAX_PATH*2];
 	char		tmp[MAX_PATH+1];
-	char		fname[MAX_PATH+1];
 	int			i;
 	int			rd;
 	int			file;
@@ -945,7 +938,7 @@ static void receive_thread(void* arg)
 	BOOL		error=FALSE;
 	BOOL		filedat;
 	FILE*		fp;
-	file_t		f;
+	smbfile_t	f;
 	xfer_t		xfer;
 	time_t		now;
 	time_t		start;
@@ -1126,28 +1119,25 @@ static void receive_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
-#ifdef _WIN32
-			GetShortPathName(xfer.filename,fname,sizeof(fname));
-#else
-			SAFECOPY(fname,xfer.filename);
-#endif
-			padfname(getfname(fname),f.name);
-			f.dir=xfer.dir;
-			filedat=getfileixb(&scfg,&f);
-			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
-				f.misc|=FM_ANON;
-			f.cdt=flength(xfer.filename);
-			f.dateuled=time32(NULL);
+			smb_hfield_str(&f, SMB_FILENAME, getfname(xfer.filename));
+			smb_hfield_str(&f, SENDER, xfer.user->alias);
 
+			filedat=findfile(&scfg, xfer.dir, f.filename);
+			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
+				f.hdr.attr |= MSG_ANONYMOUS;
+			uint32_t cdt = flength(xfer.filename);
+			smb_hfield_bin(&f, SMB_COST, &cdt);
+
+			char fdesc[LEN_FDESC + 1] = "";
 			/* Description specified with DESC command? */
-			if(xfer.desc!=NULL && *xfer.desc!=0)	
-				SAFECOPY(f.desc,xfer.desc);
+			if(xfer.desc != NULL)	
+				SAFECOPY(fdesc, xfer.desc);
 
 			/* Necessary for DIR and LIB ARS keyword support in subsequent chk_ar()'s */
 			SAFECOPY(xfer.user->curdir, scfg.dir[f.dir]->code);
 
 			/* FILE_ID.DIZ support */
-			p=strrchr(f.name,'.');
+			p = getfext(xfer.filename);
 			if(p!=NULL && scfg.dir[f.dir]->misc&DIR_DIZ) {
 				for(i=0;i<scfg.total_fextrs;i++)
 					if(!stricmp(scfg.fextr[i]->ext,p+1) 
@@ -1157,14 +1147,14 @@ static void receive_thread(void* arg)
 					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
 					if(fexistcase(tmp))
 						ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
-					cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd,fname,"FILE_ID.DIZ",cmd);
+					cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd, xfer.filename, "FILE_ID.DIZ",cmd);
 					lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ: %s",xfer.ctrl_sock, xfer.user->alias,cmd);
 					system(cmd);
 					if(!fexistcase(tmp)) {
 						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
 						if(fexistcase(tmp))
 							ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
-						cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd,fname,"DESC.SDI",cmd);
+						cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd, xfer.filename, "DESC.SDI",cmd);
 						lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ: %s",xfer.ctrl_sock, xfer.user->alias,cmd);
 						system(cmd); 
 						fexistcase(tmp);	/* fixes filename case */
@@ -1177,40 +1167,34 @@ static void receive_thread(void* arg)
 							if(ext[i-1]>' ')
 								break;
 						ext[i]=0;
-						if(!f.desc[0]) {			/* use for normal description */
+						if(!fdesc[0]) {			/* use for normal description */
 							SAFECOPY(desc,ext);
 							strip_exascii(desc, desc);	/* strip extended ASCII chars */
 							prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
 							for(i=0;desc[i];i++)	/* find appropriate first char */
 								if(IS_ALPHANUMERIC(desc[i]))
 									break;
-							SAFECOPY(f.desc,desc+i); 
+							SAFECOPY(fdesc,desc+i); 
 						}
 						close(file);
 						ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
-						f.misc|=FM_EXTDESC; 
 					} else
 						lprintf(LOG_DEBUG,"%04d <%s> DATA DIZ Does not exist: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
 				} 
 			} /* FILE_ID.DIZ support */
 
-			if(f.desc[0]==0) 	/* no description given, use (long) filename */
-				SAFECOPY(f.desc,getfname(xfer.filename));
-
-			SAFECOPY(f.uler,xfer.user->alias);	/* exception here, Aug-27-2002 */
+			smb_hfield_str(&f, SMB_FILEDESC, fdesc);
 			if(filedat) {
-				if(!putfiledat(&scfg,&f))
+				if(!updatefile(&scfg, &f))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR updating file (%s) in database"
-						,xfer.ctrl_sock, xfer.user->alias,f.name);
+						,xfer.ctrl_sock, xfer.user->alias, f.filename);
 				/* need to update the index here */
 			} else {
-				if(!addfiledat(&scfg,&f))
+				if(!addfile(&scfg, xfer.dir, &f, desc))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR adding file (%s) to database"
-						,xfer.ctrl_sock, xfer.user->alias,f.name);
+						,xfer.ctrl_sock, xfer.user->alias, f.filename);
 			}
-
-			if(f.misc&FM_EXTDESC)
-				putextdesc(&scfg,f.dir,f.datoffset,ext);
+			smb_freefilemem(&f);
 
 			if(scfg.dir[f.dir]->upload_sem[0])
 				ftouch(scfg.dir[f.dir]->upload_sem);
@@ -1224,7 +1208,7 @@ static void receive_thread(void* arg)
 						,((ulong)(total*(scfg.dir[f.dir]->up_pct/100.0))/cps)/60);
 				else
 					xfer.user->cdt=adjustuserrec(&scfg,xfer.user->number,U_CDT,10
-						,(ulong)(f.cdt*(scfg.dir[f.dir]->up_pct/100.0))); 
+						,(ulong)(cdt*(scfg.dir[f.dir]->up_pct/100.0))); 
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
 				inc_sys_upload_stats(&scfg, 1, total);
@@ -2104,7 +2088,7 @@ static void get_dirperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, 
 	*p=0;
 }
 
-static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
+static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file)
 {
 	if (!chk_ar(&scfg,lib->ar,user,client))
 		return FALSE;
@@ -2116,15 +2100,12 @@ static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 		if(!chk_ar(&scfg,dir->ul_ar,user,client))
 			return FALSE;
 	}
-	if(!getfileixb(&scfg,file) || !getfiledat(&scfg,file))
+	if (file->from == NULL || stricmp(file->from, user->alias) != 0)
 		return FALSE;
-	if (stricmp(file->uler,user->alias))
-		return FALSE;
-	// Check credits?
 	return TRUE;
 }
 
-static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
+static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file)
 {
 	if (user->rest&FLAG('D'))
 		return FALSE;
@@ -2136,12 +2117,12 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 		return FALSE;
 	if (!(user->exempt&FLAG('R')))
 		return FALSE;
-	if(!getfileixb(&scfg,file) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
+	if(!findfile(&scfg, file->dir, file->filename) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
 		return FALSE;
 	return TRUE;
 }
 
-static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
+static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file)
 {
 	if (user->rest&FLAG('D'))
 		return FALSE;
@@ -2151,13 +2132,13 @@ static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 		return FALSE;
 	if (!chk_ar(&scfg,dir->dl_ar,user,client))
 		return FALSE;
-	if(!getfileixb(&scfg,file) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
+	if(!findfile(&scfg,file->dir,file->filename) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
 		return FALSE;
 	// TODO: Verify credits
 	return TRUE;
 }
 
-static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file, char *permstr)
+static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, smbfile_t *file, char *permstr)
 {
 	char *p = permstr;
 
@@ -2177,15 +2158,15 @@ static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 	*p = 0;
 }
 
-static void get_owner_name(file_t *file, char *namestr)
+static void get_owner_name(smbfile_t *file, char *namestr)
 {
 	char *p;
 
 	if (file) {
-		if (file->misc & FM_ANON)
+		if (file->hdr.attr & MSG_ANONYMOUS)
 			strcpy(namestr, ANONYMOUS);
 		else
-			strcpy(namestr, file->uler);
+			strcpy(namestr, file->from);
 	}
 	else
 		strcpy(namestr, scfg.sys_id);
@@ -2302,7 +2283,7 @@ static void ctrl_thread(void* arg)
 	time_t		lastactive;
 	time_t		file_date;
 	off_t		file_size;
-	file_t		f;
+	smbfile_t	f;
 	glob_t		g;
 	node_t		node;
 	client_t	client;
@@ -3846,43 +3827,44 @@ static void ctrl_thread(void* arg)
 						get_unique(aliaspath, uniq);
 						send_mlsx_entry(fp, sock, sess, mlsx_feats, "cdir", permstr, UINT64_MAX, 0, str, NULL, 0, aliaspath);
 					}
-
+					smb_t smb;
+					if((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
+						lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
+						continue;
+					}
 					time_t start = time(NULL);
 					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
 					glob(path, GLOB_MARK, NULL, &g);
+					memset(&f, 0, sizeof(f));
 					for(i=0;i<(int)g.gl_pathc;i++) {
 						if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 							continue;
-#ifdef _WIN32
-						GetShortPathName(g.gl_pathv[i], str, sizeof(str));
-#else
-						SAFECOPY(str,g.gl_pathv[i]);
-#endif
-						padfname(getfname(str),f.name);
-						f.dateuled = 0;
-						f.dir=dir;
-						if((filedat=getfileixb(&scfg,&f))==FALSE
+						SAFECOPY(str, g.gl_pathv[i]);
+						SAFECOPY(fname, getfname(str));
+						smb_freefilemem(&f);
+						if((filedat=(smb_loadfile(&smb, fname, &f) == SMB_SUCCESS))==FALSE
 							&& !(startup->options&FTP_OPT_DIR_FILES)
 							&& !(scfg.dir[dir]->misc&DIR_FILES))
 							continue;
-						if (cmd[3] != 'D' && strcmp(getfname(g.gl_pathv[i]), mls_fname) != 0)
+						if (cmd[3] != 'D' && strcmp(fname, mls_fname) != 0)
 							continue;
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, &f, permstr);
 						get_owner_name(&f, str);
-						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, getfname(g.gl_pathv[i]));
+						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, fname);
 						get_unique(aliaspath, uniq);
-						f.size = f.cdt;
-						f.date = f.dateuled;
+						f.size = f.cost;
+						f.date = f.hdr.when_imported.time;
 						if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
 							struct stat st;
 							if(stat(g.gl_pathv[i], &st) != 0)
 								continue;
 							f.size = st.st_size;
 							f.date = (time32_t)st.st_mtime;
+							f.hdr.when_imported.time = (uint32_t)f.date;
 						}
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f.size, f.date, str, uniq, f.dateuled, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f.size, f.date, str, uniq, f.hdr.when_imported.time, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
 						l++;
 					}
 					if (cmd[3] == 'D') {
@@ -3890,6 +3872,8 @@ static void ctrl_thread(void* arg)
 						    ,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
 						    ,(ulong)g.gl_pathc, (long)time(NULL) - start);
 					}
+					smb_freefilemem(&f);
+					smb_close(&smb);
 					globfree(&g);
 				} else 
 					lprintf(LOG_INFO,"%04d <%s> %s listing: /%s/%s directory in %s mode (empty - no access)"
@@ -4139,28 +4123,30 @@ static void ctrl_thread(void* arg)
 					,sock, user.alias, detail ? "detailed ":""
 					,scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, mode);
 
+				smb_t smb;
+				if((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
+					lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
+					continue;
+				}
 				time_t start = time(NULL);
 				SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,filespec);
 				glob(path, GLOB_MARK, NULL, &g);
+				memset(&f, 0, sizeof(f));
 				for(i=0;i<(int)g.gl_pathc;i++) {
 					if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 						continue;
-#ifdef _WIN32
-					GetShortPathName(g.gl_pathv[i], str, sizeof(str));
-#else
 					SAFECOPY(str,g.gl_pathv[i]);
-#endif
-					padfname(getfname(str),f.name);
-					f.dir=dir;
-					if((filedat=getfileixb(&scfg,&f))==FALSE
+					SAFECOPY(fname, getfname(str));
+					if((filedat=(smb_findfile(&smb, fname, NULL) == SMB_SUCCESS))==FALSE
 						&& !(startup->options&FTP_OPT_DIR_FILES)
 						&& !(scfg.dir[dir]->misc&DIR_FILES))
 						continue;
 					if(detail) {
-						if(filedat && !getfiledat(&scfg,&f))
+						smb_freefilemem(&f);
+						if(filedat && smb_loadfile(&smb, fname, &f) != SMB_SUCCESS)
 							continue;
-						f.size = f.cdt;
-						t = f.dateuled;
+						f.size = f.cost;
+						t = f.hdr.when_imported.time;
 						if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
 							struct stat st;
 							if(stat(g.gl_pathv[i], &st) != 0)
@@ -4171,10 +4157,10 @@ static void ctrl_thread(void* arg)
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
 						if(filedat) {
-							if(f.misc&FM_ANON)
+							if(f.hdr.attr & MSG_ANONYMOUS)
 								SAFECOPY(str,ANONYMOUS);
 							else
-								dotname(f.uler,str);
+								dotname(f.from,str);
 						} else
 							SAFECOPY(str,scfg.sys_id);
 						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRId32" %s %2d "
@@ -4191,6 +4177,7 @@ static void ctrl_thread(void* arg)
 							fprintf(fp,"%5d %s\r\n"
 								,1900+tm.tm_year
 								,getfname(g.gl_pathv[i]));
+						smb_freefilemem(&f);
 					} else
 						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
 				}
@@ -4198,6 +4185,8 @@ static void ctrl_thread(void* arg)
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
 					,(ulong)g.gl_pathc, (long)time(NULL) - start);
 				globfree(&g);
+				smb_freefilemem(&f);
+				smb_close(&smb);
 			} else
 				lprintf(LOG_INFO,"%04d <%s> %slisting: /%s/%s directory in %s mode (empty - no access)"
 					,sock, user.alias, detail ? "detailed ":"", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, mode);
@@ -4438,34 +4427,34 @@ static void ctrl_thread(void* arg)
 								,INDEX_FNAME_LEN,scfg.dir[i]->code_suffix,scfg.dir[i]->lname);
 						}
 					} else if(chk_ar(&scfg,scfg.dir[dir]->ar,&user,&client)){
+						smb_t smb;
+						if((result = smb_open_dir(&scfg, &smb, dir)) != SMB_SUCCESS) {
+							lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
+							continue;
+						}
 						sprintf(cmd,"%s*",scfg.dir[dir]->path);
 						time_t start = time(NULL);
 						glob(cmd, GLOB_MARK, NULL, &g);
+						memset(&f, 0, sizeof(f));
 						for(i=0;i<(int)g.gl_pathc;i++) {
 							if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 								continue;
-	#ifdef _WIN32
-							GetShortPathName(g.gl_pathv[i], str, sizeof(str));
-	#else
-							SAFECOPY(str,g.gl_pathv[i]);
-	#endif
-							memset(&f, 0, sizeof(f));
-							padfname(getfname(str),f.name);
-							f.dir=dir;
-							if((filedat=getfileixb(&scfg,&f))==FALSE
+							SAFECOPY(str, g.gl_pathv[i]);
+							SAFECOPY(fname, getfname(str));
+							smb_freefilemem(&f);
+							if(smb_loadfile(&smb, fname, &f) != SMB_SUCCESS
 								&& !(startup->options&FTP_OPT_DIR_FILES)
 								&& !(scfg.dir[dir]->misc&DIR_FILES))
 								continue;
-							f.size = -1;	// Not used, don't query
-							if(filedat && !getfiledat(&scfg,&f))
-								continue;
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
-								,getfname(g.gl_pathv[i]),f.desc);
+								,fname, f.desc);
 						}
 						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 							,sock, user.alias, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
 							,(ulong)g.gl_pathc, (long)time(NULL) - start);
 						globfree(&g);
+						smb_freefilemem(&f);
+						smb_close(&smb);
 					}
 					fclose(fp);
 				}
@@ -4502,16 +4491,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				SAFEPRINTF2(fname,"%s%s",scfg.dir[dir]->path,p);
-#ifdef _WIN32
-				GetShortPathName(fname, str, sizeof(str));
-#else
-				SAFECOPY(str,fname);
-#endif
-				padfname(getfname(str),f.name);
-				f.dir=dir;
-				f.cdt=0;
-				f.size=-1;
-				filedat=getfileixb(&scfg,&f);
+				filedat=findfile(&scfg, dir, p);
 				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES) && !(scfg.dir[dir]->misc&DIR_FILES)) {
 					sockprintf(sock,sess,"550 File not found: %s",p);
 					lprintf(LOG_WARNING,"%04d <%s> file (%s%s) not in database for %.4s command"
@@ -4523,18 +4503,20 @@ static void ctrl_thread(void* arg)
 				/* Verify credits */
 				if(!getsize && !getdate && !delecmd
 					&& !is_download_free(&scfg,dir,&user,&client)) {
+					smb_freefilemem(&f);
 					if(filedat)
-						getfiledat(&scfg,&f);
+						loadfile(&scfg, dir, p, &f);
 					else
-						f.cdt=flength(fname);
-					if(f.cdt>(user.cdt+user.freecdt)) {
+						f.cost=flength(fname);
+					if(f.cost>(user.cdt+user.freecdt)) {
 						lprintf(LOG_WARNING,"%04d <%s> has insufficient credit to download /%s/%s/%s (%lu credits)"
 							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname
 							,scfg.dir[dir]->code_suffix
 							,p
-							,(ulong)f.cdt);
-						sockprintf(sock,sess,"550 Insufficient credit (%lu required).", (ulong)f.cdt);
+							,(ulong)f.cost);
+						sockprintf(sock,sess,"550 Insufficient credit (%lu required).", (ulong)f.cost);
 						filepos=0;
+						smb_freefilemem(&f);
 						continue;
 					}
 				}
@@ -4576,7 +4558,7 @@ static void ctrl_thread(void* arg)
 				} else {
 					lprintf(LOG_NOTICE,"%04d <%s> deleted %s",sock,user.alias,fname);
 					if(filedat) 
-						removefiledat(&scfg,&f);
+						removefile(&scfg, dir, getfname(fname));
 					sockprintf(sock,sess,"250 %s deleted.",fname);
 				}
 			} else if(success) {
@@ -4731,16 +4713,8 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(append || filepos) {	/* RESUME */
-#ifdef _WIN32
-					GetShortPathName(fname, str, sizeof(str));
-#else
-					SAFECOPY(str,fname);
-#endif
-					padfname(getfname(str),f.name);
-					f.dir=dir;
-					f.cdt=0;
-					f.size=-1;
-					if(!getfileixb(&scfg,&f) || !getfiledat(&scfg,&f)) {
+					smb_freefilemem(&f);
+					if(!loadfile(&scfg, dir, p, &f)) {
 						if(filepos) {
 							lprintf(LOG_WARNING,"%04d <%s> file (%s) not in database for %.4s command"
 								,sock,user.alias,fname,cmd);
@@ -4750,12 +4724,14 @@ static void ctrl_thread(void* arg)
 						append=FALSE;
 					}
 					/* Verify user is original uploader */
-					if((append || filepos) && stricmp(f.uler,user.alias)) {
+					if((append || filepos) && stricmp(f.from, user.alias)) {
 						lprintf(LOG_WARNING,"%04d <%s> !cannot resume upload of %s, uploaded by %s"
-							,sock,user.alias,fname,f.uler);
+							,sock,user.alias,fname,f.from);
 						sockprintf(sock,sess,"553 Insufficient access (can't resume upload from different user).");
+						smb_freefilemem(&f);
 						continue;
 					}
+					smb_freefilemem(&f);
 				}
 				lprintf(LOG_INFO,"%04d <%s> uploading: %s to %s (%s) in %s mode"
 					,sock,user.alias

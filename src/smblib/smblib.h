@@ -204,6 +204,7 @@ SMBEXPORT int		SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const uchar* extdesc);
+SMBEXPORT int		SMBCALL smb_renewfile(smb_t* smb, smbfile_t* file, int storage);
 
 /* smballoc.c */
 SMBEXPORT long		SMBCALL smb_allochdr(smb_t* smb, ulong length);
@@ -302,6 +303,12 @@ SMBEXPORT void		SMBCALL smb_rewind(FILE* fp);
 SMBEXPORT void		SMBCALL smb_clearerr(FILE* fp);
 SMBEXPORT int 		SMBCALL smb_open_fp(smb_t* smb, FILE**, int share);
 SMBEXPORT void		SMBCALL smb_close_fp(FILE**);
+
+/* New filebase API: */
+SMBEXPORT int		SMBCALL smb_findfile(smb_t*, const char* filename, idxrec_t*);
+SMBEXPORT int		SMBCALL smb_loadfile(smb_t*, const char* filename, smbfile_t*);
+SMBEXPORT void		SMBCALL smb_freefilemem(smbfile_t*);
+SMBEXPORT int		SMBCALL smb_removefile(smb_t*, smbfile_t*);
 
 #ifdef __cplusplus
 }

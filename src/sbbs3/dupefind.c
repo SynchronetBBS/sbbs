@@ -20,6 +20,7 @@
 #include "scfgdefs.h"
 #include "str_util.h"
 #include "load_cfg.h"
+#include "smblib.h"
 #include "nopen.h"
 #include "crc32.h"
 #include <stdarg.h>

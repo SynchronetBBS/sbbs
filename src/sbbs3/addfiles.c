@@ -26,6 +26,7 @@
 #include "userdat.h"
 #include "filedat.h"
 #include "load_cfg.h"
+#include "smblib.h"
 #include <stdbool.h>
 #include <stdarg.h>
 
@@ -199,7 +200,7 @@ void updatestats(ulong size)
 
 bool reupload(smb_t* smb, smbfile_t* f)
 {
-	if(!renewfile(smb, f)) {
+	if(!smb_renewfile(smb, f, SMB_SELFPACK)) {
 		fprintf(stderr, "!Error renewing: %s\n", f->filename);
 		return false;
 	}
@@ -306,7 +307,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			const char* fname = getfname(filepath);
 			printf("%s  %10"PRIu32"  %s\n"
 				,fname, cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
-			exist = findfileidx(&smb, fname, &f.idx);
+			exist = smb_findfile(&smb, fname, &f.idx) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
@@ -362,7 +363,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			}
 			else
 				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc);
-			smb_freemsgmem(&f);
+			smb_freefilemem(&f);
 			if(result != SMB_SUCCESS)
 				fprintf(stderr, "!Error %d (%s) adding file to %s", result, smb.last_error, smb.file);
 			if(mode&UL_STATS)
@@ -427,7 +428,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		}
 
 		time_t file_timestamp = fdate(filepath);
-		exist = findfileidx(&smb, fname, &f.idx);
+		exist = smb_findfile(&smb, fname, &f.idx) == SMB_SUCCESS;
 		if(exist) {
 			if(mode&NO_UPDATE)
 				continue;
@@ -530,7 +531,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		}
 		else
 			result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc);
-		smb_freemsgmem(&f);
+		smb_freefilemem(&f);
 		if(result != SMB_SUCCESS)
 			fprintf(stderr, "!ERROR %d (%s) writing to %s\n"
 				, result, smb.last_error, smb.file);
@@ -597,11 +598,14 @@ void synclist(char *inpath, int dirnum)
 		if(found)
 			continue;
 		printf("%s not found in list - ", f->filename);
-		removefile(&smb, f);
-		if(remove(getfullfilepath(&scfg, f, str)))
-			printf("Error removing %s\n",str);
-		removed++;
-		printf("Removed from database\n");
+		if(smb_removefile(&smb, f) != SMB_SUCCESS)
+			fprintf(stderr, "!ERROR (%s) removing file from database\n", smb.last_error);
+		else {
+			if(remove(getfullfilepath(&scfg, f, str)))
+				printf("Error removing %s\n",str);
+			removed++;
+			printf("Removed from database\n");
+		}
 	}
 	freefiles(file_list, file_count);
 
@@ -821,7 +825,7 @@ int main(int argc, char **argv)
 				&& IS_DIGIT(argv[j+1][0])) { /* skip x characters before description */
 				if(argc > j+2
 					&& IS_DIGIT(argv[j+2][0])) { /* skip x characters before size */
-					addlist(argv[j]+1,f,atoi(argv[j+1]),atoi(argv[j+2]));
+					addlist(argv[j]+1, dirnum, uploader, atoi(argv[j+1]), atoi(argv[j+2]));
 					j+=2;
 				}
 				else {
@@ -847,7 +851,7 @@ int main(int argc, char **argv)
 			char fdesc[LEN_FDESC + 1] = {0};
 
 			if(j+1==argc) {
-				printf("%s no description given.\n",f.name);
+				printf("%s no description given.\n",fname);
 				SAFECOPY(f.desc, "no description given");
 			}
 
@@ -873,7 +877,7 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 
-			exist=findfileidx(&smb, fname, &f.idx);
+			exist = smb_findfile(&smb, fname, &f.idx) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
@@ -895,7 +899,7 @@ int main(int argc, char **argv)
 			smb_hfield_bin(&f, SMB_COST, l);
 
 			printf("%s %7"PRIu32" %s\n",fname, l, fdesc);
-			const char* ext_desc = NULL;
+			char* ext_desc = NULL;
 			const char* file_ext = getfext(fname);
 			if(mode&FILE_ID && file_ext != NULL) {
 				for(i=0;i<scfg.total_fextrs;i++)
@@ -931,7 +935,7 @@ int main(int argc, char **argv)
 				else
 					result = smb_updatemsg(&smb, &f);
 			}
-			else 
+			else
 				result = smb_addfile(&smb, &f, SMB_SELFPACK, ext_desc);
 
 			if(mode&UL_STATS)

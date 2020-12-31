@@ -24,8 +24,8 @@
 #include "datewrap.h"	// time32()
 #include "str_util.h"
 #include "nopen.h"
-
-static char* crlf = "\r\n";
+#include "smblib.h"
+#include "load_cfg.h"	// smb_open_dir()
 
 /****************************************************************************/
 /* Gets filedata from dircode.DAT file										*/
@@ -479,13 +479,20 @@ BOOL DLLCALL removefiledat(scfg_t* cfg, file_t* f)
 }
 
 /****************************************************************************/
-/* Checks  directory data file for 'filename' (must be padded). If found,   */
-/* it returns the 1, else returns 0.                                        */
-/* Called from upload and bulkupload                                        */
 /****************************************************************************/
-BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename)
+BOOL DLLCALL findfile(scfg_t* cfg, uint dirnum, const char *filename)
 {
-	return file_exists_in_dir(cfg, dirnum, filename);
+	smb_t smb;
+
+	if(cfg == NULL || filename == NULL)
+		return FALSE;
+
+	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+		return FALSE;
+
+	int result = smb_findfile(&smb, filename, /* idx: */NULL);
+	smb_close(&smb);
+	return result == SMB_SUCCESS;
 }
 
 /****************************************************************************/
@@ -839,83 +846,30 @@ void DLLCALL sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
 	}
 }
 
-void DLLCALL freefile(smbfile_t* file)
-{
-	smb_freemsgmem(file);
-}
-
-
 void DLLCALL freefiles(smbfile_t* filelist, size_t count)
 {
 	for(size_t i = 0; i < count; i++)
-		freefile(&filelist[i]);
+		smb_freefilemem(&filelist[i]);
 	free(filelist);
-}
-
-BOOL DLLCALL findfileidx(smb_t* smb, const char* filename, idxrec_t* idx)
-{
-	rewind(smb->sid_fp);
-	while(!feof(smb->sid_fp)) {
-		smbfileidxrec_t fidx;
-
-		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
-			break;
-
-		if(strnicmp(fidx.filename, filename, sizeof(fidx.filename)) == 0) {
-			if(idx != NULL)
-				*idx = fidx.idx;
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-BOOL DLLCALL file_exists(smb_t* smb, const char* filename)
-{
-	return findfileidx(smb, filename, NULL);
-}
-
-BOOL DLLCALL file_exists_in_dir(scfg_t* cfg, uint dirnum, const char* filename)
-{
-	smb_t smb;
-
-	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
-		return FALSE;
-
-	BOOL result = file_exists(&smb, filename);
-	smb_close(&smb);
-	return result;
 }
 
 BOOL DLLCALL loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file)
 {
 	smb_t smb;
 
-	int result = smb_open_dir(cfg, &smb, dirnum);
-	if(result != SMB_SUCCESS)
+	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return FALSE;
 
-	if(!findfileidx(&smb, filename, &file->idx)) {
-		smb_close(&smb);
-		return FALSE;
-	}
-	result = smb_getmsghdr(&smb, file);
-	if(result != SMB_SUCCESS) {
-		smb_close(&smb);
-		return FALSE;
-	}
-		
-	file->extdesc = smb_getmsgtxt(&smb, file, GETMSGTXT_ALL);
-	file->dir = dirnum;
+	int result = smb_loadfile(&smb, filename, file);
 	smb_close(&smb);
-	return TRUE;
+	return result == SMB_SUCCESS;
 }
 
 BOOL DLLCALL updatefile(scfg_t* cfg, smbfile_t* file)
 {
 	smb_t smb;
 
-	if(!smb_open_dir(cfg, &smb, file->dir) != SMB_SUCCESS)
+	if(smb_open_dir(cfg, &smb, file->dir) != SMB_SUCCESS)
 		return FALSE;
 
 	BOOL result = smb_updatemsg(&smb, file) == SMB_SUCCESS;
@@ -923,14 +877,25 @@ BOOL DLLCALL updatefile(scfg_t* cfg, smbfile_t* file)
 	return result;
 }
 
-BOOL DLLCALL removefile(smb_t* smb, smbfile_t* file)
+BOOL DLLCALL removefile(scfg_t* cfg, uint dirnum, const char* filename)
 {
-	file->hdr.attr |= MSG_DELETE;
-	return smb_updatemsg(smb, file) == SMB_SUCCESS;
+	smb_t smb;
+
+	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+		return FALSE;
+
+	int result;
+	smbfile_t file;
+	if((result = smb_loadfile(&smb, filename, &file)) == SMB_SUCCESS)
+		result = smb_removefile(&smb, &file);
+	smb_freefilemem(&file);
+	smb_close(&smb);
+	return result == SMB_SUCCESS;
 }
 
 /****************************************************************************/
 /* Returns full (case-corrected) path to specified file						*/
+/* 'path' should be MAX_PATH + 1 chars in size								*/
 /****************************************************************************/
 char* DLLCALL getfullfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 {
@@ -971,27 +936,14 @@ ulong DLLCALL gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
 	return f->size / rate_cps;
 }
 
-BOOL addfile(smb_t* smb, smbfile_t* f)
-{
-	return smb_addfile(smb, f, SMB_SELFPACK, f->extdesc) == SMB_SUCCESS;
-}
-
-BOOL renewfile(smb_t* smb, smbfile_t* f)
-{
-	if(!removefile(smb, f))
-		return FALSE;
-	f->hdr.when_imported.time = time32(NULL);
-	return addfile(smb, f) == SMB_SUCCESS;
-}
-
-BOOL DLLCALL addfile_to_dir(scfg_t* cfg, uint dirnum, smbfile_t* file)
+BOOL DLLCALL addfile(scfg_t* cfg, uint dirnum, smbfile_t* file, const uchar* extdesc)
 {
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return FALSE;
 
-	BOOL result = addfile(&smb, file);
+	BOOL result = smb_addfile(&smb, file, SMB_SELFPACK, extdesc);
 	smb_close(&smb);
 
 	return result;

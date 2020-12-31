@@ -1577,8 +1577,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	SAFEPRINTF(str,"%shangup.now",cfg.node_dir);
 	removecase(str);
-	SAFEPRINTF2(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
-	removecase(str);
 
 	mode=0; 	
 	if(cfg.xtrn[xtrnnum]->misc&XTRN_SH)
@@ -1628,9 +1626,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 		if((logfile_fp=fopen(str,"a+b"))==NULL)
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 	}
-
-	SAFEPRINTF2(str,"%sfile/%04u.dwn",cfg.data_dir,useron.number);
-	batch_add_list(str);
 
 	SAFEPRINTF(str,"%shangup.now",cfg.node_dir);
 	if(fexistcase(str)) {

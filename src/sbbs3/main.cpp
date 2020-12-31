@@ -2722,11 +2722,8 @@ void event_thread(void* arg)
 					sbbs->console|=CON_L_ECHO;
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
-					sbbs->batdn_total=0;
 
 					sbbs->last_ns_time=sbbs->ns_time=sbbs->useron.ns_time;
-					SAFEPRINTF2(bat_list,"%sfile/%04u.dwn",sbbs->cfg.data_dir,sbbs->useron.number);
-					sbbs->batch_add_list(bat_list);
 
 					SAFEPRINTF3(str,"%sfile%c%04u.qwk"
 						,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
@@ -2781,7 +2778,6 @@ void event_thread(void* arg)
 						sbbs->console|=CON_L_ECHO;
 						sbbs->getmsgptrs();
 						sbbs->getusrsubs();
-						sbbs->batdn_total=0;
 						SAFEPRINTF3(str,"%sfile%c%04u.qwk"
 							,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
 						if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
@@ -3475,19 +3471,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	usrdir=NULL;
 	usrlib_total=0;
 
-	batup_desc=NULL;
-	batup_name=NULL;
-	batup_misc=NULL;
-	batup_dir=NULL;
-	batup_alt=NULL;
-
-	batdn_name=NULL;
-	batdn_dir=NULL;
-	batdn_offset=NULL;
-	batdn_size=NULL;
-	batdn_alt=NULL;
-	batdn_cdt=NULL;
-
 	/* used by update_qwkroute(): */
 	qwknode=NULL;
 	total_qwknodes=0;
@@ -3733,73 +3716,6 @@ bool sbbs_t::init()
 			}
 	}
 
-	if(cfg.max_batup) {
-
-		if((batup_desc=(char **)malloc(sizeof(char *)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_desc", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_name=(char **)malloc(sizeof(char *)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_name", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_misc=(long *)malloc(sizeof(long)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_misc", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_dir=(uint *)malloc(sizeof(uint)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_dir", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		if((batup_alt=(ushort *)malloc(sizeof(ushort)*cfg.max_batup))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batup_alt", sizeof(char *)*cfg.max_batup);
-			return(false);
-		}
-		for(i=0;i<cfg.max_batup;i++) {
-			if((batup_desc[i]=(char *)malloc(LEN_FDESC+1))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batup_desc[x]", LEN_FDESC+1);
-				return(false);
-			}
-			if((batup_name[i]=(char *)malloc(13))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batup_name[x]", 13);
-				return(false);
-			}
-		}
-	}
-
-	if(cfg.max_batdn) {
-
-		if((batdn_name=(char **)malloc(sizeof(char *)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_name", sizeof(char *)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_dir=(uint *)malloc(sizeof(uint)*cfg.max_batdn))==NULL)  {
-			errormsg(WHERE, ERR_ALLOC, "batdn_dir", sizeof(uint)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_offset=(long *)malloc(sizeof(long)*cfg.max_batdn))==NULL)  {
-			errormsg(WHERE, ERR_ALLOC, "batdn_offset", sizeof(long)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_size=(ulong *)malloc(sizeof(ulong)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_size", sizeof(ulong)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_cdt=(ulong *)malloc(sizeof(ulong)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_cdt", sizeof(long)*cfg.max_batdn);
-			return(false);
-		}
-		if((batdn_alt=(ushort *)malloc(sizeof(ushort)*cfg.max_batdn))==NULL) {
-			errormsg(WHERE, ERR_ALLOC, "batdn_alt", sizeof(ushort)*cfg.max_batdn);
-			return(false);
-		}
-		for(i=0;i<cfg.max_batdn;i++)
-			if((batdn_name[i]=(char *)malloc(13))==NULL) {
-				errormsg(WHERE, ERR_ALLOC, "batdn_name[x]", 13);
-				return(false);
-			}
-	}
-
 #ifdef USE_CRYPTLIB
 	pthread_mutex_init(&ssh_mutex,NULL);
 	ssh_mutex_created = true;
@@ -3910,29 +3826,6 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(usrlib);
 	FREE_AND_NULL(usrdirs);
 	FREE_AND_NULL(usrdir);
-
-	/* Batch upload vars */
-	for(i=0;i<cfg.max_batup && batup_desc!=NULL && batup_name!=NULL;i++) {
-		FREE_AND_NULL(batup_desc[i]);
-		FREE_AND_NULL(batup_name[i]);
-	}
-
-	FREE_AND_NULL(batup_desc);
-	FREE_AND_NULL(batup_name);
-	FREE_AND_NULL(batup_misc);
-	FREE_AND_NULL(batup_dir);
-	FREE_AND_NULL(batup_alt);
-
-	/* Batch download vars */
-	for(i=0;i<cfg.max_batdn && batdn_name!=NULL;i++)
-		FREE_AND_NULL(batdn_name[i]);
-
-	FREE_AND_NULL(batdn_name);
-	FREE_AND_NULL(batdn_dir);
-	FREE_AND_NULL(batdn_offset);
-	FREE_AND_NULL(batdn_size);
-	FREE_AND_NULL(batdn_cdt);
-	FREE_AND_NULL(batdn_alt);
 
 	listFree(&savedlines);
 	listFree(&smb_list);
@@ -4338,7 +4231,6 @@ void sbbs_t::reset_logon_vars(void)
 	keybufbot=keybuftop=0;
     logon_uls=logon_ulb=logon_dls=logon_dlb=0;
     logon_posts=logon_emails=logon_fbacks=0;
-    batdn_total=batup_total=0;
     usrgrps=usrlibs=0;
     curgrp=curlib=0;
 	for(i=0;i<cfg.total_libs;i++)

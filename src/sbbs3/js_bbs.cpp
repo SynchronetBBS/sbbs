@@ -749,10 +749,10 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case BBS_PROP_BATCH_UPLOAD_TOTAL:
-			val=sbbs->batup_total;
+			val = sbbs->batup_total();
 			break;
 		case BBS_PROP_BATCH_DNLOAD_TOTAL:
-			val=sbbs->batdn_total;
+			val = sbbs->batdn_total();
 			break;
 
 		case BBS_PROP_COMMAND_STR:

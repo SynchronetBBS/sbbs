@@ -57,7 +57,7 @@ void sbbs_t::logout()
 
 	if(useron.rest&FLAG('G')) {
 		putuserrec(&cfg,useron.number,U_NAME,LEN_NAME,nulstr);		
-		batdn_total=0; 
+		clearbatdl();
 	}
 
 	if(sys_status&SS_USERON && thisnode.status!=NODE_QUIET && !(useron.rest&FLAG('Q')))

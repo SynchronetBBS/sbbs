@@ -23,8 +23,10 @@
 #include "load_cfg.h"
 #include "filedat.h"
 #include "nopen.h"
+#include "smblib.h"
 #include "str_util.h"
 #include <stdarg.h>
+#include <stdbool.h>
 
 #define DELFILES_VER "3.17"
 
@@ -223,12 +225,12 @@ int main(int argc, char **argv)
 						continue;
 					if(access(fname, R_OK|W_OK))
 						continue;
-					if(!file_exists(&smb, getfname(fname))) {
+					if(!smb_findfile(&smb, getfname(fname), /* idx: */NULL)) {
 						printf("Not in database: %s\n", fname);
 						if(!(misc&REPORT))
 							delfile(fname);
-					} 
-				} 
+					}
+				}
 			}
 			globfree(&gl);
 		}
@@ -252,8 +254,10 @@ int main(int argc, char **argv)
 						,f->filename
 						,(long)(now - f->hdr.last_downloaded)/86400L);
 					if(!(misc&REPORT)) {
-						removefile(&smb, f);
-						delfile(fpath); 
+						if(smb_removefile(&smb, f) == SMB_SUCCESS)
+							delfile(fpath);
+						else
+							printf("ERROR (%s) removing file from database\n", smb.last_error);
 					} 
 			}
 			else if(cfg.dir[i]->maxage
@@ -263,14 +267,18 @@ int main(int argc, char **argv)
 						,f->filename
 						,(long)(now - f->hdr.when_imported.time)/86400L);
 					if(!(misc&REPORT)) {
-						removefile(&smb, f);
-						delfile(fpath); 
+						if(smb_removefile(&smb, f) == SMB_SUCCESS)
+							delfile(fpath);
+						else
+							printf("ERROR (%s) removing file from database\n", smb.last_error);
 					} 
 			}
 			else if(misc&OFFLINE && cfg.dir[i]->misc&DIR_FCHK && !fexist(fpath)) {
 					printf("Removing %s (doesn't exist)\n", f->filename);
-					if(!(misc&REPORT))
-						removefile(&smb, f);
+					if(!(misc&REPORT)) {
+						if(smb_removefile(&smb, f) != SMB_SUCCESS)
+							printf("ERROR (%s) removing file from database\n", smb.last_error);
+					}
 			} 
 		}
 		freefiles(file_list, file_count);

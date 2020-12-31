@@ -353,7 +353,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				csi->logic=LOGIC_TRUE;
 			return(0);
 		case CS_FILE_DOWNLOAD_BATCH:
-			if(batdn_total && (text[DownloadBatchQ][0]==0 || yesno(text[DownloadBatchQ]))) {
+			if(batdn_total() > 0
+				&& (text[DownloadBatchQ][0]==0 || yesno(text[DownloadBatchQ]))) {
 				start_batch_download();
 				csi->logic=LOGIC_TRUE; 
 			}
@@ -371,7 +372,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				for(y=0;y<usrdirs[x];y++)
 					if(loadfile(&cfg, usrdir[x][y], csi->str, &f)) {
 						addtobatdl(&f);
-						freefile(&f);
+						smb_freefilemem(&f);
 						csi->logic=LOGIC_TRUE;
 						return 0;
 					}

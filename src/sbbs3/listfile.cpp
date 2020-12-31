@@ -197,31 +197,31 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 							: strlen(cfg.dir[dirnum]->lname)+17;
 						if(i>8 || j>8) d++;
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("��");            /* use to start with \r\n */
+						bputs("\xc9\xcd");            /* use to start with \r\n */
 						for(c=0;c<d;c++)
-							outchar('�');
-						bputs("�\r\n� ");
+							outchar('\xcd');
+						bputs("\xbb\r\n\xba ");
 						sprintf(hdr,text[BoxHdrLib],i+1,cfg.lib[usrlib[i]]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("�\r\n� ");
+						bputs("\xba\r\n\xba ");
 						sprintf(hdr,text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("�\r\n� ");
+						bputs("\xba\r\n\xba ");
 						sprintf(hdr,text[BoxHdrFiles], file_count);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
-						bputs("�\r\n��");
+						bputs("\xba\r\n\xc8\xcd");
 						for(c=0;c<d;c++)
-							outchar('�');
-						bputs("�\r\n"); 
+							outchar('\xcd');
+						bputs("\xbc\r\n"); 
 					}
 				}
 			}
@@ -548,7 +548,7 @@ bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
 {
 	char str[256];
 
-	if(::removefile(smb ,f)) {
+	if(smb_removefile(smb ,f) == SMB_SUCCESS) {
 		SAFEPRINTF4(str,"%s removed %s from %s %s"
 			,useron.alias
 			,f->filename
@@ -601,12 +601,12 @@ bool sbbs_t::movefile(file_t* f, int newdir)
 
 bool sbbs_t::movefile(smb_t* smb, smbfile_t* f, int newdir)
 {
-	if(file_exists_in_dir(&cfg, newdir, f->filename)) {
+	if(findfile(&cfg, newdir, f->filename)) {
 		bprintf(text[FileAlreadyThere], f->filename);
 		return false; 
 	}
 
-	if(!addfile_to_dir(&cfg, newdir, f))
+	if(!addfile(&cfg, newdir, f, f->extdesc))
 		return false;
 	removefile(smb, f);
 	bprintf(text[MovedFile],f->filename
@@ -699,7 +699,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 				CRLF;
 				lncntr=0;
 				for(c=0;c<d;c++) {
-					if(batdn_total>=cfg.max_batdn) {
+					if(batdn_total() >= cfg.max_batdn) {
 						bprintf(text[BatchDlQueueIsFull],str+c);
 						break; 
 					}
@@ -709,7 +709,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-							if(batdn_total>=cfg.max_batdn) {
+							if(batdn_total() >= cfg.max_batdn) {
 								bprintf(text[BatchDlQueueIsFull],str+c);
 								break; 
 							}
@@ -1118,11 +1118,11 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
 						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
 						if(i!=dirnum && i!=INVALID_DIR
-							&& !file_exists_in_dir(&cfg,i,f->filename)) {
+							&& !findfile(&cfg,i,f->filename)) {
 							sprintf(str,text[AddToOfflineDirQ]
 								,f->filename,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {
-								addfile_to_dir(&cfg, i, f);
+								addfile(&cfg, i, f, f->extdesc);
 							} 
 						} 
 					}

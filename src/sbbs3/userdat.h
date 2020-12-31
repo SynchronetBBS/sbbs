@@ -116,20 +116,15 @@ DLLEXPORT BOOL	fixmsgptrs(scfg_t*, subscan_t*);
 DLLEXPORT BOOL	initmsgptrs(scfg_t*, subscan_t*, unsigned days, void (*progress)(void*, int, int), void* cbdata);
 
 /* Batch file transfer queues */
-DLLEXPORT char*			batchdn_list_name(scfg_t* , uint usernumber, char* fname, size_t);
-DLLEXPORT char*			batchup_list_name(scfg_t* , uint usernumber, char* fname, size_t);
-DLLEXPORT FILE*			batchdn_list_open(scfg_t* , uint usernumber);
-DLLEXPORT FILE*			batchup_list_open(scfg_t* , uint usernumber);
-DLLEXPORT str_list_t	batchdn_list_read(scfg_t* , uint usernumber);
-DLLEXPORT str_list_t	batchup_list_read(scfg_t* , uint usernumber);
-DLLEXPORT BOOL			batchdn_list_write(scfg_t*, uint usernumber, str_list_t list);
-DLLEXPORT BOOL			batchup_list_write(scfg_t*, uint usernumber, str_list_t list);
-DLLEXPORT size_t		batchdn_list_count(scfg_t*, uint usernumber);
-DLLEXPORT size_t		batchup_list_count(scfg_t*, uint usernumber);
-DLLEXPORT BOOL			batchdn_file_remove(scfg_t*, uint usernumber, const char* filename);
-DLLEXPORT BOOL			batchup_file_remove(scfg_t*, uint usernumber, const char* filename);
-DLLEXPORT BOOL			batchup_file_exists(scfg_t*, uint usernumber, const char* filename);
-DLLEXPORT BOOL			batchup_file_add(scfg_t*, uint usernumber, smbfile_t*);
+DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);
+DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE);
+DLLEXPORT str_list_t	batch_list_read(scfg_t* , uint usernumber, enum XFER_TYPE);
+DLLEXPORT BOOL			batch_list_write(scfg_t*, uint usernumber, enum XFER_TYPE, str_list_t list);
+DLLEXPORT BOOL			batch_list_clear(scfg_t*, uint usernumber, enum XFER_TYPE);
+DLLEXPORT BOOL			batch_file_add(scfg_t*, uint usernumber, enum XFER_TYPE, smbfile_t*);
+DLLEXPORT BOOL			batch_file_exists(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
+DLLEXPORT BOOL			batch_file_remove(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
+DLLEXPORT size_t		batch_file_count(scfg_t*, uint usernumber, enum XFER_TYPE);
 
 /* New atomic numeric user field adjustment functions: */
 DLLEXPORT BOOL	user_posted_msg(scfg_t*, user_t*, int count);

@@ -196,3 +196,53 @@ void SMBCALL smb_close_fp(FILE** fp)
 		*fp=NULL;
 	}
 }
+
+/****************************************************************************/
+/****************************************************************************/
+int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
+{
+	rewind(smb->sid_fp);
+	while(!feof(smb->sid_fp)) {
+		smbfileidxrec_t fidx;
+
+		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
+			break;
+
+		if(strnicmp(fidx.filename, filename, sizeof(fidx.filename)) == 0) {
+			if(idx != NULL)
+				*idx = fidx.idx;
+			return SMB_SUCCESS;
+		}
+	}
+	return SMB_ERR_NOT_FOUND;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+int SMBCALL smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
+{
+	int result;
+	if((result = smb_findfile(smb, filename, &file->idx)) != SMB_SUCCESS)
+		return result;
+
+	if((result = smb_getmsghdr(smb, file)) != SMB_SUCCESS)
+		return result;
+		
+	file->extdesc = smb_getmsgtxt(smb, file, GETMSGTXT_ALL);
+	file->dir = smb->dirnum;
+	return SMB_SUCCESS;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+void SMBCALL smb_freefilemem(smbfile_t* file)
+{
+	smb_freemsgmem(file);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+int SMBCALL smb_removefile(smb_t* smb, smbfile_t* file)
+{
+	return smb_freemsg(smb, file);
+}

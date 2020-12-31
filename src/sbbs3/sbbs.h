@@ -439,23 +439,8 @@ public:
 	int 	nodefile;		/* File handle for node.dab */
 	pthread_mutex_t	nodefile_mutex;
 	int		node_ext;		/* File handle for node.exb */
-
-							/* Batch download queue */
-	char 	**batdn_name;	/* Filenames */
-	ushort	*batdn_alt; 	/* Alternate path */
-	uint 	*batdn_dir, 	/* Directory for each file */
-			 batdn_total;	/* Total files */
-	long 	*batdn_offset;	/* Offset for data */
-	ulong	*batdn_size;	/* Size of file in bytes */
-	ulong	*batdn_cdt; 	/* Credit value of file */
-
-							/* Batch upload queue */
-	char 	**batup_desc,	/* Description for each file */
-			**batup_name;	/* Filenames */
-	long	*batup_misc;	/* Miscellaneous bits */
-	ushort	*batup_alt; 	/* Alternate path */
-	uint 	*batup_dir, 	/* Directory for each file */
-			batup_total;	/* Total files */
+	size_t	batup_total();
+	size_t	batdn_total();
 
 	/*********************************/
 	/* Color Configuration Variables */
@@ -1042,7 +1027,7 @@ public:
 	void	logofflist(void);              /* List of users logon activity */
 	bool	errormsg_inside;
 	void	errormsg(int line, const char* function, const char *source, const char* action, const char *object
-				,long access, const char *extinfo=NULL);
+				,long access=0, const char *extinfo=NULL);
 	BOOL	hacklog(char* prot, char* text);
 
 	/* qwk.cpp */
@@ -1172,26 +1157,6 @@ extern "C" {
 	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		DLLCALL notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 
-	/* New file base API: */
-	DLLEXPORT BOOL		 DLLCALL newfiles(smb_t*, time_t);
-	DLLEXPORT smbfile_t* DLLCALL loadfiles(smb_t*, const char* filespec, time_t, size_t* count);
-	DLLEXPORT void		 DLLCALL sortfiles(smbfile_t*, size_t count, enum file_sort);
-	DLLEXPORT void		 DLLCALL freefile(smbfile_t*);
-	DLLEXPORT void		 DLLCALL freefiles(smbfile_t*, size_t count);
-	DLLEXPORT BOOL		 DLLCALL findfileidx(smb_t*, const char* filename, idxrec_t*);
-	DLLEXPORT BOOL		 DLLCALL loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
-	DLLEXPORT BOOL		 DLLCALL file_exists(smb_t*, const char* filename);
-	DLLEXPORT BOOL		 DLLCALL file_exists_in_dir(scfg_t*, uint dirnum, const char* filename);
-	DLLEXPORT BOOL		 DLLCALL renewfile(smb_t*, smbfile_t*);
-	DLLEXPORT BOOL		 DLLCALL removefile(smb_t*, smbfile_t*);
-	DLLEXPORT BOOL		 DLLCALL updatefile(scfg_t*, smbfile_t*);
-	DLLEXPORT char*		 DLLCALL getfullfilepath(scfg_t*, smbfile_t*, char* path);
-	DLLEXPORT off_t		 DLLCALL getfilesize(scfg_t*, smbfile_t*);
-	DLLEXPORT time_t	 DLLCALL getfiledate(scfg_t*, smbfile_t*);
-	DLLEXPORT ulong		 DLLCALL gettimetodl(scfg_t*, smbfile_t*, uint rate_cps);
-	DLLEXPORT BOOL		 DLLCALL addfile(smb_t*, smbfile_t*);
-	DLLEXPORT BOOL		 DLLCALL addfile_to_dir(scfg_t*, uint dirnum, smbfile_t*);
-	DLLEXPORT char*		 DLLCALL format_filename(const char* fname, char* buf, size_t, BOOL pad);
 	/* logfile.cpp */
 	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text);
 

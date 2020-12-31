@@ -1576,7 +1576,7 @@ int getnodeclient(scfg_t* cfg, uint number, client_t* client, time_t* done)
 	return sock;
 }
 
-static int getdirnum(scfg_t* cfg, char* code)
+int getdirnum(scfg_t* cfg, const char* code)
 {
 	size_t i;
 
@@ -2481,7 +2481,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	f.hdr.times_downloaded++;
 	f.hdr.last_downloaded = time32(NULL);
 	if(!updatefile(cfg, &f)) {
-		freefile(&f);
+		smb_freefilemem(&f);
 		return FALSE;
 	}
 
@@ -2536,7 +2536,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	if(!(cfg->dir[dirnum]->misc&DIR_NOSTAT))
 		inc_sys_download_stats(cfg, /* files: */1, bytes);
 
-	freefile(&f);
+	smb_freefilemem(&f);
 	return TRUE;
 }
 #endif
@@ -3069,33 +3069,22 @@ BOOL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));
 }
 
-char* DLLCALL batchdn_list_name(scfg_t* cfg, uint usernumber, char* fname, size_t size)
+char* DLLCALL batch_list_name(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, char* fname, size_t size)
 {
-	snprintf(fname, size, "%suser/%04u.dnload", cfg->data_dir, usernumber);
+	safe_snprintf(fname, size, "%suser/%04u.%sload", cfg->data_dir, usernumber
+		,(type == XFER_UPLOAD || type == XFER_BATCH_UPLOAD) ? "up" : "dn");
 	return fname;
 }
 
-char* DLLCALL batchup_list_name(scfg_t* cfg, uint usernumber, char* fname, size_t size)
-{
-	snprintf(fname, size, "%suser/%04u.upload", cfg->data_dir, usernumber);
-	return fname;
-}
-
-FILE* DLLCALL batchdn_list_open(scfg_t* cfg, uint usernumber)
+FILE* DLLCALL batch_list_open(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
 	char path[MAX_PATH + 1];
-	return iniOpenFile(batchdn_list_name(cfg, usernumber, path, sizeof(path)), /* create: */FALSE);
+	return iniOpenFile(batch_list_name(cfg, usernumber, type, path, sizeof(path)), /* create: */FALSE);
 }
 
-FILE* DLLCALL batchup_list_open(scfg_t* cfg, uint usernumber)
+str_list_t DLLCALL batch_list_read(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
-	char path[MAX_PATH + 1];
-	return iniOpenFile(batchup_list_name(cfg, usernumber, path, sizeof(path)), /* create: */FALSE);
-}
-
-str_list_t DLLCALL batchdn_list_read(scfg_t* cfg, uint usernumber)
-{
-	FILE* fp = batchdn_list_open(cfg, usernumber);
+	FILE* fp = batch_list_open(cfg, usernumber, type);
 	if(fp == NULL)
 		return NULL;
 	str_list_t ini = iniReadFile(fp);
@@ -3103,20 +3092,10 @@ str_list_t DLLCALL batchdn_list_read(scfg_t* cfg, uint usernumber)
 	return ini;
 }
 
-str_list_t DLLCALL batchup_list_read(scfg_t* cfg, uint usernumber)
-{
-	FILE* fp = batchup_list_open(cfg, usernumber);
-	if(fp == NULL)
-		return NULL;
-	str_list_t ini = iniReadFile(fp);
-	iniCloseFile(fp);
-	return ini;
-}
-
-BOOL batchdn_list_write(scfg_t* cfg, uint usernumber, str_list_t list)
+BOOL batch_list_write(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, str_list_t list)
 {
 	char path[MAX_PATH + 1];
-	FILE* fp = iniOpenFile(batchdn_list_name(cfg, usernumber, path, sizeof(path)), /* create: */TRUE);
+	FILE* fp = iniOpenFile(batch_list_name(cfg, usernumber, type, path, sizeof(path)), /* create: */TRUE);
 	if(fp == NULL)
 		return FALSE;
 	BOOL result = iniWriteFile(fp, list);
@@ -3124,20 +3103,15 @@ BOOL batchdn_list_write(scfg_t* cfg, uint usernumber, str_list_t list)
 	return result;
 }
 
-BOOL batchup_list_write(scfg_t* cfg, uint usernumber, str_list_t list)
+BOOL batch_list_clear(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
 	char path[MAX_PATH + 1];
-	FILE* fp = iniOpenFile(batchup_list_name(cfg, usernumber, path, sizeof(path)), /* create: */TRUE);
-	if(fp == NULL)
-		return FALSE;
-	BOOL result = iniWriteFile(fp, list);
-	iniCloseFile(fp);
-	return result;
+	return remove(batch_list_name(cfg, usernumber, type, path, sizeof(path))) == 0;
 }
 
-BOOL batchdn_file_remove(scfg_t* cfg, uint usernumber, const char* filename)
+BOOL batch_file_remove(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
-	FILE* fp = batchdn_list_open(cfg, usernumber);
+	FILE* fp = batch_list_open(cfg, usernumber, type);
 	if(fp == NULL)
 		return FALSE;
 	str_list_t ini = iniReadFile(fp);
@@ -3148,22 +3122,9 @@ BOOL batchdn_file_remove(scfg_t* cfg, uint usernumber, const char* filename)
 	return result;
 }
 
-BOOL batchup_file_remove(scfg_t* cfg, uint usernumber, const char* filename)
+BOOL batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
-	FILE* fp = batchup_list_open(cfg, usernumber);
-	if(fp == NULL)
-		return FALSE;
-	str_list_t ini = iniReadFile(fp);
-	BOOL result = iniRemoveSection(&ini, filename);
-	iniWriteFile(fp, ini);
-	iniCloseFile(fp);
-	iniFreeStringList(ini);
-	return result;
-}
-
-BOOL batchup_file_exists(scfg_t* cfg, uint usernumber, const char* filename)
-{
-	FILE* fp = batchup_list_open(cfg, usernumber);
+	FILE* fp = batch_list_open(cfg, usernumber, type);
 	if(fp == NULL)
 		return FALSE;
 	str_list_t ini = iniReadFile(fp);
@@ -3173,9 +3134,9 @@ BOOL batchup_file_exists(scfg_t* cfg, uint usernumber, const char* filename)
 	return result;
 }
 
-BOOL batchup_file_add(scfg_t* cfg, uint usernumber, smbfile_t* f)
+BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t* f)
 {
-	FILE* fp = batchup_list_open(cfg, usernumber);
+	FILE* fp = batch_list_open(cfg, usernumber, type);
 	if(fp == NULL)
 		return FALSE;
 	fprintf(fp, "\n[%s]\n", f->filename);
@@ -3186,26 +3147,15 @@ BOOL batchup_file_add(scfg_t* cfg, uint usernumber, smbfile_t* f)
 	return TRUE;
 }
 
-size_t batchdn_list_count(scfg_t* cfg, uint usernumber)
+size_t batch_file_count(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
-	FILE* fp = batchdn_list_open(cfg, usernumber);
+	FILE* fp = batch_list_open(cfg, usernumber, type);
 	if(fp == NULL)
 		return 0;
 	size_t result = iniReadSectionCount(fp, /* prefix: */NULL);
 	iniCloseFile(fp);
 	return result;
 }
-
-size_t batchup_list_count(scfg_t* cfg, uint usernumber)
-{
-	FILE* fp = batchup_list_open(cfg, usernumber);
-	if(fp == NULL)
-		return 0;
-	size_t result = iniReadSectionCount(fp, /* prefix: */NULL);
-	iniCloseFile(fp);
-	return result;
-}
-
 
 BOOL is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 {

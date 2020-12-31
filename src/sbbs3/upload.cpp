@@ -43,8 +43,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 {
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1];
-	uchar	ext[F_EXBSIZE+1] = "";
-	char	desc[F_EXBSIZE+1];
+	uchar	ext[1024] = "";
 	char	tmp[MAX_PATH+1];
     uint	i;
     long	length;
@@ -139,10 +138,10 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		logline(LOG_NOTICE,"U!",str);
 		return(0); 
 	}
-#if 0 /* fix */
+
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		for(i=0;i<cfg.total_fextrs;i++)
-			if(!stricmp(cfg.fextr[i]->ext, ext) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
+			if(!stricmp(cfg.fextr[i]->ext, fext) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
 				break;
 		if(i<cfg.total_fextrs) {
 			sprintf(str,"%sFILE_ID.DIZ",cfg.temp_dir);
@@ -156,6 +155,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 				external(cmdstr(cfg.fextr[i]->cmd,path,"DESC.SDI",NULL),EX_OFFLINE); 
 				fexistcase(str);
 			}
+			int file;
 			if((file=nopen(str,O_RDONLY))!=-1) {
 				memset(ext,0,F_EXBSIZE+1);
 				read(file,ext,F_EXBSIZE);
@@ -163,22 +163,22 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 					if(ext[i-1]>' ')
 						break;
 				ext[i]=0;
-				if(!f->desc[0]) {
-					strcpy(desc,ext);
+				if(f->desc == NULL || f->desc[0] == 0) {
+					char	desc[LEN_FDESC];
+					SAFECOPY(desc, (char*)ext);
 					strip_exascii(desc, desc);
 					prep_file_desc(desc, desc);
 					for(i=0;desc[i];i++)
 						if(IS_ALPHANUMERIC(desc[i]))
 							break;
-					sprintf(f->desc,"%.*s",LEN_FDESC,desc+i); 
+					smb_hfield_str(f, SMB_FILEDESC, desc);
 				}
 				close(file);
 				remove(str);
-				f->misc|=FM_EXTDESC; 
 			} 
 		} 
 	}
-#endif
+
 	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
 		logon_ulb+=length;  /* Update 'this call' stats */
 		logon_uls++;
@@ -191,8 +191,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	if(f->desc == NULL || *f->desc == '\0') {
 		smb_hfield_str(f, SMB_SUMMARY, text[NoDescription]);
 	}
-	f->extdesc = ext;
-	if(!addfile_to_dir(&cfg, f->dir, f))
+	if(!addfile(&cfg, f->dir, f, ext))
 		return(0);
 
 	sprintf(str,"uploaded %s to %s %s"
@@ -231,11 +230,9 @@ bool sbbs_t::upload(uint dirnum)
 	char 	tmp[512];
     time_t	start,end;
     uint	i,j,k,destuser[MAX_USERXFER],destusers=0;
-	int		file;
 	ulong	space;
 	smbfile_t	f = {{}};
     user_t	user;
-    node_t	node;
 
 	/* Security Checks */
 	if(useron.rest&FLAG('U')) {
@@ -462,18 +459,17 @@ bool sbbs_t::upload(uint dirnum)
 		if(ch==text[YNQP][2] || (sys_status&SS_ABORT))
 			return(false);
 		if(ch=='B') {
-			batup_total = batchup_list_count(&cfg, useron.number);
-			if(batup_total >= cfg.max_batup) {
+			if(batup_total() >= cfg.max_batup) {
 				bputs(text[BatchUlQueueIsFull]);
 				return false;
 			}
-			if(batchup_file_exists(&cfg, useron.number, f.filename)) {
+			if(batch_file_exists(&cfg, useron.number, XFER_BATCH_UPLOAD, f.filename)) {
 				bprintf(text[FileAlreadyInQueue],fname);
 				return false;
 			}
-			if(batchup_file_add(&cfg, useron.number, &f)) {
+			if(batch_file_add(&cfg, useron.number, XFER_BATCH_UPLOAD, &f)) {
 				bprintf(text[FileAddedToUlQueue]
-					,fname, batup_total + 1, cfg.max_batup); 
+					,fname, batup_total(), cfg.max_batup); 
 			}
 		} else {
 			for(i=0;i<cfg.total_prots;i++)
@@ -496,12 +492,14 @@ bool sbbs_t::upload(uint dirnum)
 #if 0
 	if(dirnum==cfg.user_dir) {  /* Add files to XFER.IXT in INDX dir */
 		sprintf(str,"%sxfer.ixt",cfg.data_dir);
+		int file;
 		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 			return(false); 
 		}
 		for(j=0;j<destusers;j++) {
 			for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
+			    node_t	node;
 				getnodedat(i,&node,0);
 				if(node.useron==destuser[j] && !(node.misc&NODE_POFF)
 					&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
@@ -521,7 +519,7 @@ bool sbbs_t::upload(uint dirnum)
 		close(file); 
 	}
 #endif
-	freefile(&f);
+	smb_freefilemem(&f);
 	return true;
 }
 

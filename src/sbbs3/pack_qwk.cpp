@@ -627,8 +627,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(netfiles)
 			CRLF; 
 	}
-
-	if(batdn_total) {
+#if 0 //NFB-TODO
+	if(batdn_total()) {
 		for(i=0,totalcdt=0;i<batdn_total;i++)
 			if(!is_download_free(&cfg,batdn_dir[i],&useron,&client))
 				totalcdt+=batdn_cdt[i];
@@ -666,8 +666,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			} 
 		} 
 	}
-
-	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total && !voting_data
+#endif
+	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total() && !voting_data
 		&& (prepack || !preqwk)) {
 		if(online == ON_REMOTE)
 			bputs(text[QWKNoNewMessages]);

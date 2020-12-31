@@ -217,25 +217,6 @@ bool sbbs_t::logon()
 	useron.ltoday++;
 
 	gettimeleft();
-	{
-		str_list_t ini = batchdn_list_read(&cfg, useron.number);
-		clearbatdl();
-		str_list_t filenames = iniGetSectionList(ini, NULL);
-		for(i = 0; filenames[i] != NULL; ++i) {
-			const char* filename = filenames[i];
-			smbfile_t f;
-			char value[INI_MAX_VALUE_LEN + 1];
-			f.dir = getdirnum(&cfg, iniGetString(ini, filename, "dir", NULL, value));
-			if(!loadfile(&cfg, f.dir, filename, &f)) {
-				errormsg(WHERE, "loading file from batch download queue", filename, i);
-				continue;
-			}
-			addtobatdl(&f);
-			freefile(&f);
-		}
-		iniFreeStringList(ini);
-		iniFreeStringList(filenames);
-	}
 	if(!(sys_status&SS_QWKLOGON)) { 	 /* QWK Nodes don't go through this */
 
 		if(cfg.sys_pwdays && useron.pass[0]

@@ -28,6 +28,7 @@
 #include "nopen.h"
 #include "filedat.h"
 #include "dat_rec.h"
+#include "smblib.h"
 #include <stdarg.h>
 
 #define FILELIST_VER "3.17"
