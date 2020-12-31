@@ -6086,10 +6086,10 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
-	listInit(&current_logins, LINK_LIST_MUTEX);
-	listInit(&current_connections, LINK_LIST_MUTEX);
 
 	do {
+		listInit(&current_logins, LINK_LIST_MUTEX);
+		listInit(&current_connections, LINK_LIST_MUTEX);
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
