@@ -234,7 +234,7 @@ bool upgrade_file_bases(void)
 			} else {
 				total_files++;
 				time_t diff = time(NULL) - start;
-				printf("\r%-16s (%-5u bases remain) %u files imported (%lu files/second)"
+				printf("\r%-16s (%-5u bases remain) %lu files imported (%lu files/second)"
 					, scfg.dir[i]->code, scfg.total_dirs - (i + 1), total_files, (ulong)(diff ? total_files / diff : total_files));
 			}
 		}
@@ -243,7 +243,7 @@ bool upgrade_file_bases(void)
 		closeextdesc(extfile);
 		free(ixbbuf);
 	}
-	printf("\r%u files imported in %u directories%40s\n", total_files, scfg.total_dirs,"");
+	printf("\r%lu files imported in %u directories%40s\n", total_files, scfg.total_dirs,"");
 
 	return true;
 }
@@ -254,7 +254,7 @@ int main(int argc, char** argv)
 {
 	char	error[512];
 
-	fprintf(stderr,"\nupgrade - Upgrade Synchronet BBS from v3.18 to %s\n"
+	fprintf(stderr,"\nupgrade - Upgrade Synchronet BBS to %s\n"
 		,VERSION
 		);
 
