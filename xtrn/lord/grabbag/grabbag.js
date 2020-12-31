@@ -2902,7 +2902,7 @@ function climb() {
 		break;
 			
 		case 6:
-			reward = Math,round(player.exp / 10);
+			reward = Math.round(player.exp / 10);
 			player.hp += reward;
 			lln('  YOU GRABBED AN EMPTY POUCH!');
 			more_nomail();
