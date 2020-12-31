@@ -998,12 +998,9 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 {
 	private_t* p = (private_t*)JS_GetPrivate(cx,obj);
 
-	printf("js_user_finalize\n");
 	if(p!=NULL) {
-		if(p->file > 0) {
-			printf("Closing user file\n");
+		if(p->file > 0)
 			closeuserdat(p->file);
-		}
 		free(p);
 	}
 
@@ -1617,7 +1614,6 @@ JSObject* DLLCALL js_CreateUserObject(JSContext* cx, JSObject* parent, scfg_t* c
 	private_t*	p;
 	jsval		val;
 
-	printf("%s\n", __FUNCTION__);
 	if(name==NULL)
 	    userobj = JS_NewObject(cx, &js_user_class, NULL, parent);
 	else if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
