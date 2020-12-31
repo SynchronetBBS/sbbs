@@ -84,7 +84,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pktdump", "pktdump.vcxproj"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fmsgdump", "fmsgdump.vcxproj", "{E5F4F589-8238-4AE6-8E6D-40AB6D771E1C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "upgrade", "upgrade.vcxproj", "{B84CB739-8425-4612-BDEF-B292BEAE858F}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "upgrade_to_v319", "upgrade_to_v319.vcxproj", "{B84CB739-8425-4612-BDEF-B292BEAE858F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

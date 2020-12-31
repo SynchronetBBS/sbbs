@@ -165,7 +165,7 @@
   <ItemGroup>
     <ClCompile Include="dat_rec.c" />
     <ClCompile Include="filedat.c" />
-    <ClCompile Include="upgrade.c" />
+    <ClCompile Include="upgrade_to_v319.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\smblib\smblib.vcxproj">
