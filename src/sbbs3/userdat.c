@@ -3076,15 +3076,15 @@ char* DLLCALL batch_list_name(scfg_t* cfg, uint usernumber, enum XFER_TYPE type,
 	return fname;
 }
 
-FILE* DLLCALL batch_list_open(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
+FILE* DLLCALL batch_list_open(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, BOOL create)
 {
 	char path[MAX_PATH + 1];
-	return iniOpenFile(batch_list_name(cfg, usernumber, type, path, sizeof(path)), /* create: */FALSE);
+	return iniOpenFile(batch_list_name(cfg, usernumber, type, path, sizeof(path)), create);
 }
 
 str_list_t DLLCALL batch_list_read(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
 	if(fp == NULL)
 		return NULL;
 	str_list_t ini = iniReadFile(fp);
@@ -3094,8 +3094,7 @@ str_list_t DLLCALL batch_list_read(scfg_t* cfg, uint usernumber, enum XFER_TYPE 
 
 BOOL batch_list_write(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, str_list_t list)
 {
-	char path[MAX_PATH + 1];
-	FILE* fp = iniOpenFile(batch_list_name(cfg, usernumber, type, path, sizeof(path)), /* create: */TRUE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */TRUE);
 	if(fp == NULL)
 		return FALSE;
 	BOOL result = iniWriteFile(fp, list);
@@ -3111,7 +3110,7 @@ BOOL batch_list_clear(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 
 BOOL batch_file_remove(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
 	if(fp == NULL)
 		return FALSE;
 	str_list_t ini = iniReadFile(fp);
@@ -3124,7 +3123,7 @@ BOOL batch_file_remove(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const 
 
 BOOL batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
 	if(fp == NULL)
 		return FALSE;
 	str_list_t ini = iniReadFile(fp);
@@ -3136,9 +3135,10 @@ BOOL batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const 
 
 BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t* f)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */TRUE);
 	if(fp == NULL)
 		return FALSE;
+	fseek(fp, 0, SEEK_END);
 	fprintf(fp, "\n[%s]\n", f->filename);
 	fprintf(fp, "dir=%u\n", f->dir);
 	fprintf(fp, "desc=%s\n", f->desc);
@@ -3149,7 +3149,7 @@ BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 
 size_t batch_file_count(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
 	if(fp == NULL)
 		return 0;
 	size_t result = iniReadSectionCount(fp, /* prefix: */NULL);

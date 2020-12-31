@@ -136,7 +136,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			,f->filename
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
-		return(0); 
+		return false; 
 	}
 
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
@@ -192,7 +192,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		smb_hfield_str(f, SMB_SUMMARY, text[NoDescription]);
 	}
 	if(!addfile(&cfg, f->dir, f, ext))
-		return(0);
+		return false;
 
 	sprintf(str,"uploaded %s to %s %s"
 		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
@@ -215,7 +215,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 
 	user_event(EVENT_UPLOAD);
 
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -435,11 +435,11 @@ bool sbbs_t::upload(uint dirnum)
 			f.hdr.attr |= MSG_ANONYMOUS;
 	}
 
+	bool result = false;
 	smb_hfield_str(&f, SMB_FILENAME, fname);
 	smb_hfield_str(&f, SMB_FILEDESC, fdesc);
 	if(fexistcase(path)) {   /* File is on disk */
-		if(!uploadfile(&f))
-			return(false); 
+		result = uploadfile(&f);
 	} else {
 		xfer_prot_menu(XFER_UPLOAD);
 		SYNC;
@@ -457,19 +457,16 @@ bool sbbs_t::upload(uint dirnum)
 			}
 		ch=(char)getkeys(keys,0);
 		if(ch==text[YNQP][2] || (sys_status&SS_ABORT))
-			return(false);
-		if(ch=='B') {
-			if(batup_total() >= cfg.max_batup) {
+			result = false;
+		else if(ch=='B') {
+			if(batup_total() >= cfg.max_batup)
 				bputs(text[BatchUlQueueIsFull]);
-				return false;
-			}
-			if(batch_file_exists(&cfg, useron.number, XFER_BATCH_UPLOAD, f.filename)) {
+			else if(batch_file_exists(&cfg, useron.number, XFER_BATCH_UPLOAD, f.filename))
 				bprintf(text[FileAlreadyInQueue],fname);
-				return false;
-			}
-			if(batch_file_add(&cfg, useron.number, XFER_BATCH_UPLOAD, &f)) {
+			else if(batch_file_add(&cfg, useron.number, XFER_BATCH_UPLOAD, &f)) {
 				bprintf(text[FileAddedToUlQueue]
-					,fname, batup_total(), cfg.max_batup); 
+					,fname, batup_total(), cfg.max_batup);
+				result = true;
 			}
 		} else {
 			for(i=0;i<cfg.total_prots;i++)
@@ -482,45 +479,13 @@ bool sbbs_t::upload(uint dirnum)
 				end=time(NULL);
 				if(!(cfg.dir[dirnum]->misc&DIR_ULTIME)) /* Don't deduct upload time */
 					starttime+=end-start;
-				ch=uploadfile(&f);
+				result = uploadfile(&f);
 				autohangup();
-				if(!ch)  /* upload failed, don't process user to user xfer */
-					return(false); 
 			} 
 		} 
 	}
-#if 0
-	if(dirnum==cfg.user_dir) {  /* Add files to XFER.IXT in INDX dir */
-		sprintf(str,"%sxfer.ixt",cfg.data_dir);
-		int file;
-		if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
-			return(false); 
-		}
-		for(j=0;j<destusers;j++) {
-			for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
-			    node_t	node;
-				getnodedat(i,&node,0);
-				if(node.useron==destuser[j] && !(node.misc&NODE_POFF)
-					&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
-					sprintf(str,text[UserToUserXferNodeMsg],cfg.node_num,useron.alias);
-					putnmsg(&cfg,i,str);
-					break; 
-				} 
-			}
-			if(i>cfg.sys_nodes) {   /* User not online */
-				sprintf(str,text[UserSentYouFile],useron.alias);
-				putsmsg(&cfg,destuser[j],str); 
-			}
-			sprintf(str,"%4.4u %12.12s %4.4u\r\n"
-				,destuser[j],f.name,useron.number);
-			write(file,str,strlen(str)); 
-		}
-		close(file); 
-	}
-#endif
 	smb_freefilemem(&f);
-	return true;
+	return result;
 }
 
 /****************************************************************************/

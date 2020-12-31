@@ -116,8 +116,11 @@ void sbbs_t::batchmenu()
 						char value[INI_MAX_VALUE_LEN];
 						bprintf(text[UploadQueueLstFmt]
 							,i+1, filename
-							,iniGetString(ini, filename, "desc", "No description", value));
-				}
+							,iniGetString(ini, filename, "desc", text[NoDescription], value));
+					}
+				} else
+					bputs(text[UploadQueueIsEmpty]);
+
 				iniFreeStringList(filenames);
 				iniFreeStringList(ini);
 
@@ -134,23 +137,24 @@ void sbbs_t::batchmenu()
 						bprintf(text[DownloadQueueLstFmt],i+1
 							,filename
 							,ultoac((ulong)cost, tmp)
-							,ultoac((ulong)size, tmp)
+							,ultoac((ulong)size, str)
 							,cur_cps
 								? sectostr((uint)(size/(ulong)cur_cps),tmp2)
 								: "??:??:??");
 						totalsize += size;
-						totalcdt += cost; 
+						totalcdt += cost;
 					}
 					bprintf(text[DownloadQueueTotals]
 						,ultoac((ulong)totalcdt,tmp),ultoac((ulong)totalsize,str),cur_cps
 						? sectostr((ulong)totalsize/(ulong)cur_cps,tmp2)
 						: "??:??:??"); 
-				}
+				} else
+					bputs(text[DownloadQueueIsEmpty]);
 				iniFreeStringList(filenames);
 				iniFreeStringList(ini);
 				break;
 			case 'R':
-				if((n = batup_total()) > 0)
+				if((n = batup_total()) > 0) {
 					bprintf(text[RemoveWhichFromUlQueue], n);
 					if(getstr(str, SMB_FILENAME_MAXLEN, K_NONE) > 0)
 						batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, str);
@@ -548,9 +552,9 @@ void sbbs_t::batch_upload()
 void sbbs_t::batch_download(int xfrprot)
 {
 	char path[MAX_PATH + 1];
-	FILE* fp = iniOpenFile(
-		batch_list_name(&cfg, useron.number, XFER_BATCH_DOWNLOAD, path, sizeof(path))
-		,/* create: */FALSE);
+	FILE* fp = batch_list_open(&cfg, useron.number, XFER_BATCH_DOWNLOAD, /* create: */FALSE);
+	if(fp == NULL)
+		return;
 	str_list_t ini = iniReadFile(fp);
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
 

@@ -117,7 +117,7 @@ DLLEXPORT BOOL	initmsgptrs(scfg_t*, subscan_t*, unsigned days, void (*progress)(
 
 /* Batch file transfer queues */
 DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);
-DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE);
+DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE, BOOL create);
 DLLEXPORT str_list_t	batch_list_read(scfg_t* , uint usernumber, enum XFER_TYPE);
 DLLEXPORT BOOL			batch_list_write(scfg_t*, uint usernumber, enum XFER_TYPE, str_list_t list);
 DLLEXPORT BOOL			batch_list_clear(scfg_t*, uint usernumber, enum XFER_TYPE);

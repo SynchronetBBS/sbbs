@@ -542,7 +542,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 			if(i<1) {
 				if(i==0) {
 					if((time(NULL)-(*lastactive))>startup->max_inactivity) {
-						lprintf(LOG_WARNING,"%04d Disconnecting due to to inactivity",sock);
+						lprintf(LOG_WARNING,"%04d Disconnecting due to inactivity",sock);
 						sockprintf(sock,sess,"421 Disconnecting due to inactivity (%u seconds)."
 							,startup->max_inactivity);
 						return(0);
@@ -4139,15 +4139,13 @@ static void ctrl_thread(void* arg)
 				for(i=0;i<(int)g.gl_pathc;i++) {
 					if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
 						continue;
-					SAFECOPY(str,g.gl_pathv[i]);
-					SAFECOPY(fname, getfname(str));
-					if((filedat=(smb_findfile(&smb, fname, NULL) == SMB_SUCCESS))==FALSE
+					if((filedat=(smb_findfile(&smb, getfname(g.gl_pathv[i]), NULL) == SMB_SUCCESS))==FALSE
 						&& !(startup->options&FTP_OPT_DIR_FILES)
 						&& !(scfg.dir[dir]->misc&DIR_FILES))
 						continue;
 					if(detail) {
 						smb_freefilemem(&f);
-						if(filedat && smb_loadfile(&smb, fname, &f) != SMB_SUCCESS)
+						if(filedat && smb_loadfile(&smb, getfname(g.gl_pathv[i]), &f) != SMB_SUCCESS)
 							continue;
 						f.size = f.cost;
 						t = f.hdr.when_imported.time;
