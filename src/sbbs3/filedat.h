@@ -60,7 +60,7 @@ DLLEXPORT char*		 getfullfilepath(scfg_t*, smbfile_t*, char* path);
 DLLEXPORT off_t		 getfilesize(scfg_t*, smbfile_t*);
 DLLEXPORT time_t	 getfiledate(scfg_t*, smbfile_t*);
 DLLEXPORT ulong		 gettimetodl(scfg_t*, smbfile_t*, uint rate_cps);
-DLLEXPORT BOOL		 addfile(scfg_t*, uint dirnum, smbfile_t*, const uchar* extdesc);
+DLLEXPORT BOOL		 addfile(scfg_t*, uint dirnum, smbfile_t*, const char* extdesc);
 DLLEXPORT BOOL		 removefile(scfg_t*, uint dirnum, const char* filename);
 DLLEXPORT char*		 format_filename(const char* fname, char* buf, size_t, BOOL pad);
 

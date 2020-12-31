@@ -203,7 +203,7 @@ SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long d
 SMBEXPORT int		SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage);
 SMBEXPORT int		SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage);
-SMBEXPORT int		SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const uchar* extdesc);
+SMBEXPORT int		SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc);
 SMBEXPORT int		SMBCALL smb_renewfile(smb_t* smb, smbfile_t* file, int storage);
 
 /* smballoc.c */

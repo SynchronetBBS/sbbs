@@ -43,7 +43,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 {
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1];
-	uchar	ext[1024] = "";
+	char	ext[1024] = "";
 	char	tmp[MAX_PATH+1];
     uint	i;
     long	length;
@@ -60,7 +60,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		mv(tmp,path,0);
 	if(!fexistcase(path)) {
 		bprintf(text[FileNotReceived],f->filename);
-		sprintf(str,"attempted to upload %s to %s %s (Not received)"
+		safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (Not received)"
 			,f->filename
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
@@ -74,22 +74,22 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			attr(LIGHTGRAY);
 			bputs(cfg.ftest[i]->workstr);
 
-			sprintf(sbbsfilename,"SBBSFILENAME=%.64s",f->filename);
+			safe_snprintf(sbbsfilename,sizeof(sbbsfilename),"SBBSFILENAME=%s",f->filename);
 			putenv(sbbsfilename);
-			sprintf(sbbsfiledesc,"SBBSFILEDESC=%.*s",LEN_FDESC,f->desc);
+			safe_snprintf(sbbsfiledesc,sizeof(sbbsfiledesc),"SBBSFILEDESC=%s",f->desc);
 			putenv(sbbsfiledesc);
-			sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
+			SAFEPRINTF(str,"%ssbbsfile.nam",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fprintf(stream, "%s", f->desc);
 				fclose(stream); 
 			}
-			sprintf(str,"%ssbbsfile.des",cfg.node_dir);
+			SAFEPRINTF(str,"%ssbbsfile.des",cfg.node_dir);
 			if((stream=fopen(str,"w"))!=NULL) {
 				fwrite(f->desc,1,strlen(f->desc),stream);
 				fclose(stream); 
 			}
 			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
-				sprintf(str,"attempted to upload %s to %s %s (%s Errors)"
+				safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (%s Errors)"
 					,f->filename
 					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
 				logline(LOG_NOTICE,"U!",str);
@@ -132,7 +132,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	if((length=(long)flength(path))==0L) {
 		bprintf(text[FileZeroLength],f->filename);
 		remove(path);
-		sprintf(str,"attempted to upload %s to %s %s (Zero length)"
+		safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (Zero length)"
 			,f->filename
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
@@ -144,12 +144,12 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			if(!stricmp(cfg.fextr[i]->ext, fext) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
 				break;
 		if(i<cfg.total_fextrs) {
-			sprintf(str,"%sFILE_ID.DIZ",cfg.temp_dir);
+			SAFEPRINTF(str,"%sFILE_ID.DIZ",cfg.temp_dir);
 			if(fexistcase(str))
 				remove(str);
 			external(cmdstr(cfg.fextr[i]->cmd,path,"FILE_ID.DIZ",NULL),EX_OFFLINE);
 			if(!fexistcase(str)) {
-				sprintf(str,"%sDESC.SDI",cfg.temp_dir);
+				SAFEPRINTF(str,"%sDESC.SDI",cfg.temp_dir);
 				if(fexistcase(str))
 					remove(str);
 				external(cmdstr(cfg.fextr[i]->cmd,path,"DESC.SDI",NULL),EX_OFFLINE); 
@@ -194,7 +194,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	if(!addfile(&cfg, f->dir, f, ext))
 		return false;
 
-	sprintf(str,"uploaded %s to %s %s"
+	safe_snprintf(str,sizeof(str),"uploaded %s to %s %s"
 		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])
@@ -289,11 +289,11 @@ bool sbbs_t::upload(uint dirnum)
 		return(false); 
 	}
 	if(dirnum==cfg.sysop_dir)
-		sprintf(str,text[UploadToSysopDirQ],fname);
+		SAFEPRINTF(str,text[UploadToSysopDirQ],fname);
 	else if(dirnum==cfg.user_dir)
-		sprintf(str,text[UploadToUserDirQ],fname);
+		SAFEPRINTF(str,text[UploadToUserDirQ],fname);
 	else
-		sprintf(str,text[UploadToCurDirQ],fname,cfg.lib[cfg.dir[dirnum]->lib]->sname
+		SAFEPRINTF3(str,text[UploadToCurDirQ],fname,cfg.lib[cfg.dir[dirnum]->lib]->sname
 			,cfg.dir[dirnum]->sname);
 	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
@@ -388,13 +388,13 @@ bool sbbs_t::upload(uint dirnum)
 		if(!IS_ALPHA(ch) || sys_status&SS_ABORT)
 			return(false);
 		CRLF;
-		sprintf(descbeg,text[Rated],toupper(ch)); 
+		SAFEPRINTF(descbeg,text[Rated],toupper(ch)); 
 	}
 	if(cfg.dir[dirnum]->misc&DIR_ULDATE) {
 		now=time(NULL);
 		if(descbeg[0])
 			strcat(descbeg," ");
-		sprintf(str,"%s  ",unixtodstr(&cfg,(time32_t)now,tmp));
+		SAFEPRINTF(str,"%s  ",unixtodstr(&cfg,(time32_t)now,tmp));
 		strcat(descbeg,str); 
 	}
 	if(cfg.dir[dirnum]->misc&DIR_MULT) {
@@ -409,9 +409,9 @@ bool sbbs_t::upload(uint dirnum)
 			if(j==1)
 				upload_lastdesc[0]=0;
 			if(i>9)
-				sprintf(descend,text[FileOneOfTen],j,i);
+				SAFEPRINTF2(descend,text[FileOneOfTen],j,i);
 			else
-				sprintf(descend,text[FileOneOfTwo],j,i); 
+				SAFEPRINTF2(descend,text[FileOneOfTwo],j,i); 
 		} else
 			upload_lastdesc[0]=0; 
 	}
@@ -425,9 +425,9 @@ bool sbbs_t::upload(uint dirnum)
 	if(sys_status&SS_ABORT)
 		return(false);
 	if(descend[0])      /* end of desc specified, so pad desc with spaces */
-		sprintf(fdesc,"%s%-*s%s",descbeg,i,upload_lastdesc,descend);
+		safe_snprintf(fdesc,sizeof(fdesc),"%s%-*s%s",descbeg,i,upload_lastdesc,descend);
 	else                /* no end specified, so string ends at desc end */
-		sprintf(fdesc,"%s%s",descbeg,upload_lastdesc);
+		safe_snprintf(fdesc,sizeof(fdesc),"%s%s",descbeg,upload_lastdesc);
 
 	if(cfg.dir[dirnum]->misc&DIR_ANON && !(cfg.dir[dirnum]->misc&DIR_AONLY)
 		&& (dir_op(dirnum) || useron.exempt&FLAG('A'))) {
@@ -443,7 +443,7 @@ bool sbbs_t::upload(uint dirnum)
 	} else {
 		xfer_prot_menu(XFER_UPLOAD);
 		SYNC;
-		sprintf(keys,"%c",text[YNQP][2]);
+		SAFEPRINTF(keys,"%c",text[YNQP][2]);
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
 			mnemonics(text[ProtocolOrQuit]);
 		else {
@@ -452,7 +452,7 @@ bool sbbs_t::upload(uint dirnum)
 		}
 		for(i=0;i<cfg.total_prots;i++)
 			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-				sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+				SAFEPRINTF(tmp,"%c",cfg.prot[i]->mnemonic);
 				strcat(keys,tmp); 
 			}
 		ch=(char)getkeys(keys,0);
@@ -555,7 +555,7 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 	else {
 		xfer_prot_menu(XFER_UPLOAD);
 		mnemonics(text[ProtocolOrQuit]);
-		sprintf(keys,"%c",text[YNQP][2]);
+		SAFEPRINTF(keys,"%c",text[YNQP][2]);
 		for(i=0;i<cfg.total_prots;i++)
 			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
 				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);

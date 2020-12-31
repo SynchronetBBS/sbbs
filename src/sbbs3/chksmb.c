@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 		continue;
 	}
 
-	if((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)) {
+	if(((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)) != 0){
 		if((number=malloc(((shd_hdrs/SHD_BLOCK_LEN)+2)*sizeof(uint32_t)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
@@ -815,11 +815,11 @@ int main(int argc, char **argv)
 
 	fprintf(stderr,"\nChecking %s Index\n\n",smb.file);
 
-	if((offset=(uint32_t *)malloc(total*sizeof(uint32_t)))==NULL) {
+	if((offset=malloc(total*sizeof(uint32_t)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(uint32_t));
 		return(++errors); 
 	}
-	if((number=(uint32_t *)malloc(total*sizeof(uint32_t)))==NULL) {
+	if((number=malloc(total*sizeof(uint32_t)))==NULL) {
 		printf("Error allocating %lu bytes of memory\n",total*sizeof(uint32_t));
 		return(++errors); 
 	}

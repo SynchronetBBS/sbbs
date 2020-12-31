@@ -470,11 +470,11 @@ int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 	return retval;
 }
 
-int SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const uchar* extdesc)
+int SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc)
 {
 	file->hdr.type = SMB_MSG_TYPE_FILE;
 
-	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */extdesc, /* tail: */NULL);
+	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */(const uchar*)extdesc, /* tail: */NULL);
 }
 
 int SMBCALL smb_renewfile(smb_t* smb, smbfile_t* file, int storage)

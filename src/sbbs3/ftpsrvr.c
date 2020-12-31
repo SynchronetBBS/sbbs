@@ -3360,10 +3360,10 @@ static void ctrl_thread(void* arg)
 						t = st.st_mtime;
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
-						fprintf(fp,"%crw-r--r--   1 %-8s local %9"PRId32" %s %2d "
+						fprintf(fp,"%crw-r--r--   1 %-8s local %9"PRId64" %s %2d "
 							,*lastchar(g.gl_pathv[i]) == '/' ? 'd':'-'
 							,scfg.sys_id
-							,f.size
+							,(int64_t)f.size
 							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
@@ -4165,11 +4165,11 @@ static void ctrl_thread(void* arg)
 								dotname(f.from,str);
 						} else
 							SAFECOPY(str,scfg.sys_id);
-						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRId32" %s %2d "
+						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRId64" %s %2d "
 							,NAME_LEN
 							,str
 							,scfg.dir[dir]->code_suffix
-							,f.size
+							,(int64_t)f.size
 							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"

@@ -980,7 +980,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	msg->offset=offset;
 	if(smb_fread(smb,&msg->hdr,sizeof(msghdr_t),smb->shd_fp)!=sizeof(msghdr_t)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s reading msg header at offset %lu", __FUNCTION__, msg->idx.offset);
+			,"%s reading msg header at offset %lu", __FUNCTION__, (ulong)msg->idx.offset);
 		return(SMB_ERR_READ);
 	}
 	if(memcmp(msg->hdr.id,SHD_HEADER_ID,LEN_HEADER_ID)) {
@@ -996,7 +996,7 @@ int SMBCALL smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	if(msg->hdr.version<0x110) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s insufficient header version: %X at offset %lu", __FUNCTION__
-			,msg->hdr.version, msg->idx.offset);
+			,msg->hdr.version, (ulong)msg->idx.offset);
 		return(SMB_ERR_HDR_VER);
 	}
 	l=sizeof(msg->hdr);
@@ -1796,7 +1796,7 @@ int SMBCALL smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 	if(length < (long)(msg->offset*idxreclen)) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error)
 			,"%s invalid index offset: %ld, byte offset: %lu, length: %lu", __FUNCTION__
-			,msg->offset, msg->offset*idxreclen, length);
+			,(long)msg->offset, msg->offset*idxreclen, length);
 		return(SMB_ERR_HDR_OFFSET);
 	}
 	if(fseek(smb->sid_fp,msg->offset*idxreclen,SEEK_SET)) {

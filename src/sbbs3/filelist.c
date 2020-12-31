@@ -352,7 +352,7 @@ int main(int argc, char **argv)
 		if(misc&HDR) {
 			sprintf(fname,"%-*s      %-*s       Files: %4lu"
 				,LEN_GSNAME,scfg.lib[scfg.dir[i]->lib]->sname
-				,LEN_SLNAME,scfg.dir[i]->lname, smb.status.total_files);
+				,LEN_SLNAME,scfg.dir[i]->lname, (ulong)smb.status.total_files);
 			fprintf(out,"%s\n",fname);
 			memset(fname,'-',strlen(fname));
 			fprintf(out,"%s\n",fname); 
@@ -361,9 +361,9 @@ int main(int argc, char **argv)
 			if(misc&AUTO) fclose(out);
 			continue; 
 		}
-		size_t longest_filename = 12;
+		int longest_filename = 12;
 		for(m = 0; m < file_count; m++) {
-			size_t fnamelen = strlen(file_list[m].filename);
+			int fnamelen = strlen(file_list[m].filename);
 			if(fnamelen > longest_filename)
 				longest_filename = fnamelen;
 		}
@@ -375,8 +375,8 @@ int main(int argc, char **argv)
 				if(ext == NULL)
 					ext="";
 				fprintf(out,"%-*.*s%s"
-					, longest_filename - strlen(ext)
-					, strlen(file.filename) - strlen(ext)
+					, (int)(longest_filename - strlen(ext))
+					, (int)(strlen(file.filename) - strlen(ext))
 					, file.filename, ext);
 			} else
 				fprintf(out,"%-*s", longest_filename, file.filename);
@@ -445,7 +445,7 @@ int main(int argc, char **argv)
 
 				lines=0;
 				if(!(misc&NOE)) {
-					truncsp(file.extdesc);
+					truncsp((char*)file.extdesc);
 					fprint_extdesc(out, file.extdesc, (misc&JST) ? desc_off : 0);
 					lines++; 
 				}

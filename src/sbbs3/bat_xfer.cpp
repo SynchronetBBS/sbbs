@@ -249,7 +249,7 @@ BOOL sbbs_t::start_batch_download()
 	for(size_t i=0; filenames[i] != NULL; ++i) {
 		totalcdt += iniGetBytes(ini, filenames[i], "cost", 1, 0);
 	}
-	if(totalcdt > useron.cdt+useron.freecdt) {
+	if(totalcdt > (int64_t)(useron.cdt+useron.freecdt)) {
 		bprintf(text[YouOnlyHaveNCredits]
 			,ultoac(useron.cdt+useron.freecdt,tmp));
 		iniFreeStringList(ini);
@@ -271,7 +271,7 @@ BOOL sbbs_t::start_batch_download()
 		}
 	}
 
-	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime > timeleft) {
+	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
 		iniFreeStringList(ini);
 		iniFreeStringList(filenames);
@@ -551,7 +551,6 @@ void sbbs_t::batch_upload()
 /****************************************************************************/
 void sbbs_t::batch_download(int xfrprot)
 {
-	char path[MAX_PATH + 1];
 	FILE* fp = batch_list_open(&cfg, useron.number, XFER_BATCH_DOWNLOAD, /* create: */FALSE);
 	if(fp == NULL)
 		return;

@@ -615,7 +615,7 @@ typedef struct {				/* Message or File */
 	};
 	union {
 		uchar*	text;			/* Message body text (optional) */
-		uchar*	extdesc;		/* File extended description */
+		char*	extdesc;		/* File extended description */
 	};
 	char*		tags;			/* Message tags (space-delimited) */
 	char*		editor;			/* Message editor (if known) */

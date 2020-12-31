@@ -357,7 +357,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char letter)
 {
 	char	*ptr,*cr,*lf,exist=1;
-	uchar*	ext=NULL;
+	char*	ext=NULL;
 	char	path[MAX_PATH+1];
     int		i,j;
     ulong	cdt;
@@ -372,7 +372,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 
 	attr(cfg.color[clr_filename]);
 	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
-	bprintf("%-*s", sizeof(fname)-1, format_filename(f->filename, fname, sizeof(fname)-1, /* pad: */TRUE));
+	bprintf("%-*s", (int)sizeof(fname)-1, format_filename(f->filename, fname, sizeof(fname)-1, /* pad: */TRUE));
 	getfullfilepath(&cfg, f, path);
 
 	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
@@ -439,7 +439,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 				attr(cfg.color[clr_filedesc]^HIGH);
 				bprintf("%.*s",i,f->desc+j);
 				attr(cfg.color[clr_filedesc]);
-				bprintf("%.*s",strlen(f->desc)-(j+i),f->desc+j+i); 
+				bprintf("%.*s",(int)strlen(f->desc)-(j+i),f->desc+j+i);
 			}
 		}
 		else
@@ -901,7 +901,6 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	int		error;
 	int		found=0;
     uint	i,j;
-	long	usrxfrlen=0;
     size_t	m;
 	long	usrcdt;
     time_t	start,end,t;
@@ -1018,8 +1017,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 								&& findfile(&cfg,f->dir,path))
 								bprintf(text[FileAlreadyThere],path);
 							else {
-								sprintf(path,"%s%s",dirpath,f->filename);
-								sprintf(tmp,"%s%s",dirpath,str);
+								SAFEPRINTF2(path,"%s%s",dirpath,f->filename);
+								SAFEPRINTF2(tmp,"%s%s",dirpath,str);
 								if(fexistcase(path) && rename(path,tmp))
 									bprintf(text[CouldntRenameFile],path,tmp);
 								else {
@@ -1080,7 +1079,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					updatefile(&cfg, f);
 					break;
 				case 'F':   /* delete file only */
-					sprintf(str,"%s%s",dirpath,f->filename);
+					SAFEPRINTF2(str,"%s%s",dirpath,f->filename);
 					if(!fexistcase(str))
 						bprintf(text[FileDoesNotExist],str);
 					else {
@@ -1099,7 +1098,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(noyes(text[RemoveFileQ]))
 						break;
 					removefile(&smb, f);
-					sprintf(str,"%s%s",dirpath,f->filename);
+					SAFEPRINTF2(str,"%s%s",dirpath,f->filename);
 					if(fexistcase(str)) {
 						if(dir_op(dirnum)) {
 							if(!noyes(text[DeleteFileQ])) {
@@ -1191,7 +1190,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			} 
 		}
 		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
-			sprintf(path,"%s%s",dirpath,f->filename);
+			SAFEPRINTF2(path,"%s%s",dirpath,f->filename);
 			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
 				SYNC;       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
@@ -1269,8 +1268,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						lncntr=0;
 						seqwait(cfg.dir[f->dir]->seqdev);
 						bprintf(text[RetrievingFile],f->filename);
-						sprintf(str,"%s%s",dirpath,f->filename);
-						sprintf(path,"%s%s",cfg.temp_dir,f->filename);
+						SAFEPRINTF2(str,"%s%s",dirpath,f->filename);
+						SAFEPRINTF2(path,"%s%s",cfg.temp_dir,f->filename);
 						mv(str,path,1); /* copy the file to temp dir */
 						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 							thisnode.aux=0xf0;
@@ -1339,7 +1338,7 @@ void sbbs_t::listfiletofile(smbfile_t* f, uint dirnum, int file)
 	if(!f->cost)
 		strcat(str, "   FREE");
 	else
-		sprintf(str+strlen(str), "%7lu", f->cost);
+		sprintf(str+strlen(str), "%7lu", (ulong)f->cost);
 	if(exist)
 		strcat(str," ");
 	else

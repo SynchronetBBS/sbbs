@@ -1997,7 +1997,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return str;
 		}
 		if(strcmp(sp, "FILE_CREDITS") == 0) {
-			safe_snprintf(str, maxlen, "%lu", current_file->cost);
+			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->cost);
 			return str;
 		}
 		if(strcmp(sp, "FILE_TIME") == 0)
@@ -2014,7 +2014,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return datestr(current_file->hdr.last_downloaded);
 
 		if(strcmp(sp, "FILE_TIMES_DLED") == 0) {
-			safe_snprintf(str, maxlen, "%lu", current_file->hdr.times_downloaded);
+			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->hdr.times_downloaded);
 			return str;
 		}
 	}
