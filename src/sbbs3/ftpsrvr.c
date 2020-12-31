@@ -1130,7 +1130,7 @@ static void receive_thread(void* arg)
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
 				f.hdr.attr |= MSG_ANONYMOUS;
 			uint32_t cdt = flength(xfer.filename);
-			smb_hfield_bin(&f, SMB_COST, &cdt);
+			smb_hfield_bin(&f, SMB_COST, cdt);
 
 			char fdesc[LEN_FDESC + 1] = "";
 			/* Description specified with DESC command? */
