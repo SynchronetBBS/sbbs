@@ -1,8 +1,4 @@
-/* netmail.cpp */
-
 /* Synchronet network mail-related functions */
-
-/* $Id: netmail.cpp,v 1.69 2020/05/01 00:10:07 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -38,8 +22,15 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-faddr_t atofaddr(scfg_t* cfg, char *str);
 void pt_zone_kludge(fmsghdr_t hdr,int fido);
+
+/****************************************************************************/
+/* Returns the FidoNet address (struct) parsed from str (in ASCII text).    */
+/****************************************************************************/
+static faddr_t atofaddr(scfg_t* cfg, const char *str)
+{
+	return smb_atofaddr(&cfg->faddr[0], str);
+}
 
 /****************************************************************************/
 /* Send FidoNet/QWK/Internet NetMail from BBS								*/
@@ -1431,18 +1422,35 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 extern "C" BOOL is_supported_netmail_addr(scfg_t* cfg, const char* addr)
 {
+	const char* p;
+	fidoaddr_t faddr;
+
+	if((p = strchr(addr, '@')) == NULL)
+		return FALSE;
+	p++;
 	switch (smb_netaddr_type(addr)) {
 		case NET_FIDO:
-			return INT_TO_BOOL(cfg->total_faddrs && (cfg->netmail_misc&NMAIL_ALLOW));
+			if(!(cfg->netmail_misc&NMAIL_ALLOW))
+				return FALSE;
+			if(cfg->total_faddrs < 1)
+				return FALSE;
+			faddr = atofaddr(cfg, p);
+			for(int i = 0; i < cfg->total_faddrs; i++)
+				if(memcmp(&cfg->faddr[i], &faddr, sizeof(faddr)) == 0)
+					return FALSE;
+			return TRUE;
 		case NET_INTERNET:
-			return INT_TO_BOOL(cfg->inetmail_misc&NMAIL_ALLOW);
+			if(!(cfg->inetmail_misc&NMAIL_ALLOW))
+				return FALSE;
+			if(stricmp(p, cfg->sys_inetaddr) == 0)
+				return FALSE;
+			char domain_list[MAX_PATH + 1];
+			SAFEPRINTF(domain_list, "%sdomains.cfg", cfg->ctrl_dir);
+			return findstr(p, domain_list) == FALSE;
 		case NET_QWK:
 		{
 			char fulladdr[256] = "";
-			const char* p = strchr(addr, '@');
-			if(p == NULL)
-				return FALSE;
-			qwk_route(cfg, p + 1, fulladdr, sizeof(fulladdr)-1);
+			qwk_route(cfg, p, fulladdr, sizeof(fulladdr)-1);
 			return fulladdr[0] != 0;
 		}
 		default:

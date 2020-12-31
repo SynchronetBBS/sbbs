@@ -872,6 +872,9 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case FIDOCHARSET:
 			msg->ftn_charset=(char*)hfield_dat;
 			break;
+		case FIDOBBSID:
+			msg->ftn_bbsid=(char*)hfield_dat;
+			break;
 		case RFC822HEADER:
 		{
 			char* p = (char*)hfield_dat;

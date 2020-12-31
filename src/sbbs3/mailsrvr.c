@@ -2971,6 +2971,7 @@ static void smtp_thread(void* arg)
 	if(startup->inbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 		PlaySound(startup->inbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
+	SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 
 	addr_len=sizeof(server_addr);
 
@@ -4664,7 +4665,6 @@ static void smtp_thread(void* arg)
 					*cp=0;
 					dest_port=atoi(cp+1);
 				}
-				SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
 						&& stricmp(dest_host,startup->host_name)!=0
 						&& findstr(dest_host,domain_list)==FALSE)
@@ -4927,7 +4927,10 @@ static void smtp_thread(void* arg)
 				&& scfg.sys_misc&SM_FWDTONET 
 				&& (user.misc&NETMAIL || forward)
 				&& tp!=NULL && smb_netaddr_type(user.netmail)==NET_INTERNET 
-				&& !strstr(tp,scfg.sys_inetaddr)) {
+				&& stricmp(tp + 1, scfg.sys_inetaddr) != 0
+				&& stricmp(tp + 1, startup->host_name) != 0
+				&& findstr(tp + 1, domain_list)==FALSE
+				) {
 				lprintf(LOG_INFO,"%04d %s %s Forwarding to: %s"
 					,socket, client.protocol, client_id, user.netmail);
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
@@ -6083,10 +6086,10 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
-	listInit(&current_logins, LINK_LIST_MUTEX);
-	listInit(&current_connections, LINK_LIST_MUTEX);
 
 	do {
+		listInit(&current_logins, LINK_LIST_MUTEX);
+		listInit(&current_connections, LINK_LIST_MUTEX);
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */

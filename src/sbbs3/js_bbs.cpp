@@ -105,6 +105,7 @@ enum {
 	,BBS_PROP_MSG_FROM
 	,BBS_PROP_MSG_FROM_EXT
 	,BBS_PROP_MSG_FROM_NET
+	,BBS_PROP_MSG_FROM_BBSID
 	,BBS_PROP_MSG_FROM_AGENT
 	,BBS_PROP_MSG_REPLYTO
 	,BBS_PROP_MSG_REPLYTO_EXT
@@ -230,6 +231,7 @@ enum {
 	,"message sender name"
 	,"message sender extension"
 	,"message sender network address"
+	,"message sender BBS ID"
 	,"message sender agent type"
 	,"message reply-to name"
 	,"message reply-to extension"
@@ -570,6 +572,12 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				p=nulstr;
 			else
 				p=smb_netaddrstr(&sbbs->current_msg->from_net,tmp);
+			break;
+		case BBS_PROP_MSG_FROM_BBSID:
+			if(sbbs->current_msg == NULL || sbbs->current_msg->ftn_bbsid == NULL)
+				p = nulstr;
+			else // Should we return only the last ID of the QWKnet route here?
+				p = sbbs->current_msg->ftn_bbsid;
 			break;
 		case BBS_PROP_MSG_FROM_AGENT:
 			if(sbbs->current_msg!=NULL)
@@ -1044,6 +1052,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"msg_from"			,BBS_PROP_MSG_FROM			,PROP_READONLY	,310},
 	{	"msg_from_ext"		,BBS_PROP_MSG_FROM_EXT		,PROP_READONLY	,310},
 	{	"msg_from_net"		,BBS_PROP_MSG_FROM_NET		,PROP_READONLY	,310},
+	{	"msg_from_bbsid"	,BBS_PROP_MSG_FROM_BBSID	,PROP_READONLY	,31802},
 	{	"msg_from_agent"	,BBS_PROP_MSG_FROM_AGENT	,PROP_READONLY	,310},
 	{	"msg_replyto"		,BBS_PROP_MSG_REPLYTO		,PROP_READONLY	,310},
 	{	"msg_replyto_ext"	,BBS_PROP_MSG_REPLYTO_EXT	,PROP_READONLY	,310},

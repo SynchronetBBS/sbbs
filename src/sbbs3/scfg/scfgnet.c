@@ -242,7 +242,7 @@ void net_cfg()
 								SAFECOPY(cfg.qhub[i]->unpack,"%@unzip -Coj %f %s -d %g");
 								SAFECOPY(cfg.qhub[i]->call,"*qnet-ftp %s hub.address YOURPASS");
 								cfg.qhub[i]->node = NODE_ANY;
-								cfg.qhub[i]->days=(uchar)0xff; /* all days */
+								cfg.qhub[i]->days=0x7f; /* all days */
 								uifc.changes=1;
 								continue; 
 							}

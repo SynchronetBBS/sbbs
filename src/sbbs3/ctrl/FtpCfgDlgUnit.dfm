@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 837
-  Top = 423
+  Left = 1282
+  Top = 534
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 245
@@ -58,12 +58,20 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Interfaces (IPs)'
       end
       object QwkTimeoutLabel: TLabel
-        Left = 7
+        Left = 148
         Top = 138
         Width = 78
         Height = 20
         AutoSize = False
         Caption = 'QWK Timeout'
+      end
+      object MaxConConLabel: TLabel
+        Left = 7
+        Top = 138
+        Width = 85
+        Height = 19
+        AutoSize = False
+        Caption = 'Max Con-Conn'
       end
       object AutoStartCheckBox: TCheckBox
         Left = 7
@@ -122,18 +130,19 @@ object FtpCfgDlg: TFtpCfgDlg
       end
       object AllowQWKCheckBox: TCheckBox
         Left = 148
-        Top = 60
+        Top = 109
         Width = 119
         Height = 20
         Hint = 'Allow QWK packet transfers'
         Caption = 'QWK Packets'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 9
+        OnClick = AllowQWKCheckBoxClick
       end
       object LocalFileSysCheckBox: TCheckBox
         Left = 148
-        Top = 86
+        Top = 62
         Width = 119
         Height = 20
         Hint = 
@@ -142,7 +151,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Local File System'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 7
       end
       object HostnameCheckBox: TCheckBox
         Left = 148
@@ -157,21 +166,31 @@ object FtpCfgDlg: TFtpCfgDlg
       end
       object DirFilesCheckBox: TCheckBox
         Left = 148
-        Top = 110
+        Top = 86
         Width = 125
         Height = 20
         Hint = 'Allow users access to files in directory, but not in database'
         Caption = 'Directory File Access'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
+        TabOrder = 8
       end
       object QwkTimeoutEdit: TEdit
-        Left = 85
+        Left = 223
         Top = 138
         Width = 39
         Height = 21
         Hint = 'Maximum number of seconds before QWK packet creation timeout'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 10
+      end
+      object MaxConConEdit: TEdit
+        Left = 85
+        Top = 138
+        Width = 39
+        Height = 21
+        Hint = 'Maximum Concurrent Connections from same IP (0=unlimited)'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6

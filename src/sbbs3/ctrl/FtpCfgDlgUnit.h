@@ -86,6 +86,8 @@ __published:
     TEdit *PasvPortHighEdit;
     TLabel *PasvPortThroughLabel;
     TCheckBox *PasvIpLookupCheckBox;
+    TLabel *MaxConConLabel;
+    TEdit *MaxConConEdit;
 	void __fastcall FormShow(TObject *Sender);
 	void __fastcall OKBtnClick(TObject *Sender);
 	void __fastcall AnswerSoundButtonClick(TObject *Sender);
@@ -93,6 +95,7 @@ __published:
 	void __fastcall AutoIndexCheckBoxClick(TObject *Sender);
     void __fastcall HackAttemptSoundButtonClick(TObject *Sender);
     void __fastcall PasvIpLookupCheckBoxClick(TObject *Sender);
+    void __fastcall AllowQWKCheckBoxClick(TObject *Sender);
 private:
 public:
 	virtual __fastcall TFtpCfgDlg(TComponent* AOwner);

@@ -2,9 +2,9 @@
 
 // Synchronet v3.1 Default Logon Module
 
-// $Id: logon.js,v 1.55 2020/05/26 04:21:18 rswindell Exp $
-
 // @format.tab-size 4, @format.use-tabs true
+
+"use strict";
 
 require("sbbsdefs.js", 'SS_RLOGIN');
 require("nodedefs.js", 'NODE_QUIET');
@@ -24,6 +24,16 @@ if(options.draw_avatar_right === undefined)
 	options.draw_avatar_right = true;
 if(options.show_logon_list === undefined)
 	options.show_logon_list = true;
+if(options.sysop_available) {
+	require("text.js", 'LiSysopAvailable');
+	var list = options.sysop_available.split(',');
+	bbs.replace_text(LiSysopAvailable, list[random(list.length)].trim());
+}
+if(options.sysop_unavailable) {
+	require("text.js", 'LiSysopNotAvailable');
+	var list = options.sysop_unavailable.split(',');
+	bbs.replace_text(LiSysopNotAvailable, list[random(list.length)].trim());
+}
 
 if(options.eval_first)
 	eval(options.eval_first);
@@ -54,8 +64,8 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 
 if(user.security.restrictions&UFLAG_G) {
 	while(bbs.online) {
-		printf("\1y\1hFor our records, please enter your full name: \1w");
-		name=console.getstr(LEN_NAME,K_UPRLWR);
+		printf("\x01y\x01hFor our records, please enter your full name: \x01w");
+		const name = console.getstr(LEN_NAME,K_UPRLWR);
 		if(!name || !name.length)
 			continue;
 		bbs.log_str("Guest: " + name);
@@ -64,8 +74,8 @@ if(user.security.restrictions&UFLAG_G) {
 	}
 
 	while(bbs.online) {
-		printf("\1y\1hPlease enter your e-mail address: \1w");
-		email=console.getstr(LEN_NETMAIL);
+		printf("\x01y\x01hPlease enter your e-mail address: \x01w");
+		const email = console.getstr(LEN_NETMAIL);
 		if(!email || !email.length)
 			continue;
 		if(bbs.trashcan("email", email)) {
@@ -79,8 +89,8 @@ if(user.security.restrictions&UFLAG_G) {
 	}
 
 	while(bbs.online) {
-		printf("\1y\1hPlease enter your location (City, State): \1w");
-		location=console.getstr(LEN_LOCATION,K_UPRLWR);
+		printf("\x01y\x01hPlease enter your location (City, State): \x01w");
+		const location=console.getstr(LEN_LOCATION,K_UPRLWR);
 		if(!location || !location.length)
 			continue;
 		if(bbs.trashcan("location", location)) {
@@ -95,8 +105,8 @@ if(user.security.restrictions&UFLAG_G) {
 	if(bbs.online)
 		bbs.log_str("\r\n");
 	while(bbs.online) {
-		printf("\1y\1hWhere did you hear about this BBS?\r\n: \1w");
-		ref=console.getstr(70);
+		printf("\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w");
+		const ref=console.getstr(70);
 		if(!ref || !ref.length)
 			continue;
 		bbs.log_str(ref + "\r\n");
@@ -153,7 +163,7 @@ if(user.security.level==99				/* Sysop logging on */
 	&& !system.matchuser("guest")		/* Guest account does not yet exist */
 	&& bbs.mods.userprops.get("logon", "makeguest", true) /* Sysop has not asked to stop this question */
 	) {
-	if(console.yesno("\1?Create Guest/Anonymous user account (highly recommended)"))
+	if(console.yesno("\x01?Create Guest/Anonymous user account (highly recommended)"))
 		load("makeguest.js");
 	else if(!console.yesno("Ask again later")) {
 		bbs.mods.userprops.set("logon", "makeguest", false);
@@ -170,7 +180,7 @@ if(bbs.node_status != NODE_QUIET && ((system.settings&SYS_SYSSTAT) || !user.is_s
 	bbs.mods.logonlist_lib.add();
 
 // Auto-message
-auto_msg=system.data_dir + "msgs/auto.msg"
+const auto_msg = system.data_dir + "msgs/auto.msg"
 if(file_size(auto_msg)>0) {
 	console.printfile(auto_msg,P_NOATCODES|P_WORDWRAP);
 }

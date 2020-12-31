@@ -69,6 +69,7 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     PasvIpLookupCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_LOOKUP_PASV_IP;
 	PasvPortLowEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_low);
   	PasvPortHighEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_high);
+    MaxConConEdit->Text = AnsiString((int)MainForm->ftp_startup.max_concurrent_connections);
 
     IndexFileNameEdit->Text=AnsiString(MainForm->ftp_startup.index_file_name);
     AnswerSoundEdit->Text=AnsiString(MainForm->ftp_startup.answer_sound);
@@ -87,6 +88,8 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
 	AutoIndexCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_INDEX_FILE;
 	AutoIndexCheckBoxClick(Sender);
     PasvIpLookupCheckBoxClick(Sender);
+    QwkTimeoutEdit->Enabled = AllowQWKCheckBox->Checked;
+    QwkTimeoutLabel->Enabled = AllowQWKCheckBox->Checked;
 
     PageControl->ActivePage=GeneralTabSheet;
 }
@@ -122,6 +125,7 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(FTP_DEFAULT_MAX_INACTIVITY);
     MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(FTP_DEFAULT_QWK_TIMEOUT);
     MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(IPPORT_FTP);
+    MainForm->ftp_startup.max_concurrent_connections = MaxConConEdit->Text.ToIntDef(0);
     MainForm->FtpAutoStart=AutoStartCheckBox->Checked;
     MainForm->FtpLogFile=LogFileCheckBox->Checked;
 
@@ -217,6 +221,14 @@ void __fastcall TFtpCfgDlg::AutoIndexCheckBoxClick(TObject *Sender)
 void __fastcall TFtpCfgDlg::PasvIpLookupCheckBoxClick(TObject *Sender)
 {
     PasvIPv4AddrEdit->Enabled = !PasvIpLookupCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TFtpCfgDlg::AllowQWKCheckBoxClick(TObject *Sender)
+{
+    QwkTimeoutEdit->Enabled = AllowQWKCheckBox->Checked;
+    QwkTimeoutLabel->Enabled = AllowQWKCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 

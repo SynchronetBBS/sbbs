@@ -140,11 +140,12 @@ extern "C" time_t DLLCALL getnexteventtime(event_t* event)
 {
 	struct tm tm;
 	time_t	t = time(NULL);
+	time_t	now = t;
 
 	if(event->misc & EVENT_DISABLED)
 		return 0;
 
-	if(event->days == 0 || event->freq != 0)
+	if((event->days & 0x7f) == 0 || event->freq != 0)
 		return 0;
 
 	if(localtime_r(&t, &tm) == NULL)
@@ -160,6 +161,8 @@ extern "C" time_t DLLCALL getnexteventtime(event_t* event)
 		t += 24 * 60 * 60; /* already ran today, so add 24hrs */
 
 	do {
+		if(t > now + (1500 * 24 * 60 * 60)) /* Handle crazy configs, e.g. Feb-29, Apr-31 */
+			return 0;
 		if(localtime_r(&t, &tm) == NULL)
 			return 0;
 		if((event->days & (1 << tm.tm_wday))

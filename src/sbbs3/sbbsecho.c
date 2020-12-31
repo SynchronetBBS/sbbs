@@ -1232,6 +1232,8 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 			fprintf(fp, "\1MSGID: %.256s\r", msg->ftn_msgid);
 		if(msg->ftn_reply != NULL)
 			fprintf(fp, "\1REPLY: %.256s\r", msg->ftn_reply);
+		if(msg->ftn_bbsid != NULL)
+			fprintf(fp, "\1BBSID: %.256s\r", msg->ftn_bbsid);
 		if(msg->ftn_flags != NULL)
 			fprintf(fp, "\1FLAGS %s\r", msg->ftn_flags);
 		else if(msg->hdr.auxattr&MSG_KILLFILE)
@@ -3493,6 +3495,15 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 					smb_hfield_bin(&msg, SMB_COLUMNS, columns);
 			}
 
+			else if(!strncmp(fbuf+l+1,"BBSID:",6)) {
+				l+=7;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
+				m=l;
+				while(m<length && fbuf[m]!='\r') m++;
+				if(m>l)
+					smb_hfield(&msg,FIDOBBSID,(ushort)(m-l),fbuf+l);
+			}
+
 			else {		/* Unknown kludge line */
 				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
@@ -4911,6 +4922,13 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 
 			if(msg.columns)
 				f += sprintf(fmsgbuf+f, "\1COLS: %u\r", (unsigned int)msg.columns);
+
+			if(msg.ftn_bbsid != NULL)	/* use original BBSID */
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", msg.ftn_bbsid);
+			else if(msg.from_net.type == NET_QWK)
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", (char*)msg.from_net.addr);
+			else if(msg.from_net.type != NET_FIDO)
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", scfg.sys_id);
 
 			if(rescan)
 				f+=sprintf(fmsgbuf+f,"\1RESCANNED %s\r", smb_faddrtoa(&scfg.sub[subnum]->faddr,NULL));

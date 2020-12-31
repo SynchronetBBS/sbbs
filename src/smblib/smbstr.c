@@ -81,6 +81,7 @@ char* SMBCALL smb_hfieldtype(uint16_t type)
 		case FIDOFLAGS:			return("X-FTN-Flags");
 		case FIDOTID:			return("X-FTN-TID");
 		case FIDOCHARSET:		return("X-FTN-CHRS");
+		case FIDOBBSID:			return("X-FTN-BBSID");
 
 		case RFC822HEADER:		return("OtherHeader");
 		case RFC822MSGID:		return("Message-ID");			/* RFC-compliant */
