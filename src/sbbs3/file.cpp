@@ -36,7 +36,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 		if(usrlib[i]==cfg.dir[f->dir]->lib)
 			break;
 	for(j=0;j<usrdirs[i];j++)
-		if(usrdir[i][j]==f->dir)
+		if(usrdir[i][j]==(uint)f->dir)
 			break;
 
 	getfilepath(&cfg, f, path);

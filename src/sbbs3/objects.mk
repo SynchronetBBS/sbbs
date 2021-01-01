@@ -95,7 +95,6 @@ OBJS	=	$(MTOBJODIR)$(DIRSEP)ansiterm$(OFILE) \
 			$(MTOBJODIR)$(DIRSEP)scfglib2$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)scfgsave$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)sockopts$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)sortdir$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)str_util$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)telgate$(OFILE)\

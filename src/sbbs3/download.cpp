@@ -302,7 +302,7 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			SAFECOPY(str,"attempted to download QWK packet");
-		else if(f->dir == (uint32_t)cfg.total_dirs + 1)
+		else if(f->dir == cfg.total_dirs + 1)
 			SAFEPRINTF(str,"attempted to download attached file: %s"
 				,f->filename);
 		else
