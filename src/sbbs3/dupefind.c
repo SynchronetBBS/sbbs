@@ -25,7 +25,7 @@
 #include "crc32.h"
 #include <stdarg.h>
 
-#define DUPEFIND_VER "3.17"
+#define DUPEFIND_VER "3.19"
 
 char* crlf="\r\n";
 

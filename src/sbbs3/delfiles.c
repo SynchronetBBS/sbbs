@@ -28,7 +28,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#define DELFILES_VER "3.17"
+#define DELFILES_VER "3.19"
 
 char tmp[256];
 char *crlf="\r\n";

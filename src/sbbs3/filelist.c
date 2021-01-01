@@ -31,7 +31,7 @@
 #include "smblib.h"
 #include <stdarg.h>
 
-#define FILELIST_VER "3.17"
+#define FILELIST_VER "3.19"
 
 #define MAX_NOTS 25
 

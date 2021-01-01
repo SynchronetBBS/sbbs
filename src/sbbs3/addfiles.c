@@ -30,7 +30,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#define ADDFILES_VER "3.17"
+#define ADDFILES_VER "3.19"
 
 scfg_t scfg;
 
