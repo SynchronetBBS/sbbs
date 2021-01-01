@@ -1,8 +1,4 @@
-/* js_msg_area.c */
-
 /* Synchronet JavaScript "Message Area" Object */
-
-/* $Id: js_msg_area.c,v 1.75 2020/08/16 01:01:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -507,30 +491,6 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 				if((subobj=JS_NewObject(cx, &js_sub_class, subobj_proto, NULL))==NULL)
 					return JS_FALSE;
-/** Crash ^^^ Here in JSexec/ircd upon recycle/reload of script:
-
-	mozjs185-1.0.dll!62e4a968() 	
-	[Frames below may be incorrect and/or missing, no symbols loaded for mozjs185-1.0.dll]	
-	mozjs185-1.0.dll!62eda4b2() 	
-	mozjs185-1.0.dll!62e9cd4e() 	
-	mozjs185-1.0.dll!62ea3cf0() 	
-	mozjs185-1.0.dll!62e4e39e() 	
-	mozjs185-1.0.dll!62edd884() 	
-	mozjs185-1.0.dll!62e8010f() 	
-	mozjs185-1.0.dll!62e5b0c9() 	
-	mozjs185-1.0.dll!62e4b1ee() 	
->	sbbs.dll!js_CreateMsgAreaObject(JSContext * cx=0x07b33ce8, JSObject * parent=0x0a37f028, scfg_t * cfg=0x004a2b20, user_t * user=0x00000000, client_t * client=0x00000000, subscan_t * subscan=0x00000000)  Line 459 + 0x17 bytes	C
-	sbbs.dll!js_CreateUserObjects(JSContext * cx=0x07b33ce8, JSObject * parent=0x0a37f028, scfg_t * cfg=0x004a2b20, user_t * user=0x00000000, client_t * client=0x00000000, char * html_index_file=0x00000000, subscan_t * subscan=0x00000000)  Line 1431 + 0x1d bytes	C
-	sbbs.dll!js_CreateCommonObjects(JSContext * js_cx=0x07b33ce8, scfg_t * cfg=0x004a2b20, scfg_t * node_cfg=0x004a2b20, jsSyncMethodSpec * methods=0x00000000, __int64 uptime=0, char * host_name=0x101bdaa6, char * socklib_desc=0x101bdaa6, js_branch_t * branch=0x019c8f30, js_startup_t * js_startup=0x0012f7cc, client_t * client=0x00000000, unsigned int client_socket=4294967295, js_server_props_t * props=0x00000000)  Line 3858 + 0x1b bytes	C
-	sbbs.dll!js_load(JSContext * cx=0x02e36300, unsigned int argc=3, unsigned __int64 * arglist=0x01d700d0)  Line 282 + 0x44 bytes	C
-	mozjs185-1.0.dll!62e91dfd() 	
-	jsexec.exe!__lock_fhandle(int fh=1240564)  Line 467	C
-	7ffdf000()	
-	ffff0007()	
-	mozjs185-1.0.dll!62fe9c60() 	
-
-*/
-
 				if(p->subscan!=NULL)
 					JS_SetPrivate(cx,subobj,&p->subscan[d]);
 
