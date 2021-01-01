@@ -812,3 +812,55 @@ void make_data_dirs(scfg_t* cfg)
 	}
 #endif
 }
+
+int getdirnum(scfg_t* cfg, const char* code)
+{
+	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
+
+	for(i=0;i<cfg->total_dirs;i++)
+		if(stricmp(cfg->dir[i]->code,code)==0)
+			return(i);
+	return(-1);
+}
+
+int getlibnum(scfg_t* cfg, const char* code)
+{
+	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
+
+	for(i=0;i<cfg->total_dirs;i++)
+		if(stricmp(cfg->dir[i]->code,code)==0)
+			return(cfg->dir[i]->lib);
+	return(-1);
+}
+
+int getsubnum(scfg_t* cfg, const char* code)
+{
+	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
+
+	for(i=0;i<cfg->total_subs;i++)
+		if(stricmp(cfg->sub[i]->code,code)==0)
+			return(i);
+	return(-1);
+}
+
+int getgrpnum(scfg_t* cfg, const char* code)
+{
+	size_t i;
+
+	if(code == NULL || *code == '\0')
+		return -1;
+
+	for(i=0;i<cfg->total_subs;i++)
+		if(stricmp(cfg->sub[i]->code,code)==0)
+			return(cfg->sub[i]->grp);
+	return(-1);
+}

@@ -198,6 +198,7 @@ void SMBCALL smb_close_fp(FILE** fp)
 }
 
 /****************************************************************************/
+/* CASE-INSENSITIVE filename search through index (no wildcards)			*/
 /****************************************************************************/
 int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
 {
@@ -244,5 +245,65 @@ void SMBCALL smb_freefilemem(smbfile_t* file)
 /****************************************************************************/
 int SMBCALL smb_removefile(smb_t* smb, smbfile_t* file)
 {
-	return smb_freemsg(smb, file);
+	int result;
+
+	if(!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+		return SMB_ERR_LOCK;
+
+	file->hdr.attr |= MSG_DELETE;
+	if((result = smb_putmsghdr(smb, file)) != SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
+		return result;
+	}
+	if((result = smb_getstatus(smb)) != SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
+		return result;
+	}
+	if((result = smb_open_ha(smb)) != SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
+		return result;
+	}
+	if((result = smb_open_da(smb)) != SMB_SUCCESS) {
+		smb_unlocksmbhdr(smb);
+		return result;
+	}
+	result = smb_freemsg(smb, file);
+	smb_close_ha(smb);
+	smb_close_da(smb);
+
+	// Now remove from index:
+	if(result == SMB_SUCCESS) {
+		rewind(smb->sid_fp);
+		smbfileidxrec_t* fidx = malloc(smb->status.total_files * sizeof(*fidx));
+		if(fidx == NULL) {
+			smb_unlocksmbhdr(smb);
+			return SMB_ERR_MEM;
+		}
+		if(fread(fidx, sizeof(*fidx), smb->status.total_files, smb->sid_fp) != smb->status.total_files) {
+			free(fidx);
+			smb_unlocksmbhdr(smb);
+			return SMB_ERR_READ;
+		}
+		rewind(smb->sid_fp);
+		for(uint32_t i = 0; i < smb->status.total_files; i++) {
+			if(stricmp(fidx[i].filename, file->filename) == 0)
+				continue;
+			if(fwrite(fidx + i, sizeof(*fidx), 1, smb->sid_fp) != 1) {
+				result = SMB_ERR_WRITE;
+				break;
+			}
+		}
+		free(fidx);
+		if(result == SMB_SUCCESS) {
+			fflush(smb->sid_fp);
+			--smb->status.total_files;
+			if(chsize(fileno(smb->sid_fp), smb->status.total_files * sizeof(*fidx)) != 0)
+				result = SMB_ERR_DELETE;
+			else
+				result = smb_putstatus(smb);
+		}
+	}
+
+	smb_unlocksmbhdr(smb);
+	return result;
 }

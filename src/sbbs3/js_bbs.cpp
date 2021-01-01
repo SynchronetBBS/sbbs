@@ -711,7 +711,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				val=(uint32)sbbs->current_file->date;
+				val=(uint32)sbbs->current_file->time;
 			break;
 		case BBS_PROP_FILE_DATE_ULED:
 			if(sbbs->current_file==NULL)
@@ -2878,34 +2878,6 @@ js_bulkupload(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_resort_dir(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval *argv=JS_ARGV(cx, arglist);
-	uint		dirnum=0;
-	sbbs_t*		sbbs;
-	jsrefcount	rc;
-
-	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
-		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
-
-	if(dirnum>=sbbs->cfg.total_dirs) {
-		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		return(JS_TRUE);
-	}
-
-	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->resort(dirnum);
-	JS_RESUMEREQUEST(cx, rc);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
-	return(JS_TRUE);
-}
-
-static JSBool
 js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -3474,7 +3446,6 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 	const char	*def=ALLFILES;
 	char*		afspec=NULL;
 	char*		fspec=(char *)def;
-	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -3512,9 +3483,6 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(!(mode&(FL_FINDDESC|FL_EXFIND)))
-		fspec=padfname(fspec,buf);
-
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfiles(dirnum,fspec,0 /* tofile */,mode)));
 	if(afspec)
 		free(afspec);
@@ -3530,7 +3498,6 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 	uint32		mode=FI_INFO;
 	const char	*def=ALLFILES;
 	char*		fspec=(char *)def;
-	char		buf[MAX_PATH+1];
 	uint		dirnum;
     JSString*	js_str;
 	sbbs_t*		sbbs;
@@ -3564,7 +3531,7 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfileinfo(dirnum,padfname(fspec,buf),mode)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfileinfo(dirnum, fspec, mode)));
 	if(fspec != def)
 		free(fspec);
 	JS_RESUMEREQUEST(cx, rc);
@@ -4440,10 +4407,6 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("add files (already in local storage path) to file directory "
 		"specified by number or internal code")
-	,310
-	},
-	{"resort_dir",		js_resort_dir,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
-	,JSDOCSTR("re-sort the file directory specified by number or internal code)")
 	,310
 	},
 	{"list_files",		js_listfiles,		1,	JSTYPE_NUMBER,	JSDOCSTR("[directory=<i>current</i>] [,filespec=<tt>\"*.*\"</tt> or search_string] [,mode=<tt>FL_NONE</tt>]")

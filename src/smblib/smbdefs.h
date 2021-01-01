@@ -643,9 +643,9 @@ typedef struct {				/* Message or File */
 	uint32_t	downvotes;		/* Vote tally for this message */
 	uint32_t	total_votes;	/* Total votes for this message or poll */
 								/* Not written to the database: */
-	uint32_t	dir;			/* Directory number */
-	off_t		size;			/* File size */
-	time_t		date;			/* File date/timestamp (current) */
+	int32_t		dir;			/* Directory number */
+	off_t		size;			/* File size (current) */
+	time_t		time;			/* File modification date/timestamp (current) */
 	uint8_t		columns;		/* 0 means unknown or N/A */
 
 } smbmsg_t, smbfile_t;

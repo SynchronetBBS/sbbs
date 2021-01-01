@@ -2182,8 +2182,10 @@ uint32_t SMBCALL smb_last_in_thread(smb_t* smb, smbmsg_t* remsg)
 	return smb_last_in_branch(smb, &msg);
 }
 
-SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t attr)
+SMBEXPORT enum smb_msg_type smb_msg_type(smb_t* smb, smb_msg_attr_t attr)
 {
+	if(smb->status.attr & SMB_FILE_DIRECTORY)
+		return SMB_MSG_TYPE_FILE;
 	switch (attr&MSG_POLL_VOTE_MASK) {
 		case 0:
 			return SMB_MSG_TYPE_NORMAL;
@@ -2217,7 +2219,7 @@ SMBEXPORT size_t SMBCALL smb_msg_count(smb_t* smb, unsigned types)
 
 	size_t count = 0;
 	for(size_t i = 0; i < result; i++) {
-		if(types & (1 << smb_msg_type(idx[i].attr)))
+		if(types & (1 << smb_msg_type(smb, idx[i].attr)))
 			count++;
 	}
 	free(idx);

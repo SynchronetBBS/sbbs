@@ -48,19 +48,16 @@ BOOL DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats)
 /****************************************************************************/
 long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 {
-	char str[256];
-	long l;
-	long files = 0;
+	char path[MAX_PATH + 1];
+	off_t l;
 
-	if(dirnum>=cfg->total_dirs)	/* out of range */
-		return(0);
-	if(cfg->dir[dirnum]->misc&DIR_FILES)
-		return getfilecount(cfg->dir[dirnum]->path);
-	sprintf(str,"%s%s.sid",cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
-	l=(long)flength(str);
-	if(l>0L)
-		files = l/sizeof(smbfileidxrec_t);
-	return files;
+	if(dirnum >= cfg->total_dirs)	/* out of range */
+		return 0;
+	SAFEPRINTF2(path, "%s%s.sid", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	l = flength(path);
+	if(l <= 0)
+		return 0;
+	return (long)(l / sizeof(smbfileidxrec_t));
 }
 
 /****************************************************************************/

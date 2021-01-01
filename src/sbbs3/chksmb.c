@@ -1,8 +1,5 @@
 /* Synchronet message base (SMB) validity checker */
 
-/* $Id: chksmb.c,v 1.72 2020/04/04 20:36:38 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -175,6 +160,7 @@ int main(int argc, char **argv)
 	smb_t		smb;
 	idxrec_t	idx;
 	idxrec_t*	idxrec = NULL;
+	smbfileidxrec_t* fidxrec = NULL;
 	smbmsg_t	msg;
 	hash_t**	hashes;
 	char		revision[16];
@@ -277,27 +263,29 @@ int main(int argc, char **argv)
 		continue;
 	}
 
+	size_t idxreclen = smb_idxreclen(&smb);
 	off_t sid_length = filelength(fileno(smb.sid_fp));
-	if(sid_length != smb.status.total_msgs * sizeof(idxrec_t)) {
-		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", sid_length, (long)(smb.status.total_msgs * sizeof(idxrec_t)));
+	if(sid_length != smb.status.total_msgs * idxreclen) {
+		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", sid_length, (long)(smb.status.total_msgs * idxreclen));
 		smb_close(&smb);
 		errors++;
 		continue;
 	}
 
 	FREE_AND_NULL(idxrec);
-	if((idxrec = calloc(smb.status.total_msgs, sizeof(*idxrec))) == NULL) {
+	if((idxrec = calloc(smb.status.total_msgs, idxreclen)) == NULL) {
 		printf("!Error allocating %lu index record\n", (ulong)smb.status.total_msgs);
 		smb_close(&smb);
 		errors++;
 		continue;
 	}
-	if(fread(idxrec, sizeof(*idxrec), smb.status.total_msgs, smb.sid_fp) != smb.status.total_msgs) {
+	if(fread(idxrec, idxreclen, smb.status.total_msgs, smb.sid_fp) != smb.status.total_msgs) {
 		printf("!Error reading %lu index records\n", (ulong)smb.status.total_msgs);
 		smb_close(&smb);
 		errors++;
 		continue;
 	}
+	fidxrec = (smbfileidxrec_t*)idxrec;
 
 	off_t shd_hdrs = shd_length - smb.status.header_offset;
 
@@ -402,15 +390,23 @@ int main(int argc, char **argv)
 		smb_unlockmsghdr(&smb,&msg);
 		size=smb_hdrblocks(smb_getmsghdrlen(&msg))*SHD_BLOCK_LEN;
 
-		SAFECOPY(from,msg.from);
+		if(msg.hdr.type == SMB_MSG_TYPE_FILE)
+			SAFECOPY(from, msg.subj);
+		else
+			SAFECOPY(from, msg.from);
 		truncsp(from);
 		strip_ctrl(from);
 		fprintf(stderr,"#%-5"PRIu32" (%06lX) %-25.25s ",msg.hdr.number,l,from);
 
 		for(n = 0; n < smb.status.total_msgs; n++) {
-			if(idxrec[n].number == msg.hdr.number)
+			idxrec_t* idx;
+			if(idxreclen == sizeof(*fidxrec))
+				idx = &fidxrec[n].idx;
+			else
+				idx = &idxrec[n];
+			if(idx->number == msg.hdr.number)
 				continue;
-			if(idxrec[n].offset > l && idxrec[n].offset < l + (smb_hdrblocks(msg.hdr.length) * SHD_BLOCK_LEN)) {
+			if(idx->offset > l && idx->offset < l + (smb_hdrblocks(msg.hdr.length) * SHD_BLOCK_LEN)) {
 				fprintf(stderr,"%sMessage header overlap\n", beep);
 				msgerr=TRUE;
 				if(extinfo)
@@ -472,9 +468,9 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if(msg.hdr.type != smb_msg_type(msg.hdr.attr)) {
+		if(msg.hdr.type != smb_msg_type(&smb, msg.hdr.attr)) {
 			fprintf(stderr,"%sMessage type mismatch (%d, expected %d)\n"
-				,beep, msg.hdr.type, smb_msg_type(msg.hdr.attr));
+				,beep, msg.hdr.type, smb_msg_type(&smb, msg.hdr.attr));
 			msgerr=TRUE;
 			types++;
 		}

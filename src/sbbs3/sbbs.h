@@ -880,7 +880,6 @@ public:
 
 	/* logout.cpp */
 	void	logout(void);
-	void	backout(void);
 
 	/* newuser.cpp */
 	BOOL	newuser(void);					/* Get new user							*/
@@ -959,13 +958,8 @@ public:
 
 	/* file.cpp */
 	void	fileinfo(smbfile_t*);
-	void	openfile(file_t*);
-	void	closefile(file_t*);
-	bool	removefcdt(file_t*);
 	bool	removefcdt(smb_t*, smbfile_t*);
-	bool	removefile(file_t*);
 	bool	removefile(smb_t*, smbfile_t*);
-	bool	movefile(file_t*, int newdir);
 	bool	movefile(smb_t*, smbfile_t*, int newdir);
 	char *	getfilespec(char *str);
 	bool	checkfname(char *fname);
@@ -1000,9 +994,6 @@ public:
 	int		viewfile(smbfile_t* f, bool extdesc);
 	void	viewfiles(uint dirnum, char *fspec);
 	void	viewfilecontents(smbfile_t* f);
-
-	/* sortdir.cpp */
-	void	resort(uint dirnum);
 
 	/* xtrn.cpp */
 	int		external(const char* cmdline, long mode, const char* startup_dir=NULL);

@@ -1,7 +1,5 @@
 /* Synchronet file transfer-related command shell/module routines */
 
-/* $Id: execfile.cpp,v 1.18 2020/05/24 08:11:45 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -317,8 +303,6 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[R_Download]);
 				return(0); 
 			}
-//			padfname(csi->str,str);
-//			strupr(str);
 			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_DOWNLOAD)) {
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++)
@@ -385,8 +369,6 @@ int sbbs_t::exec_file(csi_t *csi)
 
 		case CS_FILE_VIEW:
 			if(!usrlibs) return(0);
-//			padfname(csi->str,str);
-//			strupr(str);
 			csi->logic=LOGIC_TRUE;
 			if(listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, FL_VIEW))
 				return(0);
@@ -415,8 +397,6 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[EmptyDir]);
 				return(0); 
 			}
-//			padfname(csi->str,str);
-//			strupr(str);
 			s=listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, 0);
 			if(s>1) {
 				bprintf(text[NFilesListed],s); 
@@ -425,8 +405,6 @@ int sbbs_t::exec_file(csi_t *csi)
 			return(0);
 		case CS_FILE_LIST_EXTENDED: /* Extended Information on files */
 			if(!usrlibs) return(0);
-//			padfname(csi->str,str);
-//			strupr(str);
 			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_INFO)) {
 				bputs(text[SearchingAllDirs]);
 				for(i=0;i<usrdirs[curlib];i++)
@@ -477,8 +455,6 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[R_RemoveFiles]);
 				return(0); 
 			}
-//			padfname(csi->str,str);
-//			strupr(str);
 			if(!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_REMOVE)) {
 				if(cfg.user_dir!=INVALID_DIR
 					&& cfg.user_dir!=usrdir[curlib][curdir[curlib]])

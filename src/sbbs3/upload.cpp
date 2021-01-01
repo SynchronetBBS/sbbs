@@ -1,8 +1,4 @@
-/* upload.cpp */
-
 /* Synchronet file upload-related routines */
-
-/* $Id: upload.cpp,v 1.63 2019/08/02 10:36:45 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -54,7 +38,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		errormsg(WHERE, ERR_CHK, f->filename, f->dir);
 		return false;
 	}
-	getfullfilepath(&cfg, f, path);
+	getfilepath(&cfg, f, path);
 	SAFEPRINTF2(tmp, "%s%s", cfg.temp_dir, getfname(path));
 	if(!fexistcase(path) && fexistcase(tmp))
 		mv(tmp,path,0);
@@ -102,7 +86,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 					remove(path);
 				return(0); 
 			} else {
-#if 0 // TODO - uploader tester changes filename or description
+#if 0 // NFB-TODO - uploader tester changes filename or description
 				sprintf(str,"%ssbbsfile.nam",cfg.node_dir);
 				if((stream=fopen(str,"r"))!=NULL) {
 					if(fgets(str,128,stream)) {
@@ -157,6 +141,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			}
 			int file;
 			if((file=nopen(str,O_RDONLY))!=-1) {
+				#define F_EXBSIZE 512	// temporary
 				memset(ext,0,F_EXBSIZE+1);
 				read(file,ext,F_EXBSIZE);
 				for(i=F_EXBSIZE;i;i--)
@@ -297,7 +282,7 @@ bool sbbs_t::upload(uint dirnum)
 			,cfg.dir[dirnum]->sname);
 	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
-	getfullfilepath(&cfg, &f, path);
+	getfilepath(&cfg, &f, path);
 	if(fexistcase(path)) {   /* File is on disk */
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
 			bprintf(text[FileAlreadyThere],fname);

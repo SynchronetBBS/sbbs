@@ -1,7 +1,5 @@
 /* Synchronet file database listing functions */
 
-/* $Id: listfile.cpp,v 1.66 2020/05/11 08:57:18 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -70,11 +56,10 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 		return 0;
 
 	size_t file_count;
-	smbfile_t* file_list = loadfiles(&smb
+	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
 		, &file_count);
-	sortfiles(file_list, file_count, (enum file_sort)cfg.dir[dirnum]->sort);
 
 	if(!tofile) {
 		action=NODE_LFIL;
@@ -356,24 +341,24 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 /****************************************************************************/
 bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char letter)
 {
-	char	*ptr,*cr,*lf,exist=1;
+	char	*ptr,*cr,*lf;
+	bool	exist = true;
 	char*	ext=NULL;
 	char	path[MAX_PATH+1];
     int		i,j;
     ulong	cdt;
-	off_t	size;
 	int		size_attr=clr_filecdt;
 
 	if(f->extdesc != NULL && *f->extdesc && (useron.misc&EXTDESC)) {
 		ext = f->extdesc;
-		if((useron.misc&BATCHFLAG) && lncntr+extdesclines((char*)ext)>=rows-2 && letter!='A')
+		if((useron.misc&BATCHFLAG) && lncntr+extdesclines(ext)>=rows-2 && letter!='A')
 			return false;
 	}
 
 	attr(cfg.color[clr_filename]);
 	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
 	bprintf("%-*s", (int)sizeof(fname)-1, format_filename(f->filename, fname, sizeof(fname)-1, /* pad: */TRUE));
-	getfullfilepath(&cfg, f, path);
+	getfilepath(&cfg, f, path);
 
 	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
 		outchar('+');
@@ -384,15 +369,12 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 		bprintf("%c",letter); 
 	}
 	cdt = f->cost;
-	if(cfg.dir[dirnum]->misc&DIR_FCHK) {
-		size = getfilesize(&cfg, f);
-		if(size < 0) {
-			exist=0;
-			size_attr = clr_err; 
-		}
-		else if((cfg.dir[dirnum]->misc&DIR_FREE) && size >= 0)
-			cdt = size;
+	if(f->size < 0) {
+		exist = false;
+		size_attr = clr_err; 
 	}
+	else if((cfg.dir[dirnum]->misc & (DIR_FREE | DIR_FCHK)) == (DIR_FREE | DIR_FCHK))
+		cdt = getfilesize(&cfg, f);
 	char bytes[32];
 	byte_estimate_to_str(cdt, bytes, sizeof(bytes), /* units: */1, /* precision: */1);
 	attr(cfg.color[size_attr]);
@@ -418,17 +400,6 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 		outchar('-');
 	attr(cfg.color[clr_filedesc]);
 
-#if 0 //def _WIN32
- 
-	if(exist && !(cfg.file_misc&FM_NO_LFN)) {
-		fexistcase(path);	/* Get real (long?) filename */
-		ptr=getfname(path);
-		if(stricmp(ptr,tmp) && stricmp(ptr,str))
-			bprintf("%.*s\r\n%21s",LEN_FDESC,ptr,"");
-	}
-
-#endif
-
 	if(ext == NULL) {
 		if(search[0]) { /* high-light string in string */
 			ptr = strcasestr(f->desc, search);
@@ -442,8 +413,12 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 				bprintf("%.*s",(int)strlen(f->desc)-(j+i),f->desc+j+i);
 			}
 		}
-		else
-			bputs(f->desc);
+		else {
+			if(f->desc == NULL || *f->desc == '\0')
+				bputs(f->filename);
+			else
+				bputs(f->desc);
+		}
 		CRLF; 
 	} else {
 		char* ext_desc = strdup((char*)ext);
@@ -473,158 +448,6 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 			while(*ptr==LF || *ptr==CR) ptr++; 
 		}
 		free(ext_desc);
-	}
-	return true;
-}
-
-/****************************************************************************/
-/* Remove credits from uploader of file 'f'                                 */
-/****************************************************************************/
-bool sbbs_t::removefcdt(file_t* f)
-{
-	char	str[128];
-	char 	tmp[512];
-	int		u;
-	long	cdt;
-
-	if((u=matchuser(&cfg,f->uler,TRUE /*sysop_alias*/))==0) {
-	   bputs(text[UnknownUser]);
-	   return false;; 
-	}
-	cdt=0L;
-	if(cfg.dir[f->dir]->misc&DIR_CDTMIN && cur_cps) {
-		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
-			cdt=((ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0))/cur_cps)/60;
-		if(cfg.dir[f->dir]->misc&DIR_CDTDL
-			&& f->timesdled)  /* all downloads */
-			cdt+=((ulong)((long)f->timesdled
-				*f->cdt*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
-		adjustuserrec(&cfg,u,U_MIN,10,-cdt);
-		sprintf(str,"%lu minute",cdt);
-		sprintf(tmp,text[FileRemovedUserMsg]
-			,f->name,cdt ? str : text[No]);
-		putsmsg(&cfg,u,tmp); 
-	}
-	else {
-		if(cfg.dir[f->dir]->misc&DIR_CDTUL)
-			cdt=(ulong)(f->cdt*(cfg.dir[f->dir]->up_pct/100.0));
-		if(cfg.dir[f->dir]->misc&DIR_CDTDL
-			&& f->timesdled)  /* all downloads */
-			cdt+=(ulong)((long)f->timesdled
-				*f->cdt*(cfg.dir[f->dir]->dn_pct/100.0));
-		adjustuserrec(&cfg,u,U_CDT,10,-cdt);
-		sprintf(tmp,text[FileRemovedUserMsg]
-			,f->name,cdt ? ultoac(cdt,str) : text[No]);
-		putsmsg(&cfg,u,tmp); 
-	}
-
-	adjustuserrec(&cfg,u,U_ULB,10,-f->size);
-	adjustuserrec(&cfg,u,U_ULS,5,-1);
-	return true;
-}
-
-bool sbbs_t::removefcdt(smb_t* smb, smbfile_t* f)
-{
-	return false;
-}
-
-bool sbbs_t::removefile(file_t* f)
-{
-	char str[256];
-
-	if(removefiledat(&cfg,f)) {
-		SAFEPRINTF3(str,"removed %s from %s %s"
-			,f->name
-			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-		logline("U-",str);
-		return true;
-	}
-	SAFEPRINTF2(str,"%s %s",cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	errormsg(WHERE, ERR_REMOVE, f->name, 0, str);
-	return false;;
-}
-
-bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
-{
-	char str[256];
-
-	if(smb_removefile(smb ,f) == SMB_SUCCESS) {
-		SAFEPRINTF4(str,"%s removed %s from %s %s"
-			,useron.alias
-			,f->filename
-			,cfg.lib[cfg.dir[smb->dirnum]->lib]->sname,cfg.dir[smb->dirnum]->sname);
-		logline("U-",str);
-		return true;
-	}
-	SAFEPRINTF2(str,"%s %s",cfg.lib[cfg.dir[smb->dirnum]->lib]->sname,cfg.dir[smb->dirnum]->sname);
-	errormsg(WHERE, ERR_REMOVE, f->filename, 0, str);
-	return false;
-}
-
-/****************************************************************************/
-/* Move file 'f' from f.dir to newdir                                       */
-/****************************************************************************/
-bool sbbs_t::movefile(file_t* f, int newdir)
-{
-#if 0
-	char str[MAX_PATH+1],path[MAX_PATH+1],fname[128],ext[1024];
-	int olddir=f->dir;
-
-	if(findfile(&cfg,newdir,f->name)) {
-		bprintf(text[FileAlreadyThere],f->name);
-		return false;; 
-	}
-	getextdesc(&cfg,olddir,f->datoffset,ext);
-	if(cfg.dir[olddir]->misc&DIR_MOVENEW)
-		f->dateuled=time32(NULL);
-//	unpadfname(f->name,fname);
-	removefiledat(&cfg,f);
-	f->dir=newdir;
-	addfiledat(&cfg,f);
-	bprintf(text[MovedFile],f->name
-		,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	sprintf(str,"moved %s to %s %s",f->name
-		,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
-	logline(nulstr,str);
-	if(!f->altpath) {	/* move actual file */
-		sprintf(str,"%s%s",cfg.dir[olddir]->path,fname);
-		if(fexistcase(str)) {
-			sprintf(path,"%s%s",cfg.dir[f->dir]->path,getfname(str));
-			mv(str,path,0); 
-		} 
-	}
-	if(f->misc&FM_EXTDESC)
-		putextdesc(&cfg,f->dir,f->datoffset,ext);
-#endif
-	return true;
-}
-
-bool sbbs_t::movefile(smb_t* smb, smbfile_t* f, int newdir)
-{
-	if(findfile(&cfg, newdir, f->filename)) {
-		bprintf(text[FileAlreadyThere], f->filename);
-		return false; 
-	}
-
-	if(!addfile(&cfg, newdir, f, f->extdesc))
-		return false;
-	removefile(smb, f);
-	bprintf(text[MovedFile],f->filename
-		,cfg.lib[cfg.dir[newdir]->lib]->sname,cfg.dir[newdir]->sname);
-	char str[MAX_PATH+1];
-	SAFEPRINTF4(str, "%s moved %s to %s %s",f->filename
-		,useron.alias
-		,cfg.lib[cfg.dir[newdir]->lib]->sname
-		,cfg.dir[newdir]->sname);
-	logline(nulstr,str);
-
-	if(!f->hdr.altpath) {	/* move actual file */
-		char oldpath[MAX_PATH + 1];
-		getfullfilepath(&cfg, f, oldpath);
-		f->dir = newdir;
-		char newpath[MAX_PATH + 1];
-		getfullfilepath(&cfg, f, newpath);
-		mv(oldpath, newpath, /* copy */false); 
 	}
 	return true;
 }
@@ -845,7 +668,6 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-//							padfname(str+c,tmp);
 							if(filematch(bf[i]->filename, str+c)) {
 								if(ch=='R') {
 									removefile(smb, bf[i]);
@@ -914,11 +736,10 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 		return 0;
 
 	size_t file_count;
-	smbfile_t* file_list = loadfiles(&smb
+	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, filespec
 		, /* time_t */0
 		, &file_count);
-	sortfiles(file_list, file_count, (enum file_sort)cfg.dir[dirnum]->sort);
 
 	m=0;
 	while(online && !done && m < file_count) {
@@ -1332,8 +1153,8 @@ void sbbs_t::listfiletofile(smbfile_t* f, uint dirnum, int file)
 		strcat(str, "+");
 	else
 		strcat(str, " ");
-	getfullfilepath(&cfg, f, fpath);
-	if(cfg.dir[dirnum]->misc&DIR_FCHK && !fexistcase(fpath))
+	getfilepath(&cfg, f, fpath);
+	if(f->size < 0)
 		exist=false;
 	if(!f->cost)
 		strcat(str, "   FREE");

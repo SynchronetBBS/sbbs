@@ -522,7 +522,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define LEN_ZIPCODE 	10	/* Zip/Postal code								*/
 #define LEN_MODEM		 8	/* User modem type description					*/
 #define LEN_FDESC		58	/* File description 							*/
-#define LEN_FCDT		 9	/* 9 digits for file credit values				*/
 #define LEN_TITLE		70	/* Message title								*/
 #define LEN_MAIN_CMD	28	/* Unused Storage in user.dat					*/
 #define LEN_COLS		3
@@ -615,23 +614,6 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define U_CURDIR	U_LOGONTIME+8	/* Current dir (internal code  */
 #define U_UNUSED	U_CURDIR+16
 #define U_LEN		(U_UNUSED+4+2)
-
-/****************************************************************************/
-/* Offsets into DIR .DAT file for different fields for each file 			*/
-/****************************************************************************/
-#define F_CDT		0				/* Offset in DIR#.DAT file for cdts		*/
-#define F_DESC		(F_CDT+LEN_FCDT)/* Description							*/
-#define F_ULER		(F_DESC+LEN_FDESC+2)   /* Uploader						*/
-#define F_TIMESDLED (F_ULER+30+2) 	/* Number of times downloaded 			*/
-#define F_OPENCOUNT	(F_TIMESDLED+5+2)
-#define F_MISC		(F_OPENCOUNT+3+2)
-#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */
-#define F_LEN		(F_ALTPATH+2+2) /* Total length of all fdat in file		*/
-
-#define F_IXBSIZE	22				/* Length of each index entry			*/
-
-#define F_EXBSIZE	512				/* Length of each ext-desc entry		*/
-
 
 #define SIF_MAXBUF  0x7000			/* Maximum buffer size of SIF data		*/
 
@@ -931,11 +913,6 @@ enum {							/* Values of mode for userlist function     */
 	,UL_DIR						/* List all users with access to curdir 	*/
 	};
 
-
-#define BO_LEN		16			/* backout.dab record length				*/
-
-#define BO_OPENFILE 0			/* Backout types */
-
 /**********/
 /* Macros */
 /**********/
@@ -1072,25 +1049,6 @@ typedef struct {						/* Users information */
 			logontime;					/* Time of current logon */
 
 } user_t;
-
-typedef struct {						/* File (transfers) Data */
-	char    name[13],					/* Name of file FILENAME.EXT */
-			desc[LEN_FDESC+1],			/* Uploader's Description */
-			uler[LEN_ALIAS+1];			/* User who uploaded */
-	uchar	opencount;					/* Times record is currently open */
-	time32_t  date,						/* File date/time */
-			dateuled,					/* Date/Time (Unix) Uploaded */
-			datedled;					/* Date/Time (Unix) Last downloaded */
-	uint16_t	dir,						/* Directory file is in */
-			altpath,
-			timesdled,					/* Total times downloaded */
-			timetodl;					/* How long transfer time */
-	int32_t	datoffset,					/* Offset into .DAT file */
-			size,						/* Size of file */
-			misc;						/* Miscellaneous bits */
-	uint32_t	cdt;						/* Credit value for this file */
-
-} file_t;
 
 typedef struct {
 	idxrec_t	idx;					/* defined in smbdefs.h */

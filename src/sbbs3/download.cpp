@@ -294,7 +294,7 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
 	char tmp[128];
 	char fpath[MAX_PATH+1];
 
-	getfullfilepath(&cfg, f, fpath);
+	getfilepath(&cfg, f, fpath);
 	if(!checkprotresult(prot, error, fpath)) {
 		if(f->dir<cfg.total_dirs)
 			SAFEPRINTF4(str,"attempted to download %s (%s) from %s %s"

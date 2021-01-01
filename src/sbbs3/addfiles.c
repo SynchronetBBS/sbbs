@@ -577,7 +577,7 @@ void synclist(char *inpath, int dirnum)
 		return;
 	}
 	size_t file_count;
-	file_list = loadfiles(&smb, NULL, 0, &file_count);
+	file_list = loadfiles(&scfg, &smb, NULL, 0, &file_count);
 
 	printf("\nSynchronizing %s with %s %s\n\n"
 		,listpath,scfg.lib[scfg.dir[dirnum]->lib]->sname,scfg.dir[dirnum]->sname);
@@ -601,7 +601,7 @@ void synclist(char *inpath, int dirnum)
 		if(smb_removefile(&smb, f) != SMB_SUCCESS)
 			fprintf(stderr, "!ERROR (%s) removing file from database\n", smb.last_error);
 		else {
-			if(remove(getfullfilepath(&scfg, f, str)))
+			if(remove(getfilepath(&scfg, f, str)))
 				printf("Error removing %s\n",str);
 			removed++;
 			printf("Removed from database\n");

@@ -551,7 +551,7 @@ int DLLCALL smb_open_sub(scfg_t* cfg, smb_t* smb, unsigned int subnum)
 
 BOOL DLLCALL smb_init_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
 {
-	if(dirnum != INVALID_DIR && dirnum >= cfg->total_dirs)
+	if(dirnum >= cfg->total_dirs)
 		return FALSE;
 	memset(smb, 0, sizeof(smb_t));
 	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);

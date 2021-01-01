@@ -1,8 +1,4 @@
-/* bat_xfer.cpp */
-
 /* Synchronet batch file transfer functions */
-
-/* $Id: bat_xfer.cpp,v 1.41 2020/05/13 23:56:08 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -132,17 +116,23 @@ void sbbs_t::batchmenu()
 					bputs(text[DownloadQueueLstHdr]);
 					for(size_t i = 0; filenames[i]; ++i) {
 						const char* filename = filenames[i];
-						int64_t size = iniGetBytes(ini, filename, "size", 1, 0);
-						int64_t cost = iniGetBytes(ini, filename, "cost", 1, 0);
+						smbfile_t f = {{}};
+						if(!batch_file_load(&cfg, ini, filename, &f))
+							continue;
+						getfilesize(&cfg, &f);
+						getfiletime(&cfg, &f);
 						bprintf(text[DownloadQueueLstFmt],i+1
 							,filename
-							,ultoac((ulong)cost, tmp)
-							,ultoac((ulong)size, str)
+							,ultoac(f.cost, tmp)
+							,ultoac(f.size, str)
 							,cur_cps
-								? sectostr((uint)(size/(ulong)cur_cps),tmp2)
-								: "??:??:??");
-						totalsize += size;
-						totalcdt += cost;
+								? sectostr((uint)(f.size/(ulong)cur_cps),tmp2)
+								: "??:??:??"
+							,datestr(f.time)
+						);
+						totalsize += f.size;
+						totalcdt += f.cost;
+						smb_freemsgmem(&f);
 					}
 					bprintf(text[DownloadQueueTotals]
 						,ultoac((ulong)totalcdt,tmp),ultoac((ulong)totalsize,str),cur_cps
@@ -247,7 +237,11 @@ BOOL sbbs_t::start_batch_download()
 
 	int64_t totalcdt = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
-		totalcdt += iniGetBytes(ini, filenames[i], "cost", 1, 0);
+		smbfile_t f = {{}};
+		if(batch_file_load(&cfg, ini, filenames[i], &f)) {
+			totalcdt += f.cost;
+			smb_freefilemem(&f);
+		}
 	}
 	if(totalcdt > (int64_t)(useron.cdt+useron.freecdt)) {
 		bprintf(text[YouOnlyHaveNCredits]
@@ -260,21 +254,20 @@ BOOL sbbs_t::start_batch_download()
 	int64_t totalsize = 0;
 	int64_t totaltime = 0;
 	for(size_t i=0; filenames[i] != NULL; ++i) {
-		char value[INI_MAX_VALUE_LEN + 1];
-		int dirnum = getdirnum(&cfg, iniGetString(ini, filenames[i], "dir", NULL, value));
-		if(!(cfg.dir[dirnum]->misc&DIR_TFREE) && cur_cps)
-			totaltime += iniGetBytes(ini, filenames[i], "size", 1, 0)/(ulong)cur_cps;
-		smbfile_t f;
-		if(loadfile(&cfg, dirnum, filenames[i], &f)) {
-			SAFECAT(list, getfullfilepath(&cfg, &f, path));
-			SAFECAT(list, " ");
-		}
+		smbfile_t f = {{}};
+		if(!batch_file_get(&cfg, ini, filenames[i], &f))
+			continue;
+		if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && cur_cps)
+			totaltime += getfilesize(&cfg, &f) / (ulong)cur_cps;
+		SAFECAT(list, getfilepath(&cfg, &f, path));
+		SAFECAT(list, " ");
+		smb_freefilemem(&f);
 	}
+	iniFreeStringList(ini);
+	iniFreeStringList(filenames);
 
 	if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
-		iniFreeStringList(ini);
-		iniFreeStringList(filenames);
 		return(FALSE); 
 	}
 	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
@@ -295,12 +288,10 @@ BOOL sbbs_t::start_batch_download()
 			&& chk_ar(cfg.prot[i]->ar,&useron,&client))
 			break;
 	if(i>=cfg.total_prots || !create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false)) {
-		iniFreeStringList(ini);
-		iniFreeStringList(filenames);
 		return(FALSE);
 	}
 	xfrprot=i;
-#if 0 // Download events
+#if 0 // NFB-TODO: Download events
 	list=NULL;
 	for(i=0;i<batdn_total;i++) {
 		curdirnum=batdn_dir[i]; 		/* for ARS */
@@ -401,21 +392,27 @@ bool sbbs_t::create_batchdn_lst(bool native)
 	for(size_t i = 0; filenames[i] != NULL; ++i) {
 		const char* filename = filenames[i];
 		smbfile_t f = {};
-		char value[INI_MAX_VALUE_LEN + 1];
-		f.dir = getdirnum(&cfg, iniGetString(ini, filename, "dir", NULL, value));
+		f.dir = batch_file_dir(&cfg, ini, filename);
 		if(!loadfile(&cfg, f.dir, filename, &f)) {
 			errormsg(WHERE, "loading file", filename, i);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
 		}
-		getfullfilepath(&cfg, &f, path);
-#ifdef _WIN32
-		if(!native) {
-			char tmp[MAX_PATH + 1];
-			GetShortPathName(path, tmp, sizeof(tmp));
-			SAFECOPY(path, tmp);
+		getfilepath(&cfg, &f, path);
+		if(!fexistcase(path)) {
+			bprintf(text[FileDoesNotExist], path);
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 		}
+		else {
+#ifdef _WIN32
+			if(!native) {
+				char tmp[MAX_PATH + 1];
+				GetShortPathName(path, tmp, sizeof(tmp));
+				SAFECOPY(path, tmp);
+			}
 #endif
-		fprintf(fp, "%s\r\n", path);
+			fprintf(fp, "%s\r\n", path);
+		}
 		smb_freefilemem(&f);
 	}
 	fclose(fp);
@@ -443,15 +440,13 @@ bool sbbs_t::create_batchup_lst()
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
 	for(size_t i = 0; filenames[i] != NULL; ++i) {
 		const char* filename = filenames[i];
-		char value[INI_MAX_VALUE_LEN + 1];
-		int dir = getdirnum(&cfg, iniGetString(ini, filename, "dir", NULL, value));
-		int altpath = iniGetInteger(ini, filename, "altpath", 0);
-		if(dir < 0 || dir >= cfg.total_dirs)
-			fprintf(fp, "%s", cfg.temp_dir);
-		else
-			fprintf(fp, "%s", altpath > 0 && altpath <= cfg.altpaths
-				? cfg.altpath[altpath - 1] : cfg.dir[dir]->path);
+		smbfile_t f = {{}};
+		if(!batch_file_get(&cfg, ini, filename, &f))
+			continue;
+		fprintf(fp, "%s", f.hdr.altpath > 0 && f.hdr.altpath <= cfg.altpaths
+			? cfg.altpath[f.hdr.altpath - 1] : cfg.dir[f.dir]->path);
 		fprintf(fp, "%s\r\n", filename);
+		smb_freemsgmem(&f);
 	}
 	fclose(fp);
 	iniFreeStringList(ini);
@@ -464,85 +459,78 @@ bool sbbs_t::create_batchup_lst()
 /****************************************************************************/
 void sbbs_t::batch_upload()
 {
-#if 0
-    char	str1[MAX_PATH+1],str2[MAX_PATH+1];
-	char	path[MAX_PATH+1];
-	char 	tmp[MAX_PATH+1];
-	uint	i,j,x,y;
-    file_t	f;
-	DIR*	dir;
-	DIRENT*	dirent;
+	char src[MAX_PATH + 1];
+	char dest[MAX_PATH + 1];
 
-	for(i=0;i<batup_total;) {
-		curdirnum=batup_dir[i]; 			/* for ARS */
-		lncntr=0;                               /* defeat pause */
-		unpadfname(batup_name[i],tmp);
-		SAFEPRINTF2(str1,"%s%s",cfg.temp_dir,tmp);
-		SAFEPRINTF2(str2,"%s%s",cfg.dir[batup_dir[i]]->path,tmp);
-		if(fexistcase(str1) && fexistcase(str2)) { /* file's in two places */
-			bprintf(text[FileAlreadyThere],batup_name[i]);
-			remove(str1);    /* this is the one received */
-			i++;
-			continue; 
-		}
-		if(fexist(str1))
-			mv(str1,str2,0);
-		SAFECOPY(f.name,batup_name[i]);
-		SAFECOPY(f.desc,batup_desc[i]);
-		f.dir=batup_dir[i];
-		f.misc=batup_misc[i];
-		f.altpath=batup_alt[i];
-		if(uploadfile(&f)) {
-			batup_total--;
-			for(j=i;j<batup_total;j++) {
-				batup_dir[j]=batup_dir[j+1];
-				batup_alt[j]=batup_alt[j+1];
-				batup_misc[j]=batup_misc[j+1];
-				strcpy(batup_name[j],batup_name[j+1]);
-				strcpy(batup_desc[j],batup_desc[j+1]); 
-			} 
-		}
-		else i++; 
-	}
-	if(cfg.upload_dir==INVALID_DIR)
-		return;
-	dir=opendir(cfg.temp_dir);
-	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
-		SAFEPRINTF2(tmp,"%s%s",cfg.temp_dir,dirent->d_name);
-		if(isdir(tmp))
+	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
+	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
+	for(size_t i = 0; filenames[i] != NULL; ++i) {
+		const char* filename = filenames[i];
+		int dir = batch_file_dir(&cfg, ini, filename);
+		curdirnum = dir; /* for ARS */
+		lncntr = 0; /* defeat pause */
+
+		SAFEPRINTF2(src, "%s%s", cfg.temp_dir, filename);
+		SAFEPRINTF2(dest, "%s%s", cfg.dir[dir]->path, filename);
+		if(fexistcase(src) && fexistcase(dest)) { /* file's in two places */
+			bprintf(text[FileAlreadyThere], filename);
+			remove(src);    /* this is the one received */
 			continue;
-		memset(&f,0,sizeof(file_t));
-		f.dir=cfg.upload_dir;
-		SAFEPRINTF2(path,"%s%s",cfg.dir[f.dir]->path,dirent->d_name);
-		if(fexistcase(path)) {
+		}
+
+		if(fexist(src))
+			mv(src, dest, /* copy: */FALSE);
+
+		smbfile_t f = {{}};
+		if(!batch_file_get(&cfg, ini, filename, &f))
+			continue;
+		if(uploadfile(&f))
+			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+		smb_freemsgmem(&f);
+	}
+	iniFreeStringList(filenames);
+	iniFreeStringList(ini);
+
+	if(cfg.upload_dir == INVALID_DIR) // no blind upload dir specified
+		return;
+
+	DIR* dir = opendir(cfg.temp_dir);
+	DIRENT* dirent;
+	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
+		SAFEPRINTF2(src, "%s%s", cfg.temp_dir,dirent->d_name);
+		if(isdir(src))
+			continue;
+		SAFEPRINTF2(dest, "%s%s", cfg.dir[cfg.upload_dir]->path, dirent->d_name);
+		if(fexistcase(dest)) {
 			bprintf(text[FileAlreadyOnline], dirent->d_name);
 			continue;
 		}
-		if(mv(tmp, path, /* copy: */false))
+		if(mv(src, dest, /* copy: */false))
 			continue;
 
-#ifdef _WIN32
-		GetShortPathName(path, tmp, sizeof(tmp));
-#endif
-		padfname(getfname(tmp),f.name);
-
+		bputs(text[SearchingForDupes]);
+		uint x,y;
 		for(x=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
 				if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
-					&& findfile(&cfg,usrdir[x][y],f.name))
+					&& findfile(&cfg,usrdir[x][y], dirent->d_name))
 					break;
 			if(y<usrdirs[x])
 				break; 
 		}
+		bputs(text[SearchedForDupes]);
 		if(x<usrlibs) {
-			bprintf(text[FileAlreadyOnline],f.name);
+			bprintf(text[FileAlreadyOnline], dirent->d_name);
 		} else {
-			uploadfile(&f); 
+			smbfile_t f = {{}};
+			f.dir = cfg.upload_dir;
+			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
+			uploadfile(&f);
+			smb_freefilemem(&f);
 		}
 	}
 	if(dir!=NULL)
 		closedir(dir);
-#endif
 }
 
 /****************************************************************************/
@@ -561,11 +549,9 @@ void sbbs_t::batch_download(int xfrprot)
 		char* filename = filenames[i];
 		lncntr=0;                               /* defeat pause */
 		if(xfrprot==-1 || checkprotresult(cfg.prot[xfrprot], 0, filename)) {
-		    smbfile_t	f;
-			char value[INI_MAX_VALUE_LEN + 1];
-			f.dir = getdirnum(&cfg, iniGetString(ini, filename, "dir", NULL, value));
+			smbfile_t f = {{}};
 			iniRemoveSection(&ini, filename);
-			if(!loadfile(&cfg, f.dir, filename, &f)) {
+			if(!batch_file_load(&cfg, ini, filename, &f)) {
 				errormsg(WHERE, "loading file", filename, i);
 				continue;
 			}
@@ -609,7 +595,7 @@ void sbbs_t::batch_add_list(char *list)
 					if(k && !(k%5))
 						bputs("\b\b\b\b\b     \b\b\b\b\b");
 					if(loadfile(&cfg, usrdir[i][j], str, &f)) {
-						if(fexist(getfullfilepath(&cfg, &f, path)))
+						if(fexist(getfilepath(&cfg, &f, path)))
 							addtobatdl(&f);
 						else
 							bprintf(text[FileIsNotOnline],f.filename);
@@ -653,14 +639,10 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 		return false;
 	}
 
-	char path[MAX_PATH + 1];
-	FILE* fp = iniOpenFile((batch_list_name(&cfg, useron.number, XFER_BATCH_DOWNLOAD, path, sizeof(path))), /* create: */TRUE);
-	str_list_t ini = iniReadFile(fp);
-
+	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 	if(iniSectionExists(ini, f->filename)) {
 		bprintf(text[FileAlreadyInQueue], f->filename);
 		iniFreeStringList(ini);
-		iniCloseFile(fp);
 		return false;
 	}
 
@@ -675,13 +657,14 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 		totalsize = 0;
 		for(i=0; filenames[i] != NULL; ++i) {
 			const char* filename = filenames[i];
-			char value[INI_MAX_VALUE_LEN + 1];
-			uint dirnum = getdirnum(&cfg, iniGetString(ini, filename, "dir", NULL, value));
-			totalcost += iniGetBytes(ini, filename, "cost", 1, 0);
-			int64_t fsize = iniGetBytes(ini, filename, "size", 1, 0);
-			totalsize += fsize;
-			if(!(cfg.dir[dirnum]->misc&DIR_TFREE) && cur_cps)
-				totaltime += fsize/(ulong)cur_cps; 
+			smbfile_t bf = {{}};
+			if(!batch_file_load(&cfg, ini, filename, &bf))
+				continue;
+			totalcost += bf.cost;
+			totalsize += getfilesize(&cfg, &bf);
+			if(!(cfg.dir[bf.dir]->misc&DIR_TFREE) && cur_cps)
+				totaltime += bf.size/(ulong)cur_cps;
+			smb_freefilemem(&bf);
 		}
 		if(cfg.dir[f->dir]->misc&DIR_FREE)
 			f->cost=0L;
@@ -698,20 +681,18 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 				bprintf(text[CantAddToQueue],f->filename);
 				bputs(text[NotEnoughTimeToDl]);
 			} else {
-				iniSetString(&ini, f->filename, "dir", cfg.dir[f->dir]->code, /* style: */NULL);
-				iniSetBytes(&ini, f->filename, "cost", /* unit: */1, f->cost, /* style: */NULL);
-				iniSetBytes(&ini, f->filename, "size", /* unit: */1, getfilesize(&cfg, f), /* style: */NULL);
-				bprintf(text[FileAddedToBatDlQueue]
-					,f->filename, strListCount(filenames) + 1, cfg.max_batdn, ultoac((ulong)totalcost,tmp)
-					,ultoac((ulong)totalsize,tmp2)
-					,sectostr((ulong)totalsize/(ulong)cur_cps,str));
-				result = iniWriteFile(fp, ini);
+				if(batch_file_add(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f)) {
+					bprintf(text[FileAddedToBatDlQueue]
+						,f->filename, strListCount(filenames) + 1, cfg.max_batdn, ultoac((ulong)totalcost,tmp)
+						,ultoac((ulong)totalsize,tmp2)
+						,sectostr((ulong)totalsize/(ulong)cur_cps,str));
+					result = true;
+				}
 			}
 		}
 	}
 	iniFreeStringList(ini);
 	iniFreeStringList(filenames);
-	iniCloseFile(fp);
 	return result;
 }
 

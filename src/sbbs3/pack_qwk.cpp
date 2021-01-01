@@ -36,8 +36,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	uint32_t posts;
 	uint32_t mailmsgs=0;
 	uint32_t u;
-	ulong	totalcdt,totaltime
-			,files,submsgs,msgs,netfiles=0,preqwk=0;
+	ulong	files,submsgs,msgs,netfiles=0,preqwk=0;
 	uint32_t	lastmsg;
 	ulong	subs_scanned=0;
 	float	f;	/* Sparky is responsible */
@@ -628,46 +627,41 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		if(netfiles)
 			CRLF; 
 	}
-#if 0 //NFB-TODO
-	if(batdn_total()) {
-		for(i=0,totalcdt=0;i<batdn_total;i++)
-			if(!is_download_free(&cfg,batdn_dir[i],&useron,&client))
-				totalcdt+=batdn_cdt[i];
-		if(totalcdt>useron.cdt+useron.freecdt) {
-			bprintf(text[YouOnlyHaveNCredits]
-				,ultoac(useron.cdt+useron.freecdt,tmp)); 
-		}
-		else {
-			for(i=0,totaltime=0;i<batdn_total;i++) {
-				if(!(cfg.dir[batdn_dir[i]]->misc&DIR_TFREE) && cur_cps)
-					totaltime+=batdn_size[i]/(ulong)cur_cps; 
+	{
+		int64_t totalcdt = 0;
+		int64_t totaltime = 0;
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+		for(size_t i = 0; filenames[i] != NULL; i++) {
+			const char* filename = filenames[i];
+			smbfile_t f = {{}};
+			if(!batch_file_load(&cfg, ini, filename, &f))
+				continue;
+			if(!is_download_free(&cfg, f.dir, &useron, &client))
+				totalcdt += f.cost;
+			if(totalcdt > useron.cdt+useron.freecdt) {
+				bprintf(text[YouOnlyHaveNCredits]
+					,ultoac(useron.cdt+useron.freecdt,tmp));
+				break;
 			}
-			if(!(useron.exempt&FLAG('T')) && !SYSOP && totaltime>timeleft)
-				bputs(text[NotEnoughTimeToDl]);
-			else {
-				for(i=0;i<batdn_total;i++) {
-					lncntr=0;
-					unpadfname(batdn_name[i],tmp);
-					SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,tmp);
-					if(!fexistcase(tmp2)) {
-						seqwait(cfg.dir[batdn_dir[i]]->seqdev);
-						bprintf(text[RetrievingFile],tmp);
-						SAFEPRINTF2(str,"%s%s"
-							,batdn_alt[i]>0 && batdn_alt[i]<=cfg.altpaths
-							? cfg.altpath[batdn_alt[i]-1]
-							: cfg.dir[batdn_dir[i]]->path
-							,tmp);
-						mv(str,tmp2,/* copy: */TRUE); /* copy the file to temp dir */
-						getnodedat(cfg.node_num,&thisnode,/* copy: */TRUE);
-						thisnode.aux=0xfe;
-						putnodedat(cfg.node_num,&thisnode);
-						CRLF; 
-					} 
-				} 
-			} 
-		} 
+			if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && cur_cps)
+				totaltime += getfilesize(&cfg, &f) / (ulong)cur_cps; 
+			lncntr=0;
+			SAFEPRINTF2(tmp2, "%s%s", cfg.temp_dir, f.filename);
+			if(!fexistcase(tmp2)) {
+				seqwait(cfg.dir[f.dir]->seqdev);
+				bprintf(text[RetrievingFile],tmp);
+				SAFEPRINTF2(str,"%s%s"
+					,f.hdr.altpath > 0 && f.hdr.altpath <= cfg.altpaths
+					? cfg.altpath[f.hdr.altpath - 1]
+					: cfg.dir[f.dir]->path
+					,tmp);
+				mv(str,tmp2,/* copy: */TRUE); /* copy the file to temp dir */
+				CRLF;
+			}
+		}
 	}
-#endif
+
 	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total() && !voting_data
 		&& (prepack || !preqwk)) {
 		if(online == ON_REMOTE)
@@ -698,8 +692,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		glob(str,0,NULL,&g);
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
-			padfname(fname,str);
-			if(IS_DIGIT(str[4]) && IS_DIGIT(str[9])) {
+			char* fext = getfext(fname);
+			if(IS_DIGIT(str[4]) && fext != NULL && IS_DIGIT(*(fext + 1))) {
 				SAFEPRINTF2(str,"%sQWK/%s",cfg.text_dir,fname);
 				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,fname);
 				mv(str,tmp2,/* copy: */TRUE); 

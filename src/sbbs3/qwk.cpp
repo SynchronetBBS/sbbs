@@ -1,7 +1,5 @@
 /* Synchronet QWK packet-related functions */
 
-/* $Id: qwk.cpp,v 1.97 2020/08/10 00:43:42 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -737,7 +723,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	uint 	x,y;
 	long	l;
 	ulong	qwk=useron.qwk;
-	file_t	f;
+	smbfile_t f = {{}};
 
 	sprintf(str,"%-25.25s",buf);	/* Note: must be space-padded, left justified */
 	strupr(str);
@@ -903,31 +889,26 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 	}
 
 	else if(!strncmp(str,"FREQ ",5)) {                  /* file request */
-		padfname(str+5,f.name);
+		const char* fname = str + 5;
+		SKIP_WHITESPACE(fname);
 		for(x=y=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
-				if(findfile(&cfg,usrdir[x][y],f.name))
+				if(loadfile(&cfg, usrdir[x][y], fname, &f))
 					break;
 			if(y<usrdirs[x])
 				break;
 		}
 		if(x>=usrlibs) {
-			bprintf("\r\n%s",f.name);
+			bprintf("\r\n%s",fname);
 			bputs(text[FileNotFound]);
 		}
 		else {
-#if 0 // TODO
-			f.dir=usrdir[x][y];
-			getfileixb(&cfg,&f);
-			f.size=0;
-			getfiledat(&cfg,&f);
-			if(f.size==-1L)
-				bprintf(text[FileIsNotOnline],f.name);
+			if(getfilesize(&cfg, &f) < 0)
+				bprintf(text[FileIsNotOnline], f.filename);
 			else
 				addtobatdl(&f);
-#endif
 		}
-
+		smb_freefilemem(&f);
 	}
 
 	else {

@@ -217,6 +217,46 @@ bool sbbs_t::logon()
 	useron.ltoday++;
 
 	gettimeleft();
+
+	/* Inform the user of what's in their batch upload queue */
+	{
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+		for(size_t i = 0; filenames[i] != NULL; i++) {
+			const char* filename = filenames[i];
+			smbfile_t f = {{}};
+			if(batch_file_get(&cfg, ini, filename, &f)) {
+				bprintf(text[FileAddedToUlQueue], f.filename, i + 1, cfg.max_batup);
+				smb_freefilemem(&f);
+			} else
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, filename);
+		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+	}
+
+	/* Inform the user of what's in their batch download queue */
+	{
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+		for(size_t i = 0; filenames[i] != NULL; i++) {
+			const char* filename = filenames[i];
+			smbfile_t f = {{}};
+			if(batch_file_load(&cfg, ini, filename, &f)) {
+				char tmp2[256];
+				getfilesize(&cfg, &f);
+				bprintf(text[FileAddedToBatDlQueue]
+					,f.filename, i + 1, cfg.max_batdn
+					,ultoac((ulong)f.cost,tmp)
+					,ultoac((ulong)f.size,tmp2)
+					,sectostr((ulong)f.size / (ulong)cur_cps,str));
+				smb_freefilemem(&f);
+			} else
+				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
+	}
 	if(!(sys_status&SS_QWKLOGON)) { 	 /* QWK Nodes don't go through this */
 
 		if(cfg.sys_pwdays && useron.pass[0]

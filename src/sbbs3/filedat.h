@@ -29,40 +29,35 @@
 extern "C" {
 #endif
 
-/* Legacy file base API: */
-DLLEXPORT BOOL		getfileixb(scfg_t* cfg, file_t* f);
-DLLEXPORT BOOL		putfileixb(scfg_t* cfg, file_t* f);
-DLLEXPORT BOOL		getfiledat(scfg_t* cfg, file_t* f);
-DLLEXPORT BOOL		putfiledat(scfg_t* cfg, file_t* f);
-DLLEXPORT void		putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
-DLLEXPORT void		getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
-DLLEXPORT char*		getfilepath(scfg_t* cfg, file_t* f, char* path);
-DLLEXPORT int		openextdesc(scfg_t* cfg, uint dirnum);
-DLLEXPORT void		fgetextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext, int file);
-DLLEXPORT void		closeextdesc(int file);
-DLLEXPORT BOOL		removefiledat(scfg_t* cfg, file_t* f);
-DLLEXPORT BOOL		addfiledat(scfg_t* cfg, file_t* f);
-DLLEXPORT char *	padfname(const char *filename, char *str);
-DLLEXPORT char *	unpadfname(const char *filename, char *str);
-DLLEXPORT BOOL		rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
-DLLEXPORT int		update_uldate(scfg_t* cfg, file_t* f);
+DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
+DLLEXPORT BOOL			newfiles(smb_t*, time_t);
+DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
+DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, size_t* count);
+DLLEXPORT void			sortfiles(smbfile_t*, size_t count, enum file_sort);
+DLLEXPORT void			freefiles(smbfile_t*, size_t count);
+DLLEXPORT BOOL			updatefile(scfg_t*, smbfile_t*);
+DLLEXPORT char*			getfilepath(scfg_t*, smbfile_t*, char* path);
+DLLEXPORT off_t			getfilesize(scfg_t*, smbfile_t*);
+DLLEXPORT time_t		getfiletime(scfg_t*, smbfile_t*);
+DLLEXPORT ulong			gettimetodl(scfg_t*, smbfile_t*, uint rate_cps);
+DLLEXPORT BOOL			addfile(scfg_t*, uint dirnum, smbfile_t*, const char* extdesc);
+DLLEXPORT BOOL			removefile(scfg_t*, uint dirnum, const char* filename);
+DLLEXPORT char*			format_filename(const char* fname, char* buf, size_t, BOOL pad);
 
-DLLEXPORT BOOL		findfile(scfg_t* cfg, uint dirnum, const char *filename);
+/* Batch file transfer queues */
+DLLEXPORT char*			batch_list_name(scfg_t* , uint usernumber, enum XFER_TYPE, char* fname, size_t);
+DLLEXPORT FILE*			batch_list_open(scfg_t* , uint usernumber, enum XFER_TYPE, BOOL create);
+DLLEXPORT str_list_t	batch_list_read(scfg_t* , uint usernumber, enum XFER_TYPE);
+DLLEXPORT BOOL			batch_list_write(scfg_t*, uint usernumber, enum XFER_TYPE, str_list_t list);
+DLLEXPORT BOOL			batch_list_clear(scfg_t*, uint usernumber, enum XFER_TYPE);
 
-/* New file base API: */
-DLLEXPORT BOOL		 newfiles(smb_t*, time_t);
-DLLEXPORT smbfile_t* loadfiles(smb_t*, const char* filespec, time_t, size_t* count);
-DLLEXPORT void		 sortfiles(smbfile_t*, size_t count, enum file_sort);
-DLLEXPORT void		 freefiles(smbfile_t*, size_t count);
-DLLEXPORT BOOL		 loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
-DLLEXPORT BOOL		 updatefile(scfg_t*, smbfile_t*);
-DLLEXPORT char*		 getfullfilepath(scfg_t*, smbfile_t*, char* path);
-DLLEXPORT off_t		 getfilesize(scfg_t*, smbfile_t*);
-DLLEXPORT time_t	 getfiledate(scfg_t*, smbfile_t*);
-DLLEXPORT ulong		 gettimetodl(scfg_t*, smbfile_t*, uint rate_cps);
-DLLEXPORT BOOL		 addfile(scfg_t*, uint dirnum, smbfile_t*, const char* extdesc);
-DLLEXPORT BOOL		 removefile(scfg_t*, uint dirnum, const char* filename);
-DLLEXPORT char*		 format_filename(const char* fname, char* buf, size_t, BOOL pad);
+DLLEXPORT BOOL			batch_file_add(scfg_t*, uint usernumber, enum XFER_TYPE, smbfile_t*);
+DLLEXPORT BOOL			batch_file_exists(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
+DLLEXPORT BOOL			batch_file_remove(scfg_t*, uint usernumber, enum XFER_TYPE, const char* filename);
+DLLEXPORT size_t		batch_file_count(scfg_t*, uint usernumber, enum XFER_TYPE);
+DLLEXPORT BOOL			batch_file_get(scfg_t*, str_list_t, const char* filename, smbfile_t*);
+DLLEXPORT int			batch_file_dir(scfg_t*, str_list_t, const char* filename);
+DLLEXPORT BOOL			batch_file_load(scfg_t*, str_list_t, const char* filename, smbfile_t*);
 
 #ifdef __cplusplus
 }

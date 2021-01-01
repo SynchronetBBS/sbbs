@@ -2001,13 +2001,13 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return str;
 		}
 		if(strcmp(sp, "FILE_TIME") == 0)
-			return timestr(current_file->date);
+			return timestr(current_file->time);
 		if(strcmp(sp, "FILE_TIME_ULED") == 0)
 			return timestr(current_file->hdr.when_imported.time);
 		if(strcmp(sp, "FILE_TIME_DLED") == 0)
 			return timestr(current_file->hdr.last_downloaded);
 		if(strcmp(sp, "FILE_DATE") == 0)
-			return datestr(current_file->date);
+			return datestr(current_file->time);
 		if(strcmp(sp, "FILE_DATE_ULED") == 0)
 			return datestr(current_file->hdr.when_imported.time);
 		if(strcmp(sp, "FILE_DATE_DLED") == 0)

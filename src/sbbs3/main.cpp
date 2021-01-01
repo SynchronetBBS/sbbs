@@ -3619,9 +3619,6 @@ bool sbbs_t::init()
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-/** Put in if(cfg.node_num) ? (not needed for server and event threads) */
-	backout();
-
 	/* Reset COMMAND SHELL */
 
 	main_csi.str=(char *)malloc(1024);

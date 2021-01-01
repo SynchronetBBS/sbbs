@@ -1,8 +1,4 @@
-/* execfunc.cpp */
-
 /* Hi-level command shell/module routines (functions) */
-
-/* $Id: execfunc.cpp,v 1.46 2020/05/14 07:49:59 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -323,32 +307,8 @@ int sbbs_t::exec_function(csi_t *csi)
 			bprintf(text[AltULPathIsNow],altul ? cfg.altpath[altul-1] : text[OFF]);
 			return(0);
 		case CS_FILE_RESORT_DIRECTORY:
-			for(i=1;i<=cfg.sys_nodes;i++)
-				if(i!=cfg.node_num) {
-					getnodedat(i,&node,0);
-					if(node.status==NODE_INUSE
-						|| node.status==NODE_QUIET)
-						break; 
-				}
-
-			if(i<=cfg.sys_nodes) {
-				bputs(text[ResortWarning]);
-				return(0); 
-			}
-
-			if(!stricmp(csi->str,"ALL")) {     /* all libraries */
-				for(i=0;i<usrlibs;i++)
-					for(j=0;j<usrdirs[i];j++)
-						resort(usrdir[i][j]);
-				return(0); 
-			}
-			if(!stricmp(csi->str,"LIB")) {     /* current library */
-				for(i=0;i<usrdirs[curlib];i++)
-					resort(usrdir[curlib][i]);
-				return(0); 
-			}
-			resort(usrdir[curlib][curdir[curlib]]);
-			return(0);
+			lprintf(LOG_WARNING, "deprecated function: RESORT_DIRECTORY");
+			return 0;
 
 		case CS_FILE_GET:
 			if(!fexist(csi->str)) {

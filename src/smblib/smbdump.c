@@ -61,6 +61,11 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 	/* variable fields */
 	for(i=0;i<msg->total_hfields;i++) {
 		switch(msg->hfield[i].type) {
+			case SMB_COST:
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%lu"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,(ulong)*(uint32_t*)msg->hfield_dat[i]);
+				break;
 			case SMB_COLUMNS:
 				strListAppendFormat(&list, HFIELD_NAME_FMT "%u"
 					,smb_hfieldtype(msg->hfield[i].type)

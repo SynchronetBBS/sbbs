@@ -673,11 +673,15 @@ static void send_thread(void* arg)
 	length=flength(xfer.filename);
 
 	if(length < 1) {
-		lprintf(LOG_WARNING, "%04d <%s> !DATA cannot send file (%s) with size of %"PRIdOFF" bytes"
-			,xfer.ctrl_sock, xfer.user->alias, xfer.filename, length);
-		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 Invalid file size: %"PRIdOFF, length);
-		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
-			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+		if(xfer.tmpfile) {
+			if(!(startup->options&FTP_OPT_KEEP_TEMP_FILES))
+				ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
+			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 No files");
+		} else {
+			lprintf(LOG_WARNING, "%04d <%s> !DATA cannot send file (%s) with size of %"PRIdOFF" bytes"
+				,xfer.ctrl_sock, xfer.user->alias, xfer.filename, length);
+			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 Invalid file size: %"PRIdOFF, length);
+		}
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
 		*xfer.inprogress=FALSE;
 		thread_down();
@@ -1942,7 +1946,7 @@ static BOOL send_mlsx_entry(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned 
 	if (unique != NULL && (feats & MLSX_UNIQUE))
 		end += sprintf(end, "Unique=%s;", unique);
 	if (ul != 0 && (feats & MLSX_CREATE)) {
-		t = *gmtime(&modify);
+		t = *gmtime(&ul);
 		end += sprintf(end, "Create=%04d%02d%02d%02d%02d%02d;",
 		    t.tm_year+1900, t.tm_mon+1, t.tm_mday,
 		    t.tm_hour, t.tm_min, t.tm_sec);
@@ -2009,7 +2013,7 @@ static BOOL write_local_mlsx(FILE *fp, SOCKET sock, CRYPT_SESSION sess, unsigned
 	*p=0;
 	if (is_file)
 		full_path = FALSE;
-	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)st.st_size, st.st_mtime, NULL, NULL, 0, full_path ? path : getfname(path));
+	return send_mlsx_entry(fp, sock, sess, feats, type, permstr, (uint64_t)st.st_size, st.st_mtime, NULL, NULL, st.st_ctime, full_path ? path : getfname(path));
 }
 
 /*
@@ -2121,8 +2125,6 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, s
 		return FALSE;
 	if (!(user->exempt&FLAG('R')))
 		return FALSE;
-	if(!findfile(&scfg, file->dir, file->filename) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
-		return FALSE;
 	return TRUE;
 }
 
@@ -2135,8 +2137,6 @@ static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client,
 	if (!chk_ar(&scfg,dir->ar,user,client))
 		return FALSE;
 	if (!chk_ar(&scfg,dir->dl_ar,user,client))
-		return FALSE;
-	if(!findfile(&scfg,file->dir,file->filename) && !(startup->options&FTP_OPT_DIR_FILES) && !(dir->misc&DIR_FILES))
 		return FALSE;
 	// TODO: Verify credits
 	return TRUE;
@@ -2287,8 +2287,6 @@ static void ctrl_thread(void* arg)
 	time_t		lastactive;
 	time_t		file_date;
 	off_t		file_size;
-	smbfile_t	f;
-	glob_t		g;
 	node_t		node;
 	client_t	client;
 	struct tm	tm;
@@ -3288,6 +3286,7 @@ static void ctrl_thread(void* arg)
 					}
 					else {
 						time_t start = time(NULL);
+						glob_t g;
 						glob(path, GLOB_MARK, NULL, &g);
 						for(i=0;i<(int)g.gl_pathc;i++) {
 							char fpath[MAX_PATH + 1];
@@ -3346,6 +3345,7 @@ static void ctrl_thread(void* arg)
 					memset(&cur_tm,0,sizeof(cur_tm));
 			
 				time_t start = time(NULL);
+				glob_t g;
 				glob(path, GLOB_MARK, NULL, &g);
 				for(i=0;i<(int)g.gl_pathc;i++) {
 					char fpath[MAX_PATH + 1];
@@ -3356,14 +3356,12 @@ static void ctrl_thread(void* arg)
 						struct stat st;
 						if(stat(fpath, &st) != 0)
 							continue;
-						f.size = st.st_size;
-						t = st.st_mtime;
-						if(localtime_r(&t,&tm)==NULL)
+						if(localtime_r(&st.st_mtime,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
 						fprintf(fp,"%crw-r--r--   1 %-8s local %9"PRId64" %s %2d "
 							,*lastchar(g.gl_pathv[i]) == '/' ? 'd':'-'
 							,scfg.sys_id
-							,(int64_t)f.size
+							,(int64_t)st.st_size
 							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
@@ -3837,48 +3835,38 @@ static void ctrl_thread(void* arg)
 						continue;
 					}
 					time_t start = time(NULL);
-					SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,"*");
-					glob(path, GLOB_MARK, NULL, &g);
-					memset(&f, 0, sizeof(f));
-					for(i=0;i<(int)g.gl_pathc;i++) {
-						if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
-							continue;
-						SAFECOPY(str, g.gl_pathv[i]);
-						SAFECOPY(fname, getfname(str));
-						smb_freefilemem(&f);
-						if((filedat=(smb_loadfile(&smb, fname, &f) == SMB_SUCCESS))==FALSE
-							&& !(startup->options&FTP_OPT_DIR_FILES)
-							&& !(scfg.dir[dir]->misc&DIR_FILES))
-							continue;
-						if (cmd[3] != 'D' && strcmp(fname, mls_fname) != 0)
+					size_t file_count = 0;
+					smbfile_t* file_list = loadfiles(&scfg, &smb, /* filespec */NULL, /* time: */0, &file_count);
+					for(size_t i = 0; i < file_count; i++) {
+						smbfile_t* f = &file_list[i];
+						if (cmd[3] != 'D' && strcmp(f->filename, mls_fname) != 0)
 							continue;
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", p);
-						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, &f, permstr);
-						get_owner_name(&f, str);
-						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, fname);
+						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, f, permstr);
+						get_owner_name(f, str);
+						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, f->filename);
 						get_unique(aliaspath, uniq);
-						f.size = f.cost;
-						f.date = f.hdr.when_imported.time;
-						if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
+						f->size = f->cost;
+						f->time = f->hdr.when_imported.time;
+						if(scfg.dir[dir]->misc&DIR_FCHK) {
 							struct stat st;
-							if(stat(g.gl_pathv[i], &st) != 0)
+							if(stat(getfilepath(&scfg, f, path), &st) != 0)
 								continue;
-							f.size = st.st_size;
-							f.date = (time32_t)st.st_mtime;
-							f.hdr.when_imported.time = (uint32_t)f.date;
+							f->size = st.st_size;
+							f->time = st.st_mtime;
+							f->hdr.when_imported.time = (uint32_t)st.st_ctime;
 						}
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f.size, f.date, str, uniq, f.hdr.when_imported.time, cmd[3] == 'T' ? mls_path : getfname(g.gl_pathv[i]));
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f->size, f->time, str, uniq, f->hdr.when_imported.time, cmd[3] == 'T' ? mls_path : f->filename);
 						l++;
 					}
 					if (cmd[3] == 'D') {
 						lprintf(LOG_INFO, "%04d <%s> %s listing (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 						    ,sock, user.alias, cmd, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
-						    ,(ulong)g.gl_pathc, (long)time(NULL) - start);
+						    ,(ulong)file_count, (long)time(NULL) - start);
 					}
-					smb_freefilemem(&f);
+					freefiles(file_list, file_count);
 					smb_close(&smb);
-					globfree(&g);
 				} else 
 					lprintf(LOG_INFO,"%04d <%s> %s listing: /%s/%s directory in %s mode (empty - no access)"
 						,sock, user.alias, cmd, scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, mode);
@@ -4133,61 +4121,47 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				time_t start = time(NULL);
-				SAFEPRINTF2(path,"%s%s",scfg.dir[dir]->path,filespec);
-				glob(path, GLOB_MARK, NULL, &g);
-				memset(&f, 0, sizeof(f));
-				for(i=0;i<(int)g.gl_pathc;i++) {
-					if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
-						continue;
-					if((filedat=(smb_findfile(&smb, getfname(g.gl_pathv[i]), NULL) == SMB_SUCCESS))==FALSE
-						&& !(startup->options&FTP_OPT_DIR_FILES)
-						&& !(scfg.dir[dir]->misc&DIR_FILES))
-						continue;
+				size_t file_count = 0;
+				smbfile_t* file_list = loadfiles(&scfg, &smb, filespec, /* time: */0, &file_count);
+				for(size_t i = 0; i < file_count; i++) {
+					smbfile_t* f = &file_list[i];
 					if(detail) {
-						smb_freefilemem(&f);
-						if(filedat && smb_loadfile(&smb, getfname(g.gl_pathv[i]), &f) != SMB_SUCCESS)
-							continue;
-						f.size = f.cost;
-						t = f.hdr.when_imported.time;
-						if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
+						f->size = f->cost;
+						t = f->hdr.when_imported.time;
+						if(scfg.dir[dir]->misc&DIR_FCHK) {
 							struct stat st;
-							if(stat(g.gl_pathv[i], &st) != 0)
+							if(stat(getfilepath(&scfg, f, path), &st) != 0)
 								continue;
-							f.size = st.st_size;
+							f->size = st.st_size;
 							t = st.st_mtime;
 						}
 						if(localtime_r(&t,&tm)==NULL)
 							memset(&tm,0,sizeof(tm));
-						if(filedat) {
-							if(f.hdr.attr & MSG_ANONYMOUS)
-								SAFECOPY(str,ANONYMOUS);
-							else
-								dotname(f.from,str);
-						} else
-							SAFECOPY(str,scfg.sys_id);
+						if(f->hdr.attr & MSG_ANONYMOUS)
+							SAFECOPY(str,ANONYMOUS);
+						else
+							dotname(f->from,str);
 						fprintf(fp,"-r--r--r--   1 %-*s %-8s %9"PRId64" %s %2d "
 							,NAME_LEN
 							,str
 							,scfg.dir[dir]->code_suffix
-							,(int64_t)f.size
+							,(int64_t)f->size
 							,ftp_mon[tm.tm_mon],tm.tm_mday);
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
 								,tm.tm_hour,tm.tm_min
-								,getfname(g.gl_pathv[i]));
+								,f->filename);
 						else
 							fprintf(fp,"%5d %s\r\n"
 								,1900+tm.tm_year
-								,getfname(g.gl_pathv[i]));
-						smb_freefilemem(&f);
+								,f->filename);
 					} else
-						fprintf(fp,"%s\r\n",getfname(g.gl_pathv[i]));
+						fprintf(fp,"%s\r\n", f->filename);
 				}
 				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
-					,(ulong)g.gl_pathc, (long)time(NULL) - start);
-				globfree(&g);
-				smb_freefilemem(&f);
+					,(ulong)file_count, (long)time(NULL) - start);
+				freefiles(file_list, file_count);
 				smb_close(&smb);
 			} else
 				lprintf(LOG_INFO,"%04d <%s> %slisting: /%s/%s directory in %s mode (empty - no access)"
@@ -4434,28 +4408,18 @@ static void ctrl_thread(void* arg)
 							lprintf(LOG_ERR, "ERROR %d (%s) opening %s", result, smb.last_error, smb.file);
 							continue;
 						}
-						sprintf(cmd,"%s*",scfg.dir[dir]->path);
 						time_t start = time(NULL);
-						glob(cmd, GLOB_MARK, NULL, &g);
-						memset(&f, 0, sizeof(f));
-						for(i=0;i<(int)g.gl_pathc;i++) {
-							if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
-								continue;
-							SAFECOPY(str, g.gl_pathv[i]);
-							SAFECOPY(fname, getfname(str));
-							smb_freefilemem(&f);
-							if(smb_loadfile(&smb, fname, &f) != SMB_SUCCESS
-								&& !(startup->options&FTP_OPT_DIR_FILES)
-								&& !(scfg.dir[dir]->misc&DIR_FILES))
-								continue;
+						size_t file_count = 0;
+						smbfile_t* file_list = loadfiles(&scfg, &smb, /* filespec */NULL, /* time: */0, &file_count);
+						for(size_t i = 0; i < file_count; i++) {
+							smbfile_t* f = &file_list[i];
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
-								,fname, f.desc);
+								,f->filename, f->desc);
 						}
 						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 							,sock, user.alias, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
-							,(ulong)g.gl_pathc, (long)time(NULL) - start);
-						globfree(&g);
-						smb_freefilemem(&f);
+							,(ulong)file_count, (long)time(NULL) - start);
+						freefiles(file_list, file_count);
 						smb_close(&smb);
 					}
 					fclose(fp);
@@ -4494,7 +4458,7 @@ static void ctrl_thread(void* arg)
 				}
 				SAFEPRINTF2(fname,"%s%s",scfg.dir[dir]->path,p);
 				filedat=findfile(&scfg, dir, p);
-				if(!filedat && !(startup->options&FTP_OPT_DIR_FILES) && !(scfg.dir[dir]->misc&DIR_FILES)) {
+				if(!filedat) {
 					sockprintf(sock,sess,"550 File not found: %s",p);
 					lprintf(LOG_WARNING,"%04d <%s> file (%s%s) not in database for %.4s command"
 						,sock,user.alias,genvpath(lib,dir,str),p,cmd);
@@ -4505,7 +4469,7 @@ static void ctrl_thread(void* arg)
 				/* Verify credits */
 				if(!getsize && !getdate && !delecmd
 					&& !is_download_free(&scfg,dir,&user,&client)) {
-					smb_freefilemem(&f);
+					smbfile_t f;
 					if(filedat)
 						loadfile(&scfg, dir, p, &f);
 					else
@@ -4521,6 +4485,7 @@ static void ctrl_thread(void* arg)
 						smb_freefilemem(&f);
 						continue;
 					}
+					smb_freefilemem(&f);
 				}
 
 				if(strcspn(p,ILLEGAL_FILENAME_CHARS)!=strlen(p)) {
@@ -4715,7 +4680,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(append || filepos) {	/* RESUME */
-					smb_freefilemem(&f);
+					smbfile_t f;
 					if(!loadfile(&scfg, dir, p, &f)) {
 						if(filepos) {
 							lprintf(LOG_WARNING,"%04d <%s> file (%s) not in database for %.4s command"
