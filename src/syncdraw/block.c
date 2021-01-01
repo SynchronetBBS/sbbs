@@ -265,6 +265,14 @@ blockmode(void)
 		buf=(char *)malloc(80*ti.screenheight*2);
 		memcpy(buf,Screen[ActivePage][FirstLine],80*ti.screenheight*2);
 		for(y=Y1-FirstLine;y<=Y2-FirstLine;y++) {
+			/*
+			 * This loop should really only iterate through lines
+			 * of interest, but this is an easy fix.
+			 */
+			if (y < 0)
+				continue;
+			if (y >= ti.screenheight)
+				break;
 			for(x=X1;x<=X2;x++) {
 				buf[y*160+x*2+1]=112;
 			}
