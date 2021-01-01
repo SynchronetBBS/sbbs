@@ -28,7 +28,8 @@
 bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 {
 	char	str[MAX_PATH+1],ch;
-	char 	tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
+	char 	tmp[MAX_PATH+1];
+	char	path[MAX_PATH+1];
 	char*	fname;
 	int 	mode;
 	uint	i,j,k,conf;
@@ -615,11 +616,11 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			SAFEPRINTF3(str,"%sqnet/%s.out/%s",cfg.data_dir,id,dirent->d_name);
 			if(isdir(str))
 				continue;
-			SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,dirent->d_name);
+			SAFEPRINTF2(path,"%s%s",cfg.temp_dir,dirent->d_name);
 			lncntr=0;	/* Defeat pause */
 			lprintf(LOG_INFO,"Including %s in packet",str);
 			bprintf(text[RetrievingFile],str);
-			if(!mv(str,tmp2,/* copy: */TRUE))
+			if(!mv(str,path,/* copy: */TRUE))
 				netfiles++;
 		}
 		if(dir!=NULL)
@@ -629,7 +630,6 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	}
 	{
 		int64_t totalcdt = 0;
-		int64_t totaltime = 0;
 		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
 		str_list_t filenames = iniGetSectionList(ini, NULL);
 		for(size_t i = 0; filenames[i] != NULL; i++) {
@@ -637,29 +637,28 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			smbfile_t f = {{}};
 			if(!batch_file_load(&cfg, ini, filename, &f))
 				continue;
-			if(!is_download_free(&cfg, f.dir, &useron, &client))
+			if(!is_download_free(&cfg, f.dir, &useron, &client)) {
+				if(totalcdt + f.cost > useron.cdt+useron.freecdt) {
+					bprintf(text[YouOnlyHaveNCredits]
+						,ultoac(useron.cdt+useron.freecdt,tmp));
+					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+					continue;
+				}
 				totalcdt += f.cost;
-			if(totalcdt > useron.cdt+useron.freecdt) {
-				bprintf(text[YouOnlyHaveNCredits]
-					,ultoac(useron.cdt+useron.freecdt,tmp));
-				break;
 			}
-			if(!(cfg.dir[f.dir]->misc&DIR_TFREE) && cur_cps)
-				totaltime += getfilesize(&cfg, &f) / (ulong)cur_cps; 
 			lncntr=0;
-			SAFEPRINTF2(tmp2, "%s%s", cfg.temp_dir, f.filename);
-			if(!fexistcase(tmp2)) {
+			SAFEPRINTF2(tmp, "%s%s", cfg.temp_dir, filename);
+			if(!fexistcase(tmp)) {
 				seqwait(cfg.dir[f.dir]->seqdev);
-				bprintf(text[RetrievingFile],tmp);
-				SAFEPRINTF2(str,"%s%s"
-					,f.hdr.altpath > 0 && f.hdr.altpath <= cfg.altpaths
-					? cfg.altpath[f.hdr.altpath - 1]
-					: cfg.dir[f.dir]->path
-					,tmp);
-				mv(str,tmp2,/* copy: */TRUE); /* copy the file to temp dir */
+				getfilepath(&cfg, &f, path);
+				bprintf(text[RetrievingFile], path);
+				if(mv(path, tmp,/* copy: */TRUE) != 0) /* copy the file to temp dir */
+					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 				CRLF;
 			}
 		}
+		iniFreeStringList(ini);
+		iniFreeStringList(filenames);
 	}
 
 	if(!(*msgcnt) && !mailmsgs && !files && !netfiles && !batdn_total() && !voting_data
@@ -675,18 +674,18 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		/***********************/
 		SAFEPRINTF(str,"%sQWK/HELLO",cfg.text_dir);
 		if(fexistcase(str)) {
-			SAFEPRINTF(tmp2,"%sHELLO",cfg.temp_dir);
-			mv(str,tmp2,/* copy: */TRUE); 
+			SAFEPRINTF(path,"%sHELLO",cfg.temp_dir);
+			mv(str,path,/* copy: */TRUE); 
 		}
 		SAFEPRINTF(str,"%sQWK/BBSNEWS",cfg.text_dir);
 		if(fexistcase(str)) {
-			SAFEPRINTF(tmp2,"%sBBSNEWS",cfg.temp_dir);
-			mv(str,tmp2,/* copy: */TRUE); 
+			SAFEPRINTF(path,"%sBBSNEWS",cfg.temp_dir);
+			mv(str,path,/* copy: */TRUE); 
 		}
 		SAFEPRINTF(str,"%sQWK/GOODBYE",cfg.text_dir);
 		if(fexistcase(str)) {
-			SAFEPRINTF(tmp2,"%sGOODBYE",cfg.temp_dir);
-			mv(str,tmp2,/* copy: */TRUE); 
+			SAFEPRINTF(path,"%sGOODBYE",cfg.temp_dir);
+			mv(str,path,/* copy: */TRUE); 
 		}
 		SAFEPRINTF(str,"%sQWK/BLT-*",cfg.text_dir);
 		glob(str,0,NULL,&g);
@@ -695,8 +694,8 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 			char* fext = getfext(fname);
 			if(IS_DIGIT(str[4]) && fext != NULL && IS_DIGIT(*(fext + 1))) {
 				SAFEPRINTF2(str,"%sQWK/%s",cfg.text_dir,fname);
-				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,fname);
-				mv(str,tmp2,/* copy: */TRUE); 
+				SAFEPRINTF2(path,"%s%s",cfg.temp_dir,fname);
+				mv(str,path,/* copy: */TRUE); 
 			}
 		}
 		globfree(&g);
@@ -712,13 +711,13 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 	/*******************/
 	/* Compress Packet */
 	/*******************/
-	SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,ALLFILES);
-	i=external(cmdstr(temp_cmd(),packet,tmp2,NULL)
+	SAFEPRINTF2(path,"%s%s",cfg.temp_dir,ALLFILES);
+	i=external(cmdstr(temp_cmd(),packet,path,NULL)
 		,ex|EX_WILDCARD);
 	if(!fexist(packet)) {
 		bputs(text[QWKCompressionFailed]);
 		if(i)
-			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,tmp2,NULL),i);
+			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,path,NULL),i);
 		else
 			lprintf(LOG_ERR, "Couldn't compress QWK packet");
 		return(false); 
