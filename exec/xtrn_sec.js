@@ -124,12 +124,15 @@ function external_program_menu(xsec)
 		var show_header = true;
 		var secnum = xtrn_area.sec_list[xsec].number+1;
 		var seccode = xtrn_area.sec_list[xsec].code;
-		if(!bbs.menu("xtrn" + secnum + "_head", P_NOERROR) &&
-			!bbs.menu("xtrn" + seccode + "_head", P_NOERROR)) {
-			show_header = !bbs.menu("xtrn_head", P_NOERROR);
-		}
-		else
+
+		if (bbs.menu("xtrn" + secnum + "_head", P_NOERROR) {
 			show_header = false;
+		} else if (bbs.menu("xtrn" + seccode + "_head", P_NOERROR)) {
+			show_header = false;
+		} else {
+			bbs.menu("xtrn_head", P_NOERROR);
+		}
+
 		if(bbs.menu("xtrn" + secnum, P_NOERROR) || bbs.menu("xtrn" + seccode, P_NOERROR)) {
 			if(!bbs.menu("xtrn" + secnum + "_tail", P_NOERROR) &&
 				!bbs.menu("xtrn" + seccode + "_tail", P_NOERROR)) {
