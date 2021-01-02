@@ -99,6 +99,8 @@ void sortfilenames(str_list_t filelist, size_t count, enum file_sort order)
 		case SORT_NAME_DC:
 			qsort(filelist, count, sizeof(*filelist), filename_compare_dc);
 			break;
+		default:
+			break;
 	}
 }
 
