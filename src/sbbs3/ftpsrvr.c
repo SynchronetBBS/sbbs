@@ -1231,6 +1231,7 @@ static void receive_thread(void* arg)
 	thread_down();
 }
 
+// Returns TRUE upon error?!?
 static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 {
 	BOOL nodelay;
@@ -2686,13 +2687,18 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,sess,"534 Already in TLS mode");
 					continue;
 				}
-				if (start_tls(&sock, &sess, TRUE))
+				if (start_tls(&sock, &sess, TRUE)) {
+					lprintf(LOG_WARNING, "%04d <%s> failed to initialize TLS successfully", sock, host_ip);
 					break;
+				}
 				user.number=0;
 				sysop=FALSE;
 				filepos=0;
 				got_pbsz = FALSE;
 				protection = FALSE;
+				lprintf(LOG_INFO, "%04d <%s> initialized TLS successfully", sock, host_ip);
+				client.protocol = "FTPS";
+				client_on(sock, &client, /* update: */TRUE);
 				continue;
 			}
 			sockprintf(sock,sess,"504 TLS is the only AUTH supported");

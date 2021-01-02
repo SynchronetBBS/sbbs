@@ -90,11 +90,15 @@ DLLEXPORT BOOL	logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, BOOL write);
 DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, long amt);
 DLLEXPORT int	user_rec_len(int offset);
+DLLEXPORT BOOL	can_user_access_dir(scfg_t*, uint dirnum, user_t*, client_t* client);
 DLLEXPORT BOOL	can_user_access_sub(scfg_t*, uint subnum, user_t*, client_t* client);
 DLLEXPORT BOOL	can_user_read_sub(scfg_t*, uint subnum, user_t*, client_t* client);
 DLLEXPORT BOOL	can_user_post(scfg_t*, uint subnum, user_t*, client_t* client, uint* reason);
+DLLEXPORT BOOL	can_user_upload(scfg_t*, uint dirnum, user_t*, client_t* client, uint* reason);
+DLLEXPORT BOOL	can_user_download(scfg_t*, uint dirnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT BOOL	can_user_send_mail(scfg_t*, enum smb_net_type, uint usernumber, user_t*, uint* reason);
 DLLEXPORT BOOL	is_user_subop(scfg_t*, uint subnum, user_t*, client_t* client);
+DLLEXPORT BOOL	is_user_dirop(scfg_t*, uint dirnum, user_t*, client_t* client);
 DLLEXPORT BOOL	is_download_free(scfg_t*, uint dirnum, user_t*, client_t* client);
 DLLEXPORT BOOL	is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
 DLLEXPORT BOOL	filter_ip(scfg_t*, const char* prot, const char* reason, const char* host

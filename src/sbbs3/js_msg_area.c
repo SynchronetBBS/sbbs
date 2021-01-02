@@ -79,6 +79,7 @@ static char* msg_sub_prop_desc[] = {
 	,"user's current new message scan pointer (highest-read message number)"
 	,"user's message scan configuration (bitfield) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"user's last-read message number"
+	,"number of messages currently posted to this sub-board <i>(introduced in v3.18c)</i>"
 	,NULL
 };
 #endif
@@ -88,6 +89,7 @@ struct js_msg_area_priv {
 	user_t		*user;
 	client_t	*client;
 	subscan_t	*subscan;
+	uint		subnum;
 };
 
 BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, uint subnum)
@@ -234,29 +236,56 @@ BOOL DLLCALL js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* su
 	return(TRUE);
 }
 
-/*******************************************/
-/* Re-writable Sub-board Object Properites */
-/*******************************************/
+/***************************************/
+/* Dynamic Sub-board Object Properites */
+/***************************************/
 enum {
-	 SUB_PROP_SCAN_PTR
+	 SUB_PROP_CAN_ACCESS
+	,SUB_PROP_CAN_READ
+	,SUB_PROP_CAN_POST
+	,SUB_PROP_IS_OPERATOR
+	,SUB_PROP_IS_MODERATED
+	,SUB_PROP_SCAN_PTR
 	,SUB_PROP_SCAN_CFG
 	,SUB_PROP_LAST_READ
+	,SUB_PROP_POSTS
 };
-
 
 static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval idval;
     jsint       tiny;
-	subscan_t*	scan;
+	struct js_msg_area_priv *p;
 
-	if((scan=(subscan_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_TRUE);
+	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx, obj))==NULL)
+		return JS_FALSE;
+	subscan_t*	scan = p->subscan;
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
+		case SUB_PROP_CAN_ACCESS:
+			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || can_user_access_sub(p->cfg, p->subnum, p->user, p->client));
+			break;
+		case SUB_PROP_CAN_READ:
+			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || can_user_read_sub(p->cfg, p->subnum, p->user, p->client));
+			break;
+		case SUB_PROP_CAN_POST:
+			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || can_user_post(p->cfg, p->subnum, p->user, p->client,/* reason: */NULL));
+			break;
+		case SUB_PROP_IS_OPERATOR:
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_user_subop(p->cfg, p->subnum, p->user, p->client));
+			break;
+		case SUB_PROP_IS_MODERATED:
+			if(p->cfg->sub[p->subnum]->mod_ar != NULL
+				&& p->cfg->sub[p->subnum]->mod_ar[0] != 0
+				&& p->user != NULL 
+				&& chk_ar(p->cfg,p->cfg->sub[p->subnum]->mod_ar, p->user, p->client))
+				*vp = JSVAL_TRUE;
+			else
+				*vp = JSVAL_FALSE;
+			break;
 		case SUB_PROP_SCAN_PTR:
 			*vp=UINT_TO_JSVAL(scan->ptr);
 			break;
@@ -265,6 +294,9 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SUB_PROP_LAST_READ:
 			*vp=UINT_TO_JSVAL(scan->last);
+			break;
+		case SUB_PROP_POSTS:
+			*vp=UINT_TO_JSVAL(getposts(p->cfg, p->subnum));
 			break;
 	}
 
@@ -306,12 +338,29 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 static struct JSPropertySpec js_sub_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
-	{	"scan_ptr"	,SUB_PROP_SCAN_PTR	,JSPROP_ENUMERATE|JSPROP_SHARED },
-	{	"scan_cfg"	,SUB_PROP_SCAN_CFG	,JSPROP_ENUMERATE|JSPROP_SHARED },
-	{	"last_read"	,SUB_PROP_LAST_READ	,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"can_access"	,SUB_PROP_CAN_ACCESS	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"can_read"		,SUB_PROP_CAN_READ		,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"can_post"		,SUB_PROP_CAN_POST		,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"is_operator"	,SUB_PROP_IS_OPERATOR	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"is_moderated"	,SUB_PROP_IS_MODERATED	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"scan_ptr"		,SUB_PROP_SCAN_PTR		,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"scan_cfg"		,SUB_PROP_SCAN_CFG		,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"last_read"		,SUB_PROP_LAST_READ		,JSPROP_ENUMERATE|JSPROP_SHARED },
+	{	"posts"			,SUB_PROP_POSTS			,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
 	{0}
 };
 
+static void 
+js_msg_area_finalize(JSContext *cx, JSObject *obj)
+{
+	struct js_msg_area_priv *p;
+
+	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx,obj))==NULL)
+		return;
+
+	free(p);
+	JS_SetPrivate(cx,obj,NULL);
+}
 
 static JSClass js_sub_class = {
      "MsgSub"				/* name			*/
@@ -323,7 +372,7 @@ static JSClass js_sub_class = {
 	,JS_EnumerateStub		/* enumerate	*/
 	,JS_ResolveStub			/* resolve		*/
 	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+	,js_msg_area_finalize	/* finalize		*/
 };
 
 JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
@@ -488,11 +537,15 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 			for(d=0;d<p->cfg->total_subs;d++) {
 				if(p->cfg->sub[d]->grp!=l)
 					continue;
-
 				if((subobj=JS_NewObject(cx, &js_sub_class, subobj_proto, NULL))==NULL)
 					return JS_FALSE;
-				if(p->subscan!=NULL)
-					JS_SetPrivate(cx,subobj,&p->subscan[d]);
+				struct js_msg_area_priv *np = malloc(sizeof(struct js_msg_area_priv));
+				if(np == NULL)
+					continue;
+				*np = *p;
+				np->subscan = &p->subscan[d];
+				np->subnum = d;
+				JS_SetPrivate(cx, subobj, np);
 
 				val=OBJECT_TO_JSVAL(subobj);
 				sub_index=-1;
@@ -519,39 +572,6 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					return JS_FALSE;
 
 				if(!js_CreateMsgAreaProperties(cx, p->cfg, subobj, d))
-					return JS_FALSE;
-
-				val = BOOLEAN_TO_JSVAL(grp_index >= 0 && sub_index >= 0);
-				if(!JS_SetProperty(cx, subobj, "can_access", &val))
-					return JS_FALSE;
-
-				if(p->user==NULL)
-					val=BOOLEAN_TO_JSVAL(JS_TRUE);
-				else
-					val=BOOLEAN_TO_JSVAL(can_user_read_sub(p->cfg,d,p->user,p->client));
-				if(!JS_SetProperty(cx, subobj, "can_read", &val))
-					return JS_FALSE;
-
-				if(p->user==NULL)
-					val=BOOLEAN_TO_JSVAL(JS_TRUE);
-				else
-					val=BOOLEAN_TO_JSVAL(can_user_post(p->cfg,d,p->user,p->client,/* reason: */NULL));
-				if(!JS_SetProperty(cx, subobj, "can_post", &val))
-					return JS_FALSE;
-
-				if(p->user==NULL)
-					val=BOOLEAN_TO_JSVAL(JS_TRUE);
-				else
-					val=BOOLEAN_TO_JSVAL(is_user_subop(p->cfg,d,p->user,p->client));
-				if(!JS_SetProperty(cx, subobj, "is_operator", &val))
-					return JS_FALSE;
-
-				if(p->cfg->sub[d]->mod_ar!=NULL && p->cfg->sub[d]->mod_ar[0]!=0 && p->user!=NULL 
-					&& chk_ar(p->cfg,p->cfg->sub[d]->mod_ar,p->user,p->client))
-					val=BOOLEAN_TO_JSVAL(JS_TRUE);
-				else
-					val=BOOLEAN_TO_JSVAL(JS_FALSE);
-				if(!JS_SetProperty(cx, subobj, "is_moderated", &val))
 					return JS_FALSE;
 
 				if(!JS_DefineProperties(cx, subobj, js_sub_properties))
@@ -593,19 +613,6 @@ static JSBool js_msg_area_enumerate(JSContext *cx, JSObject *obj)
 {
 	return(js_msg_area_resolve(cx, obj, JSID_VOID));
 }
-
-static void 
-js_msg_area_finalize(JSContext *cx, JSObject *obj)
-{
-	struct js_msg_area_priv *p;
-
-	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx,obj))==NULL)
-		return;
-
-	free(p);
-	JS_SetPrivate(cx,obj,NULL);
-}
-
 
 static JSClass js_msg_area_class = {
      "MsgArea"				/* name			*/

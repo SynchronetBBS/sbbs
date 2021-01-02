@@ -2944,6 +2944,75 @@ BOOL can_user_post(scfg_t* cfg, uint subnum, user_t* user, client_t* client, uin
 }
 
 /****************************************************************************/
+/* Determine if the specified user can or cannot access the specified dir	*/
+/****************************************************************************/
+BOOL can_user_access_dir(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
+{
+	if(!VALID_CFG(cfg))
+		return FALSE;
+	if(dirnum>=cfg->total_dirs)
+		return FALSE;
+	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->ar,user,client))
+		return FALSE;
+	if(!chk_ar(cfg,cfg->dir[dirnum]->ar,user,client))
+		return FALSE;
+
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Determine if the specified user can or cannot upload files to the dirnum	*/
+/* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
+/* the reason the user cannot post, when returning FALSE.					*/
+/****************************************************************************/
+BOOL can_user_upload(scfg_t* cfg, uint dirnum, user_t* user, client_t* client, uint* reason)
+{
+	if(reason!=NULL)
+		*reason=NoAccessDir;
+	if(!can_user_access_dir(cfg, dirnum, user, client))
+		return FALSE;
+	if(reason!=NULL)
+		*reason=R_Upload;
+	if(user->rest&FLAG('U'))			/* upload restriction? */
+		return FALSE;
+	if(user->rest&FLAG('T'))			/* transfer restriction? */
+		return FALSE;
+	if(!(user->exempt&FLAG('U'))		/* upload exemption */
+		&& !is_user_dirop(cfg, dirnum, user, client)) {
+		if(reason!=NULL)
+			*reason=CantUploadHere;
+		if(!chk_ar(cfg, cfg->dir[dirnum]->ul_ar, user, client))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+/****************************************************************************/
+/* Determine if the specified user can or cannot download files from dirnum	*/
+/* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
+/* the reason the user cannot post, when returning FALSE.					*/
+/****************************************************************************/
+BOOL can_user_download(scfg_t* cfg, uint dirnum, user_t* user, client_t* client, uint* reason)
+{
+	if(reason!=NULL)
+		*reason=NoAccessDir;
+	if(!can_user_access_dir(cfg, dirnum, user, client))
+		return FALSE;
+	if(reason!=NULL)
+		*reason=CantDownloadFromDir;
+	if(!chk_ar(cfg,cfg->dir[dirnum]->dl_ar,user,client))
+		return FALSE;
+	if(reason!=NULL)
+		*reason=R_Download;
+	if(user->rest&FLAG('D'))			/* download restriction? */
+		return FALSE;
+	if(user->rest&FLAG('T'))			/* transfer restriction? */
+		return FALSE;
+
+	return TRUE;
+}
+
+/****************************************************************************/
 /* Determine if the specified user can or cannot send email					*/
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
@@ -2989,6 +3058,21 @@ BOOL is_user_subop(scfg_t* cfg, uint subnum, user_t* user, client_t* client)
 		return TRUE;
 
 	return cfg->sub[subnum]->op_ar!=NULL && cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
+}
+
+/****************************************************************************/
+/* Determine if the specified user is a directory operator					*/
+/****************************************************************************/
+BOOL is_user_dirop(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
+{
+	if(user==NULL)
+		return FALSE;
+	if(!can_user_access_dir(cfg, dirnum, user, client))
+		return FALSE;
+	if(user->level >= SYSOP_LEVEL)
+		return TRUE;
+
+	return cfg->dir[dirnum]->op_ar!=NULL && cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client);
 }
 
 /****************************************************************************/

@@ -378,7 +378,7 @@ function export_users(msgbase, realnames, all)
 				if(!list[data])
 					list[data] = [];
 				list[data].push(u.alias);
-				if(realnames)
+				if(realnames && u.name != u.alias)
 					list[data].push(u.name);
 			}
 			avatar.last_exported = new Date();
