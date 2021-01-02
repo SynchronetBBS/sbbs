@@ -296,7 +296,7 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(scan != NULL) *vp=UINT_TO_JSVAL(scan->last);
 			break;
 		case SUB_PROP_POSTS:
-			if(scan != NULL) *vp=UINT_TO_JSVAL(getposts(p->cfg, p->subnum));
+			*vp=UINT_TO_JSVAL(getposts(p->cfg, p->subnum));
 			break;
 	}
 
