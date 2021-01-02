@@ -3842,7 +3842,8 @@ static void ctrl_thread(void* arg)
 					}
 					time_t start = time(NULL);
 					size_t file_count = 0;
-					smbfile_t* file_list = loadfiles(&scfg, &smb, /* filespec */NULL, /* time: */0, &file_count);
+					smbfile_t* file_list = loadfiles(&scfg, &smb
+						,/* filespec */NULL, /* time: */0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
 					for(size_t i = 0; i < file_count; i++) {
 						smbfile_t* f = &file_list[i];
 						if (cmd[3] != 'D' && strcmp(f->filename, mls_fname) != 0)
@@ -4128,7 +4129,8 @@ static void ctrl_thread(void* arg)
 				}
 				time_t start = time(NULL);
 				size_t file_count = 0;
-				smbfile_t* file_list = loadfiles(&scfg, &smb, filespec, /* time: */0, &file_count);
+				smbfile_t* file_list = loadfiles(&scfg, &smb
+					,filespec, /* time: */0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
 				for(size_t i = 0; i < file_count; i++) {
 					smbfile_t* f = &file_list[i];
 					if(detail) {
@@ -4416,7 +4418,8 @@ static void ctrl_thread(void* arg)
 						}
 						time_t start = time(NULL);
 						size_t file_count = 0;
-						smbfile_t* file_list = loadfiles(&scfg, &smb, /* filespec */NULL, /* time: */0, &file_count);
+						smbfile_t* file_list = loadfiles(&scfg, &smb
+							,/* filespec */NULL, /* time: */0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
 						for(size_t i = 0; i < file_count; i++) {
 							smbfile_t* f = &file_list[i];
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN

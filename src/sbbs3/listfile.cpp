@@ -59,6 +59,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
+		, /* extdesc: */TRUE
+		, /* sort: */TRUE
 		, &file_count);
 
 	if(!tofile) {
@@ -739,6 +741,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, filespec
 		, /* time_t */0
+		, /* extdesc: */TRUE
+		, /* sort: */TRUE
 		, &file_count);
 
 	m=0;

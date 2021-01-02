@@ -56,8 +56,8 @@ BOOL newfiles(smb_t* smb, time_t t)
 	return fdate(str) > t;
 }
 
-// Load and sort (quickly) files from an open filebase into a dynamically-allocated list
-smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, size_t* count)
+// Load and optionally-0sort files from an open filebase into a dynamically-allocated list
+smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BOOL extdesc, BOOL sort, size_t* count)
 {
 	*count = 0;
 
@@ -92,12 +92,14 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, si
 		int result = smb_getmsghdr(smb, &file);
 		if(result != SMB_SUCCESS)
 			break;
-		file.extdesc = smb_getmsgtxt(smb, &file, GETMSGTXT_ALL);
+		if(extdesc)
+			file.extdesc = smb_getmsgtxt(smb, &file, GETMSGTXT_ALL);
 		file.dir = smb->dirnum;
 		file_list[*count] = file;
 		(*count)++;
 	}
-	sortfiles(file_list, *count, (enum file_sort)cfg->dir[smb->dirnum]->sort);
+	if(sort)
+		sortfiles(file_list, *count, (enum file_sort)cfg->dir[smb->dirnum]->sort);
 
 	return file_list;
 }

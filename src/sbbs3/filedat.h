@@ -32,7 +32,7 @@ extern "C" {
 DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
 DLLEXPORT BOOL			newfiles(smb_t*, time_t);
 DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
-DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, size_t* count);
+DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, BOOL extdsec, BOOL sort, size_t* count);
 DLLEXPORT void			sortfiles(smbfile_t*, size_t count, enum file_sort);
 DLLEXPORT void			freefiles(smbfile_t*, size_t count);
 DLLEXPORT BOOL			updatefile(scfg_t*, smbfile_t*);

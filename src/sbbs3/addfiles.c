@@ -577,7 +577,7 @@ void synclist(char *inpath, int dirnum)
 		return;
 	}
 	size_t file_count;
-	file_list = loadfiles(&scfg, &smb, NULL, 0, &file_count);
+	file_list = loadfiles(&scfg, &smb, NULL, 0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
 
 	printf("\nSynchronizing %s with %s %s\n\n"
 		,listpath,scfg.lib[scfg.dir[dirnum]->lib]->sname,scfg.dir[dirnum]->sname);

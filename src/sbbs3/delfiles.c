@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 		printf("\nScanning %s %s\n", cfg.lib[cfg.dir[i]->lib]->sname, cfg.dir[i]->lname);
 
 		size_t file_count;
-		smbfile_t* file_list = loadfiles(&cfg, &smb, NULL, 0, &file_count);
+		smbfile_t* file_list = loadfiles(&cfg, &smb, NULL, 0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
 
 		for(fi = 0; fi < file_count; fi++) {
 			smbfile_t* f = &file_list[fi];
