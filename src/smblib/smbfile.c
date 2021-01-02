@@ -223,14 +223,20 @@ int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
 int SMBCALL smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
 {
 	int result;
+
+	if(filename == NULL)
+		return SMB_BAD_PARAMETER;
+
+	memset(file, 0, sizeof(*file));
+
 	if((result = smb_findfile(smb, filename, &file->idx)) != SMB_SUCCESS)
 		return result;
 
 	if((result = smb_getmsghdr(smb, file)) != SMB_SUCCESS)
 		return result;
-		
-	file->extdesc = smb_getmsgtxt(smb, file, GETMSGTXT_ALL);
+
 	file->dir = smb->dirnum;
+
 	return SMB_SUCCESS;
 }
 

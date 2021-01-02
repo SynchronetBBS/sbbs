@@ -785,6 +785,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 		if(js_CreateMsgBaseClass(js_cx, *glob, &scfg)==NULL)
 			break;
 
+		/* FileBase Class */
+		if(js_CreateFileBaseClass(js_cx, *glob, &scfg)==NULL)
+			break;
+
 		/* File Class */
 		if(js_CreateFileClass(js_cx, *glob)==NULL)
 			break;

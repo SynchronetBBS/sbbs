@@ -54,13 +54,14 @@
 extern "C" {
 #endif
 
+#define ALLFILES "*"	/* matches all files in a directory */
+
 /****************/
 /* RTL-specific */
 /****************/
 
 #if defined(__unix__)
 
-	#define ALLFILES "*"	/* matches all files in a directory */
 	#include <sys/types.h>
 	#include <sys/stat.h>
 	#include <glob.h>		/* POSIX.2 directory pattern matching function */
@@ -81,7 +82,6 @@ extern "C" {
 
 	#include <direct.h>		/* mkdir() */
 
-	#define ALLFILES "*.*"	/* matches all files in a directory */
 	#ifdef __WATCOMC__
 		#define MKDIR(dir)		mkdir(dir)
 	#else

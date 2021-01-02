@@ -1441,6 +1441,10 @@ extern "C" BOOL DLLCALL js_CreateCommonObjects(JSContext* js_cx
 		if(js_CreateMsgBaseClass(js_cx, *glob, cfg)==NULL)
 			break;
 
+		/* FileBase Class */
+		if(js_CreateFileBaseClass(js_cx, *glob, cfg)==NULL)
+			break;
+
 		/* File Class */
 		if(js_CreateFileClass(js_cx, *glob)==NULL)
 			break;

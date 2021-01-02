@@ -55,13 +55,17 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 	if(smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
 		return 0;
 
-	size_t file_count;
+	size_t file_count = 0;
 	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
 		, /* extdesc: */TRUE
 		, /* sort: */TRUE
 		, &file_count);
+	if(file_list == NULL || file_count < 1) {
+		smb_close(&smb);
+		return 0;
+	}
 
 	if(!tofile) {
 		action=NODE_LFIL;
@@ -737,13 +741,17 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 	if(smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
 		return 0;
 
-	size_t file_count;
+	size_t file_count = 0;
 	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, filespec
 		, /* time_t */0
 		, /* extdesc: */TRUE
 		, /* sort: */TRUE
 		, &file_count);
+	if(file_list == NULL || file_count < 1) {
+		smb_close(&smb);
+		return 0;
+	}
 
 	m=0;
 	while(online && !done && m < file_count) {

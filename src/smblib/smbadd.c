@@ -472,8 +472,15 @@ int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 
 int SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc)
 {
+	if(file->filename == NULL) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s missing filename", __FUNCTION__);
+		return SMB_ERR_HDR_FIELD;
+	}
+	if(smb_findfile(smb, file->filename, NULL) == SMB_SUCCESS) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s duplicate found: %s", __FUNCTION__, file->filename);
+		return SMB_DUPE_MSG;
+	}
 	file->hdr.type = SMB_MSG_TYPE_FILE;
-
 	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */(const uchar*)extdesc, /* tail: */NULL);
 }
 

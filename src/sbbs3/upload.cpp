@@ -50,6 +50,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		logline(LOG_NOTICE,"U!",str);
 		return false;
 	}
+	f->hdr.when_written.time = (uint32_t)fdate(path);
 	char* fext = getfext(f->filename);
 	for(i=0;i<cfg.total_ftests;i++)
 		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(fext, cfg.ftest[i]->ext)) {

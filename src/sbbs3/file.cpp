@@ -82,7 +82,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 }
 
 /****************************************************************************/
-/* Prompts user for file specification. <CR> is *.* and .* is assumed.      */
+/* Prompts user for file specification. <CR> is *							*/
 /* Returns padded file specification.                                       */
 /* Returns NULL if input was aborted.                                       */
 /****************************************************************************/
@@ -90,7 +90,7 @@ char * sbbs_t::getfilespec(char *str)
 {
 	bputs(text[FileSpecStarDotStar]);
 	if(!getstr(str, SMB_FILENAME_MAXLEN, K_NONE))
-		strcpy(str,ALLFILES);
+		strcpy(str, ALLFILES);
 	if(sys_status&SS_ABORT)
 		return(0);
 	return(str);

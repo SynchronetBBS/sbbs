@@ -1322,6 +1322,9 @@ extern "C" {
 	DLLEXPORT BOOL		DLLCALL js_ParseMsgHeaderObject(JSContext* cx, JSObject* hdrobj, smbmsg_t*);
 	DLLEXPORT BOOL		DLLCALL js_GetMsgHeaderObjectPrivates(JSContext* cx, JSObject* hdrobj, smb_t**, smbmsg_t**, post_t**);
 
+	/* js_filebase.c */
+	DLLEXPORT JSObject* DLLCALL js_CreateFileBaseClass(JSContext*, JSObject* parent, scfg_t*);
+
 	/* js_socket.c */
 	DLLEXPORT JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent);
 #ifdef USE_CRYPTLIB

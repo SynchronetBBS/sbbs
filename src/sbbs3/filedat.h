@@ -29,12 +29,16 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
 DLLEXPORT BOOL			newfiles(smb_t*, time_t);
+DLLEXPORT BOOL			datefileindex(smb_t*, time_t);
+
+DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
 DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
 DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, BOOL extdsec, BOOL sort, size_t* count);
 DLLEXPORT void			sortfiles(smbfile_t*, size_t count, enum file_sort);
 DLLEXPORT void			freefiles(smbfile_t*, size_t count);
+DLLEXPORT str_list_t	loadfilenames(scfg_t*, smb_t*, const char* filespec, time_t t, BOOL sort, size_t* count);
+DLLEXPORT void			sortfilenames(str_list_t, size_t count, enum file_sort order);
 DLLEXPORT BOOL			updatefile(scfg_t*, smbfile_t*);
 DLLEXPORT char*			getfilepath(scfg_t*, smbfile_t*, char* path);
 DLLEXPORT off_t			getfilesize(scfg_t*, smbfile_t*);

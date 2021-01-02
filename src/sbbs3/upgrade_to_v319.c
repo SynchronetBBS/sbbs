@@ -911,6 +911,7 @@ bool upgrade_file_bases(void)
 		/* SMB index is sorted by import (upload) time */
 		qsort(filelist, file_count, sizeof(*filelist), file_uldate_compare);
 
+		time_t latest = 0;
 		for(size_t fi = 0; fi < file_count; fi++) {
 			f = &filelist[fi];
 			if(!getfiledat(&scfg, f)) {
@@ -950,9 +951,13 @@ bool upgrade_file_bases(void)
 				printf("\r%-16s (%-5u bases remain) %lu files imported (%lu files/second)"
 					, scfg.dir[i]->code, scfg.total_dirs - (i + 1), total_files, (ulong)(diff ? total_files / diff : total_files));
 			}
+			if(f->dateuled > latest)
+				latest = f->dateuled;
 		}
 		free(filelist);
 		smb_close(&smb);
+		if(latest > 0)
+			datefileindex(&smb, latest);
 		closeextdesc(extfile);
 		free(ixbbuf);
 	}
