@@ -1,9 +1,3 @@
-/* js_file_area.c */
-
-/* Synchronet JavaScript "File Area" Object */
-
-/* $Id: js_file_area.c,v 1.56 2020/08/16 01:01:09 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -17,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -86,6 +68,7 @@ static char* dir_prop_desc[] = {
 	,"percent of file size awarded uploader in credits upon file upload"
 	,"percent of file size awarded uploader in credits upon subsequent downloads"
 	,"directory link (for HTML index)"
+	,"number of files currently in this directory <i>(introduced in v3.18c)</i>"
 	,"user has sufficient access to view this directory (e.g. list files) <i>(introduced in v3.18)</i>"
 	,"user has sufficient access to upload files to this directory"
 	,"user has sufficient access to download files from this directory"
@@ -103,6 +86,92 @@ struct js_file_area_priv {
 	user_t		*user;
 	client_t	*client;
 	char		*html_index_file;
+	uint		dirnum;
+};
+
+static void 
+js_file_area_finalize(JSContext *cx, JSObject *obj)
+{
+	struct js_file_area_priv *p;
+
+	if((p=(struct js_file_area_priv*)JS_GetPrivate(cx,obj))==NULL)
+		return;
+
+	free(p->html_index_file);
+	free(p);
+	JS_SetPrivate(cx,obj,NULL);
+}
+
+/***************************************/
+/* Dynamic Directory Object Properties */
+/***************************************/
+enum {
+	 DIR_PROP_FILES
+	,DIR_PROP_CAN_ACCESS
+	,DIR_PROP_CAN_UPLOAD
+	,DIR_PROP_CAN_DOWNLOAD
+	,DIR_PROP_IS_EXEMPT
+	,DIR_PROP_IS_OPERATOR
+};
+
+static struct JSPropertySpec js_dir_properties[] = {
+/*		 name				,tinyid		,flags	*/
+
+	{	"files"			,DIR_PROP_FILES			,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"can_access"	,DIR_PROP_CAN_ACCESS	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"can_upload"	,DIR_PROP_CAN_UPLOAD	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"can_download"	,DIR_PROP_CAN_DOWNLOAD	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"is_exempt"		,DIR_PROP_IS_EXEMPT		,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{	"is_operator"	,DIR_PROP_IS_OPERATOR	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{0}
+};
+
+static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+	jsval idval;
+    jsint       tiny;
+	struct js_file_area_priv *p;
+
+	if((p=(struct js_file_area_priv*)JS_GetPrivate(cx, obj))==NULL)
+		return JS_FALSE;
+
+    JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
+
+	switch(tiny) {
+		case DIR_PROP_FILES:
+			*vp = UINT_TO_JSVAL(getfiles(p->cfg, p->dirnum));
+			break;
+		case DIR_PROP_CAN_ACCESS:
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_access_dir(p->cfg, p->dirnum, p->user, p->client));
+			break;
+		case DIR_PROP_CAN_UPLOAD:
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_upload(p->cfg, p->dirnum, p->user, p->client, /* reason: */NULL));
+			break;
+		case DIR_PROP_CAN_DOWNLOAD:
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_download(p->cfg, p->dirnum, p->user, p->client, /* reason: */NULL));
+			break;
+		case DIR_PROP_IS_EXEMPT:
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_download_free(p->cfg, p->dirnum, p->user, p->client));
+			break;
+		case DIR_PROP_IS_OPERATOR:
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_user_dirop(p->cfg, p->dirnum, p->user, p->client));
+			break;
+	}
+	return JS_TRUE;
+}
+
+static JSClass js_dir_class = {
+     "FileDir"				/* name			*/
+    ,JSCLASS_HAS_PRIVATE	/* flags		*/
+	,JS_PropertyStub		/* addProperty	*/
+	,JS_PropertyStub		/* delProperty	*/
+	,js_dir_get				/* getProperty	*/
+	,JS_StrictPropertyStub	/* setProperty	*/
+	,JS_EnumerateStub		/* enumerate	*/
+	,JS_ResolveStub			/* resolve		*/
+	,JS_ConvertStub			/* convert		*/
+	,js_file_area_finalize	/* finalize		*/
 };
 
 JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
@@ -120,7 +189,6 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 	jsint		lib_index;
 	jsint		dir_index;
 	uint		l,d;
-	BOOL		is_op;
 	char*		name=NULL;
 	struct js_file_area_priv *p;
 
@@ -284,12 +352,19 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if(p->cfg->dir[d]->lib!=l)
 					continue;
 
-				if((dirobj=JS_NewObject(cx, NULL, NULL, NULL))==NULL)
+				if((dirobj=JS_NewObject(cx, &js_dir_class, NULL, NULL))==NULL)
 					return JS_FALSE;
+				struct js_file_area_priv *np = malloc(sizeof(struct js_file_area_priv));
+				if(np == NULL)
+					continue;
+				*np = *p;
+				np->dirnum = d;
+				np->html_index_file = NULL;
+				JS_SetPrivate(cx, dirobj, np);
 
 				val=OBJECT_TO_JSVAL(dirobj);
 				dir_index=-1;
-				if(p->user==NULL || chk_ar(p->cfg,p->cfg->dir[d]->ar,p->user,p->client)) {
+				if(p->user==NULL || can_user_access_dir(p->cfg, d, p->user, p->client)) {
 
 					if(!JS_GetArrayLength(cx, dir_list, (jsuint*)&dir_index))
 						return JS_FALSE;
@@ -454,11 +529,8 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				val=STRING_TO_JSVAL(js_str);
 				if(!JS_SetProperty(cx, dirobj, "link", &val))
 					return JS_FALSE;
-
-				if(p->user!=NULL 
-					&& (p->user->level>=SYSOP_LEVEL 
-						|| (p->cfg->dir[d]->op_ar!=NULL && p->cfg->dir[d]->op_ar[0]!=0 
-							&& chk_ar(p->cfg,p->cfg->dir[d]->op_ar,p->user,p->client))))
+#if 0
+				if(p->user == NULL || is_user_dirop(p->cfg, d, p->user, p->client))
 					is_op=TRUE;
 				else
 					is_op=FALSE;
@@ -467,19 +539,14 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if(!JS_SetProperty(cx, dirobj, "can_access", &val))
 					return JS_FALSE;
 
-				if(p->user==NULL 
-					|| ((is_op || p->user->exempt&FLAG('U')
-					|| chk_ar(p->cfg,p->cfg->dir[d]->ul_ar,p->user,p->client))
-					&& !(p->user->rest&FLAG('T')) && !(p->user->rest&FLAG('U'))))
+				if(p->user == NULL || can_user_upload(p->cfg, d, p->user, p->client, /* reason: */NULL))
 					val=JSVAL_TRUE;
 				else
 					val=JSVAL_FALSE;
 				if(!JS_SetProperty(cx, dirobj, "can_upload", &val))
 					return JS_FALSE;
 
-				if(p->user==NULL 
-					|| (chk_ar(p->cfg,p->cfg->dir[d]->dl_ar,p->user,p->client)
-					&& !(p->user->rest&FLAG('T')) && !(p->user->rest&FLAG('D'))))
+				if(p->user == NULL || can_user_download(p->cfg, d, p->user, p->client, /* reason: */NULL))
 					val=JSVAL_TRUE;
 				else
 					val=JSVAL_FALSE;
@@ -498,6 +565,9 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				else
 					val=JSVAL_FALSE;
 				if(!JS_SetProperty(cx, dirobj, "is_operator", &val))
+					return JS_FALSE;
+#endif
+				if(!JS_DefineProperties(cx, dirobj, js_dir_properties))
 					return JS_FALSE;
 
 				val=BOOLEAN_TO_JSVAL(d==p->cfg->lib[l]->offline_dir);
@@ -540,20 +610,6 @@ static JSBool js_file_area_enumerate(JSContext *cx, JSObject *obj)
 {
 	return(js_file_area_resolve(cx, obj, JSID_VOID));
 }
-
-static void 
-js_file_area_finalize(JSContext *cx, JSObject *obj)
-{
-	struct js_file_area_priv *p;
-
-	if((p=(struct js_file_area_priv*)JS_GetPrivate(cx,obj))==NULL)
-		return;
-
-	free(p->html_index_file);
-	free(p);
-	JS_SetPrivate(cx,obj,NULL);
-}
-
 
 static JSClass js_file_area_class = {
      "FileArea"				/* name			*/
