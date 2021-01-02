@@ -125,7 +125,7 @@ function external_program_menu(xsec)
 		var secnum = xtrn_area.sec_list[xsec].number+1;
 		var seccode = xtrn_area.sec_list[xsec].code;
 
-		if (bbs.menu("xtrn" + secnum + "_head", P_NOERROR) {
+		if (bbs.menu("xtrn" + secnum + "_head", P_NOERROR)) {
 			show_header = false;
 		} else if (bbs.menu("xtrn" + seccode + "_head", P_NOERROR)) {
 			show_header = false;
