@@ -405,6 +405,7 @@ uint16_t smb_name_crc(const char* name)
 	return(crc);
 }
 
+// Returns hashflags_t on success
 int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 {
 	char buf[256 * 1024];
@@ -416,19 +417,18 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 
 	MD5_open(&ctx);
 	data->crc16 = 0;
-	data->crc32 = 0xffffffff;
+	data->crc32 = 0;
 	off_t off = 0;
 	while(!feof(fp) && off < size) {
 		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), fp);
 		if(rd < 1)
 			break;
-		data->crc32 = crc32i(data->crc32, buf, rd);
+		data->crc32 = crc32i(~data->crc32, buf, rd);
 		data->crc16 = icrc16(data->crc16, buf, rd);
 		MD5_digest(&ctx ,buf, rd);
 		off += rd;
 	}
 	fclose(fp);
-	data->crc32 = ~data->crc32;
 	MD5_close(&ctx, data->md5);
 	return SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5;
 }
