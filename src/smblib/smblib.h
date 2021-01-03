@@ -195,7 +195,7 @@ SMBEXPORT size_t	SMBCALL smb_idxreclen(smb_t*);
 SMBEXPORT uint32_t	SMBCALL	smb_count_idx_records(smb_t*, uint16_t mask, uint16_t cmp);
 SMBEXPORT BOOL		SMBCALL smb_msg_is_utf8(const smbmsg_t*);
 SMBEXPORT size_t	SMBCALL smb_msg_count(smb_t*, unsigned types);
-SMBEXPORT enum smb_msg_type smb_msg_type(smb_t*, smb_msg_attr_t);
+SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t);
 
 /* smbadd.c */
 SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes

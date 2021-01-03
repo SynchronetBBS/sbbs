@@ -904,7 +904,7 @@ void sbbs_t::qwkcfgline(char *buf,uint subnum)
 		}
 		else {
 			if(getfilesize(&cfg, &f) < 0)
-				bprintf(text[FileIsNotOnline], f.filename);
+				bprintf(text[FileIsNotOnline], f.name);
 			else
 				addtobatdl(&f);
 		}

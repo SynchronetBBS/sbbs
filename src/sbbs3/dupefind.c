@@ -72,14 +72,14 @@ char *display_filename(scfg_t *cfg, uint dirnum, uint32_t fil_off)
 	static smb_t smb;
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return smb.last_error;
-	smb_fseek(smb.sid_fp, (fil_off - 1) * sizeof(smbfileidxrec_t), SEEK_SET);
-	smbfileidxrec_t idx;
+	smb_fseek(smb.sid_fp, (fil_off - 1) * sizeof(fileidxrec_t), SEEK_SET);
+	fileidxrec_t idx;
 	if(smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx)) {
 		smb_close(&smb);
 		return smb.last_error;
 	}
 	smb_close(&smb);
-	SAFECOPY(str, idx.filename);
+	SAFECOPY(str, idx.name);
 	return str;
 }
 
@@ -158,11 +158,11 @@ int main(int argc,char **argv)
 		fcrc[i][j++] = smb.status.total_files;
 		rewind(smb.sid_fp);
 		while(!feof(smb.sid_fp)) {
-			smbfileidxrec_t idx;
+			fileidxrec_t idx;
 			if(smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx))
 				break;
-			char filename[sizeof(idx.filename) + 1];
-			SAFECOPY(filename, idx.filename);
+			char filename[sizeof(idx.name) + 1];
+			SAFECOPY(filename, idx.name);
 			strupr(filename);
 			fcrc[i][j++]=crc32(filename, 0);
 		}

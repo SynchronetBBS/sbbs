@@ -38,13 +38,13 @@ void sbbs_t::downloadedfile(smbfile_t* f)
 		logon_dlb+=length;  /* Update 'this call' stats */
 		logon_dls++;
 	}
-	bprintf(text[FileNBytesSent],f->filename,ultoac(length,tmp));
+	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
 	SAFEPRINTF3(str,"downloaded %s from %s %s"
-		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
+		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	logline("D-",str);
 
-	user_downloaded_file(&cfg, &useron, &client, f->dir, f->filename, length);
+	user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
 
 	user_event(EVENT_DOWNLOAD);
 }
@@ -298,16 +298,16 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
 	if(!checkprotresult(prot, error, fpath)) {
 		if(f->dir<cfg.total_dirs)
 			SAFEPRINTF4(str,"attempted to download %s (%s) from %s %s"
-				,f->filename,ultoac(f->size,tmp)
+				,f->name,ultoac(f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			SAFECOPY(str,"attempted to download QWK packet");
 		else if(f->dir == cfg.total_dirs + 1)
 			SAFEPRINTF(str,"attempted to download attached file: %s"
-				,f->filename);
+				,f->name);
 		else
 			SAFEPRINTF2(str,"attempted to download file (%s) from unknown dir: %ld"
-				,f->filename, (long)f->dir);
+				,f->name, (long)f->dir);
 		logline(LOG_NOTICE,"D!",str);
 		return false; 
 	}

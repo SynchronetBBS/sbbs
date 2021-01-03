@@ -26,6 +26,9 @@
 #include <time.h>		/* ctime */
 #include <ctype.h>		/* toupper */
 
+#include "git_branch.h"
+#include "git_hash.h"
+
 /* SMB-specific */
 #include "genwrap.h"
 #include "conwrap.h"	/* getch */
@@ -160,16 +163,13 @@ int main(int argc, char **argv)
 	smb_t		smb;
 	idxrec_t	idx;
 	idxrec_t*	idxrec = NULL;
-	smbfileidxrec_t* fidxrec = NULL;
+	fileidxrec_t* fidxrec = NULL;
 	smbmsg_t	msg;
 	hash_t**	hashes;
-	char		revision[16];
 	time_t		now=time(NULL);
 
-	sscanf("$Revision: 1.72 $", "%*s %s", revision);
-
-	fprintf(stderr,"\nCHKSMB v2.30-%s (rev %s) SMBLIB %s - Check Synchronet Message Base\n"
-		,PLATFORM_DESC,revision,smb_lib_ver());
+	fprintf(stderr,"\nCHKSMB v3.19-%s %s/%s SMBLIB %s - Check Synchronet Message Base\n"
+		,PLATFORM_DESC, smb_lib_ver(), GIT_BRANCH, GIT_HASH);
 
 	if(argc<2) {
 		printf("%s",usage);
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 		errors++;
 		continue;
 	}
-	fidxrec = (smbfileidxrec_t*)idxrec;
+	fidxrec = (fileidxrec_t*)idxrec;
 
 	off_t shd_hdrs = shd_length - smb.status.header_offset;
 
@@ -468,9 +468,9 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if(msg.hdr.type != smb_msg_type(&smb, msg.hdr.attr)) {
+		if(msg.hdr.type != smb_msg_type(msg.hdr.attr)) {
 			fprintf(stderr,"%sMessage type mismatch (%d, expected %d)\n"
-				,beep, msg.hdr.type, smb_msg_type(&smb, msg.hdr.attr));
+				,beep, msg.hdr.type, smb_msg_type(msg.hdr.attr));
 			msgerr=TRUE;
 			types++;
 		}

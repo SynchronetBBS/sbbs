@@ -19,8 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "2.34"
-char	revision[16];
+#define SMBUTIL_VER "3.19"
 char	compiler[32];
 
 const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -53,6 +52,8 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include "str_util.h"
 #include "utf8.h"
 #include "conwrap.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 /* gets is dangerous */
 #define gets(str)  fgets((str), sizeof(str), stdin)
@@ -332,10 +333,10 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 		bail(1); 
 	}
 
-	safe_snprintf(str,sizeof(str),"SMBUTIL %s-%s r%s %s %s"
+	safe_snprintf(str,sizeof(str),"SMBUTIL %s-%s %s/%s %s %s"
 		,SMBUTIL_VER
 		,PLATFORM_DESC
-		,revision
+		,GIT_BRANCH, GIT_HASH
 		,__DATE__
 		,compiler
 		);
@@ -773,7 +774,7 @@ void maint(void)
 	uint32_t total_msgs = 0;
 	for(m=f=0;m<l;m++) {
 		idx = (idxrec_t*)(idxbuf + (m * idxreclen));
-		enum smb_msg_type type = smb_msg_type(&smb, idx[m].attr);
+		enum smb_msg_type type = smb_msg_type(idx[m].attr);
 		if(type == SMB_MSG_TYPE_NORMAL || type == SMB_MSG_TYPE_POLL)
 			total_msgs++;
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
@@ -1389,12 +1390,12 @@ void readmsgs(ulong start, ulong count)
 	size_t	idxreclen = smb_idxreclen(&smb);
 
 	if(start)
-		msg.offset=start-1;
+		msg.idx_offset=start-1;
 	else
-		msg.offset=0;
+		msg.idx_offset=0;
 	while(!done) {
 		if(domsg) {
-			fseek(smb.sid_fp,msg.offset*idxreclen,SEEK_SET);
+			fseek(smb.sid_fp,msg.idx_offset*idxreclen,SEEK_SET);
 			if(!fread(&msg.idx,1,sizeof(msg.idx),smb.sid_fp))
 				break;
 			i=smb_lockmsghdr(&smb,&msg);
@@ -1411,7 +1412,7 @@ void readmsgs(ulong start, ulong count)
 				break; 
 			}
 
-			printf("\n#%"PRIu32" (%d)\n",msg.hdr.number,msg.offset+1);
+			printf("\n#%"PRIu32" (%d)\n",msg.hdr.number,msg.idx_offset+1);
 			printf("Subj : %s\n",msg.subj);
 			printf("Attr : %04hX", msg.hdr.attr);
 			if(*msg.to) {
@@ -1448,7 +1449,7 @@ void readmsgs(ulong start, ulong count)
 		if(count) {
 			if(rd >= count)
 				break;
-			msg.offset++;
+			msg.idx_offset++;
 			continue;
 		}
 		printf("\nReading %s (?=Menu): ",smb.file);
@@ -1475,13 +1476,13 @@ void readmsgs(ulong start, ulong count)
 				break;
 			case '-':
 				printf("Backwards\n");
-				if(msg.offset)
-					msg.offset--;
+				if(msg.idx_offset)
+					msg.idx_offset--;
 				break;
 			case 'T':
 				printf("Ten titles\n");
-				listmsgs(msg.offset+2,10);
-				msg.offset+=10;
+				listmsgs(msg.idx_offset+2,10);
+				msg.idx_offset+=10;
 				domsg=0;
 				break;
 			case 'L':
@@ -1502,7 +1503,7 @@ void readmsgs(ulong start, ulong count)
 			case '\n':
 			case '+':
 				printf("Next\n");
-				msg.offset++;
+				msg.idx_offset++;
 				break; 
 		} 
 	}
@@ -1561,7 +1562,7 @@ long getmsgnum(const char* str)
 		msg.hdr.number = atol(str + 1);
 		int result = smb_getmsgidx(&smb, &msg);
 		if(result == SMB_SUCCESS)
-			return msg.offset + 1;
+			return msg.idx_offset + 1;
 	}
 	return atol(str);
 }
@@ -1599,18 +1600,29 @@ int main(int argc, char **argv)
 	else	/* if redirected, don't send status messages to stderr */
 		statfp=nulfp;
 
-	sscanf("$Revision: 1.136 $", "%*s %s", revision);
-
 	DESCRIBE_COMPILER(compiler);
 
 	smb.file[0]=0;
-	fprintf(statfp,"\nSMBUTIL v%s-%s (rev %s) SMBLIB %s - Synchronet Message Base "\
+	fprintf(statfp,"\nSMBUTIL v%s-%s %s/%s SMBLIB %s - Synchronet Message Base "\
 		"Utility\n\n"
 		,SMBUTIL_VER
 		,PLATFORM_DESC
-		,revision
+		,GIT_BRANCH, GIT_HASH
 		,smb_lib_ver()
 		);
+
+	if(sizeof(hash_t) != SIZEOF_SMB_HASH_T) {
+		printf("!Size of hash_t unexpected: %d\n", (int)sizeof(hash_t));
+		return EXIT_FAILURE;
+	}
+	if(sizeof(idxrec_t) != SIZEOF_SMB_IDXREC_T) {
+		printf("!Size of idxrec_t unexpected: %d\n", (int)sizeof(idxrec_t));
+		return EXIT_FAILURE;
+	}
+	if(sizeof(fileidxrec_t) != SIZEOF_SMB_FILEIDXREC_T) {
+		printf("!Size of fileidxrec_t unexpected: %d\n", (int)sizeof(fileidxrec_t));
+		return EXIT_FAILURE;
+	}
 
 	/* Automatically detect the system time zone (if possible) */
 	tzset();
@@ -1717,7 +1729,7 @@ int main(int argc, char **argv)
 						beep="\a";
 						break;
 					default:
-						printf("\nUnknown opt '%c'\n",argv[x][j]);
+						fprintf(stderr, "\nUnknown opt '%c'\n", argv[x][j]);
 					case '?':
 						printf("%s",usage);
 						bail(1);

@@ -598,7 +598,7 @@ void sbbs_t::batch_add_list(char *list)
 						if(fexist(getfilepath(&cfg, &f, path)))
 							addtobatdl(&f);
 						else
-							bprintf(text[FileIsNotOnline],f.filename);
+							bprintf(text[FileIsNotOnline],f.name);
 						smb_freefilemem(&f);
 						break;
 					}
@@ -629,19 +629,19 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 		return false;
 	}
 	if(!chk_ar(cfg.dir[f->dir]->dl_ar,&useron,&client)) {
-		bprintf(text[CantAddToQueue],f->filename);
+		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[CantDownloadFromDir]);
 		return false;
 	}
 	if(getfilesize(&cfg, f) < 1) {
-		bprintf(text[CantAddToQueue], f->filename);
-		bprintf(text[FileIsNotOnline], f->filename);
+		bprintf(text[CantAddToQueue], f->name);
+		bprintf(text[FileIsNotOnline], f->name);
 		return false;
 	}
 
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
-	if(iniSectionExists(ini, f->filename)) {
-		bprintf(text[FileAlreadyInQueue], f->filename);
+	if(iniSectionExists(ini, f->name)) {
+		bprintf(text[FileAlreadyInQueue], f->name);
 		iniFreeStringList(ini);
 		return false;
 	}
@@ -649,7 +649,7 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 	bool result = false;
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
 	if(strListCount(filenames) >= cfg.max_batdn) {
-		bprintf(text[CantAddToQueue] ,f->filename);
+		bprintf(text[CantAddToQueue] ,f->name);
 		bputs(text[BatchDlQueueIsFull]);
 	} else {
 		totalcost = 0;
@@ -671,19 +671,19 @@ bool sbbs_t::addtobatdl(smbfile_t* f)
 		if(!is_download_free(&cfg,f->dir,&useron,&client))
 			totalcost += f->cost;
 		if(totalcost > useron.cdt+useron.freecdt) {
-			bprintf(text[CantAddToQueue],f->filename);
+			bprintf(text[CantAddToQueue],f->name);
 			bprintf(text[YouOnlyHaveNCredits],ultoac(useron.cdt+useron.freecdt,tmp));
 		} else {
 			totalsize += f->size;
 			if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && cur_cps)
 				totaltime += f->size/(ulong)cur_cps;
 			if(!(useron.exempt&FLAG('T')) && totaltime > timeleft) {
-				bprintf(text[CantAddToQueue],f->filename);
+				bprintf(text[CantAddToQueue],f->name);
 				bputs(text[NotEnoughTimeToDl]);
 			} else {
 				if(batch_file_add(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f)) {
 					bprintf(text[FileAddedToBatDlQueue]
-						,f->filename, strListCount(filenames) + 1, cfg.max_batdn, ultoac((ulong)totalcost,tmp)
+						,f->name, strListCount(filenames) + 1, cfg.max_batdn, ultoac((ulong)totalcost,tmp)
 						,ultoac((ulong)totalsize,tmp2)
 						,sectostr((ulong)totalsize/(ulong)cur_cps,str));
 					result = true;

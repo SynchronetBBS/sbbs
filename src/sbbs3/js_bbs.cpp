@@ -638,7 +638,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_MSG_OFFSET:
 			if(sbbs->current_msg!=NULL)
-				val=sbbs->current_msg->offset;
+				val=sbbs->current_msg->idx_offset;
 			break;
 		case BBS_PROP_MSG_NUMBER:
 			if(sbbs->current_msg!=NULL)
@@ -693,7 +693,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if(sbbs->current_file==NULL)
 				p=nulstr;
 			else
-				p=sbbs->current_file->filename;
+				p=sbbs->current_file->name;
 			break;
 		case BBS_PROP_FILE_DESC:
 			if(sbbs->current_file==NULL)

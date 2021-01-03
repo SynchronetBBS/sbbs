@@ -226,7 +226,7 @@ bool sbbs_t::logon()
 			const char* filename = filenames[i];
 			smbfile_t f = {{}};
 			if(batch_file_get(&cfg, ini, filename, &f)) {
-				bprintf(text[FileAddedToUlQueue], f.filename, i + 1, cfg.max_batup);
+				bprintf(text[FileAddedToUlQueue], f.name, i + 1, cfg.max_batup);
 				smb_freefilemem(&f);
 			} else
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, filename);
@@ -246,7 +246,7 @@ bool sbbs_t::logon()
 				char tmp2[256];
 				getfilesize(&cfg, &f);
 				bprintf(text[FileAddedToBatDlQueue]
-					,f.filename, i + 1, cfg.max_batdn
+					,f.name, i + 1, cfg.max_batdn
 					,ultoac((ulong)f.cost,tmp)
 					,ultoac((ulong)f.size,tmp2)
 					,sectostr((ulong)f.size / (ulong)cur_cps,str));

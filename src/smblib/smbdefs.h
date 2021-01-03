@@ -199,7 +199,7 @@
 #define SMB_TAGS			0x69	/* List of tags (ala hash-tags) related to this message */
 #define SMB_TAG_DELIMITER	" "
 
-#define SMB_FILENAME_MAXLEN	63
+#define SMB_FILENAME_MAXLEN	58		/* sbbsdefs.h: LEN_FDESC */
 #define SMB_FILENAME		SUBJECT
 #define	SMB_FILEDESC		SMB_SUMMARY
 #define SMB_FILEUPLOADER	SENDER
@@ -293,12 +293,15 @@
 #define MSG_DOWNVOTE		(1<<12)		/* This message is a downvote */
 #define MSG_POLL			(1<<13)		/* This message is a poll */
 #define MSG_SPAM			(1<<14)		/* This message has been flagged as SPAM */
+#define MSG_FILE			(1<<15)		/* This is a file */
 
 #define MSG_VOTE			(MSG_UPVOTE|MSG_DOWNVOTE)	/* This message is a poll-vote */
 #define MSG_POLL_CLOSURE	(MSG_POLL|MSG_VOTE)			/* This message is a poll-closure */
 #define MSG_POLL_VOTE_MASK	MSG_POLL_CLOSURE
 
 #define MSG_POLL_MAX_ANSWERS	16
+
+#define FILE_ANONYMOUS		MSG_ANONYMOUS
 
 										/* Auxiliary header attributes */
 #define MSG_FILEREQUEST 	(1<<0)		/* File request */
@@ -384,7 +387,7 @@ typedef struct _PACK {		/* Time with time-zone */
 
 typedef uint16_t smb_msg_attr_t;
 
-typedef struct _PACK {		/* Index record */
+typedef struct _PACK idxrec {	/* Index record */
 
 	union {
 		struct _PACK {			/* when msg.type != BALLOT */
@@ -396,6 +399,9 @@ typedef struct _PACK {		/* Index record */
 			uint16_t	votes;	/* votes value */
 			uint32_t	remsg;	/* number of message this vote is in response to */
 		};
+		struct _PACK {			/* when msg.type == FILE */
+			uint32_t	size;
+		};
 	};
 	smb_msg_attr_t	attr;		/* attributes (read, permanent, etc.) */
 	uint32_t	offset; 		/* byte-offset of msghdr in header file */
@@ -403,21 +409,40 @@ typedef struct _PACK {		/* Index record */
 	uint32_t	time;			/* time/date message was imported/posted */
 
 } idxrec_t;
+#define SIZEOF_SMB_IDXREC_T 20
+
+struct _PACK hash_data {
+	uint16_t	crc16;					/* CRC-16 of source */
+	uint32_t	crc32;					/* CRC-32 of source */
+	uint8_t		md5[MD5_DIGEST_SIZE];	/* MD5 digest of source */
+	uint8_t		sha1[20];				/* SHA1 hash of source */
+};
+
+typedef uint8_t	hashflags_t;
+
+struct hash_info {
+	hashflags_t flags;
+	struct hash_data;
+};
 
 typedef struct _PACK {		/* File index record */
 	union {
+		idxrec_t	idx;
 		struct {
-			idxrec_t	idx;
-			char		filename[SMB_FILENAME_MAXLEN + 1];
+			struct	idxrec;
+			char	name[SMB_FILENAME_MAXLEN + 1];
+			uint8_t	padding[6];
+			struct hash_info hash;
 		};
-		uint8_t	padding[128];
 	};
-} smbfileidxrec_t;
-										/* valid bits in hash_t.flags		*/
+} fileidxrec_t;
+#define SIZEOF_SMB_FILEIDXREC_T 128
+										/* valid bits in hashflags_t		*/
 #define SMB_HASH_CRC16			(1<<0)	/* CRC-16 hash is valid				*/
 #define SMB_HASH_CRC32			(1<<1)	/* CRC-32 hash is valid				*/
 #define SMB_HASH_MD5			(1<<2)	/* MD5 digest is valid				*/
-#define SMB_HASH_MASK			(SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5)
+#define SMB_HASH_SHA1			(1<<3)	/* SHA1 hsah is valid				*/
+#define SMB_HASH_MASK			(SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5|SMB_HASH_SHA1)
 								
 #define SMB_HASH_MARKED			(1<<4)	/* Used by smb_findhash()			*/
 
@@ -447,22 +472,18 @@ enum smb_hash_source_type {
 #define SMB_HASH_SOURCE_SPAM	((1<<SMB_HASH_SOURCE_BODY))
 
 typedef struct _PACK {
-
 	uint32_t	number;					/* Message number */
 	uint32_t	time;					/* Local time of fingerprinting */
 	uint32_t	length;					/* Length (in bytes) of source */
-	uchar		source;					/* SMB_HASH_SOURCE* (in low 5-bits) */
-	uchar		flags;					/* indications of valid hashes and pre-processing */
-	uint16_t	crc16;					/* CRC-16 of source */
-	uint32_t	crc32;					/* CRC-32 of source */
-	uchar		md5[MD5_DIGEST_SIZE];	/* MD5 digest of source */
-	uchar		reserved[28];			/* sizeof(hash_t) = 64 */
-
+	uint8_t		source;					/* SMB_HASH_SOURCE* (in low 5-bits) */
+	struct		hash_info;
+	uint8_t		reserved[8];			/* sizeof(hash_t) = 64 */
 } hash_t;
+#define SIZEOF_SMB_HASH_T 64
 
 typedef struct _PACK {		/* Message base header (fixed portion) */
 
-    uchar		id[LEN_HEADER_ID];	/* SMB<^Z> */
+    uchar		smbhdr_id[LEN_HEADER_ID];	/* SMB<^Z> */
     uint16_t	version;        /* version number (initially 100h for 1.00) */
     uint16_t	length;         /* length including this struct */
 
@@ -497,9 +518,9 @@ enum smb_msg_type {
 	,SMB_MSG_TYPE_FILE			/* A file (e.g. for download) */
 };
 
-typedef struct _PACK {		/* Message/File header */
+typedef struct smbmsghdr _PACK {		/* Message/File header */
 
-	/* 00 */ uchar		id[LEN_HEADER_ID];	/* SHD<^Z> */
+	/* 00 */ uchar		msghdr_id[LEN_HEADER_ID];	/* SHD<^Z> */
     /* 04 */ uint16_t	type;				/* Message type (enum smb_msg_type) */
     /* 06 */ uint16_t	version;			/* Version of type (initially 100h for 1.00) */
     /* 08 */ uint16_t	length;				/* Total length of fixed record + all fields */
@@ -577,7 +598,10 @@ typedef struct {		/* Network (type and address) */
 typedef struct {				/* Message or File */
 
 	idxrec_t	idx;			/* Index */
-	msghdr_t	hdr;			/* Header record (fixed portion) */
+	union {
+		msghdr_t	hdr;		/* Header record (fixed portion) */
+		struct		smbmsghdr;
+	};
 	char		*to,			/* To name */
 				*to_ext,		/* To extension */
 				*to_list,		/* Comma-separated list of recipients, RFC822-style */
@@ -611,7 +635,7 @@ typedef struct {				/* Message or File */
 	};
 	union {
 		char*	subj;			/* Subject  */
-		char*	filename;		/* Filename */
+		char*	name;			/* Filename */
 	};
 	union {
 		uchar*	text;			/* Message body text (optional) */
@@ -633,7 +657,7 @@ typedef struct {				/* Message or File */
 	hfield_t	*hfield;		/* Header fields (fixed length portion) */
 	void		**hfield_dat;	/* Header fields (variable length portion) */
 	dfield_t	*dfield;		/* Data fields (fixed length portion) */
-	int32_t		offset; 		/* Offset (number of records) into index */
+	int32_t		idx_offset;		/* Offset (number of records) into index */
 	BOOL		forwarded;		/* Forwarded from agent to another */
 	uint32_t	expiration; 	/* Message will expire on this day (if >0) */
 	uint32_t	cost;			/* Cost to download/read */

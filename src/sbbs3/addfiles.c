@@ -201,7 +201,7 @@ void updatestats(ulong size)
 bool reupload(smb_t* smb, smbfile_t* f)
 {
 	if(!smb_renewfile(smb, f, SMB_SELFPACK)) {
-		fprintf(stderr, "!Error renewing: %s\n", f->filename);
+		fprintf(stderr, "!Error renewing: %s\n", f->name);
 		return false;
 	}
 	return true;
@@ -592,12 +592,12 @@ void synclist(char *inpath, int dirnum)
 			truncsp(str);
 			p=strchr(str,' ');
 			if(p) *p=0;
-			if(!stricmp(str, f->filename))
+			if(!stricmp(str, f->name))
 				found=1; 
 		}
 		if(found)
 			continue;
-		printf("%s not found in list - ", f->filename);
+		printf("%s not found in list - ", f->name);
 		if(smb_removefile(&smb, f) != SMB_SUCCESS)
 			fprintf(stderr, "!ERROR (%s) removing file from database\n", smb.last_error);
 		else {

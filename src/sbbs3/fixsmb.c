@@ -29,6 +29,8 @@
 #include "genwrap.h"	/* PLATFORM_DESC */
 #include "str_list.h"	/* strList API */
 #include "crc16.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 smb_t	smb;
 BOOL	renumber=FALSE;
@@ -254,7 +256,7 @@ int fixsmb(char* sub)
 		else if(msg.hdr.number==0)
 			printf("Not indexing invalid message number (0)!\n");
 		else {
-			msg.offset=n;
+			msg.idx_offset=n;
 			if(renumber)
 				msg.hdr.number=n+1;
 			if(msg.hdr.number > highest)
@@ -314,15 +316,12 @@ int fixsmb(char* sub)
 
 int main(int argc, char **argv)
 {
-	char		revision[16];
 	int 		i;
 	str_list_t	list;
 	int			retval = EXIT_SUCCESS;
 
-	sscanf("$Revision: 1.46 $", "%*s %s", revision);
-
-	printf("\nFIXSMB v2.10-%s (rev %s) SMBLIB %s - Rebuild Synchronet Message Base\n\n"
-		,PLATFORM_DESC,revision,smb_lib_ver());
+	printf("\nFIXSMB v3.19-%s %s/%s SMBLIB %s - Rebuild Synchronet Message Base\n\n"
+		,PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	list=strListInit();
 

@@ -1130,7 +1130,7 @@ static void receive_thread(void* arg)
 			smb_hfield_str(&f, SMB_FILENAME, getfname(xfer.filename));
 			smb_hfield_str(&f, SENDER, xfer.user->alias);
 
-			filedat=findfile(&scfg, xfer.dir, f.filename);
+			filedat=findfile(&scfg, xfer.dir, f.name);
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
 				f.hdr.attr |= MSG_ANONYMOUS;
 			uint32_t cdt = flength(xfer.filename);
@@ -1195,12 +1195,12 @@ static void receive_thread(void* arg)
 			if(filedat) {
 				if(!updatefile(&scfg, &f))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR updating file (%s) in database"
-						,xfer.ctrl_sock, xfer.user->alias, f.filename);
+						,xfer.ctrl_sock, xfer.user->alias, f.name);
 				/* need to update the index here */
 			} else {
 				if(!addfile(&scfg, xfer.dir, &f, desc))
 					lprintf(LOG_ERR,"%04d <%s> !DATA ERROR adding file (%s) to database"
-						,xfer.ctrl_sock, xfer.user->alias, f.filename);
+						,xfer.ctrl_sock, xfer.user->alias, f.name);
 			}
 			smb_freefilemem(&f);
 
@@ -3846,13 +3846,13 @@ static void ctrl_thread(void* arg)
 						,/* filespec */NULL, /* time: */0, /* extdesc: */FALSE, /* sort: */TRUE, &file_count);
 					for(size_t i = 0; i < file_count; i++) {
 						smbfile_t* f = &file_list[i];
-						if (cmd[3] != 'D' && strcmp(f->filename, mls_fname) != 0)
+						if (cmd[3] != 'D' && strcmp(f->name, mls_fname) != 0)
 							continue;
 						if (cmd[3] == 'T')
 							sockprintf(sock,sess, "250- Listing %s", p);
 						get_fileperm(scfg.lib[lib], scfg.dir[dir], &user, &client, f, permstr);
 						get_owner_name(f, str);
-						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, f->filename);
+						SAFEPRINTF3(aliaspath, "/%s/%s/%s", scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix, f->name);
 						get_unique(aliaspath, uniq);
 						f->size = f->cost;
 						f->time = f->hdr.when_imported.time;
@@ -3864,7 +3864,7 @@ static void ctrl_thread(void* arg)
 							f->time = st.st_mtime;
 							f->hdr.when_imported.time = (uint32_t)st.st_ctime;
 						}
-						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f->size, f->time, str, uniq, f->hdr.when_imported.time, cmd[3] == 'T' ? mls_path : f->filename);
+						send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", permstr, f->size, f->time, str, uniq, f->hdr.when_imported.time, cmd[3] == 'T' ? mls_path : f->name);
 						l++;
 					}
 					if (cmd[3] == 'D') {
@@ -4158,13 +4158,13 @@ static void ctrl_thread(void* arg)
 						if(tm.tm_year==cur_tm.tm_year)
 							fprintf(fp,"%02d:%02d %s\r\n"
 								,tm.tm_hour,tm.tm_min
-								,f->filename);
+								,f->name);
 						else
 							fprintf(fp,"%5d %s\r\n"
 								,1900+tm.tm_year
-								,f->filename);
+								,f->name);
 					} else
-						fprintf(fp,"%s\r\n", f->filename);
+						fprintf(fp,"%s\r\n", f->name);
 				}
 				lprintf(LOG_INFO, "%04d <%s> %slisting (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 					,sock, user.alias, detail ? "detailed ":"", ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
@@ -4423,7 +4423,7 @@ static void ctrl_thread(void* arg)
 						for(size_t i = 0; i < file_count; i++) {
 							smbfile_t* f = &file_list[i];
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN
-								,f->filename, f->desc);
+								,f->name, f->desc);
 						}
 						lprintf(LOG_INFO, "%04d <%s> index (%ld bytes) of /%s/%s (%lu files) created in %ld seconds"
 							,sock, user.alias, ftell(fp), scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix

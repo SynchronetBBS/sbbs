@@ -57,7 +57,7 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 	l = flength(path);
 	if(l <= 0)
 		return 0;
-	return (long)(l / sizeof(smbfileidxrec_t));
+	return (long)(l / sizeof(fileidxrec_t));
 }
 
 /****************************************************************************/

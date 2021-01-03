@@ -42,7 +42,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 	getfilepath(&cfg, f, path);
 	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
 	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
-	bprintf(text[FiFilename],f->filename);
+	bprintf(text[FiFilename],f->name);
 
 	if(getfilesize(&cfg, f) >= 0)
 		bprintf(text[FiFileSize], ultoac((ulong)f->size,tmp)
@@ -74,7 +74,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 		CRLF; 
 	}
 	if(f->size < 0) {
-		bprintf(text[FileIsNotOnline],f->filename);
+		bprintf(text[FileIsNotOnline],f->name);
 		if(SYSOP)
 			bprintf("%s\r\n",path);
 	}
@@ -153,12 +153,12 @@ bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
 	if((result = smb_removefile(smb ,f)) == SMB_SUCCESS) {
 		SAFEPRINTF4(str,"%s removed %s from %s %s"
 			,useron.alias
-			,f->filename
+			,f->name
 			,cfg.lib[cfg.dir[smb->dirnum]->lib]->sname,cfg.dir[smb->dirnum]->sname);
 		logline("U-",str);
 		return true;
 	}
-	errormsg(WHERE, ERR_REMOVE, f->filename, result, smb->last_error);
+	errormsg(WHERE, ERR_REMOVE, f->name, result, smb->last_error);
 	return false;
 }
 
@@ -166,18 +166,18 @@ bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
 /****************************************************************************/
 bool sbbs_t::movefile(smb_t* smb, smbfile_t* f, int newdir)
 {
-	if(findfile(&cfg, newdir, f->filename)) {
-		bprintf(text[FileAlreadyThere], f->filename);
+	if(findfile(&cfg, newdir, f->name)) {
+		bprintf(text[FileAlreadyThere], f->name);
 		return false; 
 	}
 
 	if(!addfile(&cfg, newdir, f, f->extdesc))
 		return false;
 	removefile(smb, f);
-	bprintf(text[MovedFile],f->filename
+	bprintf(text[MovedFile],f->name
 		,cfg.lib[cfg.dir[newdir]->lib]->sname,cfg.dir[newdir]->sname);
 	char str[MAX_PATH+1];
-	SAFEPRINTF4(str, "%s moved %s to %s %s",f->filename
+	SAFEPRINTF4(str, "%s moved %s to %s %s",f->name
 		,useron.alias
 		,cfg.lib[cfg.dir[newdir]->lib]->sname
 		,cfg.dir[newdir]->sname);

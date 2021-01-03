@@ -363,7 +363,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 
 	attr(cfg.color[clr_filename]);
 	char fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
-	bprintf("%-*s", (int)sizeof(fname)-1, format_filename(f->filename, fname, sizeof(fname)-1, /* pad: */TRUE));
+	bprintf("%-*s", (int)sizeof(fname)-1, format_filename(f->name, fname, sizeof(fname)-1, /* pad: */TRUE));
 	getfilepath(&cfg, f, path);
 
 	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
@@ -421,7 +421,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 		}
 		else {
 			if(f->desc == NULL || *f->desc == '\0')
-				bputs(f->filename);
+				bputs(f->name);
 			else
 				bputs(f->desc);
 		}
@@ -542,7 +542,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 								bprintf(text[BatchDlQueueIsFull],str+c);
 								break; 
 							}
-							if(filematch(bf[i]->filename, str+c)) {
+							if(filematch(bf[i]->name, str+c)) {
 								addtobatdl(bf[i]); 
 							} 
 						} 
@@ -591,7 +591,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
 //							padfname(str+c,tmp);
-							if(filematch(bf[i]->filename, str+c)) {
+							if(filematch(bf[i]->name, str+c)) {
 								if(!viewfile(bf[i], ch=='E'))
 									return(-1); 
 							} 
@@ -674,7 +674,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 						if(!p) p=strchr(str+c,',');
 						if(p) *p=0;
 						for(i=0;i<total;i++) {
-							if(filematch(bf[i]->filename, str+c)) {
+							if(filematch(bf[i]->name, str+c)) {
 								if(ch=='R') {
 									removefile(smb, bf[i]);
 									if(remfile) {
@@ -842,15 +842,15 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 				case 'E':   /* edit file information */
 					if(dir_op(dirnum)) {
 						bputs(text[EditFilename]);
-						SAFECOPY(str, f->filename);
+						SAFECOPY(str, f->name);
 						if(!getstr(str, SMB_FILENAME_MAXLEN, K_EDIT|K_AUTODEL))
 							break;
-						if(strcmp(str,f->filename) != 0) { /* rename */
-							if(stricmp(str,f->filename)
+						if(strcmp(str,f->name) != 0) { /* rename */
+							if(stricmp(str,f->name)
 								&& findfile(&cfg,f->dir,path))
 								bprintf(text[FileAlreadyThere],path);
 							else {
-								SAFEPRINTF2(path,"%s%s",dirpath,f->filename);
+								SAFEPRINTF2(path,"%s%s",dirpath,f->name);
 								SAFEPRINTF2(tmp,"%s%s",dirpath,str);
 								if(fexistcase(path) && rename(path,tmp))
 									bprintf(text[CouldntRenameFile],path,tmp);
@@ -912,7 +912,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					updatefile(&cfg, f);
 					break;
 				case 'F':   /* delete file only */
-					SAFEPRINTF2(str,"%s%s",dirpath,f->filename);
+					SAFEPRINTF2(str,"%s%s",dirpath,f->name);
 					if(!fexistcase(str))
 						bprintf(text[FileDoesNotExist],str);
 					else {
@@ -931,7 +931,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(noyes(text[RemoveFileQ]))
 						break;
 					removefile(&smb, f);
-					SAFEPRINTF2(str,"%s%s",dirpath,f->filename);
+					SAFEPRINTF2(str,"%s%s",dirpath,f->name);
 					if(fexistcase(str)) {
 						if(dir_op(dirnum)) {
 							if(!noyes(text[DeleteFileQ])) {
@@ -950,9 +950,9 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
 						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
 						if(i!=dirnum && i!=INVALID_DIR
-							&& !findfile(&cfg,i,f->filename)) {
+							&& !findfile(&cfg,i,f->name)) {
 							sprintf(str,text[AddToOfflineDirQ]
-								,f->filename,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
+								,f->name,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {
 								addfile(&cfg, i, f, f->extdesc);
 							} 
@@ -981,7 +981,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(i==useron.number)
 						useron.cdt=usrcdt;
 					sprintf(str,text[FileRemovedUserMsg]
-						,f->filename,f->cost ? ultoac(f->cost,tmp) : text[No]);
+						,f->name,f->cost ? ultoac(f->cost,tmp) : text[No]);
 					putsmsg(&cfg,i,str);
 					usrcdt=adjustuserrec(&cfg,i,U_ULB,10,-f->size);
 					if(i==useron.number)
@@ -1023,7 +1023,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 			} 
 		}
 		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
-			SAFEPRINTF2(path,"%s%s",dirpath,f->filename);
+			SAFEPRINTF2(path,"%s%s",dirpath,f->name);
 			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
 				SYNC;       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
@@ -1100,9 +1100,9 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(cfg.dir[f->dir]->seqdev) {
 						lncntr=0;
 						seqwait(cfg.dir[f->dir]->seqdev);
-						bprintf(text[RetrievingFile],f->filename);
-						SAFEPRINTF2(str,"%s%s",dirpath,f->filename);
-						SAFEPRINTF2(path,"%s%s",cfg.temp_dir,f->filename);
+						bprintf(text[RetrievingFile],f->name);
+						SAFEPRINTF2(str,"%s%s",dirpath,f->name);
+						SAFEPRINTF2(path,"%s%s",cfg.temp_dir,f->name);
 						mv(str,path,1); /* copy the file to temp dir */
 						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 							thisnode.aux=0xf0;
@@ -1110,7 +1110,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 						}
 						CRLF; 
 					}
-					const char* file_ext = getfext(f->filename);
+					const char* file_ext = getfext(f->name);
 					if(file_ext != NULL) {
 						for(j=0; j<cfg.total_dlevents; j++) {
 							if(!stricmp(cfg.dlevent[j]->ext, file_ext + 1)
@@ -1160,7 +1160,7 @@ void sbbs_t::listfiletofile(smbfile_t* f, uint dirnum, int file)
     char	fpath[MAX_PATH + 1];
 	bool	exist=true;
 
-	SAFECOPY(str, f->filename);
+	SAFECOPY(str, f->name);
 	if(f->extdesc != NULL)
 		strcat(str, "+");
 	else

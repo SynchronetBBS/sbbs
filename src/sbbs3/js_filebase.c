@@ -21,7 +21,6 @@
 
 #include "sbbs.h"
 #include "js_request.h"
-#include "userdat.h"
 #include <stdbool.h>
 
 typedef struct
@@ -30,14 +29,6 @@ typedef struct
 	int		smb_result;
 
 } private_t;
-
-typedef struct
-{
-	private_t	*p;
-	BOOL		enumerated;
-	smbfile_t	file;
-
-} privatefile_t;
 
 /* Destructor */
 
@@ -97,7 +88,6 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	return JS_TRUE;
 }
-
 
 static JSBool
 js_close(JSContext *cx, uintN argc, jsval *arglist)
@@ -213,8 +203,8 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f)
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
 	}
-	if(f->filename == NULL
-		|| (js_str = JS_NewStringCopyZ(cx, f->filename)) == NULL
+	if(f->name == NULL
+		|| (js_str = JS_NewStringCopyZ(cx, f->name)) == NULL
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
 
@@ -632,7 +622,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, str);
 		if(str == NULL)
 			return JS_FALSE;
-		if(file.filename == NULL)
+		if(file.name == NULL)
 			smb_hfield_str(&file, SMB_FILENAME, str);
 		else if(file.desc == NULL)
 			smb_hfield_str(&file, SMB_FILEDESC, str);
@@ -652,7 +642,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
-	if(file.filename != NULL) {
+	if(file.name != NULL) {
 		rc=JS_SUSPENDREQUEST(cx);
 		file.hdr.when_written.time = (uint32_t)getfiletime(scfg, &file);
 		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc);
@@ -871,7 +861,7 @@ static char* filebase_prop_desc[] = {
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"
 	,"file base attributes - <small>READ ONLY</small>"
-	,"directory number (0-based, 65535 for e-mail) - <small>READ ONLY</small>"
+	,"directory number (0-based) - <small>READ ONLY</small>"
 	,"<i>true</i> if the file base has been opened successfully - <small>READ ONLY</small>"
 	,NULL
 };

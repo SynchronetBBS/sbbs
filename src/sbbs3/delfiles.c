@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 			if(cfg.dir[i]->maxage && cfg.dir[i]->misc&DIR_SINCEDL && f->hdr.last_downloaded
 				&& (now - f->hdr.last_downloaded)/86400L > cfg.dir[i]->maxage) {
 					printf("Deleting %s (%ld days since last download)\n"
-						,f->filename
+						,f->name
 						,(long)(now - f->hdr.last_downloaded)/86400L);
 					if(!(misc&REPORT)) {
 						if(smb_removefile(&smb, f) == SMB_SUCCESS)
@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 				&& !(f->hdr.last_downloaded && cfg.dir[i]->misc&DIR_SINCEDL)
 				&& (now - f->hdr.when_imported.time)/86400L > cfg.dir[i]->maxage) {
 					printf("Deleting %s (uploaded %ld days ago)\n"
-						,f->filename
+						,f->name
 						,(long)(now - f->hdr.when_imported.time)/86400L);
 					if(!(misc&REPORT)) {
 						if(smb_removefile(&smb, f) == SMB_SUCCESS)
@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 					} 
 			}
 			else if(misc&OFFLINE && cfg.dir[i]->misc&DIR_FCHK && !fexist(fpath)) {
-					printf("Removing %s (doesn't exist)\n", f->filename);
+					printf("Removing %s (doesn't exist)\n", f->name);
 					if(!(misc&REPORT)) {
 						if(smb_removefile(&smb, f) != SMB_SUCCESS)
 							printf("ERROR (%s) removing file from database\n", smb.last_error);

@@ -127,9 +127,9 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 		return NULL;
 	memset(file_list, 0, (smb->status.total_files + 1) * sizeof(char*));
 
-	fseek(smb->sid_fp, start * sizeof(smbfileidxrec_t), SEEK_SET);
+	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	while(!feof(smb->sid_fp)) {
-		smbfileidxrec_t fidx;
+		fileidxrec_t fidx;
 
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
@@ -138,10 +138,10 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 			continue;
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(fidx.filename, filespec, /* path: */FALSE))
+			if(!wildmatchi(fidx.name, filespec, /* path: */FALSE))
 				continue;
 		}
-		file_list[*count] = strdup(fidx.filename);
+		file_list[*count] = strdup(fidx.name);
 		(*count)++;
 	}
 	if(sort)
@@ -168,9 +168,9 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BO
 		return NULL;
 	memset(file_list, 0, smb->status.total_files * sizeof(smbfile_t));
 
-	fseek(smb->sid_fp, start * sizeof(smbfileidxrec_t), SEEK_SET);
+	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	while(!feof(smb->sid_fp)) {
-		smbfileidxrec_t fidx;
+		fileidxrec_t fidx;
 
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
@@ -179,7 +179,7 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BO
 			continue;
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(fidx.filename, filespec, /* path: */FALSE))
+			if(!wildmatchi(fidx.name, filespec, /* path: */FALSE))
 				continue;
 		}
 		smbfile_t file = { .idx = fidx.idx };
@@ -203,7 +203,7 @@ static int file_compare_name_a(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return stricmp(f1->filename, f2->filename);
+	return stricmp(f1->name, f2->name);
 }
 
 static int file_compare_name_ac(const void* v1, const void* v2)
@@ -211,7 +211,7 @@ static int file_compare_name_ac(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return strcmp(f1->filename, f2->filename);
+	return strcmp(f1->name, f2->name);
 }
 
 static int file_compare_name_d(const void* v1, const void* v2)
@@ -219,7 +219,7 @@ static int file_compare_name_d(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return stricmp(f2->filename, f1->filename);
+	return stricmp(f2->name, f1->name);
 }
 
 static int file_compare_name_dc(const void* v1, const void* v2)
@@ -227,7 +227,7 @@ static int file_compare_name_dc(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return strcmp(f2->filename, f1->filename);
+	return strcmp(f2->name, f1->name);
 }
 
 static int file_compare_date_a(const void* v1, const void* v2)
@@ -235,7 +235,7 @@ static int file_compare_date_a(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return f1->hdr.when_imported.time - f2->hdr.when_imported.time;
+	return f1->when_imported.time - f2->when_imported.time;
 }
 
 static int file_compare_date_d(const void* v1, const void* v2)
@@ -243,7 +243,7 @@ static int file_compare_date_d(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return f2->hdr.when_imported.time - f1->hdr.when_imported.time;
+	return f2->when_imported.time - f1->when_imported.time;
 }
 
 void sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
@@ -371,11 +371,11 @@ BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	if(fp == NULL)
 		return FALSE;
 	fseek(fp, 0, SEEK_END);
-	fprintf(fp, "\n[%s]\n", f->filename);
+	fprintf(fp, "\n[%s]\n", f->name);
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
 	fprintf(fp, "desc=%s\n", f->desc);
-	fprintf(fp, "altpath=%u\n", f->hdr.altpath);
+	fprintf(fp, "altpath=%u\n", f->altpath);
 	fclose(fp);
 	return TRUE;
 }
@@ -391,7 +391,7 @@ BOOL batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t
 		return FALSE;
 	smb_hfield_str(f, SMB_FILENAME, filename);
 	smb_hfield_str(f, SMB_FILEDESC, iniGetString(ini, filename, "desc", NULL, value));
-	f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
+	f->altpath = iniGetShortInt(ini, filename, "altpath", 0);
 	return TRUE;
 }
 
@@ -450,11 +450,11 @@ char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 {
 	bool fchk = false;
 	if(f->dir >= cfg->total_dirs)
-		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, f->filename);
+		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, f->name);
 	else {
-		safe_snprintf(path, MAX_PATH, "%s%s", f->hdr.altpath > 0 && f->hdr.altpath <= cfg->altpaths 
-			? cfg->altpath[f->hdr.altpath-1] : cfg->dir[f->dir]->path
-			,f->filename);
+		safe_snprintf(path, MAX_PATH, "%s%s", f->altpath > 0 && f->altpath <= cfg->altpaths 
+			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
+			,f->name);
 		fchk = (cfg->dir[f->dir]->misc & DIR_FCHK) != 0;
 	}
 	if(f->size == 0 && fchk && !fexistcase(path))

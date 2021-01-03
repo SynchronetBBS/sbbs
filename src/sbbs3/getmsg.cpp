@@ -561,7 +561,7 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 		smb_close(&smb);
 		return(0);
 	}
-	msg.offset=0;
+	msg.idx_offset=0;
 	msg.hdr.number=0;
 	if(smb_getmsgidx(&smb,&msg)) {				/* Get first message index */
 		smb_close(&smb);
@@ -589,13 +589,13 @@ time_t sbbs_t::getmsgtime(uint subnum, ulong ptr)
 	}
 
 	if(ptr-msg.idx.number < lastidx.number-ptr) {
-		msg.offset=0;
+		msg.idx_offset=0;
 		msg.idx.number=0;
 		while(msg.idx.number<ptr) {
 			msg.hdr.number=0;
 			if(smb_getmsgidx(&smb,&msg) || msg.idx.number>=ptr)
 				break;
-			msg.offset++;
+			msg.idx_offset++;
 		}
 		smb_close(&smb);
 		return(msg.idx.time);

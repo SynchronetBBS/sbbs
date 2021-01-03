@@ -1987,7 +1987,7 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			}
 		}
 		if(strcmp(sp, "FILE_NAME") == 0)
-			return current_file->filename;
+			return current_file->name;
 		if(strcmp(sp, "FILE_DESC") == 0)
 			return current_file->desc;
 		if(strcmp(sp, "FILE_UPLOADER") == 0)

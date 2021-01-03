@@ -5252,7 +5252,7 @@ int export_netmail(void)
 
 	memset(&msg, 0, sizeof(msg));
 	rewind(email->sid_fp);
-	for(;!feof(email->sid_fp);msg.offset++) {
+	for(;!feof(email->sid_fp);msg.idx_offset++) {
 
 		smb_freemsgmem(&msg);
 		if(fread(&msg.idx, sizeof(msg.idx), 1, email->sid_fp) != 1)
@@ -5331,7 +5331,7 @@ int export_netmail(void)
 			if((i = smb_updatemsg(email, &msg)) != SMB_SUCCESS)
 				lprintf(LOG_ERR,"!ERROR %d (%s) line %d deleting mail msg #%u"
 					,i, email->last_error, __LINE__, msg.hdr.number);
-			(void)fseek(email->sid_fp, (msg.offset+1)*sizeof(msg.idx), SEEK_SET);
+			(void)fseek(email->sid_fp, (msg.idx_offset+1)*sizeof(msg.idx), SEEK_SET);
 		} else {
 			if((i = smb_putmsghdr(email, &msg)) != SMB_SUCCESS)
 				lprintf(LOG_ERR,"!ERROR %d (%s) line %d updating msg header for mail msg #%u"

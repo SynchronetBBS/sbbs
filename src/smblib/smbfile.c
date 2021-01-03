@@ -204,12 +204,12 @@ int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
 {
 	rewind(smb->sid_fp);
 	while(!feof(smb->sid_fp)) {
-		smbfileidxrec_t fidx;
+		fileidxrec_t fidx;
 
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
 
-		if(strnicmp(fidx.filename, filename, sizeof(fidx.filename)) == 0) {
+		if(strnicmp(fidx.name, filename, sizeof(fidx.name)) == 0) {
 			if(idx != NULL)
 				*idx = fidx.idx;
 			return SMB_SUCCESS;
@@ -280,7 +280,7 @@ int SMBCALL smb_removefile(smb_t* smb, smbfile_t* file)
 	// Now remove from index:
 	if(result == SMB_SUCCESS) {
 		rewind(smb->sid_fp);
-		smbfileidxrec_t* fidx = malloc(smb->status.total_files * sizeof(*fidx));
+		fileidxrec_t* fidx = malloc(smb->status.total_files * sizeof(*fidx));
 		if(fidx == NULL) {
 			smb_unlocksmbhdr(smb);
 			return SMB_ERR_MEM;
@@ -292,7 +292,7 @@ int SMBCALL smb_removefile(smb_t* smb, smbfile_t* file)
 		}
 		rewind(smb->sid_fp);
 		for(uint32_t i = 0; i < smb->status.total_files; i++) {
-			if(stricmp(fidx[i].filename, file->filename) == 0)
+			if(stricmp(fidx[i].name, file->name) == 0)
 				continue;
 			if(fwrite(fidx + i, sizeof(*fidx), 1, smb->sid_fp) != 1) {
 				result = SMB_ERR_WRITE;

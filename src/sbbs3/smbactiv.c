@@ -36,7 +36,7 @@ ulong first_msg()
 {
 	smbmsg_t msg;
 
-	msg.offset=0;
+	msg.idx_offset=0;
 	msg.hdr.number=0;
 	if(smb_getmsgidx(&smb,&msg))			/* Get first message index */
 		return(0);

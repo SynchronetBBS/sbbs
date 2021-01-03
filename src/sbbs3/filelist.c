@@ -363,7 +363,7 @@ int main(int argc, char **argv)
 		}
 		int longest_filename = 12;
 		for(m = 0; m < file_count; m++) {
-			int fnamelen = strlen(file_list[m].filename);
+			int fnamelen = strlen(file_list[m].name);
 			if(fnamelen > longest_filename)
 				longest_filename = fnamelen;
 		}
@@ -371,15 +371,15 @@ int main(int argc, char **argv)
 			smbfile_t file = file_list[m];
 
 			if(misc&PAD) {
-				char* ext = getfext(file.filename);
+				char* ext = getfext(file.name);
 				if(ext == NULL)
 					ext="";
 				fprintf(out,"%-*.*s%s"
 					, (int)(longest_filename - strlen(ext))
-					, (int)(strlen(file.filename) - strlen(ext))
-					, file.filename, ext);
+					, (int)(strlen(file.name) - strlen(ext))
+					, file.name, ext);
 			} else
-				fprintf(out,"%-*s", longest_filename, file.filename);
+				fprintf(out,"%-*s", longest_filename, file.name);
 
 			total_files++;
 			dir_files++;
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
 			}
 
 			if(misc&MINUS) {
-				sprintf(str,"%s%s",scfg.dir[i]->path,file.filename);
+				sprintf(str,"%s%s",scfg.dir[i]->path,file.name);
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
@@ -412,7 +412,7 @@ int main(int argc, char **argv)
 
 			if(misc&DFD) {
 				// TODO: Fix to support alt-file-paths:
-				sprintf(str,"%s%s",scfg.dir[i]->path,file.filename);
+				sprintf(str,"%s%s",scfg.dir[i]->path,file.name);
 				desc_off += fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
 			}
 

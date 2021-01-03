@@ -34,8 +34,8 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	FILE*	stream;
 
 	curdirnum=f->dir;
-	if(findfile(&cfg, f->dir, f->filename)) {
-		errormsg(WHERE, ERR_CHK, f->filename, f->dir);
+	if(findfile(&cfg, f->dir, f->name)) {
+		errormsg(WHERE, ERR_CHK, f->name, f->dir);
 		return false;
 	}
 	getfilepath(&cfg, f, path);
@@ -43,15 +43,15 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	if(!fexistcase(path) && fexistcase(tmp))
 		mv(tmp,path,0);
 	if(!fexistcase(path)) {
-		bprintf(text[FileNotReceived],f->filename);
+		bprintf(text[FileNotReceived],f->name);
 		safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (Not received)"
-			,f->filename
+			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
 		return false;
 	}
 	f->hdr.when_written.time = (uint32_t)fdate(path);
-	char* fext = getfext(f->filename);
+	char* fext = getfext(f->name);
 	for(i=0;i<cfg.total_ftests;i++)
 		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(fext, cfg.ftest[i]->ext)) {
 			if(!chk_ar(cfg.ftest[i]->ar,&useron,&client))
@@ -59,7 +59,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			attr(LIGHTGRAY);
 			bputs(cfg.ftest[i]->workstr);
 
-			safe_snprintf(sbbsfilename,sizeof(sbbsfilename),"SBBSFILENAME=%s",f->filename);
+			safe_snprintf(sbbsfilename,sizeof(sbbsfilename),"SBBSFILENAME=%s",f->name);
 			putenv(sbbsfilename);
 			safe_snprintf(sbbsfiledesc,sizeof(sbbsfiledesc),"SBBSFILEDESC=%s",f->desc);
 			putenv(sbbsfiledesc);
@@ -75,14 +75,14 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 			}
 			if(external(cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL),EX_OFFLINE)) {
 				safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (%s Errors)"
-					,f->filename
+					,f->name
 					,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname,cfg.ftest[i]->ext);
 				logline(LOG_NOTICE,"U!",str);
 #if 0
 				sprintf(str,"Failed test: %s", cmdstr(cfg.ftest[i]->cmd,path,f->desc,NULL));
 				logline("  ",str);
 #endif
-				bprintf(text[FileHadErrors],f->filename,cfg.ftest[i]->ext);
+				bprintf(text[FileHadErrors],f->name,cfg.ftest[i]->ext);
 				if(!SYSOP || yesno(text[DeleteFileQ]))
 					remove(path);
 				return(0); 
@@ -115,10 +115,10 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		}
 
 	if((length=(long)flength(path))==0L) {
-		bprintf(text[FileZeroLength],f->filename);
+		bprintf(text[FileZeroLength],f->name);
 		remove(path);
 		safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (Zero length)"
-			,f->filename
+			,f->name
 			,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		logline(LOG_NOTICE,"U!",str);
 		return false; 
@@ -173,7 +173,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		f->hdr.attr |= MSG_ANONYMOUS;
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
-	bprintf(text[FileNBytesReceived],f->filename,ultoac(length,tmp));
+	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
 	if(f->desc == NULL || *f->desc == '\0') {
 		smb_hfield_str(f, SMB_SUMMARY, text[NoDescription]);
 	}
@@ -181,7 +181,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		return false;
 
 	safe_snprintf(str,sizeof(str),"uploaded %s to %s %s"
-		,f->filename,cfg.lib[cfg.dir[f->dir]->lib]->sname
+		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
 	if(cfg.dir[f->dir]->upload_sem[0])
 		ftouch(cmdstr(cfg.dir[f->dir]->upload_sem,nulstr,nulstr,NULL));
@@ -310,7 +310,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(!dir_op(dirnum)) return(false); 
 	}
 	bputs(text[SearchingForDupes]);
-	if(findfile(&cfg,dirnum,f.filename)) {
+	if(findfile(&cfg,dirnum,f.name)) {
 		bputs(text[SearchedForDupes]);
 		bprintf(text[FileAlreadyOnline],fname);
 		return(false); 	 /* File is already in database */
@@ -323,7 +323,7 @@ bool sbbs_t::upload(uint dirnum)
 			if(usrdir[i][j]==dirnum)
 				continue;	/* we already checked this dir */
 			if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
-				&& findfile(&cfg,usrdir[i][j],f.filename)) {
+				&& findfile(&cfg,usrdir[i][j],f.name)) {
 				bputs(text[SearchedForDupes]);
 				bprintf(text[FileAlreadyOnline],fname);
 				if(!dir_op(dirnum))
@@ -447,7 +447,7 @@ bool sbbs_t::upload(uint dirnum)
 		else if(ch=='B') {
 			if(batup_total() >= cfg.max_batup)
 				bputs(text[BatchUlQueueIsFull]);
-			else if(batch_file_exists(&cfg, useron.number, XFER_BATCH_UPLOAD, f.filename))
+			else if(batch_file_exists(&cfg, useron.number, XFER_BATCH_UPLOAD, f.name))
 				bprintf(text[FileAlreadyInQueue],fname);
 			else if(batch_file_add(&cfg, useron.number, XFER_BATCH_UPLOAD, &f)) {
 				bprintf(text[FileAddedToUlQueue]
@@ -510,7 +510,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
 			long cdt = (long)flength(str);
 			smb_hfield_bin(&f, SMB_COST, cdt);
-			bprintf(text[BulkUploadDescPrompt], f.filename, cdt/1024);
+			bprintf(text[BulkUploadDescPrompt], f.name, cdt/1024);
 			if(!getstr(desc, LEN_FDESC, K_LINE))
 				break;
 			if(sys_status&SS_ABORT)
