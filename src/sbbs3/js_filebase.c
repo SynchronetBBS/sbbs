@@ -706,6 +706,7 @@ enum {
 	,SMB_PROP_FIRST_FILE	/* first file number */
 	,SMB_PROP_LAST_FILE		/* last file number */
 	,SMB_PROP_TOTAL_FILES 	/* total files */
+	,SMB_PROP_NEW_FILE_TIME
 	,SMB_PROP_MAX_CRCS		/* Maximum number of CRCs to keep in history */
     ,SMB_PROP_MAX_FILES     /* Maximum number of file to keep in dir */
     ,SMB_PROP_MAX_AGE       /* Maximum age of file to keep in dir (in days) */
@@ -793,6 +794,9 @@ static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			*vp=UINT_TO_JSVAL(p->smb.status.total_files);
 			break;
+		case SMB_PROP_NEW_FILE_TIME:
+			*vp = UINT_TO_JSVAL((uint32_t)newfiletime(&p->smb));
+			break;
 		case SMB_PROP_MAX_CRCS:
 			*vp=UINT_TO_JSVAL(p->smb.status.max_crcs);
 			break;
@@ -857,6 +861,7 @@ static char* filebase_prop_desc[] = {
 	,"first file number - <small>READ ONLY</small>"
 	,"last file number - <small>READ ONLY</small>"
 	,"total number of files - <small>READ ONLY</small>"
+	,"timestamp of newest file in this directory - <small>READ ONLY</small>"
 	,"maximum number of file CRCs to store (for dupe checking) - <small>READ ONLY</small>"
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"

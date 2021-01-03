@@ -49,11 +49,26 @@ BOOL findfile(scfg_t* cfg, uint dirnum, const char *filename)
 }
 
 // This function may be called without opening the file base (for fast new-scans)
-BOOL newfiles(smb_t* smb, time_t t)
+time_t newfiletime(smb_t* smb)
 {
 	char str[MAX_PATH + 1];
 	SAFEPRINTF(str, "%s.sid", smb->file);
-	return fdate(str) > t;
+	return fdate(str);
+}
+
+time_t dir_newfiletime(scfg_t* cfg, uint dirnum)
+{
+	smb_t smb;
+
+	if(!smb_init_dir(cfg, &smb, dirnum))
+		return -1;
+	return newfiletime(&smb);
+}
+
+// This function may be called without opening the file base (for fast new-scans)
+BOOL newfiles(smb_t* smb, time_t t)
+{
+	return newfiletime(smb) > t;
 }
 
 // This function must be called with file base closed
@@ -137,6 +152,8 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 		if(fidx.idx.number==0)	/* invalid message number, ignore */
 			continue;
 
+		TERMINATE(fidx.name);
+
 		if(filespec != NULL && *filespec != '\0') {
 			if(!wildmatchi(fidx.name, filespec, /* path: */FALSE))
 				continue;
@@ -177,6 +194,8 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BO
 
 		if(fidx.idx.number==0)	/* invalid message number, ignore */
 			continue;
+
+		TERMINATE(fidx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
 			if(!wildmatchi(fidx.name, filespec, /* path: */FALSE))

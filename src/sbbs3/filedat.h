@@ -30,7 +30,9 @@ extern "C" {
 #endif
 
 DLLEXPORT BOOL			newfiles(smb_t*, time_t);
+DLLEXPORT time_t		newfiletime(smb_t*);
 DLLEXPORT BOOL			datefileindex(smb_t*, time_t);
+DLLEXPORT time_t		dir_newfiletime(scfg_t*, uint dirnum);
 
 DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
 DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
