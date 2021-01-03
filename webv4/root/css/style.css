@@ -53,7 +53,72 @@ span.message-header.unread {
 	background-color: #FCF8E3;
 }
 
-/*	You probably don't need to mess with rules below this line. */
+/*** Dark mode ***/
+
+/* default links, like the breadcrumbs */
+[data-theme="dark"] a {
+	color: #75b8f1;
+}
+
+/* background of the top bar */
+[data-theme="dark"] .navbar {
+	background-color: #333;
+}
+
+/* bbs name at top left */
+[data-theme="dark"] .navbar-brand {
+	color: #ccc;
+}
+[data-theme="dark"] .navbar-brand:hover {
+	color: #fff;
+}
+
+/* hover for the top nav buttons */
+[data-theme="dark"] .navbar-default a:hover {
+	color: #8cc1ee !important;
+	color: #fff;
+	background-color: #444 !important;
+}
+
+/* the active top nav button when opened */
+[data-theme="dark"] .navbar-default .navbar-nav>.open>a,
+[data-theme="dark"].navbar-default .navbar-nav>.open>a:focus,
+[data-theme="dark"].navbar-default .navbar-nav>.open>a:hover {
+	background-color: #555;
+	color: #EEE;
+}
+
+/* dropdown menus */
+[data-theme="dark"] .dropdown-menu {
+	background-color: #333;
+}
+[data-theme="dark"] .dropdown-menu li a {
+	color: #75b8f1;
+}
+
+/* background color of alternate rows in lists */
+[data-theme="dark"] .striped:nth-of-type(even), [data-theme="dark"] .table-striped > tbody > tr:nth-child(odd) > td, [data-theme="dark"]  .table-striped > tbody > tr:nth-child(odd) > th {
+	background: #777;
+}
+
+/* this is the text and color for most items, including non-alternating rows */
+[data-theme="dark"] .list-group-item {
+	background-color: #555;
+	color: #CCC;
+}
+
+/* A link in a list when the mouse is hovering over it (mostly applies to the Forum) */
+[data-theme="dark"] a.list-group-item:hover, [data-theme="dark"]  a.list-group-item:active, [data-theme="dark"]  li.list-group-item.mail:hover {
+	background-color: #888;
+	color: #222;
+}
+
+/* background color for the breadcrumb box */
+[data-theme="dark"] .breadcrumb {
+	background-color: #555;
+}
+
+/*** You probably don't need to mess with rules below this line. ***/
 
 blockquote {
 	margin: .5em;
@@ -180,3 +245,39 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 .breadcrumb li {
 	display: inline;
 }
+
+[data-theme="dark"] {
+	background-color: #222 !important;
+	color: #eee;
+}
+
+[data-theme="dark"] span.badge.ignored {
+	background-color: #aaa;
+}
+
+[data-theme="dark"] .text-danger {
+	color: #ef1c18;
+}
+
+[data-theme="dark"] .text-success {
+	color: #3eef41;
+}
+
+[data-theme="dark"] a.btn, [data-theme="dark"] .icon {
+	color: #000;
+	background-color: #ddd !important;
+}
+
+[data-theme="dark"] a.btn :hover, [data-theme="dark"] .icon:hover {
+	color: #000;
+	background-color: #fff !important;
+}
+
+.darkswitchbox {
+	margin-block-start: 1em;
+	margin-block-end: 1em;
+	margin-inline-start: 0px;
+	margin-inline-end: 0px;
+	padding-inline-start: 40px;
+}
+
