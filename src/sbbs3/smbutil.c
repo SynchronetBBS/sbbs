@@ -573,13 +573,28 @@ void dumpindex(ulong start, ulong count)
 		if(!fread(&idx,1,sizeof(idx),smb.sid_fp))
 			break;
 		printf("%10"PRIu32"  ", idx.number);
-		if(idx.attr&MSG_VOTE && !(idx.attr&MSG_POLL))
-			printf("V  %04hX  %-10"PRIu32, idx.votes,idx.remsg);
-		else
-			printf("%c  %04hX  %04hX  %04X"
-				,(idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL_CLOSURE ? 'C' : (idx.attr&MSG_POLL ? 'P':' ')
-				,idx.from, idx.to, idx.subj);
-		printf("  %04X  %06X  %s\n", idx.attr, idx.offset, my_timestr(idx.time));
+		switch(smb_msg_type(idx.attr)) {
+			case SMB_MSG_TYPE_FILE:
+				printf("F %10lu", (ulong)idx.size);
+				break;
+			case SMB_MSG_TYPE_BALLOT:
+				printf("V  %04hX  %-10"PRIu32, idx.votes,idx.remsg);
+				break;
+			default:
+				printf("%c  %04hX  %04hX  %04X"
+					,(idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL_CLOSURE ? 'C' : (idx.attr&MSG_POLL ? 'P':' ')
+					,idx.from, idx.to, idx.subj);
+				break;
+		}
+		printf("  %04X  %06X  %s", idx.attr, idx.offset, my_timestr(idx.time));
+		if(smb_msg_type(idx.attr) == SMB_MSG_TYPE_FILE && idxreclen == sizeof(fileidxrec_t)) {
+			fileidxrec_t fidx;
+			fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
+			if(!fread(&fidx,1,sizeof(fidx),smb.sid_fp))
+				break;
+			printf("  %02X  %.*s", fidx.hash.flags, (int)sizeof(fidx.name), fidx.name);
+		}
+		printf("\n");
 		l++; 
 	}
 }

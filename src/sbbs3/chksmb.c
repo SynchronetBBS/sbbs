@@ -567,7 +567,7 @@ int main(int argc, char **argv)
 							"index import date/time\n");
 					timeerr++;
 				}
-				if(msg.hdr.type != SMB_MSG_TYPE_BALLOT
+				if((msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
 					&& msg.idx.subj!=smb_subject_crc(msg.subj)) {
 					fprintf(stderr,"%sSubject CRC mismatch\n",beep);
 					msgerr=TRUE;
@@ -577,8 +577,8 @@ int main(int argc, char **argv)
 							,smb_subject_crc(msg.subj),msg.idx.subj);
 					subjcrc++;
 				}
-				if(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY)
-					&& (msg.from_ext!=NULL || msg.idx.from) 
+				if(smb.status.attr & SMB_EMAIL
+					&& (msg.from_ext!=NULL || msg.idx.from)
 					&& (msg.from_ext==NULL || msg.idx.from!=atoi(msg.from_ext))) {
 					fprintf(stderr,"%sFrom extension mismatch\n",beep);
 					msgerr=TRUE;
@@ -588,8 +588,8 @@ int main(int argc, char **argv)
 							,msg.from_ext,msg.idx.from);
 					fromcrc++;
 				}
-				if(!(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY))
-					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
+				if(!(smb.status.attr & SMB_EMAIL)
+					&& (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_POLL)
 					&& msg.idx.from!=smb_name_crc(msg.from)) {
 					fprintf(stderr,"%sFrom CRC mismatch\n",beep);
 					msgerr=TRUE;
@@ -599,8 +599,8 @@ int main(int argc, char **argv)
 							,smb_name_crc(msg.from),msg.idx.from);
 					fromcrc++;
 				}
-				if(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY)
-					&& (msg.to_ext!=NULL || msg.idx.to) 
+				if(smb.status.attr & SMB_EMAIL
+					&& (msg.to_ext!=NULL || msg.idx.to)
 					&& (msg.to_ext==NULL || msg.idx.to!=atoi(msg.to_ext))) {
 					fprintf(stderr,"%sTo extension mismatch\n",beep);
 					msgerr=TRUE;
@@ -610,8 +610,8 @@ int main(int argc, char **argv)
 							,msg.to_ext,msg.idx.to);
 					tocrc++;
 				}
-				if(!(smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY)) 
-					&& msg.hdr.type != SMB_MSG_TYPE_BALLOT
+				if(!(smb.status.attr & SMB_EMAIL)
+					&& (msg.hdr.type == SMB_MSG_TYPE_NORMAL || msg.hdr.type == SMB_MSG_TYPE_BALLOT)
 					&& msg.to_ext==NULL && msg.idx.to!=smb_name_crc(msg.to)) {
 					fprintf(stderr,"%sTo CRC mismatch\n",beep);
 					msgerr=TRUE;
