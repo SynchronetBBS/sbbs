@@ -54,26 +54,19 @@ typedef struct
 	#else
 		#define MD5EXPORT	__declspec(dllexport)
 	#endif
-	#if defined(__BORLANDC__)
-		#define MD5CALL
-	#else
-		#define MD5CALL
-	#endif
 #else	/* !_WIN32 */
 	#define MD5EXPORT
-	#define MD5CALL
 #endif
-
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-MD5EXPORT void	MD5CALL MD5_open(MD5* ctx);
-MD5EXPORT void	MD5CALL MD5_digest(MD5* ctx, const void* buf, size_t len);
-MD5EXPORT void	MD5CALL MD5_close(MD5* ctx, BYTE digest[MD5_DIGEST_SIZE]);
-MD5EXPORT BYTE*	MD5CALL MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len);
-MD5EXPORT BYTE*	MD5CALL MD5_hex(BYTE* dest, const BYTE digest[MD5_DIGEST_SIZE]);
+MD5EXPORT void	MD5_open(MD5* ctx);
+MD5EXPORT void	MD5_digest(MD5* ctx, const void* buf, size_t len);
+MD5EXPORT void	MD5_close(MD5* ctx, BYTE digest[MD5_DIGEST_SIZE]);
+MD5EXPORT BYTE*	MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len);
+MD5EXPORT BYTE*	MD5_hex(char* dest, const BYTE digest[MD5_DIGEST_SIZE]);
 
 #ifdef __cplusplus
 }
