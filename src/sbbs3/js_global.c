@@ -2630,7 +2630,7 @@ js_md5_calc(JSContext* cx, uintN argc, jsval* arglist)
 	free(inbuf);
 
 	if(hex)
-		MD5_hex((BYTE*)outbuf,digest);
+		MD5_hex(outbuf,digest);
 	else
 		b64_encode(outbuf,sizeof(outbuf),(char*)digest,sizeof(digest));
 	JS_RESUMEREQUEST(cx, rc);

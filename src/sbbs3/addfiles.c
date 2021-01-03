@@ -200,7 +200,8 @@ void updatestats(ulong size)
 
 bool reupload(smb_t* smb, smbfile_t* f)
 {
-	if(!smb_renewfile(smb, f, SMB_SELFPACK)) {
+	char path[MAX_PATH + 1];
+	if(!smb_renewfile(smb, f, SMB_SELFPACK, getfilepath(&scfg, f, path))) {
 		fprintf(stderr, "!Error renewing: %s\n", f->name);
 		return false;
 	}

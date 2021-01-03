@@ -680,7 +680,7 @@ void dump_hashes(void)
 		if(hash.flags&SMB_HASH_CRC32)
 			printf("%-10s: %08"PRIx32"\n","CRC-32",	hash.data.crc32);
 		if(hash.flags&SMB_HASH_MD5)
-			printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)tmp,hash.data.md5));
+			printf("%-10s: %s\n",	"MD5",		MD5_hex(tmp,hash.data.md5));
 	}
 
 	smb_close_hash(&smb);

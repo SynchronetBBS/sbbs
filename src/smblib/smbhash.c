@@ -407,7 +407,7 @@ uint16_t smb_name_crc(const char* name)
 
 int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 {
-	uint8_t	buf[256 * 1024];
+	char buf[256 * 1024];
 	FILE*	fp;
 	MD5 ctx;
 

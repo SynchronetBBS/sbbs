@@ -1305,7 +1305,7 @@ static void pop3_thread(void* arg)
 			strlwr(user.pass);	/* this is case-sensitive, so convert to lowercase */
 			strcat(challenge,user.pass);
 			MD5_calc(digest,challenge,strlen(challenge));
-			MD5_hex((BYTE*)str,digest);
+			MD5_hex(str,digest);
 			if(strcmp(str,response)) {
 				lprintf(LOG_NOTICE,"%04d %s [%s] !FAILED APOP authentication: %s"
 					,socket, client.protocol, host_ip, username);
@@ -4338,7 +4338,7 @@ static void smtp_thread(void* arg)
 				md5_data[i]=secret[i]^0x5c;	/* opad */
 			memcpy(md5_data+i,digest,sizeof(digest));
 			MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
-			MD5_hex((BYTE*)str,digest);
+			MD5_hex(str,digest);
 			if(strcmp(p,str)) {
 				lprintf(LOG_WARNING,"%04d SMTP %s !%s FAILED CRAM-MD5 authentication"
 					,socket, client_id, relay_user.alias);
@@ -5787,8 +5787,8 @@ static void sendmail_thread(void* arg)
 								md5_data[i]=secret[i]^0x5c;	/* opad */
 							memcpy(md5_data+i,digest,sizeof(digest));
 							MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
-							
-							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex((BYTE*)str,digest));
+
+							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex(str,digest));
 							b64_encode(p=resp,sizeof(resp),buf,0);
 							break;
 						default:

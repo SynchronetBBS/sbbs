@@ -66,7 +66,7 @@ MD5EXPORT void	MD5_open(MD5* ctx);
 MD5EXPORT void	MD5_digest(MD5* ctx, const void* buf, size_t len);
 MD5EXPORT void	MD5_close(MD5* ctx, BYTE digest[MD5_DIGEST_SIZE]);
 MD5EXPORT BYTE*	MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len);
-MD5EXPORT BYTE*	MD5_hex(char* dest, const BYTE digest[MD5_DIGEST_SIZE]);
+MD5EXPORT char*	MD5_hex(char* dest, const BYTE digest[MD5_DIGEST_SIZE]);
 
 #ifdef __cplusplus
 }

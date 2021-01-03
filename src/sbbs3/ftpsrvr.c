@@ -1919,7 +1919,7 @@ static char *get_unique(const char *path, char *uniq)
 		return NULL;
 
 	MD5_calc(digest, path, strlen(path));
-	MD5_hex((BYTE*)uniq, digest);
+	MD5_hex(uniq, digest);
 	return uniq;
 }
 

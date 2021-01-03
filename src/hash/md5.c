@@ -270,20 +270,20 @@ BYTE* MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len)
 
 /* conversion for 16 character binary md5 to hex */
 
-BYTE* MD5_hex(char* to, const BYTE digest[MD5_DIGEST_SIZE])
+char* MD5_hex(char* to, const BYTE digest[MD5_DIGEST_SIZE])
 {
 	BYTE const* from = digest;
-    const char *hexdigits = "0123456789abcdef";
-    const BYTE *end = digest + MD5_DIGEST_SIZE;
-    char *d = to;
+	const char *hexdigits = "0123456789abcdef";
+	const BYTE *end = digest + MD5_DIGEST_SIZE;
+	char *d = to;
 
-    while (from < end) {
+	while (from < end) {
 		*d++ = hexdigits[(*from >> 4)];
 		*d++ = hexdigits[(*from & 0x0F)];
 		from++;
-    }
-    *d = '\0';
-    return to;
+	}
+	*d = '\0';
+	return to;
 }
 
 #ifdef MD5_TEST

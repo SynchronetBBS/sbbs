@@ -1743,7 +1743,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha1, digest);
+	MD5_hex(ha1, digest);
 
 	/* H(A1)l */
 	pass=strdup(thisuser.pass);
@@ -1755,7 +1755,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, pass, strlen(pass));
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha1l, digest);
+	MD5_hex(ha1l, digest);
 
 	/* H(A1)u */
 	strupr(pass);
@@ -1766,7 +1766,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 	MD5_digest(&ctx, ":", 1);
 	MD5_digest(&ctx, thisuser.pass, strlen(thisuser.pass));
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha1u, digest);
+	MD5_hex(ha1u, digest);
 	free(pass);
 
 	/* H(A2) */
@@ -1781,7 +1781,7 @@ static BOOL digest_authentication(http_session_t* session, int auth_allowed, use
 		return(FALSE);
 	}
 	MD5_close(&ctx, digest);
-	MD5_hex((BYTE*)ha2, digest);
+	MD5_hex(ha2, digest);
 
 	/* Check password as in user.dat */
 	calculate_digest(session, ha1, ha2, digest);
