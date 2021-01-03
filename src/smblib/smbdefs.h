@@ -387,7 +387,7 @@ typedef struct _PACK {		/* Time with time-zone */
 
 typedef uint16_t smb_msg_attr_t;
 
-typedef struct _PACK idxrec {	/* Index record */
+typedef struct _PACK {	/* Index record */
 
 	union {
 		struct _PACK {			/* when msg.type != BALLOT */
@@ -420,17 +420,17 @@ struct _PACK hash_data {
 
 typedef uint8_t	hashflags_t;
 
-struct hash_info {
+struct _PACK hash_info {
 	hashflags_t flags;
-	struct hash_data;
+	struct hash_data data;
 };
 
 typedef struct _PACK {		/* File index record */
 	union {
 		idxrec_t	idx;
 		struct {
-			struct	idxrec;
-			char	name[SMB_FILENAME_MAXLEN + 1];
+			idxrec_t idxrec;
+			char name[SMB_FILENAME_MAXLEN + 1];
 			uint8_t	padding[6];
 			struct hash_info hash;
 		};
@@ -443,7 +443,7 @@ typedef struct _PACK {		/* File index record */
 #define SMB_HASH_MD5			(1<<2)	/* MD5 digest is valid				*/
 #define SMB_HASH_SHA1			(1<<3)	/* SHA1 hsah is valid				*/
 #define SMB_HASH_MASK			(SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5|SMB_HASH_SHA1)
-								
+
 #define SMB_HASH_MARKED			(1<<4)	/* Used by smb_findhash()			*/
 
 #define SMB_HASH_STRIP_CTRL_A	(1<<5)	/* Strip Ctrl-A codes first			*/
@@ -476,7 +476,8 @@ typedef struct _PACK {
 	uint32_t	time;					/* Local time of fingerprinting */
 	uint32_t	length;					/* Length (in bytes) of source */
 	uint8_t		source;					/* SMB_HASH_SOURCE* (in low 5-bits) */
-	struct		hash_info;
+	hashflags_t flags;
+	struct hash_data data;
 	uint8_t		reserved[8];			/* sizeof(hash_t) = 64 */
 } hash_t;
 #define SIZEOF_SMB_HASH_T 64
@@ -518,7 +519,7 @@ enum smb_msg_type {
 	,SMB_MSG_TYPE_FILE			/* A file (e.g. for download) */
 };
 
-typedef struct smbmsghdr _PACK {		/* Message/File header */
+typedef struct _PACK {		/* Message/File header */
 
 	/* 00 */ uchar		msghdr_id[LEN_HEADER_ID];	/* SHD<^Z> */
     /* 04 */ uint16_t	type;				/* Message type (enum smb_msg_type) */
@@ -598,10 +599,7 @@ typedef struct {		/* Network (type and address) */
 typedef struct {				/* Message or File */
 
 	idxrec_t	idx;			/* Index */
-	union {
-		msghdr_t	hdr;		/* Header record (fixed portion) */
-		struct		smbmsghdr;
-	};
+	msghdr_t	hdr;		/* Header record (fixed portion) */
 	char		*to,			/* To name */
 				*to_ext,		/* To extension */
 				*to_list,		/* Comma-separated list of recipients, RFC822-style */

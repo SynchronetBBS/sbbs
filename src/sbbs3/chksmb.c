@@ -110,8 +110,8 @@ void print_hash(hash_t* hash)
 	printf("\t%-20s = %lu\n"		,"hash.length"	, (ulong)hash->length);
 	printf("\t%-20s = 0x%02X\n"		,"hash.source"	, (unsigned)hash->source);
 	printf("\t%-20s = 0x%02X\n"		,"hash.flags"	, (unsigned)hash->flags);
-	printf("\t%-20s = 0x%04hX\n"	,"hash.crc16"	, hash->crc16);
-	printf("\t%-20s = 0x%08X\n"		,"hash.crc32"	, hash->crc32);
+	printf("\t%-20s = 0x%04hX\n"	,"hash.crc16"	, hash->data.crc16);
+	printf("\t%-20s = 0x%08X\n"		,"hash.crc32"	, hash->data.crc32);
 }
 
 char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
@@ -499,11 +499,11 @@ int main(int argc, char **argv)
 						printf("%-10s: %"PRIu32"\n",		"Length",	hashes[h]->length);
 						printf("%-10s: %x\n",		"Flags",	hashes[h]->flags);
 						if(hashes[h]->flags&SMB_HASH_CRC16)
-							printf("%-10s: %04x\n",	"CRC-16",	hashes[h]->crc16);
+							printf("%-10s: %04x\n",	"CRC-16",	hashes[h]->data.crc16);
 						if(hashes[h]->flags&SMB_HASH_CRC32)
-							printf("%-10s: %08"PRIx32"\n","CRC-32",	hashes[h]->crc32);
+							printf("%-10s: %08"PRIx32"\n","CRC-32",	hashes[h]->data.crc32);
 						if(hashes[h]->flags&SMB_HASH_MD5)
-							printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)str,hashes[h]->md5));
+							printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)str,hashes[h]->data.md5));
 
 #endif
 					}

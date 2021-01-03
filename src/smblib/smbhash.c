@@ -87,15 +87,15 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 				if((compare[c]->flags&hash.flags&SMB_HASH_MASK)==0)	
 					continue;	/* no matching hashes */
 				if((compare[c]->flags&hash.flags&SMB_HASH_CRC16)
-					&& compare[c]->crc16!=hash.crc16)
+					&& compare[c]->data.crc16!=hash.data.crc16)
 					continue;	/* wrong crc-16 */
 				if((compare[c]->flags&hash.flags&SMB_HASH_CRC32)
-					&& compare[c]->crc32!=hash.crc32)
+					&& compare[c]->data.crc32!=hash.data.crc32)
 					continue;	/* wrong crc-32 */
 				if((compare[c]->flags&hash.flags&SMB_HASH_MD5)
-					&& memcmp(compare[c]->md5,hash.md5,sizeof(hash.md5)))
+					&& memcmp(compare[c]->data.md5,hash.data.md5,sizeof(hash.data.md5)))
 					continue;	/* wrong MD5 */
-				
+
 				/* successful match! */
 				break;	/* can't match more than one, so stop comparing */
 			}
@@ -205,11 +205,11 @@ hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned fla
 	hash->source=source;
 	hash->flags=flags;
 	if(flags&SMB_HASH_CRC16)
-		hash->crc16=crc16((char*)data,length);
+		hash->data.crc16=crc16((char*)data,length);
 	if(flags&SMB_HASH_CRC32)
-		hash->crc32=crc32((char*)data,length);
+		hash->data.crc32=crc32((char*)data,length);
 	if(flags&SMB_HASH_MD5)
-		MD5_calc(hash->md5,data,length);
+		MD5_calc(hash->data.md5,data,length);
 
 	return(hash);
 }

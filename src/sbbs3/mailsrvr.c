@@ -3793,7 +3793,7 @@ static void smtp_thread(void* arg)
 						for(i=0;hashes[i];i++)
 							lprintf(LOG_DEBUG,"%04d %s %s Message %s crc32=%x flags=%x length=%u"
 								,socket, client.protocol, client_id, smb_hashsourcetype(hashes[i]->source)
-								,hashes[i]->crc32, hashes[i]->flags, hashes[i]->length);
+								,hashes[i]->data.crc32, hashes[i]->flags, hashes[i]->length);
 
 						lprintf(LOG_DEBUG, "%04d %s %s Searching SPAM database for a match", socket, client.protocol, client_id);
 						if((i=smb_findhash(&spam, hashes, &found, sources, /* Mark: */TRUE))==SMB_SUCCESS) {

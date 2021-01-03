@@ -235,7 +235,7 @@ static int file_compare_date_a(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return f1->when_imported.time - f2->when_imported.time;
+	return f1->hdr.when_imported.time - f2->hdr.when_imported.time;
 }
 
 static int file_compare_date_d(const void* v1, const void* v2)
@@ -243,7 +243,7 @@ static int file_compare_date_d(const void* v1, const void* v2)
 	smbfile_t* f1 = (smbfile_t*)v1;
 	smbfile_t* f2 = (smbfile_t*)v2;
 
-	return f2->when_imported.time - f1->when_imported.time;
+	return f2->hdr.when_imported.time - f1->hdr.when_imported.time;
 }
 
 void sortfiles(smbfile_t* filelist, size_t count, enum file_sort order)
@@ -375,7 +375,7 @@ BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
 	fprintf(fp, "desc=%s\n", f->desc);
-	fprintf(fp, "altpath=%u\n", f->altpath);
+	fprintf(fp, "altpath=%u\n", f->hdr.altpath);
 	fclose(fp);
 	return TRUE;
 }
@@ -391,7 +391,7 @@ BOOL batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t
 		return FALSE;
 	smb_hfield_str(f, SMB_FILENAME, filename);
 	smb_hfield_str(f, SMB_FILEDESC, iniGetString(ini, filename, "desc", NULL, value));
-	f->altpath = iniGetShortInt(ini, filename, "altpath", 0);
+	f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
 	return TRUE;
 }
 
@@ -448,12 +448,12 @@ BOOL removefile(scfg_t* cfg, uint dirnum, const char* filename)
 /****************************************************************************/
 char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 {
-	bool fchk = false;
+	bool fchk = true;
 	if(f->dir >= cfg->total_dirs)
 		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, f->name);
 	else {
-		safe_snprintf(path, MAX_PATH, "%s%s", f->altpath > 0 && f->altpath <= cfg->altpaths 
-			? cfg->altpath[f->altpath-1] : cfg->dir[f->dir]->path
+		safe_snprintf(path, MAX_PATH, "%s%s", f->hdr.altpath > 0 && f->hdr.altpath <= cfg->altpaths 
+			? cfg->altpath[f->hdr.altpath-1] : cfg->dir[f->dir]->path
 			,f->name);
 		fchk = (cfg->dir[f->dir]->misc & DIR_FCHK) != 0;
 	}

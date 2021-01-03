@@ -658,11 +658,11 @@ void dump_hashes(void)
 		printf("%-10s: %s\n",		"Time",		my_timestr(hash.time));
 		printf("%-10s: %02x\n",		"Flags",	hash.flags);
 		if(hash.flags&SMB_HASH_CRC16)
-			printf("%-10s: %04x\n",	"CRC-16",	hash.crc16);
+			printf("%-10s: %04x\n",	"CRC-16",	hash.data.crc16);
 		if(hash.flags&SMB_HASH_CRC32)
-			printf("%-10s: %08"PRIx32"\n","CRC-32",	hash.crc32);
+			printf("%-10s: %08"PRIx32"\n","CRC-32",	hash.data.crc32);
 		if(hash.flags&SMB_HASH_MD5)
-			printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)tmp,hash.md5));
+			printf("%-10s: %s\n",	"MD5",		MD5_hex((BYTE*)tmp,hash.data.md5));
 	}
 
 	smb_close_hash(&smb);

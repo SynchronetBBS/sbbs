@@ -922,18 +922,18 @@ bool upgrade_file_bases(void)
 			getoldfilepath(&scfg, f, fpath);
 			smbfile_t file;
 			memset(&file, 0, sizeof(file));
-			file.when_written.time = (time32_t)fdate(fpath);
-			file.when_imported.time = f->dateuled;
-			file.last_downloaded = f->datedled;
-			file.times_downloaded = f->timesdled;
-			file.altpath = f->altpath;
+			file.hdr.when_written.time = (time32_t)fdate(fpath);
+			file.hdr.when_imported.time = f->dateuled;
+			file.hdr.last_downloaded = f->datedled;
+			file.hdr.times_downloaded = f->timesdled;
+			file.hdr.altpath = f->altpath;
 			file.size = flength(fpath);
 			smb_hfield_str(&file, SMB_FILENAME, getfname(fpath));
 			smb_hfield_str(&file, SMB_FILEDESC, f->desc);
 			smb_hfield_str(&file, SENDER, f->uler);
 			smb_hfield_bin(&file, SMB_COST, f->cdt);
 			if(f->misc&FM_ANON)
-				file.attr |= FILE_ANONYMOUS;
+				file.hdr.attr |= FILE_ANONYMOUS;
 			{
 				const char* body = NULL;
 				char extdesc[F_EXBSIZE+1] = {0};
