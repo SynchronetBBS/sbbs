@@ -143,6 +143,10 @@ typedef struct {						/* File (transfers) Data */
 
 } file_t;
 
+                                    /* Bit values for file_t.misc */
+#define FM_EXTDESC  (1<<0)          /* Extended description exists */
+#define FM_ANON 	(1<<1)			/* Anonymous upload */
+
 /****************************************************************************/
 /* Turns FILE.EXT into FILE    .EXT                                         */
 /****************************************************************************/
@@ -922,12 +926,10 @@ bool upgrade_file_bases(void)
 			getoldfilepath(&scfg, f, fpath);
 			smbfile_t file;
 			memset(&file, 0, sizeof(file));
-			file.hdr.when_written.time = (time32_t)fdate(fpath);
 			file.hdr.when_imported.time = f->dateuled;
 			file.hdr.last_downloaded = f->datedled;
 			file.hdr.times_downloaded = f->timesdled;
 			file.hdr.altpath = f->altpath;
-			file.size = flength(fpath);
 			smb_hfield_str(&file, SMB_FILENAME, getfname(fpath));
 			smb_hfield_str(&file, SMB_FILEDESC, f->desc);
 			smb_hfield_str(&file, SENDER, f->uler);
@@ -942,10 +944,10 @@ bool upgrade_file_bases(void)
 					truncsp(extdesc);
 					body = extdesc;
 				}
-				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body);
+				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body, fpath);
 			}
 			if(result != SMB_SUCCESS) {
-				fprintf(stderr, "Error %d (%s) adding file to %s\n", result, smb.last_error, smb.file);
+				fprintf(stderr, "\n!Error %d (%s) adding file to %s\n", result, smb.last_error, smb.file);
 			} else {
 				total_files++;
 				time_t diff = time(NULL) - start;
@@ -958,7 +960,7 @@ bool upgrade_file_bases(void)
 		free(filelist);
 		smb_close(&smb);
 		if(latest > 0)
-			datefileindex(&smb, latest);
+			update_newfiletime(&smb, latest);
 		closeextdesc(extfile);
 		free(ixbbuf);
 	}

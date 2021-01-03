@@ -231,6 +231,10 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f)
 	if(!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
 		return false;
 
+	val = UINT_TO_JSVAL(f->idx.size);
+	if(!JS_DefineProperty(cx, obj, "size", val, NULL, NULL, flags))
+		return false;
+
 	val = UINT_TO_JSVAL(f->hdr.when_written.time);
 	if(!JS_DefineProperty(cx, obj, "when_written_time", val, NULL, NULL, flags))
 		return false;
@@ -247,6 +251,22 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f)
 	if(!JS_DefineProperty(cx, obj, "times_downloaded", val, NULL, NULL, flags))
 		return false;
 
+	if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
+		val = UINT_TO_JSVAL(f->file_idx.hash.data.crc16);
+		if(!JS_DefineProperty(cx, obj, "crc16", val, NULL, NULL, flags))
+			return false;
+	}
+	if(f->file_idx.hash.flags & SMB_HASH_CRC32) {
+		val = UINT_TO_JSVAL(f->file_idx.hash.data.crc32);
+		if(!JS_DefineProperty(cx, obj, "crc32", val, NULL, NULL, flags))
+			return false;
+	}
+	if(f->file_idx.hash.flags & SMB_HASH_MD5) {
+		char hex[128];
+		if((js_str = JS_NewStringCopyZ(cx, MD5_hex(hex, f->file_idx.hash.data.md5))) == NULL
+			|| !JS_DefineProperty(cx, obj, "md5", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
+			return false;
+	}
 	return true;
 }
 
@@ -643,9 +663,9 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if(file.name != NULL) {
+		char path[MAX_PATH + 1];
 		rc=JS_SUSPENDREQUEST(cx);
-		file.hdr.when_written.time = (uint32_t)getfiletime(scfg, &file);
-		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc);
+		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, getfilepath(scfg, &file, path));
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 		JS_RESUMEREQUEST(cx, rc);
 	}
@@ -698,22 +718,23 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 
 /* FileBase Object Properties */
 enum {
-	 SMB_PROP_LAST_ERROR
-	,SMB_PROP_FILE
-	,SMB_PROP_DEBUG
-	,SMB_PROP_RETRY_TIME
-	,SMB_PROP_RETRY_DELAY
-	,SMB_PROP_FIRST_FILE	/* first file number */
-	,SMB_PROP_LAST_FILE		/* last file number */
-	,SMB_PROP_TOTAL_FILES 	/* total files */
-	,SMB_PROP_NEW_FILE_TIME
-	,SMB_PROP_MAX_CRCS		/* Maximum number of CRCs to keep in history */
-    ,SMB_PROP_MAX_FILES     /* Maximum number of file to keep in dir */
-    ,SMB_PROP_MAX_AGE       /* Maximum age of file to keep in dir (in days) */
-	,SMB_PROP_ATTR			/* Attributes for this file base (SMB_HYPER,etc) */
-	,SMB_PROP_DIRNUM		/* Directory number */
-	,SMB_PROP_IS_OPEN
-	,SMB_PROP_STATUS		/* Last SMBLIB returned status value (e.g. retval) */
+	 FB_PROP_LAST_ERROR
+	,FB_PROP_FILE
+	,FB_PROP_DEBUG
+	,FB_PROP_RETRY_TIME
+	,FB_PROP_RETRY_DELAY
+	,FB_PROP_FIRST_FILE		/* first file number */
+	,FB_PROP_LAST_FILE		/* last file number */
+	,FB_PROP_LAST_FILE_TIME	/* last file index time */
+	,FB_PROP_FILES 			/* total files */
+	,FB_PROP_NEW_FILE_TIME
+	,FB_PROP_MAX_CRCS		/* Maximum number of CRCs to keep in history */
+    ,FB_PROP_MAX_FILES		/* Maximum number of file to keep in dir */
+    ,FB_PROP_MAX_AGE		/* Maximum age of file to keep in dir (in days) */
+	,FB_PROP_ATTR			/* Attributes for this file base (SMB_HYPER,etc) */
+	,FB_PROP_DIRNUM			/* Directory number */
+	,FB_PROP_IS_OPEN
+	,FB_PROP_STATUS			/* Last SMBLIB returned status value (e.g. retval) */
 };
 
 static JSBool js_filebase_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
@@ -730,13 +751,19 @@ static JSBool js_filebase_set(JSContext *cx, JSObject *obj, jsid id, JSBool stri
     tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
-		case SMB_PROP_RETRY_TIME:
+		case FB_PROP_RETRY_TIME:
 			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->smb).retry_time))
 				return JS_FALSE;
 			break;
-		case SMB_PROP_RETRY_DELAY:
+		case FB_PROP_RETRY_DELAY:
 			if(!JS_ValueToInt32(cx,*vp,(int32*)&(p->smb).retry_delay))
 				return JS_FALSE;
+			break;
+		case FB_PROP_NEW_FILE_TIME:
+			time32_t t;
+			if(!JS_ValueToInt32(cx, *vp, (int32*)&t))
+				return JS_FALSE;
+			update_newfiletime(&(p->smb), t);
 			break;
 	}
 
@@ -760,59 +787,64 @@ static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
     tiny = JSVAL_TO_INT(idval);
 
 	switch(tiny) {
-		case SMB_PROP_FILE:
+		case FB_PROP_FILE:
 			s=p->smb.file;
 			break;
-		case SMB_PROP_LAST_ERROR:
+		case FB_PROP_LAST_ERROR:
 			s=p->smb.last_error;
 			break;
-		case SMB_PROP_STATUS:
+		case FB_PROP_STATUS:
 			*vp = INT_TO_JSVAL(p->smb_result);
 			break;
-		case SMB_PROP_RETRY_TIME:
+		case FB_PROP_RETRY_TIME:
 			*vp = INT_TO_JSVAL(p->smb.retry_time);
 			break;
-		case SMB_PROP_RETRY_DELAY:
+		case FB_PROP_RETRY_DELAY:
 			*vp = INT_TO_JSVAL(p->smb.retry_delay);
 			break;
-		case SMB_PROP_FIRST_FILE:
+		case FB_PROP_FIRST_FILE:
 			rc=JS_SUSPENDREQUEST(cx);
 			memset(&idx,0,sizeof(idx));
 			smb_getfirstidx(&(p->smb),&idx);
 			JS_RESUMEREQUEST(cx, rc);
 			*vp=UINT_TO_JSVAL(idx.number);
 			break;
-		case SMB_PROP_LAST_FILE:
+		case FB_PROP_LAST_FILE:
 			rc=JS_SUSPENDREQUEST(cx);
 			smb_getstatus(&(p->smb));
 			JS_RESUMEREQUEST(cx, rc);
 			*vp=UINT_TO_JSVAL(p->smb.status.last_file);
 			break;
-		case SMB_PROP_TOTAL_FILES:
+		case FB_PROP_LAST_FILE_TIME:
+			rc=JS_SUSPENDREQUEST(cx);
+			*vp = UINT_TO_JSVAL((uint32_t)lastfiletime(&p->smb));
+			JS_RESUMEREQUEST(cx, rc);
+			break;
+		case FB_PROP_FILES:
 			rc=JS_SUSPENDREQUEST(cx);
 			smb_getstatus(&(p->smb));
 			JS_RESUMEREQUEST(cx, rc);
 			*vp=UINT_TO_JSVAL(p->smb.status.total_files);
 			break;
-		case SMB_PROP_NEW_FILE_TIME:
+		case FB_PROP_NEW_FILE_TIME:
 			*vp = UINT_TO_JSVAL((uint32_t)newfiletime(&p->smb));
 			break;
-		case SMB_PROP_MAX_CRCS:
+		case FB_PROP_MAX_CRCS:
 			*vp=UINT_TO_JSVAL(p->smb.status.max_crcs);
 			break;
-		case SMB_PROP_MAX_FILES:
+		case FB_PROP_MAX_FILES:
 			*vp=UINT_TO_JSVAL(p->smb.status.max_files);
 			break;
-		case SMB_PROP_MAX_AGE:
+		case FB_PROP_MAX_AGE:
 			*vp=UINT_TO_JSVAL(p->smb.status.max_age);
 			break;
-		case SMB_PROP_ATTR:
+		case FB_PROP_ATTR:
 			*vp=UINT_TO_JSVAL(p->smb.status.attr);
 			break;
-		case SMB_PROP_DIRNUM:
+		case FB_PROP_DIRNUM:
 			*vp = INT_TO_JSVAL(p->smb.dirnum);
 			break;
-		case SMB_PROP_IS_OPEN:
+		case FB_PROP_IS_OPEN:
 			*vp = BOOLEAN_TO_JSVAL(SMB_IS_OPEN(&(p->smb)));
 			break;
 	}
@@ -826,27 +858,29 @@ static JSBool js_filebase_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return JS_TRUE;
 }
 
-#define SMB_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+#define FB_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
 
 static jsSyncPropertySpec js_filebase_properties[] = {
 /*		 name				,tinyid					,flags,				ver	*/
 
-	{	"error"				,SMB_PROP_LAST_ERROR	,SMB_PROP_FLAGS,	31900 },
-	{	"last_error"		,SMB_PROP_LAST_ERROR	,JSPROP_READONLY,	31900 },	/* alias */
-	{	"status"			,SMB_PROP_STATUS		,SMB_PROP_FLAGS,	31900 },
-	{	"file"				,SMB_PROP_FILE			,SMB_PROP_FLAGS,	31900 },
-	{	"debug"				,SMB_PROP_DEBUG			,0,					31900 },
-	{	"retry_time"		,SMB_PROP_RETRY_TIME	,JSPROP_ENUMERATE,	31900 },
-	{	"retry_delay"		,SMB_PROP_RETRY_DELAY	,JSPROP_ENUMERATE,	31900 },
-	{	"first_file"		,SMB_PROP_FIRST_FILE	,SMB_PROP_FLAGS,	31900 },
-	{	"last_file"			,SMB_PROP_LAST_FILE		,SMB_PROP_FLAGS,	31900 },
-	{	"total_files"		,SMB_PROP_TOTAL_FILES	,SMB_PROP_FLAGS,	31900 },
-	{	"max_crcs"			,SMB_PROP_MAX_CRCS		,SMB_PROP_FLAGS,	31900 },
-	{	"max_files"			,SMB_PROP_MAX_FILES  	,SMB_PROP_FLAGS,	31900 },
-	{	"max_age"			,SMB_PROP_MAX_AGE   	,SMB_PROP_FLAGS,	31900 },
-	{	"attributes"		,SMB_PROP_ATTR			,SMB_PROP_FLAGS,	31900 },
-	{	"dirnum"			,SMB_PROP_DIRNUM		,SMB_PROP_FLAGS,	31900 },
-	{	"is_open"			,SMB_PROP_IS_OPEN		,SMB_PROP_FLAGS,	31900 },
+	{	"error"				,FB_PROP_LAST_ERROR		,FB_PROP_FLAGS,		31900 },
+	{	"last_error"		,FB_PROP_LAST_ERROR		,JSPROP_READONLY,	31900 },	/* alias */
+	{	"status"			,FB_PROP_STATUS			,FB_PROP_FLAGS,		31900 },
+	{	"file"				,FB_PROP_FILE			,FB_PROP_FLAGS,		31900 },
+	{	"debug"				,FB_PROP_DEBUG			,0,					31900 },
+	{	"retry_time"		,FB_PROP_RETRY_TIME		,JSPROP_ENUMERATE,	31900 },
+	{	"retry_delay"		,FB_PROP_RETRY_DELAY	,JSPROP_ENUMERATE,	31900 },
+	{	"first_file"		,FB_PROP_FIRST_FILE		,FB_PROP_FLAGS,		31900 },
+	{	"last_file"			,FB_PROP_LAST_FILE		,FB_PROP_FLAGS,		31900 },
+	{	"last_file_time"	,FB_PROP_LAST_FILE_TIME	,FB_PROP_FLAGS,		31900 },
+	{	"files"				,FB_PROP_FILES			,FB_PROP_FLAGS,		31900 },
+	{	"new_file_time"		,FB_PROP_NEW_FILE_TIME	,JSPROP_ENUMERATE,	31900 },
+	{	"max_crcs"			,FB_PROP_MAX_CRCS		,FB_PROP_FLAGS,		31900 },
+	{	"max_files"			,FB_PROP_MAX_FILES  	,FB_PROP_FLAGS,		31900 },
+	{	"max_age"			,FB_PROP_MAX_AGE   		,FB_PROP_FLAGS,		31900 },
+	{	"attributes"		,FB_PROP_ATTR			,FB_PROP_FLAGS,		31900 },
+	{	"dirnum"			,FB_PROP_DIRNUM			,FB_PROP_FLAGS,		31900 },
+	{	"is_open"			,FB_PROP_IS_OPEN		,FB_PROP_FLAGS,		31900 },
 	{0}
 };
 
@@ -860,8 +894,9 @@ static char* filebase_prop_desc[] = {
 	,"delay between file base open/lock retries (in milliseconds)"
 	,"first file number - <small>READ ONLY</small>"
 	,"last file number - <small>READ ONLY</small>"
+	,"timestamp of last file - <small>READ ONLY</small>"
 	,"total number of files - <small>READ ONLY</small>"
-	,"timestamp of newest file in this directory - <small>READ ONLY</small>"
+	,"timestamp of directory"
 	,"maximum number of file CRCs to store (for dupe checking) - <small>READ ONLY</small>"
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"

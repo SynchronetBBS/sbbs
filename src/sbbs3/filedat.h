@@ -1,4 +1,4 @@
-/* Synchronet Filebase Access functions */
+/* Synchronet FileBase Access functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -31,8 +31,9 @@ extern "C" {
 
 DLLEXPORT BOOL			newfiles(smb_t*, time_t);
 DLLEXPORT time_t		newfiletime(smb_t*);
-DLLEXPORT BOOL			datefileindex(smb_t*, time_t);
+DLLEXPORT BOOL			update_newfiletime(smb_t*, time_t);
 DLLEXPORT time_t		dir_newfiletime(scfg_t*, uint dirnum);
+DLLEXPORT time_t		lastfiletime(smb_t*); // Reads the last index record
 
 DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
 DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);

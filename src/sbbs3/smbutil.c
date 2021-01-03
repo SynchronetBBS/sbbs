@@ -52,6 +52,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include "str_util.h"
 #include "utf8.h"
 #include "conwrap.h"
+#include "xpdatetime.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -560,6 +561,7 @@ char *my_timestr(time_t intime)
 /****************************************************************************/
 void dumpindex(ulong start, ulong count)
 {
+	char tmp[128];
 	ulong l=0;
 	idxrec_t idx;
 	size_t idxreclen = smb_idxreclen(&smb);
@@ -586,7 +588,8 @@ void dumpindex(ulong start, ulong count)
 					,idx.from, idx.to, idx.subj);
 				break;
 		}
-		printf("  %04X  %06X  %s", idx.attr, idx.offset, my_timestr(idx.time));
+		printf("  %04X  %06X  %s", idx.attr, idx.offset
+			,xpDate_to_isoDateStr(time_to_xpDate(idx.time), "-", tmp, sizeof(tmp)));
 		if(smb_msg_type(idx.attr) == SMB_MSG_TYPE_FILE && idxreclen == sizeof(fileidxrec_t)) {
 			fileidxrec_t fidx;
 			fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);

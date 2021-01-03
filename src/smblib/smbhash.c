@@ -1,8 +1,5 @@
 /* Synchronet message base (SMB) hash-related functions */
 
-/* $Id: smbhash.c,v 1.36 2019/04/11 01:00:30 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -44,7 +29,7 @@
 #include "genwrap.h"
 
 /* If return value is SMB_ERR_NOT_FOUND, hash file is left open */
-int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
+int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
 						 long source_mask, BOOL mark)
 {
 	int		retval;
@@ -123,7 +108,7 @@ int SMBCALL smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 	return(SMB_ERR_NOT_FOUND);
 }
 
-int SMBCALL smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
+int smb_addhashes(smb_t* smb, hash_t** hashes, BOOL skip_marked)
 {
 	int		retval;
 	size_t	h;
@@ -187,7 +172,7 @@ static char* strip_ctrla(uchar* dst, const uchar* src)
 
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
+hash_t* smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 						 ,const void* data, size_t length)
 {
 	hash_t*	hash;
@@ -217,7 +202,7 @@ hash_t* SMBCALL smb_hash(ulong msgnum, uint32_t t, unsigned source, unsigned fla
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
-hash_t* SMBCALL smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
+hash_t* smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned flags
 							,const char* str)
 {
 	char*	p=NULL;
@@ -245,7 +230,7 @@ hash_t* SMBCALL smb_hashstr(ulong msgnum, uint32_t t, unsigned source, unsigned 
 
 /* Allocates and calculates all hashes for a single message					*/
 /* Returns NULL on failure													*/
-hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mask)
+hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mask)
 {
 	size_t		h=0;
 	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5;
@@ -289,7 +274,7 @@ hash_t** SMBCALL smb_msghashes(smbmsg_t* msg, const uchar* body, long source_mas
 	return(hashes);
 }
 
-void SMBCALL smb_freehashes(hash_t** hashes)
+void smb_freehashes(hash_t** hashes)
 {
 	size_t		n;
 
@@ -297,7 +282,7 @@ void SMBCALL smb_freehashes(hash_t** hashes)
 }
 
 /* Calculates and stores the hashes for a single message					*/
-int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
+int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL update)
 {
 	size_t		n;
 	int			retval=SMB_SUCCESS;
@@ -326,7 +311,7 @@ int SMBCALL smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, BOOL updat
 }
 
 /* length=0 specifies ASCIIZ data											*/
-int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 								 ,unsigned flags, const void* data, size_t length)
 {
 	int			retval;
@@ -360,7 +345,7 @@ int SMBCALL smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	return(retval);
 }
 
-int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
+int smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 								 ,unsigned flags, const void* data, size_t length)
 {
 	int retval;
@@ -378,7 +363,7 @@ int SMBCALL smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	return(retval);
 }
 
-uint16_t SMBCALL smb_subject_crc(const char* subj)
+uint16_t smb_subject_crc(const char* subj)
 {
 	char*	str;
 	uint16_t	crc;
@@ -402,7 +387,7 @@ uint16_t SMBCALL smb_subject_crc(const char* subj)
 	return(crc);
 }
 
-uint16_t SMBCALL smb_name_crc(const char* name)
+uint16_t smb_name_crc(const char* name)
 {
 	char*	str;
 	uint16_t	crc;
@@ -418,4 +403,32 @@ uint16_t SMBCALL smb_name_crc(const char* name)
 	free(str);
 
 	return(crc);
+}
+
+int smb_hashfile(const char* path, off_t size, struct hash_data* data)
+{
+	uint8_t	buf[256 * 1024];
+	FILE*	fp;
+	MD5 ctx;
+
+	if((fp = fopen(path, "rb")) == NULL)
+		return 0;
+
+	MD5_open(&ctx);
+	data->crc16 = 0;
+	data->crc32 = 0xffffffff;
+	off_t off = 0;
+	while(!feof(fp) && off < size) {
+		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), fp);
+		if(rd < 1)
+			break;
+		data->crc32 = crc32i(data->crc32, buf, rd);
+		data->crc16 = icrc16(data->crc16, buf, rd);
+		MD5_digest(&ctx ,buf, rd);
+		off += rd;
+	}
+	fclose(fp);
+	data->crc32 = ~data->crc32;
+	MD5_close(&ctx, data->md5);
+	return SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5;
 }

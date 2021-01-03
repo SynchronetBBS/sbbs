@@ -411,7 +411,7 @@ typedef struct _PACK {	/* Index record */
 } idxrec_t;
 #define SIZEOF_SMB_IDXREC_T 20
 
-struct _PACK hash_data {
+struct hash_data {
 	uint16_t	crc16;					/* CRC-16 of source */
 	uint32_t	crc32;					/* CRC-32 of source */
 	uint8_t		md5[MD5_DIGEST_SIZE];	/* MD5 digest of source */
@@ -598,8 +598,11 @@ typedef struct {		/* Network (type and address) */
 
 typedef struct {				/* Message or File */
 
-	idxrec_t	idx;			/* Index */
-	msghdr_t	hdr;		/* Header record (fixed portion) */
+	union {						/* Index */
+		idxrec_t		idx;
+		fileidxrec_t	file_idx;
+	};
+	msghdr_t	hdr;			/* Header record (fixed portion) */
 	char		*to,			/* To name */
 				*to_ext,		/* To extension */
 				*to_list,		/* Comma-separated list of recipients, RFC822-style */

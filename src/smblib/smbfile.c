@@ -1,7 +1,5 @@
 /* Synchronet message base (SMB) FILE stream I/O routines */
 
-/* $Id: smbfile.c,v 1.17 2020/04/14 07:08:50 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,82 +13,70 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 #include "smblib.h"
 
-int SMBCALL smb_feof(FILE* fp)
+int smb_feof(FILE* fp)
 {
 	return(feof(fp));
 }
 
-int SMBCALL smb_ferror(FILE* fp)
+int smb_ferror(FILE* fp)
 {
 	return(ferror(fp));
 }
 
-int SMBCALL smb_fflush(FILE* fp)
+int smb_fflush(FILE* fp)
 {
 	return(fflush(fp));
 }
 
-int SMBCALL smb_fgetc(FILE* fp)
+int smb_fgetc(FILE* fp)
 {
 	return(fgetc(fp));
 }
 
-int SMBCALL smb_fputc(int ch, FILE* fp)
+int smb_fputc(int ch, FILE* fp)
 {
 	return(fputc(ch,fp));
 }
 
-int SMBCALL smb_fseek(FILE* fp, long offset, int whence)
+int smb_fseek(FILE* fp, long offset, int whence)
 {
 	return(fseek(fp,offset,whence));
 }
 
-long SMBCALL smb_ftell(FILE* fp)
+long smb_ftell(FILE* fp)
 {
 	return(ftell(fp));
 }
 
-long SMBCALL smb_fgetlength(FILE* fp)
+long smb_fgetlength(FILE* fp)
 {
 	return(filelength(fileno(fp)));
 }
 
-int SMBCALL smb_fsetlength(FILE* fp, long length)
+int smb_fsetlength(FILE* fp, long length)
 {
 	return(chsize(fileno(fp),length));
 }
 
-void SMBCALL smb_rewind(FILE* fp)
+void smb_rewind(FILE* fp)
 {
 	rewind(fp);
 }
 
-void SMBCALL smb_clearerr(FILE* fp)
+void smb_clearerr(FILE* fp)
 {
 	clearerr(fp);
 }
 
-size_t SMBCALL smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
+size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 {
 	size_t ret;
 	time_t start=0;
@@ -114,7 +100,7 @@ size_t SMBCALL smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 	#pragma argsused
 #endif
 
-size_t SMBCALL smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
+size_t smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
 {
 	return(fwrite(buf,1,bytes,fp));
 }
@@ -124,7 +110,7 @@ size_t SMBCALL smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
 /* Retries for retry_time number of seconds									*/
 /* Return 0 on success, non-zero otherwise									*/
 /****************************************************************************/
-int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
+int smb_open_fp(smb_t* smb, FILE** fp, int share)
 {
 	int 	file;
 	char	path[MAX_PATH+1];
@@ -188,7 +174,7 @@ int SMBCALL smb_open_fp(smb_t* smb, FILE** fp, int share)
 
 /****************************************************************************/
 /****************************************************************************/
-void SMBCALL smb_close_fp(FILE** fp)
+void smb_close_fp(FILE** fp)
 {
 	if(fp!=NULL) {
 		if(*fp!=NULL)
@@ -200,7 +186,7 @@ void SMBCALL smb_close_fp(FILE** fp)
 /****************************************************************************/
 /* CASE-INSENSITIVE filename search through index (no wildcards)			*/
 /****************************************************************************/
-int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
+int smb_findfile(smb_t* smb, const char* filename, fileidxrec_t* idx)
 {
 	rewind(smb->sid_fp);
 	while(!feof(smb->sid_fp)) {
@@ -211,7 +197,7 @@ int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
 
 		if(strnicmp(fidx.name, filename, sizeof(fidx.name)) == 0) {
 			if(idx != NULL)
-				*idx = fidx.idx;
+				*idx = fidx;
 			return SMB_SUCCESS;
 		}
 	}
@@ -220,7 +206,7 @@ int SMBCALL smb_findfile(smb_t* smb, const char* filename, idxrec_t* idx)
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
+int smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
 {
 	int result;
 
@@ -229,7 +215,7 @@ int SMBCALL smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
 
 	memset(file, 0, sizeof(*file));
 
-	if((result = smb_findfile(smb, filename, &file->idx)) != SMB_SUCCESS)
+	if((result = smb_findfile(smb, filename, &file->file_idx)) != SMB_SUCCESS)
 		return result;
 
 	if((result = smb_getmsghdr(smb, file)) != SMB_SUCCESS)
@@ -242,14 +228,14 @@ int SMBCALL smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
 
 /****************************************************************************/
 /****************************************************************************/
-void SMBCALL smb_freefilemem(smbfile_t* file)
+void smb_freefilemem(smbfile_t* file)
 {
 	smb_freemsgmem(file);
 }
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_removefile(smb_t* smb, smbfile_t* file)
+int smb_removefile(smb_t* smb, smbfile_t* file)
 {
 	int result;
 

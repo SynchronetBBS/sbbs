@@ -1,7 +1,5 @@
 /* Synchronet message base (SMB) high-level "add message" function */
 
-/* $Id: smbadd.c,v 1.46 2020/04/12 06:09:33 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -43,7 +29,7 @@
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
+int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 					   ,uint16_t xlat, const uchar* body, const uchar* tail)
 {
 	uchar*		lzhbuf=NULL;
@@ -325,7 +311,7 @@ int SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hash
 	return(retval);
 }
 
-int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
+int smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	int			retval;
 
@@ -363,7 +349,7 @@ int SMBCALL smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 	return retval;
 }
 
-int SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
+int smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	int			retval;
 
@@ -403,7 +389,7 @@ int SMBCALL smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
 	return retval;
 }
 
-int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
+int smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 {
 	smbmsg_t	remsg;
 	int			retval;
@@ -470,26 +456,30 @@ int SMBCALL smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 	return retval;
 }
 
-int SMBCALL smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc)
+int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* path)
 {
 	if(file->name == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s missing name", __FUNCTION__);
 		return SMB_ERR_HDR_FIELD;
 	}
 	if(smb_findfile(smb, file->name, NULL) == SMB_SUCCESS) {
-		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s duplicate found: %s", __FUNCTION__, file->name);
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s duplicate name found: %s", __FUNCTION__, file->name);
 		return SMB_DUPE_MSG;
+	}
+	if(path != NULL) {
+		file->size = flength(path);
+		file->hdr.when_written.time = (uint32_t)fdate(path);
+		file->file_idx.hash.flags = smb_hashfile(path, file->size, &file->file_idx.hash.data);
 	}
 	file->hdr.attr |= MSG_FILE;
 	file->hdr.type = SMB_MSG_TYPE_FILE;
 	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */(const uchar*)extdesc, /* tail: */NULL);
 }
 
-int SMBCALL smb_renewfile(smb_t* smb, smbfile_t* file, int storage)
+int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
 {
 	int result;
 	if((result = smb_removefile(smb, file)) != SMB_SUCCESS)
 		return result;
-	file->hdr.when_imported.time = time32(NULL);
-	return smb_addfile(smb, file, storage, file->extdesc);
+	return smb_addfile(smb, file, storage, file->extdesc, path);
 }

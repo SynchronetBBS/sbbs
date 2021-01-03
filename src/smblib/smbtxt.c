@@ -1,7 +1,5 @@
 /* Synchronet message base (SMB) message text library routines */
 
-/* $Id: smbtxt.c,v 1.49 2019/11/19 22:04:55 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -42,7 +28,7 @@
 #include "base64.h"
 #include "lzh.h"
 
-char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
+char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 {
 	char*	buf;
 	char*	preamble;
@@ -217,7 +203,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 	return(buf);
 }
 
-void SMBCALL smb_freemsgtxt(char* buf)
+void smb_freemsgtxt(char* buf)
 {
 	if(buf!=NULL)
 		free(buf);
@@ -354,7 +340,7 @@ static BOOL mime_getattachment(const char* beg, const char* end, char* attachmen
 }
 
 // Parses a MIME text/* content-type header field
-void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, char** charset)
+void smb_parse_content_type(const char* content_type, char** subtype, char** charset)
 {
 	if(subtype != NULL) {
 		FREE_AND_NULL(*subtype);
@@ -490,7 +476,7 @@ static const char* mime_getcontent(const char* buf, const char* content_type, co
 
 /* Get just the (first) plain-text or HTML portion of a MIME-encoded multi-part message body */
 /* Returns NULL if there is no MIME-encoded plain-text/html portion of the message */
-char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
+char* smb_getplaintext(smbmsg_t* msg, char* buf)
 {
 	const char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
@@ -530,7 +516,7 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 
 /* Get just a base64-encoded attachment (just one) from MIME-encoded message body */
 /* This function is destructive (over-writes 'buf' with decoded attachment)! */
-uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t filename_len, uint32_t* filelen, int index)
+uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t filename_len, uint32_t* filelen, int index)
 {
 	const char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
@@ -554,7 +540,7 @@ uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, siz
 
 /* Return number of file attachments contained in MIME-encoded message body */
 /* 'body' may be NULL if the body text is not already read/available */
-ulong SMBCALL smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
+ulong smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
 {
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return 0;

@@ -46,7 +46,7 @@ static char *binstr(uchar *buf, uint16_t length)
 	return(str);
 }
 
-str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
+str_list_t smb_msghdr_str_list(smbmsg_t* msg)
 {
 	char tmp[128];
 	int i;
@@ -173,7 +173,7 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 	return list;
 }
 
-void SMBCALL smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
+void smb_dump_msghdr(FILE* fp, smbmsg_t* msg)
 {
 	int i;
 

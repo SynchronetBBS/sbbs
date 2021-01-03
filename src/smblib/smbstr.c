@@ -23,7 +23,7 @@
 #include <genwrap.h> 		/* stricmp */
 #include "smblib.h"
 
-char* SMBCALL smb_hfieldtype(uint16_t type)
+char* smb_hfieldtype(uint16_t type)
 {
 	static char str[8];
 
@@ -113,7 +113,7 @@ char* SMBCALL smb_hfieldtype(uint16_t type)
 	return(str);
 }
 
-uint16_t SMBCALL smb_hfieldtypelookup(const char* str)
+uint16_t smb_hfieldtypelookup(const char* str)
 {
 	uint16_t type;
 
@@ -127,7 +127,7 @@ uint16_t SMBCALL smb_hfieldtypelookup(const char* str)
 	return(UNKNOWN);
 }
 
-char* SMBCALL smb_dfieldtype(uint16_t type)
+char* smb_dfieldtype(uint16_t type)
 {
 	static char str[8];
 
@@ -140,7 +140,7 @@ char* SMBCALL smb_dfieldtype(uint16_t type)
 	return(str);
 }
 
-char* SMBCALL smb_hashsourcetype(uchar type)
+char* smb_hashsourcetype(uchar type)
 {
 	static char str[8];
 
@@ -154,7 +154,7 @@ char* SMBCALL smb_hashsourcetype(uchar type)
 	return(str);
 }
 
-char* SMBCALL smb_hashsource(smbmsg_t* msg, int source)
+char* smb_hashsource(smbmsg_t* msg, int source)
 {
 	switch(source) {
 		case SMB_HASH_SOURCE_MSG_ID:
@@ -170,7 +170,7 @@ char* SMBCALL smb_hashsource(smbmsg_t* msg, int source)
 /****************************************************************************/
 /* Converts when_t.zone into ASCII format                                   */
 /****************************************************************************/
-char* SMBCALL smb_zonestr(int16_t zone, char* str)
+char* smb_zonestr(int16_t zone, char* str)
 {
 	char*		plus;
     static char buf[32];
@@ -248,7 +248,7 @@ char* SMBCALL smb_zonestr(int16_t zone, char* str)
 /****************************************************************************/
 /* Returns an ASCII string for FidoNet address 'addr'                       */
 /****************************************************************************/
-char* SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* str)
+char* smb_faddrtoa(fidoaddr_t* addr, char* str)
 {
 	static char buf[64];
     char point[25];
@@ -268,7 +268,7 @@ char* SMBCALL smb_faddrtoa(fidoaddr_t* addr, char* str)
 /****************************************************************************/
 /* Returns the FidoNet address parsed from str.								*/
 /****************************************************************************/
-fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
+fidoaddr_t smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 {
 	char*		p;
 	const char*	terminator;
@@ -306,7 +306,7 @@ fidoaddr_t SMBCALL smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 /* Returns ASCIIZ representation of network address (net_t)					*/
 /* NOT THREAD-SAFE!															*/
 /****************************************************************************/
-char* SMBCALL smb_netaddr(net_t* net)
+char* smb_netaddr(net_t* net)
 {
 	return(smb_netaddrstr(net, NULL));
 }
@@ -314,7 +314,7 @@ char* SMBCALL smb_netaddr(net_t* net)
 /****************************************************************************/
 /* Copies ASCIIZ representation of network address (net_t) into buf			*/
 /****************************************************************************/
-char* SMBCALL smb_netaddrstr(net_t* net, char* fidoaddr_buf)
+char* smb_netaddrstr(net_t* net, char* fidoaddr_buf)
 {
 	if(net->type==NET_FIDO)
 		return(smb_faddrtoa((fidoaddr_t*)net->addr,fidoaddr_buf));
@@ -326,7 +326,7 @@ char* SMBCALL smb_netaddrstr(net_t* net, char* fidoaddr_buf)
 /* QWKnet and Internet addresses must have an '@'.							*/
 /* FidoNet addresses may be in form: "user@addr" or just "addr".			*/
 /****************************************************************************/
-enum smb_net_type SMBCALL smb_netaddr_type(const char* str)
+enum smb_net_type smb_netaddr_type(const char* str)
 {
 	const char*	p;
 
@@ -365,7 +365,7 @@ enum smb_net_type SMBCALL smb_netaddr_type(const char* str)
 /*	"someone@anywhere"	= NET_INTERNET										*/
 /*	"someone@some.host"	= NET_INTERNET										*/
 /****************************************************************************/
-enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
+enum smb_net_type smb_get_net_type_by_addr(const char* addr)
 {
 	const char*	p = addr;
 	const char*	tp;
@@ -420,7 +420,7 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 	return NET_UNKNOWN;
 }
 
-char* SMBCALL smb_nettype(enum smb_net_type type)
+char* smb_nettype(enum smb_net_type type)
 {
 	switch(type) {
 		case NET_NONE:		return "NONE";

@@ -72,11 +72,19 @@ BOOL newfiles(smb_t* smb, time_t t)
 }
 
 // This function must be called with file base closed
-BOOL datefileindex(smb_t* smb, time_t t)
+BOOL update_newfiletime(smb_t* smb, time_t t)
 {
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%s.sid", smb->file);
 	return setfdate(path, t) == 0;
+}
+
+time_t lastfiletime(smb_t* smb)
+{
+	idxrec_t idx;
+	if(smb_getlastidx(smb, &idx) != SMB_SUCCESS)
+		return (time_t)-1;
+	return idx.time;
 }
 
 static int filename_compare_a(const void *arg1, const void *arg2)
@@ -149,7 +157,7 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
 
-		if(fidx.idx.number==0)	/* invalid message number, ignore */
+		if(fidx.idx.number == 0)	/* invalid message number, ignore */
 			continue;
 
 		TERMINATE(fidx.name);
@@ -187,28 +195,28 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BO
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	while(!feof(smb->sid_fp)) {
-		fileidxrec_t fidx;
+		smbfile_t f;
+		ZERO_VAR(f);
 
-		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
+		if(smb_fread(smb, &f.file_idx, sizeof(f.file_idx), smb->sid_fp) != sizeof(f.file_idx))
 			break;
 
-		if(fidx.idx.number==0)	/* invalid message number, ignore */
+		if(f.idx.number == 0)	/* invalid message number, ignore */
 			continue;
 
-		TERMINATE(fidx.name);
+		TERMINATE(f.file_idx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(fidx.name, filespec, /* path: */FALSE))
+			if(!wildmatchi(f.file_idx.name, filespec, /* path: */FALSE))
 				continue;
 		}
-		smbfile_t file = { .idx = fidx.idx };
-		int result = smb_getmsghdr(smb, &file);
+		int result = smb_getmsghdr(smb, &f);
 		if(result != SMB_SUCCESS)
 			break;
 		if(extdesc)
-			file.extdesc = smb_getmsgtxt(smb, &file, GETMSGTXT_ALL);
-		file.dir = smb->dirnum;
-		file_list[*count] = file;
+			f.extdesc = smb_getmsgtxt(smb, &f, GETMSGTXT_ALL);
+		f.dir = smb->dirnum;
+		file_list[*count] = f;
 		(*count)++;
 	}
 	if(sort)
@@ -508,14 +516,16 @@ ulong gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
 	return f->size / rate_cps;
 }
 
-BOOL addfile(scfg_t* cfg, uint dirnum, smbfile_t* file, const char* extdesc)
+BOOL addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)
 {
+	char fpath[MAX_PATH + 1];
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return FALSE;
 
-	int result = smb_addfile(&smb, file, SMB_SELFPACK, extdesc);
+	getfilepath(cfg, f, fpath);
+	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, fpath);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }

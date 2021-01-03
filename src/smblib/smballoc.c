@@ -1,7 +1,4 @@
 /* Synchronet message base (SMB) alloc/free routines */
-// vi: tabstop=4
-
-/* $Id: smballoc.c,v 1.14 2019/04/11 01:00:29 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -46,7 +31,7 @@
 /* smb_close_da() should be called after									*/
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
+long smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
 {
     uint16_t  i;
 	ulong	j,l,blocks,offset=0L;
@@ -95,7 +80,7 @@ long SMBCALL smb_allocdat(smb_t* smb, ulong length, uint16_t refs)
 /* Allocates space for data, but doesn't search for unused blocks           */
 /* Returns negative on error												*/
 /****************************************************************************/
-long SMBCALL smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
+long smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
 {
 	ulong	l,blocks,offset;
 
@@ -133,7 +118,7 @@ long SMBCALL smb_fallocdat(smb_t* smb, ulong length, uint16_t refs)
 /* Returns non-zero on error												*/
 /* Always unlocks the SMB header (when not hyper-alloc)						*/
 /****************************************************************************/
-int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
+int smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 {
 	BOOL	da_opened=FALSE;
 	int		retval=SMB_SUCCESS;
@@ -223,7 +208,7 @@ int SMBCALL smb_freemsgdat(smb_t* smb, ulong offset, ulong length, uint16_t refs
 /* SMB header should be locked before calling this function					*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
+int smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 {
 	uint16_t	i;
 	ulong	l,blocks;
@@ -267,7 +252,7 @@ int SMBCALL smb_incdat(smb_t* smb, ulong offset, ulong length, uint16_t refs)
 /* The opposite function of smb_freemsg()									*/
 /* Always unlocks the SMB header (when not hyper-alloc)						*/
 /****************************************************************************/
-int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
+int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i=SMB_SUCCESS;
 	BOOL	da_opened=FALSE;
@@ -302,7 +287,7 @@ int SMBCALL smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 /* De-allocates blocks for header record									*/
 /* Returns non-zero on error												*/
 /****************************************************************************/
-int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
+int smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 {
 	uchar	c=0;
 	long	l,blocks;
@@ -340,7 +325,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 
 /****************************************************************************/
 /****************************************************************************/
-int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
+int smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 {
 	int		i;
 	uint16_t	x;
@@ -356,7 +341,7 @@ int SMBCALL smb_freemsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 /****************************************************************************/
 /* Frees all allocated header and data blocks (1 reference) for 'msg'       */
 /****************************************************************************/
-int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
+int smb_freemsg(smb_t* smb, smbmsg_t* msg)
 {
 	int 	i;
 
@@ -382,7 +367,7 @@ int SMBCALL smb_freemsg(smb_t* smb, smbmsg_t* msg)
 /* smb_close_ha() should be called after									*/
 /* Returns negative value on error 											*/
 /****************************************************************************/
-long SMBCALL smb_allochdr(smb_t* smb, ulong length)
+long smb_allochdr(smb_t* smb, ulong length)
 {
 	uchar	c;
 	ulong	i,l,blocks,offset=0;
@@ -425,7 +410,7 @@ long SMBCALL smb_allochdr(smb_t* smb, ulong length)
 /* Allocates space for header, but doesn't search for unused blocks          */
 /* Returns negative value on error 											*/
 /****************************************************************************/
-long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
+long smb_fallochdr(smb_t* smb, ulong length)
 {
 	uchar	c=1;
 	ulong	l,blocks,offset;
@@ -457,7 +442,7 @@ long SMBCALL smb_fallochdr(smb_t* smb, ulong length)
 /* this function should be most likely not be called from anywhere but	*/
 /* smb_addmsghdr()														*/
 /************************************************************************/
-long SMBCALL smb_hallochdr(smb_t* smb)
+long smb_hallochdr(smb_t* smb)
 {
 	ulong offset;
 
@@ -488,7 +473,7 @@ long SMBCALL smb_hallochdr(smb_t* smb)
 /* unlocked until all data fields for this message have been written	*/
 /* to the SDT file														*/
 /************************************************************************/
-long SMBCALL smb_hallocdat(smb_t* smb)
+long smb_hallocdat(smb_t* smb)
 {
 	long offset;
 

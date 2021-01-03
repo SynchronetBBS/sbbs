@@ -275,10 +275,6 @@ typedef struct js_callback {
 #define DIR_FILES		(1<<20)		/* List/access files not in database */
 #define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) */
 
-                                    /* Bit values for file_t.misc */
-#define FM_EXTDESC  (1<<0)          /* Extended description exists */
-#define FM_ANON 	(1<<1)			/* Anonymous upload */
-
 									/* Bit values for cfg.file_misc				*/
 #define FM_NO_LFN	(1<<0)			/* No long filenames in listings			*/
 
