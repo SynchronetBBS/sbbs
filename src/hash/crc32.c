@@ -1,8 +1,4 @@
-/* crc32.c */
-
 /* IEEE 802.3 32-bit CRC table and convenience functions */
-
-/* $Id: crc32.c,v 1.12 2018/07/24 01:12:53 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -10,27 +6,15 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -38,7 +22,7 @@
 #include <string.h>	/* strlen */
 #include "crc32.h"
 
-CRCEXPORT int32_t crc32tbl[]={	/* CRC polynomial 0xedb88320 */
+int32_t crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
 0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
@@ -78,22 +62,22 @@ CRCEXPORT int32_t crc32tbl[]={	/* CRC polynomial 0xedb88320 */
 /* Pass len of 0 to auto-determine ASCIIZ string length						*/
 /* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
-uint32_t CRCCALL crc32i(uint32_t crc, const char *buf, unsigned long len)
+uint32_t crc32i(uint32_t crc, const char *buf, size_t len)
 {
-	unsigned long l;
+	size_t l;
 
 	if(len==0 && buf!=NULL) 
 		len=strlen(buf);
 	for(l=0;l<len;l++)
 		crc=ucrc32(buf[l],crc);
-	return(~crc);
+	return ~crc;
 }
 
-uint32_t CRCCALL fcrc32(FILE* fp, unsigned long len)
+uint32_t fcrc32(FILE* fp, size_t len)
 {
 	int	ch;
 	uint32_t crc=0xffffffff;
-	unsigned long l;
+	size_t l;
 
 	rewind(fp);
 	for(l=0;(len==0 || l<len) && !feof(fp);l++) {
@@ -101,7 +85,5 @@ uint32_t CRCCALL fcrc32(FILE* fp, unsigned long len)
 			break;
 		crc=ucrc32(ch,crc);
 	}
-	return(~crc);
+	return ~crc;
 }
-
-
