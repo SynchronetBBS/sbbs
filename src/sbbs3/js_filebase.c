@@ -739,6 +739,7 @@ enum {
 
 static JSBool js_filebase_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
+	time32_t t;
 	jsval idval;
     jsint       tiny;
 	private_t*	p;
@@ -760,7 +761,6 @@ static JSBool js_filebase_set(JSContext *cx, JSObject *obj, jsid id, JSBool stri
 				return JS_FALSE;
 			break;
 		case FB_PROP_NEW_FILE_TIME:
-			time32_t t;
 			if(!JS_ValueToInt32(cx, *vp, (int32*)&t))
 				return JS_FALSE;
 			update_newfiletime(&(p->smb), t);
