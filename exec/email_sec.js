@@ -1,7 +1,5 @@
 // E-mail Section
 
-// $Id: email_sec.js,v 1.10 2020/04/24 08:05:39 rswindell Exp $
-
 // Note: this module replaces the old ### E-mail section ### Baja code in exec/*.src
 // replace "call E-mail" with "exec_bin email_sec"
 
@@ -23,8 +21,11 @@ while(bbs.online && !console.aborted) {
 	bbs.nodesync();
 	console.print("\r\n\1_\1y\1hE-mail: \1n");
 	var wm_mode = WM_NONE;
-	var cmdkeys = "SARUFNKQ?\r";
+	var cmdkeys = "LSARUFNKQ?\r";
 	switch(console.getkeys(cmdkeys,K_UPPER)) {
+		case 'L':	// List/read your mail
+			load({}, "msglist.js", "mail","-preview");
+			break;
 		case 'R':	// Read your mail
 			bbs.read_mail(MAIL_YOUR, user.number);
 			break;
