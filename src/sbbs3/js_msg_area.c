@@ -308,10 +308,14 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 	jsval idval;
 	int32		val=0;
     jsint       tiny;
-	subscan_t*	scan;
+	struct js_msg_area_priv *p;
 
-	if((scan=(subscan_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_TRUE);
+	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx, obj))==NULL)
+		return JS_FALSE;
+
+	subscan_t*	scan = p->subscan;
+	if(scan == NULL)
+		return JS_FALSE;
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
