@@ -17,7 +17,7 @@ const ini_section = "netmail sent";
 
 const NetmailAddressHistoryLength = 10;
 
-while(bbs.online) {
+while(bbs.online && !console.aborted) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu("e-mail");
 	bbs.nodesync();
