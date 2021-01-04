@@ -139,4 +139,32 @@ window.onload =	function () {
         es.addEventListener(e, _sbbs_events[e].callback);
     });
 
+	// originally based on dark-mode-switch by Christian Oliff
+	var darkSwitch = document.getElementById("darkSwitch");
+	if (darkSwitch) {
+		initTheme();
+		darkSwitch.addEventListener("change", function(event) {
+			resetTheme();
+		});
+		function initTheme() {
+			var darkThemeSelected =
+				localStorage.getItem("darkSwitch") !== null &&
+				localStorage.getItem("darkSwitch") === "dark";
+			darkSwitch.checked = darkThemeSelected;
+			if (darkThemeSelected) {
+				jQuery("body").addClass("dark")
+			} else {
+				jQuery("body").removeClass("dark");
+			}
+		}
+		function resetTheme() {
+			if (darkSwitch.checked) {
+				jQuery("body").addClass("dark");
+				localStorage.setItem("darkSwitch", "dark");
+			} else {
+				jQuery("body").removeClass("dark");
+				localStorage.removeItem("darkSwitch");
+			}
+		}
+	}
 }

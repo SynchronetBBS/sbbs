@@ -49,6 +49,7 @@
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
+		<link href="./css/checkbox.css" rel="stylesheet">
 		<? if (file_exists(settings.web_root + 'css/custom.css')) { ?>
 			<link href="./css/custom.css" rel="stylesheet">
 		<? } ?>
@@ -101,7 +102,6 @@
     			return false;
 			});
 		</script>
-
 	</body>
 
 </html>
