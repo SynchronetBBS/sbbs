@@ -217,7 +217,7 @@ BinkP.prototype.crypt = {
 		var ret = '';
 		var ch;
 
-		for (i=0; i<buf.length; i++) {
+		for (i=0; buf !== null && i<buf.length; i++) {
 			ch = ascii(ascii(buf[i]) ^ this.decrypt_byte(keys));
 			ret += ch;
 			this.update_keys(keys, ch);
@@ -229,7 +229,7 @@ BinkP.prototype.crypt = {
 		var i;
 		var ret = '';
 
-		for (i=0; i<buf.length; i++) {
+		for (i=0; buf !== null && i<buf.length; i++) {
 			t = this.decrypt_byte(keys);
 			this.update_keys(keys, buf[i]);
 			ret += ascii(ascii(buf[i]) ^ t);
