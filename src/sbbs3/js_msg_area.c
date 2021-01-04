@@ -258,7 +258,7 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	struct js_msg_area_priv *p;
 
 	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx, obj))==NULL)
-		return JS_FALSE;
+		return JS_TRUE;
 	subscan_t*	scan = p->subscan;
 
     JS_IdToValue(cx, id, &idval);
