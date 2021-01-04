@@ -24,7 +24,7 @@ while(bbs.online && !console.aborted) {
 	var cmdkeys = "LSARUFNKQ?\r";
 	switch(console.getkeys(cmdkeys,K_UPPER)) {
 		case 'L':	// List/read your mail
-			load({}, "msglist.js", "mail","-preview");
+			bbs.exec("?msglist.js mail -preview");
 			break;
 		case 'R':	// Read your mail
 			bbs.read_mail(MAIL_YOUR, user.number);
