@@ -41,6 +41,13 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
+		<style type="text/css">
+			.hidden { display:none; }
+		</style>
+		<script src="./js/jquery.min.js"></script>
+		<script type="text/javascript">
+			jQuery('html').addClass('hidden');
+		</script>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -57,7 +64,6 @@
 
 	<body>
 
-		<script src="./js/jquery.min.js"></script>
 		<script src="./bootstrap/js/bootstrap.min.js"></script>
 		<script src="./js/common.js"></script>
 
