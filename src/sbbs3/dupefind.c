@@ -163,7 +163,6 @@ int main(int argc,char **argv)
 				break;
 			char filename[sizeof(idx.name) + 1];
 			SAFECOPY(filename, idx.name);
-			strupr(filename);
 			fcrc[i][j++]=crc32(filename, 0);
 		}
 		smb_close(&smb);
