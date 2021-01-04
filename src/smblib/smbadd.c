@@ -455,31 +455,3 @@ int smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 
 	return retval;
 }
-
-int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* path)
-{
-	if(file->name == NULL) {
-		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s missing name", __FUNCTION__);
-		return SMB_ERR_HDR_FIELD;
-	}
-	if(smb_findfile(smb, file->name, NULL) == SMB_SUCCESS) {
-		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s duplicate name found: %s", __FUNCTION__, file->name);
-		return SMB_DUPE_MSG;
-	}
-	if(path != NULL) {
-		file->size = flength(path);
-		file->hdr.when_written.time = (uint32_t)fdate(path);
-		file->file_idx.hash.flags = smb_hashfile(path, file->size, &file->file_idx.hash.data);
-	}
-	file->hdr.attr |= MSG_FILE;
-	file->hdr.type = SMB_MSG_TYPE_FILE;
-	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */(const uchar*)extdesc, /* tail: */NULL);
-}
-
-int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
-{
-	int result;
-	if((result = smb_removefile(smb, file)) != SMB_SUCCESS)
-		return result;
-	return smb_addfile(smb, file, storage, file->extdesc, path);
-}

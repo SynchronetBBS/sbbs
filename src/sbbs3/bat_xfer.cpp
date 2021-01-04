@@ -393,7 +393,7 @@ bool sbbs_t::create_batchdn_lst(bool native)
 		const char* filename = filenames[i];
 		smbfile_t f = {};
 		f.dir = batch_file_dir(&cfg, ini, filename);
-		if(!loadfile(&cfg, f.dir, filename, &f)) {
+		if(!loadfile(&cfg, f.dir, filename, &f, file_detail_index)) {
 			errormsg(WHERE, "loading file", filename, i);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
@@ -594,7 +594,7 @@ void sbbs_t::batch_add_list(char *list)
 					outchar('.');
 					if(k && !(k%5))
 						bputs("\b\b\b\b\b     \b\b\b\b\b");
-					if(loadfile(&cfg, usrdir[i][j], str, &f)) {
+					if(loadfile(&cfg, usrdir[i][j], str, &f, file_detail_normal)) {
 						if(fexist(getfilepath(&cfg, &f, path)))
 							addtobatdl(&f);
 						else

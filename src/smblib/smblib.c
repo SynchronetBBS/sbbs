@@ -1679,6 +1679,8 @@ int smb_init_idx(smb_t* smb, smbmsg_t* msg)
 		msg->idx.votes = msg->hdr.votes;
 		msg->idx.remsg = msg->hdr.thread_back;
 	} else if(msg->hdr.type == SMB_MSG_TYPE_FILE) {
+		strncpy(msg->file_idx.name, msg->name, sizeof(msg->file_idx.name) - 1);
+		msg->idx.altpath = msg->hdr.altpath;
 		msg->idx.size = msg->size;
 	} else {
 		msg->idx.subj = smb_subject_crc(msg->subj);
@@ -1809,7 +1811,6 @@ int smb_putmsgidx(smb_t* smb, smbmsg_t* msg)
 		return(SMB_ERR_SEEK);
 	}
 	if(msg->hdr.type == SMB_MSG_TYPE_FILE) {
-		strncpy(msg->file_idx.name, msg->name, sizeof(msg->file_idx.name) - 1);
 		if(!fwrite(&msg->file_idx, sizeof(msg->file_idx), 1, smb->sid_fp)) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' writing index", __FUNCTION__

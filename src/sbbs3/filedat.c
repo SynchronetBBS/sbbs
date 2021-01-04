@@ -145,10 +145,9 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 			return NULL;
 	}
 
-	char** file_list = malloc((smb->status.total_files + 1) * sizeof(char*));
+	char** file_list = calloc(smb->status.total_files + 1, sizeof(char*));
 	if(file_list == NULL)
 		return NULL;
-	memset(file_list, 0, (smb->status.total_files + 1) * sizeof(char*));
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	while(!feof(smb->sid_fp)) {
@@ -176,7 +175,7 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 }
 
 // Load and optionally-sort files from an open filebase into a dynamically-allocated list of "objects"
-smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BOOL extdesc, BOOL sort, size_t* count)
+smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, enum file_detail detail, BOOL sort, size_t* count)
 {
 	*count = 0;
 
@@ -188,35 +187,29 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BO
 			return NULL;
 	}
 
-	smbfile_t* file_list = malloc(smb->status.total_files * sizeof(smbfile_t));
+	smbfile_t* file_list = calloc(smb->status.total_files, sizeof(smbfile_t));
 	if(file_list == NULL)
 		return NULL;
-	memset(file_list, 0, smb->status.total_files * sizeof(smbfile_t));
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
 	while(!feof(smb->sid_fp)) {
-		smbfile_t f;
-		ZERO_VAR(f);
+		smbfile_t* f = &file_list[*count];
 
-		if(smb_fread(smb, &f.file_idx, sizeof(f.file_idx), smb->sid_fp) != sizeof(f.file_idx))
+		if(smb_fread(smb, &f->file_idx, sizeof(f->file_idx), smb->sid_fp) != sizeof(f->file_idx))
 			break;
 
-		if(f.idx.number == 0)	/* invalid message number, ignore */
+		if(f->idx.number == 0)	/* invalid message number, ignore */
 			continue;
 
-		TERMINATE(f.file_idx.name);
+		TERMINATE(f->file_idx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(f.file_idx.name, filespec, /* path: */FALSE))
+			if(!wildmatchi(f->file_idx.name, filespec, /* path: */FALSE))
 				continue;
 		}
-		int result = smb_getmsghdr(smb, &f);
+		int result = smb_getfile(smb, f, detail);
 		if(result != SMB_SUCCESS)
 			break;
-		if(extdesc)
-			f.extdesc = smb_getmsgtxt(smb, &f, GETMSGTXT_ALL);
-		f.dir = smb->dirnum;
-		file_list[*count] = f;
 		(*count)++;
 	}
 	if(sort)
@@ -304,14 +297,14 @@ void freefiles(smbfile_t* filelist, size_t count)
 	free(filelist);
 }
 
-BOOL loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file)
+BOOL loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file, enum file_detail detail)
 {
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return FALSE;
 
-	int result = smb_loadfile(&smb, filename, file);
+	int result = smb_loadfile(&smb, filename, file, detail);
 	smb_close(&smb);
 	if(cfg->dir[dirnum]->misc & DIR_FREE)
 		file->cost = 0;
@@ -402,7 +395,7 @@ BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
 	fprintf(fp, "desc=%s\n", f->desc);
-	fprintf(fp, "altpath=%u\n", f->hdr.altpath);
+	fprintf(fp, "altpath=%u\n", f->idx.altpath);
 	fclose(fp);
 	return TRUE;
 }
@@ -418,7 +411,7 @@ BOOL batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t
 		return FALSE;
 	smb_hfield_str(f, SMB_FILENAME, filename);
 	smb_hfield_str(f, SMB_FILEDESC, iniGetString(ini, filename, "desc", NULL, value));
-	f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
+	f->idx.altpath = f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
 	return TRUE;
 }
 
@@ -435,7 +428,7 @@ BOOL batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_
 	f->dir = batch_file_dir(cfg, ini, filename);
 	if(f->dir < 0)
 		return FALSE;
-	return loadfile(cfg, f->dir, filename, f);
+	return loadfile(cfg, f->dir, filename, f, file_detail_normal);
 }
 
 BOOL updatefile(scfg_t* cfg, smbfile_t* file)
@@ -459,7 +452,7 @@ BOOL removefile(scfg_t* cfg, uint dirnum, const char* filename)
 
 	int result;
 	smbfile_t file;
-	if((result = smb_loadfile(&smb, filename, &file)) == SMB_SUCCESS) {
+	if((result = smb_loadfile(&smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		result = smb_removefile(&smb, &file);
 		smb_freefilemem(&file);
 	}
@@ -479,8 +472,8 @@ char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 	if(f->dir >= cfg->total_dirs)
 		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, f->name);
 	else {
-		safe_snprintf(path, MAX_PATH, "%s%s", f->hdr.altpath > 0 && f->hdr.altpath <= cfg->altpaths 
-			? cfg->altpath[f->hdr.altpath-1] : cfg->dir[f->dir]->path
+		safe_snprintf(path, MAX_PATH, "%s%s", f->idx.altpath > 0 && f->idx.altpath <= cfg->altpaths 
+			? cfg->altpath[f->idx.altpath-1] : cfg->dir[f->dir]->path
 			,f->name);
 		fchk = (cfg->dir[f->dir]->misc & DIR_FCHK) != 0;
 	}

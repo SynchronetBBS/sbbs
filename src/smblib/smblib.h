@@ -179,8 +179,6 @@ SMBEXPORT int		smb_addmsg(smb_t*, smbmsg_t*, int storage, long dupechk_hashes
 SMBEXPORT int		smb_addvote(smb_t*, smbmsg_t*, int storage);
 SMBEXPORT int		smb_addpoll(smb_t*, smbmsg_t*, int storage);
 SMBEXPORT int		smb_addpollclosure(smb_t*, smbmsg_t*, int storage);
-SMBEXPORT int		smb_addfile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* path);
-SMBEXPORT int		smb_renewfile(smb_t*, smbfile_t*, int storage, const char* path);
 
 /* smballoc.c */
 SMBEXPORT long		smb_allochdr(smb_t*, ulong length);
@@ -282,9 +280,12 @@ SMBEXPORT int 		smb_open_fp(smb_t*, FILE**, int share);
 SMBEXPORT void		smb_close_fp(FILE**);
 
 /* New FileBase API: */
-SMBEXPORT int		smb_setfilepath(smbfile_t*, const char* path);
+enum file_detail { file_detail_index, file_detail_normal, file_detail_extdesc };
+SMBEXPORT int		smb_addfile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* path);
+SMBEXPORT int		smb_renewfile(smb_t*, smbfile_t*, int storage, const char* path);
+SMBEXPORT int		smb_getfile(smb_t*, smbfile_t*, enum file_detail);
 SMBEXPORT int		smb_findfile(smb_t*, const char* filename, fileidxrec_t*);
-SMBEXPORT int		smb_loadfile(smb_t*, const char* filename, smbfile_t*);
+SMBEXPORT int		smb_loadfile(smb_t*, const char* filename, smbfile_t*, enum file_detail);
 SMBEXPORT void		smb_freefilemem(smbfile_t*);
 SMBEXPORT int		smb_removefile(smb_t*, smbfile_t*);
 

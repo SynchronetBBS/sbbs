@@ -1,4 +1,4 @@
-/* Synchronet message base (SMB) FILE stream I/O routines */
+/* Synchronet message base (SMB) FILE stream and FileBase routines  */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -184,7 +184,9 @@ void smb_close_fp(FILE** fp)
 }
 
 /****************************************************************************/
-/* CASE-INSENSITIVE filename search through index (no wildcards)			*/
+/* Find file in index via either/or:										*/
+/* -  CASE-INSENSITIVE 'filename' search through index (no wildcards)		*/
+/* -  file content size and hash details found in 'idx'						*/
 /****************************************************************************/
 int smb_findfile(smb_t* smb, const char* filename, fileidxrec_t* idx)
 {
@@ -195,9 +197,29 @@ int smb_findfile(smb_t* smb, const char* filename, fileidxrec_t* idx)
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
 
-		if(strnicmp(fidx.name, filename, sizeof(fidx.name)) == 0) {
+		if(filename != NULL && strnicmp(fidx.name, filename, sizeof(fidx.name)) == 0) {
 			if(idx != NULL)
 				*idx = fidx;
+			return SMB_SUCCESS;
+		}
+
+		if(idx != NULL
+			&& ((idx->hash.flags & SMB_HASH_MASK) != 0 || idx->idx.size > 0 || idx->idx.time != 0)) {
+			if(idx->idx.size > 0 && idx->idx.size != fidx.idx.size)
+				continue;
+			if(idx->idx.time > 0 && idx->idx.time != fidx.idx.time)
+				continue;
+			if((idx->hash.flags & SMB_HASH_CRC16) && idx->hash.data.crc16 != fidx.hash.data.crc16)
+				continue;
+			if((idx->hash.flags & SMB_HASH_CRC32) && idx->hash.data.crc32 != fidx.hash.data.crc32)
+				continue;
+			if((idx->hash.flags & SMB_HASH_MD5)
+				&& memcmp(idx->hash.data.md5, fidx.hash.data.md5, sizeof(idx->hash.data.md5)) !=0)
+				continue;
+			if((idx->hash.flags & SMB_HASH_SHA1)
+				&& memcmp(idx->hash.data.sha1, fidx.hash.data.sha1, sizeof(idx->hash.data.sha1)) !=0)
+				continue;
+			*idx = fidx;
 			return SMB_SUCCESS;
 		}
 	}
@@ -206,21 +228,32 @@ int smb_findfile(smb_t* smb, const char* filename, fileidxrec_t* idx)
 
 /****************************************************************************/
 /****************************************************************************/
-int smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
+int smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file, enum file_detail detail)
 {
 	int result;
-
-	if(filename == NULL)
-		return SMB_BAD_PARAMETER;
 
 	memset(file, 0, sizeof(*file));
 
 	if((result = smb_findfile(smb, filename, &file->file_idx)) != SMB_SUCCESS)
 		return result;
 
-	if((result = smb_getmsghdr(smb, file)) != SMB_SUCCESS)
-		return result;
+	return smb_getfile(smb, file, detail);
+}
 
+/****************************************************************************/
+/****************************************************************************/
+int smb_getfile(smb_t* smb, smbfile_t* file, enum file_detail detail)
+{
+	int result;
+
+	file->name = file->file_idx.name;
+	file->hdr.when_written.time = file->idx.time;
+	if(detail > file_detail_index) {
+		if((result = smb_getmsghdr(smb, file)) != SMB_SUCCESS)
+			return result;
+		if(detail >= file_detail_extdesc)
+			file->extdesc = smb_getmsgtxt(smb, file, GETMSGTXT_ALL);
+	}
 	file->dir = smb->dirnum;
 
 	return SMB_SUCCESS;
@@ -231,6 +264,34 @@ int smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file)
 void smb_freefilemem(smbfile_t* file)
 {
 	smb_freemsgmem(file);
+}
+
+int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* path)
+{
+	if(file->name == NULL) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s missing name", __FUNCTION__);
+		return SMB_ERR_HDR_FIELD;
+	}
+	if(smb_findfile(smb, file->name, NULL) == SMB_SUCCESS) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s duplicate name found: %s", __FUNCTION__, file->name);
+		return SMB_DUPE_MSG;
+	}
+	if(path != NULL) {
+		file->size = flength(path);
+		file->hdr.when_written.time = (uint32_t)fdate(path);
+		file->file_idx.hash.flags = smb_hashfile(path, file->size, &file->file_idx.hash.data);
+	}
+	file->hdr.attr |= MSG_FILE;
+	file->hdr.type = SMB_MSG_TYPE_FILE;
+	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */(const uchar*)extdesc, /* tail: */NULL);
+}
+
+int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
+{
+	int result;
+	if((result = smb_removefile(smb, file)) != SMB_SUCCESS)
+		return result;
+	return smb_addfile(smb, file, storage, file->extdesc, path);
 }
 
 /****************************************************************************/

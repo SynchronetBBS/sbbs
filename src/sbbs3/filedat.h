@@ -36,8 +36,8 @@ DLLEXPORT time_t		dir_newfiletime(scfg_t*, uint dirnum);
 DLLEXPORT time_t		lastfiletime(smb_t*); // Reads the last index record
 
 DLLEXPORT BOOL			findfile(scfg_t* cfg, uint dirnum, const char *filename);
-DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*);
-DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, BOOL extdsec, BOOL sort, size_t* count);
+DLLEXPORT BOOL			loadfile(scfg_t*, uint dirnum, const char* filename, smbfile_t*, enum file_detail detail);
+DLLEXPORT smbfile_t*	loadfiles(scfg_t*, smb_t*, const char* filespec, time_t, enum file_detail detail, BOOL sort, size_t* count);
 DLLEXPORT void			sortfiles(smbfile_t*, size_t count, enum file_sort);
 DLLEXPORT void			freefiles(smbfile_t*, size_t count);
 DLLEXPORT str_list_t	loadfilenames(scfg_t*, smb_t*, const char* filespec, time_t t, BOOL sort, size_t* count);

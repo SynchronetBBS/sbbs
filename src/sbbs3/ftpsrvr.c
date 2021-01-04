@@ -848,7 +848,7 @@ static void send_thread(void* arg)
 
 		if(xfer.dir>=0) {
 			memset(&f,0,sizeof(f));
-			if(loadfile(&scfg, xfer.dir, xfer.filename, &f) == TRUE) {
+			if(loadfile(&scfg, xfer.dir, xfer.filename, &f, file_detail_normal) == TRUE) {
 				f.hdr.times_downloaded++;
 				f.hdr.last_downloaded = time32(NULL);
 				updatefile(&scfg, &f);
@@ -4480,7 +4480,7 @@ static void ctrl_thread(void* arg)
 					&& !is_download_free(&scfg,dir,&user,&client)) {
 					smbfile_t f;
 					if(filedat)
-						loadfile(&scfg, dir, p, &f);
+						loadfile(&scfg, dir, p, &f, file_detail_normal);
 					else
 						f.cost=flength(fname);
 					if(f.cost>(user.cdt+user.freecdt)) {
@@ -4690,7 +4690,7 @@ static void ctrl_thread(void* arg)
 				}
 				if(append || filepos) {	/* RESUME */
 					smbfile_t f;
-					if(!loadfile(&scfg, dir, p, &f)) {
+					if(!loadfile(&scfg, dir, p, &f, file_detail_normal)) {
 						if(filepos) {
 							lprintf(LOG_WARNING,"%04d <%s> file (%s) not in database for %.4s command"
 								,sock,user.alias,fname,cmd);

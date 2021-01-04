@@ -401,6 +401,7 @@ typedef struct _PACK {	/* Index record */
 		};
 		struct _PACK {			/* when msg.type == FILE */
 			uint32_t	size;
+			uint16_t	altpath;
 		};
 	};
 	smb_msg_attr_t	attr;		/* attributes (read, permanent, etc.) */
@@ -420,7 +421,7 @@ struct hash_data {
 
 typedef uint8_t	hashflags_t;
 
-struct _PACK hash_info {
+struct hash_info {
 	hashflags_t flags;
 	struct hash_data data;
 };
@@ -429,7 +430,7 @@ typedef struct _PACK {		/* File index record */
 	union {
 		idxrec_t	idx;
 		struct {
-			idxrec_t idxrec;
+			idxrec_t idx_;	// only here for storage, no need to reference
 			char name[SMB_FILENAME_MAXLEN + 1];
 			uint8_t	padding[6];
 			struct hash_info hash;

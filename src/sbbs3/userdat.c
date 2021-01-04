@@ -2421,7 +2421,7 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 {
 	smbfile_t f;
 
-	if(!loadfile(cfg, dirnum, filename, &f))
+	if(!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
 		return FALSE;
 
 	if(!bytes)
