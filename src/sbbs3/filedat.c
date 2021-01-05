@@ -43,7 +43,7 @@ BOOL findfile(scfg_t* cfg, uint dirnum, const char *filename)
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return FALSE;
 
-	int result = smb_findfile(&smb, filename, /* idx: */NULL);
+	int result = smb_findfile(&smb, filename, /* file: */NULL);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }
@@ -71,7 +71,7 @@ BOOL newfiles(smb_t* smb, time_t t)
 	return newfiletime(smb) > t;
 }
 
-// This function must be called with file base closed
+// This function *must* be called with file base closed
 BOOL update_newfiletime(smb_t* smb, time_t t)
 {
 	char path[MAX_PATH + 1];
@@ -192,11 +192,14 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, en
 		return NULL;
 
 	fseek(smb->sid_fp, start * sizeof(fileidxrec_t), SEEK_SET);
+	long offset = start;
 	while(!feof(smb->sid_fp)) {
 		smbfile_t* f = &file_list[*count];
 
 		if(smb_fread(smb, &f->file_idx, sizeof(f->file_idx), smb->sid_fp) != sizeof(f->file_idx))
 			break;
+
+		f->idx_offset = offset++;
 
 		if(f->idx.number == 0)	/* invalid message number, ignore */
 			continue;

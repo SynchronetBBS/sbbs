@@ -308,7 +308,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			const char* fname = getfname(filepath);
 			printf("%s  %10"PRIu32"  %s\n"
 				,fname, cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
-			exist = smb_findfile(&smb, fname, &f.file_idx) == SMB_SUCCESS;
+			exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;
@@ -429,7 +429,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		}
 
 		time_t file_timestamp = fdate(filepath);
-		exist = smb_findfile(&smb, fname, &f.file_idx) == SMB_SUCCESS;
+		exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 		if(exist) {
 			if(mode&NO_UPDATE)
 				continue;
@@ -878,7 +878,7 @@ int main(int argc, char **argv)
 				exit(EXIT_FAILURE);
 			}
 
-			exist = smb_findfile(&smb, fname, &f.file_idx) == SMB_SUCCESS;
+			exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
 					continue;

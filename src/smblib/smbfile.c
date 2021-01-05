@@ -186,10 +186,15 @@ void smb_close_fp(FILE** fp)
 /****************************************************************************/
 /* Find file in index via either/or:										*/
 /* -  CASE-INSENSITIVE 'filename' search through index (no wildcards)		*/
-/* -  file content size and hash details found in 'idx'						*/
+/* -  file content size and hash details found in 'file'					*/
 /****************************************************************************/
-int smb_findfile(smb_t* smb, const char* filename, fileidxrec_t* idx)
+int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 {
+	long offset = 0;
+	smbfile_t* f = file;
+	smbfile_t file_ = {0};
+	if(f == NULL)
+		f = &file_;
 	rewind(smb->sid_fp);
 	while(!feof(smb->sid_fp)) {
 		fileidxrec_t fidx;
@@ -197,29 +202,32 @@ int smb_findfile(smb_t* smb, const char* filename, fileidxrec_t* idx)
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
 
-		if(filename != NULL && strnicmp(fidx.name, filename, sizeof(fidx.name)) == 0) {
-			if(idx != NULL)
-				*idx = fidx;
+		f->idx_offset = offset++;
+
+		if(filename != NULL) {
+			if(strnicmp(fidx.name, filename, sizeof(fidx.name)) != 0)
+				continue;
+			f->file_idx = fidx;
 			return SMB_SUCCESS;
 		}
 
-		if(idx != NULL
-			&& ((idx->hash.flags & SMB_HASH_MASK) != 0 || idx->idx.size > 0 || idx->idx.time != 0)) {
-			if(idx->idx.size > 0 && idx->idx.size != fidx.idx.size)
+		if(file == NULL)
+			continue;
+
+		if((f->file_idx.hash.flags & SMB_HASH_MASK) != 0 || f->file_idx.idx.size > 0) {
+			if(f->file_idx.idx.size > 0 && f->file_idx.idx.size != fidx.idx.size)
 				continue;
-			if(idx->idx.time > 0 && idx->idx.time != fidx.idx.time)
+			if((f->file_idx.hash.flags & SMB_HASH_CRC16) && f->file_idx.hash.data.crc16 != fidx.hash.data.crc16)
 				continue;
-			if((idx->hash.flags & SMB_HASH_CRC16) && idx->hash.data.crc16 != fidx.hash.data.crc16)
+			if((f->file_idx.hash.flags & SMB_HASH_CRC32) && f->file_idx.hash.data.crc32 != fidx.hash.data.crc32)
 				continue;
-			if((idx->hash.flags & SMB_HASH_CRC32) && idx->hash.data.crc32 != fidx.hash.data.crc32)
+			if((f->file_idx.hash.flags & SMB_HASH_MD5)
+				&& memcmp(f->file_idx.hash.data.md5, fidx.hash.data.md5, sizeof(fidx.hash.data.md5)) !=0)
 				continue;
-			if((idx->hash.flags & SMB_HASH_MD5)
-				&& memcmp(idx->hash.data.md5, fidx.hash.data.md5, sizeof(idx->hash.data.md5)) !=0)
+			if((f->file_idx.hash.flags & SMB_HASH_SHA1)
+				&& memcmp(f->file_idx.hash.data.sha1, fidx.hash.data.sha1, sizeof(fidx.hash.data.sha1)) !=0)
 				continue;
-			if((idx->hash.flags & SMB_HASH_SHA1)
-				&& memcmp(idx->hash.data.sha1, fidx.hash.data.sha1, sizeof(idx->hash.data.sha1)) !=0)
-				continue;
-			*idx = fidx;
+			f->file_idx = fidx;
 			return SMB_SUCCESS;
 		}
 	}
@@ -234,7 +242,7 @@ int smb_loadfile(smb_t* smb, const char* filename, smbfile_t* file, enum file_de
 
 	memset(file, 0, sizeof(*file));
 
-	if((result = smb_findfile(smb, filename, &file->file_idx)) != SMB_SUCCESS)
+	if((result = smb_findfile(smb, filename, file)) != SMB_SUCCESS)
 		return result;
 
 	return smb_getfile(smb, file, detail);

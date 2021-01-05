@@ -1419,6 +1419,25 @@ void* smb_get_hfield(smbmsg_t* msg, uint16_t type, hfield_t** hfield)
 }
 
 /****************************************************************************/
+/* Add or replace a specific header field (by type)							*/
+/****************************************************************************/
+int smb_new_hfield(smbmsg_t* msg, uint16_t type, size_t length, void* data)
+{
+	if(smb_get_hfield(msg, type, NULL))
+		return smb_hfield_replace(msg, type, length, data);
+	else
+		return smb_hfield_add(msg, type, length, data, /* insert */FALSE);
+}
+
+/****************************************************************************/
+/* Add or replace a specific string header field (by type)					*/
+/****************************************************************************/
+int smb_new_hfield_str(smbmsg_t* msg, uint16_t type, const char* str)
+{
+	return smb_new_hfield(msg, type, str == NULL ? 0 : strlen(str), (void*)str);
+}
+
+/****************************************************************************/
 /* Adds a data field to the 'msg' structure (in memory only)                */
 /* Automatically figures out the offset into the data buffer from existing	*/
 /* dfield lengths															*/
@@ -1680,8 +1699,10 @@ int smb_init_idx(smb_t* smb, smbmsg_t* msg)
 		msg->idx.remsg = msg->hdr.thread_back;
 	} else if(msg->hdr.type == SMB_MSG_TYPE_FILE) {
 		strncpy(msg->file_idx.name, msg->name, sizeof(msg->file_idx.name) - 1);
-		msg->idx.altpath = msg->hdr.altpath;
-		msg->idx.size = msg->size;
+		if(msg->hdr.altpath > 0)
+			msg->idx.altpath = msg->hdr.altpath;
+		if(msg->size > 0)
+			msg->idx.size = msg->size;
 	} else {
 		msg->idx.subj = smb_subject_crc(msg->subj);
 		if(smb->status.attr & SMB_EMAIL) {

@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 						continue;
 					if(access(fname, R_OK|W_OK))
 						continue;
-					if(!smb_findfile(&smb, getfname(fname), /* idx: */NULL)) {
+					if(!smb_findfile(&smb, getfname(fname), /* file: */NULL)) {
 						printf("Not in database: %s\n", fname);
 						if(!(misc&REPORT))
 							delfile(fname);

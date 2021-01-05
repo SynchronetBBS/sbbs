@@ -67,6 +67,7 @@
 #define SMB_ERR_FILE_LEN	-206		/* File length invalid */
 #define SMB_ERR_DELETE		-207		/* File deletion error */
 #define SMB_ERR_UNLOCK		-208		/* File unlock error */
+#define SMB_ERR_RENAME		-209		/* File rename error */
 #define SMB_ERR_MEM			-300		/* Memory allocation error */
 
 #define SMB_DUPE_MSG		1			/* Duplicate message detected by smb_addcrc() */
@@ -129,11 +130,11 @@ SMBEXPORT int 		smb_getmsghdr(smb_t*, smbmsg_t*);
 SMBEXPORT int 		smb_unlockmsghdr(smb_t*, smbmsg_t*);
 SMBEXPORT int 		smb_addcrc(smb_t*, uint32_t crc);
 
-SMBEXPORT int 		smb_hfield_add(smbmsg_t*, uint16_t type, size_t length, void* data, BOOL insert);
+SMBEXPORT int 		smb_hfield_add(smbmsg_t*, uint16_t type, size_t, void* data, BOOL insert);
 SMBEXPORT int		smb_hfield_add_str(smbmsg_t*, uint16_t type, const char* str, BOOL insert);
-SMBEXPORT int		smb_hfield_replace(smbmsg_t*, uint16_t type, size_t length, void* data);
+SMBEXPORT int		smb_hfield_replace(smbmsg_t*, uint16_t type, size_t, void* data);
 SMBEXPORT int		smb_hfield_replace_str(smbmsg_t*, uint16_t type, const char* str);
-SMBEXPORT int		smb_hfield_append(smbmsg_t*, uint16_t type, size_t length, void* data);
+SMBEXPORT int		smb_hfield_append(smbmsg_t*, uint16_t type, size_t, void* data);
 SMBEXPORT int		smb_hfield_append_str(smbmsg_t*, uint16_t type, const char* data);
 SMBEXPORT int		smb_hfield_add_list(smbmsg_t*, hfield_t** hfield_list, void** hfield_dat, BOOL insert);
 SMBEXPORT int		smb_hfield_add_netaddr(smbmsg_t*, uint16_t type, const char* str, uint16_t* nettype, BOOL insert);
@@ -147,6 +148,8 @@ SMBEXPORT int		smb_hfield_string(smbmsg_t*, uint16_t type, const char*);
 
 SMBEXPORT int 		smb_dfield(smbmsg_t*, uint16_t type, ulong length);
 SMBEXPORT void*		smb_get_hfield(smbmsg_t*, uint16_t type, hfield_t** hfield);
+SMBEXPORT int		smb_new_hfield(smbmsg_t*, uint16_t type, size_t, void* data);
+SMBEXPORT int		smb_new_hfield_str(smbmsg_t*, uint16_t type, const char*);
 SMBEXPORT int 		smb_addmsghdr(smb_t*, smbmsg_t*, int storage);
 SMBEXPORT int 		smb_putmsg(smb_t*, smbmsg_t*);
 SMBEXPORT int 		smb_putmsgidx(smb_t*, smbmsg_t*);
@@ -200,7 +203,7 @@ SMBEXPORT int		smb_findhash(smb_t*, hash_t** compare_list, hash_t* found
 										 ,long source_mask, BOOL mark);
 SMBEXPORT int		smb_hashmsg(smb_t*, smbmsg_t*, const uchar* text, BOOL update);
 SMBEXPORT hash_t*	smb_hash(ulong msgnum, uint32_t time, unsigned source
-								,unsigned flags, const void* data, size_t length);
+								,unsigned flags, const void* data, size_t);
 SMBEXPORT hash_t*	smb_hashstr(ulong msgnum, uint32_t time, unsigned source
 								,unsigned flags, const char* str);
 
@@ -214,9 +217,9 @@ SMBEXPORT int		smb_hashfile(const char* path, off_t, struct hash_data*);
 
 /* Fast look-up functions (using hashes) */
 SMBEXPORT int 		smb_getmsgidx_by_hash(smb_t*, smbmsg_t*, unsigned source
-								 ,unsigned flags, const void* data, size_t length);
+								 ,unsigned flags, const void* data, size_t);
 SMBEXPORT int 		smb_getmsghdr_by_hash(smb_t*, smbmsg_t*, unsigned source
-								 ,unsigned flags, const void* data, size_t length);
+								 ,unsigned flags, const void* data, size_t);
 
 /* 0-length specifies ASCIIZ data (length calculated automatically) */
 #define smb_getmsgidx_by_hashstr(smb, msg, source, flags, data) \
@@ -284,7 +287,7 @@ enum file_detail { file_detail_index, file_detail_normal, file_detail_extdesc };
 SMBEXPORT int		smb_addfile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* path);
 SMBEXPORT int		smb_renewfile(smb_t*, smbfile_t*, int storage, const char* path);
 SMBEXPORT int		smb_getfile(smb_t*, smbfile_t*, enum file_detail);
-SMBEXPORT int		smb_findfile(smb_t*, const char* filename, fileidxrec_t*);
+SMBEXPORT int		smb_findfile(smb_t*, const char* filename, smbfile_t*);
 SMBEXPORT int		smb_loadfile(smb_t*, const char* filename, smbfile_t*, enum file_detail);
 SMBEXPORT void		smb_freefilemem(smbfile_t*);
 SMBEXPORT int		smb_removefile(smb_t*, smbfile_t*);

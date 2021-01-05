@@ -126,13 +126,13 @@ js_dump_file(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	uintN argn = 0;
-	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filename, NULL);
+	if(argn < argc)	{
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
-		if(filename == NULL)
-			return JS_FALSE;
 		argn++;
 	}
+	if(filename == NULL)
+		return JS_FALSE;
 
 	smbfile_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
@@ -164,7 +164,7 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f, enum file_detail
 {
 	jsval		val;
 	JSString*	js_str;
-	const uintN flags = JSPROP_ENUMERATE | JSPROP_READONLY;
+	const uintN flags = JSPROP_ENUMERATE;
 
 	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if(scfg == NULL) {
@@ -271,13 +271,6 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 			return FALSE;
 		}
 	}
-	prop_name = "added";
-	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
-		if(!JS_ValueToECMAUint32(cx, val, &idx->idx.time)) {
-			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
-			return FALSE;
-		}
-	}
 	prop_name = "crc16";
 	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		idx->hash.data.crc16 = JSVAL_TO_INT(val);
@@ -326,7 +319,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_hfield_str(file, SMB_FILENAME, cp)) != SMB_SUCCESS) {
+		if((result = smb_new_hfield_str(file, SMB_FILENAME, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to message header", result, prop_name);
 			return result;
@@ -341,7 +334,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_hfield_str(file, SMB_FILEUPLOADER, cp)) != SMB_SUCCESS) {
+		if((result = smb_new_hfield_str(file, SMB_FILEUPLOADER, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to message header", result, prop_name);
 			return result;
@@ -356,7 +349,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_FAILURE;
 		}
-		if((result = smb_hfield_str(file, SMB_FILEDESC, cp)) != SMB_SUCCESS) {
+		if((result = smb_new_hfield_str(file, SMB_FILEDESC, cp)) != SMB_SUCCESS) {
 			free(cp);
 			JS_ReportError(cx, "Error %d adding '%s' property to message header", result, prop_name);
 			return result;
@@ -412,7 +405,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filename, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
 		if(filename == NULL)
 			return JS_FALSE;
@@ -430,7 +423,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	if((p->smb_result = smb_findfile(&p->smb, filename, &file.file_idx)) == SMB_SUCCESS
+	if((p->smb_result = smb_findfile(&p->smb, filename, &file)) == SMB_SUCCESS
 		&& (p->smb_result = smb_getfile(&p->smb, &file, detail)) == SMB_SUCCESS) {
 		JSObject* fobj;
 		if((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
@@ -475,7 +468,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filespec, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], filespec, NULL);
 		HANDLE_PENDING(cx, filespec);
 		if(filespec == NULL)
 			return JS_FALSE;
@@ -551,7 +544,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 
 	uintN argn = 0;
 	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filespec, NULL);
+		JSVALUE_TO_MSTRING(cx, argv[argn], filespec, NULL);
 		HANDLE_PENDING(cx, filespec);
 		if(filespec == NULL)
 			return JS_FALSE;
@@ -613,11 +606,9 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filename, NULL);
+	if(argn < argc)	{
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
-		if(filename == NULL)
-			return JS_FALSE;
 		argn++;
 	}
 	if(filename == NULL)
@@ -659,11 +650,9 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filename, NULL);
+	if(argn < argc)	{
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
-		if(filename == NULL)
-			return JS_FALSE;
 		argn++;
 	}
 	if(filename == NULL)
@@ -704,11 +693,9 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
-		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), filename, NULL);
+	if(argn < argc)	{
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
-		if(filename == NULL)
-			return JS_FALSE;
 		argn++;
 	}
 	if(filename == NULL)
@@ -754,13 +741,12 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return JS_TRUE;
 
-	for(uintN argn = 0; argn < argc; argn++) {
-		jsval arg = argv[argn];
-		if(JSVAL_IS_OBJECT(arg)) {
-			p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(arg), &file, &extdesc);
-			if(p->smb_result != SMB_SUCCESS)
-				return JS_TRUE;
-		}
+	uintN argn = 0;
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file, &extdesc);
+		if(p->smb_result != SMB_SUCCESS)
+			return JS_TRUE;
+		argn++;
 	}
 
 	if(file.name != NULL) {
@@ -785,6 +771,9 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		str = NULL;
 	smbfile_t	file;
+	bool		renfile = false;
+	char*		filename = NULL;
+	JSObject*	fileobj = NULL;
 	jsrefcount	rc;
 
 	ZERO_VAR(file);
@@ -802,23 +791,42 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return JS_TRUE;
 
-	for(uintN argn = 0; argn < argc; argn++) {
-		jsval arg = argv[argn];
-		if(JSVAL_IS_OBJECT(arg)) {
-			p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(arg), &file, NULL);
-			if(p->smb_result != SMB_SUCCESS)
-				return JS_TRUE;
-		}
+	uintN argn = 0;
+	if(argn < argc) {
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
+		HANDLE_PENDING(cx, filename);
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		fileobj = JSVAL_TO_OBJECT(argv[argn]);
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		renfile = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
 	}
 
-	if(file.name != NULL
-		&& (p->smb_result = smb_loadfile(&p->smb, file.name, &file, file_detail_normal)) == SMB_SUCCESS) {
-		rc=JS_SUSPENDREQUEST(cx);
-		p->smb_result = smb_putmsg(&p->smb, &file);
+	rc=JS_SUSPENDREQUEST(cx);
+	if(filename != NULL && fileobj != NULL
+		&& (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
+		p->smb_result = parse_file_properties(cx, fileobj, &file, NULL);
+		if(p->smb_result == SMB_SUCCESS) {
+			char orgfname[MAX_PATH + 1];
+			char newfname[MAX_PATH + 1];
+			getfilepath(scfg, &file, newfname);
+			SAFECOPY(orgfname, newfname);
+			*getfname(orgfname) = '\0';
+			SAFECAT(orgfname, filename);
+			if(strcmp(orgfname, newfname) != 0 && renfile && rename(orgfname, newfname) != 0)
+				p->smb_result = SMB_ERR_RENAME;
+			else
+				p->smb_result = smb_putmsg(&p->smb, &file);
+		}
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
-		JS_RESUMEREQUEST(cx, rc);
 	}
+	JS_RESUMEREQUEST(cx, rc);
 	smb_freefilemem(&file);
+	free(filename);
 
 	return JS_TRUE;
 }
@@ -846,13 +854,11 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return JS_TRUE;
 
-	for(uintN argn=0; argn < argc; argn++) {
-		if(JSVAL_IS_STRING(argv[argn]))	{
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), fname, NULL);
-			HANDLE_PENDING(cx, fname);
-			if(fname == NULL)
-				return JS_FALSE;
-		}
+	uintN argn = 0;
+	if(argn < argc) {
+		JSVALUE_TO_MSTRING(cx, argv[argn], fname, NULL);
+		HANDLE_PENDING(cx, fname);
+		argn++;
 	}
 	if(fname == NULL)
 		return JS_TRUE;
@@ -878,9 +884,16 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
 	char*		fname = NULL;
+	bool		delfile = false;
 	jsrefcount	rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if(scfg == NULL) {
+		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
+		return JS_FALSE;
+	}
 
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
 		return JS_FALSE;
@@ -888,13 +901,15 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(!SMB_IS_OPEN(&(p->smb)))
 		return JS_TRUE;
 
-	for(uintN argn=0; argn < argc; argn++) {
-		if(JSVAL_IS_STRING(argv[argn]))	{
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[argn]), fname, NULL);
-			HANDLE_PENDING(cx, fname);
-			if(fname == NULL)
-				return JS_FALSE;
-		}
+	uintN argn = 0;
+	if(argn < argc)	{
+		JSVALUE_TO_MSTRING(cx, argv[argn], fname, NULL);
+		HANDLE_PENDING(cx, fname);
+		argn++;
+	}
+	if(argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		delfile = JSVAL_TO_BOOLEAN(argv[argn]);
+		argn++;
 	}
 	if(fname == NULL)
 		return JS_TRUE;
@@ -902,7 +917,11 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	smbfile_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, fname, &file, file_detail_index)) == SMB_SUCCESS) {
-		p->smb_result = smb_removefile(&p->smb, &file);
+		char path[MAX_PATH + 1];
+		if(delfile && remove(getfilepath(scfg, &file, path)) != 0)
+			p->smb_result = SMB_ERR_DELETE;
+		else
+			p->smb_result = smb_removefile(&p->smb, &file);
 		smb_freefilemem(&file);
 	}
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
@@ -1092,7 +1111,7 @@ static char* filebase_prop_desc[] = {
 	,"last file number - <small>READ ONLY</small>"
 	,"timestamp of last file - <small>READ ONLY</small>"
 	,"total number of files - <small>READ ONLY</small>"
-	,"timestamp of directory"
+	,"timestamp of directory (only writable when file base is closed)"
 	,"maximum number of file CRCs to store (for dupe checking) - <small>READ ONLY</small>"
 	,"maximum number of files before expiration - <small>READ ONLY</small>"
 	,"maximum age (in days) of files to store - <small>READ ONLY</small>"
@@ -1114,58 +1133,58 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,JSDOCSTR("close file base (if open)")
 		,31900
 	},
-	{"get_file",		js_get_file,		0, JSTYPE_OBJECT
-		,JSDOCSTR("string filename | object [,detail=FileBase.DETAIL.NORM]")
+	{"get_file",		js_get_file,		2, JSTYPE_OBJECT
+		,JSDOCSTR("<filename-string | file-object> [,detail=FileBase.DETAIL.NORM]")
 		,JSDOCSTR("get a file object")
 		,31900
 	},
-	{"get_file_list",	js_get_file_list,	0, JSTYPE_ARRAY
-		,JSDOCSTR("[string filespec] [,detail=FileBase.DETAIL.NORM] [,since_time=0] [,sort=true]")
+	{"get_file_list",	js_get_file_list,	4, JSTYPE_ARRAY
+		,JSDOCSTR("[filespec-string] [,detail=FileBase.DETAIL.NORM] [,since_time=0] [,sort=true]")
 		,JSDOCSTR("get a list of file objects")
 		,31900
 	},
-	{"get_file_names",	js_get_file_names,	0, JSTYPE_ARRAY
-		,JSDOCSTR("[string filespec] [,since_time=0] [,sort=true]")
+	{"get_file_names",	js_get_file_names,	3, JSTYPE_ARRAY
+		,JSDOCSTR("[filespec-string] [,since-time=0] [,sort=true]")
 		,JSDOCSTR("get a list of file names")
 		,31900
 	},
 	{"get_file_path",	js_get_file_path,	1, JSTYPE_STRING
-		,JSDOCSTR("string filename")
+		,JSDOCSTR("filename-string")
 		,JSDOCSTR("get the full path to the local file")
 		,31900
 	},
 	{"get_file_size",	js_get_file_size,	1, JSTYPE_NUMBER
-		,JSDOCSTR("string filename")
+		,JSDOCSTR("filename-string")
 		,JSDOCSTR("get the size of the local file, in bytes")
 		,31900
 	},
 	{"get_file_time",	js_get_file_time,	1, JSTYPE_NUMBER
-		,JSDOCSTR("string filename")
+		,JSDOCSTR("filename-string")
 		,JSDOCSTR("get the modification date/time stamp of the local file")
 		,31900
 	},
 	{"add_file",		js_add_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("object")
+		,JSDOCSTR("file-object")
 		,JSDOCSTR("add a file to the file base")
 		,31900
 	},
-	{"update_file",		js_update_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("object")
+	{"remove_file",		js_remove_file,		2, JSTYPE_BOOLEAN
+		,JSDOCSTR("filename-string [,delete=false]")
+		,JSDOCSTR("remove an existing file from the file base and optionally delete file")
+		,31900
+	},
+	{"update_file",		js_update_file,		3, JSTYPE_BOOLEAN
+		,JSDOCSTR("filename-string, file-object [,rename=false]")
 		,JSDOCSTR("update an existing file in the file base")
 		,31900
 	},
 	{"renew_file",		js_renew_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("string filename")
+		,JSDOCSTR("filename-string")
 		,JSDOCSTR("remove and re-add (as new) an existing file in the file base")
 		,31900
 	},
-	{"remove_file",		js_remove_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("string filename")
-		,JSDOCSTR("remove an existing file from the file base")
-		,31900
-	},
 	{"dump_file",		js_dump_file,		1, JSTYPE_ARRAY
-		,JSDOCSTR("string filename")
+		,JSDOCSTR("filename-string")
 		,JSDOCSTR("dump file metadata to an array of strings for diagnostic uses")
 		,31900
 	},
@@ -1182,7 +1201,7 @@ static JSBool js_filebase_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 		JS_IdToValue(cx, id, &idval);
 		if(JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			JSVALUE_TO_MSTRING(cx, idval, name, NULL);
 			HANDLE_PENDING(cx, name);
 		}
 	}
@@ -1218,7 +1237,6 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *		obj;
 	jsval *			argv=JS_ARGV(cx, arglist);
-	JSString*		js_str;
 	char*			base = NULL;
 	private_t*		p;
 	scfg_t*			scfg;
@@ -1235,8 +1253,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	memset(p,0,sizeof(private_t));
 	p->smb.retry_time=scfg->smb_retry_time;
 
-	js_str = JS_ValueToString(cx, argv[0]);
-	JSSTRING_TO_MSTRING(cx, js_str, base, NULL);
+	JSSTRING_TO_MSTRING(cx, JS_ValueToString(cx, argv[0]), base, NULL);
 	if(JS_IsExceptionPending(cx)) {
 		if(base != NULL)
 			free(base);
