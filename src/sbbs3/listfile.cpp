@@ -407,23 +407,24 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 	attr(cfg.color[clr_filedesc]);
 
 	if(ext == NULL) {
-		if(search[0]) { /* high-light string in string */
-			ptr = strcasestr(f->desc, search);
+		char* fdesc = f->desc;
+		SKIP_WHITESPACE(fdesc);
+		if(fdesc == NULL || *fdesc == '\0')
+			bputs(f->name);
+		else if(search[0]) { /* high-light string in string */
+			ptr = strcasestr(fdesc, search);
 			if(ptr != NULL) {
 				i=strlen(search);
-				j=ptr - f->desc;
-				bprintf("%.*s",j,f->desc);
+				j=ptr - fdesc;
+				bprintf("%.*s",j,fdesc);
 				attr(cfg.color[clr_filedesc]^HIGH);
-				bprintf("%.*s",i,f->desc+j);
+				bprintf("%.*s",i,fdesc+j);
 				attr(cfg.color[clr_filedesc]);
-				bprintf("%.*s",(int)strlen(f->desc)-(j+i),f->desc+j+i);
+				bprintf("%.*s",(int)strlen(fdesc)-(j+i),fdesc+j+i);
 			}
 		}
 		else {
-			if(f->desc == NULL || *f->desc == '\0')
-				bputs(f->name);
-			else
-				bputs(f->desc);
+			bputs(fdesc);
 		}
 		CRLF; 
 	} else {
