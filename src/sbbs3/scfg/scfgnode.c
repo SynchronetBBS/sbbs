@@ -101,7 +101,16 @@ void node_menu()
 			SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 			i=cfg.sys_nodes+1;
 			load_node_cfg(&cfg,error);
-			sprintf(str,"../node%d/",i);
+			if(i == 1) {
+				SAFEPRINTF(str,"../node%d/",i);
+			} else {
+				char* p;
+				SAFECOPY(str, cfg.node_path[0]);
+				if((p = strchr(str, '1')) != NULL)
+					sprintf(p, "%d/", i);
+				else
+					SAFEPRINTF(str,"../node%d/",i);
+			}
 			sprintf(tmp,"Node %d Directory",i);
 			uifc.helpbuf=node_path_help;
 			j=uifc.input(WIN_MID,0,0,tmp,str,50,K_EDIT);
