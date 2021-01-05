@@ -721,7 +721,6 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
-	char*		str = NULL;
 	char*		extdesc = NULL;
 	smbfile_t	file;
 	jsrefcount	rc;
@@ -769,7 +768,6 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
 	jsval*		argv = JS_ARGV(cx, arglist);
 	private_t*	p;
-	char*		str = NULL;
 	smbfile_t	file;
 	bool		renfile = false;
 	char*		filename = NULL;
