@@ -407,7 +407,7 @@ bool sbbs_t::upload(uint dirnum)
 	char fdesc[LEN_FDESC + 1] = "";
 	bputs(text[EnterDescNow]);
 	i=LEN_FDESC-(strlen(descbeg)+strlen(descend));
-	getstr(upload_lastdesc,i,K_LINE|K_EDIT|K_AUTODEL);
+	getstr(upload_lastdesc,i,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 	if(sys_status&SS_ABORT)
 		return(false);
 	if(descend[0])      /* end of desc specified, so pad desc with spaces */
