@@ -1276,7 +1276,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	mnemonics(str);
 
 	SAFECOPY(str,lastnodemsguser);
-	getstr(str,LEN_ALIAS,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
+	getstr(str,LEN_ALIAS,K_LINE|K_EDIT|K_AUTODEL);
 	if(sys_status&SS_ABORT) {
 		sys_status&= ~SS_ABORT;
 		return(0);
