@@ -315,7 +315,7 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 
 	subscan_t*	scan = p->subscan;
 	if(scan == NULL)
-		return JS_FALSE;
+		return JS_TRUE;
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
