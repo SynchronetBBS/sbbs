@@ -49,6 +49,7 @@
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
+<?xjs if (!settings.darkmode_off) { ?>	            
 				<li class="nav-item dark-switch">
 					<div class="form-group">
 						<div class="checkbox checbox-switch darkswitchbox">
@@ -59,6 +60,7 @@
               			</div>
               		</div>
             	</li>
+<?xjs } ?>            	
             	<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
                     <?xjs if (settings.user_registration) { ?>
                         <li>
