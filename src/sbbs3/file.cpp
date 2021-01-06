@@ -50,8 +50,11 @@ void sbbs_t::fileinfo(smbfile_t* f)
 
 	bprintf(text[FiCredits]
 		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac((ulong)f->cost,tmp));
-	bprintf(text[FiDescription],f->desc);
-	bprintf(text[FiUploadedBy],f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from);
+	if(f->desc && f->desc[0])
+		bprintf(text[FiDescription],f->desc);
+	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
+	if(p != NULL && *p != '\0')
+		bprintf(text[FiUploadedBy], p);
 	bprintf(text[FiDateUled],timestr(f->hdr.when_imported.time));
 	if(getfiletime(&cfg, f) > 0)
 		bprintf(text[FiFileDate],timestr(f->time));
