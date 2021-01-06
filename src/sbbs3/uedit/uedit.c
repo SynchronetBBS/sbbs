@@ -553,7 +553,7 @@ int edit_xedit(scfg_t *cfg, user_t *user)
 				if(j > 0)
 				    putuserrec(cfg,user->number,U_XEDIT,8,cfg->xedit[j-1]->code);
 				else
-				    putuserrec(cfg,user->number,U_XEDIT,8,nulstr);
+				    putuserrec(cfg,user->number,U_XEDIT,8,"");
 			}
 			break;
 	}
@@ -1647,7 +1647,7 @@ int edit_user(scfg_t *cfg, int usernum)
 				user.misc ^= DELETED;
 				putuserrec(cfg,user.number,U_MISC,8,ultoa(user.misc,str,16));
 				if(user.misc & DELETED)
-					putusername(cfg,user.number,nulstr);
+					putusername(cfg,user.number,"");
 				else
 					putusername(cfg,user.number,user.alias);
 				break;

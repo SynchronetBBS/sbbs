@@ -184,6 +184,7 @@ SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)rechocfg$(OFILE) \
 			$(OBJODIR)$(DIRSEP)msg_id$(OFILE) \
@@ -222,7 +223,8 @@ FILELIST_OBJS = \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)str_util$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
-			$(OBJODIR)$(DIRSEP)filedat$(OFILE)
+			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE)
 
 MAKEUSER_OBJS = \
 			$(OBJODIR)$(DIRSEP)makeuser$(OFILE) \
@@ -317,6 +319,7 @@ DELFILES_OBJS = \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)nopen$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE)
 
 DUPEFIND_OBJS = \
@@ -355,6 +358,7 @@ FMSGDUMP_OBJS = 	$(OBJODIR)$(DIRSEP)fmsgdump$(OFILE)
 
 UPGRADE_TO_V319_OBJS =	$(OBJODIR)$(DIRSEP)upgrade_to_v319$(OFILE) \
 			$(OBJODIR)$(DIRSEP)filedat$(OFILE) \
+			$(OBJODIR)$(DIRSEP)userdat$(OFILE) \
 			$(OBJODIR)$(DIRSEP)dat_rec$(OFILE) \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
 			$(OBJODIR)$(DIRSEP)scfglib1$(OFILE) \
