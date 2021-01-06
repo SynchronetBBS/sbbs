@@ -105,6 +105,10 @@ static	link_list_t current_connections;
 int	thread_suid_broken=TRUE;			/* NPTL is no longer broken */
 #endif
 
+/* convenient space-saving global variables */
+extern "C" const char* crlf="\r\n";
+extern "C" const char* nulstr="";
+
 #define GCES(status, node, sess, action) do {                          \
 	char *GCES_estr;                                                    \
 	int GCES_level;                                                      \

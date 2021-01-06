@@ -929,16 +929,13 @@ static void send_thread(void* arg)
 
 static void receive_thread(void* arg)
 {
-	char*		p;
 	char		str[128];
 	char		buf[8192];
-	char		ext[1024] = "";
-	char		desc[1024] = "";
-	char		cmd[MAX_PATH*2];
+	char		ext[513];
+	char		desc[513];
 	char		tmp[MAX_PATH+1];
 	int			i;
 	int			rd;
-	int			file;
 	off_t		total=0;
 	off_t		last_total=0;
 	ulong		dur;
@@ -1145,50 +1142,25 @@ static void receive_thread(void* arg)
 			SAFECOPY(xfer.user->curdir, scfg.dir[f.dir]->code);
 
 			/* FILE_ID.DIZ support */
-			p = getfext(xfer.filename);
-			if(p!=NULL && scfg.dir[f.dir]->misc&DIR_DIZ) {
-				for(i=0;i<scfg.total_fextrs;i++)
-					if(!stricmp(scfg.fextr[i]->ext,p+1) 
-						&& chk_ar(&scfg,scfg.fextr[i]->ar,xfer.user,xfer.client))
-						break;
-				if(i<scfg.total_fextrs) {
-					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-					if(fexistcase(tmp))
-						ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
-					cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd, xfer.filename, "FILE_ID.DIZ",cmd);
-					lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ: %s",xfer.ctrl_sock, xfer.user->alias,cmd);
-					system(cmd);
-					if(!fexistcase(tmp)) {
-						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
-						if(fexistcase(tmp))
-							ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
-						cmdstr(&scfg,xfer.user,scfg.fextr[i]->cmd, xfer.filename, "DESC.SDI",cmd);
-						lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ: %s",xfer.ctrl_sock, xfer.user->alias,cmd);
-						system(cmd); 
-						fexistcase(tmp);	/* fixes filename case */
-					}
-					if((file=nopen(tmp,O_RDONLY))!=-1) {
-						lprintf(LOG_DEBUG,"%04d <%s> DATA Parsing DIZ: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
-						memset(ext,0,sizeof(ext));
-						read(file,ext,sizeof(ext)-1);
-						for(i=sizeof(ext)-1;i;i--)	/* trim trailing spaces */
-							if(ext[i-1]>' ')
+			if(scfg.dir[f.dir]->misc&DIR_DIZ) {
+				lprintf(LOG_DEBUG,"%04d <%s> DATA Extracting DIZ from: %s",xfer.ctrl_sock, xfer.user->alias,xfer.filename);
+				if(extract_diz(&scfg, &f, /* diz_fnames */NULL, tmp, sizeof(tmp))) {
+					lprintf(LOG_DEBUG,"%04d <%s> DATA Parsing DIZ: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
+					str_list_t lines = read_diz(tmp, /* max_line_len: */80);
+					format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
+					strListFree(&lines);
+					if(!fdesc[0]) {			/* use for normal description */
+						SAFECOPY(desc,ext);
+						strip_exascii(desc, desc);	/* strip extended ASCII chars */
+						prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
+						for(i=0;desc[i];i++)	/* find appropriate first char */
+							if(IS_ALPHANUMERIC(desc[i]))
 								break;
-						ext[i]=0;
-						if(!fdesc[0]) {			/* use for normal description */
-							SAFECOPY(desc,ext);
-							strip_exascii(desc, desc);	/* strip extended ASCII chars */
-							prep_file_desc(desc, desc);	/* strip control chars and dupe chars */
-							for(i=0;desc[i];i++)	/* find appropriate first char */
-								if(IS_ALPHANUMERIC(desc[i]))
-									break;
-							SAFECOPY(fdesc,desc+i); 
-						}
-						close(file);
-						ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
-					} else
-						lprintf(LOG_DEBUG,"%04d <%s> DATA DIZ Does not exist: %s",xfer.ctrl_sock, xfer.user->alias,tmp);
-				} 
+						SAFECOPY(fdesc,desc+i);
+					}
+					ftp_remove(xfer.ctrl_sock, __LINE__, tmp, xfer.user->alias);
+				} else
+					lprintf(LOG_DEBUG,"%04d <%s> DATA DIZ does not exist in: %s",xfer.ctrl_sock, xfer.user->alias ,xfer.filename);
 			} /* FILE_ID.DIZ support */
 
 			smb_hfield_str(&f, SMB_FILEDESC, fdesc);

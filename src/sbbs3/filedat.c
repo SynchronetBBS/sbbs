@@ -29,19 +29,17 @@
 #include "load_cfg.h"	// smb_open_dir()
 #include "scfglib.h"
 
-#include <stdbool.h>
-
+ /****************************************************************************/
 /****************************************************************************/
-/****************************************************************************/
-BOOL findfile(scfg_t* cfg, uint dirnum, const char *filename)
+bool findfile(scfg_t* cfg, uint dirnum, const char *filename)
 {
 	smb_t smb;
 
 	if(cfg == NULL || filename == NULL)
-		return FALSE;
+		return false;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
-		return FALSE;
+		return false;
 
 	int result = smb_findfile(&smb, filename, /* file: */NULL);
 	smb_close(&smb);
@@ -66,13 +64,13 @@ time_t dir_newfiletime(scfg_t* cfg, uint dirnum)
 }
 
 // This function may be called without opening the file base (for fast new-scans)
-BOOL newfiles(smb_t* smb, time_t t)
+bool newfiles(smb_t* smb, time_t t)
 {
 	return newfiletime(smb) > t;
 }
 
 // This function *must* be called with file base closed
-BOOL update_newfiletime(smb_t* smb, time_t t)
+bool update_newfiletime(smb_t* smb, time_t t)
 {
 	char path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%s.sid", smb->file);
@@ -128,17 +126,17 @@ void sortfilenames(str_list_t filelist, size_t count, enum file_sort order)
 }
 
 // Return an optionally-sorted dynamically-allocated string list of filenames added since date/time (t)
-str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, BOOL sort, size_t* count)
+str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, bool sort, size_t* count)
 {
-	size_t c;
+	size_t count_;
 
 	if(count == NULL)
-		count = &c;
+		count = &count_;
 
 	*count = 0;
 
 	long start = 0;	
-	if(t) {
+	if(t > 0) {
 		idxrec_t idx;
 		start = smb_getmsgidx_by_time(smb, &idx, t);
 		if(start < 0)
@@ -162,7 +160,7 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 		TERMINATE(fidx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(fidx.name, filespec, /* path: */FALSE))
+			if(!wildmatchi(fidx.name, filespec, /* path: */false))
 				continue;
 		}
 		file_list[*count] = strdup(fidx.name);
@@ -175,7 +173,7 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 }
 
 // Load and optionally-sort files from an open filebase into a dynamically-allocated list of "objects"
-smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, enum file_detail detail, BOOL sort, size_t* count)
+smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, enum file_detail detail, bool sort, size_t* count)
 {
 	*count = 0;
 
@@ -207,7 +205,7 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, en
 		TERMINATE(f->file_idx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(f->file_idx.name, filespec, /* path: */FALSE))
+			if(!wildmatchi(f->file_idx.name, filespec, /* path: */false))
 				continue;
 		}
 		int result = smb_getfile(smb, f, detail);
@@ -300,12 +298,12 @@ void freefiles(smbfile_t* filelist, size_t count)
 	free(filelist);
 }
 
-BOOL loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file, enum file_detail detail)
+bool loadfile(scfg_t* cfg, uint dirnum, const char* filename, smbfile_t* file, enum file_detail detail)
 {
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
-		return FALSE;
+		return false;
 
 	int result = smb_loadfile(&smb, filename, file, detail);
 	smb_close(&smb);
@@ -321,7 +319,7 @@ char* batch_list_name(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, char* f
 	return fname;
 }
 
-FILE* batch_list_open(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, BOOL create)
+FILE* batch_list_open(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, bool create)
 {
 	char path[MAX_PATH + 1];
 	return iniOpenFile(batch_list_name(cfg, usernumber, type, path, sizeof(path)), create);
@@ -329,7 +327,7 @@ FILE* batch_list_open(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, BOOL cr
 
 str_list_t batch_list_read(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
 	if(fp == NULL)
 		return NULL;
 	str_list_t ini = iniReadFile(fp);
@@ -337,17 +335,17 @@ str_list_t batch_list_read(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 	return ini;
 }
 
-BOOL batch_list_write(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, str_list_t list)
+bool batch_list_write(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, str_list_t list)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */TRUE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */true);
 	if(fp == NULL)
-		return FALSE;
-	BOOL result = iniWriteFile(fp, list);
+		return false;
+	bool result = iniWriteFile(fp, list);
 	iniCloseFile(fp);
 	return result;
 }
 
-BOOL batch_list_clear(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
+bool batch_list_clear(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
 	char path[MAX_PATH + 1];
 	return remove(batch_list_name(cfg, usernumber, type, path, sizeof(path))) == 0;
@@ -355,7 +353,7 @@ BOOL batch_list_clear(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 
 size_t batch_file_count(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
 	if(fp == NULL)
 		return 0;
 	size_t result = iniReadSectionCount(fp, /* prefix: */NULL);
@@ -363,36 +361,36 @@ size_t batch_file_count(scfg_t* cfg, uint usernumber, enum XFER_TYPE type)
 	return result;
 }
 
-BOOL batch_file_remove(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
+bool batch_file_remove(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	str_list_t ini = iniReadFile(fp);
-	BOOL result = iniRemoveSection(&ini, filename);
+	bool result = iniRemoveSection(&ini, filename);
 	iniWriteFile(fp, ini);
 	iniCloseFile(fp);
 	iniFreeStringList(ini);
 	return result;
 }
 
-BOOL batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
+bool batch_file_exists(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, const char* filename)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */FALSE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */false);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	str_list_t ini = iniReadFile(fp);
-	BOOL result = iniSectionExists(ini, filename);
+	bool result = iniSectionExists(ini, filename);
 	iniCloseFile(fp);
 	iniFreeStringList(ini);
 	return result;
 }
 
-BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t* f)
+bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t* f)
 {
-	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */TRUE);
+	FILE* fp = batch_list_open(cfg, usernumber, type, /* create: */true);
 	if(fp == NULL)
-		return FALSE;
+		return false;
 	fseek(fp, 0, SEEK_END);
 	fprintf(fp, "\n[%s]\n", f->name);
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
@@ -400,22 +398,22 @@ BOOL batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	fprintf(fp, "desc=%s\n", f->desc);
 	fprintf(fp, "altpath=%u\n", f->idx.altpath);
 	fclose(fp);
-	return TRUE;
+	return true;
 }
 
-BOOL batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
+bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
 {
 	char value[INI_MAX_VALUE_LEN + 1];
 
 	if(!iniSectionExists(ini, filename))
-		return FALSE;
+		return false;
 	f->dir = batch_file_dir(cfg, ini, filename);
 	if(f->dir < 0 || f->dir >= cfg->total_dirs)
-		return FALSE;
+		return false;
 	smb_hfield_str(f, SMB_FILENAME, filename);
 	smb_hfield_str(f, SMB_FILEDESC, iniGetString(ini, filename, "desc", NULL, value));
 	f->idx.altpath = f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
-	return TRUE;
+	return true;
 }
 
 int batch_file_dir(scfg_t* cfg, str_list_t ini, const char* filename)
@@ -424,34 +422,34 @@ int batch_file_dir(scfg_t* cfg, str_list_t ini, const char* filename)
 	return getdirnum(cfg, iniGetString(ini, filename, "dir", NULL, value));
 }
 
-BOOL batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
+bool batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t* f)
 {
 	if(!iniSectionExists(ini, filename))
-		return FALSE;
+		return false;
 	f->dir = batch_file_dir(cfg, ini, filename);
 	if(f->dir < 0)
-		return FALSE;
+		return false;
 	return loadfile(cfg, f->dir, filename, f, file_detail_normal);
 }
 
-BOOL updatefile(scfg_t* cfg, smbfile_t* file)
+bool updatefile(scfg_t* cfg, smbfile_t* file)
 {
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, file->dir) != SMB_SUCCESS)
-		return FALSE;
+		return false;
 
 	int result = smb_updatemsg(&smb, file) == SMB_SUCCESS;
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }
 
-BOOL removefile(scfg_t* cfg, uint dirnum, const char* filename)
+bool removefile(scfg_t* cfg, uint dirnum, const char* filename)
 {
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
-		return FALSE;
+		return false;
 
 	int result;
 	smbfile_t file;
@@ -512,13 +510,13 @@ ulong gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
 	return f->size / rate_cps;
 }
 
-BOOL addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)
+bool addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)
 {
 	char fpath[MAX_PATH + 1];
 	smb_t smb;
 
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
-		return FALSE;
+		return false;
 
 	getfilepath(cfg, f, fpath);
 	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, fpath);
@@ -527,7 +525,7 @@ BOOL addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)
 }
 
 /* 'size' does not include the NUL-terminator */
-char* format_filename(const char* fname, char* buf, size_t size, BOOL pad)
+char* format_filename(const char* fname, char* buf, size_t size, bool pad)
 {
 	size_t fnlen = strlen(fname);
 	char* ext = getfext(fname);
@@ -544,5 +542,268 @@ char* format_filename(const char* fname, char* buf, size_t size, BOOL pad)
 	} else	/* no extension */
 		snprintf(buf, size + 1, "%s", fname);
 	return buf;
+}
+
+bool extract_diz(scfg_t* cfg, smbfile_t* f, str_list_t diz_fname, char* path, size_t maxlen)
+{
+	int i;
+	char* fext = getfext(f->name);
+	char* default_diz_fnames[] = { "FILE_ID.DIZ", "DESC.SDI", NULL };
+
+	if(fext == NULL)
+		return false;
+
+	if(diz_fname == NULL)
+		diz_fname = default_diz_fnames;
+
+	for(i = 0; i < cfg->total_fextrs; i++)
+		if(stricmp(cfg->fextr[i]->ext, fext + 1) == 0 && chk_ar(cfg, cfg->fextr[i]->ar, /* user: */NULL, /* client: */NULL))
+			break;
+	if(i >= cfg->total_fextrs)
+		return false;
+
+	fextr_t* fextr = cfg->fextr[i];
+	char archive[MAX_PATH + 1];
+	char cmd[512];
+	getfilepath(cfg, f, archive);
+	if(!fexistcase(archive))
+		return false;
+	for(i = 0; diz_fname[i] != NULL; i++) {
+		safe_snprintf(path, maxlen, "%s%s", cfg->temp_dir, diz_fname[i]);
+		removecase(path);
+		if(fexistcase(path))	// failed to delete?
+			return false;
+		system(cmdstr(cfg, /* user: */NULL, fextr->cmd, archive, diz_fname[i], cmd, sizeof(cmd)));
+		if(fexistcase(path))
+			return true;
+	}
+	return false;
+}
+
+str_list_t read_diz(const char* path, size_t max_line_len)
+{
+	FILE* fp = fopen(path, "r");
+	if(fp == NULL)
+		return NULL;
+
+	str_list_t lines = strListReadFile(fp, NULL, max_line_len);
+	fclose(fp);
+	return lines;
+}
+
+char* format_diz(str_list_t lines, char* str, size_t maxlen, bool allow_ansi)
+{
+	strListTruncateTrailingWhitespaces(lines);
+	if(!allow_ansi) {
+		for(size_t i = 0; lines[i] != NULL; i++) {
+			strip_ansi(lines[i]);
+			strip_ctrl(lines[i], lines[i]);
+		}
+	}
+	return strListCombine(lines, str, maxlen, "\r\n");
+}
+
+// Take a verbose extended description (e.g. FILE_ID.DIZ)
+// and convert to suitable short description
+char* prep_file_desc(const char *src, char* dest)
+{
+	int out;
+
+	FIND_ALPHANUMERIC(src);
+	for(out = 0; *src != '\0' && out < LEN_FDESC; src++) {
+		if(IS_WHITESPACE(*src) && out && IS_WHITESPACE(dest[out - 1]))
+			continue;
+		if(!IS_ALPHANUMERIC(*src) && out && *src == dest[out - 1])
+			continue;
+		if(*src == '\n') {
+			if(out && !IS_WHITESPACE(dest[out - 1]))
+				dest[out++] = ' ';
+			continue;
+		}
+		if(IS_CONTROL(*src))
+			continue;
+		dest[out++] = *src;
+	}
+	dest[out] = '\0';
+	return dest;
+}
+
+static const char* quoted_string(const char* str, char* buf, size_t maxlen)
+{
+	if(strchr(str,' ')==NULL)
+		return(str);
+	safe_snprintf(buf,maxlen,"\"%s\"",str);
+	return(buf);
+}
+
+#define QUOTED_STRING(ch, str, buf, maxlen) \
+	((IS_ALPHA(ch) && IS_UPPERCASE(ch)) ? str : quoted_string(str,buf,maxlen))
+
+/****************************************************************************/
+/* Returns command line generated from instr with %c replacements           */
+/* This is the C-exported version of sbbs_t::cmdstr()						*/
+/****************************************************************************/
+char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
+						,const char* fspec, char* cmd, size_t maxlen)
+{
+	char	str[MAX_PATH+1];
+    int		i,j,len;
+
+	len=strlen(instr);
+	for(i=j=0; i < len && j < (int)maxlen; i++) {
+        if(instr[i]=='%') {
+            i++;
+            cmd[j]=0;
+			int avail = maxlen - j;
+			char ch=instr[i];
+			if(IS_ALPHA(ch))
+				ch=toupper(ch);
+            switch(ch) {
+                case 'A':   /* User alias */
+					if(user!=NULL)
+						strncat(cmd,QUOTED_STRING(instr[i],user->alias,str,sizeof(str)), avail);
+                    break;
+                case 'B':   /* Baud (DTE) Rate */
+                    break;
+                case 'C':   /* Connect Description */
+					if(user!=NULL)
+						strncat(cmd,user->modem, avail);
+                    break;
+                case 'D':   /* Connect (DCE) Rate */
+                    break;
+                case 'E':   /* Estimated Rate */
+                    break;
+                case 'F':   /* File path */
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
+                    break;
+                case 'G':   /* Temp directory */
+                    strncat(cmd,cfg->temp_dir, avail);
+                    break;
+                case 'H':   /* Port Handle or Hardware Flow Control */
+                    break;
+                case 'I':   /* IP address */
+					if(user!=NULL)
+						strncat(cmd,user->note, avail);
+                    break;
+                case 'J':
+                    strncat(cmd,cfg->data_dir, avail);
+                    break;
+                case 'K':
+                    strncat(cmd,cfg->ctrl_dir, avail);
+                    break;
+                case 'L':   /* Lines per message */
+					if(user!=NULL)
+						strncat(cmd,ultoa(cfg->level_linespermsg[user->level],str,10), avail);
+                    break;
+                case 'M':   /* Minutes (credits) for user */
+					if(user!=NULL)
+						strncat(cmd,ultoa(user->min,str,10), avail);
+                    break;
+                case 'N':   /* Node Directory (same as SBBSNODE environment var) */
+                    strncat(cmd,cfg->node_dir, avail);
+                    break;
+                case 'O':   /* SysOp */
+                    strncat(cmd,QUOTED_STRING(instr[i],cfg->sys_op,str,sizeof(str)), avail);
+                    break;
+                case 'P':   /* Client protocol */
+                    break;
+                case 'Q':   /* QWK ID */
+                    strncat(cmd,cfg->sys_id, avail);
+                    break;
+                case 'R':   /* Rows */
+					if(user!=NULL)
+						strncat(cmd,ultoa(user->rows,str,10), avail);
+                    break;
+                case 'S':   /* File Spec */
+                    strncat(cmd, fspec, avail);
+                    break;
+                case 'T':   /* Time left in seconds */
+                    break;
+                case 'U':   /* UART I/O Address (in hex) */
+                    strncat(cmd,ultoa(cfg->com_base,str,16), avail);
+                    break;
+                case 'V':   /* Synchronet Version */
+                    sprintf(str,"%s%c",VERSION,REVISION);
+					strncat(cmd,str, avail);
+                    break;
+                case 'W':   /* Columns/width */
+                    break;
+                case 'X':
+					if(user!=NULL)
+						strncat(cmd,cfg->shell[user->shell]->code, avail);
+                    break;
+                case '&':   /* Address of msr */
+                    break;
+                case 'Y':
+                    break;
+                case 'Z':
+                    strncat(cmd,cfg->text_dir, avail);
+                    break;
+				case '~':	/* DOS-compatible (8.3) filename */
+#ifdef _WIN32
+					char sfpath[MAX_PATH+1];
+					SAFECOPY(sfpath,fpath);
+					GetShortPathName(fpath,sfpath,sizeof(sfpath));
+					strncat(cmd,sfpath, avail);
+#else
+                    strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
+#endif
+					break;
+                case '!':   /* EXEC Directory */
+                    strncat(cmd,cfg->exec_dir, avail);
+                    break;
+                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+                    strncat(cmd,cfg->exec_dir, avail);
+#endif
+                    break;
+
+                case '#':   /* Node number (same as SBBSNNUM environment var) */
+                    sprintf(str,"%d",cfg->node_num);
+                    strncat(cmd,str, avail);
+                    break;
+                case '*':
+                    sprintf(str,"%03d",cfg->node_num);
+                    strncat(cmd,str, avail);
+                    break;
+                case '$':   /* Credits */
+					if(user!=NULL)
+						strncat(cmd,ultoa(user->cdt+user->freecdt,str,10), avail);
+                    break;
+                case '%':   /* %% for percent sign */
+                    strncat(cmd,"%", avail);
+                    break;
+				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
+#ifndef __unix__
+					strncat(cmd,".exe", avail);
+#endif
+					break;
+				case '?':	/* Platform */
+#ifdef __OS2__
+					strcpy(str,"OS2");
+#else
+					strcpy(str,PLATFORM_DESC);
+#endif
+					strlwr(str);
+					strncat(cmd,str, avail);
+					break;
+				case '^':	/* Architecture */
+					strncat(cmd, ARCHITECTURE_DESC, avail);
+					break;
+                default:    /* unknown specification */
+                    if(IS_DIGIT(instr[i]) && user!=NULL) {
+                        sprintf(str,"%0*d",instr[i]&0xf,user->number);
+                        strncat(cmd,str, avail);
+					}
+                    break;
+			}
+            j=strlen(cmd);
+		}
+        else
+            cmd[j++]=instr[i];
+	}
+    cmd[j]=0;
+
+    return(cmd);
 }
 

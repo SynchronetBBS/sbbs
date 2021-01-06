@@ -748,13 +748,29 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 
+	rc=JS_SUSPENDREQUEST(cx);
 	if(file.name != NULL) {
-		char path[MAX_PATH + 1];
-		rc=JS_SUSPENDREQUEST(cx);
-		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, getfilepath(scfg, &file, path));
+		if(extdesc == NULL		// no extended description provided
+			&& p->smb.dirnum < scfg->total_dirs
+			&& (scfg->dir[p->smb.dirnum]->misc & DIR_DIZ)) {
+			char diz_fpath[MAX_PATH + 1];
+			if(extract_diz(scfg, &file, /* diz_fnames: */NULL, diz_fpath, sizeof(diz_fpath))) {
+				char extbuf[513] = "";
+				str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
+				format_diz(lines, extbuf, sizeof(extbuf), /* allow_ansi: */false);
+				strListFree(&lines);
+				extdesc = strdup(extbuf);
+				remove(diz_fpath);
+				if(file.desc == NULL)
+					smb_new_hfield_str(&file, SMB_FILEDESC, prep_file_desc(extbuf, extbuf));
+			}
+		}
+		char fpath[MAX_PATH + 1];
+		getfilepath(scfg, &file, fpath);
+		p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, fpath);
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
-		JS_RESUMEREQUEST(cx, rc);
 	}
+	JS_RESUMEREQUEST(cx, rc);
 	smb_freefilemem(&file);
 	free(extdesc);
 
@@ -1147,17 +1163,17 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"get_file_path",	js_get_file_path,	1, JSTYPE_STRING
-		,JSDOCSTR("filename-string")
+		,JSDOCSTR("filename")
 		,JSDOCSTR("get the full path to the local file")
 		,31900
 	},
 	{"get_file_size",	js_get_file_size,	1, JSTYPE_NUMBER
-		,JSDOCSTR("filename-string")
+		,JSDOCSTR("filename")
 		,JSDOCSTR("get the size of the local file, in bytes")
 		,31900
 	},
 	{"get_file_time",	js_get_file_time,	1, JSTYPE_NUMBER
-		,JSDOCSTR("filename-string")
+		,JSDOCSTR("filename")
 		,JSDOCSTR("get the modification date/time stamp of the local file")
 		,31900
 	},
@@ -1167,7 +1183,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"remove_file",		js_remove_file,		2, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename-string [,delete=false]")
+		,JSDOCSTR("filename [,delete=false]")
 		,JSDOCSTR("remove an existing file from the file base and optionally delete file")
 		,31900
 	},
@@ -1177,12 +1193,12 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 		,31900
 	},
 	{"renew_file",		js_renew_file,		1, JSTYPE_BOOLEAN
-		,JSDOCSTR("filename-string")
+		,JSDOCSTR("filename")
 		,JSDOCSTR("remove and re-add (as new) an existing file in the file base")
 		,31900
 	},
 	{"dump_file",		js_dump_file,		1, JSTYPE_ARRAY
-		,JSDOCSTR("filename-string")
+		,JSDOCSTR("filename")
 		,JSDOCSTR("dump file metadata to an array of strings for diagnostic uses")
 		,31900
 	},

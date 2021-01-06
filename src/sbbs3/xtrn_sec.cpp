@@ -504,7 +504,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(p)
 			*(p++)=0;
 		else
-			p=nulstr;
+			p=(char*)nulstr;
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\nCOM%d\n%lu BAUD,N,8,1\n%u\n"
 			,cfg.sys_name						/* Name of BBS */
@@ -522,7 +522,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(p)
 			*(p++)=0;
 		else
-			p=nulstr;
+			p=(char*)nulstr;
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%d\n%u\n%lu\n"
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */

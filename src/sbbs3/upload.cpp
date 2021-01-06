@@ -27,7 +27,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 {
 	char	path[MAX_PATH+1];
 	char	str[MAX_PATH+1];
-	char	ext[1024] = "";
+	char	ext[513] = "";
 	char	tmp[MAX_PATH+1];
     uint	i;
     long	length;
@@ -125,44 +125,29 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	}
 
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
-		for(i=0;i<cfg.total_fextrs;i++)
-			if(!stricmp(cfg.fextr[i]->ext, fext) && chk_ar(cfg.fextr[i]->ar,&useron,&client))
-				break;
-		if(i<cfg.total_fextrs) {
-			SAFEPRINTF(str,"%sFILE_ID.DIZ",cfg.temp_dir);
-			if(fexistcase(str))
-				remove(str);
-			external(cmdstr(cfg.fextr[i]->cmd,path,"FILE_ID.DIZ",NULL),EX_OFFLINE);
-			if(!fexistcase(str)) {
-				SAFEPRINTF(str,"%sDESC.SDI",cfg.temp_dir);
-				if(fexistcase(str))
-					remove(str);
-				external(cmdstr(cfg.fextr[i]->cmd,path,"DESC.SDI",NULL),EX_OFFLINE); 
-				fexistcase(str);
-			}
-			int file;
-			if((file=nopen(str,O_RDONLY))!=-1) {
-				#define F_EXBSIZE 512	// temporary
-				memset(ext,0,F_EXBSIZE+1);
-				read(file,ext,F_EXBSIZE);
-				for(i=F_EXBSIZE;i;i--)
-					if(ext[i-1]>' ')
+		lprintf(LOG_DEBUG, "Extracting DIZ from: %s", path);
+		if(extract_diz(&cfg, f, /* diz_fnames: */NULL, str, sizeof(str))) {
+			lprintf(LOG_DEBUG, "Parsing DIZ: %s", str);
+
+			str_list_t lines = read_diz(str, /* max_line_len: */80);
+			format_diz(lines, ext, sizeof(ext), /* allow_ansi: */false);
+			strListFree(&lines);
+
+			if(f->desc == NULL || f->desc[0] == 0) {
+				char	desc[LEN_FDESC];
+				SAFECOPY(desc, (char*)ext);
+				strip_exascii(desc, desc);
+				prep_file_desc(desc, desc);
+				for(i=0;desc[i];i++)
+					if(IS_ALPHANUMERIC(desc[i]))
 						break;
-				ext[i]=0;
-				if(f->desc == NULL || f->desc[0] == 0) {
-					char	desc[LEN_FDESC];
-					SAFECOPY(desc, (char*)ext);
-					strip_exascii(desc, desc);
-					prep_file_desc(desc, desc);
-					for(i=0;desc[i];i++)
-						if(IS_ALPHANUMERIC(desc[i]))
-							break;
-					smb_hfield_str(f, SMB_FILEDESC, desc);
-				}
-				close(file);
-				remove(str);
-			} 
-		} 
+				if(desc[i] == '\0')
+					i = 0;
+				smb_hfield_str(f, SMB_FILEDESC, desc + i);
+			}
+			remove(str);
+		} else
+			lprintf(LOG_DEBUG, "DIZ does not exist in: %s", path);
 	}
 
 	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {

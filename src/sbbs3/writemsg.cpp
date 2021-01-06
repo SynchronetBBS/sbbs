@@ -1099,7 +1099,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				break;
 			}
 			else if(!stricmp(strin,"/T")) { /* Edit title/subject */
-				if(title[0]) {
+				if(title != nulstr) { // hack
 					bputs(text[SubjectPrompt]);
 					getstr(title,LEN_TITLE,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 					SYNC;
@@ -1271,7 +1271,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		buf[0]=0;
 		bputs(text[NewFile]); 
 	}
-	if(!msgeditor(buf,nulstr,nulstr)) {
+	if(!msgeditor(buf,nulstr,/* title: */(char*)nulstr)) {
 		free(buf);
 		return false; 
 	}

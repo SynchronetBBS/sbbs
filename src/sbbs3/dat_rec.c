@@ -27,7 +27,7 @@
 /* Places into 'strout' CR or ETX terminated string starting at             */
 /* 'start' and ending at 'start'+'length' or terminator from 'strin'        */
 /****************************************************************************/
-int DLLCALL getrec(const char *strin,int start,int length,char *strout)
+int getrec(const char *strin,int start,int length,char *strout)
 {
     int i=0,stop;
 
@@ -45,7 +45,7 @@ int DLLCALL getrec(const char *strin,int start,int length,char *strout)
 /* Places into 'strout', 'strin' starting at 'start' and ending at          */
 /* 'start'+'length'                                                         */
 /****************************************************************************/
-void DLLCALL putrec(char *strout,int start,int length,char *strin)
+void putrec(char *strout,int start,int length, const char *strin)
 {
     int i=0,j;
 

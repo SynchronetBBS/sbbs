@@ -135,34 +135,6 @@ char* strip_char(const char* str, char* dest, char ch)
 	return retval;
 }
 
-char* prep_file_desc(const char *str, char* dest)
-{
-	int	i,j;
-
-	if(dest==NULL && (dest=strdup(str))==NULL)
-		return NULL;
-	strip_ansi(dest);
-	for(i=j=0;str[i];i++)
-		if(str[i]==CTRL_A && str[i+1]!=0) {
-			i++;
-			if(str[i]==0 || str[i]=='Z')	/* EOF */
-				break;
-			/* convert non-destructive backspace to a destructive backspace */
-			if(str[i]=='<' && j)	
-				j--;
-		}
-		else if(j && str[i]<=' ' && dest[j-1]==' ')
-			continue;
-		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
-			continue;
-		else if((uchar)str[i]>=' ')
-			dest[j++]=str[i];
-		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			dest[j++]=' ';
-	dest[j]=0;
-	return dest;
-}
-
 /****************************************************************************/
 /* Pattern matching string search of 'insearchof' in 'string'.				*/
 /****************************************************************************/

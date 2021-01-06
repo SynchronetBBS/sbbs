@@ -100,7 +100,7 @@ extern char item;
 extern char **opt;
 extern char tmp[256];
 extern char error[256];
-extern char *nulstr;
+extern const char *nulstr;
 extern char *invalid_code,*num_flags;
 extern int	backup_level;
 extern BOOL new_install;

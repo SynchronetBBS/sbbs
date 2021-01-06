@@ -93,7 +93,7 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 /* Handles start and stop routines for transfer protocols                   */
 /****************************************************************************/
 int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
-					 ,char *fpath, char *fspec, bool cd, bool autohangup)
+					 ,const char *fpath, const char *fspec, bool cd, bool autohangup)
 {
 	char	protlog[256],*p;
 	char*	cmdline;

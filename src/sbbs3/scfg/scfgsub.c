@@ -1305,7 +1305,7 @@ void sub_cfg(uint grpnum)
 									"tagline in the `Networks` configuration, you should enter that tagline\n"
 									"here. If this option is left blank, the default tagline is used.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->tagline
+								uifc.input(WIN_MID|WIN_SAV,0,0,"",cfg.sub[i]->tagline
 									,sizeof(cfg.sub[i]->tagline)-1,K_MSG|K_EDIT);
 								break;
 							case 5:
@@ -1390,7 +1390,7 @@ void sub_cfg(uint grpnum)
 									"\n"
 									"If this option is blank, the default origin line is used.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,0,nulstr,cfg.sub[i]->origline
+								uifc.input(WIN_MID|WIN_SAV,0,0,"",cfg.sub[i]->origline
 									,sizeof(cfg.sub[i]->origline)-1,K_EDIT);
 								break;
 						} 

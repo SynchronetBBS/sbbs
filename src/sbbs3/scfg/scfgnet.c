@@ -193,7 +193,7 @@ void net_cfg()
 							"networked sub-boards. This default can be overridden on a per sub-board\n"
 							"basis with the sub-board configuration `Network Options...`.\n"
 						;
-						uifc.input(WIN_MID|WIN_SAV,0,0,nulstr
+						uifc.input(WIN_MID|WIN_SAV,0,0,""
 							,cfg.qnet_tagline,sizeof(cfg.qnet_tagline)-1,K_MSG|K_EDIT);
 						break;
 					case 0:

@@ -1509,7 +1509,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	len=strlen(p);
 	if(!len) {
-		sbbs->text[i]=nulstr;
+		sbbs->text[i]=(char*)nulstr;
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		free(p);
 	} else {
@@ -1611,7 +1611,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		else if(sbbs->text[i][0]==0) {
 			free(sbbs->text[i]);
-			sbbs->text[i]=nulstr;
+			sbbs->text[i]=(char*)nulstr;
 		}
 	}
 	if(i<TOTAL_TEXT)

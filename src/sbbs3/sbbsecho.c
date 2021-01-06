@@ -50,6 +50,7 @@
 #include "nopen.h"
 #include "crc32.h"
 #include "userdat.h"
+#include "filedat.h"
 #include "msg_id.h"
 #include "scfgsave.h"
 #include "getmail.h"
@@ -553,121 +554,6 @@ bool delfile(const char *filename, int line)
 		return false;
 	}
 	return true;
-}
-
-/*****************************************************************************/
-/* Returns command line generated from instr with %c replacments             */
-/*****************************************************************************/
-char *mycmdstr(scfg_t* cfg, const char *instr, const char *fpath, const char *fspec)
-{
-    static char cmd[MAX_PATH+1];
-    char str[256],str2[128];
-    int i,j,len;
-
-	len=strlen(instr);
-	for(i=j=0;i<len && j<128;i++) {
-		if(instr[i]=='%') {
-			i++;
-			cmd[j]=0;
-			switch(toupper(instr[i])) {
-				case 'F':   /* File path */
-					SAFECAT(cmd,fpath);
-					break;
-				case 'G':   /* Temp directory */
-					if(cfg->temp_dir[0]!='\\'
-						&& cfg->temp_dir[0]!='/'
-						&& cfg->temp_dir[1]!=':') {
-						SAFECOPY(str,cfg->node_dir);
-						SAFECAT(str,cfg->temp_dir);
-						if(FULLPATH(str2,str,40))
-							strcpy(str,str2);
-						backslash(str);
-						SAFECAT(cmd,str);}
-					else
-						SAFECAT(cmd,cfg->temp_dir);
-					break;
-				case 'J':
-					if(cfg->data_dir[0]!='\\'
-						&& cfg->data_dir[0]!='/'
-						&& cfg->data_dir[1]!=':') {
-						SAFECOPY(str,cfg->node_dir);
-						SAFECAT(str,cfg->data_dir);
-						if(FULLPATH(str2,str,40))
-							SAFECOPY(str,str2);
-						backslash(str);
-						SAFECAT(cmd,str);
-					}
-					else
-						SAFECAT(cmd,cfg->data_dir);
-					break;
-				case 'K':
-					if(cfg->ctrl_dir[0]!='\\'
-						&& cfg->ctrl_dir[0]!='/'
-						&& cfg->ctrl_dir[1]!=':') {
-						SAFECOPY(str,cfg->node_dir);
-						SAFECAT(str,cfg->ctrl_dir);
-						if(FULLPATH(str2,str,40))
-							SAFECOPY(str,str2);
-						backslash(str);
-						SAFECAT(cmd,str);
-					}
-					else
-						SAFECAT(cmd,cfg->ctrl_dir);
-					break;
-				case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-					SAFECAT(cmd,cfg->node_dir);
-					break;
-				case 'O':   /* SysOp */
-					SAFECAT(cmd,cfg->sys_op);
-					break;
-				case 'Q':   /* QWK ID */
-					SAFECAT(cmd,cfg->sys_id);
-					break;
-				case 'S':   /* File Spec */
-					SAFECAT(cmd,fspec);
-					break;
-				case '!':   /* EXEC Directory */
-					SAFECAT(cmd,cfg->exec_dir);
-					break;
-                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-                    SAFECAT(cmd,cfg->exec_dir);
-#endif
-                    break;
-				case '#':   /* Node number (same as SBBSNNUM environment var) */
-					sprintf(str,"%d",cfg->node_num);
-					SAFECAT(cmd,str);
-					break;
-				case '*':
-					sprintf(str,"%03d",cfg->node_num);
-					SAFECAT(cmd,str);
-					break;
-				case '%':   /* %% for percent sign */
-					SAFECAT(cmd,"%");
-					break;
-				case '.':	/* .exe for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-					SAFECAT(cmd,".exe");
-#endif
-					break;
-				case '?':	/* Platform */
-					SAFECOPY(str,PLATFORM_DESC);
-					strlwr(str);
-					SAFECAT(cmd,str);
-					break;
-				default:    /* unknown specification */
-					lprintf(LOG_ERR,"ERROR Checking Command Line '%s'",instr);
-					bail(1);
-					break;
-			}
-			j=strlen(cmd);
-		}
-		else
-			cmd[j++]=instr[i];
-}
-	cmd[j]=0;
-
-	return(cmd);
 }
 
 /****************************************************************************/
@@ -2364,7 +2250,7 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 int unpack(const char *infile, const char* outdir)
 {
 	FILE *stream;
-	char str[256],tmp[128];
+	char str[256],tmp[512];
 	int ch,file;
 	unsigned u,j;
 
@@ -2396,7 +2282,7 @@ int unpack(const char *infile, const char* outdir)
 		return(1);
 	}
 
-	return execute(mycmdstr(&scfg,cfg.arcdef[u].unpack,infile, outdir));
+	return execute(cmdstr(&scfg, /* user: */NULL, cfg.arcdef[u].unpack,infile, outdir, tmp, sizeof(tmp)));
 }
 
 /******************************************************************************
@@ -2408,6 +2294,7 @@ int pack(const char *srcfile, const char *destfile, fidoaddr_t dest)
 {
 	nodecfg_t*	nodecfg;
 	arcdef_t*	archive;
+	char tmp[512];
 
 	if(!cfg.arcdefs) {
 		lprintf(LOG_DEBUG, "ERROR: pack() called with no archive types configured!");
@@ -2420,7 +2307,7 @@ int pack(const char *srcfile, const char *destfile, fidoaddr_t dest)
 
 	lprintf(LOG_DEBUG,"Packing packet (%s) into bundle (%s) for %s using %s"
 		,srcfile, destfile, smb_faddrtoa(&dest, NULL), archive->name);
-	return execute(mycmdstr(&scfg, archive->pack, destfile, srcfile));
+	return execute(cmdstr(&scfg, /* user: */NULL, archive->pack, destfile, srcfile, tmp, sizeof(tmp)));
 }
 
 /* Reads a single FTS-1 stored message header from the specified file stream and terminates C-strings */
@@ -3254,6 +3141,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 {
 	uchar	ch,stail[MAX_TAILLEN+1],*sbody;
 	char	msg_id[256],str[128],*p;
+	char	cmd[512];
 	bool	done,cr;
 	int 	i;
 	ushort	xlat=XLAT_NONE,net;
@@ -3630,7 +3518,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	i=smb_addmsg(smbfile, &msg, smb_storage_mode(&scfg, smbfile), dupechk_hashes, xlat, sbody, stail);
 	if(i == SMB_SUCCESS) {
 		if(subnum != INVALID_SUB && scfg.sub[subnum]->post_sem[0])
-			ftouch(mycmdstr(&scfg, scfg.sub[subnum]->post_sem, "", ""));
+			ftouch(cmdstr(&scfg, /* user: */NULL, scfg.sub[subnum]->post_sem, "", "", cmd, sizeof(cmd)));
 	} else {
 		lprintf(LOG_ERR,"ERROR %d (%s) line %d adding message to %s"
 			,i, smbfile->last_error, __LINE__, subnum==INVALID_SUB ? "mail":scfg.sub[subnum]->code);

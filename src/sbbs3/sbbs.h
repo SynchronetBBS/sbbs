@@ -577,7 +577,7 @@ public:
 			/* Command Shell Methods */
 	int		exec(csi_t *csi);
 	int		exec_function(csi_t *csi);
-	int		exec_misc(csi_t *csi, char *path);
+	int		exec_misc(csi_t *csi, const char *path);
 	int		exec_net(csi_t *csi);
 	int		exec_msg(csi_t *csi);
 	int		exec_file(csi_t *csi);
@@ -946,7 +946,7 @@ public:
 	/* download.cpp */
 	void	downloadedfile(smbfile_t* f);
 	void	notdownloaded(ulong size, time_t start, time_t end);
-	int		protocol(prot_t* prot, enum XFER_TYPE, char *fpath, char *fspec, bool cd, bool autohangup=true);
+	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
 	void	seqwait(uint devnum);
 	void	autohangup(void);
@@ -971,7 +971,7 @@ public:
 	/* listfile.cpp */
 	bool	listfile(smbfile_t*, uint dirnum, const char *search, const char letter);
 	int		listfiles(uint dirnum, const char *filespec, int tofile, long mode);
-	int		listfileinfo(uint dirnum, char *filespec, long mode);
+	int		listfileinfo(uint dirnum, const char *filespec, long mode);
 	void	listfiletofile(smbfile_t*, uint dirnum, int file);
 	int		batchflagprompt(smb_t*, smbfile_t* bf[], ulong row[], uint total, long totalfiles);
 
@@ -987,7 +987,7 @@ public:
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
 	void	extract(uint dirnum);
-	char *	temp_cmd(void);					/* Returns temp file command line */
+	const char*	temp_cmd(void);					/* Returns temp file command line */
 	ulong	create_filelist(const char *name, long mode);
 
 	/* viewfile.cpp */
@@ -1011,7 +1011,7 @@ public:
 
 	/* logfile.cpp */
 	void	logentry(const char *code,const char *entry);
-	void	log(char *str);				/* Writes 'str' to node log */
+	void	log(const char *str);				/* Writes 'str' to node log */
 	void	logch(char ch, bool comma);	/* Writes 'ch' to node log */
 	void	logline(const char *code,const char *str); /* Writes 'str' on it's own line in log (LOG_INFO level) */
 	void	logline(int level, const char *code,const char *str);
@@ -1136,6 +1136,8 @@ extern "C" {
 	DLLEXPORT char*		DLLCALL ansi_attr(int attr, int curattr, char* str, BOOL color);
 
 	/* main.cpp */
+	extern const char* nulstr;
+	extern const char* crlf;
 	DLLEXPORT int		DLLCALL sbbs_random(int);
 	DLLEXPORT void		DLLCALL sbbs_srand(void);
 
@@ -1163,10 +1165,6 @@ extern "C" {
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
 		,char* error, size_t errlen);
-
-	/* xtrn.cpp */
-	DLLEXPORT char*		DLLCALL cmdstr(scfg_t* cfg, user_t* user, const char* instr
-									,const char* fpath, const char* fspec, char* cmd);
 
 	/* qwk.cpp */
 	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);

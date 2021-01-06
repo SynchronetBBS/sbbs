@@ -59,8 +59,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 	smbfile_t* file_list = loadfiles(&cfg, &smb
 		, (mode&(FL_FINDDESC|FL_EXFIND)) ? NULL : filespec
 		, (mode&FL_ULTIME) ? ns_time : 0
-		, file_detail_normal
-		, /* sort: */TRUE
+		, file_detail_extdesc
+		, /* sort: */true
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
 		smb_close(&smb);
@@ -723,7 +723,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, smbfile_t** bf, ulong* row, uint total
 /* action depending on 'mode.'                                              */
 /* Returns number of files matching filespec that were found                */
 /****************************************************************************/
-int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
+int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 {
 	char	str[258],path[258],dirpath[MAX_PATH + 1],done=0,ch;
 	char 	tmp[512];
@@ -747,7 +747,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 		, filespec
 		, /* time_t */0
 		, file_detail_extdesc
-		, /* sort: */TRUE
+		, /* sort: */true
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
 		smb_close(&smb);

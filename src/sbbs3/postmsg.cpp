@@ -1,7 +1,4 @@
 /* Synchronet user create/post public message routine */
-// vi: tabstop=4
-
-/* $Id: postmsg.cpp,v 1.135 2020/08/15 21:58:14 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -378,9 +363,9 @@ extern "C" void DLLCALL signal_sub_sem(scfg_t* cfg, uint subnum)
 
 	/* signal semaphore files */
 	if(cfg->sub[subnum]->misc&SUB_FIDO && cfg->echomail_sem[0])		
-		ftouch(cmdstr(cfg,NULL,cfg->echomail_sem,nulstr,nulstr,str));
+		ftouch(cmdstr(cfg,NULL,cfg->echomail_sem,nulstr,nulstr,str,sizeof(str)));
 	if(cfg->sub[subnum]->post_sem[0]) 
-		ftouch(cmdstr(cfg,NULL,cfg->sub[subnum]->post_sem,nulstr,nulstr,str));
+		ftouch(cmdstr(cfg,NULL,cfg->sub[subnum]->post_sem,nulstr,nulstr,str,sizeof(str)));
 }
 
 extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
@@ -507,8 +492,10 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, findsig(msgbuf)))==SMB_SUCCESS
 		&& msg->to!=NULL	/* no recipient means no header created at this stage */) {
 		if(smb->subnum == INVALID_SUB) {
-			if(msg->to_net.type == NET_FIDO && cfg->netmail_sem[0])
-				ftouch(cmdstr(cfg,NULL,cfg->netmail_sem,nulstr,nulstr,NULL));
+			if(msg->to_net.type == NET_FIDO && cfg->netmail_sem[0]) {
+				char tmp[MAX_PATH + 1];
+				ftouch(cmdstr(cfg,NULL,cfg->netmail_sem,nulstr,nulstr,tmp, sizeof(tmp)));
+			}
 		} else
 			signal_sub_sem(cfg,smb->subnum);
 

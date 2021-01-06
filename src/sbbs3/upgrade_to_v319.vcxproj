@@ -93,6 +93,7 @@
     <ClCompile Include="dat_rec.c" />
     <ClCompile Include="filedat.c" />
     <ClCompile Include="upgrade_to_v319.c" />
+    <ClCompile Include="userdat.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\smblib\smblib.vcxproj">

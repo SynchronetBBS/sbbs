@@ -33,9 +33,6 @@
 extern "C" {
 #endif
 
-extern char* crlf;
-extern char* nulstr;
-
 DLLEXPORT int	openuserdat(scfg_t*, BOOL for_modify);
 DLLEXPORT int	closeuserdat(int);
 DLLEXPORT int	readuserdat(scfg_t*, unsigned user_number, char* userdat, int infile);
@@ -47,7 +44,7 @@ DLLEXPORT int	newuserdat(scfg_t*, user_t*);	/* Create new userdat in user file *
 DLLEXPORT uint	matchuser(scfg_t*, const char *str, BOOL sysop_alias); /* Checks for a username match */
 DLLEXPORT BOOL	matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);
-DLLEXPORT int	putusername(scfg_t*, int number, char * name);
+DLLEXPORT int	putusername(scfg_t*, int number, const char* name);
 DLLEXPORT uint	total_users(scfg_t*);
 DLLEXPORT uint	lastuser(scfg_t*);
 DLLEXPORT BOOL	del_lastuser(scfg_t*);
@@ -110,6 +107,7 @@ DLLEXPORT BOOL	user_set_property(scfg_t*, unsigned user_number, const char* sect
 DLLEXPORT BOOL	user_set_time_property(scfg_t*, unsigned user_number, const char* section, const char* key, time_t);
 
 /* New-message-scan pointer functions: */
+DLLEXPORT BOOL	newmsgs(smb_t*, time_t);
 DLLEXPORT BOOL	getmsgptrs(scfg_t*, user_t*, subscan_t*, void (*progress)(void*, int, int), void* cbdata);
 DLLEXPORT BOOL	putmsgptrs(scfg_t*, user_t*, subscan_t*);
 DLLEXPORT BOOL	fixmsgptrs(scfg_t*, subscan_t*);

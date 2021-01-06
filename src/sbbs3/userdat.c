@@ -38,9 +38,8 @@
 #endif
 
 /* convenient space-saving global variables */
-char* crlf="\r\n";
-char* nulstr="";
-
+static const char* crlf="\r\n";
+static const char* nulstr="";
 static const char* strIpFilterExemptConfigFile = "ipfilter_exempt.cfg";
 
 #define VALID_CFG(cfg)	(cfg!=NULL && cfg->size==sizeof(scfg_t))
@@ -684,7 +683,7 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 /****************************************************************************/
 /* Puts 'name' into slot 'number' in user/name.dat							*/
 /****************************************************************************/
-int putusername(scfg_t* cfg, int number, char *name)
+int putusername(scfg_t* cfg, int number, const char *name)
 {
 	char str[256];
 	int file;
@@ -3121,7 +3120,7 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	char	exempt[MAX_PATH+1];
 	char	tstr[64];
     FILE*	fp;
-    time32_t now=time32(NULL);
+    time_t	now = time(NULL);
 
 	if(ip_addr==NULL)
 		return(FALSE);
@@ -3145,7 +3144,7 @@ BOOL filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
     fprintf(fp, "\n; %s %s ", prot, reason);
 	if(username != NULL)
 		fprintf(fp, "by %s ", username);
-    fprintf(fp,"on %s\n", timestr(cfg, now, tstr));
+    fprintf(fp,"on %.24s\n", ctime_r(&now, tstr));
 
 	if(host!=NULL)
 		fprintf(fp,"; Hostname: %s\n",host);
@@ -3546,6 +3545,14 @@ BOOL putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 	fclose(fp);
 
 	return result;
+}
+
+BOOL newmsgs(smb_t* smb, time_t t)
+{
+	char index_fname[MAX_PATH + 1];
+
+	SAFEPRINTF(index_fname, "%s.sid", smb->file);
+	return fdate(index_fname) >= t;
 }
 
 /****************************************************************************/

@@ -27,6 +27,9 @@
 #include "filedat.h"
 #include "load_cfg.h"
 #include "smblib.h"
+#include "git_branch.h"
+#include "git_hash.h"
+
 #include <stdbool.h>
 #include <stdarg.h>
 
@@ -75,103 +78,6 @@ int lprintf(int level, const char *fmat, ...)
 	return(chcount);
 }
 
-void prep_desc(char *str)
-{
-	char tmp[1024];
-	int i,j;
-
-	for(i=j=0;str[i] && j < sizeof(tmp)-1;i++) {
-		if(j && str[i]==' ' && tmp[j-1]==' ' && (mode&KEEP_SPACE))
-			tmp[j++]=str[i];
-		else if(j && str[i]<=' ' && str[i] > 0&& tmp[j-1]==' ')
-			continue;
-		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
-			continue;
-		else if(str[i]>=' ' || str[i]<0)
-			tmp[j++]=str[i];
-		else if(str[i]==TAB || (str[i]==CR && str[i+1]==LF))
-			tmp[j++]=' ';
-	}
-	tmp[j]=0;
-	strcpy(str,tmp);
-}
-
-/*****************************************************************************/
-/* Returns command line generated from instr with %c replacments             */
-/*****************************************************************************/
-char *mycmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr)
-{
-    static char cmd[MAX_PATH+1];
-    char str[MAX_PATH+1];
-    int i,j,len;
-#ifdef _WIN32
-	char sfpath[MAX_PATH+1];
-#endif
-
-	len=strlen(instr);
-	for(i=j=0;i<len && j<128;i++) {
-		if(instr[i]=='%') {
-			i++;
-			cmd[j]=0;
-			switch(toupper(instr[i])) {
-				case 'F':   /* File path */
-					SAFECAT(cmd,fpath);
-					break;
-				case '~':	/* DOS-compatible (8.3) filename */
-#ifdef _WIN32
-					SAFECOPY(sfpath,fpath);
-					GetShortPathName(fpath,sfpath,sizeof(sfpath));
-					SAFECAT(cmd,sfpath);
-#else
-                    SAFECAT(cmd,fpath);
-#endif
-					break;
-				case 'G':   /* Temp directory */
-					SAFECAT(cmd,scfg.temp_dir);
-					break;
-                case 'J':
-                    SAFECAT(cmd,scfg.data_dir);
-                    break;
-                case 'K':
-                    SAFECAT(cmd,scfg.ctrl_dir);
-                    break;
-				case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-					SAFECAT(cmd,scfg.node_dir);
-					break;
-				case 'S':   /* File Spec */
-					SAFECAT(cmd,fspec);
-					break;
-                case 'Z':
-                    SAFECAT(cmd,scfg.text_dir);
-                    break;
-				case '!':   /* EXEC Directory */
-					SAFECAT(cmd,scfg.exec_dir);
-					break;
-                case '@':   /* EXEC Directory for DOS/OS2/Win32, blank for Unix */
-#ifndef __unix__
-                    SAFECAT(cmd,scfg.exec_dir);
-#endif
-                    break;
-				case '#':   /* Node number (same as SBBSNNUM environment var) */
-					sprintf(str,"%d",scfg.node_num);
-					SAFECAT(cmd,str);
-					break;
-				case '%':   /* %% for percent sign */
-					SAFECAT(cmd,"%");
-					break;
-				default:    /* unknown specification */
-					break;
-			}
-			j=strlen(cmd);
-		}
-		else
-			cmd[j++]=instr[i];
-	}
-	cmd[j]=0;
-
-	return(cmd);
-}
-
 /****************************************************************************/
 /* Updates dstst.dab file													*/
 /****************************************************************************/
@@ -208,60 +114,30 @@ bool reupload(smb_t* smb, smbfile_t* f)
 	return true;
 }
 
-bool get_file_diz(smbfile_t* f, const char* filepath, char* ext)
+
+bool get_file_diz(smbfile_t* f, char* ext, size_t maxlen)
 {
-#if 0 // fix
-	int i,file;
-	char tmp[MAX_PATH+1];
-	char tmpext[513];
-
-	for(i=0;i<scfg.total_fextrs;i++)
-		if(!stricmp(scfg.fextr[i]->ext,f->name+9)
-			&& chk_ar(&scfg,scfg.fextr[i]->ar,/* user: */NULL, /* client: */NULL))
-			break;
-	// If we could not find an extractor which matches our requirements, use any
-	if(i >= scfg.total_fextrs) {
-		for(i=0;i<scfg.total_fextrs;i++)
-			if(!stricmp(scfg.fextr[i]->ext,f->name+9))
-				break;
-	}
-	if(i >= scfg.total_fextrs)
+	char path[MAX_PATH + 1];
+	printf("Extracting DIZ from: %s\n", getfilepath(&scfg, f, path));
+	char diz_fpath[MAX_PATH + 1];
+	if(!extract_diz(&scfg, f, /* diz_fnames */NULL, diz_fpath, sizeof(diz_fpath))) {
+		printf("DIZ does not exist in: %s\n", getfilepath(&scfg, f, path));
 		return false;
-
-	SAFEPRINTF(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-	removecase(tmp);
-	system(mycmdstr(scfg.fextr[i]->cmd,filepath,"FILE_ID.DIZ",NULL));
-	if(!fexistcase(tmp)) {
-		SAFEPRINTF(tmp,"%sDESC.SDI",scfg.temp_dir);
-		removecase(tmp);
-		system(mycmdstr(scfg.fextr[i]->cmd,filepath,"DESC.SDI",NULL));
-		fexistcase(tmp);
 	}
+	printf("Parsing DIZ: %s\n", diz_fpath);
+	str_list_t lines = read_diz(diz_fpath, /* max_line_len: */80);
+	format_diz(lines, ext, maxlen, /* allow_ansi: */false);
+	strListFree(&lines);
+	remove(diz_fpath);
 
-	if((file=nopen(tmp,O_RDONLY|O_BINARY)) == -1)
-		return false;
-
-	memset(ext,0,513);
-	read(file,ext,512);
-	for(i=512;i;i--)
-		if(ext[i-1]>' ' || ext[i-1]<0)
-			break;
-	ext[i]=0;
 	if(mode&ASCII_ONLY)
 		strip_exascii(ext, ext);
+
 	if(!(mode&KEEP_DESC)) {
-		sprintf(tmpext,"%.256s",ext);
-		prep_desc(tmpext);
-		for(i=0;tmpext[i];i++)
-			if(IS_ALPHA(tmpext[i]))
-				break;
-		sprintf(f->desc,"%.*s",LEN_FDESC,tmpext+i);
-		for(i=0;(f->desc[i]>=' ' || f->desc[i]<0) && i<LEN_FDESC;i++)
-			;
-		f->desc[i]=0; }
-	close(file);
-	f->misc|=FM_EXTDESC;
-#endif
+		char* fdesc = strdup(ext);
+		smb_new_hfield_str(f, SMB_FILEDESC, prep_file_desc(fdesc, fdesc));
+		free(fdesc);
+	}
 	return true;
 }
 
@@ -289,6 +165,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		fprintf(stderr, "!Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
 		return;
 	}
+	str_list_t fname_list = loadfilenames(&scfg, &smb, ALLFILES, /* time: */0, /* sort: */FALSE, /* count: */NULL);
 	if(mode&SEARCH_DIR) {
 		SAFECOPY(str,cur_altpath ? scfg.altpath[cur_altpath-1] : scfg.dir[dirnum]->path);
 		printf("Searching %s\n\n",str);
@@ -300,14 +177,19 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 				,dirent->d_name);
 			if(isdir(filepath))
 				continue;
+			const char* fname = getfname(filepath);
+			printf("%s  ", fname);
+			if(strListFind(fname_list, fname, /* case-sensitive: */FALSE) && (mode&NO_UPDATE)) {
+				printf("already added.\n");
+				continue;
+			}
 			memset(ext, 0, sizeof(ext));
 			memset(&f, 0, sizeof(f));
 			char fdesc[LEN_FDESC + 1] = {0};
 			uint32_t cdt = flength(filepath);
 			time_t file_timestamp = fdate(filepath);
-			const char* fname = getfname(filepath);
-			printf("%s  %10"PRIu32"  %s\n"
-				,fname, cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
+			printf("%10"PRIu32"  %s\n"
+				,cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
 			exist = smb_findfile(&smb, fname, &f) == SMB_SUCCESS;
 			if(exist) {
 				if(mode&NO_UPDATE)
@@ -342,12 +224,13 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 
 			char* ext_desc = NULL;
 			if(mode&FILE_ID) {
-				if(get_file_diz(&f, filepath, ext))
+				if(get_file_diz(&f, ext, sizeof(ext))) {
 					ext_desc = ext;
+				}
 			}
 
 			f.hdr.altpath=cur_altpath;
-			prep_desc(fdesc);
+			prep_file_desc(fdesc, fdesc);
 			if(mode&ASCII_ONLY)
 				strip_exascii(fdesc, fdesc);
 
@@ -374,6 +257,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		if(dir!=NULL)
 			closedir(dir);
 		smb_close(&smb);
+		strListFree(&fname_list);
 		return; 
 	}
 
@@ -390,6 +274,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			printf("Can't open: %s\n"
 				   "        or: %s\n",inpath,listpath);
 			smb_close(&smb);
+			strListFree(&fname_list);
 			return; 
 		} 
 	}
@@ -459,7 +344,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			SKIP_WHITESPACE(p);
 		}
 		SAFECOPY(tmp,p);
-		prep_desc(tmp);
+		prep_file_desc(tmp, tmp);
 		sprintf(fdesc + strlen(fdesc), "%.*s", (int)(LEN_FDESC-strlen(fdesc)), tmp);
 
 		char* ext_desc = NULL;
@@ -514,9 +399,9 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		if(sskip) l=atol(fname+sskip);
 
 		if(mode&FILE_ID)
-			get_file_diz(&f, filepath, ext);
+			get_file_diz(&f, ext, sizeof(ext));
 
-		prep_desc(fdesc);
+		prep_file_desc(fdesc, fdesc);
 		if(mode&ASCII_ONLY)
 			strip_exascii(fdesc, fdesc);
 		memset(&f, 0, sizeof(f));
@@ -547,6 +432,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 		remove(listpath);
 	}
 	smb_close(&smb);
+	strListFree(&fname_list);
 }
 
 void synclist(char *inpath, int dirnum)
@@ -652,26 +538,24 @@ char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 int main(int argc, char **argv)
 {
 	char error[512];
-	char revision[16];
 	char str[MAX_PATH+1];
 	char tmp[MAX_PATH+1];
 	char *p;
 	char exist,listgiven=0,namegiven=0,ext[513]
 		,auto_name[MAX_PATH+1]="FILES.BBS";
-	int i,j,file;
+	int i,j;
 	uint desc_offset=0, size_offset=0;
 	long l;
 	smb_t	smb;
 	smbfile_t	f;
 	uint dirnum = INVALID_DIR;
 
-	sscanf("$Revision: 1.54 $", "%*s %s", revision);
-
-	fprintf(stderr,"\nADDFILES v%s-%s (rev %s) - Adds Files to Synchronet "
+	fprintf(stderr,"\nADDFILES v%s-%s %s/%s - Adds Files to Synchronet "
 		"Filebase\n"
 		,ADDFILES_VER
 		,PLATFORM_DESC
-		,revision
+		,GIT_BRANCH
+		,GIT_HASH
 		);
 
 	if(argc<2) {
@@ -891,7 +775,7 @@ int main(int argc, char **argv)
 			}
 			memset(&f, 0, sizeof(f));
 			f.hdr.altpath=cur_altpath;
-			prep_desc(fdesc);
+			prep_file_desc(fdesc, fdesc);
 			if(mode&ASCII_ONLY)
 				strip_exascii(fdesc, fdesc);
 			smb_hfield_str(&f, SMB_FILENAME, fname);
@@ -901,35 +785,8 @@ int main(int argc, char **argv)
 
 			printf("%s %7"PRIu64" %s\n",fname, (int64_t)l, fdesc);
 			char* ext_desc = NULL;
-			const char* file_ext = getfext(fname);
-			if(mode&FILE_ID && file_ext != NULL) {
-				for(i=0;i<scfg.total_fextrs;i++)
-					if(!stricmp(scfg.fextr[i]->ext, file_ext + 1) && chk_ar(&scfg,scfg.fextr[i]->ar,/* user: */NULL, /* client: */NULL))
-						break;
-				if(i<scfg.total_fextrs) {
-					sprintf(tmp,"%sFILE_ID.DIZ",scfg.temp_dir);
-					removecase(tmp);
-					system(mycmdstr(scfg.fextr[i]->cmd,str,"FILE_ID.DIZ",NULL));
-					if(!fexistcase(tmp)) {
-						sprintf(tmp,"%sDESC.SDI",scfg.temp_dir);
-						removecase(tmp);
-						system(mycmdstr(scfg.fextr[i]->cmd,str,"DESC.SDI",NULL)); 
-						fexistcase(tmp);
-					}
-					if((file=nopen(tmp,O_RDONLY|O_BINARY))!=-1) {
-						memset(ext,0,513);
-						read(file,ext,512);
-						if(!(mode&KEEP_DESC)) {
-							sprintf(fdesc,"%.*s",LEN_FDESC,ext);
-							for(i=0;(fdesc[i]>=' ' || fdesc[i]<0) && i<LEN_FDESC;i++)
-								;
-							fdesc[i]=0; 
-						}
-						close(file);
-						ext_desc = ext;
-					} 
-				} 
-			}
+			if(get_file_diz(&f, ext, sizeof(ext)))
+				ext_desc = ext;
 			if(exist) {
 				if(!(mode&NO_NEWDATE))
 					reupload(&smb, &f);

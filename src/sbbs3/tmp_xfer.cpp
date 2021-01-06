@@ -476,7 +476,7 @@ ulong sbbs_t::create_filelist(const char *name, long mode)
 /* This function returns the command line for the temp file extension for	*/
 /* current user online. 													*/
 /****************************************************************************/
-char * sbbs_t::temp_cmd(void)
+const char* sbbs_t::temp_cmd(void)
 {
 	int i;
 
