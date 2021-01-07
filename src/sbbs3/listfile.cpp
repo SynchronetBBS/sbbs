@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "filedat.h"
 
 #define BF_MAX	26	/* Batch Flag max: A-Z */	
 

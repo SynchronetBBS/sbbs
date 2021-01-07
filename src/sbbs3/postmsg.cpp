@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "utf8.h"
+#include "filedat.h"
 
 int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, long* dupechk_hashes, uint16_t* xlat)
 {

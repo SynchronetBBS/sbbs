@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "qwk.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Converts a long to an msbin real number. required for QWK NDX file		*/

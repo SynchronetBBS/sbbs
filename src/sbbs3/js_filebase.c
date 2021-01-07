@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "filedat.h"
 #include "js_request.h"
 #include <stdbool.h>
 
