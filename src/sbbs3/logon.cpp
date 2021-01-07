@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#include "filedat.h"
 
 extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
 

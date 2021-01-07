@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "cmdshell.h"
+#include "filedat.h"
 
 int sbbs_t::exec_file(csi_t *csi)
 {

@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "telnet.h"
+#include "filedat.h"
 
 /****************************************************************************/
 /* Call this function *AFTER* a file has been successfully downloaded		*/

@@ -35,6 +35,7 @@
 #include "sbbs.h"
 #include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"
+#include "filedat.h"
 #include "telnet.h"
 #include "multisock.h"
 #include "ssl.h"
