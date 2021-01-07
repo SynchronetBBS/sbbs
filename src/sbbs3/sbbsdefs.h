@@ -274,6 +274,7 @@ typedef struct js_callback {
 #define DIR_NOSTAT		(1<<19)		/* Do not include transfers in system stats */
 #define DIR_FILES		(1<<20)		/* List/access files not in database */
 #define DIR_TEMPLATE	(1<<21)		/* Use this dir as template for new dirs (in this lib) */
+#define DIR_NOHASH		(1<<22)		/* Don't auto calculate/store file content hashes */
 
 									/* Bit values for cfg.file_misc				*/
 #define FM_NO_LFN	(1<<0)			/* No long filenames in listings			*/

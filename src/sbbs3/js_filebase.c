@@ -254,9 +254,9 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 	char*		cp = NULL;
 	size_t		cp_sz = 0;
 	jsval		val;
+	const char* prop_name;
 
-	const char* prop_name = "name";
-	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if(JS_GetProperty(cx, obj, prop_name = "name", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL) {
@@ -265,28 +265,24 @@ parse_file_index_properties(JSContext *cx, JSObject* obj, fileidxrec_t* idx)
 		}
 		SAFECOPY(idx->name, cp);
 	}
-	prop_name = "size";
-	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if(JS_GetProperty(cx, obj, prop_name = "size", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToECMAUint32(cx, val, &idx->idx.size)) {
 			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
 			return FALSE;
 		}
 	}
-	prop_name = "crc16";
-	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if(JS_GetProperty(cx, obj, prop_name = "crc16", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		idx->hash.data.crc16 = JSVAL_TO_INT(val);
 		idx->hash.flags |= SMB_HASH_CRC16;
 	}
-	prop_name = "crc32";
-	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if(JS_GetProperty(cx, obj, prop_name = "crc32", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if(!JS_ValueToECMAUint32(cx, val, &idx->hash.data.crc32)) {
 			JS_ReportError(cx, "Error converting adding '%s' property to Uint32", prop_name);
 			return FALSE;
 		}
 		idx->hash.flags |= SMB_HASH_CRC32;
 	}
-	prop_name = "md5";
-	if(JS_GetProperty(cx, obj, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+	if(JS_GetProperty(cx, obj, prop_name = "md5", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
 		HANDLE_PENDING(cx, cp);
 		if(cp==NULL || strlen(cp) != MD5_DIGEST_SIZE * 2) {

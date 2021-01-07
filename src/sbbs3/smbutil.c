@@ -721,7 +721,7 @@ void maint(void)
 
 		printf("Maintaining %s hash file\r\n", smb.file);
 
-		if((smb.status.attr&(SMB_EMAIL|SMB_NOHASH)) == 0) {
+		if((smb.status.attr&(SMB_EMAIL|SMB_NOHASH|SMB_FILE_DIRECTORY)) == 0) {
 			max_hashes = smb.status.max_msgs;
 			if(smb.status.max_crcs > max_hashes)
 				max_hashes = smb.status.max_crcs;

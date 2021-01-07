@@ -25,6 +25,7 @@
 #include "ini_file.h"
 #include "dat_file.h"
 #include "datewrap.h"
+#include "filedat.h"
 
 scfg_t scfg;
 BOOL overwrite_existing_files=TRUE;
@@ -854,7 +855,9 @@ bool upgrade_file_bases(void)
 			fprintf(stderr, "Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
 			return false;
 		}
-		smb.status.attr = SMB_FILE_DIRECTORY|SMB_NOHASH;
+		smb.status.attr = SMB_FILE_DIRECTORY;
+		if(scfg.dir[i]->misc & DIR_NOHASH)
+			smb.status.attr |= SMB_NOHASH;
 		smb.status.max_age = scfg.dir[i]->maxage;
 		smb.status.max_msgs = scfg.dir[i]->maxfiles;
 		if((result = smb_create(&smb)) != SMB_SUCCESS)

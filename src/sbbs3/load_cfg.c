@@ -571,7 +571,9 @@ int DLLCALL smb_open_dir(scfg_t* cfg, smb_t* smb, unsigned int dirnum)
 	if(filelength(fileno(smb->shd_fp)) < 1) {
 		smb->status.max_files	= cfg->dir[dirnum]->maxfiles;
 		smb->status.max_age		= cfg->dir[dirnum]->maxage;
-		smb->status.attr		= SMB_FILE_DIRECTORY|SMB_NOHASH;
+		smb->status.attr		= SMB_FILE_DIRECTORY;
+		if(cfg->dir[dirnum]->misc & DIR_NOHASH)
+			smb->status.attr |= SMB_NOHASH;
 		smb_create(smb);
 	}
 	return SMB_SUCCESS;

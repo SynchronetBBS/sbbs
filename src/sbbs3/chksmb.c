@@ -475,7 +475,7 @@ int main(int argc, char **argv)
 			types++;
 		}
 
-		if(!(smb.status.attr&(SMB_EMAIL|SMB_NOHASH)) && chkhash) {
+		if(!(smb.status.attr&(SMB_EMAIL|SMB_NOHASH|SMB_FILE_DIRECTORY)) && chkhash) {
 			/* Look-up the message hashes */
 			hashes=smb_msghashes(&msg,(uchar*)body,SMB_HASH_SOURCE_DUPE);
 			if(hashes!=NULL

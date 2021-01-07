@@ -287,7 +287,8 @@ int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, c
 	if(path != NULL) {
 		file->size = flength(path);
 		file->hdr.when_written.time = (uint32_t)fdate(path);
-		file->file_idx.hash.flags = smb_hashfile(path, file->size, &file->file_idx.hash.data);
+		if(!(smb->status.attr & SMB_NOHASH))
+			file->file_idx.hash.flags = smb_hashfile(path, file->size, &file->file_idx.hash.data);
 	}
 	file->hdr.attr |= MSG_FILE;
 	file->hdr.type = SMB_MSG_TYPE_FILE;
