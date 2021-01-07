@@ -740,6 +740,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
                     strncat(cmd,cfg->text_dir, avail);
                     break;
 				case '~':	/* DOS-compatible (8.3) filename */
+				{
 #ifdef _WIN32
 					char sfpath[MAX_PATH+1];
 					SAFECOPY(sfpath,fpath);
@@ -749,6 +750,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
                     strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
 #endif
 					break;
+				}
                 case '!':   /* EXEC Directory */
                     strncat(cmd,cfg->exec_dir, avail);
                     break;
