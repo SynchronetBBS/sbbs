@@ -374,6 +374,67 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 }
 
 static JSBool
+js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
+	jsval*		argv = JS_ARGV(cx, arglist);
+	private_t*	p;
+	char		path[MAX_PATH + 1];
+	char*		filename = NULL;
+	enum file_detail detail = file_detail_normal;
+	jsrefcount	rc;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+
+	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if(scfg == NULL) {
+		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
+		return JS_FALSE;
+	}
+
+	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_filebase_class))==NULL)
+		return JS_FALSE;
+
+	smbfile_t file;
+	ZERO_VAR(file);
+
+	uintN argn = 0;
+	if(argn < argc)	{
+		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
+		HANDLE_PENDING(cx, filename);
+		argn++;
+	}
+	rc=JS_SUSPENDREQUEST(cx);
+	if(filename == NULL)
+		return JS_TRUE;
+	if(getfname(filename) != filename)
+		SAFECOPY(path, filename);
+	else {
+		file.name = filename;
+		// read index record, if it exists (for altpath)
+		smb_findfile(&p->smb, filename, &file);
+		getfilepath(scfg, &file, path);
+	}
+	file.idx.size = flength(path);
+	if((p->smb_result = smb_hashfile(path, file.idx.size, &file.file_idx.hash.data)) > 0) {
+		file.file_idx.hash.flags = p->smb_result;
+		file.hdr.when_written.time = (uint32_t)fdate(path);
+		JSObject* fobj;
+		if((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
+			JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
+		else {
+			set_file_properties(cx, fobj, &file, detail);
+		    JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
+		}
+	}
+	JS_RESUMEREQUEST(cx, rc);
+	free(filename);
+	smb_freefilemem(&file);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject*	obj = JS_THIS_OBJECT(cx, arglist);
@@ -1192,6 +1253,11 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	{"renew_file",		js_renew_file,		1, JSTYPE_BOOLEAN
 		,JSDOCSTR("filename")
 		,JSDOCSTR("remove and re-add (as new) an existing file in the file base")
+		,31900
+	},
+	{"hash_file",		js_hash_file,		1, JSTYPE_OBJECT
+		,JSDOCSTR("filename_or_fullpath")
+		,JSDOCSTR("calculate hashes of a file's contents (file base does not have to be open)")
 		,31900
 	},
 	{"dump_file",		js_dump_file,		1, JSTYPE_ARRAY

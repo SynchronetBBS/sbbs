@@ -195,6 +195,11 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 	smbfile_t file_ = {0};
 	if(f == NULL)
 		f = &file_;
+
+	if(smb->sid_fp == NULL) {
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
+		return SMB_ERR_NOT_OPEN;
+	}
 	rewind(smb->sid_fp);
 	while(!feof(smb->sid_fp)) {
 		fileidxrec_t fidx;
