@@ -290,6 +290,11 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 	}
 }
 
+.dark modal-content {
+    background-color: #555;
+    color: #FFF;
+}
+
 .darkswitchbox {
 	margin-block-start: 1em;
 	margin-block-end: 1em;
