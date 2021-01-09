@@ -198,6 +198,7 @@ int fixsmb(char* sub)
 		size=SHD_BLOCK_LEN;
 		printf("\r%2lu%%  ",(long)(100.0/((float)length/l)));
 		fflush(stdout);
+		ZERO_VAR(msg);
 		msg.idx.offset=l;
 		if((i=smb_lockmsghdr(&smb,&msg))!=0) {
 			printf("\n(%06lX) smb_lockmsghdr returned %d:\n%s\n",l,i,smb.last_error);
