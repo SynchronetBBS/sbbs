@@ -273,6 +273,20 @@ int smb_getfile(smb_t* smb, smbfile_t* file, enum file_detail detail)
 }
 
 /****************************************************************************/
+/* Writes both header and index information for file 'file'                 */
+/* Like smb_putmsg() but doesn't (re)-initialize index (idx)				*/
+/****************************************************************************/
+int smb_putfile(smb_t* smb, smbfile_t* file)
+{
+	int result;
+
+	if((result = smb_putmsghdr(smb, file))!=SMB_SUCCESS)
+		return result;
+
+	return smb_putmsgidx(smb, file);
+}
+
+/****************************************************************************/
 /****************************************************************************/
 void smb_freefilemem(smbfile_t* file)
 {

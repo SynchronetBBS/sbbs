@@ -287,6 +287,7 @@ enum file_detail { file_detail_index, file_detail_normal, file_detail_extdesc };
 SMBEXPORT int		smb_addfile(smb_t*, smbfile_t*, int storage, const char* extdesc, const char* path);
 SMBEXPORT int		smb_renewfile(smb_t*, smbfile_t*, int storage, const char* path);
 SMBEXPORT int		smb_getfile(smb_t*, smbfile_t*, enum file_detail);
+SMBEXPORT int		smb_putfile(smb_t*, smbfile_t*);
 SMBEXPORT int		smb_findfile(smb_t*, const char* filename, smbfile_t*);
 SMBEXPORT int		smb_loadfile(smb_t*, const char* filename, smbfile_t*, enum file_detail);
 SMBEXPORT void		smb_freefilemem(smbfile_t*);

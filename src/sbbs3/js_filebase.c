@@ -399,14 +399,16 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(file);
 
 	uintN argn = 0;
-	if(argn < argc)	{
+	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
 		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	rc=JS_SUSPENDREQUEST(cx);
-	if(filename == NULL)
+	if(filename == NULL) {
+		JS_ReportError(cx, "No filename argument");
 		return JS_TRUE;
+	}
+	rc=JS_SUSPENDREQUEST(cx);
 	if(getfname(filename) != filename)
 		SAFECOPY(path, filename);
 	else {
@@ -415,16 +417,21 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 		smb_findfile(&p->smb, filename, &file);
 		getfilepath(scfg, &file, path);
 	}
-	file.idx.size = flength(path);
-	if((p->smb_result = smb_hashfile(path, file.idx.size, &file.file_idx.hash.data)) > 0) {
-		file.file_idx.hash.flags = p->smb_result;
-		file.hdr.when_written.time = (uint32_t)fdate(path);
-		JSObject* fobj;
-		if((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
-			JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
-		else {
-			set_file_properties(cx, fobj, &file, detail);
-		    JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
+	off_t size = flength(path);
+	if(size < 0)
+		JS_ReportError(cx, "File does not exist: %s", path);
+	else {
+		file.idx.size = size;
+		if((p->smb_result = smb_hashfile(path, file.idx.size, &file.file_idx.hash.data)) > 0) {
+			file.file_idx.hash.flags = p->smb_result;
+			file.hdr.when_written.time = (uint32_t)fdate(path);
+			JSObject* fobj;
+			if((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
+				JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
+			else {
+				set_file_properties(cx, fobj, &file, detail);
+				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
+			}
 		}
 	}
 	JS_RESUMEREQUEST(cx, rc);
@@ -892,7 +899,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 			if(strcmp(orgfname, newfname) != 0 && renfile && rename(orgfname, newfname) != 0)
 				p->smb_result = SMB_ERR_RENAME;
 			else
-				p->smb_result = smb_putmsg(&p->smb, &file);
+				p->smb_result = smb_putfile(&p->smb, &file);
 		}
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(p->smb_result == SMB_SUCCESS));
 	}
