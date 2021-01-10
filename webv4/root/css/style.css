@@ -273,6 +273,16 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 	background-color: #ddd !important;
 }
 
+.dark .btn {
+    color: #000;
+    background-color: #ddd ;
+}
+
+.dark .btn-primary {
+    color: #FFF;
+    background-color: #337ab7;
+}
+
 .dark a.btn :hover, .dark .icon:hover {
 	color: #000;
 	background-color: #fff !important;
