@@ -2369,7 +2369,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	off_t		offset;
 	ulong		sum=0;
 	ushort		c16=0;
-	ulong		c32=~0;
+	uint32		c32=~0;
 	MD5			md5_ctx;
 	BYTE		block[4096];
 	BYTE		digest[MD5_DIGEST_SIZE];

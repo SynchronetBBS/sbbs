@@ -51,16 +51,18 @@ function TickITCfg() {
 
 	function lcprops(obj)
 	{
-		var i;
-		var keys = Object.keys(obj);
+		if(typeof obj == 'object') {
+			var i;
+			var keys = Object.keys(obj);
 
-		for (i=0; i<keys.length; i++) {
-			if (keys[i].toLowerCase() !== keys[i]) {
-				if (obj[keys[i].toLowerCase()] === undefined)
-					obj[keys[i].toLowerCase()] = obj[keys[i]];
-				delete obj[keys[i]];
-				if (typeof(obj[keys[i].toLowerCase()]) == 'Object')
-					lcprops(obj[keys[i].toLowerCase()]);
+			for (i=0; i<keys.length; i++) {
+				if (keys[i].toLowerCase() !== keys[i]) {
+					if (obj[keys[i].toLowerCase()] === undefined)
+						obj[keys[i].toLowerCase()] = obj[keys[i]];
+					delete obj[keys[i]];
+					if (typeof(obj[keys[i].toLowerCase()]) == 'Object')
+						lcprops(obj[keys[i].toLowerCase()]);
+				}
 			}
 		}
 	}

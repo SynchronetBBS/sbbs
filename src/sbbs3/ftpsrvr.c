@@ -4886,9 +4886,6 @@ static void ctrl_thread(void* arg)
 		/* Update User Statistics */
 		if(!logoutuserdat(&scfg, &user, time(NULL), logintime))
 			lprintf(LOG_ERR,"%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
-		/* Remove QWK-pack semaphore file (if left behind) */
-		sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
-		ftp_remove(sock, __LINE__, str, user.alias);
 		lprintf(LOG_INFO,"%04d <%s> logged off", sock, user.alias);
 	}
 
