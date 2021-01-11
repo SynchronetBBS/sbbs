@@ -318,7 +318,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 		}
 		if((result = smb_new_hfield_str(file, SMB_FILENAME, cp)) != SMB_SUCCESS) {
 			free(cp);
-			JS_ReportError(cx, "Error %d adding '%s' property to message header", result, prop_name);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
 		}
 	}
@@ -333,7 +333,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 		}
 		if((result = smb_new_hfield_str(file, SMB_FILEUPLOADER, cp)) != SMB_SUCCESS) {
 			free(cp);
-			JS_ReportError(cx, "Error %d adding '%s' property to message header", result, prop_name);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
 		}
 	}
@@ -348,7 +348,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 		}
 		if((result = smb_new_hfield_str(file, SMB_FILEDESC, cp)) != SMB_SUCCESS) {
 			free(cp);
-			JS_ReportError(cx, "Error %d adding '%s' property to message header", result, prop_name);
+			JS_ReportError(cx, "Error %d adding '%s' property to file object", result, prop_name);
 			return result;
 		}
 	}
@@ -358,7 +358,7 @@ parse_file_properties(JSContext *cx, JSObject* obj, smbfile_t* file, char** extd
 		JSVALUE_TO_MSTRING(cx, val, *extdesc, NULL);
 		HANDLE_PENDING(cx, *extdesc);
 		if(*extdesc == NULL) {
-			JS_ReportError(cx, "Invalid '%s' string in recipient object", prop_name);
+			JS_ReportError(cx, "Invalid '%s' string in file object", prop_name);
 			return SMB_ERR_MEM;
 		}
 	}
