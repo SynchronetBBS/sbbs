@@ -959,15 +959,23 @@ bool upgrade_file_bases(void)
 			}
 			if(f->dateuled > latest)
 				latest = f->dateuled;
+			smb_freefilemem(&file);
 		}
 		free(filelist);
+		off_t new_count = filelength(fileno(smb.sid_fp)) / smb_idxreclen(&smb);
 		smb_close(&smb);
 		if(latest > 0)
 			update_newfiletime(&smb, latest);
 		closeextdesc(extfile);
 		free(ixbbuf);
+		if(new_count != file_count) {
+			printf("\nNew file base index has %u records instead of %u\n", new_count, file_count);
+			break;
+		}
 	}
-	printf("\r%lu files imported in %u directories%40s\n", total_files, scfg.total_dirs,"");
+	time_t diff = time(NULL) - start;
+	printf("\r%lu files imported in %u directories (%lu files/second)%40s\n"
+		,total_files, scfg.total_dirs, (ulong)(diff ? total_files / diff : total_files), "");
 
 	return true;
 }
