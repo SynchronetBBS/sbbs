@@ -62,6 +62,10 @@ sbbs-windows:
     - .\build.bat
     - cd ../useredit
     - .\build.bat
+    - cd ../../../xtrn/sbj
+    - make
+    - cd ../tbd
+    - make
   artifacts:
     name: sbbs-win32
     paths:
@@ -69,6 +73,7 @@ sbbs-windows:
       - "src/sbbs3/*.dll.release/*.dll"
       - "src/sbbs3/*/*.exe.release/*.exe"
       - "src/sbbs3/*/*.exe"
+      - "xtrn/*/*.exe"
 
 sexpots-windows:
   tags: [Windows]
