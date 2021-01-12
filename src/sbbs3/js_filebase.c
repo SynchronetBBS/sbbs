@@ -479,7 +479,9 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
 		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
 			return JS_TRUE;
+		free(filename);
 		filename = strdup(file.file_idx.name);
+		argn++;
 	}
 	else if(filename == NULL)
 		return JS_TRUE;
@@ -658,7 +660,9 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		filename = NULL;
 	jsrefcount	rc;
+	smbfile_t file;
 
+	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
@@ -671,16 +675,22 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	if(argn < argc)	{
+	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
 		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	if(filename == NULL)
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
+			return JS_TRUE;
+		free(filename);
+		filename = strdup(file.file_idx.name);
+		argn++;
+	}
+	else if(filename == NULL)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	smbfile_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		JSString* js_str;
@@ -702,8 +712,10 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		filename = NULL;
 	jsrefcount	rc;
+	smbfile_t	file;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+	ZERO_VAR(file);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
 	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if(scfg == NULL) {
@@ -715,16 +727,22 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	if(argn < argc)	{
+	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
 		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	if(filename == NULL)
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
+			return JS_TRUE;
+		free(filename);
+		filename = strdup(file.file_idx.name);
+		argn++;
+	}
+	else if(filename == NULL)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	smbfile_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		getfilepath(scfg, &file, path);
@@ -745,8 +763,10 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	private_t*	p;
 	char*		filename = NULL;
 	jsrefcount	rc;
+	smbfile_t file;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+	ZERO_VAR(file);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
 	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if(scfg == NULL) {
@@ -758,16 +778,22 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	uintN argn = 0;
-	if(argn < argc)	{
+	if(argn < argc && JSVAL_IS_STRING(argv[argn]))	{
 		JSVALUE_TO_MSTRING(cx, argv[argn], filename, NULL);
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	if(filename == NULL)
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+		if(!parse_file_index_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file.file_idx))
+			return JS_TRUE;
+		free(filename);
+		filename = strdup(file.file_idx.name);
+		argn++;
+	}
+	else if(filename == NULL)
 		return JS_TRUE;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	smbfile_t file;
 	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		getfilepath(scfg, &file, path);
@@ -1234,7 +1260,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"get_file_size",	js_get_file_size,	1, JSTYPE_NUMBER
 		,JSDOCSTR("filename")
-		,JSDOCSTR("get the size of the local file, in bytes")
+		,JSDOCSTR("get the size of the local file, in bytes, or -1 if it does not exist")
 		,31900
 	},
 	{"get_file_time",	js_get_file_time,	1, JSTYPE_NUMBER
