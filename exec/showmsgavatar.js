@@ -50,7 +50,8 @@ if(!(bbs.msg_attr&bbs.mods.smbdefs.MSG_ANONYMOUS)) {
 	if(!bbs.mods.avatar_lib)
 		bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 	var options = get_options();
-	var success = bbs.mods.avatar_lib.draw(bbs.msg_from_ext, bbs.msg_from, bbs.msg_from_net
+	var success = bbs.mods.avatar_lib.draw(bbs.msg_from_ext || bbs.msg_from_bbsid
+		,bbs.msg_from, bbs.msg_from_net
 		,options.msghdr_draw_above, options.msghdr_draw_right
 		,options.msghdr_draw_top && bbs.msghdr_top_of_screen);
 	if(!success && bbs.smb_sub_code) {
