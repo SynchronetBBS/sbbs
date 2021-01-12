@@ -92,6 +92,10 @@
  QUIET	=	@
 !endif
 
+!ifndef 3RDP_ROOT
+ 3RDP_ROOT = $(SRC_ROOT)/../3rdp
+!endif
+
 # OS-specific
 DIRSEP	=	\	# This comment is necessary
 EXEFILE	=	.exe

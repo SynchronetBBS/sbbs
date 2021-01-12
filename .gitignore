@@ -15,8 +15,8 @@ gcc.*
 *.lib
 *.map
 *.dcu
-src/sbbs3/ctrl/*.drc
-src/sbbs3/ctrl/*.tds
+*.drc
+*.tds
 src/sbbs3/ctrl/sbbsctrl.mak
 3rdp/src
 localdefs.mk
