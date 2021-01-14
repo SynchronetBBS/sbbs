@@ -470,12 +470,13 @@ bool removefile(scfg_t* cfg, uint dirnum, const char* filename)
 char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 {
 	bool fchk = true;
+	const char* name = f->name == NULL ? f->file_idx.name : f->name;
 	if(f->dir >= cfg->total_dirs)
-		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, f->name);
+		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, name);
 	else {
 		safe_snprintf(path, MAX_PATH, "%s%s", f->idx.altpath > 0 && f->idx.altpath <= cfg->altpaths 
 			? cfg->altpath[f->idx.altpath-1] : cfg->dir[f->dir]->path
-			,f->name);
+			,name);
 		fchk = (cfg->dir[f->dir]->misc & DIR_FCHK) != 0;
 	}
 	if(f->size == 0 && fchk && !fexistcase(path))
