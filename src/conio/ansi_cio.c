@@ -940,11 +940,11 @@ int ansi_writestr_cb(const unsigned char *str, size_t len)
 int ansi_initio_cb(void)
 {
 #ifdef _WIN32
+	DWORD conmode = 0;
 	if(isatty(fileno(stdin))) {
 		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_INPUT))
 			return(0);
 
-		DWORD conmode = 0;
 		GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode);
 		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING))
 			return(0);
