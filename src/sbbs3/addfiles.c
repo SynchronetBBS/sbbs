@@ -406,7 +406,8 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			strip_exascii(fdesc, fdesc);
 		memset(&f, 0, sizeof(f));
 		f.hdr.altpath=cur_altpath;
-		smb_hfield_bin(&f, SMB_COST, l);
+		uint32_t cdt = (uint32_t)l;
+		smb_hfield_bin(&f, SMB_COST, cdt);
 		smb_hfield_str(&f, SMB_FILENAME, fname);
 		smb_hfield_str(&f, SMB_FILEDESC, fdesc);
 		smb_hfield_str(&f, SENDER, uploader);
@@ -781,7 +782,8 @@ int main(int argc, char **argv)
 			smb_hfield_str(&f, SMB_FILENAME, fname);
 			smb_hfield_str(&f, SMB_FILEDESC, fdesc);
 			smb_hfield_str(&f, SENDER, uploader);
-			smb_hfield_bin(&f, SMB_COST, l);
+			uint32_t cdt = (uint32_t)l;
+			smb_hfield_bin(&f, SMB_COST, cdt);
 
 			printf("%s %7"PRIu64" %s\n",fname, (int64_t)l, fdesc);
 			char* ext_desc = NULL;
