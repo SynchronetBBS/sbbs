@@ -160,9 +160,6 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
-	if(f->desc == NULL || *f->desc == '\0') {
-		smb_hfield_str(f, SMB_SUMMARY, text[NoDescription]);
-	}
 	if(!addfile(&cfg, f->dir, f, ext))
 		return false;
 
@@ -269,6 +266,7 @@ bool sbbs_t::upload(uint dirnum)
 			,cfg.dir[dirnum]->sname);
 	if(!yesno(str)) return(false);
 	action=NODE_ULNG;
+	SAFECOPY(f.file_idx.name, fname);
 	getfilepath(&cfg, &f, path);
 	if(fexistcase(path)) {   /* File is on disk */
 		if(!dir_op(dirnum) && online!=ON_LOCAL) {		 /* local users or sysops */
@@ -492,7 +490,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(getfattr(str)&(_A_HIDDEN|_A_SYSTEM))
 			continue;
 #endif
-		if(findfile(&cfg,f.dir,str)==0) {
+		if(findfile(&cfg, f.dir, dirent->d_name)==0) {
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
 			long cdt = (long)flength(str);
 			smb_hfield_bin(&f, SMB_COST, cdt);
