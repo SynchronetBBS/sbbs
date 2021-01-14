@@ -157,7 +157,8 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	}
 	if(cfg.dir[f->dir]->misc&DIR_AONLY)  /* Forced anonymous */
 		f->hdr.attr |= MSG_ANONYMOUS;
-	smb_hfield_bin(f, SMB_COST, length);
+	uint32_t cdt = (uint32_t)length;
+	smb_hfield_bin(f, SMB_COST, cdt);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived],f->name,ultoac(length,tmp));
 	if(!addfile(&cfg, f->dir, f, ext))
@@ -468,6 +469,7 @@ bool sbbs_t::bulkupload(uint dirnum)
     char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
 	char	desc[LEN_FDESC + 1];
+	smb_t	smb;
     smbfile_t f;
 	DIR*	dir;
 	DIRENT*	dirent;
@@ -476,10 +478,17 @@ bool sbbs_t::bulkupload(uint dirnum)
 	f.dir=dirnum;
 	f.hdr.altpath=altul;
 	bprintf(text[BulkUpload],cfg.lib[cfg.dir[dirnum]->lib]->sname,cfg.dir[dirnum]->sname);
-	strcpy(path,altul>0 && altul<=cfg.altpaths ? cfg.altpath[altul-1]
-		: cfg.dir[dirnum]->path);
+	SAFECOPY(path, altul>0 && altul<=cfg.altpaths ? cfg.altpath[altul-1] : cfg.dir[dirnum]->path);
+
+	int result = smb_open_dir(&cfg, &smb, dirnum);
+	if(result != SMB_SUCCESS) {
+		errormsg(WHERE, ERR_OPEN, smb.file, result, smb.last_error);
+		return false;
+	}
 	action=NODE_ULNG;
 	SYNC;
+	str_list_t list = loadfilenames(&cfg, &smb, ALLFILES, /* time_t */0, /* sort */false, NULL);
+	smb_close(&smb);
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {
 		SAFEPRINTF2(str,"%s%s",path,dirent->d_name);
@@ -490,24 +499,25 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(getfattr(str)&(_A_HIDDEN|_A_SYSTEM))
 			continue;
 #endif
-		if(findfile(&cfg, f.dir, dirent->d_name)==0) {
+		if(strListFind(list, dirent->d_name, /* case-sensitive: */FALSE) < 0) {
+			smb_freemsgmem(&f);
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
-			long cdt = (long)flength(str);
+			uint32_t cdt = (uint32_t)flength(str);
 			smb_hfield_bin(&f, SMB_COST, cdt);
 			bprintf(text[BulkUploadDescPrompt], f.name, cdt/1024);
-			if(!getstr(desc, LEN_FDESC, K_LINE))
-				break;
+			getstr(desc, LEN_FDESC, K_LINE);
 			if(sys_status&SS_ABORT)
 				break;
 			if(strcmp(desc,"-")==0)	/* don't add this file */
 				continue;
 			smb_hfield_str(&f, SMB_FILEDESC, desc);
 			uploadfile(&f);
-			smb_freemsgmem(&f);
 		}
 	}
 	if(dir!=NULL)
 		closedir(dir);
+	strListFree(&list);
+	smb_freemsgmem(&f);
 	if(sys_status&SS_ABORT)
 		return(true);
 	return(false);
