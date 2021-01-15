@@ -1,5 +1,3 @@
-// $Id: install-xtrn.js,v 1.14 2020/04/26 06:58:46 rswindell Exp $
-
 // Installer for Synchronet External Programs
 
 // This script parses a .ini file (default filename is install-xtrn.ini)
@@ -562,8 +560,14 @@ for(var i in ini_list) {
 	else if (typeof result !== 'boolean')
 		alert(result);
 }
-print("Installed " + installed + " external programs.");
-if(installed > 0) {
+if (options.debug) {
+	print("Would have Installed " + installed + " external programs.");
+	print("No programs installed due to DEBUG mode.");
+} else {
+	print("Installed " + installed + " external programs.");
+}
+
+if((installed > 0) && !options.debug) {
 	print("Requesting Synchronet recycle (configuration-reload)");
 	if(!file_touch(system.ctrl_dir + "recycle"))
 		alert("Recycle semaphore file update failure");
