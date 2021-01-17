@@ -466,7 +466,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	else {
 		jsval exit_code = JSVAL_VOID;
-		if(JS_GetProperty(cx, js_scope, "exit_code", &exit_code) && JSVAL_IS_NUMBER(exit_code))
+		if(JS_GetProperty(cx, js_scope, "exit_code", &exit_code) && exit_code != JSVAL_VOID)
 			rval = exit_code;
 	}
 	JS_SET_RVAL(cx, arglist, rval);
