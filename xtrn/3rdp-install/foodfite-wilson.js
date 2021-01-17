@@ -28,3 +28,5 @@ if (!file.open("w")) {
 }
 file.writeAll(lines);
 file.close();
+
+exit(0);
