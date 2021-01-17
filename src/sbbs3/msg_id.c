@@ -167,8 +167,7 @@ BOOL DLLCALL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg
  	if(msg->ftn_msgid == NULL) {
 		if(smb->subnum == INVALID_SUB && msg->to_net.type == NET_FIDO) {
 			safe_snprintf(msg_id, sizeof(msg_id)
-				,"%lu@%s %08lx"
-				,msg_number(msg)
+				,"%s %08lx"
 				,smb_faddrtoa(&cfg->faddr[nearest_sysfaddr(cfg, msg->to_net.addr)], NULL)
 				,msgid_serialno(msg)
 				);
