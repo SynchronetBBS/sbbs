@@ -60,7 +60,6 @@
 #endif
 
 #include <sys/types.h>	/* _dev_t */
-#include <sys/stat.h>	/* struct stat */
 
 #include <stdio.h>		/* sprintf */
 #include <stdlib.h>		/* rand */
@@ -68,6 +67,7 @@
 
 #include "genwrap.h"	/* strupr/strlwr */
 #include "dirwrap.h"	/* DLLCALL */
+#include "filewrap.h"	/* stat */
 
 #if !defined(S_ISDIR)
 	#define S_ISDIR(x)	((x)&S_IFDIR)
