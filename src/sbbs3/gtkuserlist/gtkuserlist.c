@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	}
     cfg.size=sizeof(cfg);
 
-    if(!load_cfg(&cfg, NULL, TRUE, str)) {
+    if(!load_cfg(&cfg, NULL, TRUE, str, sizeof(str))) {
 		fprintf(stderr,"Cannot load configuration data (%s)",str);
         return(-1);
 	}

@@ -496,7 +496,7 @@ void status_thread(void *arg)
 	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, NULL, TRUE, error)) {
+	if(!load_cfg(&scfg, NULL, TRUE, error, sizeof(error))) {
 		lprintf(LOG_CRIT,"!ERROR %s",error);
 		lprintf(LOG_CRIT,"!Failed to load configuration files");
 		return;
