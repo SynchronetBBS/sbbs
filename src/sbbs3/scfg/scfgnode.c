@@ -100,7 +100,7 @@ void node_menu()
 		if(msk == MSK_INS) {
 			SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 			i=cfg.sys_nodes+1;
-			load_node_cfg(&cfg,error);
+			load_node_cfg(&cfg,error, sizeof(error));
 			if(i == 1) {
 				SAFEPRINTF(str,"../node%d/",i);
 			} else {
@@ -135,7 +135,7 @@ void node_menu()
 				free_node_cfg(&cfg);
 			i&=MSK_OFF;
 			SAFECOPY(cfg.node_dir,cfg.node_path[i]);
-			load_node_cfg(&cfg,error);
+			load_node_cfg(&cfg,error, sizeof(error));
 			savnode=1;
 			continue; 
 		}
@@ -155,7 +155,7 @@ void node_menu()
 		SAFECOPY(cfg.node_dir,cfg.node_path[i]);
 		prep_dir(cfg.ctrl_dir, cfg.node_dir, sizeof(cfg.node_dir));
 
-		load_node_cfg(&cfg,error);
+		load_node_cfg(&cfg,error, sizeof(error));
 		if (cfg.node_num != i + 1) { 	/* Node number isn't right? */
 			cfg.node_num = i + 1;		/* so fix it */
 			save_node_cfg(&cfg, backup_level); /* and write it back */
