@@ -102,7 +102,7 @@ if(platform=="win32") {
 	builds.push(["src/sbbs3/useredit"	,"build.bat"
 																,"> " + build_output]);
 } else {	/* Unix */
-	builds.unshift["src/sbbs3"			,"make git_branch.h git_hash.h"]);
+	builds.unshift(["src/sbbs3"			,"make git_branch.h git_hash.h"]);
 	builds.push(["src/sbbs3"			,"make RELEASE=1 all"		,"2> " + build_output]);
 	builds.push(["src/sbbs3"			,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
 }
