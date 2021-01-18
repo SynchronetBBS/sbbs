@@ -5028,7 +5028,7 @@ void DLLCALL bbs_thread(void* arg)
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
 	SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, text, TRUE, logstr)) {
+	if(!load_cfg(&scfg, text, TRUE, logstr, sizeof(logstr))) {
 		lprintf(LOG_CRIT,"!ERROR %s",logstr);
 		lprintf(LOG_CRIT,"!FAILED to load configuration files");
 		cleanup(1);
@@ -5641,10 +5641,10 @@ NO_SSH:
 		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
 			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr, sizeof(logstr))) {
 				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 				cfg->node_num = first_node;
-				if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr)) {
+				if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr, sizeof(logstr))) {
 					lprintf(LOG_CRIT,"!ERROR %s",logstr);
 					lprintf(LOG_CRIT,"!FAILED to load configuration files");
 					sbbs->bprintf("\r\nFAILED: %s", logstr);

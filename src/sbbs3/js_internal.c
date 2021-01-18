@@ -294,7 +294,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	pscope;
 	JSObject*	js_script=NULL;
 	JSObject*	nargv;
-	jsval		rval;
+	jsval		rval = JSVAL_VOID;
 	jsrefcount	rc;
 	uintN		i;
 	jsval		val;
@@ -465,7 +465,9 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		JS_GetPendingException(cx, &rval);
 	}
 	else {
-		JS_GetProperty(cx, js_scope, "exit_code", &rval);
+		jsval exit_code = JSVAL_VOID;
+		if(JS_GetProperty(cx, js_scope, "exit_code", &exit_code) && exit_code != JSVAL_VOID)
+			rval = exit_code;
 	}
 	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
@@ -935,7 +937,7 @@ void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filen
 		JS_DefineProperty(cx, js, "scope", OBJECT_TO_JSVAL(scope)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
-	JS_DefineProperty(cx, scope, "exit_code", JSVAL_NULL
+	JS_DefineProperty(cx, scope, "exit_code", JSVAL_VOID
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_PERMANENT);
 #if defined(_MSC_VER)
 	_set_invalid_parameter_handler(msvc_invalid_parameter_handler);

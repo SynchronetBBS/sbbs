@@ -40,7 +40,7 @@ char *	readtext(long *line, FILE *stream, long dflt);
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
+BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error, size_t maxerrlen)
 {
 	int		i;
 #ifdef SBBS
@@ -50,7 +50,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 #endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
-		sprintf(error,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
+		safe_snprintf(error, maxerrlen,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
 			,cfg->size,sizeof(scfg_t));
 		return(FALSE);
 	}
@@ -64,7 +64,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		cfg->node_num=1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, error)==FALSE)
+	if(read_main_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
 
 	if(prep)
@@ -73,17 +73,17 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error)==FALSE)
+	if(read_node_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_msgs_cfg(cfg, error)==FALSE)
+	if(read_msgs_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_file_cfg(cfg, error)==FALSE)
+	if(read_file_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_xtrn_cfg(cfg, error)==FALSE)
+	if(read_xtrn_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_chat_cfg(cfg, error)==FALSE)
+	if(read_chat_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_attr_cfg(cfg, error)==FALSE)
+	if(read_attr_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
 
 #ifdef SBBS
@@ -94,7 +94,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
 		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-			sprintf(error,"%d opening %s",errno,str);
+			safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
 			return(FALSE); 
 		}
 		for(i=0;i<TOTAL_TEXT;i++)
@@ -105,7 +105,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		fclose(instream);
 
 		if(i<TOTAL_TEXT) {
-			sprintf(error,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
+			safe_snprintf(error, maxerrlen,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
 				,i
 				,TOTAL_TEXT,str);
 			return(FALSE); 
@@ -353,7 +353,7 @@ int md(const char* inpath)
 /****************************************************************************/
 /* Reads in ATTR.CFG and initializes the associated variables               */
 /****************************************************************************/
-BOOL read_attr_cfg(scfg_t* cfg, char* error)
+BOOL read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	uint*	clr;
     char    str[256];
@@ -362,12 +362,12 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 
 	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d opening %s",errno,str);
+		safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
 		return(FALSE); 
 	}
 	FREE_AND_NULL(cfg->color);
 	if((cfg->color=malloc(MIN_COLORS * sizeof(uint)))==NULL) {
-		sprintf(error,"Error allocating memory (%u bytes) for colors"
+		safe_snprintf(error, maxerrlen,"Error allocating memory (%u bytes) for colors"
 			,MIN_COLORS);
 		fclose(instream);
 		return(FALSE);

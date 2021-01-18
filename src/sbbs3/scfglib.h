@@ -37,16 +37,16 @@ extern "C" {
 #endif
 
 char*	get_alloc(long *offset, char *outstr, int maxlen, FILE *instream);
-BOOL	allocerr(FILE*, char* error, long offset, char *fname, uint size);
+BOOL	allocerr(FILE*, char* error, size_t maxerrlen, long offset, const char *fname, size_t size);
 char*	readline(long *offset, char *str, int maxlen, FILE *stream);
 
-BOOL	read_node_cfg(scfg_t* cfg, char* error);
-BOOL	read_main_cfg(scfg_t* cfg, char* error);
-BOOL	read_xtrn_cfg(scfg_t* cfg, char* error);
-BOOL	read_file_cfg(scfg_t* cfg, char* error);
-BOOL	read_msgs_cfg(scfg_t* cfg, char* error);
-BOOL	read_chat_cfg(scfg_t* cfg, char* error);
-BOOL	read_attr_cfg(scfg_t* cfg, char* error);
+BOOL	read_node_cfg(scfg_t* cfg, char* error, size_t);
+BOOL	read_main_cfg(scfg_t* cfg, char* error, size_t);
+BOOL	read_xtrn_cfg(scfg_t* cfg, char* error, size_t);
+BOOL	read_file_cfg(scfg_t* cfg, char* error, size_t);
+BOOL	read_msgs_cfg(scfg_t* cfg, char* error, size_t);
+BOOL	read_chat_cfg(scfg_t* cfg, char* error, size_t);
+BOOL	read_attr_cfg(scfg_t* cfg, char* error, size_t);
 char*	prep_path(char* path); 
 void	make_data_dirs(scfg_t* cfg);
 

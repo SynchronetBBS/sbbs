@@ -181,7 +181,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg,NULL,TRUE,error)) {
+	if(!load_cfg(&scfg,NULL,TRUE,error, sizeof(error))) {
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
 		exit(1);
 	}
