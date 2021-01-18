@@ -348,13 +348,13 @@ int main(int argc, char **argv)
 		}
 
 		printf("Reading main.cnf ... ");
-		if(!read_main_cfg(&cfg,error)) {
+		if(!read_main_cfg(&cfg,error,sizeof(error))) {
 			printf("ERROR: %s",error);
 			return EXIT_FAILURE;
 		}
 		printf("\n");
 		printf("Reading msgs.cnf ... ");
-		if(!read_msgs_cfg(&cfg,error)) {
+		if(!read_msgs_cfg(&cfg,error,sizeof(error))) {
 			printf("ERROR: %s",error);
 			return EXIT_FAILURE;
 		}
@@ -434,7 +434,7 @@ int main(int argc, char **argv)
 
 	SAFEPRINTF(str,"%smain.cnf",cfg.ctrl_dir);
 	if(!fexist(str)) {
-		sprintf(errormsg,"Main configuration file (%s) missing!",str);
+		SAFEPRINTF(errormsg, "Main configuration file (%s) missing!",str);
 		uifc.msg(errormsg);
 	}
 
@@ -475,8 +475,8 @@ int main(int argc, char **argv)
 		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
 			,"Configure",mopt)) {
 			case 0:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -484,13 +484,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 1:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_xtrn_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_xtrn_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -499,13 +499,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 2:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_msgs_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -514,13 +514,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 3:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_file_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_file_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}	
@@ -529,13 +529,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 4:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_file_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_file_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -544,8 +544,8 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 5:
-				if(!load_chat_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_chat_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg,"ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}	
@@ -590,13 +590,13 @@ int main(int argc, char **argv)
 				free_chat_cfg(&cfg);
 				break;
 			case 6:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_msgs_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -605,13 +605,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 7:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_msgs_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_msgs_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -620,8 +620,8 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 8:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -629,13 +629,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 9:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_xtrn_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_xtrn_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -644,13 +644,13 @@ int main(int argc, char **argv)
 				free_main_cfg(&cfg);
 				break;
 			case 10:
-				if(!load_main_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
-				if(!load_file_cfg(&cfg,error)) {
-					sprintf(errormsg,"ERROR: %s",error);
+				if(!load_file_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s",error);
 					uifc.msg(errormsg);
 					break;
 				}
@@ -677,50 +677,50 @@ int main(int argc, char **argv)
 	}
 }
 
-BOOL load_main_cfg(scfg_t* cfg, char *error)
+BOOL load_main_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading main.cnf ...");
-	BOOL result = read_main_cfg(cfg, error);
+	BOOL result = read_main_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_node_cfg(scfg_t* cfg, char *error)
+BOOL load_node_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading node.cnf ...");
-	BOOL result = read_node_cfg(cfg, error);
+	BOOL result = read_node_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_msgs_cfg(scfg_t* cfg, char *error)
+BOOL load_msgs_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading msgs.cnf ...");
-	BOOL result = read_msgs_cfg(cfg, error);
+	BOOL result = read_msgs_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_file_cfg(scfg_t* cfg, char *error)
+BOOL load_file_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading file.cnf ...");
-	BOOL result = read_file_cfg(cfg, error);
+	BOOL result = read_file_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_chat_cfg(scfg_t* cfg, char *error)
+BOOL load_chat_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading chat.cnf ...");
-	BOOL result = read_chat_cfg(cfg, error);
+	BOOL result = read_chat_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
 
-BOOL load_xtrn_cfg(scfg_t* cfg, char *error)
+BOOL load_xtrn_cfg(scfg_t* cfg, char *error, size_t maxerrlen)
 {
 	uifc.pop("Reading xtrn.cnf ...");
-	BOOL result = read_xtrn_cfg(cfg, error);
+	BOOL result = read_xtrn_cfg(cfg, error, maxerrlen);
 	uifc.pop(NULL);
 	return result;
 }
@@ -2193,11 +2193,11 @@ void bail(int code)
 		getchar();
 	}
     else if(forcesave) {
-        load_main_cfg(&cfg,error);
-        load_msgs_cfg(&cfg,error);
-        load_file_cfg(&cfg,error);
-        load_chat_cfg(&cfg,error);
-        load_xtrn_cfg(&cfg,error);
+        load_main_cfg(&cfg, error, sizeof(error));
+        load_msgs_cfg(&cfg, error, sizeof(error));
+        load_file_cfg(&cfg, error, sizeof(error));
+        load_chat_cfg(&cfg, error, sizeof(error));
+        load_xtrn_cfg(&cfg, error, sizeof(error));
 		cfg.new_install=new_install;
         save_main_cfg(&cfg,backup_level);
         save_msgs_cfg(&cfg,backup_level);

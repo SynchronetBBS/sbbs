@@ -1914,7 +1914,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
+	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error, sizeof(error))) {
 		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
         return(-1);
     }

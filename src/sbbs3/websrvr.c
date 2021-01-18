@@ -7005,7 +7005,7 @@ void DLLCALL web_server(void* arg)
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, text, TRUE, logstr)) {
+		if(!load_cfg(&scfg, text, TRUE, logstr, sizeof(logstr))) {
 			lprintf(LOG_CRIT,"!ERROR %s",logstr);
 			lprintf(LOG_CRIT,"!FAILED to load configuration files");
 			cleanup(1);
