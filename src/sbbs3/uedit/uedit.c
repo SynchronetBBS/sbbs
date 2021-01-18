@@ -1945,7 +1945,7 @@ int main(int argc, char** argv)  {
     memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir,bbs_startup.ctrl_dir);
-	if(!load_cfg(&cfg, NULL, TRUE, str)) {
+	if(!load_cfg(&cfg, NULL, TRUE, str, sizeof(str))) {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
