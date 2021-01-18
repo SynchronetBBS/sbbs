@@ -90,7 +90,7 @@ int refresh_globals(void)
 	}
 
     /* Read .cfg files here */
-    if(!load_cfg(&cfg, NULL, TRUE, str)) {
+    if(!load_cfg(&cfg, NULL, TRUE, str, sizeof(str))) {
 		fprintf(stderr,"Cannot load configuration data: %s\n", str);
         return(-1);
 	}
