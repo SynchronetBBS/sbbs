@@ -272,11 +272,7 @@ DLLEXPORT char*		DLLCALL truncsp_lines(char* str);
 /* Truncate new-line chars off end of string */
 DLLEXPORT char*		DLLCALL truncnl(char* str);
 
-#if defined(__unix__)
-	#define STRERROR(x)		strerror(x)
-#else
-	#define STRERROR(x)		truncsp(strerror(x))
-#endif
+#define STRERROR(x)		strerror(x)
 
 /* Re-entrant version of strerror() */
 DLLEXPORT char*		DLLCALL safe_strerror(int errnum, char* buf, size_t buflen);
