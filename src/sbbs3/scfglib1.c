@@ -27,7 +27,7 @@
 BOOL allocerr(FILE* fp, char* error, size_t maxerrlen, long offset, const char *fname, size_t size)
 {
 	safe_snprintf(error, maxerrlen, "offset %ld in %s, allocating %u bytes of memory"
-		,offset,fname,size);
+		,offset,fname, (uint)size);
 	fclose(fp);
 	return(FALSE);
 }
