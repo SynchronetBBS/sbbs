@@ -969,7 +969,7 @@ bool upgrade_file_bases(void)
 		closeextdesc(extfile);
 		free(ixbbuf);
 		if(new_count != file_count) {
-			printf("\nNew file base index has %u records instead of %u\n", new_count, file_count);
+			printf("\nNew file base index has %u records instead of %u\n", (uint)new_count, (uint)file_count);
 			break;
 		}
 	}
