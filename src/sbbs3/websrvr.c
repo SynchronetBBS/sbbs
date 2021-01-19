@@ -3649,7 +3649,7 @@ static BOOL check_request(http_session_t * session)
 						for(sp=spath, nsp=find_first_slash(sp+1); nsp; nsp=find_first_slash(sp+1)) {
 							*nsp=0;
 							nsp++;
-							if(wildmatch(sp, pspec, TRUE)) {
+							if(wildmatch(sp, pspec, TRUE, /* case_sensitive: */TRUE)) {
 								read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
 							}
 							sp=nsp;
@@ -3657,7 +3657,7 @@ static BOOL check_request(http_session_t * session)
 						free(spath);
 						free(pspec);
 					}
-					else if(wildmatch(filename,spec,TRUE)) {
+					else if(wildmatch(filename,spec,TRUE, /* case_sensitive: */TRUE)) {
 						read_webctrl_section(file, spec, session, curdir, &recheck_dynamic);
 					}
 					free(spec);
