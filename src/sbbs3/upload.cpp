@@ -54,7 +54,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	f->hdr.when_written.time = (uint32_t)fdate(path);
 	char* fext = getfext(f->name);
 	for(i=0;i<cfg.total_ftests;i++)
-		if(cfg.ftest[i]->ext[0]=='*' || !stricmp(fext, cfg.ftest[i]->ext)) {
+		if(cfg.ftest[i]->ext[0]=='*' || (fext != NULL && stricmp(fext, cfg.ftest[i]->ext) == 0)) {
 			if(!chk_ar(cfg.ftest[i]->ar,&useron,&client))
 				continue;
 			attr(LIGHTGRAY);
@@ -194,7 +194,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 bool sbbs_t::upload(uint dirnum)
 {
 	char	descbeg[25]={""},descend[25]={""}
-				,fname[SMB_FILENAME_MAXLEN + 1],keys[256],ch,*p;
+				,fname[MAX_FILENAME_LEN + 1],keys[256],ch,*p;
 	char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
 	char 	tmp[512];
@@ -491,6 +491,7 @@ bool sbbs_t::bulkupload(uint dirnum)
 	smb_close(&smb);
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL && !msgabort()) {
+		char fname[SMB_FILEIDX_NAMELEN + 1];
 		SAFEPRINTF2(str,"%s%s",path,dirent->d_name);
 		if(isdir(str))
 			continue;
@@ -499,12 +500,13 @@ bool sbbs_t::bulkupload(uint dirnum)
 		if(getfattr(str)&(_A_HIDDEN|_A_SYSTEM))
 			continue;
 #endif
-		if(strListFind(list, dirent->d_name, /* case-sensitive: */FALSE) < 0) {
+		smb_fileidxname(dirent->d_name, fname, sizeof(fname));
+		if(strListFind(list, fname, /* case-sensitive: */FALSE) < 0) {
 			smb_freemsgmem(&f);
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
 			uint32_t cdt = (uint32_t)flength(str);
 			smb_hfield_bin(&f, SMB_COST, cdt);
-			bprintf(text[BulkUploadDescPrompt], f.name, cdt/1024);
+			bprintf(text[BulkUploadDescPrompt], format_filename(f.name, fname, 12, /* pad: */FALSE), cdt/1024);
 			getstr(desc, LEN_FDESC, K_LINE);
 			if(sys_status&SS_ABORT)
 				break;

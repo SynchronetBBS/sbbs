@@ -3604,10 +3604,7 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToBoolean(cx, argv[argn++], &path);
 	
 	rc=JS_SUSPENDREQUEST(cx);
-	if(case_sensitive)
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wildmatch(fname, spec, path)));
-	else
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wildmatchi(fname, spec, path)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wildmatch(fname, spec, path, case_sensitive)));
 	free(fname);
 	if(spec != spec_def)
 		free(spec);

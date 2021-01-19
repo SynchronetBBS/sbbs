@@ -160,7 +160,7 @@ str_list_t loadfilenames(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t
 		TERMINATE(fidx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(fidx.name, filespec, /* path: */false))
+			if(!wildmatch(fidx.name, filespec, /* path: */false, /* case-sensitive: */false))
 				continue;
 		}
 		file_list[*count] = strdup(fidx.name);
@@ -205,7 +205,7 @@ smbfile_t* loadfiles(scfg_t* cfg, smb_t* smb, const char* filespec, time_t t, en
 		TERMINATE(f->file_idx.name);
 
 		if(filespec != NULL && *filespec != '\0') {
-			if(!wildmatchi(f->file_idx.name, filespec, /* path: */false))
+			if(!wildmatch(f->file_idx.name, filespec, /* path: */false, /* case-sensitive: */false))
 				continue;
 		}
 		int result = smb_getfile(smb, f, detail);

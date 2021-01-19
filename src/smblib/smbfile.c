@@ -184,6 +184,32 @@ void smb_close_fp(FILE** fp)
 }
 
 /****************************************************************************/
+/* maxlen includes the NUL terminator										*/
+/****************************************************************************/
+char* smb_fileidxname(const char* filename, char* buf, size_t maxlen)
+{
+	size_t fnlen = strlen(filename);
+	char* ext = getfext(filename);
+	if(ext != NULL) {
+		size_t extlen = strlen(ext);
+		if(extlen >= maxlen - 1) {
+			strncpy(buf, filename, maxlen);
+			buf[maxlen - 1] = '\0';
+		}
+		else {
+			fnlen -= extlen;
+			if(fnlen > (maxlen - 1) - extlen)
+				fnlen = (maxlen - 1) - extlen;
+			safe_snprintf(buf, maxlen, "%-.*s%s", (int)fnlen, filename, ext);
+		}
+	} else {	/* no extension */
+		strncpy(buf, filename, maxlen);
+		buf[maxlen - 1] = '\0';
+	}
+	return buf;
+}
+
+/****************************************************************************/
 /* Find file in index via either/or:										*/
 /* -  CASE-INSENSITIVE 'filename' search through index (no wildcards)		*/
 /* -  file content size and hash details found in 'file'					*/
@@ -195,6 +221,8 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 	smbfile_t file_ = {0};
 	if(f == NULL)
 		f = &file_;
+	char fname[SMB_FILEIDX_NAMELEN + 1];
+	smb_fileidxname(filename, fname, sizeof(fname));
 
 	if(smb->sid_fp == NULL) {
 		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
@@ -210,7 +238,7 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 		f->idx_offset = offset++;
 
 		if(filename != NULL) {
-			if(strnicmp(fidx.name, filename, sizeof(fidx.name)) != 0)
+			if(stricmp(fidx.name, fname) != 0)
 				continue;
 			f->file_idx = fidx;
 			return SMB_SUCCESS;
@@ -293,6 +321,8 @@ void smb_freefilemem(smbfile_t* file)
 	smb_freemsgmem(file);
 }
 
+/****************************************************************************/
+/****************************************************************************/
 int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, const char* path)
 {
 	if(file->name == NULL) {
@@ -314,6 +344,8 @@ int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, c
 	return smb_addmsg(smb, file, storage, SMB_HASH_SOURCE_NONE, XLAT_NONE, /* body: */(const uchar*)extdesc, /* tail: */NULL);
 }
 
+/****************************************************************************/
+/****************************************************************************/
 int smb_renewfile(smb_t* smb, smbfile_t* file, int storage, const char* path)
 {
 	int result;

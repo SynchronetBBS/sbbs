@@ -1699,7 +1699,7 @@ int smb_init_idx(smb_t* smb, smbmsg_t* msg)
 		msg->idx.remsg = msg->hdr.thread_back;
 	} else if(msg->hdr.type == SMB_MSG_TYPE_FILE) {
 		if(msg->name != NULL)
-			strncpy(msg->file_idx.name, msg->name, sizeof(msg->file_idx.name) - 1);
+			smb_fileidxname(msg->name, msg->file_idx.name, sizeof(msg->file_idx.name));
 		if(msg->hdr.altpath > 0)
 			msg->idx.altpath = msg->hdr.altpath;
 		if(msg->size > 0)

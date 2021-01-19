@@ -93,7 +93,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 char * sbbs_t::getfilespec(char *str)
 {
 	bputs(text[FileSpecStarDotStar]);
-	if(!getstr(str, SMB_FILENAME_MAXLEN, K_NONE))
+	if(!getstr(str, MAX_FILENAME_LEN, K_NONE))
 		strcpy(str, ALLFILES);
 	if(sys_status&SS_ABORT)
 		return(0);

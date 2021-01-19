@@ -147,12 +147,12 @@ void sbbs_t::batchmenu()
 			case 'R':
 				if((n = batup_total()) > 0) {
 					bprintf(text[RemoveWhichFromUlQueue], n);
-					if(getstr(str, SMB_FILENAME_MAXLEN, K_NONE) > 0)
+					if(getstr(str, MAX_FILENAME_LEN, K_NONE) > 0)
 						batch_file_remove(&cfg, useron.number, XFER_BATCH_UPLOAD, str);
 				}
 				if((n = batdn_total()) > 0) {
 					bprintf(text[RemoveWhichFromDlQueue], n);
-					if(getstr(str, SMB_FILENAME_MAXLEN, K_NONE) > 0)
+					if(getstr(str, MAX_FILENAME_LEN, K_NONE) > 0)
 						batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, str);
 				}
 				break;

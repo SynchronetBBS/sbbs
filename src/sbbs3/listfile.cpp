@@ -82,8 +82,6 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 	m = 0; // current file index
 	smbfile_t* f;
 	while(online) {
-		if(m < file_count)
-			f = &file_list[m];
 		if(found<0)
 			found=0;
 		if(m>=file_count || flagprompt) {		  /* End of list */
@@ -119,6 +117,8 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 			else
 				break; 
 		}
+		if(m < file_count)
+			f = &file_list[m];
 
 		if(letter>'Z')
 			letter='A';
@@ -845,7 +845,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					if(dir_op(dirnum)) {
 						bputs(text[EditFilename]);
 						SAFECOPY(str, f->name);
-						if(!getstr(str, SMB_FILENAME_MAXLEN, K_EDIT|K_AUTODEL))
+						if(!getstr(str, MAX_FILENAME_LEN, K_EDIT|K_AUTODEL))
 							break;
 						if(strcmp(str,f->name) != 0) { /* rename */
 							if(stricmp(str,f->name)
