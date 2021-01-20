@@ -396,7 +396,7 @@ bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, smbfile_t
 	if(f->dir >= 0 && f->dir < cfg->total_dirs)
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
 	fprintf(fp, "desc=%s\n", f->desc);
-	fprintf(fp, "altpath=%u\n", f->idx.altpath);
+	fprintf(fp, "altpath=%u\n", f->hdr.altpath);
 	fclose(fp);
 	return true;
 }
@@ -412,7 +412,7 @@ bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, smbfile_t
 		return false;
 	smb_hfield_str(f, SMB_FILENAME, filename);
 	smb_hfield_str(f, SMB_FILEDESC, iniGetString(ini, filename, "desc", NULL, value));
-	f->idx.altpath = f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
+	f->hdr.altpath = iniGetShortInt(ini, filename, "altpath", 0);
 	return true;
 }
 
@@ -474,8 +474,8 @@ char* getfilepath(scfg_t* cfg, smbfile_t* f, char* path)
 	if(f->dir >= cfg->total_dirs)
 		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, name);
 	else {
-		safe_snprintf(path, MAX_PATH, "%s%s", f->idx.altpath > 0 && f->idx.altpath <= cfg->altpaths 
-			? cfg->altpath[f->idx.altpath-1] : cfg->dir[f->dir]->path
+		safe_snprintf(path, MAX_PATH, "%s%s", f->hdr.altpath > 0 && f->hdr.altpath <= cfg->altpaths 
+			? cfg->altpath[f->hdr.altpath-1] : cfg->dir[f->dir]->path
 			,name);
 		fchk = (cfg->dir[f->dir]->misc & DIR_FCHK) != 0;
 	}

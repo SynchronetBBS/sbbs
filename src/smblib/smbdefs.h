@@ -401,7 +401,7 @@ typedef struct _PACK {	/* Index record */
 		};
 		struct _PACK {			/* when msg.type == FILE */
 			uint32_t	size;
-			uint16_t	altpath;
+			uint16_t	unused;	/* possibly store additional 16-bits of file size here */
 		};
 	};
 	smb_msg_attr_t	attr;		/* attributes (read, permanent, etc.) */

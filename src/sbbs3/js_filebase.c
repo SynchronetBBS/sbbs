@@ -206,8 +206,8 @@ set_file_properties(JSContext *cx, JSObject* obj, smbfile_t* f, enum file_detail
 	if(!JS_DefineProperty(cx, obj, "size", val, NULL, NULL, flags))
 		return false;
 
-	if(f->idx.altpath > 0 || detail > file_detail_extdesc) {
-		val = UINT_TO_JSVAL(f->idx.altpath);
+	if(f->hdr.altpath > 0 || detail > file_detail_extdesc) {
+		val = UINT_TO_JSVAL(f->hdr.altpath);
 		if(!JS_DefineProperty(cx, obj, "altpath", val, NULL, NULL, flags))
 			return false;
 	}
