@@ -551,11 +551,11 @@ void sbbs_t::batch_download(int xfrprot)
 		lncntr=0;                               /* defeat pause */
 		if(xfrprot==-1 || checkprotresult(cfg.prot[xfrprot], 0, filename)) {
 			smbfile_t f = {{}};
-			iniRemoveSection(&ini, filename);
 			if(!batch_file_load(&cfg, ini, filename, &f)) {
 				errormsg(WHERE, "loading file", filename, i);
 				continue;
 			}
+			iniRemoveSection(&ini, filename);
 			if(cfg.dir[f.dir]->misc&DIR_TFREE && cur_cps)
 				starttime+=f.size/(ulong)cur_cps;
 			downloadedfile(&f);
