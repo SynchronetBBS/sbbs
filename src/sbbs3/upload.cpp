@@ -285,8 +285,8 @@ bool sbbs_t::upload(uint dirnum)
 		if(p!=NULL)
 			*p=0;
 		ch=(char)strlen(str+i);
-		if(!stricmp(ext, str+i))
-			break; 
+		if(ext != NULL && stricmp(ext + 1, str + i) == 0)
+			break;
 	}
 	if(j && i>=j) {
 		bputs(text[TheseFileExtsOnly]);
