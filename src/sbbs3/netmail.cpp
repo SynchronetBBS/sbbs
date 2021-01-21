@@ -340,7 +340,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	int 	i,fido,inet=0,qnet=0;
 	uint16_t net;
 	uint16_t xlat;
-	long	l,offset,length,m,n;
+	long	l,length,m,n;
+	off_t offset;
 	faddr_t fidoaddr;
     fmsghdr_t hdr;
 	smbmsg_t msg;
@@ -678,7 +679,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			smb_fputc(ch,smb.sdt_fp);
 		smb_fflush(smb.sdt_fp);
 
-		msg.hdr.offset=offset;
+		msg.hdr.offset=(uint32_t)offset;
 
 		smb_dfield(&msg,TEXT_BODY,length);
 
@@ -1063,7 +1064,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 		errormsg(WHERE,ERR_OPEN,msgpath,O_RDONLY|O_BINARY);
 		return(false); 
 	}
-	off_t length = filelength(file);
+	long length = (long)filelength(file);
 	if(length < 1) {
 		strListFree(&rcpt_list);
 		fclose(instream);
@@ -1226,7 +1227,8 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	const char*	charset=NULL;
 	ushort	xlat=XLAT_NONE,net=NET_QWK,touser;
 	int 	i,j,x,file;
-	ulong	length,offset;
+	ulong	length;
+	off_t offset;
 	FILE	*instream;
 	smbmsg_t msg;
 
@@ -1347,7 +1349,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	}
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
-	fseek(smb.sdt_fp,offset,SEEK_SET);
+	fseeko(smb.sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
 	fwrite(&xlat,2,1,smb.sdt_fp);
 	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
@@ -1371,7 +1373,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, long mode, smb_t* resm
 	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
 	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
 
-	msg.hdr.offset=offset;
+	msg.hdr.offset=(uint32_t)offset;
 
 	net=NET_QWK;
 	smb_hfield_str(&msg,RECIPIENT,to);

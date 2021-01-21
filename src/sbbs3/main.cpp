@@ -4351,8 +4351,8 @@ void sbbs_t::logoffstats()
 			stats.ttoday+=(uint32_t)(now-logontime)/60;
 			stats.ptoday+=logon_posts;
 		}
-		stats.uls+=logon_uls;
-		stats.ulb+=logon_ulb;
+		stats.uls+=(uint32_t)logon_uls;
+		stats.ulb+=(uint32_t)logon_ulb;
 //		stats.dls+=logon_dls;	// Now handled in user_downloaded_file()
 //		stats.dlb+=logon_dlb;	// Now handled in user_downloaded_file()
 		stats.etoday+=logon_emails;

@@ -30,19 +30,11 @@ void sbbs_t::fileinfo(smbfile_t* f)
 	char 	tmp[512];
 	char	tmp2[64];
 	char	path[MAX_PATH+1];
-	uint	i,j;
 
 	current_file = f;
-	for(i=0;i<usrlibs;i++)
-		if(usrlib[i]==cfg.dir[f->dir]->lib)
-			break;
-	for(j=0;j<usrdirs[i];j++)
-		if(usrdir[i][j]==(uint)f->dir)
-			break;
-
 	getfilepath(&cfg, f, path);
-	bprintf(text[FiLib],i+1,cfg.lib[cfg.dir[f->dir]->lib]->lname);
-	bprintf(text[FiDir],j+1,cfg.dir[f->dir]->lname);
+	bprintf(text[FiLib], getusrlib(f->dir), cfg.lib[cfg.dir[f->dir]->lib]->lname);
+	bprintf(text[FiDir], getusrdir(f->dir), cfg.dir[f->dir]->lname);
 	bprintf(text[FiFilename],f->name);
 
 	if(getfilesize(&cfg, f) >= 0)
@@ -77,7 +69,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 		putmsg((char*)f->extdesc,P_NOATCODES);
 		CRLF; 
 	}
-	if(f->size < 0) {
+	if(f->size == -1) {
 		bprintf(text[FileIsNotOnline],f->name);
 		if(SYSOP)
 			bprintf("%s\r\n",path);

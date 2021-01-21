@@ -116,10 +116,10 @@ DLLEXPORT BOOL	initmsgptrs(scfg_t*, subscan_t*, unsigned days, void (*progress)(
 /* New atomic numeric user field adjustment functions: */
 DLLEXPORT BOOL	user_posted_msg(scfg_t*, user_t*, int count);
 DLLEXPORT BOOL	user_sent_email(scfg_t*, user_t*, int count, BOOL feedback);
-DLLEXPORT BOOL	user_downloaded(scfg_t*, user_t*, int files, long bytes);
-DLLEXPORT BOOL	user_downloaded_file(scfg_t*, user_t*, client_t*, uint dirnum, const char* filename, ulong bytes);
+DLLEXPORT BOOL	user_downloaded(scfg_t*, user_t*, int files, off_t bytes);
+DLLEXPORT BOOL	user_downloaded_file(scfg_t*, user_t*, client_t*, uint dirnum, const char* filename, off_t bytes);
 
-DLLEXPORT BOOL	user_uploaded(scfg_t*, user_t*, int files, long bytes);
+DLLEXPORT BOOL	user_uploaded(scfg_t*, user_t*, int files, off_t bytes);
 DLLEXPORT BOOL	user_adjust_credits(scfg_t*, user_t*, long amount);
 DLLEXPORT BOOL	user_adjust_minutes(scfg_t*, user_t*, long amount);
 

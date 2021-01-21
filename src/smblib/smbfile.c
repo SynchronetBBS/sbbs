@@ -46,17 +46,17 @@ int smb_fputc(int ch, FILE* fp)
 	return(fputc(ch,fp));
 }
 
-int smb_fseek(FILE* fp, long offset, int whence)
+int smb_fseek(FILE* fp, off_t offset, int whence)
 {
-	return(fseek(fp,offset,whence));
+	return(fseeko(fp,offset,whence));
 }
 
-long smb_ftell(FILE* fp)
+off_t smb_ftell(FILE* fp)
 {
-	return(ftell(fp));
+	return(ftello(fp));
 }
 
-long smb_fgetlength(FILE* fp)
+off_t smb_fgetlength(FILE* fp)
 {
 	return(filelength(fileno(fp)));
 }

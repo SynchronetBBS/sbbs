@@ -333,7 +333,7 @@ static int js_socket_sendfilesocket(js_socket_private_t *p, int file, off_t *off
 	int			i;
 
 	if(p->session==-1)
-		return sendfilesocket(p->sock, file, offset, count);
+		return (int)sendfilesocket(p->sock, file, offset, count);
 
 	len=filelength(file);
 

@@ -1209,7 +1209,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 	}
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));
 
-	uint32_t total_msgs = index_length / sizeof(*idx);
+	uint32_t total_msgs = (uint32_t)(index_length / sizeof(*idx));
 	if(total_msgs > priv->smb.status.total_msgs)
 		total_msgs = priv->smb.status.total_msgs;
 	if(total_msgs < 1) {
@@ -1884,7 +1884,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 	}
     JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(retobj));
 
-	uint32_t total_msgs = index_length / sizeof(*idx);
+	uint32_t total_msgs = (uint32_t)(index_length / sizeof(*idx));
 	if(total_msgs > priv->smb.status.total_msgs)
 		total_msgs = priv->smb.status.total_msgs;
 	if(total_msgs < 1) {

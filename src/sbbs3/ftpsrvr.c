@@ -713,7 +713,7 @@ static void send_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d sending %s from offset %"PRIdOFF
 			,xfer.ctrl_sock, xfer.user->alias, *xfer.data_sock,xfer.filename,xfer.filepos);
 
-	fseek(fp,xfer.filepos,SEEK_SET);
+	fseeko(fp,xfer.filepos,SEEK_SET);
 	last_report=start=time(NULL);
 	while((xfer.filepos+total)<length) {
 
@@ -764,7 +764,7 @@ static void send_thread(void* arg)
 		if(i<1)
 			continue;
 
-		fseek(fp,xfer.filepos+total,SEEK_SET);
+		fseeko(fp,xfer.filepos+total,SEEK_SET);
 		rd=fread(buf,sizeof(char),sizeof(buf),fp);
 		if(rd<1) /* EOF or READ error */
 			break;
@@ -840,7 +840,7 @@ static void send_thread(void* arg)
 	
 	if(!error) {
 		dur=(long)(time(NULL)-start);
-		cps=dur ? total/dur : total*2;
+		cps=(ulong)(dur ? total/dur : total*2);
 		lprintf(LOG_INFO,"%04d <%s> DATA Transfer successful: %"PRIdOFF" bytes sent in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
 			,xfer.user->alias
@@ -901,7 +901,7 @@ static void send_thread(void* arg)
 				}
 			}
 			if(!xfer.tmpfile && !xfer.delfile && !(scfg.dir[f.dir]->misc&DIR_NOSTAT))
-				inc_sys_download_stats(&scfg, 1, total);
+				inc_sys_download_stats(&scfg, 1, (ulong)total);
 		}	
 
 		if(xfer.credits) {
@@ -981,7 +981,7 @@ static void receive_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d <%s> DATA socket %d receiving %s from offset %"PRIdOFF
 			,xfer.ctrl_sock,xfer.user->alias, *xfer.data_sock,xfer.filename,xfer.filepos);
 
-	fseek(fp,xfer.filepos,SEEK_SET);
+	fseeko(fp,xfer.filepos,SEEK_SET);
 	last_report=start=time(NULL);
 	while(1) {
 
@@ -1117,7 +1117,7 @@ static void receive_thread(void* arg)
 			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias);
 	} else {
 		dur=(long)(time(NULL)-start);
-		cps=dur ? total/dur : total*2;
+		cps=(ulong)(dur ? total/dur : total*2);
 		lprintf(LOG_INFO,"%04d <%s> DATA Transfer successful: %"PRIdOFF" bytes received in %lu seconds (%lu cps)"
 			,xfer.ctrl_sock
 			,xfer.user->alias
@@ -1131,7 +1131,7 @@ static void receive_thread(void* arg)
 			filedat=findfile(&scfg, xfer.dir, f.name);
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
 				f.hdr.attr |= MSG_ANONYMOUS;
-			uint32_t cdt = flength(xfer.filename);
+			off_t cdt = flength(xfer.filename);
 			smb_hfield_bin(&f, SMB_COST, cdt);
 
 			char fdesc[LEN_FDESC + 1] = "";
@@ -1192,7 +1192,7 @@ static void receive_thread(void* arg)
 						,(ulong)(cdt*(scfg.dir[f.dir]->up_pct/100.0))); 
 			}
 			if(!(scfg.dir[f.dir]->misc&DIR_NOSTAT))
-				inc_sys_upload_stats(&scfg, 1, total);
+				inc_sys_upload_stats(&scfg, 1, (ulong)total);
 		}
 		/* Send ACK */
 		sockprintf(xfer.ctrl_sock,sess,"226 Upload complete (%lu cps).",cps);
@@ -3941,7 +3941,7 @@ static void ctrl_thread(void* arg)
 						if(detail) {
 							if(fexistcase(qwkfile)) {
 								t=fdate(qwkfile);
-								l=flength(qwkfile);
+								l=(ulong)flength(qwkfile);
 							} else {
 								t=time(NULL);
 								l=10240;
@@ -4455,7 +4455,7 @@ static void ctrl_thread(void* arg)
 					if(filedat)
 						loadfile(&scfg, dir, p, &f, file_detail_normal);
 					else
-						f.cost=flength(fname);
+						f.cost=(uint32_t)flength(fname);
 					if(f.cost>(user.cdt+user.freecdt)) {
 						lprintf(LOG_WARNING,"%04d <%s> has insufficient credit to download /%s/%s/%s (%lu credits)"
 							,sock,user.alias,scfg.lib[scfg.dir[dir]->lib]->sname

@@ -508,7 +508,7 @@ ulong gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
 		return 0;
 	if(f->size <= (off_t)rate_cps)
 		return 1;
-	return f->size / rate_cps;
+	return (ulong)(f->size / rate_cps);
 }
 
 bool addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)

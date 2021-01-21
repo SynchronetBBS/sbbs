@@ -418,11 +418,11 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 		getfilepath(scfg, &file, path);
 	}
 	off_t size = flength(path);
-	if(size < 0)
+	if(size == -1)
 		JS_ReportError(cx, "File does not exist: %s", path);
 	else {
-		file.idx.size = size;
-		if((p->smb_result = smb_hashfile(path, file.idx.size, &file.file_idx.hash.data)) > 0) {
+		file.idx.size = (uint32_t)size;
+		if((p->smb_result = smb_hashfile(path, size, &file.file_idx.hash.data)) > 0) {
 			file.file_idx.hash.flags = p->smb_result;
 			file.hdr.when_written.time = (uint32_t)fdate(path);
 			JSObject* fobj;
@@ -746,7 +746,7 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	if((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_index)) == SMB_SUCCESS) {
 		char path[MAX_PATH + 1];
 		getfilepath(scfg, &file, path);
-	    JS_SET_RVAL(cx, arglist, UINT_TO_JSVAL(getfilesize(scfg, &file)));
+	    JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((jsdouble)getfilesize(scfg, &file)));
 		smb_freefilemem(&file);
 	}
 	JS_RESUMEREQUEST(cx, rc);

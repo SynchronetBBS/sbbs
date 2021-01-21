@@ -36,12 +36,12 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 	long		lzhlen;
 	int			retval;
 	size_t		n;
-	size_t		l;
+	off_t		l;
 	off_t		length;
 	size_t		taillen=0;
 	size_t		bodylen=0;
 	size_t		chklen=0;
-	long		offset;
+	off_t		offset;
 	uint32_t	crc=0xffffffff;
 	hash_t		found;
 	hash_t**	hashes=NULL;	/* This is a NULL-terminated list of hashes */
@@ -98,7 +98,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 
 			/* Calculate CRC-32 of message text (before encoding, if any) */
 			if(smb->status.max_crcs && dupechk_hashes&(1<<SMB_HASH_SOURCE_BODY)) {
-				for(l=0;l<chklen;l++)
+				for(l=0;l<(off_t)chklen;l++)
 					crc=ucrc32(body[l],crc); 
 				crc=~crc;
 
@@ -151,10 +151,10 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes
 			}
 
 			if(offset<0) {
-				retval=offset;
+				retval=(int)offset;
 				break;
 			}
-			msg->hdr.offset=offset;
+			msg->hdr.offset=(uint32_t)offset;
 
 			if(smb_fseek(smb->sdt_fp,offset,SEEK_SET) != 0) {
 				sprintf(smb->last_error, "%s seek error %d", __FUNCTION__, errno);

@@ -207,7 +207,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
-	long		len;
+	off_t		len;
 	int			file;
 	char*		fname = NULL;
 	private_t*	p;
@@ -241,18 +241,18 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	free(fname);
 	len=filelength(file);
-	if((buf=malloc(len))==NULL) {
+	if((buf=malloc((size_t)len))==NULL) {
 		close(file);
 		return(JS_TRUE);
 	}
-	if(read(file,buf,len)!=len) {
+	if(read(file,buf,(uint)len)!=len) {
 		free(buf);
 		close(file);
 		return(JS_TRUE);
 	}
 	close(file);
 
-	if(comWriteBuf(p->com,(uint8_t *)buf,len)==len) {
+	if(comWriteBuf(p->com,(uint8_t *)buf,(size_t)len)==len) {
 		dbprintf(FALSE, p, "sent %u bytes",len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {

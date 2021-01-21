@@ -492,14 +492,14 @@ public:
 	long 	sys_status; 	/* System Status */
 	subscan_t	*subscan;	/* User sub configuration/scan info */
 
-	ulong	logon_ulb,		/* Upload Bytes This Call */
+	int64_t	logon_ulb,		/* Upload Bytes This Call */
 			logon_dlb,		/* Download Bytes This Call */
 			logon_uls,		/* Uploads This Call */
-			logon_dls,		/* Downloads This Call */
-			logon_posts,	/* Posts This Call */
+			logon_dls;		/* Downloads This Call */
+	ulong	logon_posts,	/* Posts This Call */
 			logon_emails,	/* Emails This Call */
 			logon_fbacks;	/* Feedbacks This Call */
-	uchar	logon_ml;		/* ML of the user upon logon */
+	uchar	logon_ml;		/* Security level of the user upon logon */
 
 	uint 	main_cmds;		/* Number of Main Commands this call */
 	uint 	xfer_cmds;		/* Number of Xfer Commands this call */
@@ -944,7 +944,7 @@ public:
 
 	/* download.cpp */
 	void	downloadedfile(smbfile_t* f);
-	void	notdownloaded(ulong size, time_t start, time_t end);
+	void	notdownloaded(off_t size, time_t start, time_t end);
 	int		protocol(prot_t* prot, enum XFER_TYPE, const char *fpath, const char *fspec, bool cd, bool autohangup=true);
 	const char*	protcmdline(prot_t* prot, enum XFER_TYPE type);
 	void	seqwait(uint devnum);

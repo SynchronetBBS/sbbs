@@ -374,16 +374,16 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 
 		case BBS_PROP_LOGON_ULB:
-			val=sbbs->logon_ulb;
+			val=(uint32_t)sbbs->logon_ulb;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_DLB:
-			val=sbbs->logon_dlb;
+			val=(uint32_t)sbbs->logon_dlb;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_ULS:
-			val=sbbs->logon_uls;
+			val=(uint32_t)sbbs->logon_uls;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_DLS:
-			val=sbbs->logon_dls;
+			val=(uint32_t)sbbs->logon_dls;	// TODO: fix for > 4GB!
 			break;
 		case BBS_PROP_LOGON_POSTS:
 			val=sbbs->logon_posts;

@@ -795,7 +795,7 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 	memcpy(&bin,csi,sizeof(csi_t));
 	clearvars(&bin);
-	bin.length = filelength(file);
+	bin.length = (long)filelength(file);
 	if(bin.length < 1) {
 		close(file);
 		errormsg(WHERE, ERR_LEN, str, bin.length);

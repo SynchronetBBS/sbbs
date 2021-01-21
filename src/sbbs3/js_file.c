@@ -2553,7 +2553,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					break;
 			}
 			rc=JS_SUSPENDREQUEST(cx);
-			fseek(p->fp,offset,SEEK_SET);	/* restore saved file position */
+			fseeko(p->fp,offset,SEEK_SET);	/* restore saved file position */
 			JS_RESUMEREQUEST(cx, rc);
 			if(js_str!=NULL)
 				*vp = STRING_TO_JSVAL(js_str);

@@ -73,7 +73,7 @@ ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 		l = flength(path);
 		if(l < sizeof(idxrec_t))
 			return 0;
-		return l / sizeof(idxrec_t);
+		return (ulong)(l / sizeof(idxrec_t));
 	}
 	smb_t smb = {{0}};
 	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);

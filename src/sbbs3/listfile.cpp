@@ -353,7 +353,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 	char*	ext=NULL;
 	char	path[MAX_PATH+1];
     int		i,j;
-    ulong	cdt;
+    off_t	cdt;
 	int		size_attr=clr_filecdt;
 
 	if(f->extdesc != NULL && *f->extdesc && (useron.misc&EXTDESC)) {
@@ -376,7 +376,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 		bprintf("%c",letter); 
 	}
 	cdt = f->cost;
-	if(f->size < 0) {
+	if(f->size == -1) {
 		exist = false;
 		size_attr = clr_err; 
 	}
@@ -985,7 +985,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					sprintf(str,text[FileRemovedUserMsg]
 						,f->name,f->cost ? ultoac(f->cost,tmp) : text[No]);
 					putsmsg(&cfg,i,str);
-					usrcdt=adjustuserrec(&cfg,i,U_ULB,10,-f->size);
+					usrcdt=adjustuserrec(&cfg,i,U_ULB,10,(long)-f->size);
 					if(i==useron.number)
 						useron.ulb=usrcdt;
 					usrcdt=adjustuserrec(&cfg,i,U_ULS,5,-1);
@@ -1168,7 +1168,7 @@ void sbbs_t::listfiletofile(smbfile_t* f, uint dirnum, int file)
 	else
 		strcat(str, " ");
 	getfilepath(&cfg, f, fpath);
-	if(f->size < 0)
+	if(f->size == -1)
 		exist=false;
 	if(!f->cost)
 		strcat(str, "   FREE");

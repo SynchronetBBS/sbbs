@@ -125,7 +125,7 @@ void sbbs_t::batchmenu()
 						bprintf(text[DownloadQueueLstFmt],i+1
 							,filename
 							,ultoac(f.cost, tmp)
-							,ultoac(f.size, str)
+							,ultoac((ulong)f.size, str)
 							,cur_cps
 								? sectostr((uint)(f.size/(ulong)cur_cps),tmp2)
 								: "??:??:??"

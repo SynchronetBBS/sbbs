@@ -412,6 +412,9 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 	FILE*	fp;
 	MD5 ctx;
 
+	if(size < 1)
+		return 0;
+
 	if((fp = fopen(path, "rb")) == NULL)
 		return 0;
 

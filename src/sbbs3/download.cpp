@@ -35,11 +35,11 @@ void sbbs_t::downloadedfile(smbfile_t* f)
 	off_t		length;
 
 	length = getfilesize(&cfg, f);
-	if(!(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
-		logon_dlb+=length;  /* Update 'this call' stats */
+	if(length > 0 && !(cfg.dir[f->dir]->misc&DIR_NOSTAT)) {
+		logon_dlb += length;  /* Update 'this call' stats */
 		logon_dls++;
 	}
-	bprintf(text[FileNBytesSent],f->name,ultoac(length,tmp));
+	bprintf(text[FileNBytesSent],f->name,ultoac((ulong)length,tmp));
 	SAFEPRINTF3(str,"downloaded %s from %s %s"
 		,f->name,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
@@ -54,13 +54,13 @@ void sbbs_t::downloadedfile(smbfile_t* f)
 /* This function is called when a file is unsuccessfully downloaded.        */
 /* It logs the transfer time and checks for possible leech protocol use.    */
 /****************************************************************************/
-void sbbs_t::notdownloaded(ulong size, time_t start, time_t end)
+void sbbs_t::notdownloaded(off_t size, time_t start, time_t end)
 {
     char	str[256],tmp2[256];
 	char 	tmp[512];
 
 	SAFEPRINTF2(str,"Estimated Time: %s  Transfer Time: %s"
-		,sectostr(cur_cps ? size/cur_cps : 0,tmp)
+		,sectostr(cur_cps ? (uint)(size/cur_cps) : 0,tmp)
 		,sectostr((uint)(end-start),tmp2));
 	logline(nulstr,str);
 	if(cfg.leech_pct && cur_cps                 /* leech detection */
@@ -299,7 +299,7 @@ bool sbbs_t::checkprotresult(prot_t* prot, int error, smbfile_t* f)
 	if(!checkprotresult(prot, error, fpath)) {
 		if(f->dir<cfg.total_dirs)
 			SAFEPRINTF4(str,"attempted to download %s (%s) from %s %s"
-				,f->name,ultoac(f->size,tmp)
+				,f->name,ultoac((ulong)f->size,tmp)
 				,cfg.lib[cfg.dir[f->dir]->lib]->sname,cfg.dir[f->dir]->sname);
 		else if(f->dir==cfg.total_dirs)
 			SAFECOPY(str,"attempted to download QWK packet");
@@ -398,9 +398,9 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		logon_dlb += length;	/* Update stats */
 		logon_dls++;
 		useron.dls = (ushort)adjustuserrec(&cfg, useron.number, U_DLS, 5, 1);
-		useron.dlb = adjustuserrec(&cfg,useron.number, U_DLB, 10, length);
+		useron.dlb = adjustuserrec(&cfg,useron.number, U_DLB, 10, (long)length);
 		char bytes[32];
-		ultoac(length, bytes);
+		ultoac((ulong)length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);
 		char str[128];
 		SAFEPRINTF3(str, "downloaded %s: %s (%s bytes)"

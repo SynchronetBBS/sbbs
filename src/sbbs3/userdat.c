@@ -2403,20 +2403,20 @@ BOOL user_sent_email(scfg_t* cfg, user_t* user, int count, BOOL feedback)
 	return(TRUE);
 }
 
-BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, long bytes)
+BOOL user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 {
 	if(user==NULL)
 		return(FALSE);
 
 	user->dls=(ushort)adjustuserrec(cfg, user->number, U_DLS, 5, files);
-	user->dlb=adjustuserrec(cfg, user->number, U_DLB, 10, bytes);
+	user->dlb=adjustuserrec(cfg, user->number, U_DLB, 10, (long)bytes);
 
 	return(TRUE);
 }
 
 #ifdef SBBS
 BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
-	uint dirnum, const char* filename, ulong bytes)
+	uint dirnum, const char* filename, off_t bytes)
 {
 	smbfile_t f;
 
@@ -2482,20 +2482,20 @@ BOOL user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		subtract_cdt(cfg, user, (long)f.cost);
 
 	if(!(cfg->dir[dirnum]->misc&DIR_NOSTAT))
-		inc_sys_download_stats(cfg, /* files: */1, bytes);
+		inc_sys_download_stats(cfg, /* files: */1, (ulong)bytes);
 
 	smb_freefilemem(&f);
 	return TRUE;
 }
 #endif
 
-BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, long bytes)
+BOOL user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 {
 	if(user==NULL)
 		return(FALSE);
 
 	user->uls=(ushort)adjustuserrec(cfg, user->number, U_ULS, 5, files);
-	user->ulb=adjustuserrec(cfg, user->number, U_ULB, 10, bytes);
+	user->ulb=adjustuserrec(cfg, user->number, U_ULB, 10, (long)bytes);
 
 	return(TRUE);
 }
