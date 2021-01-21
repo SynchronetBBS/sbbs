@@ -2715,44 +2715,6 @@ static void parse_mail_address(char* p
 	strip_char(name, name, '\\');
 }
 
-/* Decode quoted-printable content-transfer-encoded text */
-/* Ignores (strips) unsupported ctrl chars and non-ASCII chars */
-/* Does not enforce 76 char line length limit */
-static char* qp_decode(char* buf)
-{
-	uchar*	p=(uchar*)buf;
-	uchar*	dest=p;
-
-	for(;;p++) {
-		if(*p==0) {
-			*dest++='\r';
-			*dest++='\n';
-			break;
-		}
-		if(*p==' ' || (*p>='!' && *p<='~' && *p!='=') || *p=='\t')
-			*dest++=*p;
-		else if(*p=='=') {
-			p++;
-			if(*p==0) 	/* soft link break */
-				break;
-			if(IS_HEXDIGIT(*p) && IS_HEXDIGIT(*(p+1))) {
-				char hex[3];
-				hex[0]=*p;
-				hex[1]=*(p+1);
-				hex[2]=0;
-				/* ToDo: what about encoded NULs and the like? */
-				*dest++=(uchar)strtoul(hex,NULL,16);
-				p++;
-			} else {	/* bad encoding */
-				*dest++='=';
-				*dest++=*p;
-			}
-		}
-	}
-	*dest=0;
-	return buf;
-}
-
 static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
 {
 	char	fname[MAX_PATH+1];
@@ -2949,12 +2911,6 @@ static void smtp_thread(void* arg)
 			,SMTP_CMD_SAML
 
 	} cmd = SMTP_CMD_NONE;
-
-	enum {
-			 ENCODING_NONE
-			,ENCODING_BASE64
-			,ENCODING_QUOTED_PRINTABLE
-	} content_encoding = ENCODING_NONE;
 
 	SetThreadName("sbbs/smtp");
 	thread_up(TRUE /* setuid */);
@@ -4059,24 +4015,7 @@ static void smtp_thread(void* arg)
 				p=buf;
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(msgtxt!=NULL) {
-					switch(content_encoding) {
-						case ENCODING_BASE64:
-							{
-								char	decode_buf[sizeof(buf)];
-
-								if(b64_decode(decode_buf, sizeof(decode_buf), p, strlen(p))<0)
-									fprintf(msgtxt,"\r\n!Base64 decode error: %s\r\n", p);
-								else
-									fputs(decode_buf, msgtxt);
-							}
-							break;
-						case ENCODING_QUOTED_PRINTABLE:
-							fputs(qp_decode(p), msgtxt);
-							break;
-						default:
-							fprintf(msgtxt, "%s\r\n", p);
-							break;
-					}
+					fputs(p, msgtxt);
 				}
 				lines++;
 				/* release time-slices every x lines */
@@ -4101,20 +4040,6 @@ static void smtp_thread(void* arg)
 						parse_mail_address(p
 							,sender,		sizeof(sender)-1
 							,sender_addr,	sizeof(sender_addr)-1);
-					}
-					else if(stricmp(field,"CONTENT-TRANSFER-ENCODING")==0) {
-						lprintf(LOG_INFO,"%04d %s %s %s = %s", socket, client.protocol, client_id, field, p);
-						if(stricmp(p,"base64")==0)
-							content_encoding=ENCODING_BASE64;
-						else if(stricmp(p,"quoted-printable")==0)
-							content_encoding=ENCODING_QUOTED_PRINTABLE;
-						else {	/* Other (e.g. 7bit, 8bit, binary) */
-							content_encoding=ENCODING_NONE;
-							if(msgtxt!=NULL) 
-								fprintf(msgtxt, "%s\r\n", buf);
-						}
-						hdr_lines++;
-						continue;
 					}
 				}
 			}
@@ -4410,7 +4335,6 @@ static void smtp_thread(void* arg)
 				break;
 			}
 			rcpt_count=0;
-			content_encoding=ENCODING_NONE;
 
 			memset(mailproc_to_match,FALSE,sizeof(BOOL)*mailproc_count);
 
@@ -4468,7 +4392,6 @@ static void smtp_thread(void* arg)
 				break;
 			}
 			rcpt_count=0;
-			content_encoding=ENCODING_NONE;
 			memset(mailproc_to_match,FALSE,sizeof(BOOL)*mailproc_count);
 			sockprintf(socket,client.protocol,session,ok_rsp);
 			badcmds=0;
