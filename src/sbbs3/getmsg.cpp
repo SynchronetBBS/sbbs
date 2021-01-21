@@ -326,10 +326,10 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 		p = smb_getplaintext(msg, txt);
 		if(p == NULL)
 			p = txt;
-		else
+		else if(*p != '\0')
 			bprintf(text[MIMEDecodedPlainTextFmt]
 				, msg->text_charset == NULL ? "unspecified (US-ASCII)" : msg->text_charset
-				, msg->text_subtype);
+				, msg->text_subtype == NULL ? "plain" : msg->text_subtype);
 	}
 	truncsp(p);
 	SKIP_CRLF(p);
