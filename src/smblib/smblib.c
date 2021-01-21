@@ -891,6 +891,12 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 				smb_parse_content_type(p, &(msg->text_subtype), &(msg->text_charset));
 				break;
 			}
+			if(strnicmp(p, "Content-Transfer-Encoding:", 26) == 0) {
+				p += 26;
+				SKIP_WHITESPACE(p);
+				msg->content_encoding = p;
+				break;
+			}
 			break;
 		}
 	}
@@ -929,6 +935,7 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->newsgroups=NULL;
 	msg->mime_version=NULL;
 	msg->content_type=NULL;
+	msg->content_encoding=NULL;
 	msg->text_subtype=NULL;
 	msg->text_charset=NULL;
 

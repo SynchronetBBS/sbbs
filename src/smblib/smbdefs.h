@@ -646,6 +646,7 @@ typedef struct {				/* Message or File */
 	char*		editor;			/* Message editor (if known) */
 	char*		mime_version;	/* MIME Version (if applicable) */
 	char*		content_type;	/* MIME Content-Type (if applicable) */
+	char*		content_encoding; /* MIME Content-Transfer-Encoding (if applicable) */
 	char*		text_charset;	/* MIME text <charset>  (if applicable) - malloc'd */
 	char*		text_subtype;	/* MIME text/<sub-type> (if applicable) - malloc'd */
 	uint16_t	to_agent,		/* Type of agent message is to */

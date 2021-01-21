@@ -178,29 +178,6 @@ void prep_cfg(scfg_t* cfg)
 			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path, sizeof(cfg->lib[i]->parent_path));
 	}
 
-	for(i=0;i<cfg->total_dirs;i++) {
-
-		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
-			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
-		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
-
-		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
-		SAFEPRINTF2(cfg->dir[i]->code,"%s%s"
-			,cfg->lib[cfg->dir[i]->lib]->code_prefix
-			,cfg->dir[i]->code_suffix);
-
-		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
-
-		if(!cfg->dir[i]->path[0])
-			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
-		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
-			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
-		else
-			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
-
-		prep_path(cfg->dir[i]->upload_sem);
-	}
-
 	for(i=0;i<cfg->total_libs;i++) {
 		if((cfg->lib[i]->misc&LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
 			continue;
@@ -255,6 +232,28 @@ void prep_cfg(scfg_t* cfg)
 		}
 	}
 
+	for(i=0;i<cfg->total_dirs;i++) {
+
+		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
+			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
+		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
+
+		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
+		SAFEPRINTF2(cfg->dir[i]->code,"%s%s"
+			,cfg->lib[cfg->dir[i]->lib]->code_prefix
+			,cfg->dir[i]->code_suffix);
+
+		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
+
+		if(!cfg->dir[i]->path[0])
+			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
+		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
+		else
+			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
+
+		prep_path(cfg->dir[i]->upload_sem);
+	}
 
 	/* make data filenames are all lowercase */
 	for(i=0;i<cfg->total_shells;i++)
