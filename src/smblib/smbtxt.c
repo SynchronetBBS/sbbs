@@ -589,7 +589,7 @@ uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t file
 		if(filelen != NULL)
 			*filelen = strlen(buf);
 	}
-	return buf;
+	return (uint8_t*)buf;
 }
 
 /* Return number of file attachments contained in MIME-encoded message body */
