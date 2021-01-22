@@ -1,8 +1,4 @@
-/* js_console.cpp */
-
 /* Synchronet JavaScript "Console" Object */
-
-/* $Id: js_console.cpp,v 1.154 2020/05/24 08:16:52 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -458,6 +442,7 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		key[2];
+	int			ch;
 	int32		mode=0;
 	int32		timeout=0;
 	sbbs_t*		sbbs;
@@ -467,7 +452,7 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if(argc) {
 		if(!JS_ValueToInt32(cx,argv[0],&mode))
@@ -478,14 +463,15 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	key[0]=sbbs->inkey(mode,timeout);
+	ch = sbbs->inkey(mode,timeout);
+	if(ch != NOINP) {
+		key[0]=ch;
+		key[1]=0;
+		if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
+			return(JS_FALSE);
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	}
 	JS_RESUMEREQUEST(cx, rc);
-	key[1]=0;
-
-	if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
-		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
     return(JS_TRUE);
 }
 
@@ -2118,7 +2104,7 @@ js_term_updated(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
 	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
-		"Returns an empty string if there is no input (e.g. timeout occurs).<br>"
+		"Returns an empty string (or <tt>null</tt> when the <tt>K_NUL</tt> mode flag is used) if there is no input (e.g. timeout occurs).<br>"
 		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.")
 	,311
 	},
