@@ -4006,7 +4006,7 @@ static void smtp_thread(void* arg)
 				state=SMTP_STATE_DATA_BODY;	/* Null line separates header and body */
 				lines=0;
 				if(msgtxt!=NULL) {
-					fprintf(msgtxt, "\r\n");
+					fputs("\r\n", msgtxt);
 					hdr_len=ftell(msgtxt);
 				}
 				continue;
@@ -4016,6 +4016,7 @@ static void smtp_thread(void* arg)
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(msgtxt!=NULL) {
 					fputs(p, msgtxt);
+					fputs("\r\n", msgtxt);
 				}
 				lines++;
 				/* release time-slices every x lines */
@@ -4044,8 +4045,10 @@ static void smtp_thread(void* arg)
 				}
 			}
 
-			if(msgtxt!=NULL) 
-				fprintf(msgtxt, "%s\r\n", buf);
+			if(msgtxt!=NULL) {
+				fputs(buf, msgtxt);
+				fputs("\r\n", msgtxt);
+			}
 			hdr_lines++;
 			continue;
 		}
