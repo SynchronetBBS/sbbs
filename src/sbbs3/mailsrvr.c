@@ -859,11 +859,11 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			if(!mimeattach(socket,prot,sess,mime_boundary,file_list[i]))
 				lprintf(LOG_ERR,"%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
 			else {
-				endmime(socket,prot,sess,mime_boundary);
 				if(msg->hdr.auxattr&MSG_KILLFILE)
 					if(remove(file_list[i])!=0)
 						lprintf(LOG_WARNING,"%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
 			}
+			endmime(socket,prot,sess,mime_boundary);
 		}
 	}
     sockprintf(socket,prot,sess,".");	/* End of text */
