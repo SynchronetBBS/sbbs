@@ -39,6 +39,8 @@ function getCtrlLine(file) {
 
 	const _file = fullpath(file);
 
+	if (_file === undefined) return ret;
+
 	if (_file.indexOf(settings.web_pages) != 0 && _file.indexOf(settings.web_mods_pages) != 0) return ret;
 
     var ctrl = '';
