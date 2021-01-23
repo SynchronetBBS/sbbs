@@ -395,7 +395,13 @@ var XTRN_TRIBBS		= 11;		/* TRIBBS.SYS								*/
 var XTRN_DOOR32		= 12;		/* DOOR32.SYS								*/
 								/********************************************/
 
-
+								/********************************************/
+								/* Transfer protocol 'settings' flags		*/
+								/********************************************/
+var PROT_DSZLOG		= (1<<0);   /* Supports DSZ Log 						*/
+var PROT_NATIVE		= (1<<1);   /* Native (32-bit) executable 				*/
+var PROT_SOCKET		= (1<<2);   /* Use socket I/O, not stdio on *nix 		*/
+								/********************************************/
 
     							/********************************************/
 				                /* Bit values for file.settings				*/
