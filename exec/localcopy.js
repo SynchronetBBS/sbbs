@@ -120,4 +120,4 @@ var result = main(argv[0]);
 while(bbs.online && console.output_buffer_level && !js.terminated) {
 	sleep(100);
 }
-result;
+exit(result);
