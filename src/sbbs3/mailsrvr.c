@@ -4019,10 +4019,6 @@ static void smtp_thread(void* arg)
 					fputs("\r\n", msgtxt);
 				}
 				lines++;
-				/* release time-slices every x lines */
-				if(startup->lines_per_yield &&
-					!(lines%startup->lines_per_yield))	
-					YIELD();
 				if((lines%100) == 0 && (msgtxt != NULL))
 					lprintf(LOG_DEBUG,"%04d %s %s received %lu lines (%lu bytes) of body text"
 						,socket, client.protocol, client_id, lines, ftell(msgtxt)-hdr_len);
