@@ -2326,14 +2326,15 @@ str_list_t iniReadFile(FILE* fp)
 	inc_len=strlen(INI_INCLUDE_DIRECTIVE);
 	for(i=0; list[i]!=NULL; i++) {
 		if(strnicmp(list[i],INI_INCLUDE_DIRECTIVE,inc_len)==0) {
+			glob_t gl;
+			size_t j;
 			p=list[i]+inc_len;
 			SKIP_WHITESPACE(p);
 			truncsp(p);
-			glob_t gl;
  			glob(p, GLOB_MARK, NULL, &gl);
 			safe_snprintf(str, sizeof(str), "; %s - %lu matches found", list[i], (ulong)gl.gl_pathc);
 			strListReplace(list, i, str);
-			for(size_t j = 0; j < gl.gl_pathc; j++) {
+			for(j = 0; j < gl.gl_pathc; j++) {
 				char* fname = gl.gl_pathv[j];
 				if(*lastchar(fname) == '/')
 					continue;
