@@ -987,24 +987,45 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_fname;
 	jsrefcount	rc;
 	BOOL		ret;
+	str_list_t	list = NULL;
 
-	if((js_fname=JS_ValueToString(cx, argv[0]))==NULL) {
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-		return(JS_TRUE);
+	if(JSVAL_IS_OBJECT(argv[0]) && !JSVAL_IS_NULL(argv[0])) {
+		JSObject* array = JSVAL_TO_OBJECT(argv[0]);
+		if(!JS_IsArrayObject(cx, array))
+			return(JS_TRUE);
+		jsuint count;
+		if(!JS_GetArrayLength(cx, array, &count))
+			return(JS_TRUE);
+		char* tmp = NULL;
+		size_t tmplen = 0;
+		for(jsuint i = 0; i < count; i++) {
+			jsval val;
+			if(!JS_GetElement(cx, array, i, &val))
+				break;
+			if(!JSVAL_IS_STRING(val))	/* must be an array of strings */
+				break;
+			JSVALUE_TO_RASTRING(cx, val, tmp, &tmplen, NULL);
+			HANDLE_PENDING(cx, tmp);
+			strListPush(&list, tmp);
+		}
+		free(tmp);
 	}
-
+	else {
+		if((js_fname=JS_ValueToString(cx, argv[0]))==NULL) {
+			JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
+			return(JS_TRUE);
+		}
+		JSSTRING_TO_MSTRING(cx, js_fname, fname, NULL);
+		HANDLE_PENDING(cx, fname);
+		if(fname==NULL) {
+			JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
+			return(JS_TRUE);
+		}
+	}
 	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 		return(JS_TRUE);
 	}
-
-	JSSTRING_TO_MSTRING(cx, js_fname, fname, NULL);
-	HANDLE_PENDING(cx, fname);
-	if(fname==NULL) {
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-		return(JS_TRUE);
-	}
-
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
 	if(JS_IsExceptionPending(cx)) {
 		FREE_AND_NULL(str);
@@ -1018,9 +1039,13 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ret = findstr(str,fname);
+	if(list != NULL)
+		ret = findstr_in_list(str, list);
+	else
+		ret = findstr(str, fname);
 	free(str);
 	free(fname);
+	strListFree(&list);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
@@ -2036,8 +2061,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
 	,310
 	},		
-	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename, find_string")
-	,JSDOCSTR("search any file for pseudo-regexp")
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array, find_string")
+	,JSDOCSTR("search any file or array of strings for pseudo-regexp string (in <tt>*.can</tt> format)")
 	,310
 	},		
 	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone=<i>local</i>]")
