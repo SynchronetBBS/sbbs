@@ -1,24 +1,26 @@
 /**
  * Custom External Program Menu Library for Custom External Program Menus
  * by Michael Long mlong  innerrealmbbs.us
- * 
- * This provides common functionality for retrieving menus used by 
+ *
+ * This provides common functionality for retrieving menus used by
  * the loadable module xtrnmenu.js and by the web interface
  * 099-xtrnmenu-games.xjs
  */
 
 "use strict";
 
-load("sbbsdefs.js", "K_NONE");
+require("sbbsdefs.js", "K_NONE");
 
 /* text.dat entries */
 require("text.js", "XtrnProgLstFmt");
+
+var MENU_LOADED = true;
 
 function ExternalMenus() {
 	this.options = {};
 	this.xtrn_custommenu_options = {};
 	this.menuconfig = {};
-	
+
 	this.getOptions();
 	this.getMenuConfig();
 }
@@ -31,7 +33,7 @@ ExternalMenus.prototype.getMenuConfig = function() {
 		config_src = config_file.read();
 		config_file.close();
 	}
-	
+
 	if (typeof config_src !== "undefined") {
 		this.menuconfig = JSON.parse(config_src.toString());
 	}
@@ -41,7 +43,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	if (typeof menutype === "undefined") {
 		menutype = 'custommenu';
 	}
-	
+
 	// Get xtrn_sec options from modopts.ini [xtrn_sec]
 	if ((this.options = load({}, "modopts.js", "xtrn_sec")) == null) {
 		this.options = { multicolumn: true, sort: false };
@@ -61,28 +63,19 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 
 	if (this.options.multicolumn_fmt === undefined)
 		this.options.multicolumn_fmt = system.text(XtrnProgLstFmt);
-	
+
 	if (this.options.singlecolumn_fmt === undefined)
 		this.options.singlecolumn_fmt = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
 
 	if (this.options.singlecolumn_margin == undefined)
 		this.options.singlecolumn_margin = 7;
 
-	if (typeof bbs !== "undefined") {
-		if (this.options.singlecolumn_height == undefined)
-			this.options.singlecolumn_height = console.screen_rows - this.options.singlecolumn_margin;
-
-		// override and turn off multicolumn if terminal width is less than 80
-		if (console.screen_columns < 80)
-			options.multicolumn = false;
-	}
-	
 	if (this.options.restricted_user_msg === undefined)
 		this.options.restricted_user_msg = system.text(R_ExternalPrograms);
-	
-	if (this.options.no_programs_msg === undefined) 
+
+	if (this.options.no_programs_msg === undefined)
 		this.options.no_programs_msg =  system.text(NoXtrnPrograms);
-	
+
 	if (this.options.header_fmt === undefined)
 		this.options.header_fmt = system.text(XtrnProgLstHdr);
 
@@ -92,7 +85,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	if (this.options.underline === undefined)
 		this.options.underline = system.text(XtrnProgLstUnderline);
 
-	if (this.options.which === undefined) 
+	if (this.options.which === undefined)
 		this.options.which = system.text(WhichXtrnProg);
 
 	if (this.options.clear_screen === undefined)
@@ -106,6 +99,10 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 
 	if (this.options.section_which === undefined)
 		this.options.section_which = "\r\n\x01-\x01gWhich, \x01w\x01h~Q\x01n\x01guit or [1]: \x01h"
+
+	if (typeof (this.options.use_xtrn_sec) == "undefined") {
+		this.options.use_xtrn_sec = false;
+	}
 
 	// if its a custom menu, then override with custommenu_options
 	if (menutype == 'custommenu') {
@@ -123,7 +120,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 			this.options.singlecolumn_fmt = "\x01h\x01c%3s \xb3 \x01n\x01c%s\x01h ";
 		}
 
-		this.options.header_fmt = (typeof this.xtrn_custommenu_options.header_fmt !== "undefined") 
+		this.options.header_fmt = (typeof this.xtrn_custommenu_options.header_fmt !== "undefined")
 			? this.xtrn_custommenu_options.header_fmt : this.options.header_fmt;
 
 		this.options.titles = (typeof this.xtrn_custommenu_options.titles !== "undefined")
@@ -153,11 +150,18 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 		if (typeof bbs !== "undefined") {
 			this.options.singlecolumn_height = (typeof this.xtrn_custommenu_options.singlecolumn_height !== "undefined")
 				? this.xtrn_custommenu_options.singlecolumn_height : this.options.singlecolumn_height;
+
+			if (this.options.singlecolumn_height == undefined)
+				this.options.singlecolumn_height = console.screen_rows - this.options.singlecolumn_margin;
+
+			// override and turn off multicolumn if terminal width is less than 80
+			if (console.screen_columns < 80)
+				options.multicolumn = false;
 		}
 
 		// no need to override restricted_user_msg or no_programs_msg - these
 		// will be the same for both types of menus
-		
+
 		// Allow overriding on a per-menu basis
 		var menuoptions = load({}, "modopts.js", "xtrnmenu:" + menuid);
 		if ((typeof menuid !== "undefined") && (menuoptions != null)) {
@@ -166,9 +170,9 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 			}
 		}
 	}
-	
+
 	// these options only apply to terminals/consoles
-	
+
 	// the intention is to obtain all the mod_opts options for xtrn_sec, and
 	// override if a custom menu global setting is set
 
@@ -176,11 +180,11 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	if (this.options.custom_menu_not_found_msg === undefined) {
 		this.options.custom_menu_not_found_msg = "Menu %MENUID% not found";
 	}
-	
+
 	if (this.options.custom_menu_program_not_found_msg === undefined) {
 		this.options.custom_menu_program_not_found_msg = "Program %PROGRAMID% not found";
 	}
-	
+
 	return this.options;
 }
 
@@ -194,7 +198,7 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 	}
 
 	var menu;
-	
+
 	if ((typeof this.menuconfig !== "undefined") && (typeof this.menuconfig.menus !== "undefined")) {
 		this.menuconfig.menus.some(function (indmenu) {
 			if (indmenu.id.toLowerCase() == menuid) {
@@ -202,10 +206,10 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 			}
 		});
 	}
-	
+
 	if (!menu && (menuid == "main")) {
 		// no custom menus defined, make one to mimic old behavior
-		
+
 		var menuitems = [];
 
 		var i;
@@ -221,7 +225,7 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 				i++;
 			}
 		});
-		
+
 		menu = {
 			"id": "main",
 			"title": "Main Menu",
@@ -238,19 +242,19 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 	if ((typeof menuid === "undefined") || !menuid) {
 		return false;
 	}
-	
+
 	var menuitems = [];
 	var menu, title;
-	
+
 	xtrn_area.sec_list.some(function (sec) {
-		
+
 		if (sec.code.toLowerCase() == menuid.toLowerCase()) {
 			title = sec.name;
 
 			if (!sec.can_access || sec.prog_list.length < 1) {
 				return false;
 			}
-			
+
 			var i = 1;
 			sec.prog_list.some(function (prog) {
 				menuitems.push({
@@ -263,7 +267,7 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 				});
 				i++;
 			});
-			
+
 			if (menuitems.length > 0) {
 				menu = {
 					'id': menuid,
@@ -281,13 +285,13 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 // Sort the menu items according to options
 ExternalMenus.prototype.getSortedItems = function(menuobj) {
 	var sort_type;
-	
+
 	if ((typeof menuobj.sort_type !== "undefined") && menuobj.sort_type) {
 		sort_type = menuobj.sort_type; // "name" or "key"
 	} else {
 		sort_type = this.options.sort; // bool
 	}
-	
+
 	// first, build a new menu with only options they have access to
 	var menuitemsfiltered = [];
 	for (i in menuobj.items) {
@@ -301,7 +305,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 					}
 				}
 				break;
-			
+
 			case 'xtrnprog':
 				for (j in xtrn_area.sec_list) {
 					for (var k in xtrn_area.sec_list[j].prog_list) {
@@ -313,7 +317,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 					}
 				}
 				break;
-			
+
 			case 'custommenu':
 			default:
 				if ((typeof menuobj.items[i].access_string === "undefined") || !menuobj.items[i].access_string) {
@@ -328,7 +332,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 				break;
 		}
 	}
-	
+
 	// if no custom input keys are specified for an input, then assign a numeric input
 	// this would mimic the built-in external section menu functionality
 	// but this is only assigned on sort_type key because if the sort type is for
@@ -340,10 +344,10 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 			if (menuitemsfiltered[i].input > sortind) {
 				sortind = menuitemsfiltered[i].input;
 			}
-		}	
+		}
 	}
 	sortind++;
-	
+
 	if (sort_type == "key") {
 		for (i in menuitemsfiltered) {
 			if (!menuitemsfiltered[i].input) {
@@ -352,7 +356,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 			}
 		}
 	}
-	
+
 	if (sort_type) {
 		switch (sort_type) {
 			case "key":
@@ -365,7 +369,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 				break;
 		}
 	}
-	
+
 	// if this is a sort by title and the key is empty, it will be assigned the next available number
 	// this is to support auto-generated inputs like is done on the built-in section menus
 	// however, to keep the numeric keys in order, the numbers could not be pre-assigned like it done
@@ -376,7 +380,7 @@ ExternalMenus.prototype.getSortedItems = function(menuobj) {
 			sortind++;
 		}
 	}
-	
+
 	return menuitemsfiltered;
 }
 

@@ -97,7 +97,7 @@ var editMenu = function(menuid) {
 
         displayoptions.push(format("%23s: %s", "Edit Items", "[...]"));
         displayoptionids.push("items");
-        
+
         selection = uifc.list(WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC, 0, 0, 0, last, last,
             menu.title + ": Options", displayoptions);
 
@@ -170,7 +170,7 @@ var editItems = function(menuid) {
 
     // cur bar top left width
     var ctxm = new uifc.list.CTX(0, 0, 0, 0, 0);
-    
+
     if (typeof menuid === "undefined") {
         uifc.msg("Menu could not be found");
         return;
@@ -182,12 +182,12 @@ var editItems = function(menuid) {
             }
         }
     }
-    
+
     if ((typeof menu.items == "undefined") || (menu.items.length == 0)) {
         // no items, prompt them to make one
         editItem(menu.id, 0);
     }
-    
+
 
     uifc.help_text = word_wrap("This menu allows editing the various items in this menu.\r\n\r\n"
         + "If you leave input key blank, it will use an auto-generated number at display time.\r\n\r\n"
@@ -223,7 +223,7 @@ var editItems = function(menuid) {
             items,
             ctxm
         );
-        
+
         if (selection == -1) {
             // esc key
             break;
@@ -305,10 +305,10 @@ var editItems = function(menuid) {
                     for (i in menu.items) {
                         menuitems2.push(menu.items[i]);
                         // paste copied item after selected item
-						if (i == itemids[selection]) {
-							menuitems2.push(copyitem);
+                        if (i == itemids[selection]) {
+                            menuitems2.push(copyitem);
                             ctxm.cur = i-1;
-						}
+                        }
                     }
                     menu.items = menuitems2;
                 }
@@ -383,7 +383,7 @@ var editItem = function(menuid, itemindex) {
             ("target" in item ? item.target : "")));
         displayoptionids.push("target");
 
-        if (item.type == "custommenu") {
+        if ((item.type == "custommenu") || (item.type == "command")) {
             displayoptions.push(format("%23s: %s", "access_string",
                 ("access_string" in item ? item.access_string : "(default)")));
             displayoptionids.push("access_string");
@@ -412,7 +412,7 @@ var editItem = function(menuid, itemindex) {
         }
 
         switch (displayoptionids[selection]) {
-            
+
             case 'input':
                 uifc.help_text = word_wrap("The input key to access this item. Can be anything except Q. Leave blank to auto-generate a number.");
                 selection2 = uifc.input(WIN_MID, "Input Key", item.input, 3, K_EDIT);
@@ -478,7 +478,7 @@ var editItem = function(menuid, itemindex) {
                 }
                 item.access_string = selection2;
                 break;
-                
+
         }
         last = Math.max(selection, 0);
     }
@@ -490,7 +490,8 @@ function present_select_targettype(item)
         "This is the type of target this item points to.\r\n\r\n"
         + "custommenu is a custom menu defined in this tool.\r\n\r\n"
         + "xtrnmenu is a standard Syncrhonet External Section Menu (refer to the scfg tool).\r\n\r\n"
-        + "xtrnprog is a direct link to an external program (refer to the scfg tool)");
+        + "xtrnprog is a direct link to an external program (refer to the scfg tool)"
+        + "command is a synchronet command line. See http://wiki.synchro.net/config:cmdline");
 
     var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
     if (typeof item.type !== "undefined") {
@@ -507,10 +508,14 @@ function present_select_targettype(item)
                 targetypectx.cur = 2;
                 targetypectx.bar = 2;
                 break;
+            case 'command':
+                targetypectx.cur = 3;
+                targetypectx.bar = 3;
+                break;
         }
     }
     switch (uifc.list(WIN_ORG | WIN_MID | WIN_SAV,
-        "Target Type", ["custommenu", "xtrnmenu", "xtrnprog"], targetypectx)) {
+        "Target Type", ["custommenu", "xtrnmenu", "xtrnprog", "command"], targetypectx)) {
         case 0:
             item.type = "custommenu";
             break;
@@ -520,13 +525,16 @@ function present_select_targettype(item)
         case 2:
             item.type = "xtrnprog";
             break;
+        case 3:
+            item.type = "command";
+            break;
         default:
             // includes escape key
             break;
     }
 
     // convienence... enter target selection
-    present_select_target(item)    
+    present_select_target(item)
 }
 
 function present_select_target(item)
@@ -538,9 +546,9 @@ function present_select_target(item)
     var custommenuitems = [];
     var custommenuitemsids = [];
     var custommenunames = [];
-    
+
     var selection2;
-    
+
     switch (item.type) {
         case "custommenu":
             // present list of custom menus
@@ -582,7 +590,7 @@ function present_select_target(item)
                 seclist.push({ code: xtrn_area.sec_list[i].code, name: xtrn_area.sec_list[i].name});
             };
             seclist.sort(sort_by_code);
-            
+
             for (i in seclist) {
                 custommenuitems.push(format("%23s: %s", seclist[i].code, seclist[i].name));
                 custommenuitemsids.push(seclist[i].code);
@@ -655,6 +663,15 @@ function present_select_target(item)
             }
             break;
 
+            command:
+                selection2 = uifc.input(WIN_ORG | WIN_MID, "Command", item.target, 63, K_EDIT);
+            if ((selection2 < 0) || (selection2 == null)) {
+                // escape key
+                break;
+            }
+
+            item.target = selection2;
+            break;
         default:
             selection2 = uifc.input(WIN_ORG | WIN_MID, "Target", item.target, 50, K_EDIT);
             if ((selection2 < 0) || (selection2 == null)) {
@@ -664,7 +681,7 @@ function present_select_target(item)
 
             item.target = selection2;
             break;
-    }    
+    }
 }
 
 function sort_by_name(a, b)
@@ -708,14 +725,14 @@ try {
         }
     }
     config_file.close();
-    
+
     if (typeof menuconfig.menus === "undefined") {
         menuconfig.menus = [];
     }
 
     uifc.init("Enhanced External Program Menus Configurator");
     uifc.lightbar_color = 120;
-    uifc.background_color = 21; 
+    uifc.background_color = 21;
     uifc.frame_color = 15;
     js.on_exit("if (uifc.initialized) uifc.bail()");
 
@@ -745,9 +762,9 @@ try {
             menus.push(menuconfig.menus[m].id);
             menuTitles.push(format("%20s: %s", menuconfig.menus[m].id, menuconfig.menus[m].title));
         }
-        
+
         menuTitles.push(format("%20s  %s", '', "[Save Config Without Exit]"));
-        
+
         // WIN_ORG = original menu, destroy valid screen area
         // WIN_MID = place window in middle of screen
         // WIN_XTR = add extra line at end for inserting at end
