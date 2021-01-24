@@ -13,13 +13,6 @@
  fi
  
  # Add any libraries needed by optional components.  In the case of zlib use
-@@ -211,4 +211,4 @@
- 
- # Finally, report what we've found
- 
--echo "$LDARGS"
-\ No newline at end of file
-+echo "$LDARGS"
 --- tools/ccopts.sh.orig	2020-11-26 02:40:05.222021000 -0500
 +++ tools/ccopts.sh	2021-01-24 07:41:02.126230000 -0500
 @@ -358,9 +358,9 @@
