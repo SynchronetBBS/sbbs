@@ -22,11 +22,11 @@
 +echo "$LDARGS"
 --- tools/ccopts.sh.orig	2020-11-26 02:40:05.222021000 -0500
 +++ tools/ccopts.sh	2021-01-24 07:41:02.126230000 -0500
-@@ -357,10 +357,10 @@
+@@ -358,9 +358,9 @@
  # tools/getlibs.sh also for clang 4.7 or newer.
  
  if [ $ISCLANG -gt 0 ] && [ $ISSPECIAL -eq 0 ] ; then
--	CLANG_VER="$($CC -dumpversion | tr -d  '.' | cut -c 1-2)" ;
+	CLANG_VER="$($CC -dumpversion | sed -E 's/^([0-9]+)$/\1.0/' | sed -E 's/^([0-9]+)\.([0-9]).*$/\1\2/')" ;
 -	if [ $CLANG_VER -gt 42 ] ; then
 -		CCARGS="$CCARGS -fsanitize=safe-stack" ;
 -	fi ;
