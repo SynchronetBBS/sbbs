@@ -482,14 +482,6 @@ object MailCfgDlg: TMailCfgDlg
         Height = 13
         Caption = 'DNS Server'
       end
-      object DefCharsetLabel: TLabel
-        Left = 7
-        Top = 62
-        Width = 85
-        Height = 19
-        AutoSize = False
-        Caption = 'Default Charset'
-      end
       object ConnectTimeoutLabel: TLabel
         Left = 7
         Top = 146
@@ -578,16 +570,6 @@ object MailCfgDlg: TMailCfgDlg
         ShowHint = True
         TabOrder = 0
         OnClick = SendMailCheckBoxClick
-      end
-      object DefCharsetEdit: TEdit
-        Left = 92
-        Top = 62
-        Width = 65
-        Height = 21
-        Hint = 'Character set specified for locally generated e-mail messages'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 3
       end
       object ConnectTimeoutEdit: TEdit
         Left = 92
