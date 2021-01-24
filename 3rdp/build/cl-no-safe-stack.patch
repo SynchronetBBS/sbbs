@@ -26,7 +26,7 @@
  # tools/getlibs.sh also for clang 4.7 or newer.
  
  if [ $ISCLANG -gt 0 ] && [ $ISSPECIAL -eq 0 ] ; then
-	CLANG_VER="$($CC -dumpversion | sed -E 's/^([0-9]+)$/\1.0/' | sed -E 's/^([0-9]+)\.([0-9]).*$/\1\2/')" ;
+ 	CLANG_VER="$($CC -dumpversion | sed -E 's/^([0-9]+)$/\1.0/' | sed -E 's/^([0-9]+)\.([0-9]).*$/\1\2/')" ;
 -	if [ $CLANG_VER -gt 42 ] ; then
 -		CCARGS="$CCARGS -fsanitize=safe-stack" ;
 -	fi ;
