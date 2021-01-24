@@ -11,13 +11,23 @@
 // Mnemonic (Command Key)        E
 // Protocol Name                 E-mail Attachment
 // Download Command Line         ?emailfiles %f
-// Batch Download Command Line   ?emailfiles %s
+// Batch Download Command Line   ?emailfiles +%f
 // Native Executable/Script      Yes
 // Supports DSZLOG               Yes
 // Socket I/O                    No
 
 // Your Synchronet Mail Server (SendMail thread) must be operational for this
 // module to work as expected.
+
+// ctrl/modopts.ini settings:
+// [emailfiles]
+// maxfiles = 10
+// maxfilesize = 10M
+// maxpending = 100M
+// prompt
+// badaddr
+// msgbody
+// success
 
 require("sbbsdefs.js", "K_EDIT");
 require('smbdefs.js', 'NET_INTERNET');
@@ -33,8 +43,12 @@ if(argc < 1) {
 var options = load({}, "modopts.js", "emailfiles");
 if(!options)
 	options = {};
-if(!options.maxsize)
-	options.maxsize = 10 * 1024 * 1024;
+if(!options.maxfiles)
+	options.maxfiles = 10;
+if(!options.maxfilesize)
+	options.maxfilesize = 10 * 1024 * 1024;
+if(!options.maxpending)
+	options.maxpending = 100 * 1024 * 1024;
 
 if(argv[0] === '-install') {
 	var cnflib = load({}, "cnflib.js");
@@ -47,7 +61,7 @@ if(argv[0] === '-install') {
 		  key: 'E'
 		, name: 'E-mail Attachment'
 		, dlcmd: '?emailfiles %f'
-		, batdlcmd: '?emailfiles %s'
+		, batdlcmd: '?emailfiles +%f'
 		, ars: 'REST NOT M'
 		, settings: PROT_NATIVE | PROT_DSZLOG
 		});
@@ -61,56 +75,86 @@ if(argv[0] === '-install') {
 
 function sendfiles()
 {
+	var dir = system.data_dir + format("file/%04u.out/", user.number);
+	if(!mkpath(dir)) {
+		alert("Error " + errno_str + " making directory: " + dir);
+		return errno || 1;
+	}
+
 	var logfile = new File(system.node_dir + "PROTOCOL.LOG");
 	if(!logfile.open("w")) {
-		alert("Error " + logfile.error + " opening " + f.name);
-		return 1;
+		alert("Error " + logfile.error + " opening " + logfile.name);
+		return errno || 1;
 	}
 
 	var msgbase = new MsgBase('mail');
 	if(!msgbase.open()) {
 		alert("Error " + msgbase.error + " opening mail base");
-		return 1;
+		return msgbase.status || 1;
 	}
-
-	var files_sent = 0;
+	var diskusage = load({}, "diskusage.js");
+	var list = [];
 	for(var i = 0; i < argc; i++) {
-		var fpath = argv[i];
+		if(argv[i][0] == '+') {
+			var f = new File(argv[i].slice(1));
+			if(f.open("r")) {
+				list = list.concat(f.readAll());
+				f.close();
+			} else
+				alert("Error " + f.error + " opening " + f.name);
+		} else
+			list.push(argv[i]);
+	}
+	var files_sent = 0;
+	for(var i = 0; i < list.length; i++) {
+		if(!user.is_sysop && files_sent >= options.maxfiles) {
+			alert(format("Maximum files (%u) sent", options.maxfiles));
+			break;
+		}
+		var fpath = list[i];
 		var fname = file_getname(fpath);
 		if(!file_exists(fpath)) {
 			alert(format("File (%s) does not exist", fname));
 			continue;
 		}
 		var size = file_size(fpath);
-		if(!user.is_sysop && size > options.maxsize) {
-			alert(format("File (%s) size (%u) larger than maximum: %u bytes"
-				,fname
-				,size
-				,options.maxsize));
+		if(!user.is_sysop) {
+			if(size > options.maxfilesize) {
+				alert(format("File (%s) size (%u) is larger than maximum: %u bytes"
+					, fname
+					, size
+					, options.maxfilesize));
+				continue;
+			}
+			var pending = diskusage.get(dir + '*');
+			if(pending + size > options.maxpending) {
+				alert(format("Bytes pending (%u) at maximum: %u bytes"
+					, pending, options.maxpending));
+				continue;
+			}
+		}
+		if(!file_copy(fpath, dir + fname)) {
+			alert("Error " + errno_str + " copying file: " + fname);
 			continue;
 		}
 		var hdr = { subject: fname
-			,from: user.alias
-			,from_ext: user.number
-			,to: user.name
-			,to_net_type: NET_INTERNET
-			,to_net_addr: address
-			,auxattr: MSG_FILEATTACH | MSG_KILLFILE
+			, from: user.alias
+			, from_net_addr: user.email
+			, from_ext: user.number
+			, to: user.name
+			, to_net_type: NET_INTERNET
+			, to_net_addr: address
+			, attr: MSG_NOREPLY // Suppress bounce messages
+			, netattr: MSG_KILLSENT
+			, auxattr: MSG_FILEATTACH
 		};
-		if(!msgbase.save_msg(hdr, options.msg || "Your requested file is attached.")) {
+		if(!msgbase.save_msg(hdr,
+			format(options.msgbody || "Your requested file (%u of %u) is attached."
+				,i + 1, list.length))) {
 			alert("Error " + msgbase.error + " saving msg");
 			continue;
 		}
-		var dir = system.data_dir + format("file/%04u.out/", user.number);
-		if(!mkpath(dir)) {
-			alert("Error " + errno_str + " making directory: " + dir);
-			continue;
-		}
-		if(!file_copy(fpath, dir + fname)) {
-			alert("Error copying file: " + fname);
-			continue;
-		}
-		console.print(format(options.success || "Successfully sent: %s", fname));
+		console.print(format(options.success || "Successfully attached: %s", fname));
 		console.crlf();
 		logfile.writeln(format("S %u infinite infinite 0 cps 0 errors 0 infinite %s -1"
 			,size, fpath));
