@@ -707,6 +707,8 @@ while(bbs.online) {
 					}
 					stop_mouse();
 					clear_screen();
+					// uncomment to use doorscan
+					/*
 					if(file_exists("../xtrn/doorscan/doorscan.js")) {
 						try {
     						load("../xtrn/doorscan/doorscan.js","run",xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].code);
@@ -719,6 +721,9 @@ while(bbs.online) {
 					else {
 						bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
 					}
+					*/
+					// remove next line if using doorscan
+					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
 					start_mouse();
 					draw_main(true);
 					xtrnsec.draw();
