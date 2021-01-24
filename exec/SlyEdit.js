@@ -123,6 +123,11 @@
  *                              scrolling normally behaves in other apps.  However, SlyEdit's
  *                              choice menu now is only used for the user settings
  *                              menu, where only 1 page of items is shown.
+ * 2021-01-23 Deon George       Version 1.74
+ *                              Making use of the new K_NUL and checking user input against null,
+ *                              SlyEdit no longer thinks a 0x0 (sent with CTRL-Space on a Mac) is
+ *                              a timeout.  K_NUL was added on Jan. 21, 2021 by Rob Swindell:
+ *                              https://gitlab.synchro.net/main/sbbs/-/commit/8b8ed2159c31057764d260c0860335c85e33d6d8
  */
 
 /* Command-line arguments:
@@ -219,8 +224,8 @@ if (console.screen_columns < 80)
 }
 
 // Constants
-const EDITOR_VERSION = "1.73";
-const EDITOR_VER_DATE = "2020-03-31";
+const EDITOR_VERSION = "1.74";
+const EDITOR_VER_DATE = "2021-01-23";
 
 
 // Program variables
@@ -1084,7 +1089,7 @@ function doEditLoop()
 	var continueOn = true;
 	while (continueOn)
 	{
-		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings);
+		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings)
 
 		// If the cursor is at the end of the last line and the user
 		// pressed the DEL key, then treat it as a backspace.  Some
@@ -1103,9 +1108,9 @@ function doEditLoop()
 			returnCode = 1; // Aborted
 			saveMessageToFile();
 		}
-		// If userInput is blank, then the input timeout was probably
+		// If userInput is null, then the input timeout was probably
 		// reached, so abort.
-		else if (userInput == "")
+		else if (userInput == null)
 		{
 			returnCode = 1; // Aborted
 			continueOn = false;
