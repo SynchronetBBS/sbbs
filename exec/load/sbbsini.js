@@ -1,3 +1,12 @@
+/*
+ * This attempts to parse an sbbs.ini file in the same manner as
+ * Synchronet internally does.
+ *
+ * NOTE: All Options fields and enumeration fields are currently broken.
+ *       This means the log_level and options and presumably others as
+ *       well.
+ */
+
 new function() {
 	var f = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
 	if (!f.open("r", true))
