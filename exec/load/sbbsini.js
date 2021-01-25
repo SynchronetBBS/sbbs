@@ -38,7 +38,7 @@ new function() {
 		return ret;
 	}
 
-	sect = null;
+	sect = "Global";
 	this.ctrl_dir = backslash(f.iniGetValue(sect, "CtrlDirectory", system.ctrl_dir));
 	this.temp_dir = backslash(f.iniGetValue(sect, "TempDirectory", system.temp_dir));
 	this.host_name = f.iniGetValue(sect, "Hostname", "");
