@@ -2411,7 +2411,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	off_t		lng;
 	int			in;
 
-	if((p=(private_t*)JS_GetInstancePrivate(cx, obj, NULL, NULL))==NULL)
+	if((p=(private_t*)JS_GetPrivate(cx, obj))==NULL)
 		return(JS_TRUE);
 
     JS_IdToValue(cx, id, &idval);
