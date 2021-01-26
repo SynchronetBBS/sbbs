@@ -8,8 +8,8 @@ var lines = [];
 
 lines[0] = "@ECHO OFF";
 writeln("Beginning node config generation...");
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
 	var nodenumpad = ("00" + nodenum).slice(-2);
 	lines[1] = "FUTURE _FUTURE.C" + nodenumpad;
 	
