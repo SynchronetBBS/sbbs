@@ -148,9 +148,10 @@ function sendfiles()
 			, netattr: MSG_KILLSENT
 			, auxattr: MSG_FILEATTACH
 		};
-		if(!msgbase.save_msg(hdr,
-			format(options.msgbody || "Your requested file (%u of %u) is attached."
-				,i + 1, list.length))) {
+		var msgbody = format(options.msgbody || "Your requested file (%u of %u) is attached." +
+			"\r\n\r\nRequested from %s by %s via %s port %u."
+			,i + 1, list.length, system.name, client.ip_address, client.protocol, client.port);
+		if(!msgbase.save_msg(hdr, msgbody)) {
 			alert("Error " + msgbase.error + " saving msg");
 			continue;
 		}
@@ -171,10 +172,14 @@ if(!user.is_sysop && !(msg_area.inet_netmail_settings & NMAIL_ALLOW))
 else if(!user.is_sysop && !(msg_area.inet_netmail_settings & NMAIL_FILE))
 	alert(bbs.text(EmailFilesNotAllowed));
 else {
-	console.print(options.prompt || "\x01h\x01yE-mail address: ");
-	if(!bbs.mods.emailfiles_address)
-		bbs.mods.emailfiles_address = user.netmail;
-	var address = console.getstr(bbs.mods.emailfiles_address, 60, K_EDIT | K_AUTODEL | K_LINE);
+	if(options.prompt === false)
+		address = user.netmail;
+	else {
+		console.print(options.prompt || "\x01h\x01yE-mail address: ");
+		if(!bbs.mods.emailfiles_address)
+			bbs.mods.emailfiles_address = user.netmail;
+		var address = console.getstr(bbs.mods.emailfiles_address, 60, K_EDIT | K_AUTODEL | K_LINE);
+	}
 	if(console.aborted || netaddr_type(address) != NET_INTERNET || address.indexOf('@' + system.inet_addr) >= 0)
 		alert(options.badaddr || "Unsupported e-mail address");
 	else {
