@@ -41,7 +41,6 @@ File.prototype.iniGetEnum = function(section, k, enum, def) {
 		txt = txt.replace(/^\s+|\s+$/gm, '').toLowerCase();
 		for (i = 0; i < enum.length; i++) {
 			if (enum[i].toLowerCase() === txt) {
-print("iniGetEnum() = "+i);
 				return i;
 			}
 		}
