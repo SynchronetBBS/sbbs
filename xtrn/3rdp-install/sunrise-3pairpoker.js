@@ -6,15 +6,15 @@ var i;
 
 var gamedir = fullpath(js.startup_dir);
 var conffile = "PAIR3.CFG";
+var cfg_filename = gamedir + conffile;
 
-if (!file_exists(gamedir + conffile)) {
-	writeln("Conf not found: " + gamedir + conffile);
+if (!file_exists(cfg_filename)) {
+	writeln("Conf not found: " + cfg_filename);
 	exit(1);
 }
 
-file_backup(gamedir + conffile, 3);
+file_backup(cfg_filename, 3);
 
-var cfg_filename = js.startup_dir + conffile;
 var file = new File(cfg_filename);
 if (!file.open("r")) {
 	writeln("Error " + file.error + " opening " + file.name);
@@ -24,7 +24,7 @@ if (!file.open("r")) {
 var lines = file.readAll();
 file.close();
 
-lines[0] = '%PCBDRIVE%%PCBDIR%\DOOR.SYS';
+lines[0] = '%PCBDRIVE%%PCBDIR%door.sys';
 lines[1] = system.name;
 
 var op = system.operator.split(" ", 2);

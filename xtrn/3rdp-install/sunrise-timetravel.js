@@ -35,9 +35,10 @@ if (!file.open("w")) {
 file.writeAll(lines);
 file.close();
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'TTRAVEL' + nodenum + '.CFG');
 	

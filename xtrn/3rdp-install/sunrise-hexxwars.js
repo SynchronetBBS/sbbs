@@ -20,10 +20,11 @@ lines[10] = "3";
 lines[11] = "20";
 lines[12] = "3";
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+
 	lines[0] = nodenum;
-	lines[1] = system.node_list[i].dir + "\DOOR.SYS";
+	lines[1] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'NODE' + nodenum + '.CFG');
 	

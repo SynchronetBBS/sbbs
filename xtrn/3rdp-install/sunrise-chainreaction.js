@@ -6,13 +6,13 @@ var i;
 
 var gamedir = fullpath(js.startup_dir);
 var conffilesrc = "SAMPLE.CFG";
+var cfg_filename = gamedir + conffilesrc;
 
-if (!file_exists(gamedir + conffilesrc)) {
-	writeln("Conf not found: " + gamedir + conffilesrc);
+if (!file_exists(cfg_filename)) {
+	writeln("Conf not found: " + cfg_filename);
 	exit(1);
 }
 
-var cfg_filename = js.startup_dir + conffilesrc;
 var file = new File(cfg_filename);
 if (!file.open("r")) {
 	writeln("Error " + file.error + " opening " + file.name);

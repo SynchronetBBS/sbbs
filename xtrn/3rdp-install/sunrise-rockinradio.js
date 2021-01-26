@@ -18,7 +18,7 @@ lines[7] = "3"; // promos per day
 
 for (i in system.node_list) {
 	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'NODE' + nodenum + '.CFG');
 	

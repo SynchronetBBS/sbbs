@@ -17,9 +17,10 @@ lines[5] = "20"; // cyborg battles per day
 lines[6] = "2"; // ckm card games per day
 lines[7] = "1"; // scripts allowed per day
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'NODE' + nodenum + '.CFG');
 	

@@ -17,9 +17,10 @@ lines[5] = "20"; // enemy engages per day
 lines[6] = "2"; // player engages per day
 lines[7] = "0"; // ?
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'LIS' + nodenum + '.CFG');
 	

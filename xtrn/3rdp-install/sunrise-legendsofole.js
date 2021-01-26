@@ -7,12 +7,13 @@ var i;
 var gamedir = fullpath(js.startup_dir);
 var conffilesrc = "LOO.CFG";
 
-if (!file_exists(gamedir + conffilesrc)) {
-	writeln("Conf not found: " + gamedir + conffilesrc);
+var cfg_filename = gamedir + conffilesrc;
+
+if (!file_exists(cfg_filename)) {
+	writeln("Conf not found: " + cfg_filename);
 	exit(1);
 }
 
-var cfg_filename = js.startup_dir + conffilesrc;
 var file = new File(cfg_filename);
 if (!file.open("r")) {
 	writeln("Error " + file.error + " opening " + file.name);
@@ -27,9 +28,10 @@ var op = system.operator.split(" ", 2);
 lines[2] = op[0];
 lines[3] = op[1];
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'NODE' + nodenum + '.CFG');
 	
