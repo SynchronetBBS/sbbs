@@ -1203,30 +1203,20 @@ function doScan()
 	ucfg.save();
 }
 
-
-if (argv[0] && argv[0].length) {
-	switch(argv[0].toLowerCase()) {
+for(i in argv) {
+	switch(argv[i].toLowerCase()) {
 		case 'scan':
 			doScan();
 			break;
 		case 'pre':
-			if(argv[1])
-				runPre(argv[1].toLowerCase());
-			else
-				throw("XTRN code not included on command-line!");
+			runPre(argv[i+1].toLowerCase());
 			break;
 		case 'post':
-			if(argv[1])
-				runPost(argv[1].toLowerCase());
-			else
-				throw("XTRN code not included on command-line!");
+			runPost(argv[i+1].toLowerCase());
 			break;			
 		case 'run':
 			// deprecated
-			if(argv[1])
-				runXtrn(argv[1].toLowerCase());
-			else
-				throw("XTRN code not included on command-line!");
+			runXtrn(argv[i+1].toLowerCase());
 			break;
 		case 'config':
 			new UserConfig(user.number).configure();
@@ -1237,7 +1227,7 @@ if (argv[0] && argv[0].length) {
 		case 'rank':
 			// TODO: Door popularity rankings
 			break;
-                default:
-                        break;
+        default:
+        	break;
 	}
 }
