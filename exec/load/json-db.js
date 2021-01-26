@@ -291,7 +291,7 @@ function JSONdb (fileName, scope) {
         }
 	}
 	
-	/* shift a record off the end of an array */
+	/* shift a record off the beginning of an array */
 	this.shift = function(request,record) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
@@ -374,7 +374,7 @@ function JSONdb (fileName, scope) {
         }
 	}
 	
-	/* push a record onto the end of an array */
+	/* push a record onto the beginning of an array */
 	this.unshift = function(request,record) {
 		var client = request.client;
 		var data = request.data;
@@ -402,7 +402,7 @@ function JSONdb (fileName, scope) {
         }
 	}
 	
-	/* shift a record off the end of an array */
+	/* slice portion of array into new array */
 	this.slice = function(request,record) {
 		var client = request.client;
 		/* if the requested data does not exist, result is undefined */
