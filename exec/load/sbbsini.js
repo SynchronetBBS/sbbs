@@ -14,7 +14,6 @@ try {
 catch(e) {
 	can_extend_file = false;
 }
-print("Done...");
 
 new function() {
 	var defs = {};
