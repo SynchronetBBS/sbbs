@@ -2272,8 +2272,8 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	jsrefcount	rc;
 	char*		str = NULL;
 
-	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_file_class))==NULL) {
-		return(JS_FALSE);
+	if((p=(private_t*)JS_GetInstancePrivate(cx, obj, &js_file_class, NULL))==NULL) {
+		return(JS_TRUE);
 	}
 
     JS_IdToValue(cx, id, &idval);
@@ -2411,8 +2411,8 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	off_t		lng;
 	int			in;
 
-	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL)
-		return(JS_FALSE);
+	if((p=(private_t*)JS_GetInstancePrivate(cx, obj, NULL, NULL))==NULL)
+		return(JS_TRUE);
 
     JS_IdToValue(cx, id, &idval);
     tiny = JSVAL_TO_INT(idval);
