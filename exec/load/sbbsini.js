@@ -102,7 +102,7 @@ new function() {
 
 	var f = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
 	if (!f.open("r", true))
-		throw("Unable to open "+f.name);
+		throw new Error("Unable to open "+f.name);
 	this.bbs = {};
 	this.ftp = {};
 	this.web = {};
