@@ -25,7 +25,7 @@ file.close();
 
 file_backup(cfg_filename, 3);
 
-lines[0] = "%PCBDRIVE%%PCBDIR%\DOOR.SYS";
+lines[0] = "%PCBDRIVE%%PCBDIR%door.sys";
 lines[1] = system.name;
 var op = system.operator.split(" ", 2);
 lines[2] = op[0];
@@ -36,7 +36,6 @@ lines[8] = gamedir + "srresc.ans";
 lines[9] = gamedir + "srreshof.asc";
 lines[10] = gamedir + "srreshof.ans";
 lines[11] = "1"; // do not display adopt a door
-
 
 writeln("Creating " + cfg_filename);
 

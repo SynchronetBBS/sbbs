@@ -8,7 +8,7 @@ var gamedir = fullpath(js.startup_dir);
 
 file_backup(gamedir + "MB.CFG", 3);
 
-var cfg_filename = js.startup_dir + 'MB.CFG';
+var cfg_filename = gamedir + 'MB.CFG';
 var file = new File(cfg_filename);
 if (!file.open("r")) {
 	writeln("Error " + file.error + " opening " + file.name);

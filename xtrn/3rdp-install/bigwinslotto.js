@@ -18,7 +18,7 @@ if (!file.open("r")) {
 var lines = file.readAll();
 file.close();
 
-lines[0] = '%PCBDIR%\DOOR.SYS';
+lines[0] = "%PCBDRIVE%%PCBDIR%door.sys";
 lines[1] = system.name;
 
 var op = system.operator.split(" ", 2);

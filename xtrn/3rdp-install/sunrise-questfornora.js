@@ -18,9 +18,10 @@ lines[6] = "30"; // warrior battles player gets per day
 lines[7] = "2"; // player battles player gets per day
 lines[8] = "N"; // cleasn mode
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'QUEST' + nodenum + '.CFG');
 	

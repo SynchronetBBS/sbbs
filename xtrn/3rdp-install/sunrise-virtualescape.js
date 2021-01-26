@@ -13,7 +13,7 @@ file_backup(cfg_filename, 3);
 
 var lines = [];
 
-lines[0] = "%PCBDRIVE%%PCBDIR%\DOOR.SYS";
+lines[0] = "%PCBDRIVE%%PCBDIR%door.sys";
 lines[1] = system.name;
 var op = system.operator.split(" ", 2);
 lines[2] = op[0];

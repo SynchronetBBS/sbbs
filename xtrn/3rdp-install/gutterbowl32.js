@@ -18,8 +18,8 @@ lines[8] = '0';
 lines[9] = '0';
 
 writeln("Beginning node config generation...");
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
 	lines[1] = system.node_list[i].dir;
 	
 	writeln("Creating " + js.startup_dir + 'NODE' + nodenum + '.CTL');

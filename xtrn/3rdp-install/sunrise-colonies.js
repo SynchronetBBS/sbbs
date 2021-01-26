@@ -15,11 +15,11 @@ lines[4] = 'N';
 lines[5] = '2';
 lines[6] = '60';
 lines[7] = '5';
-lines[8] = strftime("%m-%d-%Y", time());
+lines[8] = strftime("%m-%d-%Y");
 
-for (i in system.node_list) {
-	var nodenum = parseInt(i, 10) + 1;
-	lines[0] = system.node_list[i].dir + "\DOOR.SYS";
+for(i = 0; i < system.nodes; i++) {
+	var nodenum = i + 1;
+	lines[0] = system.node_list[i].dir + "door.sys";
 	
 	writeln("Creating " + js.startup_dir + 'NODE' + nodenum + '.CFG');
 	
