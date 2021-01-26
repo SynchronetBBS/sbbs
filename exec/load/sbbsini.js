@@ -2,12 +2,105 @@
  * This attempts to parse an sbbs.ini file in the same manner as
  * Synchronet internally does.
  *
- * NOTE: All Options fields and enumeration fields are currently broken.
- *       This means the log_level and options and presumably others as
- *       well.
+ * NOTE: All Options fields and enumeration fields are broken on source
+ *	 older than Tuesday, Jan 26th, 2021 @ 1:15am UTC.
+ *       This means the log_level and options.
  */
 
+var can_extend_file = true;
+try {
+	load("inihelper.js");
+}
+catch(e) {
+	can_extend_file = false;
+}
+print("Done...");
+
 new function() {
+	var defs = {};
+	load(defs, "sbbsdefs.js");
+
+	var bbs_opts = {};
+	Object.keys(defs).forEach(function(k) {
+		if (k.indexOf('BBS_OPT_') == 0) {
+			var opt = k.replace(/^BBS_OPT_/, '').toLowerCase();
+			bbs_opts[opt] = defs[k];
+		}
+	});
+	var ftp_opts = {
+		"debug_rx":(1<<0),
+		"debug_data":(1<<1),
+		"index_file":(1<<2),
+		"debug_tx":(1<<3),
+		"allow_qwk":(1<<4),
+		"no_local_fsys":(1<<5),
+		"dir_files":(1<<6),
+		"keep_temp_files":(1<<7),
+		"lookup_pasv_ip":(1<<9),
+		"no_host_lookup":(1<<11),
+		"no_recycle":(1<<27),
+		"mute":(1<<31)
+	};
+	var mail_opts = {
+		"debug_rx_header":(1<<0),
+		"debug_rx_body":(1<<1),
+		"allow_pop3":(1<<2),
+		"debug_tx":(1<<3),
+		"debug_rx_rsp":(1<<4),
+		"relay_tx":(1<<5),
+		"debug_pop3":(1<<6),
+		"allow_rx_by_number":(1<<7),
+		"allow_sysop_aliases":(1<<9),
+		"use_submission_port":(1<<10),
+		"no_notify":(1<<8),
+		"no_host_lookup":(1<<11),
+		"use_tcp_dns":(1<<12),
+		"no_sendmail":(1<<13),
+		"allow_relay":(1<<14),
+		"smtp_auth_via_ip":(1<<21),
+		"dnsbl_refuse":(1<<15),
+		"dnsbl_ignore":(1<<16),
+		"dnsbl_baduser":(1<<17),
+		"dnsbl_chkrecvhdrs":(1<<18),
+		"dnsbl_throttle":(1<<19),
+		"dnsbl_spamhash":(1<<20),
+		"send_intransit":(1<<22),
+		"relay_auth_plain":(1<<23),
+		"relay_auth_login":(1<<24),
+		"relay_auth_cram_md5":(1<<25),
+		"no_auto_exempt":(1<<26),
+		"no_recycle":(1<<27),
+		"kill_read_spam":(1<<28),
+		"tls_submission":(1<<29),
+		"tls_pop3":(1<<30),
+		"mute":(1<<31)
+	};
+	var service_opts = {
+		"get_ident":(1<<28),
+		"no_recycle":(1<<27),
+		"mute":(1<<31),
+		"udp":(1<<0),
+		"static":(1<<1),
+		"loop":(1<<2),
+		"native":(1<<3),
+		"full_accept":(1<<4),
+		"tls":(1<<5)
+	};
+	var web_opts = {
+		"debug_rx":(1<<0),
+		"debug_tx":(1<<1),
+		"debug_ssjs":(1<<2),
+		"virtual_hosts":(1<<4),
+		"no_cgi":(1<<5),
+		"http_logging":(1<<6),
+		"allow_tls":(1<<7),
+		"hsts_safe":(1<<8),
+		"no_host_lookup":(1<<11),
+		"no_recycle":(1<<27),
+		"no_javascript":(1<<29),
+		"mute":(1<<31)
+	};
+
 	var f = new File(file_cfgname(system.ctrl_dir, "sbbs.ini"));
 	if (!f.open("r", true))
 		throw("Unable to open "+f.name);
@@ -61,7 +154,8 @@ new function() {
 	this.outgoing6 = f.iniGetValue(sect, "OutboundV6Interface", "");
 	if (this.outgoing6 === "")
 		this.outgoing6 = "::";
-	this.log_level = f.iniGetValue(sect, "LogLevel", 7 /* DEFAULT_LOG_LEVEL */);
+	if (can_extend_file)
+		this.log_level = f.iniGetLogLevel(sect, "LogLevel", 7 /* DEFAULT_LOG_LEVEL */);
 	this.bind_retry_count = f.iniGetValue(sect, "BindRetryCount", 2 /* DEFAULT_BIND_RETRY_COUNT */);
 	this.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", 15 /* DEFAULT_BIND_RETRY_DELAY */);
 	this.login_attempt = get_login_attempt_settings(f, sect);
@@ -98,8 +192,10 @@ new function() {
 	this.bbs.dosemuconf_path = f.iniGetValue(sect, "DOSemuConfPath", "");
 	this.bbs.answer_sound = f.iniGetValue(sect, "AnswerSound", "");
 	this.bbs.hangup_sound = f.iniGetValue(sect, "HangupSound", "");
-	this.bbs.log_level = f.iniGetValue(sect, "LogLevel", this.log_level);
-	this.bbs.options = f.iniGetValue(sect, "Options", 2);
+	if (can_extend_file)
+		this.bbs.log_level = f.iniGetLogLevel(sect, "LogLevel", this.log_level);
+	if (can_extend_file)
+		this.bbs.options = f.iniGetBitField(sect, "Options", bbs_opts, 2);
 	this.bbs.bind_retry_count = f.iniGetValue(sect, "BindRetryCount", this.bind_retry_count);
 	this.bbs.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", this.bind_retry_delay);
 	this.bbs.login_attempt = get_login_attempt_settings(f, sect, this);
@@ -127,8 +223,10 @@ new function() {
 	this.ftp.hangup_sound = f.iniGetValue(sect, "HangupSound", "");
 	this.ftp.hack_sound = f.iniGetValue(sect, "HangupSound", "");
 	this.ftp.temp_dir = f.iniGetValue(sect, "TempDirectory", this.temp_dir);
-	this.ftp.log_level = f.iniGetValue(sect, "LogLevel", this.log_level);
-	this.ftp.options = f.iniGetValue(sect, "Options", 12);
+	if (can_extend_file)
+		this.ftp.log_level = f.iniGetLogLevel(sect, "LogLevel", this.log_level);
+	if (can_extend_file)
+		this.ftp.options = f.iniGetBitField(sect, "Options", ftp_opts, 12);
 	this.ftp.bind_retry_count = f.iniGetValue(sect, "BindRetryCount", this.bind_retry_count);
 	this.ftp.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", this.bind_retry_delay);
 	this.ftp.login_attempt = get_login_attempt_settings(f, sect, this);
@@ -141,7 +239,8 @@ new function() {
 	this.mail.sem_chk_freq = f.iniGetValue(sect, "SemFileCheckFrequency", this.sem_chk_freq);
 	this.mail.host_name = f.iniGetValue(sect, "Hostname", this.host_name);
 	this.mail.temp_dir = f.iniGetValue(sect, "TempDirectory", this.temp_dir);
-	this.mail.log_level = f.iniGetValue(sect, "LogLevel", this.log_level);
+	if (can_extend_file)
+		this.mail.log_level = f.iniGetLogLevel(sect, "LogLevel", this.log_level);
 	this.mail.js = get_js_settings(f, sect, this);
 	this.mail.bind_retry_count = f.iniGetValue(sect, "BindRetryCount", this.bind_retry_count);
 	this.mail.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", this.bind_retry_delay);
@@ -175,7 +274,8 @@ new function() {
 	this.mail.outbound_sound = f.iniGetValue(sect, "OutboundSound", "");
 	this.mail.newmail_notice = f.iniGetValue(sect, "NewMailNotice", "%.0s\x01n\x01mNew e-mail from \x01h%s \x01n<\x01h%s\x01n>\r\n");
 	this.mail.forward_notice = f.iniGetValue(sect, "ForwardNotice", "\x01n\x01mand it was automatically forwarded to: \x01h%s\x01n\r\n");
-	this.mail.options = f.iniGetValue(sect, "Options", 4);
+	if (can_extend_file)
+		this.mail.options = f.iniGetBitField(sect, "Options", mail_opts, 4);
 	this.mail.max_concurrent_connections = f.iniGetValue(sect, "MaxConcurrentConnections", 0);
 
 	sect = "Services";
@@ -187,13 +287,15 @@ new function() {
 	this.services.js = get_js_settings(f, sect, this);
 	this.services.host_name = f.iniGetValue(sect, "Hostname", this.host_name);
 	this.services.temp_dir = f.iniGetValue(sect, "TempDirectory", this.temp_dir);
-	this.services.log_level = f.iniGetValue(sect, "LogLevel", this.log_level);
+	if (can_extend_file)
+		this.services.log_level = f.iniGetLogLevel(sect, "LogLevel", this.log_level);
 	this.services.bind_retry_count = f.iniGetValue(sect, "BindRetryCount", this.bind_retry_count);
 	this.services.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", this.bind_retry_delay);
 	this.services.login_attempt = get_login_attempt_settings(f, sect, this);
 	this.services.answer_sound = f.iniGetValue(sect, "AnswerSound", "");
 	this.services.hangup_sound = f.iniGetValue(sect, "HangupSound", "");
-	this.services.options = f.iniGetValue(sect, "Options", 2048 /* BBS_OPT_NO_HOST_LOOKUP */);
+	if (can_extend_file)
+		this.services.options = f.iniGetBitField(sect, "Options", service_opts, 2048 /* BBS_OPT_NO_HOST_LOOKUP */);
 
 	sect = "Web";
 	this.web.autostart = f.iniGetValue(sect, "AutoStart", true);
@@ -203,11 +305,11 @@ new function() {
 	this.web.js = get_js_settings(f, sect, this);
 	this.web.host_name = f.iniGetValue(sect, "Hostname", this.host_name);
 	this.web.temp_dir = f.iniGetValue(sect, "TempDirectory", this.temp_dir);
-	this.web.log_level = f.iniGetValue(sect, "LogLevel", this.log_level);
+	if (can_extend_file)
+		this.web.log_level = f.iniGetLogLevel(sect, "LogLevel", this.log_level);
 	this.web.bind_retry_count = f.iniGetValue(sect, "BindRetryCount", this.bind_retry_count);
 	this.web.bind_retry_delay = f.iniGetValue(sect, "BindRetryDelay", this.bind_retry_delay);
 	this.web.login_attempt = get_login_attempt_settings(f, sect, this);
-
 	this.web.port = f.iniGetValue(sect, "Port", 80);
 	this.web.tls_port = f.iniGetValue(sect, "TLSPort", 443);
 	this.web.max_clients = f.iniGetValue(sect, "MaxClients", 10 /* MAIL_DEFAULT_MAX_CLIENTS */);
@@ -225,6 +327,7 @@ new function() {
 	this.web.answer_sound = f.iniGetValue(sect, "AnswerSound", "");
 	this.web.hangup_sound = f.iniGetValue(sect, "HangupSound", "");
 	this.web.hack_sound = f.iniGetValue(sect, "HackAttemptSound", "");
-	this.web.options = f.iniGetValue(sect, "Options", 2112 /* BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING */);
+	if (can_extend_file)
+		this.web.options = f.iniGetBitField(sect, "Options", web_opts, 2112 /* BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING */);
 	this.web.outbuf_drain_timeout = f.iniGetValue(sect, "OutbufDrainTimeout", 10);
 }();
