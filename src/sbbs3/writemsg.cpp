@@ -22,6 +22,8 @@
 #include "sbbs.h"
 #include "wordwrap.h"
 #include "utf8.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define MAX_LINES		10000
 #define MAX_LINE_LEN	(cols - 1)
@@ -507,7 +509,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	if(console&CON_RAW_IN) {
 
 		if(editor != NULL)
-			*editor = "Synchronet writemsg $Revision: 1.175 $";
+			*editor = "Synchronet writemsg " GIT_BRANCH "/" GIT_HASH;
 
 		bprintf(text[EnterMsgNowRaw]
 			,(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
@@ -644,7 +646,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	else {
 
 		if(editor != NULL)
-			*editor = "Synchronet msgeditor $Revision: 1.175 $";
+			*editor = "Synchronet msgeditor " GIT_BRANCH "/" GIT_HASH;
 
 		buf[0]=0;
 		if(linesquoted || draft_restored) {
