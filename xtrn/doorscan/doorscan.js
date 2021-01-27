@@ -1090,10 +1090,14 @@ function doScan()
 				}
 			}
 			if(tmp==false) {
-				/* No ad... just display a message... */
-				console.attributes=YELLOW;
-				console.writeln("New external: "+xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section.");
-				console.crlf();
+				if (typeof console !== "undefined") {
+					/* No ad... just display a message... */
+					console.attributes = YELLOW;
+					console.writeln("New external: " + xtrn_area.prog[door].name + " in the " + xtrn_area.sec[xtrn_area.prog[door].sec_code].name + " section.");
+					console.crlf();
+				} else {
+					writeln("New external: " + xtrn_area.prog[door].name + " in the " + xtrn_area.sec[xtrn_area.prog[door].sec_code].name + " section.");
+				}
 			}
 			if(ucfg.door[door]==undefined && ucfg.global.addNew) {
 				ucfg=new UserConfig(user.number, true);
@@ -1204,7 +1208,7 @@ function doScan()
 }
 
 for(i in argv) {
-	if (typeof argv[i] == "String") {
+	if (typeof argv[i] == "string") {
 		switch(argv[i].toLowerCase()) {
 			case 'scan':
 				doScan();
