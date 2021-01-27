@@ -38,11 +38,13 @@ function listFiles(dir) {
 
 // Where file is a FileBase file record
 function getMimeType(file) {
-    const f = new File(system.ctrl_dir + 'mime_types.ini');
-    if (f.open('r')) {
-        const mimes = f.iniGetObject();
-        f.close();
-        if (mimes[file.ext] !== undefined) return mimes[file.ext];
+    if (file.ext) {
+        const f = new File(system.ctrl_dir + 'mime_types.ini');
+        if (f.open('r')) {
+            const mimes = f.iniGetObject();
+            f.close();
+            if (mimes[file.ext] !== undefined) return mimes[file.ext];
+        }
     }
     return 'application/octet-stream';
 }
