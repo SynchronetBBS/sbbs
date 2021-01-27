@@ -27,7 +27,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				var fileBase = new FileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
-					if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
+					if (e.name.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
 						return false;
 					} else if (typeof e.path !== 'undefined') {
 						file = e;
