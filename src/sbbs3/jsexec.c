@@ -35,6 +35,8 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "jsdebug.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 #define DEFAULT_LOG_LEVEL	LOG_INFO
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
@@ -56,7 +58,6 @@ FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
 FILE*		statfp;
-char		revision[16];
 char		compiler[32];
 char*		host_name=NULL;
 char		host_name_buf[128];
@@ -84,11 +85,11 @@ BOOL		debugger=FALSE;
 
 void banner(FILE* fp)
 {
-	fprintf(fp,"\n" PROG_NAME " v%s%c-%s (rev %s)%s - "
+	fprintf(fp,"\n" PROG_NAME " v%s%c-%s %s/%s%s - "
 		"Execute Synchronet JavaScript Module\n"
 		,VERSION,REVISION
 		,PLATFORM_DESC
-		,revision
+		,GIT_BRANCH, GIT_HASH
 #ifdef _DEBUG
 		," Debug"
 #else
@@ -971,12 +972,11 @@ long js_exec(const char *fname, char** args)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	JS_DefineProperty(js_cx, js_glob, PROG_NAME_LC "_revision"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,revision))
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, GIT_BRANCH "/" GIT_HASH))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	sprintf(rev_detail,PROG_NAME " %s%s  "
+	safe_snprintf(rev_detail, sizeof(rev_detail), PROG_NAME " " GIT_BRANCH "/" GIT_HASH "%s  "
 		"Compiled %s %s with %s"
-		,revision
 #ifdef _DEBUG
 		," Debug"
 #else
@@ -1167,7 +1167,6 @@ int main(int argc, char **argv, char** env)
 	cb.gc_interval=JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate=TRUE;
 
-	sscanf("$Revision: 1.217 $", "%*s %s", revision);
 	DESCRIBE_COMPILER(compiler);
 
 	memset(&scfg,0,sizeof(scfg));
