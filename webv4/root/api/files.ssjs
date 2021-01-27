@@ -3,6 +3,7 @@ var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
+load(settings.web_lib + 'files.js');
 require('filebase.js', 'FileBase');
 
 var CHUNK_SIZE = 1024;
@@ -41,8 +42,13 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 					reply.error = 'Not enough credits to download this file';
 					break;
 				}
-				http_reply.header['Content-Type'] = 'application/octet-stream';
-				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
+				var mt = settings.files_inline ? getMimeType(file) : 'application/octet-stream';
+				http_reply.header['Content-Type'] = mt;
+				if (mt === 'application/octet-stream') {
+					http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
+				} else {
+					http_reply.header['Content-Disposition'] = 'inline';
+				}
 				http_reply.header['Content-Encoding'] = 'binary';
 				http_reply.header['Content-Length'] = file_size(file.path);
 				var f = new File(file.path);
