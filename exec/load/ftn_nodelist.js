@@ -107,10 +107,10 @@ function NodeList(filename, warn)
 		switch(fields[0]) {
 			case 'Zone':
 				node.zone = parseInt(fields[1], 10);
-				node.net = 0;
+				node.net = node.zone;
 				node.node = 0;
 				hub.zone = node.zone;
-				hub.net = 0;
+				hub.net = node.zone;
 				hub.node = 0;
 				break;
 			case 'Region':
