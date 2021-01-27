@@ -1204,30 +1204,32 @@ function doScan()
 }
 
 for(i in argv) {
-	switch(argv[i].toLowerCase()) {
-		case 'scan':
-			doScan();
-			break;
-		case 'pre':
-			runPre(argv[++i].toLowerCase());
-			break;
-		case 'post':
-			runPost(argv[++i].toLowerCase());
-			break;
-		case 'run':
-			// deprecated
-			runXtrn(argv[++i].toLowerCase());
-			break;
-		case 'config':
-			new UserConfig(user.number).configure();
-			break;
-		case 'sysconfig':
-			sysop_config();
-			break;
-		case 'rank':
-			// TODO: Door popularity rankings
-			break;
-		default:
-			break;
+	if (typeof argv[i] == "String") {
+		switch(argv[i].toLowerCase()) {
+			case 'scan':
+				doScan();
+				break;
+			case 'pre':
+				runPre(argv[++i].toLowerCase());
+				break;
+			case 'post':
+				runPost(argv[++i].toLowerCase());
+				break;
+			case 'run':
+				// deprecated
+				runXtrn(argv[++i].toLowerCase());
+				break;
+			case 'config':
+				new UserConfig(user.number).configure();
+				break;
+			case 'sysconfig':
+				sysop_config();
+				break;
+			case 'rank':
+				// TODO: Door popularity rankings
+				break;
+			default:
+				break;
+		}
 	}
 }
