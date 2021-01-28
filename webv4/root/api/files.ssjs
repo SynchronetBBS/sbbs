@@ -42,7 +42,12 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 					reply.error = 'Not enough credits to download this file';
 					break;
 				}
-				var mt = settings.files_inline ? getMimeType(file) : 'application/octet-stream';
+				var mt;
+				if (!settings.files_inline || settings.files_inline_blacklist.indexOf(file.ext) > -1) {
+					mt = 'application/octet-stream';
+				} else {
+					mt = getMimeType(file);
+				}
 				http_reply.header['Content-Type'] = mt;
 				if (mt === 'application/octet-stream') {
 					http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
