@@ -229,22 +229,30 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
 
             case 'get-group-unread-count':
                 if (typeof http_request.query.group !== 'undefined') {
-                    http_request.query.group.forEach(
-                        function(group) {
-                            reply[group] = getGroupUnreadCount(group);
-                        }
-                    );
+                    http_request.query.group.forEach(function(group) {
+                        reply[group] = getGroupUnreadCount(group);
+                    });
                 }
                 break;
 
             case 'get-sub-unread-count':
                 if (typeof http_request.query.sub !== 'undefined') {
-                    http_request.query.sub.forEach(
-                        function(sub) {
-                            reply[sub] = getSubUnreadCount(sub);
-                        }
-                    );
+                    http_request.query.sub.forEach(function(sub) {
+                        reply[sub] = getSubUnreadCount(sub);
+                    });
                 }
+                break;
+
+            // Unread message counts for every sub in a group
+            case 'get-sub-unread-counts':
+                if (typeof http_request.query.group !== 'undefined' && msg_area.grp_list[http_request.query.group[0]]) {
+                    reply = getSubUnreadCounts(http_request.query.group[0]);
+                }
+                break;
+            
+            // Unread message counts for all groups user has access to
+            case 'get-group-unread-counts':
+                reply = getGroupUnreadCounts();
                 break;
 
             default:
