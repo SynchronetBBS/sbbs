@@ -38,7 +38,9 @@ var defaults = {
 	},
 	forum_extended_ascii: { default: true },
 	active_node_list: { default: true },
-	hide_empty_stats: { default: true }
+	hide_empty_stats: { default: true },
+	files_inline: { default: false },
+	files_inline_blacklist: { default: [ "htm", "html" ] }
 };
 
 Object.keys(defaults).forEach(function (e) {
