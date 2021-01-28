@@ -275,6 +275,11 @@ async function getSubUnreadCount(sub) {
 	onSubUnreadCount(res);
 }
 
+async function getSubUnreadCounts(grp) {
+	const res = await v4_get('./api/forum.ssjs?call=get-sub-unread-counts&group=' + grp);
+	onSubUnreadCount(res);
+}
+
 function onGroupUnreadCount(data) {
 	for (group in data) {
 		$('#badge-scanned-' + group).text(
@@ -291,6 +296,11 @@ function onGroupUnreadCount(data) {
 // 'group' can be a single group index, or a string of 0&group=1&group=2...
 async function getGroupUnreadCount(group) {
 	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-count&group=' + group);
+	onGroupUnreadCount(res);
+}
+
+async function getGroupUnreadCounts() {
+	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-counts');
 	onGroupUnreadCount(res);
 }
 
