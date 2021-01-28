@@ -1301,7 +1301,7 @@ iniGetNamedStringList(str_list_t list, const char* section)
 		return(NULL);
 
 	i=find_section(list,section);
-	if(list[i]==NULL)
+	if(section!=ROOT_SECTION && list[i]==NULL)
 		return(NULL);
 
 	/* New behavior, if section exists but is empty, return single element array (terminator only) */
