@@ -75,6 +75,7 @@ function getCtrlLine(file) {
 			ctrl = pageName(file_getname(file));
 			break;
 	}
+	ctrl = truncsp(skipsp(ctrl));
 
 	var opts = ctrl.match(/^(.*?)\:/);
 	if (opts === null || opts.length < 2) {
