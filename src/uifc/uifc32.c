@@ -2596,8 +2596,8 @@ char *utimestr(time_t *intime)
 	if(gm->tm_hour>=12) {
 		strcpy(mer,"pm");
 		hour=gm->tm_hour;
-		if (tm_hour > 12)
-			hour=gm->tm_hour-12;
+		if (hour > 12)
+			hour-=12;
 	}
 	else {
 		if(!gm->tm_hour)
