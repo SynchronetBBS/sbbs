@@ -44,6 +44,7 @@ struct list_ctx_private {
 	int top;
 	int width;
 };
+
 struct showbuf_ctx_private {
 	int	cur;
 	int bar;
