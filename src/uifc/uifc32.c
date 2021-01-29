@@ -927,11 +927,11 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				(*bar)=opts-1;
 			if((*bar)<0)
 				(*bar)=0;
-			if((*cur)<(*bar))
-				(*cur)=(*bar);
 			i=(*cur)-(*bar);
 			if(i+(height-vbrdrsize-1)>=opts) {
 				(*bar)=(height-vbrdrsize);
+				if (*bar > *cur)
+					*bar = *cur;
 				i=(*cur)-(*bar)+1;
 			}
 		}

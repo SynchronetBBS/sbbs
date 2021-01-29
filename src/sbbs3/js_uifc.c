@@ -346,6 +346,7 @@ static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		return JS_FALSE;
 	}
+	p->bar = INT_MAX;
 	js_SyncResolve(cx, obj, NULL, js_uifc_list_class_properties, NULL, NULL, 0);
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC list menu context", 317);
