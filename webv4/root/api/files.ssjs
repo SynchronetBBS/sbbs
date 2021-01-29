@@ -3,6 +3,7 @@ var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
+load(settings.web_lib + 'files.js');
 require('filebase.js', 'FileBase');
 
 var CHUNK_SIZE = 1024;
@@ -26,7 +27,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 				var fileBase = new FileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
-					if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
+					if (e.name.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
 						return false;
 					} else if (typeof e.path !== 'undefined') {
 						file = e;
@@ -41,8 +42,18 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 					reply.error = 'Not enough credits to download this file';
 					break;
 				}
-				http_reply.header['Content-Type'] = 'application/octet-stream';
-				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
+				var mt;
+				if (!settings.files_inline || settings.files_inline_blacklist.indexOf(file.ext) > -1) {
+					mt = 'application/octet-stream';
+				} else {
+					mt = getMimeType(file);
+				}
+				http_reply.header['Content-Type'] = mt;
+				if (mt === 'application/octet-stream') {
+					http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
+				} else {
+					http_reply.header['Content-Disposition'] = 'inline';
+				}
 				http_reply.header['Content-Encoding'] = 'binary';
 				http_reply.header['Content-Length'] = file_size(file.path);
 				var f = new File(file.path);

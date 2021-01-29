@@ -2,10 +2,7 @@ load("sbbsdefs.js");
 load("text.js");
 load("lockfile.js");
 
-var doorscan_dir='.';
-try { throw barfitty.barf(barf) } catch(e) { doorscan_dir=e.fileName }
-doorscan_dir=doorscan_dir.replace(/[\/\\][^\/\\]*$/,'');
-doorscan_dir=backslash(doorscan_dir);
+var doorscan_dir = js.exec_dir;
 
 function LockedOpen(filename, fmode)
 {
@@ -156,30 +153,30 @@ function Display_LORD(filename)
 					case 'r':
 						ch=txt.charAt(++i);
 						switch(ch) {
-						case '0':
-							console.attributes=BG_BLACK;
-							break;
-						case '1':
-							console.attributes=BG_BLUE;
-							break;
-						case '2':
-							console.attributes=BG_GREEN;
-							break;
-						case '3':
-							console.attributes=BG_CYAN;
-							break;
-						case '4':
-							console.attributes=BG_RED;
-							break;
-						case '5':
-							console.attributes=BG_MAGENTA;
-							break;
-						case '6':
-							console.attributes=BG_BROWN;
-							break;
-						case '7':
-							console.attributes=BG_LIGHTGRAY;
-							break;
+							case '0':
+								console.attributes=BG_BLACK;
+								break;
+							case '1':
+								console.attributes=BG_BLUE;
+								break;
+							case '2':
+								console.attributes=BG_GREEN;
+								break;
+							case '3':
+								console.attributes=BG_CYAN;
+								break;
+							case '4':
+								console.attributes=BG_RED;
+								break;
+							case '5':
+								console.attributes=BG_MAGENTA;
+								break;
+							case '6':
+								console.attributes=BG_BROWN;
+								break;
+							case '7':
+								console.attributes=BG_LIGHTGRAY;
+								break;
 						}
 						break;
 					case 'c':
@@ -557,7 +554,7 @@ function UserConfig_configure_sec(dcfg, sec)
 					r=ascii('N');
 			}
 			console.uselect(index.length,"External                                News  Scores  Run Count"
-					,format("%-40s   %c      %c         %c",xtrn_area.prog[door].name,n,s,r));
+				,format("%-40s   %c      %c         %c",xtrn_area.prog[door].name,n,s,r));
 		}
 		if(!index.length)
 			return;
@@ -585,8 +582,8 @@ function UserConfig_configure_sec(dcfg, sec)
 		else
 			this.door[index[xprog-1]].skipRunCount=!console.yesno("Show run counts");
 		if(this.door[index[xprog-1]].skipRunCount
-				&& this.door[index[xprog-1]].skipScore
-				&& this.door[index[xprog-1]].skipNews)
+			&& this.door[index[xprog-1]].skipScore
+			&& this.door[index[xprog-1]].skipNews)
 			delete this.door[index[xprog-1]];
 	}
 }
@@ -797,7 +794,7 @@ function sysop_get_newstype(dflt)
 	if(i < 1 || i > index.length)
 		return(dflt);
 	return(index[i-1]);
-	
+
 }
 
 function sysop_get_scorestype(dflt)
@@ -907,8 +904,8 @@ function sysop_config_skip(dcfg)
 	while(1) {
 		for(sec in xtrn_area.sec) {
 			index.push(sec);
-			console.uselect(index.length, "External Program Section", 
-					format("%-40s %s",xtrn_area.sec[sec].name
+			console.uselect(index.length, "External Program Section",
+				format("%-40s %s",xtrn_area.sec[sec].name
 					,(dcfg.skipSection[sec] != undefined && dcfg.skipSection[sec])?"Skip":"Include"));
 		}
 		if(index.length==0)
@@ -945,6 +942,7 @@ function sysop_config()
 	}
 }
 
+// deprecated, use pre/post instead 
 function runXtrn(xtrn)
 {
 	if(xtrn_area.prog[xtrn]==undefined)
@@ -972,7 +970,7 @@ function runXtrn(xtrn)
 	ucfg.save();
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
-			|| !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
+		|| !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
 		bbs.log_str("DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
 	}
 
@@ -982,7 +980,7 @@ function runXtrn(xtrn)
 	dcfg=new DoorConfig(true);
 
 	if(!(dcfg.door[xtrn]!=undefined && dcfg.door[xtrn].skip != undefined && dcfg.door[xtrn].skip)
-			&& !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
+		&& !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!=undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
 		bbs.log_str("DOORSCAN - "+xtrn+" ending @ "+now.toString()+"\r\n");
 	}
 
@@ -991,6 +989,60 @@ function runXtrn(xtrn)
 
 	ucfg=new UserConfig(user.number, true);
 	if(ucfg.door[xtrn] != undefined) {
+		ucfg.door[xtrn].lastExit=now;
+		ucfg.door[xtrn].lastRunCount=dcfg.door[xtrn].runCount;
+	}
+
+	ucfg.save();
+}
+
+function runPre(xtrn)
+{
+	if(xtrn_area.prog[xtrn]===undefined)
+		throw("Unknown external: "+xtrn);
+	if(!xtrn_area.prog[xtrn].can_run)
+		throw("User "+user.name+" is not allowed to run "+xtrn);
+
+	var now=new Date();
+	var dcfg=new DoorConfig(true);
+
+	dcfg.door[xtrn].lastRan=now;
+	dcfg.door[xtrn].runCount++;
+	dcfg.save();
+
+	var ucfg=new UserConfig(user.number, true);
+	if(ucfg.door[xtrn] === undefined) {
+		if(ucfg.global === undefined || (!ucfg.global.noAutoScan)) {
+			ucfg.addxtrn(xtrn);
+		}
+	}
+
+	if(ucfg.door[xtrn] !== undefined)
+		ucfg.door[xtrn].lastRan=now;
+
+	ucfg.save();
+
+	if(!(dcfg.door[xtrn]!==undefined && dcfg.door[xtrn].skip !== undefined && dcfg.door[xtrn].skip)
+		|| !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!==undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
+		bbs.log_str("DOORSCAN - "+xtrn+" starting @ "+now.toString()+"\r\n");
+	}
+}
+
+function runPost(xtrn)
+{
+	now=new Date();
+	dcfg=new DoorConfig(true);
+
+	if(!(dcfg.door[xtrn]!==undefined && dcfg.door[xtrn].skip !== undefined && dcfg.door[xtrn].skip)
+		&& !(dcfg.skipSection[xtrn_area.prog[xtrn].sec_code]!==undefined && dcfg.skipSection[xtrn_area.prog[xtrn].sec_code])) {
+		bbs.log_str("DOORSCAN - "+xtrn+" ending @ "+now.toString()+"\r\n");
+	}
+
+	dcfg.door[xtrn].lastExit=now;
+	dcfg.save();
+
+	ucfg=new UserConfig(user.number, true);
+	if(ucfg.door[xtrn] !== undefined) {
 		ucfg.door[xtrn].lastExit=now;
 		ucfg.door[xtrn].lastRunCount=dcfg.door[xtrn].runCount;
 	}
@@ -1020,7 +1072,7 @@ function doScan()
 			continue;
 		if(dcfg.door[door].installed > ucfg.global.lastScan) {
 			/* This door is NEW! */
-			
+
 			/* If the user can't run it, don't display it. */
 			if(!xtrn_area.prog[door].can_run)
 				continue;
@@ -1038,10 +1090,14 @@ function doScan()
 				}
 			}
 			if(tmp==false) {
-				/* No ad... just display a message... */
-				console.attributes=YELLOW;
-				console.writeln("New external: "+xtrn_area.prog[door].name+" in the "+xtrn_area.sec[xtrn_area.prog[door].sec_code].name+" section.");
-				console.crlf();
+				if (typeof console !== "undefined") {
+					/* No ad... just display a message... */
+					console.attributes = YELLOW;
+					console.writeln("New external: " + xtrn_area.prog[door].name + " in the " + xtrn_area.sec[xtrn_area.prog[door].sec_code].name + " section.");
+					console.crlf();
+				} else {
+					writeln("New external: " + xtrn_area.prog[door].name + " in the " + xtrn_area.sec[xtrn_area.prog[door].sec_code].name + " section.");
+				}
 			}
 			if(ucfg.door[door]==undefined && ucfg.global.addNew) {
 				ucfg=new UserConfig(user.number, true);
@@ -1079,7 +1135,7 @@ function doScan()
 					 * If the news file has not been updated, don't bother
 					 * Some doors only update the news during maintenance
 					 */
-					
+
 					if(new Date(file_date(dcfg.door[door].news)*1000) >= scantime) {
 						/* Assume ANSI */
 						if(dcfg.door[door].newsType==undefined)
@@ -1100,7 +1156,7 @@ function doScan()
 					 * If the Scores file has not been updated, don't bother
 					 * Some doors only update the Scores during maintenance
 					 */
-					
+
 					if(new Date(file_date(dcfg.door[door].score)*1000) >= scantime) {
 						/* Assume ANSI */
 						if(dcfg.door[door].scoreType==undefined)
@@ -1152,24 +1208,32 @@ function doScan()
 }
 
 for(i in argv) {
-	switch(argv[i].toLowerCase()) {
-		case 'scan':
-			doScan();
-			break;
-		case 'run':
-			if(i+1<argc)
+	if (typeof argv[i] == "string") {
+		switch(argv[i].toLowerCase()) {
+			case 'scan':
+				doScan();
+				break;
+			case 'pre':
+				runPre(argv[++i].toLowerCase());
+				break;
+			case 'post':
+				runPost(argv[++i].toLowerCase());
+				break;
+			case 'run':
+				// deprecated
 				runXtrn(argv[++i].toLowerCase());
-			else
-				throw("XTRN code not included on command-line!");
-			break;
-		case 'config':
-			new UserConfig(user.number).configure();
-			break;
-		case 'sysconfig':
-			sysop_config();
-			break;
-		case 'rank':
-			// TODO: Door popularity rankings
-			break;
+				break;
+			case 'config':
+				new UserConfig(user.number).configure();
+				break;
+			case 'sysconfig':
+				sysop_config();
+				break;
+			case 'rank':
+				// TODO: Door popularity rankings
+				break;
+			default:
+				break;
+		}
 	}
 }

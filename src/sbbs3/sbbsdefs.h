@@ -742,6 +742,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_ANSI_CPR	(1L<<22)	/* Expect ANSI Cursor Position Report		*/
 #define K_TRIM		(1L<<23)	/* Trimmed white-space						*/
 #define K_CTRLKEYS	(1L<<24)	/* No control-key handling/eating in inkey()*/
+#define K_NUL		(1L<<25)	/* Return NOINP on timeout instead of '\0'	*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/

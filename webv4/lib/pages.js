@@ -39,6 +39,8 @@ function getCtrlLine(file) {
 
 	const _file = fullpath(file);
 
+	if (_file === undefined) return ret;
+
 	if (_file.indexOf(settings.web_pages) != 0 && _file.indexOf(settings.web_mods_pages) != 0) return ret;
 
     var ctrl = '';
@@ -73,6 +75,7 @@ function getCtrlLine(file) {
 			ctrl = pageName(file_getname(file));
 			break;
 	}
+	ctrl = truncsp(skipsp(ctrl));
 
 	var opts = ctrl.match(/^(.*?)\:/);
 	if (opts === null || opts.length < 2) {

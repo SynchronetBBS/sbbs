@@ -1304,7 +1304,7 @@ iniGetNamedStringList(str_list_t list, const char* section)
 		return(NULL);
 
 	i=find_section(list,section);
-	if(list[i]==NULL)
+	if(section!=ROOT_SECTION && list[i]==NULL)
 		return(NULL);
 
 	/* New behavior, if section exists but is empty, return single element array (terminator only) */
@@ -2310,6 +2310,7 @@ BOOL iniCloseFile(FILE* fp)
 str_list_t iniReadFile(FILE* fp)
 {
 	char		str[INI_MAX_LINE_LEN];
+	char		err[512];
 	char*		p;
 	size_t		i;
 	size_t		inc_len;
@@ -2328,22 +2329,33 @@ str_list_t iniReadFile(FILE* fp)
 	inc_len=strlen(INI_INCLUDE_DIRECTIVE);
 	for(i=0; list[i]!=NULL; i++) {
 		if(strnicmp(list[i],INI_INCLUDE_DIRECTIVE,inc_len)==0) {
+			glob_t gl;
+			size_t j;
 			p=list[i]+inc_len;
 			SKIP_WHITESPACE(p);
 			truncsp(p);
-			if(inc_counter >= INI_INCLUDE_MAX)
-				SAFEPRINTF2(str, ";%s - MAXIMUM INCLUDES REACHED: %u", list[i], INI_INCLUDE_MAX);
-			else if((insert_fp=fopen(p,"r"))==NULL)
-				SAFEPRINTF2(str, ";%s - FAILURE: %s", list[i], STRERROR(errno));
-			else
-				SAFEPRINTF(str, ";%s", list[i]);
+ 			glob(p, GLOB_MARK, NULL, &gl);
+			safe_snprintf(str, sizeof(str), "; %s - %lu matches found", list[i], (ulong)gl.gl_pathc);
 			strListReplace(list, i, str);
-			if(insert_fp!=NULL) {
-				strListInsertFile(insert_fp, &list, i+1, INI_MAX_LINE_LEN);
-				fclose(insert_fp);
-				insert_fp=NULL;
-				inc_counter++;
+			for(j = 0; j < gl.gl_pathc; j++) {
+				char* fname = gl.gl_pathv[j];
+				if(*lastchar(fname) == '/')
+					continue;
+				if(inc_counter >= INI_INCLUDE_MAX)
+					SAFEPRINTF2(str, "; %s - MAXIMUM INCLUDES REACHED: %u", fname, INI_INCLUDE_MAX);
+				else if((insert_fp=fopen(fname,"r"))==NULL)
+					SAFEPRINTF2(str, "; %s - FAILURE: %s", fname, safe_strerror(errno, err, sizeof(err)));
+				else
+					SAFEPRINTF(str, "; %s", fname);
+				strListInsert(&list, str, i + 1);
+				if(insert_fp!=NULL) {
+					strListInsertFile(insert_fp, &list, i + 2, INI_MAX_LINE_LEN);
+					fclose(insert_fp);
+					insert_fp=NULL;
+					inc_counter++;
+				}
 			}
+			globfree(&gl);
 		}
 	}
 

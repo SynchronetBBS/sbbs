@@ -204,6 +204,7 @@ var   K_NOSPIN      =(1<<21);	/* Do not honor user's spinning cursor		*/
 var   K_ANSI_CPR	=(1<<22);	/* ANSI Cursor Position Report expected		*/
 var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
 var   K_CTRLKEYS	=(1<<24);	/* No control-key handling/eating in inkey()*/
+var   K_NUL         =(1<<25);   /* Return null instead of "" upon timeout   */
 					    		/********************************************/
 
 						    	/********************************************/
@@ -394,7 +395,13 @@ var XTRN_TRIBBS		= 11;		/* TRIBBS.SYS								*/
 var XTRN_DOOR32		= 12;		/* DOOR32.SYS								*/
 								/********************************************/
 
-
+								/********************************************/
+								/* Transfer protocol 'settings' flags		*/
+								/********************************************/
+var PROT_DSZLOG		= (1<<0);   /* Supports DSZ Log 						*/
+var PROT_NATIVE		= (1<<1);   /* Native (32-bit) executable 				*/
+var PROT_SOCKET		= (1<<2);   /* Use socket I/O, not stdio on *nix 		*/
+								/********************************************/
 
     							/********************************************/
 				                /* Bit values for file.settings				*/

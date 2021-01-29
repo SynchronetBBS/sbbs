@@ -51,7 +51,7 @@ function TickITCfg() {
 
 	function lcprops(obj)
 	{
-		if(typeof obj == 'object') {
+		if(typeof obj == 'object' && obj !== null) {
 			var i;
 			var keys = Object.keys(obj);
 

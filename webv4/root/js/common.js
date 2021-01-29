@@ -134,7 +134,7 @@ window.onload =	function () {
 		return a + (i == 0 ? '?' : '&') + _sbbs_events[c].qs;
 	}, '');
 
-    const es = new EventSource('/api/events.ssjs' + qs);
+    const es = new EventSource('./api/events.ssjs' + qs);
     Object.keys(_sbbs_events).forEach(function (e) {
         es.addEventListener(e, _sbbs_events[e].callback);
     });

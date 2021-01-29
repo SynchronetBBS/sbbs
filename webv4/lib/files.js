@@ -35,3 +35,16 @@ function listFiles(dir) {
 		return df;
 	});
 }
+
+// Where file is a FileBase file record
+function getMimeType(file) {
+    if (file.ext) {
+        const f = new File(system.ctrl_dir + 'mime_types.ini');
+        if (f.open('r')) {
+            const mimes = f.iniGetObject();
+            f.close();
+            if (mimes[file.ext] !== undefined) return mimes[file.ext];
+        }
+    }
+    return 'application/octet-stream';
+}

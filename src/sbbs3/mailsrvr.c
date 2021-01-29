@@ -665,7 +665,6 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	char		date[64];
 	char*		p;
 	char*		np;
-	char*		content_type=NULL;
 	int			i;
 	int			s;
 	ulong		lines;
@@ -798,18 +797,24 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	}
 	for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER) { 
-			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0)
-				content_type=msg->hfield_dat[i];
 			if(!sockprintf(socket,prot, sess,"%s",(char*)msg->hfield_dat[i]))
 				return(0);
         }
     }
+	const char* charset = msg->text_charset;
+	if(charset == NULL) {
+		if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+			charset = "UTF-8";
+		else if(str_is_ascii(msgtxt))
+			charset = "US-ASCII";
+		else
+			charset = "IBM437";
+	}
+
 	/* Default MIME Content-Type for non-Internet messages */
-	if(msg->from_net.type!=NET_INTERNET && content_type==NULL) {
-		const char* charset =  smb_msg_is_utf8(msg) ? "UTF-8" : startup->default_charset;
-		if(*charset)
-			sockprintf(socket,prot,sess,"Content-Type: text/plain; charset=%s", charset);
-		sockprintf(socket,prot,sess,"Content-Transfer-Encoding: 8bit");
+	if(msg->from_net.type!=NET_INTERNET && msg->content_type==NULL) {
+		sockprintf(socket,prot,sess, "Content-Type: text/plain; charset=%s", charset);
+		sockprintf(socket,prot,sess, "Content-Transfer-Encoding: 8bit");
 	}
 
 	if(strListCount(file_list)) {	/* File attachments */
@@ -817,7 +822,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
         sockprintf(socket,prot,sess,"");
         mimeblurb(socket,prot,sess,mime_boundary);
         sockprintf(socket,prot,sess,"");
-        mimetextpartheader(socket,prot,sess,mime_boundary, startup->default_charset);
+        mimetextpartheader(socket,prot,sess,mime_boundary, msg->text_subtype, charset);
 	}
 	if(!sockprintf(socket,prot,sess,""))	/* Header Terminator */
 		return(0);
@@ -859,11 +864,11 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			if(!mimeattach(socket,prot,sess,mime_boundary,file_list[i]))
 				lprintf(LOG_ERR,"%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
 			else {
-				endmime(socket,prot,sess,mime_boundary);
 				if(msg->hdr.auxattr&MSG_KILLFILE)
 					if(remove(file_list[i])!=0)
 						lprintf(LOG_WARNING,"%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
 			}
+			endmime(socket,prot,sess,mime_boundary);
 		}
 	}
     sockprintf(socket,prot,sess,".");	/* End of text */
@@ -1690,8 +1695,11 @@ static void pop3_thread(void* arg)
 				}
 				msg.hdr.attr|=MSG_DELETE;
 
-				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH)
-					delfattach(&scfg,&msg);
+				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH) {
+					if(!delfattach(&scfg,&msg))
+						lprintf(LOG_ERR, "%04d %s <%s> !ERROR %d deleting attachment: %s"
+							,socket, client.protocol, user.alias, errno, msg.subj);
+				}
 				smb_unlockmsghdr(&smb,&msg);
 				smb_unlocksmbhdr(&smb);
 				smb_freemsgmem(&msg);
@@ -4006,7 +4014,7 @@ static void smtp_thread(void* arg)
 				state=SMTP_STATE_DATA_BODY;	/* Null line separates header and body */
 				lines=0;
 				if(msgtxt!=NULL) {
-					fprintf(msgtxt, "\r\n");
+					fputs("\r\n", msgtxt);
 					hdr_len=ftell(msgtxt);
 				}
 				continue;
@@ -4016,12 +4024,9 @@ static void smtp_thread(void* arg)
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(msgtxt!=NULL) {
 					fputs(p, msgtxt);
+					fputs("\r\n", msgtxt);
 				}
 				lines++;
-				/* release time-slices every x lines */
-				if(startup->lines_per_yield &&
-					!(lines%startup->lines_per_yield))	
-					YIELD();
 				if((lines%100) == 0 && (msgtxt != NULL))
 					lprintf(LOG_DEBUG,"%04d %s %s received %lu lines (%lu bytes) of body text"
 						,socket, client.protocol, client_id, lines, ftell(msgtxt)-hdr_len);
@@ -4044,8 +4049,10 @@ static void smtp_thread(void* arg)
 				}
 			}
 
-			if(msgtxt!=NULL) 
-				fprintf(msgtxt, "%s\r\n", buf);
+			if(msgtxt!=NULL) {
+				fputs(buf, msgtxt);
+				fputs("\r\n", msgtxt);
+			}
 			hdr_lines++;
 			continue;
 		}
@@ -5042,8 +5049,11 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	msg->hdr.attr|=MSG_DELETE;
 
 	i=smb_updatemsg(smb,msg);
-	if(msg->hdr.auxattr&MSG_FILEATTACH)
-		delfattach(&scfg,msg);
+	if(msg->hdr.auxattr&MSG_FILEATTACH) {
+		if(!delfattach(&scfg,msg))
+			lprintf(LOG_ERR, "%04d SEND !ERROR %d deleting attachment: %s"
+				,sock, errno, msg->subj);
+	}
 	if(i!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"%04d SEND !BOUNCE ERROR %d (%s) deleting message"
 			,sock, i, smb->last_error);
@@ -5806,8 +5816,11 @@ static void sendmail_thread(void* arg)
 			if((i=smb_updatemsg(&smb,&msg))!=SMB_SUCCESS)
 				lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) deleting message #%u"
 					,sock, prot, i, smb.last_error, msg.hdr.number);
-			if(msg.hdr.auxattr&MSG_FILEATTACH)
-				delfattach(&scfg,&msg);
+			if(msg.hdr.auxattr&MSG_FILEATTACH) {
+				if(!delfattach(&scfg,&msg))
+					lprintf(LOG_ERR, "%04d %s !ERROR %d deleting attachment: %s"
+						,sock, prot, errno, msg.subj);
+			}
 
 			/* QUIT */
 			sockprintf(sock,prot,session,"QUIT");

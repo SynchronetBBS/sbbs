@@ -545,7 +545,7 @@ uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t file
 	if(strStartsWith_i(msg->content_type, "multipart/") > 0) {
 		txt = mime_getpart(buf, msg->content_type, /* match-type: */NULL, 0, &xfer_encoding, /* charset: */NULL
 			,/* attachment: */filename, filename_len, index);
-		if(txt != NULL && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
+		if(txt != NULL && *txt && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
 			size_t len = strlen(txt);
 			memmove(buf, txt, len + 1);
 			int result = b64_decode(buf, len, buf, len);
@@ -589,7 +589,7 @@ uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t file
 		if(filelen != NULL)
 			*filelen = strlen(buf);
 	}
-	return buf;
+	return (uint8_t*)buf;
 }
 
 /* Return number of file attachments contained in MIME-encoded message body */

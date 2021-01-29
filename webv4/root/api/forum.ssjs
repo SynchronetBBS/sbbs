@@ -8,11 +8,12 @@ var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
 load(settings.web_lib + 'forum.js');
+load(settings.web_lib + 'request.js');
 
 var reply = {};
 
 // There must be an API call, and the user must not be a guest or unknown
-if (http_request.query.call !== undefined && (http_request.method === 'GET' || http_request.method === 'POST')) {
+if (Request.has_param('call') && (http_request.method === 'GET' || http_request.method === 'POST')) {
 
     var handled = false;
 
@@ -21,7 +22,19 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
 
         handled = true;
 
-        switch(http_request.query.call[0].toLowerCase()) {
+        switch (http_request.query.call[0].toLowerCase()) {
+
+            // Unread message counts for every sub in a group
+            case 'get-sub-unread-counts':
+                if (Request.has_param('group') && msg_area.grp_list[http_request.query.group[0]]) {
+                    reply = getSubUnreadCounts(http_request.query.group[0]);
+                }
+                break;
+            
+            // Unread message counts for all groups user has access to
+            case 'get-group-unread-counts':
+                reply = getGroupUnreadCounts();
+                break;
 
             case 'get-mail-unread-count':
                 reply.count = user.stats.mail_waiting;
@@ -38,26 +51,15 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
                 break;
 
             case 'post-reply':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.body !== 'undefined' &&
-                    typeof http_request.query.pid !== 'undefined'
-                ) {
-                    reply.success = postReply(
-                        http_request.query.sub[0],
-                        http_request.query.body[0],
-                        Number(http_request.query.pid[0])
-                    );
+                if (Request.has_params(['sub', 'body', 'pid'])) {
+                    reply.success = postReply(http_request.query.sub[0], http_request.query.body[0], Number(http_request.query.pid[0]));
                 } else {
                     reply.success = false;
                 }
                 break;
 
             case 'post':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.to !== 'undefined' &&
-                    typeof http_request.query.subject !== 'undefined' &&
-                    typeof http_request.query.body !== 'undefined'
-                ) {
+                if (Request.has_params(['sub', 'to', 'subject', 'body'])) {
                     reply.success = postNew(
                         http_request.query.sub[0],
                         http_request.query.to[0],
@@ -70,20 +72,15 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
                 break;
 
             case 'delete-message':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.number !== 'undefined'
-                ) {
-                    reply.success = deleteMessage(
-                        http_request.query.sub[0],
-                        http_request.query.number[0]
-                    );
+                if (Request.has_params(['sub', 'number'])) {
+                    reply.success = deleteMessage(http_request.query.sub[0], http_request.query.number[0]);
                 } else {
                     reply.success = false;
                 }
                 break;
 
             case 'delete-mail':
-                if (typeof http_request.query.number !== 'undefined') {
+                if (Request.has_param('number')) {
                     reply.success = deleteMail(http_request.query.number);
                 } else {
                     reply.success = false;
@@ -91,54 +88,29 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
                 break;
 
             case 'set-scan-cfg':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.cfg !== 'undefined'
-                ) {
-                    reply.success = setScanCfg(
-                        http_request.query.sub[0],
-                        http_request.query.cfg[0]
-                    );
+                if (Request.has_params(['sub', 'cfg'])) {
+                    reply.success = setScanCfg(http_request.query.sub[0], http_request.query.cfg[0]);
                 } else {
                     reply.success = false;
                 }
                 break;
 
             case 'vote':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.id !== 'undefined' &&
-                    typeof http_request.query.up !== 'undefined' &&
-                    !(user.security.restrictions&UFLAG_V)
-                ) {
-                    reply.success = voteMessage(
-                        http_request.query.sub[0],
-                        http_request.query.id[0],
-                        http_request.query.up[0]
-                    );
+                if (Request.has_params(['sub', 'id', 'up']) && !(user.security.restrictions&UFLAG_V)) {
+                    reply.success = voteMessage(http_request.query.sub[0], http_request.query.id[0], http_request.query.up[0]);
                 } else {
                     reply.success = false;
                 }
                 break;
 
             case 'submit-poll-answers':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.id !== 'undefined' &&
-                    typeof http_request.query.answer !== 'undefined'
-                ) {
-                    reply.success = submitPollAnswers(
-                        http_request.query.sub[0],
-                        http_request.query.id[0],
-                        http_request.query.answer
-                    );
+                if (Request.has_params(['sub', 'id', 'answer'])) {
+                    reply.success = submitPollAnswers(http_request.query.sub[0], http_request.query.id[0], http_request.query.answer[0]);
                 }
                 break;
 
             case 'submit-poll':
-                if (typeof http_request.query.subject !== 'undefined' &&
-                    typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.votes !== 'undefined' &&
-                    typeof http_request.query.results !== 'undefined' &&
-                    typeof http_request.query.answer !== 'undefined'
-                ) {
+                if (Request.has_params(['subject', 'sub', 'votes', 'results', 'answer'])) {
                     reply.success = postPoll(
                         http_request.query.sub[0],
                         http_request.query.subject[0],
@@ -172,33 +144,19 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
         switch(http_request.query.call[0].toLowerCase()) {
 
             case 'get-thread-votes':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.id !== 'undefined'
-                ) {
+                if (Request.has_params(['sub', 'id'])) {
                     var id = parseInt(http_request.query.id[0]);
-                    if (!isNaN(id)) {
-                        reply = getVotesInThread(
-                            http_request.query.sub[0],
-                            id
-                        );
-                    }
+                    if (!isNaN(id)) reply = getVotesInThread(http_request.query.sub[0], id);
                 }
                 break;
 
             case 'get-sub-votes':
-                if (typeof http_request.query.sub !== 'undefined') {
-                    reply = getVotesInThreads(http_request.query.sub[0]);
-                }
+                if (Request.has_param('sub')) reply = getVotesInThreads(http_request.query.sub[0]);
                 break;
 
             case 'get-poll-results':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.id !== 'undefined'
-                ) {
-                    reply = getUserPollData(
-                        http_request.query.sub[0],
-                        http_request.query.id[0]
-                    );
+                if (Request.has_params(['sub', 'id'])) {
+                    reply = getUserPollData(http_request.query.sub[0], http_request.query.id[0]);
                 }
                 break;
 
@@ -207,43 +165,13 @@ if (http_request.query.call !== undefined && (http_request.method === 'GET' || h
                 break;
 
             case 'list-subs':
-                if (typeof http_request.query.group !== 'undefined') {
-                    reply = listSubs(http_request.query.group[0]);
-                }
+                if (Request.has_param('group')) reply = listSubs(http_request.query.group[0]);
                 break;
 
             case 'list-threads':
-                if (typeof http_request.query.sub !== 'undefined' &&
-                    typeof http_request.query.offset !== 'undefined'
-                ) {
-                    if (typeof http_request.query.count !== 'undefined') {
-                        var count = http_request.query.count[0];
-                    }
-                    reply = listThreads(
-                        http_request.query.sub[0],
-                        http_request.query.offset[0],
-                        count || settings.page_size
-                    ).threads;
-                }
-                break;
-
-            case 'get-group-unread-count':
-                if (typeof http_request.query.group !== 'undefined') {
-                    http_request.query.group.forEach(
-                        function(group) {
-                            reply[group] = getGroupUnreadCount(group);
-                        }
-                    );
-                }
-                break;
-
-            case 'get-sub-unread-count':
-                if (typeof http_request.query.sub !== 'undefined') {
-                    http_request.query.sub.forEach(
-                        function(sub) {
-                            reply[sub] = getSubUnreadCount(sub);
-                        }
-                    );
+                if (Request.has_params(['sub', 'offset'])) {
+                    if (Request.has_param('count')) var count = http_request.query.count[0];
+                    reply = listThreads(http_request.query.sub[0], http_request.query.offset[0], count || settings.page_size).threads;
                 }
                 break;
 

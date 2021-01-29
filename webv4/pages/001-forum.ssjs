@@ -12,8 +12,8 @@ var strings = {
 		vote_functions : 'enableVoteButtonHandlers("%s");',
 		vote_refresh_thread : 'getVotesInThread("%s", %s)',
 		vote_refresh_threads : 'getVotesInThreads("%s")',
-		get_group_unread : 'getGroupUnreadCount("%s")',
-		get_sub_unread : 'getSubUnreadCount("%s")',
+		get_group_unread : 'getGroupUnreadCounts()',
+		get_sub_unread : 'getSubUnreadCounts("%s")',
 		poll_control : 'pollControl("%s", %s)',
 		get_poll_data : 'getPollData("%s", %s)',
 		close : '</script>'
@@ -631,14 +631,11 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	function writeApiCall(subs) {
 		writeln(strings.script.open);
-		var codes = [];
-		subs.forEach(function (sub) { codes.push(sub.code); });
-		codes = codes.join('&sub=');
-		writeln(format(strings.script.get_sub_unread, codes));
+		writeln(format(strings.script.get_sub_unread, http_request.query.group[0]));
 		writeln(
 			format(
 				strings.script.interval,
-				format(strings.script.get_sub_unread, codes),
+				format(strings.script.get_sub_unread, http_request.query.group[0]),
 				settings.refresh_interval || 60000
 			)
 		);
@@ -685,14 +682,11 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 	function writeApiCall(groups) {
 		writeln(strings.script.open);
-		var indexes = [];
-		groups.forEach(function(group) { indexes.push(group.index); });
-		indexes = indexes.join('&group=');
-		writeln(format(strings.script.get_group_unread, indexes));
+		writeln(strings.script.get_group_unread);
 		writeln(
 			format(
 				strings.script.interval,
-				format(strings.script.get_group_unread, indexes),
+				strings.script.get_group_unread,
 				settings.refresh_interval || 60000
 			)
 		);

@@ -15,8 +15,8 @@ settings.web_mods_sidebar = backslash(fullpath(settings.web_mods + 'sidebar/'));
 var defaults = {
 	guest: {
 		default: 'Guest',
-		test: function () {
-			return system.matchuser(settings.guest) ? null : 'Guest account unavailable';
+		test: function (v) {
+			return system.matchuser(v) ? null : (new Error('Guest account unavailable'));
 		}
 	},
 	timeout: { default: 43200 },
@@ -26,34 +26,55 @@ var defaults = {
 	email_validation_level: { default: 50 },
 	max_messages: {
 		default: 0,
-		test: function () {
-			return settings.max_messages >= 0 ? null : 'max_messages must be >= 0';
+		test: function (v) {
+			return v >= 0 ? null : (new Error('max_messages must be >= 0'));
 		}
 	},
 	page_size: {
 		default: 25,
-		test: function () {
-			return settings.page_size >= 1 ? null : 'page_size must be >= 1';
+		test: function (v) {
+			return v >= 1 ? null : (new Error('page_size must be >= 1'));
 		}
 	},
 	forum_extended_ascii: { default: true },
 	active_node_list: { default: true },
-	hide_empty_stats: { default: true }
-};
-
-Object.keys(defaults).forEach(function (e) {
-	if (typeof settings[e] == 'undefined') {
-		settings[e] = defaults[e].default;
-	} else if (typeof settings[e] != typeof defaults[e].default) {
-		log(LOG_ERROR, 'Invalid ' + e + ' setting: ' + settings[e]);
-		exit();
-	} else if (typeof defaults[e].test == 'function') {
-		const t = defaults[e].test();
-		if (t !== null) {
-			log(LOG_ERROR, t);
-			exit();
+	hide_empty_stats: { default: true },
+	files_inline: { default: false },
+	files_inline_blacklist: {
+		default: [ "htm", "html" ],
+		parse: function (v) {
+			if (typeof v !== 'string') return new Error('Invalid files_inline_blacklist setting ' + v);
+			return v.split(',');
 		}
 	}
+};
+
+function doError(e) {
+	log(LOG_ERROR, e);
+	http_reply.status = '500 Internal Server Error';
+	writeln('500 Internal Server Error');
+	exit();
+}
+
+Object.keys(defaults).forEach(function (e) {
+
+	if (settings[e] === undefined) {
+		settings[e] = defaults[e].default;
+	} else if (typeof defaults[e].parse === 'function') {
+		const v = defaults[e].parse(settings[e]);
+		if (v instanceof Error) doError(v);
+		settings[e] = v;
+	}
+	
+	if (typeof settings[e] !== typeof defaults[e].default) {
+		doError(new Error('Invalid ' + e + ' setting: ' + settings[e]));
+	}
+	
+	if (typeof defaults[e].test === 'function') {
+		const t = defaults[e].test(settings[e]);
+		if (t instanceof Error) doError(t);
+	}
+
 });
 
 defaults = undefined;

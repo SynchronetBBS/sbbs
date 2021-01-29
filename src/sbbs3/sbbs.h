@@ -808,7 +808,7 @@ public:
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
-	char	inkey(long mode, unsigned long timeout=0);
+	int		inkey(long mode, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
 
 									// Terminal mouse reporting mode (mouse_mode)

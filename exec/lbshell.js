@@ -707,18 +707,8 @@ while(bbs.online) {
 					}
 					stop_mouse();
 					clear_screen();
-					if(file_exists("../xtrn/doorscan/doorscan.js")) {
-						try {
-    						load("../xtrn/doorscan/doorscan.js","run",xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].code);
-						}
-						catch(e) {
-    						console.writeln("DOORSCAN ERROR: "+e);
-    						log("Error running "+xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].code+" "+e);
-						}
-					}
-					else {
-						bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
-					}
+
+					bbs.exec_xtrn(xtrn_area.sec_list[curr_xtrnsec].prog_list[parseInt(x_prog)].number);
 					start_mouse();
 					draw_main(true);
 					xtrnsec.draw();

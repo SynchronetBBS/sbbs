@@ -115,17 +115,20 @@ function convert_msg_header(hdr_array)
 // Parses the body portion of the complete message text into an array
 function get_msg_body(msgtxt)
 {
-	var body = new Array();
+	var body = "";
 	var hdr = true;
+	var base64 = parse_msg_header(msgtxt)["content-transfer-encoding"] == "base64";
 
 	for(i in msgtxt) {
 		if(hdr && msgtxt[i].length==0)	{ // Header terminator
 			hdr = false;
 			continue;
 		}
-		if(!hdr)
-			body.push(msgtxt[i]);
+		if(!hdr) {
+			var line = base64 ? base64_decode(msgtxt[i]) : (msgtxt[i] + "\n");
+			if(line != null)
+				body += line;
+		}
 	}
-	return(body);
+	return(body.split('\n'));
 }
-		

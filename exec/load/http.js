@@ -220,7 +220,10 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 		&& this.response_headers_parsed.Location.length
 	) {
 		this.follow_redirects--;
-		return this.Get(this.response_headers_parsed.Location[0], url); // To-do: be less tired and think about referer,base
+		const re = /([a-z]+:\/\/.+:{0,1}\d{0,5})\//i;
+		var loc = this.response_headers_parsed.Location[0];
+		if (loc.search(re) < 0) loc = url.match(re)[1] + loc; // Assumes 'url' will match 're', but if it doesn't you'll have other problems anyway
+		return this.Get(loc, url); // To-do: be less tired and think about referer,base
 	}
 	return(this.body);
 };

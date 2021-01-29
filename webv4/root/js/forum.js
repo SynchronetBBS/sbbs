@@ -269,9 +269,8 @@ function onSubUnreadCount(data) {
 	}
 }
 
-// 'sub' can be a single sub code, or a string of <sub1>&sub=<sub2>&sub=<sub3>...
-async function getSubUnreadCount(sub) {
-	const res = await v4_get('./api/forum.ssjs?call=get-sub-unread-count&sub=' + sub);
+async function getSubUnreadCounts(grp) {
+	const res = await v4_get('./api/forum.ssjs?call=get-sub-unread-counts&group=' + grp);
 	onSubUnreadCount(res);
 }
 
@@ -288,9 +287,8 @@ function onGroupUnreadCount(data) {
 	}
 }
 
-// 'group' can be a single group index, or a string of 0&group=1&group=2...
-async function getGroupUnreadCount(group) {
-	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-count&group=' + group);
+async function getGroupUnreadCounts() {
+	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-counts');
 	onGroupUnreadCount(res);
 }
 

@@ -577,6 +577,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	if(p!=NULL) {
 		*p=0;
 		args=p+1;
+		SKIP_WHITESPACE(args);
 	}
 	fname=cmdline;
 
@@ -618,13 +619,17 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-		/* TODO: Handle quoted "one arg" syntax here? */
+		/* Handle quoted "one arg" syntax here */
 		if(args!=NULL && argv!=NULL) {
 			while(*args) {
-				p=strchr(args,' ');
+				if(*args == '"') {
+					args++;
+					p = strchr(args, '"');
+				}
+				else
+					p = strchr(args, ' ');
 				if(p!=NULL)
 					*p=0;
-				while(*args && *args==' ') args++; /* Skip spaces */
 				JSString* arg = JS_NewStringCopyZ(js_cx, args);
 				if(arg==NULL)
 					break;
@@ -634,7 +639,8 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 				argc++;
 				if(p==NULL)	/* last arg */
 					break;
-				args+=(strlen(args)+1);
+				args = p + 1;
+				SKIP_WHITESPACE(args);
 			}
 		}
 		JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
