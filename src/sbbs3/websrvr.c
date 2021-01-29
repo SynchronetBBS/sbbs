@@ -212,8 +212,8 @@ typedef struct  {
 	BOOL		finished;				/* Done processing request. */
 	BOOL		read_chunked;
 	BOOL		write_chunked;
-	long		range_start;
-	long		range_end;
+	off_t		range_start;
+	off_t		range_end;
 	BOOL		accept_ranges;
 	time_t		if_range;
 	BOOL		path_info_index;
@@ -1436,13 +1436,13 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 	return (ret);
 }
 
-static off_t sock_sendfile(http_session_t *session,char *path,unsigned long start, unsigned long end)
+static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_t end)
 {
 	int		file;
 	off_t	ret=0;
 	ssize_t	i;
 	char	buf[OUTBUF_LEN];		/* Input buffer */
-	unsigned long		remain;
+	off_t	remain;
 
 	if(startup->options&WEB_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG,"%04d Sending %s",session->socket,path);
@@ -1460,7 +1460,7 @@ static off_t sock_sendfile(http_session_t *session,char *path,unsigned long star
 		else {
 			remain=-1L;
 		}
-		while((i=read(file, buf, remain>sizeof(buf)?sizeof(buf):remain))>0) {
+		while(remain > 0 && (i=read(file, buf, (uint)(remain>sizeof(buf)?sizeof(buf):remain)))>0) {
 			if(writebuf(session,buf,i)!=i) {
 				lprintf(LOG_WARNING,"%04d !ERROR sending %s",session->socket,path);
 				close(file);
