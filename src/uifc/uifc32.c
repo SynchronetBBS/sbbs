@@ -932,6 +932,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			i=(*cur)-(*bar);
 			if(i+(height-vbrdrsize-1)>=opts) {
 				(*bar)=(height-vbrdrsize)-(opts-*cur);
+				i=(*cur)-(*bar);
 			}
 		}
 		if((*cur)<0)
