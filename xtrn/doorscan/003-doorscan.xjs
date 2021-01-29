@@ -1,4 +1,4 @@
-<!-- HIDDEN:Door Statistics -->
+<!-- Door Statistics -->
 <html>
 <head>
   <title>Monthly Door Log for <?xjs write(system.name) ?></title>
