@@ -1159,7 +1159,7 @@ static jsSyncMethodSpec js_functions[] = {
 	{"showbuf",			js_uifc_showbuf,	7,	JSTYPE_VOID,	JSDOCSTR("number mode, string title, string helpbuf [,uifc.showbuf.CTX object]")
 	,JSDOCSTR("Shows a scrollable text buffer - optionally parsing \"help markup codes\"<br>"
 		"The context object can be created using new uifc.showbuf.CTX() and if the same object is passed, allows WIN_SAV to work correctly.<br>"
-		"The context object has the following properties: cur, bar")
+		"The context object has the following properties: cur, bar, top, left, width, height")
 	,31802
 	},
 	{"timedisplay",			js_uifc_timedisplay,	0,	JSTYPE_VOID,	JSDOCSTR("[bool force = false]")
