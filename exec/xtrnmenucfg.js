@@ -192,7 +192,7 @@ var editItems = function(menuid) {
     uifc.help_text = word_wrap("This menu allows editing the various items in this menu.\r\n\r\n"
         + "If you leave input key blank, it will use an auto-generated number at display time.\r\n\r\n"
         + "Choose a type first and the dropdown to choose tha target will allow you to select your target.\r\n\r\n"
-        + "Access string only applies to custom menu items. For external sections or external programs, use the access settings in scfg.\r\n\r\n");
+        + "Access string only applies to custom menu items, commands, and special menus. For external sections or external programs, use the access settings in scfg.\r\n\r\n");
 
     while(1) {
         items = [];
@@ -379,32 +379,73 @@ var editItem = function(menuid, itemindex) {
             ("type" in item ? item.type : "")));
         displayoptionids.push("type");
 
-        displayoptions.push(format("%23s: %s", "target",
-            ("target" in item ? item.target : "")));
-        displayoptionids.push("target");
+        switch (item.type) {
+			case 'recentall':
+			case 'recentuser':
+			case 'mostlaunchedall':
+			case 'mostlauncheduser':
+				displayoptions.push(format("%23s: %s", "count",
+					("target" in item ? item.target : "")));
+				displayoptionids.push("target");
+				break;
+			case 'custommenu':
+			case 'xtrnmenu':
+			case 'xtrnprog':
+			case 'command':
+			default:
+				displayoptions.push(format("%23s: %s", "target",
+					("target" in item ? item.target : "")));
+				displayoptionids.push("target");
+				break;
+		}		
 
-        if ((item.type == "custommenu") || (item.type == "command")) {
-            displayoptions.push(format("%23s: %s", "access_string",
-                ("access_string" in item ? item.access_string : "(default)")));
-            displayoptionids.push("access_string");
-        }
+        switch (item.type) {
+			case 'custommenu':
+			case 'command':
+			case 'recentall':
+			case 'recentuser':
+			case 'mostlaunchedall':
+			case 'mostlauncheduser':
+				displayoptions.push(format("%23s: %s", "access_string",
+					("access_string" in item ? item.access_string : "(default)")));
+				displayoptionids.push("access_string");
+				break;
+			case 'xtrnmenu':
+			case 'xtrnprog':
+			default:
+				break;
+		}
 
         selection = uifc.list(WIN_ORG | WIN_MID | WIN_ACT | WIN_ESC,
             menu.title + ": Item " + itemindex, displayoptions, itemctx);
 
         if (selection < 0) {
-            if (!item.title || !item.type || !item.target) {
-                if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
-                    // delete item and continue
-                    newitems = [];
-                    for (i in menu.items) {
-                        if (i != itemindex) {
-                            newitems.push(menu.items[i]);
-                        }
-                    }
-                    menu.items = newitems;
-                    break;
-                }
+            if (!item.title || !item.type) {
+				if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
+					// delete item and continue
+					newitems = [];
+					for (i in menu.items) {
+						if (i != itemindex) {
+							newitems.push(menu.items[i]);
+						}
+					}
+					menu.items = newitems;
+					break;
+				}
+			} else if (!item.target && ((item.type == "custommenu") || (item.type == "command")
+				|| (item.type == "xtrnmenu") || (item.type == "xtrnprog"))) {
+				if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
+					// delete item and continue
+					newitems = [];
+					for (i in menu.items) {
+						if (i != itemindex) {
+							newitems.push(menu.items[i]);
+						}
+					}
+					menu.items = newitems;
+					break;
+				}
+            	break;
             } else {
                 // leave menu
                 break;
@@ -491,7 +532,11 @@ function present_select_targettype(item)
         + "custommenu is a custom menu defined in this tool.\r\n\r\n"
         + "xtrnmenu is a standard Syncrhonet External Section Menu (refer to the scfg tool).\r\n\r\n"
         + "xtrnprog is a direct link to an external program (refer to the scfg tool)"
-        + "command is a synchronet command line. See http://wiki.synchro.net/config:cmdline");
+        + "command is a synchronet command line. See http://wiki.synchro.net/config:cmdline"
+		+ "recentall is a special menu of most recently used games, by all users"
+		+ "recentuser is a special menu of most recently used games, for current user"
+		+ "mostlaunchedall is a special menu of most launched games, by all users"
+		+ "mostlauncheduser is a special menu of most launched games, for current user");
 
     var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
     if (typeof item.type !== "undefined") {
@@ -512,10 +557,27 @@ function present_select_targettype(item)
                 targetypectx.cur = 3;
                 targetypectx.bar = 3;
                 break;
+			case 'recentall':
+				targetypectx.cur = 4;
+				targetypectx.bar = 4;
+				break;
+			case 'recentuser':
+				targetypectx.cur = 5;
+				targetypectx.bar = 5;
+				break;
+			case 'mostlaunchedall':
+				targetypectx.cur = 6;
+				targetypectx.bar = 6;
+				break;
+			case 'mostlauncheduser':
+				targetypectx.cur = 7;
+				targetypectx.bar = 7;
+				break;
         }
     }
     switch (uifc.list(WIN_ORG | WIN_MID | WIN_SAV,
-        "Target Type", ["custommenu", "xtrnmenu", "xtrnprog", "command"], targetypectx)) {
+        "Target Type", ["custommenu", "xtrnmenu", "xtrnprog", "command", "recentall",
+			"recentuser", "mostlaunchedall", "mostlauncheduser"], targetypectx)) {
         case 0:
             item.type = "custommenu";
             break;
@@ -528,7 +590,19 @@ function present_select_targettype(item)
         case 3:
             item.type = "command";
             break;
-        default:
+		case 4:
+			item.type = "recentall";
+			break;
+		case 5:
+			item.type = "recentuser";
+			break;
+		case 6:
+			item.type = "mostlaunchedall";
+			break;
+		case 7:
+			item.type = "mostlauncheduser";
+			break;
+		default:
             // includes escape key
             break;
     }
@@ -539,7 +613,8 @@ function present_select_targettype(item)
 
 function present_select_target(item)
 {
-    uifc.help_text = word_wrap("This is the ID of the custom menu, external program section, or external program to link to.");
+    uifc.help_text = word_wrap("This is the ID of the custom menu, external program section, or external program to link to. "
+	 + "For special menus (recentall, etc.), it is the number of items to display.");
 
     var targetctx = uifc.list.CTX(0, 0, 0, 0, 0);
 
@@ -623,7 +698,6 @@ function present_select_target(item)
             break;
 
         case "xtrnprog":
-
             // present list of external programs
             // create sorted list
             var proglist = [];
@@ -662,23 +736,35 @@ function present_select_target(item)
                 }
             }
             break;
-
-            command:
-                selection2 = uifc.input(WIN_ORG | WIN_MID, "Command", item.target, 63, K_EDIT);
+            
+		case "command":
+			selection2 = uifc.input(WIN_ORG | WIN_MID, "Command", item.target, 63, K_EDIT);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
-
             item.target = selection2;
             break;
+            
+		case "recentall":
+		case "recentuser":
+		case "mostlaunchedall":
+		case "mostlauncheduser":
+			selection2 = uifc.input(WIN_ORG | WIN_MID, "Number of Items to Display", item.target, 63, K_EDIT);
+			if ((selection2 < 0) || (selection2 == null)) {
+				// escape key
+				break;
+			}
+			item.target = selection2;
+			break;
+			break;
+			
         default:
             selection2 = uifc.input(WIN_ORG | WIN_MID, "Target", item.target, 50, K_EDIT);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
-
             item.target = selection2;
             break;
     }

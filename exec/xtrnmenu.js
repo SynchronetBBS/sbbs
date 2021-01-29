@@ -27,10 +27,17 @@ const menuconfig = ExternalMenus.menuconfig;
 
 var i,j;
 
-if ((argv[0] == 'command') && (typeof argv[1] != "undefined")) {
-	docommand(argv[1]);
-} else if (argv[0] == 'gamesrv') {
-	external_section_menu_custom('gamesrv');
+var gamesrv = false;
+
+if ((argv[0] == 'command') && (typeof argv[1] !== "undefined")) {
+	docommand(argv[1], (typeof argv[2] !== "undefined" ? argv[2] : ""), (typeof argv[3] !== "undefined" ? argv[3] : ""));
+} else if (argv[0] === 'gamesrv') {
+	gamesrv = true;
+	external_section_menu_custom();
+} else if ((argv[0] === 'pre') && (typeof argv[1] !== "undefined")) {
+	dopre(argv[1]);
+} else if ((argv[0] === 'post') && (typeof argv[1] !== "undefined")) {
+	dopost(argv[1]);
 } else {
 	for (i in argv) {
 		for (j in xtrn_area.sec_list) {
@@ -38,7 +45,7 @@ if ((argv[0] == 'command') && (typeof argv[1] != "undefined")) {
 				xsec = j;
 		}
 	}
-
+	
 	if (xsec > -1) {
 		// if its the id of a standard section menu
 		if (options.use_xtrn_sec) {
@@ -56,8 +63,220 @@ if ((argv[0] == 'command') && (typeof argv[1] != "undefined")) {
 	}
 }
 
+// Runs pre-door stat tracking
+function dopre(progCode)
+{
+	require("nodedefs.js", "NODE_XTRN");
+	if (bbs.node_action != NODE_XTRN) {
+		log(LOG_DEBUG, "xtrnmenu pre: Skipping " + progCode + " because its not during a normal door run");
+		// don't want to track door stats for login events
+		return;
+	}
+	
+	var options = ExternalMenus.getOptions('custommenu', 'main');
+	
+	if (!options.json_enabled) {
+		log(LOG_DEBUG, "xtrnmenu pre: Skipping " + progCode + " because JSON is not enabled");
+		return;
+	}
+	
+	if (typeof options.blacklist_tracking_xtrncodes !== "undefined") {
+		var blacklist_xtrncodes = options.blacklist_tracking_xtrncodes.split(',');
+		for (var b=0; b < blacklist_xtrncodes.length; b++) {
+			if (blacklist_xtrncodes[b].toLowerCase() == progCode.toLowerCase()) {
+				log(LOG_DEBUG, "xtrnmenu pre: Skipping " + progCode + " because in blacklist_tracking_xtrncodes");
+				return;
+			}
+		}
+	}
+	
+	// get section of this program and block tracking if its in blacklist config
+	var secCode;
+	for (var j in xtrn_area.sec_list) {
+		for (var k in xtrn_area.sec_list[j].prog_list) {
+			if (xtrn_area.sec_list[j].prog_list[k].code.toLowerCase() == progCode.toLowerCase()) {
+				secCode = xtrn_area.sec_list[j].code;
+			}
+		}
+	}
+	if (typeof options.blacklist_tracking_xtrnsec !== "undefined") {
+		var blacklist_seccodes = options.blacklist_tracking_xtrnsec.split(',');
+		for (var b=0; b < blacklist_seccodes.length; b++) {
+			if (blacklist_seccodes[b].toLowerCase() == secCode) {
+				log(LOG_DEBUG, "xtrnmenu pre: Skipping " + progCode + " because in blacklist_tracking_xtrnsec " + secCode);
+				return;
+			}
+		}
+	}
+	
+	try {
+		load("json-client.js")
+		var jsonClient = new JSONClient(options.json_host, options.json_port);
+		jsonClient.callback = processUpdate;
+	} catch (e) {
+		log(LOG_ERR, "xtrnmenu pre: Could not initialize JSON database so door tracking is now disabled: " + e);
+		return;
+	}
+	
+	// global times a door is run
+	var globalLaunchNum = jsonClient.read("xtrnmenu", "launchnum", 1);
+	
+	if (typeof globalLaunchNum === "undefined") {
+		globalLaunchNum = {};
+	}
+	
+	if (typeof globalLaunchNum[progCode] !== "undefined") {
+		globalLaunchNum[progCode]++;
+	} else {
+		globalLaunchNum[progCode] = 1;
+	}
+	log(LOG_DEBUG, "xtrnmenu pre: globalLaunchNum " + progCode + " = " + globalLaunchNum[progCode]);
+	
+	jsonClient.write("xtrnmenu", "launchnum", globalLaunchNum, 2);
+	// user's times a door is run
+	var userLaunchNum = jsonClient.read("xtrnmenu", "launchnum_user_" + user.alias, 1);
+	if (!userLaunchNum) {
+		userLaunchNum = {};
+	}
+	
+	if (typeof userLaunchNum[progCode] !== "undefined") {
+		userLaunchNum[progCode]++;
+	} else {
+		userLaunchNum[progCode] = 1;
+	}
+	log(LOG_DEBUG, "xtrnmenu pre: userLaunchNum " + progCode + " = " + userLaunchNum[progCode]);
+	jsonClient.write("xtrnmenu", "launchnum_user_" + user.alias,userLaunchNum, 2);
+	
+	// global launch start time (most recent)
+	var globalLaunchStart = jsonClient.read("xtrnmenu", "launchstart", 1);
+	if (!globalLaunchStart) {
+		globalLaunchStart = {};
+	}
+	
+	globalLaunchStart[progCode] = time();
+	log(LOG_DEBUG, "xtrnmenu pre: globalLaunchStart " + progCode + " = " + globalLaunchStart[progCode] );
+	jsonClient.write("xtrnmenu", "launchstart", globalLaunchStart, 2);
+	
+	// user launch start time (most recent)
+	var userLaunchStart = jsonClient.read("xtrnmenu", "launchstart_user_" + user.alias, 1);
+	if (!userLaunchStart) {
+		userLaunchStart = {};
+	}
+	
+	userLaunchStart[progCode] = time();
+	log(LOG_DEBUG, "xtrnmenu pre: userLaunchStart " + progCode + " = " + userLaunchStart[progCode] );
+	jsonClient.write("xtrnmenu", "launchstart_user_" + user.alias, userLaunchStart, 2);
+	
+	jsonClient.cycle();
+}
+
+
+// Runs post-door stat tracking
+function dopost(progCode)
+{
+	require("nodedefs.js", "NODE_XTRN");
+	if (bbs.node_action != NODE_XTRN) {
+		log(LOG_DEBUG, "xtrnmenu post: Skipping " + progCode + " because its not during a normal door run");
+		// don't want to track door stats for login events
+		return;
+	}
+	
+	var options = ExternalMenus.getOptions('custommenu', 'main');
+	
+	if (!options.json_enabled) {
+		log(LOG_DEBUG, "xtrnmenu post: Skipping " + progCode + " because JSON is not enabled");
+		return;
+	}
+	
+	if (typeof options.blacklist_tracking_xtrncodes !== "undefined") {
+		var blacklist_xtrncodes = options.blacklist_tracking_xtrncodes.split(',');
+		for (var b=0; b < blacklist_xtrncodes.length; b++) {
+			if (blacklist_xtrncodes[b].toLowerCase() == progCode.toLowerCase()) {
+				log(LOG_DEBUG, "xtrnmenu post: Skipping " + progCode + " because in blacklist_tracking_xtrncodes");
+				return;
+			}
+		}
+	}
+	
+	// get section of this program and block tracking if its in blacklist config
+	var secCode;
+	for (var j in xtrn_area.sec_list) {
+		for (var k in xtrn_area.sec_list[j].prog_list) {
+			if (xtrn_area.sec_list[j].prog_list[k].code.toLowerCase() == progCode.toLowerCase()) {
+				secCode = xtrn_area.sec_list[j].code;
+			}
+		}
+	}
+	if (typeof options.blacklist_tracking_xtrnsec !== "undefined") {
+		var blacklist_seccodes = options.blacklist_tracking_xtrnsec.split(',');
+		for (var b=0; b < blacklist_seccodes.length; b++) {
+			if (blacklist_seccodes[b].toLowerCase() == secCode) {
+				log(LOG_DEBUG, "xtrnmenu post: Skipping " + progCode + " because in blacklist_tracking_xtrnsec " + secCode);
+				return;
+			}
+		}
+	}
+	
+	try {
+		load("json-client.js")
+		var jsonClient = new JSONClient(options.json_host, options.json_port);
+		jsonClient.callback = processUpdate;
+	} catch (e) {
+		log(LOG_ERR, "xtrnmenu pre: Could not initialize JSON database so door tracking is now disabled: " + e);
+		return;
+	}
+	
+	// user time ran
+	var newTimeRan;
+	var userLaunchStart = jsonClient.read("xtrnmenu", "launchstart_user_" + user.alias, 1);
+	if (userLaunchStart) {
+		if (typeof userLaunchStart[progCode] !== "undefined") {
+			var lasttime = userLaunchStart[progCode];
+			var now = time();
+			var runtime = now - lasttime;
+			
+			var userTimeRan = jsonClient.read("xtrnmenu", "timeran_user_" + user.alias, 1);
+			if (!userTimeRan) {
+				// first time
+				userTimeRan = {};
+			}
+			
+			if (typeof userTimeRan[progCode] === "undefined") {
+				userTimeRan[progCode] = runtime;
+			} else {
+				userTimeRan[progCode] = userTimeRan[progCode] + runtime;
+			}
+			jsonClient.write("xtrnmenu", "timeran_user_" + user.alias, userTimeRan, 2);
+			
+			// global time ran
+			var globalTimeran = jsonClient.read("xtrnmenu", "timeran", 1);
+			if (typeof globalTimeRan === "undefined") {
+				globalTimeRan = {};
+			}
+			
+			if (typeof globalTimeRan[progCode] === "undefined") {
+				globalTimeRan[progCode] = runtime;
+			} else {
+				globalTimeRan[progCode] = globalTimeRan[progCode] + runtime;
+			}
+			jsonClient.write("xtrnmenu", "timeran", globalTimeRan, 2);
+			
+			jsonClient.cycle();
+		}
+	}
+}
+
+/**
+ * JSON DB handler
+ * @param update
+ */
+function processUpdate(update)
+{
+	log(ERROR, "Unhandler JSON DB packet: " + JSON.stringify(update));
+}
+
 // Runs custom commands, for gamesrv
-function docommand(command)
+function docommand(command, commandparam1, commandparam2)
 {
 	switch (command) {
 		case 'checkmail':
@@ -86,36 +305,254 @@ function docommand(command)
 			commandstr = console.getstr();
 			str_cmds(commandstr);
 			break;
+		case 'textsec':
+			bbs.text_sec();
+			break;
+		case 'filearea':
+			if(file_exists(system.text_dir+"menu/tmessage.*"))
+				bbs.menu("tmessage");
+			filearea(commandparam1, commandparam2);
+			break;
+		case 'chat':
+			load("chat_sec.js");
+			break;
 		default:
 			doerror("Unknown command " + command);
 			break;
 	}
 }
 
-// Renders the top-level external menu
+// Present a basic download area
+// Taken from classic shell
+function filearea(filelib, filedir) {
+	var options = ExternalMenus.getOptions('custommenu', 'main');
+
+	var key;
+	
+	if (!filelib || !filedir) {
+		writeln("Error: No file area or dir selected");
+		return;
+	}
+	
+	bbs.curlib = filelib;
+	bbs.curdir = filedir;
+	
+	file_transfers:
+		while (1) {
+			console.clear();
+			
+			if (!bbs.menu("xtrnmenu_xfer", P_NOERROR)) {
+				console.crlf();
+				writeln("\x01c\x01h[B]\x01n\x01c Batch");
+				writeln("\x01c\x01h[D]\x01n\x01c Download");
+				writeln("\x01c\x01h[F]\x01n\x01c Find Text in Descriptions");
+				writeln("\x01c\x01h[V]\x01n\x01c View Files");
+				writeln("\x01c\x01h[L]\x01n\x01c List Files");
+				writeln("\x01c\x01h[S]\x01n\x01c Search Filename");
+				writeln("\x01c\x01h[Q]\x01n\x01c Quit");
+			}
+			
+			console.crlf();
+			
+			// Update node status
+			bbs.node_action = NODE_XFER;
+			bbs.node_sync();
+			
+			// Display main Prompt
+			console.print(typeof options.custom.xfer_prompt !== "undefined" ? 
+				options.custom.xfer_prompt : "\x01n\x01c\xfe \x01b\x01hFile \x01n\x01c\xfe \x01h");
+			if (bbs.compare_ars("exempt T"))
+				console.putmsg("@TUSED@", P_SAVEATR);
+			else
+				console.putmsg("@TLEFT@", P_SAVEATR);
+			console.putmsg(typeof options.custom.xfer_prompt2 !== "undefined" ?
+				options.custom.xfer_prompt2 : " \x01n\x01c@DIR@: \x01n");
+			
+			// Get key (with / extended commands allowed)
+			var str = console.getkey().toLowerCase();
+			
+			// Commands
+			switch (str) {
+				case ';':
+					require("str_cmds.js", "str_cmds");
+					console.putmsg(typeof options.custom.command_prompt !== "undefined" ?
+						options.custom.command_prompt : "\r\n\x01gCommand: ");
+					var commandstr = console.getstr();
+					str_cmds(commandstr);
+					break;
+					
+				case '!':
+					if (bbs.compare_ars("SYSOP")) {
+						bbs.menu("sysxfer");
+					}
+					break;
+					
+				case 'b':
+					bbs.batch_menu();
+					break;
+				
+				case 'd':
+					console.print(typeof options.custom.download_prompt !== "undefined" ?
+						options.custom.download_prompt : "\r\n\x01c\x01hDownload File(s)\r\n");
+					
+					if (bbs.batch_dnload_total > 0) {
+						if (console.yesno(bbs.text(DownloadBatchQ))) {
+							bbs.batch_download();
+							break;
+						}
+					}
+					str = bbs.get_filespec();
+					if ((str == null) || (file_area.lib_list.length == 0))
+						break;
+					if (user.security.restrictions & UFLAG_D) {
+						console.putmsg(bbs.text(R_Download), P_SAVEATR);
+						break;
+					}
+					if (!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_DOWNLOAD)) {
+						var s = 0;
+						console.putmsg(bbs.text(SearchingAllDirs), P_SAVEATR);
+						for (i = 0; i < file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+							if (i != bbs.curdir &&
+								(s = bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_DOWNLOAD)) != 0) {
+								if (s == -1 || str.indexOf('?') != -1 || str.indexOf('*') != -1) {
+									continue file_transfers;
+								}
+							}
+						}
+						console.putmsg(bbs.text(SearchingAllLibs), P_SAVEATR);
+						for (i = 0; i < file_area.lib_list.length; i++) {
+							if (i == bbs.curlib)
+								continue;
+							for (j = 0; j < file_area.lib_list[i].dir_list.length; j++) {
+								if ((s = bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_DOWNLOAD)) != 0) {
+									if (s == -1 || str.indexOf('?') != -1 || str.indexOf('*') != -1) {
+										continue file_transfers;
+									}
+								}
+							}
+						}
+					}
+					break;
+					
+				case 'f':
+					console.print(typeof options.custom.finddesc_prompt !== "undefined" ?
+						options.custom.finddesc_prompt : "\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\r\n");
+					bbs.scan_dirs(FL_FINDDESC, false);
+					break;
+					
+				case 'i':
+					file_info();
+					break;
+					
+				case 'l':
+					i = bbs.list_files();
+					if (i == -1)
+						break;
+					if (i == 0)
+						console.putmsg(bbs.text(EmptyDir), P_SAVEATR);
+					else
+						console.putmsg(format(bbs.text(NFilesListed), i), P_SAVEATR);
+					break;
+					
+				case 'r':
+					console.print(typeof options.custom.remove_prompt !== "undefined" ?
+						options.custom.remove_prompt : "\r\n\x01c\x01hRemove/Edit File(s)\r\n");
+					str = bbs.get_filespec();
+					if (str == null)
+						break;
+					if (!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
+						var s = 0;
+						console.putmsg(bbs.text(SearchingAllDirs), P_SAVEATR);
+						for (i = 0; i < file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+							if (i != bbs.curdir &&
+								(s = bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_REMOVE)) != 0) {
+								if (s == -1 || str.indexOf('?') != -1 || str.indexOf('*') != -1) {
+									continue file_transfers;
+								}
+							}
+						}
+						console.putmsg(bbs.text(SearchingAllLibs), P_SAVEATR);
+						for (i = 0; i < file_area.lib_list.length; i++) {
+							if (i == bbs.curlib)
+								continue;
+							for (j = 0; j < file_area.lib_list[i].dir_list.length; j++) {
+								if ((s = bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_REMOVE)) != 0) {
+									if (s == -1 || str.indexOf('?') != -1 || str.indexOf('*') != -1) {
+										continue file_transfers;
+									}
+								}
+							}
+						}
+					}
+					break;
+					
+				case 'q':
+					return;
+				
+				case 's':
+					console.print(typeof options.custom.searchfname_prompt !== "undefined" ?
+						options.custom.searchfname_prompt : "\r\n\x01c\x01hSearch for Filename(s)\r\n");
+					bbs.scan_dirs(FL_NO_HDR);
+					break;
+					
+				case 't':
+					bbs.temp_xfer();
+					break;
+					
+				case 'v':
+					console.print(typeof options.custom.view_prompt !== "undefined" ?
+						options.custom.view_prompt : "\r\n\x01c\x01hView File(s)\r\n");
+					str = bbs.get_filespec();
+					if (str == null)
+						continue file_transfers;
+					if (!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
+						console.putmsg(bbs.text(SearchingAllDirs), P_SAVEATR);
+						for (i = 0; i < file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+							if (i == bbs.curdir)
+								continue;
+							if (bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FL_VIEW))
+								break;
+						}
+						if (i < file_area.lib_list[bbs.curlib].dir_list.length)
+							continue file_transfers;
+						console.putmsg(bbs.text(SearchingAllLibs), P_SAVEATR);
+						for (i = 0; i < file_area.lib_list.length; i++) {
+							if (i == bbs.curlib)
+								continue;
+							for (j = 0; j < file_area.lib_list[i].dir_list.length; j++) {
+								if (bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FL_VIEW))
+									continue file_transfers;
+							}
+						}
+					}
+					break;
+				
+				default:
+					break;
+			}
+			console.crlf();
+		}
+}
+
+// Renders the menu
 function external_section_menu_custom(menuid)
 {
 	var i, menucheck, menuobj, item_multicolumn_fmt, item_singlecolumn_fmt,
 		cost, multicolumn, menuitemsfiltered = [];
 	var validkeys = []; // valid chars on menu selection
 	var keymax = 0; // max integer allowed on menu selection
-
-	var gamesrv = menuid == "gamesrv" ? true : false;
-	if (gamesrv) {
-		menuid = undefined;
-	}
-
+	
 	var options = ExternalMenus.getOptions('custommenu', menuid);
-
+	
 	menuobj = ExternalMenus.getMenu(menuid);
-
+	
 	// Allow overriding auto-format on a per-menu basis
 	var multicolumn_fmt = options.multicolumn_fmt;
 	var singlecolumn_fmt = options.singlecolumn_fmt;
-
+	
 	while (bbs.online) {
 		console.aborted = false;
-
+		
 		if (typeof menuobj === "undefined") {
 			menuobj = ExternalMenus.getSectionMenu(menuid);
 			if (typeof menuobj === "undefined") {
@@ -123,35 +560,35 @@ function external_section_menu_custom(menuid)
 				break;
 			}
 		}
-
+		
 		if (options.clear_screen) {
 			console.clear(LIGHTGRAY);
 		}
-
+		
 		if (user.security.restrictions&UFLAG_X) {
 			write(options.restricted_user_msg);
 			break;
 		}
-
+		
 		if (!xtrn_area.sec_list.length) {
 			write(options.no_programs_msg);
 			break;
 		}
-
+		
 		system.node_list[bbs.node_num-1].aux = 0; /* aux is 0, only if at menu */
 		bbs.node_action = NODE_XTRN;
 		bbs.node_sync();
-
+		
 		menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
-
+		
 		if (!bbs.menu("xtrnmenu_head_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_head", P_NOERROR)) {
 			bbs.menu("xtrn_head", P_NOERROR);
 		}
-
+		
 		// if file exists text/menu/xtrnmenu_(menuid).[rip|ans|mon|msg|asc], 
 		// then display that, otherwise dynamiic
 		if (!bbs.menu("xtrnmenu_" + menuid, P_NOERROR)) {
-
+			
 			// if no custom menu file in text/menu, create a dynamic one
 			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
 			printf(options.header_fmt, menuobj.title);
@@ -172,7 +609,7 @@ function external_section_menu_custom(menuid)
 					write(options.underline);
 			}
 			console.crlf();
-
+			
 			// n is the number of items for the 1st column
 			var n;
 			if (multicolumn) {
@@ -180,7 +617,7 @@ function external_section_menu_custom(menuid)
 			} else {
 				n = menuitemsfiltered.length;
 			}
-
+			
 			// j is the index for each menu item on 2nd column
 			var j = n; // start j at the first item for 2nd column
 			for (i = 0; i < n && !console.aborted; i++) {
@@ -189,9 +626,9 @@ function external_section_menu_custom(menuid)
 					// if its an external program, get the cost
 					cost = xtrn_area.prog[menuitemsfiltered[i].target.toLowerCase()].cost;
 				}
-
+				
 				console.add_hotspot(menuitemsfiltered[i].input.toString());
-
+				
 				validkeys.push(menuitemsfiltered[i].input.toString());
 				var intCheck = Number(menuitemsfiltered[i].input);
 				if (!intCheck.isNaN) {
@@ -199,46 +636,46 @@ function external_section_menu_custom(menuid)
 						keymax = menuitemsfiltered[i].input;
 					}
 				}
-
+				
 				// allow overriding format on a per-item basis
 				// great for featuring a specific game
 				var checkkey = menuitemsfiltered[i].target + '-multicolumn_fmt';
 				checkkey = checkkey.toLowerCase();
 				item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
 					options[checkkey] : options.multicolumn_fmt;
-
+				
 				checkkey = menuitemsfiltered[i].target + '-singlecolumn_fmt'
 				checkkey = checkkey.toLowerCase();
 				item_singlecolumn_fmt = (typeof options[checkkey] !== "undefined") ?
 					options[checkkey] : options.singlecolumn_fmt;
-
+				
 				printf(multicolumn ? item_multicolumn_fmt : item_singlecolumn_fmt,
 					menuitemsfiltered[i].input.toString().toUpperCase(),
 					menuitemsfiltered[i].title,
 					cost
 				);
-
+				
 				if (multicolumn) {
-					if ((typeof(menuitemsfiltered[j]) !== "undefined")) {
+					if (typeof menuitemsfiltered[j] !== "undefined") {
 						validkeys.push(menuitemsfiltered[j].input.toString());
-
+						
 						var intCheck = Number(menuitemsfiltered[j].input);
 						if (!intCheck.isNaN) {
 							if (intCheck > keymax) {
 								keymax = menuitemsfiltered[j].input;
 							}
 						}
-
+						
 						// allow overriding format on a per-item basis
 						// great for featuring a specific game
 						var checkkey = menuitemsfiltered[j].target + '-multicolumn_fmt';
 						checkkey = checkkey.toLowerCase();
 						item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
 							options[checkkey] : options.multicolumn_fmt;
-
+						
 						checkkey = menuitemsfiltered[j].target + '-singlecolumn_fmt'
 						checkkey = checkkey.toLowerCase();
-
+						
 						write(options.multicolumn_separator);
 						console.add_hotspot(menuitemsfiltered[j].input.toString());
 						printf(item_multicolumn_fmt,
@@ -253,23 +690,23 @@ function external_section_menu_custom(menuid)
 				}
 				console.crlf();
 			}
-
+			
 			if (gamesrv) {
 				if (!bbs.menu("xtrn_gamesrv_tail_" + menuid, P_NOERROR)) {
 					bbs.menu("xtrn_gamesrv_tail", P_NOERROR);
 				}
 			}
-
+			
 			if (!bbs.menu("xtrnmenu_tail_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_tail", P_NOERROR)) {
 				bbs.menu("xtrn_tail", P_NOERROR);
 			}
-
+			
 			bbs.node_sync();
 			console.mnemonics(options.which);
 		}
-
+		
 		validkeys.push('q');
-
+		
 		var keyin, keyin2;
 		var maxkeylen = 0;
 		var maxfirstkey = 0;
@@ -283,21 +720,21 @@ function external_section_menu_custom(menuid)
 				morekeys.push(validkeys[k].toString().toLowerCase().substring(0,1));
 			}
 		}
-
+		
 		// get first key
 		keyin = console.getkey();
 		keyin = keyin.toString().toLowerCase();
-
+	
 		// The logic below is to make it not require enter for as
 		// many items as possible
-
+		
 		// if max keys is 2 and they entered something that might have
 		// a second digit/char, then get the key
 		if (maxkeylen == 2) {
 			if (morekeys.indexOf(keyin) !== -1) {
 				write(keyin);
 				keyin2 = console.getkey(); // either the second digit or enter
-				if ((keyin2 != "\r") && (keyin2 != "\n") && (keyin2 != "\r\n")) {
+				if ((keyin2 !== "\r") && (keyin2 !== "\n") && (keyin2 !== "\r\n")) {
 					keyin = keyin + keyin2.toLowerCase();
 				}
 			}
@@ -308,21 +745,21 @@ function external_section_menu_custom(menuid)
 			keyin2 = console.getkeys(validkeys, keymax);
 			keyin = keyin + keyin2.toLowerCase();
 		}
-
+		
 		if (keyin) {
 			if (keyin == 'q') {
-				if (gamesrv && ('menuid' == 'main')) {
+				if (gamesrv && (menuid == 'main')) {
 					bbs.logoff();
 				} else {
 					console.clear();
 					return;
 				}
 			}
-
+			
 			menuitemsfiltered.some(function (menuitemfiltered) {
-				var menutarget = menuitemfiltered.target.toLowerCase();
+				var menutarget = menuitemfiltered.target ? menuitemfiltered.target.toLowerCase() : null;
 				var menuinput = menuitemfiltered.input.toString().toLowerCase();
-
+				
 				if (menuinput == keyin) {
 					switch (menuitemfiltered.type) {
 						// custom menu, defined in xtrnmenu.json
@@ -350,6 +787,12 @@ function external_section_menu_custom(menuid)
 						case 'command':
 							bbs.exec(menutarget);
 							return true;
+						case 'recentall':
+						case 'recentuser':
+						case 'mostlaunchedall':
+						case 'mostlauncheduser':
+							special_menu(menuitemfiltered.type, menuitemfiltered.title, menutarget);
+							return true;
 					} //switch
 				} // if menu item matched keyin
 			}); // foreach menu item
@@ -357,6 +800,232 @@ function external_section_menu_custom(menuid)
 	} // main bbs.online loop
 }
 
+
+// Renders the special menu (recent, most launched, etc.)
+function special_menu(menutype, title, itemcount) {
+	if (itemcount === undefined) {
+		itemcount = 0;
+	}
+	
+	var i, menucheck, item_multicolumn_fmt, item_singlecolumn_fmt,
+		cost, multicolumn, menuitemsfiltered = [];
+	var validkeys = []; // valid chars on menu selection
+	var keymax = 0; // max integer allowed on menu selection
+	
+	var options = ExternalMenus.getOptions('custommenu', 'main');
+	
+	var menuid = menutype;
+	
+	// Allow overriding auto-format on a per-menu basis
+	var multicolumn_fmt = options.multicolumn_fmt;
+	var singlecolumn_fmt = options.singlecolumn_fmt;
+	
+	while (bbs.online) {
+		console.aborted = false;
+		
+		if (options.clear_screen) {
+			console.clear(LIGHTGRAY);
+		}
+		
+		if (user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
+		
+		var menuobj = ExternalMenus.getSpecial(menutype, title, itemcount);
+		if (!bbs.menu("xtrnmenu_head_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_head", P_NOERROR)) {
+			bbs.menu("xtrn_head", P_NOERROR);
+		}
+		
+		if ((menuobj === undefined) || (!menuobj.items.length)) {
+			write(options.no_programs_msg);
+			break;
+		}
+		
+		menuitemsfiltered = menuobj.items;
+		
+		// if file exists text/menu/xtrnmenu_(menuid).[rip|ans|mon|msg|asc], 
+		// then display that, otherwise dynamiic
+		if (!bbs.menu("xtrnmenu_" + menuid, P_NOERROR)) {
+			
+			// if no custom menu file in text/menu, create a dynamic one
+			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
+			printf(options.header_fmt, title);
+			if(options.titles.trimRight() != '')
+				write(options.titles);
+			if(multicolumn) {
+				write(options.multicolumn_separator);
+				if (options.titles.trimRight() != '')
+					write(options.titles);
+			}
+			if(options.underline.trimRight() != '') {
+				console.crlf();
+				write(options.underline);
+			}
+			if(multicolumn) {
+				write(options.multicolumn_separator);
+				if (options.underline.trimRight() != '')
+					write(options.underline);
+			}
+			console.crlf();
+			
+			// n is the number of items for the 1st column
+			var n;
+			if (multicolumn) {
+				n = Math.floor(menuitemsfiltered.length / 2) + (menuitemsfiltered.length & 1);
+			} else {
+				n = menuitemsfiltered.length;
+			}
+			
+			// j is the index for each menu item on 2nd column
+			var j = n; // start j at the first item for 2nd column
+			for (i = 0; i < n && !console.aborted; i++) {
+				cost = xtrn_area.prog[menuitemsfiltered[i].target.toLowerCase()].cost;
+			
+				console.add_hotspot(menuitemsfiltered[i].input.toString());
+				
+				validkeys.push(menuitemsfiltered[i].input.toString());
+				var intCheck = Number(menuitemsfiltered[i].input);
+				if (!intCheck.isNaN) {
+					if (intCheck > keymax) {
+						keymax = menuitemsfiltered[i].input;
+					}
+				}
+				
+				// allow overriding format on a per-item basis
+				// great for featuring a specific game
+				var checkkey = menuitemsfiltered[i].target + '-multicolumn_fmt';
+				checkkey = checkkey.toLowerCase();
+				item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
+					options[checkkey] : options.multicolumn_fmt;
+				
+				checkkey = menuitemsfiltered[i].target + '-singlecolumn_fmt'
+				checkkey = checkkey.toLowerCase();
+				item_singlecolumn_fmt = (typeof options[checkkey] !== "undefined") ?
+					options[checkkey] : options.singlecolumn_fmt;
+				
+				printf(multicolumn ? item_multicolumn_fmt : item_singlecolumn_fmt,
+					menuitemsfiltered[i].input.toString().toUpperCase(),
+					menuitemsfiltered[i].title,
+					cost
+				);
+				
+				if (multicolumn) {
+					if (typeof menuitemsfiltered[j] !== "undefined") {
+						validkeys.push(menuitemsfiltered[j].input.toString());
+						
+						var intCheck = Number(menuitemsfiltered[j].input);
+						if (!intCheck.isNaN) {
+							if (intCheck > keymax) {
+								keymax = menuitemsfiltered[j].input;
+							}
+						}
+						
+						// allow overriding format on a per-item basis
+						// great for featuring a specific game
+						var checkkey = menuitemsfiltered[j].target + '-multicolumn_fmt';
+						checkkey = checkkey.toLowerCase();
+						item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
+							options[checkkey] : options.multicolumn_fmt;
+						
+						checkkey = menuitemsfiltered[j].target + '-singlecolumn_fmt'
+						checkkey = checkkey.toLowerCase();
+						
+						write(options.multicolumn_separator);
+						console.add_hotspot(menuitemsfiltered[j].input.toString());
+						printf(item_multicolumn_fmt,
+							menuitemsfiltered[j].input.toString().toUpperCase(),
+							menuitemsfiltered[j].title,
+							cost
+						);
+					} else {
+						write(options.multicolumn_separator);
+					}
+					j++;
+				}
+				console.crlf();
+			}
+			
+			if (gamesrv) {
+				if (!bbs.menu("xtrn_gamesrv_tail_" + menuid, P_NOERROR)) {
+					bbs.menu("xtrn_gamesrv_tail", P_NOERROR);
+				}
+			}
+			
+			if (!bbs.menu("xtrnmenu_tail_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_tail", P_NOERROR)) {
+				bbs.menu("xtrn_tail", P_NOERROR);
+			}
+			
+			bbs.node_sync();
+			console.mnemonics(options.which);
+		}
+		
+		validkeys.push('q');
+		
+		var keyin, keyin2;
+		var maxkeylen = 0;
+		var maxfirstkey = 0;
+		var morekeys = [];
+		var k;
+		for (k in validkeys) {
+			if (validkeys[k].length > maxkeylen) {
+				maxkeylen = validkeys[k].length;
+			}
+			if (validkeys[k].length > 1) {
+				morekeys.push(validkeys[k].toString().toLowerCase().substring(0,1));
+			}
+		}
+		
+		// get first key
+		keyin = console.getkey();
+		keyin = keyin.toString().toLowerCase();
+		
+		// The logic below is to make it not require enter for as
+		// many items as possible
+		
+		// if max keys is 2 and they entered something that might have
+		// a second digit/char, then get the key
+		if (maxkeylen == 2) {
+			if (morekeys.indexOf(keyin) !== -1) {
+				write(keyin);
+				keyin2 = console.getkey(); // either the second digit or enter
+				if ((keyin2 !== "\r") && (keyin2 !== "\n") && (keyin2 !== "\r\n")) {
+					keyin = keyin + keyin2.toLowerCase();
+				}
+			}
+		} else if (maxkeylen > 2) {
+			// there there are more than 99 items, then just use getkeys 
+			// for the rest
+			write(keyin);
+			keyin2 = console.getkeys(validkeys, keymax);
+			keyin = keyin + keyin2.toLowerCase();
+		}
+		
+		if (keyin) {
+			if (keyin == 'q') {
+				console.clear();
+				return;
+			}
+			
+			menuitemsfiltered.some(function (menuitemfiltered) {
+				var menutarget = menuitemfiltered.target.toLowerCase();
+				var menuinput = menuitemfiltered.input.toString().toLowerCase();
+				
+				if (menuinput == keyin) {
+					// everything in this menu is an xtrnprog
+
+					// run the external program
+					if (typeof xtrn_area.prog[menutarget] !== "undefined") {
+						bbs.exec_xtrn(menutarget);
+						return true;
+					} else {
+						doerror(options.custom_menu_program_not_found_msg.replace('%PROGRAMID%', menutarget));
+					}
+				} // if menu item matched keyin
+			}); // foreach menu item
+		} // if keyin
+	} // main bbs.online loop
+}
 
 // Display error message to console and save to log
 function doerror(msg)
