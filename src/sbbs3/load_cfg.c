@@ -176,9 +176,6 @@ void prep_cfg(scfg_t* cfg)
 	for(i=0;i<cfg->total_libs;i++) {
 		if(cfg->lib[i]->parent_path[0])
 			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path, sizeof(cfg->lib[i]->parent_path));
-	}
-
-	for(i=0;i<cfg->total_libs;i++) {
 		if((cfg->lib[i]->misc&LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
 			continue;
 		char path[MAX_PATH+1];
