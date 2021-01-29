@@ -7,7 +7,6 @@ Current unfinished status of doorscan:
 2. There is no logon/terminal module to display door usage
 3. The bulletin functionality was never implemented
 4. The user preferences may not be fully implemented
-5. It really ought to be converted to use JSONDB
 
 -----
 
@@ -65,14 +64,10 @@ You have many options:
 
 For original web (ie runemaster), copy doorscan.xjs to your web root
 
-For webv4, edit webv4/pages/More/003-doorscan.xjs and remove the HIDDEN from
-the comment:
+For webv4, copy 003-doorscan.xjs to webv4/pages/More/003-doorscan.xjs 
 
-<!-- HIDDEN:Door Statistics -->
-
-so it becomes
-
-<!-- Door Statistics -->
+For either web page, you may need to edit the load() line in the web page to 
+point to your doorscan.js file's location.
 
 Adding a Door Scan Configuration Item
 =====================================

@@ -1,11 +1,11 @@
-<!-- HIDDEN:Door Statistics -->
+<!-- Door Statistics -->
 <html>
 <head>
   <title>Monthly Door Log for <?xjs write(system.name) ?></title>
 </head>
 <body>
 <?xjs 
-   load("/sbbs/xtrn/doorscan/doorscan.js");
+   load(fullpath(system.ctrl_dir + "../xtrn/doorscan/doorscan.js"));
    var lp=new LogParser(); 
    
    if (typeof settings.xtrn_blacklist === 'string') {
