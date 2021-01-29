@@ -84,7 +84,8 @@ int main(int argc, char **argv)
 {
 	char str[256],*p;
 	int i,j,file;
-	ulong length,max_users=0xffffffff;
+	off_t length;
+	ulong max_users=0xffffffff;
 	uint32_t l;
 	sub_status_t *sub_status;
 	scfg_t	cfg;

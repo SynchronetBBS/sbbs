@@ -152,7 +152,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 	char *p;
 	char ext[1024];
 	int i;
-	long l;
+	off_t l;
 	BOOL exist;
 	FILE *stream;
 	DIR*	dir;
@@ -186,7 +186,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 			memset(ext, 0, sizeof(ext));
 			memset(&f, 0, sizeof(f));
 			char fdesc[LEN_FDESC + 1] = {0};
-			uint32_t cdt = flength(filepath);
+			uint32_t cdt = (uint32_t)flength(filepath);
 			time_t file_timestamp = fdate(filepath);
 			printf("%10"PRIu32"  %s\n"
 				,cdt, unixtodstr(&scfg,(time32_t)file_timestamp,str));
@@ -333,7 +333,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 
 		if(mode&TODAYS_DATE) {		/* put today's date in desc */
 			l=time32(NULL);
-			unixtodstr(&scfg,l,fdesc);
+			unixtodstr(&scfg,(time32_t)l,fdesc);
 			strcat(fdesc, "  "); 
 		}
 
@@ -424,7 +424,7 @@ void addlist(char *inpath, uint dirnum, const char* uploader, uint dskip, uint s
 				, result, smb.last_error, smb.file);
 
 		if(mode&UL_STATS)
-			updatestats(l);
+			updatestats((ulong)l);
 		files++;
 	} while(!feof(stream) && !ferror(stream));
 	fclose(stream);
@@ -749,7 +749,7 @@ int main(int argc, char **argv)
 				sprintf(fdesc, "%s  ", unixtodstr(&scfg,time32(NULL),tmp));
 			sprintf(tmp, "%.*s", (int)(LEN_FDESC-strlen(fdesc)), argv[++j]);
 			SAFECOPY(fdesc, tmp);
-			l=flength(str);
+			l=(long)flength(str);
 			if(l==-1) {
 				printf("%s not found.\n",str);
 				continue;

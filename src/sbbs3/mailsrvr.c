@@ -2847,7 +2847,7 @@ static void smtp_thread(void* arg)
 	ulong		lines=0;
 	ulong		hdr_lines=0;
 	ulong		hdr_len=0;
-	ulong		length;
+	off_t		length;
 	ulong		badcmds=0;
 	ulong		login_attempts;
 	ulong		waiting;
@@ -3261,14 +3261,14 @@ static void smtp_thread(void* arg)
 					else
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 
-					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
+					if((telegram_buf=(char*)malloc((size_t)(length+strlen(str)+1)))==NULL) {
 						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory for telegram from %s"
 							,socket, client.protocol, client_id, length+strlen(str)+1,sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue; 
 					}
 					strcpy(telegram_buf,str);	/* can't use SAFECOPY here */
-					if(fread(telegram_buf+strlen(str),1,length,msgtxt)!=length) {
+					if(fread(telegram_buf+strlen(str),1,(size_t)length,msgtxt)!=length) {
 						lprintf(LOG_ERR,"%04d %s %s !ERROR reading %lu bytes from telegram file"
 							,socket, client.protocol, client_id, length);
 						sockprintf(socket,client.protocol,session, insuf_stor);
@@ -3689,14 +3689,14 @@ static void smtp_thread(void* arg)
 					continue;
 				}
 
-				if((msgbuf=(char*)malloc(length+1))==NULL) {
+				if((msgbuf=(char*)malloc((size_t)(length+1)))==NULL) {
 					lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory"
 						,socket, client.protocol, client_id, length+1);
 					sockprintf(socket,client.protocol,session, insuf_stor);
 					subnum=INVALID_SUB;
 					continue;
 				}
-				fread(msgbuf,length,1,msgtxt);
+				fread(msgbuf,(size_t)length,1,msgtxt);
 				msgbuf[length]=0;	/* ASCIIZ */
 
 				/* Do external JavaScript processing here? */

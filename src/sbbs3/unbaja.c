@@ -1330,10 +1330,10 @@ void decompile(FILE *bin, FILE *srcfile)
 	char	src[2048];
 	int		redo=FALSE;
 	char	*labels;
-	size_t	currpos=0;
+	off_t	currpos=0;
 
 	currpos=filelength(fileno(bin));
-	labels=(char *)calloc(1,filelength(fileno(bin)));
+	labels=(char *)calloc(1,(size_t)filelength(fileno(bin)));
 	if(labels==NULL) {
 		printf("ERROR allocating memory for labels\n");
 		return;
@@ -1351,7 +1351,7 @@ void decompile(FILE *bin, FILE *srcfile)
 		}
 		src[0]=0;
 		if(labels[currpos])
-			sprintf(src,":label_%04" XP_PRIsize_t "x\n",currpos);
+			sprintf(src,":label_%04" XP_PRIsize_t "x\n", (uint)currpos);
 		switch(uch) {
 			case CS_USE_INT_VAR:
 				usevar=TRUE;

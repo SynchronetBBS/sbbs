@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 	size_t idxreclen = smb_idxreclen(&smb);
 	off_t sid_length = filelength(fileno(smb.sid_fp));
 	if(sid_length != smb.status.total_msgs * idxreclen) {
-		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", sid_length, (long)(smb.status.total_msgs * idxreclen));
+		printf("!Size of index file (%ld) is incorrect (expected: %ld)\n", (long)sid_length, (long)(smb.status.total_msgs * idxreclen));
 		smb_close(&smb);
 		errors++;
 		continue;
@@ -290,7 +290,7 @@ int main(int argc, char **argv)
 	off_t shd_hdrs = shd_length - smb.status.header_offset;
 
 	if(shd_hdrs && (shd_hdrs%SHD_BLOCK_LEN) != 0)
-		printf("!Size of msg header records in SHD file incorrect: %lu\n", shd_hdrs);
+		printf("!Size of msg header records in SHD file incorrect: %lu\n", (ulong)shd_hdrs);
 
 	if((i=smb_locksmbhdr(&smb))!=0) {
 		smb_close(&smb);
@@ -300,10 +300,10 @@ int main(int argc, char **argv)
 	}
 
 	if(((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)) != 0){
-		if((number=malloc(((shd_hdrs/SHD_BLOCK_LEN)+2)*sizeof(uint32_t)))
+		if((number=malloc((size_t)(((shd_hdrs/SHD_BLOCK_LEN)+2))*sizeof(uint32_t)))
 			==NULL) {
 			printf("Error allocating %lu bytes of memory\n"
-				,(shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t));
+				,(ulong)((shd_hdrs/SHD_BLOCK_LEN)*sizeof(uint32_t)));
 			return(++errors); 
 		} 
 	}
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
 	off_t sdt_length = filelength(fileno(smb.sdt_fp));
 	if(sdt_length && (sdt_length % SDT_BLOCK_LEN) != 0)
 		printf("!Size of SDT file (%lu) not evenly divisble by block length (%u)\n"
-			,sdt_length, SDT_BLOCK_LEN);
+			,(ulong)sdt_length, SDT_BLOCK_LEN);
 
 	if(chkalloc && !(smb.status.attr&SMB_HYPERALLOC)) {
 		if((i=smb_open_ha(&smb))!=0) {
@@ -323,8 +323,8 @@ int main(int argc, char **argv)
 		if(filelength(fileno(smb.shd_fp)) != smb.status.header_offset
 			+ (filelength(fileno(smb.sha_fp)) * SHD_BLOCK_LEN))
 			printf("!Size of SHA file (%lu) does not match SHD file (%lu)\n"
-				,filelength(fileno(smb.sha_fp))
-				,filelength(fileno(smb.shd_fp)));
+				,(ulong)filelength(fileno(smb.sha_fp))
+				,(ulong)filelength(fileno(smb.shd_fp)));
 
 		if((i=smb_open_da(&smb))!=0) {
 			printf("smb_open_da returned %d: %s\n",i,smb.last_error);
@@ -332,8 +332,8 @@ int main(int argc, char **argv)
 		}
 		if((filelength(fileno(smb.sda_fp)))/sizeof(uint16_t) != filelength(fileno(smb.sdt_fp))/SDT_BLOCK_LEN)
 			printf("!Size of SDA file (%lu) does not match SDT file (%lu)\n"
-				,filelength(fileno(smb.sda_fp))
-				,filelength(fileno(smb.sdt_fp)));
+				,(ulong)filelength(fileno(smb.sda_fp))
+				,(ulong)filelength(fileno(smb.sdt_fp)));
 	}
 
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
@@ -803,7 +803,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"\r%79s\r100%%\n","");
 	}
 
-	total=filelength(fileno(smb.sid_fp))/smb_idxreclen(&smb);
+	total=(ulong)filelength(fileno(smb.sid_fp))/smb_idxreclen(&smb);
 
 	dupenum=dupeoff=misnumbered=idxzeronum=idxnumerr=idxofferr=idxerr=delidx=0;
 

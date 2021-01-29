@@ -2693,7 +2693,8 @@ int mv(const char *insrc, const char *indest, bool copy)
 	char src[MAX_PATH+1];
 	char dest[MAX_PATH+1];
 	int  ind,outd;
-	long length,chunk=4096,l;
+	off_t length;
+	long chunk=4096,l;
     FILE *inp,*outp;
 
 	SAFECOPY(src, insrc);
@@ -2750,7 +2751,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	int result = 0;
 	while(l<length) {
 		if(l+chunk>length)
-			chunk=length-l;
+			chunk=(long)(length-l);
 		if(fread(buf,1,chunk,inp) != chunk) {
 			result = -2;
 			break;
@@ -2801,7 +2802,7 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 {
 	int i;
-	long l,total;
+	ulong l,total;
 	idxrec_t idx;
 
 	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
@@ -2810,14 +2811,14 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 	}
 
 	/* total msgs in sub */
-	total=filelength(fileno(smb->sid_fp))/sizeof(idxrec_t);
+	total=(ulong)filelength(fileno(smb->sid_fp))/sizeof(idxrec_t);
 
 	if(!total) {			/* empty */
 		smb_unlocksmbhdr(smb);
 		return(0);
 	}
 
-	if(((*post)=(post_t*)malloc(sizeof(post_t)*total))    /* alloc for max */
+	if(((*post)=(post_t*)malloc((size_t)(sizeof(post_t)*total)))    /* alloc for max */
 		==NULL) {
 		smb_unlocksmbhdr(smb);
 		lprintf(LOG_ERR,"ERROR line %d allocating %lu bytes for %s",__LINE__
@@ -5497,7 +5498,7 @@ void find_stray_packets(void)
 	FILE*	fp;
 	size_t	f;
 	glob_t	g;
-	long	flen;
+	off_t	flen;
 	uint16_t	terminator;
 	fidoaddr_t	pkt_orig;
 	fidoaddr_t	pkt_dest;
@@ -5533,7 +5534,7 @@ void find_stray_packets(void)
 			continue;
 		}
 		terminator = ~FIDO_PACKET_TERMINATOR;
-		(void)fseek(fp, flen-sizeof(terminator), SEEK_SET);
+		(void)fseek(fp, (long)(flen-sizeof(terminator)), SEEK_SET);
 		(void)fread(&terminator, sizeof(terminator), 1, fp);
 		fclose(fp);
 		if(!parse_pkthdr(&pkthdr, &pkt_orig, &pkt_dest, &pkt_type)) {
@@ -5735,9 +5736,9 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			hdr.attr&=~FIDO_LOCAL;	/* Strip local bit, obviously not created locally */
 
 			if(strncmp(fmsgbuf, "AREA:", 5) != 0) {					/* Netmail */
-				(void)fseek(fidomsg, msg_offset, SEEK_SET);
+				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
 				import_netmail("", hdr, fidomsg, inbound);
-				(void)fseek(fidomsg, next_msg, SEEK_SET);
+				(void)fseeko(fidomsg, next_msg, SEEK_SET);
 				printf("\n");
 				continue;
 			}

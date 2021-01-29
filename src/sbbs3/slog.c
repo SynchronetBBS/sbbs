@@ -26,8 +26,8 @@ int main(int argc, char **argv)
 	int i,file,pause=0,lncntr=0;
     time_t timestamp;
     long l;
-    ulong   length,
-            logons,
+    off_t   length;
+    ulong	logons,
             timeon,
             posts,
             emails,
@@ -65,13 +65,13 @@ length=filelength(file);
 if(length<40) {
     close(file);
 	return(1); }
-if((buf=malloc(length))==0) {
+if((buf=malloc((size_t)length))==0) {
     close(file);
-	printf("error allocating %lu bytes\r\n",length);
+	printf("error allocating %lu bytes\r\n",(ulong)length);
 	return(1); }
-read(file,buf,length);
+read(file,buf,(uint)length);
 close(file);
-l=length-4;
+l=(long)(length-4);
 while(l>-1L) {
     fbacks=buf[l]|((long)buf[l+1]<<8)|((long)buf[l+2]<<16)
         |((long)buf[l+3]<<24);

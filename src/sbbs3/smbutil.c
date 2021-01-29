@@ -926,7 +926,8 @@ void packmsgs(ulong packable)
 	uchar	buf[SDT_BLOCK_LEN],ch;
 	char	fname[MAX_PATH+1],tmpfname[MAX_PATH+1];
 	int i,size;
-	ulong l,m,n,datoffsets=0,length,total;
+	ulong l,m,n,datoffsets=0,total;
+	off_t length;
 	FILE *tmp_sdt,*tmp_shd,*tmp_sid;
 	BOOL		error=FALSE;
 	smbhdr_t	hdr;
@@ -1186,8 +1187,8 @@ void packmsgs(ulong packable)
 			}
 
 			if(!(smb.status.attr&SMB_HYPERALLOC)) {
-				datoffset[datoffsets].new=msg.hdr.offset
-					=smb_fallocdat(&smb,m,1);
+				datoffset[datoffsets].new=(uint32_t)msg.hdr.offset
+					=(uint32_t)smb_fallocdat(&smb,(uint32_t)m,1);
 				datoffsets++;
 				fseek(tmp_sdt,msg.hdr.offset,SEEK_SET); 
 			}
@@ -1217,7 +1218,7 @@ void packmsgs(ulong packable)
 		if(smb.status.attr&SMB_HYPERALLOC)
 			msg.idx.offset=ftell(tmp_shd);
 		else
-			msg.idx.offset=smb_fallochdr(&smb,length)+smb.status.header_offset;
+			msg.idx.offset=(uint32_t)smb_fallochdr(&smb,(ulong)length)+smb.status.header_offset;
 		smb_init_idx(&smb, &msg);
 		fseek(tmp_sid, l * idxreclen, SEEK_SET);
 		fwrite(&msg.idx, 1, sizeof(msg.idx), tmp_sid);
@@ -1862,14 +1863,14 @@ int main(int argc, char **argv)
 							y=strlen(cmd)-1;
 							break;
 						case 'R':
-							printf("Re-initialzing %s SMB/status header\n", smb.file);
+							printf("Re-initializing %s SMB/status header\n", smb.file);
 							if((i=smb_initsmbhdr(&smb)) != SMB_SUCCESS) {
 								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);
 								return i;
 							}
 							memset(&smb.status, 0, sizeof(smb.status));
 							smb.status.header_offset = sizeof(smbhdr_t) + sizeof(smb.status);
-							smb.status.total_msgs = filelength(fileno(smb.sid_fp)) / smb_idxreclen(&smb);
+							smb.status.total_msgs = (uint32_t)filelength(fileno(smb.sid_fp)) / smb_idxreclen(&smb);
 							idxrec_t idx;
 							if((i=smb_getlastidx(&smb, &idx)) != SMB_SUCCESS) {
 								fprintf(errfp, "\n%s!error %d: %s\n", beep, i, smb.last_error);

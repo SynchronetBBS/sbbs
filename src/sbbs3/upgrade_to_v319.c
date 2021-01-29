@@ -260,7 +260,7 @@ BOOL getfiledat(scfg_t* cfg, file_t* f)
 		struct stat st;
 		getoldfilepath(cfg,f,str);
 		if(stat(str, &st) == 0) {
-			f->size = st.st_size;
+			f->size = (int32_t)st.st_size;
 			f->date = (time32_t)st.st_mtime;
 		} else
 			f->size = -1;	// indicates file does not exist
@@ -870,7 +870,7 @@ bool upgrade_file_bases(void)
 		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
 		if((file=open(str,O_RDONLY|O_BINARY))==-1)
 			continue;
-		long l=filelength(file);
+		long l=(long)filelength(file);
 		if(!l) {
 			close(file);
 			continue;

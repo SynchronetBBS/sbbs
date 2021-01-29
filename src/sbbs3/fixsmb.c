@@ -98,7 +98,8 @@ int fixsmb(char* sub)
 	char*		text;
 	char		c;
 	int 		i,w;
-	ulong		l,length,size,n;
+	ulong		l,size,n;
+	off_t		length;
 	smbmsg_t	msg;
 	uint32_t*	numbers = NULL;
 	long		total = 0;
