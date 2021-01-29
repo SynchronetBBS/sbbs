@@ -1187,8 +1187,8 @@ void packmsgs(ulong packable)
 			}
 
 			if(!(smb.status.attr&SMB_HYPERALLOC)) {
-				datoffset[datoffsets].new=(uint32_t)msg.hdr.offset
-					=(uint32_t)smb_fallocdat(&smb,(uint32_t)m,1);
+				msg.hdr.offset = (uint32_t)smb_fallocdat(&smb,(uint32_t)m,1);
+				datoffset[datoffsets].new = msg.hdr.offset;
 				datoffsets++;
 				fseek(tmp_sdt,msg.hdr.offset,SEEK_SET); 
 			}
