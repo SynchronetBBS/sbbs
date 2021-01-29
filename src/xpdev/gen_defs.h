@@ -273,7 +273,7 @@ typedef intmax_t	intptr_t;
 typedef int32_t         time32_t;
 
 #if defined(_WIN32)
-#  if !defined _FILE_OFFSET_BITS
+#  if defined _MSC_VER && !defined _FILE_OFFSET_BITS
 #    define _FILE_OFFSET_BITS 64
 #  endif
 #  if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS==64)
