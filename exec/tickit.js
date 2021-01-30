@@ -27,8 +27,17 @@ load("sbbsdefs.js");
 require("fidocfg.js", 'TickITCfg');
 require("fido.js", 'FIDO');
 
-var sbbsecho = new SBBSEchoCfg();
-var tickit = new TickITCfg();
+var cfgfile;
+
+for (var i in argv) {
+	if(argv[i] == "-force-replace")
+		force_replace = true;
+	else if(argv[i][0] != '-')
+		cfgfile = argv[i];
+}
+
+var tickit = new TickITCfg(cfgfile);
+var sbbsecho = new SBBSEchoCfg(tickit.gcfg.echocfg);
 var files_bbs={};
 var force_replace = false;
 
@@ -730,10 +739,6 @@ function main() {
 	var i, j;
 	var ticfiles;
 	var tic;
-
-	for (i in argv)
-		if(argv[i] == "-force-replace")
-			force_replace = true;
 
 	// check source FTN address overrides and list for debugging purposes - wk42
 	//
