@@ -18,6 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
+#include "ssl.h"
 
 static void configure_dst(void)
 {
@@ -65,18 +66,6 @@ void sys_cfg(void)
 	int i,j,k,dflt,bar;
 	char sys_pass[sizeof(cfg.sys_pass)];
 	SAFECOPY(sys_pass, cfg.sys_pass);
-	char* cryptlib_syspass_helpbuf =
-		"`Changing the System Password requires new Cryptlib key and certificate:`\n"
-		"\n"
-		"The Cryptlib private key (`cryptlib.key`) and TLS certificate (`ssl.cert`)\n"
-		"files, located in the Synchronet `ctrl` directory, are encrypted with the\n"
-		"current `System Password`.\n"
-		"\n"
-		"Changing the System Password will require that the Cryptlib Private Key\n"
-		"and Certificate files be regenerated.  The Cryptlib key and certificate\n"
-		"regeneration should occur automatically after the files are deleted and\n"
-		"the Synchronet servers are recycled.";
-
 	while(1) {
 		i=0;
 		sprintf(opt[i++],"%-33.33s%s","BBS Name",cfg.sys_name);
@@ -129,13 +118,27 @@ void sys_cfg(void)
 				if(!i) {
 					cfg.new_install=new_install;
 					if(strcmp(sys_pass, cfg.sys_pass) != 0) {
-						uifc.helpbuf = cryptlib_syspass_helpbuf;
-						if((fexist("ssl.cert") || fexist("cryptlib.key"))
-							&& uifc.confirm("System Password Changed. Delete Cryptlib Key and Certificate?")) {
-							if(remove("ssl.cert") != 0)
-								uifc.msgf("Error %d removing ssl.cert", errno);
-							if(remove("cryptlib.key") != 0)
-								uifc.msgf("Error %d removing cryptlib.key", errno);
+						if(fexist("ssl.cert") || fexist("cryptlib.key")) {
+							CRYPT_KEYSET ssl_keyset;
+							CRYPT_CONTEXT ssl_context = -1;
+							int status;
+							int ignoreme;
+
+							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "ssl.cert", CRYPT_KEYOPT_NONE)))
+								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssl_cert", sys_pass)))
+									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssl_cert"))) {
+										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
+										cryptKeysetClose(ssl_keyset);
+									}
+
+							if (cryptStatusOK(status = cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, "cryptlib.key", CRYPT_KEYOPT_NONE)))
+								if (cryptStatusOK(status = cryptGetPrivateKey(ssl_keyset, &ssl_context, CRYPT_KEYID_NAME, "ssh_server", sys_pass)))
+									if (cryptStatusOK(status = cryptDeleteKey(ssl_keyset, CRYPT_KEYID_NAME, "ssh_server"))) {
+										ignoreme = cryptAddPrivateKey(ssl_keyset, ssl_context, cfg.sys_pass);
+										cryptKeysetClose(ssl_keyset);
+									}
+
+							(void)ignoreme;
 						}
 					}
 					save_main_cfg(&cfg,backup_level);
@@ -386,9 +389,6 @@ void sys_cfg(void)
 				uifc.input(WIN_MID,0,0,"System Operator",cfg.sys_op,sizeof(cfg.sys_op)-1,K_EDIT);
 				break;
 			case 4:
-				uifc.helpbuf=cryptlib_syspass_helpbuf;
-				if(uifc.deny("Changing SysPass requires new Cryptlib key/cert. Continue?"))
-					break;
 				uifc.helpbuf=
 					"`System Password:`\n"
 					"\n"
