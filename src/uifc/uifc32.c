@@ -927,14 +927,12 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				(*bar)=opts-1;
 			if((*bar)<0)
 				(*bar)=0;
-			if((*cur)<(*bar))
-				(*cur)=(*bar);
 			i=(*cur)-(*bar);
 			if(i+(height-vbrdrsize-1)>=opts) {
-				i=opts-(height-vbrdrsize);
-				if(i<0)
-					i=0;
-				(*cur)=i+(*bar);
+				(*bar)=(height-vbrdrsize);
+				if (*bar > *cur)
+					*bar = *cur;
+				i=(*cur)-(*bar)+1;
 			}
 		}
 		if((*cur)<0)
@@ -2595,7 +2593,9 @@ char *utimestr(time_t *intime)
 	}
 	if(gm->tm_hour>=12) {
 		strcpy(mer,"pm");
-		hour=gm->tm_hour-12;
+		hour=gm->tm_hour;
+		if (hour > 12)
+			hour-=12;
 	}
 	else {
 		if(!gm->tm_hour)
