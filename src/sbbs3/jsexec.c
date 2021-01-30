@@ -105,7 +105,7 @@ void usage()
 {
 	banner(stdout);
 
-	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] or -Ijs-expression] [args]\n"
+	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] or -r js-expression] [args]\n"
 		"\navailable opts:\n\n"
 #ifdef JSDOOR
 		"    -c<ctrl_dir>   specify path to CTRL directory\n"
@@ -129,7 +129,6 @@ void usage()
 		"    -L<level>      set log level (default=%u)\n"
 		"    -E<level>      set error log level threshold (default=%u)\n"
 		"    -i<path_list>  set load() comma-sep search path list (default=\"%s\")\n"
-		"    -I<expression> interpret and execute specified JavaScript expression\n"
 		"    -f             use non-buffered stream for console messages\n"
 		"    -a             append instead of overwriting message output files\n"
 		"    -A             send all message to stdout\n"
@@ -1229,7 +1228,7 @@ int main(int argc, char **argv, char** env)
 				case 'E':
 				case 'g':
 				case 'i':
-				case 'I':
+				case 'r':
 				case 'L':
 				case 'm':
 				case 'o':
@@ -1268,7 +1267,7 @@ int main(int argc, char **argv, char** env)
 						case 'i':
 							load_path_list=p;
 							break;
-						case 'I':
+						case 'r':
 							js_buf = p;
 							break;
 						case 'L':
