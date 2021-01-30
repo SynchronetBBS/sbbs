@@ -103,9 +103,9 @@ void banner(FILE* fp)
 
 void usage()
 {
-	banner(stderr);
+	banner(stdout);
 
-	fprintf(stderr, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] or -Ijs-expression] [args]\n"
+	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] or -Ijs-expression] [args]\n"
 		"\navailable opts:\n\n"
 #ifdef JSDOOR
 		"    -c<ctrl_dir>   specify path to CTRL directory\n"
