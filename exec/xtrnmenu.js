@@ -33,7 +33,7 @@ if ((argv[0] == 'command') && (typeof argv[1] !== "undefined")) {
 	docommand(argv[1], (typeof argv[2] !== "undefined" ? argv[2] : ""), (typeof argv[3] !== "undefined" ? argv[3] : ""));
 } else if (argv[0] === 'gamesrv') {
 	gamesrv = true;
-	external_section_menu_custom();
+	external_menu_custom();
 } else if ((argv[0] === 'pre') && (typeof argv[1] !== "undefined")) {
 	dopre(argv[1]);
 } else if ((argv[0] === 'post') && (typeof argv[1] !== "undefined")) {
@@ -52,14 +52,14 @@ if ((argv[0] == 'command') && (typeof argv[1] !== "undefined")) {
 			// stock menu
 			js.exec("xtrn_sec.js", {}, xsec);
 		} else {
-			external_section_menu_custom(xsec);
+			external_menu_custom(xsec);
 		}
 	} else if (typeof argv[0] !== "undefined") {
 		// if its not a section menu, assume it is a custom menu
-		external_section_menu_custom(argv[0]);
+		external_menu_custom(argv[0]);
 	} else {
 		// main custom menu
-		external_section_menu_custom();
+		external_menu_custom();
 	}
 }
 
@@ -544,7 +544,7 @@ function filearea(filelib, filedir) {
 }
 
 // Renders the menu
-function external_section_menu_custom(menuid)
+function external_menu_custom(menuid)
 {
 	var i, menucheck, menuobj, item_multicolumn_fmt, item_singlecolumn_fmt,
 		item_multicolumn_fmt_inverse, item_singlecolumn_fmt_inverse,
@@ -950,14 +950,14 @@ function external_section_menu_custom(menuid)
 					switch (menuitemfiltered.type) {
 						// custom menu, defined in xtrnmenu.json
 						case 'custommenu':
-							external_section_menu_custom(menutarget);
+							external_menu_custom(menutarget);
 							return true;
 						// external program section
 						case 'xtrnmenu':
 							if (options.use_xtrn_sec) {
 								js.exec("xtrn_sec.js", {}, menutarget);
 							} else {
-								external_section_menu_custom(menutarget);
+								external_menu_custom(menutarget);
 							}
 							return true;
 						// external program
@@ -984,6 +984,9 @@ function external_section_menu_custom(menuid)
 						case 'search':
 							search_menu(menuitemfiltered.title, menutarget);
 							return true;
+						case 'favorites':
+							favorites_menu(menuitemfiltered.title, menutarget);
+							return true;
 					} //switch
 				} // if menu item matched keyin
 			}); // foreach menu item
@@ -1004,9 +1007,9 @@ function special_menu(menutype, title, itemcount) {
 	var validkeys = []; // valid chars on menu selection
 	var keymax = 0; // max integer allowed on menu selection
 	
-	var options = ExternalMenus.getOptions('custommenu', 'main');
-	
 	var menuid = menutype;
+	
+	var options = ExternalMenus.getOptions('custommenu', menuid);
 	
 	// Allow overriding auto-format on a per-menu basis
 	var multicolumn_fmt = options.custom.multicolumn_fmt_special !== undefined 
@@ -1059,141 +1062,136 @@ function special_menu(menutype, title, itemcount) {
 			type: 'quit',
 		});
 		
-		// if file exists text/menu/xtrnmenu_(menuid).[rip|ans|mon|msg|asc], 
-		// then display that, otherwise dynamiic
-		if (!bbs.menu("xtrnmenu_" + menuid, P_NOERROR)) {
-			
-			// if no custom menu file in text/menu, create a dynamic one
-			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
-			printf(options.header_fmt, title);
-			if(options.titles.trimRight() != '')
+		// if no custom menu file in text/menu, create a dynamic one
+		multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
+		printf(options.header_fmt, title);
+		if(options.titles.trimRight() != '')
+			write(options.titles);
+		if(multicolumn) {
+			write(options.multicolumn_separator);
+			if (options.titles.trimRight() != '')
 				write(options.titles);
-			if(multicolumn) {
-				write(options.multicolumn_separator);
-				if (options.titles.trimRight() != '')
-					write(options.titles);
-			}
-			if(options.underline.trimRight() != '') {
-				console.crlf();
-				write(options.underline);
-			}
-			if(multicolumn) {
-				write(options.multicolumn_separator);
-				if (options.underline.trimRight() != '')
-					write(options.underline);
-			}
+		}
+		if(options.underline.trimRight() != '') {
 			console.crlf();
+			write(options.underline);
+		}
+		if(multicolumn) {
+			write(options.multicolumn_separator);
+			if (options.underline.trimRight() != '')
+				write(options.underline);
+		}
+		console.crlf();
+		
+		// n is the number of items for the 1st column
+		var n;
+		if (multicolumn) {
+			n = Math.floor(menuitemsfiltered.length / 2) + (menuitemsfiltered.length & 1);
+		} else {
+			n = menuitemsfiltered.length;
+		}
+		
+		// j is the index for each menu item on 2nd column
+		var j = n; // start j at the first item for 2nd column
+		for (i = 0; i < n && !console.aborted; i++) {
+			console.add_hotspot(menuitemsfiltered[i].input.toString());
 			
-			// n is the number of items for the 1st column
-			var n;
-			if (multicolumn) {
-				n = Math.floor(menuitemsfiltered.length / 2) + (menuitemsfiltered.length & 1);
-			} else {
-				n = menuitemsfiltered.length;
+			validkeys.push(menuitemsfiltered[i].input.toString());
+			
+			if (menuitemsfiltered[i].input > keymax) {
+				keymax = menuitemsfiltered[i].input;
 			}
 			
-			// j is the index for each menu item on 2nd column
-			var j = n; // start j at the first item for 2nd column
-			for (i = 0; i < n && !console.aborted; i++) {
-				console.add_hotspot(menuitemsfiltered[i].input.toString());
-				
-				validkeys.push(menuitemsfiltered[i].input.toString());
-				
-				if (menuitemsfiltered[i].input > keymax) {
-					keymax = menuitemsfiltered[i].input;
+			if (i == selected_index) {
+				if (menuitemsfiltered[i].type == 'quit') {
+					printf(multicolumn ? return_multicolumn_special_fmt_inverse : return_singlecolumn_special_fmt_inverse,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title,
+						''
+					);
+				} else {
+					printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title,
+						menuitemsfiltered[i].stats
+					);
 				}
-				
-				if (i == selected_index) {
-					if (menuitemsfiltered[i].type == 'quit') {
-						printf(multicolumn ? return_multicolumn_special_fmt_inverse : return_singlecolumn_special_fmt_inverse,
-							menuitemsfiltered[i].input,
-							menuitemsfiltered[i].title,
-							''
-						);
+			} else {
+				if (menuitemsfiltered[i].type == 'quit') {
+					printf(multicolumn ? return_multicolumn_special_fmt : return_singlecolumn_special_fmt,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title,
+						''
+					);
+				} else {
+					printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title,
+						menuitemsfiltered[i].stats
+					);
+				}
+			}
+			
+			if (multicolumn) {
+				if (typeof menuitemsfiltered[j] !== "undefined") {
+					validkeys.push(menuitemsfiltered[j].input.toString());
+					
+					if (menuitemsfiltered[j].input > keymax) {
+						keymax = menuitemsfiltered[i].input;
+					}
+					
+					write(options.multicolumn_separator);
+					console.add_hotspot(menuitemsfiltered[j].input.toString());
+					
+					if (selected_index == j) {
+						if (menuitemsfiltered[j].type == 'quit') {
+							printf(multicolumn ? return_multicolumn_special_fmt_inverse : return_singlecolumn_special_fmt_inverse,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title,
+								''
+							);
+						} else {
+							printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title,
+								menuitemsfiltered[j].stats
+							);
+						}
 					} else {
-						printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
-							menuitemsfiltered[i].input,
-							menuitemsfiltered[i].title,
-							menuitemsfiltered[i].stats
-						);
+						if (menuitemsfiltered[j].type == 'quit') {
+							printf(multicolumn ? return_multicolumn_special_fmt : return_singlecolumn_special_fmt,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title,
+								''
+							);
+						} else {
+							printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title,
+								menuitemsfiltered[j].stats
+							);
+						}
 					}
 				} else {
-					if (menuitemsfiltered[i].type == 'quit') {
-						printf(multicolumn ? return_multicolumn_special_fmt : return_singlecolumn_special_fmt,
-							menuitemsfiltered[i].input,
-							menuitemsfiltered[i].title,
-							''
-						);
-					} else {
-						printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
-							menuitemsfiltered[i].input,
-							menuitemsfiltered[i].title,
-							menuitemsfiltered[i].stats
-						);
-					}
+					write(options.multicolumn_separator);
 				}
-				
-				if (multicolumn) {
-					if (typeof menuitemsfiltered[j] !== "undefined") {
-						validkeys.push(menuitemsfiltered[j].input.toString());
-						
-						if (menuitemsfiltered[j].input > keymax) {
-							keymax = menuitemsfiltered[i].input;
-						}
-						
-						write(options.multicolumn_separator);
-						console.add_hotspot(menuitemsfiltered[j].input.toString());
-						
-						if (selected_index == j) {
-							if (menuitemsfiltered[j].type == 'quit') {
-								printf(multicolumn ? return_multicolumn_special_fmt_inverse : return_singlecolumn_special_fmt_inverse,
-									menuitemsfiltered[j].input,
-									menuitemsfiltered[j].title,
-									''
-								);
-							} else {
-								printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
-									menuitemsfiltered[j].input,
-									menuitemsfiltered[j].title,
-									menuitemsfiltered[j].stats
-								);
-							}
-						} else {
-							if (menuitemsfiltered[j].type == 'quit') {
-								printf(multicolumn ? return_multicolumn_special_fmt : return_singlecolumn_special_fmt,
-									menuitemsfiltered[j].input,
-									menuitemsfiltered[j].title,
-									''
-								);
-							} else {
-								printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
-									menuitemsfiltered[j].input,
-									menuitemsfiltered[j].title,
-									menuitemsfiltered[j].stats
-								);
-							}
-						}
-					} else {
-						write(options.multicolumn_separator);
-					}
-					j++;
-				}
-				console.crlf();
+				j++;
 			}
-			
-			if (gamesrv) {
-				if (!bbs.menu("xtrn_gamesrv_tail_" + menuid, P_NOERROR)) {
-					bbs.menu("xtrn_gamesrv_tail", P_NOERROR);
-				}
-			}
-			
-			if (!bbs.menu("xtrnmenu_tail_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_tail", P_NOERROR)) {
-				bbs.menu("xtrn_tail", P_NOERROR);
-			}
-			
-			bbs.node_sync();
-			console.mnemonics(options.which);
+			console.crlf();
 		}
+		
+		if (gamesrv) {
+			if (!bbs.menu("xtrn_gamesrv_tail_" + menuid, P_NOERROR)) {
+				bbs.menu("xtrn_gamesrv_tail", P_NOERROR);
+			}
+		}
+		
+		if (!bbs.menu("xtrnmenu_tail_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_tail", P_NOERROR)) {
+			bbs.menu("xtrn_tail", P_NOERROR);
+		}
+		
+		bbs.node_sync();
+		console.mnemonics(options.which);
 		
 		validkeys.push('q');
 		validkeys.push("\x1B");
@@ -1227,24 +1225,14 @@ function special_menu(menutype, title, itemcount) {
 		// if ENTER on a QUIT item, exit
 		if (keyin == "\x0d") {
 			if (menuitemsfiltered[selected_index].type == "quit") {
-				if (gamesrv && (menuid == 'main')) {
-					bbs.logoff();
-				} else {
-					console.clear();
-					return;
-				}
-			}
-		}
-		
-		if (gamesrv && ((keyin == "\x1B")) && (menuid == 'main')) {
-			// don't have ESC do anything on the main menu
-		} else if ((keyin == 'q') || (keyin == "\x1B")) {
-			if (gamesrv && (menuid == 'main')) {
-				bbs.logoff();
-			} else {
 				console.clear();
 				return;
 			}
+		}
+		
+		if ((keyin == 'q') || (keyin == "\x1B")) {
+			console.clear();
+			return;
 		} else if (keyin == KEY_UP) {
 			--selected_index;
 			if (selected_index < 0) {
@@ -1261,12 +1249,8 @@ function special_menu(menutype, title, itemcount) {
 			var row_limit = n -1;
 			if (selected_index == 0) {
 				// first item, go back menu
-				if (gamesrv && (menuid == 'main')) {
-					bbs.logoff();
-				} else {
-					console.clear();
-					return;
-				}
+				console.clear();
+				return;
 			} else if (selected_index <= row_limit) {
 				// on first col
 				var new_selected_index = selected_index + n;
@@ -1355,7 +1339,9 @@ function search_menu(title, itemcount) {
 	var validkeys = []; // valid chars on menu selection
 	var keymax = 0; // max integer allowed on menu selection
 	
-	var options = ExternalMenus.getOptions('custommenu', 'main');
+	var menuid = 'search';
+	
+	var options = ExternalMenus.getOptions('custommenu', menuid);
 	
 	var return_multicolumn_fmt = options.custom.return_multicolumn_fmt !== undefined
 		? options.custom.return_multicolumn_fmt : multicolumn_fmt;
@@ -1365,8 +1351,6 @@ function search_menu(title, itemcount) {
 		? options.custom.return_singlecolumn_fmt_inverse : singlecolumn_fmt_inverse;
 	var return_multicolumn_fmt_inverse = options.custom.return_multicolumn_fmt_inverse !== undefined
 		? options.custom.return_multicolumn_fmt_inverse : multicolumn_fmt_inverse;
-	
-	var menuid = "search";
 	
 	while (bbs.online) {
 		console.aborted = false;
@@ -1738,14 +1722,14 @@ function search_menu(title, itemcount) {
 						switch (menuitemfiltered.type) {
 							// custom menu, defined in xtrnmenu.json
 							case 'custommenu':
-								external_section_menu_custom(menutarget);
+								external_menu_custom(menutarget);
 								return true;
 							// external program section
 							case 'xtrnmenu':
 								if (options.use_xtrn_sec) {
 									js.exec("xtrn_sec.js", {}, menutarget);
 								} else {
-									external_section_menu_custom(menutarget);
+									external_menu_custom(menutarget);
 								}
 								return true;
 							// external program
@@ -1764,6 +1748,582 @@ function search_menu(title, itemcount) {
 			}
 		} // if keyin
 	} // main bbs.online loop
+}
+
+// Return the favorites menu
+function favorites_menu(title, itemcount) {
+	if (itemcount === undefined) {
+		itemcount = 0;
+	}
+	
+	var i, menucheck, item_multicolumn_fmt, item_singlecolumn_fmt,
+		item_multicolumn_fmt_inverse, item_singlecolumn_fmt_inverse,
+		multicolumn, selected_index = 0, menuitemsfiltered = [];
+	var validkeys = []; // valid chars on menu selection
+	var keymax = 0; // max integer allowed on menu selection
+	
+	var menuid = 'favorites';
+	
+	var options = ExternalMenus.getOptions('custommenu', menuid);
+	
+	// Allow overriding auto-format on a per-menu basis
+	var multicolumn_fmt = options.multicolumn_fmt;
+	var singlecolumn_fmt = options.singlecolumn_fmt;
+	var multicolumn_fmt_inverse = options.multicolumn_fmt_inverse;
+	var singlecolumn_fmt_inverse = options.singlecolumn_fmt_inverse;
+	
+	var return_singlecolumn_fmt = options.custom.return_singlecolumn_fmt !== undefined
+		? options.custom.return_singlecolumn_fmt : singlecolumn_fmt;
+	var return_multicolumn_fmt = options.custom.return_multicolumn_fmt !== undefined
+		? options.custom.return_multicolumn_fmt : multicolumn_fmt;
+	var return_singlecolumn_fmt_inverse = options.custom.return_singlecolumn_fmt_inverse !== undefined
+		? options.custom.return_singlecolumn_fmt_inverse : singlecolumn_fmt_inverse;
+	var return_multicolumn_fmt_inverse = options.custom.return_multicolumn_fmt_inverse !== undefined
+		? options.custom.return_multicolumn_fmt_inverse : multicolumn_fmt_inverse;
+	
+	while (bbs.online) {
+		console.aborted = false;
+		
+		if (options.clear_screen) {
+			console.clear(LIGHTGRAY);
+		}
+		
+		if (user.security.restrictions&UFLAG_X) {
+			write(options.restricted_user_msg);
+			break;
+		}
+		
+		var menuobj = ExternalMenus.getFavorites(title, itemcount);
+		if (!bbs.menu("xtrnmenu_head_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_head", P_NOERROR)) {
+			bbs.menu("xtrn_head", P_NOERROR);
+		}
+		
+		menuitemsfiltered = typeof menuobj.items !== "undefined" ? menuobj.items : {};
+		
+		// The quit item is intended to aid in the lightbar navigation
+		menuitemsfiltered.unshift({
+			input: 'Q',
+			title: options.custom.return_msg !== undefined ? options.custom.return_msg : 'Return to Previous Menu',
+			target: '',
+			type: 'quit'
+		});
+		
+		menuitemsfiltered.push({
+			input: '+',
+			title: options.custom.favorite_add_item !== undefined ? options.custom.favorite_add_item : 'Add Item',
+			target: '',
+			type: 'add'
+		});
+		
+		menuitemsfiltered.push({
+			input: '-',
+			title: options.custom.favorite_remove_item !== undefined ? options.custom.favorite_remove_item : 'Remove Item',
+			target: '',
+			type: 'remove'
+		});
+			
+		// if no custom menu file in text/menu, create a dynamic one
+		multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
+		printf(options.header_fmt, title);
+		if(options.titles.trimRight() != '')
+			write(options.titles);
+		if(multicolumn) {
+			write(options.multicolumn_separator);
+			if (options.titles.trimRight() != '')
+				write(options.titles);
+		}
+		if(options.underline.trimRight() != '') {
+			console.crlf();
+			write(options.underline);
+		}
+		if(multicolumn) {
+			write(options.multicolumn_separator);
+			if (options.underline.trimRight() != '')
+				write(options.underline);
+		}
+		console.crlf();
+		
+		// n is the number of items for the 1st column
+		var n;
+		if (multicolumn) {
+			n = Math.floor(menuitemsfiltered.length / 2) + (menuitemsfiltered.length & 1);
+		} else {
+			n = menuitemsfiltered.length;
+		}
+		
+		// j is the index for each menu item on 2nd column
+		var j = n; // start j at the first item for 2nd column
+		for (i = 0; i < n && !console.aborted; i++) {
+			console.add_hotspot(menuitemsfiltered[i].input.toString());
+			
+			validkeys.push(menuitemsfiltered[i].input.toString());
+			
+			if (menuitemsfiltered[i].input > keymax) {
+				keymax = menuitemsfiltered[i].input;
+			}
+			
+			if (i == selected_index) {
+				if (menuitemsfiltered[i].type == 'quit') {
+					printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title
+					);
+				} else {
+					printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title
+					);
+				}
+			} else {
+				if (menuitemsfiltered[i].type == 'quit') {
+					printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title
+					);
+				} else {
+					printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
+						menuitemsfiltered[i].input,
+						menuitemsfiltered[i].title
+					);
+				}
+			}
+			
+			if (multicolumn) {
+				if (typeof menuitemsfiltered[j] !== "undefined") {
+					validkeys.push(menuitemsfiltered[j].input.toString());
+					
+					if (menuitemsfiltered[j].input > keymax) {
+						keymax = menuitemsfiltered[i].input;
+					}
+					
+					write(options.multicolumn_separator);
+					console.add_hotspot(menuitemsfiltered[j].input.toString());
+					
+					if (selected_index == j) {
+						if (menuitemsfiltered[j].type == 'quit') {
+							printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title
+							);
+						} else {
+							printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title
+							);
+						}
+					} else {
+						if (menuitemsfiltered[j].type == 'quit') {
+							printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title
+							);
+						} else {
+							printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
+								menuitemsfiltered[j].input,
+								menuitemsfiltered[j].title
+							);
+						}
+					}
+				} else {
+					write(options.multicolumn_separator);
+				}
+				j++;
+			}
+			console.crlf();
+		}
+		
+		if (gamesrv) {
+			if (!bbs.menu("xtrn_gamesrv_tail_" + menuid, P_NOERROR)) {
+				bbs.menu("xtrn_gamesrv_tail", P_NOERROR);
+			}
+		}
+		
+		if (!bbs.menu("xtrnmenu_tail_" + menuid, P_NOERROR) && !bbs.menu("xtrnmenu_tail", P_NOERROR)) {
+			bbs.menu("xtrn_tail", P_NOERROR);
+		}
+		
+		bbs.node_sync();
+		console.mnemonics(options.which);
+		
+		validkeys.push('q');
+		validkeys.push("\x1B");
+		validkeys.push(KEY_LEFT);
+		validkeys.push(KEY_RIGHT);
+		validkeys.push(KEY_UP);
+		validkeys.push(KEY_DOWN);
+		validkeys.push("\x0d"); //enter
+		
+		var keyin, keyin2;
+		var maxkeylen = 0;
+		var maxfirstkey = 0;
+		var morekeys = [];
+		var k;
+		for (k in validkeys) {
+			if (validkeys[k] == "\x1B") {
+				continue;
+			}
+			if (validkeys[k].length > maxkeylen) {
+				maxkeylen = validkeys[k].length;
+			}
+			if (validkeys[k].length > 1) {
+				morekeys.push(validkeys[k].toString().toLowerCase().substring(0,1));
+			}
+		}
+		
+		// get first key
+		keyin = console.getkey();
+		keyin = keyin.toString().toLowerCase();
+		
+		// if ENTER 
+		if (keyin == "\x0d") {
+			if (menuitemsfiltered[selected_index].type == "quit") {
+				console.clear();
+				return;
+			} else if (menuitemsfiltered[selected_index].type == "add") {
+				add_favorite();
+			} else if (menuitemsfiltered[selected_index].type == "remove") {
+				remove_favorite();
+			}
+		} else if ((keyin == 'q') || (keyin == "\x1B")) {
+			console.clear();
+			return;
+		} else if (keyin == KEY_UP) {
+			--selected_index;
+			if (selected_index < 0) {
+				selected_index = menuitemsfiltered.length - 1;
+			}
+			continue;
+		} else if (keyin == KEY_DOWN) {
+			++selected_index;
+			if (selected_index > (menuitemsfiltered.length - 1)) {
+				selected_index = 0;
+			}
+			continue;
+		} else if (keyin == KEY_LEFT) {
+			var row_limit = n -1;
+			if (selected_index == 0) {
+				console.clear();
+				return;
+			} else if (selected_index <= row_limit) {
+				// on first col
+				var new_selected_index = selected_index + n;
+				if (typeof menuitemsfiltered[new_selected_index] === "undefined") {
+					// no item on right, no change
+				} else {
+					selected_index = new_selected_index;
+				}
+			} else {
+				// on second col
+				selected_index = selected_index - n;
+			}
+		} else if (keyin == KEY_RIGHT) {
+			var row_limit = n - 1;
+			if (selected_index <= row_limit) {
+				// on first col
+				var new_selected_index = selected_index + n;
+				if (typeof menuitemsfiltered[new_selected_index] === "undefined") {
+					// no item on right, no change
+				} else {
+					selected_index = new_selected_index;
+				}
+			} else {
+				// on second col
+				selected_index = selected_index - n;
+			}
+		} else if ((maxkeylen == 2) && (keyin !== "\x0d")) {
+			// The logic below is to make it not require enter for as
+			// many items as possible
+			
+			// if max keys is 2 and they entered something that might have
+			// a second digit/char, then get the key
+			if (morekeys.indexOf(keyin) !== -1) {
+				write(keyin);
+				keyin2 = console.getkey(); // either the second digit or enter
+				if ((keyin2 !== "\r") && (keyin2 !== "\n") && (keyin2 !== "\r\n")) {
+					keyin = keyin + keyin2.toLowerCase();
+				}
+			}
+		} else if ((maxkeylen > 2) && (keyin !== "\x0d")) {
+			// there there are more than 99 items, then just use getkeys 
+			// for the rest
+			write(keyin);
+			keyin2 = console.getkeys(validkeys, keymax);
+			keyin = keyin + keyin2.toLowerCase();
+		}
+		
+		if (keyin) {
+			if ((keyin == '+') || (keyin == '=')) {
+				add_favorite();
+			} else if ((keyin == '-') || (keyin == '_')) {
+				remove_favorite();
+			} else {
+				for (var d in menuitemsfiltered) {
+					var menutarget = menuitemsfiltered[d].target.toLowerCase();
+					var menuinput = menuitemsfiltered[d].input.toString().toLowerCase();
+					if ((menuinput == keyin) ||
+						((keyin == "\x0d") && (menuitemsfiltered[selected_index].input == menuitemsfiltered[d].input))) {
+						// everything in this menu is an xtrnprog
+						
+						// reset selected index, because the menus are dynamic and
+						// the order may change between executions
+						selected_index = 0;
+						
+						// run the external program
+						if (typeof xtrn_area.prog[menutarget] !== "undefined") {
+							bbs.exec_xtrn(menutarget);
+						} else {
+							doerror(options.custom_menu_program_not_found_msg.replace('%PROGRAMID%', menutarget));
+						}
+					} // if menu item matched keyin
+				}
+			}
+		} // if keyin
+	} // main bbs.online loop
+}
+
+// Add an entry to the favorites menu
+function add_favorite()
+{
+	var options = ExternalMenus.getOptions('custommenu', 'favorites');
+	
+	if (!options.json_enabled) {
+		log(LOG_DEBUG, "xtrnmenulib: Skipping favorites because JSON is not enabled");
+		return false;
+	}
+	
+	try {
+		load("json-client.js")
+		var jsonClient = new JSONClient(options.json_host, options.json_port);
+		jsonClient.callback = processUpdate;
+	} catch (e) {
+		log(LOG_ERR, "xtrnmenu add_favorites: Could not initialize JSON database so favorites is now disabled: " + e);
+		return false;
+	}
+	
+	var sortedItems = [];
+	var jsonData = jsonClient.read("xtrnmenu", "favorites_" + user.alias, 1);
+	
+	if (!jsonData) {
+		jsonData = [];
+	}
+	
+	load("frame.js");
+	load("tree.js");
+	
+	var frame = new Frame(1, 1, console.screen_columns, 4, WHITE);
+	var treeframe = new Frame(1, 5, console.screen_columns, console.screen_rows-5, WHITE);
+	var tree = new Tree(treeframe);
+	frame.open();
+	treeframe.open();
+	
+	frame.putmsg(options.custom.add_favorites_msg !== undefined 
+		? options.custom.add_favorites_msg : "\x01c\x01hAdd Favorite");
+	frame.gotoxy(1, 3);
+	frame.putmsg(options.custom.favorites_inst !== undefined
+		? options.custom.favorites_inst : '\x01n\x01w\x01h\x012[Up/Down/Home/End] to Navigate, [Enter] to Select, [Q] to Quit');
+	
+	var xtrnwidth = 0;
+	var sortedItems = [];
+	for (var m in xtrn_area.prog) {
+		if (xtrn_area.prog[m].can_access) {
+			var found = false;
+			jsonData.some(function (jsonxtrn) {
+				if (jsonxtrn == xtrn_area.prog[m].code) {
+					found = true;
+					return true;
+				}
+			});
+			if (!found) {
+				sortedItems.push({ code: xtrn_area.prog[m].code, name: xtrn_area.prog[m].name })
+				if (xtrn_area.prog[m].name.length > xtrnwidth) {
+					xtrnwidth = xtrn_area.prog[m].name.length;
+				}
+			}
+		}
+	}
+	
+	sortedItems.sort(function(a, b) {
+			if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
+			if(a.name.toLowerCase()<b.name.toLowerCase()) return -1;
+			return 0;
+		});
+	
+	for (m in sortedItems) {
+		const item = tree.addItem(sortedItems[m].name, sortedItems[m].code);
+		item.code = sortedItems[m].code;
+	}
+	
+	treeframe.width = xtrnwidth + 2;
+	
+	tree.colors.fg = LIGHTGRAY;
+	tree.colors.bg = BG_BLACK;
+	tree.colors.lfg = WHITE;
+	tree.colors.lbg = BG_MAGENTA;
+	tree.colors.kfg = YELLOW;
+	
+	tree.open();
+	
+	console.clear(BG_BLACK|LIGHTGRAY);
+	
+	frame.draw();
+	treeframe.draw();
+	
+	var selection;
+	var key;
+	var xtrn;
+	while(bbs.online) {
+		key = console.getkey();
+		if (key == "\x0d") {
+			// hit enter, item is selected
+			break;
+		}
+		if ((key.toLowerCase() == 'q') || (key == "\x1B")) return;
+		
+		selection = tree.getcmd({ key: key, mouse: false });
+		
+		if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
+			if ((key == KEY_UP) && (tree.line == 1)) {
+				// pressed up on first item, go to end
+				tree.end();
+				tree.refresh(); // fixes itself with it going to next to last item
+			} else if ((key == KEY_DOWN) && (tree.line == sortedItems.length)) {
+				// pressed down on last item, go to start
+				tree.home();
+				tree.refresh(); // fixes issue with it going to 2nd item
+			}
+			xtrn = tree.currentItem;
+		}
+		treeframe.cycle();
+	}
+	
+	jsonData.push(xtrn.code);
+	jsonClient.write("xtrnmenu", "favorites_" + user.alias, jsonData, 2);
+}
+
+
+// Remove an entry from the favorites menu
+function remove_favorite()
+{
+	var options = ExternalMenus.getOptions('custommenu', 'favorites');
+	
+	if (!options.json_enabled) {
+		log(LOG_DEBUG, "xtrnmenulib: Skipping favorites because JSON is not enabled");
+		return false;
+	}
+	
+	try {
+		load("json-client.js")
+		var jsonClient = new JSONClient(options.json_host, options.json_port);
+		jsonClient.callback = processUpdate;
+	} catch (e) {
+		log(LOG_ERR, "xtrnmenu remove_favorites: Could not initialize JSON database so favorites is now disabled: " + e);
+		return false;
+	}
+	
+	var sortedItems = [];
+	var jsonData = jsonClient.read("xtrnmenu", "favorites_" + user.alias, 1);
+	
+	if (!jsonData) {
+		jsonData = [];
+	}
+	
+	load("frame.js");
+	load("tree.js");
+	
+	var frame = new Frame(1, 1, console.screen_columns, 4, WHITE);
+	var treeframe = new Frame(1, 5, console.screen_columns, console.screen_rows-5, WHITE);
+	var tree = new Tree(treeframe);
+	frame.open();
+	treeframe.open();
+	
+	frame.putmsg(options.custom.remove_favorites_msg !== undefined
+		? options.custom.remove_favorites_msg : "\x01c\x01hRemove Favorite");
+	frame.gotoxy(1, 3);
+	frame.putmsg(options.custom.favorites_inst !== undefined
+		? options.custom.favorites_inst : '\x01n\x01w\x01h\x012[Up/Down/Home/End] to Navigate, [Enter] to Select, [Q] to Quit');
+	
+	var xtrnwidth = 0;
+	var sortedItems = [];
+	for (var m in xtrn_area.prog) {
+		if (xtrn_area.prog[m].can_access) {
+			var found = false;
+			jsonData.some(function (jsonxtrn) {
+				if (jsonxtrn == xtrn_area.prog[m].code) {
+					found = true;
+					return true;
+				}
+			});
+			if (found) {
+				sortedItems.push({ code: xtrn_area.prog[m].code, name: xtrn_area.prog[m].name })
+				if (xtrn_area.prog[m].name.length > xtrnwidth) {
+					xtrnwidth = xtrn_area.prog[m].name.length;
+				}
+			}
+		}
+	}
+	
+	sortedItems.sort(function(a, b) {
+		if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
+		if(a.name.toLowerCase()<b.name.toLowerCase()) return -1;
+		return 0;
+	});
+	
+	for (m in sortedItems) {
+		const item = tree.addItem(sortedItems[m].name, sortedItems[m].code);
+		item.code = sortedItems[m].code;
+	}
+	
+	treeframe.width = xtrnwidth + 2;
+	
+	tree.colors.fg = LIGHTGRAY;
+	tree.colors.bg = BG_BLACK;
+	tree.colors.lfg = WHITE;
+	tree.colors.lbg = BG_MAGENTA;
+	tree.colors.kfg = YELLOW;
+	
+	tree.open();
+	
+	console.clear(BG_BLACK|LIGHTGRAY);
+	
+	frame.draw();
+	treeframe.draw();
+	
+	var selection;
+	var key;
+	var xtrn;
+	while(bbs.online) {
+		key = console.getkey();
+		if (key == "\x0d") {
+			// hit enter, item is selected
+			break;
+		}
+		if ((key.toLowerCase() == 'q') || (key == "\x1B")) return;
+		
+		selection = tree.getcmd({ key: key, mouse: false });
+		
+		if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
+			if ((key == KEY_UP) && (tree.line == 1)) {
+				// pressed up on first item, go to end
+				tree.end();
+				tree.refresh(); // fixes itself with it going to next to last item
+			} else if ((key == KEY_DOWN) && (tree.line == sortedItems.length)) {
+				// pressed down on last item, go to start
+				tree.home();
+				tree.refresh(); // fixes issue with it going to 2nd item
+			}
+			xtrn = tree.currentItem;
+		}
+		treeframe.cycle();
+	}
+	
+	var newJsonData = [];
+	jsonData.forEach(function (jsonxtrn) {
+		if (jsonxtrn != xtrn.code) {
+			newJsonData.push(jsonxtrn);
+		}
+	});
+	
+	jsonClient.write("xtrnmenu", "favorites_" + user.alias, newJsonData, 2);
 }
 
 // Display error message to console and save to log

@@ -201,25 +201,13 @@ var editItems = function(menuid) {
         itemids = [];
         for(i in menu.items) {
             items.push(format(
-                "%6s %10s %s",
+                "%6s %16s %s",
                 menu.items[i].input ? menu.items[i].input : '(auto)',
                 menu.items[i].type,
                 menu.items[i].title
             ));
             itemids.push(i);
         }
-        // WIN_ORG = original menu
-        // WIN_MID = centered mid
-        // WIN_ACT = menu remains active after a selection
-        // WIN_ESC = screen is active when escape is pressed
-        // WIN_XTR = blank line to insert
-        // WIN_INS = insert key
-        // WIN_DEL = delete
-        // WIN_CUT = cut ctrl-x
-        // WIN_COPY = copy ctrl-c
-        // WIN_PASTE = paste ctrl-v
-		// WIN_PASTEXTR = allow paste on new line
-        // WIN_SAV = use context/save position
         selection = uifc.list(
 			WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC|WIN_XTR|WIN_INS|WIN_DEL|WIN_CUT|WIN_COPY|WIN_PASTE|WIN_PASTEXTR|WIN_SAV,
             menu.title + ": Items",
@@ -307,14 +295,14 @@ var editItems = function(menuid) {
                     var menuitems2 = [];
                     var pushed = false;
                     for (i in menu.items) {
-                        menuitems2.push(menu.items[i]);
-                        // paste copied item after selected item
+                        // paste copied item before selected item
                         if (i == itemids[selection]) {
                             menuitems2.push(copyitem);
                             ctxm.cur = i-1;
                             pushed = true;
                         }
-                    }
+						menuitems2.push(menu.items[i]);
+					}
                     if (!pushed) {
                     	// add to end
 						menuitems2.push(copyitem);
@@ -398,6 +386,7 @@ var editItem = function(menuid, itemindex) {
 			case 'longestrunall':
 			case 'longestrunuser':
 			case 'search':
+			case 'favorites':
 				displayoptions.push(format("%23s: %s", "count",
 					("target" in item ? item.target : "")));
 				displayoptionids.push("target");
@@ -423,6 +412,7 @@ var editItem = function(menuid, itemindex) {
 			case 'longestrunuser':
 			case 'longestrunall':
 			case 'search':
+			case 'favorites':
 				displayoptions.push(format("%23s: %s", "access_string",
 					("access_string" in item ? item.access_string : "(default)")));
 				displayoptionids.push("access_string");
@@ -558,7 +548,8 @@ function present_select_targettype(item)
 		+ "mostlauncheduser is a special menu of most launched games, for current user"
 		+ "longestrunall is a special menu of games that users spent the most time in"
 		+ "longestrunuser is a special menu of games that current user spent the most time in"
-		+ "search is a special menu item to perform a search", 72);
+		+ "search is a special menu item to perform a search"
+		+ "favorites is a special menu to let the user pick favorite games to play", 72);
 
     var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
     if (typeof item.type !== "undefined") {
@@ -607,12 +598,16 @@ function present_select_targettype(item)
 				targetypectx.cur = 10;
 				targetypectx.bar = 10;
 				break;
+			case 'favorites':
+				targetypectx.cur = 11;
+				targetypectx.bar = 11;
+				break;				
 		}
     }
     switch (uifc.list(WIN_ORG | WIN_MID | WIN_SAV,
         "Target Type", ["custommenu", "xtrnmenu", "xtrnprog", "command", "recentall",
 			"recentuser", "mostlaunchedall", "mostlauncheduser", "longestrunall",
-			"longestrunuser", "search"], targetypectx)) {
+			"longestrunuser", "search", "favorites"], targetypectx)) {
         case 0:
             item.type = "custommenu";
             break;
@@ -645,6 +640,9 @@ function present_select_targettype(item)
 			break;
 		case 10:
 			item.type = "search";
+			break;
+		case 11:
+			item.type = "favorites";
 			break;
 		default:
             // includes escape key
@@ -797,6 +795,7 @@ function present_select_target(item)
 		case "longestrunall":
 		case "longestrunuser":
 		case "search":
+		case "favorites":
 			selection2 = uifc.input(WIN_ORG | WIN_MID, "Number of Items to Display", item.target, 63, K_EDIT);
 			if ((selection2 < 0) || (selection2 == null)) {
 				// escape key

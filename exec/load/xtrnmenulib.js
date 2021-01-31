@@ -480,7 +480,7 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 		var jsonClient = new JSONClient(this.options.json_host, this.options.json_port);
 		jsonClient.callback = processUpdate;
 	} catch (e) {
-		log(LOG_ERR, "xtrnmenulib: Could not initialize JSON database so door tracking is now disabled: " + e);
+		log(LOG_ERR, "xtrnmenulib: Could not initialize JSON database so special menu is now disabled: " + e);
 		return false;
 	}
 
@@ -584,5 +584,68 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 		};
 	}
 
+	return menu;
+}
+
+// return menu object for user's favorites
+ExternalMenus.prototype.getFavorites = function(title, itemcount) {
+	var menu;
+	var menuitems = [];
+	
+	if (itemcount === undefined) {
+		itemcount = 0;
+	}
+	
+	if (!this.options.json_enabled) {
+		log(LOG_DEBUG, "xtrnmenulib: Skipping favorites because JSON is not enabled");
+		return false;
+	}
+	
+	try {
+		load("json-client.js")
+		var jsonClient = new JSONClient(this.options.json_host, this.options.json_port);
+		jsonClient.callback = processUpdate;
+	} catch (e) {
+		log(LOG_ERR, "xtrnmenulib: Could not initialize JSON database so favorites is now disabled: " + e);
+		return false;
+	}
+	
+	var sortedItems = [];
+	var jsonData = jsonClient.read("xtrnmenu", "favorites_" + user.alias, 1);
+	
+	if (!jsonData) {
+		jsonData = {};
+	}
+	
+	var i = 1;
+	for (var d=0; d<jsonData.length; d++) {
+		for (var e in xtrn_area.prog) {
+			if (xtrn_area.prog[e].code.toLowerCase() == jsonData[d].toLowerCase()) {
+				var stats;
+				
+				menuitems.push({
+					'input': i,
+					'target': xtrn_area.prog[e].code,
+					'title': xtrn_area.prog[e].name,
+					'type': 'xtrnprog',
+					'access_string': xtrn_area.prog[e].ars,
+					'cost': xtrn_area.prog[e].cost,
+				});
+				i++;
+				break;
+			}
+		}
+		
+		if ((itemcount > 0) && ((d + 1) >= itemcount)) {
+			break;
+		}
+	}
+
+	menu = {
+		'id': 'favorites',
+		'title': title,
+		'items': menuitems,
+	};
+	
 	return menu;
 }
