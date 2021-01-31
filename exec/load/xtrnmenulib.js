@@ -67,6 +67,12 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	if (this.options.singlecolumn_fmt === undefined)
 		this.options.singlecolumn_fmt = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
 	
+	if (this.options.multicolumn_fmt_inverse === undefined)
+		this.options.multicolumn_fmt_inverse = system.text(XtrnProgLstFmt);
+	
+	if (this.options.singlecolumn_fmt_inverse === undefined)
+		this.options.singlecolumn_fmt_inverse = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
+	
 	if (this.options.singlecolumn_margin == undefined)
 		this.options.singlecolumn_margin = 7;
 	
@@ -118,6 +124,20 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 		} else {
 			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
 			this.options.singlecolumn_fmt = "\x01h\x01c%3s \xb3 \x01n\x01c%s\x01h ";
+		}
+		
+		if (typeof this.xtrn_custommenu_options.multicolumn_fmt_inverse !== "undefined") {
+			this.options.multicolumn_fmt_inverse = this.xtrn_custommenu_options.multicolumn_fmt_inverse;
+		} else {
+			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+			this.options.multicolumn_fmt_inverse = "\x01h\x01c%3s \xb3 \x01n\x016\x01w\x01h%-32.32s \x01n\x01h";
+		}
+		
+		if (typeof this.xtrn_custommenu_options.singlecolumn_fmt_inverse !== "undefined") {
+			this.options.singlecolumn_fmt_inverse = this.xtrn_custommenu_options.singlecolumn_fmt_inverse;
+		} else {
+			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+			this.options.singlecolumn_fmt_inverse = "\x01h\x01c%3s \xb3 \x01n\x016\x01w\x01h%s \x01n\x01h";
 		}
 		
 		this.options.header_fmt = (typeof this.xtrn_custommenu_options.header_fmt !== "undefined")
@@ -480,6 +500,12 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 		case 'mostlauncheduser':
 			jsonData = jsonClient.read("xtrnmenu", "launchnum_user_" + user.alias, 1);
 			break;
+		case 'longestrunall':
+			jsonData = jsonClient.read("xtrnmenu", "timeran", 1);
+			break;
+		case 'longestrunuser':
+			jsonData = jsonClient.read("xtrnmenu", "timeran_user_" + user.alias, 1);
+			break;
 		default:
 			log(LOG_ERR, "xtrnmenulib: Unknown special menu type: " + menutype);
 			return false;
@@ -495,6 +521,43 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 		var doorid = sortedItems[d];
 		for (var e in xtrn_area.prog) {
 			if (xtrn_area.prog[e].code.toLowerCase() == doorid.toLowerCase()) {
+				var stats;
+				switch (menutype) {
+					case 'longestrunall':
+					case 'longestrunuser':
+						var seconds = jsonData[doorid];
+						var hours = ~~(seconds/3600);
+						var mins = ~~((seconds % 3600) / 60);
+						var secs = ~~seconds % 60;
+						stats = ("00"+hours).slice(-2) + ":" + ("00"+mins).slice(-2) + ":" + ("00"+secs).slice(-2);
+						break;
+					case 'recentall':
+					case 'recentuser':
+						var elapsedtime = (time() - jsonData[doorid])*1000;
+						var msPerMin = 60000;
+						var msPerHour = msPerMin * 60;
+						var msPerDay = msPerHour * 24;
+						var msPerMon = msPerDay * 30;
+						var msPerYear = msPerDay * 365;
+						if (elapsedtime < msPerMin) {
+							stats = Math.round(elapsedtime/1000) + ' sec ago';
+						} else if (elapsedtime < msPerHour) {
+							stats = Math.round(elapsedtime/msPerMin) + ' min ago';
+						} else if (elapsedtime < msPerDay) {
+							var stat = Math.round(elapsedtime/msPerHour)
+							stats = Math.round(elapsedtime/msPerHour) + ' hr ago';
+						} else if (elapsedtime < msPerMon) {
+							stats = Math.round(elapsedtime/msPerDay) + ' day ago';
+						} else if (elapsedtime < msPerYear) {
+							stats = Math.round(elapsedtime/msPerMonth) + ' mon ago';
+						} else {
+							stats = Math.round(elapsedtime/msPerYear) + ' yr ago';
+						}
+						break;
+					default:
+						stats = jsonData[doorid].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");;
+						break;
+				}
 				menuitems.push({
 					'input': i,
 					'target': xtrn_area.prog[e].code,
@@ -502,7 +565,7 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 					'type': 'xtrnprog',
 					'access_string': xtrn_area.prog[e].ars,
 					'cost': xtrn_area.prog[e].cost,
-					'stats': jsonData[doorid],
+					'stats': stats,
 				});
 				i++;
 				break;
