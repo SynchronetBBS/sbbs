@@ -1388,7 +1388,7 @@ int main(int argc, char **argv, char** env)
 		umask(umask_val);
 
 	if(module==NULL && js_buf==NULL && isatty(fileno(stdin))) {
-		fprintf(stderr,"\n!No JavaScirpt module-name or expression specified\n");
+		fprintf(stderr,"\n!No JavaScript module-name or expression specified\n");
 		usage();
 		return(do_bail(1)); 
 	}
