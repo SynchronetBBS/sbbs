@@ -105,8 +105,11 @@ void usage()
 {
 	banner(stdout);
 
-	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] or -r js-expression] [args]\n"
+	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] [args]\n"
+		"   or: " PROG_NAME_LC " [-opts] -r js-expression [args]\n"
+		"   or: " PROG_NAME_LC " -v\n"
 		"\navailable opts:\n\n"
+		"    -r<expression> run (compile and execute) JavaScript expression\n"
 #ifdef JSDOOR
 		"    -c<ctrl_dir>   specify path to CTRL directory\n"
 #else
@@ -144,7 +147,7 @@ void usage()
 		"    -l             loop until intentionally terminated\n"
 		"    -p             wait for keypress (pause) on exit\n"
 		"    -!             wait for keypress (pause) on error\n"
-		"    -D             debugs the script\n"
+		"    -D             load the script into an interactive debugger\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_TIME_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
@@ -1385,7 +1388,7 @@ int main(int argc, char **argv, char** env)
 		umask(umask_val);
 
 	if(module==NULL && js_buf==NULL && isatty(fileno(stdin))) {
-		fprintf(stderr,"\n!Module name not specified\n");
+		fprintf(stderr,"\n!No JavaScirpt module-name or expression specified\n");
 		usage();
 		return(do_bail(1)); 
 	}
