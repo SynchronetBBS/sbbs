@@ -89,7 +89,7 @@
 		Options.ScreenRows = 25;
 		Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
 		Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
-		var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+		window.fTelnet = new fTelnetClient('fTelnetContainer', Options);
 		fTelnet.OnConnectionClose = function () {
 			window.location.reload();
 		};
