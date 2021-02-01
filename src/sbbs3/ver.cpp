@@ -116,7 +116,7 @@ void sbbs_t::ver()
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MINORVERSION, &cl_minor);
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &cl_step);
 		(void)result;
-		sprintf(str, "  cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
+		safe_snprintf(str, sizeof(str), "cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
 		center(str);
 		CRLF;
 	}
