@@ -25,6 +25,7 @@
 #include "ciolib.h"
 #include "git_hash.h"
 #include "git_branch.h"
+#include "cryptlib.h"
 
 /********************/
 /* Global Variables */
@@ -451,6 +452,8 @@ int main(int argc, char **argv)
 	strcpy(mopt[i++],"External Programs");
 	strcpy(mopt[i++],"Text File Sections");
 	mopt[i][0]=0;
+	i = cryptInit();
+	(void)i;
 	while(1) {
 		uifc.helpbuf=
 			"`Main Configuration Menu:`\n"

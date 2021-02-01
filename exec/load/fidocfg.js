@@ -32,10 +32,10 @@ require('fido.js', 'FIDO');
  * num_to_basefn(num)			converts an integer to a base-X string
  * save()						save the configuration
  */
-function TickITCfg() {
+function TickITCfg(fname) {
 	this.gcfg = undefined;
 	this.acfg = {};
-	var tcfg = new File(system.ctrl_dir+'tickit.ini');
+	var tcfg = new File(file_cfgname(system.ctrl_dir, fname || 'tickit.ini'));
 	var sects;
 	var i;
 	var tmp;
@@ -175,7 +175,7 @@ TickITCfg.prototype.get_next_tic_filename = function()
 };
 TickITCfg.prototype.save = function()
 {
-	var tcfg = new File(system.ctrl_dir+'tickit.ini');
+	var tcfg = new File(this.cfgfile);
 	var sects;
 	var i;
 	var j;
@@ -262,9 +262,9 @@ TickITCfg.prototype.save = function()
  * FREQITCfg methods
  * save()			Saves the freqit config to the INI file
  */
-function FREQITCfg()
+function FREQITCfg(fname)
 {
-	var f=new File(system.ctrl_dir+'freqit.ini');
+	var f=new File(file_cfgname(system.ctrl_dir, fname || 'freqit.ini'));
 	var val;
 	var i;
 	var key;
@@ -314,9 +314,9 @@ function FREQITCfg()
 	}
 	f.close();
 }
-FREQITCfg.prototype.save = function()
+FREQITCfg.prototype.save = function(fname)
 {
-	var fcfg = new File(system.ctrl_dir+'freqit.ini');
+	var fcfg = new File(file_cfgname(system.ctrl_dir, fname || 'freqit.ini'));
 	var sects;
 	var i;
 	var j;
@@ -363,9 +363,9 @@ FREQITCfg.prototype.save = function()
 	return true;
 };
 
-function BinkITCfg()
+function BinkITCfg(fname)
 {
-	var f=new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
+	var f=new File(file_cfgname(system.ctrl_dir, fname || 'sbbsecho.ini'));
 	var sects;
 
 	this.node = {};
