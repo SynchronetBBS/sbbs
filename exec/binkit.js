@@ -26,6 +26,7 @@ var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 // data/binkstats.ini
 var stats = { inbound: { true: {}, false: {} }, callout: { true: {}, false: {} }, totals: {} };
+var cfgfname;
 
 function update_stats(stats, addr, bp, host)
 {
@@ -609,7 +610,7 @@ function callout(addr, scfg, locks, bicfg)
 
 	log(LOG_INFO, format("%s callout to %s started", bp.revision, addr));
 	if (bicfg === undefined)
-		bicfg = new BinkITCfg();
+		bicfg = new BinkITCfg(cfgfname);
 	bp.system_operator = bicfg.sysop;
 	bp.plain_auth_only = bicfg.plain_auth_only;
 	bp.crypt_support = bicfg.crypt_support;
@@ -845,8 +846,8 @@ function run_outbound(ran)
 	var scfg_ob;
 
 	log(LOG_DEBUG, "Running outbound");
-	scfg = new SBBSEchoCfg();
-	bicfg = new BinkITCfg();
+	scfg = new SBBSEchoCfg(cfgfname);
+	bicfg = new BinkITCfg(cfgfname);
 
 	if (!scfg.is_flo) {
 		log(LOG_ERROR, "sbbsecho not configured for FLO-style mailers.");
@@ -1011,8 +1012,8 @@ function run_inbound(sock)
 
 	log(LOG_INFO, bp.revision + " inbound connection from " +sock.remote_ip_address+":"+sock.remote_port);
 	bp.cb_data = {
-		binkitcfg:new BinkITCfg(),
-		binkit_scfg:new SBBSEchoCfg(),
+		binkitcfg:new BinkITCfg(cfgfname),
+		binkit_scfg:new SBBSEchoCfg(cfgfname),
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_locks:locks
@@ -1057,7 +1058,7 @@ function poll_node(addr_str, scfg, bicfg, myaddr)
 	var locks = [];
 
 	if (scfg === undefined)
-		scfg = new SBBSEchoCfg();
+		scfg = new SBBSEchoCfg(cfgfname);
 
 	if (myaddr === undefined)
 		myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
@@ -1092,8 +1093,8 @@ function run_polls(ran)
 	var locks = [];
 
 	log(LOG_DEBUG, "Running polls");
-	scfg = new SBBSEchoCfg();
-	bicfg = new BinkITCfg();
+	scfg = new SBBSEchoCfg(cfgfname);
+	bicfg = new BinkITCfg(cfgfname);
 	myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 
 	Object.keys(bicfg.node).forEach(function(addr_str) {
@@ -1192,6 +1193,11 @@ log(LOG_INFO, version_notice + " invoked with options: " + argv.join(' '));
 if (system.fido_addr_list.length < 1) {
 	alert("No system FidoNet address configured");
 	exit(1);
+}
+
+for (i = 0; i < argv.length; i++) {
+	if(file_getext(argv[i]) == ".ini")
+		cfgfname = argv[i];
 }
 
 // If we're running as a service, call run_inbound().
