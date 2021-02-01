@@ -649,6 +649,79 @@ char* ascii_str(uchar* str)
 	return((char*)str);
 }
 
+char* replace_named_values(const char* src	 
+    ,char* buf	 
+    ,size_t buflen       /* includes '\0' terminator */	 
+    ,const char* escape_seq	 
+    ,named_string_t* string_list	 
+    ,named_int_t* int_list	 
+    ,BOOL case_sensitive)	 
+ {	 
+     char    val[32];	 
+     size_t  i;	 
+     size_t  esc_len=0;	 
+     size_t  name_len;	 
+     size_t  value_len;	 
+     char*   p = buf;	 
+     int (*cmp)(const char*, const char*, size_t);	 
+ 
+     if(case_sensitive)	 
+         cmp=strncmp;	 
+     else	 
+         cmp=strnicmp;	 
+ 
+     if(escape_seq!=NULL)	 
+         esc_len = strlen(escape_seq);	 
+ 
+     while(*src && (size_t)(p-buf) < buflen-1) {	 
+         if(esc_len) {	 
+             if(cmp(src, escape_seq, esc_len)!=0) {	 
+                 *p++ = *src++;	 
+                 continue;	 
+             }	 
+             src += esc_len; /* skip the escape seq */	 
+         }	 
+         if(string_list) {	 
+             for(i=0; string_list[i].name!=NULL /* terminator */; i++) {	 
+                 name_len = strlen(string_list[i].name);	 
+                 if(cmp(src, string_list[i].name, name_len)==0) {	 
+                     value_len = strlen(string_list[i].value);	 
+                     if((p-buf)+value_len > buflen-1)        /* buffer overflow? */	 
+                         value_len = (buflen-1)-(p-buf); /* truncate value */	 
+                     memcpy(p, string_list[i].value, value_len);	 
+                     p += value_len;	 
+                     src += name_len;	 
+                     break;	 
+                 }	 
+             }	 
+             if(string_list[i].name!=NULL) /* variable match */	 
+                 continue;	 
+         }	 
+         if(int_list) {	 
+             for(i=0; int_list[i].name!=NULL /* terminator */; i++) {	 
+                 name_len = strlen(int_list[i].name);	 
+                 if(cmp(src, int_list[i].name, name_len)==0) {	 
+                     SAFEPRINTF(val,"%d",int_list[i].value);	 
+                     value_len = strlen(val);	 
+                     if((p-buf)+value_len > buflen-1)        /* buffer overflow? */	 
+                         value_len = (buflen-1)-(p-buf); /* truncate value */	 
+                     memcpy(p, val, value_len);	 
+                     p += value_len;	 
+                     src += name_len;	 
+                     break;	 
+                 }	 
+             }	 
+             if(int_list[i].name!=NULL) /* variable match */	 
+                 continue;	 
+         }	 
+
+         *p++ = *src++;	 
+     }	 
+     *p=0;   /* terminate string in destination buffer */	 
+ 
+     return(buf);	 
+ }	 
+ 
 /****************************************************************************/
 /* Condense consecutive white-space chars in a string to single spaces		*/
 /****************************************************************************/

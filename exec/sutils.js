@@ -1,4 +1,3 @@
-
 "use strict";
 
 const REVISION = "$Revision: 1.0 $".split(' ')[1];
@@ -29,7 +28,7 @@ while((!which || which < 1) && !aborted()) {
     if (typeof categories !== "undefined") {
         var x = 1;
         for (var catid in categories) {
-            printf("%2d. %s\n", x, categories[catid]);
+            printf("%2d. %s\r\n", x, categories[catid]);
             categoryitems[x] = catid;
             x++;
         };
@@ -73,7 +72,7 @@ function docategorymenu(catid, catname) {
             var x = 1;
             for (var iniid in utilitems) {
                 if (file_exists(js.exec_dir + utilitems[iniid].filename)) {
-                    printf("%2d. %-20s %s\n", x, utilitems[iniid].name, utilitems[iniid].desc);
+                    printf("%2d. %-20s %s\r\n", x, utilitems[iniid].name, utilitems[iniid].desc);
                     menuitems[x] = iniid;
                     x++;
                 }

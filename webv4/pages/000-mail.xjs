@@ -18,6 +18,7 @@
 				<div class="checkbox">
 					<label class="checkbox-inline">
 						<input id="check-<? write(header.number); ?>" type="checkbox" class="mail-select">
+                        <? write(header.attr&MSG_READ ? '' : '<span class="badge new">' + locale.strings.page_mail.label_new_message + '</span>') ?>
 					</label>
 				</div>
 			</div>

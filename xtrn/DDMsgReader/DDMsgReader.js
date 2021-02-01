@@ -73,6 +73,9 @@
  *                              Bug fix: When forwarding a message, it now correctly
  *                              sets the to_net_type property in the message header to
  *                              FidoNet or internet for those types of message destinations
+ * 2020-12-01 Eric Oulashin     Version 1.39
+ *                              When forwarding a message, added the ability to
+ *                              optionally edit the message before forwarding it.
  */
 
 
@@ -184,8 +187,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.38";
-var READER_DATE = "2020-11-26";
+var READER_VERSION = "1.39";
+var READER_DATE = "2020-12-01";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -13333,6 +13336,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 				else
 					return "Unable to open the sub-board to get the message body";
 			}
+
 			// Prepend some lines to the message body to describe where
 			// the message came from originally.
 			var newMsgBody = "This is a forwarded message from " + system.name + "\n";
@@ -13353,6 +13357,56 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			newMsgBody += "Subject: " + pMsgHdr.subject + "\n";
 			newMsgBody += "==================================\n\n";
 			newMsgBody += pMsgBody;
+
+			// New - Editing the message
+			// TODO: Ask whether to edit the message before forwarding it,
+			// and use console.editfile(filename) to edit it.
+			if (!console.noyes("Edit the message before sending"))
+			{
+				var baseWorkDir = system.node_dir + "DDMsgReader_Temp";
+				deltree(baseWorkDir + "/");
+				if (mkdir(baseWorkDir))
+				{
+					// TODO: Let the user edit the message, then read it
+					// and set newMsgBody to it
+					var tmpMsgFilename = baseWorkDir + "/message.txt";
+					// Write the current message to the file
+					var wroteMsgToTmpFile = false;
+					var outFile = new File(tmpMsgFilename);
+					if (outFile.open("w"))
+					{
+						wroteMsgToTmpFile = outFile.write(newMsgBody, newMsgBody.length);
+						outFile.close();
+					}
+					if (wroteMsgToTmpFile)
+					{
+						// Let the user edit the file, and if successful,
+						// read it in to newMsgBody
+						if (console.editfile(tmpMsgFilename))
+						{
+							var inFile = new File(tmpMsgFilename);
+							if (inFile.open("r"))
+							{
+								newMsgBody = inFile.read(inFile.length);
+								inFile.close();
+							}
+						}
+					}
+					else
+					{
+						console.print("\1n\1cFailed to write message to a file for editing\1n");
+						console.crlf();
+						console.pause();
+					}
+				}
+				else
+				{
+					console.print("\1n\1cCouldn't create temporary directory\1n");
+					console.crlf();
+					console.pause();
+				}
+			}
+			// End New (editing message)
 
 			// Create part of a header object which will be used when saving/sending
 			// the message.  The destination ("to" informatoin) will be filled in

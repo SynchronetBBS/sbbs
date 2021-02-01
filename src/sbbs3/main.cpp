@@ -27,6 +27,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
+#include "ver.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -1108,11 +1109,12 @@ static JSBool
 js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char		instr[81];
+	char		instr[128] = "";
     JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
     char*		prompt=NULL;
+	int32		mode = K_EDIT;
 	size_t		result;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1120,16 +1122,22 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	if(argc) {
-		JSVALUE_TO_MSTRING(cx, argv[0], prompt, NULL);
+	uintN argn = 0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_MSTRING(cx, argv[argn], prompt, NULL);
 		if(prompt==NULL)
 			return(JS_FALSE);
+		argn++;
 	}
-
-	if(argc>1) {
-		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
-	} else
-		instr[0]=0;
+	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
+		JSVALUE_TO_STRBUF(cx, argv[argn], instr, sizeof(instr), NULL);
+		argn++;
+	}
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToInt32(cx,argv[argn], &mode))
+			return JS_FALSE;
+		argn++;
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(prompt != NULL) {
@@ -1137,7 +1145,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		free(prompt);
 	}
 
-	result = sbbs->getstr(instr,sizeof(instr)-1,K_EDIT);
+	result = sbbs->getstr(instr, sizeof(instr)-1, mode);
 	sbbs->attr(LIGHTGRAY);
 	if(!result) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -1190,8 +1198,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("print an alert message (ala client-side JS)")
 	,310
 	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[value]")
-	,JSDOCSTR("displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)")
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[text] [,value] [,mode=K_EDIT]")
+	,JSDOCSTR("displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
 	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
@@ -1289,7 +1297,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 					,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 					,&js_callback								/* js */
 					,&startup->js
-					,&client, client_socket, -1					/* client */
+					,client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
 					,&js_server_props							/* server */
 					,glob
 			))
@@ -3532,6 +3540,19 @@ bool sbbs_t::init()
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
+		SAFEPRINTF(str, "%sclient.ini", cfg.node_dir);
+		FILE* fp = fopen(str, "wt");
+		if(fp != NULL) {
+			fprintf(fp, "sock=%d\n", client_socket);
+			fprintf(fp, "addr=%s\n", client.addr);
+			fprintf(fp, "host=%s\n", client.host);
+			fprintf(fp, "port=%u\n", (uint)client.port);
+			fprintf(fp, "time=%lu\n", (ulong)client.time);
+			fprintf(fp, "prot=%s\n", client.protocol);
+			fprintf(fp, "local_addr=%s\n", local_addr);
+			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
+			fclose(fp);
+		}
 		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
 			,client_socket, local_addr, inet_addrport(&addr));
 		spymsg("Connected");
@@ -4453,7 +4474,7 @@ void sbbs_t::logoffstats()
 
 void node_thread(void* arg)
 {
-	char			str[128];
+	char			str[MAX_PATH + 1];
 	int				file;
 	uint			curshell=0;
 	node_t			node;
@@ -4553,6 +4574,15 @@ void node_thread(void* arg)
 
 	sbbs->logout();
 	sbbs->logoffstats();	/* Updates both system and node dsts.dab files */
+
+	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
+	FILE* fp = fopen(str, "at");
+	if(fp != NULL) {
+		fprintf(fp, "user=%u\n", sbbs->useron.number);
+		fprintf(fp, "name=%s\n", sbbs->useron.alias);
+		fprintf(fp, "done=%lu\n", (ulong)time(NULL));
+		fclose(fp);
+	}
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
 		sbbs->daily_maint();
@@ -4877,7 +4907,7 @@ const char* DLLCALL bbs_ver(void)
 	if(ver[0]==0) {	/* uninitialized */
 		DESCRIBE_COMPILER(compiler);
 
-		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
+		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  Compiled %s/%s %s %s with %s"
 			,TELNET_SERVER
 			,VERSION, REVISION
 #ifdef _DEBUG
@@ -4885,7 +4915,7 @@ const char* DLLCALL bbs_ver(void)
 #else
 			,""
 #endif
-			,smb_lib_ver()
+			,git_branch, git_hash
 			,__DATE__, __TIME__, compiler
 			);
 	}
@@ -5048,18 +5078,17 @@ void DLLCALL bbs_thread(void* arg)
 	char compiler[32];
 	DESCRIBE_COMPILER(compiler);
 
-	lprintf(LOG_INFO,"%s Version %s Revision %c%s"
+	lprintf(LOG_INFO,"%s Version %s%c%s"
 		,TELNET_SERVER
 		,VERSION
-		,toupper(REVISION)
+		,REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
 		);
-	lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-	lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+	lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"

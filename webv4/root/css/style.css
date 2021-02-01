@@ -17,6 +17,11 @@ a.unread {
 	background: #FFFFFF;
 }
 
+span.badge.new {
+        background: #2E9AFE;
+        color: #FFFFFF;
+}
+
 /* A read mail message in the list view. */
 a.read {
 	background: #E6E6E6;

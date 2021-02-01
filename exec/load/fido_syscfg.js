@@ -40,7 +40,7 @@ function SBBSEchoCfg ()
 
 	ecfg = new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
 	if (!ecfg.open("r"))
-		throw new Error("Unable to open '"+ecfg.name+"'");
+		throw new Error(ecfg.error + " opening '"+ecfg.name+"'");
 
 	this.inbound = backslash(ecfg.iniGetValue(null, "Inbound", "../fido/nonsecure"));
 	if (this.inbound !== null)

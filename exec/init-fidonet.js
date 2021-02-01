@@ -800,7 +800,8 @@ if(your.node === temp_node) {
 		}
 		if(aborted() || confirm("Come back when you have a permanently-assigned node address"))
 			exit(0);
-	} else if(network.fido && confirm("Send a node number application to " + network.fido)) {
+	} else if(network.fido && network.fido != fidoaddr.to_str(hub)
+		&& confirm("Send a node number application to " + network.fido)) {
 		var result = send_app_netmail(network.fido);
 		if(typeof result !== 'boolean') {
 			alert(result);

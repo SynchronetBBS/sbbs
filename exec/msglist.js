@@ -1042,6 +1042,21 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 								return true;
 							}
 							break;
+						case 'E':
+							if((msgbase.cfg && msg_area.sub[msgbase.cfg.code].is_operator)
+								|| list[current].from_ext == user.number)
+								bbs.edit_msg(list[current]);
+							break;
+						case 'F':
+							if(mail) {
+								console.clearline();
+								var dest = prompt("To", "", K_NOCRLF);
+								if(dest) {
+									if(!bbs.forward_msg(list[current], dest))
+										alert("failed");
+								}
+							}
+							break;
 						case 'M':
 							mail_reply(list[current]);
 							break;

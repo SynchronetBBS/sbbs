@@ -36,13 +36,12 @@
 #include "text.h"			/* TOTAL_TEXT */
 #include "ftpsrvr.h"
 #include "telnet.h"
-#include "js_rtpool.h"
-#include "js_request.h"
 #include "multisock.h"
 #include "ssl.h"
 #include "cryptlib.h"
 #include "xpprintf.h"		// vasprintf
 #include "md5.h"
+#include "ver.h"
 
 /* Constants */
 
@@ -82,10 +81,10 @@ static protected_uint32_t thread_count;
 static volatile time_t	uptime=0;
 static volatile ulong	served=0;
 static volatile BOOL	terminate_server=FALSE;
-static char		revision[16];
 static char 	*text[TOTAL_TEXT];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
+static link_list_t current_connections;
 
 #ifdef SOCKET_DEBUG
 	static BYTE 	socket_debug[0x10000]={0};
@@ -205,12 +204,15 @@ static void update_clients(void)
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
+	if(!update)
+		listAddNodeData(&current_connections, client->addr, strlen(client->addr) + 1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
+	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
@@ -432,692 +434,6 @@ int getdir(char* p, user_t* user, client_t* client)
 
 	return(dir);
 }
-
-/*********************************/
-/* JavaScript Data and Functions */
-/*********************************/
-#ifdef JAVASCRIPT
-
-js_server_props_t js_server_props;
-
-static JSBool
-js_write(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval *argv=JS_ARGV(cx, arglist);
-    uintN		i;
-    JSString*	str=NULL;
-	FILE*	fp;
-	jsrefcount	rc;
-	char		*p = NULL;
-	size_t		len;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-    for (i = 0; i < argc; i++) {
-		str = JS_ValueToString(cx, argv[i]);
-		if (!str)
-		    return JS_FALSE;
-		JSSTRING_TO_MSTRING(cx, str, p, &len);
-		HANDLE_PENDING(cx, p);
-		rc=JS_SUSPENDREQUEST(cx);
-		if(p) {
-			fwrite(p, len, 1, fp);
-			free(p);
-		}
-		JS_RESUMEREQUEST(cx, rc);
-	}
-
-	if(str==NULL)
-		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-	else
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	return(JS_TRUE);
-}
-
-static JSBool
-js_writeln(JSContext *cx, uintN argc, jsval *arglist)
-{
-	FILE*	fp;
-	jsrefcount	rc;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if((fp=(FILE*)JS_GetContextPrivate(cx))==NULL)
-		return(JS_FALSE);
-
-	js_write(cx,argc,arglist);
-	rc=JS_SUSPENDREQUEST(cx);
-	fprintf(fp,"\r\n");
-	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
-}
-
-static JSFunctionSpec js_global_functions[] = {
-	{"write",           js_write,           1},		/* write to HTML file */
-	{"writeln",         js_writeln,         1},		/* write to HTML file */
-	{"print",			js_writeln,         1},		/* alias for writeln */
-	{0}
-};
-
-static void
-js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
-{
-	char	line[64];
-	char	file[MAX_PATH+1];
-	char*	warning;
-	FILE*	fp;
-	int		log_level;
-
-	fp=(FILE*)JS_GetContextPrivate(cx);
-	
-	if(report==NULL) {
-		lprintf(LOG_ERR,"!JavaScript: %s", message);
-		if(fp!=NULL)
-			fprintf(fp,"!JavaScript: %s", message);
-		return;
-    }
-
-	if(report->filename)
-		sprintf(file," %s",report->filename);
-	else
-		file[0]=0;
-
-	if(report->lineno)
-		sprintf(line," line %u",report->lineno);
-	else
-		line[0]=0;
-
-	if(JSREPORT_IS_WARNING(report->flags)) {
-		if(JSREPORT_IS_STRICT(report->flags))
-			warning="strict warning";
-		else
-			warning="warning";
-		log_level=LOG_WARNING;
-	} else {
-		log_level=LOG_ERR;
-		warning="";
-	}
-
-	lprintf(log_level,"!JavaScript %s%s%s: %s",warning,file,line,message);
-	if(fp!=NULL)
-		fprintf(fp,"!JavaScript %s%s%s: %s",warning,file,line,message);
-}
-
-static JSContext* 
-js_initcx(JSRuntime* runtime, SOCKET sock, JSObject** glob, JSObject** ftp, js_callback_t* cb)
-{
-	JSContext*	js_cx;
-	BOOL		success=FALSE;
-	BOOL		rooted=FALSE;
-
-    if((js_cx = JS_NewContext(runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
-		return(NULL);
-	JS_BEGINREQUEST(js_cx);
-
-	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",sock);
-
-    JS_SetErrorReporter(js_cx, js_ErrorReporter);
-
-	memset(cb, 0, sizeof(js_callback_t));
-
-	/* ToDo: call js_CreateCommonObjects() instead */
-
-	do {
-
-		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing Global object",sock);
-		if(!js_CreateGlobalObject(js_cx, &scfg, NULL, &startup->js, glob))
-			break;
-		rooted=TRUE;
-
-		if(!JS_DefineFunctions(js_cx, *glob, js_global_functions)) 
-			break;
-
-		/* Internal JS Object */
-		if(js_CreateInternalJsObject(js_cx, *glob, cb, &startup->js)==NULL)
-			break;
-
-		lprintf(LOG_DEBUG,"%04d JavaScript: Initializing System object",sock);
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, server_host_name(), SOCKLIB_DESC)==NULL) 
-			break;
-
-		if((*ftp=JS_DefineObject(js_cx, *glob, "ftp", NULL
-			,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))==NULL)
-			break;
-
-		if(js_CreateServerObject(js_cx,*glob,&js_server_props)==NULL)
-			break;
-
-		success=TRUE;
-
-	} while(0);
-
-	if(!success) {
-		if(rooted)
-			JS_RemoveObjectRoot(js_cx, glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);
-		return(NULL);
-	}
-
-	return(js_cx);
-}
-
-BOOL js_add_file(JSContext* js_cx, JSObject* array, 
-				 char* name, char* desc, char* ext_desc,
-				 off_t size, ulong credits, 
-				 time_t time, time_t uploaded, time_t last_downloaded, 
-				 ulong times_downloaded, ulong misc, 
-				 char* uploader, char* link)
-{
-	JSObject*	file;
-	JSString*	js_str;
-	jsval		val;
-	jsuint		index;
-
-	if(uploaded == 0)
-		uploaded = time;
-
-	if((file=JS_NewObject(js_cx, NULL, NULL, NULL))==NULL)
-		return(FALSE);
-
-	if((js_str=JS_NewStringCopyZ(js_cx, name))==NULL)
-		return(FALSE);
-	val=STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(js_cx, file, "name", &val))
-		return(FALSE);
-
-	if((js_str=JS_NewStringCopyZ(js_cx, desc))==NULL)
-		return(FALSE);
-	val=STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(js_cx, file, "description", &val))
-		return(FALSE);
-
-	if((js_str=JS_NewStringCopyZ(js_cx, ext_desc))==NULL)
-		return(FALSE);
-	val=STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(js_cx, file, "extended_description", &val))
-		return(FALSE);
-
-	val=INT_TO_JSVAL(size);
-	if(!JS_SetProperty(js_cx, file, "size", &val))
-		return(FALSE);
-
-	val=INT_TO_JSVAL(credits);
-	if(!JS_SetProperty(js_cx, file, "credits", &val))
-		return(FALSE);
-
-	val=DOUBLE_TO_JSVAL((double)time);
-	if(!JS_SetProperty(js_cx, file, "time", &val))
-		return(FALSE);
-
-	val=INT_TO_JSVAL((int32)uploaded);
-	if(!JS_SetProperty(js_cx, file, "uploaded", &val))
-		return(FALSE);
-
-	val=INT_TO_JSVAL((int32)last_downloaded);
-	if(!JS_SetProperty(js_cx, file, "last_downloaded", &val))
-		return(FALSE);
-
-	val=INT_TO_JSVAL(times_downloaded);
-	if(!JS_SetProperty(js_cx, file, "times_downloaded", &val))
-		return(FALSE);
-
-	if((js_str=JS_NewStringCopyZ(js_cx, uploader))==NULL)
-		return(FALSE);
-	val=STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(js_cx, file, "uploader", &val))
-		return(FALSE);
-
-	val=INT_TO_JSVAL(misc);
-	if(!JS_SetProperty(js_cx, file, "settings", &val))
-		return(FALSE);
-
-	if((js_str=JS_NewStringCopyZ(js_cx, link))==NULL)
-		return(FALSE);
-	val=STRING_TO_JSVAL(js_str);
-	if(!JS_SetProperty(js_cx, file, "link", &val))
-		return(FALSE);
-
-	if(!JS_GetArrayLength(js_cx, array, &index))
-		return(FALSE);
-
-	val=OBJECT_TO_JSVAL(file);
-	return(JS_SetElement(js_cx, array, index, &val));
-}
-
-BOOL js_generate_index(JSContext* js_cx, JSObject* parent, 
-					   SOCKET sock, FILE* fp, int lib, int dir, user_t* user, client_t* client)
-{
-	char		str[256];
-	char		path[MAX_PATH+1];
-	char		spath[MAX_PATH+1];	/* script path */
-	char		vpath[MAX_PATH+1];	/* virtual path */
-	char		aliasfile[MAX_PATH+1];
-	char		extdesc[513];
-	char*		p;
-	char*		tp;
-	char*		np;
-	char*		dp;
-	char		aliasline[512];
-	BOOL		alias_dir;
-	BOOL		success=FALSE;
-	FILE*		alias_fp;
-	uint		i;
-	file_t		f;
-	glob_t		g;
-	jsval		val;
-	jsval		rval;
-	JSObject*	lib_obj=NULL;
-	JSObject*	dir_obj=NULL;
-	JSObject*	file_array=NULL;
-	JSObject*	dir_array=NULL;
-	JSObject*	js_script=NULL;
-	JSString*	js_str;
-	long double		start=xp_timer();
-	jsrefcount	rc;
-
-	lprintf(LOG_DEBUG,"%04d <%s> JavaScript: Generating HTML Index for %s"
-		,sock, user->alias, genvpath(lib,dir,str));
-
-	JS_SetContextPrivate(js_cx, fp);
-
-	do {	/* pseudo try/catch */
-
-		if((file_array=JS_NewArrayObject(js_cx, 0, NULL))==NULL) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to create file_array",sock, user->alias);
-			break;
-		}
-
-		/* file[] */
-		val=OBJECT_TO_JSVAL(file_array);
-		if(!JS_SetProperty(js_cx, parent, "file_list", &val)) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set file property",sock, user->alias);
-			break;
-		}
-
-		if((dir_array=JS_NewArrayObject(js_cx, 0, NULL))==NULL) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to create dir_array",sock, user->alias);
-			break;
-		}
-
-		/* dir[] */
-		val=OBJECT_TO_JSVAL(dir_array);
-		if(!JS_SetProperty(js_cx, parent, "dir_list", &val)) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set dir property",sock, user->alias);
-			break;
-		}
-
-		rc=JS_SUSPENDREQUEST(js_cx);
-		if(strcspn(startup->html_index_script,"/\\")==strlen(startup->html_index_script)) {
-			sprintf(spath,"%s%s",scfg.mods_dir,startup->html_index_script);
-			if(scfg.mods_dir[0]==0 || !fexist(spath))
-				sprintf(spath,"%s%s",scfg.exec_dir,startup->html_index_script);
-		} else
-			sprintf(spath,"%.*s",(int)sizeof(spath)-4,startup->html_index_script);
-		/* Add extension if not specified */
-		if(!strchr(spath,'.'))
-			strcat(spath,".js");
-
-		if(!fexist(spath)) {
-			JS_RESUMEREQUEST(js_cx, rc);
-			lprintf(LOG_ERR,"%04d <%s> !HTML JavaScript (%s) doesn't exist",sock,user->alias, spath);
-			break;
-		}
-		JS_RESUMEREQUEST(js_cx, rc);
-
-		if((js_str=JS_NewStringCopyZ(js_cx, startup->html_index_file))==NULL)
-			break;
-		val=STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, parent, "html_index_file", &val)) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set html_index_file property",sock, user->alias);
-			break;
-		}
-
-		/* curlib */
-		if((lib_obj=JS_NewObject(js_cx, NULL, 0, NULL))==NULL) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to create lib_obj",sock, user->alias);
-			break;
-		}
-
-		val=OBJECT_TO_JSVAL(lib_obj);
-		if(!JS_SetProperty(js_cx, parent, "curlib", &val)) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curlib property",sock, user->alias);
-			break;
-		}
-
-		/* curdir */
-		if((dir_obj=JS_NewObject(js_cx, NULL, 0, NULL))==NULL) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to create dir_obj",sock, user->alias);
-			break;
-		}
-
-		val=OBJECT_TO_JSVAL(dir_obj);
-		if(!JS_SetProperty(js_cx, parent, "curdir", &val)) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curdir property",sock, user->alias);
-			break;
-		}
-
-		SAFECOPY(vpath,"/");
-
-		if(lib>=0) { /* root */
-
-			strcat(vpath,scfg.lib[lib]->sname);
-			strcat(vpath,"/");
-
-			if((js_str=JS_NewStringCopyZ(js_cx, scfg.lib[lib]->sname))==NULL)
-				break;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(js_cx, lib_obj, "name", &val)) {
-				lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curlib.name property",sock, user->alias);
-				break;
-			}
-
-			if((js_str=JS_NewStringCopyZ(js_cx, scfg.lib[lib]->lname))==NULL)
-				break;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(js_cx, lib_obj, "description", &val)) {
-				lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curlib.desc property",sock, user->alias);
-				break;
-			}
-		}
-
-		if(dir>=0) { /* 1st level */
-			strcat(vpath,scfg.dir[dir]->code_suffix);
-			strcat(vpath,"/");
-
-			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->code))==NULL)
-				break;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(js_cx, dir_obj, "code", &val)) {
-				lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curdir.code property",sock, user->alias);
-				break;
-			}
-
-			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->sname))==NULL)
-				break;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(js_cx, dir_obj, "name", &val)) {
-				lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curdir.name property",sock, user->alias);
-				break;
-			}
-
-			if((js_str=JS_NewStringCopyZ(js_cx, scfg.dir[dir]->lname))==NULL)
-				break;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(js_cx, dir_obj, "description", &val)) {
-				lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curdir.desc property",sock, user->alias);
-				break;
-			}
-
-			val=INT_TO_JSVAL(scfg.dir[dir]->misc);
-			if(!JS_SetProperty(js_cx, dir_obj, "settings", &val)) {
-				lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curdir.misc property",sock, user->alias);
-				break;
-			}
-		}
-
-		if((js_str=JS_NewStringCopyZ(js_cx, vpath))==NULL)
-			break;
-		val=STRING_TO_JSVAL(js_str);
-		if(!JS_SetProperty(js_cx, parent, "path", &val)) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to set curdir property",sock, user->alias);
-			break;
-		}
-
-		if(lib<0) {	/* root dir */
-
-			rc=JS_SUSPENDREQUEST(js_cx);
-			/* File Aliases */
-			sprintf(path,"%sftpalias.cfg",scfg.ctrl_dir);
-			if((alias_fp=fopen(path,"r"))!=NULL) {
-
-				while(!feof(alias_fp)) {
-					if(!fgets(aliasline,sizeof(aliasline),alias_fp))
-						break;
-
-					p=aliasline;	/* alias pointer */
-					SKIP_WHITESPACE(p);
-
-					if(*p==';')	/* comment */
-						continue;
-
-					tp=p;		/* terminator pointer */
-					FIND_WHITESPACE(tp);
-					if(*tp) *tp=0;
-
-					np=tp+1;	/* filename pointer */
-					SKIP_WHITESPACE(np);
-
-					tp=np;		/* terminator pointer */
-					FIND_WHITESPACE(tp);
-					if(*tp) *tp=0;
-
-					dp=tp+1;	/* description pointer */
-					SKIP_WHITESPACE(dp);
-					truncsp(dp);
-
-					if(stricmp(dp,BBS_HIDDEN_ALIAS)==0)
-						continue;
-
-					alias_dir=FALSE;
-
-					/* Virtual Path? */
-					if(!strnicmp(np,BBS_VIRTUAL_PATH,strlen(BBS_VIRTUAL_PATH))) {
-						if((dir=getdir(np+strlen(BBS_VIRTUAL_PATH),user,client))<0)
-							continue; /* No access or invalid virtual path */
-						tp=strrchr(np,'/');
-						if(tp==NULL) 
-							continue;
-						tp++;
-						if(*tp) {
-							SAFEPRINTF2(aliasfile,"%s%s",scfg.dir[dir]->path,tp);
-							np=aliasfile;
-						}
-						else 
-							alias_dir=TRUE;
-					}
-
-					if(!alias_dir && !fexist(np))
-						continue;
-
-					if(alias_dir) {
-						if(!chk_ar(&scfg,scfg.dir[dir]->ar,user,client))
-							continue;
-						SAFEPRINTF2(vpath,"/%s/%s",p,startup->html_index_file);
-					} else
-						SAFECOPY(vpath,p);
-					JS_RESUMEREQUEST(js_cx, rc);
-					js_add_file(js_cx
-						,alias_dir ? dir_array : file_array
-						,p				/* filename */
-						,dp				/* description */
-						,NULL			/* extdesc */
-						,flength(np)	/* size */
-						,0				/* credits */
-						,fdate(np)		/* time */
-						,0				/* uploaded */
-						,0				/* last downloaded */
-						,0				/* times downloaded */
-						,0				/* misc */
-						,scfg.sys_id	/* uploader */
-						,vpath			/* link */
-						);
-					rc=JS_SUSPENDREQUEST(js_cx);
-				}
-
-				fclose(alias_fp);
-			}
-			JS_RESUMEREQUEST(js_cx, rc);
-
-			/* QWK Packet */
-			if(startup->options&FTP_OPT_ALLOW_QWK /* && fexist(qwkfile) */) {
-				sprintf(str,"%s.qwk",scfg.sys_id);
-				SAFEPRINTF(vpath,"/%s",str);
-				js_add_file(js_cx
-					,file_array 
-					,str						/* filename */
-					,"QWK Message Packet"		/* description */
-					,NULL						/* extdesc */
-					,10240						/* size */
-					,0							/* credits */
-					,time(NULL)					/* time */
-					,0							/* uploaded */
-					,0							/* last downloaded */
-					,0							/* times downloaded */
-					,0							/* misc */
-					,scfg.sys_id				/* uploader */
-					,str						/* link */
-					);
-			}
-
-			/* Library Folders */
-			for(i=0;i<scfg.total_libs;i++) {
-				if(!chk_ar(&scfg,scfg.lib[i]->ar,user,client))
-					continue;
-				SAFEPRINTF2(vpath,"/%s/%s",scfg.lib[i]->sname,startup->html_index_file);
-				js_add_file(js_cx
-					,dir_array 
-					,scfg.lib[i]->sname			/* filename */
-					,scfg.lib[i]->lname			/* description */
-					,NULL						/* extdesc */
-					,0,0,0,0,0,0,0				/* unused */
-					,scfg.sys_id				/* uploader */
-					,vpath						/* link */
-					);
-			}
-		} else if(dir<0) {
-			/* Directories */
-			for(i=0;i<scfg.total_dirs;i++) {
-				if(scfg.dir[i]->lib!=lib)
-					continue;
-				if(/* i!=scfg.sysop_dir && i!=scfg.upload_dir && */
-					!chk_ar(&scfg,scfg.dir[i]->ar,user,client))
-					continue;
-				SAFEPRINTF3(vpath,"/%s/%s/%s"
-					,scfg.lib[scfg.dir[i]->lib]->sname
-					,scfg.dir[i]->code_suffix
-					,startup->html_index_file);
-				js_add_file(js_cx
-					,dir_array 
-					,scfg.dir[i]->sname			/* filename */
-					,scfg.dir[i]->lname			/* description */
-					,NULL						/* extdesc */
-					,getfiles(&scfg,i)			/* size */
-					,0,0,0,0,0					/* unused */
-					,scfg.dir[i]->misc			/* misc */
-					,scfg.sys_id				/* uploader */
-					,vpath						/* link */
-					);
-
-			}
-		} else if(chk_ar(&scfg,scfg.dir[dir]->ar,user,client)){
-			SAFEPRINTF(path,"%s*",scfg.dir[dir]->path);
-			rc=JS_SUSPENDREQUEST(js_cx);
-			time_t start = time(NULL);
-			glob(path, GLOB_MARK, NULL, &g);
-			for(i=0;i<(int)g.gl_pathc;i++) {
-				if(*lastchar(g.gl_pathv[i]) == '/')	/* is directory */
-					continue;
-	#ifdef _WIN32
-				GetShortPathName(g.gl_pathv[i], str, sizeof(str));
-	#else
-				SAFECOPY(str,g.gl_pathv[i]);
-	#endif
-				memset(&f, 0, sizeof(f));
-				padfname(getfname(str),f.name);
-				f.dir=dir;
-				BOOL filedat;
-				if((filedat=getfileixb(&scfg,&f))==FALSE
-					&& !(startup->options&FTP_OPT_DIR_FILES)
-					&& !(scfg.dir[dir]->misc&DIR_FILES))
-					continue;
-				if(filedat) {
-					if(!getfiledat(&scfg,&f))
-						continue;
-				} else {
-					f.size = f.cdt;
-					f.date = f.dateuled;
-					if(!filedat || (scfg.dir[dir]->misc&DIR_FCHK)) {
-						struct stat st;
-						if(stat(g.gl_pathv[i], &st) != 0)
-							continue;
-						f.cdt = st.st_size;
-						f.size = st.st_size;
-						f.date = (time32_t)st.st_mtime;
-					}
-				}
-				if(f.misc&FM_EXTDESC) {
-					extdesc[0]=0;
-					getextdesc(&scfg, dir, f.datoffset, extdesc);
-					/* Remove Ctrl-A Codes and Ex-ASCII code */
-					remove_ctrl_a(extdesc,extdesc);
-				}
-				SAFEPRINTF3(vpath,"/%s/%s/%s"
-					,scfg.lib[scfg.dir[dir]->lib]->sname
-					,scfg.dir[dir]->code_suffix
-					,getfname(g.gl_pathv[i]));
-				JS_RESUMEREQUEST(js_cx, rc);
-				js_add_file(js_cx
-					,file_array 
-					,getfname(g.gl_pathv[i])	/* filename */
-					,f.desc						/* description */
-					,f.misc&FM_EXTDESC ? extdesc : NULL
-					,f.size						/* size */
-					,f.cdt						/* credits */
-					,f.date						/* time */
-					,f.dateuled					/* uploaded */
-					,f.datedled					/* last downloaded */
-					,f.timesdled				/* times downloaded */
-					,f.misc						/* misc */
-					,f.uler						/* uploader */
-					,getfname(g.gl_pathv[i])	/* link */
-					);
-				rc=JS_SUSPENDREQUEST(js_cx);
-			}
-			lprintf(LOG_INFO, "%04d <%s> JavaScript array of /%s/%s (%lu files) created in %ld seconds"
-				,sock, user->alias, scfg.lib[lib]->sname, scfg.dir[dir]->code_suffix
-				,(ulong)g.gl_pathc,(long)time(NULL) - start);
-			globfree(&g);
-			JS_RESUMEREQUEST(js_cx, rc);
-		}
-
-		/* RUN SCRIPT */
-		JS_ClearPendingException(js_cx);
-
-		if((js_script=JS_CompileFile(js_cx, parent, spath))==NULL) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to compile script (%s)",sock, user->alias, spath);
-			break;
-		}
-
-		js_PrepareToExecute(js_cx, parent, spath, /* startup_dir: */NULL, parent);
-		if((success=JS_ExecuteScript(js_cx, parent, js_script, &rval))!=TRUE) {
-			lprintf(LOG_ERR,"%04d <%s> !JavaScript FAILED to execute script (%s)",sock, user->alias, spath);
-			break;
-		}
-
-		lprintf(LOG_DEBUG,"%04d <%s> JavaScript: Done executing script: %s (%.2Lf seconds)"
-			,sock, user->alias, spath, xp_timer()-start);
-
-	} while(0);
-
-
-	JS_DeleteProperty(js_cx, parent, "path");
-	JS_DeleteProperty(js_cx, parent, "sort");
-	JS_DeleteProperty(js_cx, parent, "reverse");
-	JS_DeleteProperty(js_cx, parent, "file_list");
-	JS_DeleteProperty(js_cx, parent, "dir_list");
-	JS_DeleteProperty(js_cx, parent, "curlib");
-	JS_DeleteProperty(js_cx, parent, "curdir");
-	JS_DeleteProperty(js_cx, parent, "html_index_file");
-
-	return(success);
-}
-
-
-#endif	/* ifdef JAVASCRIPT */
 
 void recverror(SOCKET socket, int rd, int line)
 {
@@ -1927,6 +1243,7 @@ static void receive_thread(void* arg)
 	thread_down();
 }
 
+// Returns TRUE upon error?!?
 static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 {
 	BOOL nodelay;
@@ -2934,7 +2251,6 @@ static void ctrl_thread(void* arg)
 	char		path[MAX_PATH+1];
 	char		local_dir[MAX_PATH+1];
 	char		ren_from[MAX_PATH+1]="";
-	char		html_index_ext[MAX_PATH+1];
 	WORD		port;
 	uint32_t	ip_addr;
 	socklen_t	addr_len;
@@ -2997,15 +2313,6 @@ static void ctrl_thread(void* arg)
 	client_t	client;
 	struct tm	tm;
 	struct tm 	cur_tm;
-#ifdef JAVASCRIPT
-	jsval		js_val;
-	JSRuntime*	js_runtime=NULL;
-	JSContext*	js_cx=NULL;
-	JSObject*	js_glob;
-	JSObject*	js_ftp;
-	JSString*	js_str;
-	js_callback_t	js_callback;
-#endif
 	login_attempt_t attempted;
 	CRYPT_SESSION	sess = -1;
 	BOOL		got_pbsz = FALSE;
@@ -3112,8 +2419,8 @@ static void ctrl_thread(void* arg)
 	}
 
 	sockprintf(sock,sess,"220-%s (%s)",scfg.sys_name, server_host_name());
-	sockprintf(sock,sess," Synchronet FTP Server %s-%s Ready"
-		,revision,PLATFORM_DESC);
+	sockprintf(sock,sess," Synchronet FTP Server %s%c-%s Ready"
+		,VERSION, REVISION, PLATFORM_DESC);
 	sprintf(str,"%sftplogin.txt",scfg.text_dir);
 	if((fp=fopen(str,"rb"))!=NULL) {
 		while(!feof(fp)) {
@@ -3374,27 +2681,6 @@ static void ctrl_thread(void* arg)
 			timeleft=(long)gettimeleft(&scfg,&user,logintime);
 			ftp_printfile(sock,sess,"hello",230);
 
-#ifdef JAVASCRIPT
-#ifdef JS_CX_PER_SESSION
-			if(js_cx!=NULL) {
-
-				if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
-					lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user class",sock);
-
-				if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", user.number, &client)==NULL) 
-					lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user object",sock);
-
-				if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock, -1)==NULL) 
-					lprintf(LOG_ERR,"%04d !JavaScript ERROR creating client object",sock);
-
-				if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user
-					,startup->html_index_file)==NULL) 
-					lprintf(LOG_ERR,"%04d !JavaScript ERROR creating file area object",sock);
-
-			}
-#endif
-#endif
-
 			if(sysop)
 				sockprintf(sock,sess,"230-Sysop access granted.");
 			sockprintf(sock,sess,"230-%s logged in.",user.alias);
@@ -3422,13 +2708,18 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,sess,"534 Already in TLS mode");
 					continue;
 				}
-				if (start_tls(&sock, &sess, TRUE))
+				if (start_tls(&sock, &sess, TRUE)) {
+					lprintf(LOG_WARNING, "%04d <%s> failed to initialize TLS successfully", sock, host_ip);
 					break;
+				}
 				user.number=0;
 				sysop=FALSE;
 				filepos=0;
 				got_pbsz = FALSE;
 				protection = FALSE;
+				lprintf(LOG_INFO, "%04d <%s> initialized TLS successfully", sock, host_ip);
+				client.protocol = "FTPS";
+				client_on(sock, &client, /* update: */TRUE);
 				continue;
 			}
 			sockprintf(sock,sess,"504 TLS is the only AUTH supported");
@@ -4408,16 +3699,6 @@ static void ctrl_thread(void* arg)
 					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : startup->index_file_name);
 					l++;
 				}
-				/* HTML Index File */
-				if(startup->options&FTP_OPT_INDEX_FILE && startup->html_index_file[0]
-						&& (cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0)) {
-					if (cmd[3] == 'T')
-						sockprintf(sock,sess, "250- Listing %s", startup->html_index_file);
-					get_owner_name(NULL, str);
-					send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", UINT64_MAX, 0, str, NULL, 0, cmd[3] == 'T' ? mls_path : startup->html_index_file);
-					l++;
-				}
-
 				if(lib<0) { /* Root dir */
 					if (cmd[3] == 'T' && !*mls_fname) {
 						sockprintf(sock,sess, "250- Listing root");
@@ -4502,25 +3783,6 @@ static void ctrl_thread(void* arg)
 							if(!alias_dir && !fexist(np)) {
 								lprintf(LOG_WARNING,"%04d <%s> !Missing aliased file: %s",sock, user.alias, np);
 								continue;
-							}
-
-							if(cmd[3] == 'D' || strcmp(startup->html_index_file, mls_fname) == 0) {
-								if (cmd[3] == 'T')
-									sockprintf(sock,sess, "250- Listing %s", p);
-								get_unique(aliaspath, uniq);
-								if (cmd[3] == 'D') {
-									if (alias_dir==TRUE)
-										send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, NULL, uniq, 0, p);
-									else
-										send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), NULL, uniq, 0, p);
-								}
-								else {
-									if (alias_dir==TRUE)
-										send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, 0, NULL, uniq, 0, aliaspath[0] ? aliaspath : mls_path);
-									else
-										send_mlsx_entry(fp, sock, sess, mlsx_feats, "file", "r", (uint64_t)flength(np), fdate(np), NULL, uniq, 0, mls_path);
-								}
-								l++;
 							}
 						}
 
@@ -4721,21 +3983,6 @@ static void ctrl_thread(void* arg)
 						,startup->index_file_name);
 				else
 					fprintf(fp,"%s\r\n",startup->index_file_name);
-			} 
-			/* HTML Index File */
-			if(startup->options&FTP_OPT_HTML_INDEX_FILE && startup->html_index_file[0]
-				&& wildmatchi(startup->html_index_file, filespec, FALSE)) {
-				if(detail)
-					fprintf(fp,"-r--r--r--   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
-						,NAME_LEN
-						,scfg.sys_id
-						,lib<0 ? scfg.sys_id : dir<0 
-							? scfg.lib[lib]->sname : scfg.dir[dir]->code_suffix
-						,512L
-						,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
-						,startup->html_index_file);
-				else
-					fprintf(fp,"%s\r\n",startup->html_index_file);
 			} 
 
 			if(lib<0) { /* Root dir */
@@ -5054,8 +4301,6 @@ static void ctrl_thread(void* arg)
 				p=tp+1;
 			}
 
-			sprintf(html_index_ext,"%s?",startup->html_index_file);
-
 			sprintf(str,"%s.qwk",scfg.sys_id);
 			if(lib<0 && startup->options&FTP_OPT_ALLOW_QWK 
 				&& !stricmp(p,str) && !delecmd) {
@@ -5141,9 +4386,7 @@ static void ctrl_thread(void* arg)
 					delfile=TRUE;
 					fprintf(fp,"%-*s File/Folder Descriptions\r\n"
 						,INDEX_FNAME_LEN,startup->index_file_name);
-					if(startup->options&FTP_OPT_HTML_INDEX_FILE)
-						fprintf(fp,"%-*s File/Folder Descriptions (HTML)\r\n"
-							,INDEX_FNAME_LEN,startup->html_index_file);
+
 					if(lib<0) {
 
 						/* File Aliases */
@@ -5234,132 +4477,6 @@ static void ctrl_thread(void* arg)
 							,(ulong)g.gl_pathc, (long)time(NULL) - start);
 						globfree(&g);
 					}
-					fclose(fp);
-				}
-			/* HTML Index File */
-			} else if(startup->options&FTP_OPT_HTML_INDEX_FILE 
-				&& (!stricmp(p,startup->html_index_file) 
-				|| !strnicmp(p,html_index_ext,strlen(html_index_ext)))
-				&& !delecmd) {
-				success=TRUE;
-				if(getsize) {
-					sockprintf(sock,sess, "550 Size not available for dynamically generated files");
-					continue;
-				}
-				else if(getdate)
-					file_date=time(NULL);
-				else {
-#ifdef JAVASCRIPT
-					if(startup->options&FTP_OPT_NO_JAVASCRIPT) {
-						lprintf(LOG_ERR,"%04d <%s> !JavaScript disabled, cannot generate %s",sock, user.alias, fname);
-						sockprintf(sock,sess, "451 JavaScript disabled");
-						filepos=0;
-						continue;
-					}
-					if(js_runtime == NULL) {
-						lprintf(LOG_DEBUG,"%04d <%s> JavaScript: Creating runtime: %lu bytes"
-							,sock, user.alias,startup->js.max_bytes);
-
-						if((js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL) {
-							lprintf(LOG_ERR,"%04d <%s> !ERROR creating JavaScript runtime",sock, user.alias);
-							sockprintf(sock,sess,"451 Error creating JavaScript runtime");
-							filepos=0;
-							continue;
-						}
-					}
-
-					if(js_cx==NULL) {	/* Context not yet created, create it now */
-						/* js_initcx() starts a request */
-						if(((js_cx=js_initcx(js_runtime, sock,&js_glob,&js_ftp,&js_callback))==NULL)) {
-							lprintf(LOG_ERR,"%04d <%s> !ERROR initializing JavaScript context",sock, user.alias);
-							sockprintf(sock,sess,"451 Error initializing JavaScript context");
-							filepos=0;
-							continue;
-						}
-						if(js_CreateUserClass(js_cx, js_glob, &scfg)==NULL) 
-							lprintf(LOG_ERR,"%04d <%s> !JavaScript ERROR creating user class",sock, user.alias);
-
-						if(js_CreateFileClass(js_cx, js_glob)==NULL) 
-							lprintf(LOG_ERR,"%04d <%s> !JavaScript ERROR creating file class",sock, user.alias);
-
-						if(js_CreateUserObject(js_cx, js_glob, &scfg, "user", &user, &client, /* global_user: */TRUE)==NULL) 
-							lprintf(LOG_ERR,"%04d <%s> !JavaScript ERROR creating user object",sock, user.alias);
-
-						if(js_CreateClientObject(js_cx, js_glob, "client", &client, sock, -1)==NULL) 
-							lprintf(LOG_ERR,"%04d <%s> !JavaScript ERROR creating client object",sock, user.alias);
-
-						if(js_CreateFileAreaObject(js_cx, js_glob, &scfg, &user, &client
-							,startup->html_index_file)==NULL) 
-							lprintf(LOG_ERR,"%04d <%s> !JavaScript ERROR creating file area object",sock, user.alias);
-					}
-					else
-						JS_BEGINREQUEST(js_cx);
-
-					if((js_str=JS_NewStringCopyZ(js_cx, "name"))!=NULL) {
-						js_val=STRING_TO_JSVAL(js_str);
-						JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
-					}
-					js_val=BOOLEAN_TO_JSVAL(FALSE);
-					JS_SetProperty(js_cx, js_ftp, "reverse", &js_val);
-
-					if(!strnicmp(p,html_index_ext,strlen(html_index_ext))) {
-						p+=strlen(html_index_ext);
-						tp=strrchr(p,'$');
-						if(tp!=NULL)
-							*tp=0;
-						if(!strnicmp(p,"ext=",4)) {
-							p+=4;
-							if(!strcmp(p,"on"))
-								user.misc|=EXTDESC;
-							else
-								user.misc&=~EXTDESC;
-							if(!(user.rest&FLAG('G')))
-								putuserrec(&scfg,user.number,U_MISC,8,ultoa(user.misc,str,16));
-						} 
-						else if(!strnicmp(p,"sort=",5)) {
-							p+=5;
-							tp=strchr(p,'&');
-							if(tp!=NULL) {
-								*tp=0;
-								tp++;
-								if(!stricmp(tp,"reverse")) {
-									js_val=BOOLEAN_TO_JSVAL(TRUE);
-									JS_SetProperty(js_cx, js_ftp, "reverse", &js_val);
-								}
-							}
-							if((js_str=JS_NewStringCopyZ(js_cx, p))!=NULL) {
-								js_val=STRING_TO_JSVAL(js_str);
-								JS_SetProperty(js_cx, js_ftp, "sort", &js_val);
-							}
-						}
-					}
-
-					js_val=BOOLEAN_TO_JSVAL(INT_TO_BOOL(user.misc&EXTDESC));
-					JS_SetProperty(js_cx, js_ftp, "extended_descriptions", &js_val);
-
-					JS_ENDREQUEST(js_cx);
-#endif
-					if((fp=fopen(ftp_tmpfname(fname,"html",sock),"w+b"))==NULL) {
-						lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
-							,sock, user.alias, errno, strerror(errno), __LINE__, fname);
-						sockprintf(sock,sess, "451 Insufficient system storage");
-						filepos=0;
-						continue;
-					}
-					lprintf(LOG_INFO,"%04d <%s> downloading %s for %s in %s mode"
-						,sock, user.alias, startup->html_index_file, genvpath(lib,dir,str)
-						,mode);
-					credits=FALSE;
-					tmpfile=TRUE;
-					delfile=TRUE;
-#ifdef JAVASCRIPT
-					JS_BEGINREQUEST(js_cx);
-					js_val=INT_TO_JSVAL(timeleft);
-					if(!JS_SetProperty(js_cx, js_ftp, "time_left", &js_val))
-						lprintf(LOG_ERR,"%04d <%s> !JavaScript ERROR setting user.time_left",sock, user.alias);
-					js_generate_index(js_cx, js_ftp, sock, fp, lib, dir, &user, &client);
-					JS_ENDREQUEST(js_cx);
-#endif
 					fclose(fp);
 				}
 			} else if(dir>=0) {
@@ -5617,8 +4734,6 @@ static void ctrl_thread(void* arg)
 				if((!append && filepos==0 && fexist(fname))
 					|| (startup->options&FTP_OPT_INDEX_FILE 
 						&& !stricmp(p,startup->index_file_name))
-					|| (startup->options&FTP_OPT_HTML_INDEX_FILE 
-						&& !stricmp(p,startup->html_index_file))
 					) {
 					lprintf(LOG_WARNING,"%04d <%s> attempted to overwrite existing file: %s"
 						,sock,user.alias,fname);
@@ -5867,22 +4982,6 @@ static void ctrl_thread(void* arg)
 		PlaySound(startup->hangup_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-#ifdef JAVASCRIPT
-	if(js_cx!=NULL) {
-		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying context",sock);
-		JS_BEGINREQUEST(js_cx);
-		JS_RemoveObjectRoot(js_cx, &js_glob);
-		JS_ENDREQUEST(js_cx);
-		JS_DestroyContext(js_cx);	/* Free Context */
-	}
-
-	if(js_runtime!=NULL) {
-		lprintf(LOG_DEBUG,"%04d JavaScript: Destroying runtime",sock);
-		jsrt_Release(js_runtime);
-	}
-
-#endif
-
 /*	status(STATUS_WFC); server thread should control status display */
 
 	if(pasv_sock!=INVALID_SOCKET)
@@ -5940,6 +5039,8 @@ static void cleanup(int code, int line)
 
 	update_clients();	/* active_clients is destroyed below */
 
+	listFree(&current_connections);
+
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
@@ -5965,17 +5066,16 @@ const char* DLLCALL ftp_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.501 $", "%*s %s", revision);
-
-	sprintf(ver,"%s %s%s  "
-		"Compiled %s %s with %s"
+	safe_snprintf(ver, sizeof(ver), "%s %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
 		,FTP_SERVER
-		,revision
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler);
 
 	return(ver);
@@ -5999,8 +5099,6 @@ void DLLCALL ftp_server(void* arg)
 	char			client_ip[INET6_ADDRSTRLEN];
 	CRYPT_SESSION		none = -1;
 
-	ftp_ver();
-
 	startup=(ftp_startup_t*)arg;
 	SetThreadName("sbbs/ftpServer");
 
@@ -6023,13 +5121,6 @@ void DLLCALL ftp_server(void* arg)
 		return;
 	}
 
-	ZERO_VAR(js_server_props);
-	SAFEPRINTF2(js_server_props.version,"%s %s",FTP_SERVER,revision);
-	js_server_props.version_detail=ftp_ver();
-	js_server_props.clients=&active_clients.value;
-	js_server_props.options=&startup->options;
-	js_server_props.interfaces=&startup->interfaces;
-
 	uptime=0;
 	served=0;
 	startup->recycle_now=FALSE;
@@ -6038,6 +5129,7 @@ void DLLCALL ftp_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		listInit(&current_connections, LINK_LIST_MUTEX);
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
@@ -6046,13 +5138,6 @@ void DLLCALL ftp_server(void* arg)
 		if(startup->max_inactivity==0)			startup->max_inactivity=FTP_DEFAULT_MAX_INACTIVITY;	/* seconds */
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;		/* seconds */
 		if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
-		if(startup->html_index_file[0]==0)		SAFECOPY(startup->html_index_file,"00index.html");
-		if(startup->html_index_script[0]==0)	SAFECOPY(startup->html_index_script,"ftp-html.js");
-		if(startup->options&FTP_OPT_HTML_INDEX_FILE)
-			startup->options&=~FTP_OPT_NO_JAVASCRIPT;
-		else
-			startup->options|=FTP_OPT_NO_JAVASCRIPT;
-		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 
 		protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
@@ -6061,8 +5146,8 @@ void DLLCALL ftp_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"Synchronet FTP Server Revision %s%s"
-			,revision
+		lprintf(LOG_INFO,"Synchronet FTP Server Version %s%c%s"
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -6072,7 +5157,7 @@ void DLLCALL ftp_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		sbbs_srand();	/* Seed random number generator */
 
@@ -6223,6 +5308,20 @@ void DLLCALL ftp_server(void* arg)
 				startup->socket_open(startup->cbdata,TRUE);
 
 			inet_addrtop(&client_addr, client_ip, sizeof(client_ip));
+
+			if(startup->max_concurrent_connections > 0) {
+				int ip_len = strlen(client_ip) + 1;
+				uint connections = listCountMatches(&current_connections, client_ip, ip_len);
+				if(connections >= startup->max_concurrent_connections
+					&& !is_host_exempt(&scfg, client_ip, /* host_name */NULL)) {
+					lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
+ 						,client_socket, client_ip, startup->max_concurrent_connections);
+					sockprintf(client_socket, -1, "421 Maximum connections (%u) exceeded", startup->max_concurrent_connections);
+					ftp_close_socket(&client_socket,&none,__LINE__);
+					continue;
+				}
+			}
+
 			if(trashcan(&scfg,client_ip,"ip-silent")) {
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
@@ -6232,7 +5331,6 @@ void DLLCALL ftp_server(void* arg)
 				lprintf(LOG_WARNING,"%04d !MAXIMUM CLIENTS (%d) reached, access denied"
 					,client_socket, startup->max_clients);
 				sockprintf(client_socket,-1,"421 Maximum active clients reached, please try again later.");
-				mswait(3000);
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
 			}
@@ -6241,7 +5339,6 @@ void DLLCALL ftp_server(void* arg)
 				lprintf(LOG_CRIT,"%04d !ERROR allocating %d bytes of memory for ftp_t"
 					,client_socket,(int)sizeof(ftp_t));
 				sockprintf(client_socket,-1,"421 System error, please try again later.");
-				mswait(3000);
 				ftp_close_socket(&client_socket,&none,__LINE__);
 				continue;
 			}

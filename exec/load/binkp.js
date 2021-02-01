@@ -1,4 +1,4 @@
-const binkp_revision = 2;
+const binkp_revision = 4;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -916,6 +916,8 @@ BinkP.prototype.session = function()
 BinkP.prototype.close = function()
 {
 	var i;
+	var end;
+	var remain;
 
 	// Send an ERR and close.
 	this.ack_file();
@@ -936,6 +938,19 @@ BinkP.prototype.close = function()
 		else {
 			if (this.senteob < 1)
 				this.sendCmd(this.command.M_EOB);
+		}
+		// Attempt a super-duper graceful shutdown to prevent RST...
+		if (this.sock !== undefined) {
+			this.sock.is_writeable = false;
+			remain = this.timeout;
+			end = time() + remain;
+			do {
+				if (this.sock.recv(2048, remain) == 0)
+					break;
+				remain = end - time();
+			} while (remain > 0);
+			this.sock.close();
+			this.sock = undefined;
 		}
 	}
 	this.tx_queue.forEach(function(file) {
@@ -1043,7 +1058,7 @@ BinkP.prototype.recvFrame = function(timeout)
 		ret = new this.Frame();
 		i = this.sock.recv(1, timeout);
 		if (i === null) {
-			log(LOG_INFO, "Error in recv() of first byte of packet header, timeout = " + timeout);
+			log(LOG_INFO, "Error "+this.sock.error+" ("+this.sock.error_str+") in recv() of first byte of packet header, timeout = " + timeout);
 			this.sock.close();
 			this.sock = undefined;
 			return undefined;
@@ -1225,7 +1240,7 @@ BinkP.prototype.recvFrame = function(timeout)
 									log(LOG_WARNING, 'Peer ended their VER with " '+m[2]+'" instead of the required " binkp/1.1", but we\'re assuming binkp 1.1 anyway');
 								}
 								log(LOG_DEBUG, "Parsed BinkP version: " + binkp_ver);
-								this.ver_1_1 = binkp_ver >= 1.1;
+								this.ver1_1 = binkp_ver >= 1.1;
 							}
 							break;
 						case 'ZYZ':

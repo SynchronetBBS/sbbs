@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 1274
-  Top = 822
+  Left = 1214
+  Top = 710
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 246

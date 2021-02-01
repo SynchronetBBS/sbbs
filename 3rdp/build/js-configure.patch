@@ -1,5 +1,24 @@
---- js-1.8.5/js/src/configure.orig	2011-03-31 12:08:36.000000000 -0700
-+++ js-1.8.5/js/src/configure	2014-01-03 01:02:00.000000000 -0800
+--- js-1.8.5/js/src/configure	2011-03-31 12:08:36.000000000 -0700
++++ js-1.8.5/js/src/configure	2020-12-19 01:02:37.189932487 -0800
+@@ -6391,12 +6391,12 @@
+ echo $ac_n "checking for Python version >= $PYTHON_VERSION but not 3.x""... $ac_c" 1>&6
+ echo "configure:6393: checking for Python version >= $PYTHON_VERSION but not 3.x" >&5
+ 
+-$PYTHON -c "import sys; sys.exit(sys.version[:3] < sys.argv[1] or sys.version[:2] != '2.')" $PYTHON_VERSION
+-_python_res=$?
+-
+-if test "$_python_res" != 0; then
+-    { echo "configure: error: Python $PYTHON_VERSION or higher (but not Python 3.x) is required." 1>&2; exit 1; }
+-fi
++#$PYTHON -c "import sys; sys.exit(sys.version[:3] < sys.argv[1] or sys.version[:2] != '2.')" $PYTHON_VERSION
++#_python_res=$?
++#
++#if test "$_python_res" != 0; then
++#    { echo "configure: error: Python $PYTHON_VERSION or higher (but not Python 3.x) is required." 1>&2; exit 1; }
++#fi
+ echo "$ac_t""yes" 1>&6
+ 
+ 
 @@ -9446,7 +9446,7 @@
  echo "$ac_t""$ac_cv_have_visibility_builtin_bug" 1>&6
          if test "$ac_cv_have_visibility_builtin_bug" = "no" -a \

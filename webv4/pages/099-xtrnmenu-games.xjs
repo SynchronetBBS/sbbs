@@ -1,0 +1,149 @@
+<!--HIDDEN:Games-->
+<?xjs
+/**
+ * Web Display for Custom External Program Menus
+ * by Michael Long mlong  innerrealmbbs.us
+ * 
+ * See wiki at http://wiki.synchro.net/module:xtrnmenumod
+ */
+
+    load("ftelnethelper.js");
+    load('sbbsdefs.js');
+    load("xtrnmenulib.js");
+    load(settings.web_lib + 'ftelnet.js');
+    load(settings.web_lib + 'request.js');
+
+    var ExternalMenus = new ExternalMenus();
+
+    if (typeof settings.xtrn_blacklist === 'string') {
+        settings.xtrn_blacklist = settings.xtrn_blacklist.toLowerCase().split(',');
+    } else {
+        settings.xtrn_blacklist = [];
+    }
+
+    var menuitems = [];
+?>
+
+<style>.fTelnetStatusBar { display : none; }</style>
+
+<a name="fTelnet"></a>
+<div id="fTelnetContainer" class="fTelnetContainer" style="margin-bottom:1em;"></div>
+
+<div id="xtrn-list" class="list-group">
+
+<?xjs
+    var menuobj;
+    if ((Request.get_param('type') == 'xtrnmenu') && Request.has_param('target')) {
+        menuobj = ExternalMenus.getSectionMenu(Request.get_param('target'));
+    } else {
+        if (Request.has_param('target')) {
+            menuobj = ExternalMenus.getMenu(Request.get_param('target'));
+        } else {
+            menuobj = ExternalMenus.getMenu('main');
+        }
+    }
+
+    if ((typeof menuobj === "undefined") || !menuobj
+        || (typeof menuobj.items === "undefined") || (menuobj.items.length < 1)) {
+        writeln("<h4>" + ExternalMenus.options.no_programs_msg + "</h4>");
+    } else if (user.security.restrictions&UFLAG_X) {
+        writeln("<h4>" + options.restricted_user_msg + "</h4>");
+    } else {
+        // ok to display menu
+
+        writeln("<h4>" + menuobj.title + "</h4>");
+        var menuitemsfiltered = ExternalMenus.getSortedItems(menuobj);
+        menuitemsfiltered.forEach(function (menuitem) {
+            if (settings.xtrn_blacklist.indexOf(menuitem.target.toLowerCase()) > -1) {
+                return;
+            }
+            menuitems.push({
+                'itemtitle': menuitem.title,
+                'itemtype': menuitem.type,
+                'itemtarget': menuitem.target
+            });
+        });
+    }
+?>
+</div>
+
+<script id="fTelnetScript" src="<?xjs write(get_url()); ?>"></script>
+<script type="text/javascript">
+    var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
+    var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
+    var Options = new fTelnetOptions();
+    Options.BareLFtoCRLF = false;
+    Options.BitsPerSecond = 57600;
+    Options.ConnectionType = 'rlogin';
+    Options.Emulation = 'ansi-bbs';
+    Options.Enter = '\r';
+    Options.Font = 'CP437';
+    Options.ForceWss = false;
+    Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+    Options.LocalEcho = false;
+    Options.Port = location.protocol == 'https:' ? wssp : wsp;
+    Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
+    Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
+    Options.ScreenColumns = 80;
+    Options.ScreenRows = 25;
+    Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
+    Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
+    var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+    fTelnet.OnConnectionClose = function () {
+        window.location.reload();
+    };
+
+    async function launchXtrn() {
+        var code = event.srcElement.id;
+        await v4_get('./api/system.ssjs?call=set-xtrn-intent&code=' + code);
+        fTelnet._Options.RLoginTerminalType = 'xtrn=' + code;
+        fTelnet.Connect();
+    }
+
+    var menuitems = <?xjs write(JSON.stringify(menuitems)); ?>;
+    var currentTarget = "<?xjs Request.write_param('target'); ?>";
+    var currentType = "<?xjs Request.write_param('type'); ?>";
+    var currentTitle = `<?xjs write(menuobj.title) ?>`;
+    if (currentTitle && !currentTarget) {
+        // main menu - store title for breadcrumb
+        sessionStorage.setItem("mainmenu", currentTitle);
+    }
+    var div = $('#xtrn-list');
+    menuitems.forEach(function (menuitem) {
+        var a = document.createElement('a');
+        $(a).addClass("list-group-item");
+        $(a).addClass("striped");
+        a.text = menuitem.itemtitle;
+
+        if (menuitem.itemtype == "xtrnprog") {
+            a.href = "#fTelnet";
+            a.id = menuitem.itemtarget;
+            a.onclick = function () { launchXtrn(); };
+        } else {
+            a.href = "/?page=<?xjs Request.write_param('page') ?>&type=" +menuitem.itemtype
+                + "&target=" + menuitem.itemtarget;
+            a.onclick = function () {
+                sessionStorage.setItem('prev:' + menuitem.itemtarget.toLowerCase(), '<?xjs Request.write_param('target')?>');
+                sessionStorage.setItem('prevtype:' + menuitem.itemtarget.toLowerCase(), '<?xjs Request.write_param('type')?>');
+                sessionStorage.setItem('prevtitle:' + menuitem.itemtarget.toLowerCase(), currentTitle);
+            };
+        }
+        $(div).append(a);
+    });
+
+    // breadcrumb
+    var prevTarget = sessionStorage.getItem('prev:' + currentTarget.toLowerCase());
+    var prevType = sessionStorage.getItem('prevtype:' + currentTarget.toLowerCase());
+    var prevTitle = sessionStorage.getItem('prevtitle:' + currentTarget.toLowerCase());
+    if (prevType && prevTarget && prevTitle) {
+        $('#xtrn-list').prepend('<ol class="breadcrumb"><a href="/?page=<?xjs Request.write_param('page') ?>&type=' + prevType
+        + '&target=' + prevTarget + '">' + prevTitle + '</a></ol>');
+    } else if (currentTarget) {
+        // level 2, not main menu
+        var mainmenuTitle = sessionStorage.getItem('mainmenu');
+        if (!mainmenuTitle) {
+            mainmenuTitle = 'Games';
+        }
+        $('#xtrn-list').prepend('<ol class="breadcrumb"><a href="/?page=<?xjs Request.write_param('page') ?>">' + mainmenuTitle + '</a></ol>');
+    }
+</script>

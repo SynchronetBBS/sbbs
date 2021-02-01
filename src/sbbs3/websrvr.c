@@ -65,6 +65,7 @@
 #include "xpprintf.h"
 #include "ssl.h"
 #include "fastcgi.h"
+#include "ver.h"
 
 static const char*	server_name="Synchronet Web Server";
 static const char*	newline="\r\n";
@@ -106,7 +107,6 @@ static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminated=FALSE;
 static volatile BOOL	terminate_http_logging_thread=FALSE;
 static struct xpms_set	*ws_set=NULL;
-static char		revision[16];
 static char		root_dir[MAX_PATH+1];
 static char		error_dir[MAX_PATH+1];
 static char		cgi_dir[MAX_PATH+1];
@@ -6758,17 +6758,16 @@ const char* DLLCALL web_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.720 $", "%*s %s", revision);
-
-	sprintf(ver,"%s %s%s  "
-		"Compiled %s %s with %s"
+	sprintf(ver,"%s %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
 		,server_name
-		,revision
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler);
 
 	return(ver);
@@ -6904,7 +6903,6 @@ void DLLCALL web_server(void* arg)
 	startup=(web_startup_t*)arg;
 
 	SetThreadName("sbbs/webServer");
-	web_ver();	/* get CVS revision */
 
     if(startup==NULL) {
     	sbbs_beep(100,500);
@@ -6926,7 +6924,7 @@ void DLLCALL web_server(void* arg)
 #endif
 
 	ZERO_VAR(js_server_props);
-	SAFEPRINTF2(js_server_props.version,"%s %s",server_name,revision);
+	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=web_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
@@ -6976,9 +6974,9 @@ void DLLCALL web_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"%s Revision %s%s"
+		lprintf(LOG_INFO,"%s Version %s%c%s"
 			,server_name
-			,revision
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -6988,7 +6986,7 @@ void DLLCALL web_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		if(!winsock_startup()) {
 			cleanup(1);

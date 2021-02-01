@@ -1174,20 +1174,29 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		SAFECOPY(str,fullcmdline);
 		sprintf(fullcmdline,"%s -F %s",startup->dosemu_path,str);
 
-#elif defined(__linux__) && defined(USE_DOSEMU)
+#elif defined(__linux__)
 
-		/* dosemu integration  --  Ryan Underwood, <nemesis @ icequake.net> */
+		/* dosemu integration  --  originally by Ryan Underwood, <nemesis @ icequake.net> */
 
-		FILE *dosemubat;
-		int setup_override;
+		FILE *dosemubatfp;
+		FILE *externalbatfp;
+		FILE *de_launch_inifp;
 		char tok[MAX_PATH+1];
+		char buf[1024];
+		char bufout[1024];
 
+		char cmdlinebatch[MAX_PATH+1];
+		char externalbatsrc[MAX_PATH+1];
+		char externalbat[MAX_PATH+1];
 		char dosemuconf[MAX_PATH+1];
+		char de_launch_cmd[INI_MAX_VALUE_LEN];
 		char dosemubinloc[MAX_PATH+1];
 		char virtualconf[75];
 		char dosterm[15];
 		char log_external[MAX_PATH+1];
-
+		const char* runtype;
+		str_list_t de_launch_ini;
+		
 		/*  on the Unix side. xtrndir is the parent of the door's startup dir. */
 		char xtrndir[MAX_PATH+1];
 
@@ -1196,15 +1205,18 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		char ctrldir_dos[MAX_PATH+1];
 		char datadir_dos[MAX_PATH+1];
 		char execdir_dos[MAX_PATH+1];
+		char nodedir_dos[MAX_PATH+1];
 
 		/* Default locations that can be overridden by
 		 * the sysop in emusetup.bat */
 
-		const char nodedrive[] = DOSEMU_NODE_DRIVE;
-		const char xtrndrive[] = DOSEMU_XTRN_DRIVE;
 		const char ctrldrive[] = DOSEMU_CTRL_DRIVE;
 		const char datadrive[] = DOSEMU_DATA_DRIVE;
 		const char execdrive[] = DOSEMU_EXEC_DRIVE;
+		const char nodedrive[] = DOSEMU_NODE_DRIVE;
+		
+		const char external_bat_fn[] = "external.bat";
+		const char dosemu_cnf_fn[] = "dosemu.conf";
 
 		SAFECOPY(str,startup_dir);
 		if(*(p=lastchar(str))=='/')		/* kill trailing slash */
@@ -1214,8 +1226,9 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		SAFECOPY(xtrndir,str);
 
-		/* construct DOS equivalents for the unix directories */
-
+		SAFECOPY(xtrndir_dos,xtrndir);
+		REPLACE_CHARS(xtrndir_dos,'/','\\',p);
+		
 		SAFECOPY(ctrldir_dos,cfg.ctrl_dir);
 		REPLACE_CHARS(ctrldir_dos,'/','\\',p);
 
@@ -1234,28 +1247,52 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		p=lastchar(execdir_dos);
 		if (*p=='\\') *p=0;
 
-		SAFECOPY(xtrndir_dos,xtrndir);
-		REPLACE_CHARS(xtrndir_dos,'/','\\',p);
+		SAFECOPY(nodedir_dos,cfg.node_dir);
+		REPLACE_CHARS(nodedir_dos,'/','\\',p);
+ 
+		p=lastchar(nodedir_dos);
+		if (*p=='\\') *p=0;
+
+		/* must have sbbs.ini bbs useDOSemu=1 (or empty), cannot be =0 */
+		if (!startup->usedosemu) {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU disabled, program not run");
+			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			return -1;
+		}
+
+		/* must have sbbs.ini bbs DOSemuPath set to valid path */
+		SAFECOPY(dosemubinloc,(cmdstr(startup->dosemu_path,nulstr,nulstr,tok)));
+		if (dosemubinloc[0] == '\0') {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU invalid DOSEmuPath, program not run");
+			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			return -1;
+		}
+
+		if (!fexist(dosemubinloc)) {
+			lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU not found: %s", dosemubinloc);
+			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			return -1;
+		}
 
 		/* check for existence of a dosemu.conf in the door directory.
 		 * It is a good idea to be able to use separate configs for each
-		 * door. */
-
-		sprintf(str,"%sdosemu.conf",startup_dir);
+		 * door. 
+		 *
+		 * First check startup_dir, then check cfg.ctrl_dir
+		 */
+		SAFEPRINTF2(str,"%s%s",startup_dir, dosemu_cnf_fn);
 		if (!fexist(str)) {
-
-		/* If we can't find it in the door dir, look for a global one
-		 * in the ctrl dir. */
-
-			sprintf(str,"%sdosemu.conf",cfg.ctrl_dir);
+			/* If we can't find it in the door dir, look for the configured one */
+			SAFECOPY(str,startup->dosemuconf_path);
+			if (!isabspath(str)) {
+				SAFEPRINTF2(str,"%s%s", cfg.ctrl_dir, startup->dosemuconf_path);
+			}
 			if (!fexist(str)) {
-
-		/* If we couldn't find either, try for the system one, then
-		 * error out. */
-				SAFECOPY(str,"/etc/dosemu/dosemu.conf");
+				/* If we couldn't find either, try for the system one, then
+				 * error out. */
+				SAFEPRINTF(str,"/etc/dosemu/%s", dosemu_cnf_fn);
 				if (!fexist(str)) {
-
-					SAFECOPY(str,"/etc/dosemu.conf");
+					SAFEPRINTF(str,"/etc/%s", dosemu_cnf_fn);
 					if (!fexist(str)) {
 						errormsg(WHERE,ERR_READ,str,0);
 						return(-1);
@@ -1268,112 +1305,116 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		}
 		else SAFECOPY(dosemuconf,str);  /* using door-specific conf */
 
-		/* same deal for emusetup.bat. */
-
-		sprintf(str,"%semusetup.bat",startup_dir);
-		if (!fexist(str)) {
-
-		/* If we can't find it in the door dir, look for a global one
-		 * in the ctrl dir. */
-
-			sprintf(str,"%semusetup.bat",cfg.ctrl_dir);
-			if (!fexist(str)) {
-
-		/* If we couldn't find either, set an error condition. */
-				setup_override = -1;
-			}
-			else setup_override = 0;  /* using global bat */
-		}
-		else setup_override = 1;  /* using door-specific bat */
-
 		/* Create the external bat here to be placed in the node dir. */
-
-		sprintf(str,"%sexternal.bat",cfg.node_dir);
-		if(!(dosemubat=fopen(str,"w+"))) {
+		SAFEPRINTF2(str,"%s%s",cfg.node_dir,external_bat_fn);
+		if(!(dosemubatfp=fopen(str,"w+"))) {
 			errormsg(WHERE,ERR_CREATE,str,0);
 			return(-1);
 		}
 
-		fprintf(dosemubat,"@echo off\r\n");
-		fprintf(dosemubat,"set DSZLOG=%s\\PROTOCOL.LOG\r\n",nodedrive);
-		fprintf(dosemubat,"set SBBSNODE=%s\r\n",nodedrive);
-		fprintf(dosemubat,"set SBBSNNUM=%d\r\n",cfg.node_num);
-		fprintf(dosemubat,"set SBBSCTRL=%s\r\n",ctrldrive);
-		fprintf(dosemubat,"set SBBSDATA=%s\r\n",datadrive);
-		fprintf(dosemubat,"set SBBSEXEC=%s\r\n",execdrive);
-		fprintf(dosemubat,"set PCBNODE=%d\r\n",cfg.node_num);
-		fprintf(dosemubat,"set PCBDRIVE=%s\r\n",nodedrive);
-		fprintf(dosemubat,"set PCBDIR=\\\r\n");
+		fprintf(dosemubatfp,"@ECHO OFF\r\n");
+		fprintf(dosemubatfp,"SET DSZLOG=%s\\PROTOCOL.LOG\r\n",nodedrive);
+		fprintf(dosemubatfp,"SET SBBSNODE=%s\r\n",nodedrive);
+		fprintf(dosemubatfp,"SET SBBSNNUM=%d\r\n",cfg.node_num);
+		fprintf(dosemubatfp,"SET SBBSCTRL=%s\r\n",ctrldrive);
+		fprintf(dosemubatfp,"SET SBBSDATA=%s\r\n",datadrive);
+		fprintf(dosemubatfp,"SET SBBSEXEC=%s\r\n",execdrive);
+		fprintf(dosemubatfp,"SET PCBNODE=%d\r\n",cfg.node_num);
+		fprintf(dosemubatfp,"SET PCBDRIVE=%s\r\n",nodedrive);
+		fprintf(dosemubatfp,"SET PCBDIR=\\\r\n");
 
-		// let's do this cleanly like dosemu's default autoexec.bat does -wk42
-		/* clear existing redirections on dos side and */
-		/* redirect necessary drive letters to unix paths */
-		fprintf(dosemubat,"unix -s DOSDRIVE_E\r\n");
-		fprintf(dosemubat,"if '%%DOSDRIVE_E%%' == '' goto nodriveE\r\n");
-		fprintf(dosemubat,"lredir del %s\r\n",xtrndrive);
-		fprintf(dosemubat,":nodriveE\r\n");
-		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",xtrndrive,xtrndir_dos);
-
-		fprintf(dosemubat,"unix -s DOSDRIVE_F\r\n");
-		fprintf(dosemubat,"if '%%DOSDRIVE_F%%' == '' goto nodriveF\r\n");
-		fprintf(dosemubat,"lredir del %s\r\n",ctrldrive);
-		fprintf(dosemubat,":nodriveF\r\n");
-		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",ctrldrive,ctrldir_dos);
-
-		fprintf(dosemubat,"unix -s DOSDRIVE_G\r\n");
-		fprintf(dosemubat,"if '%%DOSDRIVE_G%%' == '' goto nodriveG\r\n");
-		fprintf(dosemubat,"lredir del %s\r\n",datadrive);
-		fprintf(dosemubat,":nodriveG\r\n");
-		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",datadrive,datadir_dos);
-
-		fprintf(dosemubat,"unix -s DOSDRIVE_H\r\n");
-		fprintf(dosemubat,"if '%%DOSDRIVE_H%%' == '' goto nodriveH\r\n");
-		fprintf(dosemubat,"lredir del %s\r\n",execdrive);
-		fprintf(dosemubat,":nodriveH\r\n");
-		fprintf(dosemubat,"lredir %s linux\\fs%s\r\n",execdrive,execdir_dos);
-
-		/* change to the drive where the parent of the startup_dir is mounted */
-		fprintf(dosemubat,"%s\r\n",xtrndrive);
-
-		const char* gamedir = "";
+		char gamedir[MAX_PATH+1];
 		if(startup_dir!=NULL && startup_dir[0]) {
 			SAFECOPY(str, startup_dir);
 			*lastchar(str) = 0;
-			gamedir = getfname(str);
+			SAFECOPY(gamedir, getfname(str));
 		}
+ 
 		if(*gamedir == 0) {
 			lprintf(LOG_ERR, "No startup directory configured for DOS command-line: %s", cmdline);
 			return -1;
 		}
-		fprintf(dosemubat,"cd %s\r\n", gamedir);
 
-		if (setup_override == 1)
-			fprintf(dosemubat,"call %s\\%s\\emusetup.bat %s\r\n",xtrndrive,gamedir,cmdline);
-		else if (setup_override == 0)
-			fprintf(dosemubat,"call %s\\emusetup.bat\r\n",ctrldrive);
-		/* if (setup_override == -1) do_nothing */
-
-		/*  Check if it's a bat file, to prepend "call" to the command  */
-
-		SAFECOPY(tok,cmdline);
-		truncstr(tok," ");
-
-		p = getfext(tok);  /*  check if it's a bat file  */
-		if (p != NULL && stricmp(p, ".bat") == 0)
-			fprintf(dosemubat,"call ");  /* if so, "call" it */
-
-		fprintf(dosemubat,"%s\r\n",cmdline);
-		fprintf(dosemubat,"exitemu\r\n");
+		/* external editors use node dir so unset this */
+		if (startup_dir == cfg.node_dir) {
+			*gamedir = '\0';
+		}
+		
+		fprintf(dosemubatfp,"SET STARTDIR=%s\r\n",gamedir);
 
 		/* Check the "Stdio Interception" flag from scfg for this door.  If it's
 		 * enabled, we enable doorway mode.  Else, it's vmodem for us, unless
 		 * it's a timed event.
 		 */
 
-		if (!(mode&(EX_STDIO)) && online!=ON_LOCAL)
+		if (!(mode&(EX_STDIO)) && online!=ON_LOCAL) {
 			SAFECOPY(virtualconf,"-I\"serial { virtual com 1 }\"");
-		else
+			runtype = "FOSSIL";
+		} else {
 			virtualconf[0] = '\0';
+			runtype = "STDIO";
+		}
+
+		/* now append exec/external.bat (which is editable) to this 
+		 generated file */
+		SAFEPRINTF2(str,"%s%s",startup_dir,external_bat_fn);
+
+		if ((startup_dir == cfg.node_dir) || !fexist(str)) {
+			SAFEPRINTF2(str,"%s%s",cfg.exec_dir, external_bat_fn);
+			if (!fexist(str)) {
+				errormsg(WHERE,ERR_READ,str,0);
+				return(-1);
+			} 
+		}
+
+        SAFECOPY(externalbatsrc, str); 
+
+		if (!(externalbatfp=fopen(externalbatsrc,"r"))) {
+			errormsg(WHERE,ERR_OPEN,externalbatsrc,0);
+			return(-1);
+		} 
+
+		/* append the command line to the batch file */
+		SAFECOPY(tok,cmdline);
+		truncstr(tok," ");
+		p = getfext(tok);  
+		/*  check if it's a bat file  */
+		if (p != NULL && stricmp(p, ".bat") == 0) {
+			SAFEPRINTF(cmdlinebatch, "CALL %s", cmdline);
+		} else {
+			SAFECOPY(cmdlinebatch, cmdline);
+		}
+
+		named_string_t externalbat_replacements[] = {
+			{(char*)"CMDLINE", cmdlinebatch},
+			{(char*)"DSZLOG", (char*)nodedrive},
+			{(char*)"SBBSNODE", (char*)nodedrive},
+			{(char*)"SBBSCTRL", (char*)ctrldrive},
+			{(char*)"SBBSDATA", (char*)datadrive},
+			{(char*)"SBBSEXEC", (char*)execdrive},
+			{(char*)"XTRNDIR", xtrndir_dos},
+			{(char*)"CTRLDIR", ctrldir_dos},
+			{(char*)"DATADIR", datadir_dos},
+			{(char*)"EXECDIR", execdir_dos},
+			{(char*)"NODEDIR", nodedir_dos},
+			{(char*)"STARTDIR", (char*)gamedir},
+			{(char*)"RUNTYPE", (char *)runtype},
+			{NULL, NULL}
+		};
+
+		named_int_t externalbat_int_replacements[] = {
+		    {(char*)"SBBSNNUM", cfg.node_num },
+		};
+
+		while(!feof(externalbatfp)) {
+			if (fgets(buf, sizeof(buf), externalbatfp)!=NULL) {
+				replace_named_values(buf, bufout, sizeof(bufout), "$", externalbat_replacements, 
+					externalbat_int_replacements, FALSE);
+				fprintf(dosemubatfp,"%s",bufout);
+			}
+		}
+
+		fclose(externalbatfp);
 
 		/* Set the interception bits, since we are always going to want Synchronet
 		 * to intercept dos programs under Unix.
@@ -1381,31 +1422,17 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		mode |= EX_STDIO;
 
-		/* See if we have the dosemu link in the door's dir.  If so, use the dosemu
-		 * that it points to as our command to execute.  If not, use DOSemuPath.
-		 */
-
-		sprintf(str,"%sdosemu.bin",startup_dir);
-		if (!fexist(str)) {
-			SAFECOPY(dosemubinloc,(cmdstr(startup->dosemu_path,nulstr,nulstr,tok)));
-		}
-		else {
-			SAFECOPY(dosemubinloc,str);
-		}
-
 		/* Attempt to keep dosemu from prompting for a disclaimer. */
 
 		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
 		if (!isdir(str)) {
 			mkdir(str, 0755);
 		}
-
 		strcat(str, "/disclaimer");
 		ftouch(str);
 
 		/* Set up the command for dosemu to execute with 'unix -e'. */
-
-		sprintf(str,"%sexternal.bat",nodedrive);
+		SAFEPRINTF2(externalbat,"%s%s",nodedrive, external_bat_fn);
 
 		/* need TERM=linux for maintenance programs to work
 		 * (dosemu won't start with no controlling terminal)
@@ -1421,15 +1448,56 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 			log_external[0] = '\0';
 		}
 
-		/* Drum roll. */
+		/*
+		 * Get the global emu launch command
+		 */
+		 /* look for file in startup dir */
+		SAFEPRINTF(str,"%sdosemu.ini",startup_dir);
+		if (!fexist(str)) {
+			/* look for file in exec dir */        
+    		SAFEPRINTF(str,"%sdosemu.ini",cfg.exec_dir);
+			if (!fexist(str)) {
+				errormsg(WHERE,ERR_OPEN,"dosemu.ini", 0);
+				return(-1);
+			}
+		}
 
-		safe_snprintf(fullcmdline, sizeof(fullcmdline),
-		// remove unneeded redirection and fix faulty keystroke command -wk42
-		"/usr/bin/env %s HOME=%s QUIET=1 DOSDRIVE_D=%s %s -I\"video { none }\" -I'keystroke \"\\r\"' %s -f%s -E%s -o%sdosemu_boot.log %s",
-			dosterm,cfg.ctrl_dir,cfg.node_dir,dosemubinloc,virtualconf,dosemuconf,str,cfg.node_dir,log_external);
+		/* if file found, then open and process it */
+		if ((de_launch_inifp=iniOpenFile(str, false))==NULL) {
+			errormsg(WHERE,ERR_OPEN,str, 0);
+			return(-1);
+		}         
+		de_launch_ini = iniReadFile(de_launch_inifp);
+		iniCloseFile(de_launch_inifp);
+		SAFECOPY(de_launch_cmd, "");
+		iniGetString(de_launch_ini, ROOT_SECTION, "cmd", nulstr, de_launch_cmd);
+		if (virtualconf[0] == '\0') {
+			iniGetString(de_launch_ini, "stdio", "cmd", de_launch_cmd, de_launch_cmd);
+		}
+		iniFreeStringList(de_launch_ini);
 
-		fprintf(dosemubat,"REM For debugging: %s\r\n",fullcmdline);
-		fclose(dosemubat);
+		named_string_t de_ini_replacements[] = 
+		{
+			{(char*)"TERM", dosterm}, 
+			{(char*)"CTRLDIR", cfg.ctrl_dir},
+			{(char*)"NODEDIR", cfg.node_dir},
+			{(char*)"DOSEMUBIN", dosemubinloc},
+			{(char*)"VIRTUALCONF", virtualconf},
+			{(char*)"DOSEMUCONF", dosemuconf},
+			{(char*)"EXTBAT", externalbat},
+			{(char*)"EXTLOG", log_external},
+			{(char*)"RUNTYPE", (char *)runtype},
+			{NULL, NULL}
+		};
+		named_int_t de_ini_int_replacements[] = {
+            {(char*)"NNUM", cfg.node_num },
+        };
+		replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$", 
+			de_ini_replacements, de_ini_int_replacements, FALSE);
+
+		/* Drum roll. */      
+		fprintf(dosemubatfp,"REM For debugging: %s\r\n",fullcmdline);
+		fclose(dosemubatfp);
 
 #else
 		lprintf((mode&EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
@@ -1842,6 +1910,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 	char	str[MAX_PATH+1],*cmd;
     int		i,j,len;
 	bool	native = (mode == EX_UNSPECIFIED) || native_executable(&cfg, instr, mode);
+	(void) native;
 
     if(outstr==NULL)
         cmd=cmdstr_output;
@@ -1874,7 +1943,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,ultoa((ulong)cur_cps*10,str,10), avail);
                     break;
                 case 'F':   /* File path */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native && strncmp(fpath, cfg.node_dir, strlen(cfg.node_dir)) == 0) {
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 						strncat(cmd, fpath + strlen(cfg.node_dir), avail);
@@ -1884,7 +1953,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 						strncat(cmd,QUOTED_STRING(instr[i],fpath,str,sizeof(str)), avail);
                     break;
                 case 'G':   /* Temp directory */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_TEMP_DIR, avail);
 					else
@@ -1898,7 +1967,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,cid, avail);
                     break;
                 case 'J':
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_DATA_DIR, avail);
 					else
@@ -1906,7 +1975,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 						strncat(cmd,cfg.data_dir, avail);
                     break;
                 case 'K':
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_CTRL_DIR, avail);
 					else
@@ -1920,7 +1989,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,ultoa(useron.min,str,10), avail);
                     break;
                 case 'N':   /* Node Directory (same as SBBSNODE environment var) */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_NODE_DIR, avail);
 					else
@@ -1965,7 +2034,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
                     strncat(cmd,comspec, avail);
                     break;
                 case 'Z':
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_TEXT_DIR, avail);
 					else
@@ -1983,7 +2052,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 #endif
 					break;
                 case '!':   /* EXEC Directory */
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 					if(!native)
 						strncat(cmd, DOSEMU_EXEC_DIR, avail);
 					else

@@ -26,7 +26,7 @@
 /* If sent is non-zero, it returns the number of mail sent by usernumber    */
 /* If usernumber is 0, it returns all mail on the system                    */
 /****************************************************************************/
-int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
+int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
 {
     char    path[MAX_PATH+1];
     int     i=0;
@@ -55,7 +55,9 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
 			continue;
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if((idx.attr&attr) != attr)
+		if(attr < 0 && (idx.attr & (~attr)) != 0)
+			continue;
+		if(attr > 0 && (idx.attr & attr) != attr)
 			continue;
 		if(usernumber == 0
 			|| (!sent && idx.to==usernumber)

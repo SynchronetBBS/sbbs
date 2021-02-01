@@ -1,8 +1,4 @@
-/* sockwrap.c */
-
 /* Berkley/WinSock socket API wrappers */
-
-/* $Id: sockwrap.c,v 1.74 2020/08/09 02:13:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -10,32 +6,19 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This library is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU Lesser General Public License		*
+ * This program is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU General Public License				*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU Lesser General Public License for more details: lgpl.txt or	*
- * http://www.fsf.org/copyleft/lesser.html									*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ * See the GNU General Public License for more details: gpl.txt or			*
+ * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <ctype.h>		/* isdigit */
 #include <stdlib.h>		/* alloca/free on FreeBSD */
 #include <string.h>		/* bzero (for FD_ZERO) on FreeBSD */
 #include <errno.h>		/* ENOMEM */
@@ -160,7 +143,7 @@ int getSocketOptionByName(const char* name, int* level)
 			return(socket_options[i].value);
 		}
 	}
-	if(!isdigit(*name))	/* unknown option name */
+	if(!IS_DIGIT(*name))	/* unknown option name */
 		return(-1);
 	return(strtol(name,NULL,0));
 }
@@ -524,14 +507,22 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 #endif
 }
 
-#if defined(_WIN32) && !defined(_MSC_VER)
-DLLEXPORT int inet_pton(int af, const char *src, void *dst)
+DLLEXPORT void set_socket_errno(int err)
+{
+#if defined(_WINSOCKAPI_)
+	WSASetLastError(err);
+#else
+	errno = err;
+#endif
+}
+
+DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 {
 	struct addrinfo hints = {0};
 	struct addrinfo *res, *cur;
 
 	if (af != AF_INET && af != AF_INET6) {
-		// TODO: Should set socket_errno to EAFNOSUPPORT
+		set_socket_errno(EAFNOSUPPORT);
 		return -1;
 	}
 
@@ -558,4 +549,3 @@ DLLEXPORT int inet_pton(int af, const char *src, void *dst)
 	freeaddrinfo(res);
 	return 1;
 }
-#endif

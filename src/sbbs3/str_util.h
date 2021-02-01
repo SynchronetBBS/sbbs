@@ -39,6 +39,9 @@ DLLEXPORT char *	remove_ctrl_a(const char* instr, char* outstr);
 DLLEXPORT char 		ctrl_a_to_ascii_char(char code);
 DLLEXPORT char *	truncstr(char* str, const char* set);
 DLLEXPORT char *	ascii_str(uchar* str);
+DLLEXPORT char *    replace_named_values(const char* src ,char* buf, size_t buflen,	 
+                       const char* escape_seq, named_string_t* string_list,	 
+                       named_int_t* int_list, BOOL case_sensitive);
 DLLEXPORT char *	condense_whitespace(char* str);
 DLLEXPORT char		exascii_to_ascii_char(uchar ch);
 DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);

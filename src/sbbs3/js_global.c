@@ -4055,7 +4055,6 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 	hints.ai_socktype = SOCK_STREAM;
 	rc=JS_SUSPENDREQUEST(cx);
 	if((result=getaddrinfo(p, NULL, &hints, &res))!=0) {
-		lprintf(LOG_ERR, "!ERROR resolve_ip %s failed with error %d",p, result);
 		JS_RESUMEREQUEST(cx, rc);
 		free(p);
 		return JS_TRUE;

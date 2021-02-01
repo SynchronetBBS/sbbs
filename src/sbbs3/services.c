@@ -47,6 +47,7 @@
 #include "js_socket.h"
 #include "multisock.h"
 #include "ssl.h"
+#include "ver.h"
 
 /* Constants */
 
@@ -59,7 +60,6 @@ static char*	text[TOTAL_TEXT];
 static volatile BOOL	terminated=FALSE;
 static time_t	uptime=0;
 static ulong	served=0;
-static char		revision[16];
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static protected_uint32_t threads_pending_start;
@@ -817,8 +817,8 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			break;
 
 		if(service_client->service->js_server_props.version[0]==0) {
-			SAFEPRINTF(service_client->service->js_server_props.version
-				,"Synchronet Services %s",revision);
+			SAFEPRINTF2(service_client->service->js_server_props.version
+				,"Synchronet Services %s%c", VERSION, REVISION);
 			service_client->service->js_server_props.version_detail=
 				services_ver();
 			service_client->service->js_server_props.clients=
@@ -1661,16 +1661,15 @@ const char* DLLCALL services_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.336 $", "%*s %s", revision);
-
-	sprintf(ver,"Synchronet Services %s%s  "
-		"Compiled %s %s with %s"
-		,revision
+	sprintf(ver,"Synchronet Services %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -1735,8 +1734,6 @@ void DLLCALL services_thread(void* arg)
 	int			level;
 	BOOL			need_cert = FALSE;
 
-	services_ver();
-
 	startup=(services_startup_t*)arg;
 
     if(startup==NULL) {
@@ -1776,8 +1773,8 @@ void DLLCALL services_thread(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"Synchronet Services Revision %s%s"
-			,revision
+		lprintf(LOG_INFO,"Synchronet Services Version %s%c%s"
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -1787,7 +1784,7 @@ void DLLCALL services_thread(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		protected_uint32_init(&threads_pending_start,0);
 

@@ -151,6 +151,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 	struct tm tm;
 	struct tm tl;
 	stats_t stats;
+	long term = term_supports();
 
 	char	node_dir[MAX_PATH+1];
 	char	ctrl_dir[MAX_PATH+1];
@@ -212,8 +213,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,cfg.sys_nodes						/* Total system nodes */
 			,cfg.node_num						/* Current node */
 			,tleft								/* User Timeleft in seconds */
-			,term_supports(ANSI)				/* User ANSI ? (Yes/Mono/No) */
-				? term_supports(COLOR)
+			,(term & ANSI)						/* User ANSI ? (Yes/Mono/No) */
+				? (term & COLOR)
 				? "Yes":"Mono":"No"
 			,rows								/* User Screen lines */
 			,useron.cdt+useron.freecdt);		/* User Credits */
@@ -326,7 +327,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
-		safe_snprintf(str, sizeof(str), "%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%ld\n%u\n"
+		safe_snprintf(str, sizeof(str), "%lu\n%s\n%lu\n%ld\n%u\n%u\n%u\n%d\n%u\n"
 			,useron.cdt+useron.freecdt			/* Gold */
 			,unixtodstr(&cfg,useron.laston,tmp)	/* User last on date */
 			,cols 								/* User screen width */
@@ -334,7 +335,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.level						/* User SL */
 			,0									/* Cosysop? */
 			,SYSOP								/* Sysop? (1/0) */
-			,term_supports(ANSI)				/* ANSI ? (1/0) */
+			,INT_TO_BOOL(term & ANSI)			/* ANSI ? (1/0) */
 			,online==ON_REMOTE);				/* Remote (1/0) */
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
@@ -416,8 +417,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,unixtodstr(&cfg,useron.laston,tmp)	/* 17: User last on date */
 			,tleft								/* 18: User time left in sec */
 			,tleft/60							/* 19: User time left in min */
-			,useron.misc&NO_EXASCII 			/* 20: GR if COLOR ANSI */
-				? "7E" : (useron.misc&(ANSI|COLOR))==(ANSI|COLOR) ? "GR" : "NG");
+			,(term & NO_EXASCII)				/* 20: GR if COLOR ANSI */
+				? "7E" : (term & (ANSI|COLOR)) == (ANSI|COLOR) ? "GR" : "NG");
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
 
@@ -451,7 +452,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 
 		localtime_r(&ns_time,&tm);
 		safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%lu\n%02d/%02d/%02d\n"
-			,(useron.misc&(NO_EXASCII|ANSI|COLOR))==ANSI
+			,(term & (NO_EXASCII|ANSI|COLOR)) == ANSI
 				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			,'Y'                                /* 40: Use record locking */
 			,cfg.color[clr_external]			/* 41: BBS default color */
@@ -522,11 +523,11 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			*(p++)=0;
 		else
 			p=nulstr;
-		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%ld\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%d\n%u\n%lu\n"
 			,tmp								/* User's firstname */
 			,p									/* User's lastname */
 			,useron.location					/* User's city */
-			,term_supports(ANSI)				/* 1=ANSI 0=ASCII */
+			,INT_TO_BOOL(term & ANSI)			/* 1=ANSI 0=ASCII */
 			,useron.level						/* Security level */
 			,tleft/60); 						/* Time left in minutes */
 		strupr(str);
@@ -577,7 +578,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		if(useron.misc&DELETED) c|=(1<<0);
 		if(useron.misc&CLRSCRN) c|=(1<<1);
 		if(useron.misc&UPAUSE)	 c|=(1<<2);
-		if(term_supports(ANSI))	c|=(1<<3);
+		if(term & ANSI)			c|=(1<<3);
 		if(useron.sex=='F')     c|=(1<<7);
 		write(file,&c,1);						/* Attrib */
 		write(file,&useron.flags1,4);			/* Flags */
@@ -655,7 +656,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,&c,1);						/* ScreenClear */
 		c=useron.misc&UPAUSE ? 1:0;
 		write(file,&c,1);						/* MorePrompts */
-		c=useron.misc&NO_EXASCII ? 0:1;
+		c=(term & NO_EXASCII) ? 0:1;
 		write(file,&c,1);						/* GraphicsMode */
 		c=useron.xedit ? 1:0;
 		write(file,&c,1);						/* ExternEdit */
@@ -666,7 +667,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		write(file,str,49); 					/* ChatReason */
 		c=0;
 		write(file,&c,1);						/* ExternLogoff */
-		c=(char)term_supports(ANSI);
+		c=(char)INT_TO_BOOL(term & ANSI);
 		write(file,&c,1);						/* ANSI_Capable */
 		close(file);
 	}
@@ -713,7 +714,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.location					/* User location */
 			,useron.level						/* Security level */
 			,tleft/60							/* Time left in min */
-			,term_supports(ANSI) ? "COLOR":"MONO"  /* ANSI ??? */
+			,(term & ANSI) ? "COLOR":"MONO"		/* ANSI ??? */
 			,useron.pass						/* Password */
 			,useron.number);					/* User number */
 		lfexpand(str,misc);
@@ -801,8 +802,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,startup->answer_sound[0] ? -1:0	/* Caller Alarm on/off */
 			,' ' 								/* Sysop next flag */
 			,0									/* Error corrected */
-			,useron.misc&NO_EXASCII ? '7'       /* Graphics mode */
-				: (useron.misc&(COLOR|ANSI))==(COLOR|ANSI) ? 'Y':'N'
+			,(term & NO_EXASCII) ? '7'			/* Graphics mode */
+				: (term & (COLOR|ANSI)) == (COLOR|ANSI) ? 'Y':'N'
 			,'A'                                /* Node chat status */
 			,(uint)dte_rate 					/* DTE Port Speed */
 			,connection 						/* Connection description */
@@ -869,11 +870,11 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		l=0L;
 		write(file,&l,4);						/* Memorized message number */
 
-		safe_snprintf(str, sizeof(str), "%d%c%c%ld%s%c%c%d%d%d%c%c"
+		safe_snprintf(str, sizeof(str), "%d%c%c%d%s%c%c%d%d%d%c%c"
 			,cfg.com_port						/* COM Port number */
 			,' ' 								/* Reserved */
 			,' ' 								/* "" */
-			,term_supports(ANSI)				/* 1=ANSI 0=NO ANSI */
+			,INT_TO_BOOL(term & ANSI)			/* 1=ANSI 0=NO ANSI */
 			,"01-01-80"                         /* last event date */
 			,0,0								/* last event minute */
 			,0									/* caller exited to dos */
@@ -1036,7 +1037,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			"%s\n%s\n%lu\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 			"%lu\n%lu\n%s\n%s\n"
 			,dropdir
-			,term_supports(ANSI) ? "TRUE":"FALSE"  /* ANSI ? True or False */
+			,(term & ANSI) ? "TRUE":"FALSE"		/* ANSI ? True or False */
 			,useron.level						/* Security level */
 			,useron.uls 						/* Total uploads */
 			,useron.dls 						/* Total downloads */
@@ -1102,10 +1103,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			return; 
 		}
 
-		safe_snprintf(str, sizeof(str), "%s\n%ld\n%d\n%lu\n%lu\n%u\n%lu\n"
+		safe_snprintf(str, sizeof(str), "%s\n%d\n%d\n%lu\n%lu\n%u\n%lu\n"
 			,name								/* Complete name of user */
-			,term_supports(ANSI)	 			/* ANSI ? */
-			,term_supports(NO_EXASCII) ? 0:1	/* IBM characters ? */
+			,INT_TO_BOOL(term & ANSI)			/* ANSI ? */
+			,!INT_TO_BOOL(term & NO_EXASCII)	/* IBM characters ? */
 			,rows								/* Page length */
 			,dte_rate							/* Baud rate */
 			,online==ON_LOCAL ? 0:cfg.com_port	/* COM port */
@@ -1133,7 +1134,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,useron.pass						/* User's password */
 			,useron.level						/* User's level */
 			,useron.misc&EXPERT ? 'Y':'N'       /* Expert? */
-			,term_supports(ANSI) ? 'Y':'N'      /* ANSI? */
+			,(term & ANSI) ? 'Y':'N'			/* ANSI? */
 			,tleft/60							/* Minutes left */
 			,useron.phone						/* User's phone number */
 			,useron.location					/* User's city and state */
@@ -1170,7 +1171,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 		}
 
 		safe_snprintf(str, sizeof(str), "%d\n%d\n%lu\n%s%c\n%d\n%s\n%s\n%d\n%ld\n"
-			"%ld\n%d\n"
+			"%d\n%d\n"
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? 0 /* Local */ : 2 /* Telnet */
 			,misc&(XTRN_STDIO|XTRN_CONIO) ? INVALID_SOCKET : client_socket_dup
 			,dte_rate
@@ -1180,7 +1181,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, ulong tl
 			,name
 			,useron.level
 			,tleft/60
-			,term_supports(ANSI)
+			,INT_TO_BOOL(term & ANSI)
 			,cfg.node_num);
 		lfexpand(str,misc);
 		write(file,str,strlen(str));
@@ -1594,7 +1595,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum)
 
 	char drop_file[MAX_PATH + 1];
 	char startup_dir[MAX_PATH + 1];
-#if defined(__linux__) && defined(USE_DOSEMU)
+#if defined(__linux__)
 	if(cfg.xtrn[xtrnnum]->cmd[0] != '?' && cfg.xtrn[xtrnnum]->cmd[0] != '*'	&& !(cfg.xtrn[xtrnnum]->misc & XTRN_NATIVE)) {
 		SAFEPRINTF2(startup_dir, "%s\\%s", DOSEMU_XTRN_DRIVE, getdirname(cfg.xtrn[xtrnnum]->path));
 		backslash(startup_dir);

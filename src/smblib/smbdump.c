@@ -1,8 +1,4 @@
-/* smbdump.c */
-
 /* Synchronet message base (SMB) message header dumper */
-
-/* $Id: smbdump.c,v 1.19 2020/05/25 00:39:47 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -10,32 +6,20 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
- *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
- *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <time.h>		/* ctime */
+#include "datewrap.h"	/* ctime_r */
 #include <string.h>		/* strcat */
 #include "smblib.h"
 
@@ -104,6 +88,12 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 					,smb_hfieldtype(msg->hfield[i].type)
 					,smb_netaddr(&msg->replyto_net));
 				break;
+			case FORWARDED:
+				tt = *(time32_t*)msg->hfield_dat[i];
+				strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s"
+					,smb_hfieldtype(msg->hfield[i].type)
+					,ctime_r(&tt, tmp));
+				break;
 			default:
 				strListAppendFormat(&list, HFIELD_NAME_FMT "%s"
 					,smb_hfieldtype(msg->hfield[i].type)
@@ -116,12 +106,12 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 	tt=msg->hdr.when_written.time;
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%08X %04hX %.24s %s"	,"when_written"
 		,msg->hdr.when_written.time, msg->hdr.when_written.zone
-		,ctime(&tt)	
+		,ctime_r(&tt, tmp)
 		,smb_zonestr(msg->hdr.when_written.zone,NULL));
 	tt=msg->hdr.when_imported.time;
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%08X %04hX %.24s %s"	,"when_imported"
 		,msg->hdr.when_imported.time, msg->hdr.when_imported.zone
-		,ctime(&tt)	
+		,ctime_r(&tt, tmp)
 		,smb_zonestr(msg->hdr.when_imported.zone,NULL));
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"type"				,msg->hdr.type);
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%04Xh"			,"version"			,msg->hdr.version);
@@ -154,14 +144,14 @@ str_list_t SMBCALL smb_msghdr_str_list(smbmsg_t* msg)
 			strListAppendFormat(&list, HFIELD_NAME_FMT "%"PRIu32,"times_downloaded"	,msg->hdr.times_downloaded);
 		if(msg->hdr.last_downloaded) {
 			tt=msg->hdr.last_downloaded;
-			strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s"	,"last_downloaded"	,ctime(&tt));
+			strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s"	,"last_downloaded"	,ctime_r(&tt, tmp));
 		}
 	}
 
 	/* convenience integers */
 	if(msg->expiration) {
 		tt=msg->expiration;
-		strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s", "expiration", ctime(&tt));
+		strListAppendFormat(&list, HFIELD_NAME_FMT "%.24s", "expiration", ctime_r(&tt, tmp));
 	}
 	if(msg->cost)
 		strListAppendFormat(&list, HFIELD_NAME_FMT "%u", "cost", msg->cost);

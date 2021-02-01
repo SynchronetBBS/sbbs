@@ -48,14 +48,15 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.in.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/libmozjs.tgz $(3RDP_ROOT)$(DIRSEP)build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.patch $(3RDP_ROOT)$(DIRSEP)build/js-configure.in.patch $(3RDP_ROOT)$(DIRSEP)build/imacro-asm-fix.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzC $(JS_SRC) -f $(3RDPDISTDIR)$(DIRSEP)libmozjs.tgz
 	$(QUIET)echo "pthread_np.h" >> $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src$(DIRSEP)config$(DIRSEP)system-headers
-	$(QUIET)patch -p0 -d $(JS_SRC)$(DIRSEP)js-1.8.5 < js_src_jsnativestack_cpp.patch
-	$(QUIET)patch -p0 -d $(JS_SRC) < js-configure.patch
-	$(QUIET)patch -p0 -d $(JS_SRC) < js-configure.in.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC)$(DIRSEP)js-1.8.5 < js_src_jsnativestack_cpp.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-configure.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-configure.in.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < imacro-asm-fix.patch
 	-$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && autoconf-2.13
 	$(QUIET)cd $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src && env $(JS_CONFIGURE_ENV) ./configure $(JS_CONFIGURE_ARGS)
 	$(QUIET)$(MAKE) -C $(JS_SRC)$(DIRSEP)js-1.8.5$(DIRSEP)js$(DIRSEP)src
@@ -72,46 +73,46 @@ $(CRYPTLIB_BUILD): $(3RDP_ROOT)$(DIRSEP)dist/cryptlib.zip $(3RDP_ROOT)$(DIRSEP)b
 	$(QUIET)-rm -rf $(CRYPT_SRC)/*
 	$(QUIET)unzip -oa $(3RDPDISTDIR)$(DIRSEP)cryptlib.zip -d $(CRYPT_SRC)
 	$(QUIET)perl -pi.bak -e 's/\r//' $(CRYPT_SRC)/crypt32.vcxproj
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < terminal-params.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-mingw32-static.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ranlib.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-vcxproj.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-endian.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-win32-noasm.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-zz-country.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-algorithms.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-allow-duplicate-ext.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-macosx-minver.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-cryptodev.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-posix-me-gently.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-tpm-linux.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-PAM-noprompts.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-zlib.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < Dynamic-linked-static-lib.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < SSL-fix.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-bigger-maxattribute.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-mingw-vcver.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-win32-build-fix.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-gcc-non-const-time-val.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-no-odbc.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-noasm-defines.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-bn-noasm64-fix.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-no-RSA-suites.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-fix-ECC-RSA.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-prefer-ECC.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-prefer-ECC-harder.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-more-RSA-ECC-fixes.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-DH-key-init.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-clear-GCM-flag.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-use-ssh-ctr.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ssh-list-ctr-modes.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ssh-incCtr.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-ssl-suite-blocksizes.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-no-tpm.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-no-via-aes.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-fix-ssh-ecc-ephemeral.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-just-use-cc.patch
-	$(QUIET)patch -p0 -d $(CRYPT_SRC) < cl-learn-numbers.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < terminal-params.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-mingw32-static.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ranlib.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-vcxproj.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-endian.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-win32-noasm.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-zz-country.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-algorithms.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-allow-duplicate-ext.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-macosx-minver.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-cryptodev.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-posix-me-gently.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-tpm-linux.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-PAM-noprompts.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-zlib.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < Dynamic-linked-static-lib.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < SSL-fix.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-bigger-maxattribute.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-mingw-vcver.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-win32-build-fix.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-gcc-non-const-time-val.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-odbc.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-noasm-defines.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-bn-noasm64-fix.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-RSA-suites.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fix-ECC-RSA.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-prefer-ECC.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-prefer-ECC-harder.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-more-RSA-ECC-fixes.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-DH-key-init.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-clear-GCM-flag.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-use-ssh-ctr.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ssh-list-ctr-modes.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ssh-incCtr.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-ssl-suite-blocksizes.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-tpm.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-no-via-aes.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-fix-ssh-ecc-ephemeral.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-just-use-cc.patch
+	$(QUIET)patch -b -p0 -d $(CRYPT_SRC) < cl-learn-numbers.patch
 ifeq ($(CC),mingw32-gcc)
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make directories
 	$(QUIET)cd $(CRYPT_SRC) && env - PATH="$(PATH)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" make toolscripts

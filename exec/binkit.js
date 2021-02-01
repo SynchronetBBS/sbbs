@@ -21,7 +21,7 @@ load('fidocfg.js');
 load('binkp.js');
 load('freqit_common.js');
 
-var REVISION = 2.40;
+var REVISION = 2.41;
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 // data/binkstats.ini
@@ -53,7 +53,7 @@ function update_stats(stats, addr, bp, host)
 	if(bp.sent_files.length)
 		stats[addr].sent_files = bp.sent_files;
 	if(bp.failed_sent_files.length)
-		stats[addr].failed_sent_files = bp.failed_sent_files;
+		stats[addr].failed_sent_files = bp.failed_sent_files.map(function(i) { return i.path; });
 	if(bp.received_files.length)
 		stats[addr].received_files = bp.received_files;
 	if(bp.failed_received_files.length)
@@ -387,6 +387,7 @@ function handle_freq(reqfname, bp)
 		// Now, check for the file...
 		FREQIT.handle_regular(fname, bp, bp.authenticated === 'secure', pw, cfg);
 	}
+	req.close();
 }
 
 function rename_or_move(src, dst_dir, dst_fname)
@@ -582,6 +583,7 @@ function callout_done(bp)
 						break;
 				}
 			});
+			f.close();
 		}
 	});
 

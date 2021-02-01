@@ -45,6 +45,7 @@
 char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 {
 	char*	buf;
+	char*	preamble;
 	char*	lzhbuf;
 	char*	p;
 	char*	str;
@@ -107,6 +108,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			buf[l] = 0;
 		}
 	}
+	preamble = strdup(buf);
 
 	for(i=0;i<(uint)msg->hdr.total_dfields;i++) {
 		if(msg->dfield[i].length<=sizeof(xlat))
@@ -146,6 +148,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					,"%s malloc failure of %ld bytes for LZH buffer"
 					, __FUNCTION__, length);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			if(smb_fread(smb,lzhbuf,length,smb->sdt_fp) != length) {
@@ -154,6 +157,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					, __FUNCTION__, length);
 				free(lzhbuf);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			lzhlen=*(int32_t*)lzhbuf;
@@ -163,6 +167,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					, __FUNCTION__, l+lzhlen+3L);
 				free(lzhbuf);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			buf=p;
@@ -176,6 +181,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					,"%s realloc failure of %ld bytes for text buffer"
 					, __FUNCTION__, l+length+3L);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			buf=p;
@@ -196,9 +202,18 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 
 	if(mode&GETMSGTXT_PLAIN) {
 		char* plaintext = smb_getplaintext(msg, buf);
-		if(plaintext != NULL)
-			return plaintext;
+		if(plaintext != NULL) {
+			buf = malloc(strlen(preamble) + strlen(plaintext) + 1);
+			if(buf == NULL)
+				buf = plaintext;
+			else {
+				strcpy(buf, preamble);
+				strcat(buf, plaintext);
+				free(plaintext);
+			}
+		}
 	}
+	free(preamble);
 	return(buf);
 }
 
@@ -480,7 +495,6 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 	const char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
-	FREE_AND_NULL(msg->text_subtype);
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
 	txt = mime_getcontent(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset
@@ -490,9 +504,12 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 			,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
 		if(txt == NULL)
 			return NULL;
+		free(msg->text_subtype);
 		msg->text_subtype = strdup("html");
-	} else
+	} else {
+		free(msg->text_subtype);
 		msg->text_subtype = strdup("plain");
+	}
 
 	memmove(buf, txt, strlen(txt)+1);
 	if(*buf == 0)	/* No decoding necessary */

@@ -1,6 +1,4 @@
 /* Synchronet class (sbbs_t) definition and exported function prototypes */
-// vi: tabstop=4
-/* $Id: sbbs.h,v 1.583 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -477,7 +463,7 @@ public:
 	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
 	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
 
-	char 	dszlog[127];	/* DSZLOG enviornment variable */
+	char 	dszlog[127];	/* DSZLOG environment variable */
     int     keybuftop,keybufbot;    /* Keyboard input buffer pointers (for ungetkey) */
 	char    keybuf[KEY_BUFSIZE];    /* Keyboard input buffer */
 	size_t	keybuf_space(void);
@@ -637,7 +623,7 @@ public:
 
 	void	reset_logon_vars(void);
 
-	uint	finduser(char *str, bool silent_failure = false);
+	uint	finduser(const char* str, bool silent_failure = false);
 
 	int 	sub_op(uint subnum);
 
@@ -695,16 +681,16 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	void	forwardmail(smbmsg_t* msg, int usernum);
+	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
 	ushort	chmsgattr(smbmsg_t);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
-	void	editmsg(smbmsg_t* msg, uint subnum);
+	bool	editmsg(smb_t*, smbmsg_t*);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
 				,uint subnum, const char* tagfile);
-	void	copyfattach(uint to, uint from, char *title);
+	bool	copyfattach(uint to, uint from, const char* subj);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
 	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
@@ -773,7 +759,7 @@ public:
 	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	inc_row(int count);
 	void	inc_column(int count);
-	void	center(char *str, unsigned int columns = 0);
+	void	center(const char *str, unsigned int columns = 0);
 	void	wide(const char*);
 	void	clearscreen(long term);
 	void	clearline(void);
@@ -1041,7 +1027,6 @@ public:
 				,ulong misc);
 	bool	exec_xtrn(uint xtrnnum);			/* Executes online external program */
 	bool	user_event(user_event_t);			/* Executes user event(s) */
-	char	xtrn_access(uint xnum);			/* Does useron have access to xtrn? */
 	void	moduserdat(uint xtrnnum);
 	const char* xtrn_dropdir(const xtrn_t*, char* buf, size_t);
 
@@ -1194,6 +1179,7 @@ extern "C" {
 
 	/* data.cpp */
 	DLLEXPORT time_t	DLLCALL getnextevent(scfg_t* cfg, event_t* event);
+	DLLEXPORT time_t	DLLCALL getnexteventtime(event_t* event);
 
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
@@ -1453,12 +1439,6 @@ extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 #ifdef __cplusplus
 }
 #endif
-
-extern
-#ifdef __cplusplus
- "C"
-#endif
-	const char* beta_version;
 
 /* Global data */
 

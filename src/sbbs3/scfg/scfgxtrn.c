@@ -683,7 +683,7 @@ void tevents_cfg()
 						if(k==-1)
 							break;
 						if(k==7)
-							cfg.event[i]->days=(uchar)0xff;
+							cfg.event[i]->days=0x7f;
 						else if(k==8)
 							cfg.event[i]->days=0;
 						else
@@ -2242,7 +2242,7 @@ int natvpgm_cfg()
 
 void xtrnsec_cfg()
 {
-	static int xtrnsec_dflt,xtrnsec_opt;
+	static int xtrnsec_dflt,xtrnsec_bar,xtrnsec_opt;
 	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
@@ -2271,7 +2271,7 @@ void xtrnsec_cfg()
 			"\n"
 			"To configure an online program section, select it and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(j,0,0,45,&xtrnsec_dflt,0,"Online Program Sections",opt);
+		i=uifc.list(j,0,0,45,&xtrnsec_dflt,&xtrnsec_bar,"Online Program Sections",opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;

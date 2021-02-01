@@ -103,8 +103,6 @@ function authorize_order(acme, order, webroots)
 								token.close();
 							} else
 								log(LOG_ERR, "Error " + errno + " opening/creating " + token.name);
-						} else {
-							log(LOG_WARNING, "Token not found: " + token.name);
 						}
 					}
 					acme.accept_challenge(authz.challenges[challenge]);

@@ -1,8 +1,4 @@
-/* js_bbs.cpp */
-
 /* Synchronet JavaScript "bbs" Object */
-
-/* $Id: js_bbs.cpp,v 1.198 2020/05/26 03:07:05 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -121,6 +105,7 @@ enum {
 	,BBS_PROP_MSG_FROM
 	,BBS_PROP_MSG_FROM_EXT
 	,BBS_PROP_MSG_FROM_NET
+	,BBS_PROP_MSG_FROM_BBSID
 	,BBS_PROP_MSG_FROM_AGENT
 	,BBS_PROP_MSG_REPLYTO
 	,BBS_PROP_MSG_REPLYTO_EXT
@@ -246,6 +231,7 @@ enum {
 	,"message sender name"
 	,"message sender extension"
 	,"message sender network address"
+	,"message sender BBS ID"
 	,"message sender agent type"
 	,"message reply-to name"
 	,"message reply-to extension"
@@ -586,6 +572,12 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				p=nulstr;
 			else
 				p=smb_netaddrstr(&sbbs->current_msg->from_net,tmp);
+			break;
+		case BBS_PROP_MSG_FROM_BBSID:
+			if(sbbs->current_msg == NULL || sbbs->current_msg->ftn_bbsid == NULL)
+				p = nulstr;
+			else // Should we return only the last ID of the QWKnet route here?
+				p = sbbs->current_msg->ftn_bbsid;
 			break;
 		case BBS_PROP_MSG_FROM_AGENT:
 			if(sbbs->current_msg!=NULL)
@@ -1060,6 +1052,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"msg_from"			,BBS_PROP_MSG_FROM			,PROP_READONLY	,310},
 	{	"msg_from_ext"		,BBS_PROP_MSG_FROM_EXT		,PROP_READONLY	,310},
 	{	"msg_from_net"		,BBS_PROP_MSG_FROM_NET		,PROP_READONLY	,310},
+	{	"msg_from_bbsid"	,BBS_PROP_MSG_FROM_BBSID	,PROP_READONLY	,31802},
 	{	"msg_from_agent"	,BBS_PROP_MSG_FROM_AGENT	,PROP_READONLY	,310},
 	{	"msg_replyto"		,BBS_PROP_MSG_REPLYTO		,PROP_READONLY	,310},
 	{	"msg_replyto_ext"	,BBS_PROP_MSG_REPLYTO_EXT	,PROP_READONLY	,310},
@@ -3631,6 +3624,90 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_forward_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		n;
+	JSObject*	hdrobj;
+	sbbs_t*		sbbs;
+	smb_t*		smb = NULL;
+	smbmsg_t*	msg = NULL;
+	char*		to = NULL;
+	char*		subject = NULL;
+	char*		comment = NULL;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	for(n=0; n<argc; n++) {
+		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
+			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, /* post_t */NULL)) {
+				JS_ReportError(cx, "msg hdr object lacks privates");
+				return JS_FALSE;
+			}
+		} else if(JSVAL_IS_STRING(argv[n])) {
+			JSString* str = JS_ValueToString(cx, argv[n]);
+			if(to == NULL) {
+				JSSTRING_TO_MSTRING(cx, str, to, NULL);
+			} else if(subject == NULL) {
+				JSSTRING_TO_MSTRING(cx, str, subject, NULL);
+			} else if(comment == NULL) {
+				JSSTRING_TO_MSTRING(cx, str, comment, NULL);
+			}
+		}
+	}
+	if(smb != NULL && msg != NULL && to != NULL) {
+		rc=JS_SUSPENDREQUEST(cx);
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->forwardmsg(smb, msg, to, subject, comment)));
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	FREE_AND_NULL(subject);
+	FREE_AND_NULL(comment);
+	FREE_AND_NULL(to);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_edit_msg(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		n;
+	JSObject*	hdrobj;
+	sbbs_t*		sbbs;
+	smb_t*		smb = NULL;
+	smbmsg_t*	msg = NULL;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+
+	for(n=0; n<argc; n++) {
+		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
+			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
+				return JS_FALSE;
+			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, /* post_t */NULL)) {
+				JS_ReportError(cx, "msg hdr object lacks privates");
+				return JS_FALSE;
+			}
+		}
+	}
+	if(smb != NULL && msg != NULL) {
+		rc=JS_SUSPENDREQUEST(cx);
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editmsg(smb, msg)));
+		JS_RESUMEREQUEST(cx, rc);
+	}
+	return JS_TRUE;
+}
+
+static JSBool
 js_show_msg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
@@ -3712,17 +3789,16 @@ js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			}
 		}
 	}
-	if(smb == NULL || msg == NULL)
-		return JS_TRUE;
-
-	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->show_msghdr(smb, msg, subject, from, to);
-	JS_RESUMEREQUEST(cx, rc);
+	if(smb != NULL && msg != NULL) {
+		rc=JS_SUSPENDREQUEST(cx);
+		sbbs->show_msghdr(smb, msg, subject, from, to);
+		JS_RESUMEREQUEST(cx, rc);
+	}
 	FREE_AND_NULL(subject);
 	FREE_AND_NULL(from);
 	FREE_AND_NULL(to);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -4386,6 +4462,14 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 		"If <i>reply_header</i> is specified (a header object returned from <i>MsgBase.get_msg_header()</i>), that header "
 		"will be used for the in-reply-to header fields.")
 	,313
+	},
+	{"forward_msg",		js_forward_msg,		2,	JSTYPE_BOOLEAN,	JSDOCSTR("object header, string to [,string subject] [,string comment]")
+	,JSDOCSTR("Forward a message")
+	,31802
+	},
+	{"edit_msg",		js_edit_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("object header")
+	,JSDOCSTR("Edit a message")
+	,31802
 	},
 	{"show_msg",		js_show_msg,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("object header [,mode=<tt>P_NONE</tt>] ")
 	,JSDOCSTR("show a message's header and body (text) with optional print <i>mode</i> (bitfield)<br>"

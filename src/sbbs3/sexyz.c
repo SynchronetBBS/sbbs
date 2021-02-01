@@ -18,7 +18,7 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-/* 
+/*
  * ZMODEM code based on zmtx/zmrx v1.02 (C) Mattheij Computer Service 1994
  * by Jacques Mattheij
  *
@@ -87,7 +87,7 @@
 /* Global Vars */
 /***************/
 long	mode=0;							/* Program mode 					*/
-long	zmode=0L;						/* Zmodem mode						*/
+long	zmode=0L;						/* ZMODEM mode						*/
 uchar	block[XMODEM_MAX_BLOCK_SIZE];	/* Block buffer 					*/
 ulong	block_num;						/* Block number 					*/
 char*	dszlog;
@@ -106,7 +106,7 @@ FILE*	errfp;
 FILE*	statfp;
 FILE*	logfp=NULL;
 
-char	revision[16];
+const char*	revision = "3.0";
 
 SOCKET	sock=INVALID_SOCKET;
 
@@ -604,7 +604,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		fprintf(statfp,"\b\b\b\b    \b\b\b\b");
 		if(result!=WAIT_OBJECT_0) {
 			lprintf(LOG_WARNING
-				,"!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
+				,"TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)"
 				,result, timeout, RingBufFull(&outbuf));
 			fprintf(statfp
 				,"\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
@@ -972,7 +972,7 @@ static int send_files(char** fname, uint fnames)
 
 			if(mode&ZMODEM)
 				success=zmodem_send_file(&zm, path, fp, /* ZRQINIT? */fnum==0, &startfile, &sent_bytes);
-			else	/* X/Ymodem */
+			else	/* X/YMODEM */
 				success=xmodem_send_file(&xm, path, fp, &startfile, &sent_bytes);
 
 			fclose(fp);
@@ -1138,7 +1138,7 @@ static int receive_files(char** fname_list, int fnames)
 				lprintf(LOG_DEBUG,"YMODEM header (%u fields): %s", i, block+strlen((char*)block)+1);
 				SAFECOPY(fname,(char*)block);
 
-			} else {	/* Zmodem */
+			} else {	/* ZMODEM */
 				lprintf(LOG_INFO,"Waiting for ZMODEM sender...");
 
 				i=zmodem_recv_init(&zm);
@@ -1415,17 +1415,18 @@ static const char* usage=
 #endif
 	"\n"
 	"opts   = -y  allow overwriting of existing files when receiving\n"
-	"         -o  disable Zmodem CRC-32 mode (use CRC-16)\n"
-	"         -s  disable Zmodem streaming (Slow Zmodem)\n"
-	"         -k  enable X/Ymodem-1K send mode\n"
-    "         -c  enable Xmodem-CRC receive mode\n"
-	"         -g  enable X/Ymodem-G receive mode (no error recovery)\n"
-	"         -2  set maximum Zmodem block size to 2K\n"
-	"         -4  set maximum Zmodem block size to 4K\n"
-	"         -8  set maximum Zmodem block size to 8K (ZedZap)\n"
-	"         -m# set maximum receive file size to # bytes (0=unlimited, default=%u)\n"
-	"         -!  to pause after abnormal exit (error)\n"
+	"         -k  enable X/YMODEM-1K send mode\n"
+	"         -c  enable XMODEM-CRC receive mode\n"
+	"         -g  enable X/YMODEM-G receive mode (no error recovery)\n"
+	"         -o  disable ZMODEM CRC-32 mode (use CRC-16)\n"
+	"         -s  use segmented ZMODEM (disable streaming)\n"
+	"         -2  set maximum ZMODEM block size to 2K\n"
+	"         -4  set maximum ZMODEM block size to 4K\n"
+	"         -8  set maximum ZMODEM block size to 8K (ZedZap)\n"
+	"         -w# set maximum ZMODEM transmit window size (default=0, unlimited)\n"
+	"         -m# set maximum receive file size to # bytes (default=0, unlimited)\n"
 	"         -l  lowercase received filenames\n"
+	"         -!  to pause after abnormal exit (error)\n"
 #ifdef __unix__
 	"         -telnet to enable Telnet mode (the default except in stdio mode)\n"
 #else
@@ -1434,11 +1435,11 @@ static const char* usage=
 	"         -rlogin or -ssh or -raw to disable Telnet mode\n"
 	"\n"
 	"cmd    = v  to display detailed version information\n"
-	"         sx to send Xmodem     rx to receive Xmodem\n"
-	"         sX to send Xmodem-1K  rc to receive Xmodem-CRC\n"
-	"         sy to send Ymodem     ry to receive Ymodem\n"
-	"         sY to send Ymodem-1K  rg to receive Ymodem-G\n"
-	"         sz to send Zmodem     rz to receive Zmodem\n"
+	"         sx to send XMODEM     rx to receive XMODEM\n"
+	"         sX to send XMODEM-1K  rc to receive XMODEM-CRC\n"
+	"         sy to send YMODEM     ry to receive YMODEM\n"
+	"         sY to send YMODEM-1K  rg to receive YMODEM-G\n"
+	"         sz to send ZMODEM     rz to receive ZMODEM\n"
 	"\n"
 	"file   = filename to send or receive\n"
 	"path   = directory to receive files into\n"
@@ -1508,7 +1509,6 @@ int main(int argc, char **argv)
 	int		retval;
 	uint	fnames=0;
 	FILE*	fp;
-	BOOL	tcp_nodelay;
 	char	compiler[32];
 	BOOL	telnet_requested=FALSE;
 	str_list_t ini = strListInit();
@@ -1525,13 +1525,10 @@ int main(int argc, char **argv)
 	statfp=stdout;
 #endif
 
-	sscanf("$Revision: 2.10 $", "%*s %s", revision);
-
 	fprintf(statfp,"\nSynchronet External X/Y/ZMODEM  v%s-%s"
-		"  Copyright %s Rob Swindell\n\n"
+		"  Copyright Rob Swindell\n\n"
 		,revision
 		,PLATFORM_DESC
-		,&__DATE__[7]
 		);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL,flush);
@@ -1555,8 +1552,6 @@ int main(int argc, char **argv)
 		fclose(fp);
 	}
 
-	tcp_nodelay				=iniGetBool(ini, ROOT_SECTION,"TCP_NODELAY",TRUE);
-
 	telnet					=iniGetBool(ini, ROOT_SECTION,"Telnet",TRUE);
 	debug_tx				=iniGetBool(ini, ROOT_SECTION,"DebugTx",FALSE);
 	debug_rx				=iniGetBool(ini, ROOT_SECTION,"DebugRx",FALSE);
@@ -1578,36 +1573,42 @@ int main(int argc, char **argv)
 	if(iniGetBool(ini, ROOT_SECTION,"Debug",FALSE))
 		log_level=LOG_DEBUG;
 
-	xm.send_timeout			=iniGetInteger(ini, "Xmodem","SendTimeout",xm.send_timeout);	/* seconds */
-	xm.recv_timeout			=iniGetInteger(ini, "Xmodem","RecvTimeout",xm.recv_timeout);	/* seconds */
-	xm.byte_timeout			=iniGetInteger(ini, "Xmodem","ByteTimeout",xm.byte_timeout);	/* seconds */
-	xm.ack_timeout			=iniGetInteger(ini, "Xmodem","AckTimeout",xm.ack_timeout);	/* seconds */
-	xm.block_size			=(ulong)iniGetBytes(ini, "Xmodem","BlockSize",1,xm.block_size);			/* 128 or 1024 */
-	xm.max_block_size		=(ulong)iniGetBytes(ini, "Xmodem","MaxBlockSize",1,xm.max_block_size);	/* 128 or 1024 */
-	xm.max_errors			=iniGetInteger(ini, "Xmodem","MaxErrors",xm.max_errors);
-	xm.g_delay				=iniGetInteger(ini, "Xmodem","G_Delay",xm.g_delay);
-	xm.crc_mode_supported	=iniGetBool(ini, "Xmodem","SendCRC",xm.crc_mode_supported);
-	xm.g_mode_supported		=iniGetBool(ini, "Xmodem","SendG",xm.g_mode_supported);
+	const char* section = "XMODEM";
+	xm.send_timeout			=iniGetInteger(ini, section,"SendTimeout",xm.send_timeout);	/* seconds */
+	xm.recv_timeout			=iniGetInteger(ini, section,"RecvTimeout",xm.recv_timeout);	/* seconds */
+	xm.byte_timeout			=iniGetInteger(ini, section,"ByteTimeout",xm.byte_timeout);	/* seconds */
+	xm.ack_timeout			=iniGetInteger(ini, section,"AckTimeout",xm.ack_timeout);	/* seconds */
+	xm.block_size			=(ulong)iniGetBytes(ini, section,"BlockSize",1,xm.block_size);			/* 128 or 1024 */
+	xm.max_block_size		=(ulong)iniGetBytes(ini, section,"MaxBlockSize",1,xm.max_block_size);	/* 128 or 1024 */
+	xm.max_errors			=iniGetInteger(ini, section,"MaxErrors",xm.max_errors);
+	xm.g_delay				=iniGetInteger(ini, section,"G_Delay",xm.g_delay);
+	xm.crc_mode_supported	=iniGetBool(ini, section,"SendCRC",xm.crc_mode_supported);
+	xm.g_mode_supported		=iniGetBool(ini, section,"SendG",xm.g_mode_supported);
 
-	xm.fallback_to_xmodem	=iniGetInteger(ini, "Ymodem","FallbackToXmodem", xm.fallback_to_xmodem);
+	xm.fallback_to_xmodem	=iniGetInteger(ini, "YMODEM","FallbackToXmodem", xm.fallback_to_xmodem);
 
-	zm.init_timeout			=iniGetInteger(ini, "Zmodem","InitTimeout",zm.init_timeout);	/* seconds */
-	zm.send_timeout			=iniGetInteger(ini, "Zmodem","SendTimeout",zm.send_timeout);	/* seconds */
-	zm.recv_timeout			=iniGetInteger(ini, "Zmodem","RecvTimeout",zm.recv_timeout);	/* seconds */
-	zm.crc_timeout			=iniGetInteger(ini, "Zmodem","CrcTimeout",zm.crc_timeout);	/* seconds */
-	zm.block_size			=(ulong)iniGetBytes(ini, "Zmodem","BlockSize",1,zm.block_size);	/* 1024  */
-	zm.max_block_size		=(ulong)iniGetBytes(ini, "Zmodem","MaxBlockSize",1,zm.max_block_size); /* 1024 or 8192 */
-	zm.max_errors			=iniGetInteger(ini, "Zmodem","MaxErrors",zm.max_errors);
-	zm.recv_bufsize			=(ulong)iniGetBytes(ini, "Zmodem","RecvBufSize",1,0);
-	zm.no_streaming			=!iniGetBool(ini, "Zmodem","Streaming",TRUE);
-	zm.want_fcs_16			=!iniGetBool(ini, "Zmodem","CRC32",TRUE);
-	zm.escape_telnet_iac	=iniGetBool(ini, "Zmodem","EscapeTelnetIAC",TRUE);
-	zm.escape_8th_bit		=iniGetBool(ini, "Zmodem","Escape8thBit",FALSE);
-	zm.escape_ctrl_chars	=iniGetBool(ini, "Zmodem","EscapeCtrlChars",FALSE);
+	section = "ZMODEM";
+	zm.init_timeout			=iniGetInteger(ini, section,"InitTimeout",zm.init_timeout);	/* seconds */
+	zm.send_timeout			=iniGetInteger(ini, section,"SendTimeout",zm.send_timeout);	/* seconds */
+	zm.recv_timeout			=iniGetInteger(ini, section,"RecvTimeout",zm.recv_timeout);	/* seconds */
+	zm.crc_timeout			=iniGetInteger(ini, section,"CrcTimeout",zm.crc_timeout);	/* seconds */
+	zm.block_size			=(ulong)iniGetBytes(ini, section,"BlockSize",1,zm.block_size);	/* 1024  */
+	zm.max_block_size		=(ulong)iniGetBytes(ini, section,"MaxBlockSize",1,zm.max_block_size); /* 1024 or 8192 */
+	zm.max_errors			=iniGetInteger(ini, section,"MaxErrors",zm.max_errors);
+	zm.recv_bufsize			=(ulong)iniGetBytes(ini, section,"RecvBufSize",1,0);
+	zm.no_streaming			=!iniGetBool(ini, section,"Streaming",TRUE);
+	zm.want_fcs_16			=!iniGetBool(ini, section,"CRC32",TRUE);
+	zm.can_full_duplex		=iniGetBool(ini, section,"FullDuplex",TRUE);
+	zm.escape_telnet_iac	=iniGetBool(ini, section,"EscapeTelnetIAC",TRUE);
+	zm.escape_8th_bit		=iniGetBool(ini, section,"Escape8thBit",FALSE);
+	zm.escape_ctrl_chars	=iniGetBool(ini, section,"EscapeCtrlChars",FALSE);
+	zm.max_window_size		=(uint32_t)iniGetBytes(ini, section,"MaxWindowSize",1,0);
+	zm.target_window_size	=(unsigned)iniGetDuration(ini, section,"TargetWindowSize",0);
 
-	dszlog_path				=iniGetBool(ini, "DSZLOG","Path",TRUE);
-	dszlog_short			=iniGetBool(ini, "DSZLOG","Short",FALSE);
-	dszlog_quotes			=iniGetBool(ini, "DSZLOG","Quotes",FALSE);
+	section = "DSZLOG";
+	dszlog_path				=iniGetBool(ini, section, "Path",TRUE);
+	dszlog_short			=iniGetBool(ini, section, "Short",FALSE);
+	dszlog_quotes			=iniGetBool(ini, section, "Quotes",FALSE);
 
 	if(zm.recv_bufsize > 0xffff)
 		zm.recv_bufsize = 0xffff;
@@ -1669,7 +1670,7 @@ int main(int argc, char **argv)
 					case 'Y':
 						mode|=(YMODEM|CRC);
 						break;
-					case 'k':	/* Ymodem-Checksum for debug/test purposes only */
+					case 'k':	/* YMODEM-Checksum for debug/test purposes only */
 						mode|=YMODEM;
 						break;
 					case 'g':
@@ -1682,7 +1683,7 @@ int main(int argc, char **argv)
 						break;
 					default:
 						fprintf(statfp,"Unrecognized command '%s'\n\n",argv[i]);
-						fprintf(statfp,usage,MAX_FILE_SIZE);
+						fprintf(statfp,usage);
 						bail(1); 
 						return -1;
 				} 
@@ -1729,11 +1730,11 @@ int main(int argc, char **argv)
 					dszlog_quotes=TRUE;
 					continue;
 				}
-				switch(toupper(*arg)) {
-					case 'K':	/* sz/rz compatible */
+				switch(*arg) {
+					case 'k':	/* sz/rz compatible */
 						xm.block_size=XMODEM_MAX_BLOCK_SIZE;
 						break;
-					case 'C':	/* sz/rz compatible */
+					case 'c':	/* sz/rz compatible */
 						mode|=CRC;
 						break;
 					case '2':
@@ -1745,25 +1746,28 @@ int main(int argc, char **argv)
 					case '8':	/* ZedZap */
 						zm.max_block_size=8192;
 						break;
-					case 'O':	/* disable Zmodem CRC-32 */
+					case 'o':	/* disable ZMODEM CRC-32 */
 						zm.want_fcs_16=TRUE;
 						break;
-					case 'S':	/* disable Zmodem streaming */
+					case 's':	/* disable ZMODEM streaming */
 						zm.no_streaming=TRUE;
 						break;
-					case 'G':	/* Ymodem-G or Xmodem-G (a.k.a. Qmodem-G) */
+					case 'w':	/* Max ZMODEM Transmit Window Size */
+						zm.max_window_size = parse_byte_count(arg + 1, /* units: */1);
+						break;
+					case 'g':	/* YMODEM-G or XMODEM-G (a.k.a. Qmodem-G) */
 						mode|=(GMODE|CRC);
 						break;
-					case 'Y':
+					case 'y':
 						mode|=OVERWRITE;
 						break;
 					case '!':
 						pause_on_abend=TRUE;
 						break;
-					case 'M':	/* MaxFileSize */
-						max_file_size=strtoul(arg + 1,NULL,0);	/* TODO: use strtoull() ? */
+					case 'm':	/* MaxFileSize */
+						max_file_size = parse_byte_count(arg + 1, /* units: */1);
 						break;
-					case 'L':	/* Lowercase received filenames */
+					case 'l':	/* Lowercase received filenames */
 						lc_filenames=TRUE;
 						break;
 				}
@@ -1819,14 +1823,14 @@ int main(int argc, char **argv)
 
 	if(!(mode&(SEND|RECV))) {
 		fprintf(statfp,"!No command specified\n\n");
-		fprintf(statfp,usage,MAX_FILE_SIZE);
+		fprintf(statfp,usage);
 		bail(1); 
 		return -1;
 	}
 
-	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/Xmodem */
+	if(mode&(SEND|XMODEM) && !fnames) { /* Sending with any or recv w/XMODEM */
 		fprintf(statfp,"!Must specify filename or filelist\n\n");
-		fprintf(statfp,usage,MAX_FILE_SIZE);
+		fprintf(statfp,usage);
 		bail(1); 
 		return -1;
 	}
@@ -1845,7 +1849,7 @@ int main(int argc, char **argv)
 		init_stdio();
 #else
 		fprintf(statfp,"!No socket descriptor specified\n\n");
-		fprintf(errfp,usage,MAX_FILE_SIZE);
+		fprintf(errfp,usage);
 		bail(1);
 		return -1;
 #endif
@@ -1875,6 +1879,19 @@ int main(int argc, char **argv)
 		lprintf(LOG_DEBUG, "Setting socket options");
 		if(iniGetSocketOptions(ini, "sockopts", sock, error, sizeof(error)) != 0)
 			lprintf(LOG_ERR, "ERROR %s", error);
+		int value = 0;
+		socklen_t len = sizeof(value);
+		if(getsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&value, &len) == 0)
+			lprintf(LOG_DEBUG, "Socket send buffer length: %d bytes", value);
+		value = 0;
+		len = sizeof(value);
+		if(getsockopt(sock, SOL_SOCKET, SO_RCVBUF, (char*)&value, &len) == 0)
+			lprintf(LOG_DEBUG, "Socket receive buffer length: %d bytes", value);
+		value = 0;
+		len = sizeof(value);
+		if(getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char*)&value, &len) == 0)
+			lprintf(LOG_DEBUG, "Socket TCP_NODELAY: %d", value);
+
 #ifdef __unix__
 	}
 #endif

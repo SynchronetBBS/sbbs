@@ -2459,19 +2459,22 @@ function main()
 				var ibbs = [];
 				for(i in list) {
 					var bbs = list[i];
-					if(!bbs.entry.autoverify || !bbs.entry.autoverify.success)
+					if(!bbs.entry.autoverify)
+						continue;
+					if(!bbs.entry.autoverify.last_success && !bbs.entry.autoverify.last_failure)
 						continue;
 					if(!lib.imsg_capable_system(bbs))
 						continue;
+					var last = bbs.entry.autoverify.last_success || bbs.entry.autoverify.last_failure;
 					if(!ibbs.every(function(element) {
-							return element.service_address != bbs.entry.autoverify.last_success.service.address
-								&& element.ip_address != bbs.entry.autoverify.last_success.ip_address
+							return element.service_address != last.service.address
+								&& element.ip_address != last.ip_address
 								&& element.name != bbs.name;
 							}))
 						continue;
 					ibbs.push( {
-						service_address: bbs.entry.autoverify.last_success.service.address,
-						ip_address: bbs.entry.autoverify.last_success.ip_address,
+						service_address: last.service.address,
+						ip_address: last.ip_address,
 						name: bbs.name
 						} );
 				}

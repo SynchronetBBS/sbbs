@@ -39,6 +39,7 @@ static const char*	strInterfaces="Interface";
 static const char*	strPort="Port";
 static const char*	strMaxClients="MaxClients";
 static const char*	strMaxInactivity="MaxInactivity";
+static const char*	strMaxConConn="MaxConcurrentConnections";
 static const char*	strHostName="HostName";
 static const char*	strLogLevel="LogLevel";
 static const char*	strBindRetryCount="BindRetryCount";
@@ -251,6 +252,7 @@ void sbbs_read_ini(
 	const char*	section;
 	const char* default_term_ansi;
 	const char*	default_dosemu_path;
+	const char*	default_dosemuconf_path;
 	char		value[INI_MAX_VALUE_LEN];
 	str_list_t	list;
 	global_startup_t global_buf;
@@ -366,10 +368,14 @@ void sbbs_read_ini(
 		default_dosemu_path="/usr/local/bin/doscmd";
 	#else
 		default_dosemu_path="/usr/bin/dosemu.bin";
+		default_dosemuconf_path="";
 	#endif
 
+		bbs->usedosemu=iniGetBool(list,section,"UseDOSemu",TRUE);
 		SAFECOPY(bbs->dosemu_path
 			,iniGetString(list,section,"DOSemuPath",default_dosemu_path,value));
+		SAFECOPY(bbs->dosemuconf_path
+			,iniGetString(list,section,"DOSemuConfPath",default_dosemuconf_path,value));			
 
 		SAFECOPY(bbs->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
@@ -386,7 +392,7 @@ void sbbs_read_ini(
 		bbs->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
-		bbs->max_concurrent_connections = iniGetInteger(list, section, "MaxConcurrentConnections", 0);
+		bbs->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
 	}
 
 	/***********************************************************************/
@@ -429,19 +435,11 @@ void sbbs_read_ini(
 		ftp->pasv_port_high
 			=iniGetShortInt(list,section,"PasvPortHigh",0xffff);
 
-
-		/* JavaScript Operating Parameters */
-		sbbs_get_js_settings(list, section, &ftp->js, &global->js);
-
 		SAFECOPY(ftp->host_name
 			,iniGetString(list,section,strHostName,global->host_name,value));
 
 		SAFECOPY(ftp->index_file_name
 			,iniGetString(list,section,"IndexFileName","00index",value));
-		SAFECOPY(ftp->html_index_file
-			,iniGetString(list,section,"HtmlIndexFile","00index.html",value));
-		SAFECOPY(ftp->html_index_script
-			,iniGetString(list,section,"HtmlIndexScript","ftp-html.js",value));
 
 		SAFECOPY(ftp->answer_sound
 			,iniGetString(list,section,strAnswerSound,nulstr,value));
@@ -457,11 +455,12 @@ void sbbs_read_ini(
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
 		ftp->options
 			=iniGetBitField(list,section,strOptions,ftp_options
-				,FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK);
+				,FTP_OPT_INDEX_FILE | FTP_OPT_ALLOW_QWK);
 
 		ftp->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		ftp->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		ftp->login_attempt = get_login_attempt_settings(list, section, global);
+		ftp->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
 	}
 
 	/***********************************************************************/
@@ -566,7 +565,7 @@ void sbbs_read_ini(
 		mail->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		mail->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
-		mail->max_concurrent_connections = iniGetInteger(list, section, "MaxConcurrentConnections", 0);
+		mail->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
 	}
 
 	/***********************************************************************/
@@ -804,7 +803,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
 			break;
-		if(!iniSetInteger(lp,section,"MaxConcurrentConnections",bbs->max_concurrent_connections,&style))
+		if(!iniSetInteger(lp,section,strMaxConConn,bbs->max_concurrent_connections,&style))
 			break;
 
 
@@ -839,7 +838,10 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetString(lp,section,"DOSemuPath",bbs->dosemu_path,&style))
 			break;
-
+		if(!iniSetString(lp,section,"DOSemuConfPath",bbs->dosemuconf_path,&style))
+			break;
+		if(!iniSetBool(lp,section,"UseDOSemu",bbs->usedosemu,&style))
+			break;
 		if(!iniSetString(lp,section,strAnswerSound,bbs->answer_sound,&style))
 			break;
 		if(!iniSetString(lp,section,strHangupSound,bbs->hangup_sound,&style))
@@ -886,6 +888,8 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetShortInt(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
 			break;
+		if(!iniSetInteger(lp,section,strMaxConConn,ftp->max_concurrent_connections,&style))
+			break;
 		if(!iniSetShortInt(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
 			break;
 		if(!iniSetBytes(lp,section,"MinFileSize",1,ftp->min_fsize,&style))
@@ -913,10 +917,6 @@ BOOL sbbs_write_ini(
 		else if(!iniSetLogLevel(lp,section,strLogLevel,ftp->log_level,&style))
 			break;
 
-		/* JavaScript Operating Parameters */
-		if(!sbbs_set_js_settings(lp,section,&ftp->js,&global->js,&style))
-			break;
-
 		if(strcmp(ftp->host_name,global->host_name)==0
             || (bbs != NULL && strcmp(bbs->host_name,cfg->sys_inetaddr)==0))
 			iniRemoveKey(lp,section,strHostName);
@@ -929,10 +929,6 @@ BOOL sbbs_write_ini(
 			break;
 
 		if(!iniSetString(lp,section,"IndexFileName",ftp->index_file_name,&style))
-			break;
-		if(!iniSetString(lp,section,"HtmlIndexFile",ftp->html_index_file,&style))
-			break;
-		if(!iniSetString(lp,section,"HtmlIndexScript",ftp->html_index_script,&style))
 			break;
 
 		if(!iniSetString(lp,section,strAnswerSound,ftp->answer_sound,&style))
@@ -1018,7 +1014,7 @@ BOOL sbbs_write_ini(
 			break;
 		if(!iniSetInteger(lp,section,"ConnectTimeout",mail->connect_timeout,&style))
 			break;
-		if(!iniSetInteger(lp,section,"MaxConcurrentConnections",mail->max_concurrent_connections,&style))
+		if(!iniSetInteger(lp,section,strMaxConConn,mail->max_concurrent_connections,&style))
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)==0

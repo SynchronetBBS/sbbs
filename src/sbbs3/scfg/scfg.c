@@ -23,6 +23,8 @@
 #include "scfg.h"
 #undef BLINK
 #include "ciolib.h"
+#include "git_hash.h"
+#include "git_branch.h"
 
 /********************/
 /* Global Variables */
@@ -153,9 +155,13 @@ int main(int argc, char **argv)
 	char 	str[MAX_PATH+1];
 	BOOL    door_mode=FALSE;
 	int		ciolib_mode=CIOLIB_MODE_AUTO;
+	char	compiler[32];
 
-    printf("\nSynchronet Configuration Utility (%s)  v%s  " COPYRIGHT_NOTICE
-        "\n",PLATFORM_DESC,VERSION);
+	DESCRIBE_COMPILER(compiler);
+
+    printf("\nSynchronet Configuration Utility (%s)  v%s%c  " COPYRIGHT_NOTICE
+        "\n",PLATFORM_DESC, VERSION, REVISION);
+	printf("\nCompiled %s/%s %s %s with %s\n", GIT_BRANCH, GIT_HASH, __DATE__, __TIME__, compiler);
 
 	xp_randomize();
 	cfg.size=sizeof(cfg);
@@ -288,6 +294,7 @@ int main(int argc, char **argv)
 						"-c  =  force color mode\n"
 						"-m  =  force monochrome mode\n"
                         "-e# =  set escape delay to #msec\n"
+						"-insert = enable keyboard insert mode by default\n"
 						"-import=<filename> = import a message area list file\n"
 						"-faddr=<addr> = specify your FTN address for imported subs\n"
 						"-misc=<value> = specify option flags for imported subs\n"

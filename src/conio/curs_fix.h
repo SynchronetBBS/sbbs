@@ -35,6 +35,13 @@
  #define _XOPEN_SOURCE_EXTENDED 1
  #include <ncurses.h>
 #else
+ #ifdef __OpenBSD__
+  /* OpenBSD appears to ship with an old (5.7 from November 02, 2008) version
+   * of ncurses.  This apparently predates both _XOPEN_SOURCE >= 500 and
+   * NCURSES_WIDECHAR support for enabling wide characters.
+   * so, define _XOPEN_SOURCE_EXTENDED to get these. */
+  #define _XOPEN_SOURCE_EXTENDED 1
+ #endif
  #define NCURSES_WIDECHAR 1
  #ifdef XCURSES
   #include <xcurses.h>

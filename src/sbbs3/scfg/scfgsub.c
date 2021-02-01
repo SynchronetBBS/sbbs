@@ -36,6 +36,7 @@ bool new_sub(unsigned new_subnum, unsigned group_num, sub_t* pasted_sub, long mi
 	new_subboard->misc |= misc;
 	if(new_subboard->misc&(SUB_FIDO | SUB_INET))
 		new_subboard->misc |= SUB_NOVOTING;
+	new_subboard->pmode = P_MARKUP | P_HIDEMARKS;
 	new_subboard->maxmsgs = 500;
 
 	/* Use last sub in group (if exists) as a template for new subs */
@@ -166,6 +167,7 @@ void sub_cfg(uint grpnum)
 		if(uifc.changes && cfg.grp[grpnum]->sort)
 			sort_subs(grpnum);
 		int maxlen = 0;
+		bool template_shown = false;
 		for(i=0,j=0;i<cfg.total_subs && j<MAX_OPTS;i++)
 			if(cfg.sub[i]->grp==grpnum) {
 				subnum[j]=i;
@@ -187,7 +189,9 @@ void sub_cfg(uint grpnum)
 					default:	/* Defeat stupid GCC warning */
 						break;
 				}
-				sprintf(str, "%-*s %c", name_len, name, cfg.sub[i]->misc&SUB_TEMPLATE ? '*' : ' ');
+				sprintf(str, "%-*s %c", name_len, name, (cfg.sub[i]->misc&SUB_TEMPLATE && !template_shown) ? '*' : ' ');
+				if(cfg.sub[i]->misc&SUB_TEMPLATE)
+					template_shown = true;
 				truncsp(str);
 				len += sprintf(opt[j] + strlen(opt[j]), "%s", str);
 				if(len > maxlen)
@@ -1370,8 +1374,10 @@ void sub_cfg(uint grpnum)
 								}
 								opt[n][0]=0;
 								n = uifc.list(WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT, 0, 0, 0, &k, NULL, "FidoNet Address", opt);
-								if(n >= 0 && n < cfg.total_faddrs)
+								if(n >= 0 && n < cfg.total_faddrs) {
 									cfg.sub[i]->faddr = cfg.faddr[n];
+									uifc.changes = TRUE;
+								}
 								break;
 							}
 							case 8:

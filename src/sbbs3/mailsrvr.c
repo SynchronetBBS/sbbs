@@ -45,6 +45,7 @@
 #include "multisock.h"
 #include "ssl.h"
 #include "cryptlib.h"
+#include "ver.h"
 
 /* Constants */
 static const char*	server_name="Synchronet Mail Server";
@@ -84,7 +85,6 @@ static volatile BOOL	sendmail_running=FALSE;
 static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminate_sendmail=FALSE;
 static sem_t	sendmail_wakeup_sem;
-static char		revision[16];
 static volatile time_t	uptime;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
@@ -1176,8 +1176,8 @@ static void pop3_thread(void* arg)
 		safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%.128s>"
 			,rand(),socket,(ulong)time(NULL),(ulong)clock(), server_host_name());
 
-		sockprintf(socket,client.protocol,session,"+OK Synchronet %s Server %s-%s Ready %s"
-			,client.protocol, revision,PLATFORM_DESC,challenge);
+		sockprintf(socket,client.protocol,session,"+OK Synchronet %s Server %s%c-%s Ready %s"
+			,client.protocol, VERSION, REVISION, PLATFORM_DESC, challenge);
 
 		/* Requires USER or APOP command first */
 		for(i=5;i;i--) {
@@ -1192,7 +1192,7 @@ static void pop3_thread(void* arg)
 			else if (!stricmp(buf, "CAPA")) {
 				// Capabilities
 				sockprintf(socket,client.protocol,session, "+OK Capability list follows");
-				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s-%s\r\n%s.", revision, PLATFORM_DESC, (session != -1 || get_ssl_cert(&scfg, NULL, NULL) == -1) ? "" : "STLS\r\n");
+				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s%c-%s\r\n%s.", VERSION, REVISION, PLATFORM_DESC, (session != -1 || get_ssl_cert(&scfg, NULL, NULL) == -1) ? "" : "STLS\r\n");
 				i++;
 			}
 			else if (!stricmp(buf, "STLS")) {
@@ -1408,7 +1408,7 @@ static void pop3_thread(void* arg)
 			if(!stricmp(buf, "CAPA")) {
 				// Capabilities
 				sockprintf(socket,client.protocol,session, "+OK Capability list follows");
-				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s-%s\r\n.", revision, PLATFORM_DESC);
+				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s%c-%s\r\n.", VERSION, REVISION, PLATFORM_DESC);
 				continue;
 			}
 			if(!stricmp(buf, "QUIT")) {
@@ -2971,6 +2971,7 @@ static void smtp_thread(void* arg)
 	if(startup->inbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 		PlaySound(startup->inbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
+	SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 
 	addr_len=sizeof(server_addr);
 
@@ -3209,8 +3210,8 @@ static void smtp_thread(void* arg)
 
 	/* SMTP session active: */
 
-	sockprintf(socket,client.protocol,session,"220 %s Synchronet %s Server %s-%s Ready"
-		,server_host_name(), client.protocol, revision, PLATFORM_DESC);
+	sockprintf(socket,client.protocol,session,"220 %s Synchronet %s Server %s%c-%s Ready"
+		,server_host_name(), client.protocol, VERSION, REVISION, PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, client.protocol, session, buf, sizeof(buf));
 		if(rd<0) 
@@ -3928,7 +3929,7 @@ static void smtp_thread(void* arg)
 
 					snprintf(hdrfield,sizeof(hdrfield),
 						"from %s (%s [%s%s])\r\n"
-						"          by %s [%s%s] (%s %s-%s) with %s\r\n"
+						"          by %s [%s%s] (%s %s%c-%s) with %s\r\n"
 						"          for %s; %s\r\n"
 						"          (envelope-from %s)"
 						,host_name,hello_name
@@ -3938,7 +3939,7 @@ static void smtp_thread(void* arg)
 						,server_addr.addr.sa_family==AF_INET6?"IPv6: ":""
 						,server_ip
 						,server_name
-						,revision,PLATFORM_DESC
+						,VERSION, REVISION, PLATFORM_DESC
 						,with_clauses[with_val]
 						,forward_path,msgdate(msg.hdr.when_imported,date)
 						,reverse_path);
@@ -4664,7 +4665,6 @@ static void smtp_thread(void* arg)
 					*cp=0;
 					dest_port=atoi(cp+1);
 				}
-				SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
 						&& stricmp(dest_host,startup->host_name)!=0
 						&& findstr(dest_host,domain_list)==FALSE)
@@ -4927,7 +4927,10 @@ static void smtp_thread(void* arg)
 				&& scfg.sys_misc&SM_FWDTONET 
 				&& (user.misc&NETMAIL || forward)
 				&& tp!=NULL && smb_netaddr_type(user.netmail)==NET_INTERNET 
-				&& !strstr(tp,scfg.sys_inetaddr)) {
+				&& stricmp(tp + 1, scfg.sys_inetaddr) != 0
+				&& stricmp(tp + 1, startup->host_name) != 0
+				&& findstr(tp + 1, domain_list)==FALSE
+				) {
 				lprintf(LOG_INFO,"%04d %s %s Forwarding to: %s"
 					,socket, client.protocol, client_id, user.netmail);
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
@@ -6007,18 +6010,16 @@ const char* DLLCALL mail_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sscanf("$Revision: 1.735 $", "%*s %s", revision);
-
-	sprintf(ver,"%s %s%s  SMBLIB %s  "
-		"Compiled %s %s with %s"
+	sprintf(ver,"%s %s%c%s  "
+		"Compiled %s/%s %s %s with %s"
 		,server_name
-		,revision
+		,VERSION, REVISION
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
-		,smb_lib_ver()
+		,git_branch, git_hash
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -6049,8 +6050,6 @@ void DLLCALL mail_server(void* arg)
 	char*			servprot = "N/A";
 	CRYPT_SESSION	session = -1;
 
-	mail_ver();
-
 	startup=(mail_startup_t*)arg;
 
 #ifdef _THREAD_SUID_BROKEN
@@ -6073,7 +6072,7 @@ void DLLCALL mail_server(void* arg)
 	}
 
 	ZERO_VAR(js_server_props);
-	SAFEPRINTF2(js_server_props.version,"%s %s",server_name,revision);
+	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=mail_ver();
 	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
@@ -6087,10 +6086,10 @@ void DLLCALL mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
-	listInit(&current_logins, LINK_LIST_MUTEX);
-	listInit(&current_connections, LINK_LIST_MUTEX);
 
 	do {
+		listInit(&current_logins, LINK_LIST_MUTEX);
+		listInit(&current_connections, LINK_LIST_MUTEX);
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
@@ -6113,9 +6112,9 @@ void DLLCALL mail_server(void* arg)
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"%s Revision %s%s"
+		lprintf(LOG_INFO,"%s Version %s%c%s"
 			,server_name
-			,revision
+			,VERSION, REVISION
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -6125,9 +6124,7 @@ void DLLCALL mail_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
-
-		lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
+		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
 		sbbs_srand();
 

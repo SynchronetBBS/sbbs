@@ -53,6 +53,7 @@
 #include "msg_id.h"
 #include "scfgsave.h"
 #include "getmail.h"
+#include "ver.h"
 
 #define MAX_OPEN_SMBS	10
 
@@ -91,7 +92,6 @@ str_list_t bad_areas;
 fidoaddr_t		sys_faddr = {1,1,1,0};		/* Default system address: 1:1/1.0 */
 sbbsecho_cfg_t	cfg;
 scfg_t			scfg;
-char			revision[16];
 char			compiler[32];
 
 bool pause_on_exit=false;
@@ -116,8 +116,8 @@ const char* sbbsecho_pid(void)
 {
 	static char str[256];
 
-	sprintf(str, "SBBSecho %u.%02u-%s r%s %s %s"
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision,__DATE__,compiler);
+	sprintf(str, "SBBSecho %u.%02u-%s %s/%s %s %s"
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash,__DATE__,compiler);
 
 	return str;
 }
@@ -198,7 +198,7 @@ int fwrite_via_control_line(FILE* fp, fidoaddr_t* addr)
 	time_t t = time(NULL);
 	struct tm* tm = gmtime(&t);
 	return fprintf(fp,"\1Via %s @%04u%02u%02u.%02u%02u%02u.UTC "
-		"SBBSecho %u.%02u-%s r%s\r"
+		"SBBSecho %u.%02u-%s %s/%s\r"
 		,smb_faddrtoa(addr, NULL)
 		,tm->tm_year+1900
 		,tm->tm_mon+1
@@ -206,7 +206,7 @@ int fwrite_via_control_line(FILE* fp, fidoaddr_t* addr)
 		,tm->tm_hour
 		,tm->tm_min
 		,tm->tm_sec
-		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,revision);
+		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,git_branch,git_hash);
 }
 
 int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
@@ -1232,6 +1232,8 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 			fprintf(fp, "\1MSGID: %.256s\r", msg->ftn_msgid);
 		if(msg->ftn_reply != NULL)
 			fprintf(fp, "\1REPLY: %.256s\r", msg->ftn_reply);
+		if(msg->ftn_bbsid != NULL)
+			fprintf(fp, "\1BBSID: %.256s\r", msg->ftn_bbsid);
 		if(msg->ftn_flags != NULL)
 			fprintf(fp, "\1FLAGS %s\r", msg->ftn_flags);
 		else if(msg->hdr.auxattr&MSG_KILLFILE)
@@ -1262,10 +1264,6 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		fprintf(fp, "\1CHRS: %s\r", charset);
 		if(msg->editor != NULL)
 			fprintf(fp, "\1NOTE: %s\r", msg->editor);
-		/* comment headers are part of text */
-		for(i=0; i<msg->total_hfields; i++)
-			if(msg->hfield[i].type == SMB_COMMENT)
-				fprintf(fp, "%s\r", (char*)msg->hfield_dat[i]);
 		if(subject != msg->subj)
 			fprintf(fp, "Subject: %s\r\r", msg->subj);
 	}
@@ -3497,6 +3495,15 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 					smb_hfield_bin(&msg, SMB_COLUMNS, columns);
 			}
 
+			else if(!strncmp(fbuf+l+1,"BBSID:",6)) {
+				l+=7;
+				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
+				m=l;
+				while(m<length && fbuf[m]!='\r') m++;
+				if(m>l)
+					smb_hfield(&msg,FIDOBBSID,(ushort)(m-l),fbuf+l);
+			}
+
 			else {		/* Unknown kludge line */
 				while(l<length && fbuf[l]<=' ' && fbuf[l]>=0) l++;
 				m=l;
@@ -4916,6 +4923,13 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 			if(msg.columns)
 				f += sprintf(fmsgbuf+f, "\1COLS: %u\r", (unsigned int)msg.columns);
 
+			if(msg.ftn_bbsid != NULL)	/* use original BBSID */
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", msg.ftn_bbsid);
+			else if(msg.from_net.type == NET_QWK)
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", (char*)msg.from_net.addr);
+			else if(msg.from_net.type != NET_FIDO)
+				f += sprintf(fmsgbuf + f, "\1BBSID: %.256s\r", scfg.sys_id);
+
 			if(rescan)
 				f+=sprintf(fmsgbuf+f,"\1RESCANNED %s\r", smb_faddrtoa(&scfg.sub[subnum]->faddr,NULL));
 
@@ -5142,7 +5156,7 @@ bool retoss_bad_echomail(void)
 			continue;
 		}
 
-		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_BODY_ONLY);
+		char* body = smb_getmsgtxt(&badsmb, &badmsg, GETMSGTXT_NO_TAILS);
 		if(body == NULL) {
 			smb_unlockmsghdr(&badsmb,&badmsg);
 			smb_freemsgmem(&badmsg);
@@ -6122,14 +6136,12 @@ int main(int argc, char **argv)
 		memset(&smb[i],0,sizeof(smb_t));
 	memset(&cfg,0,sizeof(cfg));
 
-	sscanf("$Revision: 3.179 $", "%*s %s", revision);
-
 	DESCRIBE_COMPILER(compiler);
 
-	printf("\nSBBSecho v%u.%02u-%s (rev %s) - Synchronet FidoNet EchoMail Tosser\n"
+	printf("\nSBBSecho v%u.%02u-%s (%s/%s) - Synchronet FidoNet EchoMail Tosser\n"
 		,SBBSECHO_VERSION_MAJOR, SBBSECHO_VERSION_MINOR
 		,PLATFORM_DESC
-		,revision
+		,git_branch, git_hash
 		);
 
 	cmdline[0]=0;

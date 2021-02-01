@@ -1,7 +1,4 @@
 /* Synchronet JavaScript "User" Object */
-// vi: tabstop=4
-
-/* $Id: js_user.c,v 1.119 2020/08/11 03:54:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -88,6 +73,9 @@ enum {
 	,USER_PROP_ETODAY	
 	,USER_PROP_PTODAY
 	,USER_PROP_MAIL_WAITING
+	,USER_PROP_READ_WAITING
+	,USER_PROP_UNREAD_WAITING
+	,USER_PROP_SPAM_WAITING
 	,USER_PROP_MAIL_PENDING
 	,USER_PROP_ULB       
 	,USER_PROP_ULS       
@@ -391,7 +379,16 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=scfg->level_freecdtperday[p->user->level];
 			break;
 		case USER_PROP_MAIL_WAITING:
-			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* SPAM: */FALSE);
+			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */0);
+			break;
+		case USER_PROP_READ_WAITING:
+			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */MSG_READ);
+			break;
+		case USER_PROP_UNREAD_WAITING:
+			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */~MSG_READ);
+			break;
+		case USER_PROP_SPAM_WAITING:
+			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */MSG_SPAM);
 			break;
 		case USER_PROP_MAIL_PENDING:
 			val=getmail(scfg,p->user->number,/* sent? */TRUE, /* SPAM: */FALSE);
@@ -960,6 +957,9 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 	{	"files_downloaded"	,USER_PROP_DLS        	,USER_PROP_FLAGS,		310 },
 	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		310 },
 	{	"mail_waiting"		,USER_PROP_MAIL_WAITING	,USER_PROP_FLAGS,		312	},
+	{	"read_mail_waiting"	,USER_PROP_READ_WAITING	,USER_PROP_FLAGS,		31802 },
+	{	"unread_mail_waiting",USER_PROP_UNREAD_WAITING,USER_PROP_FLAGS,		31802 },
+	{	"spam_waiting"		,USER_PROP_SPAM_WAITING	,USER_PROP_FLAGS,		31802 },
 	{	"mail_pending"		,USER_PROP_MAIL_PENDING	,USER_PROP_FLAGS,		312	},
 	{0}
 };
@@ -984,7 +984,10 @@ static char* user_stats_prop_desc[] = {
 	,"total bytes downloaded"
 	,"total files downloaded"
 	,"suspected leech downloads"
-	,"number of e-mail messages currently waiting"
+	,"total number of e-mail messages currently waiting in inbox"
+	,"number of read e-mail messages currently waiting in inbox"
+	,"number of unread e-mail messages currently waiting in inbox"
+	,"number of SPAM e-mail messages currently waiting in inbox"
 	,"number of e-mail messages sent, currently pending deletion"
 	,NULL
 };

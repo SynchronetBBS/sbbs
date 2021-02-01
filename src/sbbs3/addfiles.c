@@ -29,7 +29,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#define ADDFILES_VER "3.04"
+#define ADDFILES_VER "3.05"
 
 scfg_t scfg;
 
@@ -665,7 +665,7 @@ void synclist(char *inpath, int dirnum)
 char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 			 "[desc_off] [size_off]"
 	"\n   or: addfiles code [.alt_path] [-opts] file "
-		"\"description\"\n"
+		"[\"description\"]\n"
 	"\navailable opts:"
 	"\n      -a         import ASCII only (no extended ASCII)"
 	"\n      -b         synchronize database with file list (use with caution)"
@@ -898,7 +898,7 @@ int main(int argc, char **argv)
 #endif
 			if(j+1==argc) {
 				printf("%s no description given.\n",f.name);
-				continue;
+				SAFECOPY(f.desc, "no description given");
 			}
 			sprintf(str,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[f.dir]->path,argv[j]);
@@ -922,8 +922,10 @@ int main(int argc, char **argv)
 					SAFECOPY(f.desc, unixtodstr(&scfg,(time32_t)file_timestamp,tmp));
 				SAFECAT(f.desc, "  ");
 			}
-			j++;
-			SAFECAT(f.desc, argv[j]);
+			if(j+1 < argc) {
+				j++;
+				SAFECAT(f.desc, argv[j]);
+			}
 			l=flength(str);
 			if(l==-1) {
 				printf("%s not found.\n",str);
