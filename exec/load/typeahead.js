@@ -429,18 +429,13 @@ var Typeahead = function (options) {
                 properties.position = (properties.position >= properties.text.length) ? properties.text.length : properties.position + 1;
                 break;
             case '\b':
+            case '\x08':
+            case '\x7f':
                 if (properties.position === 0) break;
                 properties.text = properties.text.split('');
                 properties.text.splice((properties.position - 1), 1);
                 properties.text = properties.text.join('');
                 properties.position--;
-                change = true;
-                break;
-            case '\x7f':
-                if (properties.position >= properties.text.length) break;
-                properties.text = properties.text.split('');
-                properties.text.splice((properties.position), 1);
-                properties.text = properties.text.join('');
                 change = true;
                 break;
             case '\r':
