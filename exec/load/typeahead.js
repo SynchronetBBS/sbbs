@@ -429,6 +429,7 @@ var Typeahead = function (options) {
                 properties.position = (properties.position >= properties.text.length) ? properties.text.length : properties.position + 1;
                 break;
             case '\b':
+            case '\x08':
                 if (properties.position === 0) break;
                 properties.text = properties.text.split('');
                 properties.text.splice((properties.position - 1), 1);
