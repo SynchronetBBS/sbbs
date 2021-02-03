@@ -355,27 +355,26 @@ var Typeahead = function (options) {
             display.treeFrame.invalidate();
         }
 
-        if (suggestions.length < 1) {
-            display.tree = undefined;
-            return;
-        }
-
         display.tree = new Tree(display.treeFrame);
         display.tree.colors.fg = properties.sfg;
         display.tree.colors.bg = properties.sbg;
         display.tree.colors.lfg = properties.hsfg;
         display.tree.colors.lbg = properties.hsbg;
 
-        display.tree.addItem('');
-        for (var n = 0; n < (properties.maxResults || suggestions.length); n++) {
-            if (typeof suggestions[n] === 'object' && typeof suggestions[n].text === 'string') {
-                var item = display.tree.addItem(suggestions[n].text);
-                item.suggestion = suggestions[n];
-            } else if (typeof suggestions[n] === 'string') {
-                display.tree.addItem(suggestions[n]);
+        if (suggestions.length < 1) {
+            display.tree.addItem('No results found');
+        } else {
+            display.tree.addItem('');
+            for (var n = 0; n < (properties.maxResults || suggestions.length); n++) {
+                if (typeof suggestions[n] === 'object' && typeof suggestions[n].text === 'string') {
+                    var item = display.tree.addItem(suggestions[n].text);
+                    item.suggestion = suggestions[n];
+                } else if (typeof suggestions[n] === 'string') {
+                    display.tree.addItem(suggestions[n]);
+                }
             }
         }
-
+        
         display.tree.open();
 
         properties.suggested = true;
@@ -412,7 +411,8 @@ var Typeahead = function (options) {
                 break;
             case KEY_UP:
             case KEY_DOWN:
-                if (typeof display.tree !== 'undefined') {
+                //if (typeof display.tree !== 'undefined') {
+                if (display.tree.items.length > 1) {
                     display.tree.getcmd(key);
                 }
                 break;
