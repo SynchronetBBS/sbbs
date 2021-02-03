@@ -27,10 +27,10 @@ var op = system.operator.split(" ", 2);
 lines[2] = op[0];
 lines[3] = op[1];
 
-lines[6] = gamedir + "betsy.ans";
 lines[7] = gamedir + "betsy.asc";
-lines[8] = gamedir + "betsyhof.ans";
+lines[8] = gamedir + "betsy.ans";
 lines[9] = gamedir + "betsyhof.asc";
+lines[10] = gamedir + "betsyhof.ans";
 
 for(i = 0; i < system.nodes; i++) {
 	var nodenum = i + 1;
