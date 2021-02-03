@@ -19,6 +19,8 @@ require("sbbsdefs.js", "K_NONE");
 
 require("xtrnmenulib.js", "MENU_LOADED");
 
+const ansiterm = load({}, 'ansiterm_lib.js');
+
 var options, xsec = -1;
 
 //// Main
@@ -110,9 +112,9 @@ function dopre(progCode)
 	}
 	
 	try {
-		load("json-client.js")
+		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(options.json_host, options.json_port);
-		jsonClient.callback = processUpdate;
+		jsonClient.callback = ExternalMenus.processUpdate;
 	} catch (e) {
 		log(LOG_ERR, "xtrnmenu pre: Could not initialize JSON database so door tracking is now disabled: " + e);
 		return;
@@ -218,9 +220,9 @@ function dopost(progCode)
 	}
 	
 	try {
-		load("json-client.js")
+		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(options.json_host, options.json_port);
-		jsonClient.callback = processUpdate;
+		jsonClient.callback = ExternalMenus.processUpdate;
 	} catch (e) {
 		log(LOG_ERR, "xtrnmenu pre: Could not initialize JSON database so door tracking is now disabled: " + e);
 		return;
@@ -265,15 +267,6 @@ function dopost(progCode)
 			jsonClient.cycle();
 		}
 	}
-}
-
-/**
- * JSON DB handler
- * @param update
- */
-function processUpdate(update)
-{
-	log(ERROR, "Unhandler JSON DB packet: " + JSON.stringify(update));
 }
 
 // Runs custom commands, for gamesrv
@@ -600,6 +593,12 @@ function external_menu_custom(menuid)
 			break;
 		}
 		
+		// empty menu
+		if (!menuobj.items.length && (menuid != "main")) {
+			write(options.no_programs_msg);
+			break;
+		}
+		
 		system.node_list[bbs.node_num-1].aux = 0; /* aux is 0, only if at menu */
 		bbs.node_action = NODE_XTRN;
 		bbs.node_sync();
@@ -842,7 +841,12 @@ function external_menu_custom(menuid)
 			// don't have ESC do anything on the main menu
 		} else if ((keyin == 'q') || (keyin == "\x1B")) {
 			if (gamesrv && (menuid == 'main')) {
-				bbs.logoff();
+				// doing it this way rather than calling bbs.logoff()
+				// so that the prompt defaults to Yes
+				console.crlf();
+				if (console.yesno("Do you wish to logoff")) {
+					bbs.logoff(false);
+				}
 			} else {
 				console.clear();
 				return;
@@ -1397,11 +1401,11 @@ function search_menu(title, itemcount) {
 			if (menuconfig.menus[i].title.toLowerCase().indexOf(searchterm) !== -1) {
 				if (user.compare_ars(menuconfig.menus[i].title.access_string)) {
 					menuitemsfiltered.push({
-						'input': input++,
-						'id': menuconfig.menus[i].id,
-						'title': menuconfig.menus[i].title,
-						'target': menuconfig.menus[i].id,
-						'type': 'custommenu'
+						input: input++,
+						id: menuconfig.menus[i].id,
+						title: menuconfig.menus[i].title,
+						target: menuconfig.menus[i].id,
+						type: 'custommenu'
 					});	
 				}
 			}
@@ -1414,11 +1418,11 @@ function search_menu(title, itemcount) {
 			if (xtrn_area.sec_list[i].name.toLowerCase().indexOf(searchterm) !== -1) {
 				if (xtrn_area.sec_list[i].can_access) {
 					menuitemsfiltered.push({
-						'input': input++,
-						'id': xtrn_area.sec_list[i].code,
-						'title': xtrn_area.sec_list[i].name,
-						'target': xtrn_area.sec_list[i].code,
-						'type': 'xtrnmenu'
+						input: input++,
+						id: xtrn_area.sec_list[i].code,
+						title: xtrn_area.sec_list[i].name,
+						target: xtrn_area.sec_list[i].code,
+						type: 'xtrnmenu'
 					});
 				}
 			}
@@ -1432,11 +1436,11 @@ function search_menu(title, itemcount) {
 				if (xtrn_area.sec_list[i].prog_list[k].name.toLowerCase().indexOf(searchterm) !== -1) {
 					if (xtrn_area.sec_list[i].prog_list[k].can_access) {
 						menuitemsfiltered.push({
-							'input': input++,
-							'id': xtrn_area.sec_list[i].prog_list[k].code,
-							'title': xtrn_area.sec_list[i].prog_list[k].name,
-							'target': xtrn_area.sec_list[i].prog_list[k].code,
-							'type': 'xtrnprog'
+							input: input++,
+							id: xtrn_area.sec_list[i].prog_list[k].code,
+							title: xtrn_area.sec_list[i].prog_list[k].name,
+							target: xtrn_area.sec_list[i].prog_list[k].code,
+							type: 'xtrnprog'
 						});
 					}
 				}
@@ -2054,6 +2058,16 @@ function favorites_menu(title, itemcount) {
 		if (keyin) {
 			if ((keyin == '+') || (keyin == '=')) {
 				add_favorite();
+			} else if ((keyin == "\x08") || (keyin == "\x7f")) {
+				// delete
+				if (menuitemsfiltered[selected_index].type == 'xtrnprog') {
+					console.crlf();
+					if (!console.noyes("Do you wish to remove " +
+						menuitemsfiltered[selected_index].title)) {
+						remove_favorite(menuitemsfiltered[selected_index].target.toLowerCase());
+					}
+				}
+				
 			} else if ((keyin == '-') || (keyin == '_')) {
 				remove_favorite();
 			} else {
@@ -2084,6 +2098,12 @@ function favorites_menu(title, itemcount) {
 // Add an entry to the favorites menu
 function add_favorite()
 {
+	require("frame.js", "Frame");
+	require("tree.js", "Tree");
+	require("scrollbar.js", "ScrollBar");
+	require('typeahead.js', 'Typeahead');
+	load(js.global, 'cga_defs.js');
+	
 	var options = ExternalMenus.getOptions('custommenu', 'favorites');
 	
 	if (!options.json_enabled) {
@@ -2092,9 +2112,9 @@ function add_favorite()
 	}
 	
 	try {
-		load("json-client.js")
+		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(options.json_host, options.json_port);
-		jsonClient.callback = processUpdate;
+		jsonClient.callback = ExternalMenus.processUpdate;
 	} catch (e) {
 		log(LOG_ERR, "xtrnmenu add_favorites: Could not initialize JSON database so favorites is now disabled: " + e);
 		return false;
@@ -2107,12 +2127,10 @@ function add_favorite()
 		jsonData = [];
 	}
 	
-	load("frame.js");
-	load("tree.js");
-	
-	var frame = new Frame(1, 1, console.screen_columns, 4, WHITE);
-	var treeframe = new Frame(1, 5, console.screen_columns, console.screen_rows-5, WHITE);
+	var frame = new Frame(1, 1, console.screen_columns, console.screen_rows, WHITE);
+	var treeframe = new Frame(frame.x, frame.y+4, frame.width, frame.height-5, WHITE);
 	var tree = new Tree(treeframe);
+	var s = new ScrollBar(tree);
 	frame.open();
 	treeframe.open();
 	
@@ -2120,7 +2138,7 @@ function add_favorite()
 		? options.custom.add_favorites_msg : "\x01c\x01hAdd Favorite");
 	frame.gotoxy(1, 3);
 	frame.putmsg(options.custom.favorites_inst !== undefined
-		? options.custom.favorites_inst : '\x01n\x01w\x01h\x012[Up/Down/Home/End] to Navigate, [Enter] to Select, [Q] to Quit');
+		? options.custom.favorites_inst : '\x01n\x01w\x01h\x012 [Up/Down/Home/End] to Navigate, [Enter] to Select, [Q] to Quit, [S] to Search ');
 	
 	var xtrnwidth = 0;
 	var sortedItems = [];
@@ -2154,13 +2172,23 @@ function add_favorite()
 	}
 	
 	treeframe.width = xtrnwidth + 2;
-	
-	tree.colors.fg = LIGHTGRAY;
-	tree.colors.bg = BG_BLACK;
-	tree.colors.lfg = WHITE;
-	tree.colors.lbg = BG_MAGENTA;
-	tree.colors.kfg = YELLOW;
-	
+
+	// lightbar non-current item
+	tree.colors.fg = options.custom.favorite_add_fg 
+		? js.global[options.custom.favorite_add_fg] : LIGHTGRAY;
+	tree.colors.bg = options.custom.favorite_add_bg 
+		? js.global[options.custom.favorite_add_bg] : BG_BLACK;
+	// lightbar current item
+	tree.colors.lfg = options.custom.favorite_add_lfg 
+		? js.global[options.custom.favorite_add_lfg] : WHITE;
+	tree.colors.lbg = options.custom.favorite_add_lbg
+		? js.global[options.custom.favorite_add_lbg] : BG_MAGENTA;
+	// tree heading
+	tree.colors.cfg = options.custom.favorite_add_cfg 
+		? js.global[options.custom.favorite_add_cfg] : WHITE;
+	tree.colors.cbg = options.custom.favorite_add_cbg 
+		? js.global[options.custom.favorite_add_cbg] : BG_BLACK;
+	// other tree color settings not applicable to this implementation
 	tree.open();
 	
 	console.clear(BG_BLACK|LIGHTGRAY);
@@ -2172,37 +2200,120 @@ function add_favorite()
 	var key;
 	var xtrn;
 	while(bbs.online) {
-		key = console.getkey();
+		key = console.getkey(K_NOSPIN);
 		if (key == "\x0d") {
 			// hit enter, item is selected
 			break;
-		}
-		if ((key.toLowerCase() == 'q') || (key == "\x1B")) return;
-		
-		selection = tree.getcmd({ key: key, mouse: false });
-		
-		if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
-			if ((key == KEY_UP) && (tree.line == 1)) {
-				// pressed up on first item, go to end
-				tree.end();
-				tree.refresh(); // fixes itself with it going to next to last item
-			} else if ((key == KEY_DOWN) && (tree.line == sortedItems.length)) {
-				// pressed down on last item, go to start
-				tree.home();
-				tree.refresh(); // fixes issue with it going to 2nd item
+		} else if ((key.toLowerCase() == 'q') || (key == "\x1B")) {
+			return;
+		} else if (key.toLowerCase() == 's') {
+			xtrn = add_favorite_search(frame, treeframe, options);
+			break;
+		} else {
+			selection = tree.getcmd({key: key, mouse: false});
+			
+			if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
+				if ((key == KEY_UP) && (tree.line == 1)) {
+					// pressed up on first item, go to end
+					tree.end();
+					tree.refresh(); // fixes itself with it going to next to last item
+				} else if ((key == KEY_DOWN) && (tree.line == sortedItems.length)) {
+					// pressed down on last item, go to start
+					tree.home();
+					tree.refresh(); // fixes issue with it going to 2nd item
+				}
+				xtrn = tree.currentItem;
 			}
-			xtrn = tree.currentItem;
 		}
+		frame.cycle();
 		treeframe.cycle();
+		s.cycle();
 	}
-	
-	jsonData.push(xtrn.code);
-	jsonClient.write("xtrnmenu", "favorites_" + user.alias, jsonData, 2);
+
+	if (typeof xtrn.code !== "undefined") {
+		jsonData.push(xtrn.code);
+		jsonClient.write("xtrnmenu", "favorites_" + user.alias, jsonData, 2);
+	}
 }
 
+// Type ahead search for add favorite
+function add_favorite_search(frame, treeframe, options) {
+	require("frame.js", "Frame");
+	require("tree.js", "Tree");
+	require('typeahead.js', 'Typeahead');
+	load(js.global, 'cga_defs.js');
+	
+	var sframe = new Frame(
+		1,
+		1,
+		console.screen_columns,
+		console.screen_rows,
+		LIGHTGRAY,
+		frame
+	);
+	sframe.open();
+	
+	const typeahead = new Typeahead({
+		x : 1,
+		y : 1,
+		bg : options.custom.favorite_add_search_fg 
+			? js.global[options.custom.favorite_add_search_fg] : LIGHTGRAY,
+		fg: options.custom.favorite_add_search_bg 
+			? js.global[options.custom.favorite_add_search_bg] : BG_BLACK,
+		sfg: options.custom.favorite_add_search_sfg 
+			? js.global[options.custom.favorite_add_search_sfg] : LIGHTGRAY,
+		sbg: options.custom.favorite_add_search_sbg 
+			? js.global[options.custom.favorite_add_search_sbg] : BG_BLACK,
+		hsfg: options.custom.favorite_add_search_hsfg 
+			? js.global[options.custom.favorite_add_search_hsfg] : WHITE,
+		hsbg: options.custom.favorite_add_search_hsbg 
+			? js.global[options.custom.favorite_add_search_hsbg] : BG_MAGENTA,
+		prompt: options.custom.favorite_add_search_prompt 
+			? options.custom.favorite_add_search_prompt : "\x01c\x01hSearch (ESC to Cancel): \x01n",
+		len: treeframe.width,
+		frame: sframe,
+		datasources: [
+			function (searchterm) {
+				const ret = [];
+				
+				for (i in xtrn_area.sec_list) {
+					for (var k in xtrn_area.sec_list[i].prog_list) {
+						if (xtrn_area.sec_list[i].prog_list[k].name.toLowerCase().indexOf(searchterm.toLowerCase()) !== -1) {
+							if (xtrn_area.sec_list[i].prog_list[k].can_access) {
+								ret.push({
+									'code': xtrn_area.sec_list[i].prog_list[k].code,
+									'text': xtrn_area.sec_list[i].prog_list[k].name,
+								});
+							}
+						}
+					}
+				}
+				return ret;
+			}
+		]
+	});
+	
+	var user_input = undefined;
+	while (typeof user_input !== 'object') {
+		var key = console.inkey(K_NONE, 5);
+		if (key == "\x1B") {
+			typeahead.close();
+			sframe.close();
+			return false;
+		}
+		
+		user_input = typeahead.inkey(key);
+		typeahead.cycle();
+		if (sframe.cycle()) typeahead.updateCursor();
+	}
+	
+	typeahead.close();
+	sframe.close();
+	return user_input;
+}
 
 // Remove an entry from the favorites menu
-function remove_favorite()
+function remove_favorite(xtrncode)
 {
 	var options = ExternalMenus.getOptions('custommenu', 'favorites');
 	
@@ -2212,9 +2323,9 @@ function remove_favorite()
 	}
 	
 	try {
-		load("json-client.js")
+		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(options.json_host, options.json_port);
-		jsonClient.callback = processUpdate;
+		jsonClient.callback = ExternalMenus.processUpdate;
 	} catch (e) {
 		log(LOG_ERR, "xtrnmenu remove_favorites: Could not initialize JSON database so favorites is now disabled: " + e);
 		return false;
@@ -2227,98 +2338,104 @@ function remove_favorite()
 		jsonData = [];
 	}
 	
-	load("frame.js");
-	load("tree.js");
-	
-	var frame = new Frame(1, 1, console.screen_columns, 4, WHITE);
-	var treeframe = new Frame(1, 5, console.screen_columns, console.screen_rows-5, WHITE);
-	var tree = new Tree(treeframe);
-	frame.open();
-	treeframe.open();
-	
-	frame.putmsg(options.custom.remove_favorites_msg !== undefined
-		? options.custom.remove_favorites_msg : "\x01c\x01hRemove Favorite");
-	frame.gotoxy(1, 3);
-	frame.putmsg(options.custom.favorites_inst !== undefined
-		? options.custom.favorites_inst : '\x01n\x01w\x01h\x012[Up/Down/Home/End] to Navigate, [Enter] to Select, [Q] to Quit');
-	
-	var xtrnwidth = 0;
-	var sortedItems = [];
-	for (var m in xtrn_area.prog) {
-		if (xtrn_area.prog[m].can_access) {
-			var found = false;
-			jsonData.some(function (jsonxtrn) {
-				if (jsonxtrn == xtrn_area.prog[m].code) {
-					found = true;
-					return true;
-				}
-			});
-			if (found) {
-				sortedItems.push({ code: xtrn_area.prog[m].code, name: xtrn_area.prog[m].name })
-				if (xtrn_area.prog[m].name.length > xtrnwidth) {
-					xtrnwidth = xtrn_area.prog[m].name.length;
+	if ((typeof xtrncode === "undefined") || (!xtrncode)) {
+		require("frame.js", "Frame");
+		require("tree.js", "Tree");
+		require("scrollbar.js", "ScrollBar");
+		
+		var frame = new Frame(1, 1, console.screen_columns, 4, WHITE);
+		var treeframe = new Frame(1, 5, console.screen_columns, console.screen_rows - 5, WHITE);
+		var tree = new Tree(treeframe);
+		var s = new ScrollBar(tree);
+		frame.open();
+		treeframe.open();
+		
+		frame.putmsg(options.custom.remove_favorites_msg !== undefined
+			? options.custom.remove_favorites_msg : "\x01c\x01hRemove Favorite");
+		frame.gotoxy(1, 3);
+		frame.putmsg(options.custom.favorites_inst_rem !== undefined
+			? options.custom.favorites_inst_rem : '\x01n\x01w\x01h\x012 [Up/Down/Home/End] to Navigate, [Enter] to Select, [Q] to Quit ');
+		
+		var xtrnwidth = 0;
+		var sortedItems = [];
+		for (var m in xtrn_area.prog) {
+			if (xtrn_area.prog[m].can_access) {
+				var found = false;
+				jsonData.some(function (jsonxtrn) {
+					if (jsonxtrn == xtrn_area.prog[m].code) {
+						found = true;
+						return true;
+					}
+				});
+				if (found) {
+					sortedItems.push({code: xtrn_area.prog[m].code, name: xtrn_area.prog[m].name})
+					if (xtrn_area.prog[m].name.length > xtrnwidth) {
+						xtrnwidth = xtrn_area.prog[m].name.length;
+					}
 				}
 			}
 		}
-	}
-	
-	sortedItems.sort(function(a, b) {
-		if(a.name.toLowerCase()>b.name.toLowerCase()) return 1;
-		if(a.name.toLowerCase()<b.name.toLowerCase()) return -1;
-		return 0;
-	});
-	
-	for (m in sortedItems) {
-		const item = tree.addItem(sortedItems[m].name, sortedItems[m].code);
-		item.code = sortedItems[m].code;
-	}
-	
-	treeframe.width = xtrnwidth + 2;
-	
-	tree.colors.fg = LIGHTGRAY;
-	tree.colors.bg = BG_BLACK;
-	tree.colors.lfg = WHITE;
-	tree.colors.lbg = BG_MAGENTA;
-	tree.colors.kfg = YELLOW;
-	
-	tree.open();
-	
-	console.clear(BG_BLACK|LIGHTGRAY);
-	
-	frame.draw();
-	treeframe.draw();
-	
-	var selection;
-	var key;
-	var xtrn;
-	while(bbs.online) {
-		key = console.getkey();
-		if (key == "\x0d") {
-			// hit enter, item is selected
-			break;
+		
+		sortedItems.sort(function (a, b) {
+			if (a.name.toLowerCase() > b.name.toLowerCase()) return 1;
+			if (a.name.toLowerCase() < b.name.toLowerCase()) return -1;
+			return 0;
+		});
+		
+		for (m in sortedItems) {
+			const item = tree.addItem(sortedItems[m].name, sortedItems[m].code);
+			item.code = sortedItems[m].code;
 		}
-		if ((key.toLowerCase() == 'q') || (key == "\x1B")) return;
 		
-		selection = tree.getcmd({ key: key, mouse: false });
+		treeframe.width = xtrnwidth + 2;
 		
-		if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
-			if ((key == KEY_UP) && (tree.line == 1)) {
-				// pressed up on first item, go to end
-				tree.end();
-				tree.refresh(); // fixes itself with it going to next to last item
-			} else if ((key == KEY_DOWN) && (tree.line == sortedItems.length)) {
-				// pressed down on last item, go to start
-				tree.home();
-				tree.refresh(); // fixes issue with it going to 2nd item
+		tree.colors.fg = LIGHTGRAY;
+		tree.colors.bg = BG_BLACK;
+		tree.colors.lfg = WHITE;
+		tree.colors.lbg = BG_MAGENTA;
+		tree.colors.kfg = YELLOW;
+		
+		tree.open();
+		
+		console.clear(BG_BLACK | LIGHTGRAY);
+		
+		frame.draw();
+		treeframe.draw();
+		
+		var selection;
+		var key;
+		var xtrn;
+		while (bbs.online) {
+			key = console.getkey();
+			if (key == "\x0d") {
+				// hit enter, item is selected
+				break;
 			}
-			xtrn = tree.currentItem;
+			if ((key.toLowerCase() == 'q') || (key == "\x1B")) return;
+			
+			selection = tree.getcmd({key: key, mouse: false});
+			
+			if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
+				if ((key == KEY_UP) && (tree.line == 1)) {
+					// pressed up on first item, go to end
+					tree.end();
+					tree.refresh(); // fixes itself with it going to next to last item
+				} else if ((key == KEY_DOWN) && (tree.line == sortedItems.length)) {
+					// pressed down on last item, go to start
+					tree.home();
+					tree.refresh(); // fixes issue with it going to 2nd item
+				}
+				xtrn = tree.currentItem;
+				xtrncode = xtrn.code;
+			}
+			treeframe.cycle();
+			s.cycle();
 		}
-		treeframe.cycle();
 	}
 	
 	var newJsonData = [];
 	jsonData.forEach(function (jsonxtrn) {
-		if (jsonxtrn != xtrn.code) {
+		if (jsonxtrn != xtrncode) {
 			newJsonData.push(jsonxtrn);
 		}
 	});

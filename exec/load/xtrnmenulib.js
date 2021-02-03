@@ -218,7 +218,7 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	}
 	
 	this.options.custom = this.xtrn_custommenu_options;
-	
+
 	return this.options;
 }
 
@@ -250,20 +250,20 @@ ExternalMenus.prototype.getMenu = function(menuid) {
 		xtrn_area.sec_list.forEach(function (sec) {
 			if (sec.can_access) {
 				menuitems.push({
-					"input": i,
-					"target": sec.code,
-					"type": "xtrnmenu",
-					"title": sec.name,
-					"access_string": sec.ars
+					input: i,
+					target: sec.code,
+					type: "xtrnmenu",
+					title: sec.name,
+					access_string: sec.ars
 				});
 				i++;
 			}
 		});
 		
 		menu = {
-			"id": "main",
-			"title": "Main Menu",
-			"items": menuitems
+			id: "main",
+			title: "Main Menu",
+			items: menuitems
 		};
 	}
 	return menu;
@@ -278,12 +278,17 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 	}
 	
 	var menuitems = [];
-	var menu, title;
+	var title;
+	
+	var menu = {
+		id: menuid,
+		title: null,
+		items: []
+	}
 	
 	xtrn_area.sec_list.some(function (sec) {
-		
 		if (sec.code.toLowerCase() == menuid.toLowerCase()) {
-			title = sec.name;
+			menu.title = sec.name;
 			
 			if (!sec.can_access || sec.prog_list.length < 1) {
 				return false;
@@ -292,22 +297,18 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 			var i = 1;
 			sec.prog_list.some(function (prog) {
 				menuitems.push({
-					'input' : i,
-					'target': prog.code,
-					'title': prog.name,
-					'type': 'xtrnprog',
-					'access_string': prog.ars,
-					'cost': prog.cost
+					input : i,
+					target: prog.code,
+					title: prog.name,
+					type: 'xtrnprog',
+					access_string: prog.ars,
+					cost: prog.cost
 				});
 				i++;
 			});
 			
 			if (menuitems.length > 0) {
-				menu = {
-					'id': menuid,
-					'title': title,
-					'items': menuitems,
-				};
+				menu.items = menuitems;
 			}
 			return;
 		}
@@ -447,6 +448,11 @@ ExternalMenus.prototype.sort_by_input = function(a, b) {
 	return 0;
 }
 
+// Handle json update
+ExternalMenus.prototype.processUpdate = function(update) {
+	log(ERROR, "Unhandled JSON DB packet: " + JSON.stringify(update));
+}
+
 // Sort for special menus, by value numerically desc
 ExternalMenus.prototype.sort_special = function(obj) {
 	var keys = [];
@@ -458,6 +464,8 @@ ExternalMenus.prototype.sort_special = function(obj) {
 
 // return menu object for special menu (most recent, etc.)
 ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
+	var options = this.getOptions('custommenu', menutype);
+
 	var menu;
 	var menuitems = [];
 	
@@ -476,10 +484,11 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 	}
 
 	try {
-		load("json-client.js")
+		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(this.options.json_host, this.options.json_port);
-		jsonClient.callback = processUpdate;
+		jsonClient.callback = this.processUpdate;
 	} catch (e) {
+		writeln("NP" + e);
 		log(LOG_ERR, "xtrnmenulib: Could not initialize JSON database so special menu is now disabled: " + e);
 		return false;
 	}
@@ -559,13 +568,13 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 						break;
 				}
 				menuitems.push({
-					'input': i,
-					'target': xtrn_area.prog[e].code,
-					'title': xtrn_area.prog[e].name,
-					'type': 'xtrnprog',
-					'access_string': xtrn_area.prog[e].ars,
-					'cost': xtrn_area.prog[e].cost,
-					'stats': stats,
+					input: i,
+					target: xtrn_area.prog[e].code,
+					title: xtrn_area.prog[e].name,
+					type: 'xtrnprog',
+					access_string: xtrn_area.prog[e].ars,
+					cost: xtrn_area.prog[e].cost,
+					stats: stats,
 				});
 				i++;
 				break;
@@ -578,9 +587,9 @@ ExternalMenus.prototype.getSpecial = function(menutype, title, itemcount) {
 	}
 	if (menuitems.length > 0) {
 		menu = {
-			'id': menutype,
-			'title': title,
-			'items': menuitems,
+			id: menutype,
+			title: title,
+			items: menuitems,
 		};
 	}
 
@@ -602,9 +611,9 @@ ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 	}
 	
 	try {
-		load("json-client.js")
+		require("json-client.js", "JSONClient");
 		var jsonClient = new JSONClient(this.options.json_host, this.options.json_port);
-		jsonClient.callback = processUpdate;
+		jsonClient.callback = this.processUpdate;
 	} catch (e) {
 		log(LOG_ERR, "xtrnmenulib: Could not initialize JSON database so favorites is now disabled: " + e);
 		return false;
@@ -624,12 +633,12 @@ ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 				var stats;
 				
 				menuitems.push({
-					'input': i,
-					'target': xtrn_area.prog[e].code,
-					'title': xtrn_area.prog[e].name,
-					'type': 'xtrnprog',
-					'access_string': xtrn_area.prog[e].ars,
-					'cost': xtrn_area.prog[e].cost,
+					input: i,
+					target: xtrn_area.prog[e].code,
+					title: xtrn_area.prog[e].name,
+					type: 'xtrnprog',
+					access_string: xtrn_area.prog[e].ars,
+					cost: xtrn_area.prog[e].cost,
 				});
 				i++;
 				break;
@@ -642,9 +651,9 @@ ExternalMenus.prototype.getFavorites = function(title, itemcount) {
 	}
 
 	menu = {
-		'id': 'favorites',
-		'title': title,
-		'items': menuitems,
+		id: 'favorites',
+		title: title !== undefined ? title : 'Favorites',
+		items: menuitems,
 	};
 	
 	return menu;
