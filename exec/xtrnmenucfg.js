@@ -189,12 +189,12 @@ var editItems = function(menuid) {
         editItem(menu.id, 0);
     }
      */
-	
+    
     uifc.help_text = word_wrap("This menu allows editing the various items in this menu.\r\n\r\n"
         + "If you leave input key blank, it will use an auto-generated number at display time.\r\n\r\n"
         + "Choose a type first and the dropdown to choose the target will allow you to select your target.\r\n\r\n"
         + "Access string only applies to custom menu items, commands, and special menus. For external sections or external programs, use the access settings in scfg.\r\n\r\n",
-		72);
+        72);
 
     while(1) {
         items = [];
@@ -209,7 +209,7 @@ var editItems = function(menuid) {
             itemids.push(i);
         }
         selection = uifc.list(
-			WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC|WIN_XTR|WIN_INS|WIN_DEL|WIN_CUT|WIN_COPY|WIN_PASTE|WIN_PASTEXTR|WIN_SAV,
+            WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC|WIN_XTR|WIN_INS|WIN_DEL|WIN_CUT|WIN_COPY|WIN_PASTE|WIN_PASTEXTR|WIN_SAV,
             menu.title + ": Items",
             items,
             ctxm
@@ -261,7 +261,7 @@ var editItems = function(menuid) {
                 // if item already exists in list, modify if since you can't have dupes (except empty input keys)
                 for (var i in menu.items) {
                     if ((menu.items[i].input == copyitem.input) 
-						&& (copyitem.input !== null) && (copyitem.input !== "")) {
+                        && (copyitem.input !== null) && (copyitem.input !== "")) {
                         oktopaste = true;
                         while(1) {
                             selection2 = uifc.input(WIN_MID, "Enter New Input Key", "", 3, K_EDIT);
@@ -301,13 +301,13 @@ var editItems = function(menuid) {
                             ctxm.cur = i-1;
                             pushed = true;
                         }
-						menuitems2.push(menu.items[i]);
-					}
+                        menuitems2.push(menu.items[i]);
+                    }
                     if (!pushed) {
-                    	// add to end
-						menuitems2.push(copyitem);
-						ctxm.cur = menuitems2.length-1;
-					}
+                        // add to end
+                        menuitems2.push(copyitem);
+                        ctxm.cur = menuitems2.length-1;
+                    }
                     menu.items = menuitems2;
                 }
             }
@@ -332,7 +332,7 @@ var editItem = function(menuid, itemindex) {
     var displayoptions = [], displayoptionids = [], newitems = [];
     // used for building target selection
     var custommenuitems = [], custommenuitemsids = [], custommenunames = [];
-	
+    
     if (typeof menuid === "undefined") {
         uifc.msg("Menu could not be found");
         return;
@@ -347,7 +347,7 @@ var editItem = function(menuid, itemindex) {
 
     if (typeof menu.items[itemindex] === "undefined") {
         // new item
-		// 
+        // 
         menu.items.push({
             input: null,
             title: null,
@@ -379,80 +379,80 @@ var editItem = function(menuid, itemindex) {
         displayoptionids.push("type");
 
         switch (item.type) {
-			case 'recentall':
-			case 'recentuser':
-			case 'mostlaunchedall':
-			case 'mostlauncheduser':
-			case 'longestrunall':
-			case 'longestrunuser':
-			case 'search':
-			case 'favorites':
-				displayoptions.push(format("%23s: %s", "count",
-					("target" in item ? item.target : "")));
-				displayoptionids.push("target");
-				break;
-			case 'custommenu':
-			case 'xtrnmenu':
-			case 'xtrnprog':
-			case 'command':
-			default:
-				displayoptions.push(format("%23s: %s", "target",
-					("target" in item ? item.target : "")));
-				displayoptionids.push("target");
-				break;
-		}		
+            case 'recentall':
+            case 'recentuser':
+            case 'mostlaunchedall':
+            case 'mostlauncheduser':
+            case 'longestrunall':
+            case 'longestrunuser':
+            case 'search':
+            case 'favorites':
+                displayoptions.push(format("%23s: %s", "count",
+                    ("target" in item ? item.target : "")));
+                displayoptionids.push("target");
+                break;
+            case 'custommenu':
+            case 'xtrnmenu':
+            case 'xtrnprog':
+            case 'command':
+            default:
+                displayoptions.push(format("%23s: %s", "target",
+                    ("target" in item ? item.target : "")));
+                displayoptionids.push("target");
+                break;
+        }		
 
         switch (item.type) {
-			case 'custommenu':
-			case 'command':
-			case 'recentall':
-			case 'recentuser':
-			case 'mostlaunchedall':
-			case 'mostlauncheduser':
-			case 'longestrunuser':
-			case 'longestrunall':
-			case 'search':
-			case 'favorites':
-				displayoptions.push(format("%23s: %s", "access_string",
-					("access_string" in item ? item.access_string : "(default)")));
-				displayoptionids.push("access_string");
-				break;
-			case 'xtrnmenu':
-			case 'xtrnprog':
-			default:
-				break;
-		}
+            case 'custommenu':
+            case 'command':
+            case 'recentall':
+            case 'recentuser':
+            case 'mostlaunchedall':
+            case 'mostlauncheduser':
+            case 'longestrunuser':
+            case 'longestrunall':
+            case 'search':
+            case 'favorites':
+                displayoptions.push(format("%23s: %s", "access_string",
+                    ("access_string" in item ? item.access_string : "(default)")));
+                displayoptionids.push("access_string");
+                break;
+            case 'xtrnmenu':
+            case 'xtrnprog':
+            default:
+                break;
+        }
 
         selection = uifc.list(WIN_ORG | WIN_MID | WIN_ACT | WIN_ESC,
             menu.title + ": Item " + itemindex, displayoptions, itemctx);
 
         if (selection < 0) {
             if (!item.title || !item.type) {
-				if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
-					// delete item and continue
-					newitems = [];
-					for (i in menu.items) {
-						if (i != itemindex) {
-							newitems.push(menu.items[i]);
-						}
-					}
-					menu.items = newitems;
-					break;
-				}
-			} else if (!item.target && ((item.type == "custommenu") || (item.type == "command")
-				|| (item.type == "xtrnmenu") || (item.type == "xtrnprog"))) {
-				if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
-					// delete item and continue
-					newitems = [];
-					for (i in menu.items) {
-						if (i != itemindex) {
-							newitems.push(menu.items[i]);
-						}
-					}
-					menu.items = newitems;
-					break;
-				}
-            	break;
+                if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
+                    // delete item and continue
+                    newitems = [];
+                    for (i in menu.items) {
+                        if (i != itemindex) {
+                            newitems.push(menu.items[i]);
+                        }
+                    }
+                    menu.items = newitems;
+                    break;
+                }
+            } else if (!item.target && ((item.type == "custommenu") || (item.type == "command")
+                || (item.type == "xtrnmenu") || (item.type == "xtrnprog"))) {
+                if (uifc.list(WIN_ORG | WIN_MID, "This item is missing required items.", ["Remove Item", "Edit Item"]) == 0) {
+                    // delete item and continue
+                    newitems = [];
+                    for (i in menu.items) {
+                        if (i != itemindex) {
+                            newitems.push(menu.items[i]);
+                        }
+                    }
+                    menu.items = newitems;
+                    break;
+                }
+                break;
             } else {
                 // leave menu
                 break;
@@ -483,10 +483,10 @@ var editItem = function(menuid, itemindex) {
                             keyused = true;
                         }
                     }
-	
-					if (selection2 == "Q") {
-						uifc.msg("This input key Q is reserved");
-					}  else if (keyused) {
+    
+                    if (selection2 == "Q") {
+                        uifc.msg("This input key Q is reserved");
+                    }  else if (keyused) {
                         uifc.msg("This input key is already used by another item.");
                     } else {
                         item.input = selection2;
@@ -542,14 +542,14 @@ function present_select_targettype(item)
         + "xtrnmenu is a standard Syncrhonet External Section Menu (refer to the scfg tool).\r\n\r\n"
         + "xtrnprog is a direct link to an external program (refer to the scfg tool)"
         + "command is a synchronet command line. See http://wiki.synchro.net/config:cmdline"
-		+ "recentall is a special menu of most recently used games, by all users"
-		+ "recentuser is a special menu of most recently used games, for current user"
-		+ "mostlaunchedall is a special menu of most launched games, by all users"
-		+ "mostlauncheduser is a special menu of most launched games, for current user"
-		+ "longestrunall is a special menu of games that users spent the most time in"
-		+ "longestrunuser is a special menu of games that current user spent the most time in"
-		+ "search is a special menu item to perform a search"
-		+ "favorites is a special menu to let the user pick favorite games to play", 72);
+        + "recentall is a special menu of most recently used games, by all users"
+        + "recentuser is a special menu of most recently used games, for current user"
+        + "mostlaunchedall is a special menu of most launched games, by all users"
+        + "mostlauncheduser is a special menu of most launched games, for current user"
+        + "longestrunall is a special menu of games that users spent the most time in"
+        + "longestrunuser is a special menu of games that current user spent the most time in"
+        + "search is a special menu item to perform a search"
+        + "favorites is a special menu to let the user pick favorite games to play", 72);
 
     // for existing items, set the popup to the correct value
     if (typeof item.type !== "undefined") {
@@ -570,44 +570,44 @@ function present_select_targettype(item)
                 targetypectx.cur = 3;
                 targetypectx.bar = 3;
                 break;
-			case 'recentall':
-				targetypectx.cur = 4;
-				targetypectx.bar = 4;
-				break;
-			case 'recentuser':
-				targetypectx.cur = 5;
-				targetypectx.bar = 5;
-				break;
-			case 'mostlaunchedall':
-				targetypectx.cur = 6;
-				targetypectx.bar = 6;
-				break;
-			case 'mostlauncheduser':
-				targetypectx.cur = 7;
-				targetypectx.bar = 7;
-				break;
-			case 'longestrunall':
-				targetypectx.cur = 8;
-				targetypectx.bar = 8;
-				break;
-			case 'longestrunuser':
-				targetypectx.cur = 9;
-				targetypectx.bar = 9;
-				break;
-			case 'search':
-				targetypectx.cur = 10;
-				targetypectx.bar = 10;
-				break;
-			case 'favorites':
-				targetypectx.cur = 11;
-				targetypectx.bar = 11;
-				break;				
-		}
+            case 'recentall':
+                targetypectx.cur = 4;
+                targetypectx.bar = 4;
+                break;
+            case 'recentuser':
+                targetypectx.cur = 5;
+                targetypectx.bar = 5;
+                break;
+            case 'mostlaunchedall':
+                targetypectx.cur = 6;
+                targetypectx.bar = 6;
+                break;
+            case 'mostlauncheduser':
+                targetypectx.cur = 7;
+                targetypectx.bar = 7;
+                break;
+            case 'longestrunall':
+                targetypectx.cur = 8;
+                targetypectx.bar = 8;
+                break;
+            case 'longestrunuser':
+                targetypectx.cur = 9;
+                targetypectx.bar = 9;
+                break;
+            case 'search':
+                targetypectx.cur = 10;
+                targetypectx.bar = 10;
+                break;
+            case 'favorites':
+                targetypectx.cur = 11;
+                targetypectx.bar = 11;
+                break;				
+        }
     }
     switch (uifc.list(WIN_ORG | WIN_MID | WIN_SAV,
         "Target Type", ["custommenu", "xtrnmenu", "xtrnprog", "command", "recentall",
-			"recentuser", "mostlaunchedall", "mostlauncheduser", "longestrunall",
-			"longestrunuser", "search", "favorites"], targetypectx)) {
+            "recentuser", "mostlaunchedall", "mostlauncheduser", "longestrunall",
+            "longestrunuser", "search", "favorites"], targetypectx)) {
         case 0:
             item.type = "custommenu";
             break;
@@ -620,31 +620,31 @@ function present_select_targettype(item)
         case 3:
             item.type = "command";
             break;
-		case 4:
-			item.type = "recentall";
-			break;
-		case 5:
-			item.type = "recentuser";
-			break;
-		case 6:
-			item.type = "mostlaunchedall";
-			break;
-		case 7:
-			item.type = "mostlauncheduser";
-			break;
-		case 8:
-			item.type = "longestrunall";
-			break;
-		case 9:
-			item.type = "longestrunuser";
-			break;
-		case 10:
-			item.type = "search";
-			break;
-		case 11:
-			item.type = "favorites";
-			break;
-		default:
+        case 4:
+            item.type = "recentall";
+            break;
+        case 5:
+            item.type = "recentuser";
+            break;
+        case 6:
+            item.type = "mostlaunchedall";
+            break;
+        case 7:
+            item.type = "mostlauncheduser";
+            break;
+        case 8:
+            item.type = "longestrunall";
+            break;
+        case 9:
+            item.type = "longestrunuser";
+            break;
+        case 10:
+            item.type = "search";
+            break;
+        case 11:
+            item.type = "favorites";
+            break;
+        default:
             // includes escape key
             break;
     }
@@ -656,7 +656,7 @@ function present_select_targettype(item)
 function present_select_target(item)
 {
     uifc.help_text = word_wrap("This is the ID of the custom menu, external program section, or external program to link to. "
-	 + "For special menus (recentall, etc.), it is the number of items to display.", 72);
+     + "For special menus (recentall, etc.), it is the number of items to display.", 72);
 
     var custommenuitems = [];
     var custommenuitemsids = [];
@@ -680,29 +680,29 @@ function present_select_target(item)
                         targetctxmenu.bar = p;
                     }
                 }
-			}
-	
-			selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxmenu);
+            }
+    
+            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxmenu);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
 
             // increment counter for rapid bulk adding
-			if (targetctxmenu.cur < custommenuitemsids.length) {
-				++targetctxmenu.cur;
-				++targetctxmenu.bar;
-			}
+            if (targetctxmenu.cur < custommenuitemsids.length) {
+                ++targetctxmenu.cur;
+                ++targetctxmenu.bar;
+            }
 
             item.target = custommenuitemsids[selection2];
 
             while(1) {
                 if ((item.title !== null) && uifc.list(WIN_ORG | WIN_MID, "Replace item title with menus's name?", ["Yes", "No"]) == 0) {
                     item.title = custommenunames[selection2]; // for external program, change title to program name
-				} else if (item.title === null) {
-					item.title = custommenunames[selection2];
-				}
-				break;
+                } else if (item.title === null) {
+                    item.title = custommenunames[selection2];
+                }
+                break;
             }
             break;
 
@@ -727,29 +727,29 @@ function present_select_target(item)
                         targetctxsection.bar = p;
                     }
                 }
-			} 
+            } 
 
             selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxsection);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
-	
-			// increment counter for rapid bulk adding            
-			if (targetctxsection.cur < custommenuitemsids.length) {
-				++targetctxsection.cur;
-				++targetctxsection.bar;
-			}
+    
+            // increment counter for rapid bulk adding            
+            if (targetctxsection.cur < custommenuitemsids.length) {
+                ++targetctxsection.cur;
+                ++targetctxsection.bar;
+            }
 
             item.target = custommenuitemsids[selection2];
 
             while(1) {
                 if ((item.title !== null) && uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
                     item.title = custommenunames[selection2]; // for external program, change title to program name
-				} else if (item.title === null) {
-					item.title = custommenunames[selection2];
-				}
-				break;
+                } else if (item.title === null) {
+                    item.title = custommenunames[selection2];
+                }
+                break;
             }
             break;
 
@@ -775,19 +775,19 @@ function present_select_target(item)
                         targetctxprog.bar = p;
                     }
                 }
-			} 
+            } 
             
-			selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxprog);
+            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxprog);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
-	
-			// increment counter for rapid bulk adding
-			if (targetctxprog.cur < custommenuitemsids.length) {
-				++targetctxprog.cur;
-				++targetctxprog.bar;
-			}
+    
+            // increment counter for rapid bulk adding
+            if (targetctxprog.cur < custommenuitemsids.length) {
+                ++targetctxprog.cur;
+                ++targetctxprog.bar;
+            }
             
             if (selection2 || selection2 === 0) {
                 item.target = custommenuitemsids[selection2];
@@ -795,15 +795,15 @@ function present_select_target(item)
                     if ((item.title !== null) && uifc.list(WIN_ORG | WIN_MID, "Replace item title with programs's name?", ["Yes", "No"]) == 0) {
                         item.title = custommenunames[selection2]; // for external program, change title to program name
                     } else if (item.title === null) {
-                    	item.title = custommenunames[selection2];
-					}
+                        item.title = custommenunames[selection2];
+                    }
                     break;
                 }
             }
             break;
             
-		case "command":
-			selection2 = uifc.input(WIN_ORG | WIN_MID, "Command", item.target, 63, K_EDIT);
+        case "command":
+            selection2 = uifc.input(WIN_ORG | WIN_MID, "Command", item.target, 63, K_EDIT);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
@@ -811,23 +811,23 @@ function present_select_target(item)
             item.target = selection2;
             break;
             
-		case "recentall":
-		case "recentuser":
-		case "mostlaunchedall":
-		case "mostlauncheduser":
-		case "longestrunall":
-		case "longestrunuser":
-		case "search":
-		case "favorites":
-			selection2 = uifc.input(WIN_ORG | WIN_MID, "Number of Items to Display", item.target, 63, K_EDIT);
-			if ((selection2 < 0) || (selection2 == null)) {
-				// escape key
-				break;
-			}
-			item.target = selection2;
-			break;
-			break;
-			
+        case "recentall":
+        case "recentuser":
+        case "mostlaunchedall":
+        case "mostlauncheduser":
+        case "longestrunall":
+        case "longestrunuser":
+        case "search":
+        case "favorites":
+            selection2 = uifc.input(WIN_ORG | WIN_MID, "Number of Items to Display", item.target, 63, K_EDIT);
+            if ((selection2 < 0) || (selection2 == null)) {
+                // escape key
+                break;
+            }
+            item.target = selection2;
+            break;
+            break;
+            
         default:
             selection2 = uifc.input(WIN_ORG | WIN_MID, "Target", item.target, 50, K_EDIT);
             if ((selection2 < 0) || (selection2 == null)) {
@@ -867,12 +867,12 @@ try {
     var copyitem = {}; // for menu item copy/paste
     var config_file = new File(file_cfgname(system.ctrl_dir, "xtrnmenu.cfg"));
     // this is made to persist so that if adding multiple items, it will
-	// remember the position of the target type (good for bulk adds)
-	var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
-	var targetctxmenu = uifc.list.CTX(0, 0, 0, 0, 0);
-	var targetctxsection = uifc.list.CTX(0, 0, 0, 0, 0);
-	var targetctxprog = uifc.list.CTX(0, 0, 0, 0, 0);
-	
+    // remember the position of the target type (good for bulk adds)
+    var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
+    var targetctxmenu = uifc.list.CTX(0, 0, 0, 0, 0);
+    var targetctxsection = uifc.list.CTX(0, 0, 0, 0, 0);
+    var targetctxprog = uifc.list.CTX(0, 0, 0, 0, 0);
+    
     if (config_file.open('r+')) {
         var config_src = config_file.read();
         try {
