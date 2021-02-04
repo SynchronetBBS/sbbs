@@ -17,6 +17,8 @@ var lines = file.readAll();
 file.close();
 
 lines[4] = gamedir;
+lines[5] = "MANIA.ASC";
+lines[6] = "MANIA.ANS";
 
 writeln("Beginning node config generation...");
 for(i = 0; i < system.nodes; i++) {
