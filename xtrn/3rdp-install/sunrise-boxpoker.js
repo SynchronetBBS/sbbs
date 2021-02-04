@@ -27,10 +27,10 @@ var op = system.operator.split(" ", 2);
 lines[2] = op[0];
 lines[3] = op[1];
 
-lines[8] = gamedir + "srboxpkr.ans";
-lines[9] = gamedir + "srboxpkr.asc";
-lines[10] = gamedir + "srboxpkr.ans";
-lines[11] = gamedir + "srboxpkr.asc";
+lines[8] = gamedir + "srboxpkr.asc";
+lines[9] = gamedir + "srboxpkr.ans";
+lines[10] = gamedir + "srboxpkh.asc";
+lines[11] = gamedir + "srboxpkh.ans";
 
 for (i in system.node_list) {
 	var nodenum = parseInt(i, 10) + 1;

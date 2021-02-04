@@ -14,6 +14,8 @@ file.close();
 lines[0] = "LINE";
 lines[1] = system.name;
 lines[2] = system.operator;
+lines[5] = "bull99.ans";
+lines[6] = "bull99.asc";
 lines[9] = "NONE";
 lines[10] = "";
 lines[11] = "";
