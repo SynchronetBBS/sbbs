@@ -31,10 +31,10 @@ var op = system.operator.split(" ", 2);
 lines[2] = op[0];
 lines[3] = op[1];
 
-lines[7] = gamedir + "scrib.ans";
-lines[8] = gamedir + "scrib.asc";
-lines[9] = gamedir + "scribhof.ans";
-lines[10] = gamedir + "scribhof.asc";
+lines[7] = gamedir + "scrib.asc";
+lines[8] = gamedir + "scrib.ans";
+lines[9] = gamedir + "scribhof.asc";
+lines[10] = gamedir + "scribhof.ans";
 lines[11] = "1";
 lines[38] = "G";
 
