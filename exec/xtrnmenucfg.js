@@ -332,7 +332,7 @@ var editItem = function(menuid, itemindex) {
     var displayoptions = [], displayoptionids = [], newitems = [];
     // used for building target selection
     var custommenuitems = [], custommenuitemsids = [], custommenunames = [];
-
+	
     if (typeof menuid === "undefined") {
         uifc.msg("Menu could not be found");
         return;
@@ -349,11 +349,11 @@ var editItem = function(menuid, itemindex) {
         // new item
 		// 
         menu.items.push({
-            "input": null,
-            "title": "New Item " + time(),
-            "type": null,
-            "target": null,
-            "access_string": null,
+            input: null,
+            title: null,
+            type: null,
+            target: null,
+            access_string: null,
         });
         itemindex = menu.items.length - 1;
         present_select_targettype(menu.items[itemindex]);
@@ -551,7 +551,7 @@ function present_select_targettype(item)
 		+ "search is a special menu item to perform a search"
 		+ "favorites is a special menu to let the user pick favorite games to play", 72);
 
-    var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
+    // for existing items, set the popup to the correct value
     if (typeof item.type !== "undefined") {
         switch (item.type) {
             case 'custommenu':
@@ -658,8 +658,6 @@ function present_select_target(item)
     uifc.help_text = word_wrap("This is the ID of the custom menu, external program section, or external program to link to. "
 	 + "For special menus (recentall, etc.), it is the number of items to display.", 72);
 
-    var targetctx = uifc.list.CTX(0, 0, 0, 0, 0);
-
     var custommenuitems = [];
     var custommenuitemsids = [];
     var custommenunames = [];
@@ -678,25 +676,33 @@ function present_select_target(item)
             if ((typeof item.target !== "undefined") && item.target) {
                 for (var p in custommenuitemsids) {
                     if (custommenuitemsids[p] == item.target) {
-                        targetctx.cur = p;
-                        targetctx.bar = p;
+                        targetctxmenu.cur = p;
+                        targetctxmenu.bar = p;
                     }
                 }
-            }
-
-            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
+			}
+	
+			selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxmenu);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
 
+            // increment counter for rapid bulk adding
+			if (targetctxmenu.cur < custommenuitemsids.length) {
+				++targetctxmenu.cur;
+				++targetctxmenu.bar;
+			}
+
             item.target = custommenuitemsids[selection2];
 
             while(1) {
-                if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
+                if ((item.title !== null) && uifc.list(WIN_ORG | WIN_MID, "Replace item title with menus's name?", ["Yes", "No"]) == 0) {
                     item.title = custommenunames[selection2]; // for external program, change title to program name
-                }
-                break;
+				} else if (item.title === null) {
+					item.title = custommenunames[selection2];
+				}
+				break;
             }
             break;
 
@@ -717,25 +723,33 @@ function present_select_target(item)
             if ((typeof item.target !== "undefined") && item.target) {
                 for (var p in custommenuitemsids) {
                     if (custommenuitemsids[p].toLowerCase() == item.target.toLowerCase()) {
-                        targetctx.cur = p;
-                        targetctx.bar = p;
+                        targetctxsection.cur = p;
+                        targetctxsection.bar = p;
                     }
                 }
-            }
+			} 
 
-            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
+            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxsection);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
+	
+			// increment counter for rapid bulk adding            
+			if (targetctxsection.cur < custommenuitemsids.length) {
+				++targetctxsection.cur;
+				++targetctxsection.bar;
+			}
 
             item.target = custommenuitemsids[selection2];
 
             while(1) {
-                if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
+                if ((item.title !== null) && uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
                     item.title = custommenunames[selection2]; // for external program, change title to program name
-                }
-                break;
+				} else if (item.title === null) {
+					item.title = custommenunames[selection2];
+				}
+				break;
             }
             break;
 
@@ -757,23 +771,32 @@ function present_select_target(item)
             if ((typeof item.target !== "undefined") && item.target) {
                 for (var p in custommenuitemsids) {
                     if (custommenuitemsids[p].toLowerCase() == item.target.toLowerCase()) {
-                        targetctx.cur = p;
-                        targetctx.bar = p;
+                        targetctxprog.cur = p;
+                        targetctxprog.bar = p;
                     }
                 }
-            }
-
-            selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctx);
+			} 
+            
+			selection2 = uifc.list(WIN_ORG | WIN_MID | WIN_SAV, "Target", custommenuitems, targetctxprog);
             if ((selection2 < 0) || (selection2 == null)) {
                 // escape key
                 break;
             }
+	
+			// increment counter for rapid bulk adding
+			if (targetctxprog.cur < custommenuitemsids.length) {
+				++targetctxprog.cur;
+				++targetctxprog.bar;
+			}
+            
             if (selection2 || selection2 === 0) {
                 item.target = custommenuitemsids[selection2];
                 while(1) {
-                    if (uifc.list(WIN_ORG | WIN_MID, "Replace item title with sections's name?", ["Yes", "No"]) == 0) {
+                    if ((item.title !== null) && uifc.list(WIN_ORG | WIN_MID, "Replace item title with programs's name?", ["Yes", "No"]) == 0) {
                         item.title = custommenunames[selection2]; // for external program, change title to program name
-                    }
+                    } else if (item.title === null) {
+                    	item.title = custommenunames[selection2];
+					}
                     break;
                 }
             }
@@ -843,6 +866,13 @@ try {
     var menuconfig = {};
     var copyitem = {}; // for menu item copy/paste
     var config_file = new File(file_cfgname(system.ctrl_dir, "xtrnmenu.cfg"));
+    // this is made to persist so that if adding multiple items, it will
+	// remember the position of the target type (good for bulk adds)
+	var targetypectx = uifc.list.CTX(0, 0, 0, 0, 0);
+	var targetctxmenu = uifc.list.CTX(0, 0, 0, 0, 0);
+	var targetctxsection = uifc.list.CTX(0, 0, 0, 0, 0);
+	var targetctxprog = uifc.list.CTX(0, 0, 0, 0, 0);
+	
     if (config_file.open('r+')) {
         var config_src = config_file.read();
         try {

@@ -168,12 +168,6 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 			? this.xtrn_custommenu_options.singlecolumn_margin : this.options.singlecolumn_margin;
 		
 		if (typeof bbs !== "undefined") {
-			this.options.singlecolumn_height = (typeof this.xtrn_custommenu_options.singlecolumn_height !== "undefined")
-				? this.xtrn_custommenu_options.singlecolumn_height : this.options.singlecolumn_height;
-			
-			if (this.options.singlecolumn_height === undefined)
-				this.options.singlecolumn_height = console.screen_rows - this.options.singlecolumn_margin;
-			
 			// override and turn off multicolumn if terminal width is less than 80
 			if (console.screen_columns < 80)
 				options.multicolumn = false;
