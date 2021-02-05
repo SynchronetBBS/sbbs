@@ -770,8 +770,8 @@ function external_menu_custom(menuid)
 						if (selected_index == j) {
 							if (menuitemsfiltered[j].type == 'quit') {
 								printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-									menuitemsfiltered[i].input.toString().toUpperCase(),
-									menuitemsfiltered[i].title,
+									menuitemsfiltered[j].input.toString().toUpperCase(),
+									menuitemsfiltered[j].title,
 									''
 								);					
 							} else {
