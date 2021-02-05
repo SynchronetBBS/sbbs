@@ -1830,7 +1830,7 @@ function favorites_menu(title, itemcount) {
 			bbs.menu("xtrn_head", P_NOERROR);
 		}
 		
-		menuitemsfiltered = typeof menuobj.items !== "undefined" ? menuobj.items : {};
+		menuitemsfiltered = typeof menuobj.items !== "undefined" ? menuobj.items : [];
 		
 		// The quit item is intended to aid in the lightbar navigation
 		menuitemsfiltered.unshift({
@@ -2022,8 +2022,10 @@ function favorites_menu(title, itemcount) {
 				return;
 			} else if (menuitemsfiltered[selected_index].type == "add") {
 				add_favorite();
+				continue;
 			} else if (menuitemsfiltered[selected_index].type == "remove") {
 				remove_favorite();
+				continue;
 			}
 		} else if ((keyin == 'q') || (keyin == "\x1B")) {
 			console.clear();
@@ -2240,6 +2242,7 @@ function add_favorite()
 		key = console.getkey(K_NOSPIN);
 		if (key == "\x0d") {
 			// hit enter, item is selected
+			xtrn = tree.currentItem;
 			break;
 		} else if ((key.toLowerCase() == 'q') || (key == "\x1B")) {
 			return;
@@ -2248,6 +2251,7 @@ function add_favorite()
 			break;
 		} else {
 			selection = tree.getcmd({key: key, mouse: false});
+			xtrn = tree.currentItem;
 			
 			if (key == KEY_UP || key == KEY_DOWN || key == KEY_HOME || key == KEY_END) {
 				if ((key == KEY_UP) && (tree.line == 1)) {
@@ -2267,7 +2271,7 @@ function add_favorite()
 		s.cycle();
 	}
 
-	if (typeof xtrn.code !== "undefined") {
+	if ((typeof xtrn !== "undefined") && (typeof xtrn.code !== "undefined")) {
 		jsonData.push(xtrn.code);
 		jsonClient.write("xtrnmenu", "favorites_" + user.alias, jsonData, 2);
 	}
