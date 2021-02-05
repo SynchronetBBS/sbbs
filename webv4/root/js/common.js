@@ -91,6 +91,44 @@ function registerEventListener(scope, callback, params) {
 	};
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+	// originally based on dark-mode-switch by Christian Oliff
+	var darkSwitch = document.getElementById("darkSwitch");
+	if (darkSwitch) {
+		initTheme();
+		darkSwitch.addEventListener("change", function (event) {
+			resetTheme();
+		});
+
+		function initTheme() {
+			var darkThemeSelected;
+			if (localStorage.getItem("darkSwitch") !== null) {
+				darkThemeSelected = localStorage.getItem("darkSwitch") === "dark";
+			} else {
+				darkThemeSelected = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+			}
+			darkSwitch.checked = darkThemeSelected;
+			if (darkThemeSelected) {
+				jQuery("body").addClass("dark")
+			} else {
+				jQuery("body").removeClass("dark");
+			}
+		}
+
+		function resetTheme() {
+			if (darkSwitch.checked) {
+				jQuery("body").addClass("dark");
+				localStorage.setItem("darkSwitch", "dark");
+			} else {
+				jQuery("body").removeClass("dark");
+				localStorage.setItem("darkSwitch", "light");
+			}
+		}
+	}
+
+	jQuery('html').removeClass('hidden');
+});
+
 window.onload =	function () {
 
 	$('#button-logout').click(logout);

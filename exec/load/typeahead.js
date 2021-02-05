@@ -216,37 +216,37 @@ load('tree.js');
 var Typeahead = function (options) {
 
     var properties = {
-        'x' : 0,
-        'y' : 0,
-        'len' : console.screen_columns,
-        'height' : 0,
-        'prompt' : '',
-        'fg' : LIGHTGRAY,
-        'bg' : BG_BLUE,
-        'sfg' : LIGHTGRAY,
-        'sbg' : BG_BLUE,
-        'hsfg' : WHITE,
-        'hsbg' : BG_CYAN,
-        'cursor' : ascii(219),
-        'position' : 0,
-        'text' : '',
-        'datasources' : [],
-        'delay' : 1,
-        'minLength' : 1,
-        'lastKey' : system.timer,
-        'suggested' : false,
-        'attr' : console.attributes,
-        'focus' : true,
-        'maxResults': 0,
+        x: 0,
+        y: 0,
+        len: console.screen_columns,
+        height: 0,
+        prompt: '',
+        fg: LIGHTGRAY,
+        bg: BG_BLUE,
+        sfg: LIGHTGRAY,
+        sbg: BG_BLUE,
+        hsfg: WHITE,
+        hsbg: BG_CYAN,
+        cursor: ascii(219),
+        position: 0,
+        text: '',
+        datasources: [],
+        delay: 1,
+        minLength: 1,
+        lastKey: system.timer,
+        suggested: false,
+        attr: console.attributes,
+        focus: true,
+        maxResults: 0,
     };
 
     var display = {
-        'parentFrame' : undefined,
-        'frame' : undefined,
-        'inputFrame' : undefined,
-        'cursor' : undefined,
-        'treeFrame' : undefined,
-        'tree' : undefined
+        parentFrame: undefined,
+        frame: undefined,
+        inputFrame: undefined,
+        cursor: undefined,
+        treeFrame: undefined,
+        tree: undefined
     };
 
     function initSettings() {
@@ -355,27 +355,26 @@ var Typeahead = function (options) {
             display.treeFrame.invalidate();
         }
 
-        if (suggestions.length < 1) {
-            display.tree = undefined;
-            return;
-        }
-
         display.tree = new Tree(display.treeFrame);
         display.tree.colors.fg = properties.sfg;
         display.tree.colors.bg = properties.sbg;
         display.tree.colors.lfg = properties.hsfg;
         display.tree.colors.lbg = properties.hsbg;
 
-        display.tree.addItem('');
-        for (var n = 0; n < (properties.maxResults || suggestions.length); n++) {
-            if (typeof suggestions[n] === 'object' && typeof suggestions[n].text === 'string') {
-                var item = display.tree.addItem(suggestions[n].text);
-                item.suggestion = suggestions[n];
-            } else if (typeof suggestions[n] === 'string') {
-                display.tree.addItem(suggestions[n]);
+        if (suggestions.length < 1) {
+            display.tree.addItem('No results found');
+        } else {
+            display.tree.addItem('');
+            for (var n = 0; n < (properties.maxResults || suggestions.length); n++) {
+                if (typeof suggestions[n] === 'object' && typeof suggestions[n].text === 'string') {
+                    var item = display.tree.addItem(suggestions[n].text);
+                    item.suggestion = suggestions[n];
+                } else if (typeof suggestions[n] === 'string') {
+                    display.tree.addItem(suggestions[n]);
+                }
             }
         }
-
+        
         display.tree.open();
 
         properties.suggested = true;
@@ -412,7 +411,8 @@ var Typeahead = function (options) {
                 break;
             case KEY_UP:
             case KEY_DOWN:
-                if (typeof display.tree !== 'undefined') {
+                //if (typeof display.tree !== 'undefined') {
+                if (display.tree.items.length > 1) {
                     display.tree.getcmd(key);
                 }
                 break;
@@ -429,6 +429,7 @@ var Typeahead = function (options) {
                 properties.position = (properties.position >= properties.text.length) ? properties.text.length : properties.position + 1;
                 break;
             case '\b':
+            case '\x08':
                 if (properties.position === 0) break;
                 properties.text = properties.text.split('');
                 properties.text.splice((properties.position - 1), 1);
