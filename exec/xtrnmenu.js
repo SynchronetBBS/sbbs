@@ -637,8 +637,18 @@ function external_menu_custom(menuid)
 		// then display that, otherwise dynamiic
 		if (!bbs.menu("xtrnmenu_" + menuid, P_NOERROR)) {
 			
+			// determine lines left. we can't know the size of the footer so 
+			// let the sysop use singlecolumn_margin to specify that. Below
+			// calcution will always leave room for titles and underline even
+			// if they aren't rendered
+			var linesleft = console.screen_rows - console.line_counter - options.singlecolumn_margin 
+				- 2 - 2; // -2 for header_fmt/crlf and -2 for crlf and footer
+			if(options.titles.trimRight() != '') linesleft = linesleft - 1;
+			if(options.underline.trimRight() != '') linesleft = linesleft - 2;
+			
+			multicolumn = menuitemsfiltered.length  > linesleft;
+			
 			// if no custom menu file in text/menu, create a dynamic one
-			multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
 			printf(options.header_fmt, menuobj.title);
 			if(options.titles.trimRight() != '')
 				write(options.titles);
@@ -760,8 +770,8 @@ function external_menu_custom(menuid)
 						if (selected_index == j) {
 							if (menuitemsfiltered[j].type == 'quit') {
 								printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-									menuitemsfiltered[i].input.toString().toUpperCase(),
-									menuitemsfiltered[i].title,
+									menuitemsfiltered[j].input.toString().toUpperCase(),
+									menuitemsfiltered[j].title,
 									''
 								);					
 							} else {
@@ -1066,8 +1076,18 @@ function special_menu(menutype, title, itemcount) {
 			type: 'quit',
 		});
 		
+		// determine lines left. we can't know the size of the footer so 
+		// let the sysop use singlecolumn_margin to specify that. Below
+		// calcution will always leave room for titles and underline even
+		// if they aren't rendered
+		var linesleft = console.screen_rows - console.line_counter - options.singlecolumn_margin
+			- 2 - 2; // -2 for header_fmt/crlf and -2 for crlf and footer
+		if(options.titles.trimRight() != '') linesleft = linesleft - 1;
+		if(options.underline.trimRight() != '') linesleft = linesleft - 2;
+		
+		multicolumn = menuitemsfiltered.length  > linesleft;
+		
 		// if no custom menu file in text/menu, create a dynamic one
-		multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
 		printf(options.header_fmt, title);
 		if(options.titles.trimRight() != '')
 			write(options.titles);
@@ -1462,9 +1482,17 @@ function search_menu(title, itemcount) {
 			type: 'quit',
 		});
 		
-		// if no custom menu file in text/menu, create a dynamic one
-		multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
-
+		// determine lines left. we can't know the size of the footer so 
+		// let the sysop use singlecolumn_margin to specify that. Below
+		// calcution will always leave room for titles and underline even
+		// if they aren't rendered
+		var linesleft = console.screen_rows - console.line_counter - options.singlecolumn_margin
+			- 2 - 2; // -2 for header_fmt/crlf and -2 for crlf and footer
+		if(options.titles.trimRight() != '') linesleft = linesleft - 1;
+		if(options.underline.trimRight() != '') linesleft = linesleft - 2;
+		
+		multicolumn = menuitemsfiltered.length  > linesleft;
+		
 		if(options.titles.trimRight() != '')
 			write(options.titles);
 		if(multicolumn) {
@@ -1825,9 +1853,18 @@ function favorites_menu(title, itemcount) {
 			target: '',
 			type: 'remove'
 		});
-			
-		// if no custom menu file in text/menu, create a dynamic one
-		multicolumn = options.multicolumn && menuitemsfiltered.length > options.singlecolumn_height;
+		
+		// determine lines left. we can't know the size of the footer so 
+		// let the sysop use singlecolumn_margin to specify that. Below
+		// calcution will always leave room for titles and underline even
+		// if they aren't rendered
+		var linesleft = console.screen_rows - console.line_counter - options.singlecolumn_margin
+			- 2 - 2; // -2 for header_fmt/crlf and -2 for crlf and footer
+		if(options.titles.trimRight() != '') linesleft = linesleft - 1;
+		if(options.underline.trimRight() != '') linesleft = linesleft - 2;
+		
+		multicolumn = menuitemsfiltered.length  > linesleft;
+		
 		printf(options.header_fmt, title);
 		if(options.titles.trimRight() != '')
 			write(options.titles);
