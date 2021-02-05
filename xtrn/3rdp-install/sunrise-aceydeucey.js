@@ -28,10 +28,10 @@ var op = system.operator.split(" ", 2);
 lines[2] = op[0];
 lines[3] = op[1];
 
-lines[7] = gamedir + "aceyd.ans";
-lines[8] = gamedir + "aceyd.asc";
-lines[9] = gamedir + "aceydhof.ans";
-lines[10] = gamedir + "aceydhof.asc";
+lines[7] = gamedir + "aceyd.asc";
+lines[8] = gamedir + "aceyd.ans";
+lines[9] = gamedir + "aceydhof.asc";
+lines[10] = gamedir + "aceydhof.ans";
 lines[11] = "1";
 
 for(i = 0; i < system.nodes; i++) {

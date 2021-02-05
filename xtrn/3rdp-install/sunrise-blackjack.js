@@ -27,10 +27,10 @@ var op = system.operator.split(" ", 2);
 lines[2] = op[0];
 lines[3] = op[1];
 
-lines[7] = gamedir + "srbj.ans";
-lines[8] = gamedir + "srbj.asc";
-lines[9] = gamedir + "srbjhof.ans";
-lines[10] = gamedir + "srbjhof.asc";
+lines[7] = gamedir + "srbj.asc";
+lines[8] = gamedir + "srbj.ans";
+lines[9] = gamedir + "srbjhof.asc";
+lines[10] = gamedir + "srbjhof.ans";
 lines[11] = "1";
 
 for(i = 0; i < system.nodes; i++) {

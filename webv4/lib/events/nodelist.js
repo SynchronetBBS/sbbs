@@ -73,7 +73,7 @@ function scan() {
             if (e.status != NODE_INUSE) {
                 return {
                     node: i + 1,
-                    status: null,
+                    status: locale.strings.sidebar_node_list.label_waiting_for_call,
                     action: null,
                     user: null,
                     connection: ''
