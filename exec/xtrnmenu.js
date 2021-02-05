@@ -2267,7 +2267,7 @@ function add_favorite()
 		s.cycle();
 	}
 
-	if (typeof xtrn.code !== "undefined") {
+	if ((typeof xtrn !== "undefined") || (typeof xtrn.code !== "undefined")) {
 		jsonData.push(xtrn.code);
 		jsonClient.write("xtrnmenu", "favorites_" + user.alias, jsonData, 2);
 	}
