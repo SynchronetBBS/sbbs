@@ -1830,7 +1830,7 @@ function favorites_menu(title, itemcount) {
 			bbs.menu("xtrn_head", P_NOERROR);
 		}
 		
-		menuitemsfiltered = typeof menuobj.items !== "undefined" ? menuobj.items : {};
+		menuitemsfiltered = typeof menuobj.items !== "undefined" ? menuobj.items : [];
 		
 		// The quit item is intended to aid in the lightbar navigation
 		menuitemsfiltered.unshift({
