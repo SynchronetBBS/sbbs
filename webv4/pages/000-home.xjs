@@ -20,30 +20,32 @@
 
     	<script id="fTelnetScript" src="<?xjs write(get_url()); ?>"></script>
     	<script>
-            var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
-            var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
-    		var Options = new fTelnetOptions();
-    		Options.BareLFtoCRLF = false;
-            Options.BitsPerSecond = 57600;
-            Options.ButtonBarVisible = true;
-    		Options.ConnectionType = 'telnet';
-    		Options.Emulation = 'ansi-bbs';
-    		Options.Enter = '\r';
-    		Options.Font = 'CP437';
-    		Options.ForceWss = false;
-    		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
-    		Options.LocalEcho = false;
-    		Options.Port = location.protocol == 'https:' ? wssp : wsp;
-    		Options.ScreenColumns = 80;
-    		Options.ScreenRows = 25;
-            Options.SplashScreen = '<?xjs write(get_splash()); ?>';
-            var fTelnet = new fTelnetClient('fTelnetContainer', Options);
-            fTelnet.ButtonBarVisible = true;
-            if ($('#ftelnet-connect').length) {
-                $('#ftelnet-connect').click(function() {
-                    fTelnet.Connect();
-                });
-            }
+    		window.addEventListener('load', (event) => {
+				var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
+				var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
+				var Options = new fTelnetOptions();
+				Options.BareLFtoCRLF = false;
+				Options.BitsPerSecond = 57600;
+				Options.ButtonBarVisible = true;
+				Options.ConnectionType = 'telnet';
+				Options.Emulation = 'ansi-bbs';
+				Options.Enter = '\r';
+				Options.Font = 'CP437';
+				Options.ForceWss = false;
+				Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+				Options.LocalEcho = false;
+				Options.Port = location.protocol == 'https:' ? wssp : wsp;
+				Options.ScreenColumns = 80;
+				Options.ScreenRows = 25;
+				Options.SplashScreen = '<?xjs write(get_splash()); ?>';
+				var fTelnet = new fTelnetClient('fTelnetContainer', Options);
+				fTelnet.ButtonBarVisible = true;
+				if ($('#ftelnet-connect').length) {
+					$('#ftelnet-connect').click(function() {
+						fTelnet.Connect();
+					});
+				}
+			});
     	</script>
 
 <?xjs } ?>
