@@ -877,33 +877,40 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 
 static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines)
 {
-	char		filepath[MAX_PATH+1];
+	char		dirname[MAX_PATH + 1];
+	char		filepath[MAX_PATH + 1];
 	ulong		retval;
 	char*		boundary=NULL;
-	unsigned	i;
 	str_list_t	file_list=NULL;
-	str_list_t	split;
 
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {
+		if(msg->idx.to != 0)
+			SAFEPRINTF2(dirname, "%sfile/%04u.in", scfg.data_dir, msg->idx.to);
+		else
+			SAFEPRINTF2(dirname, "%sfile/%04u.out", scfg.data_dir, msg->idx.from);
 
 		boundary = mimegetboundary();
 		file_list = strListInit();
 
-		/* Parse subject (if necessary) */
-		if(!strListCount(file_list)) {	/* filename(s) stored in subject */
-			split=strListSplitCopy(NULL,msg->subj," ");
-			if(split!=NULL) {
-				for(i=0;split[i];i++) {
-					if(msg->idx.to!=0)
-						SAFEPRINTF3(filepath,"%sfile/%04u.in/%s"
-							,scfg.data_dir,msg->idx.to,getfname(truncsp(split[i])));
-					else
-						SAFEPRINTF3(filepath,"%sfile/%04u.out/%s"
-							,scfg.data_dir,msg->idx.from,getfname(truncsp(split[i])));
-					strListPush(&file_list,filepath);
-				}
-				strListFree(&split);
+		/* filename(s) in subject */
+		char* p = msg->subj;
+		SKIP_WHITESPACE(p);
+		while(*p != '\0') {
+			char delim = ' ';
+			if(*p == '"') {
+				delim = '"';
+				p++;
 			}
+			char* tp = strchr(p, delim);
+			if(tp == NULL && delim != ' ')
+				break;
+			*tp = '\0';
+			SAFEPRINTF2(filepath, "%s/%s", dirname, getfname(truncsp(p)));
+			strListPush(&file_list, filepath);
+			if(tp == NULL)
+				break;
+			p = tp + 1;
+			SKIP_WHITESPACE(p);
 		}
     }
 
