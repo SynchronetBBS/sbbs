@@ -335,17 +335,15 @@ ExternalMenus.prototype.getSectionMenu = function(menuid) {
 				return false;
 			}
 			
-			var i = 1;
 			sec.prog_list.some(function (prog) {
 				menuitems.push({
-					input : i,
+					input : null,
 					target: prog.code,
 					title: prog.name,
 					type: 'xtrnprog',
 					access_string: prog.ars,
 					cost: prog.cost
 				});
-				i++;
 			});
 			
 			if (menuitems.length > 0) {
