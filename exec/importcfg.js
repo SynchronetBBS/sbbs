@@ -1,4 +1,3 @@
-
 // Imports a limited set of types exported by exportcfg.js
 // Example: jsexec exportcfg.js xtrn-secs > secs.txt
 //          jsexec importcfg.js xtrn-secs secs.txt
@@ -150,7 +149,7 @@ switch(argv[0]) {
 		if (!cnflib.write(system.ctrl_dir + "xtrn.cnf", undefined, xtrn_cnf)) {
 			throw("Failed to write " + system.ctrl_dir + "xtrn.cnf");
 		} else {
-			writeln("External sections saved.");
+			writeln("External programs saved.");
 		}
 		
 		break;
@@ -199,7 +198,7 @@ switch(argv[0]) {
 			if (!cnflib.write(system.ctrl_dir + "xtrn.cnf", undefined, xtrn_cnf)) {
 				throw("Failed to write " + system.ctrl_dir + "xtrn.cnf");
 			} else {
-				writeln("External sections saved.");
+				writeln("External events saved.");
 			}
 		}
 		break;
@@ -237,7 +236,7 @@ switch(argv[0]) {
 			if (!cnflib.write(system.ctrl_dir + "xtrn.cnf", undefined, xtrn_cnf)) {
 				throw("Failed to write " + system.ctrl_dir + "xtrn.cnf");
 			} else {
-				writeln("External sections saved.");
+				writeln("External editors saved.");
 			}
 		}
 		
