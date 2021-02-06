@@ -43,147 +43,208 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 	if (typeof menutype === "undefined") {
 		menutype = 'custommenu';
 	}
-	
+
 	// Get xtrn_sec options from modopts.ini [xtrn_sec]
 	if ((this.options = load({}, "modopts.js", "xtrn_sec")) == null) {
 		this.options = { multicolumn: true, sort: false };
 	}
-	
-	// Get xtrn_custommenu options from modopts.ini [xtrn_custommenu]
+
+	// Get xtrn_custommenu options from modopts.d/xtrnmenu.ini [xtrnmenu]
 	if ((this.xtrn_custommenu_options = load({}, "modopts.js", "xtrnmenu")) == null) {
 		this.xtrn_custommenu_options = { };
 	}
-	
-	// in all cases, we start with the xtrn_sec options as the base and set the defaults
-	if (this.options.multicolumn === undefined)
+
+	// We start with the option from xtrnmenu. If it doesn't exist,
+	// we use the option from xtrn_sec (if applicable). And if that doesn't exist, we use the 
+	// default (system or in code).
+
+	if (typeof this.xtrn_custommenu_options.multicolumn !== "undefined") {
+		this.options.multicolumn = this.xtrn_custommenu_options.multicolumn;
+	} else if (typeof this.options.multicolumn === "undefined") {
 		this.options.multicolumn = true;
-	
-	if (this.options.multicolumn_separator === undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.multicolumn_separator !== "undefined") {
+		this.options.multicolumn_separator = this.xtrn_custommenu_options.multicolumn_separator;
+	} else if (typeof this.options.multicolumn_seperator === "undefined") {
 		this.options.multicolumn_separator = " ";
-	
-	if (this.options.multicolumn_fmt === undefined)
-		this.options.multicolumn_fmt = system.text(XtrnProgLstFmt);
-	
-	if (this.options.singlecolumn_fmt === undefined)
-		this.options.singlecolumn_fmt = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
-	
-	if (this.options.multicolumn_fmt_inverse === undefined)
-		this.options.multicolumn_fmt_inverse = system.text(XtrnProgLstFmt);
-	
-	if (this.options.singlecolumn_fmt_inverse === undefined)
-		this.options.singlecolumn_fmt_inverse = "\x01h\x01c%3u \xb3 \x01n\x01c%s\x01h ";
-	
-	if (this.options.singlecolumn_margin == undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.multicolumn_fmt !== "undefined") {
+		this.options.multicolumn_fmt = this.xtrn_custommenu_options.multicolumn_fmt;
+	} else if (typeof this.options.multicolumn_fmt === "undefined") {
+		// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+		this.options.multicolumn_fmt = "\x01h\x01c%3s \xb3 \x01n\x01c%-32.32s\x01h ";
+	}
+
+	if (typeof this.xtrn_custommenu_options.singlecolumn_fmt !== "undefined") {
+		this.options.singlecolumn_fmt = this.xtrn_custommenu_options.singlecolumn_fmt;
+	} else if (typeof this.options.singlecolumn_fmt === "undefined") {
+		// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+		this.options.singlecolumn_fmt = "\x01h\x01c%3s \xb3 \x01n\x01c%s\x01h ";
+	}
+
+	if (typeof this.xtrn_custommenu_options.multicolumn_fmt_inverse !== "undefined") {
+		this.options.multicolumn_fmt_inverse = this.xtrn_custommenu_options.multicolumn_fmt_inverse;
+	} else {
+		// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+		this.options.multicolumn_fmt_inverse = "\x01h\x01c%3s \xb3 \x01n\x016\x01w\x01h%-32.32s \x01n\x01h";
+	}
+
+	if (typeof this.xtrn_custommenu_options.singlecolumn_fmt_inverse !== "undefined") {
+		this.options.singlecolumn_fmt_inverse = this.xtrn_custommenu_options.singlecolumn_fmt_inverse;
+	} else {
+		// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+		this.options.singlecolumn_fmt_inverse = "\x01h\x01c%3s \xb3 \x01n\x016\x01w\x01h%s \x01n\x01h";
+	}
+
+	if (typeof this.xtrn_custommenu_options.return_multicolumn_fmt !== "undefined") {
+		this.options.return_multicolumn_fmt = this.xtrn_custommenu_options.return_multicolumn_fmt;
+	} else if (typeof this.options.return_multicolumn_fmt === "undefined") {
+		// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
+		this.options.return_multicolumn_fmt = this.options.multicolumn_fmt;
+	}
+
+	if (typeof this.xtrn_custommenu_options.return_singlecolumn_fmt !== "undefined") {
+		this.options.return_singlecolumn_fmt = this.xtrn_custommenu_options.return_singlecolumn_fmt;
+	} else if (typeof this.options.return_singlecolumn_fmt === "undefined") {
+		// cannot default to xtrn_sec singlecolumn_fmt due to use of %u instead of %s
+		this.options.return_singlecolumn_fmt = this.options.singlecolumn_fmt;
+	}
+
+	if (typeof this.xtrn_custommenu_options.return_multicolumn_fmt_inverse !== "undefined") {
+		this.options.return_multicolumn_fmt_inverse = this.xtrn_custommenu_options.return_multicolumn_fmt_inverse;
+	} else if (typeof this.options.return_multicolumn_fmt_inverse === "undefined") {
+		this.options.return_multicolumn_fmt_inverse = this.options.multicolumn_fmt_inverse;
+	}
+
+	if (typeof this.xtrn_custommenu_options.return_singlecolumn_fmt_inverse !== "undefined") {
+		this.options.return_singlecolumn_fmt_inverse = this.xtrn_custommenu_options.return_singlecolumn_fmt_inverse;
+	} else if (typeof this.options.return_singlecolumn_fmt_inverse === "undefined") {
+		this.options.return_singlecolumn_fmt_inverse = this.options.singlecolumn_fmt_inverse;
+	}
+
+	this.options.multicolumn_fmt_special = typeof this.xtrn_custommenu_options.multicolumn_fmt_special !== "undefined"
+		? this.xtrn_custommenu_options.multicolumn_fmt_special : this.options.multicolumn_fmt;
+
+	this.options.singlecolumn_fmt_special = typeof this.xtrn_custommenu_options.singlecolumn_fmt_special !== "undefined"
+		? this.xtrn_custommenu_options.singlecolumn_fmt_special : this.options.singlecolumn_fmt;
+
+	this.options.multicolumn_fmt_special_inverse = typeof this.xtrn_custommenu_options.multicolumn_fmt_special_inverse !== "undefined"
+		? this.xtrn_custommenu_options.multicolumn_fmt_special_inverse : this.options.multicolumn_fmt_inverse;
+
+	this.options.singlecolumn_fmt_special_inverse = typeof this.xtrn_custommenu_options.singlecolumn_fmt_special_inverse !== "undefined"
+		? this.xtrn_custommenu_options.singlecolumn_fmt_special_inverse : this.options.singlecolumn_fmt_inverse;
+
+	this.options.return_singlecolumn_special_fmt = typeof this.xtrn_custommenu_options.return_singlecolumn_special_fmt
+		? this.xtrn_custommenu_options.return_singlecolumn_special_fmt : this.options.singlecolumn_fmt;
+
+	this.options.return_multicolumn_special_fmt = typeof this.xtrn_custommenu_options.return_multicolumn_special_fmt
+		? this.xtrn_custommenu_options.return_multicolumn_special_fmt : this.options.multicolumn_fmt;
+
+	this.options.return_singlecolumn_special_fmt_inverse = typeof this.xtrn_custommenu_options.return_singlecolumn_special_fmt_inverse
+		? this.xtrn_custommenu_options.return_singlecolumn_special_fmt_inverse : this.options.singlecolumn_fmt_inverse;
+
+	this.options.return_multicolumn_special_fmt_inverse = typeof this.xtrn_custommenu_options.return_multicolumn_special_fmt_inverse
+		? this.xtrn_custommenu_options.return_multicolumn_special_fmt_inverse : this.options.multicolumn_fmt_inverse_inverse;
+
+	if (typeof this.xtrn_custommenu_options.singlecolumn_margin !== "undefined") {
+		this.options.singlecolumn_margin = this.xtrn_custommenu_options.singlecolumn_margin;
+	} else if (typeof this.options.singlecolumn_margin === "undefined") {
 		this.options.singlecolumn_margin = 7;
-	
-	if (this.options.restricted_user_msg === undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.restricted_user_msg !== "undefined") {
+		this.options.restricted_user_msg = this.xtrn_custommenu_options.restricted_user_msg;
+	} else if (typeof this.options.restricted_user_msg === "undefined") {
 		this.options.restricted_user_msg = system.text(R_ExternalPrograms);
-	
-	if (this.options.no_programs_msg === undefined)
-		this.options.no_programs_msg =  system.text(NoXtrnPrograms);
-	
-	if (this.options.header_fmt === undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.no_programs_msg !== "undefined") {
+		this.options.no_programs_msg = this.xtrn_custommenu_options.no_programs_msg;
+	} else if (typeof this.options.no_programs_msg === "undefined") {
+		this.options.no_programs_msg = system.text(NoXtrnPrograms);
+	}
+
+	if (typeof this.xtrn_custommenu_options.header_fmt !== "undefined") {
+		this.options.header_fmt = this.xtrn_custommenu_options.header_fmt;
+	} else if (typeof this.options.header_fmt === "undefined") {
 		this.options.header_fmt = system.text(XtrnProgLstHdr);
-	
-	if (this.options.titles === undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.titles !== "undefined") {
+		this.options.titles = this.xtrn_custommenu_options.titles;
+	} else if (typeof this.options.title === "undefined") {
 		this.options.titles = system.text(XtrnProgLstTitles);
-	
-	if (this.options.underline === undefined)
-		this.options.underline = system.text(XtrnProgLstUnderline);
-	
-	if (this.options.which === undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.which !== "undefined") {
+		this.options.which = this.xtrn_custommenu_options.which;
+	} else if (typeof this.options.which === "undefined") {
 		this.options.which = system.text(WhichXtrnProg);
-	
-	if (this.options.clear_screen === undefined)
+	}
+
+	if (typeof this.xtrn_custommenu_options.underline !== "undefined") {
+		this.options.underline = this.xtrn_custommenu_options.underline;
+	} else if (typeof this.options.underline === "undefined") {
+		this.options.underline = system.text(XtrnProgLstUnderline);
+	}
+
+	if (typeof this.xtrn_custommenu_options.clear_screen !== "undefined") {
+		this.options.clear_screen = this.xtrn_custommenu_options.clear_screen;
+	} else if (typeof this.options.clear_screen === "undefined") {
 		this.options.clear_screen = true;
-	
-	if (this.options.section_fmt === undefined)
-		this.options.section_fmt = "\x01y\x01g%3d:\x01n\x01g %s"
-	
-	if (this.options.section_header_fmt === undefined)
-		this.options.section_header_fmt = "\x01-\x01gSelect \x01hExternal Program Section\x01-\x01g:"
-	
-	if (this.options.section_which === undefined)
-		this.options.section_which = "\r\n\x01-\x01gWhich, \x01w\x01h~Q\x01n\x01guit or [1]: \x01h"
-	
-	if (typeof (this.options.use_xtrn_sec) == "undefined") {
-		this.options.use_xtrn_sec = false;
 	}
+
+	if (typeof this.xtrn_custommenu_options.section_fmt !== "undefined") {
+		this.options.section_fmt = this.xtrn_custommenu_options.section_fmt;
+	} else if (typeof this.options.section_fmt === "undefined") {
+		this.options.section_fmt = "\x01y\x01g%3d:\x01n\x01g %s";
+	}
+
+	if (typeof this.xtrn_custommenu_options.section_header_fmt !== "undefined") {
+		this.options.section_header_fmt = this.xtrn_custommenu_options.section_header_fmt;
+	} else if (typeof this.options.section_header_fmt === "undefined") {
+		this.options.section_header_fmt = "\x01-\x01gSelect \x01hExternal Program Section\x01-\x01g:";
+	}
+
+	if (typeof this.xtrn_custommenu_options.section_which !== "undefined") {
+		this.options.section_which = this.xtrn_custommenu_options.section_which;
+	} else if (typeof this.options.section_which === "undefined") {
+		this.options.section_which = "\r\n\x01-\x01gWhich, \x01w\x01h~Q\x01n\x01guit or [1]: \x01h";
+	}
+
+	if (typeof this.xtrn_custommenu_options.sort !== "undefined") {
+		this.options.sort = this.xtrn_custommenu_options.sort;
+	} else if (typeof this.options.sort === "undefined") {
+		this.options.sort = false;
+	}
+
+	this.options.custom_menu_not_found_msg = (typeof this.options.custom_menu_not_found_msg !== "undefined")
+		? this.options.custom_menu_not_found_msg : "Menu %MENUID% not found";
 	
-	// if its a custom menu, then override with custommenu_options
-	if (menutype == 'custommenu') {
-		if (typeof this.xtrn_custommenu_options.multicolumn_fmt !== "undefined") {
-			this.options.multicolumn_fmt = this.xtrn_custommenu_options.multicolumn_fmt;
-		} else {
-			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
-			this.options.multicolumn_fmt = "\x01h\x01c%3s \xb3 \x01n\x01c%-32.32s\x01h ";
-		}
-		
-		if (typeof this.xtrn_custommenu_options.singlecolumn_fmt !== "undefined") {
-			this.options.singlecolumn_fmt = this.xtrn_custommenu_options.singlecolumn_fmt;
-		} else {
-			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
-			this.options.singlecolumn_fmt = "\x01h\x01c%3s \xb3 \x01n\x01c%s\x01h ";
-		}
-		
-		if (typeof this.xtrn_custommenu_options.multicolumn_fmt_inverse !== "undefined") {
-			this.options.multicolumn_fmt_inverse = this.xtrn_custommenu_options.multicolumn_fmt_inverse;
-		} else {
-			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
-			this.options.multicolumn_fmt_inverse = "\x01h\x01c%3s \xb3 \x01n\x016\x01w\x01h%-32.32s \x01n\x01h";
-		}
-		
-		if (typeof this.xtrn_custommenu_options.singlecolumn_fmt_inverse !== "undefined") {
-			this.options.singlecolumn_fmt_inverse = this.xtrn_custommenu_options.singlecolumn_fmt_inverse;
-		} else {
-			// cannot default to xtrn_sec multicolumn_fmt due to use of %u instead of %s
-			this.options.singlecolumn_fmt_inverse = "\x01h\x01c%3s \xb3 \x01n\x016\x01w\x01h%s \x01n\x01h";
-		}
-		
-		this.options.header_fmt = (typeof this.xtrn_custommenu_options.header_fmt !== "undefined")
-			? this.xtrn_custommenu_options.header_fmt : this.options.header_fmt;
-		
-		this.options.titles = (typeof this.xtrn_custommenu_options.titles !== "undefined")
-			? this.xtrn_custommenu_options.titles : this.options.titles;
-		
-		this.options.which = (typeof this.xtrn_custommenu_options.which !== "undefined")
-			? this.xtrn_custommenu_options.which : this.options.which;
-		
-		this.options.underline = (typeof this.xtrn_custommenu_options.underline !== "undefined")
-			? this.xtrn_custommenu_options.underline : this.options.underline;
-		
-		this.options.multicolumn_separator = (typeof this.xtrn_custommenu_options.multicolumn_separator !== "undefined")
-			? this.xtrn_custommenu_options.multicolumn_separator : this.options.multicolumn_separator;
-		
-		this.options.multicolumn = (typeof this.xtrn_custommenu_options.multicolumn !== "undefined")
-			? this.xtrn_custommenu_options.multicolumn : this.options.multicolumn;
-		
-		this.options.sort = (typeof this.xtrn_custommenu_options.sort !== "undefined")
-			? this.xtrn_custommenu_options.sort : this.options.sort;
-		
-		this.options.clear_screen = (typeof this.xtrn_custommenu_options.clear_screen !== "undefined")
-			? this.xtrn_custommenu_options.clear_screen : this.options.clear_screen;
-		
-		this.options.singlecolumn_margin = (typeof this.xtrn_custommenu_options.singlecolumn_margin !== "undefined")
-			? this.xtrn_custommenu_options.singlecolumn_margin : this.options.singlecolumn_margin;
-		
-		if (typeof bbs !== "undefined") {
-			// override and turn off multicolumn if terminal width is less than 80
-			if (console.screen_columns < 80)
-				options.multicolumn = false;
-		}
-		
-		// no need to override restricted_user_msg or no_programs_msg - these
-		// will be the same for both types of menus
-		
-		// Allow overriding on a per-menu basis
-		var menuoptions = load({}, "modopts.js", "xtrnmenu:" + menuid);
-		if ((typeof menuid !== "undefined") && (menuoptions !== null)) {
-			for (var m in menuoptions) {
-				this.options[m] = menuoptions[m];
-			}
+	this.options.custom_menu_program_not_found_msg = (typeof this.options.custom_menu_program_not_found_msg  !== "undefined")
+		? this.options.custom_menu_program_not_found_msg  : "Menu %MENUID% not found";
+
+	this.options.use_xtrn_sec = (typeof this.xtrn_custommenu_options.use_xtrn_sec !== "undefined")
+		? this.xtrn_custommenu_options.use_xtrn_sec : false;
+	
+	this.options.custom_quit_msg = (typeof this.xtrn_custommenu_options.custom_quit_msg !== "undefined")
+		? this.xtrn_custommenu_options.custom_quit_msg : 'Quit';
+
+	this.options.custom_return_msg = (typeof this.xtrn_custommenu_options.custom_return_msg !== "undefined")
+		? this.xtrn_custommenu_options.custom_return_msg : 'Return to Previous Menu';
+
+	// Allow overriding on a per-menu basis
+	var menuoptions = load({}, "modopts.js", "xtrnmenu:" + menuid);
+	if ((typeof menuid !== "undefined") && (menuoptions !== null)) {
+		for (var m in menuoptions) {
+			this.options[m] = menuoptions[m];
 		}
 	}
+
+	this.options.custom_logoff_msg = (typeof this.xtrn_custommenu_options.custom_logoff_msg !== "undefined")
+		? this.xtrn_custommenu_options.custom_logoff_msg : 'Logoff';
 	
 	this.options.json_enabled = (typeof this.xtrn_custommenu_options.json_enabled !== undefined)
 		? this.xtrn_custommenu_options.json_enabled : false;
@@ -196,20 +257,6 @@ ExternalMenus.prototype.getOptions = function(menutype, menuid) {
 		? this.xtrn_custommenu_options.blacklist_tracking_xtrncodes : "";
 	this.options.blacklist_tracking_xtrnsec = (typeof this.xtrn_custommenu_options.blacklist_tracking_xtrnsec !== undefined)
 		? this.xtrn_custommenu_options.blacklist_tracking_xtrnsec : "";
-	
-	// these options only apply to terminals/consoles
-	
-	// the intention is to obtain all the mod_opts options for xtrn_sec, and
-	// override if a custom menu global setting is set
-	
-	//// The following are used for the enhanced custom menu functionality
-	if (this.options.custom_menu_not_found_msg === undefined) {
-		this.options.custom_menu_not_found_msg = "Menu %MENUID% not found";
-	}
-	
-	if (this.options.custom_menu_program_not_found_msg === undefined) {
-		this.options.custom_menu_program_not_found_msg = "Program %PROGRAMID% not found";
-	}
 	
 	this.options.custom = this.xtrn_custommenu_options;
 

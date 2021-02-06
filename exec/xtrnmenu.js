@@ -559,15 +559,6 @@ function external_menu_custom(menuid)
 	var multicolumn_fmt_inverse = options.multicolumn_fmt_inverse;
 	var singlecolumn_fmt_inverse = options.singlecolumn_fmt_inverse;
 	
-	var return_singlecolumn_fmt = options.custom.return_singlecolumn_fmt !== undefined
-		? options.custom.return_singlecolumn_fmt : singlecolumn_fmt;
-	var return_multicolumn_fmt = options.custom.return_multicolumn_fmt !== undefined
-		? options.custom.return_multicolumn_fmt : multicolumn_fmt;
-	var return_singlecolumn_fmt_inverse = options.custom.return_singlecolumn_fmt_inverse !== undefined
-		? options.custom.return_singlecolumn_fmt_inverse : singlecolumn_fmt_inverse;
-	var return_multicolumn_fmt_inverse = options.custom.return_multicolumn_fmt_inverse !== undefined
-		? options.custom.return_multicolumn_fmt_inverse : multicolumn_fmt_inverse;	
-	
 	while (bbs.online) {
 		console.aborted = false;
 		
@@ -609,21 +600,21 @@ function external_menu_custom(menuid)
 		if (gamesrv && (menuid == 'main')) {
 			menuitemsfiltered.push({
 				input: 'Q',
-				title: options.custom_logoff_msg !== undefined ? options.custom_logoff_msg : 'Logoff',
+				title: options.custom_logoff_msg,
 				target: '',
 				type: 'quit',
 			});
 		} else if (menuid == 'main') {
 			menuitemsfiltered.push({
 				input: 'Q',
-				title: options.custom.quit_msg !== undefined ? options.custom.quit_msg : 'Quit',
+				title: options.custom.quit_msg,
 				target: '',
 				type: 'quit',
 			});
 		} else {
 			menuitemsfiltered.unshift({
 				input: 'Q',
-				title: options.custom.return_msg !== undefined ? options.custom.return_msg : 'Return to Previous Menu',
+				title: options.custom.return_msg,
 				target: '',
 				type: 'quit',
 			});
@@ -697,48 +688,34 @@ function external_menu_custom(menuid)
 				
 				// allow overriding format on a per-item basis
 				// great for featuring a specific game
-				var checkkey = menuitemsfiltered[i].target + '-multicolumn_fmt';
-				checkkey = checkkey.toLowerCase();
+				var checkkey = menuitemsfiltered[i].target.toLowerCase() + '-multicolumn_fmt';
 				item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
 					options[checkkey] : options.multicolumn_fmt;
-				item_multicolumn_fmt_inverse = (typeof options[checkkey + "_inverse"] !== "undefined") ?
-					options[checkkey + "_inverse"] : options.multicolumn_fmt_inverse;
+				var checkkeyinv = menuitemsfiltered[i].target.toLowerCase() + '-multicolumn_fmt_inverse';
+				item_multicolumn_fmt_inverse = (typeof options[checkkeyinv] !== "undefined") ?
+					options[checkkeyinv] : options.multicolumn_fmt_inverse;
 				
-				checkkey = menuitemsfiltered[i].target + '-singlecolumn_fmt'
-				checkkey = checkkey.toLowerCase();
+				checkkey = menuitemsfiltered[i].target.toLowerCase() + '-singlecolumn_fmt';
+				checkkeyinv = menuitemsfiltered[i].target.toLowerCase() + '-singlecolumn_fmt_inverse';
 				item_singlecolumn_fmt = (typeof options[checkkey] !== "undefined") ?
 					options[checkkey] : options.singlecolumn_fmt;
-				item_singlecolumn_fmt_inverse = (typeof options[checkkey + "_inverse"] !== "undefined") ?
-					options[checkkey + "_inverse"] : options.singlecolumn_fmt_inverse;
+				item_singlecolumn_fmt_inverse = (typeof options[checkkeyinv] !== "undefined") ?
+					options[checkkeyinv] : options.singlecolumn_fmt_inverse;
 				
-				if (i == selected_index) {
-					if (menuitemsfiltered[i].type == 'quit') {
-						printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-							menuitemsfiltered[i].input.toString().toUpperCase(),
-							menuitemsfiltered[i].title,
-							''
-						);
-					} else {
-						printf(multicolumn ? item_multicolumn_fmt_inverse : item_singlecolumn_fmt_inverse,
-							menuitemsfiltered[i].input.toString().toUpperCase(),
-							menuitemsfiltered[i].title,
-							cost
-						);
-					}
+				if (selected_index == i) {
+					printf(
+						menuitemsfiltered[i].type == 'quit' ? options.return_multicolumn_fmt_inverse : item_multicolumn_fmt_inverse,
+						menuitemsfiltered[i].input.toString().toUpperCase(),
+						menuitemsfiltered[i].title,
+						menuitemsfiltered[i].type == 'quit' ? '' : cost
+					);
 				} else {
-					if (menuitemsfiltered[i].type == 'quit') {
-						printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
-							menuitemsfiltered[i].input.toString().toUpperCase(),
-							menuitemsfiltered[i].title,
-							''
-						);
-					} else {
-						printf(multicolumn ? item_multicolumn_fmt : item_singlecolumn_fmt,
-							menuitemsfiltered[i].input.toString().toUpperCase(),
-							menuitemsfiltered[i].title,
-							cost
-						);
-					}
+					printf(
+						menuitemsfiltered[i].type == 'quit' ? options.return_multicolumn_fmt : item_multicolumn_fmt,
+						menuitemsfiltered[i].input.toString().toUpperCase(),
+						menuitemsfiltered[i].title,
+						menuitemsfiltered[i].type == 'quit' ? '' : cost
+					);
 				}
 				
 				if (multicolumn) {
@@ -754,47 +731,30 @@ function external_menu_custom(menuid)
 						
 						// allow overriding format on a per-item basis
 						// great for featuring a specific game
-						var checkkey = menuitemsfiltered[j].target + '-multicolumn_fmt';
-						checkkey = checkkey.toLowerCase();
+						var checkkey = menuitemsfiltered[j].target.toLowerCase() + '-multicolumn_fmt';
 						item_multicolumn_fmt = (typeof options[checkkey] !== "undefined") ?
 							options[checkkey] : options.multicolumn_fmt;
-						item_multicolumn_fmt_inverse = (typeof options[checkkey + "_inverse"] !== "undefined") ?
-							options[checkkey + "_inverse"] : options.multicolumn_fmt_inverse;
-						
-						checkkey = menuitemsfiltered[j].target + '-singlecolumn_fmt'
-						checkkey = checkkey.toLowerCase();
+						var checkkeyinv = menuitemsfiltered[j].target.toLowerCase() + '-multicolumn_fmt_inverse';
+						item_multicolumn_fmt_inverse = (typeof options[checkkeyinv] !== "undefined") ?
+							options[checkkeyinv] : options.multicolumn_fmt_inverse;
 						
 						write(options.multicolumn_separator);
 						console.add_hotspot(menuitemsfiltered[j].input.toString());
 						
 						if (selected_index == j) {
-							if (menuitemsfiltered[j].type == 'quit') {
-								printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-									menuitemsfiltered[j].input.toString().toUpperCase(),
-									menuitemsfiltered[j].title,
-									''
-								);					
-							} else {
-								printf(item_multicolumn_fmt_inverse,
-									menuitemsfiltered[j].input.toString().toUpperCase(),
-									menuitemsfiltered[j].title,
-									cost
-								);
-							}
+							printf(
+								menuitemsfiltered[j].type == 'quit' ? options.return_multicolumn_fmt_inverse : item_multicolumn_fmt_inverse,
+								menuitemsfiltered[j].input.toString().toUpperCase(),
+								menuitemsfiltered[j].title,
+								menuitemsfiltered[j].type == 'quit' ? '' : cost
+							);
 						} else {
-							if (menuitemsfiltered[j].type == 'quit') {
-								printf(return_multicolumn_fmt,
-									menuitemsfiltered[j].input.toString().toUpperCase(),
-									menuitemsfiltered[j].title,
-									''
-								);
-							} else {
-								printf(item_multicolumn_fmt,
-									menuitemsfiltered[j].input.toString().toUpperCase(),
-									menuitemsfiltered[j].title,
-									cost
-								);
-							}
+							printf(
+								menuitemsfiltered[j].type == 'quit' ? options.return_multicolumn_fmt : item_multicolumn_fmt,
+								menuitemsfiltered[j].input.toString().toUpperCase(),
+								menuitemsfiltered[j].title,
+								menuitemsfiltered[j].type == 'quit' ? '' : cost
+							);
 						}
 					} else {
 						write(options.multicolumn_separator);
@@ -830,8 +790,8 @@ function external_menu_custom(menuid)
 		var maxkeylen = 0;
 		var maxfirstkey = 0;
 		var morekeys = [];
-		var k;
-		for (k in validkeys) {
+
+		for (var k in validkeys) {
 			if (validkeys[k] == "\x1B") {
 				continue;
 			}
@@ -1025,25 +985,6 @@ function special_menu(menutype, title, itemcount) {
 	
 	var options = ExternalMenus.getOptions('custommenu', menuid);
 	
-	// Allow overriding auto-format on a per-menu basis
-	var multicolumn_fmt = options.custom.multicolumn_fmt_special !== undefined 
-		? options.custom.multicolumn_fmt_special : options.multicolumn_fmt;
-	var singlecolumn_fmt = options.custom.singlecolumn_fmt_special !== undefined
-		? options.custom.singlecolumn_fmt_special : options.singlecolumn_fmt;
-	var multicolumn_fmt_inverse = options.custom.multicolumn_fmt_special_inverse !== undefined
-		? options.custom.multicolumn_fmt_special_inverse : options.multicolumn_fmt_inverse;
-	var singlecolumn_fmt_inverse = options.custom.singlecolumn_fmt_special_inverse !== undefined
-		? options.custom.singlecolumn_fmt_special_inverse : options.singlecolumn_fmt_inverse;
-	
-	var return_singlecolumn_special_fmt = options.custom.return_singlecolumn_special_fmt !== undefined
-		? options.custom.return_singlecolumn_special_fmt : singlecolumn_fmt;
-	var return_multicolumn_special_fmt = options.custom.return_multicolumn_special_fmt !== undefined
-		? options.custom.return_multicolumn_special_fmt : multicolumn_fmt;
-	var return_singlecolumn_special_fmt_inverse = options.custom.return_singlecolumn_special_fmt_inverse !== undefined
-		? options.custom.return_singlecolumn_special_fmt_inverse : singlecolumn_fmt_inverse;
-	var return_multicolumn_special_fmt_inverse = options.custom.return_multicolumn_special_fmt_inverse !== undefined
-		? options.custom.return_multicolumn_special_fmt_inverse : multicolumn_fmt_inverse;
-	
 	while (bbs.online) {
 		console.aborted = false;
 		
@@ -1071,7 +1012,7 @@ function special_menu(menutype, title, itemcount) {
 		// The quit item is intended to aid in the lightbar navigation
 		menuitemsfiltered.unshift({
 			input: 'Q',
-			title: options.custom.return_msg !== undefined ? options.custom.return_msg : 'Return to Previous Menu',
+			title: options.custom.return_msg,
 			target: '',
 			type: 'quit',
 		});
@@ -1127,74 +1068,50 @@ function special_menu(menutype, title, itemcount) {
 			}
 			
 			if (i == selected_index) {
-				if (menuitemsfiltered[i].type == 'quit') {
-					printf(multicolumn ? return_multicolumn_special_fmt_inverse : return_singlecolumn_special_fmt_inverse,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title,
-						''
-					);
-				} else {
-					printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title,
-						menuitemsfiltered[i].stats
-					);
-				}
+				var itemformatret = multicolumn ? options.return_multicolumn_special_fmt_inverse : options.return_singlecolumn_special_fmt_inverse;
+				var itemformat = multicolumn ? options.multicolumn_fmt_special_inverse : options.singlecolumn_fmt_special_inverse
+				printf(
+					menuitemsfiltered[i].type == 'quit' ? itemformatret : itemformat, 
+					menuitemsfiltered[i].input,
+					menuitemsfiltered[i].title,
+					menuitemsfiltered[i].type == 'quit' ? '' : menuitemsfiltered[i].stats
+				);
 			} else {
-				if (menuitemsfiltered[i].type == 'quit') {
-					printf(multicolumn ? return_multicolumn_special_fmt : return_singlecolumn_special_fmt,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title,
-						''
-					);
-				} else {
-					printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title,
-						menuitemsfiltered[i].stats
-					);
-				}
+				var itemformatret = multicolumn ? options.return_multicolumn_special_fmt : options.return_singlecolumn_special_fmt;
+				var itemformat = multicolumn ? options.multicolumn_fmt_special : options.singlecolumn_fmt_special
+				printf(
+					menuitemsfiltered[i].type == 'quit' ? itemformatret : itemformat,
+					menuitemsfiltered[i].input,
+					menuitemsfiltered[i].title,
+					menuitemsfiltered[i].type == 'quit' ? '' : menuitemsfiltered[i].stats
+				);
 			}
-			
+
 			if (multicolumn) {
 				if (typeof menuitemsfiltered[j] !== "undefined") {
 					validkeys.push(menuitemsfiltered[j].input.toString());
-					
+
 					if (menuitemsfiltered[j].input > keymax) {
 						keymax = menuitemsfiltered[i].input;
 					}
-					
+
 					write(options.multicolumn_separator);
 					console.add_hotspot(menuitemsfiltered[j].input.toString());
 					
-					if (selected_index == j) {
-						if (menuitemsfiltered[j].type == 'quit') {
-							printf(multicolumn ? return_multicolumn_special_fmt_inverse : return_singlecolumn_special_fmt_inverse,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title,
-								''
-							);
-						} else {
-							printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title,
-								menuitemsfiltered[j].stats
-							);
-						}
+					if (j == selected_index) {
+						printf(
+							menuitemsfiltered[j].type == 'quit' ? options.return_multicolumn_special_fmt_inverse : options.multicolumn_fmt_special_inverse,
+							menuitemsfiltered[j].input,
+							menuitemsfiltered[j].title,
+							menuitemsfiltered[j].type == 'quit' ? '' : menuitemsfiltered[j].stats
+						);
 					} else {
-						if (menuitemsfiltered[j].type == 'quit') {
-							printf(multicolumn ? return_multicolumn_special_fmt : return_singlecolumn_special_fmt,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title,
-								''
-							);
-						} else {
-							printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title,
-								menuitemsfiltered[j].stats
-							);
-						}
+						printf(
+							menuitemsfiltered[j].type == 'quit' ? options.return_multicolumn_special_fmt : options.multicolumn_fmt_special,
+							menuitemsfiltered[j].input,
+							menuitemsfiltered[j].title,
+							menuitemsfiltered[j].type == 'quit' ? '' : menuitemsfiltered[j].stats
+						);
 					}
 				} else {
 					write(options.multicolumn_separator);
@@ -1367,15 +1284,6 @@ function search_menu(title, itemcount) {
 	
 	var options = ExternalMenus.getOptions('custommenu', menuid);
 	
-	var return_multicolumn_fmt = options.custom.return_multicolumn_fmt !== undefined
-		? options.custom.return_multicolumn_fmt : multicolumn_fmt;
-	var return_singlecolumn_fmt = options.custom.return_singlecolumn_fmt !== undefined
-		? options.custom.return_singlecolumn_fmt : singlecolumn_fmt;
-	var return_singlecolumn_fmt_inverse = options.custom.return_singlecolumn_fmt_inverse !== undefined
-		? options.custom.return_singlecolumn_fmt_inverse : singlecolumn_fmt_inverse;
-	var return_multicolumn_fmt_inverse = options.custom.return_multicolumn_fmt_inverse !== undefined
-		? options.custom.return_multicolumn_fmt_inverse : multicolumn_fmt_inverse;
-	
 	while (bbs.online) {
 		console.aborted = false;
 		
@@ -1403,7 +1311,8 @@ function search_menu(title, itemcount) {
 			if (!searchterm) {
 				return;
 			} else {
-				console.crlf();
+				console.up();
+				console.clearline();
 				printf(typeof options.custom.searchresultsheader !== "undefined"
 					? options.custom.searchresultsheader : "\x01n\x01cSearch Results for \x01h%s", searchterm);
 			}
@@ -1531,31 +1440,23 @@ function search_menu(title, itemcount) {
 			}
 			
 			if (i == selected_index) {
-				if (menuitemsfiltered[i].type == 'quit') {
-					printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-						menuitemsfiltered[i].input.toString().toUpperCase(),
-						menuitemsfiltered[i].title,
-						''
-					);
-				} else {
-					printf(multicolumn ? options.multicolumn_fmt_inverse : options.singlecolumn_fmt_inverse,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title
-					);
-				}
+				var itemformatret = multicolumn ? options.return_multicolumn_fmt_inverse : options.return_singlecolumn_fmt_inverse;
+				var itemformat = multicolumn ? options.multicolumn_fmt_inverse : options.singlecolumn_fmt_inverse;
+				printf(
+					menuitemsfiltered[i].type == 'quit' ? itemformatret : itemformat,
+					menuitemsfiltered[i].input,
+					menuitemsfiltered[i].title,
+					''
+				);
 			} else {
-				if (menuitemsfiltered[i].type == 'quit') {
-					printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
-						menuitemsfiltered[i].input.toString().toUpperCase(),
-						menuitemsfiltered[i].title,
-						''
-					);
-				} else {
-					printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title
-					);
-				}
+				var itemformatret = multicolumn ? options.return_multicolumn_fmt : options.return_singlecolumn_fmt;
+				var itemformat = multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt;
+				printf(
+					menuitemsfiltered[i].type == 'quit' ? itemformatret : itemformat,
+					menuitemsfiltered[i].input,
+					menuitemsfiltered[i].title,
+					''
+				);
 			}
 			
 			if (multicolumn) {
@@ -1569,31 +1470,23 @@ function search_menu(title, itemcount) {
 					console.add_hotspot(menuitemsfiltered[j].input.toString());
 					
 					if (j == selected_index) {
-						if (menuitemsfiltered[j].type == 'quit') {
-							printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-								menuitemsfiltered[j].input.toString().toUpperCase(),
-								menuitemsfiltered[j].title,
-								''
-							);
-						} else {
-							printf(multicolumn ? options.multicolumn_fmt_inverse : options.singlecolumn_fmt_inverse,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title
-							);
-						}
+						var itemformatret = multicolumn ? options.return_multicolumn_fmt_inverse : options.return_singlecolumn_fmt_inverse;
+						var itemformat = multicolumn ? options.multicolumn_fmt_inverse : options.singlecolumn_fmt_inverse;
+						printf(
+							menuitemsfiltered[j].type == 'quit' ? itemformatret : itemformat,
+							menuitemsfiltered[j].input,
+							menuitemsfiltered[j].title,
+							''
+						);
 					} else {
-						if (menuitemsfiltered[j].type == 'quit') {
-							printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
-								menuitemsfiltered[j].input.toString().toUpperCase(),
-								menuitemsfiltered[j].title,
-								''
-							);
-						} else {
-							printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title
-							);
-						}
+						var itemformatret = multicolumn ? options.return_multicolumn_fmt : options.return_singlecolumn_fmt;
+						var itemformat = multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt;
+						printf(
+							menuitemsfiltered[j].type == 'quit' ? itemformatret : itemformat,
+							menuitemsfiltered[j].input,
+							menuitemsfiltered[j].title,
+							''
+						);
 					}
 				} else {
 					write(options.multicolumn_separator);
@@ -1798,21 +1691,6 @@ function favorites_menu(title, itemcount) {
 	
 	var options = ExternalMenus.getOptions('custommenu', menuid);
 	
-	// Allow overriding auto-format on a per-menu basis
-	var multicolumn_fmt = options.multicolumn_fmt;
-	var singlecolumn_fmt = options.singlecolumn_fmt;
-	var multicolumn_fmt_inverse = options.multicolumn_fmt_inverse;
-	var singlecolumn_fmt_inverse = options.singlecolumn_fmt_inverse;
-	
-	var return_singlecolumn_fmt = options.custom.return_singlecolumn_fmt !== undefined
-		? options.custom.return_singlecolumn_fmt : singlecolumn_fmt;
-	var return_multicolumn_fmt = options.custom.return_multicolumn_fmt !== undefined
-		? options.custom.return_multicolumn_fmt : multicolumn_fmt;
-	var return_singlecolumn_fmt_inverse = options.custom.return_singlecolumn_fmt_inverse !== undefined
-		? options.custom.return_singlecolumn_fmt_inverse : singlecolumn_fmt_inverse;
-	var return_multicolumn_fmt_inverse = options.custom.return_multicolumn_fmt_inverse !== undefined
-		? options.custom.return_multicolumn_fmt_inverse : multicolumn_fmt_inverse;
-	
 	while (bbs.online) {
 		console.aborted = false;
 		
@@ -1835,21 +1713,21 @@ function favorites_menu(title, itemcount) {
 		// The quit item is intended to aid in the lightbar navigation
 		menuitemsfiltered.unshift({
 			input: 'Q',
-			title: options.custom.return_msg !== undefined ? options.custom.return_msg : 'Return to Previous Menu',
+			title: options.custom.return_msg,
 			target: '',
 			type: 'quit'
 		});
 		
 		menuitemsfiltered.push({
 			input: '+',
-			title: options.custom.favorite_add_item !== undefined ? options.custom.favorite_add_item : 'Add Item',
+			title: options.custom.favorite_add_item,
 			target: '',
 			type: 'add'
 		});
 		
 		menuitemsfiltered.push({
 			input: '-',
-			title: options.custom.favorite_remove_item !== undefined ? options.custom.favorite_remove_item : 'Remove Item',
+			title: options.custom.favorite_remove_item,
 			target: '',
 			type: 'remove'
 		});
@@ -1904,29 +1782,21 @@ function favorites_menu(title, itemcount) {
 			}
 			
 			if (i == selected_index) {
-				if (menuitemsfiltered[i].type == 'quit') {
-					printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title
-					);
-				} else {
-					printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title
-					);
-				}
+				var itemformatret = multicolumn ? options.return_multicolumn_fmt_inverse : options.return_singlecolumn_fmt_inverse;
+				var itemformat = multicolumn ? options.multicolumn_fmt_inverse : options.singlecolumn_fmt_inverse
+				printf(
+					menuitemsfiltered[i].type == 'quit' ? itemformatret : itemformat,
+					menuitemsfiltered[i].input,
+					menuitemsfiltered[i].title
+				);
 			} else {
-				if (menuitemsfiltered[i].type == 'quit') {
-					printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title
-					);
-				} else {
-					printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
-						menuitemsfiltered[i].input,
-						menuitemsfiltered[i].title
-					);
-				}
+				var itemformatret = multicolumn ? options.return_multicolumn_fmt : options.return_singlecolumn_fmt;
+				var itemformat = multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
+				printf(
+					menuitemsfiltered[i].type == 'quit' ? itemformatret : itemformat,
+					menuitemsfiltered[i].input,
+					menuitemsfiltered[i].title
+				);
 			}
 			
 			if (multicolumn) {
@@ -1940,30 +1810,22 @@ function favorites_menu(title, itemcount) {
 					write(options.multicolumn_separator);
 					console.add_hotspot(menuitemsfiltered[j].input.toString());
 					
-					if (selected_index == j) {
-						if (menuitemsfiltered[j].type == 'quit') {
-							printf(multicolumn ? return_multicolumn_fmt_inverse : return_singlecolumn_fmt_inverse,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title
-							);
-						} else {
-							printf(multicolumn ? multicolumn_fmt_inverse : singlecolumn_fmt_inverse,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title
-							);
-						}
+					if (j == selected_index) {
+						var itemformatret = multicolumn ? options.return_multicolumn_fmt_inverse : options.return_singlecolumn_fmt_inverse;
+						var itemformat = multicolumn ? options.multicolumn_fmt_inverse : options.singlecolumn_fmt_inverse
+						printf(
+							menuitemsfiltered[j].type == 'quit' ? itemformatret : itemformat,
+							menuitemsfiltered[j].input,
+							menuitemsfiltered[j].title
+						);
 					} else {
-						if (menuitemsfiltered[j].type == 'quit') {
-							printf(multicolumn ? return_multicolumn_fmt : return_singlecolumn_fmt,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title
-							);
-						} else {
-							printf(multicolumn ? multicolumn_fmt : singlecolumn_fmt,
-								menuitemsfiltered[j].input,
-								menuitemsfiltered[j].title
-							);
-						}
+						var itemformatret = multicolumn ? options.return_multicolumn_fmt : options.return_singlecolumn_fmt;
+						var itemformat = multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
+						printf(
+							menuitemsfiltered[j].type == 'quit' ? itemformatret : itemformat,
+							menuitemsfiltered[j].input,
+							menuitemsfiltered[j].title
+						);
 					}
 				} else {
 					write(options.multicolumn_separator);
