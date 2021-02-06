@@ -560,6 +560,10 @@ function external_menu_custom(menuid)
 	var singlecolumn_fmt_inverse = options.singlecolumn_fmt_inverse;
 	
 	while (bbs.online) {
+		// Turn off pausing while displaying the menu. If it pauses, the kb nav 
+		// will not be able to work properly
+		bbs.sys_status|=SS_PAUSEOFF;
+
 		console.aborted = false;
 		
 		if (typeof menuobj === "undefined") {
@@ -776,6 +780,9 @@ function external_menu_custom(menuid)
 			
 			bbs.node_sync();
 			console.mnemonics(options.which);
+			
+			// turn back on pausing
+			bbs.sys_status&=~SS_PAUSEOFF;
 		}
 		
 		validkeys.push('q');
