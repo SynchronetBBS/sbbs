@@ -29,7 +29,7 @@
 </div>
 
 <?xjs        
-		if ((typeof menuobj.items !== "undefined") || (menuobj.items.length > 0)) {
+		if ((typeof menuobj.items !== "undefined") && (menuobj.items.length > 0)) {
 			var i = 0;
 			menuobj.items.some(function (menuitem) {
 				if (menuitem.type != "xtrnprog") {
