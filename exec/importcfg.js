@@ -10,21 +10,21 @@ var file_cnf = cnflib.read("file.cnf");
 
 var cfgtype;
 var cfgtypes = {
-	'msg-grps': 	msg_area.grp,
-	'msg-subs':		msg_area.sub,
-	'file-libs': 	file_area.lib,
-	'file-dirs':	file_area.dir,
-	'file-prots':	file_cnf.prot,
-	'file-extrs':   file_cnf.fextr,
-	'file-comps':   file_cnf.fcomp,
-	'file-viewers': file_cnf.fview,
-	'file-testers': file_cnf.ftest,
-	'file-dlevents':file_cnf.dlevent,
-	'text-secs':	file_cnf.txtsec,
-	'xtrn-secs': 	xtrn_area.sec,
-	'xtrn-progs': 	xtrn_area.prog,
-	'xtrn-events': 	xtrn_area.event,
-	'xtrn-editors':	xtrn_area.editor,
+	'msg-grps':		'grp',
+	'msg-subs':		'sub',
+	'file-libs': 	'lib',
+	'file-dirs':	'dir',
+	'file-prots':	'prot',
+	'file-extrs':   'fextr',
+	'file-comps':   'fcomp',
+	'file-viewers': 'fview',
+	'file-testers': 'ftext',
+	'file-dlevents':'dlevent',
+	'text-secs':	'txtsec',
+	'xtrn-secs': 	'xtrnsec',
+	'xtrn-progs': 	'xtrn',
+	'xtrn-events': 	'event',
+	'xtrn-editors':	'xedit',
 };
 
 var cnf_fnames = {
@@ -43,24 +43,6 @@ var cnf_fnames = {
 	'xtrn-progs': 	'xtrn.cnf',
 	'xtrn-events': 	'xtrn.cnf',
 	'xtrn-editors':	'xtrn.cnf',
-};
-
-var cnf_objs = {
-	'msg-grps': 	'grp',
-	'msg-subs':		'sub',
-	'file-libs': 	'lib',
-	'file-dirs':	'dir',
-	'file-prots':	'prot',
-	'file-extrs':   'fextr',
-	'file-comps':   'fcomp',
-	'file-viewers': 'fview',
-	'file-testers': 'ftext',
-	'file-dlevents':'dlevent',
-	'text-secs':	'txtsec',
-	'xtrn-secs': 	'xtrnsec',
-	'xtrn-progs': 	'xtrn',
-	'xtrn-events': 	'event',
-	'xtrn-editors':	'xedit',
 };
 
 var filename;
@@ -128,7 +110,7 @@ for(var i in text) {
 }
 
 /* Add list of imported objects into the .cnf file */
-const cnf_obj = cnf_objs[cfgtype];
+const cnf_obj = cfgtypes[cfgtype];
 const cnf_fname = system.ctrl_dir + cnf_fnames[cfgtype];
 var cnf = cnflib.read(cnf_fname);
 if(!cnf) {
