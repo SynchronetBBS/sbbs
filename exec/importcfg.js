@@ -146,7 +146,7 @@ for(var i in list) {
 if(options.debug)
 	writeln(JSON.stringify(cnf[cnf_obj], null, 4));
 else {
-	writln("Saving changes to " + cnf_fname);
+	writeln("Saving changes to " + cnf_fname);
 	if(!cnflib.write(cnf_fname, undefined, cnf)) {
 		alert("Failed to write " + cnf_fname);
 		exit(-1);
