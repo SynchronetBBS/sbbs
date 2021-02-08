@@ -13,16 +13,16 @@ External Programs -> Online Programs (Doors), then choose an Externals section
 to add Star Trek to.  Create a new item with the following details, leaving
 all over settings at their default values:
 
-¦Name                       Star Trek
-¦Internal Code              STARTREK
-¦Start-up Directory         ../xtrn/startrek
-¦Command Line               ?startrek.js
-¦Multiple Concurrent Users  Yes
+Â¦Name                       Star Trek
+Â¦Internal Code              STARTREK
+Â¦Start-up Directory         ../xtrn/startrek
+Â¦Command Line               ?startrek.js
+Â¦Multiple Concurrent Users  Yes
 
 
 Star Trek features an interBBS scoreboard.  To use the scoreboard on my JSON
-DB server, open 'server.ini', and edit the 'host' and 'port' values at the top
-to read:
+DB server, which may contain adult/innappropriate ship names, open 
+'server.ini', and edit the 'host' and 'port' values at the top to read:
 
 host = bbs.electronicchicken.com
 port = 10088
