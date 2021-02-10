@@ -4,6 +4,7 @@
 // *****************************************************************
 
 "use strict";
+
 var cnflib = load({}, "cnflib.js");
 var file_cnf = cnflib.read("file.cnf");
 
@@ -128,9 +129,7 @@ if (cnf_obj == 'xtrn') {
 
 for(var i in list) {
 	var obj = list[i];
-	
 	var j;
-
 	for(j = 0; j < cnf[cnf_obj].length; j++) {
 		if(cnf[cnf_obj][j].code !== undefined) {
 			if(cnf[cnf_obj][j].code.toUpperCase() == obj.code.toUpperCase())
