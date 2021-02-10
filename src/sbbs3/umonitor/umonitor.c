@@ -1148,7 +1148,7 @@ USAGE:
 						do_cmd(str);
 						break;
 					case 3:
-						sprintf(str,"%ssyncterm",cfg.exec_dir);
+						sprintf(str,"%ssyncterm ",cfg.exec_dir);
 						for(j=1; j<argc; j++) {
 							strcat(str,"'");
 							strcat(str,argv[j]);
