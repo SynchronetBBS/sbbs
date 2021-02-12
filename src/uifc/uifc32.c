@@ -928,6 +928,10 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 			if((*bar)<0)
 				(*bar)=0;
 			i=(*cur)-(*bar);
+			if (i < 0) {
+				*bar += i;
+				i = 0;
+			}
 			if(i+(height-vbrdrsize-1)>=opts) {
 				(*bar)=(height-vbrdrsize);
 				if (*bar > *cur)
