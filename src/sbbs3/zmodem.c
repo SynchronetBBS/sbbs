@@ -1166,7 +1166,7 @@ BOOL zmodem_recv_hex_header(zmodem_t* zm)
 		 */
 		c = zmodem_rx(zm);	/* drop LF */
 	}
-	if(c != '\n') {
+	if(c != '\n' && c != 0x8A) {
 		lprintf(zm, LOG_ERR, "%s HEX header not terminated with LF: %s"
 			,__FUNCTION__, chr(c));
 		return FALSE;
