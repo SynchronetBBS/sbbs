@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	SAFECOPY(cfg.ctrl_dir, p);
 	backslash(cfg.ctrl_dir);
 
-	load_cfg(&cfg, NULL, TRUE, str, sizeof(str));
+	load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str));
 	chdir(cfg.ctrl_dir);
 
 	dirnum=libnum=-1;
