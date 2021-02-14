@@ -117,19 +117,52 @@ if(!cnf) {
 	alert("Failed to read " + cnf_fname);
 	exit(-1);
 }
+writeln("Backing up " + cnf_fname);
+file_backup(cnf_fname,15);
+
+if (cnf_obj == 'xtrn') {
+	var secs = {};
+	for (var i in cnf['xtrnsec']) {
+		secs[cnf['xtrnsec'][i]['code'].toUpperCase()] = i;
+	}
+}
 
 for(var i in list) {
 	var obj = list[i];
 	var j;
 	for(j = 0; j < cnf[cnf_obj].length; j++) {
 		if(cnf[cnf_obj][j].code !== undefined) {
-			if(cnf[cnf_obj][j].code == obj.code)
+			if(cnf[cnf_obj][j].code.toUpperCase() == obj.code.toUpperCase())
 				break;
 		} else {
-			if(cnf[cnf_obj][j].name == obj.name)
+			if(cnf[cnf_obj][j].name.toUpperCase() == obj.name.toUpperCase())
 				break;
 		}
 	}
+
+	obj.code = obj.code.toUpperCase();
+	switch (cnf_obj) {
+		case 'xtrnsec':
+			delete obj.number;
+			delete obj.index;
+			break;
+		case 'xtrn':
+			obj.sec_code = obj.sec_code.toUpperCase();
+			delete obj.number;
+			delete obj.index;
+			delete obj.sec_index;
+			delete obj.sec_number;
+			if (typeof secs[obj.sec_code] === "undefined") {
+				writeln("Could not find section " + obj.sec_code + " for program " + (obj.code || obj.name));
+				continue;
+			} else {
+				obj.sec = secs[obj.sec_code];
+			}
+			break;
+		default:
+			break;
+	}
+
 	if(j < cnf[cnf_obj].length) {
 		if(!options.overwrite) {
 			writeln("Already exists: " + (obj.name || obj.code));

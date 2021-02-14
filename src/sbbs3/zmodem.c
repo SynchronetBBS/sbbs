@@ -64,6 +64,8 @@
 
 #define HDRLEN     5	/* size of a zmodem header */
 
+#define STRIPPED_PARITY(c)	((c) & 0x7f)
+
 static int lprintf(zmodem_t* zm, int level, const char *fmt, ...)
 {
 	va_list argptr;
@@ -652,7 +654,7 @@ int zmodem_send_zeof(zmodem_t* zm)
  * check the data stream for 5 consecutive CAN characters;
  * and if you see them abort. this saves a lot of clutter in
  * the rest of the code; even though it is a very strange place
- * for an exit. (but that was wat session abort was all about.)
+ * for an exit. (but that was what session abort was all about.)
  */
 
 int zmodem_recv_raw(zmodem_t* zm)
@@ -816,7 +818,7 @@ int zmodem_rx(zmodem_t* zm)
  * return 1 with correct packet frame continues
  * return 0 with incorrect frame.
  * return TIMEOUT with a timeout
- * if an acknowledgement is requested it is generated automatically
+ * if an acknowledgment is requested it is generated automatically
  * here.
  */
 
@@ -1018,6 +1020,7 @@ int zmodem_recv_nibble(zmodem_t* zm)
 	if(c < 0)
 		return c;
 
+	c = STRIPPED_PARITY(c);
 	if(c > '9') {
 		if(c < 'a' || c > 'f') {
 			/*
@@ -1166,7 +1169,7 @@ BOOL zmodem_recv_hex_header(zmodem_t* zm)
 		 */
 		c = zmodem_rx(zm);	/* drop LF */
 	}
-	if(c != '\n') {
+	if(c != '\n' && c != 0x8A) {
 		lprintf(zm, LOG_ERR, "%s HEX header not terminated with LF: %s"
 			,__FUNCTION__, chr(c));
 		return FALSE;
@@ -1235,12 +1238,12 @@ int zmodem_recv_header_raw(zmodem_t* zm)
 				return(c);
 			if(is_cancelled(zm))
 				return(ZCAN);
-		} while(c != ZPAD);
+		} while(STRIPPED_PARITY(c) != ZPAD);
 
 		if((c = zmodem_recv_raw(zm)) < 0)
 			return(c);
 
-		if(c == ZPAD) {
+		if(STRIPPED_PARITY(c) == ZPAD) {
 			if((c = zmodem_recv_raw(zm)) < 0)
 				return(c);
 		}
@@ -1249,7 +1252,7 @@ int zmodem_recv_header_raw(zmodem_t* zm)
 		 * spurious ZPAD check
 		 */
 
-		if(c != ZDLE) {
+		if(STRIPPED_PARITY(c) != ZDLE) {
 			lprintf(zm,LOG_DEBUG, "%s Expected ZDLE, received: %s", __FUNCTION__, chr(c));
 			continue;
 		}
@@ -1260,7 +1263,7 @@ int zmodem_recv_header_raw(zmodem_t* zm)
 
 		c = zmodem_rx(zm);
 
-		switch (c) {
+		switch (STRIPPED_PARITY(c)) {
 			case ZBIN:
 				if(!zmodem_recv_bin16_header(zm))
 					return INVHDR;

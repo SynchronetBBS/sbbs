@@ -40,7 +40,7 @@ char *	readtext(long *line, FILE *stream, long dflt);
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error, size_t maxerrlen)
+BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t maxerrlen)
 {
 	int		i;
 #ifdef SBBS
@@ -73,7 +73,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error, size_t 
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error, maxerrlen)==FALSE)
+	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_node)
 		return(FALSE);
 	if(read_msgs_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);

@@ -89,8 +89,8 @@ int refresh_globals(void)
 		gtk_combo_box_set_active(GTK_COMBO_BOX(cTempQWKFileType), 0);
 	}
 
-    /* Read .cfg files here */
-    if(!load_cfg(&cfg, NULL, TRUE, str, sizeof(str))) {
+    /* Read .cnf files here */
+    if(!load_cfg(&cfg, /* text */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
 		fprintf(stderr,"Cannot load configuration data: %s\n", str);
         return(-1);
 	}
