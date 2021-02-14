@@ -131,7 +131,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
     scfg.size=sizeof(scfg);
     char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-    if(!load_cfg(&scfg,NULL,FALSE,error,sizeof(error))) {
+    if(!load_cfg(&scfg, /* text: */NULL, /* prep: */FALSE, /* node: */FALSE, error, sizeof(error))) {
         Application->MessageBox(error,"ERROR Loading Configuration"
         	,MB_OK|MB_ICONEXCLAMATION);
         Close();
