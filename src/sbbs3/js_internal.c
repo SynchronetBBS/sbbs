@@ -1,8 +1,4 @@
-/* js_internal.c */
-
 /* Synchronet "js" object, for internal JavaScript callback and GC control */
-
-/* $Id: js_internal.c,v 1.99 2020/03/29 23:40:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -431,11 +415,11 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			val = OBJECT_TO_JSVAL(load_path_list);
 			JS_SetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val);
-			JS_GetArrayLength(cx, pload_path_list, &plen);
-			for (pcnt = 0; pcnt < plen; pcnt++) {
-				JS_GetElement(cx, pload_path_list, pcnt, &val);
-				JS_SetElement(cx, load_path_list, pcnt, &val);
-			}
+			if(JS_GetArrayLength(cx, pload_path_list, &plen))
+				for (pcnt = 0; pcnt < plen; pcnt++) {
+					if(JS_GetElement(cx, pload_path_list, pcnt, &val))
+						JS_SetElement(cx, load_path_list, pcnt, &val);
+				}
 		}
 		else {
 			JS_ReportError(cx, "Unable to get parent js."JAVASCRIPT_LOAD_PATH_LIST" array.");

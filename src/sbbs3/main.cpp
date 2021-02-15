@@ -3495,6 +3495,33 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	/* used by update_qwkroute(): */
 	qwknode=NULL;
 	total_qwknodes=0;
+
+	qwkmail_last = 0;
+	logon_ulb = 0;
+    logon_dlb = 0;
+    logon_uls = 0;
+    logon_dls = 0;
+    logon_posts = 0;
+    logon_emails = 0;
+    logon_fbacks = 0;
+    logon_ml = 0;
+    main_cmds = 0;
+    xfer_cmds = 0;
+    posts_read = 0;
+    temp_cdt = 0;
+    autohang = 0;
+    curgrp = 0;
+    curlib = 0;
+    usrgrps = 0;
+    usrlibs = 0;
+    comspec = 0;
+    altul = 0;
+    noaccess_str = 0;
+    noaccess_val = 0;
+    cur_output_rate = output_rate_unlimited;
+    getstr_offset = 0;
+    lastnodemsg = 0;
+    xtrn_mode = 0;
 }
 
 //****************************************************************************
