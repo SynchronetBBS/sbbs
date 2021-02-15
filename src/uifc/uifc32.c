@@ -2530,73 +2530,76 @@ void bottomline(int mode)
 char *utimestr(time_t *intime)
 {
 	static char str[25];
-	char wday[4],mon[4],mer[3],hour;
+	const char* wday="";
+	const char* mon="";
+	const char* mer= "";
+	int hour;
 	struct tm *gm;
 
 	gm=localtime(intime);
 	switch(gm->tm_wday) {
 		case 0:
-			strcpy(wday,"Sun");
+			wday = "Sun";
 			break;
 		case 1:
-			strcpy(wday,"Mon");
+			wday = "Mon";
 			break;
 		case 2:
-			strcpy(wday,"Tue");
+			wday = "Tue";
 			break;
 		case 3:
-			strcpy(wday,"Wed");
+			wday = "Wed";
 			break;
 		case 4:
-			strcpy(wday,"Thu");
+			wday = "Thu";
 			break;
 		case 5:
-			strcpy(wday,"Fri");
+			wday = "Fri";
 			break;
 		case 6:
-			strcpy(wday,"Sat");
+			wday = "Sat";
 			break;
 	}
 	switch(gm->tm_mon) {
 		case 0:
-			strcpy(mon,"Jan");
+			mon = "Jan";
 			break;
 		case 1:
-			strcpy(mon,"Feb");
+			mon = "Feb";
 			break;
 		case 2:
-			strcpy(mon,"Mar");
+			mon = "Mar";
 			break;
 		case 3:
-			strcpy(mon,"Apr");
+			mon = "Apr";
 			break;
 		case 4:
-			strcpy(mon,"May");
+			mon = "May";
 			break;
 		case 5:
-			strcpy(mon,"Jun");
+			mon = "Jun";
 			break;
 		case 6:
-			strcpy(mon,"Jul");
+			mon = "Jul";
 			break;
 		case 7:
-			strcpy(mon,"Aug");
+			mon = "Aug";
 			break;
 		case 8:
-			strcpy(mon,"Sep");
+			mon = "Sep";
 			break;
 		case 9:
-			strcpy(mon,"Oct");
+			mon = "Oct";
 			break;
 		case 10:
-			strcpy(mon,"Nov");
+			mon = "Nov";
 			break;
 		case 11:
-			strcpy(mon,"Dec");
+			mon = "Dec";
 			break;
 	}
 	if(gm->tm_hour>=12) {
-		strcpy(mer,"pm");
+		mer = "pm";
 		hour=gm->tm_hour;
 		if (hour > 12)
 			hour-=12;
@@ -2606,9 +2609,9 @@ char *utimestr(time_t *intime)
 			hour=12;
 		else
 			hour=gm->tm_hour;
-		strcpy(mer,"am");
+		mer = "am";
 	}
-	sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
+	safe_snprintf(str, sizeof(str), "%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
 		,hour,gm->tm_min,mer);
 	return(str);
 }
