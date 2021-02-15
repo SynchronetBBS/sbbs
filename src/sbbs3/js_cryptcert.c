@@ -1570,16 +1570,17 @@ js_cryptcert_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		tiny = JSVAL_TO_INT(idval);
 	else {
 		size_t i;
-		char *name;
+		char *name = NULL;
 
 		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
 		HANDLE_PENDING(cx, name);
-		for (i = 0; js_cryptcert_properties[i].name; i++) {
+		for (i = 0; name != NULL && js_cryptcert_properties[i].name; i++) {
 			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
 				tiny = js_cryptcert_properties[i].tinyid;
 				break;
 			}
 		}
+		free(name);
 		if (!js_cryptcert_properties[i].name)
 			return JS_TRUE;
 	}
@@ -2348,16 +2349,17 @@ js_cryptcert_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp
 		tiny = JSVAL_TO_INT(idval);
 	else {
 		size_t i;
-		char *name;
+		char *name = NULL;
 
 		JSVALUE_TO_MSTRING(cx, idval, name, NULL);
 		HANDLE_PENDING(cx, name);
-		for (i = 0; js_cryptcert_properties[i].name; i++) {
+		for (i = 0; name != NULL && js_cryptcert_properties[i].name; i++) {
 			if (strcmp(name, js_cryptcert_properties[i].name) == 0) {
 				tiny = js_cryptcert_properties[i].tinyid;
 				break;
 			}
 		}
+		free(name);
 		if (!js_cryptcert_properties[i].name)
 			return JS_TRUE;
 	}

@@ -822,7 +822,7 @@ BOOL DLLCALL write_file_cfg(scfg_t* cfg, int backup_level)
 							SAFEPRINTF(str, "%sdirs", cfg->data_dir);
 						prep_dir(str, path, sizeof(path));
 					}
-					mkpath(path);
+					(void)mkpath(path);
 				}
 
 				put_str(cfg->dir[i]->upload_sem, stream);

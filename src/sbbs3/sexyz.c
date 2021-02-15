@@ -252,7 +252,7 @@ char* dszlog_filename(char* str)
 	static char	path[MAX_PATH+1];
 
 #ifdef _WIN32
-	char sfpath[MAX_PATH+1];
+	static char sfpath[MAX_PATH+1];
 	if(dszlog_short) {
 		SAFECOPY(sfpath,str);
 		GetShortPathName(str,sfpath,sizeof(sfpath));

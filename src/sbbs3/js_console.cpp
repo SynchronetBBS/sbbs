@@ -810,8 +810,10 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx, argv[i], &val))
+			if(!JS_ValueToInt32(cx, argv[i], &val)) {
+				free(cstr);
 				return JS_FALSE;
+			}
 			if(!maxnum_specified) {
 				maxnum_specified = true;
 				maxnum = val;
@@ -821,6 +823,7 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
+			free(cstr);
 			JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
 			if(cstr==NULL)
 				return JS_FALSE;
@@ -829,7 +832,7 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	val=sbbs->getkeys(cstr, maxnum, mode);
-	FREE_AND_NULL(cstr);
+	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(val==-1) {			// abort
@@ -955,8 +958,10 @@ js_yesno(JSContext *cx, uintN argc, jsval *arglist)
 	if(cstr==NULL)
 		return JS_FALSE;
 	if(argc > 1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx, argv[1], &mode))
+		if(!JS_ValueToInt32(cx, argv[1], &mode)) {
+			free(cstr);
 			return JS_FALSE;
+		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->yesno(cstr, mode)));
@@ -987,8 +992,10 @@ js_noyes(JSContext *cx, uintN argc, jsval *arglist)
 	if(cstr==NULL)
 		return JS_FALSE;
 	if(argc > 1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx, argv[1], &mode))
+		if(!JS_ValueToInt32(cx, argv[1], &mode)) {
+			free(cstr);
 			return JS_FALSE;
+		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->noyes(cstr, mode)));
@@ -1218,8 +1225,10 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_RASTRING(cx, argv[0], cstr, &cstr_sz, NULL);
 		if(cstr==NULL)
 		    return(JS_FALSE);
-		if(!JS_ValueToInt32(cx, argv[1], &pmode))
+		if(!JS_ValueToInt32(cx, argv[1], &pmode)) {
+			free(cstr);
 			return JS_FALSE;
+		}
 		rc=JS_SUSPENDREQUEST(cx);
 		sbbs->bputs(cstr, pmode);
 		JS_RESUMEREQUEST(cx, rc);
@@ -1233,8 +1242,7 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->bputs(cstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
-	if(cstr)
-		free(cstr);
+	free(cstr);
 
     return(JS_TRUE);
 }
@@ -1258,7 +1266,7 @@ js_strlen(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc > 1)
-		JS_ValueToInt32(cx, argv[1], &pmode);
+		(void)JS_ValueToInt32(cx, argv[1], &pmode);
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
 	if(cstr==NULL)

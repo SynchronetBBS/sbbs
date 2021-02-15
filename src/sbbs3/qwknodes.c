@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%-5u\r",msg.offset+1);
 			if(msg.idx.to==smm || msg.idx.to==sbl)
 				continue;
-			if(max_age && now-msg.idx.time>((ulong)max_age*24UL*60UL*60UL))
+			if(max_age && now-msg.idx.time>((time_t)max_age*24UL*60UL*60UL))
 				continue;
 			if((j=smb_lockmsghdr(&smb,&msg))!=0) {
 				printf("smb_lockmsghdr returned %d\n",j);
