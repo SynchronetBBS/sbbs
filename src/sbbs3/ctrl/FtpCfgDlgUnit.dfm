@@ -164,13 +164,13 @@ object FtpCfgDlg: TFtpCfgDlg
         ShowHint = True
         TabOrder = 1
       end
-      object DirFilesCheckBox: TCheckBox
+      object AllowBounceCheckBox: TCheckBox
         Left = 148
         Top = 86
         Width = 125
         Height = 20
-        Hint = 'Allow users access to files in directory, but not in database'
-        Caption = 'Directory File Access'
+        Hint = 'Allow authenticated users to use FTP Bounce (not recommended)'
+        Caption = 'Allow Bouncing'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 8
