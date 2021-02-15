@@ -220,7 +220,7 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 		&& this.response_headers_parsed.Location.length
 	) {
 		this.follow_redirects--;
-		return this.Get(this.response_headers_parsed.Location[0], this.url.url, this.url.url); // To-do: be less tired and think about referer,base
+		return this.Get(this.response_headers_parsed.Location[0], this.url.url, this.url.url);
 	}
 	return(this.body);
 };
