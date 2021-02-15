@@ -115,8 +115,7 @@ int main(int argc,char **argv)
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",str);
 		return(1);
 	}
-
-	chdir(cfg.ctrl_dir);
+	(void)chdir(cfg.ctrl_dir);
 
 	lputs("\n");
 

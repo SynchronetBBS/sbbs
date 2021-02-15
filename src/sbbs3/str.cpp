@@ -1,7 +1,5 @@
 /* Synchronet high-level string i/o routines */
 
-/* $Id: str.cpp,v 1.88 2020/04/23 02:40:19 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -154,7 +140,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 		return; 
 	}
 	length=(long)filelength(file);
-	if((buf=(char *)malloc(length))==0) {
+	if((buf=(char *)calloc(length + 1, 1))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
@@ -322,7 +308,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 		return; 
 	}
 	length=(long)filelength(file);
-	if((buf=(char *)malloc(length))==0) {
+	if((buf=(char *)calloc(length + 1, 1))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
@@ -1229,10 +1215,8 @@ void sbbs_t::change_user(void)
 		return;
 	if((i=finduser(str))==0)
 		return;
-	if(online==ON_REMOTE) {
-		getuserrec(&cfg,i,U_LEVEL,2,str);
-		if(atoi(str)>logon_ml) {
-			getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp);
+	if(getuserrec(&cfg,i,U_LEVEL,2,str) == 0 && atoi(str)>logon_ml) {
+		if(getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp) == 0) {
 			bputs(text[ChUserPwPrompt]);
 			console|=CON_R_ECHOX;
 			getstr(str,8,K_UPPER);

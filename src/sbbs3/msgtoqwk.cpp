@@ -559,7 +559,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 
 	fseek(qwk_fp,offset,SEEK_SET);
 	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);
-	fseek(qwk_fp,size,SEEK_CUR);
+	(void)fseek(qwk_fp,size,SEEK_CUR);
 
 	return(size);
 }

@@ -97,7 +97,7 @@ void node_menu()
 			}
 			continue; 
 		}
-		if(msk == MSK_INS) {
+		if(msk == MSK_INS && cfg.sys_nodes < MAX_NODES) {
 			SAFECOPY(cfg.node_dir,cfg.node_path[cfg.sys_nodes-1]);
 			i=cfg.sys_nodes+1;
 			load_node_cfg(&cfg,error, sizeof(error));

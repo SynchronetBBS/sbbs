@@ -154,7 +154,7 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 	if(buf == NULL)
 		buf = msgghdr_field_cp437_str;
 
-	strncpy(buf, str, sizeof(msgghdr_field_cp437_str));
+	strncpy(buf, str, sizeof(msgghdr_field_cp437_str) - 1);
 	utf8_to_cp437_str(buf);
 
 	return buf;
@@ -363,7 +363,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 	char* txt;
 	int attachment_index = 0;
 	bool found = true;
-	while((txt=smb_getmsgtxt(smb, msg, 0)) != NULL && found) {
+	while(found && (txt=smb_getmsgtxt(smb, msg, 0)) != NULL) {
 		char filename[MAX_PATH+1] = {0};
 		uint32_t filelen = 0;
 		uint8_t* filedata;
@@ -428,7 +428,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 							if(cfg.prot[i]->dlcmd[0]
 								&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 								sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-								strcat(str,tmp);
+								SAFECAT(str,tmp);
 							}
 						ch=(char)getkeys(str,0);
 						for(i=0;i<cfg.total_prots;i++)

@@ -2376,9 +2376,8 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		/* ToDo: Set operational callback */
 		success=JS_ExecuteScript(*js_cx, js_scope, js_script, &rval);
 
-		JS_GetProperty(*js_cx, js_scope, "exit_code", &rval);
-
-		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
+		if(JS_GetProperty(*js_cx, js_scope, "exit_code", &rval)
+			&& rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
 			JS_ValueToInt32(*js_cx,rval,result);
 
 		js_EvalOnExit(*js_cx, js_scope, &js_callback);

@@ -29,7 +29,7 @@ char *readtext(FILE *stream, char **comment_ret)
 	if(*(p+1)=='\\') {	/* merge multiple lines */
 		for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
 		truncsp(cp);
-		strcat(comment, cp);
+		SAFECAT(comment, cp);
 		while(strlen(buf)<2000) {
 			if(!fgets(str,255,stream))
 				return(NULL);
@@ -41,7 +41,7 @@ char *readtext(FILE *stream, char **comment_ret)
 			if(p && *(p+1)=='\\') {
 				for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
 				truncsp(cp);
-				strcat(comment, cp);
+				SAFECAT(comment, cp);
 				continue;
 			}
 			break; 
@@ -49,7 +49,7 @@ char *readtext(FILE *stream, char **comment_ret)
 	}
 	else {
 		for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
-		strcat(comment, cp);
+		SAFECAT(comment, cp);
 		truncsp(comment);
 	}
 	*(p)=0;
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 		p = getenv("SBBSEXEC");
 	if(p==NULL)
 		p = "/sbbs/exec";
-	sprintf(path,"%s/load/text.js",p);
+	SAFEPRINTF(path,"%s/load/text.js",p);
 	if((text_js=fopen(path, "w"))==NULL) {
 		perror(path);
 		return __LINE__;
