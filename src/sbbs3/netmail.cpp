@@ -191,7 +191,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	if(mode&WM_FILE) {
 		SAFECOPY(fname, subj);
 		sprintf(str,"%sfile/%04u.out", cfg.data_dir, useron.number);
-		MKDIR(str);
+		(void)MKDIR(str);
 		SAFECOPY(tmp, cfg.data_dir);
 		if(tmp[0]=='.')    /* Relative path */
 			sprintf(tmp,"%s%s", cfg.node_dir, cfg.data_dir);
@@ -375,7 +375,10 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		return; 
 	}
 	memcpy((char *)qwkbuf,block,QWK_BLOCK_LEN);
-	fread(qwkbuf+QWK_BLOCK_LEN,n-1,QWK_BLOCK_LEN,rep);
+	if(fread(qwkbuf+QWK_BLOCK_LEN, QWK_BLOCK_LEN, n-1, rep) != n-1) {
+		errormsg(WHERE, ERR_READ, "QWK block", n-1);
+		return;
+	}
 
 	size_t kludge_hdrlen = 0;
 	char* beg = qwkbuf + QWK_BLOCK_LEN;
@@ -874,7 +877,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		l++;
 	}
 	l=0;
-	write(fido,&l,1);	/* Null terminator */
+	write(fido,(BYTE*)&l,sizeof(BYTE));	/* Null terminator */
 	close(fido);
 	free((char *)qwkbuf);
 	if(cfg.netmail_sem[0])		/* update semaphore file */
@@ -1010,7 +1013,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	if(mode&WM_FILE) {
 		SAFEPRINTF2(str2,"%sfile/%04u.out",cfg.data_dir,useron.number);
-		MKDIR(str2);
+		(void)MKDIR(str2);
 		SAFEPRINTF3(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
 		if(fexistcase(str2)) {
 			strListFree(&rcpt_list);

@@ -860,8 +860,10 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if(!JSVAL_IS_OBJECT(argv[argn]))
 			continue;
-		if((objarg = JSVAL_TO_OBJECT(argv[argn]))==NULL)
+		if((objarg = JSVAL_TO_OBJECT(argv[argn]))==NULL) {
+			free(title);
 			return(JS_FALSE);
+		}
 		if(JS_IsArrayObject(cx, objarg)) {
 			if(!JS_GetArrayLength(cx, objarg, &numopts))
 				return(JS_TRUE);
@@ -1000,8 +1002,10 @@ js_uifc_getstrxy(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn<argc && JSVAL_IS_STRING(argv[argn])) {
 		JSVALUE_TO_MSTRING(cx, argv[argn], org, NULL);
 		argn++;
-		if(JS_IsExceptionPending(cx))
+		if(JS_IsExceptionPending(cx)) {
+			free(org);
 			return JS_FALSE;
+		}
 		if(org==NULL)
 			return(JS_TRUE);
 	}
@@ -1050,7 +1054,7 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	char*		str;
-	char*		title;
+	char*		title = NULL;
 	int32		left=0;
 	int32		top=0;
 	int32		width=0;
@@ -1073,8 +1077,10 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToInt32(cx, argv[argn++], &mode))
 		return JS_FALSE;
 	JSVALUE_TO_MSTRING(cx, argv[argn++], title, NULL);
-	if(JS_IsExceptionPending(cx))
+	if(JS_IsExceptionPending(cx)) {
+		free(title);
 		return JS_FALSE;
+	}
 	if(title==NULL)
 		return(JS_TRUE);
 	JSVALUE_TO_MSTRING(cx, argv[argn++], str, NULL);

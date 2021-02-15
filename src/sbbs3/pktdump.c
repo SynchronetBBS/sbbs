@@ -222,6 +222,7 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 			,pkdmsg.orignet, pkdmsg.orignode
 			,pkdmsg.destnet, pkdmsg.destnode);
 		printf("Attribute: 0x%04X (%s)\n",pkdmsg.attr, fmsgattr_str(pkdmsg.attr));
+		TERMINATE(pkdmsg.time);
 		printf("Date/Time: %s\n",pkdmsg.time);
 	
 		/* Display variable-length fields */

@@ -1024,6 +1024,7 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
+		free(fname);
 		return(JS_TRUE);
 	}
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);

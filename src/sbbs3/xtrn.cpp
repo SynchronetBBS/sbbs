@@ -18,6 +18,7 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
+
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "telnet.h"
@@ -445,11 +446,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		GetShortPathName(cfg.data_dir,data_dir,sizeof(data_dir));
 		GetShortPathName(cfg.exec_dir,exec_dir,sizeof(exec_dir));
 
-		sprintf(path,"%sDOSXTRN.RET", cfg.node_dir);
-		remove(path);
+		SAFEPRINTF(path,"%sDOSXTRN.RET", cfg.node_dir);
+		(void)remove(path);
 
     	// Create temporary environment file
-    	sprintf(path,"%sDOSXTRN.ENV", node_dir);
+    	SAFEPRINTF(path,"%sDOSXTRN.ENV", node_dir);
         FILE* fp=fopen(path,"w");
         if(fp==NULL) {
 			XTRN_CLEANUP;
@@ -554,6 +555,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		// Create the child output pipe (override default 4K buffer size)
 		if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,sizeof(buf))) {
 			errormsg(WHERE,ERR_CREATE,"stdout pipe",0);
+			strListFreeBlock(env_block);
 			return(GetLastError());
 		}
 		startup_info.hStdError=startup_info.hStdOutput;
@@ -561,6 +563,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		// Create the child input pipe.
 		if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,sizeof(buf))) {
 			errormsg(WHERE,ERR_CREATE,"stdin pipe",0);
+			CloseHandle(rdoutpipe);
+			strListFreeBlock(env_block);
 			return(GetLastError());
 		}
 
@@ -830,7 +834,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     		sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
 			FILE* fp=fopen(str,"r");
 			if(fp!=NULL) {
-				fscanf(fp,"%d",&retval);
+				if(fscanf(fp,"%d",&retval) != 1) {
+					lprintf(LOG_ERR, "Node %d Error reading return value from %s", cfg.node_num, str);
+					retval = -1;
+				}
 				fclose(fp);
 			}
 		}

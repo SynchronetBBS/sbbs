@@ -70,7 +70,7 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 
 #if defined(_WINSOCKAPI_)	 
 	WSADATA WSAData;	 
-    WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */	 
+    (void)WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */	 
 #endif	 
 
 #if defined(__unix__) && defined(PREFIX)
