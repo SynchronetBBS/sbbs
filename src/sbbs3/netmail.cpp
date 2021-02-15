@@ -377,6 +377,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	memcpy((char *)qwkbuf,block,QWK_BLOCK_LEN);
 	if(fread(qwkbuf+QWK_BLOCK_LEN, QWK_BLOCK_LEN, n-1, rep) != (size_t)n-1) {
 		errormsg(WHERE, ERR_READ, "QWK block", n-1);
+		free(qwkbuf);
 		return;
 	}
 

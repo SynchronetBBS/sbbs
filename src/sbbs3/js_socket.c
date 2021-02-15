@@ -2817,6 +2817,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Unable to create socket set");
 		goto fail;
 	}
+	// Q for Deuce: what calls xpms_destroy or otherwise free()'s this set (once assigned to p->set)?
 	if (obj == NULL) {
 		JSVALUE_TO_MSTRING(cx, argv[0], interface, NULL);
 		HANDLE_PENDING(cx, interface);
@@ -2874,11 +2875,15 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
 		free(p);
+		free(set);
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineSocketOptionsArray(cx, obj, type))
+	if(!js_DefineSocketOptionsArray(cx, obj, type)) {
+		free(p);
+		free(set);
 		return(JS_FALSE);
+	}
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for incoming TCP/IP socket communications",317);
@@ -2903,6 +2908,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 fail:
 	if (protocol)
 		free(protocol);
+	free(set);
 	return JS_FALSE;
 }
 

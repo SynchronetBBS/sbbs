@@ -174,14 +174,13 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 
 	if(smb != NULL)
 		this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
-	if(msg != NULL) {
-		current_msg = msg;		// Needed for @-codes and JS bbs.msg_* properties
-		current_msg_subj = msg->subj;
-		current_msg_from = msg->from;
-		current_msg_to = msg->to;
-		if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
-			pmode |= P_UTF8;
-	}
+	current_msg = msg;		// Needed for @-codes and JS bbs.msg_* properties
+	current_msg_subj = msg->subj;
+	current_msg_from = msg->from;
+	current_msg_to = msg->to;
+	if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
+		pmode |= P_UTF8;
+
 	if(subject != NULL)
 		current_msg_subj = subject;
 	if(from != NULL)
@@ -392,7 +391,11 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
 		char subj[FIDO_SUBJ_LEN];
-		smb_getmsgidx(smb, msg);
+		int result = smb_getmsgidx(smb, msg);
+		if(result != SMB_SUCCESS) {
+			errormsg(WHERE, ERR_READ, "index", result, smb->last_error);
+			return;
+		}
 		SAFECOPY(subj, msg->subj);					/* filenames (multiple?) in title */
 		char *p,*tp,ch;
 		tp=subj;
@@ -439,7 +442,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 							int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
 							if(checkprotresult(cfg.prot[i],error,&fd)) {
 								if(del)
-									remove(fpath);
+									(void)remove(fpath);
 								logon_dlb+=length;	/* Update stats */
 								logon_dls++;
 								useron.dls=(ushort)adjustuserrec(&cfg,useron.number
