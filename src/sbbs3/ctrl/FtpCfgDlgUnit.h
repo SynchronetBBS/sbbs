@@ -69,7 +69,7 @@ __published:
     TButton *OKBtn;
     TButton *CancelBtn;
     TButton *ApplyBtn;
-    TCheckBox *DirFilesCheckBox;
+    TCheckBox *AllowBounceCheckBox;
     TTabSheet *IndexTabSheet;
     TCheckBox *AutoIndexCheckBox;
     TEdit *IndexFileNameEdit;

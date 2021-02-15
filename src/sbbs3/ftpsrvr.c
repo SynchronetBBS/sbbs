@@ -2873,7 +2873,7 @@ static void ctrl_thread(void* arg)
 			if(pasv_sock!=INVALID_SOCKET)  {
 				ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 			}
-
+			memcpy(&data_addr, &ftp.client_addr, ftp.client_addr_len);
 			p=cmd+5;
 			SKIP_WHITESPACE(p);
 			if(strnicmp(cmd, "PORT ",5)==0) {
@@ -3009,7 +3009,9 @@ static void ctrl_thread(void* arg)
 			}
 
 			inet_addrtop(&data_addr, data_ip, sizeof(data_ip));
-			if(data_port< IPPORT_RESERVED) {
+			bool bounce_allowed = (startup->options & FTP_OPT_ALLOW_BOUNCE) && !(user.rest & FLAG('G'));
+			if(data_port < IPPORT_RESERVED
+				|| (memcmp(&data_addr, &ftp.client_addr, ftp.client_addr_len) != 0 && !bounce_allowed)) {
 				lprintf(LOG_WARNING,"%04d <%s> !SUSPECTED BOUNCE ATTACK ATTEMPT to %s port %u"
 					,sock,user.alias
 					,data_ip,data_port);
