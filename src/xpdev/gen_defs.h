@@ -420,7 +420,7 @@ typedef struct {
 #ifdef SAFECOPY_USES_SPRINTF
 #define SAFECOPY(dst,src)                   sprintf(dst,"%.*s",(int)sizeof(dst)-1,src)
 #else   /* strncpy is faster */
-#define SAFECOPY(dst,src)                   (strncpy(dst,(src)==NULL?"(null)":(src),sizeof(dst)), TERMINATE(dst))
+#define SAFECOPY(dst,src)                   (strncpy(dst,src,sizeof(dst)), TERMINATE(dst))
 #endif
 
 #define SAFECAT(dst, src) do { \

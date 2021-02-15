@@ -200,7 +200,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	}
 	if(length > lines * PRINTFILE_MAX_LINE_LEN) {
 		length = lines * PRINTFILE_MAX_LINE_LEN; 
-		fseek(fp, -length, SEEK_END);
+		(void)fseek(fp, -length, SEEK_END);
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		fclose(fp);

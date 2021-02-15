@@ -1483,8 +1483,11 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
-	if(p->fp==NULL)
+	if(p->fp==NULL) {
+		if(name != name_def)
+			free(name);
 		return(JS_TRUE);
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if((list=iniReadFile(p->fp))==NULL) {
