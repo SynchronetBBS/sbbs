@@ -3319,7 +3319,7 @@ static BOOL check_extra_path(http_session_t * session)
 				if(isdir(rpath) && !isdir(session->req.physical_path)) {
 					for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
 						*end=0;
-						strcat(rpath,startup->index_file_name[i]);
+						SAFECAT(rpath,startup->index_file_name[i]);
 						if(!stat(rpath,&sb)) {
 							sprintf(vp_slash, "/%s", startup->index_file_name[i]);
 							SAFECOPY(session->req.extra_path_info,epath);
@@ -3535,13 +3535,13 @@ static BOOL check_request(http_session_t * session)
 		last_ch=*lastchar(path);
 		if(!IS_PATH_DELIM(last_ch))  {
 			session->req.send_location=MOVED_PERM;
-			strcat(path,"/");
-			strcat(session->req.physical_path,"/");
+			SAFECAT(path,"/");
+			SAFECAT(session->req.physical_path,"/");
 		}
 		last_ch=*lastchar(session->req.virtual_path);
 		if(!IS_PATH_DELIM(last_ch))  {
 			session->req.send_location=MOVED_PERM;
-			strcat(session->req.virtual_path,"/");
+			SAFECAT(session->req.virtual_path,"/");
 		}
 		last_slash=find_last_slash(path);
 		if(last_slash==NULL) {
@@ -3551,7 +3551,7 @@ static BOOL check_request(http_session_t * session)
 		last_slash++;
 		for(i=0; startup->index_file_name!=NULL && startup->index_file_name[i]!=NULL ;i++)  {
 			*last_slash=0;
-			strcat(path,startup->index_file_name[i]);
+			SAFECAT(path,startup->index_file_name[i]);
 			if(startup->options&WEB_OPT_DEBUG_TX)
 				lprintf(LOG_DEBUG,"%04d Checking for %s",session->socket,path);
 			if(!stat(path,&sb))
@@ -3563,7 +3563,7 @@ static BOOL check_request(http_session_t * session)
 		if(startup->index_file_name==NULL || startup->index_file_name[i] == NULL)
 			send404=1;
 		else {
-			strcat(session->req.virtual_path,startup->index_file_name[i]);
+			SAFECAT(session->req.virtual_path,startup->index_file_name[i]);
 			if(session->req.send_location != MOVED_PERM)
 				session->req.send_location=MOVED_STAT;
 		}
@@ -3723,8 +3723,8 @@ static BOOL check_request(http_session_t * session)
 		if(session->req.method!=HTTP_OPTIONS) {
 			if(startup->options&WEB_OPT_DEBUG_TX)
 				lprintf(LOG_DEBUG,"%04d 404 - %s does not exist",session->socket,path);
-			strcat(session->req.physical_path,session->req.extra_path_info);
-			strcat(session->req.virtual_path,session->req.extra_path_info);
+			SAFECAT(session->req.physical_path,session->req.extra_path_info);
+			SAFECAT(session->req.virtual_path,session->req.extra_path_info);
 			send_error(session,__LINE__,error_404);
 			return(FALSE);
 		}
@@ -4009,7 +4009,7 @@ struct fastcgi_data {
 static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 {
 	char padding[255];
-	struct fastcgi_header header;
+	struct fastcgi_header header = {0};
 	struct fastcgi_body *body;
 
 	if (recv(sock, (char*)&header.len
@@ -5262,10 +5262,11 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 		else {
 			/* "Fast Mode" requested? */
 			jsval		val;
-			JSObject*	reply;
+			JSObject*	reply = NULL;
 			if(JS_GetProperty(cx, session->js_glob, "http_reply", &val))
 				reply=JSVAL_TO_OBJECT(val);
-			if(JS_GetProperty(cx, reply, "fast", &val)
+			if(reply != NULL
+				&& JS_GetProperty(cx, reply, "fast", &val)
 				&& JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
 				session->req.keep_alive=FALSE;
 				rc=JS_SUSPENDREQUEST(cx);
@@ -5410,7 +5411,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
     for(;i<argc && strlen(str)<(sizeof(str)/2);i++) {
 		char* tp=strchr(str, 0);
 		JSVALUE_TO_STRBUF(cx, argv[i], tp, sizeof(str)/2, NULL);
-		strcat(str," ");
+		SAFECAT(str," ");
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	lprintf(level,"%04d %s",session->socket,str);
@@ -6821,9 +6822,9 @@ void http_logging_thread(void* arg)
 		}
 		SAFECOPY(newfilename,base);
 		if((startup->options&WEB_OPT_VIRTUAL_HOSTS) && ld->vhost!=NULL) {
-			strcat(newfilename,ld->vhost);
+			SAFECAT(newfilename,ld->vhost);
 			if(ld->vhost[0])
-				strcat(newfilename,"-");
+				SAFECAT(newfilename,"-");
 		}
 		strftime(strchr(newfilename,0),15,"%Y-%m-%d.log",&ld->completed);
 		if(logfile==NULL || strcmp(newfilename,filename)) {

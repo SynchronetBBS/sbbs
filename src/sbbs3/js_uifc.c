@@ -865,8 +865,10 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 			return(JS_FALSE);
 		}
 		if(JS_IsArrayObject(cx, objarg)) {
-			if(!JS_GetArrayLength(cx, objarg, &numopts))
+			if(!JS_GetArrayLength(cx, objarg, &numopts)) {
+				free(title);
 				return(JS_TRUE);
+			}
 			if(opts == NULL)
 				opts=strListInit();
 			for(i=0;i<numopts;i++) {
