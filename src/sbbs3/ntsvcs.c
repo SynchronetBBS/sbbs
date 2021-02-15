@@ -1,7 +1,5 @@
 /* Synchronet BBS as a set of Windows NT Services */
 
-/* $Id: ntsvcs.c,v 1.53 2020/08/17 18:21:08 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -295,7 +281,7 @@ static int svc_lputs(void* p, int level, const char* str)
 	}
 
 	if(svc->log_handle == INVALID_HANDLE_VALUE) {
-		sprintf(fname,"\\\\.\\mailslot\\%s.log",svc->name);
+		SAFEPRINTF(fname,"\\\\.\\mailslot\\%s.log",svc->name);
 		svc->log_handle = CreateFile(
 			fname,					/* pointer to name of the file */
 			GENERIC_WRITE,			/* access (read-write) mode */
@@ -310,7 +296,7 @@ static int svc_lputs(void* p, int level, const char* str)
 		len=sizeof(msg);
 		if(!WriteFile(svc->log_handle,&msg,len,&wr,NULL) || wr!=len) {
 			/* This most likely indicates the server closed the mailslot */
-			sprintf(debug,"!ERROR %d writing %u bytes to %s pipe (wr=%d)"
+			safe_snprintf(debug, sizeof(debug), "!ERROR %d writing %u bytes to %s pipe (wr=%d)"
 				,GetLastError(),len,svc->name,wr);
 			OutputDebugString(debug);
 			/* So close the handle and attempt re-open next time */
@@ -376,7 +362,7 @@ static void read_ini(sbbs_ntsvc_t* svc)
 		services_startup=svc->startup;
 
 	if((fp=fopen(ini_file,"r"))!=NULL) {
-		sprintf(str,"Reading %s",ini_file);
+		SAFEPRINTF(str,"Reading %s",ini_file);
 		svc_lputs(NULL,LOG_INFO,str);
 	}
 
@@ -437,11 +423,11 @@ static void WINAPI svc_main(sbbs_ntsvc_t* svc, DWORD argc, LPTSTR *argv)
 			(*svc->log_level)=strtol(argv[++i],NULL,0);
 	}
 
-	sprintf(str,"Starting NT Service: %s",svc->display_name);
+	SAFEPRINTF(str,"Starting NT Service: %s",svc->display_name);
 	svc_lputs(svc,LOG_INFO,str);
 
     if((svc->status_handle = RegisterServiceCtrlHandler(svc->name, svc->ctrl_handler))==0) {
-		sprintf(str,"!ERROR %d registering service control handler",GetLastError());
+		SAFEPRINTF(str,"!ERROR %d registering service control handler",GetLastError());
 		svc_lputs(NULL,LOG_ERR,str);
 		return;
 	}
@@ -535,7 +521,7 @@ static BOOL register_event_source(char* name, char* path)
 	LONG	retval;
 	char*	value;
 
-	sprintf(keyname,"system\\CurrentControlSet\\services\\eventlog\\application\\%s",name);
+	SAFEPRINTF(keyname,"system\\CurrentControlSet\\services\\eventlog\\application\\%s",name);
 
 	retval=RegCreateKeyEx(
 		HKEY_LOCAL_MACHINE,			/* handle to an open key */
@@ -605,7 +591,7 @@ static const char* start_type_desc(DWORD start_type)
 		case SERVICE_NOT_INSTALLED:			return("Not installed");
 	}
 
-	sprintf(str,"Start_type: %d", start_type);
+	SAFEPRINTF(str,"Start_type: %d", start_type);
 	return(str);
 }
 
@@ -623,7 +609,7 @@ static const char* state_desc(DWORD state)
 		case SERVICE_PAUSED:				return("Paused");
 	}
 
-	sprintf(str,"State: %d", state);
+	SAFEPRINTF(str,"State: %d", state);
 	return(str);
 }
 
@@ -655,7 +641,7 @@ static const char* control_desc(DWORD ctrl)
 		case SERVICE_CONTROL_SYSOP_UNAVAILABLE:	
 			return("Sysop Unavailable");
 	}
-	sprintf(str,"Control: %d", ctrl);
+	SAFEPRINTF(str,"Control: %d", ctrl);
 	return(str);
 }
 
@@ -688,6 +674,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 		&size			/* address of variable for bytes needed */
 		) || GetLastError()!=ERROR_INSUFFICIENT_BUFFER) {
 		printf("\n!Unexpected QueryServiceConfig ERROR %u\n",err=GetLastError());
+		CloseServiceHandle(hService);
 		return(-1);
 	}
 
@@ -696,6 +683,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 
 	if((service_config=malloc(size))==NULL) {
 		printf("\n!ERROR allocating %u bytes of memory\n", size);
+		CloseServiceHandle(hService);
 		return(-1);
 	}
 
@@ -706,6 +694,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 		&size			/* address of variable for bytes needed */
 		)) {
 		printf("\n!QueryServiceConfig ERROR %u\n",GetLastError());
+		CloseServiceHandle(hService);
 		free(service_config);
 		return(-1);
 	}
@@ -719,7 +708,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 /****************************************************************************/
 /* Utility function to create a service with description (on Win2K+)		*/
 /****************************************************************************/
-static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
+static void create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 								,char* name, char* display_name, char* description, char* path
 								,BOOL autostart)
 {
@@ -758,8 +747,6 @@ static SC_HANDLE create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 		register_event_source(name,path);
 		register_event_source(NTSVC_NAME_EVENT,path);	/* Create SynchronetEvent event source */
 	}
-
-	return(hService);
 }
 
 /****************************************************************************/
@@ -773,8 +760,6 @@ static int install(const char* svc_name)
     char		path[MAX_PATH+1];
 
 	printf("Installing Synchronet NT Services...\n");
-
-	hSCMlib = LoadLibrary("ADVAPI32.DLL");
 
     if(GetModuleFileName(NULL,path,sizeof(path))==0)
     {
@@ -791,6 +776,8 @@ static int install(const char* svc_name)
 		fprintf(stderr,"!ERROR %d opening SC manager\n",GetLastError());
 		return(-1);
 	}
+
+	hSCMlib = LoadLibrary("ADVAPI32.DLL");
 
 	for(i=0;ntsvc_list[i]!=NULL;i++)
 		if(svc_name==NULL	/* All? */
@@ -1212,7 +1199,7 @@ int main(int argc, char** argv)
     bbs_startup.terminated=svc_terminated;
 	bbs_startup.clients=svc_clients;
 	bbs_startup.login_attempt_list=&login_attempt_list;
-    strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(bbs_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize FTP startup structure */
     memset(&ftp_startup,0,sizeof(ftp_startup));
@@ -1224,7 +1211,7 @@ int main(int argc, char** argv)
     ftp_startup.terminated=svc_terminated;
 	ftp_startup.clients=svc_clients;
 	ftp_startup.login_attempt_list=&login_attempt_list;
-    strcpy(ftp_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(ftp_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
@@ -1236,7 +1223,7 @@ int main(int argc, char** argv)
     web_startup.terminated=svc_terminated;
 	web_startup.clients=svc_clients;
 	web_startup.login_attempt_list=&login_attempt_list;
-    strcpy(web_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(web_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
@@ -1248,7 +1235,7 @@ int main(int argc, char** argv)
     mail_startup.terminated=svc_terminated;
 	mail_startup.clients=svc_clients;
 	mail_startup.login_attempt_list=&login_attempt_list;
-    strcpy(mail_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(mail_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
@@ -1260,11 +1247,11 @@ int main(int argc, char** argv)
     services_startup.terminated=svc_terminated;
 	services_startup.clients=svc_clients;
 	services_startup.login_attempt_list=&login_attempt_list;
-    strcpy(services_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(services_startup.ctrl_dir,ctrl_dir);
 
 	/* Read .ini file here */
 	if((fp=fopen(ini_file,"r"))!=NULL) {
-		sprintf(str,"Reading %s",ini_file);
+		SAFEPRINTF(str,"Reading %s",ini_file);
 		svc_lputs(NULL,LOG_INFO,str);
 	}
 
@@ -1283,7 +1270,7 @@ int main(int argc, char** argv)
 		fclose(fp);
 
 	if(chdir(ctrl_dir)!=0) {
-		sprintf(str,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), ctrl_dir);
+		safe_snprintf(str, sizeof(str), "!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), ctrl_dir);
 		svc_lputs(NULL,LOG_ERR,str);
 	}
 
@@ -1332,7 +1319,7 @@ int main(int argc, char** argv)
 		if(StartServiceCtrlDispatcher(ServiceDispatchTable))
 			return(0);
 
-		sprintf(str,"!ERROR %u starting service control dispatcher",GetLastError());
+		safe_snprintf(str, sizeof(str), "!ERROR %u starting service control dispatcher",GetLastError());
 		printf("%s\n\n",str);
 		OutputDebugString(str); 
 	}

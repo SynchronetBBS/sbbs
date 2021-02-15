@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 	backslash(cfg.ctrl_dir);
 
 	load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str));
-	chdir(cfg.ctrl_dir);
+	(void)chdir(cfg.ctrl_dir);
 
 	dirnum=libnum=-1;
 	if(argv[1][0]=='*')

@@ -996,7 +996,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
 
-	if(buf != NULL) {
+	if(fname == NULL && buf != NULL) {
 		SAFECOPY(path, "cmdline");
 		fp = NULL;
 		js_buf = (char*)buf;
@@ -1053,6 +1053,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 		if(buf != NULL) {
 			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
 			mfprintf(statfp,"Result (%s): %s", JS_GetTypeName(js_cx, JS_TypeOfValue(js_cx, rval)), p);
+			free(p);
 		}
 		JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {

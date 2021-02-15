@@ -774,7 +774,7 @@ bool bso_lock_node(fidoaddr_t dest)
 		if(terminated)
 			return false;
 		SLEEP(cfg.bso_lock_delay*1000);
-		mkpath(outbound); // Just in case something (e.g. Argus) deleted the outbound directory
+		(void)mkpath(outbound); // Just in case something (e.g. Argus) deleted the outbound directory
 	}
 	strListPush(&locked_bso_nodes, fname);
 	lprintf(LOG_DEBUG, "Node (%s) successfully locked via: %s", smb_faddrtoa(&dest, NULL), fname);
@@ -4633,7 +4633,7 @@ int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inboun
 				SAFEPRINTF2(str,"%s%s", inbound, tp);
 			}
 			SAFEPRINTF2(tmp,"%sfile/%04u.in",scfg.data_dir,usernumber);
-			mkpath(tmp);
+			(void)mkpath(tmp);
 			backslash(tmp);
 			SAFECAT(tmp,tp);
 			lprintf(LOG_DEBUG, "Moving attachment from %s to %s", str, tmp);
@@ -5307,7 +5307,7 @@ int export_netmail(void)
 				lprintf(LOG_DEBUG, "MIME attachment decoded: %s (%lu bytes)", filename, (ulong)filelen);
 				char outdir[MAX_PATH+1];
 				SAFEPRINTF2(outdir, "%sfile/%04u.out", scfg.data_dir, msg.idx.from);
-				mkpath(outdir);
+				(void)mkpath(outdir);
 				char fpath[MAX_PATH+1];
 				SAFEPRINTF2(fpath, "%s/%s", outdir, filename);
 				FILE* fp = fopen(fpath, "wb");
@@ -6377,7 +6377,7 @@ int main(int argc, char **argv)
 	cfg.areas=0;		/* Total number of areas in AREAS.BBS */
 	cfg.area=NULL;
 
-	fexistcase(cfg.areafile);
+	(void)fexistcase(cfg.areafile);
 	if((stream = fopen(cfg.areafile,"r")) == NULL) {
 		lprintf(LOG_NOTICE, "Could not open Area File (%s): %s", cfg.areafile, strerror(errno));
 	} else {

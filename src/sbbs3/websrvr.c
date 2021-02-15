@@ -568,7 +568,7 @@ static int writebuf(http_session_t	*session, const char *buf, size_t len)
 		ResetEvent(session->outbuf.empty_event);
 		avail=RingBufFree(&session->outbuf);
 		if(!avail) {
-			WaitForEvent(session->outbuf.empty_event, 1);
+			(void)WaitForEvent(session->outbuf.empty_event, 1);
 			continue;
 		}
 		if(avail > len-sent)
@@ -3394,8 +3394,8 @@ static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, c
 			js_parse_query(session,session->req.post_data);
 		}
 	}
-	JS_GetProperty(session->js_cx,session->js_glob,"js",&val);
-	if (JSVAL_IS_OBJECT(val)) {
+	if(JS_GetProperty(session->js_cx,session->js_glob,"js",&val)
+		&& JSVAL_IS_OBJECT(val)) {
 		if((js_str=JS_NewStringCopyZ(session->js_cx, curdir))!=NULL) {
 			JS_DefineProperty(session->js_cx, JSVAL_TO_OBJECT(val), "startup_dir", STRING_TO_JSVAL(js_str)
 				,NULL,NULL,JSPROP_ENUMERATE);
@@ -3425,10 +3425,11 @@ static BOOL exec_js_webctrl(http_session_t* session, char *name, char* script, c
 		JS_ReportPendingException(session->js_cx);
 		if (rewrite && JSVAL_IS_BOOLEAN(rval) && JSVAL_TO_BOOLEAN(rval)) {
 			session->req.send_location = MOVED_STAT;
-			JS_GetProperty(session->js_cx,session->js_request,"request_string",&val);
-			JSVALUE_TO_STRBUF(session->js_cx, val, redir_req, sizeof(redir_req), NULL);
-			safe_snprintf(session->redir_req,sizeof(session->redir_req),"%s %s%s%s",methods[session->req.method]
-				,redir_req,session->http_ver<HTTP_1_0?"":" ",http_vers[session->http_ver]);
+			if(JS_GetProperty(session->js_cx,session->js_request,"request_string",&val)) {
+				JSVALUE_TO_STRBUF(session->js_cx, val, redir_req, sizeof(redir_req), NULL);
+				safe_snprintf(session->redir_req,sizeof(session->redir_req),"%s %s%s%s",methods[session->req.method]
+					,redir_req,session->http_ver<HTTP_1_0?"":" ",http_vers[session->http_ver]);
+			}
 		}
 		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 	} while(0);
@@ -4357,7 +4358,7 @@ static int cgi_write_in(void *arg, char *buf, size_t bufsz)
 	int wr;
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
-	WriteFile(cd->wrpipe, buf, bufsz, &wr, /* Overlapped: */NULL);
+	(void)WriteFile(cd->wrpipe, buf, bufsz, &wr, /* Overlapped: */NULL);
 	return wr;
 }
 
@@ -5004,6 +5005,7 @@ static BOOL exec_cgi(http_session_t *session)
 	/* Create the child input pipe. */
 	if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0 /* default buffer size */)) {
 		lprintf(LOG_ERR,"%04d !ERROR %d creating stdin pipe",session->socket,GetLastError());
+		CloseHandle(rdoutpipe);
 		return(FALSE);
 	}
 
@@ -5261,10 +5263,10 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, BOOL writeln)
 			/* "Fast Mode" requested? */
 			jsval		val;
 			JSObject*	reply;
-			JS_GetProperty(cx, session->js_glob, "http_reply", &val);
-			reply=JSVAL_TO_OBJECT(val);
-			JS_GetProperty(cx, reply, "fast", &val);
-			if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
+			if(JS_GetProperty(cx, session->js_glob, "http_reply", &val))
+				reply=JSVAL_TO_OBJECT(val);
+			if(JS_GetProperty(cx, reply, "fast", &val)
+				&& JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
 				session->req.keep_alive=FALSE;
 				rc=JS_SUSPENDREQUEST(cx);
 				if(!ssjs_send_headers(session,FALSE)) {
@@ -5685,10 +5687,10 @@ js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 			/* "Fast Mode" requested? */
 			jsval		val;
 			JSObject*	reply;
-			JS_GetProperty(cx, session->js_glob, "http_reply", &val);
-			reply=JSVAL_TO_OBJECT(val);
-			JS_GetProperty(cx, reply, "fast", &val);
-			if(JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
+			if(JS_GetProperty(cx, session->js_glob, "http_reply", &val))
+				reply=JSVAL_TO_OBJECT(val);
+			if(JS_GetProperty(cx, reply, "fast", &val)
+				&& JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
 				session->req.keep_alive=FALSE;
 				if(!ssjs_send_headers(session,FALSE)) {
 					free(template);
@@ -5841,22 +5843,23 @@ static BOOL js_setup(http_session_t* session)
 static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 {
 	jsval		val;
-	JSObject*	reply;
-	JSIdArray*	heads;
-	JSObject*	headers;
+	JSObject*	reply = NULL;
+	JSIdArray*	heads = NULL;
+	JSObject*	headers = NULL;
 	int			i, h;
 	char		str[MAX_REQUEST_LINE+1];
 	char		*p=NULL,*p2=NULL;
 	size_t		p_sz=0, p2_sz=0;
 
 	JS_BEGINREQUEST(session->js_cx);
-	JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val);
-	reply = JSVAL_TO_OBJECT(val);
-	JS_GetProperty(session->js_cx,reply,"status",&val);
-	JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
-	JS_GetProperty(session->js_cx,reply,"header",&val);
-	headers = JSVAL_TO_OBJECT(val);
-	heads=JS_Enumerate(session->js_cx,headers);
+	if(JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val))
+		reply = JSVAL_TO_OBJECT(val);
+	if(JS_GetProperty(session->js_cx,reply,"status",&val))
+		JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
+	if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
+		headers = JSVAL_TO_OBJECT(val);
+		heads=JS_Enumerate(session->js_cx,headers);
+	}
 	if(heads != NULL) {
 		for(i=0;i<heads->length;i++)  {
 			JS_IdToValue(session->js_cx,heads->vector[i],&val);
@@ -5868,8 +5871,8 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 					free(p2);
 				return FALSE;
 			}
-			JS_GetProperty(session->js_cx,headers,p,&val);
-			JSVALUE_TO_RASTRING(session->js_cx, val, p2, &p2_sz, NULL);
+			if(JS_GetProperty(session->js_cx,headers,p,&val))
+				JSVALUE_TO_RASTRING(session->js_cx, val, p2, &p2_sz, NULL);
 			if(JS_IsExceptionPending(session->js_cx)) {
 				if(p)
 					free(p);

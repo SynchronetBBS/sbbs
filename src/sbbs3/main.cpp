@@ -1134,8 +1134,10 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx,argv[argn], &mode))
+		if(!JS_ValueToInt32(cx,argv[argn], &mode)) {
+			free(prompt);
 			return JS_FALSE;
+		}
 		argn++;
 	}
 
@@ -1778,14 +1780,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		sendsocket(client_socket, buf, 2);
+		(void)sendsocket(client_socket, buf, 2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		sendsocket(client_socket, buf, 3);
+		(void)sendsocket(client_socket, buf, 3);
 	}
 }
 
@@ -2083,7 +2085,7 @@ void input_thread(void *arg)
 		if(sbbs->passthru_socket_active == true) {
 			BOOL writable = FALSE;
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable)
-				sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
+				(void)sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
 			else
 				lprintf(LOG_WARNING, "Node %d could not write to passthru socket (writable=%d)"
 					, sbbs->cfg.node_num, (int)writable);
@@ -2496,10 +2498,10 @@ void output_thread(void* arg)
 			}
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				(void)sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #endif
 		}
 
@@ -2681,7 +2683,7 @@ void event_thread(void* arg)
 					} else {
 						char badpkt[MAX_PATH+1];
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
-						remove(badpkt);
+						(void)remove(badpkt);
 						if(rename(g.gl_pathv[i], badpkt) == 0)
 							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
 						else
@@ -4031,10 +4033,10 @@ void sbbs_t::spymsg(const char* msg)
 	}
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
+		(void)sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
 #ifdef __unix__
 	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
+		(void)sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
 #endif
 }
 

@@ -660,6 +660,7 @@ void synclist(char *inpath, int dirnum)
 		printf("\nDeleting %s\n",listpath);
 		remove(listpath);
 	}
+	fclose(stream);
 }
 
 char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "

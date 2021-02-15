@@ -1454,18 +1454,15 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if(argc && JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 	}
-	i--;
 
-	if(i<0 || i>=TOTAL_TEXT)
-		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-	else {
-		JSString* js_str = JS_NewStringCopyZ(cx, sbbs->text[i]);
+	if(i > 0 && i <= TOTAL_TEXT) {
+		JSString* js_str = JS_NewStringCopyZ(cx, sbbs->text[i - 1]);
 		if(js_str==NULL)
 			return(JS_FALSE);
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
@@ -1495,10 +1492,9 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
 	}
-	i--;
-
-	if(i<0 || i>=TOTAL_TEXT)
+	if(i < 1 || i > TOTAL_TEXT)
 		return(JS_TRUE);
+	i--;
 
 	if(sbbs->text[i]!=sbbs->text_sav[i] && sbbs->text[i]!=nulstr)
 		free(sbbs->text[i]);
@@ -2192,12 +2188,15 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
-	if(cstr==NULL)
+	if(cstr==NULL) {
+		free(cstr);
+		free(desc);
 		return JS_FALSE;
+	}
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->sendfile(cstr, prot, desc, autohang)));
 	free(cstr);
-	FREE_AND_NULL(desc);
+	free(desc);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -3550,8 +3549,11 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(uintN i=1;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToECMAUint32(cx,argv[i],&mode))
+			if(!JS_ValueToECMAUint32(cx,argv[i],&mode)) {
+				if(fspec != def)
+					free(fspec);
 				return JS_FALSE;
+			}
 		}
 		else if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
@@ -3644,10 +3646,17 @@ js_forward_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(n=0; n<argc; n++) {
 		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
-			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL)
+			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL) {
+				free(to);
+				free(subject);
+				free(comment);
 				return JS_FALSE;
+			}
 			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, /* post_t */NULL)) {
 				JS_ReportError(cx, "msg hdr object lacks privates");
+				free(to);
+				free(subject);
+				free(comment);
 				return JS_FALSE;
 			}
 		} else if(JSVAL_IS_STRING(argv[n])) {
@@ -3666,9 +3675,9 @@ js_forward_msg(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->forwardmsg(smb, msg, to, subject, comment)));
 		JS_RESUMEREQUEST(cx, rc);
 	}
-	FREE_AND_NULL(subject);
-	FREE_AND_NULL(comment);
-	FREE_AND_NULL(to);
+	free(subject);
+	free(comment);
+	free(to);
 
 	return JS_TRUE;
 }
