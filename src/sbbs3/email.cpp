@@ -77,7 +77,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest&FLAG('M'))) {
-		str[0] = '\0'
+		str[0] = '\0';
 		if(getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str) == 0
 			&& is_supported_netmail_addr(&cfg, str)) {
 			bprintf(text[UserNetMail],str);
