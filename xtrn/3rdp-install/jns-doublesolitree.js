@@ -22,6 +22,7 @@ if (file.open(configfile, 'r')) {
 	lines[3] = 'NOLOG';
 	lines[6] = gamedir + 'solitree.asc';
 	lines[7] = gamedir + 'solitree.ans';
+	lines[8] = "";
 	lines[11] = "2";
 	lines[12] = "2";
 	lines[13] = "2";
@@ -48,7 +49,7 @@ lines[5] = "DOOR.SYS";
 lines[9] = "PCBNODE";
 lines[10] = gamedir;
 
-if (file.open(configfile, 'r+')) {
+if (file.open(configfile, file_exists(configfile) ? 'r+' : 'w+')) {
 	file.writeAll(lines);
 	file.close();
 } else {

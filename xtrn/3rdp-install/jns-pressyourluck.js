@@ -5,37 +5,37 @@ writeln("Generating config files...");
 var i;
 
 var gamedir = fullpath(js.startup_dir);
-var configfile = gamedir + "BOMBSQAD.CFG";
-var nodedat = gamedir + "NODEINFO.DAT";
+var configfile = gamedir + "PRESLUCK.CFG";
+var nodedat = gamedir + "DOORINFO.DAT";
 
 file_backup(configfile);
 
 var lines = [];
-	
+
 var file = new File(configfile);
 if (file.open(configfile, 'r')) {
 	lines = file.readAll();
-	file.close();	
+	file.close();
 } else {
 	// new config
 	lines[2] = 'Y';
 	lines[3] = 'NOLOG';
-	lines[6] = gamedir + 'bombsqad.asc';
-	lines[7] = gamedir + 'bombsqad.ans';
-	lines[11] = "5";
+	lines[6] = gamedir + 'presluck.asc';
+	lines[7] = gamedir + 'presluck.ans';
+	lines[8] = "";
+	lines[11] = "10";
 	lines[12] = "2";
-	lines[13] = "2";
-	lines[14] = "300";
+	lines[13] = "27";
 }
 
 lines[0] = system.name;
 lines[1] = system.operator;
 
-var mfile = new File(gamedir + "BOMBSQAD.KEY");
+var mfile = new File(gamedir + "PRESLUCK.KEY");
 if(mfile.open("rb")) {
 	var md5 = mfile.md5_hex;
 	writeln("Check key " + md5);
-	if (md5 == "70356999d5473d3fb05693dc7aa36407") {
+	if (md5 == "9e1d5776eaf008c545fc7e85c6129c35") {
 		writeln("Restoring free key sysop info");
 		lines[0] = "BBSFILES.COM";
 		lines[1] = "FREE COPY";

@@ -22,6 +22,7 @@ if (file.open(configfile, 'r')) {
 	lines[3] = 'NOLOG';
 	lines[6] = gamedir + 'montana.asc';
 	lines[7] = gamedir + 'montana.ans';
+	lines[8] = "";
 	lines[11] = "3";
 	lines[12] = "5";
 	lines[13] = "25";
@@ -47,7 +48,7 @@ lines[5] = "DOOR.SYS";
 lines[9] = "PCBNODE";
 lines[10] = nodedat;
 
-if (file.open(configfile, 'r+')) {
+if (file.open(configfile, file_exists(configfile) ? 'r+' : 'w+')) {
 	file.writeAll(lines);
 	file.close();
 } else {

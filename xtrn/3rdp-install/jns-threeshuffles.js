@@ -5,37 +5,38 @@ writeln("Generating config files...");
 var i;
 
 var gamedir = fullpath(js.startup_dir);
-var configfile = gamedir + "BOMBSQAD.CFG";
+var configfile = gamedir + "THREE.CFG";
 var nodedat = gamedir + "NODEINFO.DAT";
 
 file_backup(configfile);
 
 var lines = [];
-	
+
 var file = new File(configfile);
 if (file.open(configfile, 'r')) {
 	lines = file.readAll();
-	file.close();	
+	file.close();
 } else {
 	// new config
 	lines[2] = 'Y';
 	lines[3] = 'NOLOG';
-	lines[6] = gamedir + 'bombsqad.asc';
-	lines[7] = gamedir + 'bombsqad.ans';
-	lines[11] = "5";
-	lines[12] = "2";
-	lines[13] = "2";
-	lines[14] = "300";
+	lines[6] = gamedir + 'threesh.asc';
+	lines[7] = gamedir + 'threesh.ans';
+	lines[8] = "";
+	lines[11] = "3";
+	lines[12] = "5";
+	lines[13] = "25";
+	lines[14] = "7";
 }
 
 lines[0] = system.name;
 lines[1] = system.operator;
 
-var mfile = new File(gamedir + "BOMBSQAD.KEY");
+var mfile = new File(gamedir + "THREE.KEY");
 if(mfile.open("rb")) {
 	var md5 = mfile.md5_hex;
 	writeln("Check key " + md5);
-	if (md5 == "70356999d5473d3fb05693dc7aa36407") {
+	if (md5 == "d2fdf6ed54fd27de589ddfb6a6493735") {
 		writeln("Restoring free key sysop info");
 		lines[0] = "BBSFILES.COM";
 		lines[1] = "FREE COPY";
@@ -46,7 +47,7 @@ if(mfile.open("rb")) {
 lines[4] = "Synchronet";
 lines[5] = "DOOR.SYS";
 lines[9] = "PCBNODE";
-lines[10] = gamedir;
+lines[10] = nodedat;
 
 if (file.open(configfile, file_exists(configfile) ? 'r+' : 'w+')) {
 	file.writeAll(lines);
