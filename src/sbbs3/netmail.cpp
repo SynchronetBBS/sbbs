@@ -273,6 +273,11 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		return(false); 
 	}
 	length=(long)filelength(file);
+	if(length < 0) {
+		close(file);
+		errormsg(WHERE, ERR_LEN, msgpath, length);
+		return false;
+	}
 	if((buf=(char *)calloc(1, length+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
