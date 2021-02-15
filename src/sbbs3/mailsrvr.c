@@ -902,9 +902,11 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 				p++;
 			}
 			char* tp = strchr(p, delim);
-			if(tp == NULL && delim != ' ')
-				break;
-			*tp = '\0';
+			if(tp == NULL) {
+				if(delim != ' ')
+					break;
+			} else
+				*tp = '\0';
 			SAFEPRINTF2(filepath, "%s/%s", dirname, getfname(truncsp(p)));
 			strListPush(&file_list, filepath);
 			if(tp == NULL)
@@ -2699,6 +2701,9 @@ static void parse_mail_address(char* p
 	char*	tp;
 	char	tmp[256];
 
+	if(p == NULL || name == NULL || addr == NULL)
+		return;
+
 	SKIP_WHITESPACE(p);
 
 	/* Get the address */
@@ -4223,7 +4228,7 @@ static void smtp_thread(void* arg)
 			lprintf(LOG_DEBUG,"%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);
 #endif
-			b64_encode(str,sizeof(str),challenge,0);
+			b64_encode(str,sizeof(str),challenge,strlen(challenge));
 			sockprintf(socket,client.protocol,session,"334 %s",str);
 			if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
 				lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH CRAM-MD5 response", socket, client.protocol, client_id);
@@ -5708,7 +5713,7 @@ static void sendmail_thread(void* arg)
 					}
 					switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
 						case MAIL_OPT_RELAY_AUTH_LOGIN:
-							b64_encode(p=resp,sizeof(resp),startup->relay_user,0);
+							b64_encode(p=resp,sizeof(resp),startup->relay_user,strlen(startup->relay_user));
 							break;
 						case MAIL_OPT_RELAY_AUTH_CRAM_MD5:
 							p=buf;
@@ -5729,7 +5734,7 @@ static void sendmail_thread(void* arg)
 							MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
 							
 							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex((BYTE*)str,digest));
-							b64_encode(p=resp,sizeof(resp),buf,0);
+							b64_encode(p=resp,sizeof(resp),buf,strlen(buf));
 							break;
 						default:
 							p="<unknown>";
@@ -5744,7 +5749,7 @@ static void sendmail_thread(void* arg)
 						}
 						switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
 							case MAIL_OPT_RELAY_AUTH_LOGIN:
-								b64_encode(p=buf,sizeof(buf),startup->relay_pass,0);
+								b64_encode(p=buf,sizeof(buf),startup->relay_pass,strlen(startup->relay_pass));
 								break;
 							default:
 								p="<unknown>";
