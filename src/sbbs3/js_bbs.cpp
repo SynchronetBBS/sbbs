@@ -3772,10 +3772,16 @@ js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
 			if((hdrobj=JSVAL_TO_OBJECT(argv[n]))==NULL) {
 				JS_ReportError(cx, "invalid object argument");
+				free(subject);
+				free(from);
+				free(to);
 				return JS_FALSE;
 			}
 			if(!js_GetMsgHeaderObjectPrivates(cx, hdrobj, &smb, &msg, NULL)) {
 				JS_ReportError(cx, "msg hdr object lacks privates");
+				free(subject);
+				free(from);
+				free(to);
 				return JS_FALSE;
 			}
 		} else if(JSVAL_IS_STRING(argv[n])) {
@@ -3794,9 +3800,9 @@ js_show_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->show_msghdr(smb, msg, subject, from, to);
 		JS_RESUMEREQUEST(cx, rc);
 	}
-	FREE_AND_NULL(subject);
-	FREE_AND_NULL(from);
-	FREE_AND_NULL(to);
+	free(subject);
+	free(from);
+	free(to);
 
 	return JS_TRUE;
 }
