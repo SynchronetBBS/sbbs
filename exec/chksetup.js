@@ -219,7 +219,7 @@ var tests = {
 		try {
 			finger_obj = JSON.parse(finger_result.join(''));
 		} catch(e) {
-			return 'finger ' + finger_query + '@' + finger_host + ' result: ' + e;
+			return finger_result.join('');
 		}
 		var bbs = list[lib.system_index(list, system.name)];
 		bbs.entry = undefined;
