@@ -2817,7 +2817,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Unable to create socket set");
 		goto fail;
 	}
-	// Q for Deuce: what calls xpms_destroy or otherwise free()'s this set (once assigned to p->set)?
+	// A for Digitman: "Nothing." -- DigitalMan (via Mumble)
 	if (obj == NULL) {
 		JSVALUE_TO_MSTRING(cx, argv[0], interface, NULL);
 		HANDLE_PENDING(cx, interface);
