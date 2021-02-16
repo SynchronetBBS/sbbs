@@ -396,8 +396,9 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 
 	do_js_close(p, true);
 
-	if(p->hostname)
-		free(p->hostname);
+	if(!p->external)
+		free(p->set);
+	free(p->hostname);
 	free(p);
 
 	JS_SetPrivate(cx, obj, NULL);
@@ -2817,7 +2818,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Unable to create socket set");
 		goto fail;
 	}
-	// A for Digitman: "Nothing." -- DigitalMan (via Mumble)
 	if (obj == NULL) {
 		JSVALUE_TO_MSTRING(cx, argv[0], interface, NULL);
 		HANDLE_PENDING(cx, interface);
