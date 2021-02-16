@@ -133,6 +133,7 @@ struct xpmapping* DLLCALL xpmap(const char *filename, enum xpmap_type type)
 	ret=(struct xpmapping *)malloc(sizeof(struct xpmapping));
 	if(ret==NULL) {
 		CloseHandle(md);
+		UnmapViewOfFile(addr);
 		return NULL;
 	}
 	ret->addr=addr;

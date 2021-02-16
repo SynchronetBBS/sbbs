@@ -854,6 +854,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	for(; argn<argc; argn++) {
 		if(JSVAL_IS_STRING(argv[argn])) {
+			free(title);
 			JSVALUE_TO_MSTRING(cx, argv[argn], title, NULL);
 			HANDLE_PENDING(cx, title);
 			continue;
