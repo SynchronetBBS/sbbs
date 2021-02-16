@@ -3522,6 +3522,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
     getstr_offset = 0;
     lastnodemsg = 0;
     xtrn_mode = 0;
+	last_ns_time = 0;
 }
 
 //****************************************************************************

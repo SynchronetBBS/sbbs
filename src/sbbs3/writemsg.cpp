@@ -632,14 +632,24 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			return(false); 
 		}
 		length=(long)filelength(file);
+		if(length < 0) {
+			errormsg(WHERE, ERR_LEN, msgtmp, length);
+			free(buf);
+			return false;
+		}
 		l=strlen((char *)buf);	  /* reserve space for top and terminating null */
 		/* truncate if too big */
 		if(length>(long)((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1))) {
 			length=(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1);
 			bputs(text[OutOfBytes]); 
 		}
-		lread(file,buf+l,length);
+		long rd = read(file,buf+l,length);
 		close(file);
+		if(rd != length) {
+			errormsg(WHERE, ERR_READ, msgtmp, length);
+			free(buf);
+			return false;
+		}
 		// remove(msgtmp); 	   /* no need to save the temp input file */
 		buf[l+length]=0; 
 	}
@@ -845,7 +855,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 		errormsg(WHERE,ERR_ALLOC,str,flen);
 		return; 
 	}
-	if(lread(file,buf,flen)!=flen) {
+	if(read(file,buf,flen)!=flen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,flen);
 		free(buf);

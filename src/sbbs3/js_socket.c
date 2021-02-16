@@ -2749,7 +2749,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	uint16_t port;
 	jsrefcount rc;
 	scfg_t *scfg;
-	struct xpms_set *set;
+	struct xpms_set *set = NULL;
 	struct ls_cb_data cb;
 	jsuint count;
 	int i;
