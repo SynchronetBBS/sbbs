@@ -678,6 +678,8 @@ void sbbs_read_ini(
 
 		web->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
+		web->tls_error_level
+			=iniGetLogLevel(list,section, "TLSErrorLevel", web->tls_error_level);
 		web->options
 			=iniGetBitField(list,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);

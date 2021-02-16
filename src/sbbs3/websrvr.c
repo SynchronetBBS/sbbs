@@ -406,6 +406,8 @@ enum  {
 	int GCES_level;                                                                 \
 	get_crypt_error_string(status, sess->tls_sess, &GCES_estr, action, &GCES_level);\
 	if (GCES_estr) {                                                                \
+		if(GCES_level < startup->tls_error_level)                                   \
+			GCES_level = startup->tls_error_level;                                  \
 		lprintf(GCES_level, "%04d TLS %s", sess->socket, GCES_estr);                \
 		free_crypt_attrstr(GCES_estr);                                              \
 	}                                                                               \
