@@ -131,7 +131,7 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 			memcpy(y, z, zcnt);
 			y64 = malloc(zcnt*4/3+3);
 			if (y64 == NULL) {
-				free(x);
+				free(x64);
 				free(y);
 				return 0;
 			}
