@@ -62,7 +62,7 @@ span.message-header.unread {
 
 /* background of the top bar */
 .dark .navbar {
-	background-color: #333;
+	background-color: #222;
 }
 
 /* bbs name at top left */
@@ -77,20 +77,20 @@ span.message-header.unread {
 .dark .navbar-default a:hover {
 	color: #8cc1ee !important;
 	color: #fff;
-	background-color: #444 !important;
+	background-color: #222 !important;
 }
 
 /* the active top nav button when opened */
 .dark .navbar-default .navbar-nav>.open>a,
 .dark.navbar-default .navbar-nav>.open>a:focus,
 .dark.navbar-default .navbar-nav>.open>a:hover {
-	background-color: #555;
+	background-color: #333;
 	color: #EEE;
 }
 
 /* dropdown menus */
 .dark .dropdown-menu {
-	background-color: #333;
+	background-color: #222;
 }
 .dark .dropdown-menu li a {
 	color: #75b8f1;
@@ -98,13 +98,14 @@ span.message-header.unread {
 
 /* background color of alternate rows in lists */
 .dark .striped:nth-of-type(even), .dark .table-striped > tbody > tr:nth-child(odd) > td, .dark  .table-striped > tbody > tr:nth-child(odd) > th {
-	background: #444;
+	background: #222;
 }
 
 /* this is the text and color for most items, including non-alternating rows */
 .dark .list-group-item {
-	background-color: #555;
-	color: #EEE;
+	background-color: #333;
+	color: #ddd;
+	border-color: #888;
 }
 
 /* A link in a list when the mouse is hovering over it (mostly applies to the Forum) */
@@ -120,7 +121,7 @@ span.message-header.unread {
 
 /* background color for the breadcrumb box */
 .dark .breadcrumb {
-	background-color: #555;
+	background-color: #333;
 }
 
 /*** You probably don't need to mess with rules below this line. ***/
@@ -301,8 +302,8 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 }
 
 .dark .modal-content {
-	background-color: #555 !important;
-	color: #FFF !important;
+	background-color: #333 !important;
+	color: #ddd !important;
 }
 
 .darkswitchbox {
@@ -314,7 +315,7 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 }
 
 .dark input,.dark select,.dark textarea {
-	color: #333;
+	color: #111;
 	background-color: #DDD;
 }
 
