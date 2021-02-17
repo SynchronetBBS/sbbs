@@ -93,13 +93,13 @@ function registerEventListener(scope, callback, params) {
 document.addEventListener('DOMContentLoaded', () => {
 	// originally based on dark-mode-switch by Christian Oliff
 	if ($('#darkSwitch').length) {
-		$('#darkSwitch').checked = localStorage.getItem('darkSwitch') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+		$('#darkSwitch').prop('checked', localStorage.getItem('darkSwitch') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
 		$('#darkSwitch').change(resetTheme);
 		resetTheme();
 		function resetTheme() {
-			if (this.checked) {
+			if ($('#darkSwitch').prop('checked')) {
 				$('body').addClass('dark');
-				localStorage.setItem('darkSwitch', 'dark');
+				localStorage.setItem('darkSwitch', true);
 			} else {
 				$('body').removeClass('dark');
 				localStorage.removeItem('darkSwitch');
