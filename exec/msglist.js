@@ -448,6 +448,10 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 			, sub_name
 			, msg.num
 			, total_msgs));
+		if((msgbase.attributes & SMB_EMAIL) && !(msg.attr&MSG_READ) && (msg.to_ext == user.number)) {
+			if(!update_msg_attr(msgbase, msg, msg.attr |= MSG_READ))
+				alert("failed to add read attribute");
+		}
 		// Only message text nav keys are handled here
 		var key = console.getkeys(total_msgs, K_UPPER|K_NOCRLF);
 		switch(key) {
@@ -1127,14 +1131,6 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 					if(viewed_msg != current) {
 						console.clear();
 						viewed_msg = current;
-					}
-				}
-				
-				if(list[current]) {
-					var msg = list[current];
-					if(mail && msg.to_ext == user.number) {
-						if(!update_msg_attr(msgbase, msg, msg.attr | MSG_READ))
-							alert("failed to add read attribute");
 					}
 				}
 				break;
