@@ -69,7 +69,7 @@ function sendTelegram(alias) {
 		v4_post('./api/system.ssjs', { call: 'send-telegram', user: alias, telegram: $('#telegram').val() });
         $('#popUpModal').modal('hide');
     }
-	$('#popUpModalTitle').html('Send a telegram to ' + alias);
+	$('#popUpModalTitle').html(`Send a telegram to ${alias}`);
 	$('#popUpModalBody').html(
         '<form id="send-telegram-form">'
 		+ '<input type="text" class="form-control" placeholder="My message" name="telegram" id="telegram">'
@@ -145,7 +145,7 @@ window.onload =	function () {
 	}
 
 	const qs = Object.entries(_sbbs_events).reduce((a, c, i) => `${a}${(i === 0 ? '?' : '&')}${c[1].qs}`, '');
-    const es = new EventSource('./api/events.ssjs' + qs);
+    const es = new EventSource(`./api/events.ssjs${qs}`);
     Object.keys(_sbbs_events).forEach(e => es.addEventListener(e, _sbbs_events[e].callback));
 
 }
