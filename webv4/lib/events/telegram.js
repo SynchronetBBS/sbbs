@@ -15,7 +15,7 @@ function cycle() {
 				/* white-space */false,
 				/* ansi */false,
 				/* ctrl_a */false
-			));
+			))
 		});
 	}
 }
