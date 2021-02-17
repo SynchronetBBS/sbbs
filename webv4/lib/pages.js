@@ -218,14 +218,10 @@ function getPage(page) {
 	switch(ext) {
 		case '.SSJS':
 			if (ext === '.SSJS' && p.search(/\.xjs\.ssjs$/i) >= 0) break;
-			(function () {
-				load(p, true);
-			})();
+			js.exec(p, new function () {});
 			break;
 		case '.XJS':
-			(function () {
-				load(xjs_compile(p), true);
-			})();
+			js.exec(xjs_compile(p), new function () {});
 			break;
 		case '.HTML':
 			var f = new File(p);
