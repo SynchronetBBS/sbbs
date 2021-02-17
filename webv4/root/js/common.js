@@ -11,7 +11,9 @@ async function v4_fetch(url, method, body) {
 		}
 	}
 	try {
-		return await fetch(url, init).then(res => res.json());
+		const response = await fetch(url, init);
+		const data = await response.json();
+		return data;
 	} catch (err) {
 		console.log('Error on fetch', url, init);
 	}
@@ -81,52 +83,30 @@ function sendTelegram(alias) {
 }
 
 function registerEventListener(scope, callback, params) {
-	params = Object.keys(params || {}).reduce(function (a, c) {
-		a += '&' + c + '=' + params[c];
-		return a;
-	}, '');
+	params = Object.keys(params || {}).reduce((a, c) => `${a}&${c}=${params[c]}`, '');
 	_sbbs_events[scope] = {
-		qs: 'subscribe=' + scope + params,
-		callback: callback
+		qs: `subscribe=${scope}${params}`,
+		callback: callback,
 	};
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', () => {
 	// originally based on dark-mode-switch by Christian Oliff
-	var darkSwitch = document.getElementById("darkSwitch");
-	if (darkSwitch) {
-		initTheme();
-		darkSwitch.addEventListener("change", function (event) {
-			resetTheme();
-		});
-
-		function initTheme() {
-			var darkThemeSelected;
-			if (localStorage.getItem("darkSwitch") !== null) {
-				darkThemeSelected = localStorage.getItem("darkSwitch") === "dark";
-			} else {
-				darkThemeSelected = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-			}
-			darkSwitch.checked = darkThemeSelected;
-			if (darkThemeSelected) {
-				jQuery("body").addClass("dark")
-			} else {
-				jQuery("body").removeClass("dark");
-			}
-		}
-
+	if ($('#darkSwitch').length) {
+		$('#darkSwitch').checked = localStorage.getItem('darkSwitch') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+		$('#darkSwitch').change(resetTheme);
+		resetTheme();
 		function resetTheme() {
-			if (darkSwitch.checked) {
-				jQuery("body").addClass("dark");
-				localStorage.setItem("darkSwitch", "dark");
+			if (this.checked) {
+				$('body').addClass('dark');
+				localStorage.setItem('darkSwitch', 'dark');
 			} else {
-				jQuery("body").removeClass("dark");
-				localStorage.setItem("darkSwitch", "light");
+				$('body').removeClass('dark');
+				localStorage.removeItem('darkSwitch');
 			}
 		}
 	}
-
-	jQuery('html').removeClass('hidden');
+	$('html').removeClass('hidden');
 });
 
 window.onload =	function () {
@@ -135,31 +115,27 @@ window.onload =	function () {
 	$('#button-login').click(login);
 	$('#form-login').submit(login);
 
-	$('#popUpModal').on('hidden.bs.modal', function (e) {
+	$('#popUpModal').on('hidden.bs.modal', () => {
 		$('#popUpModalActionButton').off('click');
 		$('#popUpModalTitle').empty();
 		$('#popUpModalBody').empty();
 	});
-	$("#popUpModalCloseButton").click(function () {
-		$('#popUpModal').modal('hide');
-	});
+	$("#popUpModalCloseButton").click(() => $('#popUpModal').modal('hide'));
 
 	setTimeout(scrollUp, 25);
 	window.onhashchange = scrollUp;
 
 	if ($('#button-logout').length > 0) {
 
-		registerEventListener('mail', function (e) {
+		registerEventListener('mail', e => {
             const data = JSON.parse(e.data);
             if (typeof data.count != 'number') return;
             $('#badge-unread-mail').text(data.count < 1 ? '' : data.count);
             $('#badge-unread-mail-inner').text(data.count < 1 ? '' : data.count);
 		});
 		
-		registerEventListener('telegram', function (e) {
-            const tg = JSON.parse(e.data).replace(/\1./g, '').replace(
-                /\r?\n/g, '<br>'
-            );
+		registerEventListener('telegram', e => {
+            const tg = JSON.parse(e.data).replace(/\1./g, '').replace(/\r?\n/g, '<br>');
             $('#popUpModalTitle').html('New telegram(s) received');
             $('#popUpModalBody').append(tg);
             $('#popUpModalActionButton').hide();
@@ -168,13 +144,8 @@ window.onload =	function () {
 
 	}
 
-	const qs = Object.keys(_sbbs_events).reduce(function (a, c, i) {
-		return a + (i == 0 ? '?' : '&') + _sbbs_events[c].qs;
-	}, '');
-
+	const qs = Object.entries(_sbbs_events).reduce((a, c, i) => `${a}${(i === 0 ? '?' : '&')}${c[1].qs}`, '');
     const es = new EventSource('./api/events.ssjs' + qs);
-    Object.keys(_sbbs_events).forEach(function (e) {
-        es.addEventListener(e, _sbbs_events[e].callback);
-    });
+    Object.keys(_sbbs_events).forEach(e => es.addEventListener(e, _sbbs_events[e].callback));
 
 }
