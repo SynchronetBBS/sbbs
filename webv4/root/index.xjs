@@ -56,7 +56,7 @@
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
-<?xjs if (!settings.darkmode_off) { ?>	
+<?xjs if (settings.darkmode_allow) { ?>
 		<link href="./css/checkbox.css" rel="stylesheet">
 <?xjs } ?>
 		<? if (file_exists(settings.web_root + 'css/custom.css')) { ?>

@@ -90,10 +90,19 @@ function registerEventListener(scope, callback, params) {
 	};
 }
 
+function darkmodeRequested() {
+	const ls = JSON.parse(localStorage.getItem('darkSwitch'));
+	if (ls) return true;
+	if (ls === false) return false;
+	if ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) return true;
+	if ($('#darkSwitch').prop('checked')) return true;
+	return false;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
 	// originally based on dark-mode-switch by Christian Oliff
 	if ($('#darkSwitch').length) {
-		$('#darkSwitch').prop('checked', localStorage.getItem('darkSwitch') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+		$('#darkSwitch').prop('checked', darkmodeRequested());
 		$('#darkSwitch').change(resetTheme);
 		resetTheme();
 		function resetTheme() {
@@ -102,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				localStorage.setItem('darkSwitch', true);
 			} else {
 				$('body').removeClass('dark');
-				localStorage.removeItem('darkSwitch');
+				localStorage.setItem('darkSwitch', false);
 			}
 		}
 	}

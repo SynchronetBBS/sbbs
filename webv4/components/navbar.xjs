@@ -49,12 +49,12 @@
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
-<?xjs if (!settings.darkmode_off) { ?>	            
+<?xjs if (settings.darkmode_allow) { ?>	            
 				<li class="nav-item dark-switch">
 					<div class="form-group">
 						<div class="checkbox checbox-switch darkswitchbox">
 							<label>
-								<input type="checkbox" id="darkSwitch" />Dark
+								<input type="checkbox" id="darkSwitch" <? write(settings.darkmode_on ? 'checked' : '') ?> />Dark
 								<span></span>
 							</label>
               			</div>
