@@ -284,7 +284,7 @@ int modem_connect(struct bbslist *bbs)
     if (!comSetFlowControl(com, bbs->flow_control)) {
         conn_api.close();
         if (!bbs->hidepopups) {
-            uifcmsg(respbuf,    "`Failed to set Flow Control`\n\n"
+            uifcmsg("Failed to set Flow Control",    "`Failed to set Flow Control`\n\n"
                 "SyncTERM was unable to set flow control.\n");
         }
         return(-1);
