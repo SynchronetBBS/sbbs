@@ -3602,14 +3602,16 @@ static BOOL check_request(http_session_t * session)
 		/* Terminate the path after the slash */
 		*(last_slash+1)=0;
 		SAFEPRINTF(str,"%saccess.ars",curdir);
-		if(!stat(str,&sb)) {
-			/* NEVER serve up an access.ars file */
-			lprintf(LOG_WARNING,"%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.",session->socket);
-			lprintf(LOG_WARNING,"%04d !WARNING! access.ars found at %s.",session->socket,str);
-			if(!strcmp(path,str)) {
-				send_error(session,__LINE__,"403 Forbidden");
-				return(FALSE);
+		/* NEVER serve up an access.ars file */
+		if(!strcmp(path,str)) {
+			if(!stat(str,&sb)) {
+				lprintf(LOG_WARNING,"%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.",session->socket);
+				lprintf(LOG_WARNING,"%04d !WARNING! access.ars found at %s.",session->socket,str);
 			}
+			send_error(session,__LINE__,"403 Forbidden");
+			return(FALSE);
+		}
+		if(!stat(str,&sb)) {
 			/* Read access.ars file */
 			if((file=fopen(str,"r"))!=NULL) {
 				fgets(session->req.ars,sizeof(session->req.ars),file);
@@ -3624,12 +3626,12 @@ static BOOL check_request(http_session_t * session)
 			truncsp(session->req.ars);
 		}
 		SAFEPRINTF(str,"%swebctrl.ini",curdir);
+		/* NEVER serve up a webctrl.ini file */
+		if(!strcmp(path,str)) {
+			send_error(session,__LINE__,"403 Forbidden");
+			return(FALSE);
+		}
 		if(!stat(str,&sb)) {
-			/* NEVER serve up a webctrl.ini file */
-			if(!strcmp(path,str)) {
-				send_error(session,__LINE__,"403 Forbidden");
-				return(FALSE);
-			}
 			/* Read webctrl.ini file */
 			if((file=fopen(str,"r"))!=NULL) {
 				/* FREE()d in this block */
