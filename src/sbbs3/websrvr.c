@@ -4900,7 +4900,6 @@ static BOOL exec_cgi(http_session_t *session)
 			if(i!=-1 && i!=0) {
 				buf[i]=0;
 				lprintf(LOG_ERR,"%04d CGI Error: %s",session->socket,buf);
-				start=time(NULL);
 			}
 		}
 
@@ -4908,7 +4907,6 @@ static BOOL exec_cgi(http_session_t *session)
 			i=read(out_pipe[0],buf,sizeof(buf));
 			if(i!=-1 && i!=0)  {
 				int snt=0;
-				start=time(NULL);
 				snt=writebuf(session,buf,i);
 				if(session->req.ld!=NULL)
 					session->req.ld->size+=snt;
