@@ -1052,7 +1052,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	char	fname[MAX_PATH+1];
 	char	fullpath[MAX_PATH+1];
 	char	fullcmdline[MAX_PATH+1];
-	char*	argv[MAX_ARGS];
+	char*	argv[MAX_ARGS + 1];
 	BYTE*	bp;
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
