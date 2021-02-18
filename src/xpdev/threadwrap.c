@@ -217,44 +217,7 @@ int DLLCALL pthread_mutex_destroy(pthread_mutex_t* mutex)
 /* Protected (thread-safe) Integers (e.g. atomic/interlocked variables) */
 /************************************************************************/
 
-#ifdef __FreeBSD__
-#define PROTECTED_TYPE_INIT(type) \
-int DLLCALL protected_##type##_init(protected_##type##_t* prot, type##_t value) \
-{ \
-	atomic_init(prot, value); \
-	return 0; \
-}
-
-PROTECTED_TYPE_INIT(int32)
-PROTECTED_TYPE_INIT(int64)
-PROTECTED_TYPE_INIT(uint32)
-PROTECTED_TYPE_INIT(uint64)
-
-#define PROTECTED_TYPE_SET(type) \
-type##_t DLLCALL protected_##type##_set(protected_##type##_t* prot, type##_t value) \
-{ \
-	atomic_store(prot, value); \
-	return value; \
-}
-
-PROTECTED_TYPE_SET(int32)
-PROTECTED_TYPE_SET(int64)
-PROTECTED_TYPE_SET(uint32)
-PROTECTED_TYPE_SET(uint64)
-
-#define PROTECTED_TYPE_ADJUST(type, adjtype) \
-type##_t DLLCALL protected_##type##_adjust(protected_##type##_t* prot, adjtype##_t value) \
-{ \
-	type##_t old = atomic_fetch_add(prot, value); \
-	return old + value; \
-}
-
-PROTECTED_TYPE_ADJUST(int32, int32)
-PROTECTED_TYPE_ADJUST(int64, int64)
-PROTECTED_TYPE_ADJUST(uint32, int32)
-PROTECTED_TYPE_ADJUST(uint64, int64)
-
-#else
+#ifndef __FreeBSD__
 int	DLLCALL protected_int32_init(protected_int32_t* prot, int32_t value)
 {
 	prot->value = value;
