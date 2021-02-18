@@ -57,8 +57,8 @@
 			lprintf(LOG_ERR, "%04d SSH Error %d destroying Cryptlib Session %d from line %d"
 				, sock, result, session, line);
 		else {
-			int32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
-			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%d remain)"
+			uint32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%u remain)"
 				, sock, session, line, remain);
 		}
 	}
