@@ -41,14 +41,8 @@
 <? } ?>
 
 <?xjs
-    function _read_unread(tab) {
-        write('(');
-        if (_mail[tab].unread) {
-            write('<strong>' + _mail[tab].unread + '</strong>');
-        } else {
-            write(_mail[tab].unread);
-        }
-        write('/' + _mail[tab].read + ')');
+    function _unread(tab) {
+        if (_mail[tab].unread) write('(<strong>' + _mail[tab].unread + '</strong>)');
     }
 ?>
 
@@ -101,19 +95,18 @@
 	<li role="presentation" class="<? write(_active_tab('inbox')); ?>">
 		<a href="./?page=<? write(page); ?>&amp;tab=inbox">
 			<? write(locale.strings.page_mail.label_tab_inbox); ?>
-            <? _read_unread('inbox'); ?>
+            <? _unread('inbox'); ?>
 		</a>
 	</li>
     <li role="presentation" class="<? write(_active_tab('spam')); ?>">
 		<a href="./?page=<? write(page); ?>&amp;tab=spam">
 			Spam
-            <? _read_unread('spam'); ?>
+            <? _unread('spam'); ?>
 		</a>
 	</li>
 	<li role="presentation" class="<? write(_active_tab('sent')); ?>">
 		<a href="./?page=<? write(page); ?>&amp;tab=sent">
 			<? write(locale.strings.page_mail.label_tab_sent); ?>
-            <? _read_unread('sent'); ?>
 		</a>
 	</li>
 </ul>
