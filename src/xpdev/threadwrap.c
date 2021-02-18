@@ -217,7 +217,7 @@ int DLLCALL pthread_mutex_destroy(pthread_mutex_t* mutex)
 /* Protected (thread-safe) Integers (e.g. atomic/interlocked variables) */
 /************************************************************************/
 
-#ifdef __FreeBSD__
+#ifdef __unix__
 #define PROTECTED_TYPE_INIT(type) \
 int DLLCALL protected_##type##_init(protected_##type##_t* prot, type##_t value) \
 { \
