@@ -49,6 +49,9 @@ var defaults = {
 	},
 	darkmode_allow: { default: true },
 	darkmode_on: { default: false },
+	ftelnet: { default: true },
+	vote_functions: { default: true },
+	xtrn_blacklist: { default: 'scfg' },
 };
 
 if (settings.darkmode_off) settings.darkmode_allow = false;
