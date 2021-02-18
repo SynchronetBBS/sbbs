@@ -6687,7 +6687,7 @@ void http_session_thread(void* arg)
 	RingBufDispose(&session.outbuf);
 	FREE_AND_NULL(session.subscan);
 
-	clients_remain=protected_uint32_adjust(&active_clients, -1);
+	clients_remain=protected_uint32_adjust_fetch(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 

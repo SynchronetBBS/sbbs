@@ -225,7 +225,7 @@ static void thread_up(BOOL setuid)
 
 static int32_t thread_down(void)
 {
-	int32_t count = protected_uint32_adjust(&thread_count,-1);
+	int32_t count = protected_uint32_adjust_fetch(&thread_count,-1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,FALSE, FALSE);
 	return count;
@@ -5002,7 +5002,7 @@ static void ctrl_thread(void* arg)
 	ftp_close_socket(&tmp_sock,&sess,__LINE__);
 
 	{
-		int32_t	clients = protected_uint32_adjust(&active_clients, -1);
+		int32_t	clients = protected_uint32_adjust_fetch(&active_clients, -1);
 		int32_t	threads = thread_down();
 		update_clients();
 
