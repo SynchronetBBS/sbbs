@@ -168,10 +168,15 @@ typedef std::atomic<uint64_t> protected_uint64_t;
 #define protected_int64_init(pval, val) (std::atomic_store<int64_t>(pval, val), 0)
 #define protected_uint64_init(pval, val) (std::atomic_store<uint64_t>(pval, val), 0)
 
-#define protected_int32_adjust(pval, adj) (std::atomic_fetch_add<int32_t>(pval, adj) + adj)
-#define protected_uint32_adjust(pval, adj) (std::atomic_fetch_add<uint32_t>(pval, adj) + adj)
-#define protected_int64_adjust(pval, adj) (std::atomic_fetch_add<int64_t>(pval, adj) + adj)
-#define protected_uint64_adjust(pval, adj) (std::atomic_fetch_add<uint64_t>(pval, adj) + adj)
+#define protected_int32_adjust(pval, adj) std::atomic_fetch_add<int32_t>(pval, adj)
+#define protected_uint32_adjust(pval, adj) std::atomic_fetch_add<uint32_t>(pval, adj)
+#define protected_int64_adjust(pval, adj) std::atomic_fetch_add<int64_t>(pval, adj)
+#define protected_uint64_adjust(pval, adj) std::atomic_fetch_add<uint64_t>(pval, adj)
+
+#define protected_int32_adjust_fetch(pval, adj) (std::atomic_fetch_add<int32_t>(pval, adj) + adj)
+#define protected_uint32_adjust_fetch(pval, adj) (std::atomic_fetch_add<uint32_t>(pval, adj) + adj)
+#define protected_int64_adjust_fetch(pval, adj) (std::atomic_fetch_add<int64_t>(pval, adj) + adj)
+#define protected_uint64_adjust_fetch(pval, adj) (std::atomic_fetch_add<uint64_t>(pval, adj) + adj)
 
 #define protected_int32_value(val) std::atomic_load<int32_t>(&val)
 #define protected_uint32_value(val) std::atomic_load<uint32_t>(&val)
@@ -188,10 +193,15 @@ typedef _Atomic(uint64_t) protected_uint64_t;
 #define protected_int64_init(pval, val) (atomic_init(pval, val), 0)
 #define protected_uint64_init(pval, val) (atomic_init(pval, val), 0)
 
-#define protected_int32_adjust(pval, adj) (atomic_fetch_add(pval, adj) + adj)
-#define protected_uint32_adjust(pval, adj) (atomic_fetch_add(pval, adj) + adj)
-#define protected_int64_adjust(pval, adj) (atomic_fetch_add(pval, adj) + adj)
-#define protected_uint64_adjust(pval, adj) (atomic_fetch_add(pval, adj) + adj)
+#define protected_int32_adjust(pval, adj) atomic_fetch_add(pval, adj)
+#define protected_uint32_adjust(pval, adj) atomic_fetch_add(pval, adj)
+#define protected_int64_adjust(pval, adj) atomic_fetch_add(pval, adj)
+#define protected_uint64_adjust(pval, adj) atomic_fetch_add(pval, adj)
+
+#define protected_int32_adjust_fetch(pval, adj) (atomic_fetch_add(pval, adj) + adj)
+#define protected_uint32_adjust_fetch(pval, adj) (atomic_fetch_add(pval, adj) + adj)
+#define protected_int64_adjust_fetch(pval, adj) (atomic_fetch_add(pval, adj) + adj)
+#define protected_uint64_adjust_fetch(pval, adj) (atomic_fetch_add(pval, adj) + adj)
 
 #define protected_int32_value(val) atomic_load(&val)
 #define protected_uint32_value(val) atomic_load(&val)
@@ -235,6 +245,11 @@ typedef struct {
 #define protected_uint32_value(i)		protected_uint32_adjust(&i,0)
 #define protected_int64_value(i)		protected_int64_adjust(&i,0)
 #define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
+
+#define protected_int32_adjust_fetch(a, b)	protected_int32_adjust(a, b)
+#define protected_uint32_adjust_fetch(a, b)	protected_uint32_adjust(a, b)
+#define protected_int64_adjust_fetch(a, b)	protected_int64_adjust(a, b)
+#define protected_uint64_adjust_fetch(a, b)	protected_uint64_adjust(a, b)
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
 DLLEXPORT int DLLCALL protected_int32_init(protected_int32_t*,	int32_t value);

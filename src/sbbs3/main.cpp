@@ -57,7 +57,7 @@
 			lprintf(LOG_ERR, "%04d SSH Error %d destroying Cryptlib Session %d from line %d"
 				, sock, result, session, line);
 		else {
-			uint32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
+			uint32_t remain = protected_uint32_adjust_fetch(&ssh_sessions, -1);
 			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%u remain)"
 				, sock, session, line, remain);
 		}
@@ -4687,7 +4687,7 @@ void node_thread(void* arg)
 		/* crash here on Aug-4-2015:
 		node_thread_running already destroyed
 		bbs_thread() timed out waiting for 1 node thread(s) to terminate */
-		int32_t remain = protected_uint32_adjust(&node_threads_running, -1);
+		uint32_t remain = protected_uint32_adjust_fetch(&node_threads_running, -1);
 		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
 			,sbbs->cfg.node_num, remain, served);
 	}
