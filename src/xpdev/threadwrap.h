@@ -40,6 +40,10 @@
 #include "gen_defs.h"	/* HANDLE */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
+#ifdef __FreeBSD__
+#include <stdatomic.h>
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -148,6 +152,20 @@ DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
 /* working and being thread-safe on all platforms that support pthread	*/
 /* mutexes.																*/
 /************************************************************************/
+#ifdef __FreeBSD__
+typedef _Atomic(int32_t) protected_int32_t;
+typedef _Atomic(uint32_t) protected_uint32_t;
+typedef _Atomic(int64_t) protected_int64_t;
+typedef _Atomic(uint64_t) protected_uint64_t;
+
+DLLEXPORT int DLLCALL protected_uint32_init(protected_uint32_t*,	uint32_t value);
+DLLEXPORT int DLLCALL protected_uint64_init(protected_uint64_t*,	uint64_t value);
+
+#define protected_int32_destroy(i)	0
+#define protected_uint32_destroy(i)	0
+#define protected_int64_destroy(i)	0
+#define protected_uint64_destroy(i)	0
+#else
 typedef struct {
 	int32_t				value;
 	pthread_mutex_t		mutex;
@@ -168,11 +186,18 @@ typedef struct {
 	pthread_mutex_t		mutex;
 } protected_uint64_t;
 
+#define protected_uint32_init(i, val)	protected_int32_init((protected_int32_t*)i, val)
+#define protected_uint64_init(i, val)	protected_int64_init((protected_int64_t*)i, val)
+/* Return 0 on success, non-zero on failure (see pthread_mutex_destroy): */
+#define protected_int32_destroy(i)	pthread_mutex_destroy(&i.mutex)
+#define protected_uint32_destroy	protected_int32_destroy	
+#define protected_int64_destroy		protected_int32_destroy	
+#define protected_uint64_destroy	protected_int32_destroy	
+#endif
+
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
 DLLEXPORT int DLLCALL protected_int32_init(protected_int32_t*,	int32_t value);
-#define protected_uint32_init(i, val)	protected_int32_init((protected_int32_t*)i, val)
 DLLEXPORT int DLLCALL protected_int64_init(protected_int64_t*,	int64_t value);
-#define protected_uint64_init(i, val)	protected_int64_init((protected_int64_t*)i, val)
 
 /* Return new value: */
 DLLEXPORT int32_t DLLCALL protected_int32_adjust(protected_int32_t*, int32_t adjustment);
@@ -187,12 +212,6 @@ DLLEXPORT int64_t DLLCALL protected_int64_set(protected_int64_t*, int64_t val);
 DLLEXPORT uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t*, int64_t adjustment);
 DLLEXPORT uint64_t DLLCALL protected_uint64_set(protected_uint64_t*, uint64_t adjustment);
 #define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
-
-/* Return 0 on success, non-zero on failure (see pthread_mutex_destroy): */
-#define protected_int32_destroy(i)	pthread_mutex_destroy(&i.mutex)
-#define protected_uint32_destroy	protected_int32_destroy	
-#define protected_int64_destroy		protected_int32_destroy	
-#define protected_uint64_destroy	protected_int32_destroy	
 
 #if defined(__cplusplus)
 }
