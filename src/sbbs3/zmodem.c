@@ -869,7 +869,7 @@ int zmodem_recv_data32(zmodem_t* zm, unsigned char * p, unsigned maxlen, unsigne
 	rxd_crc |= zmodem_rx(zm) << 24;
 
 	if(rxd_crc != crc) {
-		lprintf(zm, LOG_DEBUG, "%lu %s CRC ERROR (%08lX, expected: %08lX) Bytes=%u, subpacket type=%s"
+		lprintf(zm, LOG_DEBUG, "%lu %s CRC ERROR (%08X, expected: %08X) Bytes=%u, subpacket type=%s"
 			,(ulong)zm->ack_file_pos, __FUNCTION__, rxd_crc, crc, *len, chr(subpkt_type));
 		return CRCFAILED;
 	}
@@ -1205,7 +1205,7 @@ BOOL zmodem_recv_bin32_header(zmodem_t* zm)
 	rxd_crc |= zmodem_rx(zm) << 24;
 
 	if(rxd_crc != crc) {
-		lprintf(zm,LOG_WARNING, "%lu %s CRC ERROR (%08lX, expected: %08lX)"
+		lprintf(zm,LOG_WARNING, "%lu %s CRC ERROR (%08X, expected: %08X)"
 			,(ulong)zm->ack_file_pos, __FUNCTION__, rxd_crc, crc);
 		return(FALSE);
 	}
@@ -1515,7 +1515,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 		zmodem_recv_purge(zm, /* timeout: */1);
 		return TRUE;
 	}
-	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZRPOS offset: %lu"
+	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZRPOS offset: %u"
 		,(ulong)zm->current_file_pos, zm->rxd_header_pos);
 	return FALSE;
 }
@@ -1523,7 +1523,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 BOOL zmodem_handle_zack(zmodem_t* zm, uint32_t min, uint32_t max)
 {
 	if(zm->rxd_header_pos >= min && zm->rxd_header_pos <= max) {
-		lprintf(zm, LOG_DEBUG, "%lu Received valid ZACK", zm->rxd_header_pos);
+		lprintf(zm, LOG_DEBUG, "%lu Received valid ZACK", (ulong)zm->rxd_header_pos);
 		zm->ack_file_pos = zm->rxd_header_pos;
 		return TRUE;
 	}
@@ -1661,7 +1661,7 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 			}
 		}
 
-		lprintf(zm, LOG_DEBUG, "%lu Sending %s data subpacket (%u bytes) window: %lu / %lu"
+		lprintf(zm, LOG_DEBUG, "%lu Sending %s data subpacket (%lu bytes) window: %lu / %lu"
 			,(ulong)pos, chr(tx_type), len, (ulong)zm->current_window_size, (ulong)zm->max_window_size);
 		if(zmodem_send_data(zm, tx_type, zm->tx_data_subpacket, len) != SEND_SUCCESS) {
 			zm->consecutive_errors++;
@@ -1896,7 +1896,7 @@ BOOL zmodem_send_file(zmodem_t* zm, char* fname, FILE* fp, BOOL request_init, ti
 			if(zm->crc_request==0)
 				lprintf(zm,LOG_NOTICE,"Receiver requested CRC of entire file");
 			else
-				lprintf(zm,LOG_NOTICE,"Receiver requested CRC of first %lu bytes of file"
+				lprintf(zm,LOG_NOTICE,"Receiver requested CRC of first %u bytes of file"
 					,zm->crc_request);
 			zmodem_send_pos_header(zm, ZCRC, fcrc32(fp,zm->crc_request), /* Hex: */TRUE);
 			type = zmodem_recv_header(zm);
@@ -2054,7 +2054,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_re
 				lprintf(zm,LOG_NOTICE,"Calculating CRC of: %s", fpath);
 				crc=fcrc32(fp,(uint32_t)l);	/* Warning: 4GB limit! */
 				fclose(fp);
-				lprintf(zm,LOG_INFO,"CRC of %s (%lu bytes): %08lX"
+				lprintf(zm,LOG_INFO,"CRC of %s (%lu bytes): %08X"
 					,getfname(fpath), (ulong)l, crc);
 				lprintf(zm,LOG_NOTICE,"Waiting for CRC of remote file: %s", zm->current_file_name);
 				if(!zmodem_recv_crc(zm,&rcrc)) {
@@ -2062,7 +2062,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_re
 					break;
 				}
 				if(crc!=rcrc) {
-					lprintf(zm,LOG_WARNING,"Remote file has different CRC value: %08lX", rcrc);
+					lprintf(zm,LOG_WARNING,"Remote file has different CRC value: %08X", rcrc);
 					if(zm->duplicate_filename) {
 						if(zm->duplicate_filename(zm->cbdata, zm)) {
 							loop=TRUE;
@@ -2293,7 +2293,7 @@ unsigned zmodem_recv_file_data(zmodem_t* zm, FILE* fp, int64_t offset)
 		errors++;
 		lprintf(zm, LOG_WARNING, "%lu ERROR #%d: %s (type: %s)", (ulong)pos, errors, chr(result), chr(type));
 		if(errors > zm->max_errors) {
-			lprintf(zm, LOG_ERR, "%lu Maximum errors (%lu) exceeded", (ulong)pos, zm->max_errors);
+			lprintf(zm, LOG_ERR, "%lu Maximum errors (%u) exceeded", (ulong)pos, zm->max_errors);
 			break;
 		}
 		if(zmodem_waits_for_ack(type))
@@ -2328,7 +2328,7 @@ int zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, int* type)
 				*/
 				if(zm->rxd_header_pos==(uint32_t)ftello(fp))
 					return result;
-				lprintf(zm,LOG_WARNING,"Ignoring ZEOF as all bytes (%lu) have not been received"
+				lprintf(zm,LOG_WARNING,"Ignoring ZEOF as all bytes (%u) have not been received"
 					,zm->rxd_header_pos);
 				continue;
 			case ZFIN:

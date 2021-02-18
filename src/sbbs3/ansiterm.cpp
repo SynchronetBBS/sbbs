@@ -209,8 +209,10 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 	int		ch;
 	char	str[128];
 
-    *x=0;
-    *y=0;
+	if(x != NULL)
+		*x=0;
+	if(y != NULL)
+		*y=0;
 
 	putcom("\x1b[6n");	/* Request cursor position */
 
