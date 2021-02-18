@@ -1465,6 +1465,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     		SAFEPRINTF(str,"%sdosemu.ini",cfg.exec_dir);
 			if (!fexist(str)) {
 				errormsg(WHERE,ERR_OPEN,"dosemu.ini", 0);
+				fclose(dosemubatfp);
 				return(-1);
 			}
 		}
@@ -1472,6 +1473,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* if file found, then open and process it */
 		if ((de_launch_inifp=iniOpenFile(str, false))==NULL) {
 			errormsg(WHERE,ERR_OPEN,str, 0);
+			fclose(dosemubatfp);
 			return(-1);
 		}         
 		de_launch_ini = iniReadFile(de_launch_inifp);

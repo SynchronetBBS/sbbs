@@ -22,7 +22,27 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-void pt_zone_kludge(fmsghdr_t hdr,int fido);
+static void pt_zone_kludge(const fmsghdr_t* hdr,int fido)
+{
+	char str[256];
+
+	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
+		,hdr->destzone,hdr->destnet,hdr->destnode
+		,hdr->origzone,hdr->orignet,hdr->orignode);
+	write(fido,str,strlen(str));
+
+	if(hdr->destpoint) {
+		sprintf(str,"\1TOPT %hu\r"
+			,hdr->destpoint);
+		write(fido,str,strlen(str)); 
+	}
+
+	if(hdr->origpoint) {
+		sprintf(str,"\1FMPT %hu\r"
+			,hdr->origpoint);
+		write(fido,str,strlen(str)); 
+	}
+}
 
 /****************************************************************************/
 /* Returns the FidoNet address (struct) parsed from str (in ASCII text).    */
@@ -854,7 +874,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	}
 	write(fido,&hdr,sizeof(hdr));
 
-	pt_zone_kludge(hdr,fido);
+	pt_zone_kludge(&hdr,fido);
 
 	if(cfg.netmail_misc&NMAIL_DIRECT) {
 		sprintf(str,"\1FLAGS DIR\r\n");

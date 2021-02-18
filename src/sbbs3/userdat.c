@@ -2219,8 +2219,10 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 
 	if(length < 1) { /* auto-length */
 		length=user_rec_len(start);
-		if(length < 1)
+		if(length < 1) {
+			close(file);
 			return -5;
+		}
 	}
 
 	i=0;
@@ -2341,8 +2343,10 @@ ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj
 
 	if(length < 1) { /* auto-length */
 		length=user_rec_len(start);
-		if(length < 1)
+		if(length < 1) {
+			close(file);
 			return 0;
+		}
 	}
 
 	i=0;
