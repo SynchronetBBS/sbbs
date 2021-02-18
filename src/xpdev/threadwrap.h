@@ -41,7 +41,12 @@
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 #ifdef __FreeBSD__
+#include <stdbool.h>
+#ifdef __cplusplus
+#include <atomic>
+#else
 #include <stdatomic.h>
+#endif
 #endif
 
 #if defined(__cplusplus)
@@ -153,10 +158,17 @@ DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
 /* mutexes.																*/
 /************************************************************************/
 #ifdef __FreeBSD__
+#ifdef __cplusplus
+typedef std::atomic<int32_t> protected_int32_t;
+typedef std::atomic<uint32_t> protected_uint32_t;
+typedef std::atomic<int64_t> protected_int64_t;
+typedef std::atomic<uint64_t> protected_uint64_t;
+#else
 typedef _Atomic(int32_t) protected_int32_t;
 typedef _Atomic(uint32_t) protected_uint32_t;
 typedef _Atomic(int64_t) protected_int64_t;
 typedef _Atomic(uint64_t) protected_uint64_t;
+#endif
 
 DLLEXPORT int DLLCALL protected_uint32_init(protected_uint32_t*,	uint32_t value);
 DLLEXPORT int DLLCALL protected_uint64_init(protected_uint64_t*,	uint64_t value);

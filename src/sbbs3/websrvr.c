@@ -6932,7 +6932,7 @@ void DLLCALL web_server(void* arg)
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
 	js_server_props.version_detail=web_ver();
-	js_server_props.clients=&active_clients.value;
+	js_server_props.clients=&active_clients;
 	js_server_props.options=&startup->options;
 	js_server_props.interfaces=&startup->interfaces;
 

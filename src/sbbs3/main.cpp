@@ -5059,7 +5059,7 @@ void DLLCALL bbs_thread(void* arg)
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 	js_server_props.version_detail=bbs_ver();
-	js_server_props.clients=&node_threads_running.value;
+	js_server_props.clients=&node_threads_running;
 	js_server_props.options=&startup->options;
 	js_server_props.interfaces=&startup->telnet_interfaces;
 
