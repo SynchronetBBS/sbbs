@@ -25,8 +25,8 @@
 			<div class="col-sm-11" style="cursor:pointer;" onclick="getMailBody(<? write(header.number); ?>)">
                 <? write(_mail_tab == 'sent' ? locale.strings.page_mail.label_message_to : locale.strings.page_mail.label_message_from); ?>:
                 <strong><? write(_mail_tab == 'sent' ? header.to : header.from); ?></strong>
-                <? if (header.from_net_type != NET_NONE) { ?>
-                    &lt;<? write(_mail_tab == 'sent' ? (header.to + '@' + header.to_net_addr) : (header.from + '@' + header.from_net_addr)); ?>&gt;
+                <? if (_mail_tab == 'sent' ? header.to_net_type : header.from_net_type) { ?>
+                    &lt;<? write(_mail_tab == 'sent' ? header.to_net_addr : header.from_net_addr); ?>&gt;
                 <? } ?>
 				<? write(locale.strings.page_mail.label_message_date); ?>
 				<? write((new Date(header.when_written_time * 1000)).toLocaleString()); ?>
