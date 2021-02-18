@@ -1527,7 +1527,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		xfer->dir=dir;
 		xfer->desc=desc;
 		SAFECOPY(xfer->filename,filename);
-		protected_uint32_adjust(&thread_count,1);
+		(void)protected_uint32_adjust(&thread_count,1);
 		if(receiving)
 			result=_beginthread(receive_thread,0,(void*)xfer);
 		else
@@ -1647,7 +1647,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 					sprintf(filename,"%s%s",scfg.dir[dir]->path,fname);
 			}
 		} else if(filename!=NULL)
-			SAFECOPY(filename,p);
+			strcpy(filename,p);
 
 		result=TRUE;	/* success */
 		break;
@@ -2397,7 +2397,7 @@ static void ctrl_thread(void* arg)
 		return;
 	} 
 
-	protected_uint32_adjust(&active_clients, 1);
+	(void)protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	/* Initialize client display */
@@ -5043,7 +5043,7 @@ static void cleanup(int code, int line)
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
-		protected_uint32_destroy(active_clients);
+		(void)protected_uint32_destroy(active_clients);
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0) 
@@ -5125,11 +5125,11 @@ void DLLCALL ftp_server(void* arg)
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
-	protected_uint32_init(&thread_count, 0);
+	(void)protected_uint32_init(&thread_count, 0);
 
 	do {
 		listInit(&current_connections, LINK_LIST_MUTEX);
-		protected_uint32_init(&active_clients, 0);
+		(void)protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
 		if(startup->port==0)					startup->port=IPPORT_FTP;
@@ -5138,7 +5138,7 @@ void DLLCALL ftp_server(void* arg)
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;		/* seconds */
 		if(startup->index_file_name[0]==0)		SAFECOPY(startup->index_file_name,"00index");
 
-		protected_uint32_adjust(&thread_count,1);
+		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
@@ -5346,7 +5346,7 @@ void DLLCALL ftp_server(void* arg)
 			memcpy(&ftp->client_addr, &client_addr, client_addr_len);
 			ftp->client_addr_len = client_addr_len;
 
-			protected_uint32_adjust(&thread_count,1);
+			(void)protected_uint32_adjust(&thread_count,1);
 			_beginthread(ctrl_thread, 0, ftp);
 			served++;
 		}
@@ -5380,5 +5380,5 @@ void DLLCALL ftp_server(void* arg)
 
 	} while(!terminate_server);
 
-	protected_uint32_destroy(thread_count);
+	(void)protected_uint32_destroy(thread_count);
 }

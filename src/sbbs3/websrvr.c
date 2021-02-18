@@ -764,7 +764,7 @@ static void thread_up(BOOL setuid)
 
 static void thread_down(void)
 {
-	protected_uint32_adjust(&thread_count,-1);
+	(void)protected_uint32_adjust(&thread_count,-1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,FALSE, FALSE);
 }
@@ -6497,7 +6497,7 @@ void http_session_thread(void* arg)
 
 	/* Destroyed in this block (before all returns) */
 	sem_init(&session.output_thread_terminated,0,0);
-	protected_uint32_adjust(&thread_count,1);
+	(void)protected_uint32_adjust(&thread_count,1);
 	_beginthread(http_output_thread, 0, &session);
 
 	sbbs_srand();	/* Seed random number generator */
@@ -6548,7 +6548,7 @@ void http_session_thread(void* arg)
 		return;
 	}
 
-	protected_uint32_adjust(&active_clients, 1);
+	(void)protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 	SAFECOPY(session.username,unknown);
 
@@ -6742,7 +6742,7 @@ static void cleanup(int code)
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %u active clients", protected_uint32_value(active_clients));
 	else
-		protected_uint32_destroy(active_clients);
+		(void)protected_uint32_destroy(active_clients);
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
@@ -6941,10 +6941,10 @@ void DLLCALL web_server(void* arg)
 	startup->recycle_now=FALSE;
 	startup->shutdown_now=FALSE;
 	terminate_server=FALSE;
-	protected_uint32_init(&thread_count, 0);
+	(void)protected_uint32_init(&thread_count, 0);
 
 	do {
-		protected_uint32_init(&active_clients,0);
+		(void)protected_uint32_init(&active_clients,0);
 
 		/* Setup intelligent defaults */
 		if(startup->port==0)					startup->port=IPPORT_HTTP;
@@ -6959,7 +6959,7 @@ void DLLCALL web_server(void* arg)
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 		if(startup->ssjs_ext[0]==0)				SAFECOPY(startup->ssjs_ext,".ssjs");
 
-		protected_uint32_adjust(&thread_count,1);
+		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
@@ -7092,7 +7092,7 @@ void DLLCALL web_server(void* arg)
 			/* Start log thread */
 			/********************/
 			http_logging_thread_running=TRUE;
-			protected_uint32_adjust(&thread_count,1);
+			(void)protected_uint32_adjust(&thread_count,1);
 			_beginthread(http_logging_thread, 0, startup->logfile_base);
 		}
 
@@ -7167,7 +7167,7 @@ void DLLCALL web_server(void* arg)
 				/* Destroyed in http_session_thread */
 				pthread_mutex_init(&session->struct_filled,NULL);
 				pthread_mutex_lock(&session->struct_filled);
-				protected_uint32_adjust(&thread_count,1);
+				(void)protected_uint32_adjust(&thread_count,1);
 				_beginthread(http_session_thread, 0, session);
 			}
 
@@ -7279,5 +7279,5 @@ void DLLCALL web_server(void* arg)
 
 	} while(!terminate_server);
 
-	protected_uint32_destroy(thread_count);
+	(void)protected_uint32_destroy(thread_count);
 }

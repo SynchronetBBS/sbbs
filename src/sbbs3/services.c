@@ -821,8 +821,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 				,"Synchronet Services %s%c", VERSION, REVISION);
 			service_client->service->js_server_props.version_detail=
 				services_ver();
-			service_client->service->js_server_props.clients=
-				&service_client->service->clients;
+			service_client->service->js_server_props.clients=0; // TODO: &service_client->service->clients
 			service_client->service->js_server_props.interfaces=
 				&service_client->service->interfaces;
 			service_client->service->js_server_props.options=
@@ -993,7 +992,7 @@ static void js_service_thread(void* arg)
 	SetThreadName("sbbs/jsService");
 	thread_up(TRUE /* setuid */);
 	sbbs_srand();	/* Seed random number generator */
-	protected_uint32_adjust(&threads_pending_start, -1);
+	(void)protected_uint32_adjust(&threads_pending_start, -1);
 
 	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
@@ -1207,7 +1206,7 @@ static void js_static_service_thread(void* arg)
 	SetThreadName("sbbs/jsStatic");
 	thread_up(TRUE /* setuid */);
 	sbbs_srand();	/* Seed random number generator */
-	protected_uint32_adjust(&threads_pending_start, -1);
+	(void)protected_uint32_adjust(&threads_pending_start, -1);
 
 	memset(&service_client,0,sizeof(service_client));
 	service_client.set = service->set;
@@ -1312,7 +1311,7 @@ static void native_static_service_thread(void* arg)
 
 	SetThreadName("sbbs/static");
 	thread_up(TRUE /* setuid */);
-	protected_uint32_adjust(&threads_pending_start, -1);
+	(void)protected_uint32_adjust(&threads_pending_start, -1);
 
 #ifdef _WIN32
 	if(!DuplicateHandle(GetCurrentProcess(),
@@ -1377,7 +1376,7 @@ static void native_service_thread(void* arg)
 
 	SetThreadName("sbbs/native");
 	thread_up(TRUE /* setuid */);
-	protected_uint32_adjust(&threads_pending_start, -1);
+	(void)protected_uint32_adjust(&threads_pending_start, -1);
 
 	inet_addrtop(&service_client.addr, client.addr, sizeof(client.addr));
 
@@ -1625,7 +1624,7 @@ static void cleanup(int code)
 		lprintf(LOG_NOTICE,"0000 Services cleanup waiting on %d threads pending start",protected_uint32_value(threads_pending_start));
 		SLEEP(1000);
 	}
-	protected_uint32_destroy(threads_pending_start);
+	(void)protected_uint32_destroy(threads_pending_start);
 
 	FREE_AND_NULL(service);
 	services=0;
@@ -1786,7 +1785,7 @@ void DLLCALL services_thread(void* arg)
 
 		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
 
-		protected_uint32_init(&threads_pending_start,0);
+		(void)protected_uint32_init(&threads_pending_start,0);
 
 		if(!winsock_startup()) {
 			cleanup(1);
@@ -1893,13 +1892,13 @@ void DLLCALL services_thread(void* arg)
 					if(inst) {
 						inst->socket=service[i].set->socks[j].sock;
 						inst->service=&service[i];
-						protected_uint32_adjust(&threads_pending_start, 1);
+						(void)protected_uint32_adjust(&threads_pending_start, 1);
 						_beginthread(native_static_service_thread, service[i].stack_size, inst);
 					}
 				}
 			}
 			else {										/* JavaScript */
-				protected_uint32_adjust(&threads_pending_start, 1);
+				(void)protected_uint32_adjust(&threads_pending_start, 1);
 				_beginthread(js_static_service_thread, service[i].stack_size, &service[i]);
 			}
 		}
@@ -2171,7 +2170,7 @@ void DLLCALL services_thread(void* arg)
 
 					udp_buf = NULL;
 
-					protected_uint32_adjust(&threads_pending_start, 1);
+					(void)protected_uint32_adjust(&threads_pending_start, 1);
 					if(service[i].options&SERVICE_OPT_NATIVE)	/* Native */
 						_beginthread(native_service_thread, service[i].stack_size, client);
 					else										/* JavaScript */

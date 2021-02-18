@@ -1154,7 +1154,7 @@ static void pop3_thread(void* arg)
 		return;
 	}
 
-	protected_uint32_adjust(&active_clients, 1);
+	(void)protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	/* Initialize client display */
@@ -1753,7 +1753,7 @@ static void pop3_thread(void* arg)
 	smb_close(&smb);
 
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-	protected_uint32_adjust(&active_clients, -1);
+	(void)protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
@@ -3045,7 +3045,7 @@ static void smtp_thread(void* arg)
 		getnameinfo(&smtp.client_addr.addr, smtp.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		lprintf(LOG_INFO,"%04d %s %s Hostname: %s", socket, client.protocol, client_id, host_name);
 	}
-	protected_uint32_adjust(&active_clients, 1);
+	(void)protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	SAFECOPY(hello_name,host_name);
@@ -3065,7 +3065,7 @@ static void smtp_thread(void* arg)
 				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 			mail_close_socket(&socket, &session);
 			thread_down();
-			protected_uint32_adjust(&active_clients, -1);
+			(void)protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			free(mailproc_to_match);
 			return;
@@ -3079,7 +3079,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,client.protocol,session,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			mail_close_socket(&socket, &session);
 			thread_down();
-			protected_uint32_adjust(&active_clients, -1);
+			(void)protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			free(mailproc_to_match);
 			return;
@@ -3091,7 +3091,7 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,client.protocol,session,"550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			mail_close_socket(&socket, &session);
 			thread_down();
-			protected_uint32_adjust(&active_clients, -1);
+			(void)protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			free(mailproc_to_match);
 			return;
@@ -3112,7 +3112,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_NOTICE,"%04d %s !REFUSED SESSION from blacklisted server (%lu total)"
 					,socket, client.protocol, ++stats.sessions_refused);
 				thread_down();
-				protected_uint32_adjust(&active_clients, -1);
+				(void)protected_uint32_adjust(&active_clients, -1);
 				update_clients();
 				free(mailproc_to_match);
 				return;
@@ -3127,7 +3127,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket,client.protocol,session, smtp_error, "mail base locked");
 		mail_close_socket(&socket, &session);
 		thread_down();
-		protected_uint32_adjust(&active_clients, -1);
+		(void)protected_uint32_adjust(&active_clients, -1);
 		update_clients();
 		free(mailproc_to_match);
 		return;
@@ -3151,7 +3151,7 @@ static void smtp_thread(void* arg)
 		sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 		mail_close_socket(&socket, &session);
 		thread_down();
-		protected_uint32_adjust(&active_clients, -1);
+		(void)protected_uint32_adjust(&active_clients, -1);
 		update_clients();
 		free(mailproc_to_match);
 		return;
@@ -5013,7 +5013,7 @@ static void smtp_thread(void* arg)
 	status(STATUS_WFC);
 
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-	protected_uint32_adjust(&active_clients, -1);
+	(void)protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
@@ -5915,7 +5915,7 @@ static void cleanup(int code)
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
-		protected_uint32_destroy(active_clients);
+		(void)protected_uint32_destroy(active_clients);
 
 #ifdef _WINSOCKAPI_	
 	if(WSAInitialized && WSACleanup()!=0) 
@@ -6032,12 +6032,12 @@ void DLLCALL mail_server(void* arg)
 	terminate_server=FALSE;
 
 	SetThreadName("sbbs/mailServer");
-	protected_uint32_init(&thread_count, 0);
+	(void)protected_uint32_init(&thread_count, 0);
 
 	do {
 		listInit(&current_logins, LINK_LIST_MUTEX);
 		listInit(&current_connections, LINK_LIST_MUTEX);
-		protected_uint32_init(&active_clients, 0);
+		(void)protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
 		if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
@@ -6052,7 +6052,7 @@ void DLLCALL mail_server(void* arg)
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
 
-		protected_uint32_adjust(&thread_count,1);
+		(void)protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
@@ -6211,7 +6211,7 @@ void DLLCALL mail_server(void* arg)
 
 		if(!(startup->options&MAIL_OPT_NO_SENDMAIL)) {
 			sendmail_running=TRUE;
-			protected_uint32_adjust(&thread_count,1);
+			(void)protected_uint32_adjust(&thread_count,1);
 			_beginthread(sendmail_thread, 0, NULL);
 		}
 
@@ -6328,7 +6328,7 @@ void DLLCALL mail_server(void* arg)
 					memcpy(&smtp->client_addr, &client_addr, client_addr_len);
 					smtp->client_addr_len=client_addr_len;
 					smtp->tls_port = (servprot == servprot_submissions);
-					protected_uint32_adjust(&thread_count,1);
+					(void)protected_uint32_adjust(&thread_count,1);
 					_beginthread(smtp_thread, 0, smtp);
 					stats.connections_served++;
 				}
@@ -6346,7 +6346,7 @@ void DLLCALL mail_server(void* arg)
 					memcpy(&pop3->client_addr, &client_addr, client_addr_len);
 					pop3->client_addr_len=client_addr_len;
 					pop3->tls_port = (servprot == servprot_pop3s);
-					protected_uint32_adjust(&thread_count,1);
+					(void)protected_uint32_adjust(&thread_count,1);
 					_beginthread(pop3_thread, 0, pop3);
 					stats.connections_served++;
 				}
@@ -6403,5 +6403,5 @@ void DLLCALL mail_server(void* arg)
 
 	} while(!terminate_server);
 
-	protected_uint32_destroy(thread_count);
+	(void)protected_uint32_destroy(thread_count);
 }

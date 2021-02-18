@@ -40,7 +40,7 @@
 #include "gen_defs.h"	/* HANDLE */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
-#ifdef __FreeBSD__
+#ifdef __unix__
 #include <stdbool.h>
 #ifdef __cplusplus
 #include <atomic>
@@ -157,7 +157,7 @@ DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
 /* working and being thread-safe on all platforms that support pthread	*/
 /* mutexes.																*/
 /************************************************************************/
-#ifdef __FreeBSD__
+#ifdef __unix__
 #ifdef __cplusplus
 typedef std::atomic<int32_t> protected_int32_t;
 typedef std::atomic<uint32_t> protected_uint32_t;
