@@ -79,20 +79,17 @@ function getSubUnreadCount(sub) {
     };
     if (typeof msg_area.sub[sub] === 'undefined') return ret;
     try {
+        var ua = crc16_calc(user.alias.toLowerCase());
+        var un = crc16_calc(user.name.toLowerCase());
+        var ud = crc16_calc(user.number);
+        var sy = msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY;
+        var sn = msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW;
         var msgBase = new MsgBase(sub);
         msgBase.open();
         for (var m = msg_area.sub[sub].scan_ptr + 1; m <= msgBase.last_msg; m++) {
             var i = msgBase.get_msg_index(m);
             if (i === null || i.attr&MSG_DELETE || i.attr&MSG_NODISP) continue;
-            if ((   msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY &&
-                    i.to === crc16_calc(user.alias.toLowerCase()) ||
-                    i.to === crc16_calc(user.name.toLowerCase()) ||
-                    (sub === 'mail' && i.to === crc16_calc(user.number))
-                ) ||
-                msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW
-            ) {
-                ret.scanned++;
-            }
+            if ((sy && (i.to === ua || i.to === un || (sub === 'mail' && i.to == ud))) || sn) ret.scanned++;
             ret.total++;
         }
         msgBase.close();
