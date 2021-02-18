@@ -173,6 +173,11 @@ typedef _Atomic(uint64_t) protected_uint64_t;
 DLLEXPORT int DLLCALL protected_uint32_init(protected_uint32_t*,	uint32_t value);
 DLLEXPORT int DLLCALL protected_uint64_init(protected_uint64_t*,	uint64_t value);
 
+#define protected_int32_value(val) atomic_load(&val)
+#define protected_uint32_value(val) atomic_load(&val)
+#define protected_int64_value(val) atomic_load(&val)
+#define protected_uint64_value(val) atomic_load(&val)
+
 #define protected_int32_destroy(i)	0
 #define protected_uint32_destroy(i)	0
 #define protected_int64_destroy(i)	0
@@ -205,6 +210,10 @@ typedef struct {
 #define protected_uint32_destroy	protected_int32_destroy	
 #define protected_int64_destroy		protected_int32_destroy	
 #define protected_uint64_destroy	protected_int32_destroy	
+#define protected_int32_value(i)		protected_int32_adjust(&i,0)
+#define protected_uint32_value(i)		protected_uint32_adjust(&i,0)
+#define protected_int64_value(i)		protected_int64_adjust(&i,0)
+#define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
 #endif
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
@@ -214,16 +223,12 @@ DLLEXPORT int DLLCALL protected_int64_init(protected_int64_t*,	int64_t value);
 /* Return new value: */
 DLLEXPORT int32_t DLLCALL protected_int32_adjust(protected_int32_t*, int32_t adjustment);
 DLLEXPORT int32_t DLLCALL protected_int32_set(protected_int32_t*, int32_t val);
-#define protected_int32_value(i)		protected_int32_adjust(&i,0)
 DLLEXPORT uint32_t DLLCALL protected_uint32_adjust(protected_uint32_t*, int32_t adjustment);
 DLLEXPORT uint32_t DLLCALL protected_uint32_set(protected_uint32_t*, uint32_t val);
-#define protected_uint32_value(i)		protected_uint32_adjust(&i,0)
 DLLEXPORT int64_t DLLCALL protected_int64_adjust(protected_int64_t*, int64_t adjustment);
 DLLEXPORT int64_t DLLCALL protected_int64_set(protected_int64_t*, int64_t val);
-#define protected_int64_value(i)		protected_int64_adjust(&i,0)
 DLLEXPORT uint64_t DLLCALL protected_uint64_adjust(protected_uint64_t*, int64_t adjustment);
 DLLEXPORT uint64_t DLLCALL protected_uint64_set(protected_uint64_t*, uint64_t adjustment);
-#define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
 
 #if defined(__cplusplus)
 }
