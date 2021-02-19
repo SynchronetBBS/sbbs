@@ -1923,13 +1923,12 @@ static BOOL email_addr_is_exempt(const char* addr)
 
 	if(*addr==0 || strcmp(addr,"<>")==0)
 		return FALSE;
+	angle_bracket(netmail, sizeof(netmail), addr);
 	SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
-	if(findstr((char*)addr,fname))
+	if(findstr(netmail, fname))
 		return TRUE;
-	SAFECOPY(netmail, addr);
-	if(*(p=netmail)=='<')
-		p++;
-	truncstr(p,">");
+	p = netmail + 1;
+	*lastchar(p) = '\0';
 	return userdatdupe(&scfg, 0, U_NETMAIL, LEN_NETMAIL, p, /* del */FALSE, /* next */FALSE, NULL, NULL);
 }
 
@@ -2700,7 +2699,7 @@ static void parse_mail_address(char* p
 	char*	tp;
 	char	tmp[256];
 
-	if(p == NULL || name == NULL || addr == NULL)
+	if(p == NULL || addr == NULL)
 		return;
 
 	SKIP_WHITESPACE(p);
@@ -2714,24 +2713,26 @@ static void parse_mail_address(char* p
 	sprintf(addr,"%.*s",(int)addr_len,tp);
 	truncstr(addr,">( ");
 
-	SAFECOPY(tmp,p);
-	p=tmp;
-	/* Get the "name" (if possible) */
-	if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
-		p=tp+1;
-		tp=strchr(p,'"');
-	} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
-		p=tp+1;
-		tp=strchr(p,')');
-	} else if(*p=='<') {					/* address in brackets? */
-		p++;
-		tp=strchr(p,'>');
-	} else									/* name, then address in brackets */
-		tp=strchr(p,'<');
-	if(tp) *tp=0;
-	sprintf(name,"%.*s",(int)name_len,p);
-	truncsp(name);
-	strip_char(name, name, '\\');
+	if(name != NULL) {
+		SAFECOPY(tmp,p);
+		p=tmp;
+		/* Get the "name" (if possible) */
+		if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
+			p=tp+1;
+			tp=strchr(p,'"');
+		} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
+			p=tp+1;
+			tp=strchr(p,')');
+		} else if(*p=='<') {					/* address in brackets? */
+			p++;
+			tp=strchr(p,'>');
+		} else									/* name, then address in brackets */
+			tp=strchr(p,'<');
+		if(tp) *tp=0;
+		sprintf(name,"%.*s",(int)name_len,p);
+		truncsp(name);
+		strip_char(name, name, '\\');
+	}
 }
 
 static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
@@ -3159,7 +3160,8 @@ static void smtp_thread(void* arg)
 
 	if(trashcan(&scfg,host_name,"smtpspy") 
 		|| trashcan(&scfg,host_ip,"smtpspy")) {
-		SAFEPRINTF(str,"%ssmtpspy.txt", scfg.logs_dir);
+		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, client.protocol);
+		strlwr(str);
 		spy=fopen(str,"a");
 	}
 
@@ -3524,11 +3526,20 @@ static void smtp_thread(void* arg)
 							smb_hfield_str(&msg, hfield_type=RFC822SUBJECT, p);
 							continue;
 						}
-						if(relay_user.number==0	&& stricmp(field, "FROM")==0
-							&& !chk_email_addr(socket, client.protocol,p,host_name,host_ip,rcpt_addr,reverse_path,"FROM")) {
-							errmsg="554 Sender not allowed.";
-							smb_error=SMB_FAILURE;
-							break;
+						if(stricmp(field, "FROM")==0) {
+							if(relay_user.number==0
+								&& !chk_email_addr(socket, client.protocol,p,host_name,host_ip,rcpt_addr,reverse_path,"FROM")) {
+								errmsg="554 Sender not allowed.";
+								smb_error=SMB_FAILURE;
+								break;
+							}
+							char from_addr[128];
+							parse_mail_address(p, from_addr, sizeof(from_addr)-1, /* name: */NULL, 0);
+							if(dnsbl_result.s_addr && email_addr_is_exempt(from_addr)) {
+								lprintf(LOG_INFO,"%04d %s %s Ignoring DNSBL results for exempt sender (from): %s"
+									,socket, client.protocol, client_id, from_addr);
+								dnsbl_result.s_addr=0;
+							}
 						}
 						if(relay_user.number==0 && stricmp(field, "TO")==0 && !spam_bait_result
 							&& !chk_email_addr(socket, client.protocol,p,host_name,host_ip,rcpt_addr,reverse_path,"TO")) {
@@ -4550,6 +4561,7 @@ static void smtp_thread(void* arg)
 				&& (trashcan(&scfg,reverse_path,"smtpspy")
 					|| trashcan(&scfg,rcpt_addr,"smtpspy"))) {
 				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, client.protocol);
+				strlwr(path);
 				spy=fopen(path,"a");
 			}
 
