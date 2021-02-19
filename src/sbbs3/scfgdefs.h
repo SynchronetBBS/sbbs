@@ -401,7 +401,7 @@ typedef struct
 	uint16_t		total_faddrs;		/* Total number of fido addresses */
 	swap_t			**swap; 			/* Swapping externals */
 	uint16_t		total_swaps;		/* Total number of non-swap xtrns */
-	natvpgm_t 		**natvpgm;			/* Native (32-bit) Programs */
+	natvpgm_t 		**natvpgm;			/* Native (not MS-DOS) Programs */
 	uint16_t		total_natvpgms; 	/* Total number of native pgms */
 	guru_t			**guru; 			/* Gurus */
 	uint16_t		total_gurus;		/* Total number of guru files */

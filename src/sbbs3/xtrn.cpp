@@ -388,7 +388,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(native && mode&EX_STDOUT && !(mode&EX_OFFLINE))
 		use_pipes=true;
 
- 	if(native) { // Native (32-bit) external
+ 	if(native) { // Native (not MS-DOS) external
 
 		if((env_list=strListInit())==NULL) {
 			XTRN_CLEANUP;
@@ -1104,7 +1104,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	else
 		SAFECOPY(fullcmdline,cmdline);
 
- 	if(native) { // Native (32-bit) external
+ 	if(native) { // Native (not MS-DOS) external
 
 		// Current environment passed to child process
 		sprintf(dszlog,"%sPROTOCOL.LOG",cfg.node_dir);

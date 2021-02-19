@@ -602,9 +602,9 @@ BOOL read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	}
 	cfg->total_events=i;
 
-	/********************************/
-	/* Native (32-bit) Program list */
-	/********************************/
+	/************************************/
+	/* Native (not MS-DOS) Program list */
+	/************************************/
 
 	get_int(cfg->total_natvpgms,instream);
 
