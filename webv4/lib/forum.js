@@ -331,7 +331,7 @@ function get_mail_headers(filter, ascending) {
             h.attr&MSG_READ ? ret.sent.read++ : (ret.sent.unread++);
             if (filter == 'sent') ret.headers.push(h);
         }
-	if (h.to_ext == user.number) {
+    	if (h.to_ext == user.number) {
             if (is_spam(h)) {
                 h.attr&MSG_READ ? ret.spam.read++ : (ret.spam.unread++);
                 if (filter == 'spam') ret.headers.push(h);
@@ -440,7 +440,7 @@ function getSignature() {
 function postMessage(sub, header, body) {
     var ret = false;
     if (user.alias === settings.guest ||
-        typeof msg_area.sub[sub] === 'undefined' ||
+        msg_area.sub[sub] === undefined ||
         !msg_area.sub[sub].can_post ||
         typeof header.to !== 'string' ||
         header.to === '' ||
@@ -475,15 +475,10 @@ function postMessage(sub, header, body) {
 // Called by postNew/postReply, not directly
 function postMail(header, body) {
     // Lazy ARS checks; we could check the *type* of email being sent, I guess.
-    if (user.security.restrictions&UFLAG_E ||
-        user.security.restrictions&UFLAG_M
-    ) {
+    if (user.security.restrictions&UFLAG_E || user.security.restrictions&UFLAG_M) {
         return false;
     }
-    if (typeof header.to !== 'string' ||
-        typeof header.subject !== 'string' ||
-        typeof body !== 'string'
-    ) {
+    if (typeof header.to !== 'string' || typeof header.subject !== 'string' || typeof body !== 'string') {
         return false;
     }
     var ret = false;
@@ -537,12 +532,7 @@ function postNew(sub, to, subject, body) {
 // Add a new message to 'sub' in reply to parent message 'pid'
 function postReply(sub, body, pid) {
     var ret = false;
-    if (    typeof sub !== 'string' ||
-            typeof body !== 'string' ||
-            typeof pid !== 'number'
-    ) {
-        return ret;
-    }
+    if (typeof sub !== 'string' || typeof body !== 'string' || typeof pid !== 'number') return ret;
     try {
         var msgBase = new MsgBase(sub);
         msgBase.open();
@@ -550,15 +540,12 @@ function postReply(sub, body, pid) {
         msgBase.close();
         if (pHeader === null) return ret;
         var header = {
-            'to' : pHeader.from == user.alias ? pHeader.to : pHeader.from,
-            'from' : user.alias,
-            'subject' : pHeader.subject,
-            'thread_id' : (
-                typeof pHeader.thread_id === 'undefined'
-                ? pHeader.number
-                : pHeader.thread_id
-            ),
-            'thread_back' : pHeader.number
+            to: pHeader.from == user.alias ? pHeader.to : pHeader.from,
+            from: user.alias,
+            from_ext: user.number,
+            subject: pHeader.subject,
+            thread_id: pHeader.thread_id === undefined ? pHeader.number : pHeader.thread_id,
+            thread_back: pHeader.number,
         };
         if (sub === 'mail') {
             if (typeof pHeader.from_net_addr !== 'undefined') {
