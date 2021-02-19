@@ -6,9 +6,10 @@
 	load(settings.web_lib + 'sidebar.js');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
-    if (page.search(/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/i) > -1) {
+	if (page.search(/\.link$/) > -1) {
+		var loc = getExternalLink(page);
         http_reply.status = '301 Moved Permanently';
-        http_reply.header['Location'] = page;
+        http_reply.header['Location'] = loc;
         exit();
     }
 	var pagePath = getPagePath(page);
