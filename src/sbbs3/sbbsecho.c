@@ -2624,6 +2624,14 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 			dest=nodecfg->route;
 			lprintf(LOG_NOTICE,"Routing packet (%s) to %s",tmp_pkt, smb_faddrtoa(&dest,NULL));
 		}
+		if(nodecfg == NULL && dest.point != 0) {
+			fidoaddr_t	boss = dest;
+			boss.point = 0;
+			if((nodecfg = findnodecfg(&cfg, boss, /* exact: */true)) != NULL) {
+				dest = boss;
+				lprintf(LOG_INFO, "Routing packet (%s) to boss-node %s", tmp_pkt, smb_faddrtoa(&dest, NULL));
+			}
+		}
 	}
 	outbound = get_current_outbound(dest, cfg.use_outboxes);
 	if(outbound == NULL)
@@ -5525,6 +5533,15 @@ void pack_netmail(void)
 				addr=nodecfg->route;		/* Routed */
 				lprintf(LOG_INFO, "Routing NetMail (%s) to %s",getfname(path),smb_faddrtoa(&addr,NULL));
 				nodecfg=findnodecfg(&cfg, addr,0);
+			}
+			if(nodecfg == NULL && addr.point != 0) {
+				fidoaddr_t	boss = addr;
+				boss.point = 0;
+				if((nodecfg = findnodecfg(&cfg, boss, /* exact: */true)) != NULL) {
+					addr = boss;
+					lprintf(LOG_INFO, "Routing NetMail (%s) to boss-node %s"
+						,getfname(path), smb_faddrtoa(&addr, NULL));
+				}
 			}
 		}
 		if(!bso_lock_node(addr))
