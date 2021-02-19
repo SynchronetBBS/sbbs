@@ -3534,7 +3534,7 @@ static void smtp_thread(void* arg)
 								break;
 							}
 							char from_addr[128];
-							parse_mail_address(p, from_addr, sizeof(from_addr)-1, /* name: */NULL, 0);
+							parse_mail_address(p, /* name: */NULL, 0, from_addr, sizeof(from_addr)-1);
 							if(dnsbl_result.s_addr && email_addr_is_exempt(from_addr)) {
 								lprintf(LOG_INFO,"%04d %s %s Ignoring DNSBL results for exempt sender (from): %s"
 									,socket, client.protocol, client_id, from_addr);
