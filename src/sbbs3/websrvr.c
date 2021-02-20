@@ -1286,6 +1286,9 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 		}
 		if (session->req.send_location) {
 			ret=-1;
+			if(session->req.dynamic!=IS_CGI && session->req.dynamic!=IS_FASTCGI && (!chunked) && (!session->req.manual_length)) {
+				session->req.send_content = FALSE;
+			}
 			switch (session->req.send_location) {
 				case MOVED_PERM:
 					status_line=error_301;
@@ -1305,6 +1308,9 @@ static BOOL send_headers(http_session_t *session, const char *status, int chunke
 
 		if(stat_code==304 || stat_code==204 || (stat_code >= 100 && stat_code<=199)) {
 			session->req.send_content = FALSE;
+		}
+
+		if (!session->req.send_content) {
 			chunked=FALSE;
 			send_entity = FALSE;
 		}
