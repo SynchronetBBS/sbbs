@@ -78,7 +78,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 		useron_xedit = 0;
 
 	quotes_fname(useron_xedit,fname,sizeof(fname));
-	removecase(fname);
+	(void)removecase(fname);
 
 	if((fp=fopen(fname,"wb"))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,0);
@@ -300,9 +300,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		mode|=WM_NOTOP;
 
 	msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
-	removecase(msgtmp);
+	(void)removecase(msgtmp);
 	SAFEPRINTF(tagfile,"%seditor.tag",cfg.temp_dir);
-	removecase(tagfile);
+	(void)removecase(tagfile);
 	SAFEPRINTF(draft_desc, "draft.%s.msg", subnum >= cfg.total_subs ? "mail" : cfg.sub[subnum]->code);
 	SAFEPRINTF3(draft, "%suser/%04u.%s", cfg.data_dir, useron.number, draft_desc);
 
@@ -311,7 +311,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		if(mv(draft, msgtmp, /* copy: */true) == 0) {
 			lprintf(LOG_NOTICE, "draft message restored: %s (%lu bytes)", draft, (ulong)flength(msgtmp));
 			draft_restored = true;
-			removecase(quotes_fname(useron_xedit, str, sizeof(str)));
+			(void)removecase(quotes_fname(useron_xedit, str, sizeof(str)));
 		} else
 			lprintf(LOG_ERR, "ERROR %d (%s) restoring draft message: %s", errno, strerror(errno), draft);
 	}
@@ -456,7 +456,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		} 
 	}
 	else {
-		removecase(quotes_fname(useron_xedit, str, sizeof(str)));
+		(void)removecase(quotes_fname(useron_xedit, str, sizeof(str)));
 	}
 
 	if(!online || sys_status&SS_ABORT) {
@@ -575,7 +575,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 		if(!draft_restored) {
 			if(!linesquoted)
-				removecase(msgtmp);
+				(void)removecase(msgtmp);
 			else {
 				qlen=(long)flength(msgtmp);
 				qtime=(long)fdate(msgtmp); 
@@ -632,14 +632,24 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			return(false); 
 		}
 		length=(long)filelength(file);
+		if(length < 0) {
+			errormsg(WHERE, ERR_LEN, msgtmp, length);
+			free(buf);
+			return false;
+		}
 		l=strlen((char *)buf);	  /* reserve space for top and terminating null */
 		/* truncate if too big */
 		if(length>(long)((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1))) {
 			length=(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1);
 			bputs(text[OutOfBytes]); 
 		}
-		lread(file,buf+l,length);
+		long rd = read(file,buf+l,length);
 		close(file);
+		if(rd != length) {
+			errormsg(WHERE, ERR_READ, msgtmp, length);
+			free(buf);
+			return false;
+		}
 		// remove(msgtmp); 	   /* no need to save the temp input file */
 		buf[l+length]=0; 
 	}
@@ -678,7 +688,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 	now=time(NULL);
 	bputs(text[Saving]);
-	removecase(fname);
+	(void)removecase(fname);
 	if((stream=fnopen(NULL,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,O_WRONLY|O_CREAT|O_TRUNC);
 		free(buf);
@@ -736,7 +746,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		}
 	}
 
-	remove(draft);
+	(void)remove(draft);
 	fclose(stream);
 	free((char *)buf);
 	bprintf(text[SavedNBytes],l,lines);
@@ -781,10 +791,10 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 	xeditnum--;
 
 	SAFEPRINTF(path,"%sresult.ed",cfg.node_dir);
-	removecase(path);
+	(void)removecase(path);
 	if(cfg.xedit[xeditnum]->misc&QUICKBBS) {
 		SAFEPRINTF2(path,"%s%s",cfg.node_dir, cfg.xedit[xeditnum]->misc&XTRN_LWRCASE ? "msginf":"MSGINF");
-		removecase(path);
+		(void)removecase(path);
 		if((fp=fopen(path,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -804,7 +814,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 	}
 	else {
 		SAFEPRINTF2(path,"%s%s",cfg.node_dir,cfg.xedit[xeditnum]->misc&XTRN_LWRCASE ? "editor.inf" : "EDITOR.INF");
-		removecase(path);
+		(void)removecase(path);
 		if((fp=fopen(path,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -845,7 +855,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 		errormsg(WHERE,ERR_ALLOC,str,flen);
 		return; 
 	}
-	if(lread(file,buf,flen)!=flen) {
+	if(read(file,buf,flen)!=flen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,flen);
 		free(buf);
@@ -1123,7 +1133,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				upload:
 				char	fname[MAX_PATH + 1];
 				SAFEPRINTF(fname, "%sUPLOAD.MSG", cfg.temp_dir);
-				removecase(fname);
+				(void)removecase(fname);
 				if(!recvfile(fname, prot, /* autohang: */false)) {
 					bprintf(text[FileNotReceived], "File");
 					continue;
@@ -1210,7 +1220,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 	else
 		maxlines=MAX_LINES;
 	quotes_fname(useron_xedit, path, sizeof(path));
-	removecase(path);
+	(void)removecase(path);
 
 	if(useron_xedit) {
 
@@ -1218,7 +1228,8 @@ bool sbbs_t::editfile(char *fname, bool msg)
 
 		msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
 		if(stricmp(msgtmp,path)) {
-			removecase(msgtmp);
+			if(removecase(msgtmp) != 0)
+				errormsg(WHERE, ERR_REMOVE, msgtmp, 0);
 			if(fexistcase(path))
 				CopyFile(path, msgtmp, /* failIfExists: */FALSE);
 		}
@@ -1246,8 +1257,8 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		rioctl(IOSM|PAUSE|ABORT); 
 		return true; 
 	}
-	if((buf=(char *)malloc(maxlines*MAX_LINE_LEN))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,nulstr,maxlines*MAX_LINE_LEN);
+	if((buf=(char *)malloc((maxlines*MAX_LINE_LEN) + 1))==NULL) {
+		errormsg(WHERE,ERR_ALLOC,nulstr, (maxlines*MAX_LINE_LEN) + 1);
 		return false; 
 	}
 	if((file=nopen(fname,O_RDONLY))!=-1) {
@@ -1590,7 +1601,8 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 		return false;
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
-	removecase(msgtmp);
+	if(removecase(msgtmp) != 0)
+		return false;
 	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
 	if(!editfile(msgtmp, /* msg: */true))
 		return false;

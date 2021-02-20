@@ -1768,7 +1768,7 @@ BOOL smb_msg_is_utf8(const smbmsg_t* msg)
 uint16_t smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name, enum smb_net_type net_type, void* net_addr)
 {
 	uint16_t votes = 0;
-	smbmsg_t msg;
+	smbmsg_t msg = {0};
 
 	if(smb->sid_fp==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s index not open", __FUNCTION__);

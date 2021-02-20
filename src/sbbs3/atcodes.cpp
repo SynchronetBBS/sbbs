@@ -181,8 +181,8 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	if(thousep)
 		cp = separate_thousands(cp, separated, sizeof(separated), ',');
 
+	char upper[128];
 	if(uppercase) {
-		char upper[128];
 		SAFECOPY(upper, cp);
 		strupr(upper);
 		cp = upper;
@@ -1726,10 +1726,10 @@ const char* sbbs_t::atcode(char* sp, char* str, size_t maxlen, long* pmode, bool
 			return(current_msg_from);
 		return(str);
 	}
-	if(!strcmp(sp,"MSG_FROM_NAME") && current_msg_from!=NULL) {
+	if(!strcmp(sp,"MSG_FROM_NAME") && current_msg != NULL && current_msg_from != NULL) {
 		if(current_msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
 			return(text[Anonymous]);
-		if(pmode != NULL && current_msg != NULL)
+		if(pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
 		return(current_msg_from);
 	}

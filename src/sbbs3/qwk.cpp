@@ -221,7 +221,7 @@ void sbbs_t::update_qwkroute(char *via)
 					continue;
 				if(i==total_qwknodes) {
 					if((qwknode=(struct qwknode*)realloc(qwknode,sizeof(struct qwknode)*(i+1)))==NULL) {
-						errormsg(WHERE,ERR_ALLOC,str,sizeof(struct qwknode)*(i+1));
+						errormsg(WHERE,ERR_ALLOC,via,sizeof(struct qwknode)*(i+1));
 						break;
 					}
 					total_qwknodes++;

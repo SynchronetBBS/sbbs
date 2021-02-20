@@ -47,8 +47,21 @@
             <ul class="nav navbar-nav">
                 <?xjs menu(getPageList(settings.web_pages)); ?>
             </ul>
+
             <ul class="nav navbar-nav navbar-right">
-                <?xjs if (user.alias === settings.guest || user.number < 1) { ?>
+<?xjs if (settings.darkmode_allow) { ?>	            
+				<li class="nav-item dark-switch">
+					<div class="form-group">
+						<div class="checkbox checbox-switch darkswitchbox">
+							<label>
+								<input type="checkbox" id="darkSwitch" <? write(settings.darkmode_on ? 'checked' : '') ?> />Dark
+								<span></span>
+							</label>
+              			</div>
+              		</div>
+            	</li>
+<?xjs } ?>            	
+            	<?xjs if (user.alias === settings.guest || user.number < 1) { ?>
                     <?xjs if (settings.user_registration) { ?>
                         <li>
                             <a href="./?page=000-register.xjs"><? write(locale.strings.main.menu_item_register); ?></a>

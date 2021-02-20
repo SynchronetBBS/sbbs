@@ -52,14 +52,10 @@ function getSidebarModule(module) {
 	switch (ext) {
 		case '.SSJS':
 			if (ext === '.SSJS' && module.search(/\.xjs\.ssjs$/i) >= 0) break;
-			(function () {
-				load(module, true);
-			})();
+			js.exec(module, new function () {});
 			break;
 		case '.XJS':
-			(function () {
-				load(xjs_compile(module), true);
-			})();
+			js.exec(xjs_compile(module), new function () {});
 			break;
 		case '.HTML':
 			ret = getFileContents(module);

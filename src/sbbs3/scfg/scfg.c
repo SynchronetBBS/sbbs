@@ -25,6 +25,7 @@
 #include "ciolib.h"
 #include "git_hash.h"
 #include "git_branch.h"
+#include "cryptlib.h"
 
 /********************/
 /* Global Variables */
@@ -454,6 +455,8 @@ int main(int argc, char **argv)
 	strcpy(mopt[i++],"External Programs");
 	strcpy(mopt[i++],"Text File Sections");
 	mopt[i][0]=0;
+	i = cryptInit();
+	(void)i;
 	while(1) {
 		uifc.helpbuf=
 			"`Main Configuration Menu:`\n"
@@ -663,16 +666,13 @@ int main(int argc, char **argv)
 				break;
 			case -1:
 				i=0;
-				strcpy(opt[0],"Yes");
-				strcpy(opt[1],"No");
-				opt[2][0]=0;
 				uifc.helpbuf=
 					"`Exit SCFG:`\n"
 					"\n"
 					"If you want to exit the Synchronet configuration utility, select `Yes`.\n"
 					"Otherwise, select `No` or hit ~ ESC ~.\n"
 				;
-				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Exit SCFG",opt);
+				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Exit SCFG",uifcYesNoOpts);
 				if(!i)
 					bail(0);
 				break; 
@@ -792,9 +792,6 @@ int save_changes(int mode)
 		uifc.changes=0;
 		return(0);
 	}
-	strcpy(opt[0],"Yes");
-	strcpy(opt[1],"No");
-	opt[2][0]=0;
 	uifc.helpbuf=
 		"`Save Changes:`\n"
 		"\n"
@@ -803,7 +800,7 @@ int save_changes(int mode)
 		"these changes, select `No`. If you are not sure and want to review the\n"
 		"configuration before deciding, hit ~ ESC ~.\n"
 	;
-	i=uifc.list(mode|WIN_SAV,0,0,0,&i,0,"Save Changes",opt);
+	i=uifc.list(mode|WIN_SAV,0,0,0,&i,0,"Save Changes",uifcYesNoOpts);
 	if(i!=-1)
 		uifc.changes=0;
 	return(i);
@@ -858,14 +855,12 @@ void txt_cfg()
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if (msk == MSK_INS) {
-			strcpy(str,"");
 			uifc.helpbuf=
 				"`Text Section Name:`\n"
 				"\n"
 				"This is the name of this text section.\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40
-				,K_EDIT)<1)
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Text Section Name",str,40,K_NONE)<1)
 				continue;
 			SAFECOPY(code,str);
 			prep_code(code,/* prefix: */NULL);
@@ -900,8 +895,8 @@ void txt_cfg()
 				continue; 
 			}
 			memset((txtsec_t *)cfg.txtsec[i],0,sizeof(txtsec_t));
-			strcpy(cfg.txtsec[i]->name,str);
-			strcpy(cfg.txtsec[i]->code,code);
+			SAFECOPY(cfg.txtsec[i]->name,str);
+			SAFECOPY(cfg.txtsec[i]->code,code);
 			cfg.total_txtsecs++;
 			uifc.changes=1;
 			continue; 
@@ -948,14 +943,14 @@ void txt_cfg()
 						"\n"
 						"This is the name of this text section.\n"
 					;
-					strcpy(str,cfg.txtsec[i]->name);	/* save */
+					SAFECOPY(str,cfg.txtsec[i]->name);	/* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10
 						,"Text File Section Name"
 						,cfg.txtsec[i]->name,sizeof(cfg.txtsec[i]->name)-1,K_EDIT))
-						strcpy(cfg.txtsec[i]->name,str);
+						SAFECOPY(cfg.txtsec[i]->name,str);
 					break;
 				case 1:
-					strcpy(str,cfg.txtsec[i]->code);
+					SAFECOPY(str,cfg.txtsec[i]->code);
 					uifc.helpbuf=
 						"`Text Section Internal Code:`\n"
 						"\n"
@@ -966,7 +961,7 @@ void txt_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						strcpy(cfg.txtsec[i]->code,str);
+						SAFECOPY(cfg.txtsec[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -1030,14 +1025,12 @@ void shell_cfg()
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if (msk == MSK_INS) {
-			strcpy(str,"Menu Shell");
 			uifc.helpbuf=
 				"`Command Shell Name:`\n"
 				"\n"
 				"This is the descriptive name of this command shell.\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40
-				,K_EDIT)<1)
+			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Command Shell Name",str,40,K_NONE)<1)
 				continue;
 			SAFECOPY(code,str);
 			prep_code(code,/* prefix: */NULL);
@@ -1076,8 +1069,8 @@ void shell_cfg()
 				continue; 
 			}
 			memset((shell_t *)cfg.shell[i],0,sizeof(shell_t));
-			strcpy(cfg.shell[i]->name,str);
-			strcpy(cfg.shell[i]->code,code);
+			SAFECOPY(cfg.shell[i]->name,str);
+			SAFECOPY(cfg.shell[i]->code,code);
 			cfg.total_shells++;
 			uifc.changes=1;
 			continue; 
@@ -1138,14 +1131,14 @@ void shell_cfg()
 						"\n"
 						"This is the descriptive name of this command shell.\n"
 					;
-					strcpy(str,cfg.shell[i]->name);    /* save */
+					SAFECOPY(str,cfg.shell[i]->name);    /* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10
 						,"Command Shell Name"
 						,cfg.shell[i]->name,sizeof(cfg.shell[i]->name)-1,K_EDIT))
-						strcpy(cfg.shell[i]->name,str);
+						SAFECOPY(cfg.shell[i]->name,str);
 					break;
 				case 1:
-					strcpy(str,cfg.shell[i]->code);
+					SAFECOPY(str,cfg.shell[i]->code);
 					uifc.helpbuf=
 						"`Command Shell Internal Code:`\n"
 						"\n"
@@ -1160,7 +1153,7 @@ void shell_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						strcpy(cfg.shell[i]->code,str);
+						SAFECOPY(cfg.shell[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -1168,7 +1161,7 @@ void shell_cfg()
 					}
 					break;
 				case 2:
-					sprintf(str,"%s Command Shell",cfg.shell[i]->name);
+					SAFEPRINTF(str,"%s Command Shell",cfg.shell[i]->name);
 					getar(str,cfg.shell[i]->arstr);
 					break; 
 			} 
@@ -1233,7 +1226,7 @@ void getar(char *desc, char *inar)
 	char str[128],ar[128];
 	int i,j,len,done=0,n;
 
-	strcpy(ar,inar);
+	SAFECOPY(ar,inar);
 	while(!done) {
 	len=strlen(ar);
 	if(len>=30) {	  /* Needs to be shortened */
@@ -1267,7 +1260,7 @@ void getar(char *desc, char *inar)
 			else
 				strncat(str,ar+i,1); 
 		}
-		strcpy(ar,str);
+		SAFECOPY(ar,str);
 		len=strlen(ar); 
 	}
 
@@ -1290,7 +1283,7 @@ void getar(char *desc, char *inar)
 			else
 				strncat(str,ar+i,1); 
 		}
-		strcpy(ar,str);
+		SAFECOPY(ar,str);
         len=strlen(ar); 
 	}
 
@@ -1309,7 +1302,7 @@ void getar(char *desc, char *inar)
 			else
 				strncat(str,ar+i,1); 
 		}
-		strcpy(ar,str);
+		SAFECOPY(ar,str);
         len=strlen(ar); 
 	}
 
@@ -1326,7 +1319,7 @@ void getar(char *desc, char *inar)
 			if(j==7)
 				strncat(str,ar+i,1); 
 		}
-        strcpy(ar,str);
+        SAFECOPY(ar,str);
         len=strlen(ar); 
 	}
 
@@ -1440,7 +1433,7 @@ void getar(char *desc, char *inar)
 			else
 				strncat(str,ar+i,1); 
 }
-		strcpy(ar,str);
+		SAFECOPY(ar,str);
 		len=strlen(ar); 
 }
 	if(len>=30) {				  /* Remove all spaces and &s */
@@ -1449,7 +1442,7 @@ void getar(char *desc, char *inar)
 		for(i=0;i<n;i++)
 			if(ar[i]!=' ' && ar[i]!='&')
 				strncat(str,ar+i,1);
-		strcpy(ar,str);
+		SAFECOPY(ar,str);
 		len=strlen(ar); 
 	}
 	i=0;
@@ -1509,16 +1502,13 @@ void getar(char *desc, char *inar)
 			break;
 		case 1:
 			i=1;
-			strcpy(opt[0],"Yes");
-			strcpy(opt[1],"No");
-			opt[2][0]=0;
 			uifc.helpbuf=
 				"`Clear Requirements:`\n"
 				"\n"
 				"If you wish to clear the current requirement string, select `Yes`.\n"
 				"Otherwise, select `No`.\n"
 			;
-			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",opt);
+			i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Are You Sure",uifcYesNoOpts);
 			if(!i) {
 				ar[0]=0;
 				uifc.changes=1; 

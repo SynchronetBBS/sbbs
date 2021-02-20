@@ -57,8 +57,8 @@
 			lprintf(LOG_ERR, "%04d SSH Error %d destroying Cryptlib Session %d from line %d"
 				, sock, result, session, line);
 		else {
-			int32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
-			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%d remain)"
+			uint32_t remain = protected_uint32_adjust_fetch(&ssh_sessions, -1);
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%u remain)"
 				, sock, session, line, remain);
 		}
 	}
@@ -1140,8 +1140,10 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx,argv[argn], &mode))
+		if(!JS_ValueToInt32(cx,argv[argn], &mode)) {
+			free(prompt);
 			return JS_FALSE;
+		}
 		argn++;
 	}
 
@@ -1788,14 +1790,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		sendsocket(client_socket, buf, 2);
+		(void)sendsocket(client_socket, buf, 2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		sendsocket(client_socket, buf, 3);
+		(void)sendsocket(client_socket, buf, 3);
 	}
 }
 
@@ -2093,7 +2095,7 @@ void input_thread(void *arg)
 		if(sbbs->passthru_socket_active == true) {
 			BOOL writable = FALSE;
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable)
-				sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
+				(void)sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
 			else
 				lprintf(LOG_WARNING, "Node %d could not write to passthru socket (writable=%d)"
 					, sbbs->cfg.node_num, (int)writable);
@@ -2506,10 +2508,10 @@ void output_thread(void* arg)
 			}
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				(void)sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #endif
 		}
 
@@ -2689,7 +2691,7 @@ void event_thread(void* arg)
 					} else {
 						char badpkt[MAX_PATH+1];
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
-						remove(badpkt);
+						(void)remove(badpkt);
 						if(rename(g.gl_pathv[i], badpkt) == 0)
 							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
 						else
@@ -3484,6 +3486,34 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	/* used by update_qwkroute(): */
 	qwknode=NULL;
 	total_qwknodes=0;
+
+	qwkmail_last = 0;
+	logon_ulb = 0;
+    logon_dlb = 0;
+    logon_uls = 0;
+    logon_dls = 0;
+    logon_posts = 0;
+    logon_emails = 0;
+    logon_fbacks = 0;
+    logon_ml = 0;
+    main_cmds = 0;
+    xfer_cmds = 0;
+    posts_read = 0;
+    temp_cdt = 0;
+    autohang = 0;
+    curgrp = 0;
+    curlib = 0;
+    usrgrps = 0;
+    usrlibs = 0;
+    comspec = 0;
+    altul = 0;
+    noaccess_str = 0;
+    noaccess_val = 0;
+    cur_output_rate = output_rate_unlimited;
+    getstr_offset = 0;
+    lastnodemsg = 0;
+    xtrn_mode = 0;
+	last_ns_time = 0;
 }
 
 //****************************************************************************
@@ -3929,10 +3959,10 @@ void sbbs_t::spymsg(const char* msg)
 	}
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
+		(void)sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
 #ifdef __unix__
 	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
+		(void)sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
 #endif
 }
 
@@ -4554,7 +4584,7 @@ void node_thread(void* arg)
 		/* crash here on Aug-4-2015:
 		node_thread_running already destroyed
 		bbs_thread() timed out waiting for 1 node thread(s) to terminate */
-		int32_t remain = protected_uint32_adjust(&node_threads_running, -1);
+		uint32_t remain = protected_uint32_adjust_fetch(&node_threads_running, -1);
 		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
 			,sbbs->cfg.node_num, remain, served);
 	}
@@ -4859,8 +4889,8 @@ static void cleanup(int code)
 	listFree(&current_logins);
 	listFree(&current_connections);
 
-	protected_uint32_destroy(node_threads_running);
-	protected_uint32_destroy(ssh_sessions);
+	(void)protected_uint32_destroy(node_threads_running);
+	(void)protected_uint32_destroy(ssh_sessions);
 
 	status("Down");
 	thread_down();
@@ -4926,7 +4956,7 @@ void DLLCALL bbs_thread(void* arg)
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 	js_server_props.version_detail=bbs_ver();
-	js_server_props.clients=&node_threads_running.value;
+	js_server_props.clients=&node_threads_running;
 	js_server_props.options=&startup->options;
 	js_server_props.interfaces=&startup->telnet_interfaces;
 
@@ -5028,7 +5058,7 @@ void DLLCALL bbs_thread(void* arg)
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
 	SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, text, TRUE, logstr, sizeof(logstr))) {
+	if(!load_cfg(&scfg, text, /* prep: */TRUE, /* node_req: */TRUE, logstr, sizeof(logstr))) {
 		lprintf(LOG_CRIT,"!ERROR %s",logstr);
 		lprintf(LOG_CRIT,"!FAILED to load configuration files");
 		cleanup(1);
@@ -5641,10 +5671,10 @@ NO_SSH:
 		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
 			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-			if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr, sizeof(logstr))) {
+			if(!load_cfg(cfg, node_text[i - 1], /* prep: */TRUE, /* node_req: */TRUE, logstr, sizeof(logstr))) {
 				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 				cfg->node_num = first_node;
-				if(!load_cfg(cfg, node_text[i - 1], TRUE, logstr, sizeof(logstr))) {
+				if(!load_cfg(cfg, node_text[i - 1], /* prep: */TRUE, /* node: */TRUE, logstr, sizeof(logstr))) {
 					lprintf(LOG_CRIT,"!ERROR %s",logstr);
 					lprintf(LOG_CRIT,"!FAILED to load configuration files");
 					sbbs->bprintf("\r\nFAILED: %s", logstr);

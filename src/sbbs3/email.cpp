@@ -1,8 +1,4 @@
-/* email.cpp */
-
 /* Synchronet email function - for sending private e-mail */
-
-/* $Id: email.cpp,v 1.79 2020/04/15 02:27:10 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -85,6 +69,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		bputs(text[UnknownUser]);
 		return(false); 
 	}
+	str[0] = '\0';
 	getuserrec(&cfg,usernumber,U_MISC,8,str);
 	l=ahtoul(str);
 	if(l&(DELETED|INACTIVE)) {              /* Deleted or Inactive User */
@@ -92,8 +77,9 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		return(false); 
 	}
 	if((l&NETMAIL) && (cfg.sys_misc&SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest&FLAG('M'))) {
-		getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str);
-		if(is_supported_netmail_addr(&cfg, str)) {
+		str[0] = '\0';
+		if(getuserrec(&cfg,usernumber,U_NETMAIL,LEN_NETMAIL,str) == 0
+			&& is_supported_netmail_addr(&cfg, str)) {
 			bprintf(text[UserNetMail],str);
 			if((mode & WM_FORCEFWD) || yesno(text[ForwardMailQ])) /* Forward to netmail address */
 				return(netmail(str, subj, mode, resmb, remsg));
@@ -109,7 +95,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	action=NODE_SMAL;
 	nodesync();
 
-	sprintf(str,"%sfeedback.*", cfg.exec_dir);
+	SAFEPRINTF(str,"%sfeedback.*", cfg.exec_dir);
 	if(usernumber==cfg.node_valuser && useron.fbacks && fexist(str)) {
 		exec_bin("feedback",&main_csi);
 		if(main_csi.logic!=LOGIC_TRUE)
@@ -145,15 +131,15 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	if(mode&WM_FILE) {
 		if(!checkfname(title)) {
 			bputs(text[BadFilename]);
-			remove(msgpath);
+			(void)remove(msgpath);
 			return(false);
 		}
-		sprintf(str2,"%sfile/%04u.in", cfg.data_dir,usernumber);
-		MKDIR(str2);
-		sprintf(str2,"%sfile/%04u.in/%s", cfg.data_dir,usernumber,title);
+		SAFEPRINTF2(str2,"%sfile/%04u.in", cfg.data_dir,usernumber);
+		(void)MKDIR(str2);
+		SAFEPRINTF3(str2,"%sfile/%04u.in/%s", cfg.data_dir,usernumber,title);
 		if(fexistcase(str2)) {
 			bputs(text[FileAlreadyThere]);
-			remove(msgpath);
+			(void)remove(msgpath);
 			return(false); 
 		}
 		xfer_prot_menu(XFER_UPLOAD);
@@ -167,7 +153,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 		ch=(char)getkeys(str,0);
 		if(ch==text[YNQP][2] || sys_status&SS_ABORT) {
 			bputs(text[Aborted]);
-			remove(msgpath);
+			(void)remove(msgpath);
 			return(false); 
 		}
 		for(x=0;x<cfg.total_prots;x++)
@@ -184,7 +170,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 			bprintf(text[FileNBytesReceived],title,ultoac(l,tmp));
 		else {
 			bprintf(text[FileNotReceived],title);
-			remove(msgpath);
+			(void)remove(msgpath);
 			return(false); 
 		} 
 	}
@@ -290,13 +276,13 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, long mode,
 	username(&cfg,usernumber,str);
 	smb_hfield_str(&msg,RECIPIENT,str);
 
-	sprintf(str,"%u",usernumber);
+	SAFEPRINTF(str,"%u",usernumber);
 	smb_hfield_str(&msg,RECIPIENTEXT,str);
 
 	SAFECOPY(str,useron.alias);
 	smb_hfield_str(&msg,SENDER,str);
 
-	sprintf(str,"%u",useron.number);
+	SAFEPRINTF(str,"%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
 
 	if(useron.misc&NETMAIL) {

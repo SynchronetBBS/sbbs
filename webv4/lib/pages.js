@@ -93,6 +93,17 @@ function getCtrlLine(file) {
 
 }
 
+function getExternalLink(fn) {
+	const p = getPagePath(fn);
+	if (p === null) throw new Error('Invalid page ' + fn + ',,,' + settings.web_mods_pages);
+	const f = new File(p);
+	f.open('r');
+	const c = f.read().split(',');
+	f.close();
+	if (c.length < 2) throw new Error('Invalid page ' + fn + ',,,' + settings.web_mods_pages);
+	return c[0];
+}
+
 function _getPageList(dir) {
 
 	if (!file_isdir(dir)) return [];
@@ -133,7 +144,7 @@ function _getPageList(dir) {
 				file: fn,
 				name: pageName(c),
 				title: l[1],
-				page: l[0],
+				page: fn,
 				type: 'link'
 			});
 		} else {
@@ -218,14 +229,10 @@ function getPage(page) {
 	switch(ext) {
 		case '.SSJS':
 			if (ext === '.SSJS' && p.search(/\.xjs\.ssjs$/i) >= 0) break;
-			(function () {
-				load(p, true);
-			})();
+			js.exec(p, new function () {});
 			break;
 		case '.XJS':
-			(function () {
-				load(xjs_compile(p), true);
-			})();
+			js.exec(xjs_compile(p), new function () {});
 			break;
 		case '.HTML':
 			var f = new File(p);

@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-DLLEXPORT BOOL		load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error, size_t);
+DLLEXPORT BOOL		load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t);
 DLLEXPORT void		free_cfg(scfg_t* cfg);
 DLLEXPORT void		free_text(char* text[]);
 DLLEXPORT ushort	sys_timezone(scfg_t* cfg);

@@ -88,7 +88,7 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SERVER_PROP_CLIENTS:
 			if(p->clients!=NULL)
-				*vp=UINT_TO_JSVAL(*p->clients);
+				*vp=UINT_TO_JSVAL(protected_uint32_value(*p->clients));
 			break;
 	}
 

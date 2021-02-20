@@ -39,6 +39,7 @@ static char* lib_prop_desc[] = {
 	,"library access requirements"
 	,"library link (for HTML index)"
 	,"user has sufficient access to this library's directories <i>(introduced in v3.18)</i>"
+	,"internal code prefix (for directories) <i>(introduced in v3.18c)</i>"
 	,NULL
 };
 
@@ -341,6 +342,12 @@ JSBool DLLCALL js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 			val = BOOLEAN_TO_JSVAL(lib_index >= 0);
 			if(!JS_SetProperty(cx, libobj, "can_access", &val))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->lib[l]->code_prefix))==NULL)
+				return JS_FALSE;
+			val=STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, libobj, "code_prefix", &val))
 				return JS_FALSE;
 
 #ifdef BUILD_JSDOCS

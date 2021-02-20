@@ -131,8 +131,17 @@ while(bbs.online) {
 				var path = console.getstr(path, 128, K_EDIT|K_LINE|K_TRIM);
 				if(!path || console.aborted)
 					break;
-				if(!file_exists(path))
-					path = backslash(txtsec_data(usrsec[cursec])) + path;
+				if(!file_exists(path)) {
+					var default_path = backslash(txtsec_data(usrsec[cursec])) + path;
+					if (!file_exists(default_path)) {
+						console.print(bbs.text(FileNotFound));
+						break;
+					} else {
+						// only change the path if the file was found, otherwise
+						// leave it alone so they can correct it 
+						path = default_path;
+					}
+				}
 				console.printfile(path);
 				console.crlf();
 				console.print(bbs.text(AddTextFileDesc));

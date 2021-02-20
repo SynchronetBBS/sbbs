@@ -24,28 +24,6 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-void pt_zone_kludge(fmsghdr_t hdr,int fido)
-{
-	char str[256];
-
-	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
-		,hdr.destzone,hdr.destnet,hdr.destnode
-		,hdr.origzone,hdr.orignet,hdr.orignode);
-	write(fido,str,strlen(str));
-
-	if(hdr.destpoint) {
-		sprintf(str,"\1TOPT %hu\r"
-			,hdr.destpoint);
-		write(fido,str,strlen(str)); 
-	}
-
-	if(hdr.origpoint) {
-		sprintf(str,"\1FMPT %hu\r"
-			,hdr.origpoint);
-		write(fido,str,strlen(str)); 
-	}
-}
-
 bool sbbs_t::lookup_netuser(char *into)
 {
 	char to[128],name[26],str[256],q[128];

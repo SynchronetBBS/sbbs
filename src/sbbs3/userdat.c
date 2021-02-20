@@ -2177,8 +2177,13 @@ int getuserrec(scfg_t* cfg, int usernumber,int start, int length, char *str)
 	}
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 
-	if(length==0)	/* auto-length */
+	if(length < 1) { /* auto-length */
 		length=user_rec_len(start);
+		if(length < 1) {
+			close(file);
+			return -5;
+		}
+	}
 
 	i=0;
 	while(i<LOOP_NODEDAB
@@ -2296,8 +2301,13 @@ ulong adjustuserrec(scfg_t* cfg, int usernumber, int start, int length, long adj
 
 	lseek(file,(long)((long)(usernumber-1)*U_LEN)+start,SEEK_SET);
 
-	if(length==0)	/* auto-length */
+	if(length < 1) { /* auto-length */
 		length=user_rec_len(start);
+		if(length < 1) {
+			close(file);
+			return 0;
+		}
+	}
 
 	i=0;
 	while(i<LOOP_NODEDAB
@@ -3095,7 +3105,7 @@ BOOL is_download_free(scfg_t* cfg, uint dirnum, user_t* user, client_t* client)
 	if(user->exempt&FLAG('D'))
 		return(TRUE);
 
-	if(cfg->dir[dirnum]->ex_ar==NULL || cfg->dir[dirnum]->ex_ar[0]==0)
+	if(cfg->dir[dirnum]->ex_ar[0]==0)
 		return(FALSE);
 
 	return(chk_ar(cfg,cfg->dir[dirnum]->ex_ar,user,client));

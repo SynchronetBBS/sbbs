@@ -1431,7 +1431,7 @@ int main(int argc, char** argv)
     bbs_startup.clients=status_term_clients;
 #endif
 	bbs_startup.login_attempt_list=&login_attempt_list;
-    strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(bbs_startup.ctrl_dir,ctrl_dir);
 
 #ifdef __unix__
 
@@ -1454,7 +1454,7 @@ int main(int argc, char** argv)
 	status_startup.setuid=do_setuid;
 	status_startup.clients=status_status_clients;
 	status_startup.status=status_status_status;	// Heh.
-    strcpy(status_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(status_startup.ctrl_dir,ctrl_dir);
 #endif
 
 	/* Initialize FTP startup structure */
@@ -1477,8 +1477,8 @@ int main(int argc, char** argv)
 	ftp_startup.status=status_ftp_status;
 #endif
 	ftp_startup.login_attempt_list=&login_attempt_list;
-    strcpy(ftp_startup.index_file_name,"00index");
-    strcpy(ftp_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(ftp_startup.index_file_name,"00index");
+    SAFECOPY(ftp_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
@@ -1500,7 +1500,7 @@ int main(int argc, char** argv)
 	web_startup.status=status_web_status;
 #endif
 	web_startup.login_attempt_list=&login_attempt_list;
-    strcpy(web_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(web_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
@@ -1522,7 +1522,7 @@ int main(int argc, char** argv)
 	mail_startup.status=status_mail_status;
 #endif
 	mail_startup.login_attempt_list=&login_attempt_list;
-    strcpy(mail_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(mail_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
@@ -1544,7 +1544,7 @@ int main(int argc, char** argv)
 	services_startup.status=status_services_status;
 #endif
 	services_startup.login_attempt_list=&login_attempt_list;
-    strcpy(services_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(services_startup.ctrl_dir,ctrl_dir);
 
 	/* Pre-INI command-line switches */
 	for(i=1;i<argc;i++) {
@@ -1552,7 +1552,7 @@ int main(int argc, char** argv)
 		while(*arg=='-')
 			arg++;
 		if(strcspn(arg,"\\/")!=strlen(arg)) {
-			strcpy(ini_file,arg);
+			SAFECOPY(ini_file,arg);
 			continue;
 		}
 		if(stricmp(arg, "version") == 0) {
@@ -1914,7 +1914,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error, sizeof(error))) {
+	if(!load_cfg(&scfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, error, sizeof(error))) {
 		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
         return(-1);
     }
@@ -2341,7 +2341,7 @@ int main(int argc, char** argv)
 							login_attempt=node->data;
 							localtime32(&login_attempt->time,&tm);
 							if(inet_addrtop(&login_attempt->addr, ip_addr, sizeof(ip_addr))==NULL)
-								strcpy(ip_addr, "<invalid address>");
+								SAFECOPY(ip_addr, "<invalid address>");
 							printf("%lu attempts (%lu duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
 								,login_attempt->count
 								,login_attempt->dupes

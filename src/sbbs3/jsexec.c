@@ -101,12 +101,15 @@ void banner(FILE* fp)
 		,__DATE__, __TIME__, compiler);
 }
 
-void usage(FILE* fp)
+void usage()
 {
-	banner(fp);
+	banner(stdout);
 
-	fprintf(fp,"\nusage: " PROG_NAME_LC " [-opts] [path]module[.js] [args]\n"
+	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] [args]\n"
+		"   or: " PROG_NAME_LC " [-opts] -r js-expression [args]\n"
+		"   or: " PROG_NAME_LC " -v\n"
 		"\navailable opts:\n\n"
+		"    -r<expression> run (compile and execute) JavaScript expression\n"
 #ifdef JSDOOR
 		"    -c<ctrl_dir>   specify path to CTRL directory\n"
 #else
@@ -144,7 +147,7 @@ void usage(FILE* fp)
 		"    -l             loop until intentionally terminated\n"
 		"    -p             wait for keypress (pause) on exit\n"
 		"    -!             wait for keypress (pause) on error\n"
-		"    -D             debugs the script\n"
+		"    -D             load the script into an interactive debugger\n"
 		,JAVASCRIPT_MAX_BYTES
 		,JAVASCRIPT_TIME_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
@@ -909,7 +912,7 @@ char *dbg_getline(void)
 #endif
 }
 
-long js_exec(const char *fname, char** args)
+long js_exec(const char *fname, const char* buf, char** args)
 {
 	int			argc=0;
 	uint		line_no;
@@ -993,33 +996,39 @@ long js_exec(const char *fname, char** args)
 
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
 
-	if(fp==stdin) 	 /* Using stdin for script source */
-		SAFECOPY(path,"stdin");
+	if(fname == NULL && buf != NULL) {
+		SAFECOPY(path, "cmdline");
+		fp = NULL;
+		js_buf = (char*)buf;
+		js_buflen = strlen(buf);
+	} else {
+		if(fp==stdin) 	 /* Using stdin for script source */
+			SAFECOPY(path,"stdin");
 
-	fprintf(statfp,"Reading script from %s\n",path);
-	line_no=0;
-	js_buflen=0;
-	while(!feof(fp)) {
-		if(!fgets(line,sizeof(line),fp))
-			break;
-		line_no++;
-		/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
-		if(line_no==1 && strncmp(line,"#!",2)==0)
-			strcpy(line,"\n");	/* To keep line count correct */
-		len=strlen(line);
-		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
-			lprintf(LOG_ERR,"!Error allocating %lu bytes of memory"
-				,(ulong)(js_buflen+len));
-			if(fp!=stdin)
-				fclose(fp);
-			return(-1);
+		fprintf(statfp,"Reading script from %s\n",path);
+		line_no=0;
+		js_buflen=0;
+		while(!feof(fp)) {
+			if(!fgets(line,sizeof(line),fp))
+				break;
+			line_no++;
+			/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
+			if(line_no==1 && strncmp(line,"#!",2)==0)
+				strcpy(line,"\n");	/* To keep line count correct */
+			len=strlen(line);
+			if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
+				lprintf(LOG_ERR,"!Error allocating %lu bytes of memory"
+					,(ulong)(js_buflen+len));
+				if(fp!=stdin)
+					fclose(fp);
+				return(-1);
+			}
+			memcpy(js_buf+js_buflen,line,len);
+			js_buflen+=len;
 		}
-		memcpy(js_buf+js_buflen,line,len);
-		js_buflen+=len;
+		if(fp!=NULL && fp!=stdin)
+			fclose(fp);
 	}
-	if(fp!=NULL && fp!=stdin)
-		fclose(fp);
-
 	start=xp_timer();
 	if(debugger)
 		init_debugger(js_runtime, js_cx, dbg_puts, dbg_getline);
@@ -1040,10 +1049,14 @@ long js_exec(const char *fname, char** args)
 		result = EXIT_FAILURE;
 	} else {
 		exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
+		char	*p;
+		if(buf != NULL) {
+			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
+			mfprintf(statfp,"Result (%s): %s", JS_GetTypeName(js_cx, JS_TypeOfValue(js_cx, rval)), p);
+			free(p);
+		}
 		JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
-			char	*p;
-
 			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
 			mfprintf(statfp,"Using JavaScript exit_code: %s",p);
 			free(p);
@@ -1060,7 +1073,7 @@ long js_exec(const char *fname, char** args)
 			,path
 			,diff);
 
-	if(js_buf!=NULL)
+	if(js_buf!=NULL && js_buf!=buf)
 		free(js_buf);
 
 	return(result);
@@ -1134,6 +1147,7 @@ int main(int argc, char **argv, char** env)
 	char	error[512];
 #endif
 	char*	module=NULL;
+	char*	js_buf=NULL;
 	char*	p;
 	char*	omode="w";
 	int		argn;
@@ -1208,7 +1222,7 @@ int main(int argc, char **argv, char** env)
 	errfp = fopen("error.log", "a");
 #endif
 
-	for(argn=1;argn<argc && module==NULL;argn++) {
+	for(argn=1;argn<argc && module==NULL && js_buf==NULL;argn++) {
 		if(argv[argn][0]=='-') {
 			p=argv[argn]+2;
 			switch(argv[argn][1]) {
@@ -1218,6 +1232,7 @@ int main(int argc, char **argv, char** env)
 				case 'E':
 				case 'g':
 				case 'i':
+				case 'r':
 				case 'L':
 				case 'm':
 				case 'o':
@@ -1229,8 +1244,8 @@ int main(int argc, char **argv, char** env)
 					char opt = argv[argn][1];
 					if(*p==0) {
 						if(argn + 1 >= argc) {
-							fprintf(errfp,"\n!Option requires a parameter value: %s\n", argv[argn]);
-							usage(errfp);
+							fprintf(stderr,"\n!Option requires a parameter value: %s\n", argv[argn]);
+							usage();
 							return(do_bail(1));
 						}
 						p=argv[++argn];
@@ -1255,6 +1270,9 @@ int main(int argc, char **argv, char** env)
 							break;
 						case 'i':
 							load_path_list=p;
+							break;
+						case 'r':
+							js_buf = p;
 							break;
 						case 'L':
 							log_level=parseLogLevel(p);
@@ -1352,9 +1370,9 @@ int main(int argc, char **argv, char** env)
 					pause_on_error=TRUE;
 					break;
 				default:
-					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
+					fprintf(stderr,"\n!Unsupported option: %s\n",argv[argn]);
 				case '?':
-					usage(errfp);
+					usage();
 					return(do_bail(1));
 			}
 			continue;
@@ -1370,9 +1388,9 @@ int main(int argc, char **argv, char** env)
 	if(umask_val >= 0)
 		umask(umask_val);
 
-	if(module==NULL && isatty(fileno(stdin))) {
-		fprintf(errfp,"\n!Module name not specified\n");
-		usage(errfp);
+	if(module==NULL && js_buf==NULL && isatty(fileno(stdin))) {
+		fprintf(stderr,"\n!No JavaScript module-name or expression specified\n");
+		usage();
 		return(do_bail(1)); 
 	}
 
@@ -1390,7 +1408,7 @@ int main(int argc, char **argv, char** env)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg,text,TRUE,error, sizeof(error))) {
+	if(!load_cfg(&scfg, text, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		return(do_bail(1));
 	}
@@ -1455,13 +1473,13 @@ int main(int argc, char **argv, char** env)
 		}
 		fprintf(statfp,"\n");
 
-		result=js_exec(module,&argv[argn]);
+		result=js_exec(module, js_buf, &argv[argn]);
 		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
 		YIELD();
 
 		if(result)
-			lprintf(LOG_ERR,"!Module (%s) set exit_code: %ld", module, result);
+			lprintf(LOG_ERR,"!Module (%s) set exit_code: %ld", module == NULL ? "cmdline" : module, result);
 
 		fprintf(statfp,"\n");
 		fprintf(statfp,"JavaScript: Destroying context\n");

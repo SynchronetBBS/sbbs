@@ -39,6 +39,7 @@ static char* msg_grp_prop_desc[] = {
 	,"group description"
 	,"group access requirements"
 	,"user has sufficient access to list this group's sub-boards <i>(introduced in v3.18)</i>"
+	,"internal code prefix (for sub-boards) <i>(introduced in v3.18c)</i>"
 	,NULL
 };
 
@@ -524,6 +525,12 @@ JSBool DLLCALL js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 			val = BOOLEAN_TO_JSVAL(grp_index >= 0);
 			if(!JS_SetProperty(cx, grpobj, "can_access", &val))
+				return JS_FALSE;
+
+			if((js_str=JS_NewStringCopyZ(cx, p->cfg->grp[l]->code_prefix))==NULL)
+				return JS_FALSE;
+			val=STRING_TO_JSVAL(js_str);
+			if(!JS_SetProperty(cx, grpobj, "code_prefix", &val))
 				return JS_FALSE;
 
 #ifdef BUILD_JSDOCS

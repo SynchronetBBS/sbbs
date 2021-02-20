@@ -92,19 +92,19 @@ BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
 	int		file;
 	uint32_t	val;
 
-	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
+	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
 		return(FALSE);
 
-	lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	read(file,&val,4);        /* Uploads today         */
+	(void)lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	(void)read(file,&val,4);        /* Uploads today         */
 	val+=files;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
-	read(file,&val,4);        /* Upload bytes today    */
+	(void)lseek(file,-4L,SEEK_CUR);
+	(void)write(file,&val,4);
+	(void)read(file,&val,4);        /* Upload bytes today    */
 	val+=bytes;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
+	(void)lseek(file,-4L,SEEK_CUR);
+	(void)write(file,&val,4);
 	close(file);
 	return(TRUE);
 }
@@ -115,19 +115,19 @@ BOOL inc_sys_download_stats(scfg_t* cfg, ulong files, ulong bytes)
 	int		file;
 	uint32_t	val;
 
-	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
+	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
 		return(FALSE);
 
-	lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	read(file,&val,4);        /* Downloads today         */
+	(void)lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	(void)read(file,&val,4);        /* Downloads today         */
 	val+=files;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
-	read(file,&val,4);        /* Download bytes today    */
+	(void)lseek(file,-4L,SEEK_CUR);
+	(void)write(file,&val,4);
+	(void)read(file,&val,4);        /* Download bytes today    */
 	val+=bytes;
-	lseek(file,-4L,SEEK_CUR);
-	write(file,&val,4);
+	(void)lseek(file,-4L,SEEK_CUR);
+	(void)write(file,&val,4);
 	close(file);
 	return(TRUE);
 }

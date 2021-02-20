@@ -73,6 +73,8 @@
 #include "ringbuf.h"
 #include "telnet.h"
 #include "nopen.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 /* sexyz */
 #include "sexyz.h"
@@ -250,7 +252,7 @@ char* dszlog_filename(char* str)
 	static char	path[MAX_PATH+1];
 
 #ifdef _WIN32
-	char sfpath[MAX_PATH+1];
+	static char sfpath[MAX_PATH+1];
 	if(dszlog_short) {
 		SAFECOPY(sfpath,str);
 		GetShortPathName(str,sfpath,sizeof(sfpath));
@@ -1525,10 +1527,10 @@ int main(int argc, char **argv)
 	statfp=stdout;
 #endif
 
-	fprintf(statfp,"\nSynchronet External X/Y/ZMODEM  v%s-%s"
+	fprintf(statfp,"\nSynchronet External X/Y/ZMODEM  v%s  %s/%s"
 		"  Copyright Rob Swindell\n\n"
 		,revision
-		,PLATFORM_DESC
+		,GIT_BRANCH, GIT_HASH
 		);
 
 	xmodem_init(&xm,NULL,&mode,lputs,xmodem_progress,send_byte,recv_byte,is_connected,NULL,flush);

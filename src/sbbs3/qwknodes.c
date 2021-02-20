@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 	cfg.size=sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 
-	if(!load_cfg(&cfg, NULL, TRUE, str, sizeof(str))) {
+	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
 		printf("\7\n%s\n",str);
 	}
 
@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%-5u\r",msg.idx_offset+1);
 			if(msg.idx.to==smm || msg.idx.to==sbl)
 				continue;
-			if(max_age && now-msg.idx.time>((ulong)max_age*24UL*60UL*60UL))
+			if(max_age && now-msg.idx.time>((time_t)max_age*24UL*60UL*60UL))
 				continue;
 			if((j=smb_lockmsghdr(&smb,&msg))!=0) {
 				printf("smb_lockmsghdr returned %d\n",j);

@@ -1584,8 +1584,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			ushort		aliascrc,namecrc,sysop=crc16("sysop",0);
 
 			/* dig a client object out of the global object */
-			JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &cov);
-			if(JSVAL_IS_OBJECT(cov)) {
+			if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &cov)
+				&& JSVAL_IS_OBJECT(cov)) {
 				JSObject *obj = JSVAL_TO_OBJECT(cov);
 				JSClass	*cl;
 
@@ -1594,8 +1594,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 			}
 
 			/* dig a user object out of the global object */
-			JS_GetProperty(cx, JS_GetGlobalObject(cx), "user", &cov);
-			if(JSVAL_IS_OBJECT(cov)) {
+			if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "user", &cov)
+				&& JSVAL_IS_OBJECT(cov)) {
 				JSObject *obj = JSVAL_TO_OBJECT(cov);
 				JSClass	*cl;
 
@@ -2057,6 +2057,7 @@ js_dump_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 			JSObject* array;
 			if((array = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
 				JS_ReportError(cx, "JS_NewArrayObject failure");
+				strListFree(&list);
 				return JS_FALSE;
 			}
 			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(array));

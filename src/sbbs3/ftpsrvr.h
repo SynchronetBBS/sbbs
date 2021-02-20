@@ -106,6 +106,7 @@ static struct init_field ftp_init_fields[] = {
 #define FTP_OPT_NO_LOCAL_FSYS		(1<<5)
 #define FTP_OPT_DIR_FILES			(1<<6)	/* Allow access to files in dir but not in database */
 #define FTP_OPT_KEEP_TEMP_FILES		(1<<7)	/* Don't delete temp files (for debugging) */
+#define FTP_OPT_ALLOW_BOUNCE		(1<<8)
 #define FTP_OPT_LOOKUP_PASV_IP		(1<<9)	/* resolve public IP address for PASV response */
 #define FTP_OPT_NO_HOST_LOOKUP		(1<<11)
 #define FTP_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
@@ -125,6 +126,7 @@ static ini_bitdesc_t ftp_options[] = {
 	{ FTP_OPT_NO_LOCAL_FSYS			,"NO_LOCAL_FSYS"		},
 	{ FTP_OPT_DIR_FILES				,"DIR_FILES"			},
 	{ FTP_OPT_KEEP_TEMP_FILES		,"KEEP_TEMP_FILES"		},
+	{ FTP_OPT_ALLOW_BOUNCE			,"ALLOW_BOUNCE"			},
 	{ FTP_OPT_LOOKUP_PASV_IP		,"LOOKUP_PASV_IP"		},
 	{ FTP_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
 	{ FTP_OPT_NO_RECYCLE			,"NO_RECYCLE"			},

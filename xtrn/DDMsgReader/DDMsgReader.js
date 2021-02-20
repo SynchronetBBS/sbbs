@@ -1,5 +1,3 @@
-// $Id: DDMsgReader.js,v 1.143 2020/05/23 23:30:28 nightfox Exp $
-
 /* This is a message reader/lister door for Synchronet.  Features include:
  * - Listing messages in the user's current message area with the ability to
  *   navigate forwards & backwards through the list (and for ANSI users, a
@@ -76,6 +74,19 @@
  * 2020-12-01 Eric Oulashin     Version 1.39
  *                              When forwarding a message, added the ability to
  *                              optionally edit the message before forwarding it.
+ * 2021-01-31 Michael Long      Version 1.40
+ *                              Fixed left/right colors not being customizable on message
+ *                              list lightbar
+ * 2021-02-12 Eric Oulashin     Version 1.41
+ *                              Bug fix: When changing to another area with the lightbar
+ *                              interface, if the user's current sub-board is a high-numbered
+ *                              sub-board and they select a message group with fewer
+ *                              sub-boards, the highlighted sub-board in that group would
+ *                              be set to that high number and would be incorrect.
+ *                              That has been fixed.  Copied a fix from my stand-alone
+ *                              message area chooser.  In that scenario, the current
+ *                              highlighted sub-board in the other group will be
+ *                              the first one.
  */
 
 
@@ -187,8 +198,8 @@ if (system.version_num < 31500)
 }
 
 // Reader version information
-var READER_VERSION = "1.39";
-var READER_DATE = "2020-12-01";
+var READER_VERSION = "1.41";
+var READER_DATE = "2021-02-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3951,9 +3962,17 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 	};
 
 	// Set the currently selected item to the current group
-	subBoardMenu.selectedItemIdx = msg_area.sub[this.subBoardCode].index;
-	if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
-		subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+	if (msg_area.sub[this.subBoardCode].grp_index == pGrpIdx)
+	{
+		subBoardMenu.selectedItemIdx = msg_area.sub[this.subBoardCode].index;
+		if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
+			subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
+	}
+	else
+	{
+		subBoardMenu.selectedItemIdx = 0;
+		subBoardMenu.topItemIdx = 0;
+	}
 
 	return subBoardMenu;
 }
@@ -5480,33 +5499,19 @@ function DigDistMsgReader_ScrollReaderDetermineClickCoordAction(pScrollRetObj, p
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("DEL") == 0)
 				retObj.actionStr = this.enhReaderKeys.deleteMessage;
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("E)") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.editMsg;
-			}
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("F") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.firstMsg;
-			}
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("L") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.lastMsg;
-			}
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("R") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.reply;
-			}
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("C") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.chgMsgArea;
-			}
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("Q") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.quit;
-			}
 			else if (pEnhReadHelpLineClickCoords[coordIdx].actionStr.indexOf("?") == 0)
-			{
 				retObj.actionStr = this.enhReaderKeys.showHelp;
-			}
 			break;
 		}
 	}
@@ -7303,13 +7308,13 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 		var numLeft = Math.floor(numChars / 2);
 		var numRight = numChars - numLeft;
 		for (var i = 0; i < numLeft; ++i)
-			this.msgListLightbarModeHelpLine = "Û" + this.msgListLightbarModeHelpLine;
+			this.msgListLightbarModeHelpLine = " " + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine = "\1n"
 		                             + this.colors.lightbarMsgListHelpLineBkgColor
 		                             + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine += "\1n" + this.colors.lightbarMsgListHelpLineBkgColor;
 		for (var i = 0; i < numRight; ++i)
-			this.msgListLightbarModeHelpLine += "Û";
+			this.msgListLightbarModeHelpLine += ' ';
 	}
 }
 // For the DigDistMsgReader Class: Sets the hotkey help line for the enhanced
@@ -13358,8 +13363,7 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			newMsgBody += "==================================\n\n";
 			newMsgBody += pMsgBody;
 
-			// New - Editing the message
-			// TODO: Ask whether to edit the message before forwarding it,
+			// Ask whether to edit the message before forwarding it,
 			// and use console.editfile(filename) to edit it.
 			if (!console.noyes("Edit the message before sending"))
 			{

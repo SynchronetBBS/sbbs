@@ -449,10 +449,10 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 			JS_RESUMEREQUEST(bg->cx, brc);
 		}
 		else {
-			JS_GetProperty(exec_cx, exec_obj, "argv", &old_js_argv);
-			JS_AddValueRoot(exec_cx, &old_js_argv);
-			JS_GetProperty(exec_cx, exec_obj, "argc", &old_js_argc);
-			JS_AddValueRoot(exec_cx, &old_js_argc);
+			if(JS_GetProperty(exec_cx, exec_obj, "argv", &old_js_argv))
+				JS_AddValueRoot(exec_cx, &old_js_argv);
+			if(JS_GetProperty(exec_cx, exec_obj, "argc", &old_js_argc))
+				JS_AddValueRoot(exec_cx, &old_js_argc);
 			restore_args = TRUE;
 		}
 
@@ -1670,71 +1670,61 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>5 && JSVAL_IS_OBJECT(argv[5])) {
 		stateobj=JSVAL_TO_OBJECT(argv[5]);
-		JS_GetProperty(cx,stateobj,"fg",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"fg",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &fg)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"bg",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"bg",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &bg)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"lastcolor",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"lastcolor",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &lastcolor)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"blink",&val);
-		if(JSVAL_IS_BOOLEAN(val)) {
+		if(JS_GetProperty(cx,stateobj,"blink",&val) && JSVAL_IS_BOOLEAN(val)) {
 			if(!JS_ValueToBoolean(cx, val, &blink)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"bold",&val);
-		if(JSVAL_IS_BOOLEAN(val)) {
+		if(JS_GetProperty(cx,stateobj,"bold",&val) && JSVAL_IS_BOOLEAN(val)) {
 			if(!JS_ValueToBoolean(cx, val, &bold)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"hpos",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"hpos",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &hpos)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"currrow",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"currrow",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &currrow)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"wraphpos",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"wraphpos",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &wraphpos)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"wrapvpos",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"wrapvpos",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &wrapvpos)) {
 				free(inbuf);
 				return JS_FALSE;
 			}
 		}
-		JS_GetProperty(cx,stateobj,"wrappos",&val);
-		if(JSVAL_IS_NUMBER(val)) {
+		if(JS_GetProperty(cx,stateobj,"wrappos",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &wrappos)) {
 				free(inbuf);
 				return JS_FALSE;
@@ -4292,8 +4282,10 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 		int32 codepoint = 0;
-		if(!JS_ValueToInt32(cx, argv[0], &codepoint))
+		if(!JS_ValueToInt32(cx, argv[0], &codepoint)) {
+			free(outbuf);
 			return JS_FALSE;
+		}
 		int result = utf8_putc(outbuf, len - 1, codepoint);
 		if(result < 1) {
 			free(outbuf);

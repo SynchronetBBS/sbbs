@@ -1107,6 +1107,9 @@ void packmsgs(ulong packable)
 			smb_close_ha(&smb);
 			smb_close_da(&smb); 
 		}
+		if(tmp_sdt != NULL) fclose(tmp_sdt);
+		if(tmp_shd != NULL) fclose(tmp_shd);
+		if(tmp_sid != NULL) fclose(tmp_sid);
 		fprintf(errfp,"\n%s!Error opening temp files\n",beep);
 		return; 
 	}

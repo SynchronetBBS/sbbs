@@ -1,7 +1,4 @@
 /* Synchronet string input routines */
-// vi: tabstop=4
-
-/* $Id: getstr.cpp,v 1.40 2020/05/08 08:25:49 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -77,7 +62,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 	}
 	else str1[0]=0;
 	if(mode&K_EDIT)
-		strcat(str1,strout);
+		SAFECAT(str1,strout);
 	else
 		strout[0]=0;
 	if(strlen(str1)>maxlen)
@@ -338,7 +323,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, long mode, const str_list_t h
 				for(x=0;x<(maxlen-l)/2;x++)
 					str2[x]=' ';
 				str2[x]=0;
-				strcat(str2,str1);
+				SAFECAT(str2,str1);
 				strcpy(strout,str2);
 				l=strlen(strout);
 				if(mode&K_NOECHO)

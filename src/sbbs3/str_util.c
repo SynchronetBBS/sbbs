@@ -371,6 +371,8 @@ char* ultoac(ulong l, char *string)
 
 /****************************************************************************/
 /* Truncate string at first occurrence of char in specified character set	*/
+/* Returns a pointer to the terminating NUL if the string was truncated,	*/
+/* NULL otherwise.															*/
 /****************************************************************************/
 char* truncstr(char* str, const char* set)
 {
@@ -381,6 +383,16 @@ char* truncstr(char* str, const char* set)
 		*p=0;
 
 	return(p);
+}
+
+/****************************************************************************/
+/* Truncate string at first occurrence of char in specified character set	*/
+/* Returns a pointer to the start of the string.							*/
+/****************************************************************************/
+char* truncated_str(char* str, const char* set)
+{
+	truncstr(str, set);
+	return str;
 }
 
 /****************************************************************************/

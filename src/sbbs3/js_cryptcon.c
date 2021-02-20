@@ -131,6 +131,7 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 			memcpy(y, z, zcnt);
 			y64 = malloc(zcnt*4/3+3);
 			if (y64 == NULL) {
+				free(x64);
 				free(y);
 				return 0;
 			}
@@ -811,8 +812,6 @@ js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		return JS_TRUE;
-		JS_ReportError(cx, getprivate_failure, WHERE);
-		return JS_FALSE;
 	}
 
     JS_IdToValue(cx, id, &idval);

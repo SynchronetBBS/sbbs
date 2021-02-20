@@ -539,7 +539,7 @@ void tevents_cfg()
 					done=1;
 					break;
 				case 0:
-					strcpy(str,cfg.event[i]->code);
+					SAFECOPY(str,cfg.event[i]->code);
 					uifc.helpbuf=
 						"`Timed Event Internal Code:`\n"
 						"\n"
@@ -550,7 +550,7 @@ void tevents_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						strcpy(cfg.event[i]->code,str);
+						SAFECOPY(cfg.event[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -1067,10 +1067,10 @@ void xtrn_cfg(uint section)
 						"\n"
 						"This is the name or description of the online program (door).\n"
 					;
-					strcpy(str,cfg.xtrn[i]->name);
+					SAFECOPY(str,cfg.xtrn[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Online Program Name"
 						,cfg.xtrn[i]->name,sizeof(cfg.xtrn[i]->name)-1,K_EDIT))
-						strcpy(cfg.xtrn[i]->name,str);
+						SAFECOPY(cfg.xtrn[i]->name,str);
 					break;
 				case 1:
 					uifc.helpbuf=
@@ -1080,11 +1080,11 @@ void xtrn_cfg(uint section)
 						"refer to it internally. This code is usually an abbreviation of the\n"
 						"online program name.\n"
 					;
-					strcpy(str,cfg.xtrn[i]->code);
+					SAFECOPY(str,cfg.xtrn[i]->code);
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
 						,str,LEN_CODE,K_UPPER|K_EDIT);
 					if(code_ok(str))
-						strcpy(cfg.xtrn[i]->code,str);
+						SAFECOPY(cfg.xtrn[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -1745,13 +1745,13 @@ void xedit_cfg()
 						"\n"
 						"This is the name or description of the external editor.\n"
 					;
-					strcpy(str,cfg.xedit[i]->name);
+					SAFECOPY(str,cfg.xedit[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"External Editor Name"
 						,cfg.xedit[i]->name,sizeof(cfg.xedit[i]->name)-1,K_EDIT))
-						strcpy(cfg.xedit[i]->name,str);
+						SAFECOPY(cfg.xedit[i]->name,str);
 					break;
 				case 1:
-					strcpy(str,cfg.xedit[i]->code);
+					SAFECOPY(str,cfg.xedit[i]->code);
 					uifc.helpbuf=
 						"`External Editor Internal Code:`\n"
 						"\n"
@@ -1762,7 +1762,7 @@ void xedit_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						strcpy(cfg.xedit[i]->code,str);
+						SAFECOPY(cfg.xedit[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -2211,7 +2211,7 @@ int natvpgm_cfg()
 				continue; 
 			}
 			memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
-			strcpy(cfg.natvpgm[i]->name,str);
+			SAFECOPY(cfg.natvpgm[i]->name,str);
 			cfg.total_natvpgms++;
 			uifc.changes=TRUE;
 			continue; 
@@ -2231,10 +2231,10 @@ int natvpgm_cfg()
 			"\n"
 			"This is the executable filename of the Native external program.\n"
 		;
-		strcpy(str,cfg.natvpgm[i]->name);
+		SAFECOPY(str,cfg.natvpgm[i]->name);
 		if(uifc.input(WIN_MID|WIN_SAV,0,5,"Native Program Name",str,12
 			,K_EDIT)>0)
-			strcpy(cfg.natvpgm[i]->name,str);
+			SAFECOPY(cfg.natvpgm[i]->name,str);
 		}
 	return(0);
 }
@@ -2384,14 +2384,14 @@ void xtrnsec_cfg()
 						"\n"
 						"This is the name of this section.\n"
 					;
-					strcpy(str,cfg.xtrnsec[i]->name);	 /* save */
+					SAFECOPY(str,cfg.xtrnsec[i]->name);	 /* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10
 						,"Program Section Name"
 						,cfg.xtrnsec[i]->name,sizeof(cfg.xtrnsec[i]->name)-1,K_EDIT))
-						strcpy(cfg.xtrnsec[i]->name,str);
+						SAFECOPY(cfg.xtrnsec[i]->name,str);
 					break;
 				case 1:
-					strcpy(str,cfg.xtrnsec[i]->code);
+					SAFECOPY(str,cfg.xtrnsec[i]->code);
 					uifc.helpbuf=
 						"`Online Program Section Internal Code:`\n"
 						"\n"
@@ -2402,7 +2402,7 @@ void xtrnsec_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						strcpy(cfg.xtrnsec[i]->code,str);
+						SAFECOPY(cfg.xtrnsec[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");

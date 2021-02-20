@@ -22,7 +22,27 @@
 #include "sbbs.h"
 #include "qwk.h"
 
-void pt_zone_kludge(fmsghdr_t hdr,int fido);
+static void pt_zone_kludge(const fmsghdr_t* hdr,int fido)
+{
+	char str[256];
+
+	sprintf(str,"\1INTL %hu:%hu/%hu %hu:%hu/%hu\r"
+		,hdr->destzone,hdr->destnet,hdr->destnode
+		,hdr->origzone,hdr->orignet,hdr->orignode);
+	write(fido,str,strlen(str));
+
+	if(hdr->destpoint) {
+		sprintf(str,"\1TOPT %hu\r"
+			,hdr->destpoint);
+		write(fido,str,strlen(str)); 
+	}
+
+	if(hdr->origpoint) {
+		sprintf(str,"\1FMPT %hu\r"
+			,hdr->origpoint);
+		write(fido,str,strlen(str)); 
+	}
+}
 
 /****************************************************************************/
 /* Returns the FidoNet address (struct) parsed from str (in ASCII text).    */
@@ -191,7 +211,7 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 	if(mode&WM_FILE) {
 		SAFECOPY(fname, subj);
 		sprintf(str,"%sfile/%04u.out", cfg.data_dir, useron.number);
-		MKDIR(str);
+		(void)MKDIR(str);
 		SAFECOPY(tmp, cfg.data_dir);
 		if(tmp[0]=='.')    /* Relative path */
 			sprintf(tmp,"%s%s", cfg.node_dir, cfg.data_dir);
@@ -273,6 +293,11 @@ bool sbbs_t::netmail(const char *into, const char *title, long mode, smb_t* resm
 		return(false); 
 	}
 	length=(long)filelength(file);
+	if(length < 0) {
+		close(file);
+		errormsg(WHERE, ERR_LEN, msgpath, length);
+		return false;
+	}
 	if((buf=(char *)calloc(1, length+1))==NULL) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
@@ -371,7 +396,11 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		return; 
 	}
 	memcpy((char *)qwkbuf,block,QWK_BLOCK_LEN);
-	fread(qwkbuf+QWK_BLOCK_LEN,n-1,QWK_BLOCK_LEN,rep);
+	if(fread(qwkbuf+QWK_BLOCK_LEN, QWK_BLOCK_LEN, n-1, rep) != (size_t)n-1) {
+		errormsg(WHERE, ERR_READ, "QWK block", n-1);
+		free(qwkbuf);
+		return;
+	}
 
 	size_t kludge_hdrlen = 0;
 	char* beg = qwkbuf + QWK_BLOCK_LEN;
@@ -846,7 +875,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	}
 	write(fido,&hdr,sizeof(hdr));
 
-	pt_zone_kludge(hdr,fido);
+	pt_zone_kludge(&hdr,fido);
 
 	if(cfg.netmail_misc&NMAIL_DIRECT) {
 		sprintf(str,"\1FLAGS DIR\r\n");
@@ -870,7 +899,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		l++;
 	}
 	l=0;
-	write(fido,&l,1);	/* Null terminator */
+	write(fido,(BYTE*)&l,sizeof(BYTE));	/* Null terminator */
 	close(fido);
 	free((char *)qwkbuf);
 	if(cfg.netmail_sem[0])		/* update semaphore file */
@@ -1006,7 +1035,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, long mode, smb_t* resm
 
 	if(mode&WM_FILE) {
 		SAFEPRINTF2(str2,"%sfile/%04u.out",cfg.data_dir,useron.number);
-		MKDIR(str2);
+		(void)MKDIR(str2);
 		SAFEPRINTF3(str2,"%sfile/%04u.out/%s",cfg.data_dir,useron.number,title);
 		if(fexistcase(str2)) {
 			strListFree(&rcpt_list);

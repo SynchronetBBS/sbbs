@@ -43,29 +43,31 @@
 
 <script id="fTelnetScript" src="<?xjs write(get_url()); ?>"></script>
 <script type="text/javascript">
-    var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
-    var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
-    var Options = new fTelnetOptions();
-    Options.BareLFtoCRLF = false;
-    Options.BitsPerSecond = 57600;
-    Options.ConnectionType = 'rlogin';
-    Options.Emulation = 'ansi-bbs';
-    Options.Enter = '\r';
-    Options.Font = 'CP437';
-    Options.ForceWss = false;
-    Options.Hostname = '<?xjs write(http_request.vhost); ?>';
-    Options.LocalEcho = false;
-    Options.Port = location.protocol == 'https:' ? wssp : wsp;
-    Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
-    Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
-    Options.ScreenColumns = 80;
-    Options.ScreenRows = 25;
-    Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
-    Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
-    var fTelnet = new fTelnetClient('fTelnetContainer', Options);
-    fTelnet.OnConnectionClose = function () {
-        window.location.reload();
-    };
+	window.addEventListener('load', (event) => {
+		var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
+		var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
+		var Options = new fTelnetOptions();
+		Options.BareLFtoCRLF = false;
+		Options.BitsPerSecond = 57600;
+		Options.ConnectionType = 'rlogin';
+		Options.Emulation = 'ansi-bbs';
+		Options.Enter = '\r';
+		Options.Font = 'CP437';
+		Options.ForceWss = false;
+		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+		Options.LocalEcho = false;
+		Options.Port = location.protocol == 'https:' ? wssp : wsp;
+		Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
+		Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
+		Options.ScreenColumns = 80;
+		Options.ScreenRows = 25;
+		Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
+		Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
+		window.fTelnet = new fTelnetClient('fTelnetContainer', Options);
+		fTelnet.OnConnectionClose = function () {
+			window.location.reload();
+		};
+	});
 
     async function launchXtrn(code) {
         await v4_get('./api/system.ssjs?call=set-xtrn-intent&code=' + code);

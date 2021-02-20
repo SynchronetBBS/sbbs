@@ -421,7 +421,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 
 					if(pp1) {	/* ASCII */
 						if(!pp2) {
-							if(!strnicmp(*pp2,"0x",2)) {
+							if(!strnicmp(*pp1,"0x",2)) {
 								l=strtol((*pp1)+2,0,16);
 								ultoa(*lp2,tmp,16); 
 							}

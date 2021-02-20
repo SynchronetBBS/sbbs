@@ -251,7 +251,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				bputs(text[ErrorLogHdr]);
 				printfile(str,0);
 				if(text[DeleteErrorLogQ][0] && !noyes(text[DeleteErrorLogQ]))
-					remove(str); 
+					(void)remove(str); 
 			}
 			else
 				bprintf(text[FileDoesNotExist],str);

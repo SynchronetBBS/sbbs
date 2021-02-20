@@ -764,7 +764,7 @@ long DLLCALL delfiles(const char *inpath, const char *spec, size_t keep)
 	for(i = 0; i < g.gl_pathc && files < g.gl_pathc - keep; i++) {
 		if(isdir(g.gl_pathv[i]))
 			continue;
-		CHMOD(g.gl_pathv[i],S_IWRITE);	/* In case it's been marked RDONLY */
+		(void)CHMOD(g.gl_pathv[i],S_IWRITE);	/* In case it's been marked RDONLY */
 		if(remove(g.gl_pathv[i])==0)
 			files++;
 		else

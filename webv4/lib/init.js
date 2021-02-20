@@ -46,8 +46,15 @@ var defaults = {
 			if (typeof v !== 'string') return new Error('Invalid files_inline_blacklist setting ' + v);
 			return v.split(',');
 		}
-	}
+	},
+	darkmode_allow: { default: true },
+	darkmode_on: { default: false },
+	ftelnet: { default: true },
+	vote_functions: { default: true },
+	xtrn_blacklist: { default: 'scfg' },
 };
+
+if (settings.darkmode_off) settings.darkmode_allow = false;
 
 function doError(e) {
 	log(LOG_ERROR, e);

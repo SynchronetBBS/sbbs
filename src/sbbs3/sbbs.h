@@ -1203,7 +1203,7 @@ extern "C" {
 		const char*	version_detail;
 		str_list_t*	interfaces;
 		uint32_t*	options;
-		uint32_t*	clients;
+		protected_uint32_t*	clients;
 	} js_server_props_t;
 
 	enum {

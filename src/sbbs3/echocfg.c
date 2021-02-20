@@ -2427,13 +2427,13 @@ int main(int argc, char **argv)
 				break;
 
 			case 8:
-	uifc.helpbuf=
-	"~ EchoLists ~\n\n"
-	"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\n"
-	"format, which are utilized in `addition` to your Area File (e.g. \n"
-	"`areas.bbs`) for advanced AreaFix (Area Management) operations.\n";
 				i=0;
 				while(1) {
+					uifc.helpbuf=
+					"~ EchoLists ~\n\n"
+					"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\n"
+					"format, which are utilized in `addition` to your Area File (e.g. \n"
+					"`areas.bbs`) for advanced AreaFix (Area Management) operations.\n";
 					for(u=0;u<cfg.listcfgs;u++)
 						snprintf(opt[u],MAX_OPLN-1,"%s",cfg.listcfg[u].listpath);
 					opt[u][0]=0;
@@ -2493,7 +2493,13 @@ int main(int argc, char **argv)
 					while(1) {
 						j=0;
 						uifc.helpbuf=
-						"Configuring an EchoList"
+						"~ Configuring an EchoList ~\n\n"
+						"The `EchoList Path/Name`, `Required Key` and `Hub Address` must be configured\n"
+						"correctly and any one of the Required Keys added to the `EchoList Keys`\n"
+						"of the `Linked Nodes` of interest.\n"
+						"\n"
+						"The other settings are only for forwarding received Area Manager\n"
+						"requests 'upstream' (to your hub) when needed.\n"
 						;
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","EchoList Path/Name"
 							,cfg.listcfg[i].listpath);
@@ -2531,6 +2537,7 @@ int main(int argc, char **argv)
 								"A linked node need only have one of the required keys to have access\n"
 								"the echolist."
 								;
+								x=0;
 								while(1) {
 									for(u=0; cfg.listcfg[i].keys!=NULL && cfg.listcfg[i].keys[u] != NULL;u++)
 										strcpy(opt[u],cfg.listcfg[i].keys[u]);
@@ -2554,6 +2561,7 @@ int main(int argc, char **argv)
 									if((x&MSK_ON)==MSK_DEL) {
 										x&=MSK_OFF;
 										strListRemove(&cfg.listcfg[i].keys,x);
+										uifc.changes = TRUE;
 										continue;
 									}
 									SAFECOPY(str,cfg.listcfg[i].keys[x]);

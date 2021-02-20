@@ -18,6 +18,7 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
+
 #include "sbbs.h"
 #include "cmdshell.h"
 #include "telnet.h"
@@ -387,7 +388,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	if(native && mode&EX_STDOUT && !(mode&EX_OFFLINE))
 		use_pipes=true;
 
- 	if(native) { // Native (32-bit) external
+ 	if(native) { // Native (not MS-DOS) external
 
 		if((env_list=strListInit())==NULL) {
 			XTRN_CLEANUP;
@@ -445,11 +446,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		GetShortPathName(cfg.data_dir,data_dir,sizeof(data_dir));
 		GetShortPathName(cfg.exec_dir,exec_dir,sizeof(exec_dir));
 
-		sprintf(path,"%sDOSXTRN.RET", cfg.node_dir);
-		remove(path);
+		SAFEPRINTF(path,"%sDOSXTRN.RET", cfg.node_dir);
+		(void)remove(path);
 
     	// Create temporary environment file
-    	sprintf(path,"%sDOSXTRN.ENV", node_dir);
+    	SAFEPRINTF(path,"%sDOSXTRN.ENV", node_dir);
         FILE* fp=fopen(path,"w");
         if(fp==NULL) {
 			XTRN_CLEANUP;
@@ -554,6 +555,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		// Create the child output pipe (override default 4K buffer size)
 		if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,sizeof(buf))) {
 			errormsg(WHERE,ERR_CREATE,"stdout pipe",0);
+			strListFreeBlock(env_block);
 			return(GetLastError());
 		}
 		startup_info.hStdError=startup_info.hStdOutput;
@@ -561,6 +563,8 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		// Create the child input pipe.
 		if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,sizeof(buf))) {
 			errormsg(WHERE,ERR_CREATE,"stdin pipe",0);
+			CloseHandle(rdoutpipe);
+			strListFreeBlock(env_block);
 			return(GetLastError());
 		}
 
@@ -830,7 +834,10 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     		sprintf(str,"%sDOSXTRN.RET", cfg.node_dir);
 			FILE* fp=fopen(str,"r");
 			if(fp!=NULL) {
-				fscanf(fp,"%d",&retval);
+				if(fscanf(fp,"%d",&retval) != 1) {
+					lprintf(LOG_ERR, "Node %d Error reading return value from %s", cfg.node_num, str);
+					retval = -1;
+				}
 				fclose(fp);
 			}
 		}
@@ -1045,7 +1052,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	char	fname[MAX_PATH+1];
 	char	fullpath[MAX_PATH+1];
 	char	fullcmdline[MAX_PATH+1];
-	char*	argv[MAX_ARGS];
+	char*	argv[MAX_ARGS + 1];
 	BYTE*	bp;
 	BYTE	buf[XTRN_IO_BUF_LEN];
     BYTE 	output_buf[XTRN_IO_BUF_LEN*2];
@@ -1097,7 +1104,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 	else
 		SAFECOPY(fullcmdline,cmdline);
 
- 	if(native) { // Native (32-bit) external
+ 	if(native) { // Native (not MS-DOS) external
 
 		// Current environment passed to child process
 		sprintf(dszlog,"%sPROTOCOL.LOG",cfg.node_dir);
@@ -1458,6 +1465,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
     		SAFEPRINTF(str,"%sdosemu.ini",cfg.exec_dir);
 			if (!fexist(str)) {
 				errormsg(WHERE,ERR_OPEN,"dosemu.ini", 0);
+				fclose(dosemubatfp);
 				return(-1);
 			}
 		}
@@ -1465,6 +1473,7 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 		/* if file found, then open and process it */
 		if ((de_launch_inifp=iniOpenFile(str, false))==NULL) {
 			errormsg(WHERE,ERR_OPEN,str, 0);
+			fclose(dosemubatfp);
 			return(-1);
 		}         
 		de_launch_ini = iniReadFile(de_launch_inifp);

@@ -49,6 +49,7 @@ var cfgtypes = {
 	'file-viewers': file_cnf.fview,
 	'file-testers': file_cnf.ftest,
 	'file-dlevents':file_cnf.dlevent,
+	'text-secs':	file_cnf.txtsec,
 	'xtrn-secs': 	xtrn_area.sec,
 	'xtrn-progs': 	xtrn_area.prog,
 	'xtrn-events': 	xtrn_area.event,
@@ -100,7 +101,7 @@ for(var i = 0; i < argc; i++) {
 	if(arg.charAt(0) != '-') {
 		if(cfgtype === undefined) {
 			if(cfgtypes[arg] === undefined)
-				usage("unsuppoted cfg-type: " + arg);
+				usage("unsupported cfg-type: " + arg);
 			cfgtype = arg;
 		 } else {
 			props.push(arg);

@@ -608,10 +608,10 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	if(js_scope!=NULL) {
 
 		if (scope != NULL) {
-			JS_GetProperty(js_cx, scope, "argv", &old_js_argv);
-			JS_AddValueRoot(js_cx, &old_js_argv);
-			JS_GetProperty(js_cx, scope, "argc", &old_js_argc);
-			JS_AddValueRoot(js_cx, &old_js_argc);
+			if(JS_GetProperty(js_cx, scope, "argv", &old_js_argv))
+				JS_AddValueRoot(js_cx, &old_js_argv);
+			if(JS_GetProperty(js_cx, scope, "argc", &old_js_argc))
+				JS_AddValueRoot(js_cx, &old_js_argc);
 		}
 
 		JSObject* argv=JS_NewArrayObject(js_cx, 0, NULL);

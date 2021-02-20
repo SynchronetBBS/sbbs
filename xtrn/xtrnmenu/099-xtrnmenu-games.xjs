@@ -1,10 +1,10 @@
-<!--HIDDEN:Games-->
+<!--Games-->
 <?xjs
 /**
  * Web Display for Custom External Program Menus
  * by Michael Long mlong  innerrealmbbs.us
  * 
- * See wiki at http://wiki.synchro.net/module:xtrnmenumod
+ * See wiki at http://wiki.synchro.net/module:xtrnmenu
  */
 
     load("ftelnethelper.js");
@@ -33,8 +33,43 @@
 
 <?xjs
     var menuobj;
-    if ((Request.get_param('type') == 'xtrnmenu') && Request.has_param('target')) {
-        menuobj = ExternalMenus.getSectionMenu(Request.get_param('target'));
+    if (Request.get_param('type')) {
+        var target = Request.get_param('target');
+        switch (Request.get_param('type')) {
+	        case 'custommenu':
+                if (target !== undefined) {
+			        menuobj = ExternalMenus.getMenu(target);
+                }
+                break;
+            case 'xtrnmenu':
+                if (target !== undefined) {
+			        menuobj = ExternalMenus.getSectionMenu(target);
+                }
+                break;
+            case 'recentall':
+                menuobj = ExternalMenus.getSpecial(Request.get_param('type'), "Most Recent - All", target);
+                break;
+            case 'recentuser':
+                menuobj = ExternalMenus.getSpecial(Request.get_param('type'), "Most Recent - Yours", target);
+                break;
+            case 'mostlaunchedall':
+                menuobj = ExternalMenus.getSpecial(Request.get_param('type'), "Most Launched - All", target);
+                break;
+            case 'mostlauncheduser':
+                menuobj = ExternalMenus.getSpecial(Request.get_param('type'), "Most Launched - Yours", target);
+                break;
+            case 'longestrunall':
+                menuobj = ExternalMenus.getSpecial(Request.get_param('type'), "Longest Run - All", target);
+                break;
+            case 'longestrunuser':
+                menuobj = ExternalMenus.getSpecial(Request.get_param('type'), "Longest Run - Yours", target);
+                break;
+            case 'favorites':                
+                menuobj = ExternalMenus.getFavorites("Favorites", target);
+                break;
+            default:
+                break;
+        }
     } else {
         if (Request.has_param('target')) {
             menuobj = ExternalMenus.getMenu(Request.get_param('target'));
@@ -57,11 +92,27 @@
             if (settings.xtrn_blacklist.indexOf(menuitem.target.toLowerCase()) > -1) {
                 return;
             }
-            menuitems.push({
-                'itemtitle': menuitem.title,
-                'itemtype': menuitem.type,
-                'itemtarget': menuitem.target
-            });
+            switch (menuitem.type) {
+                case 'custommenu':
+                case 'xtrnmenu':
+                case 'xtrnprog':
+                case 'favorites':
+                case 'recentall':
+                case 'recentuser':
+                case 'mostlaunchedall':
+                case 'mostlauncheduser':
+                case 'longestrunuser':
+                case 'longestrunall':
+                    menuitems.push({
+                        'itemtitle': menuitem.title,
+                        'itemtype': menuitem.type,
+                        'itemtarget': menuitem.target,
+                        'stats': typeof menuitem.stats !== undefined ? menuitem.stats : null
+                    });
+                    break;
+                default:
+                  break;
+            }
         });
     }
 ?>
@@ -69,29 +120,31 @@
 
 <script id="fTelnetScript" src="<?xjs write(get_url()); ?>"></script>
 <script type="text/javascript">
-    var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
-    var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
-    var Options = new fTelnetOptions();
-    Options.BareLFtoCRLF = false;
-    Options.BitsPerSecond = 57600;
-    Options.ConnectionType = 'rlogin';
-    Options.Emulation = 'ansi-bbs';
-    Options.Enter = '\r';
-    Options.Font = 'CP437';
-    Options.ForceWss = false;
-    Options.Hostname = '<?xjs write(http_request.vhost); ?>';
-    Options.LocalEcho = false;
-    Options.Port = location.protocol == 'https:' ? wssp : wsp;
-    Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
-    Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
-    Options.ScreenColumns = 80;
-    Options.ScreenRows = 25;
-    Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
-    Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
-    var fTelnet = new fTelnetClient('fTelnetContainer', Options);
-    fTelnet.OnConnectionClose = function () {
-        window.location.reload();
-    };
+	window.addEventListener('load', (event) => {
+		var wsp = <?xjs write(settings.wsp || GetWebSocketServicePort()); ?>;
+		var wssp = <?xjs write(settings.wssp || GetWebSocketServicePort(true)); ?>;
+		var Options = new fTelnetOptions();
+		Options.BareLFtoCRLF = false;
+		Options.BitsPerSecond = 57600;
+		Options.ConnectionType = 'rlogin';
+		Options.Emulation = 'ansi-bbs';
+		Options.Enter = '\r';
+		Options.Font = 'CP437';
+		Options.ForceWss = false;
+		Options.Hostname = '<?xjs write(http_request.vhost); ?>';
+		Options.LocalEcho = false;
+		Options.Port = location.protocol == 'https:' ? wssp : wsp;
+		Options.RLoginClientUsername = '<?xjs write(user.security.password); ?>';
+		Options.RLoginServerUsername = '<?xjs write(user.alias); ?>';
+		Options.ScreenColumns = 80;
+		Options.ScreenRows = 25;
+		Options.SplashScreen = Options.SplashScreen = '<?xjs write(get_splash()); ?>';
+		Options.WebSocketUrlPath = '?Port=<?xjs write(GetRLoginPort()); ?>';
+		window.fTelnet = new fTelnetClient('fTelnetContainer', Options);
+		fTelnet.OnConnectionClose = function () {
+			window.location.reload();
+		};
+	});
 
     async function launchXtrn() {
         var code = event.srcElement.id;
@@ -109,11 +162,18 @@
         sessionStorage.setItem("mainmenu", currentTitle);
     }
     var div = $('#xtrn-list');
+    
     menuitems.forEach(function (menuitem) {
         var a = document.createElement('a');
         $(a).addClass("list-group-item");
         $(a).addClass("striped");
         a.text = menuitem.itemtitle;
+        
+        if (typeof menuitem.stats !== "undefined") {
+            var badge = document.createElement('span');
+            $(badge).addClass('badge').text(menuitem.stats);
+            a.appendChild(badge);
+        }
 
         if (menuitem.itemtype == "xtrnprog") {
             a.href = "#fTelnet";

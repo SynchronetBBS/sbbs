@@ -1,9 +1,4 @@
-/* prntfile.cpp */
-// vi: tabstop=4
-
 /* Synchronet file print/display routines */
-
-/* $Id: prntfile.cpp,v 1.47 2020/05/26 03:07:05 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -18,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -217,7 +200,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	}
 	if(length > lines * PRINTFILE_MAX_LINE_LEN) {
 		length = lines * PRINTFILE_MAX_LINE_LEN; 
-		fseek(fp, -length, SEEK_END);
+		(void)fseek(fp, -length, SEEK_END);
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		fclose(fp);
@@ -285,7 +268,8 @@ bool sbbs_t::menu(const char *code, long mode, JSObject* obj)
 			}
 			if(menu_exists(code, next, path))
 				break;
-			menu_exists(code, last, path);
+			if(!menu_exists(code, last, path))
+				return false;
 		} while(0);
 	}
 

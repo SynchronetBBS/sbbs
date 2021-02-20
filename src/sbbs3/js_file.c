@@ -1305,7 +1305,7 @@ js_iniSetObject(JSContext *cx, uintN argc, jsval *arglist)
 			JS_DestroyIdArray(cx,id_array);
 			return JS_FALSE;
 		}
-		JS_GetProperty(cx,object,cp,&set_argv[2]);
+		(void)JS_GetProperty(cx,object,cp,&set_argv[2]);
 		FREE_AND_NULL(cp);
 		if(!js_iniSetValue_internal(cx,obj,3,set_argv,&list)) {
 			rval = JSVAL_FALSE;
@@ -1469,20 +1469,25 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
     if(!JS_GetArrayLength(cx, array, &count))
 		return(JS_TRUE);
 
-	if(argc>1)
+	if(argc>1) {
 		JSVALUE_TO_MSTRING(cx, argv[1], name, NULL);
-	HANDLE_PENDING(cx, name);
-	if(name==NULL) {
-		JS_ReportError(cx, "Invalid NULL name property");
-		return JS_FALSE;
+		HANDLE_PENDING(cx, name);
+		if(name==NULL) {
+			JS_ReportError(cx, "Invalid NULL name property");
+			return JS_FALSE;
+		}
 	}
-
 	if((p=(private_t*)js_GetClassPrivate(cx, obj, &js_file_class))==NULL) {
+		if(name != name_def)
+			free(name);
 		return(JS_FALSE);
 	}
 
-	if(p->fp==NULL)
+	if(p->fp==NULL) {
+		if(name != name_def)
+			free(name);
 		return(JS_TRUE);
+	}
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if((list=iniReadFile(p->fp))==NULL) {
@@ -2331,7 +2336,7 @@ static JSBool js_file_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			if(!JS_ValueToInt32(cx,*vp,&i))
 				return(JS_FALSE);
 			rc=JS_SUSPENDREQUEST(cx);
-			CHMOD(p->name,i);
+			(void)CHMOD(p->name,i);
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 		case FILE_PROP_ETX:

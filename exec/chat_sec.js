@@ -16,16 +16,23 @@ if (!options)
 	options = {};
 if (options.irc === undefined)
 	options.irc = true;
-if (options.irc_server === undefined)
-	options.irc_server = "irc.synchro.net 6667";
-if (options.irc_channel === undefined)
-	options.irc_channel = "#Synchronet";
+var irc_servers = ["irc.synchro.net 6667"];
+if (options.irc_server !== undefined)
+	irc_servers = options.irc_server.split(',');
+var irc_channels = ["#Synchronet"];
+if (options.irc_channel !== undefined)
+	irc_channels = options.irc_channel.split(',');
 if (options.irc_seclevel === undefined)
 	options.irc_seclevel = 90;
 if (options.finger === undefined)
 	options.finger = true;
 if (options.imsg === undefined)
 	options.imsg = true;
+
+for(var i in irc_servers)
+	irc_servers[i] = irc_servers[i].trim();
+for(var i in irc_channels)
+	irc_channels[i] = irc_channels[i].trim();
 
 if(user.security.restrictions & UFLAG_C) {
     write(bbs.text(R_Chat));
@@ -87,17 +94,34 @@ while(1) {
 			break;
 		case 'R':
 		{
-			var server=options.irc_server;
+			var server = irc_servers[0];
+			if(irc_servers.length > 1) {
+				for(var i = 0; i < irc_servers.length; i++)
+					console.uselect(i, "IRC Server", irc_servers[i]);
+				var i = console.uselect();
+				if(i < 0)
+					break;
+				server = irc_servers[i];
+			}
 			if(user.security.level >= options.irc_seclevel || user.security.exemptions&UFLAG_C) {
 				write("\r\n\x01n\x01y\x01hIRC Server: ");
-				server=console.getstr(options.irc_server, 40, K_EDIT|K_LINE|K_AUTODEL);
+				server = console.getstr(server, 40, K_EDIT|K_LINE|K_AUTODEL);
 				if(console.aborted || server.length < 4)
 					break;
 			}
 			if(server.indexOf(' ') < 0)
 				server += " 6667";
-			write("\r\n\x01n\x01y\x01hIRC Channel: ");
-			var channel=console.getstr(options.irc_channel, 40, K_EDIT|K_LINE|K_AUTODEL);
+			if(irc_channels.length > 1) {
+				for(var i = 0; i < irc_channels.length; i++)
+					console.uselect(i, "IRC Channel", irc_channels[i]);
+				var i = console.uselect();
+				if(i < 0)
+					break;
+				channel = irc_channels[i];
+			} else {
+				write("\r\n\x01n\x01y\x01hIRC Channel: ");
+				var channel = console.getstr(options.irc_channel, 40, K_EDIT|K_LINE|K_AUTODEL);
+			}
 			if(!console.aborted && channel.length) {
 				log("IRC to " + server + " " + channel);
 				bbs.exec("?irc -a " + server + " " + channel); // can't be load()ed because it calls exit()

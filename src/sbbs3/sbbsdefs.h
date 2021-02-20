@@ -195,7 +195,7 @@ typedef struct js_callback {
 
 									/* Bit values for prot[x].misc */
 #define PROT_DSZLOG		(1<<0)      /* Supports DSZ Log */
-#define PROT_NATIVE		(1<<1)		/* Native (32-bit) executable */
+#define PROT_NATIVE		(1<<1)		/* Native (not MS-DOS) executable */
 #define PROT_SOCKET		(1<<2)		/* Use socket I/O, not stdio on *nix */
 
 									/* Bit values in netmail_misc */
@@ -825,7 +825,7 @@ enum {							/* readmail and delmailidx which types		*/
 #define EX_OFFLINE	(1<<8)		/* Run this program offline					*/
 #define EX_BG		(1<<10)		/* Back-ground/detached process				*/
 #define EX_BIN		(1<<11)		/* Binary mode (no Unix LF to CRLF)			*/
-#define EX_NATIVE	XTRN_NATIVE		/* Native 32-bit application 			*/
+#define EX_NATIVE	XTRN_NATIVE		/* Native (not MS-DOS) application 			*/
 #define EX_CHKTIME	XTRN_CHKTIME	/* Check time left						*/
 #define EX_NOECHO	XTRN_NOECHO		/* Don't echo stdin to stdout 			*/
 #define EX_STDIO	(EX_STDIN|EX_STDOUT)

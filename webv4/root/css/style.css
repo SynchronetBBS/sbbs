@@ -18,8 +18,8 @@ a.unread {
 }
 
 span.badge.new {
-        background: #2E9AFE;
-        color: #FFFFFF;
+	background: #2E9AFE;
+	color: #FFFFFF;
 }
 
 /* A read mail message in the list view. */
@@ -53,7 +53,78 @@ span.message-header.unread {
 	background-color: #FCF8E3;
 }
 
-/*	You probably don't need to mess with rules below this line. */
+/*** Dark mode ***/
+
+/* default links, like the breadcrumbs */
+.dark a {
+	color: #75b8f1;
+}
+
+/* background of the top bar */
+.dark .navbar {
+	background-color: #222;
+}
+
+/* bbs name at top left */
+.dark .navbar-brand {
+	color: #ccc;
+}
+.dark .navbar-brand:hover {
+	color: #fff;
+}
+
+/* hover for the top nav buttons */
+.dark .navbar-default a:hover {
+	color: #8cc1ee !important;
+	color: #fff;
+	background-color: #222 !important;
+}
+
+/* the active top nav button when opened */
+.dark .navbar-default .navbar-nav>.open>a,
+.dark.navbar-default .navbar-nav>.open>a:focus,
+.dark.navbar-default .navbar-nav>.open>a:hover {
+	background-color: #333;
+	color: #EEE;
+}
+
+/* dropdown menus */
+.dark .dropdown-menu {
+	background-color: #222;
+}
+.dark .dropdown-menu li a {
+	color: #75b8f1;
+}
+
+/* background color of alternate rows in lists */
+.dark .striped:nth-of-type(even), .dark .table-striped > tbody > tr:nth-child(odd) > td, .dark  .table-striped > tbody > tr:nth-child(odd) > th {
+	background: #222;
+}
+
+/* this is the text and color for most items, including non-alternating rows */
+.dark .list-group-item {
+	background-color: #333;
+	color: #ddd;
+	border-color: #888;
+}
+
+/* A link in a list when the mouse is hovering over it (mostly applies to the Forum) */
+.dark a.list-group-item:hover, .dark  a.list-group-item:active {
+	background-color: #888;
+	color: #222;
+}
+
+.dark li.list-group-item.mail:hover {
+	background-color: #888;
+	color: #FFF;
+}
+
+/* background color for the breadcrumb box */
+.dark .breadcrumb {
+	background-color: #333;
+}
+
+/*** You probably don't need to mess with rules below this line. ***/
 
 blockquote {
 	margin: .5em;
@@ -180,3 +251,72 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 .breadcrumb li {
 	display: inline;
 }
+
+.dark {
+	background-color: #222 !important;
+	color: #eee;
+}
+
+.dark span.badge.ignored {
+	background-color: #aaa;
+}
+
+.dark .text-danger {
+	color: #ef1c18;
+}
+
+.dark .text-success {
+	color: #3eef41;
+}
+
+.dark a.btn, .dark .icon {
+	color: #000;
+	background-color: #ddd !important;
+}
+
+.dark .btn {
+	color: #000;
+	background-color: #ddd ;
+}
+
+.dark .btn-primary {
+	color: #FFF;
+	background-color: #337ab7;
+}
+
+.dark a.btn :hover, .dark .icon:hover {
+	color: #000;
+	background-color: #fff !important;
+}
+
+@media (max-width: 767px) {
+	.dark-switch {
+		padding: 10px 15px;
+	}
+}
+
+@media (min-width: 768px) {
+	.dark-switch {
+		padding: 0px;
+	}
+}
+
+.dark .modal-content {
+	background-color: #333 !important;
+	color: #ddd !important;
+}
+
+.darkswitchbox {
+	margin-block-start: 1em;
+	margin-block-end: 1em;
+	margin-inline-start: 0px;
+	margin-inline-end: 0px;
+	padding-inline-start: 40px;
+}
+
+.dark input,.dark select,.dark textarea {
+	color: #111;
+	background-color: #DDD;
+}
+
+

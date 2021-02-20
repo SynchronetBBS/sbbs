@@ -135,7 +135,7 @@ uint getsub(void)
 		opt[k][0]=0;
 		sprintf(str,"Select %s Sub-board",cfg.grp[i]->sname);
 		j=uifc.list(WIN_RHT|WIN_BOT|WIN_SAV,0,0,45,&sub_dflt,&sub_bar,str,opt);
-		if(j==-1)
+		if(j==-1 || j >= k)
 			continue;
 		sub_dflt++;
 		sub_bar++;

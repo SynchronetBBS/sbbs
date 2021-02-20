@@ -70,7 +70,7 @@ void sbbs_get_ini_fname(char* ini_file, char* ctrl_dir, char* pHostName)
 
 #if defined(_WINSOCKAPI_)	 
 	WSADATA WSAData;	 
-    WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */	 
+    (void)WSAStartup(MAKEWORD(1,1), &WSAData); /* req'd for gethostname */	 
 #endif	 
 
 #if defined(__unix__) && defined(PREFIX)
@@ -678,6 +678,8 @@ void sbbs_read_ini(
 
 		web->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
+		web->tls_error_level
+			=iniGetLogLevel(list,section, "TLSErrorLevel", web->tls_error_level);
 		web->options
 			=iniGetBitField(list,section,strOptions,web_options
 				,BBS_OPT_NO_HOST_LOOKUP | WEB_OPT_HTTP_LOGGING);
