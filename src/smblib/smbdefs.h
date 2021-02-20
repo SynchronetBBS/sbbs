@@ -364,21 +364,9 @@ enum smb_priority {			/* msghdr_t.priority */
 /* Typedefs */
 /************/
 
-#if defined(_WIN32) || defined(__BORLANDC__) 
-	#define PRAGMA_PACK
-#endif
+#pragma pack(push,1)	/* Disk image structures must be packed */
 
-#if defined(PRAGMA_PACK) || defined(__WATCOMC__)
-	#define _PACK
-#else
-	#define _PACK __attribute__ ((packed))
-#endif
-
-#if defined(PRAGMA_PACK)
-	#pragma pack(push,1)	/* Disk image structures must be packed */
-#endif
-
-typedef struct _PACK {		/* Time with time-zone */
+typedef struct {		/* Time with time-zone */
 
 	uint32_t	time;			/* Local time (unix format) */
 	int16_t		zone;			/* Time zone */
@@ -387,19 +375,19 @@ typedef struct _PACK {		/* Time with time-zone */
 
 typedef uint16_t smb_msg_attr_t;
 
-typedef struct _PACK {	/* Index record */
+typedef struct {	/* Index record */
 
 	union {
-		struct _PACK {			/* when msg.type != BALLOT */
+		struct {			/* when msg.type != BALLOT */
 			uint16_t	to; 	/* 16-bit CRC of recipient name (lower case) or user # */
 			uint16_t	from;	/* 16-bit CRC of sender name (lower case) or user # */
 			uint16_t	subj;	/* 16-bit CRC of subject (lower case, w/o RE:) */
 		};
-		struct _PACK {			/* when msg.type == BALLOT */
+		struct {			/* when msg.type == BALLOT */
 			uint16_t	votes;	/* votes value */
 			uint32_t	remsg;	/* number of message this vote is in response to */
 		};
-		struct _PACK {			/* when msg.type == FILE */
+		struct {			/* when msg.type == FILE */
 			uint32_t	size;
 			uint16_t	unused;	/* possibly store additional 16-bits of file size here */
 		};
@@ -426,7 +414,7 @@ struct hash_info {
 	struct hash_data data;
 };
 
-typedef struct _PACK {		/* File index record */
+typedef struct {		/* File index record */
 	union {
 		idxrec_t	idx;
 		struct {
@@ -471,7 +459,7 @@ enum smb_hash_source_type {
 								/* These are the hash sources stored/compared for SPAM message detection: */
 #define SMB_HASH_SOURCE_SPAM	((1<<SMB_HASH_SOURCE_BODY))
 
-typedef struct _PACK {
+typedef struct {
 	uint32_t	number;					/* Message number */
 	uint32_t	time;					/* Local time of fingerprinting */
 	uint32_t	length;					/* Length (in bytes) of source */
@@ -482,7 +470,7 @@ typedef struct _PACK {
 } hash_t;
 #define SIZEOF_SMB_HASH_T 64
 
-typedef struct _PACK {		/* Message base header (fixed portion) */
+typedef struct {		/* Message base header (fixed portion) */
 
     uchar		smbhdr_id[LEN_HEADER_ID];	/* SMB<^Z> */
     uint16_t	version;        /* version number (initially 100h for 1.00) */
@@ -490,7 +478,7 @@ typedef struct _PACK {		/* Message base header (fixed portion) */
 
 } smbhdr_t;
 
-typedef struct _PACK {		/* Message/File base status header */
+typedef struct {		/* Message/File base status header */
 
 	union {
 		uint32_t	last_msg;	/* last message number */
@@ -519,7 +507,7 @@ enum smb_msg_type {
 	,SMB_MSG_TYPE_FILE			/* A file (e.g. for download) */
 };
 
-typedef struct _PACK {		/* Message/File header */
+typedef struct {		/* Message/File header */
 
 	/* 00 */ uchar		msghdr_id[LEN_HEADER_ID];	/* SHD<^Z> */
     /* 04 */ uint16_t	type;				/* Message type (enum smb_msg_type) */
@@ -556,7 +544,7 @@ typedef struct _PACK {		/* Message/File header */
 
 #define thread_orig	thread_back	/* for backwards compatibility with older code */
 
-typedef struct _PACK {		/* Data field */
+typedef struct {		/* Data field */
 
 	uint16_t	type;			/* Type of data field */
     uint32_t	offset;         /* Offset into buffer */ 
@@ -564,14 +552,14 @@ typedef struct _PACK {		/* Data field */
 
 } dfield_t;
 
-typedef struct _PACK {		/* Header field */
+typedef struct {		/* Header field */
 
 	uint16_t	type;
 	uint16_t	length; 		/* Length of buffer */
 
 } hfield_t;
 
-typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
+typedef struct {		/* FidoNet address (zone:net/node.point) */
 
 	uint16_t	zone;
 	uint16_t	net;
@@ -580,9 +568,7 @@ typedef struct _PACK {		/* FidoNet address (zone:net/node.point) */
 
 } fidoaddr_t;
 
-#if defined(PRAGMA_PACK)
 #pragma pack(pop)		/* original packing */
-#endif
 
 typedef uint16_t smb_net_type_t;
 
