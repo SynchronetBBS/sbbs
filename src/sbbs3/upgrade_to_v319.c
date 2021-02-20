@@ -839,7 +839,7 @@ int update_uldate(scfg_t* cfg, file_t* f)
 	return(0);
 }
 
-bool upgrade_file_bases(void)
+bool upgrade_file_bases(bool hash)
 {
 	int result;
 	ulong total_files = 0;
@@ -856,7 +856,7 @@ bool upgrade_file_bases(void)
 			return false;
 		}
 		smb.status.attr = SMB_FILE_DIRECTORY;
-		if(scfg.dir[i]->misc & DIR_NOHASH)
+		if(!hash || (scfg.dir[i]->misc & DIR_NOHASH))
 			smb.status.attr |= SMB_NOHASH;
 		smb.status.max_age = scfg.dir[i]->maxage;
 		smb.status.max_msgs = scfg.dir[i]->maxfiles;
@@ -945,7 +945,8 @@ bool upgrade_file_bases(void)
 				if(f->misc&FM_EXTDESC && extfile > 0) {
 					fgetextdesc(&scfg, i, f->datoffset, extdesc, extfile);
 					truncsp(extdesc);
-					body = extdesc;
+					if(*extdesc)
+						body = extdesc;
 				}
 				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body, fpath);
 			}
@@ -998,12 +999,12 @@ int main(int argc, char** argv)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg,NULL,TRUE,error,sizeof(error))) {
+	if(!load_cfg(&scfg, NULL, TRUE, /* node: **/FALSE, error, sizeof(error))) {
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
 		return EXIT_FAILURE + __COUNTER__;
 	}
 
-	if(!upgrade_file_bases())
+	if(!upgrade_file_bases(/* hash: */true))
 		return EXIT_FAILURE + __COUNTER__;
 
 	printf("Upgrade successful.\n");
