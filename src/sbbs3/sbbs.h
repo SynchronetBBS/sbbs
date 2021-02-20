@@ -716,7 +716,9 @@ public:
 	/* con_out.cpp */
 	size_t	bstrlen(const char *str, long mode = 0);
 	int		bputs(const char *str, long mode = 0);	/* BBS puts function */
+	int		bputs(long mode, const char* str) { return bputs(str, mode); }
 	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
+	int		rputs(long mode, const char* str) { return rputs(str, mode); }
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
