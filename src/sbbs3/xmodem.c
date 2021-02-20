@@ -200,7 +200,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 				break;
 			case EOT:
 				lprintf(xm,LOG_DEBUG,"Block %u: EOT received", expected_block_num);
-				if(/*((*xm->mode)&(YMODEM|GMODE))==YMODEM &&*/ !eot) {
+				if(!((*xm->mode) & GMODE) && !eot) {
 					lprintf(xm,LOG_INFO,"NAKing first EOT");
 					eot=1;	
 					xmodem_put_nak(xm,expected_block_num); /* chuck's double EOT trick */
