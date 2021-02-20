@@ -65,6 +65,7 @@ int sbbs_t::listfiles(uint dirnum, const char *filespec, int tofile, long mode)
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
 		smb_close(&smb);
+		free(file_list);
 		return 0;
 	}
 
@@ -411,7 +412,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 		char* fdesc = f->desc;
 		SKIP_WHITESPACE(fdesc);
 		if(fdesc == NULL || *fdesc == '\0')
-			bputs(f->name);
+			bputs(P_TRUNCATE, f->name);
 		else if(search[0]) { /* high-light string in string */
 			ptr = strcasestr(fdesc, search);
 			if(ptr != NULL) {
@@ -425,7 +426,7 @@ bool sbbs_t::listfile(smbfile_t* f, uint dirnum, const char *search, const char 
 			}
 		}
 		else {
-			bputs(fdesc);
+			bputs(P_TRUNCATE, fdesc);
 		}
 		CRLF; 
 	} else {
@@ -752,6 +753,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 		, &file_count);
 	if(file_list == NULL || file_count < 1) {
 		smb_close(&smb);
+		free(file_list);
 		return 0;
 	}
 
