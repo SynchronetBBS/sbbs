@@ -33,26 +33,26 @@ void sbbs_t::fileinfo(smbfile_t* f)
 
 	current_file = f;
 	getfilepath(&cfg, f, path);
-	bprintf(text[FiLib], getusrlib(f->dir), cfg.lib[cfg.dir[f->dir]->lib]->lname);
-	bprintf(text[FiDir], getusrdir(f->dir), cfg.dir[f->dir]->lname);
-	bprintf(text[FiFilename],f->name);
+	bprintf(P_TRUNCATE, text[FiLib], getusrlib(f->dir), cfg.lib[cfg.dir[f->dir]->lib]->lname);
+	bprintf(P_TRUNCATE, text[FiDir], getusrdir(f->dir), cfg.dir[f->dir]->lname);
+	bprintf(P_TRUNCATE, text[FiFilename],f->name);
 
 	if(getfilesize(&cfg, f) >= 0)
-		bprintf(text[FiFileSize], ultoac((ulong)f->size,tmp)
+		bprintf(P_TRUNCATE, text[FiFileSize], ultoac((ulong)f->size,tmp)
 			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
-	bprintf(text[FiCredits]
+	bprintf(P_TRUNCATE, text[FiCredits]
 		,(cfg.dir[f->dir]->misc&DIR_FREE || !f->cost) ? "FREE" : ultoac((ulong)f->cost,tmp));
 	if(f->desc && f->desc[0])
-		bprintf(text[FiDescription],f->desc);
+		bprintf(P_TRUNCATE, text[FiDescription],f->desc);
 	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
 	if(p != NULL && *p != '\0')
-		bprintf(text[FiUploadedBy], p);
-	bprintf(text[FiDateUled],timestr(f->hdr.when_imported.time));
+		bprintf(P_TRUNCATE, text[FiUploadedBy], p);
+	bprintf(P_TRUNCATE, text[FiDateUled],timestr(f->hdr.when_imported.time));
 	if(getfiletime(&cfg, f) > 0)
-		bprintf(text[FiFileDate],timestr(f->time));
-	bprintf(text[FiDateDled],f->hdr.last_downloaded ? timestr(f->hdr.last_downloaded) : "Never");
-	bprintf(text[FiTimesDled],f->hdr.times_downloaded);
+		bprintf(P_TRUNCATE, text[FiFileDate],timestr(f->time));
+	bprintf(P_TRUNCATE, text[FiDateDled],f->hdr.last_downloaded ? timestr(f->hdr.last_downloaded) : "Never");
+	bprintf(P_TRUNCATE, text[FiTimesDled],f->hdr.times_downloaded);
 	ulong timetodl = gettimetodl(&cfg, f, cur_cps);
 	if(timetodl > 0)
 		bprintf(text[FiTransferTime],sectostr(timetodl,tmp));
@@ -64,7 +64,7 @@ void sbbs_t::fileinfo(smbfile_t* f)
 		else
 			bprintf(text[InvalidAlternatePathN],f->hdr.altpath); 
 	}
-	bputs(text[FileHdrDescSeparator]);
+	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(f->extdesc != NULL && *f->extdesc) {
 		putmsg((char*)f->extdesc,P_NOATCODES);
 		CRLF; 
