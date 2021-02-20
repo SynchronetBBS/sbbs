@@ -76,7 +76,7 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
     int		i;
 
 	curdirnum=dirnum;	/* for ARS */
-	sprintf(viewcmd,"%s%s",cfg.dir[dirnum]->path,fspec);
+	SAFEPRINTF2(viewcmd,"%s%s",cfg.dir[dirnum]->path,fspec);
 	if(!fexist(viewcmd)) {
 		bputs(text[FileNotFound]);
 		return; 
@@ -88,7 +88,7 @@ void sbbs_t::viewfiles(uint dirnum, char *fspec)
 	}
 	for(i=0;i<cfg.total_fviews;i++)
 		if(!stricmp(file_ext + 1, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
-			strcpy(viewcmd,cfg.fview[i]->cmd);
+			SAFECOPY(viewcmd,cfg.fview[i]->cmd);
 			break; 
 		}
 	if(i==cfg.total_fviews) {
@@ -119,7 +119,7 @@ void sbbs_t::viewfilecontents(smbfile_t* f)
 		for(i=0;i<cfg.total_fviews;i++) {
 			if(!stricmp(ext,cfg.fview[i]->ext)
 				&& chk_ar(cfg.fview[i]->ar,&useron,&client)) {
-				strcpy(cmd,cfg.fview[i]->cmd);
+				SAFECOPY(cmd,cfg.fview[i]->cmd);
 				break; 
 			} 
 		}
