@@ -91,9 +91,9 @@ function registerEventListener(scope, callback, params) {
 }
 
 function darkmodeRequested() {
-	const ls = JSON.parse(localStorage.getItem('darkSwitch'));
-	if (ls) return true;
-	if (ls === false) return false;
+	const ls = localStorage.getItem('darkSwitch');
+	if (ls === "true") return true;
+	if (ls === "false") return false;
 	if ((window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) return true;
 	if ($('#darkSwitch').prop('checked')) return true;
 	return false;
