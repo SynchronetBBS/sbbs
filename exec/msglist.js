@@ -1038,9 +1038,10 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case 'A':
 						case 'R':
-							if(mail)
+							if(mail) {
 								mail_reply(list[current], key == 'A');
-							else {
+								console.pause();
+							} else {
 								console.clear();
 								bbs.post_msg(msgbase.subnum, list[current]);
 								return true;
@@ -1063,6 +1064,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case 'M':
 							mail_reply(list[current]);
+							console.pause();
 							break;
 						case 'D':
 							console.clearline();
@@ -1233,9 +1235,10 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				break;
 			case 'A':
 			case 'R':
-				if(mail)
+				if(mail) {
 					mail_reply(list[current], key.toUpperCase() == 'A');
-				else {
+					console.pause();
+				} else {
 					console.clear();
 					bbs.post_msg(msgbase.subnum, list[current]);
 					return true; // reload msgs
@@ -1243,6 +1246,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				break;
 			case 'M':
 				mail_reply(list[current]);
+				console.pause();
 				break;
 			case 'S':
 				if(sort == undefined)
