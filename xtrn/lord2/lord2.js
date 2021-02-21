@@ -7,6 +7,8 @@
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
 load("dorkit.js");
+if (dk.user.full_name == 'Local User')
+	dk.user.full_name = 'SYSOP';
 dk.console.auto_pause = false;
 if (js.global.console !== undefined) {
 	console.ctrlkey_passthru = dk_old_ctrlkey_passthru;
@@ -502,20 +504,22 @@ var Game_Def = [
 	}
 ];
 
-var UCASE = true;
+var UCASE = false;
 var matchcase = true;
 function getfname(str)
 {
 	str = str.replace(/\\/g,'/');
-	var ec = file_getcase(js.exec_dir + str);
+	if (matchcase) {
+		var ec = file_getcase(js.exec_dir + str);
 
-	if (ec !== undefined) {
-		return ec;
+		if (ec !== undefined) {
+			return ec;
+		}
 	}
 	if (UCASE) {
 		return js.exec_dir + str.toUpperCase();
 	}
-	return str.toLowerCase();
+	return js.exec_dir + str.toLowerCase();
 }
 
 function savetime()
@@ -1699,7 +1703,7 @@ function run_ref(sec, fname)
 			status_bar();
 		},
 		'trim':function(args) {
-			var f = new File(getfname(getvar(args[0])));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			var len = getvar(args[1]);
 			var al;
 
@@ -2017,7 +2021,7 @@ function run_ref(sec, fname)
 		},
 		'readfile':function(args) {
 			var vs = getlines();
-			var f = new File(getfname(getvar(args[0])));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			var l;
 
 			if (f.open('r')) {
@@ -2571,8 +2575,8 @@ rescan:
 			file_copy(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
 		},
 		'convert_file_to_ansi':function(args) {
-			var inf = new File(getfname(getvar(args[0])));
-			var out = new File(getfname(getvar(args[1])));
+			var inf = new File(getfname(getvar(args[0]).toLowerCase()));
+			var out = new File(getfname(getvar(args[1]).toLowerCase()));
 			var l;
 
 			if (!inf.open('r'))
@@ -2588,8 +2592,8 @@ rescan:
 			out.close();
 		},
 		'convert_file_to_ascii':function(args) {
-			var inf = new File(getfname(getvar(args[0])));
-			var out = new File(getfname(getvar(args[1])));
+			var inf = new File(getfname(getvar(args[0]).toLowerCase()));
+			var out = new File(getfname(getvar(args[1]).toLowerCase()));
 			var l;
 
 			if (!inf.open('r'))
@@ -2621,7 +2625,7 @@ rescan:
 			player = op;
 		},
 		'lordrank':function(args) {
-			var f = new File(getfname(getvar(args[0])));
+			var f = new File(getfname(getvar(args[0]).toLowerCase()));
 			var rp = ranked_players(args[1]);
 
 			if (!f.open('ab'))
@@ -2735,10 +2739,13 @@ rescan:
 				// SIGH... duplicates are allowed... see Stonebridge.
 				//if (obj.section[cs] !== undefined)
 				//	throw new Error('Duplicate section name '+cs+' in '+fname);
-				obj.section[cs] = {line:n};
+				// But the *FIRST* match is the right one!
+				if (obj.section[cs] === undefined)
+					obj.section[cs] = {line:n};
 				return;
 			}
-			m = l.match(/^\s*@label\s+([^\s;]+)/i);
+			// Labels *can* have spaces in them (see extitems.ref)
+			m = l.match(/^\s*@label\s+([^;]+)/i);
 			if (m !== null) {
 				var lab = m[1].toLowerCase();
 				// SIGH... duplicates are allowed... see Stonebridge.
@@ -4718,6 +4725,17 @@ run_ref('rules', 'rules.ref');
 
 setup_time_warnings();
 
+var done = false;
+for (arg in argv) {
+	var m = argv[arg].match(/^(.*)\+(.*)$/);
+	if (m != null) {
+		run_ref(m[1], m[2]);
+		done = true;
+	}
+}
+if (done)
+	exit(0);
+
 if (player.Record === undefined) {
 	if (pfile.length >= 200) {
 		pick_deleted();
@@ -4753,6 +4771,7 @@ killfiles.push(cfile);
 cfile.close();
 
 run_ref('startgame', 'gametxt.ref');
+
 js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.lastsaved = savetime(); player.put(); pfile.file.close() }');
 players[player.Record] = update_rec;
 player.onnow = 1;
