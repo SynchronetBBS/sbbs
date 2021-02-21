@@ -55,11 +55,6 @@ span.message-header.unread {
 
 /*** Dark mode ***/
 
-/* default links, like the breadcrumbs */
-.dark a {
-	color: #75b8f1;
-}
-
 /* background of the top bar */
 .dark .navbar {
 	background-color: #222;
