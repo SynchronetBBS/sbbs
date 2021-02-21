@@ -745,6 +745,7 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 			JSVALUE_TO_MSTRING(cx, argv[fnarg], filename, NULL);
 			JS_ReportError(cx,"symbol '%s' not defined by script '%s'", property, filename);
 			free(filename);
+			free(property);
 			return(JS_FALSE);
 		}
 	}

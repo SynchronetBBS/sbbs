@@ -484,7 +484,6 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 			size++; 
 		}
 
-		free(buf);
 		if(ch!=qwk_newline) {
 			fputc(qwk_newline,qwk_fp); 		/* make sure it ends in newline */
 			size++; 
@@ -515,6 +514,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 			fputc(' ',qwk_fp); 
 		}
 	}
+	free(buf);
 
 	tt=msg->hdr.when_written.time;
 	if(localtime_r(&tt,&tm)==NULL)
@@ -557,7 +557,7 @@ long sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t* smb
 		,(mode&QM_TO_QNET) ? '*' : ' '     /* Net tag line */
 		);
 
-	fseek(qwk_fp,offset,SEEK_SET);
+	(void)fseek(qwk_fp,offset,SEEK_SET);
 	fwrite(str,QWK_BLOCK_LEN,1,qwk_fp);
 	(void)fseek(qwk_fp,size,SEEK_CUR);
 

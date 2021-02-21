@@ -1034,6 +1034,8 @@ long js_exec(const char *fname, const char* buf, char** args)
 		init_debugger(js_runtime, js_cx, dbg_puts, dbg_getline);
 	if((js_script=JS_CompileScript(js_cx, js_glob, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
 		lprintf(LOG_ERR,"!Error compiling script from %s",path);
+		if(js_buf != buf)
+			free(js_buf);
 		return(-1);
 	}
 	if((diff=xp_timer()-start) > 0)
