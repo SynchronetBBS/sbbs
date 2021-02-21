@@ -237,14 +237,14 @@ typedef struct {
 #define protected_uint32_init(i, val)	protected_int32_init((protected_int32_t*)i, val)
 #define protected_uint64_init(i, val)	protected_int64_init((protected_int64_t*)i, val)
 /* Return 0 on success, non-zero on failure (see pthread_mutex_destroy): */
-#define protected_int32_destroy(i)	pthread_mutex_destroy(&i.mutex)
+#define protected_int32_destroy(i)	pthread_mutex_destroy(&(i).mutex)
 #define protected_uint32_destroy	protected_int32_destroy	
 #define protected_int64_destroy		protected_int32_destroy	
 #define protected_uint64_destroy	protected_int32_destroy	
-#define protected_int32_value(i)		protected_int32_adjust(&i,0)
-#define protected_uint32_value(i)		protected_uint32_adjust(&i,0)
-#define protected_int64_value(i)		protected_int64_adjust(&i,0)
-#define protected_uint64_value(i)		protected_uint64_adjust(&i,0)
+#define protected_int32_value(i)		protected_int32_adjust(&(i),0)
+#define protected_uint32_value(i)		protected_uint32_adjust(&(i),0)
+#define protected_int64_value(i)		protected_int64_adjust(&(i),0)
+#define protected_uint64_value(i)		protected_uint64_adjust(&(i),0)
 
 #define protected_int32_adjust_fetch(a, b)	protected_int32_adjust(a, b)
 #define protected_uint32_adjust_fetch(a, b)	protected_uint32_adjust(a, b)
