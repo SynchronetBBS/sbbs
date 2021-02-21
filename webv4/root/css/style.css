@@ -269,26 +269,6 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 	color: #3eef41;
 }
 
-.dark a.btn, .dark .icon {
-	color: #000;
-	background-color: #ddd !important;
-}
-
-.dark .btn {
-	color: #000;
-	background-color: #ddd ;
-}
-
-.dark .btn-primary {
-	color: #FFF;
-	background-color: #337ab7;
-}
-
-.dark a.btn :hover, .dark .icon:hover {
-	color: #000;
-	background-color: #fff !important;
-}
-
 @media (max-width: 767px) {
 	.dark-switch {
 		padding: 10px 15px;
