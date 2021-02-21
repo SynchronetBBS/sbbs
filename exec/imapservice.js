@@ -733,7 +733,7 @@ function parse_command(line)
 			return(ret);
 		}
 
-		while(line.length) {
+		while(line) {
 			switch(line.charAt(0)) {
 				case '"':
 					args.push(parse_quotedstring());
