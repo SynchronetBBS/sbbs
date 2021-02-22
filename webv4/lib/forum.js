@@ -45,14 +45,12 @@ function listSubs(group) {
     });
 }
 
-function listThreads(sub, offset, count, page_offset) {
+function listThreads(sub, offset, count) {
 
     offset = parseInt(offset);
     if (isNaN(offset) || offset < 0) return false;
     count = parseInt(count);
     if (isNaN(count) || count < 1) return false;
-
-    if (page_offset) offset = offset * count;
 
     var threads = getMessageThreads(sub, settings.max_messages);
     if (offset >= threads.order.length) return false;
@@ -72,10 +70,40 @@ function listThreads(sub, offset, count, page_offset) {
 
 }
 
+function getNewestMessageInSub(sub) {
+    const mb = new MsgBase(sub.code);
+    if (!mb.open()) return;
+    var h;
+    var ret;
+    for (var m = mb.last_msg; m >= mb.first_msg; m--) {
+        h = mb.get_msg_header(m);
+        if (h === null) continue;
+        ret = {
+            from: h.from,
+            subject: h.subject,
+            when_written_time: h.when_written_time,
+        };
+        break;
+    }
+    mb.close();
+    return ret;
+}
+
+function getNewestMessagePerSub(grp) {
+    grp = parseInt(grp, 10);
+    if (isNaN(grp) || grp < 0 || !msg_area.grp_list[grp]) return [];
+    return msg_area.grp_list[grp].sub_list.reduce(function (a, c) {
+        const s = getNewestMessageInSub(c);
+        if (s !== undefined) a[c.code] = s;
+        log(LOG_DEBUG, JSON.stringify(s));
+        return a;
+    }, {});
+}
+
 function getSubUnreadCount(sub) {
     var ret = {
-        scanned : 0,
-        total : 0
+        scanned: 0,
+        total: 0
     };
     if (typeof msg_area.sub[sub] === 'undefined') return ret;
     try {
@@ -157,7 +185,7 @@ function getThreadVoteTotals(thread, mkeys) {
 }
 
 // { [thread_id]: { total, unread, votes: { up: { parent, total }, down: { parent, total }, total }, newest } }
-function getThreadStats(sub, offset, page_size) {
+function getThreadStats(sub, offset, page_size, guest) {
     const threads = getMessageThreads(sub, settings.max_messages);
     const ret = {};
     if (!offset) offset = 0;
@@ -169,7 +197,7 @@ function getThreadStats(sub, offset, page_size) {
         var mkeys = Object.keys(thread.messages);
         ret[threads.order[n]] = {
             total: mkeys.length,
-            unread: getUnreadInThread(sub, thread, mkeys),
+            unread: guest ? 0 : getUnreadInThread(sub, thread, mkeys),
             votes: getThreadVoteTotals(thread, mkeys),
             newest: {
                 from: thread.messages[mkeys[mkeys.length - 1]].from,
