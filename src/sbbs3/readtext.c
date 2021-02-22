@@ -68,7 +68,8 @@ char *readtext(long *line,FILE *stream,long dflt)
 				continue;
 			break; 
 		}
-	*(p)=0;
+	if(p != NULL)
+		*p = '\0';
 	k=strlen(buf);
 	for(i=1,j=0;i<k && j<sizeof(str)-1;j++) {
 		if(buf[i]=='\\')	{ /* escape */
