@@ -4068,8 +4068,6 @@ void sbbs_t::spymsg(const char* msg)
 #endif
 }
 
-#define MV_BUFLEN	4096
-
 /****************************************************************************/
 /* Moves or copies a file from one dir to another                           */
 /* both 'src' and 'dest' must contain full path and filename                */
@@ -4077,13 +4075,6 @@ void sbbs_t::spymsg(const char* msg)
 /****************************************************************************/
 int sbbs_t::mv(char *src, char *dest, char copy)
 {
-	char	*buf,atr=curatr;
-	int		ind,outd;
-	uint	chunk=MV_BUFLEN;
-	ulong	length,l;
-	time_t	ftime;
-	FILE *inp,*outp;
-
     if(!stricmp(src,dest))	 /* source and destination are the same! */
         return(0);
     if(!fexistcase(src)) {
@@ -4107,67 +4098,10 @@ int sbbs_t::mv(char *src, char *dest, char copy)
         return(0);
 	}
 #endif
-    attr(WHITE);
-    if((ind=nopen(src,O_RDONLY))==-1) {
-        errormsg(WHERE,ERR_OPEN,src,O_RDONLY);
-        return(-1);
+	if(!CopyFile(src, dest, /* fail if exists: */true)) {
+		errormsg(WHERE, "CopyFile", src, 0, dest);
+		return -1;
 	}
-    if((inp=fdopen(ind,"rb"))==NULL) {
-        close(ind);
-        errormsg(WHERE,ERR_FDOPEN,src,O_RDONLY);
-        return(-1);
-	}
-    setvbuf(inp,NULL,_IOFBF,32*1024);
-    if((outd=nopen(dest,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
-        fclose(inp);
-        errormsg(WHERE,ERR_OPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
-        return(-1);
-	}
-    if((outp=fdopen(outd,"wb"))==NULL) {
-        close(outd);
-        fclose(inp);
-        errormsg(WHERE,ERR_FDOPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
-        return(-1);
-	}
-    setvbuf(outp,NULL,_IOFBF,8*1024);
-	ftime=filetime(ind);
-    length=(long)filelength(ind);
-    if(length) {	/* Something to copy */
-		if((buf=(char *)malloc(MV_BUFLEN))==NULL) {
-			fclose(inp);
-			fclose(outp);
-			errormsg(WHERE,ERR_ALLOC,nulstr,MV_BUFLEN);
-			return(-1);
-		}
-		l=0L;
-		while(l<length) {
-			bprintf("%2lu%%",l ? (long)(100.0/((float)length/l)) : 0L);
-			if(l+chunk>length)
-				chunk=length-l;
-			if(fread(buf,1,chunk,inp)!=chunk) {
-				free(buf);
-				fclose(inp);
-				fclose(outp);
-				errormsg(WHERE,ERR_READ,src,chunk);
-				return(-1);
-			}
-			if(fwrite(buf,1,chunk,outp)!=chunk) {
-				free(buf);
-				fclose(inp);
-				fclose(outp);
-				errormsg(WHERE,ERR_WRITE,dest,chunk);
-				return(-1);
-			}
-			l+=chunk;
-			bputs("\b\b\b");
-		}
-		bputs("   \b\b\b");  /* erase it */
-		attr(atr);
-		free(buf);
-	}
-    fclose(inp);
-    fclose(outp);
-	setfdate(dest,ftime);	/* Would be nice if we could use futime() instead */
     if(!copy && remove(src)) {
         errormsg(WHERE,ERR_REMOVE,src,0);
         return(-1);
