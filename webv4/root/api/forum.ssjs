@@ -175,6 +175,10 @@ if (Request.has_param('call') && (http_request.method === 'GET' || http_request.
                 }
                 break;
 
+            case 'get-newest-message-per-sub':
+                if (Request.has_param('group')) reply = getNewestMessagePerSub(Request.get_param('group'));
+                break;
+
             default:
                 break;
 
