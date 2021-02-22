@@ -3583,7 +3583,7 @@ static BOOL check_request(http_session_t * session)
 			last_slash=path;
 		else
 			last_slash++;
-		strcpy(filename,last_slash);
+		SAFECOPY(filename,last_slash);
 	}
 
 	if(strnicmp(path,root_dir,strlen(root_dir))) {
@@ -4795,7 +4795,9 @@ static BOOL exec_cgi(http_session_t *session)
 		if((p=strrchr(cgipath,'/'))!=NULL)
 		{
 			*p=0;
-			chdir(cgipath);
+			if(chdir(cgipath) != 0)
+				lprintf(LOG_ERR, "%04d !ERROR %d changing directory to %s"
+					,session->socket, errno, cgipath);
 		}
 
 		/* Execute command */
@@ -5861,21 +5863,20 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 	size_t		p_sz=0, p2_sz=0;
 
 	JS_BEGINREQUEST(session->js_cx);
-	if(JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val))
+	if(JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val)) {
 		reply = JSVAL_TO_OBJECT(val);
-	if(JS_GetProperty(session->js_cx,reply,"status",&val))
-		JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
-	if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
-		headers = JSVAL_TO_OBJECT(val);
-		heads=JS_Enumerate(session->js_cx,headers);
+		if(JS_GetProperty(session->js_cx,reply,"status",&val))
+			JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
+		if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
+			headers = JSVAL_TO_OBJECT(val);
+			heads=JS_Enumerate(session->js_cx,headers);
+		}
 	}
 	if(heads != NULL) {
 		for(i=0;i<heads->length;i++)  {
 			JS_IdToValue(session->js_cx,heads->vector[i],&val);
 			JSVALUE_TO_RASTRING(session->js_cx, val, p, &p_sz, NULL);
 			if(p==NULL) {
-				if(p)
-					free(p);
 				if(p2)
 					free(p2);
 				return FALSE;
@@ -5889,7 +5890,7 @@ static BOOL ssjs_send_headers(http_session_t* session,int chunked)
 					free(p2);
 				return FALSE;
 			}
-			if (!session->req.sent_headers) {
+			if (p2 != NULL && !session->req.sent_headers) {
 				h = get_header_type(p);
 				switch(h) {
 				case HEAD_LOCATION:

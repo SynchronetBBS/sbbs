@@ -46,7 +46,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 	FILE *stream;
 
 	SAFECOPY(fpath, fname);
-	fexistcase(fpath);
+	(void)fexistcase(fpath);
 	p=getfext(fpath);
 	if(p!=NULL) {
 		if(stricmp(p,".rip")==0) {
@@ -171,7 +171,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	long	length,l;
 
 	SAFECOPY(fpath, fname);
-	fexistcase(fpath);
+	(void)fexistcase(fpath);
 	if(mode&P_NOABORT) {
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);

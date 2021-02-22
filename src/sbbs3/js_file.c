@@ -1533,7 +1533,10 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 				continue;
 			}
 			/* value */
-			JS_GetProperty(cx,object,cp,&set_argv[2]);
+			if(!JS_GetProperty(cx,object,cp,&set_argv[2])) {
+				FREE_AND_NULL(cp);
+				continue;
+			}
 			FREE_AND_NULL(cp);	/* Moved from before JS_GetProperty() call */
 			if(!js_iniSetValue_internal(cx,obj,3,set_argv,&list)) {
 				rval = JSVAL_FALSE;

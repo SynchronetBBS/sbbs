@@ -4194,12 +4194,13 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	/* number to string */
-	JS_ValueToNumber(cx,argv[0],&d);
+	if(JS_ValueToNumber(cx,argv[0],&d)) {
 
-	if((js_str = JS_NewStringCopyZ(cx, ltoaf((long)d,str)))==NULL)
-		return(JS_FALSE);
+		if((js_str = JS_NewStringCopyZ(cx, ltoaf((long)d,str)))==NULL)
+			return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	}
 	return(JS_TRUE);
 }
 

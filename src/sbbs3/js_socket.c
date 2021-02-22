@@ -554,9 +554,10 @@ void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 	if(JSVAL_IS_INT(val))
 		tv->tv_sec = JSVAL_TO_INT(val);
 	else if(JSVAL_IS_DOUBLE(val)) {
-		JS_ValueToNumber(cx,val,&jsd);
-		tv->tv_sec = (int)jsd;
-		tv->tv_usec = (int)(jsd*1000000.0)%1000000;
+		if(JS_ValueToNumber(cx,val,&jsd)) {
+			tv->tv_sec = (int)jsd;
+			tv->tv_usec = (int)(jsd*1000000.0)%1000000;
+		}
 	}
 }
 
@@ -840,7 +841,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	ret = js_socket_sendsocket(p,cp,len,TRUE);
 	if(ret >= 0) {
-		dbprintf(FALSE, p, "sent %d of %u bytes",ret,len);
+		dbprintf(FALSE, p, "sent %d of %lu bytes",ret,len);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
 	} else {
 		p->last_error=ERROR_VALUE;

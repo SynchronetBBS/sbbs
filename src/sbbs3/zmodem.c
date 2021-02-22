@@ -1527,7 +1527,7 @@ BOOL zmodem_handle_zack(zmodem_t* zm, uint32_t min, uint32_t max)
 		zm->ack_file_pos = zm->rxd_header_pos;
 		return TRUE;
 	}
-	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZACK, offset: %lu"
+	lprintf(zm, LOG_WARNING, "%lu Received INVALID ZACK, offset: %u"
 		, (ulong)zm->current_file_pos, zm->rxd_header_pos);
 	return FALSE;
 }

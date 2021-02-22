@@ -481,8 +481,8 @@ void status_thread(void *arg)
 
 	pthread_once(&init_once, init_lists);
 	startup->status(startup->cbdata, "Initializing");
-	strcpy(client.addr, startup->sock_fname);
-	strcpy(client.host, "<unix-domain>");
+	SAFECOPY(client.addr, startup->sock_fname);
+	SAFECOPY(client.host, "<unix-domain>");
 	client.protocol = "STATUS";
 	client.size = sizeof(client);
 

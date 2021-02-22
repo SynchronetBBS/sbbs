@@ -722,7 +722,7 @@ static void output_thread(void* arg)
 			dump(buf+bufbot,i);
 
 		if(i!=(int)(buftop-bufbot)) {
-			lprintf(LOG_ERR,"Short socket send (%u instead of %u)"
+			lprintf(LOG_ERR,"Short socket send (%u instead of %lu)"
 				,i ,buftop-bufbot);
 			short_sends++;
 		}
@@ -938,7 +938,7 @@ static int send_files(char** fname, uint fnames)
 		return(-1);
 	}
 	if(xm.total_files>1)
-		lprintf(LOG_INFO,"Sending %u files (%"PRId64" KB total)"
+		lprintf(LOG_INFO,"Sending %lu files (%"PRId64" KB total)"
 			,xm.total_files,xm.total_bytes/1024);
 
 	zm.files_remaining = xm.total_files;
@@ -989,11 +989,11 @@ static int send_files(char** fname, uint fnames)
 				if(zm.file_skipped)
 					lprintf(LOG_WARNING,"File Skipped");
 				else
-					lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %lu"
+					lprintf(LOG_INFO,"Successful - Time: %lu:%02lu  CPS: %u"
 						,t/60,t%60,cps);
 
 				if(xm.total_files-xm.sent_files)
-					lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %u  KBytes: %"PRId64
+					lprintf(LOG_INFO,"Remaining - Time: %lu:%02lu  Files: %lu  KBytes: %"PRId64
 						,((xm.total_bytes-xm.sent_bytes)/cps)/60
 						,((xm.total_bytes-xm.sent_bytes)/cps)%60
 						,xm.total_files-xm.sent_files

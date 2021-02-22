@@ -1106,7 +1106,8 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc<1)
 		ti=(jsdouble)time(NULL);	/* use current time */
 	else
-		JS_ValueToNumber(cx,argv[0],&ti);
+		if(!JS_ValueToNumber(cx,argv[0],&ti))
+			return JS_TRUE;
 	rc=JS_SUSPENDREQUEST(cx);
 	timestr(sys->cfg,(time32_t)ti,str);
 	JS_RESUMEREQUEST(cx, rc);
@@ -1440,8 +1441,10 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t* cfg = sys->cfg;
 
 	node_num=cfg->node_num;
-	if(argc) 
-		JS_ValueToInt32(cx,argv[0],&node_num);
+	if(argc)  {
+		if(!JS_ValueToInt32(cx,argv[0],&node_num))
+			return JS_TRUE;
+	}
 	if(node_num<1)
 		node_num=1;
 
@@ -1732,8 +1735,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	if(client!=NULL) {
 		if(client->protocol != NULL)
 			SAFECOPY(user.modem,client->protocol);
-		if(client->host != NULL)
-			SAFECOPY(user.comp,client->host);
+		SAFECOPY(user.comp,client->host);
 		if(client->addr != NULL)
 			SAFECOPY(user.ipaddr,client->addr);
 	}
