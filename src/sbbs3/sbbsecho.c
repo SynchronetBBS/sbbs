@@ -441,7 +441,7 @@ const char* iniTimeStr(time_t t)
 void fwrite_echostat_msg(FILE* fp, const echostat_msg_t* msg, const char* prefix)
 {
 	echostat_msg_t zero = {{0}};
-	if(memcmp(msg, &zero, sizeof(msg)) == 0)
+	if(memcmp(msg, &zero, sizeof(*msg)) == 0)
 		return;
 	if(msg->to[0])			fprintf(fp, "%s.to = %s\n"		, prefix, msg->to);
 	if(msg->from[0])		fprintf(fp, "%s.from = %s\n"	, prefix, msg->from);
