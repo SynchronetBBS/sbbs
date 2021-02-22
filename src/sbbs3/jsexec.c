@@ -1026,7 +1026,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 			memcpy(js_buf+js_buflen,line,len);
 			js_buflen+=len;
 		}
-		if(fp!=NULL && fp!=stdin)
+		if(fp!=stdin)
 			fclose(fp);
 	}
 	start=xp_timer();
