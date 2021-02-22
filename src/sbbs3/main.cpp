@@ -3317,7 +3317,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		SAFECOPY(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		SAFEPRINTF2(syspage_semfile, "%ssyspage.%u", cfg.ctrl_dir, node_num);
-		remove(syspage_semfile);
+		(void)remove(syspage_semfile);
 	} else {	/* event thread needs exclusive-use temp_dir */
 		if(startup->temp_dir[0])
 			SAFECOPY(cfg.temp_dir,startup->temp_dir);
@@ -4077,7 +4077,7 @@ void sbbs_t::spymsg(const char* msg)
 /****************************************************************************/
 int sbbs_t::mv(char *src, char *dest, char copy)
 {
-	char	str[MAX_PATH+1],*buf,atr=curatr;
+	char	*buf,atr=curatr;
 	int		ind,outd;
 	uint	chunk=MV_BUFLEN;
 	ulong	length,l;
@@ -4114,7 +4114,7 @@ int sbbs_t::mv(char *src, char *dest, char copy)
 	}
     if((inp=fdopen(ind,"rb"))==NULL) {
         close(ind);
-        errormsg(WHERE,ERR_FDOPEN,str,O_RDONLY);
+        errormsg(WHERE,ERR_FDOPEN,src,O_RDONLY);
         return(-1);
 	}
     setvbuf(inp,NULL,_IOFBF,32*1024);
@@ -4391,7 +4391,7 @@ void sbbs_t::reset_logon_vars(void)
 /****************************************************************************/
 void sbbs_t::catsyslog(int crash)
 {
-	char str[MAX_PATH+1];
+	char str[MAX_PATH+1] = "node.log";
 	char *buf;
 	int  i,file;
 	long length;

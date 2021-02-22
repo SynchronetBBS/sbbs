@@ -165,7 +165,7 @@ static char* monthstr(uint16_t months)
 			continue;
 		if(str[0])
 			strcat(str," ");
-		strcat(str,mon[i]);
+		SAFECAT(str,mon[i]);
 	}
 	
 	return(str);

@@ -2631,7 +2631,7 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 {
 	char		host_name[128];
 	char		*fromstr;
-	char		ip[16];
+	char		ip[16] = "ipv6-addr";
 	char		*p;
 	char		*p2;
 	char		*last;

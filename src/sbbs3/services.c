@@ -444,7 +444,9 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 			,client->socket,client->service->protocol,client->user.alias);
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
-	JS_SetProperty(cx, obj, "logged_in", &val);
+	if(!JS_SetProperty(cx, obj, "logged_in", &val))
+		llprintf(LOG_ERR, "%04d %s Error setting logged in property for %s"
+			,client->socket, client->service->protocol, client->user.alias);
 
 	if(client->user.pass[0])
 		loginSuccess(startup->login_attempt_list, &client->addr);
@@ -617,6 +619,8 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
+	if(sock < 0)
+		return JS_TRUE;
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, &addr.addr, &addr_len)==0) {
@@ -670,6 +674,8 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	SAFECOPY(client.host,client.user);
 
 	sock=js_socket(cx,argv[0]);
+	if(sock < 0)
+		return JS_TRUE;
 
 	addr_len = sizeof(addr);
 	if(getpeername(sock, &addr.addr, &addr_len)==0) {
@@ -713,6 +719,8 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	sock=js_socket(cx,argv[0]);
+	if(sock < 0)
+		return JS_TRUE;
 
 	if(sock!=INVALID_SOCKET) {
 
@@ -1325,6 +1333,14 @@ static void native_static_service_thread(void* arg)
 	}
 #else
 	socket_dup = dup(inst.socket);
+	if(socket_dup == -1) {
+		lprintf(LOG_ERR,"%04d %s !ERROR %d duplicating socket descriptor"
+			,inst.socket, inst.service->protocol, errno);
+		close_socket(inst.socket);
+		thread_down();
+		inst.service->running--;
+		return;
+	}
 #endif
 
 	/* RUN SCRIPT */
@@ -1440,6 +1456,13 @@ static void native_service_thread(void* arg)
 	}
 #else
 	socket_dup = dup(socket);
+	if(socket_dup == -1) {
+		lprintf(LOG_ERR,"%04d %s !ERROR %d duplicating socket descriptor"
+			,socket, service->protocol, errno);
+		close_socket(socket);
+		thread_down();
+		return;
+	}
 #endif
 
 	update_clients();

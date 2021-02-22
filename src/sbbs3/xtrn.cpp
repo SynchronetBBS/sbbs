@@ -1436,7 +1436,11 @@ int sbbs_t::external(const char* cmdline, long mode, const char* startup_dir)
 
 		sprintf(str, "%s/.dosemu", cfg.ctrl_dir);
 		if (!isdir(str)) {
-			mkdir(str, 0755);
+			if(mkdir(str, 0755) != 0) {
+				errormsg(WHERE,ERR_MKDIR, str, 0755);
+				fclose(dosemubatfp);
+				return -1;
+			}
 		}
 		strcat(str, "/disclaimer");
 		ftouch(str);
