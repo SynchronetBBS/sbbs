@@ -5927,7 +5927,7 @@ static void cleanup(int code)
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
 	else
-		(void)protected_uint32_destroy(active_clients);
+		protected_uint32_destroy(active_clients);
 
 #ifdef _WINSOCKAPI_	
 	if(WSAInitialized && WSACleanup()!=0) 
@@ -6415,5 +6415,5 @@ void DLLCALL mail_server(void* arg)
 
 	} while(!terminate_server);
 
-	(void)protected_uint32_destroy(thread_count);
+	protected_uint32_destroy(thread_count);
 }

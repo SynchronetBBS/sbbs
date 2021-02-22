@@ -445,7 +445,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	val = BOOLEAN_TO_JSVAL(JS_TRUE);
 	if(!JS_SetProperty(cx, obj, "logged_in", &val))
-		llprintf(LOG_ERR, "%04d %s Error setting logged in property for %s"
+		lprintf(LOG_ERR, "%04d %s Error setting logged in property for %s"
 			,client->socket, client->service->protocol, client->user.alias);
 
 	if(client->user.pass[0])

@@ -737,8 +737,8 @@ void status_thread(void *arg)
 		listRemoveNode(&status_sock, node, FALSE);
 	}
 	listUnlock(&status_sock);
-	(void)protected_uint32_destroy(thread_count);
-	(void)protected_uint32_destroy(active_clients);
+	protected_uint32_destroy(thread_count);
+	protected_uint32_destroy(active_clients);
 
 	startup->thread_up(startup->cbdata, FALSE, FALSE);
 	startup->terminated(startup->cbdata, rc);
