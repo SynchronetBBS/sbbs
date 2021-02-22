@@ -1082,7 +1082,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 				lseek(in,0L,SEEK_SET);
 			ch=0;
 			utime(inpath,NULL);
-			(void)read(in,&ch,1);
+			if(read(in,&ch,1) != 1)
+				ch = 0;
 			(void)lseek(in,-1L,SEEK_CUR);
 			if(!ch) break;					  /* char from other node */
 			activity=1;
