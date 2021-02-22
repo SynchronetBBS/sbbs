@@ -587,7 +587,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 				lprintf(LOG_DEBUG,"%04d %s RX: %s",socket, prot, buf);
 			continue;
 		}
-		if(rsp!=NULL && strnicmp(buf,rsp,strlen(rsp))) {
+		if(strnicmp(buf,rsp,strlen(rsp))) {
 			lprintf(LOG_WARNING,"%04d %s !INVALID RESPONSE: '%s' Expected: '%s'", socket, prot, buf, rsp);
 			free(mopt);
 			return(-1);

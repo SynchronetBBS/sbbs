@@ -354,10 +354,10 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 	pthread_mutex_lock(&status_mutex[svc]);
 	if(on) {
 		prot = client->protocol;
-		if (client == NULL || prot == NULL)
+		if (prot == NULL)
 			prot = "<null>";
 		user = client->user;
-		if (client == NULL || user == NULL)
+		if (user == NULL)
 			user = "<null>";
 		if(update) {
 			list_node_t*	node;
