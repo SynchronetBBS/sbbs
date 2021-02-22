@@ -4371,13 +4371,14 @@ int pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inbo
 /**************************************/
 /* Send netmail, returns 0 on success */
 /**************************************/
-int import_netmail(const char* path, fmsghdr_t hdr, FILE* fp, const char* inbound)
+int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const char* inbound)
 {
 	char info[512],str[256],tmp[256],subj[256]
 		,*fmsgbuf=NULL,*p,*tp,*sp;
 	int i,match,usernumber = 0;
 	ulong length;
 	fidoaddr_t addr;
+	fmsghdr_t hdr = *inhdr;
 
 	hdr.destzone=sys_faddr.zone;
 	hdr.destpoint=hdr.origpoint=0;
@@ -5882,7 +5883,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if(strncmp(fmsgbuf, "AREA:", 5) != 0) {					/* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
-				import_netmail("", hdr, fidomsg, inbound);
+				import_netmail("", &hdr, fidomsg, inbound);
 				(void)fseeko(fidomsg, next_msg, SEEK_SET);
 				printf("\n");
 				continue;
@@ -6654,7 +6655,7 @@ int main(int argc, char **argv)
 				lprintf(LOG_ERR,"ERROR line %d reading fido msghdr from %s",__LINE__,path);
 				continue;
 			}
-			i=import_netmail(path,hdr,fidomsg,cfg.inbound);
+			i=import_netmail(path, &hdr, fidomsg, cfg.inbound);
 			/**************************************/
 			/* Delete source netmail if specified */
 			/**************************************/
