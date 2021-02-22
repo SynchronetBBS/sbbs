@@ -1404,7 +1404,7 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 	if((count%interval) != 0)
 		return;
 	if(text == NULL) text = "";
-	float pct = ((float)count/total)*100.0F;
+	float pct = total ? ((float)count/total)*100.0F : 100.0F;
 	SAFEPRINTF2(str, "[ %-8s  %4.1f%% ]", text, pct);
 	cursor_left(backfill(str, pct, cfg.color[clr_progress_full], cfg.color[clr_progress_empty]));
 }
