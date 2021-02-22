@@ -4992,8 +4992,8 @@ static void cleanup(int code)
 	listFree(&current_logins);
 	listFree(&current_connections);
 
-	(void)protected_uint32_destroy(node_threads_running);
-	(void)protected_uint32_destroy(ssh_sessions);
+	protected_uint32_destroy(node_threads_running);
+	protected_uint32_destroy(ssh_sessions);
 
 	status("Down");
 	thread_down();
