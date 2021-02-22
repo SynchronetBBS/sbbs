@@ -3224,6 +3224,10 @@ char* getfmsg(FILE* stream, ulong* outlen)
 
 	length=0L;
 	start=ftello(stream);						/* Beginning of Message */
+	if(start < 0) {
+		lprintf(LOG_ERR, "ERROR %d line %d getting file offset", errno, __LINE__);
+		return NULL;
+	}
 	while(1) {
 		ch=fgetc(stream);						/* Look for Terminating NULL */
 		if(ch==0 || ch==EOF)					/* Found end of message */
