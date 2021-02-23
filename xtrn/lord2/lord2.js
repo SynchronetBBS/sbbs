@@ -619,6 +619,7 @@ var vars = {
 	's&sir':{type:'fn', get:function() { return player.sexmale === 1 ? 'sir' : 'ma\'am' }},
 	's&him':{type:'fn', get:function() { return player.sexmale === 1 ? 'him' : 'her' }},
 	's&his':{type:'fn', get:function() { return player.sexmale === 1 ? 'his' : 'her' }},
+	's&he':{type:'fn', get:function() { return player.sexmale === 1 ? 'he' : 'she' }},
 	'&money':{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
 	'&gold':{type:'fn', get:function() { return player.money }, set:function(money) { player.money = clamp_integer(money, 's32') } },
 	'&bank':{type:'fn', get:function() { return player.bank }, set:function(bank) { player.bank = clamp_integer(bank, 's32') } },
@@ -737,12 +738,14 @@ function setvar(name, val) {
 	}
 }
 
-function getvar(name) {
+function getvar(name, replacing) {
 	var uc = false;
 	var lc = false;
 	var ret;
 
 	if (vars[name.toLowerCase()] === undefined) {
+		if (replacing === true)
+			return name;
 		return replace_vars(name);
 	}
 	if (name.substr(0, 2) === 'S&')
@@ -800,15 +803,15 @@ function replace_vars(str)
 {
 	if (typeof str !== 'string')
 		return str;
-	str = str.replace(/([Ss]?&[A-Za-z]+)/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[Vv][0-4][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[Ss][0-1][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[Pp][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[Tt][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1); });
-	str = str.replace(/(`[nexd\\\*])/g, function(m, r1) { return getvar(r1); });
+	str = str.replace(/([Ss]?&[A-Za-z]+)/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[Vv][0-4][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[Ss][0-1][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[Pp][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[Tt][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[nexd\\\*])/g, function(m, r1) { return getvar(r1, true); });
 	return str;
 }
 
@@ -3961,6 +3964,10 @@ function vbar(choices, args)
 		lw(opt.norm);
 	}
 
+	function movetoend() {
+		dk.console.gotoxy(opt.x, opt.y + choices.length - 1);
+	}
+
 	if (opt.drawall) {
 		choices.forEach(function(c, i) {
 			draw_choice(i);
@@ -3980,8 +3987,10 @@ function vbar(choices, args)
 		}
 		ch = getkey().toUpperCase();
 		ret.ch = ch;
-		if (opt.extras.indexOf(ch) > -1)
+		if (opt.extras.indexOf(ch) > -1) {
+			movetoend();
 			return ret;
+		}
 		switch(ch) {
 			case '8':
 			case 'KEY_UP':
@@ -3992,6 +4001,7 @@ function vbar(choices, args)
 					if (opt.return_on_wrap) {
 						draw_choice(oldcur);
 						ret.wrap = true;
+						movetoend();
 						return ret;
 					}
 					ret.cur = choices.length - 1;
@@ -4006,12 +4016,14 @@ function vbar(choices, args)
 					if (opt.return_on_wrap) {
 						draw_choice(oldcur);
 						ret.wrap = true;
+						movetoend();
 						return ret;
 					}
 					ret.cur = 0;
 				}
 				break;
 			case '\r':
+				movetoend();
 				return ret;
 		}
 	}
@@ -4733,9 +4745,9 @@ var gfile = new RecordFile(getfname('game.dat'), Game_Def);
 var maildir = getfname('mail');
 
 // TODO: Actually send this font to SyncTERM too.
-if (file_exists(getfname('FONTS/LORD2.FNT'))) {
+if (file_exists(getfname('fonts/lord2.fnt'))) {
 	if (dk.system.mode === 'local')
-		conio.loadfont(getfname('FONTS/LORD2.FNT'));
+		conio.loadfont(getfname('fonts/lord2.fnt'));
 }
 
 if (!file_isdir(maildir)) {
