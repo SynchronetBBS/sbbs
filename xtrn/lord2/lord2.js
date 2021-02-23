@@ -3,6 +3,7 @@
 // TODO: More optimal horizontal lightbars
 // TODO: Multiplayer interactions
 // TODO: Save player after changes in case process crashes
+// TODO: run NOTIME in HELP.REF on idle timeout
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -33,7 +34,7 @@ var map;
 var world;
 var game;
 var killfiles = [];
-var enemy;
+var enemy = undefined;
 var saved_cursor = {x:0, y:0};
 var progname = '';
 var time_warnings = [];
@@ -1013,6 +1014,16 @@ function sclrscr()
 	curlinenum = 1;
 }
 
+function clearrows(start, end)
+{
+	var row;
+
+	for (row = start; row <= end; row++) {
+		dk.console.gotoxy(0, row);
+		dk.console.cleareol();
+	}
+}
+
 function foreground(col)
 {
 	if (col > 15) {
@@ -1683,7 +1694,7 @@ function run_ref(sec, fname)
 			setvar(args[0], str);
 		},
 		'rename':function(args) {
-			file_rename(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
+			file_rename(getfname(getvar(args[0])), getfname(getvar(args[1])));
 		},
 		'addlog':function(args) {
 			var f = new File(getfname('lognow.txt'));
@@ -1697,13 +1708,13 @@ function run_ref(sec, fname)
 			}
 		},
 		'delete':function(args) {
-			file_remove(getfname(getvar(args[0]).toLowerCase()));
+			file_remove(getfname(getvar(args[0])));
 		},
 		'statbar':function(args) {
 			status_bar();
 		},
 		'trim':function(args) {
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			var len = getvar(args[1]);
 			var al;
 
@@ -1882,7 +1893,7 @@ function run_ref(sec, fname)
 					break;
 				case 'exist':
 				case 'exists':
-					if (file_exists(getfname(args[0].toLowerCase())) === (args[2].toLowerCase() === 'true'))
+					if (file_exists(getfname(args[0])) === (args[2].toLowerCase() === 'true'))
 						handlers.do(args.slice(4));
 					else if (args[4].toLowerCase() === 'begin')
 						handlers.begin(args.slice(5));
@@ -1929,15 +1940,19 @@ function run_ref(sec, fname)
 		},
 		'run':function(args) {
 			var f = fname;
-			var s = replace_vars(args[0]);
+			var s = replace_vars(args[0]).toLowerCase();
 
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
-				f = getvar(args[2]);
+				f = getvar(args[2]).toLowerCase();
 			}
+			if (f.indexOf('.') === -1)
+				f += '.ref';
 			if (files[f] === undefined)
 				load_ref(f);
+			if (files[f] === undefined)
+				throw new Error('Unable to load REF "'+f+'"');
 			if (files[f].section[s] === undefined)
-				throw new Error('Unable to find run section '+sec+' in '+f+' at '+fname+':'+line);
+				throw new Error('Unable to find run section '+s+' in '+f+' at '+fname+':'+line);
 			fname = f;
 			line = files[f].section[s].line;
 		},
@@ -2011,7 +2026,7 @@ function run_ref(sec, fname)
 		'writefile':function(args) {
 			if (args.length < 1)
 				throw new Error('No filename for writefile at '+fname+':'+line);
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			if (!f.open('ab'))
 				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
@@ -2021,7 +2036,7 @@ function run_ref(sec, fname)
 		},
 		'readfile':function(args) {
 			var vs = getlines();
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			var l;
 
 			if (f.open('r')) {
@@ -2047,7 +2062,7 @@ function run_ref(sec, fname)
 			var lines;
 			if (args.length < 1)
 				throw new Error('No filename for displayfile at '+fname+':'+line);
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			if (!file_exists(f.name)) {
 				lln('`0File '+getvar(args[0])+' missing - please inform sysop');
 				return;
@@ -2177,11 +2192,10 @@ function run_ref(sec, fname)
 			player.put();
 		},
 		'busy':function(args) {
-			// Actually, it doesn't seem this touches UPDATE.TMP *or* TRADER.DAT
 			// TODO: Turn red for other players, and run @#busy if other player interacts
 			// this toggles battle...
-			//update_rec.battle = 1;
-			//update_rec.put();
+			player.battle = 1;
+			update_update();
 		},
 		'drawmap':function(args) {
 			draw_map();
@@ -2203,10 +2217,7 @@ function run_ref(sec, fname)
 			var sattr = dk.console.attr.value;
 
 			dk.console.attr.value = 2;
-			for (i = start; i < end; i++) {
-				dk.console.gotoxy(0, start);
-				dk.console.cleareol();
-			}
+			clearrows(start, end - 1);
 			dk.console.attr.value = sattr;
 		},
 		'loadmap':function(args) {
@@ -2272,8 +2283,8 @@ function run_ref(sec, fname)
 						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
 						break;
 				}
-				draw_map();
 			}
+			draw_map();
 		},
 		'saveglobals':function(args) {
 			world.put();
@@ -2347,6 +2358,7 @@ function run_ref(sec, fname)
 			var itm;
 			var ch;
 			var choice;
+			var box;
 
 			dk.console.gotoxy(0, 6);
 			lw('`r5`%  Item To Sell                        Amount Owned                              `r0');
@@ -2386,8 +2398,8 @@ rescan:
 								continue rescan;
 							}
 							if (player.i[itm.Record] > 1) {
-								draw_box(14, items[itm.Record].name, ['', '   `$Sell how many?               ',''])
-								dk.console.gotoxy(38, 16);
+								box = draw_box(14, items[itm.Record].name, ['', '   `$Sell how many?               ',''])
+								dk.console.gotoxy(box.x + 21, box.y + 2);
 								// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
 								lw('`r1`0');
@@ -2396,8 +2408,8 @@ rescan:
 									continue rescan;
 								}
 							}
-							draw_box(16, itm.name ['', '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?','','`r5`$Yes','`$No']);
-							dk.console.gotoxy(25,21);
+							box = draw_box(16, itm.name, ['', '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?','','`r5`$Yes','`$No']);
+							dk.console.gotoxy(box.x + 3, box.y + 4);
 							yn = true;
 							do {
 								ch = getkey().toUpperCase();
@@ -2411,14 +2423,15 @@ rescan:
 									case '6':
 									case 'KEY_RIGHT':
 										yn = !yn;
-										dk.console.gotoxy(23,20);
+										dk.console.gotoxy(box.x + 3, box.y + 4);
 										if (yn)
 											lw('`r5');
 										lw('`$Yes`r1');
-										dk.console.gotoxy(23,21);
+										dk.console.gotoxy(box.x + 3, box.y + 5);
 										if (!yn)
 											lw('`r5');
 										lw('`$No`r1');
+										dk.console.gotoxy(box.x + 3, box.y + 5 - yn);
 										break;
 								}
 							} while (ch !== '\r');
@@ -2435,12 +2448,12 @@ rescan:
 							lw('`r0');
 							continue rescan;
 					}
-					draw_map();
 				}
+				draw_map();
 			}
 		},
 		'dataload':function(args) {
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			var rec = getvar(args[1]);
 			var val;
 
@@ -2465,7 +2478,7 @@ rescan:
 			setvar(args[2], val);
 		},
 		'datasave':function(args) {
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			var rec = getvar(args[1]);
 			var val = replace_vars(getvar(args[2]));
 
@@ -2488,7 +2501,7 @@ rescan:
 			f.close();
 		},
 		'datanewday':function(args) {
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			var i;
 			var d;
 
@@ -2572,11 +2585,11 @@ rescan:
 			}
 		},
 		'copyfile':function(args) {
-			file_copy(getfname(getvar(args[0]).toLowerCase()), getfname(getvar(args[1]).toLowerCase()));
+			file_copy(getfname(getvar(args[0])), getfname(getvar(args[1])));
 		},
 		'convert_file_to_ansi':function(args) {
-			var inf = new File(getfname(getvar(args[0]).toLowerCase()));
-			var out = new File(getfname(getvar(args[1]).toLowerCase()));
+			var inf = new File(getfname(getvar(args[0])));
+			var out = new File(getfname(getvar(args[1])));
 			var l;
 
 			if (!inf.open('r'))
@@ -2592,8 +2605,8 @@ rescan:
 			out.close();
 		},
 		'convert_file_to_ascii':function(args) {
-			var inf = new File(getfname(getvar(args[0]).toLowerCase()));
-			var out = new File(getfname(getvar(args[1]).toLowerCase()));
+			var inf = new File(getfname(getvar(args[0])));
+			var out = new File(getfname(getvar(args[1])));
 			var l;
 
 			if (!inf.open('r'))
@@ -2625,7 +2638,7 @@ rescan:
 			player = op;
 		},
 		'lordrank':function(args) {
-			var f = new File(getfname(getvar(args[0]).toLowerCase()));
+			var f = new File(getfname(getvar(args[0])));
 			var rp = ranked_players(args[1]);
 
 			if (!f.open('ab'))
@@ -2767,7 +2780,6 @@ rescan:
 
 	while (1) {
 		line++;
-//log(fname+':'+line);
 		if (line >= files[fname].lines.length)
 			return;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
@@ -2970,6 +2982,7 @@ function mail_check(messenger)
 				lln(l);
 		}
 	}
+	con_check();
 	if (messenger) {
 		sln('');
 		more();
@@ -3192,7 +3205,6 @@ function update(skip) {
 
 		timeout_bar();
 		mail_check(true);
-		con_check();
 	}
 	dk.console.gotoxy(player.x - 1, player.y - 1);
 	foreground(15);
@@ -3334,6 +3346,8 @@ function move_player(xoff, yoff) {
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
+				player.battle = 0;
+				update_update();
 			}
 		}
 	});
@@ -3346,8 +3360,10 @@ function move_player(xoff, yoff) {
 		}
 	}
 	if (moved && !special && map.battleodds > 0 && map.reffile !== '' && map.refsection !== '') {
-		if (random(map.battleodds) === 0)
+		if (random(map.battleodds) === 0) {
 			run_ref(map.refsection, map.reffile);
+			// TODO: Is this where we clear battle?!?!
+		}
 	}
 }
 
@@ -3385,9 +3401,9 @@ function draw_box(y, title, lines, width)
 	if (width === undefined) {
 		width = displen(title) + 6;
 		lines.forEach(function(l) {
-			var l = displen(lines) + 6;
-			if (l > width)
-				l = width;
+			var len = displen(l) + 6;
+			if (len > width)
+				width = len;
 		});
 	}
 
@@ -3401,6 +3417,7 @@ function draw_box(y, title, lines, width)
 	});
 	dk.console.gotoxy(x, y + lines.length + 1);
 	lw(box_bottom(width));
+	return {width:width, y:y, x:x};
 }
 
 // Assume width of 36
@@ -3435,7 +3452,7 @@ function popup_menu(title, opts)
 	});
 
 	ch = vbar(otxt, {drawall:false, x:x + 3, y:y + 1, highlight:'`r5`0', norm:'`r1`0'});
-	return ch.cur;
+	return opts[ch.cur].ret;
 }
 
 function decorate_item(it)
@@ -3551,6 +3568,8 @@ newpage:
 								player.armournumber = 0;
 								break;
 							case 'S':
+								dk.console.attr.value = 2;
+								clearrows(12, 22);
 								ret = run_ref(items[inv[cur] - 1].refsection, 'items.ref');
 								if (items[inv[cur] - 1].useonce) {
 									player.i[inv[cur] - 1]--;
@@ -3795,6 +3814,7 @@ function offline_battle()
 				if (player.p[1] < 1) {
 					if (enm.lose_reffile !== '' && enm.lose_refname !== '')
 						run_ref(enm.lose_refname, enm.lose_reffile);
+					break;
 				}
 			}
 		}
@@ -4016,20 +4036,20 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 		lw('`r0`2');
 		for (i = 0; i < cnt; i++) {
 			idx = i + off;
-			if (idx >= itms.length) {
-				str = '';
-			}
-			else {
+			str = '';
+			if (idx < itms.length) {
 				it = itms[idx] - 1;
 				desc = items[it].description;
 				choices.push(((selling && (items[it].sell === false)) ? '`8  ' : '`2  ')+items[it].name);
 				if (cur === idx)
-					str = '`r1`2';
+					str += '`r1';
 				else
-					str = '`r0`2';
+					str += '`r0';
 				if (selling && items[it].sell === false)
 					str += '`8';
-				str = '  '+items[it].name;
+				else
+					str += '`2';
+				str += '  '+items[it].name;
 				if (cur === idx)
 					str += '`r0';
 				str += decorate_item(items[it]);
@@ -4253,6 +4273,16 @@ function hail()
 		op.put(false);
 		update_bar('You find `0'+op.name+'`2 sleeping like a baby. (hit a key)', true);
 		switch(hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Transfer Gold', 'Write Mail'])) {
+			case 0:
+				break;
+			case 1: // Attack
+				break;
+			case 2: // Give Item
+				break;
+			case 3: // Transfer Gold
+				break;
+			case 4: // Write Mail
+				break;
 		}
 		// TODO: Offline battles, giving things, etc...
 	}
@@ -4379,9 +4409,8 @@ function do_map()
 
 	ch = ''
 	while (ch != 'Q') {
-		if (enemy !== undefined) {
+		if (enemy !== undefined)
 			offline_battle();
-		}
 		while (!dk.console.waitkey(game.delay)) {
 			update();
 		};
@@ -4638,6 +4667,7 @@ function load_time()
 		f.truncate(0);
 		f.write(state.time+'\r\n');
 		f.close;
+		// TODO: Delete inactive players after 15 days.
 		run_ref('maint', 'maint.ref');
 	}
 }
@@ -4769,6 +4799,10 @@ if (!cfile.open('w+b'))
 	throw new Error('Unable to open '+cfile.name);
 killfiles.push(cfile);
 cfile.close();
+
+if (player.battle) {
+	run_ref('busy', 'gametxt.ref');
+}
 
 run_ref('startgame', 'gametxt.ref');
 
