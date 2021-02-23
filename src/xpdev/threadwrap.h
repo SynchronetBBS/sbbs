@@ -40,7 +40,14 @@
 #include "gen_defs.h"	/* HANDLE */
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
-#ifdef __unix__
+#if !__STDC_NO_ATOMICS__
+	#if defined __GNUC__ && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
+		#define __STDC_NO_ATOMICS__ 1
+	#elif defined __BORLANDC__
+		#define __STDC_NO_ATOMICS__ 1
+	#endif
+#endif
+#if !__STDC_NO_ATOMICS__
 #include <stdbool.h>
 #ifdef __cplusplus
 #include <atomic>
@@ -157,7 +164,7 @@ DLLEXPORT int DLLCALL pthread_once(pthread_once_t *oc, void (*init)(void));
 /* working and being thread-safe on all platforms that support pthread	*/
 /* mutexes.																*/
 /************************************************************************/
-#ifdef __unix__
+#if !__STDC_NO_ATOMICS__
 #ifdef __cplusplus
 typedef std::atomic<int32_t> protected_int32_t;
 typedef std::atomic<uint32_t> protected_uint32_t;
