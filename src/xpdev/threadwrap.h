@@ -43,7 +43,7 @@
 #if !__STDC_NO_ATOMICS__
 	#if defined __GNUC__ && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
 		#define __STDC_NO_ATOMICS__ 1
-	#elif defined __BORLANDC__
+	#elif defined __BORLANDC__ || defined _MSC_VER
 		#define __STDC_NO_ATOMICS__ 1
 	#endif
 #endif
