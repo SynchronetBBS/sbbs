@@ -4,6 +4,8 @@
 // TODO: Multiplayer interactions
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
+// TODO: When I stole the Gryphon Moon, it didn't go into my inventory!
+// TODO: Listing does not have K (Koshi Quest) or D (Dragontooth Quest)
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -864,8 +866,10 @@ function superclean(str)
 
 function lord_to_ansi(str)
 {
-	var ret = '';
+	var ret = '\x1b[0m';
 	var i;
+	var bg = '';
+	var bright = false;
 
 	for (i=0; i<str.length; i += 1) {
 		if (str[i] === '`') {
@@ -875,80 +879,162 @@ function lord_to_ansi(str)
 					ret += '\x1b[2J\x1b[H\r\n\r\n';
 					break;
 				case '1':
-					ret += '\x1b[0;34m';
+					if (bright)
+						ret += '\x1b[0;34'+bg+'m';
+					else
+						ret += '\x1b[34m';
+					bright = false;
+					break;
+				case '^':
+					// TODO: This may not do 41...
+					if (bright)
+						ret += '\x1b[0;30'+bg+'m';
+					else
+						ret += '\x1b[30m';
+					bright = false;
 					break;
 				case '*':
 					// TODO: This may not do 41...
-					ret += '\x1b[0;30;41m';
+					if (bright) {
+						ret += '\x1b[0;30;41m';
+					}
+					else
+						ret += '\x1b[30;41m';
+					bg = ';41';
+					bright = false;
 					break;
 				case '2':
-					ret += '\x1b[0;32m';
+					if (bright)
+						ret += '\x1b[0;32'+bg+'m';
+					else
+						ret += '\x1b[32m';
+					bright = false;
 					break;
 				case '3':
-					ret += '\x1b[0;36m';
+					if (bright)
+						ret += '\x1b[0;36'+bg+'m';
+					else
+						ret += '\x1b[36m';
+					bright = false;
 					break;
 				case '4':
-					ret += '\x1b[0;31m';
+					if (bright)
+						ret += '\x1b[0;31'+bg+'m';
+					else
+						ret += '\x1b[31m';
+					bright = false;
 					break;
 				case '5':
-					ret += '\x1b[0;35m';
+					if (bright)
+						ret += '\x1b[0;35'+bg+'m';
+					else
+						ret += '\x1b[35m';
+					bright = false;
 					break;
 				case '6':
-					ret += '\x1b[0;33m';
+					if (bright)
+						ret += '\x1b[0;33;'+bg+'m';
+					else
+						ret += '\x1b[33m';
+					bright = false;
 					break;
 				case '7':
-					ret += '\x1b[0;37m';
+					if (bright)
+						ret += '\x1b[0;37'+bg+'m';
+					else
+						ret += '\x1b[37m';
+					bright = false;
 					break;
 				case '8':
-					ret += '\x1b[1;30m';
+					if (bright)
+						ret += '\x1b[30m';
+					else
+						ret += '\x1b[1;30m';
+					bright = true;
 					break;
 				case '9':
-					ret += '\x1b[1;34m';
+					if (bright)
+						ret += '\x1b[34m';
+					else
+						ret += '\x1b[1;34m';
+					bright = true;
 					break;
 				case '0':
-					ret += '\x1b[1;32m';
+					if (bright)
+						ret += '\x1b[32m';
+					else
+						ret += '\x1b[1;32m';
+					bright = true;
 					break;
 				case '!':
-					ret += '\x1b[1;36m';
+					if (bright)
+						ret += '\x1b[36m';
+					else
+						ret += '\x1b[1;36m';
+					bright = true;
 					break;
 				case '@':
-					ret += '\x1b[1;31m';
+					if (bright)
+						ret += '\x1b[31m';
+					else
+						ret += '\x1b[1;31m';
+					bright = true;
 					break;
 				case '#':
-					ret += '\x1b[1;35m';
+					if (bright)
+						ret += '\x1b[35m';
+					else
+						ret += '\x1b[1;35m';
+					bright = true;
 					break;
 				case '$':
-					ret += '\x1b[1;33m';
+					if (bright)
+						ret += '\x1b[33m';
+					else
+						ret += '\x1b[1;33m';
+					bright = true;
 					break;
 				case '%':
-					ret += '\x1b[1;37m';
+					if (bright)
+						ret += '\x1b[37m';
+					else
+						ret += '\x1b[1;37m';
+					bright = true;
 					break;
 				case 'r':
 					i += 1;
 					switch(str[i]) {
-						case 0:
+						case '0':
 							ret += '\x1b[40m';
+							bg = '';
 							break;
-						case 1:
+						case '1':
 							ret += '\x1b[44m';
+							bg = ';44';
 							break;
-						case 2:
+						case '2':
 							ret += '\x1b[42m';
+							bg = ';42'
 							break;
-						case 3:
+						case '3':
 							ret += '\x1b[43m';
+							bg = ';43';
 							break;
-						case 4:
+						case '4':
 							ret += '\x1b[41m';
+							bg = ';41';
 							break;
-						case 5:
+						case '5':
 							ret += '\x1b[45m';
+							bg = ';45';
 							break;
-						case 6:
+						case '6':
 							ret += '\x1b[47m';
+							bg = ';47';
 							break;
-						case 7:
+						case '7':
 							ret += '\x1b[46m';
+							bg = ';46';
 							break;
 					}
 					break;
@@ -1214,9 +1300,13 @@ function spaces(len)
 function space_pad(str, len)
 {
 	var dl = displen(str);
+	var alen = Math.abs(len);
 
-	while (dl < len) {
-		str += ' ';
+	while (dl < alen) {
+		if (len < 0)
+			str = ' ' + str;
+		else
+			str += ' ';
 		dl++;
 	}
 
@@ -1346,14 +1436,17 @@ function status_bar()
 	update_bar(b, false);
 }
 
-function pretty_int(int)
+function pretty_int(int, rpad)
 {
 	var ret = parseInt(int, 10).toString();
 	var i;
+	if (rpad === undefined)
+		rpad = 0;
 
 	for (i = ret.length - 3; i > 0; i-= 3) {
 		ret = ret.substr(0, i)+','+ret.substr(i);
 	}
+	ret = space_pad(ret, rpad);
 	return ret;
 }
 
@@ -1491,6 +1584,7 @@ function run_ref(sec, fname)
 	var cl;
 	var args;
 	var ret;
+	var refret;
 
 	fname = fname.toLowerCase();
 	sec = sec.toLowerCase();
@@ -1664,6 +1758,7 @@ function run_ref(sec, fname)
 			player.name = getvar('`s10');
 		},
 		'moveback':function(args) {
+			// TODO: After giving the guard north of Stoneport or whatever an apple from the left, you "stick"
 			erase(player.x - 1, player.y - 1);
 			player.x = player.lastx;
 			player.y = player.lasty;
@@ -1748,12 +1843,24 @@ function run_ref(sec, fname)
 		'do':function(args) {
 			var tmp;
 
-			if (args.length < 1 || args.length > 0 && args[0].toLowerCase() === 'do') {
+			if (args.length < 1 || args.length == 1 && args[0].toLowerCase() === 'do') {
 				if (line + 1 >= files[fname].lines.length)
 					throw new Error('do at end of file');
 				// Trailing do is not fatal... see jump.ref:21 in cnw
 				//if (files[fname].lines[line + 1].search(/^\s*@begin/i) === -1)
 				//	throw new Error('trailing do at '+fname+':'+line);
+				tmp = line;
+				while (files[fname].lines[++tmp].search(/^\s*;/) != -1) {
+					if (tmp >= files[fname].lines.length)
+						break;
+				}
+				if (tmp < files[fname].lines.length) {
+					if (files[fname].lines[tmp].search(/^\s*@begin(?:\s*|;.*)$/i) != -1)
+						line = tmp;
+				}
+				return;
+			}
+			if (args.length == 2 && args[1].toLowerCase() === 'begin') {
 				line++;
 				return;
 			}
@@ -1777,6 +1884,9 @@ function run_ref(sec, fname)
 				else if (args[2].toLowerCase() === 'deleted') {
 					tmp = pfile.get(clamp_integer(getvar(args[3]), '8'));
 					setvar(args[0], tmp.deleted);
+				}
+				else if (args[2].toLowerCase() === 'random') {
+					setvar(args[0], random(clamp_integer(getvar(args[3]), 's32')) + clamp_integer(getvar(args[4]), 's32'));
 				}
 				else
 					setvar(args[0], getsvar(args[2], args[0]));
@@ -1881,18 +1991,20 @@ function run_ref(sec, fname)
 				case '=':
 				case 'equals':
 				case 'is':
-					if (args[2].toLowerCase() === 'length') {
-						tmp = remove_colour(expand_ticks(replace_vars(getvar(args[3])))).length;
+					tmp2 = 2;
+					if (args[tmp2].toLowerCase() === 'length') {
+						tmp = remove_colour(expand_ticks(replace_vars(getvar(args[++tmp2])))).length;
 					}
-					else if (args[2].toLowerCase() === 'reallength') {
-						tmp = getvar(args[3]).length;
+					else if (args[tmp2].toLowerCase() === 'reallength') {
+						tmp = getvar(args[++tmp2]).length;
 					}
 					else
-						tmp = getsvar(args[2], args[0]);
+						tmp = getsvar(args[tmp2], args[0]);
+					tmp2++;
 					if (getvar(args[0]).toString() === tmp.toString())
-						handlers.do(args.slice(4));
-					else if (args[4].toLowerCase() === 'begin')
-						handlers.begin(args.slice(5));
+						handlers.do(args.slice(tmp2 + 1));
+					else if (args[tmp2].toLowerCase() === 'begin')
+						handlers.begin(args.slice(tmp2 + 1));
 					break;
 				case 'exist':
 				case 'exists':
@@ -1930,7 +2042,7 @@ function run_ref(sec, fname)
 			}
 		},
 		'routine':function(args) {
-			var s = replace_vars(args[0]);
+			var s = replace_vars(args[0]).toLowerCase();
 			if (args.length === 1) {
 				run_ref(s, fname);
 				return;
@@ -1939,7 +2051,7 @@ function run_ref(sec, fname)
 				run_ref(s, args[2]);
 				return;
 			}
-			throw new Error('Unable to parse routine at '+fname+':'+line);
+			throw new Error('Unable to parse routine "'+s+'" at '+fname+':'+line);
 		},
 		'run':function(args) {
 			var f = fname;
@@ -2647,7 +2759,7 @@ rescan:
 			if (!f.open('ab'))
 				return;
 			rp.forEach(function(pl, i) {
-				f.write((pl.sexmale === 1 ? '`0M' : '`#F')+' `2'+space_pad(pl.name, 21)+'`2'+format('%14d', pl.p[0])+'`%'+format('%5d', pl.p[8])+'     '+space_pad((pl.dead === 1 ? '`4Dead' : '`%Alive'), 6)+(pl.p[6] >= 0 ? '`0' : '`4') + format('%7d',pl.p[6])+'`%     '+pl.p[18]+'\r\n');
+				f.write((pl.sexmale === 1 ? ' ' : '`#F')+' `2'+space_pad(pl.name, 21)+'`2'+pretty_int(pl.p[0], -14)+'`%'+pretty_int(pl.p[8], -5)+'     '+space_pad((pl.dead === 1 ? '`4Dead' : '`%Alive'), 6)+(pl.p[6] >= 0 ? '`0' : '`4') + pretty_int(pl.p[6], -7)+'`%    '+(pl.p[17] > 0 ? pretty_int(pl.p[17]) : '')+((pl.t[16] & (1<<7)) ? ' `r1`%K`r0' : '')+((pl.t[17] & (1<<7)) ? ' `r4`^D`r0' : '') + '\r\n');
 			});
 			f.close();
 		},
@@ -2784,14 +2896,16 @@ rescan:
 	while (1) {
 		line++;
 		if (line >= files[fname].lines.length)
-			return;
+			return refret;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
 		if (cl.search(/^@#/) !== -1)
-			return;
+			return refret;
 		if (cl.search(/^\s*@closescript/i) !== -1)
-			return;
-		if (cl.search(/^\s*@itemexit/i) !== -1)
-			return 'ITEMEXIT';
+			return refret;
+		if (cl.search(/^\s*@itemexit/i) !== -1) {
+			refret = 'ITEMEXIT';
+			continue;
+		}
 		if (cl.search(/^;/) !== -1)
 			continue;
 		if (cl.search(/^@/) === -1) {
@@ -2804,6 +2918,8 @@ rescan:
 		}
 		// A bare @ is used to terminate things sometimes...
 		args = cl.substr(1).split(/\s+/);
+		while (args !== undefined && args.length > 1 && args[args.length - 1] === '')
+			args.pop();
 		ret = handle(args);
 	}
 }
@@ -3428,33 +3544,22 @@ function draw_box(y, title, lines, width)
 function popup_menu(title, opts)
 {
 	var str;
-	var x = 21;
 	var y = 12 + ((9 - opts.length)/2);
 	var cur = 0;
 	var ch;
 	var sattr = dk.console.attr.value;
 	var otxt = [];
+	var oinit = [];
+	var box;
+	var first = '`r5`0';
 
-	str = box_top(38, title);
-	dk.console.gotoxy(x, y);
-	lw(str);
-	opts.forEach(function(o, i) {
-		str = box_middle(38, o.txt, i === cur);
-		dk.console.gotoxy(x, y+1+i);
-		lw(str);
-	});
-	dk.console.gotoxy(x+3, y+1+cur);
-
-	str = box_bottom(38);
-	dk.console.gotoxy(x, y+opts.length+1);
-	lw(str);
-
-	dk.console.gotoxy(x+3, y+1+cur);
 	opts.forEach(function(o) {
 		otxt.push(o.txt);
+		oinit.push(first + o.txt);
+		first = '';
 	});
-
-	ch = vbar(otxt, {drawall:false, x:x + 3, y:y + 1, highlight:'`r5`0', norm:'`r1`0'});
+	box = draw_box(y, title, oinit);
+	ch = vbar(otxt, {drawall:false, x:box.x + 3, y:box.y + 1, highlight:'`r5`0', norm:'`r1`0'});
 	return opts[ch.cur].ret;
 }
 
@@ -3587,7 +3692,11 @@ newpage:
 						}
 						if (ret === undefined || ret !== 'ITEMEXIT')
 							continue rescan;
-						// Fallthrough
+						if (ret == 'ITEMEXIT') {
+							dk.console.attr.value = attr;
+							return ret;
+						}
+						// Fallthrough(?)
 					case 'Q':
 						dk.console.attr.value = attr;
 						return;
@@ -3692,6 +3801,10 @@ function offline_battle()
 	var enm = enemy;
 	var supr;
 
+	// TODO Something weird happens when you do multiple training fights...
+	// A small map is shown you can move one square on during the battle.
+	// (Seen after swamp)
+	// Seen with swamp dago in SKY WORLD... which was DEAD when I moved at all
 	enemy = undefined;
 	switch(enm.sex) {
 		case 1:
@@ -4568,8 +4681,8 @@ function do_map()
 				run_ref('talk', 'help.ref');
 				break;
 			case 'V':
-				view_inventory();
-				run_ref('closestats', 'gametxt.ref');
+				if (view_inventory() !== 'ITEMEXIT')
+					run_ref('closestats', 'gametxt.ref');
 				break;
 			case 'W':
 				sclrscr();
