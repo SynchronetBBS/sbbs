@@ -886,7 +886,6 @@ function lord_to_ansi(str)
 					bright = false;
 					break;
 				case '^':
-					// TODO: This may not do 41...
 					if (bright)
 						ret += '\x1b[0;30'+bg+'m';
 					else
@@ -3801,10 +3800,6 @@ function offline_battle()
 	var enm = enemy;
 	var supr;
 
-	// TODO Something weird happens when you do multiple training fights...
-	// A small map is shown you can move one square on during the battle.
-	// (Seen after swamp)
-	// Seen with swamp dago in SKY WORLD... which was DEAD when I moved at all
 	enemy = undefined;
 	switch(enm.sex) {
 		case 1:
@@ -4534,8 +4529,10 @@ function do_map()
 
 	ch = ''
 	while (ch != 'Q') {
-		if (enemy !== undefined)
+		if (enemy !== undefined) {
 			offline_battle();
+			continue;
+		}
 		while (!dk.console.waitkey(game.delay)) {
 			update();
 		};
