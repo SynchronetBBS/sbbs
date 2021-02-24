@@ -1979,7 +1979,7 @@ function run_ref(sec, fname)
 					break;
 				case '!':
 				case 'not':
-					if (getvar(args[0]).toString() !== getvar(args[2]).toString())
+					if (getvar(args[0]).toString().toLowerCase() !== getvar(args[2]).toString().toLowerCase())
 						handlers.do(args.slice(4));
 					else if (args[4].toLowerCase() === 'begin')
 						handlers.begin(args.slice(5));
@@ -1997,7 +1997,7 @@ function run_ref(sec, fname)
 					else
 						tmp = getsvar(args[tmp2], args[0]);
 					tmp2++;
-					if (getvar(args[0]).toString() === tmp.toString())
+					if (getvar(args[0]).toString().toLowerCase() === tmp.toString().toLowerCase())
 						handlers.do(args.slice(tmp2 + 1));
 					else if (args[tmp2].toLowerCase() === 'begin')
 						handlers.begin(args.slice(tmp2 + 1));
