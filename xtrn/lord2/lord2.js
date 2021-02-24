@@ -4,7 +4,6 @@
 // TODO: Multiplayer interactions
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
-// TODO: When I stole the Gryphon Moon, it didn't go into my inventory!
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -2992,6 +2991,7 @@ function update_update()
 
 function update_space(x, y)
 {
+	dk.console.gotoxy(x, y);
 	x += 1;
 	y += 1;
 
