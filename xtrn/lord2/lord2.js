@@ -595,8 +595,8 @@ var vars = {
 	'`d':{type:'const', val:'\b'},
 	'`\\':{type:'const', val:'\r\n'},
 	'`*':{type:'const', val:dk.connection.node},
-	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8') } },
-	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8') } },
+	x:{type:'fn', get:function() { return player.x }, set:function(x) { erase (player.x-1, player.y-1); player.x = clamp_integer(x, 's8'); update(true); } },
+	y:{type:'fn', get:function() { return player.y }, set:function(y) { erase (player.x-1, player.y-1); player.y = clamp_integer(y, 's8'); update(true); } },
 	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
 	dead:{type:'fn', get:function() { return player.dead }, set:function(dead) { player.dead = clamp_integer(dead, 's8') } },
 	sexmale:{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
@@ -1757,7 +1757,6 @@ function run_ref(sec, fname)
 			player.name = getvar('`s10');
 		},
 		'moveback':function(args) {
-			// TODO: After giving the guard north of Stoneport or whatever an apple from the left, you "stick"
 			erase(player.x - 1, player.y - 1);
 			player.x = player.lastx;
 			player.y = player.lasty;
