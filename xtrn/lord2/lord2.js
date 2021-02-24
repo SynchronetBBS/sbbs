@@ -3723,10 +3723,11 @@ function show_player_names()
 	getkey();
 }
 
-function hbar(x, y, opts)
+function hbar(x, y, opts, cur)
 {
-	var cur = 0;
 	var ch;
+	if (cur === undefined)
+		cur = 0;
 
 	while (1) {
 		dk.console.gotoxy(x, y);
@@ -4257,6 +4258,8 @@ function hail()
 	var fn;
 	var inv;
 	var choice;
+	var done = true;	// Defaulting to true helps find bugs!
+	var cur;
 
 	function draw_menu()
 	{
@@ -4386,22 +4389,37 @@ function hail()
 	player.battle = 1;
 	update_update();
 	player.put();
+	// TODO: Handle the nofighting map flag
 	if (op.onnow === 0) {
 		op.battle = 1;
 		op.put(false);
 		update_bar('You find `0'+op.name+'`2 sleeping like a baby. (hit a key)', true);
-		switch(hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Transfer Gold', 'Write Mail'])) {
-			case 0:
-				break;
-			case 1: // Attack
-				break;
-			case 2: // Give Item
-				break;
-			case 3: // Transfer Gold
-				break;
-			case 4: // Write Mail
-				break;
+		getkey();
+		done = false;
+		cur = 0;
+		while (!done) {
+			cur = hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Transfer Gold', 'Write Mail'], cur);
+			switch(cur) {
+				case 0:
+					done = true;
+					break;
+				case 1: // Attack
+log(LOG_ERROR, "`v9: "+world.v[8]+" OP: "+op.p[8]);
+					if (world.v[8] === 0 || op.p[8] < world.v[8]) {
+						update_bar("No fighting is allowed in this area.", true);
+						break;
+					}
+					break;
+				case 2: // Give Item
+					break;
+				case 3: // Transfer Gold
+					break;
+				case 4: // Write Mail
+					break;
+			}
 		}
+		op.battle = 0;
+		op.put(false);
 		// TODO: Offline battles, giving things, etc...
 	}
 	else {
@@ -4430,85 +4448,96 @@ function hail()
 			}
 		}
 
-		switch(hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Chat'])) {
-			case 0:
-				break;
-			case 1:	// TODO: Attack...
-				break;
-			case 2: // TODO: Give Item
-				lln('`c`r0`2                                `r1`%  GIVING.  `r0');
-				sln('');
-				sln('');
-				sln('');
-				lw('`r5Item To Give                 Amount Owned');
-				dk.console.cleareol();
-				dk.console.gotoxy(0, 23);
-				lw('  `$Q `2to quit, `$ENTER `2to give item.       You have `$'+player.money+' gold.');
-				dk.console.cleareol();
-				dk.console.gotoxy(0, 7);
-				inv = get_inventory();
-				if (inv.length === 0) {
+		done = false;
+		cur = 0;
+		while (!done) {
+			cur = hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Chat'], cur);
+			switch(cur) {
+				case 0:
+					done = true;
+					break;
+				case 1:	// TODO: Attack...
+					if (world.v[8] === 0 || op.p[8] < world.v[8]) {
+						update_bar("No fighting is allowed in this area.", true);
+						break;
+					}
+					break;
+				case 2: // TODO: Give Item
+					lln('`c`r0`2                                `r1`%  GIVING.  `r0');
+					sln('');
+					sln('');
+					sln('');
+					lw('`r5Item To Give                 Amount Owned');
+					dk.console.cleareol();
+					dk.console.gotoxy(0, 23);
+					lw('  `$Q `2to quit, `$ENTER `2to give item.       You have `$'+player.money+' gold.');
+					dk.console.cleareol();
 					dk.console.gotoxy(0, 7);
-					lw('`r0  `2You have nothing to give, loser.  (press `%Q `2to continue)');
-					do {
-						ch = getkey().toUpperCase();
-					} while (ch !== 'Q');
-				}
-				else {
-					// TODO: I'm not sure this is how it actually looks...
-					choice = items_menu(inv, 0, false, false, '', 7, 22);
-					if (items[inv[choice.cur] - 1].questitem) {
-						// This is presumably in a popup box too.
-						draw_box(12, '', ['','  `$You don\'t think it would be wise to give that away.`2  ','']);
-						getkey();
+					inv = get_inventory();
+					if (inv.length === 0) {
+						dk.console.gotoxy(0, 7);
+						lw('`r0  `2You have nothing to give, loser.  (press `%Q `2to continue)');
+						do {
+							ch = getkey().toUpperCase();
+						} while (ch !== 'Q');
 					}
 					else {
-						draw_box(12, items[inv[choice.cur] - 1].name, ['','  `$Give how many?`2        ','']);
-						// Confirmation box line 14, same title...
-						// '  `$Give 1 of `em to <name>`$?
-						//
-						//  Yes
-						// No
-						// Then stays in hail menu.
-						dk.console.gotoxy(46, 14);
-						ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true}));
-						if ((!isNaN(ch)) && ch > 0 && ch <= player.i[inv[choice.cur] - 1]) {
-							player.i[inv[choice.cur] - 1] -= ch;
-							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'))
-							if (!f.open('ab'))
-								throw new Error('Unable to open '+f.name);
-							f.write('ADDITEM|'+inv[choice.cur]+'|'+ch+'\r\n');
-							f.close();
-
-							// TODO: And a mail message or something?
+						// TODO: I'm not sure this is how it actually looks...
+						choice = items_menu(inv, 0, false, false, '', 7, 22);
+						if (items[inv[choice.cur] - 1].questitem) {
+							// This is presumably in a popup box too.
+							draw_box(12, '', ['','  `$You don\'t think it would be wise to give that away.`2  ','']);
+							getkey();
 						}
+						else {
+							draw_box(12, items[inv[choice.cur] - 1].name, ['','  `$Give how many?`2        ','']);
+							// Confirmation box line 14, same title...
+							// '  `$Give 1 of `em to <name>`$?
+							//
+							//  Yes
+							// No
+							// Then stays in hail menu.
+							dk.console.gotoxy(46, 14);
+							ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true}));
+							if ((!isNaN(ch)) && ch > 0 && ch <= player.i[inv[choice.cur] - 1]) {
+								player.i[inv[choice.cur] - 1] -= ch;
+								f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'))
+								if (!f.open('ab'))
+									throw new Error('Unable to open '+f.name);
+								f.write('ADDITEM|'+inv[choice.cur]+'|'+ch+'\r\n');
+								f.close();
+
+								// TODO: And a mail message or something?
+							}
+						}
+						draw_map();
+						update();
+						dk.console.gotoxy(0, 21);
 					}
+					break;
+				case 3:
+					fn = file_getcase(maildir+'chat'+(player.Record + 1)+'.tmp');
+					if (fn !== undefined)
+						file_remove(fn);
+					fn = file_getcase(maildir+'chat'+(op.Record + 1)+'.tmp');
+					if (fn !== undefined)
+						file_remove(fn);
+					f = new File(getfname(maildir + 'inf'+(op.Record + 1)+'.tmp'));
+					if (!f.open('ab'))
+						throw new Error('Unable to open '+f.name);
+
+					f.write('CHAT\r\n');
+					f.close();
+					chat(op);
 					draw_map();
-					update();
-					dk.console.gotoxy(0, 21);
-				}
-				break;
-			case 3:
-				fn = file_getcase(maildir+'chat'+(player.Record + 1)+'.tmp');
-				if (fn !== undefined)
-					file_remove(fn);
-				fn = file_getcase(maildir+'chat'+(op.Record + 1)+'.tmp');
-				if (fn !== undefined)
-					file_remove(fn);
-				f = new File(getfname(maildir + 'inf'+(op.Record + 1)+'.tmp'));
-				if (!f.open('ab'))
-					throw new Error('Unable to open '+f.name);
-				
-				f.write('CHAT\r\n');
-				f.close();
-				chat(op);
-				draw_map();
-				break;
+					break;
+			}
 		}
 	}
 	player.battle = 0;
 	update_update();
 	player.put();
+	erase_menu();
 	update();
 
 	redraw_bar(true);
