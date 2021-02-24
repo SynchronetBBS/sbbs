@@ -5,7 +5,6 @@
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
 // TODO: When I stole the Gryphon Moon, it didn't go into my inventory!
-// TODO: Listing does not have K (Koshi Quest) or D (Dragontooth Quest)
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
