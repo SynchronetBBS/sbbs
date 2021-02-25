@@ -1128,7 +1128,7 @@ static void receive_thread(void* arg)
 			smb_hfield_str(&f, SMB_FILENAME, getfname(xfer.filename));
 			smb_hfield_str(&f, SENDER, xfer.user->alias);
 
-			filedat=findfile(&scfg, xfer.dir, f.name);
+			filedat=findfile(&scfg, xfer.dir, f.name, NULL);
 			if(scfg.dir[f.dir]->misc&DIR_AONLY)  /* Forced anonymous */
 				f.hdr.attr |= MSG_ANONYMOUS;
 			off_t cdt = flength(xfer.filename);
@@ -4448,7 +4448,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				SAFEPRINTF2(fname,"%s%s",scfg.dir[dir]->path,p);
-				filedat=findfile(&scfg, dir, p);
+				filedat=findfile(&scfg, dir, p, NULL);
 				if(!filedat) {
 					sockprintf(sock,sess,"550 File not found: %s",p);
 					lprintf(LOG_WARNING,"%04d <%s> file (%s%s) not in database for %.4s command"

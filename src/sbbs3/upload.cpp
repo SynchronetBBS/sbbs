@@ -35,7 +35,7 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 	FILE*	stream;
 
 	curdirnum=f->dir;
-	if(findfile(&cfg, f->dir, f->name)) {
+	if(findfile(&cfg, f->dir, f->name, NULL)) {
 		errormsg(WHERE, ERR_CHK, f->name, f->dir);
 		return false;
 	}
@@ -295,7 +295,7 @@ bool sbbs_t::upload(uint dirnum)
 		if(!dir_op(dirnum)) return(false); 
 	}
 	bputs(text[SearchingForDupes]);
-	if(findfile(&cfg,dirnum,f.name)) {
+	if(findfile(&cfg, dirnum, f.name, NULL)) {
 		bputs(text[SearchedForDupes]);
 		bprintf(text[FileAlreadyOnline],fname);
 		return(false); 	 /* File is already in database */
@@ -308,7 +308,7 @@ bool sbbs_t::upload(uint dirnum)
 			if(usrdir[i][j]==dirnum)
 				continue;	/* we already checked this dir */
 			if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
-				&& findfile(&cfg,usrdir[i][j],f.name)) {
+				&& findfile(&cfg, usrdir[i][j], f.name, NULL)) {
 				bputs(text[SearchedForDupes]);
 				bprintf(text[FileAlreadyOnline],fname);
 				if(!dir_op(dirnum))

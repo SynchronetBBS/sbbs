@@ -851,7 +851,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 							break;
 						if(strcmp(str,f->name) != 0) { /* rename */
 							if(stricmp(str,f->name)
-								&& findfile(&cfg,f->dir,path))
+								&& findfile(&cfg, f->dir, path, NULL))
 								bprintf(text[FileAlreadyThere],path);
 							else {
 								SAFEPRINTF2(path,"%s%s",dirpath,f->name);
@@ -954,7 +954,7 @@ int sbbs_t::listfileinfo(uint dirnum, const char *filespec, long mode)
 					if(dir_op(dirnum) || useron.exempt&FLAG('R')) {
 						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
 						if(i!=dirnum && i!=INVALID_DIR
-							&& !findfile(&cfg,i,f->name)) {
+							&& !findfile(&cfg, i, f->name, NULL)) {
 							sprintf(str,text[AddToOfflineDirQ]
 								,f->name,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {

@@ -31,7 +31,7 @@
 
  /****************************************************************************/
 /****************************************************************************/
-bool findfile(scfg_t* cfg, uint dirnum, const char *filename)
+bool findfile(scfg_t* cfg, uint dirnum, const char *filename, smbfile_t* file)
 {
 	smb_t smb;
 
@@ -41,7 +41,7 @@ bool findfile(scfg_t* cfg, uint dirnum, const char *filename)
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return false;
 
-	int result = smb_findfile(&smb, filename, /* file: */NULL);
+	int result = smb_findfile(&smb, filename, file);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }

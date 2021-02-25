@@ -334,11 +334,11 @@ void sbbs_t::extract(uint dirnum)
 		bputs(text[UnextractableFile]);
 		return; 
 	}
-	if(!intmp && !findfile(&cfg,dirnum,f.name)) {    /* not temp dir */
+	if(!intmp && !findfile(&cfg, dirnum, f.name, NULL)) {    /* not temp dir */
 		bputs(text[SearchingAllDirs]);
 		for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
 			if(i==dirnum) continue;
-			if(findfile(&cfg,usrdir[curlib][i],f.name))
+			if(findfile(&cfg, usrdir[curlib][i], f.name, NULL))
 				break; 
 		}
 		if(i==usrdirs[curlib]) { /* not found in cur lib */
@@ -346,7 +346,7 @@ void sbbs_t::extract(uint dirnum)
 			for(i=j=0;i<usrlibs;i++) {
 				if(i==curlib) continue;
 				for(j=0;j<usrdirs[i] && !msgabort();j++)
-					if(findfile(&cfg,usrdir[i][j],f.name))
+					if(findfile(&cfg, usrdir[i][j], f.name, NULL))
 						break;
 				if(j<usrdirs[i])
 					break; 

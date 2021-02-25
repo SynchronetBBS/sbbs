@@ -162,7 +162,7 @@ bool sbbs_t::removefile(smb_t* smb, smbfile_t* f)
 /****************************************************************************/
 bool sbbs_t::movefile(smb_t* smb, smbfile_t* f, int newdir)
 {
-	if(findfile(&cfg, newdir, f->name)) {
+	if(findfile(&cfg, newdir, f->name, NULL)) {
 		bprintf(text[FileAlreadyThere], f->name);
 		return false; 
 	}

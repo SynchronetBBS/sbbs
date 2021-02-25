@@ -514,7 +514,7 @@ void sbbs_t::batch_upload()
 		for(x=0;x<usrlibs;x++) {
 			for(y=0;y<usrdirs[x];y++)
 				if(cfg.dir[usrdir[x][y]]->misc&DIR_DUPES
-					&& findfile(&cfg,usrdir[x][y], dirent->d_name))
+					&& findfile(&cfg,usrdir[x][y], dirent->d_name, NULL))
 					break;
 			if(y<usrdirs[x])
 				break; 
