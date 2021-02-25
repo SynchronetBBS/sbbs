@@ -1,7 +1,7 @@
 'use strict';
 
 // TODO: More optimal horizontal lightbars
-// TODO: Multiplayer interactions
+// TODO: Multiplayer online battles
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
 
@@ -2203,7 +2203,7 @@ function run_ref(sec, fname)
 				}
 				f.close();
 			}
-			// TODO: Documentation says it won't change variables if file too short...
+			// Documentation says it won't change variables if file too short...
 			// By felicity.ref ends up displaying junk...
 			//while (vs.length) {
 			//	setvar(vs.shift(), '');
@@ -2340,14 +2340,14 @@ function run_ref(sec, fname)
 			}
 		},
 		'offmap':function(args) {
-			// TODO: Disappear to other players... this toggles busy because
+			// Disappear to other players... this toggles busy because
 			// it looks like that's what it does...
 			player.busy = 1;
 			update_update();
 			player.put();
 		},
 		'busy':function(args) {
-			// TODO: Turn red for other players, and run @#busy if other player interacts
+			// Turn red for other players, and run @#busy if other player interacts
 			// this toggles battle...
 			player.battle = 1;
 			update_update();
@@ -3061,7 +3061,7 @@ function mail_check(messenger)
 		lw('`r0`c');
 	}
 
-	// TODO: Not sure what happens on windows of someone else has the file open...
+	// TODO: Not sure what happens on windows if someone else has the file open...
 	// We likely need a file mutex here.
 	file_rename(fn, f.name);
 	if (!f.open('r'))
@@ -3255,7 +3255,6 @@ function con_check()
 				player.put();
 				break;
 			case 'UPDATE':
-				// TODO: No idea...
 				update();
 				break;
 			case 'ADDGOLD':
@@ -4605,6 +4604,7 @@ function hail()
 					clearrows(21,23);
 					dk.console.gotoxy(1, 22);
 					lw('`r0`2Give `0'+op.name+'`2 how much of your `$$'+player.money+'`2? : ');
+					// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 					ch = dk.console.getstr({edit:player.money.toString(), integer:true, input_box:true, attr:new Attribute(31), len:11});
 					ch = parseInt(ch, 10);
 					clearrows(22);
@@ -4650,7 +4650,6 @@ function hail()
 		players[op.Record].put();
 		op.battle = 0;
 		op.put(false);
-		// TODO: giving things, etc...
 	}
 	else {
 		op.unLock();
@@ -4694,7 +4693,7 @@ function hail()
 						}
 					}
 					break;
-				case 2: // TODO: Give Item
+				case 2:
 					give_item(true);
 					break;
 				case 3:
