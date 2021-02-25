@@ -38,7 +38,7 @@ var enemy = undefined;
 var saved_cursor = {x:0, y:0};
 var progname = '';
 var time_warnings = [];
-var file_pos = {};
+var file_pos = {con:0};
 
 var items = [];
 var other_players = {};
@@ -519,6 +519,10 @@ function getfname(str)
 	}
 	if (UCASE) {
 		return js.exec_dir + str.toUpperCase();
+	}
+	if (str.indexOf(maildir) === 0) {
+		str = str.toLowerCase().replace(/([\\\/])([^\/\\]+)$/, function(m, p1, p2) { return p1 + p2.toUpperCase(); });
+		return js.exec_dir + str;
 	}
 	return js.exec_dir + str.toLowerCase();
 }
@@ -1103,7 +1107,10 @@ function sclrscr()
 function clearrows(start, end)
 {
 	var row;
+	if (end === undefined)
+		end = start;
 
+	dk.console.attr.value = 2;
 	for (row = start; row <= end; row++) {
 		dk.console.gotoxy(0, row);
 		dk.console.cleareol();
@@ -1574,6 +1581,40 @@ function chooseplayer()
 	return undefined;
 }
 
+function yes_no(y, title, question) {
+	var ch;
+	var ret;
+	var box = draw_box(y, title, ['', question, '', '`r5`$Yes','`$No']);
+
+	dk.console.gotoxy(box.x + 3, box.y + 4);
+	ret = true;
+	do {
+		ch = getkey().toUpperCase();
+		switch (ch) {
+			case '8':
+			case 'KEY_UP':
+			case '4':
+			case 'KEY_LEFT':
+			case '2':
+			case 'KEY_DOWN':
+			case '6':
+			case 'KEY_RIGHT':
+				ret = !ret;
+				dk.console.gotoxy(box.x + 3, box.y + 4);
+				if (ret)
+					lw('`r5');
+				lw('`$Yes`r1');
+				dk.console.gotoxy(box.x + 3, box.y + 5);
+				if (!ret)
+					lw('`r5');
+				lw('`$No`r1');
+				dk.console.gotoxy(box.x + 3, box.y + 5 - (ret ? 1 : 0));
+				break;
+		}
+	} while (ch !== '\r');
+	return ret;
+}
+
 function run_ref(sec, fname)
 {
 	var line;
@@ -1635,6 +1676,7 @@ function run_ref(sec, fname)
 				if (player.deleted === 1)
 					// TODO: Do we tell the player or something?
 					return;
+				update_players();
 				if (players[to-1].onnow) {
 					f = new File(getfname(maildir+'talk'+to+'.tmp'));
 					if (f.open('ab')) {
@@ -2004,10 +2046,12 @@ function run_ref(sec, fname)
 					break;
 				case 'exist':
 				case 'exists':
-					if (file_exists(getfname(args[0])) === (args[2].toLowerCase() === 'true'))
+					if (file_exists(getfname(args[0])) === (args[2].toLowerCase() === 'true')) {
 						handlers.do(args.slice(4));
-					else if (args[4].toLowerCase() === 'begin')
+					}
+					else if (args[4].toLowerCase() === 'begin') {
 						handlers.begin(args.slice(5));
+					}
 					break;
 				case 'inside':
 					if (getvar(args[2]).toLowerCase().indexOf(getvar(args[0]).toLowerCase()) !== -1)
@@ -2327,7 +2371,6 @@ function run_ref(sec, fname)
 			var i;
 			var sattr = dk.console.attr.value;
 
-			dk.console.attr.value = 2;
 			clearrows(start, end - 1);
 			dk.console.attr.value = sattr;
 		},
@@ -2509,7 +2552,7 @@ rescan:
 								continue rescan;
 							}
 							if (player.i[itm.Record] > 1) {
-								box = draw_box(14, items[itm.Record].name, ['', '   `$Sell how many?               ',''])
+								box = draw_box(14, items[itm.Record].name, ['', '`$Sell how many?            ',''])
 								dk.console.gotoxy(box.x + 21, box.y + 2);
 								// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
@@ -2519,33 +2562,7 @@ rescan:
 									continue rescan;
 								}
 							}
-							box = draw_box(16, itm.name, ['', '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?','','`r5`$Yes','`$No']);
-							dk.console.gotoxy(box.x + 3, box.y + 4);
-							yn = true;
-							do {
-								ch = getkey().toUpperCase();
-								switch (ch) {
-									case '8':
-									case 'KEY_UP':
-									case '4':
-									case 'KEY_LEFT':
-									case '2':
-									case 'KEY_DOWN':
-									case '6':
-									case 'KEY_RIGHT':
-										yn = !yn;
-										dk.console.gotoxy(box.x + 3, box.y + 4);
-										if (yn)
-											lw('`r5');
-										lw('`$Yes`r1');
-										dk.console.gotoxy(box.x + 3, box.y + 5);
-										if (!yn)
-											lw('`r5');
-										lw('`$No`r1');
-										dk.console.gotoxy(box.x + 3, box.y + 5 - yn);
-										break;
-								}
-							} while (ch !== '\r');
+							yn = yes_no(16, itm.name, '`$Sell '+amt+' of \'em for '+(amt * price)+' gold?');
 							if (yn) {
 								player.i[itm.Record] -= amt;
 								if (player.i[itm.Record] <= 0) {
@@ -3031,8 +3048,10 @@ function mail_check(messenger)
 	var ch;
 	var reply = [];
 
-	if (!file_exists(fn))
+	if (!file_exists(fn)) {
+		con_check();
 		return;
+	}
 
 	if (messenger) {
 		update_bar('`2A messenger stops you with the following news. (press `0R`2 to read it)', true);
@@ -3099,9 +3118,8 @@ function mail_check(messenger)
 		}
 	}
 	con_check();
+	more();
 	if (messenger) {
-		sln('');
-		more();
 		draw_map();
 		update();
 	}
@@ -3214,8 +3232,6 @@ function con_check()
 {
 	var al;
 
-	if (file_pos.con === undefined)
-		file_pos.con = 0;
 	if (!cfile.open('r'))
 		throw new Error('Unable to open '+cfile.name);
 	cfile.position = file_pos.con;
@@ -3252,6 +3268,37 @@ function con_check()
 	});
 }
 
+function update_players()
+{
+	var i;
+	var op;
+	var u;
+
+	for (i = 0; i < ufile.length; i++) {
+		if (i === player.Record)
+			continue;
+		if (i >= players.length) {
+			op = pfile.get(i);
+			if (op === null)
+				break;
+			players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle, deleted:op.deleted});
+		}
+		u = ufile.get(i);
+		if (u === null) {
+			u = ufile.new();
+			u.x = players[i].x;
+			u.y = players[i].y;
+			u.map = players[i].map;
+			u.onnow = players[i].onnow;
+			u.busy = players[i].busy;
+			u.battle = players[i].battle;
+			u.deleted = players[i].deleted;
+			u.put();
+		}
+		players[i] = u;
+	}
+}
+
 var next_update = -1;
 function update(skip) {
 	var i;
@@ -3264,21 +3311,7 @@ function update(skip) {
 	if ((!skip) || now > next_update) {
 		next_update = now + game.delay;
 		// First, update player data
-		for (i = 0; i < ufile.length; i++) {
-			if (i === player.Record)
-				continue;
-			if (i >= players.length) {
-				op = pfile.get(i);
-				if (op === null)
-					break;
-				players.push({x:op.x, y:op.y, map:op.map, onnow:op.onnow, busy:op.busy, battle:op.battle, deleted:op.deleted});
-			}
-			if (players[i].deleted)
-				continue;
-			u = ufile.get(i);
-			if (u.map !== 0 && u.x !== 0 && u.y !== 0)
-				players[i] = u;
-		}
+		update_players();
 
 		// First, erase any moved players and update other_players
 		done = new Array(80*20);
@@ -3607,7 +3640,7 @@ newpage:
 				cur = choice.cur;
 				switch(choice.ch) {
 					case 'D':
-						draw_box(12, items[inv[cur] - 1].name, ['','   `$Drop how many?               ','']);
+						draw_box(12, items[inv[cur] - 1].name, ['','`$Drop how many?             ','']);
 						dk.console.gotoxy(38, 14);
 						// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 						ch = dk.console.getstr({edit:player.i[inv[cur] - 1].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
@@ -3673,7 +3706,6 @@ newpage:
 								player.armournumber = 0;
 								break;
 							case 'S':
-								dk.console.attr.value = 2;
 								clearrows(12, 22);
 								ret = run_ref(items[inv[cur] - 1].refsection, 'items.ref');
 								if (items[inv[cur] - 1].useonce) {
@@ -3729,6 +3761,7 @@ function hbar(x, y, opts, cur)
 	if (cur === undefined)
 		cur = 0;
 
+	lw('`r0`2');
 	while (1) {
 		dk.console.gotoxy(x, y);
 		opts.forEach(function(o, i) {
@@ -3784,7 +3817,7 @@ function enemy_hp(enm)
 	lw(space_pad('`r1`0`e\'s `2hitpoints: '+disp_hp(enm.hp, enm.maxhp), 44));
 }
 
-function offline_battle()
+function offline_battle(no_super, skip_see)
 {
 	var ch;
 	var dmg;
@@ -3798,6 +3831,11 @@ function offline_battle()
 	var atk;
 	var enm = enemy;
 	var supr;
+	if (no_super === undefined)
+		no_super = false;
+	if (skip_see === undefined)
+		skip_see = false;
+	var ret;
 
 	enemy = undefined;
 	switch(enm.sex) {
@@ -3820,9 +3858,18 @@ function offline_battle()
 	your_hp();
 	enemy_hp(enm);
 	dk.console.gotoxy(2,21);
-	lw('`r0`2'+enm.see);
+	if (skip_see)
+		lw('`r0`2');
+	else
+		lw('`r0`2'+enm.see);
 	while(1) {
-		ch = hbar(2, 23, ['Attack', 'Run For it']);
+		if (skip_see) {
+			ch = 0;
+			skip_see = 0;
+		}
+		else {
+			ch = hbar(2, 23, ['Attack', 'Run For it']);
+		}
 		dk.console.gotoxy(2,21);
 		dk.console.cleareol();
 		if (ch === 1) {
@@ -3834,11 +3881,15 @@ function offline_battle()
 			else {
 				if (enm.run_reffile !== '' && enm.run_refname !== '')
 					run_ref(enm.run_refname, enm.run_reffile);
+				ret = 'RAN';
 				break;
 			}
 		}
 		else {
-			supr = (random(10) === 0);
+			if (no_super)
+				supr = false;
+			else
+				supr = (random(10) === 0);
 			dmg = hstr + random(hstr) + 1 - enm.defence;
 			if (supr)
 				dmg *= 2;
@@ -3892,6 +3943,7 @@ function offline_battle()
 			getkey();
 			if (enm.win_reffile !== '' && enm.win_refname !== '')
 				run_ref(enm.win_refname, enm.win_reffile);
+			ret = 'WON';
 			break;
 		}
 		else {
@@ -3924,6 +3976,7 @@ function offline_battle()
 				if (player.p[1] < 1) {
 					if (enm.lose_reffile !== '' && enm.lose_refname !== '')
 						run_ref(enm.lose_refname, enm.lose_reffile);
+					ret = 'LOST';
 					break;
 				}
 			}
@@ -3937,6 +3990,7 @@ function offline_battle()
 	dk.console.gotoxy(0, 23);
 	dk.console.cleareol();
 	redraw_bar(true);
+	return ret;
 }
 
 function mail_to(pl, quotes)
@@ -4256,10 +4310,88 @@ function hail()
 	var ch;
 	var f;
 	var fn;
-	var inv;
 	var choice;
 	var done = true;	// Defaulting to true helps find bugs!
 	var cur;
+
+	function give_item(online) {
+		var inv;
+		var ch;
+		var f;
+		var cur = 0;
+
+		lln('`c`r0`2                                `r1`%  GIVING.  `r0');
+		sln('');
+		sln('');
+		sln('');
+		lw('`r5Item To Give                 Amount Owned');
+		dk.console.cleareol();
+		dk.console.gotoxy(0, 23);
+		lw('  `$Q `2to quit, `$ENTER `2to give item.       You have `$'+player.money+' gold.');
+		dk.console.cleareol();
+		dk.console.gotoxy(0, 7);
+		inv = get_inventory();
+		if (inv.length === 0) {
+			dk.console.gotoxy(0, 7);
+			lw('`r0  `2You have nothing to give, loser.  (press `%Q `2to continue)');
+			do {
+				ch = getkey().toUpperCase();
+			} while (ch !== 'Q');
+		}
+		else {
+			while (1) {
+				choice = items_menu(inv, cur, false, false, '', 7, 22);
+				cur = choice.cur;
+				if (choice.ch === 'Q')
+					break;
+				if (items[inv[choice.cur] - 1].questitem) {
+					// This is presumably in a popup box too.
+					draw_box(12, '', ['','`$You don\'t think it would be wise to give that away.`2','']);
+					getkey();
+				}
+				else {
+					if (player.i[inv[choice.cur] - 1] === 1)
+						ch = 1;
+					else if (player.i[inv[choice.cur] - 1] < 1) {
+						draw_box(12, items[inv[choice.cur] - 1].name, ['', "You don't have any more of those!", '']);
+						getkey();
+						ch = 0;
+					}
+					else {
+						draw_box(12, items[inv[choice.cur] - 1].name, ['','`$Give how many?`2        ','']);
+						dk.console.gotoxy(44, 14);
+						ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true}));
+					}
+					if ((!isNaN(ch)) && ch > 0 && ch <= player.i[inv[choice.cur] - 1]) {
+						if (yes_no(14, items[inv[choice.cur] - 1].name, '`$Give '+pretty_int(ch)+' of \'em to '+op.name+'`$?')) {
+							player.i[inv[choice.cur] - 1] -= ch;
+							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'));
+							if (!f.open('ab'))
+								throw new Error('Unable to open '+f.name);
+							f.write('ADDITEM|'+inv[choice.cur]+'|'+ch+'\r\n');
+							f.close();
+							if (!online) {
+								f = new File(getfname(maildir+'mail'+(op.Record + 1)+'.dat'));
+								if (!f.open('ab'))
+									throw new Error('Unable to open '+f.name);
+								f.write('  `%`r1GOOD NEWS!`r0\r\n`0  '+repeat_chars(ascii(0xc4), 77)+'\r\n  `0'+player.name+' `2gives you ');
+								if (ch === 1)
+									f.write('a ');
+								else
+									f.write(pretty_int(ch) + ' ');
+								f.write('really nice `$' + items[inv[choice.cur] - 1].name + '`2!\r\n');
+								f.write('@DONE\r\n');
+								f.close();
+							}
+						}
+					}
+				}
+			}
+			draw_map();
+			update();
+			dk.console.gotoxy(0, 21);
+		}
+	}
 
 	function draw_menu()
 	{
@@ -4294,12 +4426,7 @@ function hail()
 	}
 
 	function erase_menu() {
-		dk.console.gotoxy(0, 21);
-		dk.console.cleareol();
-		dk.console.gotoxy(0, 22);
-		dk.console.cleareol();
-		dk.console.gotoxy(0, 23);
-		dk.console.cleareol();
+		clearrows(21, 23);
 	}
 
 	update();
@@ -4389,10 +4516,12 @@ function hail()
 	player.battle = 1;
 	update_update();
 	player.put();
-	// TODO: Handle the nofighting map flag
 	if (op.onnow === 0) {
 		op.battle = 1;
 		op.put(false);
+		update_players();
+		players[op.Record].battle = 1;
+		players[op.Record].put();
 		update_bar('You find `0'+op.name+'`2 sleeping like a baby. (hit a key)', true);
 		getkey();
 		done = false;
@@ -4404,23 +4533,124 @@ function hail()
 					done = true;
 					break;
 				case 1: // Attack
-log(LOG_ERROR, "`v9: "+world.v[8]+" OP: "+op.p[8]);
-					if (world.v[8] === 0 || op.p[8] < world.v[8]) {
-						update_bar("No fighting is allowed in this area.", true);
-						break;
+					if (map.nofighting) {
+						if (world.v[8] === 0 || op.p[8] < world.v[8]) {
+							update_bar("No fighting is allowed in this area.", true);
+							break;
+						}
 					}
+					enemy = {
+						name:op.name,
+						see:'',
+						killstr:'',
+						sex:op.sex,
+						defence:op.p[4],
+						gold:op.money === 0 ? 0 : Math.floor(op.money / 2),
+						experience:op.experience === 0 ? 0 : Math.floor(op.experience / 10),
+						hp:op.p[1],
+						maxhp:op.p[2],
+						attacks:[],
+						win_reffile:'gametxt.ref',
+						lose_reffile:'gametxt.ref',
+						run_reffile:'gametxt.ref',
+						win_refname:'live',
+						lose_refname:'die',
+						run_refname:'run',
+					};
+					if (op.weaponnumber == 0) {
+						enemy.attacks.push({
+							strength:(op.p[3]),
+							hitaction:'`0`e`2 hits you with '+(op.sexmale === 1 ? 'his' : 'her')+' fists',
+						});
+					}
+					else {
+						enemy.attacks.push({
+							strength:(op.p[3] + items[op.weaponnumber - 1].strength),
+							hitaction:'`0`e`2 hits you with '+(op.sexmale === 1 ? 'his' : 'her')+' `0'+items[op.weaponnumber-1].name+'`2',
+						});
+					}
+					if (op.armournumber !== 0) {
+						enemy.defence += otems[op.armournumber - 1].defence;
+					}
+					setvar('`v39', op.Record + 1);
+					switch (offline_battle(true, true)) {
+						case 'RAN':
+							// TODO: Do the opponents HP drop in an offline battle they win?
+							break;
+						case 'WON':
+							op.dead = 1;
+							op.x = 0;
+							op.y = 0;
+							op.map = 1;
+							players[op.Record].x = 0;
+							players[op.Record].y = 0;
+							players[op.Record].map = 0;
+							players[op.Record].battle = 0;
+							players[op.Record].put();
+							if (op.money > 0)
+								op.money -= Math.floor(op.money / 2);
+							if (op.experience > 0)
+								op.experience -= Math.floor(op.exterience / 10);
+							break;
+						case 'LOST':
+							// TODO: Do the opponents HP drop in an offline battle they win?
+							break;
+					}
+					done = true;
 					break;
 				case 2: // Give Item
+					give_item(false);
 					break;
 				case 3: // Transfer Gold
+					clearrows(21,23);
+					dk.console.gotoxy(1, 22);
+					lw('`r0`2Give `0'+op.name+'`2 how much of your `$$'+player.money+'`2? : ');
+					ch = dk.console.getstr({edit:player.money.toString(), integer:true, input_box:true, attr:new Attribute(31), len:11});
+					ch = parseInt(ch, 10);
+					clearrows(22);
+					if (ch > 0) {
+						if (ch > player.money) {
+							dk.console.gotoxy(1, 22);
+							lw("`r0  `2You sort of don't have that much, friend.  `2(`0hit a key`2)");
+							getkey();
+							clearrows(22);
+						}
+						else {
+							dk.console.gotoxy(1, 22);
+							lw("`r0  `$$"+pretty_int(ch)+" `2 gold transfered! `2(`0hit a key`2)");
+							player.money -= ch;
+							player.put();
+							f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'));
+							if (!f.open('ab'))
+								throw new Error('Unable to open '+f.name);
+							f.write('ADDGOLD|'+ch+'\r\n');
+							f.close();
+							f = new File(getfname(maildir+'mail'+(op.Record + 1)+'.dat'));
+							if (!f.open('ab'))
+								throw new Error('Unable to open '+f.name);
+							f.write('  `%`r1GOOD NEWS!`r0\r\n`0  '+repeat_chars(ascii(0xc4), 77)+'\r\n  `0'+player.name+' `2gives you `$' + pretty_int(ch) + ' `2 gold!');
+							f.write('@DONE\r\n');
+							f.close();
+							getkey();
+							clearrows(22);
+						}
+					}
 					break;
 				case 4: // Write Mail
+					sclrscr();
+					sln('');
+					sln('');
+					mail_to(op.Record);
+					draw_map();
+					update();
 					break;
 			}
 		}
+		players[op.Record].battle = 0;
+		players[op.Record].put();
 		op.battle = 0;
 		op.put(false);
-		// TODO: Offline battles, giving things, etc...
+		// TODO: giving things, etc...
 	}
 	else {
 		op.unLock();
@@ -4457,63 +4687,15 @@ log(LOG_ERROR, "`v9: "+world.v[8]+" OP: "+op.p[8]);
 					done = true;
 					break;
 				case 1:	// TODO: Attack...
-					if (world.v[8] === 0 || op.p[8] < world.v[8]) {
-						update_bar("No fighting is allowed in this area.", true);
-						break;
+					if (map.nofighting) {
+						if (world.v[8] === 0 || op.p[8] < world.v[8]) {
+							update_bar("No fighting is allowed in this area.", true);
+							break;
+						}
 					}
 					break;
 				case 2: // TODO: Give Item
-					lln('`c`r0`2                                `r1`%  GIVING.  `r0');
-					sln('');
-					sln('');
-					sln('');
-					lw('`r5Item To Give                 Amount Owned');
-					dk.console.cleareol();
-					dk.console.gotoxy(0, 23);
-					lw('  `$Q `2to quit, `$ENTER `2to give item.       You have `$'+player.money+' gold.');
-					dk.console.cleareol();
-					dk.console.gotoxy(0, 7);
-					inv = get_inventory();
-					if (inv.length === 0) {
-						dk.console.gotoxy(0, 7);
-						lw('`r0  `2You have nothing to give, loser.  (press `%Q `2to continue)');
-						do {
-							ch = getkey().toUpperCase();
-						} while (ch !== 'Q');
-					}
-					else {
-						// TODO: I'm not sure this is how it actually looks...
-						choice = items_menu(inv, 0, false, false, '', 7, 22);
-						if (items[inv[choice.cur] - 1].questitem) {
-							// This is presumably in a popup box too.
-							draw_box(12, '', ['','  `$You don\'t think it would be wise to give that away.`2  ','']);
-							getkey();
-						}
-						else {
-							draw_box(12, items[inv[choice.cur] - 1].name, ['','  `$Give how many?`2        ','']);
-							// Confirmation box line 14, same title...
-							// '  `$Give 1 of `em to <name>`$?
-							//
-							//  Yes
-							// No
-							// Then stays in hail menu.
-							dk.console.gotoxy(46, 14);
-							ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true}));
-							if ((!isNaN(ch)) && ch > 0 && ch <= player.i[inv[choice.cur] - 1]) {
-								player.i[inv[choice.cur] - 1] -= ch;
-								f = new File(getfname(maildir+'con'+(op.Record + 1)+'.tmp'))
-								if (!f.open('ab'))
-									throw new Error('Unable to open '+f.name);
-								f.write('ADDITEM|'+inv[choice.cur]+'|'+ch+'\r\n');
-								f.close();
-
-								// TODO: And a mail message or something?
-							}
-						}
-						draw_map();
-						update();
-						dk.console.gotoxy(0, 21);
-					}
+					give_item(true);
 					break;
 				case 3:
 					fn = file_getcase(maildir+'chat'+(player.Record + 1)+'.tmp');
@@ -4873,11 +5055,37 @@ function setup_time_warnings()
 	time_warnings.push(0);
 }
 
+function build_index()
+{
+	var i;
+	var p;
+	var u;
+
+	for (i = 0; i < pfile.length; i++) {
+		u = ufile.get(i);
+		if (u === null) {
+			u = ufile.new();
+			p = pfile.Get(i);
+			u.x = p.x;
+			u.y = p.y;
+			u.map = p.map;
+			u.onnow = p.onnow;
+			u.busy = p.busy;
+			u.battle = p.battle;
+			u.deleted = p.deleted;
+			u.put();
+		}
+	}
+}
+
 var pfile = new RecordFile(getfname('trader.dat'), Player_Def);
 var mfile = new RecordFile(getfname('map.dat'), Map_Def);
 var wfile = new RecordFile(getfname('world.dat'), World_Def);
 var ifile = new RecordFile(getfname('items.dat'), Item_Def);
 var ufile = new RecordFile(getfname('update.tmp'), Update_Def);
+if (ufile.length < pfile.length) {
+	build_index();
+}
 var gfile = new RecordFile(getfname('game.dat'), Game_Def);
 var maildir = getfname('mail');
 
@@ -4944,7 +5152,7 @@ killfiles.push(lfile);
 lfile.close();
 
 var cfile = new File(getfname(maildir + 'con'+(player.Record + 1)+'.tmp'));
-if (!cfile.open('w+b'))
+if (!cfile.open('ab'))
 	throw new Error('Unable to open '+cfile.name);
 killfiles.push(cfile);
 cfile.close();
@@ -4964,4 +5172,6 @@ player.lastdayon = state.time;
 player.lastdayplayed = state.time;
 player.lastsaved = savetime();
 player.put();
+
+mail_check(false);
 do_map();
