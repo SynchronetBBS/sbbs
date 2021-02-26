@@ -1,7 +1,6 @@
 'use strict';
 
 // TODO: More optimal horizontal lightbars
-// TODO: Multiplayer online battles
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
 
@@ -614,7 +613,7 @@ var vars = {
 	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set date at '+fname+':'+line); } },
 	// DOCUMENTED in LORD 2 but non-functional.
 	//'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set nicedate at '+fname+':'+line); } },
-	// Implemented in LORD 2
+	// Implemented in LORD 2 (but not documented)
 	'&quickdate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set nicedate at '+fname+':'+line); } },
 	's&armour':{type:'fn', get:function() { if (player.armournumber === 0) return ''; return items[player.armournumber - 1].name; } },
 	's&arm_num':{type:'fn', get:function() { if (player.armournumber === 0) return 0; return items[player.armournumber - 1].defence; } },
@@ -1325,75 +1324,6 @@ function space_pad(str, len)
 }
 
 var bar_timeout = 0;
-// TODO: How this works in the original...
-/*
- * The buffer is in mail/talkX.tmp (where X is the 1-based player number)
- * The game pulls the top line out of there and displays it.
- * As soon as a line is displayed, it is appended to mail/logX.tmp
- * which is what is used when displaying the backlog/fastbacklog
- * 
- * Only the last 19 are displayed, but the file keeps growing.
- * 
- * Various notifications also go into mail/talkX.tmp (enter/exit messages etc)
- * This is where 'T' global messages go too.
- * 
- * mail/conX.tmp is where
- * ADDITEM|4|1 (itemnum, count) goes.
- * ADDGOLD|1
- * CONNECT|1
- * UPDATE
- * 
- * mail/mailX.tmp is actual messages..
- * @MESSAGE Mee
- * <txt>
- * <txt>
- * @DONE
- * @REPLY 1
- * 
- * Only @DONE is required.
- * 
- * MAIL\TEMP1.QWT is where the message to quote goes.
- * MAIL\TEM1.TMP is where the message is composed to.
- * MAIL\MAB1.DAT seems to be all mail displayed this session.
- * MAIL\MAT1.DAT is the currently RXed file (MAIL1.DAT is renamed to this I betcha)
- * 
- * Other interesting MAIL things...
- * MAIL\BAT
- * MAIL\CHAT
- * MAIL\GIV
- * MAIL\INF
- * MAIL\LOG *
- * MAIL\MAB *
- * MAIL\MAT *
- * MAIL\TALK *
- * MAIL\TCON
- * MAIL\TEM *
- * MAIL\TEMP *
- * MAIL\TX
- * 
- * Requires \r\n
- * 
- * HAIL... Appends CONNECT|<them> to conX, creates tx<me>.tmp, and sets battle bit
- * Delete the tx<me>.tmp and the connection is established.
- * 
- * Chat...
- * Puts "CHAT" into INF<them>.TMP
- * Chat lines go into CHAT<them>.TMP '  `0Mee : `2Chat line.'
- * Single line 'EXIT' indicates that was terminated.
- * 
- * Battle...
- * Appends `r0`0Mee `2hits you with his `0Dagger`2 for `b7`2 damage!|7
- * -500 is running away
- * -1000 is yelling something
- * To BAT<them>.dat
- * 
- * Rankings are stored in three files...
- * TEMP0.DAT (LORDANSI)
- * SCORE.ANS
- * SCORE.TXT
- * 
- */
-
 var current_saybar = spaces(76);
 function redraw_bar(updstatus)
 {
@@ -1443,7 +1373,7 @@ function status_bar()
 {
 	var b;
 
-	b = '`r1`2Location is `0'+map.name+'`2. HP: (`%'+player.p[1]+'`2 of `%'+player.p[2]+'`2).  Press `%?`2 for help.';
+	b = '`r1`2Location is `0'+map.name+'`2. HP: (`%'+pretty_int(player.p[1])+'`2 of `%'+pretty_int(player.p[2])+'`2).  Press `%?`2 for help.';
 	update_bar(b, false);
 }
 
@@ -1820,9 +1750,6 @@ function run_ref(sec, fname)
 				hs = hs.replace(f, r);
 			}
 			setvar(args[2], hs);
-		},
-		'readchar':function(args) {
-			setvar(args[0], getkey());
 		},
 		'saybar':function(args) {
 			line++;
@@ -3085,6 +3012,8 @@ function update_update()
 
 function update_space(x, y)
 {
+	var oa = dk.console.attr.value;
+
 	dk.console.gotoxy(x, y);
 	x += 1;
 	y += 1;
@@ -3113,6 +3042,8 @@ function update_space(x, y)
 			}
 		}
 	});
+
+	dk.console.attr.value = oa;
 }
 
 function mail_check(messenger)
@@ -3477,8 +3408,11 @@ function draw_map() {
 	var s;
 
 	dk.console.attr.value = 7;
-	sclrscr();
+	// No need to clear screen since we're overwriting the whole thing.
+	// TODO: If dk.console had a function to clear to end of screen, that would help.
+	// this may be broken on screens with more than 24 rows now.
 	for (y = 0; y < 20; y++) {
+		dk.console.cleareol();
 		for (x = 0; x < 80; x++) {
 			off = getoffset(x,y);
 			mi = map.mapinfo[off];
@@ -3488,6 +3422,7 @@ function draw_map() {
 			dk.console.print(mi.ch === '' ? ' ' : mi.ch);
 		}
 	}
+	clearrows(21, 24);
 	redraw_bar(true);
 	other_players = {};
 }
@@ -3908,7 +3843,7 @@ function disp_hp(cur, max)
 {
 	if (cur < 1)
 		return '`bDead';
-	return '(`0'+cur+'`2/`0'+max+'`2)';
+	return '(`0'+pretty_int(cur)+'`2/`0'+pretty_int(max)+'`2)';
 }
 
 function your_hp()
@@ -4033,7 +3968,7 @@ function offline_battle(no_super, skip_see)
 				}
 				else
 					astr = wep.hitaction;
-				lw('`2' + astr + '`2 for `0'+dmg+'`2 damage!');
+				lw('`2' + astr + '`2 for `0'+pretty_int(dmg)+'`2 damage!');
 				enm.hp -= dmg;
 				enemy_hp(enm);
 			}
@@ -4045,7 +3980,7 @@ function offline_battle(no_super, skip_see)
 			lw('`r0`0You killed '+him+'!')
 			dk.console.gotoxy(2, 23);
 			dk.console.cleareol();
-			lw('`2You find `$$'+enm.gold+'`2 and gain `%'+pretty_int(enm.experience)+' `2experience in this battle.  `2<`0MORE`2>')
+			lw('`2You find `$$'+pretty_int(enm.gold)+'`2 and gain `%'+pretty_int(enm.experience)+' `2experience in this battle.  `2<`0MORE`2>');
 			player.money = clamp_integer(player.money + enm.gold, 's32');
 			player.p[0] = clamp_integer(player.p[0] + enm.experience, 's32');
 			if (supr)
@@ -4080,8 +4015,8 @@ function offline_battle(no_super, skip_see)
 				}
 			}
 			else {
-				lw('`r0`0'+enm.name+' `2'+atk.hitaction+'`2 for `4'+dmg+'`2 damage!');
-				player.p[1] -= dmg;
+				lw('`r0`0'+enm.name+' `2'+atk.hitaction+'`2 for `4'+pretty_int(dmg)+'`2 damage!');
+				player.p[1] = clamp_integer(player.p[1] - dmg, 's32');
 				your_hp();
 				if (player.p[1] < 1) {
 					if (enm.lose_reffile !== '' && enm.lose_refname !== '')
@@ -4092,13 +4027,8 @@ function offline_battle(no_super, skip_see)
 			}
 		}
 	}
-	dk.console.gotoxy(0, 21);
 	lw('`r0`2');
-	dk.console.cleareol();
-	dk.console.gotoxy(0, 22);
-	dk.console.cleareol();
-	dk.console.gotoxy(0, 23);
-	dk.console.cleareol();
+	clearrows(21, 23);
 	redraw_bar(true);
 	return ret;
 }
@@ -4338,7 +4268,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 				str += decorate_item(items[it]);
 				if (buying) {
 					str += spaces(32 - displen(str));
-					str += '`2$`$'+items[it].value+'`2';
+					str += '`2$`$'+pretty_int(items[it].value)+'`2';
 				}
 				else {
 					str += spaces(37 - displen(str));
@@ -4353,7 +4283,7 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 					str += '`2 (`0';
 					if (selling && items[it].sell === false)
 						str += '`8';
-					str += player.i[it]+'`2)';
+					str += pretty_int(player.i[it]) + '`2)';
 				}
 				str += spaces(48 - displen(str));
 				str += '`2 ';
@@ -4519,7 +4449,7 @@ function online_battle(op, attack_first) {
 					astr = weap.hitaction;
 				}
 				dk.console.gotoxy(2, 21);
-				lw('`2' + astr + '`2 for `0'+dmg+'`2 damage!');
+				lw('`2' + astr + '`2 for `0'+pretty_int(dmg)+'`2 damage!');
 				enemy.hp -= dmg;
 			}
 			enemy_hp(enemy);
@@ -4665,7 +4595,6 @@ function online_battle(op, attack_first) {
 	return ret;
 }
 
-
 function hail()
 {
 	var op;
@@ -4694,7 +4623,7 @@ function hail()
 		lw('`r5Item To Give                 Amount Owned');
 		dk.console.cleareol();
 		dk.console.gotoxy(0, 23);
-		lw('  `$Q `2to quit, `$ENTER `2to give item.       You have `$'+player.money+' gold.');
+		lw('  `$Q `2to quit, `$ENTER `2to give item.       You have `$'+pretty_int(player.money)+' gold.');
 		dk.console.cleareol();
 		dk.console.gotoxy(0, 7);
 		inv = get_inventory();
@@ -4950,7 +4879,7 @@ function hail()
 				case 3: // Transfer Gold
 					clearrows(21,23);
 					dk.console.gotoxy(1, 22);
-					lw('`r0`2Give `0'+op.name+'`2 how much of your `$$'+player.money+'`2? : ');
+					lw('`r0`2Give `0'+op.name+'`2 how much of your `$$'+pretty_int(player.money)+'`2? : ');
 					// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 					ch = dk.console.getstr({edit:player.money.toString(), integer:true, input_box:true, attr:new Attribute(31), len:11});
 					ch = parseInt(ch, 10);
