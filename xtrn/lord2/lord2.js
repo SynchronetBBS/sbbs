@@ -2655,7 +2655,7 @@ rescan:
 							}
 							if (player.i[itm.Record] > 1) {
 								box = draw_box(14, items[itm.Record].name, ['', '`$Sell how many?            ',''])
-								dk.console.gotoxy(box.x + 21, box.y + 2);
+								dk.console.gotoxy(box.x + 18, box.y + 2);
 								// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
 								lw('`r1`0');
@@ -3291,7 +3291,9 @@ function con_check()
 				player.put();
 				break;
 			case 'UPDATE':
+				// Not sure which this does, but no reason not to do both...
 				update();
+				update_update();
 				break;
 			case 'ADDGOLD':
 				player.money += parseInt(c[1], 10);
@@ -4968,7 +4970,7 @@ function hail()
 					f.write('BYE\r\n');
 					f.close();
 					break;
-				case 1:	// TODO: Attack...
+				case 1:
 					if (map.nofighting) {
 						if (world.v[8] === 0 || op.p[8] < world.v[8]) {
 							update_bar("No fighting is allowed in this area.", true);
