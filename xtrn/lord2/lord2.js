@@ -597,8 +597,8 @@ var vars = {
 	'`d':{type:'const', val:'\b'},
 	'`\\':{type:'const', val:'\r\n'},
 	'`*':{type:'const', val:dk.connection.node},
-	x:{type:'fn', get:function() { return player.x }, set:function(x) { erase (player.x-1, player.y-1); player.x = clamp_integer(x, 's8'); update(true); } },
-	y:{type:'fn', get:function() { return player.y }, set:function(y) { erase (player.x-1, player.y-1); player.y = clamp_integer(y, 's8'); update(true); } },
+	x:{type:'fn', get:function() { return player.x }, set:function(x) { erase(player.x-1, player.y-1); player.x = clamp_integer(x, 's8'); update(true); } },
+	y:{type:'fn', get:function() { return player.y }, set:function(y) { erase(player.x-1, player.y-1); player.y = clamp_integer(y, 's8'); update(true); } },
 	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
 	dead:{type:'fn', get:function() { return player.dead }, set:function(dead) { player.dead = clamp_integer(dead, 's8') } },
 	sexmale:{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
@@ -2988,11 +2988,13 @@ function getpoffset() {
 function erase(x, y) {
 	var off = getoffset(x,y);
 	var mi = map.mapinfo[off];
+	var attr = dk.console.attr.value;
 
 	foreground(mi.forecolour);
 	background(mi.backcolour);
 	dk.console.gotoxy(x, y);
 	dk.console.print(mi.ch === '' ? ' ' : mi.ch);
+	dk.console.attr.value = attr;
 }
 
 function update_update()
@@ -3144,9 +3146,10 @@ function chat(op)
 			if (l !== null) {
 				if (l === 'EXIT') {
 					lln('  `0'+op.name+'`2 has left.');
+					sln('');
 					file_remove(ch.name);
 					more();
-					return;
+					return false;
 				}
 				lln(l+'`r');
 				continue;
@@ -3166,7 +3169,7 @@ function chat(op)
 					chop.close();
 					update_update()
 					file_remove(ch.name);
-					return;
+					return true;
 				case '':
 					break;
 				default:
@@ -3191,11 +3194,15 @@ function hailed(pl)
 	var al;
 	var pos = 0;
 	var exit = false;
+	var lin;
+	var givfile = new File(getfname(maildir + 'giv'+(player.Record + 1)+'.tmp'));
+	var givfile_pos = 0;
 
 	if (!file_exists(tx.name))
 		return;
 	update_bar('`0'+op.name+' `2hails you.  Press (`0A`2) to leave.', true);
 	lw('`r0`2');
+	hail_cleanup();
 	file_remove(tx.name);
 	do {
 		inn = getfname(maildir + 'inf'+(player.Record + 1)+'.tmp');
@@ -3210,19 +3217,42 @@ function hailed(pl)
 			inf.close();
 			al.forEach(function(l) {
 				if (l === 'CHAT') {
-					chat(op);
-					exit = true;
+					if (chat(op))
+						exit = true;
+				}
+				else {
+					update_bar(l, true);
 				}
 			});
 		}
+		if (givfile.open('rb')) {
+			givfile.position = givfile_pos;
+			lin = givfile.readln();
+			switch(lin) {
+				case null:
+					break;
+				case 'BYE':
+					exit = true;
+					// Fall-through
+				default:
+					givfile_pos = givfile.position;
+					break;
+			}
+			givfile.close();
+		}
+		if (file_exists(getfname(maildir + 'bat'+(player.Record + 1)+'.tmp'))) {
+			online_battle(op, false);
+			break;
+		}
 		if (dk.console.waitkey(game.delay)) {
-			if (getkey().toUpperCase() === 'A')
+			if (getkey().toUpperCase() === 'A') {
+				exit = true;
 				break;
+			}
 		}
 		op.reLoad();
 	} while((!exit) && op.battle === 1);
-	if (inf !== undefined)
-		file_remove(inf.name);
+	hail_cleanup();
 	draw_map();
 	redraw_bar(true);
 	update();
@@ -3306,6 +3336,7 @@ function update(skip) {
 	var op;
 	var now = (new Date().valueOf());
 	var done;
+	var orig_attr = dk.console.attr.value;
 
 	if ((!skip) || now > next_update) {
 		next_update = now + game.delay;
@@ -3360,6 +3391,7 @@ function update(skip) {
 	dk.console.print('\x02');
 	dk.console.gotoxy(player.x - 1, player.y - 1);
 	update_update();
+	dk.console.attr.value = orig_attr;
 }
 
 function draw_map() {
@@ -3816,6 +3848,26 @@ function enemy_hp(enm)
 	lw(space_pad('`r1`0`e\'s `2hitpoints: '+disp_hp(enm.hp, enm.maxhp), 44));
 }
 
+function fist_string(ename)
+{
+	switch(random(5)) {
+		case 0:
+			return '`2You punch `0'+ename+'`2 in the jimmy';
+		case 1:
+			return 'You kick `0'+ename+'`2 hard as you can';
+			break;
+		case 2:
+			return '`2You slap `0'+ename+'`2 a good one';
+			break;
+		case 3:
+			return '`2You headbutt `0'+ename;
+			break;
+		default:
+			return '`2You trip `0'+ename;
+			break;
+	}
+}
+
 function offline_battle(no_super, skip_see)
 {
 	var ch;
@@ -3902,26 +3954,10 @@ function offline_battle(no_super, skip_see)
 				if (supr)
 					astr = '`2You `%SUPER STRIKE`2';
 				else if (wep === undefined) {
-					switch(random(5)) {
-						case 0:
-							astr = '`2You punch `0`e`2 in the jimmy';//Him,it
-							break;
-						case 1:
-							astr = 'You kick `0`e`2 hard as you can';// Wild Boar
-							break;
-						case 2:
-							astr = '`2You slap `0`e`2 a good one';//Rabid dog
-							break;
-						case 3:
-							astr = '`2You headbutt `0`e';//Rabid dog
-							break;
-						case 4:
-							astr = '`2You trip `0`e';//Rabid dog
-							break;
-					}
+					astr = fist_string(enm.name);
 				}
 				else
-					astr = wep.hitaction
+					astr = wep.hitaction;
 				lw('`2' + astr + '`2 for `0'+dmg+'`2 damage!');
 				enm.hp -= dmg;
 				enemy_hp(enm);
@@ -3934,9 +3970,9 @@ function offline_battle(no_super, skip_see)
 			lw('`r0`0You killed '+him+'!')
 			dk.console.gotoxy(2, 23);
 			dk.console.cleareol();
-			lw('`2You find `$$'+enm.gold+'`2 and gain `%'+enm.experience+' `2experience in this battle.  `2<`0MORE`2>')
-			player.money += enm.gold;
-			player.p[0] += enm.experience;
+			lw('`2You find `$$'+enm.gold+'`2 and gain `%'+pretty_int(enm.experience)+' `2experience in this battle.  `2<`0MORE`2>')
+			player.money = clamp_integer(player.money + enm.gold, 's32');
+			player.p[0] = clamp_integer(player.p[0] + enm.experience, 's32');
 			if (supr)
 				update_bar(enm.killstr, true, 0);
 			getkey();
@@ -4298,6 +4334,263 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 	}
 }
 
+function player_to_enemy(op)
+{
+	enemy = {
+		name:op.name,
+		see:'',
+		killstr:'',
+		sex:op.sexmale,
+		defence:op.p[4],
+		gold:op.money === 0 ? 0 : Math.floor(op.money / 2),
+		experience:op.experience === 0 ? 0 : Math.floor(op.experience / 10),
+		hp:op.p[1],
+		maxhp:op.p[2],
+		attacks:[],
+		win_reffile:'gametxt.ref',
+		lose_reffile:'gametxt.ref',
+		run_reffile:'gametxt.ref',
+		win_refname:'live',
+		lose_refname:'die',
+		run_refname:'run',
+	};
+	if (op.weaponnumber == 0) {
+		enemy.attacks.push({
+			strength:(op.p[3]),
+			hitaction:'`0`e`2 hits you with '+(op.sexmale === 1 ? 'his' : 'her')+' fists',
+		});
+	}
+	else {
+		enemy.attacks.push({
+			strength:(op.p[3] + items[op.weaponnumber - 1].strength),
+			hitaction:'`0`e`2 hits you with '+(op.sexmale === 1 ? 'his' : 'her')+' `0'+items[op.weaponnumber-1].name+'`2',
+		});
+	}
+	if (op.armournumber !== 0) {
+		enemy.defence += items[op.armournumber - 1].defence;
+	}
+	setvar('`v39', op.Record + 1);
+	setvar('enemy', op.name);
+}
+
+// Deletes files that are *read* during an online interaction (not written)
+function hail_cleanup()
+{
+	file_remove(getfname(maildir + 'bat'+(player.Record + 1)+'.tmp'));
+	file_remove(getfname(maildir + 'tx'+(player.Record + 1)+'.tmp'));
+	file_remove(getfname(maildir + 'chat'+(player.Record + 1)+'.tmp'));
+	file_remove(getfname(maildir + 'giv'+(player.Record + 1)+'.tmp'));
+	file_remove(getfname(maildir + 'inf'+(player.Record + 1)+'.tmp'));
+}
+
+function online_battle(op, attack_first) {
+	var str;
+	var hstr;
+	var def;
+	var edef;
+	var pbat = new File(getfname(maildir+'bat'+(player.Record + 1)+'.tmp'));
+	var ebat = new File(getfname(maildir+'bat'+(op.Record + 1)+'.tmp'));
+	var wname;
+	var weap;
+	var astr;
+	var wend;
+	var rln;
+	var tleft;
+	var m;
+	var ret;
+	var dmg;
+	var doneBattle = false;
+	var doneMenu;
+	var doneMessages = false;
+	var cur;
+	var ln;
+	var poff = 0;
+
+	if (player.weaponnumber == 0)
+		wname = 'fists';
+	else {
+		wname = items[player.weaponnumber - 1].name;
+		weap = items[player.weaponnumber - 1];
+	}
+
+	str = (player.weaponnumber === 0 ? 0 : items[player.weaponnumber - 1].strength) + player.p[3];
+	hstr = str >> 1;
+	def = (player.armournumber === 0 ? 0 : items[player.armournumber - 1].defence) + player.p[4];
+	edef = (op.armournumber === 0 ? 0 : items[op.armournumber - 1].defence) + op.p[4];
+	player_to_enemy(op);
+
+	enemy_hp(enemy);
+	your_hp();
+	while (!doneBattle) {
+		if (attack_first) {
+			// Make an attack...
+			clearrows(21,23);
+			dmg = hstr + random(hstr) + 1 - edef;
+			if (!ebat.open('ab'))
+				throw new Error('Unable to open '+ebat.name);
+			if (dmg < 0) {
+				ebat.write('`r0`0'+player.name+' `2misses you completely!|0\r\n');
+				ebat.close();
+				dk.console.gotoxy(2, 21);
+				lw('`4You completely miss!`2');
+			}
+			else {
+				ebat.write('`r0`0'+player.name+' `2hits you with '+(player.sexmale == 1 ? 'his' : 'her')+' `0'+wname+'`2 for `b'+pretty_int(dmg)+'`2 damage!|'+dmg+'\r\n');
+				ebat.close();
+				if (weap === undefined) {
+					astr = fist_string(op.name);
+				}
+				else {
+					astr = weap.hitaction;
+				}
+				dk.console.gotoxy(2, 21);
+				lw('`2' + astr + '`2 for `0'+dmg+'`2 damage!');
+				enemy.hp -= dmg;
+			}
+			enemy_hp(enemy);
+			if (enemy.hp < 1) {
+				dk.console.gotoxy(2, 22);
+				lw('`r0`0You killed '+(enemy.sex === 1 ? 'him' : 'her')+'!');
+				dk.console.gotoxy(2, 23);
+				lw('`2You find `$$'+pretty_int(enemy.gold)+'`2 and gain `%'+pretty_int(enemy.experience)+' `2experience in this battle.  `2<`0MORE`2>');
+				player.money = clamp_integer(player.money + enemy.gold, 's32');
+				player.p[0] = clamp_integer(player.p[0] + enemy.experience, 's32');
+				player.put();
+				getkey();
+				run_ref('iwon', 'gametxt.ref');
+				ret = 'WON';
+				break;
+			}
+
+			// Wait for response from remote...
+			dk.console.gotoxy(2, 23);
+			lw('`r0`2You wait for the counter attack...');
+			// Timeout count... 
+			wend = time() + 30;
+		}
+		else
+			attack_first = true;
+
+		doneMessages = false;
+		while (!doneMessages) {
+			rln = undefined;
+			if (!pbat.is_open) {
+				if (file_exists(pbat.name))
+					pbat.open('rb');
+			}
+			if (pbat.is_open) {
+				pbat.position = poff;
+				rln = pbat.readln();
+				poff = pbat.position;
+			}
+			if (rln === null || rln === undefined) {
+				if (pbat.is_open)
+					pbat.close();
+				tleft = wend - time();
+				if (tleft < 1) {
+					ret = 'TIMEOUT';
+					if (pbat.is_open)
+						pbat.close();
+					file_remove(pbat.name);
+					poff = 0;
+					doneBattle = true;
+					break;
+				}
+				if (tleft <= 10) {
+					dk.console.gotoxy(55, 23);
+					dk.console.cleareol();
+					lw('`0(`2timeout in '+tleft+'`0)`2');
+				}
+				mswait(game.delay);
+				continue;
+			}
+			if (pbat.is_open)
+				pbat.close();
+
+			m = rln.match(/^(.*)\|(-500|-1000|[0-9]+)\r?\n?$/);
+			if (m !== null) {
+				dmg = parseInt(m[2], 10);
+				switch(dmg) {
+					case -500:	// Other side left
+						doneBattle = true;
+						doneMessages = true;
+						ret = 'LEFT';
+						break;
+					case -1000:	// Yelled something
+						update_bar(m[1], true);
+						wend = time() + 30;
+						break;
+					default:
+						clearrows(22, 22);
+						dk.console.gotoxy(2, 22);
+						lw(m[1]);
+						player.p[1] -= dmg;
+						your_hp();
+						if (player.p[1] < 1) {
+							player.p[1] = 0;
+							player.put();
+							// TODO: Dead notification, etc...
+							run_ref('die', 'gametxt.ref');
+							ret = 'LOST';
+							doneBattle = true;
+							doneMessages = true;
+							break;
+						}
+						player.put();
+						doneMessages = true;
+						break;
+				}
+			}
+		}
+
+		if (pbat.is_open)
+			pbat.close();
+		file_remove(pbat.name);
+		poff = 0;
+		if (doneBattle)
+			break;
+
+		// Ask for next battle action...
+		doneMenu = false;
+		cur = 0;
+		while (!doneMenu) {
+			clearrows(23, 23);
+			cur = hbar(0, 23, ['Attack', 'Yell Something', 'Leave'], cur);
+			switch(cur) {
+				case 0:	// Attack
+					doneMenu = true;
+					break;
+				case 1:	// Yell something
+					// Loops back to this message...
+					clearrows(23, 23);
+					dk.console.gotoxy(2, 23);
+					lw('`r0`2Message? : ');
+					ln = clean_str(dk.console.getstr({input_box:true, attr:new Attribute(31), len:66, crlf:false}));
+					if (!ebat.open('ab'))
+						throw new Error('Unable to open '+ebat.name);
+					ebat.write(ln + "|-1000\r\n");
+					ebat.close();
+					break;
+				case 2:	// Leave
+					// Exits and away we go...
+					if (!ebat.open('ab'))
+						throw new Error('Unable to open '+ebat.name);
+					ebat.write("RUN AWAY!|-500\r\n");
+					ebat.close();
+					doneMenu = true;
+					doneBattle = true;
+					ret = 'RANAWAY';
+					break;
+			}
+		}
+	}
+
+	enemy = undefined;
+	clearrows(21,23);
+	return ret;
+}
+
+
 function hail()
 {
 	var op;
@@ -4338,6 +4631,13 @@ function hail()
 			} while (ch !== 'Q');
 		}
 		else {
+			if (online) {
+				f = new File(getfname(maildir+'inf'+(op.Record + 1)+'.tmp'));
+				if (!f.open('ab'))
+					throw new Error('Unable to open '+f.name);
+				f.write(player.name+' `2searches through '+(player.sexmale == 1 ? 'his' : 'her')+' backpack. (`0A`2 to abort)\r\n');
+				f.close();
+			}
 			while (1) {
 				choice = items_menu(inv, cur, false, false, '', 7, 22);
 				cur = choice.cur;
@@ -4369,22 +4669,27 @@ function hail()
 								throw new Error('Unable to open '+f.name);
 							f.write('ADDITEM|'+inv[choice.cur]+'|'+ch+'\r\n');
 							f.close();
-							if (!online) {
-								f = new File(getfname(maildir+'mail'+(op.Record + 1)+'.dat'));
-								if (!f.open('ab'))
-									throw new Error('Unable to open '+f.name);
-								f.write('  `%`r1GOOD NEWS!`r0\r\n`0  '+repeat_chars(ascii(0xc4), 77)+'\r\n  `0'+player.name+' `2gives you ');
-								if (ch === 1)
-									f.write('a ');
-								else
-									f.write(pretty_int(ch) + ' ');
-								f.write('really nice `$' + items[inv[choice.cur] - 1].name + '`2!\r\n');
-								f.write('@DONE\r\n');
-								f.close();
-							}
+							f = new File(getfname(maildir+'mail'+(op.Record + 1)+'.dat'));
+							if (!f.open('ab'))
+								throw new Error('Unable to open '+f.name);
+							f.write('  `%`r1GOOD NEWS!`r0\r\n`0  '+repeat_chars(ascii(0xc4), 77)+'\r\n  `0'+player.name+' `2gives you ');
+							if (ch === 1)
+								f.write('a ');
+							else
+								f.write(pretty_int(ch) + ' ');
+							f.write('really nice `$' + items[inv[choice.cur] - 1].name + '`2!\r\n');
+							f.write('@DONE\r\n');
+							f.close();
 						}
 					}
 				}
+			}
+			if (online) {
+				f = new File(getfname(maildir+'inf'+(op.Record + 1)+'.tmp'));
+				if (!f.open('ab'))
+					throw new Error('Unable to open '+f.name);
+				f.write(player.name+' `2closes '+(player.sexmale == 1 ? 'his' : 'her')+' backpack. (`0A`2 to abort)\r\n');
+				f.close();
 			}
 			draw_map();
 			update();
@@ -4538,40 +4843,7 @@ function hail()
 							break;
 						}
 					}
-					enemy = {
-						name:op.name,
-						see:'',
-						killstr:'',
-						sex:op.sex,
-						defence:op.p[4],
-						gold:op.money === 0 ? 0 : Math.floor(op.money / 2),
-						experience:op.experience === 0 ? 0 : Math.floor(op.experience / 10),
-						hp:op.p[1],
-						maxhp:op.p[2],
-						attacks:[],
-						win_reffile:'gametxt.ref',
-						lose_reffile:'gametxt.ref',
-						run_reffile:'gametxt.ref',
-						win_refname:'live',
-						lose_refname:'die',
-						run_refname:'run',
-					};
-					if (op.weaponnumber == 0) {
-						enemy.attacks.push({
-							strength:(op.p[3]),
-							hitaction:'`0`e`2 hits you with '+(op.sexmale === 1 ? 'his' : 'her')+' fists',
-						});
-					}
-					else {
-						enemy.attacks.push({
-							strength:(op.p[3] + items[op.weaponnumber - 1].strength),
-							hitaction:'`0`e`2 hits you with '+(op.sexmale === 1 ? 'his' : 'her')+' `0'+items[op.weaponnumber-1].name+'`2',
-						});
-					}
-					if (op.armournumber !== 0) {
-						enemy.defence += otems[op.armournumber - 1].defence;
-					}
-					setvar('`v39', op.Record + 1);
+					player_to_enemy(op);
 					switch (offline_battle(true, true)) {
 						case 'RAN':
 							// TODO: Do the opponents HP drop in an offline battle they win?
@@ -4654,6 +4926,7 @@ function hail()
 	else {
 		op.unLock();
 		update_bar('`2Hailing `0'+op.name+'`2... (hit a key to abort)', true);
+		hail_cleanup();
 
 		f = new File(getfname(maildir+'tx'+(player.Record + 1)+'.tmp'))
 		if (!f.open('ab'))
@@ -4673,6 +4946,7 @@ function hail()
 				player.battle = 0;
 				update_update();
 				player.put();
+				hail_cleanup();
 				return;
 			}
 		}
@@ -4684,6 +4958,11 @@ function hail()
 			switch(cur) {
 				case 0:
 					done = true;
+					f = new File(getfname(maildir+'giv'+(op.Record + 1)+'.tmp'));
+					if (!f.open('ab'))
+						throw new Error('Unable to open '+f.name);
+					f.write('BYE\r\n');
+					f.close();
 					break;
 				case 1:	// TODO: Attack...
 					if (map.nofighting) {
@@ -4692,6 +4971,8 @@ function hail()
 							break;
 						}
 					}
+					online_battle(op, true);
+					done = true;
 					break;
 				case 2:
 					give_item(true);
@@ -4711,6 +4992,7 @@ function hail()
 					f.close();
 					chat(op);
 					draw_map();
+					done = true;
 					break;
 			}
 		}
@@ -4718,6 +5000,7 @@ function hail()
 	player.battle = 0;
 	update_update();
 	player.put();
+	hail_cleanup();
 	erase_menu();
 	update();
 
@@ -5108,6 +5391,7 @@ load_time();
 load_game();
 
 run_ref('rules', 'rules.ref');
+hail_cleanup();
 
 setup_time_warnings();
 
