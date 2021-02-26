@@ -22,7 +22,7 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
         "#FC5454", // Light Red
         "#FC54FC", // Light Magenta
         "#FCFC54", // Yellow (High Brown)
-        "#FFFFFF"  // White
+        "#FFFFFF", // White
     ];
 
     const ANSI_COLORS = [
@@ -41,7 +41,7 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
         "#5454FC", // Light Blue
         "#FC54FC", // Light Magenta
         "#54FCFC", // Light Cyan
-        "#FFFFFF"  // White
+        "#FFFFFF", // White
     ];
 
     function get_workspace(cols, rows, callback) {
@@ -65,20 +65,16 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
         container.appendChild(spritesheet_canvas);
 
         const img = new Image();
-        img.addEventListener('load', function () {
+        img.addEventListener('load', () => {
             spritesheet_ctx.drawImage(img, 0, 0);
-            callback({
-                container: container,
-                ctx: ctx,
-                spritesheet_ctx: spritesheet_ctx
-            })
+            callback({ container, ctx, spritesheet_ctx });
         });
         img.src = spritesheet_src;
 
     }
 
     function delete_workspace(workspace) {
-        $(workspace.container).remove();
+        workspace.container.parentNode.removeChild(container);
     }
 
     // Clip character # 'char' from the spritesheet and return it as ImageData
@@ -107,17 +103,15 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
     function get_png(workspace, callback) {
         const data = workspace.ctx.canvas.toDataURL();
         const img = new Image();
-        img.addEventListener('load', function () {
-            callback(img);
-        });
+        img.addEventListener('load', () => callback(img));
         img.src = data;
     }
 
-    this.from_bin = function (bin, cols, rows, callback) {
-        get_workspace(cols, rows, function (workspace) {
-            var x = 0;
-            var y = 0;
-            for (var n = 0; n < cols * rows * 2; n = n + 2) {
+    this.from_bin = function (bin, cols, rows, callback, dataOnly) {
+        get_workspace(cols, rows, workspace => {
+            let x = 0;
+            let y = 0;
+            for (let n = 0; n < cols * rows * 2; n = n + 2) {
                 const char = bin.substr(n, 1).charCodeAt(0);
                 const attr = bin.substr(n + 1, 1).charCodeAt(0);
                 put_character(
@@ -134,23 +128,27 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
                     y++;
                 }
             }
-            get_png(workspace, function (img) {
-                delete_workspace(workspace);
-                callback(img);
-            });
+            if (dataOnly) {
+                callback(workspace.ctx.canvas.toDataURL());
+            } else {
+                get_png(workspace, img => {
+                    delete_workspace(workspace);
+                    callback(img);
+                });
+            }
         });
     }
 
     this.from_ans = function (ans, target, rate) {
-        var x = 0;
-        var y = 0;
-        var _x = 0;
-        var _y = 0;
-        var fg = 7;
-        var bg = 0;
-        var high = 0;
-        var match;
-        var opts;
+        let x = 0;
+        let y = 0;
+        let _x = 0;
+        let _y = 0;
+        let fg = 7;
+        let bg = 0;
+        let high = 0;
+        let match;
+        let opts;
         const re = /^\u001b\[((?:[0-9]{0,2};?)*)([a-zA-Z])/;
         const data = [[]];
         const seq = [];
@@ -158,9 +156,7 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
             match = re.exec(ans);
             if (match !== null) {
                 ans = ans.substr(match[0].length);
-                opts = match[1].split(';').map(function (e) {
-                    return parseInt(e);
-                });
+                opts = match[1].split(';').map(e => parseInt(e, 10));
                 switch (match[2]) {
                     case 'A':
 						y = Math.max(y - (opts[0] || 1), 0);
@@ -182,8 +178,8 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
                         if (y >= data.length) data[y] = [];
 						break;
 					case 'm':
-						for (var o in opts) {
-							var i = parseInt(opts[o]);
+						for (let o in opts) {
+							let i = parseInt(opts[o], 10);
 							if (i == 0) {
 								fg = 7;
 								bg = 0;
@@ -209,16 +205,16 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
 						break;
 					case 'J':
 						if (opts.length == 1 && opts[0] == 2) {
-                            for (var yy = 0; yy < data.length; yy++) {
+                            for (let yy = 0; yy < data.length; yy++) {
                                 if (!Array.isArray(data[yy])) data[yy] = [];
-								for (var xx = 0; xx < 80; xx++) {
+								for (let xx = 0; xx < 80; xx++) {
                                     data[yy][xx] = { c: ' ', a: fg|(bg<<3)|(high<<7) };
 								}
 							}
 						}
 						break;
 					case 'K':
-                        for (var xx = 0; xx < 80; xx++) {
+                        for (let xx = 0; xx < 80; xx++) {
                             data[y][xx] = { c: ' ', a: fg|(bg<<3)|(high<<7) };
                         }
 						break;
@@ -227,7 +223,7 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
 						break;
                 }
             } else {
-                var ch = ans.substr(0, 1);
+                let ch = ans.substr(0, 1);
                 switch (ch) {
                     case '\x1a':
                         ans = '';
@@ -241,7 +237,7 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
                         break;
                     default:
                         data[y][x] = { c: ch, a: fg|(bg<<3)|(high<<7) };
-                        seq.push({y:y,x:x});
+                        seq.push({y, x});
                         x++;
                         if (x > 79) {
                             x = 0;
@@ -253,11 +249,13 @@ function GraphicsConverter(spritesheet_src, font_width, font_height, spritesheet
                 ans = ans.substr(1);
             }
         }
-        get_workspace(80, data.length, function (workspace) {
+        get_workspace(80, data.length, workspace => {
             if (typeof target == 'string') {
-                $(target).prepend(workspace.container);
+                let tgt = document.getElementById(target);
+                if (tgt === null) tgt = document.getElementById(target.replace(/^#/, ''));
+                tgt.prepend(workspace.container);
             }
-            seq.forEach(function (e, i) {
+            seq.forEach((e, i) => {
                 function draw() {
                     put_character(
                         workspace,
