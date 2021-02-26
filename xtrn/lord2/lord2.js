@@ -3412,19 +3412,19 @@ function draw_map() {
 	dk.console.attr.value = 7;
 	// No need to clear screen since we're overwriting the whole thing.
 	// TODO: If dk.console had a function to clear to end of screen, that would help.
-	// this may be broken on screens with more than 24 rows now.
 	for (y = 0; y < 20; y++) {
-		dk.console.cleareol();
 		for (x = 0; x < 80; x++) {
 			off = getoffset(x,y);
 			mi = map.mapinfo[off];
 			foreground(mi.forecolour);
 			background(mi.backcolour);
 			dk.console.gotoxy(x, y);
+			if (x == 79)
+				dk.console.cleareol();
 			dk.console.print(mi.ch === '' ? ' ' : mi.ch);
 		}
 	}
-	clearrows(21, 24);
+	clearrows(21, dk.console.rows - 1);
 	redraw_bar(true);
 	other_players = {};
 }
