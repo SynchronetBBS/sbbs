@@ -132,7 +132,7 @@ blockquote {
 }
 
 div.message {
-	margin: 1em 0 1em 1em;
+	margin: 1em 0 1em 0;
 }
 
 input.dropdown {
@@ -318,5 +318,3 @@ animation: indicator-fade 3s ease 0s 1 alternate !important;
 	color: #111;
 	background-color: #DDD;
 }
-
-
