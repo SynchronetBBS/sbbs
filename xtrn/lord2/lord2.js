@@ -612,7 +612,10 @@ var vars = {
 	blockpassable:{type:'fn', get:function() { return (map.mapinfo[getpoffset()].terrain === 1 ? 1 : 0); } },
 	'&realname':{type:'const', val:dk.user.full_name},
 	'&date':{type:'fn', get:function() { var d = new Date(); return format('%02d/%02d/%02d', d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set date at '+fname+':'+line); } },
-	'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set nicedate at '+fname+':'+line); } },
+	// DOCUMENTED in LORD 2 but non-functional.
+	//'&nicedate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set nicedate at '+fname+':'+line); } },
+	// Implemented in LORD 2
+	'&quickdate':{type:'fn', get:function() { var d = new Date(); return format('%d:%02d on %02d/%02d/%02d', d.getHours() % 12, d.getMinutes(), d.getMonth()+1, d.getDate(), d.getYear()%100); }, set:function(x) { throw new Error('Attempt to set nicedate at '+fname+':'+line); } },
 	's&armour':{type:'fn', get:function() { if (player.armournumber === 0) return ''; return items[player.armournumber - 1].name; } },
 	's&arm_num':{type:'fn', get:function() { if (player.armournumber === 0) return 0; return items[player.armournumber - 1].defence; } },
 	's&weapon':{type:'fn', get:function() { if (player.weaponnumber === 0) return ''; return items[player.weaponnumber - 1].name; } },
@@ -1233,6 +1236,10 @@ function handle_lordcodes(str)
 					sln('');
 					sln('');
 					break;
+				case 'y':
+				case 'Y':
+					foreground(30);	// Blinking yellow
+					break;
 				case 'r':
 				case 'R':
 					i += 1;
@@ -1640,12 +1647,204 @@ function run_ref(sec, fname)
 	}
 
 	var do_handlers = {
-		'write':function(args) {
+		'addlog':function(args) {
+			var f = new File(getfname('lognow.txt'));
 			line++;
 			if (line > files[fname].lines.length)
 				return;
-			cl = files[fname].lines[line];
-			lw(replace_vars(cl));
+			if (f.open('ab')) {
+				cl = files[fname].lines[line];
+				f.write(replace_vars(cl)+'\r\n');
+				f.close();
+			}
+		},
+		'beep':function(args) {
+			// TODO: Only beeps locally!
+			return;
+		},
+		'copytoname':function(args) {
+			player.name = getvar('`s10');
+		},
+		'delete':function(args) {
+			file_remove(getfname(getvar(args[0])));
+		},
+		'frontpad':function(args) {
+			var str = getvar(args[0]).toString();
+			var dl = broken_displen(str);
+			var l = parseInt(getvar(args[1]), 10);
+
+			str = spaces(l - dl) + str;
+			setvar(args[0], str);
+		},
+		'getkey':function(args) {
+			if (!dk.console.waitkey(0))
+				return '_';
+			return dk.console.getkey();
+		},
+		'goto':function(args) {
+			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
+			args[0] = replace_vars(args[0]).toLowerCase();
+			if (files[fname].section[args[0]] === undefined)
+				throw new Error('Goto undefined label '+args[0]+' at '+fname+':'+line);
+			line = files[fname].section[args[0]].line;
+		},
+		'move':function(args) {
+			if (args.length > 1) {
+				dk.console.gotoxy(clamp_integer(getvar(args[0]), '8') - 1, clamp_integer(getvar(args[1]), '8') - 1);
+				return;
+			}
+			throw new Error('Invalid move at '+fname+':'+line);
+		},
+		'moveback':function(args) {
+			erase(player.x - 1, player.y - 1);
+			player.x = player.lastx;
+			player.y = player.lasty;
+		},
+		'numreturn':function(args) {
+			var ret = 0;
+			var i;
+			var haystack = getvar(args[1]);
+			for (i = 0; i < haystack.length; i++) {
+				switch(haystack[i]) {
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						i++;
+						break;
+				}
+			}
+			setvar(args[0], i);
+			return;
+		},
+		'pad':function(args) {
+			var str = getvar(args[0]).toString();
+			var dl = displen(str);
+			var l = parseInt(getvar(args[1]), 10);
+
+			str += spaces(l - dl);
+			setvar(args[0], str);
+		},
+		'quebar':function(args) {
+			line++;
+			if (line >= files[fname].lines.length)
+				throw new Error('Trailing quebar at '+fname+':'+line);
+			tfile_append(files[fname].lines[line]);
+		},
+		'readchar':function(args) {
+			// TODO: It's possible to "abort" input and get a zero-length string.
+			setvar(arg[0], getkey());
+		},
+		'readnum':function(args) {
+			var x = scr.pos.x;
+			var y = scr.pos.y;
+			var attr = scr.attr.value;
+			var len = getvar(args.shift());
+			var s;
+			var fg = 15;
+			var bg = 1;
+			var val = '';
+
+			if (args.length > 1)
+				fg = getvar(args.shift());
+			if (args.length > 1)
+				fg = getvar(args.shift());
+			if (args.length > 0) {
+				val = parseInt(getvar(args[0]), 10);
+				if (isNaN(val))
+					throw new Error('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
+			}
+			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true});
+			setvar('`v40', s);
+			dk.console.gotoxy(x, y);
+			while (remove_colour(s).length < len)
+				s += ' ';
+			dk.console.attr = 15;
+			lw(s);
+			dk.console.attr = attr;
+		},
+		'readspecial':function(args) {
+			var ch;
+
+			do {
+				ch = getkey().toUpperCase();
+				if (ch === '\r')
+					ch = args[1].substr(0, 1);
+			} while (args[1].indexOf(ch) === -1);
+			setvar(args[0], ch);
+			sln(ch);
+		},
+		'readstring':function(args) {
+			var x = scr.pos.x;
+			var y = scr.pos.y;
+			var attr = scr.attr.value;
+			var len = getvar(args[0]);
+			var s;
+
+			if (args.length === 2)
+				args.push('`s10');
+			s = dk.console.getstr({crlf:false, len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31)});
+			setvar(args[2], s);
+			dk.console.gotoxy(x, y);
+			while (remove_colour(s).length < len)
+				s += ' ';
+			dk.console.attr = 15;
+			lw(s);
+			dk.console.attr = attr;
+		},
+		'rename':function(args) {
+			file_rename(getfname(getvar(args[0])), getfname(getvar(args[1])));
+		},
+		'replace':function(args) {
+			var hs;
+			var f = getvar(args[0]);
+			var r = getvar(args[1]);
+
+			hs = getvar(args[2]);
+			hs = hs.replace(f, r);
+			setvar(args[2], hs);
+		},
+		'replaceall':function(args) {
+			var hs;
+			var f = getvar(args[0]);
+			var r = getvar(args[1]);
+
+			hs = getvar(args[2]);
+			while (hs.indexOf(f) !== -1) {
+				hs = hs.replace(f, r);
+			}
+			setvar(args[2], hs);
+		},
+		'readchar':function(args) {
+			setvar(args[0], getkey());
+		},
+		'saybar':function(args) {
+			line++;
+			if (line >= files[fname].lines.length)
+				throw new Error('Trailing saybar at '+fname+':'+line);
+			update_bar(files[fname].lines[line], true, 5);
+		},
+		'statbar':function(args) {
+			status_bar();
+		},
+		'strip':function(args) {
+			setvar(args[0], getvar(args[0]).trim());
+		},
+		'stripall':function(args) {
+			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
+		},
+		'stripbad':function(args) {
+			setvar(args[0], clean_str(getvar(args[0])));
+		},
+		'stripcode':function(args) {
+			// TODO: How is this different than STRIPALL?
+			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
 		'talk':function(args) {
 			var to;
@@ -1686,169 +1885,6 @@ function run_ref(sec, fname)
 				}
 			}
 		},
-		'readspecial':function(args) {
-			var ch;
-
-			do {
-				ch = getkey().toUpperCase();
-				if (ch === '\r')
-					ch = args[1].substr(0, 1);
-			} while (args[1].indexOf(ch) === -1);
-			setvar(args[0], ch);
-			sln(ch);
-		},
-		'goto':function(args) {
-			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
-			args[0] = replace_vars(args[0]).toLowerCase();
-			if (files[fname].section[args[0]] === undefined)
-				throw new Error('Goto undefined label '+args[0]+' at '+fname+':'+line);
-			line = files[fname].section[args[0]].line;
-		},
-		'move':function(args) {
-			if (args.length > 1) {
-				dk.console.gotoxy(clamp_integer(getvar(args[0]), '8') - 1, clamp_integer(getvar(args[1]), '8') - 1);
-				return;
-			}
-			throw new Error('Invalid move at '+fname+':'+line);
-		},
-		'readstring':function(args) {
-			var x = scr.pos.x;
-			var y = scr.pos.y;
-			var attr = scr.attr.value;
-			var len = getvar(args[0]);
-			var s;
-
-			if (args.length === 2)
-				args.push('`s10');
-			s = dk.console.getstr({crlf:false, len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31)});
-			setvar(args[2], s);
-			dk.console.gotoxy(x, y);
-			while (remove_colour(s).length < len)
-				s += ' ';
-			dk.console.attr = 15;
-			lw(s);
-			dk.console.attr = attr;
-		},
-		'readnum':function(args) {
-			var x = scr.pos.x;
-			var y = scr.pos.y;
-			var attr = scr.attr.value;
-			var len = getvar(args.shift());
-			var s;
-			var fg = 15;
-			var bg = 1;
-			var val = '';
-
-			if (args.length > 1)
-				fg = getvar(args.shift());
-			if (args.length > 1)
-				fg = getvar(args.shift());
-			if (args.length > 0) {
-				val = parseInt(getvar(args[0]), 10);
-				if (isNaN(val))
-					throw new Error('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
-			}
-			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true});
-			setvar('`v40', s);
-			dk.console.gotoxy(x, y);
-			while (remove_colour(s).length < len)
-				s += ' ';
-			dk.console.attr = 15;
-			lw(s);
-			dk.console.attr = attr;
-		},
-		'stripbad':function(args) {
-			setvar(args[0], clean_str(getvar(args[0])));
-		},
-		'strip':function(args) {
-			setvar(args[0], getvar(args[0]).trim());
-		},
-		'upcase':function(args) {
-			setvar(args[0], getvar(args[0]).toUpperCase());
-		},
-		'stripall':function(args) {
-			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
-		},
-		'stripcode':function(args) {
-			// TODO: How is this different than STRIPALL?
-			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
-		},
-		'replace':function(args) {
-			var hs;
-			var f = getvar(args[0]);
-			var r = getvar(args[1]);
-
-			hs = getvar(args[2]);
-			hs = hs.replace(f, r);
-			setvar(args[2], hs);
-		},
-		'replaceall':function(args) {
-			var hs;
-			var f = getvar(args[0]);
-			var r = getvar(args[1]);
-
-			hs = getvar(args[2]);
-			while (hs.indexOf(f) !== -1) {
-				hs = hs.replace(f, r);
-			}
-			setvar(args[2], hs);
-		},
-		'copytoname':function(args) {
-			player.name = getvar('`s10');
-		},
-		'moveback':function(args) {
-			erase(player.x - 1, player.y - 1);
-			player.x = player.lastx;
-			player.y = player.lasty;
-		},
-		'saybar':function(args) {
-			line++;
-			if (line >= files[fname].lines.length)
-				throw new Error('Trailing saybar at '+fname+':'+line);
-			update_bar(files[fname].lines[line], true, 5);
-		},
-		'quebar':function(args) {
-			line++;
-			if (line >= files[fname].lines.length)
-				throw new Error('Trailing quebar at '+fname+':'+line);
-			tfile_append(files[fname].lines[line]);
-		},
-		'pad':function(args) {
-			var str = getvar(args[0]).toString();
-			var dl = displen(str);
-			var l = parseInt(getvar(args[1]), 10);
-
-			str += spaces(l - dl);
-			setvar(args[0], str);
-		},
-		'frontpad':function(args) {
-			var str = getvar(args[0]).toString();
-			var dl = broken_displen(str);
-			var l = parseInt(getvar(args[1]), 10);
-
-			str = spaces(l - dl) + str;
-			setvar(args[0], str);
-		},
-		'rename':function(args) {
-			file_rename(getfname(getvar(args[0])), getfname(getvar(args[1])));
-		},
-		'addlog':function(args) {
-			var f = new File(getfname('lognow.txt'));
-			line++;
-			if (line > files[fname].lines.length)
-				return;
-			if (f.open('ab')) {
-				cl = files[fname].lines[line];
-				f.write(replace_vars(cl)+'\r\n');
-				f.close();
-			}
-		},
-		'delete':function(args) {
-			file_remove(getfname(getvar(args[0])));
-		},
-		'statbar':function(args) {
-			status_bar();
-		},
 		'trim':function(args) {
 			var f = new File(getfname(getvar(args[0])));
 			var len = getvar(args[1]);
@@ -1868,16 +1904,356 @@ function run_ref(sec, fname)
 			f.truncate(f.position);
 			f.close();
 		},
-		'getkey':function(args) {
-			if (!dk.console.waitkey(0))
-				return '_';
-			return dk.console.getkey();
+		'upcase':function(args) {
+			setvar(args[0], getvar(args[0]).toUpperCase());
 		},
-		'readchar':function(args) {
-			setvar(args[0], getkey());
-		}
+		'write':function(args) {
+			line++;
+			if (line > files[fname].lines.length)
+				return;
+			cl = files[fname].lines[line];
+			lw(replace_vars(cl));
+		},
 	};
 	var handlers = {
+		// TODO: NPC Chat commands... see Jack Phlash REFDoor docs for deets.
+		// Appears to be used to end a slow/etc block
+		'':function(args) {},
+		'addchar':function(args) {
+			var tmp;
+
+			if (player.Record === undefined) {
+				tmp = pfile.new();
+				if (tmp.Record >= 200) {
+					pfile.file.position = pfile.RecordLength * 200;
+					pfile.truncate(pfile.RecordLength * 200);
+					run_ref('full','gametxt.ref');
+					exit(0);
+				}
+				player.Record = tmp.Record;
+				ufile.new();
+			}
+			player.lastsaved = savetime();
+			player.put();
+			update_rec = ufile.get(player.Record);
+			while(update_rec === null) {
+				ufile.new();
+				update_rec = ufile.get(player.Record);
+			}
+		},
+		'begin':function(args) {
+			var depth = 1;
+			// Don't do this, trailing whitespace... we now delete trailing WS so do it again.
+			// We *can't* delete trailing whitespace because of felicity.ref:779 (sigh)
+			//if (args.length > 0)
+			//	throw new Error('Unexpected arguments to begin at '+fname+':'+line);
+			while (depth > 0) {
+				line++;
+				if (files[fname].lines[line] === undefined)
+					throw new Error('Ran off end of script at '+fname+':'+line);
+				if (files[fname].lines[line].search(/^\s*@#/i) !== -1)
+					depth = 0;
+				if (files[fname].lines[line].search(/^\s*@begin/i) !== -1)
+					depth++;
+				if (files[fname].lines[line].search(/^\s*@end/i) !== -1)
+					depth--;
+			}
+		},
+		'bitset':function(args) {
+			var bit = clamp_integer(getvar(args[1]), '32');
+			var s = clamp_integer(getvar(args[2]), '8');
+			var v = clamp_integer(getvar(args[0]), '32');
+
+			if (s !== 0 && s !== 1)
+				throw new Error('Setting bit to value other than zero or one');
+			if ((!!(v & (1 << bit))) !== (!!s))
+				v ^= (1<<bit);
+			setvar(args[0], v);
+		},
+		'busy':function(args) {
+			// Turn red for other players, and run @#busy if other player interacts
+			// this toggles battle...
+			player.battle = 1;
+			update_update();
+		},
+		'buymanager':function(args) {
+			var itms = getlines();
+			var itm;
+			var i;
+			var cur = 0;
+			var ch;
+			var choice;
+
+			for (i = 0; i < itms.length; i++)
+				itms[i] = parseInt(itms[i], 10);
+			// Don't clear the screen first?  Interesting...
+			dk.console.gotoxy(0, 9);
+			lw('`r5`%  Item To Buy                         Price                                     ');
+			dk.console.gotoxy(0, 23);
+			lw('`r5                                                                               ');
+			dk.console.gotoxy(2, 23);
+			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+
+			if (items.length === 0) {
+				dk.console.gotoxy(0, 10);
+				lw('  `2They have nothing to sell.  (press `%Q `2to continue)');
+				do {
+					ch = getkey.toUpperCase();
+				} while(ch !== 'Q');
+			}
+
+			while(1) {
+				choice = items_menu(itms, cur, true, false, '', 10, 22)
+				cur = choice.cur;
+				switch(choice.ch) {
+					case 'Q':
+						return;
+					case '\r':
+						itm = items[itms[cur] - 1];
+						dk.console.gotoxy(0, 23);
+						lw('`r4                                                                               ');
+						if (player.money >= itm.value) {
+							player.i[itm.Record]++;
+							player.money -= itm.value;
+							dk.console.gotoxy(1, 23);
+							// TODO: `* is node number... sometimes!
+							lw('`r4`^ ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
+						}
+						else {
+							dk.console.gotoxy(1, 23);
+							lw('`r4`^ ITEM NOT BOUGHT! `%You don\'t have enough gold.  `2(`0press a key to continue`2)`r0');
+						}
+						getkey();
+						dk.console.gotoxy(0, 23);
+						lw('`r5                                                                               ');
+						dk.console.gotoxy(2, 23);
+						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
+						break;
+				}
+			}
+			draw_map();
+		},
+		'checkmail':function(args) {
+			mail_check(false);
+		},
+		'choice':function(args) {
+			var allchoices = getlines();
+			var choices = [];
+			var cmap = [];
+			var cur = getvar('`v01') - 1;
+			var attr = dk.console.attr.value;
+			var choice;
+
+			function filter_choices() {
+				choices = [];
+				allchoices.forEach(function(l, i) {
+					var m;
+
+					do {
+						m = l.match(/^([-\+=\!><])([`&0-9a-zA-Z]+) ([^ ]+) /)
+						if (m !== null) {
+							l = l.substr(m[0].length);
+							switch(m[1]) {
+								case '=':
+									if (getvar(m[2]).toString() !== m[3])
+										return;
+									break;
+								case '!':
+									if (getvar(m[2]).toString() === m[3])
+										return;
+									break;
+								case '<':
+									if (getvar(m[2]) >= parseInt(m[3], 10))
+										return;
+									break;
+								case '>':
+									if (getvar(m[2]) <= parseInt(m[3], 10))
+										return;
+									break;
+								case '+':
+									if (!(getvar(m[2]) & (1 << parseInt(m[3], 10))))
+										return;
+									break;
+								case '-':
+									if (getvar(m[2]) & (1 << parseInt(m[3], 10)))
+										return;
+									break;
+								default:
+									throw new Error('Unhandled filter choice!');
+							}
+						}
+					} while (m != null);
+					choices.push(l);
+					cmap.push(i);
+				});
+			}
+
+			filter_choices();
+			dk.console.attr.value = 15;
+			choice = vbar(choices, {cur:cur});
+			setvar('responce', cmap[choice.cur] + 1);
+			setvar('`v01', cmap[choice.cur] + 1);
+		},
+		'chooseplayer':function(args) {
+			var pl = chooseplayer();
+
+			if (pl === undefined)
+				setvar(args[0], 0);
+			else
+				setvar(args[0], pl + 1);
+		},
+		'clear':function(args) {
+			if (args[0].toLowerCase() === 'screen') {
+				sclrscr();
+				return;
+			}
+			throw new Error('Unknown clear type at '+fname+':'+line);
+		},
+		'clearblock':function(args) {
+			var start = parseInt(getvar(args[0]), 10) - 1;
+			var end = parseInt(getvar(args[1]), 10);
+			var i;
+			var sattr = dk.console.attr.value;
+
+			clearrows(start, end - 1);
+			dk.console.attr.value = sattr;
+		},
+		'convert_file_to_ansi':function(args) {
+			var inf = new File(getfname(getvar(args[0])));
+			var out = new File(getfname(getvar(args[1])));
+			var l;
+
+			if (!inf.open('r'))
+				return;
+			if (!out.open('wb')) {
+				inf.close();
+				return;
+			}
+			while ((l = inf.readln()) !== null) {
+				out.write(lord_to_ansi(l)+'\r\n');
+			}
+			inf.close();
+			out.close();
+		},
+		'convert_file_to_ascii':function(args) {
+			var inf = new File(getfname(getvar(args[0])));
+			var out = new File(getfname(getvar(args[1])));
+			var l;
+
+			if (!inf.open('r'))
+				return;
+			if (!out.open('wb')) {
+				inf.close();
+				return;
+			}
+			while ((l = inf.readln()) !== null) {
+				out.write(remove_colour(l).replace(/`c/g,'')+'\r\n');
+			}
+			inf.close();
+			out.close();
+		},
+		'copyfile':function(args) {
+			file_copy(getfname(getvar(args[0])), getfname(getvar(args[1])));
+		},
+		'dataload':function(args) {
+			var f = new File(getfname(getvar(args[0])));
+			var rec = getvar(args[1]);
+			var val;
+
+			if (!file_exists(f.name)) {
+				f.open('wb');
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++) {
+					if ((i + 1) === rec)
+						f.writeBin(val, 4);
+					else
+						f.writeBin(0, 4);
+				}
+				f.close();
+				setvar(args[2], 0);
+				return;
+			}
+			if (!f.open('rb'))
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+			f.position = rec * 4;
+			val = f.readBin(4);
+			f.close();
+			setvar(args[2], val);
+		},
+		'datanewday':function(args) {
+			var f = new File(getfname(getvar(args[0])));
+			var i;
+			var d;
+
+			if (!file_exists(f.name)) {
+				f.open('wb');
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++)
+					f.writeBin(0, 4);
+				f.close();
+				return;
+			}
+			if (!f.open('r+b'))
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+			d = f.readBin(4);
+			if (d != state.time) {
+				f.position = 0;
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++)
+					f.writeBin(0, 4);
+			}
+			f.close();
+		},
+		'datasave':function(args) {
+			var f = new File(getfname(getvar(args[0])));
+			var rec = getvar(args[1]);
+			var val = replace_vars(getvar(args[2]));
+
+			if (!file_exists(f.name)) {
+				f.open('wb');
+				f.writeBin(state.time, 4);
+				for (i = 0; i < 250; i++) {
+					if ((i + 1) === rec)
+						f.writeBin(val, 4);
+					else
+						f.writeBin(0, 4);
+				}
+				f.close();
+				return;
+			}
+			if (!f.open('r+b'))
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+			f.position = rec * 4;
+			f.writeBin(val, 4);
+			f.close();
+		},
+		'delete':function(args) {
+			file_remove(getfname(getvar(args[0])));
+		},
+		'display':function(args) {
+			if (args.length > 2 && args[1].toLowerCase() === 'in') {
+				// TODO: Implement this!
+				throw new Error('Display command not implemented!');
+			}
+			throw new Error('Unsupported display at '+fname+':'+line);
+		},
+		'displayfile':function(args) {
+			var lines;
+			if (args.length < 1)
+				throw new Error('No filename for displayfile at '+fname+':'+line);
+			var f = new File(getfname(getvar(args[0])));
+			if (!file_exists(f.name)) {
+				lln('`0File '+getvar(args[0])+' missing - please inform sysop');
+				return;
+			}
+			if (!f.open('r'))
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+			lines = f.readAll();
+			f.close();
+			lines.forEach(function(l) {
+				lln(l);
+			});
+		},
 		'do':function(args) {
 			var tmp;
 
@@ -1958,13 +2334,73 @@ function run_ref(sec, fname)
 				setvar(args[0], random(clamp_integer(getvar(args[2]), 's32')));
 				return;
 			}
+			if (args.length === 2 && args[1].toLowerCase() === 'copytoname') {
+				player.name = getvar('`s10');
+				return;
+			}
 			throw new Error('Unhandled do at '+fname+':'+line);
 		},
-		'version':function(args) {
-			if (args.length < 1)
-				throw new Error('Invalid version at '+fname+':'+line);
-			if (parseInt(args[0] > vars.version.val))
-				throw new Error('lord2.js version too old!');
+		'drawmap':function(args) {
+			draw_map();
+		},
+		'drawpart':function(args) {
+			var x = getvar(args[0]);
+			var y = getvar(args[1]);
+
+			erase(x - 1, y - 1);
+			update_space(x - 1, y - 1);
+		},
+		'end':function(args) {},
+		'fight':function(args) {
+			var l = getlines();
+
+			function split_ref(str, prefix) {
+				var l = str.split('|');
+
+				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
+					l = ['',''];
+
+				enemy[prefix+'_reffile'] = getvar(l[0]);
+				enemy[prefix+'_refname'] = getvar(l[1]);
+			}
+
+			function add_attack(str) {
+				var l = str.split('|');
+
+				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
+					return;
+
+				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:getvar(l[0])});
+			}
+
+			enemy = {
+				name:getvar(l[0]),
+				see:getvar(l[1]),
+				killstr:getvar(l[2]),
+				sex:parseInt(getvar(l[3]), 10),
+				defence:parseInt(getvar(l[9]), 10),
+				gold:parseInt(getvar(l[10]), 10),
+				experience:parseInt(getvar(l[11]), 10),
+				hp:parseInt(getvar(l[12]), 10),
+				maxhp:parseInt(getvar(l[12]), 10),
+				attacks:[]
+			};
+			add_attack(l[4]);
+			add_attack(l[5]);
+			add_attack(l[6]);
+			add_attack(l[7]);
+			add_attack(l[8]);
+			split_ref(l[13], 'win');
+			split_ref(l[14], 'lose');
+			split_ref(l[15], 'run');
+		},
+		'graphics':function(args) {
+			// TODO: Sets the graphics support level (3 is ANSI)
+		},
+		'halt':function(args) {
+			if (args.length > 0)
+				exit(clamp_integer(args[0], 's32'));
+			exit(0);
 		},
 		'if':function(args) {
 			var tmp;
@@ -2021,6 +2457,7 @@ function run_ref(sec, fname)
 					break;
 				case '!':
 				case 'not':
+				case "isn't":
 					if (getvar(args[0]).toString().toLowerCase() !== getvar(args[2]).toString().toLowerCase())
 						handlers.do(args.slice(4));
 					else if (args[4].toLowerCase() === 'begin')
@@ -2063,236 +2500,6 @@ function run_ref(sec, fname)
 					throw new Error('Unhandled condition '+args[1]+' at '+fname+':'+line);
 			}
 		},
-		'begin':function(args) {
-			var depth = 1;
-			// Don't do this, trailing whitespace... we now delete trailing WS so do it again.
-			// We *can't* delete trailing whitespace because of felicity.ref:779 (sigh)
-			//if (args.length > 0)
-			//	throw new Error('Unexpected arguments to begin at '+fname+':'+line);
-			while (depth > 0) {
-				line++;
-				if (files[fname].lines[line] === undefined)
-					throw new Error('Ran off end of script at '+fname+':'+line);
-				if (files[fname].lines[line].search(/^\s*@#/i) !== -1)
-					depth = 0;
-				if (files[fname].lines[line].search(/^\s*@begin/i) !== -1)
-					depth++;
-				if (files[fname].lines[line].search(/^\s*@end/i) !== -1)
-					depth--;
-			}
-		},
-		'routine':function(args) {
-			var s = replace_vars(args[0]).toLowerCase();
-			if (args.length === 1) {
-				run_ref(s, fname);
-				return;
-			}
-			if (args[1].toLowerCase() === 'in') {
-				run_ref(s, args[2]);
-				return;
-			}
-			throw new Error('Unable to parse routine "'+s+'" at '+fname+':'+line);
-		},
-		'run':function(args) {
-			var f = fname;
-			var s = replace_vars(args[0]).toLowerCase();
-
-			if (args.length > 2 && args[1].toLowerCase() === 'in') {
-				f = getvar(args[2]).toLowerCase();
-			}
-			if (f.indexOf('.') === -1)
-				f += '.ref';
-			if (files[f] === undefined)
-				load_ref(f);
-			if (files[f] === undefined)
-				throw new Error('Unable to load REF "'+f+'"');
-			if (files[f].section[s] === undefined)
-				throw new Error('Unable to find run section '+s+' in '+f+' at '+fname+':'+line);
-			fname = f;
-			line = files[f].section[s].line;
-		},
-		'pauseon':function(args) {
-			morechk = true;
-		},
-		'pauseoff':function(args) {
-			morechk = false;
-		},
-		'show':function(args) {
-			var l = getlines();
-			var ch;
-			var i;
-			var p;
-			var pages;
-			var sattr = 2;
-
-			if (args.length === 0) {
-				l.forEach(function(l) {
-					lln(replace_vars(l));
-				});
-			}
-			else if (args[0].toLowerCase() === 'scroll') {
-				p = 0;
-				pages = l.length / 22;
-				if (pages > parseInt(pages, 10))
-					pages = parseInt(pages, 10) + 1;
-
-				while(1) {
-					sclrscr();
-					dk.console.attr.value = sattr;
-					for (i = 0; i < 22; i++) {
-						if (p*22+i >= l.length)
-							continue;
-						handle_lordcodes(l[p*22+i]);
-						sln('');
-					}
-					sattr = dk.console.attr.value;
-					dk.console.gotoxy(0, 22);
-					lw('`r1`%  (`$'+(p+1)+'`%/`$'+pages+'`%)`$');
-					dk.console.cleareol();
-					dk.console.gotoxy(12, 22);
-					lw('`%[`$N`%]`$ext Page, `%[`$P`%]`$revious Page, `%[`$Q`%]`$uit, `%[`$S`%]`$tart, `%[`$E`%]`$nd');
-					ch = getkey().toUpperCase();
-					switch (ch) {
-						case 'E':
-							p = pages - 1;
-							break;
-						case 'N':
-							p++;
-							if (p >= pages)
-								p = pages - 1;
-							break;
-						case 'P':
-							p--;
-							if (p < 0)
-								p = 0;
-							break;
-						case 'S':
-							p = 0;
-							break;
-						case 'Q':
-							dk.console.attr.value = sattr;
-							return;
-					}
-				}
-			}
-			else
-				throw new Error('Unsupported SHOW command at '+fname+':'+line);
-		},
-		'writefile':function(args) {
-			if (args.length < 1)
-				throw new Error('No filename for writefile at '+fname+':'+line);
-			var f = new File(getfname(getvar(args[0])));
-			if (!f.open('ab'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
-			getlines().forEach(function(l) {
-				f.write(replace_vars(l)+'\r\n');
-			});
-			f.close();
-		},
-		'readfile':function(args) {
-			var vs = getlines();
-			var f = new File(getfname(getvar(args[0])));
-			var l;
-
-			if (f.open('r')) {
-				while(vs.length > 0) {
-					l = f.readln();
-					if (l === null)
-						break;
-					setvar(vs.shift(), l);
-				}
-				f.close();
-			}
-			// Documentation says it won't change variables if file too short...
-			// By felicity.ref ends up displaying junk...
-			//while (vs.length) {
-			//	setvar(vs.shift(), '');
-			//}
-		},
-		'end':function(args) {},
-		'label':function(args) {},
-		// Appears to be used to end a slow/etc block
-		'':function(args) {},
-		'displayfile':function(args) {
-			var lines;
-			if (args.length < 1)
-				throw new Error('No filename for displayfile at '+fname+':'+line);
-			var f = new File(getfname(getvar(args[0])));
-			if (!file_exists(f.name)) {
-				lln('`0File '+getvar(args[0])+' missing - please inform sysop');
-				return;
-			}
-			if (!f.open('r'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
-			lines = f.readAll();
-			f.close();
-			lines.forEach(function(l) {
-				lln(l);
-			});
-		},
-		'choice':function(args) {
-			var allchoices = getlines();
-			var choices = [];
-			var cmap = [];
-			var cur = getvar('`v01') - 1;
-			var attr = dk.console.attr.value;
-			var choice;
-
-			function filter_choices() {
-				choices = [];
-				allchoices.forEach(function(l, i) {
-					var m;
-
-					do {
-						m = l.match(/^([-\+=\!><])([`&0-9a-zA-Z]+) ([^ ]+) /)
-						if (m !== null) {
-							l = l.substr(m[0].length);
-							switch(m[1]) {
-								case '=':
-									if (getvar(m[2]).toString() !== m[3])
-										return;
-									break;
-								case '!':
-									if (getvar(m[2]).toString() === m[3])
-										return;
-									break;
-								case '<':
-									if (getvar(m[2]) >= parseInt(m[3], 10))
-										return;
-									break;
-								case '>':
-									if (getvar(m[2]) <= parseInt(m[3], 10))
-										return;
-									break;
-								case '+':
-									if (!(getvar(m[2]) & (1 << parseInt(m[3], 10))))
-										return;
-									break;
-								case '-':
-									if (getvar(m[2]) & (1 << parseInt(m[3], 10)))
-										return;
-									break;
-								default:
-									throw new Error('Unhandled filter choice!');
-							}
-						}
-					} while (m != null);
-					choices.push(l);
-					cmap.push(i);
-				});
-			}
-
-			filter_choices();
-			dk.console.attr.value = 15;
-			choice = vbar(choices, {cur:cur});
-			setvar('responce', cmap[choice.cur] + 1);
-			setvar('`v01', cmap[choice.cur] + 1);
-		},
-		'halt':function(args) {
-			if (args.length > 0)
-				exit(clamp_integer(args[0], 's32'));
-			exit(0);
-		},
 		'key':function(args) {
 			if (args.length > 0) {
 				switch(args[0].toLowerCase()) {
@@ -2317,27 +2524,39 @@ function run_ref(sec, fname)
 			lw('\r');
 			dk.console.cleareol();
 		},
-		'addchar':function(args) {
-			var tmp;
+		'label':function(args) {},
+		'loadcursor':function(args) {
+			dk.console.gotoxy(saved_cursor.x, saved_cursor.y);
+		},
+		'loadglobals':function(args) {
+			world.reLoad();
+		},
+		'loadmap':function(args) {
+			map = load_map(parseInt(getvar(args[0]), 10));
+		},
+		'loadworld':function(args) {
+			world = wfile.get(0);
+		},
+		'lordrank':function(args) {
+			var f = new File(getfname(getvar(args[0])));
+			var rp = ranked_players(args[1]);
 
-			if (player.Record === undefined) {
-				tmp = pfile.new();
-				if (tmp.Record >= 200) {
-					pfile.file.position = pfile.RecordLength * 200;
-					pfile.truncate(pfile.RecordLength * 200);
-					run_ref('full','gametxt.ref');
-					exit(0);
-				}
-				player.Record = tmp.Record;
-				ufile.new();
-			}
-			player.lastsaved = savetime();
-			player.put();
-			update_rec = ufile.get(player.Record);
-			while(update_rec === null) {
-				ufile.new();
-				update_rec = ufile.get(player.Record);
-			}
+			if (!f.open('ab'))
+				return;
+			rp.forEach(function(pl, i) {
+				f.write((pl.sexmale === 1 ? ' ' : '`#F')+' `2'+space_pad(pl.name, 21)+'`2'+pretty_int(pl.p[0], -14)+'`%'+pretty_int(pl.p[8], -5)+'     '+space_pad((pl.dead === 1 ? '`4Dead' : '`%Alive'), 6)+(pl.p[6] >= 0 ? '`0' : '`4') + pretty_int(pl.p[6], -7)+'`%    '+(pl.p[17] > 0 ? pretty_int(pl.p[17]) : '')+((pl.t[16] & (1<<7)) ? ' `r1`%K`r0' : '')+((pl.t[17] & (1<<7)) ? ' `r4`^D`r0' : '') + '\r\n');
+			});
+			f.close();
+		},
+		'moremap':function(args) {
+			line++;
+			if (line > files[fname].lines.length)
+				return;
+			cl = files[fname].lines[line];
+			morestr = replace_vars(cl);
+		},
+		'nocheck':function(args) {
+			// We don't really support this because there's no need for it.
 		},
 		'offmap':function(args) {
 			// Disappear to other players... this toggles busy because
@@ -2346,159 +2565,115 @@ function run_ref(sec, fname)
 			update_update();
 			player.put();
 		},
-		'busy':function(args) {
-			// Turn red for other players, and run @#busy if other player interacts
-			// this toggles battle...
-			player.battle = 1;
-			update_update();
-		},
-		'drawmap':function(args) {
-			draw_map();
-		},
-		'update':function(args) {
-			player.busy = 0;
-			update();
-			player.put();
-		},
-		'update_update':function(args) {
-			player.busy = 0;
-			update_update();
-			player.put();
-		},
-		'clearblock':function(args) {
-			var start = parseInt(getvar(args[0]), 10) - 1;
-			var end = parseInt(getvar(args[1]), 10);
-			var i;
-			var sattr = dk.console.attr.value;
+		'overheadmap':function(args) {
+			var off;
+			var x, y;
 
-			clearrows(start, end - 1);
-			dk.console.attr.value = sattr;
-		},
-		'loadmap':function(args) {
-			map = load_map(parseInt(getvar(args[0]), 10));
-		},
-		'loadworld':function(args) {
-			world = wfile.get(0);
-		},
-		'saveworld':function(args) {
-			world.put();
-		},
-		'buymanager':function(args) {
-			var itms = getlines();
-			var itm;
-			var i;
-			var cur = 0;
-			var ch;
-			var choice;
-
-			for (i = 0; i < itms.length; i++)
-				itms[i] = parseInt(itms[i], 10);
-			// Don't clear the screen first?  Interesting...
-			dk.console.gotoxy(0, 9);
-			lw('`r5`%  Item To Buy                         Price                                     ');
-			dk.console.gotoxy(0, 23);
-			lw('`r5                                                                               ');
-			dk.console.gotoxy(2, 23);
-			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
-
-			if (items.length === 0) {
-				dk.console.gotoxy(0, 10);
-				lw('  `2They have nothing to sell.  (press `%Q `2to continue)');
-				do {
-					ch = getkey.toUpperCase();
-				} while(ch !== 'Q');
-			}
-
-			while(1) {
-				choice = items_menu(itms, cur, true, false, '', 10, 22)
-				cur = choice.cur;
-				switch(choice.ch) {
-					case 'Q':
-						return;
-					case '\r':
-						itm = items[itms[cur] - 1];
-						dk.console.gotoxy(0, 23);
-						lw('`r4                                                                               ');
-						if (player.money >= itm.value) {
-							player.i[itm.Record]++;
-							player.money -= itm.value;
-							dk.console.gotoxy(1, 23);
-							// TODO: `* is node number... sometimes!
-							lw('`r4`^ ITEM BOUGHT! `%You now have ' + player.i[itm.Record] + ' of \'em.  `2(`0press a key to continue`2)`r0');
-						}
-						else {
-							dk.console.gotoxy(1, 23);
-							lw('`r4`^ ITEM NOT BOUGHT! `%You don\'t have enough gold.  `2(`0press a key to continue`2)`r0');
-						}
-						getkey();
-						dk.console.gotoxy(0, 23);
-						lw('`r5                                                                               ');
-						dk.console.gotoxy(2, 23);
-						lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$&gold `2gold.`r0');
-						break;
+			sclrscr();
+			dk.console.gotoxy(0, 0);
+			for (y = 0; y < 20; y++) {
+				dk.console.gotoxy(0, y);
+				for (x = 0; x < 80; x++) {
+					off = y * 80 + x;
+					if (world.hideonmap[off] || world.mapdatindex[off] < 1)
+						background(1);
+					else
+						background(2);
+					lw(' ');
 				}
 			}
-			draw_map();
+		},
+		'pauseoff':function(args) {
+			morechk = false;
+		},
+		'pauseon':function(args) {
+			morechk = true;
+		},
+		'progname':function(args) {
+			// TODO: Status bar stuff.
+			line++;
+			if (line > files[fname].lines.length)
+				return;
+			cl = files[fname].lines[line];
+			progname = replace_vars(cl);
+		},
+		'rank':function(args) {
+			// TODO: No real clue what the filename is for...
+			var rp = ranked_players(args[1]);
+			var op = player;
+
+			rp.forEach(function(pl, i) {
+				player = pl;
+				run_ref(format('`p%02d', getvar(args[2])), fname);
+			});
+			player = op;
+		},
+		'readfile':function(args) {
+			var vs = getlines();
+			var f = new File(getfname(getvar(args[0])));
+			var l;
+
+			if (f.open('r')) {
+				while(vs.length > 0) {
+					l = f.readln();
+					if (l === null)
+						break;
+					setvar(vs.shift(), l);
+				}
+				f.close();
+			}
+			// Documentation says it won't change variables if file too short...
+			// By felicity.ref ends up displaying junk...
+			//while (vs.length) {
+			//	setvar(vs.shift(), '');
+			//}
+		},
+		'restorecursor':function(args) {
+			dk.console.gotoxy(saved_cursor.x, saved_cursor.y);
+		},
+		'routine':function(args) {
+			var s = replace_vars(args[0]).toLowerCase();
+			if (args.length === 1) {
+				run_ref(s, fname);
+				return;
+			}
+			if (args[1].toLowerCase() === 'in') {
+				run_ref(s, args[2]);
+				return;
+			}
+			throw new Error('Unable to parse routine "'+s+'" at '+fname+':'+line);
+		},
+		'routineabort':function(args) {
+			// TODO: Implement this.
+			throw new Error('RoutineAbort is not implemented');
+		},
+		'run':function(args) {
+			// TODO: Test if the ref that's ran actually returns here, or if it simple aborts execution!
+			var f = fname;
+			var s = replace_vars(args[0]).toLowerCase();
+
+			if (args.length > 2 && args[1].toLowerCase() === 'in') {
+				f = getvar(args[2]).toLowerCase();
+			}
+			if (f.indexOf('.') === -1)
+				f += '.ref';
+			if (files[f] === undefined)
+				load_ref(f);
+			if (files[f] === undefined)
+				throw new Error('Unable to load REF "'+f+'"');
+			if (files[f].section[s] === undefined)
+				throw new Error('Unable to find run section '+s+' in '+f+' at '+fname+':'+line);
+			fname = f;
+			line = files[f].section[s].line;
+		},
+		'savecursor':function(args) {
+			saved_cursor = {x:scr.pos.x, y:scr.pos.y};
 		},
 		'saveglobals':function(args) {
 			world.put();
 		},
-		'loadglobals':function(args) {
-			world.reLoad();
-		},
-		'bitset':function(args) {
-			var bit = clamp_integer(getvar(args[1]), '32');
-			var s = clamp_integer(getvar(args[2]), '8');
-			var v = clamp_integer(getvar(args[0]), '32');
-
-			if (s !== 0 && s !== 1)
-				throw new Error('Setting bit to value other than zero or one');
-			if ((!!(v & (1 << bit))) !== (!!s))
-				v ^= (1<<bit);
-			setvar(args[0], v);
-		},
-		'fight':function(args) {
-			var l = getlines();
-
-			function split_ref(str, prefix) {
-				var l = str.split('|');
-
-				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
-					l = ['',''];
-
-				enemy[prefix+'_reffile'] = getvar(l[0]);
-				enemy[prefix+'_refname'] = getvar(l[1]);
-			}
-
-			function add_attack(str) {
-				var l = str.split('|');
-
-				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
-					return;
-
-				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:getvar(l[0])});
-			}
-
-			enemy = {
-				name:getvar(l[0]),
-				see:getvar(l[1]),
-				killstr:getvar(l[2]),
-				sex:parseInt(getvar(l[3]), 10),
-				defence:parseInt(getvar(l[9]), 10),
-				gold:parseInt(getvar(l[10]), 10),
-				experience:parseInt(getvar(l[11]), 10),
-				hp:parseInt(getvar(l[12]), 10),
-				maxhp:parseInt(getvar(l[12]), 10),
-				attacks:[]
-			};
-			add_attack(l[4]);
-			add_attack(l[5]);
-			add_attack(l[6]);
-			add_attack(l[7]);
-			add_attack(l[8]);
-			split_ref(l[13], 'win');
-			split_ref(l[14], 'lose');
-			split_ref(l[15], 'run');
+		'saveworld':function(args) {
+			world.put();
 		},
 		'sellmanager':function(args) {
 			var i;
@@ -2580,201 +2755,93 @@ rescan:
 				draw_map();
 			}
 		},
-		'dataload':function(args) {
-			var f = new File(getfname(getvar(args[0])));
-			var rec = getvar(args[1]);
-			var val;
-
-			if (!file_exists(f.name)) {
-				f.open('wb');
-				f.writeBin(state.time, 4);
-				for (i = 0; i < 250; i++) {
-					if ((i + 1) === rec)
-						f.writeBin(val, 4);
-					else
-						f.writeBin(0, 4);
-				}
-				f.close();
-				setvar(args[2], 0);
-				return;
-			}
-			if (!f.open('rb'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
-			f.position = rec * 4;
-			val = f.readBin(4);
-			f.close();
-			setvar(args[2], val);
+		'shell':function(args) {
+			// TODO?  I mean... likely not.
+			throw new Error("Attempt to use a shell command.");
 		},
-		'datasave':function(args) {
-			var f = new File(getfname(getvar(args[0])));
-			var rec = getvar(args[1]);
-			var val = replace_vars(getvar(args[2]));
-
-			if (!file_exists(f.name)) {
-				f.open('wb');
-				f.writeBin(state.time, 4);
-				for (i = 0; i < 250; i++) {
-					if ((i + 1) === rec)
-						f.writeBin(val, 4);
-					else
-						f.writeBin(0, 4);
-				}
-				f.close();
-				return;
-			}
-			if (!f.open('r+b'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
-			f.position = rec * 4;
-			f.writeBin(val, 4);
-			f.close();
-		},
-		'datanewday':function(args) {
-			var f = new File(getfname(getvar(args[0])));
+		'show':function(args) {
+			var l = getlines();
+			var ch;
 			var i;
-			var d;
+			var p;
+			var pages;
+			var sattr = 2;
 
-			if (!file_exists(f.name)) {
-				f.open('wb');
-				f.writeBin(state.time, 4);
-				for (i = 0; i < 250; i++)
-					f.writeBin(0, 4);
-				f.close();
-				return;
+			if (args.length === 0) {
+				l.forEach(function(l) {
+					lln(replace_vars(l));
+				});
 			}
-			if (!f.open('r+b'))
-				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
-			d = f.readBin(4);
-			if (d != state.time) {
-				f.position = 0;
-				f.writeBin(state.time, 4);
-				for (i = 0; i < 250; i++)
-					f.writeBin(0, 4);
-			}
-			f.close();
-		},
-		'progname':function(args) {
-			line++;
-			if (line > files[fname].lines.length)
-				return;
-			cl = files[fname].lines[line];
-			progname = replace_vars(cl);
-		},
-		'moremap':function(args) {
-			line++;
-			if (line > files[fname].lines.length)
-				return;
-			cl = files[fname].lines[line];
-			morestr = replace_vars(cl);
-		},
-		'clear':function(args) {
-			if (args[0].toLowerCase() === 'screen') {
-				sclrscr();
-				return;
-			}
-			throw new Error('Unknown clear type at '+fname+':'+line);
-		},
-		'chooseplayer':function(args) {
-			var pl = chooseplayer();
+			else if (args[0].toLowerCase() === 'scroll') {
+				p = 0;
+				pages = l.length / 22;
+				if (pages > parseInt(pages, 10))
+					pages = parseInt(pages, 10) + 1;
 
-			if (pl === undefined)
-				setvar(args[0], 0);
-			else
-				setvar(args[0], pl + 1);
-		},
-		'drawpart':function(args) {
-			var x = getvar(args[0]);
-			var y = getvar(args[1]);
-
-			erase(x - 1, y - 1);
-			update_space(x - 1, y - 1);
-		},
-		'loadcursor':function(args) {
-			dk.console.gotoxy(saved_cursor.x, saved_cursor.y);
-		},
-		'savecursor':function(args) {
-			saved_cursor = {x:scr.pos.x, y:scr.pos.y};
-		},
-		'overheadmap':function(args) {
-			var off;
-			var x, y;
-
-			sclrscr();
-			dk.console.gotoxy(0, 0);
-			for (y = 0; y < 20; y++) {
-				dk.console.gotoxy(0, y);
-				for (x = 0; x < 80; x++) {
-					off = y * 80 + x;
-					if (world.hideonmap[off] || world.mapdatindex[off] < 1)
-						background(1);
-					else
-						background(2);
-					lw(' ');
+				while(1) {
+					sclrscr();
+					dk.console.attr.value = sattr;
+					for (i = 0; i < 22; i++) {
+						if (p*22+i >= l.length)
+							continue;
+						handle_lordcodes(l[p*22+i]);
+						sln('');
+					}
+					sattr = dk.console.attr.value;
+					dk.console.gotoxy(0, 22);
+					lw('`r1`%  (`$'+(p+1)+'`%/`$'+pages+'`%)`$');
+					dk.console.cleareol();
+					dk.console.gotoxy(12, 22);
+					lw('`%[`$N`%]`$ext Page, `%[`$P`%]`$revious Page, `%[`$Q`%]`$uit, `%[`$S`%]`$tart, `%[`$E`%]`$nd');
+					ch = getkey().toUpperCase();
+					switch (ch) {
+						case 'E':
+							p = pages - 1;
+							break;
+						case 'N':
+							p++;
+							if (p >= pages)
+								p = pages - 1;
+							break;
+						case 'P':
+							p--;
+							if (p < 0)
+								p = 0;
+							break;
+						case 'S':
+							p = 0;
+							break;
+						case 'Q':
+							dk.console.attr.value = sattr;
+							return;
+					}
 				}
 			}
+			else
+				throw new Error('Unsupported SHOW command at '+fname+':'+line);
 		},
-		'copyfile':function(args) {
-			file_copy(getfname(getvar(args[0])), getfname(getvar(args[1])));
+		'showlocal':function(args) {
+			// TODO: Like show, but only on local screen (see BEEP).
 		},
-		'convert_file_to_ansi':function(args) {
-			var inf = new File(getfname(getvar(args[0])));
-			var out = new File(getfname(getvar(args[1])));
-			var l;
-
-			if (!inf.open('r'))
-				return;
-			if (!out.open('wb')) {
-				inf.close();
-				return;
-			}
-			while ((l = inf.readln()) !== null) {
-				out.write(lord_to_ansi(l)+'\r\n');
-			}
-			inf.close();
-			out.close();
+		'stripcode':function(args) {
+			setvar(args[0], remove_colour(clean_str(getvar(args[0]))));
 		},
-		'convert_file_to_ascii':function(args) {
-			var inf = new File(getfname(getvar(args[0])));
-			var out = new File(getfname(getvar(args[1])));
-			var l;
-
-			if (!inf.open('r'))
-				return;
-			if (!out.open('wb')) {
-				inf.close();
-				return;
-			}
-			while ((l = inf.readln()) !== null) {
-				out.write(remove_colour(l).replace(/`c/g,'')+'\r\n');
-			}
-			inf.close();
-			out.close();
+		'update':function(args) {
+			player.busy = 0;
+			update();
+			player.put();
 		},
-		'display':function(args) {
-			if (args.length > 2 && args[1].toLowerCase() === 'in') {
-			}
-			throw new Error('Unsupported display at '+fname+':'+line);
+		'update_update':function(args) {
+			player.busy = 0;
+			update_update();
+			player.put();
 		},
-		'rank':function(args) {
-			// TODO: No real clue what the filename is for...
-			var rp = ranked_players(args[1]);
-			var op = player;
-
-			rp.forEach(function(pl, i) {
-				player = pl;
-				run_ref(format('`p%02d', getvar(args[2])), fname);
-			});
-			player = op;
-		},
-		'lordrank':function(args) {
-			var f = new File(getfname(getvar(args[0])));
-			var rp = ranked_players(args[1]);
-
-			if (!f.open('ab'))
-				return;
-			rp.forEach(function(pl, i) {
-				f.write((pl.sexmale === 1 ? ' ' : '`#F')+' `2'+space_pad(pl.name, 21)+'`2'+pretty_int(pl.p[0], -14)+'`%'+pretty_int(pl.p[8], -5)+'     '+space_pad((pl.dead === 1 ? '`4Dead' : '`%Alive'), 6)+(pl.p[6] >= 0 ? '`0' : '`4') + pretty_int(pl.p[6], -7)+'`%    '+(pl.p[17] > 0 ? pretty_int(pl.p[17]) : '')+((pl.t[16] & (1<<7)) ? ' `r1`%K`r0' : '')+((pl.t[17] & (1<<7)) ? ' `r4`^D`r0' : '') + '\r\n');
-			});
-			f.close();
+		'version':function(args) {
+			// TODO: Figure this out...
+			if (args.length < 1)
+				throw new Error('Invalid version at '+fname+':'+line);
+			if (parseInt(args[0] > vars.version.val))
+				throw new Error('lord2.js version too old!');
 		},
 		'whoison':function(args) {
 			var pl;
@@ -2791,9 +2858,17 @@ rescan:
 				}
 			});
 		},
-		'checkmail':function(args) {
-			mail_check(false);
-		}
+		'writefile':function(args) {
+			if (args.length < 1)
+				throw new Error('No filename for writefile at '+fname+':'+line);
+			var f = new File(getfname(getvar(args[0])));
+			if (!f.open('ab'))
+				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
+			getlines().forEach(function(l) {
+				f.write(replace_vars(l)+'\r\n');
+			});
+			f.close();
+		},
 	};
 
   	function handle(args)
