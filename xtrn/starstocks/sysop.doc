@@ -1,20 +1,5 @@
 Please report any bugs, issues or questions to: mcmlxxix at bbs dot thebrokenbubble dot com
 
-*****UPDATING YOUR LOCAL LIBRARIES******
-
-NOTE: It is recommended that you check frequently for game updates from the 
-Synchronet CVS repository located at:
-	
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/xtrn/starstocks/
-	
-Before you attempt to install the program, it is recommended that you
-update your relative 'exec/' and 'exec/load/' paths
-with the latest files from the Synchronet CVS repository at:
-	
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/
-	http://cvs.synchro.net/cgi-bin/viewcvs.cgi/exec/load/
-	
-
 *****CONFIGURING YOUR EXTERNAL PROGRAM*****
 
 Sample configuration in SCFG -> external programs:

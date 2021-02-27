@@ -139,7 +139,7 @@ function GameSettings()
 
 	this.save=GameSettings_Save;
 	if(file_exists(f.name)) {
-		f.open("r+");
+		f.open("r");
 		for(i=0; i<GameSettingProperties.length; i++) {
 			this[GameSettingProperties[i].prop]=f.iniGetValue(null, GameSettingProperties[i].prop, GameSettingProperties[i].def);
 		}

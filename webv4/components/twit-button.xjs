@@ -1,0 +1,4 @@
+<? var _bs = locale.get('button_block_sender', 'page_forum'); ?>
+<button id="bsb-%s" class="btn btn-default icon" aria-label="<? write(_bs); ?>" title="<? write(_bs); ?>" onclick="if (confirm('Permanently block this sender?')) { blockSender('%s', '%s', '%s') }">
+    <span class="glyphicon glyphicon-ban-circle"></span>
+</button>

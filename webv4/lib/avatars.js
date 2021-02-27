@@ -14,9 +14,8 @@ function Avatars() {
             } else {
                 cache.local[usernumber] = data.data;
             }
-        } else {
-            return cache.local[usernumber];
         }
+        return cache.local[usernumber];
     }
 
     this.get_netuser = function (username, netaddr) {
@@ -30,9 +29,8 @@ function Avatars() {
             } else {
                 cache.network[netaddr][username] = data.data;
             }
-        } else {
-            return cache.network[netaddr][username];
         }
+        return cache.network[netaddr][username];
     }
 
 }

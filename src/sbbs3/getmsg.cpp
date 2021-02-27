@@ -1,8 +1,5 @@
 /* Synchronet message retrieval functions */
 
-/* $Id: getmsg.cpp,v 1.102 2020/05/08 05:19:29 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -97,7 +82,8 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 	uint32_t auxattr = msg->hdr.auxattr;
 	uint32_t netattr = msg->hdr.netattr;
 
-	bprintf(text[MsgAttr]
+	char attr_str[64];
+	safe_snprintf(attr_str, sizeof(attr_str), "%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
 		,attr&MSG_SPAM		? "SPAM  "      :nulstr
 		,attr&MSG_READ		? "Read  "      :nulstr
@@ -112,11 +98,35 @@ void sbbs_t::show_msgattr(smbmsg_t* msg)
 		,attr&MSG_NOREPLY	? "NoReply  "	:nulstr
 		,poll == MSG_POLL	? "Poll  "		:nulstr
 		,poll == MSG_POLL && auxattr&POLL_CLOSED ? "(Closed)  "	:nulstr
-		,auxattr&(MSG_FILEATTACH|MSG_MIMEATTACH) ? "Attach  "   :nulstr
-		,netattr&MSG_SENT						 ? "Sent  "		:nulstr
-		,netattr&MSG_INTRANSIT					 ? "InTransit  ":nulstr
-		,netattr&MSG_KILLSENT					 ? "KillSent  " :nulstr
+	);
+
+	char auxattr_str[64];
+	safe_snprintf(auxattr_str, sizeof(auxattr_str), "%s%s%s%s%s%s%s"
+		,auxattr&MSG_FILEREQUEST? "FileRequest  "   :nulstr
+		,auxattr&MSG_FILEATTACH	? "FileAttach  "    :nulstr
+		,auxattr&MSG_MIMEATTACH	? "MimeAttach  "	:nulstr
+		,auxattr&MSG_KILLFILE	? "KillFile  "      :nulstr
+		,auxattr&MSG_RECEIPTREQ	? "ReceiptReq  "	:nulstr
+		,auxattr&MSG_CONFIRMREQ	? "ConfirmReq  "    :nulstr
+		,auxattr&MSG_NODISP		? "DontDisplay  "	:nulstr
 		);
+
+	char netattr_str[64];
+	safe_snprintf(netattr_str, sizeof(netattr_str), "%s%s%s%s%s%s%s%s"
+		,netattr&MSG_LOCAL		? "Local  "			:nulstr
+		,netattr&MSG_INTRANSIT	? "InTransit  "     :nulstr
+		,netattr&MSG_SENT		? "Sent  "			:nulstr
+		,netattr&MSG_KILLSENT	? "KillSent  "      :nulstr
+		,netattr&MSG_HOLD		? "Hold  "			:nulstr
+		,netattr&MSG_CRASH		? "Crash  "			:nulstr
+		,netattr&MSG_IMMEDIATE	? "Immediate  "		:nulstr
+		,netattr&MSG_DIRECT		? "Direct  "		:nulstr
+		);
+
+	bprintf(text[MsgAttr], attr_str, auxattr_str, netattr_str
+		,nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr
+		,nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr
+		,nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr, nulstr);
 }
 
 /* Returns a CP437 text.dat string converted to UTF-8, when appropriate */
@@ -144,7 +154,7 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 	if(buf == NULL)
 		buf = msgghdr_field_cp437_str;
 
-	strncpy(buf, str, sizeof(msgghdr_field_cp437_str));
+	strncpy(buf, str, sizeof(msgghdr_field_cp437_str) - 1);
 	utf8_to_cp437_str(buf);
 
 	return buf;
@@ -164,14 +174,13 @@ void sbbs_t::show_msghdr(smb_t* smb, smbmsg_t* msg, const char* subject, const c
 
 	if(smb != NULL)
 		this->smb = *smb;	// Needed for @-codes and JS bbs.smb_* properties
-	if(msg != NULL) {
-		current_msg = msg;		// Needed for @-codes and JS bbs.msg_* properties
-		current_msg_subj = msg->subj;
-		current_msg_from = msg->from;
-		current_msg_to = msg->to;
-		if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
-			pmode |= P_UTF8;
-	}
+	current_msg = msg;		// Needed for @-codes and JS bbs.msg_* properties
+	current_msg_subj = msg->subj;
+	current_msg_from = msg->from;
+	current_msg_to = msg->to;
+	if(msg->hdr.auxattr & MSG_HFIELDS_UTF8)
+		pmode |= P_UTF8;
+
 	if(subject != NULL)
 		current_msg_subj = subject;
 	if(from != NULL)
@@ -247,18 +256,18 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 
 	show_msghdr(smb, msg);
 
+	int comments=0;
+	for(int i = 0; i < msg->total_hfields; i++)
+		if(msg->hfield[i].type == SMB_COMMENT) {
+			bprintf("%s\r\n", (char*)msg->hfield_dat[i]);
+			comments++;
+		}
+	if(comments)
+		CRLF;
+
 	if(msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && smb->subnum < cfg.total_subs) {
 		char* answer;
 		int longest_answer = 0;
-
-		int comments=0;
-		for(int i = 0; i < msg->total_hfields; i++)
-			if(msg->hfield[i].type == SMB_COMMENT) {
-				bprintf("%s\r\n", (char*)msg->hfield_dat[i]);
-				comments++;
-			}
-		if(comments)
-			CRLF;
 
 		for(int i = 0; i < msg->total_hfields; i++) {
 			if(msg->hfield[i].type != SMB_POLL_ANSWER)
@@ -307,7 +316,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 			mnemonics(text[VoteInThisPollNow]);
 		return true;
 	}
-	if((txt=smb_getmsgtxt(smb, msg, 0)) == NULL)
+	if((txt=smb_getmsgtxt(smb, msg, GETMSGTXT_BODY_ONLY)) == NULL)
 		return false;
 	char* p = txt;
 	if(!(console&CON_RAW_IN)) {
@@ -316,10 +325,10 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 		p = smb_getplaintext(msg, txt);
 		if(p == NULL)
 			p = txt;
-		else
+		else if(*p != '\0')
 			bprintf(text[MIMEDecodedPlainTextFmt]
 				, msg->text_charset == NULL ? "unspecified (US-ASCII)" : msg->text_charset
-				, msg->text_subtype);
+				, msg->text_subtype == NULL ? "plain" : msg->text_subtype);
 	}
 	truncsp(p);
 	SKIP_CRLF(p);
@@ -332,6 +341,8 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, long p_mode, post_t* post)
 		p_mode |= cfg.sub[smb->subnum]->pmode;
 		p_mode &= ~cfg.sub[smb->subnum]->n_pmode;
 	}
+	if(console & CON_RAW_IN)
+		p_mode = P_NOATCODES;
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
 	if(column)
@@ -351,7 +362,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 	char* txt;
 	int attachment_index = 0;
 	bool found = true;
-	while((txt=smb_getmsgtxt(smb, msg, 0)) != NULL && found) {
+	while(found && (txt=smb_getmsgtxt(smb, msg, 0)) != NULL) {
 		char filename[MAX_PATH+1] = {0};
 		uint32_t filelen = 0;
 		uint8_t* filedata;
@@ -380,7 +391,11 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {  /* Attached file */
 		char subj[FIDO_SUBJ_LEN];
-		smb_getmsgidx(smb, msg);
+		int result = smb_getmsgidx(smb, msg);
+		if(result != SMB_SUCCESS) {
+			errormsg(WHERE, ERR_READ, "index", result, smb->last_error);
+			return;
+		}
 		SAFECOPY(subj, msg->subj);					/* filenames (multiple?) in title */
 		char *p,*tp,ch;
 		tp=subj;
@@ -416,7 +431,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 							if(cfg.prot[i]->dlcmd[0]
 								&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
 								sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-								strcat(str,tmp);
+								SAFECAT(str,tmp);
 							}
 						ch=(char)getkeys(str,0);
 						for(i=0;i<cfg.total_prots;i++)
@@ -427,7 +442,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 							int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, false);
 							if(checkprotresult(cfg.prot[i],error,&fd)) {
 								if(del)
-									remove(fpath);
+									(void)remove(fpath);
 								logon_dlb+=length;	/* Update stats */
 								logon_dls++;
 								useron.dls=(ushort)adjustuserrec(&cfg,useron.number
@@ -645,7 +660,10 @@ ulong sbbs_t::getlastmsg(uint subnum, uint32_t *ptr, time_t *t)
 		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
 		return(0);
 	}
-	total=(long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
+	if(cfg.sub[subnum]->misc & SUB_NOVOTING)
+		total = (long)filelength(fileno(smb.sid_fp))/sizeof(idxrec_t);
+	else
+		total = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);
 	if(ptr)

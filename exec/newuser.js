@@ -28,7 +28,7 @@ if(options.send_newuser_welcome)	// backwards compatibility hack
 
 console.clear();
 
-if(!user.address.length && user.number>1) {
+if(!user.address.length && user.number>1 && options.survey !== false) {
 	print("\1y\1hWhere did you hear about this BBS?");
 	user.address=console.getstr(30,K_LINE);
 }
@@ -104,8 +104,10 @@ if(options.ask_sysop
 /* Send New User Welcome E-mail */
 /********************************/
 welcome_msg = system.text_dir + "welcome.msg"; 
-if(options.send_welcome && file_exists(welcome_msg) && !qnet && user.number>1)
-	send_newuser_welcome_msg(welcome_msg);
+if(options.send_welcome && file_exists(welcome_msg) && !qnet && user.number>1) {
+	if(send_newuser_welcome_msg(welcome_msg))
+		log(LOG_INFO,"Sent new user welcome e-mail");
+}
 
 function send_newuser_welcome_msg(fname)
 {
@@ -120,7 +122,7 @@ function send_newuser_welcome_msg(fname)
 
 	msgbase = new MsgBase("mail");
 	if(msgbase.open()==false) {
-		log(LOG_ERR,"!ERROR " + msgbase.last_error);
+		log(LOG_ERR,"!ERROR " + msgbase.error);
 		return(false);
 	}
 
@@ -133,10 +135,10 @@ function send_newuser_welcome_msg(fname)
 		subject: "Welcome to " + system.name + "!" 
 	};
 
-	if(!msgbase.save_msg(hdr, msgtxt))
-		log(LOG_ERR,"!ERROR " + msgbase.last_error + "saving mail message");
-
-	log(LOG_INFO,"Sent new user welcome e-mail");
+	var result = msgbase.save_msg(hdr, msgtxt);
+	if(!result)
+		log(LOG_ERR, "!ERROR " + msgbase.error + " saving mail message");
 
 	msgbase.close();
+	return result;
 }

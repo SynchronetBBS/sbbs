@@ -1,9 +1,4 @@
-/* prntfile.cpp */
-// vi: tabstop=4
-
 /* Synchronet file print/display routines */
-
-/* $Id: prntfile.cpp,v 1.47 2020/05/26 03:07:05 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -18,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -63,7 +46,7 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 	FILE *stream;
 
 	SAFECOPY(fpath, fname);
-	fexistcase(fpath);
+	(void)fexistcase(fpath);
 	p=getfext(fpath);
 	if(p!=NULL) {
 		if(stricmp(p,".rip")==0) {
@@ -82,10 +65,6 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 			rioctl(IOCS|ABORT); 
 		}
 		sys_status&=~SS_ABORT; 
-	}
-
-	if(!(mode&P_NOCRLF) && row > 0 && !rip) {
-		newline();
 	}
 
 	if((stream=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
@@ -107,6 +86,10 @@ bool sbbs_t::printfile(const char* fname, long mode, long org_cols, JSObject* ob
 			return false;
 		}
 		return true;
+	}
+
+	if(!(mode&P_NOCRLF) && row > 0 && !rip) {
+		newline();
 	}
 
 	if((mode&P_OPENCLOSE) && length <= PRINTFILE_MAX_FILE_LEN) {
@@ -188,16 +171,13 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	long	length,l;
 
 	SAFECOPY(fpath, fname);
-	fexistcase(fpath);
+	(void)fexistcase(fpath);
 	if(mode&P_NOABORT) {
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);
 			rioctl(IOCS|ABORT); 
 		}
 		sys_status&=~SS_ABORT; 
-	}
-	if(!(mode&P_NOCRLF) && row > 0) {
-		newline();
 	}
 	if((fp=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
@@ -209,6 +189,9 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 		}
 		return false; 
 	}
+	if(!(mode&P_NOCRLF) && row > 0) {
+		newline();
+	}
 	length=(long)filelength(file);
 	if(length<0) {
 		fclose(fp);
@@ -217,7 +200,7 @@ bool sbbs_t::printtail(const char* fname, int lines, long mode, long org_cols, J
 	}
 	if(length > lines * PRINTFILE_MAX_LINE_LEN) {
 		length = lines * PRINTFILE_MAX_LINE_LEN; 
-		fseek(fp, -length, SEEK_END);
+		(void)fseek(fp, -length, SEEK_END);
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		fclose(fp);
@@ -285,7 +268,8 @@ bool sbbs_t::menu(const char *code, long mode, JSObject* obj)
 			}
 			if(menu_exists(code, next, path))
 				break;
-			menu_exists(code, last, path);
+			if(!menu_exists(code, last, path))
+				return false;
 		} while(0);
 	}
 
@@ -317,6 +301,8 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 	else {
 		backslash(menu_dir);
 		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
+		FULLPATH(path, prefix, MAX_PATH);
+		SAFECOPY(prefix, path);
 	}
 	safe_snprintf(path, MAX_PATH, "%s.%lucol.%s", prefix, cols, ext);
 	if(fexistcase(path))

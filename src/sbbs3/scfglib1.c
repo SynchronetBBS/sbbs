@@ -1,7 +1,5 @@
 /* Synchronet configuration library routines */
 
-/* $Id: scfglib1.c,v 1.86 2020/08/08 19:04:07 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,39 +13,21 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
 #include "scfglib.h"
+#include "load_cfg.h"
+#include "nopen.h"
+#include "ars_defs.h"
 
-/***********************************************************/
-/* These functions are called from here and must be linked */
-/***********************************************************/
-/***
-	nopen()
-	truncsp()
-***/
-
-BOOL allocerr(FILE* fp, char* error, long offset, char *fname, uint size)
+BOOL allocerr(FILE* fp, char* error, size_t maxerrlen, long offset, const char *fname, size_t size)
 {
-	sprintf(error,"offset %ld in %s, allocating %u bytes of memory"
-		,offset,fname,size);
+	safe_snprintf(error, maxerrlen, "offset %ld in %s, allocating %u bytes of memory"
+		,offset,fname, (uint)size);
 	fclose(fp);
 	return(FALSE);
 }
@@ -55,23 +35,23 @@ BOOL allocerr(FILE* fp, char* error, long offset, char *fname, uint size)
 /****************************************************************************/
 /* Reads in NODE.CNF and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_node_cfg(scfg_t* cfg, char* error)
+BOOL read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	c,str[MAX_PATH+1],fname[13];
+	char	c,str[MAX_PATH+1];
 	int 	i;
 	long	offset=0;
 	FILE	*instream;
 
-	SAFECOPY(fname,"node.cnf");
-	sprintf(str,"%s%s",cfg->node_dir,fname);
+	const char* fname = "node.cnf";
+	SAFEPRINTF2(str,"%s%s",cfg->node_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d (%s) opening %s",errno,STRERROR(errno),str);
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,STRERROR(errno),str);
 		return(FALSE); 
 	}
 
 	get_int(cfg->node_num,instream);
 	if(!cfg->node_num) {
-		sprintf(error,"offset %ld in %s, Node number must be non-zero"
+		safe_snprintf(error, maxerrlen,"offset %ld in %s, Node number must be non-zero"
 			,offset,fname);
 		fclose(instream);
 		return(FALSE); 
@@ -135,18 +115,18 @@ BOOL read_node_cfg(scfg_t* cfg, char* error)
 /****************************************************************************/
 /* Reads in MAIN.CNF and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_main_cfg(scfg_t* cfg, char* error)
+BOOL read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1],fname[13],c;
+	char	str[MAX_PATH+1],c;
 	short	i,j;
 	int16_t	n;
 	long	offset=0;
 	FILE	*instream;
 
-	SAFECOPY(fname,"main.cnf");
+	const char* fname = "main.cnf";
 	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d (%s) opening %s",errno,STRERROR(errno),str);
+		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
 		return(FALSE); 
 	}
 
@@ -162,11 +142,11 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 #if 0	/* removed Jan-10-2003: cfg->node_num may be old or uninitialized */
 	if(!cfg->sys_nodes || cfg->sys_nodes<cfg->node_num || cfg->sys_nodes>MAX_NODES) {
 		if(!cfg->sys_nodes)
-			sprintf(error,"Total nodes on system must be non-zero.");
+			safe_snprintf(error, maxerrlen,"Total nodes on system must be non-zero.");
 		else if(cfg->sys_nodes>MAX_NODES)
-			sprintf(error,"Total nodes exceeds %u.",MAX_NODES);
+			safe_snprintf(error, maxerrlen,"Total nodes exceeds %u.",MAX_NODES);
 		else
-			sprintf(error,"Total nodes (%u) < node number in NODE.CNF (%u)"
+			safe_snprintf(error, maxerrlen,"Total nodes (%u) < node number in NODE.CNF (%u)"
 				,cfg->sys_nodes,cfg->node_num);
 		fclose(instream);
 		return(FALSE); 
@@ -233,7 +213,13 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->new_install,instream);
 	get_int(cfg->new_msgscan_init,instream);
 	get_int(cfg->guest_msgscan_init,instream);
-	for(i=0;i<5;i++)
+	get_int(cfg->min_pwlen, instream);
+	if(cfg->min_pwlen < MIN_PASS_LEN)
+		cfg->min_pwlen = MIN_PASS_LEN;
+	if(cfg->min_pwlen > LEN_PASS)
+		cfg->min_pwlen = LEN_PASS;
+	get_int(c, instream);
+	for(i=0;i<4;i++)
 		get_int(n,instream);
 
 	/*************************/
@@ -285,7 +271,15 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_str(cfg->logonlist_mod,instream);
 	if(cfg->logonlist_mod[0] == '\xff')
 		SAFECOPY(cfg->logonlist_mod, "logonlist");
-	for(i=0;i<126;i++)					/* unused - initialized to 0xff */
+
+	get_str(cfg->prextrn_mod,instream);
+	if(cfg->prextrn_mod[0] == '\xff') 
+	    SAFECOPY(cfg->prextrn_mod, "prextrn");
+	get_str(cfg->postxtrn_mod,instream);
+	if(cfg->postxtrn_mod[0] == '\xff') 
+	    SAFECOPY(cfg->postxtrn_mod, "postxtrn");		
+		
+	for(i=0;i<117;i++)					/* unused - initialized to 0xff */
 		get_int(n,instream);
 
 	get_int(cfg->user_backup_level,instream);
@@ -340,7 +334,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 			get_int(n,instream); 
 	}
 	if(i!=100) {
-		sprintf(error,"Insufficient User Level Information: "
+		safe_snprintf(error, maxerrlen,"Insufficient User Level Information: "
 			"%d user levels read, 100 needed.",i);
 		fclose(instream);
 		return(FALSE); 
@@ -349,7 +343,7 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 	get_int(cfg->total_shells,instream);
 	#ifdef SBBS
 	if(!cfg->total_shells) {
-		sprintf(error,"At least one command shell must be configured.");
+		safe_snprintf(error, maxerrlen,"At least one command shell must be configured.");
 		fclose(instream);
 		return(FALSE); 
 	}
@@ -357,14 +351,14 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_shells) {
 		if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(shell_t *)*cfg->total_shells);
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(shell_t *)*cfg->total_shells);
 	} else
 		cfg->shell=NULL;
 
 	for(i=0;i<cfg->total_shells;i++) {
 		if(feof(instream)) break;
 		if((cfg->shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(shell_t));
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(shell_t));
 		memset(cfg->shell[i],0,sizeof(shell_t));
 
 		get_str(cfg->shell[i]->name,instream);
@@ -387,18 +381,18 @@ BOOL read_main_cfg(scfg_t* cfg, char* error)
 /****************************************************************************/
 /* Reads in MSGS.CNF and initializes the associated variables				*/
 /****************************************************************************/
-BOOL read_msgs_cfg(scfg_t* cfg, char* error)
+BOOL read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	str[MAX_PATH+1],fname[13],c;
+	char	str[MAX_PATH+1],c;
 	short	i,j;
 	int16_t	n,k;
 	long	offset=0;
 	FILE	*instream;
 
-	SAFECOPY(fname,"msgs.cnf");
-	sprintf(str,"%s%s",cfg->ctrl_dir,fname);
+	const char* fname = "msgs.cnf";
+	SAFEPRINTF2(str,"%s%s",cfg->ctrl_dir,fname);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d (%s) opening %s",errno,STRERROR(errno),str);
+		safe_snprintf(error, maxerrlen,"%d (%s) opening %s",errno,STRERROR(errno),str);
 		return(FALSE);
 	}
 
@@ -431,7 +425,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_grps) {
 		if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(grp_t *)*cfg->total_grps);
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(grp_t *)*cfg->total_grps);
 	} else
 		cfg->grp=NULL;
 
@@ -439,7 +433,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 		if(feof(instream)) break;
 		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(grp_t));
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(grp_t));
 		memset(cfg->grp[i],0,sizeof(grp_t));
 
 		get_str(cfg->grp[i]->lname,instream);
@@ -465,14 +459,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_subs) {
 		if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(sub_t *)*cfg->total_subs);
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(sub_t *)*cfg->total_subs);
 	} else
 		cfg->sub=NULL;
 
 	for(i=0;i<cfg->total_subs;i++) {
 		if(feof(instream)) break;
 		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(sub_t));
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(sub_t));
 		memset(cfg->sub[i],0,sizeof(sub_t));
 
 		cfg->sub[i]->subnum = i;
@@ -486,7 +480,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 #ifdef SBBS
 		if(cfg->sub[i]->grp >= cfg->total_grps) {
-			sprintf(error,"offset %ld in %s: invalid group number (%u) for sub-board: %s"
+			safe_snprintf(error, maxerrlen,"offset %ld in %s: invalid group number (%u) for sub-board: %s"
 				,offset,fname
 				,cfg->sub[i]->grp
 				,cfg->sub[i]->code_suffix);
@@ -528,7 +522,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 #ifdef SBBS
 		for(j=0;j<i;j++)
 			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
-				sprintf(error,"offset %ld in %s: Duplicate pointer index for subs %s and %s"
+				safe_snprintf(error, maxerrlen,"offset %ld in %s: Duplicate pointer index for subs %s and %s"
 					,offset,fname
 					,cfg->sub[i]->code_suffix,cfg->sub[j]->code_suffix);
 				fclose(instream);
@@ -556,7 +550,7 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_faddrs) {
 		if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(faddr_t)*cfg->total_faddrs);
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(faddr_t)*cfg->total_faddrs);
 	} else
 		cfg->faddr=NULL;
 
@@ -585,14 +579,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_qhubs) {
 		if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(qhub_t*)*cfg->total_qhubs);
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(qhub_t*)*cfg->total_qhubs);
 	} else
 		cfg->qhub=NULL;
 
 	for(i=0;i<cfg->total_qhubs;i++) {
 		if(feof(instream)) break;
 		if((cfg->qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(qhub_t));
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(qhub_t));
 		memset(cfg->qhub[i],0,sizeof(qhub_t));
 
 		get_str(cfg->qhub[i]->id,instream);
@@ -607,11 +601,11 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 		if(k) {
 			if((cfg->qhub[i]->sub=(sub_t**)malloc(sizeof(sub_t*)*k))==NULL)
-				return allocerr(instream,error,offset,fname,sizeof(ulong)*k);
+				return allocerr(instream, error, maxerrlen, offset,fname,sizeof(ulong)*k);
 			if((cfg->qhub[i]->conf=(ushort *)malloc(sizeof(ushort)*k))==NULL)
-				return allocerr(instream,error,offset,fname,sizeof(ushort)*k);
+				return allocerr(instream, error, maxerrlen, offset,fname,sizeof(ushort)*k);
 			if((cfg->qhub[i]->mode=(char *)malloc(sizeof(char)*k))==NULL)
-				return allocerr(instream,error,offset,fname,sizeof(uchar)*k);
+				return allocerr(instream, error, maxerrlen, offset,fname,sizeof(uchar)*k);
 		}
 
 		for(j=0;j<k;j++) {
@@ -651,14 +645,14 @@ BOOL read_msgs_cfg(scfg_t* cfg, char* error)
 
 	if(cfg->total_phubs) {
 		if((cfg->phub=(phub_t **)malloc(sizeof(phub_t *)*cfg->total_phubs))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(phub_t*)*cfg->total_phubs);
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(phub_t*)*cfg->total_phubs);
 	} else
 		cfg->phub=NULL;
 
 	for(i=0;i<cfg->total_phubs;i++) {
 		if(feof(instream)) break;
 		if((cfg->phub[i]=(phub_t *)malloc(sizeof(phub_t)))==NULL)
-			return allocerr(instream,error,offset,fname,sizeof(phub_t));
+			return allocerr(instream, error, maxerrlen, offset,fname,sizeof(phub_t));
 		memset(cfg->phub[i],0,sizeof(phub_t));
 
 		get_str(cfg->phub[i]->name,instream);

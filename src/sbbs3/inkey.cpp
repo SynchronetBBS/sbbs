@@ -1,6 +1,4 @@
-/* Synchronet single key input function (no wait) */
-
-/* $Id: inkey.cpp,v 1.80 2020/08/04 04:56:37 rswindell Exp $ */
+/* Synchronet single key input function */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -74,7 +60,7 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 			}
 			if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
 				ch = 0x60 | (ch&0x1f);
-			if(isalpha((unsigned char)ch))
+			if(IS_ALPHA(ch))
 				ch ^= 0x20;	/* Swap upper/lower case */
 		}
 
@@ -95,18 +81,20 @@ int kbincom(sbbs_t* sbbs, unsigned long timeout)
 
 /****************************************************************************/
 /* Returns character if a key has been hit remotely and responds			*/
-/* Called from functions getkey, msgabort and main_sec						*/
+/* May return NOINP on timeout instead of '\0' when K_NUL mode is used.		*/
 /****************************************************************************/
-char sbbs_t::inkey(long mode, unsigned long timeout)
+int sbbs_t::inkey(long mode, unsigned long timeout)
 {
-	uchar	ch=0;
+	int	ch=0;
 
 	ch=kbincom(this,timeout); 
 
-	if(ch==0) {
+	if(ch == NOINP) {
 		if(sys_status&SS_SYSPAGE) 
 			sbbs_beep(sbbs_random(800),100);
-		return(0);
+		if(mode & K_NUL)	// distinguish between timeout and '\0'
+			return NOINP;
+		return 0;
 	}
 
 	if(cfg.node_misc&NM_7BITONLY
@@ -116,7 +104,7 @@ char sbbs_t::inkey(long mode, unsigned long timeout)
 	this->timeout=time(NULL);
 
 	/* Is this a control key */
-	if(ch<' ') {
+	if(!(mode & K_CTRLKEYS) && ch < ' ') {
 		if(cfg.ctrlkey_passthru&(1<<ch))	/*  flagged as passthru? */
 			return(ch);						/* do not handle here */
 		return(handle_ctrlkey(ch,mode));
@@ -416,7 +404,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 							return 0;
 						}
 						str[i++] = byte;
-						if(isalpha(byte))
+						if(IS_ALPHA(byte))
 							break;
 					}
 					str[i] = 0;
@@ -487,7 +475,7 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 	#endif
 					return 0;
 				}
-				if(ch!=';' && !isdigit((uchar)ch) && ch!='R') {    /* other ANSI */
+				if(ch!=';' && !IS_DIGIT(ch) && ch!='R') {    /* other ANSI */
 					str[i]=0;
 					switch(ch) {
 						case 'A':
@@ -533,15 +521,17 @@ char sbbs_t::handle_ctrlkey(char ch, long mode)
 					return(ESC); 
 				}
 				if(ch=='R') {       /* cursor position report */
-					if(mode&K_ANSI_CPR && i && !(useron.rows)) {	/* auto-detect rows */
+					if(mode&K_ANSI_CPR && i) {	/* auto-detect rows */
 						int	x,y;
 						str[i]=0;
 						if(sscanf(str,"%u;%u",&y,&x)==2) {
 							lprintf(LOG_DEBUG,"received ANSI cursor position report: %ux%u"
 								,x, y);
 							/* Sanity check the coordinates in the response: */
-							if(x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
-							if(y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+							if(useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols=x;
+							if(useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows=y;
+							if(useron.cols == TERM_COLS_AUTO || useron.rows == TERM_ROWS_AUTO)
+								update_nodeterm();
 						}
 					}
 					return(0); 

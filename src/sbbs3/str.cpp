@@ -1,7 +1,5 @@
 /* Synchronet high-level string i/o routines */
 
-/* $Id: str.cpp,v 1.88 2020/04/23 02:40:19 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -154,7 +140,7 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 		return; 
 	}
 	length=(long)filelength(file);
-	if((buf=(char *)malloc(length))==0) {
+	if((buf=(char *)calloc(length + 1, 1))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
@@ -255,15 +241,15 @@ void sbbs_t::sif(char *fname, char *answers, long len)
 				cr=1;
 				m++; 
 			}
-			if(isdigit((uchar)buf[m+1])) {
+			if(IS_DIGIT(buf[m+1])) {
 				max=buf[++m]&0xf;
-				if(isdigit((uchar)buf[m+1]))
+				if(IS_DIGIT(buf[m+1]))
 					max=max*10+(buf[++m]&0xf); 
 			}
-			if(buf[m+1]=='.' && isdigit((uchar)buf[m+2])) {
+			if(buf[m+1]=='.' && IS_DIGIT(buf[m+2])) {
 				m++;
 				min=buf[++m]&0xf;
-				if(isdigit((uchar)buf[m+1]))
+				if(IS_DIGIT(buf[m+1]))
 					min=min*10+(buf[++m]&0xf); 
 			}
 			if(buf[m+1]=='"') {
@@ -322,7 +308,7 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 		return; 
 	}
 	length=(long)filelength(file);
-	if((buf=(char *)malloc(length))==0) {
+	if((buf=(char *)calloc(length + 1, 1))==0) {
 		close(file);
 		errormsg(WHERE,ERR_ALLOC,str,length);
 		answers[0]=0;
@@ -402,15 +388,15 @@ void sbbs_t::sof(char *fname, char *answers, long len)
 				cr=1;
 				m++; 
 			}
-			if(isdigit((uchar)buf[m+1])) {
+			if(IS_DIGIT(buf[m+1])) {
 				max=buf[++m]&0xf;
-				if(isdigit((uchar)buf[m+1]))
+				if(IS_DIGIT(buf[m+1]))
 					max=max*10+(buf[++m]&0xf); 
 			}
-			if(buf[m+1]=='.' && isdigit((uchar)buf[m+2])) {
+			if(buf[m+1]=='.' && IS_DIGIT(buf[m+2])) {
 				m++;
 				min=buf[++m]&0xf;
-				if(isdigit((uchar)buf[m+1]))
+				if(IS_DIGIT(buf[m+1]))
 					min=min*10+(buf[++m]&0xf); 
 			}
 			if(buf[m+1]=='"') {
@@ -542,9 +528,9 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, long mode)
 			}
 		}
 		else if(c<t) {
-			if(tmplt[c]=='N' && !isdigit((uchar)ch))
+			if(tmplt[c]=='N' && !IS_DIGIT(ch))
 				continue;
-			if(tmplt[c]=='A' && !isalpha((uchar)ch))
+			if(tmplt[c]=='A' && !IS_ALPHA(ch))
 				continue;
 			outchar(ch);
 			str[c++]=ch;
@@ -702,7 +688,7 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 	SAFECOPY(pass,passwd);
 	strupr(pass);
 
-	if(strlen(pass) < MIN_PASS_LEN) {
+	if(strlen(pass) < cfg.min_pwlen) {
 		bputs(text[PasswordTooShort]);
 		return(false); 
 	}
@@ -980,7 +966,7 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 			continue;
 		if(type==XFER_BIDIR && cfg.prot[i]->bicmd[0]==0)
 			continue;
-		if(printed && (printed%2)==0)
+		if(printed && (cols < 80 || (printed%2)==0))
 			CRLF;
 		bprintf(text[TransferProtLstFmt],cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 		printed++;
@@ -1059,8 +1045,8 @@ extern RingBuf* node_inbuf[];
 bool sbbs_t::spy(uint i /* node_num */)
 {
 	char	ch;
-	char	ansi_seq[32];
-	int		ansi_len;
+	char	ansi_seq[256];
+	size_t	ansi_len;
 	int		in;
 
 	if(!i || i>MAX_NODES) {
@@ -1077,7 +1063,10 @@ bool sbbs_t::spy(uint i /* node_num */)
 	}
 	bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
 		"\r\n\r\n",i);
-	spy_socket[i-1]=client_socket;
+	if(passthru_thread_running)
+		spy_socket[i-1]=client_socket_dup;
+	else
+		spy_socket[i-1]=client_socket;
 	ansi_len=0;
 	while(online 
 		&& client_socket!=INVALID_SOCKET 
@@ -1089,29 +1078,45 @@ bool sbbs_t::spy(uint i /* node_num */)
 			continue;
 		}
 		ch=in;
-		if(ch==ESC) {
-			if(!ansi_len) {
-				ansi_seq[ansi_len++]=ch;
-				continue;
-			}
-			ansi_len=0;
-		}
-		if(ansi_len && ansi_len<(int)sizeof(ansi_seq)-2) {
-			if(ansi_len==1) {
-				if(ch=='[') {
-					ansi_seq[ansi_len++]=ch;
-					continue;
+		if(ch == ESC) {
+			if(ansi_len)
+				ansi_len = 0;
+			else {
+				if((in = incom(500)) != NOINP) {
+					if(in == '[') {
+						ansi_seq[ansi_len++] = ESC;
+						ansi_seq[ansi_len++] = '[';
+						continue;
+					} else {
+						if(node_inbuf[i-1] != NULL) {
+							RingBufWrite(node_inbuf[i-1], (uchar*)&ch, sizeof(ch));
+							ch = in;
+						}
+					}
 				}
-				ansi_len=0;
 			}
-			if(ch=='R') { /* throw-away cursor position report */
-				ansi_len=0;
-				continue;
-			}
-			ansi_seq[ansi_len++]=ch;
-			if(isalpha(ch)) {
-				if(node_inbuf[i-1]!=NULL) 
-					RingBufWrite(node_inbuf[i-1],(uchar*)ansi_seq,ansi_len);
+		}
+		if(ansi_len) {
+			if(ansi_len < sizeof(ansi_seq))
+				ansi_seq[ansi_len++] = ch;
+			if(ch >= '@' && ch <= '~') {
+				switch(ch) {
+					case 'A':	// Up
+					case 'B':	// Down
+					case 'C':	// Right
+					case 'D':	// Left
+					case 'F':	// Preceding line
+					case 'H':	// Home
+					case 'K':	// End
+					case 'V':	// PageUp
+					case 'U':	// PageDn
+					case '@':	// Insert
+					case '~':	// Various VT-220
+						// Pass-through these sequences to spied-upon node (eat all others)
+						if(node_inbuf[i-1] != NULL) 
+							RingBufWrite(node_inbuf[i-1], (uchar*)ansi_seq, ansi_len);
+						break;
+				}
 				ansi_len=0;
 			}
 			continue;
@@ -1120,7 +1125,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			lncntr=0;						/* defeat pause */
 			spy_socket[i-1]=INVALID_SOCKET;	/* disable spy output */
 			ch=handle_ctrlkey(ch,K_NONE);
-			spy_socket[i-1]=client_socket;	/* enable spy output */
+			spy_socket[i-1] = passthru_thread_running ? client_socket_dup : client_socket;	/* enable spy output */
 			if(ch==0)
 				continue;
 		}
@@ -1128,6 +1133,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			RingBufWrite(node_inbuf[i-1],(uchar*)&ch,1);
 	}
 	spy_socket[i-1]=INVALID_SOCKET;
+
 	return(true);
 }
 
@@ -1209,10 +1215,8 @@ void sbbs_t::change_user(void)
 		return;
 	if((i=finduser(str))==0)
 		return;
-	if(online==ON_REMOTE) {
-		getuserrec(&cfg,i,U_LEVEL,2,str);
-		if(atoi(str)>logon_ml) {
-			getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp);
+	if(getuserrec(&cfg,i,U_LEVEL,2,str) == 0 && atoi(str)>logon_ml) {
+		if(getuserrec(&cfg,i,U_PASS,LEN_PASS,tmp) == 0) {
 			bputs(text[ChUserPwPrompt]);
 			console|=CON_R_ECHOX;
 			getstr(str,8,K_UPPER);

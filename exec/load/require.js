@@ -3,7 +3,7 @@ if (eval('typeof('+argv[2]+') !== "undefined" ? true : false'))
 	js.global.require_module_file = 'dummy.js';
 load(js.global.require_module_file);
 if (eval('typeof('+argv[2]+') == "undefined"'))
-	throw("ERROR: load()ing "+argv[1]+" didn't define symbol \""+argv[2]+"\"");
+	throw new Error("ERROR: load()ing "+argv[1]+" didn't define symbol \""+argv[2]+"\"");
 if (argv[0] === 'undefined') {
 	Object.defineProperties(this, {
 		"argv": {

@@ -1,0 +1,140 @@
+***************************************************
+* What's New in Synchronet Version 3.18 for Win32 *
+* (ChangeLog since v3.17b for Win32 Jan 01, 2019) *
+***************************************************
+
+Terminal Server
+~~~~~~~~~~~~~~~
+o UTF-8 support
+  - Auto-detect UTF-8 terminals
+  - Automatic translation of DOS/native door game output
+  - Auto-translation between ASCII/CP437, PETSCII, and UTF-8
+  - Create and read/translate UTF-8 encoded networked messages, email
+  - UNICODE display tricks (e.g. double-wide chars, special chars)
+o New ARS keywords: UTF8, CP437, ASCII
+o Improved CBM/PETSCII terminal support
+o Improved support for 40-column terminals
+o Improved support for terminals > 80 columns in width
+o Bright-background (PETSCII and ANSI iCE-color) terminals supported
+o Mouse-reporting terminal support (click-able menu options, scroll-wheel)
+o Fast-logon support (logging-in as "!user-id"), enabled via modopts.ini
+o Automatic detection of Raw TCP client connections on Telnet ports
+o Automatic text-portion of multi-part MIME-messages in QWK message packets
+o New operator option to delete numeric ranges of messages in sub-boards
+o Configurable treatment of "Soft-CRs" created by external message editors
+o @-codes:
+  - New formatting options: http://wiki.synchro.net/custom:atcodes#formatting
+  - UNICODE http://wiki.synchro.net/custom:atcodes#unicode
+  - Mouse "hot spot" control (HOT, CLEAR_HOT, ~, `)
+  - Many added (including some additional PCBoard codes):
+    CHECKMARK, ELLIPSIS, COPY, SOUNDCOPY, REGISTERED, TRADEMARK, DEGREE_C,
+    WIDE, CHARSET, NN, TN, AN, ON, PWDAYS, AUTODEL, DATETIMEZONE, DATEFMT,
+    FILE, FILESIZE, FILEBYTES, FILEKB, FILEMB, FILEGB, FILL, POS, DELAY,
+    YESCHAR, NOCHAR, QUITCHAR, BPS:<rate>, PWAGE, PWDATE, MPERC, MPERD,
+    MAXCALLS, MAXPOSTS, MAXMAILS, MAXLINES, FIRSTON, FIRSTDATEON, FIRSTTIMEON,
+    EMAILS, FBACKS, ETODAY, PTODAY, LTODAY, MTODAY, MTOTAL, TTODAY, TTOTAL,
+    TLAST, MEXTRA, TEXTRA, MBANKED, TBANKED, PCR, CREDITS, FREECDT,
+    REALNAME, STR, STRVAR, JS:<prop>, CLREOL, MAILW#, MAILP#, SPAMW#,
+    MSG_IMP_DATE, MSG_IMP_TIMEZONE, SYSAVAIL
+o New helpful sysop debugging command: ECHO and EVAL
+o New sysop command to toggle chat availability: AVAIL
+o Auto-ZMODEM upload of message text from user
+ (internal editor and fseditor.js)
+o sexyz:
+  - Improved YMODEM-G file transfer reliability / compatibility
+  - Improved ZMODEM downloads where the receiver already has the file
+o Built-in support for terminal output rate limiting
+  (e.g. 9600bps simulation) - requires compatible terminal
+o Support the fast display of giant (e.g. multi-gigabyte) text files
+o Arrow-up/down history scroll:
+  - sysop command arguments
+  - netmail recipient addresses
+o Sunrise (DoorFrame) multinode door setup convenience environment variables:
+  PCBDIR and PCBDRIVE
+o ftn-setup.js: menu-driven setup of several FidoNet-style networks
+o xtrn-setup.js: menu-driven setup of many external programs (e.g. door games)
+o Customizable spinning cursors (10 of them!) in the text.dat
+o Easy *random* display file/menu selection (just use wildcards!)
+o more loadable modules: automsg, list msgs, text_sec, logonlist
+o Message base load/read/scan optimizations
+o User notifications of messages posted to them via QWKnet
+
+General
+~~~~~~~
+o install-xtrn.js: automated/wizard-like install of external programs
+  - run 'jsexec -auto /sbbs/xtrn/*' to auto-discover/install new xtrn progs
+o Support for C-style escaping in trashcan/filter files
+  (e.g. "\ " or "\x20" for a leading space character)
+o Sysop email notifications upon chat-paging and logged-errors
+o user presence and private messages shared between webv4 and terminal users
+o Windows build is now linked with dynamic C/C++ runtime libraries
+o Ctrl-F (find) and Ctrl-G (repeat find) in SCFG and EchoCfg
+o exportcfg.js: export SBBS configuration data to various file formats
+o qnet-ftp.js: new QWKnet/FTP module
+o FTP server file listing optimizations
+o Numerous mail server improvements
+  (e.g. msg priority, MIME-encoded header fields)
+
+Security
+~~~~~~~~
+o User security notifications: failed login attempts, password requests
+o User password maximum length increased from 8 to 40 characters
+o Sysop can set the minimum user password length from 4 to 40 characters
+o Sysop-reset of the failed-login/temp-ban list via "ctrl/clear" sem file
+o Updated TLS/SSL/SSH library (Cryptlib 3.4.5) and patched for compatibility
+  and security
+o Extended user credits and upload/download byte-stats from 2GB to 4GB
+  
+JavaScript
+~~~~~~~~~~
+o JSexec default behavior can be configured via ctrl/jsexec.ini
+o IPv6 socket support
+o New methods: file_mode(), file_chmod(), utf8_encode(), utf8_decode(),
+  utf8_get_width(), str_is_utf8(), str_is_utf16(), str_is_ascii(),
+  str_has_ctrl(), js.exec(), system.get_node(), bbs.show_msg(),
+  bbs.show_msg_header(), bbs.download_msg_attachments(),
+  bbs.change_msg_attr(), console.wide(), console.output_rate,
+  MsgBase.get_index(), MsgBase.dump_msg_header(), system.notify(),
+  console.add_hotspot(), console.clear_hotspots(), console.scroll_hotspots(),
+  user.downloaded_file()
+o New properties: system.min_password_length, system.max_password_length,
+  system.autodel, client.user_name, bbs.msghdr_top_of_screen, console.type,
+  console.charset, console.mouse_mode, console.current_row, 
+  console.keyboard_buffer_level, console.keyboard_buffer_space, Queue.orphan,
+  msg_area.grp[]/grp_list[].can_access, msg_area.sub[].can_access,
+  file_area.lib[]/lib_list[].can_access, file_area.dir[].can_access
+
+SBBSecho
+~~~~~~~~
+o Import performance improvements (new smblib, twitlist caching)
+o Configurable Soft-CR (0x8D) import behavior: default is to leave-alone
+o AreaFix support for links with 5D addresses (zone:net/node[.point]@domain)
+o Tic passwords up to 40 chars in length
+o Explicit CHRS and NOTE header (control paragraph) import/export support
+o Ctrl-A to '@' import-conversion for invalid control paragraphs
+o Better "Kill Sent" (KFS) support on exported mail
+o Export the original message author's editor columns (COLS kludge) when known
+o Simplified and more deterministic TZUTC (timezone) import logic
+  (just store the UTC offset, don't infer the location)
+o Ability to operate without an Area File (for systems with no downlinks)
+  (set AutoAddsSubs=true, AutoAddToAreaFile=false)
+o Auto-detection of UTF-8 encoded message body text
+  (and never strip Soft-CRs from them)
+o sbbsecho.ini format is more compatible crudini/python-iniparse
+o NetMail Robots (e.g. tickit-FileFix, a.k.a. TickFix) are now supported
+o New remote FileFix module (tickfix.js) for use with tickit.js 
+o Removed old 80-column word-wrap on import behavior
+o Include Message and Reply-IDs in export NetMail messages
+
+Control Panel
+~~~~~~~~~~~~~
+o FidoNet related menu items
+o File->Run menu options to auto-install FidoNet networks, external programs
+o Now defaults to "dark mode"
+  (File->Import Settings->sbbsctrl.darkmode.ini to choose it)
+
+Web Server
+~~~~~~~~~~
+o More RFC/standards-conformant HTTP[S] support
+o HSTS support: https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
+o Manyfold send-file through-put performance improvement

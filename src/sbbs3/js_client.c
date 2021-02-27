@@ -52,15 +52,16 @@ enum {
 
 #ifdef BUILD_JSDOCS
 	static char* client_prop_desc[] = {
-	"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
-	,"client's IPv4 or IPv6 address"
+	 "client's IPv4 or IPv6 address"
 	,"client's host name (up to 64 characters)"
 	,"client's TCP or UDP port number"
 	,"date/time of initial connection (in time_t format)"
 	,"protocol/service name (e.g. 'Telnet', 'FTP', etc.)"
 	,"user's name/alias"
 	,"user's number (non-zero if logged in)"
+
 	/* this next one must be last */
+	,"instance of <a href=#Socket>Socket class</a> representing client's TCP/IP connection"
 	,NULL
 	};
 #endif
@@ -188,12 +189,12 @@ JSObject* DLLCALL js_CreateClientObject(JSContext* cx, JSObject* parent
 
 	JS_SetPrivate(cx, obj, client);	/* Store a pointer to client_t */
 
-	js_CreateSocketObject(cx, obj, "socket", sock, session);
-
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Represents a TCP/IP client session",310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", client_prop_desc, JSPROP_READONLY);
 #endif
+
+	js_CreateSocketObject(cx, obj, "socket", sock, session);
 
 	return(obj);
 }

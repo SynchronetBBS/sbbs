@@ -3,8 +3,6 @@
 ------------------------------------------------
 FatFish is a fishing simulation door game for Synchronet BBS systems.
 
-Website: http://art.poorcoding.com/fatfish.
-
 --------
 Features
 --------

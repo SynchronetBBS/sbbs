@@ -821,11 +821,6 @@ function 	quit()
 	var splash=new Graphic(80,splash_size);
 	splash.load(splash_filename);
 	splash.draw();
-	
-	console.gotoxy(1,23);
-	console.center("\1n\1c[\1hPress any key to continue\1n\1c]");
-	while(console.inkey(K_NOECHO|K_NOSPIN)==="");
-	console.clear();
 }
 //########################## CLASSES #########################################
 

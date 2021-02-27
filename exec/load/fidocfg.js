@@ -32,10 +32,10 @@ require('fido.js', 'FIDO');
  * num_to_basefn(num)			converts an integer to a base-X string
  * save()						save the configuration
  */
-function TickITCfg() {
+function TickITCfg(fname) {
 	this.gcfg = undefined;
 	this.acfg = {};
-	var tcfg = new File(system.ctrl_dir+'tickit.ini');
+	var tcfg = new File(file_cfgname(system.ctrl_dir, fname || 'tickit.ini'));
 	var sects;
 	var i;
 	var tmp;
@@ -51,22 +51,24 @@ function TickITCfg() {
 
 	function lcprops(obj)
 	{
-		var i;
-		var keys = Object.keys(obj);
+		if(typeof obj == 'object' && obj !== null) {
+			var i;
+			var keys = Object.keys(obj);
 
-		for (i=0; i<keys.length; i++) {
-			if (keys[i].toLowerCase() !== keys[i]) {
-				if (obj[keys[i].toLowerCase()] === undefined)
-					obj[keys[i].toLowerCase()] = obj[keys[i]];
-				delete obj[keys[i]];
-				if (typeof(obj[keys[i].toLowerCase()]) == 'Object')
-					lcprops(obj[keys[i].toLowerCase()]);
+			for (i=0; i<keys.length; i++) {
+				if (keys[i].toLowerCase() !== keys[i]) {
+					if (obj[keys[i].toLowerCase()] === undefined)
+						obj[keys[i].toLowerCase()] = obj[keys[i]];
+					delete obj[keys[i]];
+					if (typeof(obj[keys[i].toLowerCase()]) == 'Object')
+						lcprops(obj[keys[i].toLowerCase()]);
+				}
 			}
 		}
 	}
 
-	if (!tcfg.open("r"))
-		throw("Unable to open '"+tcfg.name+"'");
+	if (!tcfg.open(tcfg.exists ? "r" : "w+"))
+		throw new Error(tcfg.error + " (" + strerror(tcfg.error) + ") opening '" + tcfg.name + "'");
 	this.gcfg = tcfg.iniGetObject();
 	lcprops(this.gcfg);
 	if (this.gcfg.handler !== undefined) {
@@ -147,9 +149,8 @@ TickITCfg.prototype.get_next_tic_filename = function()
 		val = f.readBin();
 	}
 	else {
-		if (!f.open("web+")) {
-			log(LOG_ERROR, "Unable to open file "+f.name+"!");
-			return undefined;
+		if (!f.open("wxb+")) {
+			throw new Error(f.error + " (" + strerror(f.error) + ") opening '" + f.name + "'");
 		}
 		val = -1;
 	}
@@ -174,7 +175,7 @@ TickITCfg.prototype.get_next_tic_filename = function()
 };
 TickITCfg.prototype.save = function()
 {
-	var tcfg = new File(system.ctrl_dir+'tickit.ini');
+	var tcfg = new File(this.cfgfile);
 	var sects;
 	var i;
 	var j;
@@ -233,7 +234,7 @@ TickITCfg.prototype.save = function()
 	}
 
 	if (!tcfg.open(tcfg.exists ? 'r+':'w+'))
-		return "Unable to open '"+tcfg.name+"'";
+		throw new Error(tcfg.error + " (" + strerror(tcfg.error) + ") opening '" + tcfg.name + "'");
 
 	writesect(null, this.gcfg);
 	sects = tcfg.iniGetSections().map(function(v){return v.toLowerCase();});
@@ -261,17 +262,16 @@ TickITCfg.prototype.save = function()
  * FREQITCfg methods
  * save()			Saves the freqit config to the INI file
  */
-function FREQITCfg()
+function FREQITCfg(fname)
 {
-	var f=new File(system.ctrl_dir+'freqit.ini');
+	var f=new File(file_cfgname(system.ctrl_dir, fname || 'freqit.ini'));
 	var val;
 	var i;
 	var key;
 	var sects;
 
-	if (!f.open('r')) {
-		log(LOG_ERROR, "Unable to open '"+f.name+"'");
-		return;
+	if (!f.open(f.exists ? 'r' : 'w+')) {
+		throw new Error(f.error + " (" + strerror(f.error) + ") opening '" + f.name + "'");
 	}
 	// TODO: Support requiring passwords for specific files/dirs
 	this.dirs = [];
@@ -314,9 +314,9 @@ function FREQITCfg()
 	}
 	f.close();
 }
-FREQITCfg.prototype.save = function()
+FREQITCfg.prototype.save = function(fname)
 {
-	var fcfg = new File(system.ctrl_dir+'freqit.ini');
+	var fcfg = new File(file_cfgname(system.ctrl_dir, fname || 'freqit.ini'));
 	var sects;
 	var i;
 	var j;
@@ -363,9 +363,9 @@ FREQITCfg.prototype.save = function()
 	return true;
 };
 
-function BinkITCfg()
+function BinkITCfg(fname)
 {
-	var f=new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
+	var f=new File(file_cfgname(system.ctrl_dir, fname || 'sbbsecho.ini'));
 	var sects;
 
 	this.node = {};

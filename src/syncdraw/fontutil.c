@@ -143,6 +143,7 @@ void
 ShowFont(int number)
 {
 	int             a = 0, x, ch;
+	textattr(7);
 	clrscr();
 	Openfont(number);
 	do {
@@ -186,6 +187,7 @@ ShowFont(int number)
 			break;
 		}
 	} while (toupper(ch) != 'Q');
+	textattr(7);
 	clrscr();
 }
 
@@ -241,7 +243,7 @@ main(int argc, char **argv)
 					textattr(24);
 				else
 					textattr(8);
-				for (x = x; x <= 16; x++)
+				for (; x <= 16; x++)
 					putch(250);
 				textattr(10);
 				cprintf("%02d", (size[y + c] / 1024));
@@ -326,6 +328,7 @@ main(int argc, char **argv)
 				fclose(fp);
 				fclose(fp2);
 				fclose(fp3);
+				textattr(7);
 				clrscr();
 				break;
 			}
@@ -393,6 +396,7 @@ main(int argc, char **argv)
 			fclose(fp3);
 			remove(FontFile);
 			rename("tmp.fnt", FontFile);
+			textattr(7);
 			clrscr();
 			break;
 		case 10:

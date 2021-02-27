@@ -204,7 +204,7 @@ Tree.prototype.__defineSetter__("frame",function(frame) {
 		return true;
 	}
 	else {
-		throw("frame parameter must be a Frame() object");
+		throw new Error("frame parameter must be a Frame() object");
 	}
 });
 Tree.prototype.__defineGetter__("items",function() {
@@ -216,7 +216,7 @@ Tree.prototype.__defineSetter__("items",function(items) {
 		return true;
 	}
 	else {
-		throw("items parameter must be an array");
+		throw new Error("items parameter must be an array");
 	}
 });
 Tree.prototype.__defineGetter__("parent",function() {

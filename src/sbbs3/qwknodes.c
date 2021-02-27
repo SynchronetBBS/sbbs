@@ -1,5 +1,3 @@
-/* $Id: qwknodes.c,v 1.25 2020/08/17 00:48:28 rswindell Exp $ */
-
 /* Synchronet QWKnet node list or route.dat file generator */
 
 /****************************************************************************
@@ -15,29 +13,21 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "load_cfg.h"
+#include "str_util.h"
+#include "date_str.h"
+#include "smblib.h"
 #include "nopen.h"
 #include "crc16.h"
 #include "crc32.h"
 #include "conwrap.h"	/* kbhit */
+#include <stdarg.h>
 
 unsigned _stklen=10000;
 smb_t		smb;
@@ -254,7 +244,7 @@ int main(int argc, char **argv)
 	cfg.size=sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
 
-	if(!load_cfg(&cfg, NULL, TRUE, str)) {
+	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
 		printf("\7\n%s\n",str);
 	}
 
@@ -299,7 +289,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"%-5u\r",msg.offset+1);
 			if(msg.idx.to==smm || msg.idx.to==sbl)
 				continue;
-			if(max_age && now-msg.idx.time>((ulong)max_age*24UL*60UL*60UL))
+			if(max_age && now-msg.idx.time>((time_t)max_age*24UL*60UL*60UL))
 				continue;
 			if((j=smb_lockmsghdr(&smb,&msg))!=0) {
 				printf("smb_lockmsghdr returned %d\n",j);
@@ -340,7 +330,7 @@ int main(int argc, char **argv)
 								p=addr;
 							else
 								*(p++)=0;
-							sprintf(str,"%s %s:%s%c%s"
+							safe_snprintf(str, sizeof(str), "%s %s:%s%c%s"
 								,unixtodstr(&cfg,msg.hdr.when_written.time,tmp)
 								,p,cfg.sys_id,p==addr ? 0 : '/'
 								,addr);

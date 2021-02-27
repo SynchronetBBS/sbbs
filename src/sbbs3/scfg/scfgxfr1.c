@@ -1,5 +1,3 @@
-/* $Id: scfgxfr1.c,v 1.30 2019/07/13 23:13:58 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -886,7 +872,7 @@ void xfer_opts()
 						"don't wish it to be available for a certain method of transfer, leave\n"
 						"the command line for that method blank.\n"
 					;
-					i=uifc.list(i,0,0,50,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
+					i=uifc.list(i,0,0,34,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
 					if(i==-1)
 						break;
 					int msk = i & MSK_ON;
@@ -967,7 +953,7 @@ void xfer_opts()
 							,cfg.prot[i]->batdlcmd);
 						sprintf(opt[j++],"%-30.30s%-40s","Bi-dir Command Line"
 							,cfg.prot[i]->bicmd);
-						sprintf(opt[j++],"%-30.30s%s",   "Native (32-bit) Executable"
+						sprintf(opt[j++],"%-30.30s%s",   "Native Executable/Script"
 							,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
 						sprintf(opt[j++],"%-30.30s%s",	 "Supports DSZLOG"
 							,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
@@ -1030,7 +1016,7 @@ void xfer_opts()
 							case 8:
 								l=cfg.prot[i]->misc&PROT_NATIVE ? 0:1;
 								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Native (32-bit) Executable",uifcYesNoOpts);
+									,"Native Executable/Script",uifcYesNoOpts);
 								if((l==0 && !(cfg.prot[i]->misc&PROT_NATIVE))
 									|| (l==1 && cfg.prot[i]->misc&PROT_NATIVE)) {
 									cfg.prot[i]->misc^=PROT_NATIVE;

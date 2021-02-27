@@ -1,5 +1,6 @@
 SRC_ROOT	:=	..
 include ${SRC_ROOT}/build/Common.gmake
+include extdeps.mk
 
 ifdef WITHOUT_OOII
  CFLAGS	+= -DWITHOUT_OOII=1

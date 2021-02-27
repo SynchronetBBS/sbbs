@@ -849,7 +849,8 @@ var SpinningCursor6=839;
 var SpinningCursor7=840;
 var SpinningCursor8=841;
 var SpinningCursor9=842;
+var HowManyColumns=843;
 
-var TOTAL_TEXT=843;
+var TOTAL_TEXT=844;
 
 this;

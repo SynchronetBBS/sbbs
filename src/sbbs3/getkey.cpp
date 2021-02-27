@@ -91,9 +91,9 @@ char sbbs_t::getkey(long mode)
 			return(0);
 		now=time(NULL);
 		if(ch) {
-			if(mode&K_NUMBER && isprint(ch) && !isdigit(ch))
+			if(mode&K_NUMBER && IS_PRINTABLE(ch) && !IS_DIGIT(ch))
 				continue;
-			if(mode&K_ALPHA && isprint(ch) && !isalpha(ch))
+			if(mode&K_ALPHA && IS_PRINTABLE(ch) && !IS_ALPHA(ch))
 				continue;
 			if(mode&K_NOEXASC && ch&0x80)
 				continue;
@@ -365,7 +365,7 @@ long sbbs_t::getkeys(const char *keys, ulong max, long mode)
 			lncntr=0;
 			return(-1); 
 		}
-		if(ch && !n && ((keys == NULL && !isdigit(ch)) || (strchr(str,ch)))) {  /* return character if in string */
+		if(ch && !n && ((keys == NULL && !IS_DIGIT(ch)) || (strchr(str,ch)))) {  /* return character if in string */
 			if(ch > ' ') {
 				if(!(mode&K_NOECHO))
 					outchar(ch);
@@ -411,7 +411,7 @@ long sbbs_t::getkeys(const char *keys, ulong max, long mode)
 			i/=10;
 			n--; 
 		}
-		else if(max && isdigit(ch) && (i*10)+(ch&0xf)<=max && (ch!='0' || n)) {
+		else if(max && IS_DIGIT(ch) && (i*10)+(ch&0xf)<=max && (ch!='0' || n)) {
 			i*=10;
 			n++;
 			i+=ch&0xf;
@@ -475,13 +475,14 @@ void sbbs_t::pause()
 /****************************************************************************/
 void sbbs_t::ungetkey(char ch, bool insert)
 {
+	char dbg[2] = {};
 #if 0	/* this way breaks ansi_getxy() */
 	RingBufWrite(&inbuf,(uchar*)&ch,sizeof(uchar));
 #else
 	if(keybuf_space()) {
 		char* p = c_escape_char(ch);
 		if(p == NULL) {
-			char dbg[2] = { ch, 0 };
+			dbg[0] = ch;
 			p = dbg;
 		}
 		lprintf(LOG_DEBUG, "%s key into keybuf: %02X (%s)", insert ? "insert" : "append", ch, p);

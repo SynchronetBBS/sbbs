@@ -1,8 +1,4 @@
-/* readmail.cpp */
-
 /* Synchronet private mail reading function */
-
-/* $Id: readmail.cpp,v 1.101 2020/05/11 05:01:01 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -435,24 +419,20 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 			case 'F':  /* Forward last piece */
 				domsg=0;
 				bputs(text[ForwardMailTo]);
-				if(!getstr(str,LEN_ALIAS,cfg.uq&UQ_NOUPRLWR ? K_NONE:K_UPRLWR))
+				if(!getstr(str, sizeof(str) - 1, K_TRIM))
 					break;
-				i=finduser(str);
-				if(!i)
+				smb_getmsgidx(&smb,&msg);
+				if(!forwardmsg(&smb, &msg, str))
 					break;
 				domsg=1;
 				if(smb.curmsg<smb.msgs-1) smb.curmsg++;
 				else done=1;
-				smb_getmsgidx(&smb,&msg);
-				forwardmail(&msg,i);
-				if(msg.hdr.attr&MSG_PERMANENT)
+				if(msg.hdr.attr&(MSG_PERMANENT | MSG_DELETE))
 					break;
 				SAFEPRINTF(str2,text[DeleteMailQ],msghdr_field(&msg, msg.from));
 				if(!yesno(str2))
 					break;
-				if(msg.total_hfields)
-					smb_freemsgmem(&msg);
-				msg.total_hfields=0;
+				smb_freemsgmem(&msg);
 				msg.idx.offset=0;
 				if(smb_locksmbhdr(&smb)==SMB_SUCCESS) {	/* Lock the entire base */
 					if(loadmsg(&msg,msg.idx.number) >= 0) {
@@ -465,7 +445,6 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					}
 					smb_unlocksmbhdr(&smb);
 				}
-
 				break;
 			case 'H':
 				domsg=0;
@@ -663,7 +642,7 @@ void sbbs_t::readmail(uint usernumber, int which, long lm_mode)
 					msgtotxt(&smb, &msg, str, /* header: */true, /* mode: */GETMSGTXT_ALL);
 				break;
 			case 'E':
-				editmsg(&msg,INVALID_SUB);
+				editmsg(&smb, &msg);
 				break;
 			case 'T':
 				domsg=0;

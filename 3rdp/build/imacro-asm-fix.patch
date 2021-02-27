@@ -1,0 +1,11 @@
+--- js-1.8.5/js/src/imacro_asm.py	2020-12-19 01:15:38.325248687 -0800
++++ js-1.8.5/js/src/imacro_asm.py	2020-12-19 01:15:30.005192001 -0800
+@@ -456,7 +456,7 @@
+ if __name__ == '__main__':
+     import sys
+     if len(sys.argv) != 3:
+-        print "usage: python imacro_asm.py infile.jsasm outfile.c.out"
++        print("usage: python imacro_asm.py infile.jsasm outfile.c.out")
+         sys.exit(1)
+ 
+     f = open(sys.argv[2], 'w')
