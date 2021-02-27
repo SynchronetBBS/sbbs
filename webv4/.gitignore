@@ -1,9 +1,0 @@
-# Ignore processed XJS files
-*.xjs.ssjs
-
-mods/*
-
-root/css/custom.css
-root/logo.gif
-root/.well-known
-

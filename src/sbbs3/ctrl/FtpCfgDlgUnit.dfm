@@ -1,6 +1,6 @@
 object FtpCfgDlg: TFtpCfgDlg
-  Left = 1282
-  Top = 534
+  Left = 837
+  Top = 423
   BorderStyle = bsDialog
   Caption = 'FTP Server Configuration'
   ClientHeight = 245
@@ -58,20 +58,12 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Interfaces (IPs)'
       end
       object QwkTimeoutLabel: TLabel
-        Left = 148
+        Left = 7
         Top = 138
         Width = 78
         Height = 20
         AutoSize = False
         Caption = 'QWK Timeout'
-      end
-      object MaxConConLabel: TLabel
-        Left = 7
-        Top = 138
-        Width = 85
-        Height = 19
-        AutoSize = False
-        Caption = 'Max Con-Conn'
       end
       object AutoStartCheckBox: TCheckBox
         Left = 7
@@ -130,19 +122,18 @@ object FtpCfgDlg: TFtpCfgDlg
       end
       object AllowQWKCheckBox: TCheckBox
         Left = 148
-        Top = 109
+        Top = 60
         Width = 119
         Height = 20
         Hint = 'Allow QWK packet transfers'
         Caption = 'QWK Packets'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 9
-        OnClick = AllowQWKCheckBoxClick
+        TabOrder = 7
       end
       object LocalFileSysCheckBox: TCheckBox
         Left = 148
-        Top = 62
+        Top = 86
         Width = 119
         Height = 20
         Hint = 
@@ -151,7 +142,7 @@ object FtpCfgDlg: TFtpCfgDlg
         Caption = 'Local File System'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 7
+        TabOrder = 8
       end
       object HostnameCheckBox: TCheckBox
         Left = 148
@@ -164,33 +155,23 @@ object FtpCfgDlg: TFtpCfgDlg
         ShowHint = True
         TabOrder = 1
       end
-      object AllowBounceCheckBox: TCheckBox
+      object DirFilesCheckBox: TCheckBox
         Left = 148
-        Top = 86
+        Top = 110
         Width = 125
         Height = 20
-        Hint = 'Allow authenticated users to use FTP Bounce (not recommended)'
-        Caption = 'Allow Bouncing'
+        Hint = 'Allow users access to files in directory, but not in database'
+        Caption = 'Directory File Access'
         ParentShowHint = False
         ShowHint = True
-        TabOrder = 8
+        TabOrder = 9
       end
       object QwkTimeoutEdit: TEdit
-        Left = 223
-        Top = 138
-        Width = 39
-        Height = 21
-        Hint = 'Maximum number of seconds before QWK packet creation timeout'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 10
-      end
-      object MaxConConEdit: TEdit
         Left = 85
         Top = 138
         Width = 39
         Height = 21
-        Hint = 'Maximum Concurrent Connections from same IP (0=unlimited)'
+        Hint = 'Maximum number of seconds before QWK packet creation timeout'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
@@ -274,6 +255,14 @@ object FtpCfgDlg: TFtpCfgDlg
     object IndexTabSheet: TTabSheet
       Caption = 'Index'
       ImageIndex = 3
+      object HtmlJavaScriptLabel: TLabel
+        Left = 7
+        Top = 62
+        Width = 65
+        Height = 20
+        AutoSize = False
+        Caption = 'JavaScript'
+      end
       object AutoIndexCheckBox: TCheckBox
         Left = 7
         Top = 10
@@ -295,6 +284,38 @@ object FtpCfgDlg: TFtpCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
+      end
+      object HtmlIndexCheckBox: TCheckBox
+        Left = 7
+        Top = 36
+        Width = 78
+        Height = 19
+        Hint = 'Automatically generate HTML index files for file descriptions'
+        Caption = 'HTML'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 2
+        OnClick = HtmlIndexCheckBoxClick
+      end
+      object HtmlFileNameEdit: TEdit
+        Left = 85
+        Top = 36
+        Width = 156
+        Height = 21
+        Hint = 'Name of HTML index file (default=00index.html)'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
+      end
+      object HtmlJavaScriptEdit: TEdit
+        Left = 85
+        Top = 62
+        Width = 156
+        Height = 21
+        Hint = 'JavaScript filename to execute to generate HTML index file'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 4
       end
     end
     object LogTabSheet: TTabSheet

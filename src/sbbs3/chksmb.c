@@ -158,7 +158,7 @@ int main(int argc, char **argv)
 				,hasherr,badhash
 				,acthdrblocks,actdatblocks
 				,dfieldlength,dfieldoffset
-				,dupenum,dupenumhdr,dupeoff,attr,actalloc,types
+				,dupenum,dupenumhdr,dupeoff,attr,actalloc
 				,datactalloc,misnumbered,timeerr,idxofferr,idxerr
 				,subjcrc,fromcrc,tocrc
 				,intransit,unvalidated
@@ -349,7 +349,6 @@ int main(int argc, char **argv)
 	}
 
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
-	types = 0;
 	subjcrc=fromcrc=tocrc=0;
 	hdrnumerr=hdrlenerr=0;
 	actalloc=datactalloc=deldatblocks=delhdrblocks=xlaterr=0;
@@ -470,13 +469,6 @@ int main(int argc, char **argv)
 					printf("MSGERR: %s\n", smb.last_error);
 				gettailerr++;
 			}
-		}
-
-		if(msg.hdr.type != smb_msg_type(msg.hdr.attr)) {
-			fprintf(stderr,"%sMessage type mismatch (%d, expected %d)\n"
-				,beep, msg.hdr.type, smb_msg_type(msg.hdr.attr));
-			msgerr=TRUE;
-			types++;
 		}
 
 		if(!(smb.status.attr&SMB_EMAIL) && chkhash) {
@@ -1023,10 +1015,6 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,"Mismatched Header Lengths"
 			,hdrlenerr);
-	if(types)
-		printf("%-35.35s (!): %lu\n"
-			,"Mismatched Attribute/MsgTypes"
-			,types);
 #define INDXERR "Index/Header Mismatch: "
 	if(attr)
 		printf("%-35.35s (!): %lu\n"

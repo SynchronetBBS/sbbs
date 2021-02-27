@@ -1,4 +1,7 @@
 /* Synchronet real-time chat functions */
+// vi: tabstop=4
+
+/* $Id: chat.cpp,v 1.84 2020/08/15 21:58:14 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -72,7 +87,7 @@ void sbbs_t::multinodechat(int channel)
 			errormsg(WHERE,ERR_ALLOC,str,(size_t)filelength(file)+1);
 			return;
 		}
-		(void)read(file,gurubuf,(size_t)filelength(file));
+		read(file,gurubuf,(size_t)filelength(file));
 		gurubuf[filelength(file)]=0;
 		close(file);
 	}
@@ -227,7 +242,7 @@ void sbbs_t::multinodechat(int channel)
 								,(size_t)filelength(file)+1);
 							break;
 						}
-						(void)read(file,gurubuf,(size_t)filelength(file));
+						read(file,gurubuf,(size_t)filelength(file));
 						gurubuf[filelength(file)]=0;
 						close(file);
 					}
@@ -569,7 +584,7 @@ bool sbbs_t::guru_page(void)
 		close(file);
 		return(false);
 	}
-	(void)read(file,gurubuf,(size_t)filelength(file));
+	read(file,gurubuf,(size_t)filelength(file));
 	gurubuf[filelength(file)]=0;
 	close(file);
 	localguru(gurubuf,i);
@@ -708,7 +723,7 @@ bool sbbs_t::sysop_page(void)
 				mode|= EX_NATIVE;
 			if(cfg.page[i]->misc&XTRN_SH)
 				mode |= EX_SH;
-			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL,mode), mode); 
+			external(cmdstr(cfg.page[i]->cmd,nulstr,nulstr,NULL), mode); 
 		}
 		else if(cfg.sys_misc&SM_SHRTPAGE) {
 			bprintf(text[PagingGuru],cfg.sys_op);
@@ -756,7 +771,7 @@ bool sbbs_t::chan_access(uint cnum)
 /****************************************************************************/
 /* Private split-screen (or interspersed) chat with node or local sysop		*/
 /****************************************************************************/
-void sbbs_t::privchat(bool forced, int node_num)
+void sbbs_t::privchat(bool local)
 {
 	char	str[128],c,*p,localbuf[5][81],remotebuf[5][81]
 			,localline=0,remoteline=0,localchar=0,remotechar=0
@@ -772,8 +787,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 	node_t	node;
 	time_t	last_nodechk=0;
 
-	if(forced)
-		n = node_num;
+	if(local) 
+		n=0;
 	else {
 
 		if(useron.rest&FLAG('C')) {
@@ -793,28 +808,23 @@ void sbbs_t::privchat(bool forced, int node_num)
 			bprintf(text[NodeNAlreadyInPChat],n);
 			return; 
 		}
-		if(SYSOP && getnodedat(n, &node, true) == 0) {
-			node.misc |= NODE_FCHAT;
-			putnodedat(n, &node);
-		} else {
-			if((node.action!=NODE_PAGE || node.aux!=cfg.node_num)
-				&& node.misc&NODE_POFF) {
-				bprintf(text[CantPageNode],node.misc&NODE_ANON
-					? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
-				return;
-			}
-			if(node.action!=NODE_PAGE) {
-				bprintf(text[PagingUser]
-					,node.misc&NODE_ANON ? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp)
-					,node.misc&NODE_ANON ? 0 : node.useron);
-				sprintf(str,text[NodePChatPageMsg]
-					,cfg.node_num,thisnode.misc&NODE_ANON
-						? text[UNKNOWN_USER] : useron.alias);
-				putnmsg(&cfg,n,str);
-				sprintf(str,"paged %s on node %d to private chat"
-					,username(&cfg,node.useron,tmp),n);
-				logline("C",str);
-			}
+		if((node.action!=NODE_PAGE || node.aux!=cfg.node_num)
+			&& node.misc&NODE_POFF && !SYSOP) {
+			bprintf(text[CantPageNode],node.misc&NODE_ANON
+				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
+			return; 
+		}
+		if(node.action!=NODE_PAGE) {
+			bprintf(text[PagingUser]
+				,node.misc&NODE_ANON ? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp)
+				,node.misc&NODE_ANON ? 0 : node.useron);
+			sprintf(str,text[NodePChatPageMsg]
+				,cfg.node_num,thisnode.misc&NODE_ANON
+					? text[UNKNOWN_USER] : useron.alias);
+			putnmsg(&cfg,n,str);
+			sprintf(str,"paged %s on node %d to private chat"
+				,username(&cfg,node.useron,tmp),n);
+			logline("C",str); 
 		}
 
 		if(getnodedat(cfg.node_num,&thisnode,true)==0) {
@@ -848,14 +858,14 @@ void sbbs_t::privchat(bool forced, int node_num)
 	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 		thisnode.action=action=NODE_PCHT;
 		thisnode.aux=n;
-		thisnode.misc&=~ (NODE_LCHAT|NODE_FCHAT);
+		thisnode.misc&=~NODE_LCHAT;
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-	if(!online || (!forced && (sys_status&SS_ABORT)))
+	if(!online || sys_status&SS_ABORT)
 		return;
 
-	if(forced && n == 0) {
+	if(local) {
 		/* If an external sysop chat event handler is installed, just run that and do nothing else */
 		if(user_event(EVENT_LOCAL_CHAT))
 			return;
@@ -872,7 +882,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 	*/
 
 	if(!(sys_status&SS_SPLITP)) {
-		if(forced)
+		if(local)
 			bprintf(text[SysopIsHere],cfg.sys_op);
 		else
 			bputs(text[WelcomeToPrivateChat]);
@@ -884,7 +894,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 		return; 
 	}
 
-	if(forced && n == 0)
+	if(local)
 		sprintf(inpath,"%slchat.dab",cfg.node_dir);
 	else
 		sprintf(inpath,"%schat.dab",cfg.node_path[n-1]);
@@ -914,7 +924,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
-	if(n) { // not local
+	if(!local) {
 		if(getnodedat(n,&node,true)==0) {
 			node.misc|=NODE_RPCHT;				/* Set "reset pchat flag" */
 			putnodedat(n,&node); 				/* on other node */
@@ -945,15 +955,15 @@ void sbbs_t::privchat(bool forced, int node_num)
 		ansi_save();
 		ansi_gotoxy(1,13);
 		remote_y=1;
-		bprintf(forced ? local_sep : sep
+		bprintf(local ? local_sep : sep
 			,thisnode.misc&NODE_MSGW ? 'T':' '
 			,sectostr(timeleft,tmp)
 			,thisnode.misc&NODE_NMSG ? 'M':' ');
-		ansi_gotoxy(1,14);
+		CRLF;
 		local_y=14; 
 	}
 
-	while(online && (forced || !(sys_status&SS_ABORT))) {
+	while(online && (local || !(sys_status&SS_ABORT))) {
 		lncntr=0;
 		if(sys_status&SS_SPLITP)
 			lbuflen=0;
@@ -997,11 +1007,11 @@ void sbbs_t::privchat(bool forced, int node_num)
 					bputs("\1i_\1n");  /* Fake cursor */
 					ansi_save();
 					ansi_gotoxy(1,13);
-					bprintf(forced ? local_sep : sep
+					bprintf(local ? local_sep : sep
 						,thisnode.misc&NODE_MSGW ? 'T':' '
 						,sectostr(timeleft,tmp)
 						,thisnode.misc&NODE_NMSG ? 'M':' ');
-					ansi_gotoxy(1,14);
+					CRLF;
 					attr(cfg.color[clr_chatlocal]);
 					localbuf[localline][localchar]=0;
 					for(i=0;i<=localline;i++) {
@@ -1025,9 +1035,9 @@ void sbbs_t::privchat(bool forced, int node_num)
 					localbuf[localline][localchar]=0;
 					localchar=0;
 
-					if(sys_status&SS_SPLITP && local_y >= rows) {
+					if(sys_status&SS_SPLITP && local_y==24) {
 						ansi_gotoxy(1,13);
-						bprintf(forced ? local_sep : sep
+						bprintf(local ? local_sep : sep
 							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
 							,thisnode.misc&NODE_NMSG ? 'M':' ');
@@ -1055,12 +1065,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 					}
 					// SYNC;
 				} 
-			} else { // illegal key
-				continue;
 			}
 
-			(void)read(out,&c,1);
-			(void)lseek(out,-1L,SEEK_CUR);
+			read(out,&c,1);
+			lseek(out,-1L,SEEK_CUR);
 			if(!c)		/* hasn't wrapped */
 				write(out,&ch,1);
 			else {
@@ -1082,9 +1090,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 				lseek(in,0L,SEEK_SET);
 			ch=0;
 			utime(inpath,NULL);
-			if(read(in,&ch,1) != 1)
-				ch = 0;
-			(void)lseek(in,-1L,SEEK_CUR);
+			read(in,&ch,1);
+			lseek(in,-1L,SEEK_CUR);
 			if(!ch) break;					  /* char from other node */
 			activity=1;
 			if(sys_status&SS_SPLITP && !remote_activity) {
@@ -1124,7 +1131,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 					if(sys_status&SS_SPLITP && remote_y==12) {
 						CRLF;
-						bprintf(forced ? local_sep : sep
+						bprintf(local ? local_sep : sep
 							,thisnode.misc&NODE_MSGW ? 'T':' '
 							,sectostr(timeleft,tmp)
 							,thisnode.misc&NODE_NMSG ? 'M':' ');
@@ -1185,7 +1192,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 					nodesync(); 
 			}
 
-			if(n != 0) {
+			if(!local) {
 				getnodedat(n,&node,0);
 				if((node.action!=NODE_PCHT && node.action!=NODE_PAGE)
 					|| node.aux!=cfg.node_num) {
@@ -1261,8 +1268,8 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		sprintf(str,text[NodeToPrivateChat],lastnodemsg);
 	mnemonics(str);
 
-	SAFECOPY(str,lastnodemsguser);
-	getstr(str,LEN_ALIAS,K_LINE|K_EDIT|K_AUTODEL);
+	strcpy(str,lastnodemsguser);
+	getstr(str,LEN_ALIAS,K_UPRLWR|K_LINE|K_EDIT|K_AUTODEL);
 	if(sys_status&SS_ABORT) {
 		sys_status&= ~SS_ABORT;
 		return(0);
@@ -1282,7 +1289,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 				? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp));
 			return(0); 
 		}
-		SAFECOPY(lastnodemsguser,str);
+		strcpy(lastnodemsguser,str);
 		if(telegram)
 			return(node.useron);
 		return(j); 
@@ -1323,7 +1330,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 			}
 			if(telegram)
 				return(j);
-			SAFECOPY(lastnodemsguser,str);
+			strcpy(lastnodemsguser,str);
 			return(i); 
 		} 
 	}
@@ -1422,7 +1429,7 @@ void sbbs_t::nodemsg()
 					bprintf("%4s",nulstr);
 					if(!getstr(line,70,K_WRAP|K_MSG))
 						break;
-					SAFEPRINTF2(str,"%4s%s\r\n",nulstr,line);
+					sprintf(str,"%4s%s\r\n",nulstr,line);
 					SAFECAT(buf,str);
 					if(line[0]) {
 						if(i)
@@ -1557,7 +1564,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	j=strlen(line);
 	k=0;
 	for(i=0;i<j;i++) {
-		if(line[i]<0 || !IS_ALPHANUMERIC(line[i])) {
+		if(line[i]<0 || !isalnum((uchar)line[i])) {
 			if(!k)	/* beginning non-alphanumeric */
 				continue;
 			if(line[i]==line[i+1])	/* redundant non-alnum */
@@ -1570,7 +1577,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 	cstr[k]=0;
 	while(k) {
 		k--;
-		if(!IS_ALPHANUMERIC(cstr[k]))
+		if(!isalnum((uchar)cstr[k]))
 			continue;
 		break; 
 	}
@@ -1643,7 +1650,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case 'B':
 							if(sys_status&SS_USERON) {
-								getbirthdstr(&cfg, useron.birth, theanswer, sizeof(theanswer));
+								SAFECAT(theanswer,useron.birth);
 							} else {
 								SAFECAT(theanswer,"00/00/00");
 							}
@@ -1772,8 +1779,8 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			if(action!=NODE_MCHT) {
 				for(i=0;i<k;i++) {
 					if(i && mistakes && theanswer[i]!=theanswer[i-1] &&
-						((!IS_ALPHANUMERIC(theanswer[i]) && !sbbs_random(100))
-						|| (IS_ALPHANUMERIC(theanswer[i]) && !sbbs_random(30)))) {
+						((!isalnum((uchar)theanswer[i]) && !sbbs_random(100))
+						|| (isalnum((uchar)theanswer[i]) && !sbbs_random(30)))) {
 						c=j=((uint)sbbs_random(3)+1);	/* 1 to 3 chars */
 						if(c<strcspn(theanswer+(i+1),"\0., "))
 							c=j=1;
@@ -1895,7 +1902,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		if((**ptrptr)==')')
 			break;
 		c=0;
-		while((**ptrptr) && IS_WHITESPACE(**ptrptr))
+		while((**ptrptr) && isspace(**ptrptr))
 			(*ptrptr)++;
 		while((**ptrptr)!='|' && (**ptrptr)!='&' && (**ptrptr)!=')' &&(**ptrptr)) {
 			str[c++]=(**ptrptr);
@@ -1934,13 +1941,13 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		else {
 			cp=strstr(line,str);
 			if(cp && c) {
-				if(cp!=line || IS_ALPHANUMERIC(*(cp+strlen(str))))
+				if(cp!=line || isalnum((uchar)*(cp+strlen(str))))
 					cp=0; 
 			}
 			else {	/* must be isolated word */
 				while(cp)
-					if((cp!=line && IS_ALPHANUMERIC(*(cp-1)))
-						|| IS_ALPHANUMERIC(*(cp+strlen(str))))
+					if((cp!=line && isalnum((uchar)*(cp-1)))
+						|| isalnum((uchar)*(cp+strlen(str))))
 						cp=strstr(cp+strlen(str),str);
 					else
 						break; 

@@ -1,5 +1,8 @@
 /* Synchronet Mail (SMTP/POP3) server and sendmail threads */
 
+/* $Id: mailsrvr.c,v 1.734 2020/08/08 19:04:06 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -25,6 +40,7 @@
 #include <stdlib.h>			/* ltoa in GNU C lib */
 #include <stdarg.h>			/* va_list */
 #include <string.h>			/* strrchr */
+#include <ctype.h>			/* isdigit */
 #include <fcntl.h>			/* Open flags */
 #include <errno.h>			/* errno */
 
@@ -45,7 +61,6 @@
 #include "multisock.h"
 #include "ssl.h"
 #include "cryptlib.h"
-#include "ver.h"
 
 /* Constants */
 static const char*	server_name="Synchronet Mail Server";
@@ -56,11 +71,11 @@ static const char*	server_name="Synchronet Mail Server";
 int dns_getmx(char* name, char* mx, char* mx2
 			  ,DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout);
 
-#define pop_error		"-ERR System Error: %s, try again later"
-#define pop_auth_error	"-ERR Authentication failure"
+#define pop_err			"-ERR"
 #define ok_rsp			"250 OK"
 #define auth_ok			"235 User Authenticated"
-#define smtp_error		"421 System Error: %s, try again later"
+#define sys_error		"421 System error"
+#define sys_unavail		"421 System unavailable, try again later"
 #define insuf_stor		"452 Insufficient system storage"
 #define badarg_rsp 		"501 Bad argument"
 #define badseq_rsp		"503 Bad sequence of commands"
@@ -69,7 +84,6 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 #define TIMEOUT_THREAD_WAIT		60		/* Seconds */
 #define DNSBL_THROTTLE_VALUE	1000	/* Milliseconds */
-#define SMTP_MAX_BAD_CMDS		9
 
 #define STATUS_WFC	"Listening"
 
@@ -85,27 +99,17 @@ static volatile BOOL	sendmail_running=FALSE;
 static volatile BOOL	terminate_server=FALSE;
 static volatile BOOL	terminate_sendmail=FALSE;
 static sem_t	sendmail_wakeup_sem;
+static char		revision[16];
 static volatile time_t	uptime;
 static str_list_t recycle_semfiles;
 static str_list_t shutdown_semfiles;
 static int		mailproc_count;
 static js_server_props_t js_server_props;
-static link_list_t current_logins;
-static link_list_t current_connections;
-static bool savemsg_mutex_created = false;
-static pthread_mutex_t savemsg_mutex;
-
-static const char* servprot_smtp = "SMTP";
-static const char* servprot_submission = "SMTP";
-static const char* servprot_submissions = "SMTPS";
-static const char* servprot_pop3 = "POP3";
-static const char* servprot_pop3s = "POP3S";
 
 struct {
 	volatile ulong	sockets;
 	volatile ulong	errors;
 	volatile ulong	crit_errors;
-	volatile ulong	connections_exceeded;
 	volatile ulong	connections_ignored;
 	volatile ulong	connections_refused;
 	volatile ulong	connections_served;
@@ -203,7 +207,7 @@ static int lprintf(int level, const char *fmt, ...)
 		return(0);
 #endif
 
-    return(startup->lputs(startup->cbdata, level, condense_whitespace(sbuf)));
+    return(startup->lputs(startup->cbdata,level,sbuf));
 }
 
 #ifdef _WINSOCKAPI_
@@ -246,15 +250,12 @@ static void update_clients(void)
 
 static void client_on(SOCKET sock, client_t* client, BOOL update)
 {
-	if(!update)
-		listAddNodeData(&current_connections, client->addr, strlen(client->addr)+1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,TRUE,sock,client,update);
 }
 
 static void client_off(SOCKET sock)
 {
-	listRemoveTaggedNode(&current_connections, sock, /* free_data */TRUE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,FALSE,sock,NULL,FALSE);
 }
@@ -267,7 +268,7 @@ static void thread_up(BOOL setuid)
 
 static int32_t thread_down(void)
 {
-	int32_t count = protected_uint32_adjust_fetch(&thread_count,-1);
+	int32_t count = protected_uint32_adjust(&thread_count,-1);
 	if(startup!=NULL && startup->thread_up!=NULL)
 		startup->thread_up(startup->cbdata,FALSE,FALSE);
 	return count;
@@ -587,7 +588,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 				lprintf(LOG_DEBUG,"%04d %s RX: %s",socket, prot, buf);
 			continue;
 		}
-		if(strnicmp(buf,rsp,strlen(rsp))) {
+		if(rsp!=NULL && strnicmp(buf,rsp,strlen(rsp))) {
 			lprintf(LOG_WARNING,"%04d %s !INVALID RESPONSE: '%s' Expected: '%s'", socket, prot, buf, rsp);
 			free(mopt);
 			return(-1);
@@ -629,23 +630,6 @@ void originator_info(SOCKET socket, const char* protocol, CRYPT_SESSION sess, sm
 			);
 }
 
-char* angle_bracket(char* buf, size_t max, const char* addr)
-{
-	if(*addr == '<')
-		safe_snprintf(buf, max, "%s", addr);
-	else
-		safe_snprintf(buf, max, "<%s>", addr);
-	return buf;
-}
-
-int compare_addrs(const char* addr1, const char* addr2)
-{
-	char tmp1[256];
-	char tmp2[256];
-
-	return strcmp(angle_bracket(tmp1, sizeof(tmp1), addr1), angle_bracket(tmp2, sizeof(tmp2), addr2));
-}
-
 /* RFC822: The maximum total length of a text line including the
    <CRLF> is 1000 characters (but not counting the leading
    dot duplicated for transparency). 
@@ -661,10 +645,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	char		fromaddr[256]="";
 	char		fromhost[256];
 	char		msgid[256];
-	char		tmp[256];
 	char		date[64];
 	char*		p;
 	char*		np;
+	char*		content_type=NULL;
 	int			i;
 	int			s;
 	ulong		lines;
@@ -708,7 +692,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			SAFECOPY(fromaddr,(char*)msg->from_net.addr);
 		else 
 			usermailaddr(&scfg,fromaddr,msg->from);
-		s = sockprintf(socket,prot,sess,"From: %s %s", fromname, angle_bracket(tmp, sizeof(tmp), fromaddr));
+		if(fromaddr[0]=='<')
+			s=sockprintf(socket,prot,sess,"From: %s %s",fromname,fromaddr);
+		else
+			s=sockprintf(socket,prot,sess,"From: %s <%s>",fromname,fromaddr);
 	}
 	if(!s)
 		return(0);
@@ -797,24 +784,18 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	}
 	for(i=0;i<msg->total_hfields;i++) { 
 		if(msg->hfield[i].type==RFC822HEADER) { 
+			if(strnicmp((char*)msg->hfield_dat[i],"Content-Type:",13)==0)
+				content_type=msg->hfield_dat[i];
 			if(!sockprintf(socket,prot, sess,"%s",(char*)msg->hfield_dat[i]))
 				return(0);
         }
     }
-	const char* charset = msg->text_charset;
-	if(charset == NULL) {
-		if(smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8))
-			charset = "UTF-8";
-		else if(str_is_ascii(msgtxt))
-			charset = "US-ASCII";
-		else
-			charset = "IBM437";
-	}
-
 	/* Default MIME Content-Type for non-Internet messages */
-	if(msg->from_net.type!=NET_INTERNET && msg->content_type==NULL) {
-		sockprintf(socket,prot,sess, "Content-Type: text/plain; charset=%s", charset);
-		sockprintf(socket,prot,sess, "Content-Transfer-Encoding: 8bit");
+	if(msg->from_net.type!=NET_INTERNET && content_type==NULL) {
+		const char* charset =  smb_msg_is_utf8(msg) ? "UTF-8" : startup->default_charset;
+		if(*charset)
+			sockprintf(socket,prot,sess,"Content-Type: text/plain; charset=%s", charset);
+		sockprintf(socket,prot,sess,"Content-Transfer-Encoding: 8bit");
 	}
 
 	if(strListCount(file_list)) {	/* File attachments */
@@ -822,7 +803,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
         sockprintf(socket,prot,sess,"");
         mimeblurb(socket,prot,sess,mime_boundary);
         sockprintf(socket,prot,sess,"");
-        mimetextpartheader(socket,prot,sess,mime_boundary, msg->text_subtype, charset);
+        mimetextpartheader(socket,prot,sess,mime_boundary, startup->default_charset);
 	}
 	if(!sockprintf(socket,prot,sess,""))	/* Header Terminator */
 		return(0);
@@ -864,11 +845,11 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			if(!mimeattach(socket,prot,sess,mime_boundary,file_list[i]))
 				lprintf(LOG_ERR,"%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
 			else {
+				endmime(socket,prot,sess,mime_boundary);
 				if(msg->hdr.auxattr&MSG_KILLFILE)
 					if(remove(file_list[i])!=0)
 						lprintf(LOG_WARNING,"%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
 			}
-			endmime(socket,prot,sess,mime_boundary);
 		}
 	}
     sockprintf(socket,prot,sess,".");	/* End of text */
@@ -877,42 +858,33 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 
 static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines)
 {
-	char		dirname[MAX_PATH + 1];
-	char		filepath[MAX_PATH + 1];
+	char		filepath[MAX_PATH+1];
 	ulong		retval;
 	char*		boundary=NULL;
+	unsigned	i;
 	str_list_t	file_list=NULL;
+	str_list_t	split;
 
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {
-		if(msg->idx.to != 0)
-			SAFEPRINTF2(dirname, "%sfile/%04u.in", scfg.data_dir, msg->idx.to);
-		else
-			SAFEPRINTF2(dirname, "%sfile/%04u.out", scfg.data_dir, msg->idx.from);
 
 		boundary = mimegetboundary();
 		file_list = strListInit();
 
-		/* filename(s) in subject */
-		char* p = msg->subj;
-		SKIP_WHITESPACE(p);
-		while(*p != '\0') {
-			char delim = ' ';
-			if(*p == '"') {
-				delim = '"';
-				p++;
+		/* Parse subject (if necessary) */
+		if(!strListCount(file_list)) {	/* filename(s) stored in subject */
+			split=strListSplitCopy(NULL,msg->subj," ");
+			if(split!=NULL) {
+				for(i=0;split[i];i++) {
+					if(msg->idx.to!=0)
+						SAFEPRINTF3(filepath,"%sfile/%04u.in/%s"
+							,scfg.data_dir,msg->idx.to,getfname(truncsp(split[i])));
+					else
+						SAFEPRINTF3(filepath,"%sfile/%04u.out/%s"
+							,scfg.data_dir,msg->idx.from,getfname(truncsp(split[i])));
+					strListPush(&file_list,filepath);
+				}
+				strListFree(&split);
 			}
-			char* tp = strchr(p, delim);
-			if(tp == NULL) {
-				if(delim != ' ')
-					break;
-			} else
-				*tp = '\0';
-			SAFEPRINTF2(filepath, "%s/%s", dirname, getfname(truncsp(p)));
-			strListPush(&file_list, filepath);
-			if(tp == NULL)
-				break;
-			p = tp + 1;
-			SKIP_WHITESPACE(p);
 		}
     }
 
@@ -944,7 +916,7 @@ static u_long resolve_ip(const char *inaddr)
 		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
-		if(*p!='.' && !IS_DIGIT(*p))
+		if(*p!='.' && !isdigit((uchar)*p))
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
@@ -997,7 +969,6 @@ static void pop3_thread(void* arg)
 	char		buf[512];
 	char		host_name[128];
 	char		host_ip[INET6_ADDRSTRLEN];
-	char		server_ip[INET6_ADDRSTRLEN];
 	char		username[128];
 	char		password[128];
 	char		challenge[256];
@@ -1030,7 +1001,6 @@ static void pop3_thread(void* arg)
 	char *estr;
 	int level;
 	int stat;
-	union xp_sockaddr	server_addr;
 
 	SetThreadName("sbbs/pop3");
 	thread_up(TRUE /* setuid */);
@@ -1049,32 +1019,22 @@ static void pop3_thread(void* arg)
 		PlaySound(startup->pop3_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 
-	socklen_t addr_len = sizeof(server_addr);
-	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
-		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting address/port"
-			,socket, client.protocol, i, ERROR_VALUE);
-		mail_close_socket(&socket, &session);
-		thread_down();
-		return;
-	}
-
 	inet_addrtop(&pop3.client_addr, host_ip, sizeof(host_ip));
-	inet_addrtop(&server_addr, server_ip, sizeof(server_ip));
 
 	if(startup->options&MAIL_OPT_DEBUG_POP3)
-		lprintf(LOG_INFO,"%04d %s [%s] connection accepted on %s port %u from port %u"
-			,socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&pop3.client_addr));
+		lprintf(LOG_INFO,"%04d %s connection accepted from: %s port %u"
+			,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr));
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&pop3.client_addr.addr, pop3.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_INFO,"%04d %s [%s] Hostname: %s", socket, client.protocol, host_ip, host_name);
+			lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]", socket, client.protocol, host_name, host_ip);
 	}
 	if (pop3.tls_port) {
 		if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 			if (estr) {
-				lprintf(level, "%04d %s [%s] !Failure getting certificate: %s", socket, client.protocol, host_ip, estr);
+				lprintf(level, "%04d %s !Failure getting certificate: %s", socket, client.protocol, estr);
 				free_crypt_attrstr(estr);
 			}
 			mail_close_socket(&socket, &session);
@@ -1134,11 +1094,11 @@ static void pop3_thread(void* arg)
 	if(banned || trashcan(&scfg,host_ip,"ip")) {
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d %s !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
 				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 		}
 		else
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT IP ADDRESS BLOCKED",socket, client.protocol, host_ip);
+			lprintf(LOG_NOTICE,"%04d %s !CLIENT IP ADDRESS BLOCKED: %s",socket, client.protocol, host_ip);
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		mail_close_socket(&socket, &session);
 		thread_down();
@@ -1146,15 +1106,15 @@ static void pop3_thread(void* arg)
 	}
 
 	if(trashcan(&scfg,host_name,"host")) {
-		lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT HOSTNAME BLOCKED: %s"
-			,socket, client.protocol, host_ip, host_name);
+		lprintf(LOG_NOTICE,"%04d %s !CLIENT HOSTNAME BLOCKED: %s"
+			,socket, client.protocol, host_name);
 		sockprintf(socket,client.protocol,session,"-ERR Access denied.");
 		mail_close_socket(&socket, &session);
 		thread_down();
 		return;
 	}
 
-	(void)protected_uint32_adjust(&active_clients, 1);
+	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	/* Initialize client display */
@@ -1172,7 +1132,7 @@ static void pop3_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &pop3.client_addr)) > 1) {
-		lprintf(LOG_DEBUG,"%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
+		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
 			,socket, client.protocol, host_ip, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -1190,8 +1150,8 @@ static void pop3_thread(void* arg)
 		safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%.128s>"
 			,rand(),socket,(ulong)time(NULL),(ulong)clock(), server_host_name());
 
-		sockprintf(socket,client.protocol,session,"+OK Synchronet %s Server %s%c-%s Ready %s"
-			,client.protocol, VERSION, REVISION, PLATFORM_DESC, challenge);
+		sockprintf(socket,client.protocol,session,"+OK Synchronet %s Server %s-%s Ready %s"
+			,client.protocol, revision,PLATFORM_DESC,challenge);
 
 		/* Requires USER or APOP command first */
 		for(i=5;i;i--) {
@@ -1206,13 +1166,13 @@ static void pop3_thread(void* arg)
 			else if (!stricmp(buf, "CAPA")) {
 				// Capabilities
 				sockprintf(socket,client.protocol,session, "+OK Capability list follows");
-				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s%c-%s\r\n%s.", VERSION, REVISION, PLATFORM_DESC, (session != -1 || get_ssl_cert(&scfg, NULL, NULL) == -1) ? "" : "STLS\r\n");
+				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s-%s\r\n%s.", revision, PLATFORM_DESC, (session != -1 || get_ssl_cert(&scfg, NULL, NULL) == -1) ? "" : "STLS\r\n");
 				i++;
 			}
 			else if (!stricmp(buf, "STLS")) {
 				if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 					if (estr) {
-						lprintf(level, "%04d %s [%s] !TLS Failure getting certificate: %s", socket, client.protocol, host_ip, estr);
+						lprintf(level, "%04d %s !TLS Failure getting certificate: %s", socket, client.protocol, estr);
 						free_crypt_attrstr(estr);
 					}
 					sockprintf(socket,client.protocol,session,"-ERR STLS command not supported");
@@ -1301,18 +1261,19 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d %s [%s] !UNKNOWN USER: '%s'"
 					,socket, client.protocol, host_ip, username);
-			badlogin(socket, session, client.protocol, pop_auth_error, username, password, host_name, &pop3.client_addr);
+			badlogin(socket, session, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
 			lprintf(LOG_ERR,"%04d %s [%s] !ERROR %d getting data on user (%s)"
 				,socket, client.protocol, host_ip, i, username);
+			badlogin(socket, session, client.protocol, pop_err, NULL, NULL, NULL, NULL);
 			break;
 		}
 		if(user.misc&(DELETED|INACTIVE)) {
 			lprintf(LOG_NOTICE,"%04d %s [%s] !DELETED or INACTIVE user #%u (%s)"
 				,socket, client.protocol, host_ip, user.number, username);
-			badlogin(socket, session, client.protocol, pop_auth_error, username, password, NULL, NULL);
+			badlogin(socket, session, client.protocol, pop_err, NULL, NULL, NULL, NULL);
 			break;
 		}
 		if(apop) {
@@ -1328,7 +1289,7 @@ static void pop3_thread(void* arg)
 				lprintf(LOG_DEBUG,"%04d !POP3 calc digest: %s",socket,str);
 				lprintf(LOG_DEBUG,"%04d !POP3 resp digest: %s",socket,response);
 #endif
-				badlogin(socket, session, client.protocol, pop_auth_error, username, response, host_name, &pop3.client_addr);
+				badlogin(socket, session, client.protocol, pop_err, username, response, host_name, &pop3.client_addr);
 				break;
 			}
 		} else if(stricmp(password,user.pass)) {
@@ -1338,14 +1299,12 @@ static void pop3_thread(void* arg)
 			else
 				lprintf(LOG_NOTICE,"%04d %s [%s] !FAILED Password attempt for user %s"
 					,socket, client.protocol, host_ip, username);
-			badlogin(socket, session, client.protocol, pop_auth_error, username, password, host_name, &pop3.client_addr);
+			badlogin(socket, session, client.protocol, pop_err, username, password, host_name, &pop3.client_addr);
 			break;
 		}
 
-		if(user.pass[0]) {
+		if(user.pass[0])
 			loginSuccess(startup->login_attempt_list, &pop3.client_addr);
-			listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
-		}
 
 		putuserrec(&scfg,user.number,U_COMP,LEN_COMP,host_name);
 		putuserrec(&scfg,user.number,U_IPADDR,LEN_IPADDR,host_ip);
@@ -1356,8 +1315,8 @@ static void pop3_thread(void* arg)
 		client_on(socket,&client,TRUE /* update */);
 		activity=FALSE;
 
-		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_INFO,"%04d %s [%s] %s logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
+		if(startup->options&MAIL_OPT_DEBUG_POP3)		
+			lprintf(LOG_INFO,"%04d %s [%s] %s logged in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
 		SAFEPRINTF2(str,"%s: %s", client.protocol, user.alias);
 		status(str);
 
@@ -1419,12 +1378,6 @@ static void pop3_thread(void* arg)
 				sockprintf(socket,client.protocol,session,"+OK");
 				continue;
 			}
-			if(!stricmp(buf, "CAPA")) {
-				// Capabilities
-				sockprintf(socket,client.protocol,session, "+OK Capability list follows");
-				sockprintf(socket,client.protocol,session, "TOP\r\nUSER\r\nPIPELINING\r\nUIDL\r\nIMPLEMENTATION Synchronet POP3 Server %s%c-%s\r\n.", VERSION, REVISION, PLATFORM_DESC);
-				continue;
-			}
 			if(!stricmp(buf, "QUIT")) {
 				sockprintf(socket,client.protocol,session,"+OK");
 				break;
@@ -1476,7 +1429,7 @@ static void pop3_thread(void* arg)
 			if(!strnicmp(buf, "LIST",4) || !strnicmp(buf,"UIDL",4)) {
 				p=buf+4;
 				SKIP_WHITESPACE(p);
-				if(IS_DIGIT(*p)) {
+				if(isdigit((uchar)*p)) {
 					msgnum=strtoul(p, NULL, 10);
 					if(msgnum<1 || msgnum>msgs) {
 						lprintf(LOG_NOTICE,"%04d %s <%s> !INVALID message #%" PRIu32
@@ -1704,11 +1657,8 @@ static void pop3_thread(void* arg)
 				}
 				msg.hdr.attr|=MSG_DELETE;
 
-				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH) {
-					if(!delfattach(&scfg,&msg))
-						lprintf(LOG_ERR, "%04d %s <%s> !ERROR %d deleting attachment: %s"
-							,socket, client.protocol, user.alias, errno, msg.subj);
-				}
+				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH)
+					delfattach(&scfg,&msg);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_unlocksmbhdr(&smb);
 				smb_freemsgmem(&msg);
@@ -1736,11 +1686,11 @@ static void pop3_thread(void* arg)
 
 	if(activity) {
 		if(user.number)
-			lprintf(LOG_INFO,"%04d %s <%s> logged-out from port %u on %s [%s]"
+			lprintf(LOG_INFO,"%04d %s <%s> logged out from port %u on %s [%s]"
 				,socket, client.protocol, user.alias, inet_addrport(&pop3.client_addr), host_name, host_ip);
 		else
-			lprintf(LOG_INFO,"%04d %s [%s] client disconnected from port %u on %s"
-				,socket, client.protocol, host_ip, inet_addrport(&pop3.client_addr), host_name);
+			lprintf(LOG_INFO,"%04d %s client disconnected from port %u on %s [%s]"
+				,socket, client.protocol, inet_addrport(&pop3.client_addr), host_name, host_ip);
 	}
 
 	status(STATUS_WFC);
@@ -1752,16 +1702,15 @@ static void pop3_thread(void* arg)
 	smb_freemsgmem(&msg);
 	smb_close(&smb);
 
-	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-	(void)protected_uint32_adjust(&active_clients, -1);
+	protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
 	{ 
 		int32_t remain = thread_down();
 		if(startup->options&MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_DEBUG,"%04d %s [%s] session thread terminated (%u threads remain, %lu clients served)"
-				,socket, client.protocol, host_ip, remain, ++stats.pop3_served);
+			lprintf(LOG_DEBUG,"%04d %s session thread terminated (%u threads remain, %lu clients served)"
+				,socket, client.protocol, remain, ++stats.pop3_served);
 	}
 
 	/* Must be last */
@@ -1907,8 +1856,8 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	if(!trashcan(&scfg,addr,"email"))
 		return(TRUE);
 
-	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s"
-		,socket, prot, host_ip, source, addr);
+	lprintf(LOG_NOTICE,"%04d %s !BLOCKED %s e-mail address: %s"
+		,socket, prot, source, addr);
 	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
 	spamlog(&scfg, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
 
@@ -1923,34 +1872,41 @@ static BOOL email_addr_is_exempt(const char* addr)
 
 	if(*addr==0 || strcmp(addr,"<>")==0)
 		return FALSE;
-	angle_bracket(netmail, sizeof(netmail), addr);
 	SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
-	if(findstr(netmail, fname))
+	if(findstr((char*)addr,fname))
 		return TRUE;
-	p = netmail + 1;
-	*lastchar(p) = '\0';
+	SAFECOPY(netmail, addr);
+	if(*(p=netmail)=='<')
+		p++;
+	truncstr(p,">");
 	return userdatdupe(&scfg, 0, U_NETMAIL, LEN_NETMAIL, p, /* del */FALSE, /* next */FALSE, NULL, NULL);
 }
 
 static void exempt_email_addr(const char* comment
-							  ,const char* sender_info
+							  ,const char* fromname, const char* fromext, const char* fromaddr
 							  ,const char* toaddr)
 {
 	char	fname[MAX_PATH+1];
-	char	to[256];
+	char	to[128];
 	char	tmp[128];
 	FILE*	fp;
 
-	angle_bracket(to, sizeof(to), toaddr);
+	if(*toaddr == '<')
+		SAFECOPY(to, toaddr);
+	else
+		SAFEPRINTF(to,"<%s>",toaddr);
 	if(!email_addr_is_exempt(to)) {
 		SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 		if((fp=fopen(fname,"a"))==NULL)
 			lprintf(LOG_ERR,"0000 !Error opening file: %s", fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
-			fprintf(fp,"\n;%s from %s on %s\n%s\n"
-				,comment, sender_info
-				,timestr(&scfg,time32(NULL),tmp), to);
+			fprintf(fp,"\n;%s from \"%s\""
+				,comment, fromname);
+			if(fromext!=NULL)
+				fprintf(fp,"%s",fromext);
+			fprintf(fp," %s on %s\n%s\n"
+				,fromaddr, timestr(&scfg,time32(NULL),tmp), to);
 			fclose(fp);
 		}
 	}
@@ -2262,7 +2218,10 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		}
 
 		if(*js_cx==NULL) {
-			if((*js_cx = JS_NewContext(*js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Initializing context (stack: %lu bytes)\n"
+				,sock, log_prefix, startup->js.cx_stack);
+
+			if((*js_cx = JS_NewContext(*js_runtime, startup->js.cx_stack))==NULL)
 				return FALSE;
 		}
 		JS_BEGINREQUEST(*js_cx);
@@ -2375,8 +2334,9 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		/* ToDo: Set operational callback */
 		success=JS_ExecuteScript(*js_cx, js_scope, js_script, &rval);
 
-		if(JS_GetProperty(*js_cx, js_scope, "exit_code", &rval)
-			&& rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
+		JS_GetProperty(*js_cx, js_scope, "exit_code", &rval);
+
+		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval))
 			JS_ValueToInt32(*js_cx,rval,result);
 
 		js_EvalOnExit(*js_cx, js_scope, &js_callback);
@@ -2424,7 +2384,7 @@ char* mimehdr_q_decode(char* buf)
 	for(;*p != 0; p++) {
 		if(*p == '=') {
 			p++;
-			if(IS_HEXDIGIT(*p) && IS_HEXDIGIT(*(p + 1))) {
+			if(isxdigit(*p) && isxdigit(*(p + 1))) {
 				uchar ch = HEX_CHAR_TO_INT(*p) << 4;
 				p++;
 				ch |= HEX_CHAR_TO_INT(*p);
@@ -2631,7 +2591,7 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 {
 	char		host_name[128];
 	char		*fromstr;
-	char		ip[16] = "ipv6-addr";
+	char		ip[16];
 	char		*p;
 	char		*p2;
 	char		*last;
@@ -2651,7 +2611,7 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 		if(*p==0)
 			break;
 		p2=host_name;
-		for(;*p && !IS_WHITESPACE(*p) && p2<host_name+126;p++)  {
+		for(;*p && !isspace((unsigned char)*p) && p2<host_name+126;p++)  {
 			*p2++=*p;
 		}
 		*p2=0;
@@ -2685,8 +2645,8 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 		}
 
 		if((dnsbl_result->s_addr=dns_blacklisted(socket,prot,&addr,host_name,dnsbl,dnsbl_ip))!=0)
-				lprintf(LOG_NOTICE,"%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
-					,socket, prot, ip, dnsbl, host_name, inet_ntoa(*dnsbl_result));
+				lprintf(LOG_NOTICE,"%04d %s BLACKLISTED SERVER on %s: %s [%s] = %s"
+					,socket, prot, dnsbl, host_name, ip, inet_ntoa(*dnsbl_result));
 	} while(0);
 	free(fromstr);
 	return(dnsbl_result->s_addr);
@@ -2699,9 +2659,6 @@ static void parse_mail_address(char* p
 	char*	tp;
 	char	tmp[256];
 
-	if(p == NULL || addr == NULL)
-		return;
-
 	SKIP_WHITESPACE(p);
 
 	/* Get the address */
@@ -2713,26 +2670,62 @@ static void parse_mail_address(char* p
 	sprintf(addr,"%.*s",(int)addr_len,tp);
 	truncstr(addr,">( ");
 
-	if(name != NULL) {
-		SAFECOPY(tmp,p);
-		p=tmp;
-		/* Get the "name" (if possible) */
-		if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
-			p=tp+1;
-			tp=strchr(p,'"');
-		} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
-			p=tp+1;
-			tp=strchr(p,')');
-		} else if(*p=='<') {					/* address in brackets? */
+	SAFECOPY(tmp,p);
+	p=tmp;
+	/* Get the "name" (if possible) */
+	if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
+		p=tp+1;
+		tp=strchr(p,'"');
+	} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
+		p=tp+1;
+		tp=strchr(p,')');
+	} else if(*p=='<') {					/* address in brackets? */
+		p++;
+		tp=strchr(p,'>');
+	} else									/* name, then address in brackets */
+		tp=strchr(p,'<');
+	if(tp) *tp=0;
+	sprintf(name,"%.*s",(int)name_len,p);
+	truncsp(name);
+	strip_char(name, name, '\\');
+}
+
+/* Decode quoted-printable content-transfer-encoded text */
+/* Ignores (strips) unsupported ctrl chars and non-ASCII chars */
+/* Does not enforce 76 char line length limit */
+static char* qp_decode(char* buf)
+{
+	uchar*	p=(uchar*)buf;
+	uchar*	dest=p;
+
+	for(;;p++) {
+		if(*p==0) {
+			*dest++='\r';
+			*dest++='\n';
+			break;
+		}
+		if(*p==' ' || (*p>='!' && *p<='~' && *p!='=') || *p=='\t')
+			*dest++=*p;
+		else if(*p=='=') {
 			p++;
-			tp=strchr(p,'>');
-		} else									/* name, then address in brackets */
-			tp=strchr(p,'<');
-		if(tp) *tp=0;
-		sprintf(name,"%.*s",(int)name_len,p);
-		truncsp(name);
-		strip_char(name, name, '\\');
+			if(*p==0) 	/* soft link break */
+				break;
+			if(isxdigit(*p) && isxdigit(*(p+1))) {
+				char hex[3];
+				hex[0]=*p;
+				hex[1]=*(p+1);
+				hex[2]=0;
+				/* ToDo: what about encoded NULs and the like? */
+				*dest++=(uchar)strtoul(hex,NULL,16);
+				p++;
+			} else {	/* bad encoding */
+				*dest++='=';
+				*dest++=*p;
+			}
+		}
 	}
+	*dest=0;
+	return buf;
 }
 
 static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
@@ -2826,9 +2819,11 @@ static void smtp_thread(void* arg)
 	char		rcpt_name[128];
 	char		rcpt_addr[128];
 	char		sender[128];
+	char		sender_ext[128];
 	char		sender_addr[128];
 	char		hello_name[128];
 	char		user_name[128];
+	char		user_pass[128];
 	char		relay_list[MAX_PATH+1];
 	char		domain_list[MAX_PATH+1];
 	char		spam_bait[MAX_PATH+1];
@@ -2893,7 +2888,6 @@ static void smtp_thread(void* arg)
 	user_t		relay_user;
 	node_t		node;
 	client_t	client;
-	char		client_id[128];
 	smtp_t		smtp=*(smtp_t*)arg;
 	union xp_sockaddr	server_addr;
 	IN_ADDR		dnsbl_result;
@@ -2932,6 +2926,12 @@ static void smtp_thread(void* arg)
 
 	} cmd = SMTP_CMD_NONE;
 
+	enum {
+			 ENCODING_NONE
+			,ENCODING_BASE64
+			,ENCODING_QUOTED_PRINTABLE
+	} content_encoding = ENCODING_NONE;
+
 	SetThreadName("sbbs/smtp");
 	thread_up(TRUE /* setuid */);
 
@@ -2947,7 +2947,6 @@ static void smtp_thread(void* arg)
 	if(startup->inbound_sound[0] && !(startup->options&MAIL_OPT_MUTE)) 
 		PlaySound(startup->inbound_sound, NULL, SND_ASYNC|SND_FILENAME);
 #endif
-	SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 
 	addr_len=sizeof(server_addr);
 
@@ -3013,7 +3012,7 @@ static void smtp_thread(void* arg)
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
 		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting address/port"
 			,socket, client.protocol, i, ERROR_VALUE);
-		sockprintf(socket,client.protocol,session,smtp_error, "getsockname failure");
+		sockprintf(socket,client.protocol,session,sys_error);
 		mail_close_socket(&socket, &session);
 		thread_down();
 		return;
@@ -3021,7 +3020,7 @@ static void smtp_thread(void* arg)
 
 	if((mailproc_to_match=malloc(sizeof(BOOL)*mailproc_count))==NULL) {
 		lprintf(LOG_CRIT,"%04d %s !ERROR allocating memory for mailproc_to_match", socket, client.protocol);
-		sockprintf(socket,client.protocol,session,smtp_error, "malloc failure");
+		sockprintf(socket,client.protocol,session,sys_error);
 		mail_close_socket(&socket, &session);
 		thread_down();
 		return;
@@ -3035,18 +3034,16 @@ static void smtp_thread(void* arg)
 	memset(&relay_user,0,sizeof(relay_user));
 
 	inet_addrtop(&smtp.client_addr,host_ip,sizeof(host_ip));
-	inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
 
-	lprintf(LOG_INFO,"%04d %s [%s] Connection accepted on %s port %u from port %u"
-		,socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&smtp.client_addr));
-	SAFEPRINTF(client_id, "[%s]", host_ip);
+	lprintf(LOG_INFO,"%04d %s Connection accepted on port %u from: %s port %u"
+		,socket, client.protocol, inet_addrport(&server_addr), host_ip, inet_addrport(&smtp.client_addr));
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if(!(startup->options&MAIL_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&smtp.client_addr.addr, smtp.client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-		lprintf(LOG_INFO,"%04d %s %s Hostname: %s", socket, client.protocol, client_id, host_name);
+		lprintf(LOG_INFO,"%04d %s Hostname: %s [%s]", socket, client.protocol, host_name, host_ip);
 	}
-	(void)protected_uint32_adjust(&active_clients, 1);
+	protected_uint32_adjust(&active_clients, 1);
 	update_clients();
 
 	SAFECOPY(hello_name,host_name);
@@ -3055,6 +3052,8 @@ static void smtp_thread(void* arg)
 	SAFEPRINTF(spam_block,"%sspamblock.cfg",scfg.ctrl_dir);
 	SAFEPRINTF(spam_block_exemptions,"%sspamblock_exempt.cfg",scfg.ctrl_dir);
 
+	inet_addrtop(&server_addr,server_ip,sizeof(server_ip));
+
 	if(strcmp(server_ip, host_ip)==0) {
 		/* local connection */
 		dnsbl_result.s_addr=0;
@@ -3062,11 +3061,11 @@ static void smtp_thread(void* arg)
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if(banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-				,socket, client.protocol, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
+			lprintf(LOG_NOTICE, "%04d !TEMPORARY BAN of %s (%lu login attempts, last: %s) - remaining: %s"
+				,socket, host_ip, attempted.count-attempted.dupes, attempted.user, seconds_to_str(banned, ban_duration));
 			mail_close_socket(&socket, &session);
 			thread_down();
-			(void)protected_uint32_adjust(&active_clients, -1);
+			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			free(mailproc_to_match);
 			return;
@@ -3080,19 +3079,19 @@ static void smtp_thread(void* arg)
 			sockprintf(socket,client.protocol,session,"550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			mail_close_socket(&socket, &session);
 			thread_down();
-			(void)protected_uint32_adjust(&active_clients, -1);
+			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			free(mailproc_to_match);
 			return;
 		}
 
 		if(trashcan(&scfg,host_name,"host")) {
-			lprintf(LOG_NOTICE,"%04d %s [%s] !CLIENT HOSTNAME BLOCKED: %s (%lu total)"
-				,socket, client.protocol, host_ip, host_name, ++stats.sessions_refused);
+			lprintf(LOG_NOTICE,"%04d %s !CLIENT HOSTNAME BLOCKED: %s (%lu total)"
+				,socket, client.protocol, host_name, ++stats.sessions_refused);
 			sockprintf(socket,client.protocol,session,"550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			mail_close_socket(&socket, &session);
 			thread_down();
-			(void)protected_uint32_adjust(&active_clients, -1);
+			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 			free(mailproc_to_match);
 			return;
@@ -3101,8 +3100,8 @@ static void smtp_thread(void* arg)
 		/*  SPAM Filters (mail-abuse.org) */
 		dnsbl_result.s_addr = dns_blacklisted(socket,client.protocol,&smtp.client_addr,host_name,dnsbl,dnsbl_ip);
 		if(dnsbl_result.s_addr) {
-			lprintf(LOG_NOTICE,"%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
-				,socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntoa(dnsbl_result));
+			lprintf(LOG_NOTICE,"%04d %s BLACKLISTED SERVER on %s: %s [%s] = %s"
+				,socket, client.protocol, dnsbl, host_name, dnsbl_ip, inet_ntoa(dnsbl_result));
 			if(startup->options&MAIL_OPT_DNSBL_REFUSE) {
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 				spamlog(&scfg, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
@@ -3113,7 +3112,7 @@ static void smtp_thread(void* arg)
 				lprintf(LOG_NOTICE,"%04d %s !REFUSED SESSION from blacklisted server (%lu total)"
 					,socket, client.protocol, ++stats.sessions_refused);
 				thread_down();
-				(void)protected_uint32_adjust(&active_clients, -1);
+				protected_uint32_adjust(&active_clients, -1);
 				update_clients();
 				free(mailproc_to_match);
 				return;
@@ -3123,12 +3122,12 @@ static void smtp_thread(void* arg)
 
 	SAFEPRINTF(smb.file,"%smail",scfg.data_dir);
 	if(smb_islocked(&smb)) {
-		lprintf(LOG_WARNING,"%04d %s [%s] !MAIL BASE LOCKED: %s"
-			,socket, client.protocol, host_ip, smb.last_error);
-		sockprintf(socket,client.protocol,session, smtp_error, "mail base locked");
+		lprintf(LOG_WARNING,"%04d %s !MAIL BASE LOCKED: %s"
+			,socket, client.protocol, smb.last_error);
+		sockprintf(socket,client.protocol,session,sys_unavail);
 		mail_close_socket(&socket, &session);
 		thread_down();
-		(void)protected_uint32_adjust(&active_clients, -1);
+		protected_uint32_adjust(&active_clients, -1);
 		update_clients();
 		free(mailproc_to_match);
 		return;
@@ -3140,19 +3139,19 @@ static void smtp_thread(void* arg)
 	srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));	/* seed random number generator */
 	rand();	/* throw-away first result */
 	SAFEPRINTF4(session_id,"%x%x%x%lx",getpid(),socket,rand(),(long)clock());
-	lprintf(LOG_DEBUG,"%04d %s [%s] Session ID=%s", socket, client.protocol, host_ip, session_id);
+	lprintf(LOG_DEBUG,"%04d %s Session ID=%s", socket, client.protocol, session_id);
 	SAFEPRINTF3(msgtxt_fname,"%sSBBS_%s.%s.msg", scfg.temp_dir, client.protocol, session_id);
 	SAFEPRINTF3(newtxt_fname,"%sSBBS_%s.%s.new", scfg.temp_dir, client.protocol, session_id);
 	SAFEPRINTF3(logtxt_fname,"%sSBBS_%s.%s.log", scfg.temp_dir, client.protocol, session_id);
 	SAFEPRINTF3(rcptlst_fname,"%sSBBS_%s.%s.lst", scfg.temp_dir, client.protocol, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
-		lprintf(LOG_CRIT,"%04d %s [%s] !ERROR %d creating recipient list: %s"
-			,socket, client.protocol, host_ip, errno, rcptlst_fname);
-		sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
+		lprintf(LOG_CRIT,"%04d %s !ERROR %d creating recipient list: %s"
+			,socket, client.protocol, errno, rcptlst_fname);
+		sockprintf(socket,client.protocol,session,sys_error);
 		mail_close_socket(&socket, &session);
 		thread_down();
-		(void)protected_uint32_adjust(&active_clients, -1);
+		protected_uint32_adjust(&active_clients, -1);
 		update_clients();
 		free(mailproc_to_match);
 		return;
@@ -3160,8 +3159,7 @@ static void smtp_thread(void* arg)
 
 	if(trashcan(&scfg,host_name,"smtpspy") 
 		|| trashcan(&scfg,host_ip,"smtpspy")) {
-		SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, client.protocol);
-		strlwr(str);
+		SAFEPRINTF(str,"%ssmtpspy.txt", scfg.logs_dir);
 		spy=fopen(str,"a");
 	}
 
@@ -3187,8 +3185,8 @@ static void smtp_thread(void* arg)
 
 	/* SMTP session active: */
 
-	sockprintf(socket,client.protocol,session,"220 %s Synchronet %s Server %s%c-%s Ready"
-		,server_host_name(), client.protocol, VERSION, REVISION, PLATFORM_DESC);
+	sockprintf(socket,client.protocol,session,"220 %s Synchronet %s Server %s-%s Ready"
+		,server_host_name(), client.protocol, revision, PLATFORM_DESC);
 	while(1) {
 		rd = sockreadline(socket, client.protocol, session, buf, sizeof(buf));
 		if(rd<0) 
@@ -3205,23 +3203,23 @@ static void smtp_thread(void* arg)
 				cmd=SMTP_CMD_NONE;
 
 				if(msgtxt==NULL) {
-					lprintf(LOG_ERR,"%04d %s %s !NO MESSAGE TEXT FILE POINTER?", socket, client.protocol, client_id);
+					lprintf(LOG_ERR,"%04d %s !NO MESSAGE TEXT FILE POINTER?", socket, client.protocol);
 					sockprintf(socket,client.protocol,session,"554 No message text");
 					continue;
 				}
 
 				if(ftell(msgtxt)<1) {
-					lprintf(LOG_ERR,"%04d %s %s !INVALID MESSAGE LENGTH: %ld (%lu lines)"
-						, socket, client.protocol, client_id, ftell(msgtxt), lines);
+					lprintf(LOG_ERR,"%04d %s !INVALID MESSAGE LENGTH: %ld (%lu lines)"
+						, socket, client.protocol, ftell(msgtxt), lines);
 					sockprintf(socket,client.protocol,session,"554 No message text");
 					continue;
 				}
 
-				lprintf(LOG_INFO,"%04d %s %s End of message (body: %lu lines, %lu bytes, header: %lu lines, %lu bytes)"
-					, socket, client.protocol, client_id, lines, ftell(msgtxt)-hdr_len, hdr_lines, hdr_len);
+				lprintf(LOG_INFO,"%04d %s End of message (body: %lu lines, %lu bytes, header: %lu lines, %lu bytes)"
+					, socket, client.protocol, lines, ftell(msgtxt)-hdr_len, hdr_lines, hdr_len);
 
 				if(!socket_check(socket, NULL, NULL, 0)) {
-					lprintf(LOG_WARNING,"%04d %s %s !Sender disconnected (premature evacuation)", socket, client.protocol, client_id);
+					lprintf(LOG_WARNING,"%04d %s !sender disconnected (premature evacuation)", socket, client.protocol);
 					continue;
 				}
 
@@ -3230,8 +3228,8 @@ static void smtp_thread(void* arg)
 				/* Twit-listing (sender's name and e-mail addresses) here */
 				SAFEPRINTF(path,"%stwitlist.cfg",scfg.ctrl_dir);
 				if(fexist(path) && (findstr(sender,path) || findstr(sender_addr,path))) {
-					lprintf(LOG_NOTICE,"%04d %s %s !FILTERING TWIT-LISTED SENDER: %s <%s> (%lu total)"
-						,socket, client.protocol, client_id, sender, sender_addr, ++stats.msgs_refused);
+					lprintf(LOG_NOTICE,"%04d %s !FILTERING TWIT-LISTED SENDER: %s <%s> (%lu total)"
+						,socket, client.protocol, sender, sender_addr, ++stats.msgs_refused);
 					SAFEPRINTF2(tmp,"Twit-listed sender: %s <%s>", sender, sender_addr);
 					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 					sockprintf(socket,client.protocol,session, "554 Sender not allowed.");
@@ -3273,17 +3271,17 @@ static void smtp_thread(void* arg)
 							,head,sender_addr,host_ip,host_name,tail);
 					else
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
-
+					
 					if((telegram_buf=(char*)malloc(length+strlen(str)+1))==NULL) {
-						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory for telegram from %s"
-							,socket, client.protocol, client_id, length+strlen(str)+1,sender_addr);
+						lprintf(LOG_CRIT,"%04d %s !ERROR allocating %lu bytes of memory for telegram from %s"
+							,socket, client.protocol,length+strlen(str)+1,sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue; 
 					}
 					strcpy(telegram_buf,str);	/* can't use SAFECOPY here */
 					if(fread(telegram_buf+strlen(str),1,length,msgtxt)!=length) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR reading %lu bytes from telegram file"
-							,socket, client.protocol, client_id, length);
+						lprintf(LOG_ERR,"%04d %s !ERROR reading %lu bytes from telegram file"
+							,socket, client.protocol,length);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						free(telegram_buf);
 						continue; 
@@ -3303,11 +3301,11 @@ static void smtp_thread(void* arg)
 						SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),rcpt_to,value));
 
 						if((i=putsmsg(&scfg,usernum,telegram_buf))==0)
-							lprintf(LOG_INFO,"%04d %s %s Created telegram (%ld/%lu bytes) from %s to %s <%s>"
-								,socket, client.protocol, client_id, length, (ulong)strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
+							lprintf(LOG_INFO,"%04d %s Created telegram (%ld/%lu bytes) from %s to %s <%s>"
+								,socket, client.protocol, length, (ulong)strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
 						else
-							lprintf(LOG_ERR,"%04d %s %s !ERROR %d creating telegram from %s to %s <%s>"
-								,socket, client.protocol, client_id, i, sender_addr, rcpt_to, rcpt_addr);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d creating telegram from %s to %s <%s>"
+								,socket, client.protocol, i, sender_addr, rcpt_to, rcpt_addr);
 					}
 					iniFreeStringList(sec_list);
 					free(telegram_buf);
@@ -3353,18 +3351,18 @@ static void smtp_thread(void* arg)
 							,host_name, host_ip, relay_user.number
 							,rcpt_addr
 							,sender, sender_addr, reverse_path, str);
-						lprintf(LOG_INFO,"%04d %s %s Executing external mail processor: %s"
-							,socket, client.protocol, client_id, mp->name);
+						lprintf(LOG_INFO,"%04d %s Executing external mail processor: %s"
+							,socket, client.protocol, mp->name);
 
 						if(mp->native) {
-							lprintf(LOG_DEBUG,"%04d %s %s Executing external command: %s"
-								,socket, client.protocol, client_id, str);
+							lprintf(LOG_DEBUG,"%04d %s Executing external command: %s"
+								,socket, client.protocol, str);
 							if((j=system(str))!=0) {
-								lprintf(LOG_NOTICE,"%04d %s %s system(%s) returned %d (errno: %d)"
-									,socket, client.protocol, client_id, str, j, errno);
+								lprintf(LOG_NOTICE,"%04d %s system(%s) returned %d (errno: %d)"
+									,socket, client.protocol, str, j, errno);
 								if(mp->ignore_on_error) {
-									lprintf(LOG_WARNING,"%04d %s %s !IGNORED MAIL due to mail processor (%s) error: %d"
-										,socket, client.protocol, client_id, mp->name, j);
+									lprintf(LOG_WARNING,"%04d %s !IGNORED MAIL due to mail processor (%s) error: %d"
+										,socket, client.protocol, mp->name, j);
 									msg_handled=TRUE;
 								}
 							}
@@ -3395,8 +3393,8 @@ static void smtp_thread(void* arg)
 								if(!fgets(str,sizeof(str),proc_out))
 									break;
 								truncsp(str);
-								lprintf(LOG_DEBUG,"%04d %s %s External mail processor (%s) debug: %s"
-									,socket, client.protocol, client_id, mp->name, str);
+								lprintf(LOG_DEBUG,"%04d %s External mail processor (%s) debug: %s"
+									,socket, client.protocol, mp->name, str);
 							}
 							fclose(proc_out);
 						}
@@ -3409,15 +3407,15 @@ static void smtp_thread(void* arg)
 					}
 					if(flength(proc_err_fname)>0 
 						&& (proc_out=fopen(proc_err_fname,"r"))!=NULL) {
-						lprintf(LOG_WARNING,"%04d %s %s !External mail processor (%s) created: %s"
-								,socket, client.protocol, client_id, mailproc->name, proc_err_fname);
+						lprintf(LOG_WARNING,"%04d %s !External mail processor (%s) created: %s"
+								,socket, client.protocol, mailproc->name, proc_err_fname);
 						while(!feof(proc_out)) {
 							int n;
 							if(!fgets(str,sizeof(str),proc_out))
 								break;
 							truncsp(str);
-							lprintf(LOG_WARNING,"%04d %s %s !External mail processor (%s) error: %s"
-								,socket, client.protocol, client_id, mailproc->name, str);
+							lprintf(LOG_WARNING,"%04d %s !External mail processor (%s) error: %s"
+								,socket, client.protocol, mailproc->name, str);
 							n=atoi(str);
 							if(n>=100 && n<1000)
 								sockprintf(socket,client.protocol,session,"%s", str);
@@ -3430,8 +3428,8 @@ static void smtp_thread(void* arg)
 						msg_handled=TRUE;
 					}
 					else if(!fexist(msgtxt_fname) || !fexist(rcptlst_fname)) {
-						lprintf(LOG_NOTICE,"%04d %s %s External mail processor (%s) removed %s file"
-							,socket, client.protocol, client_id
+						lprintf(LOG_NOTICE,"%04d %s External mail processor (%s) removed %s file"
+							,socket, client.protocol
 							,mailproc->name
 							,fexist(msgtxt_fname)==FALSE ? "message text" : "recipient list");
 						sockprintf(socket,client.protocol,session,ok_rsp);
@@ -3446,23 +3444,23 @@ static void smtp_thread(void* arg)
 				/* We must do this before continuing for handled msgs */
 				/* to prevent freopen(NULL) and orphaned temp files */
 				if((rcptlst=fopen(rcptlst_fname,fexist(rcptlst_fname) ? "r":"w+"))==NULL) {
-					lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening recipient list: %s"
-						,socket, client.protocol, client_id, errno, rcptlst_fname);
+					lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening recipient list: %s"
+						,socket, client.protocol, errno, rcptlst_fname);
 					if(!msg_handled)
-						sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
+						sockprintf(socket,client.protocol,session,sys_error);
 					continue;
 				}
 			
 				if(!msg_handled && subnum==INVALID_SUB && iniReadSectionCount(rcptlst,NULL) < 1) {
-					lprintf(LOG_DEBUG,"%04d %s %s No recipients in recipient list file (message handled by external mail processor?)"
-						,socket, client.protocol, client_id);
+					lprintf(LOG_DEBUG,"%04d %s No recipients in recipient list file (message handled by external mail processor?)"
+						,socket, client.protocol);
 					sockprintf(socket,client.protocol,session,ok_rsp);
 					msg_handled=TRUE;
 				}
 				if(msg_handled) {
 					if(mailproc!=NULL)
-						lprintf(LOG_NOTICE,"%04d %s %s Message handled by external mail processor (%s, %lu total)"
-							,socket, client.protocol, client_id, mailproc->name, ++mailproc->handled);
+						lprintf(LOG_NOTICE,"%04d %s Message handled by external mail processor (%s, %lu total)"
+							,socket, client.protocol, mailproc->name, ++mailproc->handled);
 					continue;
 				}
 
@@ -3474,9 +3472,9 @@ static void smtp_thread(void* arg)
 					remove(newtxt_fname);
 
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
-					lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening message file: %s"
-						,socket, client.protocol, client_id, errno, msgtxt_fname);
-					sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
+					lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening message file: %s"
+						,socket, client.protocol, errno, msgtxt_fname);
+					sockprintf(socket,client.protocol,session,sys_error);
 					continue;
 				}
 
@@ -3503,8 +3501,8 @@ static void smtp_thread(void* arg)
 							/* SPAM Filtering/Logging */
 							if(relay_user.number==0) {
 								if(trashcan(&scfg,p,"subject")) {
-									lprintf(LOG_NOTICE,"%04d %s %s !BLOCKED SUBJECT (%s) from: %s (%lu total)"
-										,socket, client.protocol, client_id, p, reverse_path, ++stats.msgs_refused);
+									lprintf(LOG_NOTICE,"%04d %s !BLOCKED SUBJECT (%s) from: %s (%lu total)"
+										,socket, client.protocol, p, reverse_path, ++stats.msgs_refused);
 									SAFEPRINTF2(tmp,"Blocked subject (%s) from: %s"
 										,p, reverse_path);
 									spamlog(&scfg, (char*)client.protocol, "REFUSED"
@@ -3518,28 +3516,19 @@ static void smtp_thread(void* arg)
 										,(int)sizeof(str)/2, startup->dnsbl_tag
 										,(int)sizeof(str)/2, p);
 									p=str;
-									lprintf(LOG_NOTICE,"%04d %s %s TAGGED MAIL SUBJECT from blacklisted server with: %s"
-										,socket, client.protocol, client_id, startup->dnsbl_tag);
+									lprintf(LOG_NOTICE,"%04d %s TAGGED MAIL SUBJECT from blacklisted server with: %s"
+										,socket, client.protocol, startup->dnsbl_tag);
 									msg.hdr.attr |= MSG_SPAM;
 								}
 							}
 							smb_hfield_str(&msg, hfield_type=RFC822SUBJECT, p);
 							continue;
 						}
-						if(stricmp(field, "FROM")==0) {
-							if(relay_user.number==0
-								&& !chk_email_addr(socket, client.protocol,p,host_name,host_ip,rcpt_addr,reverse_path,"FROM")) {
-								errmsg="554 Sender not allowed.";
-								smb_error=SMB_FAILURE;
-								break;
-							}
-							char from_addr[128];
-							parse_mail_address(p, /* name: */NULL, 0, from_addr, sizeof(from_addr)-1);
-							if(dnsbl_result.s_addr && email_addr_is_exempt(from_addr)) {
-								lprintf(LOG_INFO,"%04d %s %s Ignoring DNSBL results for exempt sender (from): %s"
-									,socket, client.protocol, client_id, from_addr);
-								dnsbl_result.s_addr=0;
-							}
+						if(relay_user.number==0	&& stricmp(field, "FROM")==0
+							&& !chk_email_addr(socket, client.protocol,p,host_name,host_ip,rcpt_addr,reverse_path,"FROM")) {
+							errmsg="554 Sender not allowed.";
+							smb_error=SMB_FAILURE;
+							break;
 						}
 						if(relay_user.number==0 && stricmp(field, "TO")==0 && !spam_bait_result
 							&& !chk_email_addr(socket, client.protocol,p,host_name,host_ip,rcpt_addr,reverse_path,"TO")) {
@@ -3552,11 +3541,11 @@ static void smtp_thread(void* arg)
 					}
 					if((smb_error=parse_header_field((char*)buf, &msg, &hfield_type))!=SMB_SUCCESS) {
 						if(smb_error==SMB_ERR_HDR_LEN)
-							lprintf(LOG_WARNING,"%04d %s %s !MESSAGE HEADER EXCEEDS %u BYTES"
-								,socket, client.protocol, client_id, SMB_MAX_HDR_LEN);
+							lprintf(LOG_WARNING,"%04d %s !MESSAGE HEADER EXCEEDS %u BYTES"
+								,socket, client.protocol, SMB_MAX_HDR_LEN);
 						else
-							lprintf(LOG_ERR,"%04d %s %s !ERROR %d adding header field: %s"
-								,socket, client.protocol, client_id, smb_error, buf);
+							lprintf(LOG_ERR,"%04d %s !ERROR %d adding header field: %s"
+								,socket, client.protocol, smb_error, buf);
 						break;
 					}
 				}
@@ -3605,8 +3594,8 @@ static void smtp_thread(void* arg)
 							,startup->dnsbl_hdr, dnsbl_ip
 							,dnsbl, inet_ntoa(dnsbl_result));
 						smb_hfield_str(&msg, RFC822HEADER, str);
-						lprintf(LOG_NOTICE,"%04d %s %s TAGGED MAIL HEADER from blacklisted server with: %s"
-							,socket, client.protocol, client_id, startup->dnsbl_hdr);
+						lprintf(LOG_NOTICE,"%04d %s TAGGED MAIL HEADER from blacklisted server with: %s"
+							,socket, client.protocol, startup->dnsbl_hdr);
 					}
 					if(startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
 						SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
@@ -3615,36 +3604,21 @@ static void smtp_thread(void* arg)
 				}
 				if(dnsbl_recvhdr)			/* DNSBL-listed IP found in Received header? */
 					dnsbl_result.s_addr=0;	/* Reset DNSBL look-up result between messages */
-
+				
 				if((scfg.sys_misc&SM_DELREADM)
 					|| ((startup->options&MAIL_OPT_KILL_READ_SPAM) && (msg.hdr.attr&MSG_SPAM)))
 					msg.hdr.attr |= MSG_KILLREAD;
 
 				if(sender[0]==0) {
-					lprintf(LOG_WARNING,"%04d %s %s !MISSING mail header 'FROM' field (%lu total)"
-						,socket, client.protocol, client_id, ++stats.msgs_refused);
+					lprintf(LOG_WARNING,"%04d %s !MISSING mail header 'FROM' field (%lu total)"
+						,socket, client.protocol, ++stats.msgs_refused);
 					sockprintf(socket,client.protocol,session, "554 Mail header missing 'FROM' field");
 					subnum=INVALID_SUB;
 					continue;
 				}
-				if(relay_user.number == 0
-					&& strchr(sender, '@') != NULL
-					&& compare_addrs(sender, sender_addr) != 0) {
-					lprintf(LOG_WARNING,"%04d %s %s !FORGED mail header 'FROM' field (%lu total)"
-						,socket, client.protocol, client_id, ++stats.msgs_refused);
-					sockprintf(socket,client.protocol,session, "554 Mail header contains mismatched 'FROM' field");
-					subnum=INVALID_SUB;
-					continue;
-				}
-				char sender_info[512];
 				if(relay_user.number) {
 					SAFEPRINTF(str,"%u",relay_user.number);
 					smb_hfield_str(&msg, SENDEREXT, str);
-					SAFEPRINTF2(sender_info, "'%s' #%u", sender, relay_user.number);
-				} else if(compare_addrs(sender, sender_addr) == 0) {
-					angle_bracket(sender_info, sizeof(sender_info), sender_addr);
-				} else {
-					safe_snprintf(sender_info, sizeof(sender_info), "'%s' %s", sender, angle_bracket(tmp, sizeof(tmp), sender_addr));
 				}
 				if(relay_user.number && subnum!=INVALID_SUB) {
 					nettype=NET_NONE;
@@ -3702,8 +3676,8 @@ static void smtp_thread(void* arg)
 				length=filelength(fileno(msgtxt))-ftell(msgtxt);
 
 				if(startup->max_msg_size && length>startup->max_msg_size) {
-					lprintf(LOG_WARNING,"%04d %s %s !Message size (%lu) from %s to <%s> exceeds maximum: %u bytes"
-						,socket, client.protocol, client_id, length, sender_info, rcpt_addr, startup->max_msg_size);
+					lprintf(LOG_WARNING,"%04d %s !Message size (%lu) exceeds maximum: %u bytes"
+						,socket, client.protocol,length,startup->max_msg_size);
 					sockprintf(socket,client.protocol,session, "552 Message size (%lu) exceeds maximum: %u bytes"
 						,length,startup->max_msg_size);
 					subnum=INVALID_SUB;
@@ -3712,8 +3686,8 @@ static void smtp_thread(void* arg)
 				}
 
 				if((msgbuf=(char*)malloc(length+1))==NULL) {
-					lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %lu bytes of memory"
-						,socket, client.protocol, client_id, length+1);
+					lprintf(LOG_CRIT,"%04d %s !ERROR allocating %lu bytes of memory"
+						,socket, client.protocol,length+1);
 					sockprintf(socket,client.protocol,session, insuf_stor);
 					subnum=INVALID_SUB;
 					continue;
@@ -3729,8 +3703,8 @@ static void smtp_thread(void* arg)
 						memset(&relay_user,0,sizeof(relay_user));
 
 					if(!can_user_post(&scfg,subnum,&relay_user,&client,&reason)) {
-						lprintf(LOG_WARNING,"%04d %s %s !%s (user #%u) cannot post on %s (reason: %u)"
-							,socket, client.protocol, client_id, sender_addr, relay_user.number
+						lprintf(LOG_WARNING,"%04d %s !%s (user #%u) cannot post on %s (reason: %u)"
+							,socket, client.protocol, sender_addr, relay_user.number
 							,scfg.sub[subnum]->sname, reason + 1);
 						sockprintf(socket,client.protocol,session,"550 Insufficient access");
 						subnum=INVALID_SUB;
@@ -3744,13 +3718,13 @@ static void smtp_thread(void* arg)
 
 					smb.subnum=subnum;
 					if((i=savemsg(&scfg, &smb, &msg, &client, server_host_name(), msgbuf, /* remsg: */NULL))!=SMB_SUCCESS) {
-						lprintf(LOG_WARNING,"%04d %s %s !ERROR %d (%s) %s posting message to %s (%s)"
-							,socket, client.protocol, client_id, i, smb.last_error, sender_info, scfg.sub[subnum]->sname, smb.file);
+						lprintf(LOG_WARNING,"%04d %s !ERROR %d (%s) posting message to %s (%s)"
+							,socket, client.protocol, i, smb.last_error, scfg.sub[subnum]->sname, smb.file);
 						sockprintf(socket,client.protocol,session, "452 ERROR %d (%s) posting message"
 							,i,smb.last_error);
 					} else {
-						lprintf(LOG_INFO,"%04d %s %s %s posted a message on %s (%s)"
-							,socket, client.protocol, client_id, sender_info, scfg.sub[subnum]->sname, smb.file);
+						lprintf(LOG_INFO,"%04d %s %s posted a message on %s (%s)"
+							,socket, client.protocol, sender_addr, scfg.sub[subnum]->sname, smb.file);
 						sockprintf(socket,client.protocol,session,ok_rsp);
 						if(relay_user.number != 0)
 							user_posted_msg(&scfg, &relay_user, 1);
@@ -3771,50 +3745,49 @@ static void smtp_thread(void* arg)
 					if((dnsbl_recvhdr || dnsbl_result.s_addr) && startup->options&MAIL_OPT_DNSBL_SPAMHASH)
 						is_spam=TRUE;
 
-					lprintf(LOG_DEBUG,"%04d %s %s Calculating message hashes (sources=%lx, msglen=%lu)"
-						,socket, client.protocol, client_id, sources, (ulong)strlen(msgbuf));
+					lprintf(LOG_DEBUG,"%04d %s Calculating message hashes (sources=%lx, msglen=%lu)"
+						,socket, client.protocol, sources, (ulong)strlen(msgbuf));
 					if((hashes=smb_msghashes(&msg, (uchar*)msgbuf, sources)) != NULL) {
 						hash_t	found;
 
 						for(i=0;hashes[i];i++)
-							lprintf(LOG_DEBUG,"%04d %s %s Message %s crc32=%x flags=%x length=%u"
-								,socket, client.protocol, client_id, smb_hashsourcetype(hashes[i]->source)
+							lprintf(LOG_DEBUG,"%04d %s Message %s crc32=%x flags=%x length=%u"
+								,socket, client.protocol, smb_hashsourcetype(hashes[i]->source)
 								,hashes[i]->crc32, hashes[i]->flags, hashes[i]->length);
 
-						lprintf(LOG_DEBUG, "%04d %s %s Searching SPAM database for a match", socket, client.protocol, client_id);
+						lprintf(LOG_DEBUG, "%04d %s Searching SPAM database for a match", socket, client.protocol);
 						if((i=smb_findhash(&spam, hashes, &found, sources, /* Mark: */TRUE))==SMB_SUCCESS) {
 							SAFEPRINTF3(str,"%s (%s) found in SPAM database (added on %s)"
 								,smb_hashsourcetype(found.source)
 								,smb_hashsource(&msg,found.source)
 								,timestr(&scfg,found.time,tmp)
 								);
-							lprintf(LOG_NOTICE,"%04d %s %s Message from %s %s", socket, client.protocol, client_id, sender_info, str);
+							lprintf(LOG_NOTICE,"%04d %s Message %s", socket, client.protocol, str);
 							if(!is_spam) {
 								spamlog(&scfg, (char*)client.protocol, "IGNORED"
 									,str, host_name, host_ip, rcpt_addr, reverse_path);
 								is_spam=TRUE;
 							}
 						} else {
-							lprintf(LOG_DEBUG, "%04d %s %s Done searching SPAM database", socket, client.protocol, client_id);
+							lprintf(LOG_DEBUG, "%04d %s Done searching SPAM database", socket, client.protocol);
 							if(i!=SMB_ERR_NOT_FOUND)
-								lprintf(LOG_ERR,"%04d %s %s !ERROR %d (%s) opening SPAM database"
-									,socket, client.protocol, client_id, i, spam.last_error);
+								lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) opening SPAM database"
+									,socket, client.protocol, i, spam.last_error);
 						}
-
+						
 						if(is_spam) {
 							size_t	n,total=0;
 							for(n=0;hashes[n]!=NULL;n++)
 								if(!(hashes[n]->flags&SMB_HASH_MARKED)) {
-									lprintf(LOG_INFO,"%04d %s %s Adding message %s (%s) from %s to SPAM database"
-										,socket, client.protocol, client_id
+									lprintf(LOG_INFO,"%04d %s Adding message %s (%s) to SPAM database"
+										,socket, client.protocol
 										,smb_hashsourcetype(hashes[n]->source)
 										,smb_hashsource(&msg,hashes[n]->source)
-										,sender_info
 										);
 									total++;
 								}
 							if(total) {
-								lprintf(LOG_DEBUG,"%04d %s %s Adding %lu message hashes to SPAM database", socket, client.protocol, client_id, (ulong)total);
+								lprintf(LOG_DEBUG,"%04d %s Adding %lu message hashes to SPAM database", socket, client.protocol, (ulong)total);
 								smb_addhashes(&spam, hashes, /* skip_marked: */TRUE);
 							}
 							if(i!=SMB_SUCCESS && !spam_bait_result && (dnsbl_recvhdr || dnsbl_result.s_addr))
@@ -3824,17 +3797,17 @@ static void smtp_thread(void* arg)
 
 						smb_freehashes(hashes);
 					} else
-						lprintf(LOG_ERR,"%04d %s %s !smb_msghashes returned NULL", socket, client.protocol, client_id);
+						lprintf(LOG_ERR,"%04d %s smb_msghashes returned NULL", socket, client.protocol);
 
 					if(is_spam || ((startup->options&MAIL_OPT_DNSBL_IGNORE) && (dnsbl_recvhdr || dnsbl_result.s_addr))) {
 						free(msgbuf);
 						if(is_spam)
-							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED SPAM MESSAGE from %s to <%s> (%lu total)"
-								,socket, client.protocol, client_id, sender_info, rcpt_addr, ++stats.msgs_ignored);
+							lprintf(LOG_NOTICE,"%04d %s !IGNORED SPAM MESSAGE (%lu total)"
+								,socket, client.protocol, ++stats.msgs_ignored);
 						else {
 							SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
-							lprintf(LOG_NOTICE,"%04d %s %s !IGNORED MAIL from %s to <%s> from server: %s (%lu total)"
-								,socket, client.protocol, client_id, sender_info, rcpt_addr, str, ++stats.msgs_ignored);
+							lprintf(LOG_NOTICE,"%04d %s !IGNORED MAIL from server: %s (%lu total)"
+								,socket, client.protocol, str, ++stats.msgs_ignored);
 							spamlog(&scfg, (char*)client.protocol, "IGNORED"
 								,str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 						}
@@ -3845,14 +3818,8 @@ static void smtp_thread(void* arg)
 					}
 				}
 
-				char rcpt_info[512];
-				if(compare_addrs(rcpt_name, rcpt_addr) == 0)
-					angle_bracket(rcpt_info, sizeof(rcpt_info), rcpt_addr);
-				else
-					safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", rcpt_name, angle_bracket(tmp, sizeof(tmp), rcpt_addr));
-				lprintf(LOG_DEBUG,"%04d %s %s Saving message data from %s to %s"
-					,socket, client.protocol, client_id, sender_info, rcpt_info);
-				pthread_mutex_lock(&savemsg_mutex);
+				lprintf(LOG_DEBUG,"%04d %s Saving message to: '%s'", socket, client.protocol, rcpt_name);
+
 				/* E-mail */
 				smb.subnum=INVALID_SUB;
 				/* creates message data, but no header or index records (since msg.to==NULL) */
@@ -3863,22 +3830,20 @@ static void smtp_thread(void* arg)
 				free(msgbuf);
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
-					pthread_mutex_unlock(&savemsg_mutex);
-					lprintf(LOG_CRIT,"%04d %s %s !ERROR %d (%s) saving message from %s to %s"
-						,socket, client.protocol, client_id, i, smb.last_error, sender_info, rcpt_info);
+					lprintf(LOG_CRIT,"%04d %s !ERROR %d (%s) saving message"
+						,socket, client.protocol,i,smb.last_error);
 					sockprintf(socket,client.protocol,session, "452 ERROR %d (%s) saving message"
 						,i,smb.last_error);
 					continue;
 				}
 
-				lprintf(LOG_DEBUG,"%04d %s %s Saved message data from %s to %s"
-					,socket, client.protocol, client_id, sender_info, rcpt_info);
+				lprintf(LOG_DEBUG,"%04d %s Saved message data to: '%s'", socket, client.protocol, rcpt_name);
 
 				sec_list=iniReadSectionList(rcptlst,NULL);	/* Each section is a recipient */
 				for(rcpt_count=0; sec_list!=NULL
 					&& sec_list[rcpt_count]!=NULL 
 					&& (startup->max_recipients==0 || rcpt_count<startup->max_recipients); rcpt_count++) {
-
+				
 					section=sec_list[rcpt_count];
 
 					SAFECOPY(rcpt_to,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENT),"unknown",value));
@@ -3888,20 +3853,16 @@ static void smtp_thread(void* arg)
 					SAFEPRINTF(str,"#%u",usernum);
 					SAFECOPY(rcpt_addr,iniReadString(rcptlst,section	,smb_hfieldtype(RECIPIENTNETADDR),str,value));
 					SAFECOPY(forward_path, iniReadString(rcptlst, section, smb_hfieldtype(SMTPFORWARDPATH), "", value));
-					if(compare_addrs(rcpt_to, rcpt_addr) == 0)
-						angle_bracket(rcpt_info, sizeof(rcpt_info), rcpt_addr);
-					else
-						safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", rcpt_to, angle_bracket(tmp, sizeof(tmp), rcpt_addr));
 
 					if(nettype==NET_NONE /* Local destination */ && usernum==0) {
-						lprintf(LOG_ERR,"%04d %s %s !Can't deliver mail from %s to user #0"
-							,socket, client.protocol, client_id, sender_info);
+						lprintf(LOG_ERR,"%04d %s !can't deliver mail to user #0"
+							,socket, client.protocol);
 						break;
 					}
 
 					if((i=smb_copymsgmem(&smb,&newmsg,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR %d (%s) copying message from %s"
-							,socket, client.protocol, client_id, i, smb.last_error, sender_info);
+						lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) copying message"
+							,socket, client.protocol, i, smb.last_error);
 						break;
 					}
 
@@ -3915,7 +3876,7 @@ static void smtp_thread(void* arg)
 
 					snprintf(hdrfield,sizeof(hdrfield),
 						"from %s (%s [%s%s])\r\n"
-						"          by %s [%s%s] (%s %s%c-%s) with %s\r\n"
+						"          by %s [%s%s] (%s %s-%s) with %s\r\n"
 						"          for %s; %s\r\n"
 						"          (envelope-from %s)"
 						,host_name,hello_name
@@ -3925,9 +3886,9 @@ static void smtp_thread(void* arg)
 						,server_addr.addr.sa_family==AF_INET6?"IPv6: ":""
 						,server_ip
 						,server_name
-						,VERSION, REVISION, PLATFORM_DESC
+						,revision,PLATFORM_DESC
 						,with_clauses[with_val]
-						,forward_path,msgdate(msg.hdr.when_imported,date)
+						,rcpt_to,msgdate(msg.hdr.when_imported,date)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 
@@ -3941,10 +3902,6 @@ static void smtp_thread(void* arg)
 						if((tp = strstr(rcpt_name, str)) != NULL && tp != rcpt_name) {
 							*tp = 0;
 							truncsp(rcpt_name);
-						}
-						if(!matchusername(&scfg, rcpt_name, rcpt_to)) {
-							SAFECOPY(rcpt_name, rcpt_to);
-							truncstr(rcpt_name, "@");
 						}
 					}
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
@@ -3964,17 +3921,18 @@ static void smtp_thread(void* arg)
 						smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(agent), &agent);
 
 					add_msg_ids(&scfg, &smb, &newmsg, /* remsg: */NULL);
-					lprintf(LOG_DEBUG,"%04d %s %s Adding message header from %s to %s"
-						,socket, client.protocol, client_id, sender_info, rcpt_info);
 					i=smb_addmsghdr(&smb,&newmsg,smb_storage_mode(&scfg, &smb));
 					smb_freemsgmem(&newmsg);
 					if(i!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR %d (%s) adding message header from %s to %s"
-							,socket, client.protocol, client_id, i, smb.last_error, sender_info, rcpt_info);
+						lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) adding message header"
+							,socket, client.protocol, i, smb.last_error);
 						break;
 					}
-					lprintf(LOG_INFO,"%04d %s %s Added message header #%u from %s to %s"
-						,socket, client.protocol, client_id, newmsg.hdr.number, sender_info, rcpt_info);
+					sender_ext[0]=0;
+					if(msg.from_ext!=NULL)
+						SAFEPRINTF(sender_ext," #%s",msg.from_ext);
+					lprintf(LOG_INFO,"%04d %s Created message #%u from %s%s [%s] to %s [%s]"
+						,socket, client.protocol, newmsg.hdr.number, sender, sender_ext, smb_netaddrstr(&msg.from_net,tmp), rcpt_name, rcpt_addr);
 					if(relay_user.number!=0)
 						user_sent_email(&scfg, &relay_user, 1, usernum==1);
 
@@ -4029,14 +3987,13 @@ static void smtp_thread(void* arg)
 				smb_close_da(&smb);
 #endif
 				smb_close(&smb);
-				pthread_mutex_unlock(&savemsg_mutex);
 				continue;
 			}
 			if(buf[0]==0 && state==SMTP_STATE_DATA_HEADER) {	
 				state=SMTP_STATE_DATA_BODY;	/* Null line separates header and body */
 				lines=0;
 				if(msgtxt!=NULL) {
-					fputs("\r\n", msgtxt);
+					fprintf(msgtxt, "\r\n");
 					hdr_len=ftell(msgtxt);
 				}
 				continue;
@@ -4045,19 +4002,39 @@ static void smtp_thread(void* arg)
 				p=buf;
 				if(*p=='.') p++;	/* Transparency (RFC821 4.5.2) */
 				if(msgtxt!=NULL) {
-					fputs(p, msgtxt);
-					fputs("\r\n", msgtxt);
+					switch(content_encoding) {
+						case ENCODING_BASE64:
+							{
+								char	decode_buf[sizeof(buf)];
+
+								if(b64_decode(decode_buf, sizeof(decode_buf), p, strlen(p))<0)
+									fprintf(msgtxt,"\r\n!Base64 decode error: %s\r\n", p);
+								else
+									fputs(decode_buf, msgtxt);
+							}
+							break;
+						case ENCODING_QUOTED_PRINTABLE:
+							fputs(qp_decode(p), msgtxt);
+							break;
+						default:
+							fprintf(msgtxt, "%s\r\n", p);
+							break;
+					}
 				}
 				lines++;
+				/* release time-slices every x lines */
+				if(startup->lines_per_yield &&
+					!(lines%startup->lines_per_yield))	
+					YIELD();
 				if((lines%100) == 0 && (msgtxt != NULL))
-					lprintf(LOG_DEBUG,"%04d %s %s received %lu lines (%lu bytes) of body text"
-						,socket, client.protocol, client_id, lines, ftell(msgtxt)-hdr_len);
+					lprintf(LOG_DEBUG,"%04d %s received %lu lines (%lu bytes) of body text"
+						,socket, client.protocol, lines, ftell(msgtxt)-hdr_len);
 				continue;
 			}
 			/* RFC822 Header parsing */
 			strip_char(buf, buf, '\r');	/* There should be no bare carriage returns in header fields */
 			if(startup->options&MAIL_OPT_DEBUG_RX_HEADER)
-				lprintf(LOG_DEBUG,"%04d %s %s %s",socket, client.protocol, client_id, buf);
+				lprintf(LOG_DEBUG,"%04d %s %s",socket, client.protocol, buf);
 
 			{
 				char field[32];
@@ -4068,18 +4045,30 @@ static void smtp_thread(void* arg)
 							,sender,		sizeof(sender)-1
 							,sender_addr,	sizeof(sender_addr)-1);
 					}
+					else if(stricmp(field,"CONTENT-TRANSFER-ENCODING")==0) {
+						lprintf(LOG_INFO,"%04d %s %s = %s", socket, client.protocol, field, p);
+						if(stricmp(p,"base64")==0)
+							content_encoding=ENCODING_BASE64;
+						else if(stricmp(p,"quoted-printable")==0)
+							content_encoding=ENCODING_QUOTED_PRINTABLE;
+						else {	/* Other (e.g. 7bit, 8bit, binary) */
+							content_encoding=ENCODING_NONE;
+							if(msgtxt!=NULL) 
+								fprintf(msgtxt, "%s\r\n", buf);
+						}
+						hdr_lines++;
+						continue;
+					}
 				}
 			}
 
-			if(msgtxt!=NULL) {
-				fputs(buf, msgtxt);
-				fputs("\r\n", msgtxt);
-			}
+			if(msgtxt!=NULL) 
+				fprintf(msgtxt, "%s\r\n", buf);
 			hdr_lines++;
 			continue;
 		}
 		strip_ctrl(buf, buf);
-		lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
+		lprintf(LOG_DEBUG,"%04d %s RX: %s", socket, client.protocol, buf);
 		if(!strnicmp(buf,"HELO",4)) {
 			p=buf+4;
 			SKIP_WHITESPACE(p);
@@ -4114,35 +4103,33 @@ static void smtp_thread(void* arg)
 			subnum=INVALID_SUB;
 			continue;
 		}
+		ZERO_VAR(user_pass);
 		if((auth_login=(stricmp(buf,"AUTH LOGIN")==0))==TRUE 
 			|| strnicmp(buf,"AUTH PLAIN",10)==0) {
-			char user_pass[128] = "";
-			ZERO_VAR(relay_user);
-			listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
 			if(auth_login) {
 				sockprintf(socket,client.protocol,session,"334 VXNlcm5hbWU6");	/* Base64-encoded "Username:" */
 				if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
-					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH LOGIN username argument", socket, client.protocol, client_id);
+					lprintf(LOG_WARNING,"%04d %s !missing AUTH LOGIN username argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-					lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
-				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1 || str_has_ctrl(user_name)) {
-					lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH LOGIN username argument", socket, client.protocol, client_id);
+					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
+				if(b64_decode(user_name,sizeof(user_name),buf,rd)<1) {
+					lprintf(LOG_WARNING,"%04d %s !bad AUTH LOGIN username argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				sockprintf(socket,client.protocol,session,"334 UGFzc3dvcmQ6");	/* Base64-encoded "Password:" */
 				if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
-					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH LOGIN password argument", socket, client.protocol, client_id);
+					lprintf(LOG_WARNING,"%04d %s !missing AUTH LOGIN password argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-					lprintf(LOG_DEBUG,"%04d %s %s RX: %s", socket, client.protocol, client_id, buf);
-				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1 || str_has_ctrl(user_pass)) {
-					lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH LOGIN password argument", socket, client.protocol, client_id);
+					lprintf(LOG_DEBUG,"%04d RX: %s",socket,buf);
+				if(b64_decode(user_pass,sizeof(user_pass),buf,rd)<1) {
+					lprintf(LOG_WARNING,"%04d %s !bad AUTH LOGIN password argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
@@ -4150,13 +4137,13 @@ static void smtp_thread(void* arg)
 				p=buf+10;
 				SKIP_WHITESPACE(p);
 				if(*p==0) {
-					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN argument", socket, client.protocol, client_id);
+					lprintf(LOG_WARNING,"%04d %s !missing AUTH PLAIN argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
 				ZERO_VAR(tmp);
-				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1 || str_has_ctrl(tmp)) {
-					lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH PLAIN argument", socket, client.protocol, client_id);
+				if(b64_decode(tmp,sizeof(tmp),p,strlen(p))<1) {
+					lprintf(LOG_WARNING,"%04d %s !bad AUTH PLAIN argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
@@ -4164,7 +4151,7 @@ static void smtp_thread(void* arg)
 				while(*p) p++;	/* skip username */
 				p++;			/* skip NULL */
 				if(*p==0) {
-					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN user-id argument", socket, client.protocol, client_id);
+					lprintf(LOG_WARNING,"%04d %s !missing AUTH PLAIN user-id argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, NULL, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
@@ -4172,7 +4159,7 @@ static void smtp_thread(void* arg)
 				while(*p) p++;	/* skip user-id */
 				p++;			/* skip NULL */
 				if(*p==0) {
-					lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH PLAIN password argument", socket, client.protocol, client_id);
+					lprintf(LOG_WARNING,"%04d %s !missing AUTH PLAIN password argument", socket, client.protocol);
 					badlogin(socket, session, client.protocol, badarg_rsp, user_name, NULL, host_name, &smtp.client_addr);
 					continue;
 				}
@@ -4181,75 +4168,69 @@ static void smtp_thread(void* arg)
 
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s' (password: %s)"
-						,socket, client.protocol, client_id, user_name, user_pass);
+					lprintf(LOG_WARNING,"%04d %s !UNKNOWN USER: '%s' (password: %s)"
+						,socket, client.protocol, user_name, user_pass);
 				else
-					lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s'"
-						,socket, client.protocol, client_id, user_name);
+					lprintf(LOG_WARNING,"%04d %s !UNKNOWN USER: '%s'"
+						,socket, client.protocol, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, user_name, user_pass, host_name, &smtp.client_addr);
 				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user (%s)"
-					,socket, client.protocol, client_id, i, user_name);
+				lprintf(LOG_ERR,"%04d %s !ERROR %d getting data on user (%s)"
+					,socket, client.protocol, i, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
 				break;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
-				lprintf(LOG_WARNING,"%04d %s %s !DELETED or INACTIVE user #%u (%s)"
-					,socket, client.protocol, client_id, relay_user.number, user_name);
+				lprintf(LOG_WARNING,"%04d %s !DELETED or INACTIVE user #%u (%s)"
+					,socket, client.protocol, relay_user.number, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
 				break;
 			}
 			if(stricmp(user_pass,relay_user.pass)) {
 				if(scfg.sys_misc&SM_ECHO_PW)
-					lprintf(LOG_WARNING,"%04d %s %s !FAILED Password attempt for user %s: '%s' expected '%s'"
-						,socket, client.protocol, client_id, user_name, user_pass, relay_user.pass);
+					lprintf(LOG_WARNING,"%04d %s !FAILED Password attempt for user %s: '%s' expected '%s'"
+						,socket, client.protocol, user_name, user_pass, relay_user.pass);
 				else
-					lprintf(LOG_WARNING,"%04d %s %s !FAILED Password attempt for user %s"
-						,socket, client.protocol, client_id, user_name);
+					lprintf(LOG_WARNING,"%04d %s !FAILED Password attempt for user %s"
+						,socket, client.protocol, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, user_name, user_pass, host_name, &smtp.client_addr);
 				break;
 			}
 
-			if(relay_user.pass[0]) {
+			if(relay_user.pass[0])
 				loginSuccess(startup->login_attempt_list, &smtp.client_addr);
-				listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
-			}
 
 			/* Update client display */
 			client.user=relay_user.alias;
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d %s %s %s logged-in using %s authentication"
-				,socket,client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN");
-			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
+			lprintf(LOG_INFO,"%04d %s %s authenticated using %s authentication"
+				,socket,client.protocol,relay_user.alias,auth_login ? "LOGIN" : "PLAIN");
 			sockprintf(socket,client.protocol,session,auth_ok);
 			continue;
 		}
 		if(!stricmp(buf,"AUTH CRAM-MD5")) {
-			ZERO_VAR(relay_user);
-			listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-
 			safe_snprintf(challenge,sizeof(challenge),"<%x%x%lx%lx@%s>"
 				,rand(),socket,(ulong)time(NULL),(ulong)clock(),server_host_name());
 #if 0
 			lprintf(LOG_DEBUG,"%04d SMTP CRAM-MD5 challenge: %s"
 				,socket,challenge);
 #endif
-			b64_encode(str,sizeof(str),challenge,strlen(challenge));
+			b64_encode(str,sizeof(str),challenge,0);
 			sockprintf(socket,client.protocol,session,"334 %s",str);
 			if((rd=sockreadline(socket, client.protocol, session, buf, sizeof(buf)))<1) {
-				lprintf(LOG_WARNING,"%04d %s %s !Missing AUTH CRAM-MD5 response", socket, client.protocol, client_id);
+				lprintf(LOG_WARNING,"%04d %s !missing AUTH CRAM-MD5 response", socket, client.protocol);
 				sockprintf(socket,client.protocol,session,badarg_rsp);
 				continue;
 			}
 			if(startup->options&MAIL_OPT_DEBUG_RX_RSP) 
-				lprintf(LOG_DEBUG,"%04d %s %s RX: %s",socket, client.protocol, client_id, buf);
+				lprintf(LOG_DEBUG,"%04d %s RX: %s",socket, client.protocol, buf);
 
-			if(b64_decode(response,sizeof(response),buf,rd)<1 || str_has_ctrl(response)) {
-				lprintf(LOG_WARNING,"%04d %s %s !Bad AUTH CRAM-MD5 response", socket, client.protocol, client_id);
+			if(b64_decode(response,sizeof(response),buf,rd)<1) {
+				lprintf(LOG_WARNING,"%04d %s !Bad AUTH CRAM-MD5 response", socket, client.protocol);
 				sockprintf(socket,client.protocol,session,badarg_rsp);
 				continue;
 			}
@@ -4263,20 +4244,20 @@ static void smtp_thread(void* arg)
 				p=response;
 			SAFECOPY(user_name,response);
 			if((relay_user.number=matchuser(&scfg,user_name,FALSE))==0) {
-				lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER: '%s'"
-					,socket, client.protocol, client_id, user_name);
+				lprintf(LOG_WARNING,"%04d %s !UNKNOWN USER: '%s'"
+					,socket, client.protocol, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, user_name, NULL, host_name, &smtp.client_addr);
 				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user (%s)"
-					,socket, client.protocol, client_id, i, user_name);
+				lprintf(LOG_ERR,"%04d %s !ERROR %d getting data on user (%s)"
+					,socket, client.protocol, i, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
 				break;
 			}
 			if(relay_user.misc&(DELETED|INACTIVE)) {
-				lprintf(LOG_WARNING,"%04d %s %s !DELETED or INACTIVE user #%u (%s)"
-					,socket, client.protocol, client_id, relay_user.number, user_name);
+				lprintf(LOG_WARNING,"%04d %s !DELETED or INACTIVE user #%u (%s)"
+					,socket, client.protocol, relay_user.number, user_name);
 				badlogin(socket, session, client.protocol, badauth_rsp, NULL, NULL, NULL, NULL);
 				break;
 			}
@@ -4294,8 +4275,8 @@ static void smtp_thread(void* arg)
 			MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
 			MD5_hex((BYTE*)str,digest);
 			if(strcmp(p,str)) {
-				lprintf(LOG_WARNING,"%04d SMTP %s !%s FAILED CRAM-MD5 authentication"
-					,socket, client_id, relay_user.alias);
+				lprintf(LOG_WARNING,"%04d !SMTP %s FAILED CRAM-MD5 authentication"
+					,socket,relay_user.alias);
 #if 0
 				lprintf(LOG_DEBUG,"%04d !SMTP calc digest: %s"
 					,socket,str);
@@ -4306,19 +4287,16 @@ static void smtp_thread(void* arg)
 				break;
 			}
 
-			if(relay_user.pass[0]) {
+			if(relay_user.pass[0])
 				loginSuccess(startup->login_attempt_list, &smtp.client_addr);
-				listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
-			}
 
 			/* Update client display */
 			client.user=relay_user.alias;
 			client.usernum = relay_user.number;
 			client_on(socket,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d %s %s %s logged-in using CRAM-MD5 authentication"
-				,socket, client.protocol, client_id, relay_user.alias);
-			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
+			lprintf(LOG_INFO,"%04d %s %s authenticated using CRAM-MD5 authentication"
+				,socket, client.protocol,relay_user.alias);
 			sockprintf(socket,client.protocol,session,auth_ok);
 			continue;
 		}
@@ -4337,7 +4315,7 @@ static void smtp_thread(void* arg)
 		}
 		if(state<SMTP_STATE_HELO) {
 			/* RFC 821 4.1.1 "The first command in a session must be the HELO command." */
-			lprintf(LOG_WARNING,"%04d %s %s !MISSING 'HELO' command (Received: '%s')",socket, client.protocol, client_id, buf);
+			lprintf(LOG_WARNING,"%04d %s !MISSING 'HELO' command (Received: '%s')",socket, client.protocol, buf);
 			sockprintf(socket,client.protocol,session, badseq_rsp);
 			continue;
 		}
@@ -4358,18 +4336,19 @@ static void smtp_thread(void* arg)
 
 			/* reset recipient list */
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening %s"
-					,socket, client.protocol, client_id, errno, rcptlst_fname);
-				sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
+				lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening %s"
+					,socket, client.protocol, errno, rcptlst_fname);
+				sockprintf(socket,client.protocol,session,sys_error);
 				break;
 			}
 			rcpt_count=0;
+			content_encoding=ENCODING_NONE;
 
 			memset(mailproc_to_match,FALSE,sizeof(BOOL)*mailproc_count);
 
 			sockprintf(socket,client.protocol,session,ok_rsp);
 			badcmds=0;
-			lprintf(LOG_INFO,"%04d %s %s Session reset",socket, client.protocol, client_id);
+			lprintf(LOG_INFO,"%04d %s Session reset",socket, client.protocol);
 			continue;
 		}
 		if(!strnicmp(buf,"MAIL FROM:",10)
@@ -4391,8 +4370,8 @@ static void smtp_thread(void* arg)
 
 			/* If MAIL FROM address is in dnsbl_exempt.cfg, clear DNSBL results */
 			if(dnsbl_result.s_addr && email_addr_is_exempt(reverse_path)) {
-				lprintf(LOG_INFO,"%04d %s %s Ignoring DNSBL results for exempt sender: %s"
-					,socket, client.protocol, client_id, reverse_path);
+				lprintf(LOG_INFO,"%04d %s Ignoring DNSBL results for exempt sender: %s"
+					,socket, client.protocol,reverse_path);
 				dnsbl_result.s_addr=0;
 			}
 
@@ -4415,12 +4394,13 @@ static void smtp_thread(void* arg)
 
 			/* reset recipient list */
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening %s"
-					,socket, client.protocol, client_id, errno, rcptlst_fname);
-				sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
+				lprintf(LOG_ERR,"%04d %s !ERROR %d re-opening %s"
+					,socket, client.protocol, errno, rcptlst_fname);
+				sockprintf(socket,client.protocol,session,sys_error);
 				break;
 			}
 			rcpt_count=0;
+			content_encoding=ENCODING_NONE;
 			memset(mailproc_to_match,FALSE,sizeof(BOOL)*mailproc_count);
 			sockprintf(socket,client.protocol,session,ok_rsp);
 			badcmds=0;
@@ -4441,7 +4421,7 @@ static void smtp_thread(void* arg)
 		if(!strnicmp(buf,"RCPT TO:",8)) {
 
 			if(state<SMTP_STATE_MAIL_FROM) {
-				lprintf(LOG_WARNING,"%04d %s %s !MISSING 'MAIL' command",socket, client.protocol, client_id);
+				lprintf(LOG_WARNING,"%04d %s !MISSING 'MAIL' command",socket, client.protocol);
 				sockprintf(socket,client.protocol,session, badseq_rsp);
 				continue;
 			}
@@ -4471,8 +4451,8 @@ static void smtp_thread(void* arg)
 			}
 
 			if(*p==0) {
-				lprintf(LOG_NOTICE,"%04d %s %s !NO RECIPIENT SPECIFIED"
-					,socket, client.protocol, client_id);
+				lprintf(LOG_NOTICE,"%04d !SMTP NO RECIPIENT SPECIFIED"
+					,socket);
 				sockprintf(socket,client.protocol,session, "500 No recipient specified");
 				continue;
 			}
@@ -4483,8 +4463,8 @@ static void smtp_thread(void* arg)
 			/* Check recipient counter */
 			if(startup->max_recipients) {
 				if(rcpt_count>=startup->max_recipients) {
-					lprintf(LOG_NOTICE,"%04d %s %s !MAXIMUM RECIPIENTS (%d) REACHED"
-						,socket, client.protocol, client_id, startup->max_recipients);
+					lprintf(LOG_NOTICE,"%04d %s !MAXIMUM RECIPIENTS (%d) REACHED"
+						,socket, client.protocol, startup->max_recipients);
 					SAFEPRINTF(tmp,"Maximum recipient count (%d)",startup->max_recipients);
 					spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp
 						,host_name, host_ip, rcpt_addr, reverse_path);
@@ -4494,8 +4474,8 @@ static void smtp_thread(void* arg)
 				}
 				if(relay_user.number!=0 && !(relay_user.exempt&FLAG('M'))
 					&& rcpt_count+(waiting=getmail(&scfg,relay_user.number,/* sent: */TRUE, /* SPAM: */FALSE)) > startup->max_recipients) {
-					lprintf(LOG_NOTICE,"%04d %s %s !MAXIMUM PENDING SENT EMAILS (%lu) REACHED for User #%u (%s)"
-						,socket, client.protocol, client_id, waiting, relay_user.number, relay_user.alias);
+					lprintf(LOG_NOTICE,"%04d %s !MAXIMUM PENDING SENT EMAILS (%lu) REACHED for User #%u (%s)"
+						,socket, client.protocol, waiting, relay_user.number, relay_user.alias);
 					sockprintf(socket,client.protocol,session, "452 Too many pending emails sent");
 					stats.msgs_refused++;
 					continue;
@@ -4504,8 +4484,8 @@ static void smtp_thread(void* arg)
 
 			if(relay_user.number && (relay_user.etoday+rcpt_count) >= scfg.level_emailperday[relay_user.level]
 				&& !(relay_user.exempt&FLAG('M'))) {
-				lprintf(LOG_NOTICE,"%04d %s %s !EMAILS PER DAY LIMIT (%u) REACHED FOR USER #%u (%s)"
-					,socket, client.protocol, client_id, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
+				lprintf(LOG_NOTICE,"%04d %s !EMAILS PER DAY LIMIT (%u) REACHED FOR USER #%u (%s)"
+					,socket, client.protocol, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
 				SAFEPRINTF2(tmp,"Maximum emails per day (%u) for %s"
 					,scfg.level_emailperday[relay_user.level], relay_user.alias);
 				spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp
@@ -4514,18 +4494,18 @@ static void smtp_thread(void* arg)
 				stats.msgs_refused++;
 				continue;
 			}
-
+				
 			/* Check for SPAM bait recipient */
 			if((spam_bait_result=findstr(rcpt_addr,spam_bait))==TRUE) {
 				char	reason[256];
 				SAFEPRINTF(reason,"SPAM BAIT (%s) taken", rcpt_addr);
-				lprintf(LOG_NOTICE,"%04d %s %s %s by: %s"
-					,socket, client.protocol, client_id, reason, reverse_path);
+				lprintf(LOG_NOTICE,"%04d %s %s by: %s"
+					,socket, client.protocol, reason, reverse_path);
 				if(relay_user.number==0) {
 					strcpy(tmp,"IGNORED");
 					if(dnsbl_result.s_addr==0						/* Don't double-filter */
 						&& !spam_block_exempt)	{ 
-						lprintf(LOG_NOTICE,"%04d %s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block);
+						lprintf(LOG_NOTICE,"%04d !BLOCKING IP ADDRESS: %s in %s", socket, host_ip, spam_block);
 						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block);
 						strcat(tmp," and BLOCKED");
 					}
@@ -4547,8 +4527,8 @@ static void smtp_thread(void* arg)
 			}
 
 			if(relay_user.number==0 && dnsbl_result.s_addr && startup->options&MAIL_OPT_DNSBL_BADUSER) {
-				lprintf(LOG_NOTICE,"%04d %s %s !REFUSED MAIL from blacklisted server (%lu total)"
-					,socket, client.protocol, client_id, ++stats.sessions_refused);
+				lprintf(LOG_NOTICE,"%04d %s !REFUSED MAIL from blacklisted server (%lu total)"
+					,socket, client.protocol, ++stats.sessions_refused);
 				SAFEPRINTF2(str,"Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
 				spamlog(&scfg, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket,client.protocol,session
@@ -4561,15 +4541,14 @@ static void smtp_thread(void* arg)
 				&& (trashcan(&scfg,reverse_path,"smtpspy")
 					|| trashcan(&scfg,rcpt_addr,"smtpspy"))) {
 				SAFEPRINTF2(path,"%s%sspy.txt", scfg.logs_dir, client.protocol);
-				strlwr(path);
 				spy=fopen(path,"a");
 			}
 
 			/* Check for full address aliases */
 			p=alias(&scfg,p,alias_buf);
 			if(p==alias_buf) 
-				lprintf(LOG_DEBUG,"%04d %s %s ADDRESS ALIAS: %s (for %s)"
-					,socket, client.protocol, client_id, p, rcpt_addr);
+				lprintf(LOG_DEBUG,"%04d %s ADDRESS ALIAS: %s (for %s)"
+					,socket, client.protocol,p,rcpt_addr);
 
 			tp=strrchr(p,'@');
 			if(cmd==SMTP_CMD_MAIL && tp!=NULL) {
@@ -4599,10 +4578,11 @@ static void smtp_thread(void* arg)
 							faddr.net = net;
 							faddr.zone = zone;
 
-							lprintf(LOG_INFO,"%04d %s %s %s relaying to FidoNet address: %s (%s)"
-								,socket, client.protocol, client_id, relay_user.alias, p, smb_faddrtoa(&faddr, NULL));
+							lprintf(LOG_INFO,"%04d %s %s relaying to FidoNet address: %s (%s)"
+								,socket, client.protocol, relay_user.alias, tp+1, smb_faddrtoa(&faddr, NULL));
+
 							fprintf(rcptlst,"[%u]\n",rcpt_count++);
-							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT), p);
+							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
 							fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_FIDO);
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),smb_faddrtoa(&faddr,NULL));
 							fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(SMTPFORWARDPATH),rcpt_to);
@@ -4618,6 +4598,7 @@ static void smtp_thread(void* arg)
 					*cp=0;
 					dest_port=atoi(cp+1);
 				}
+				SAFEPRINTF(domain_list,"%sdomains.cfg",scfg.ctrl_dir);
 				if((stricmp(dest_host,scfg.sys_inetaddr)!=0
 						&& stricmp(dest_host,startup->host_name)!=0
 						&& findstr(dest_host,domain_list)==FALSE)
@@ -4640,8 +4621,8 @@ static void smtp_thread(void* arg)
 							|| relay_user.rest&(FLAG('G')|FLAG('M'))) &&
 						!findstr(host_name,relay_list) && 
 						!findstr(host_ip,relay_list)) {
-						lprintf(LOG_WARNING,"%04d %s %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
-							,socket, client.protocol, client_id, reverse_path, host_ip, p);
+						lprintf(LOG_WARNING,"%04d %s !ILLEGAL RELAY ATTEMPT from %s [%s] to %s"
+							,socket, client.protocol, reverse_path, host_ip, p);
 						SAFEPRINTF(tmp,"Relay attempt to: %s", p);
 						spamlog(&scfg, (char*)client.protocol, "REFUSED", tmp, host_name, host_ip, rcpt_addr, reverse_path);
 						if(startup->options&MAIL_OPT_ALLOW_RELAY)
@@ -4658,8 +4639,8 @@ static void smtp_thread(void* arg)
 					if(relay_user.number==0)
 						SAFECOPY(relay_user.alias,"Unknown User");
 
-					lprintf(LOG_INFO,"%04d %s %s %s relaying to external mail service: %s"
-						,socket, client.protocol, client_id, relay_user.alias, tp+1);
+					lprintf(LOG_INFO,"%04d %s %s relaying to external mail service: %s"
+						,socket, client.protocol, relay_user.alias, tp+1);
 
 					fprintf(rcptlst,"[%u]\n",rcpt_count++);
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
@@ -4689,8 +4670,8 @@ static void smtp_thread(void* arg)
 
 			p=alias(&scfg,p,name_alias_buf);
 			if(p==name_alias_buf) 
-				lprintf(LOG_DEBUG,"%04d %s %s NAME ALIAS: %s (for %s)"
-					,socket, client.protocol, client_id, p, rcpt_addr);
+				lprintf(LOG_DEBUG,"%04d %s NAME ALIAS: %s (for %s)"
+					,socket, client.protocol,p,rcpt_addr);
 		
 			/* Check if message is to be processed by one or more external mail processors */
 			mailproc_match = INT_MAX;	// no match, by default
@@ -4718,8 +4699,8 @@ static void smtp_thread(void* arg)
 					if(!stricmp(p,scfg.sub[i]->code))
 						break;
 				if(i>=scfg.total_subs) {
-					lprintf(LOG_NOTICE,"%04d %s %s !UNKNOWN SUB-BOARD: %s", socket, client.protocol, client_id, p);
-					sockprintf(socket,client.protocol, session, "550 Unknown sub-board: %s", p);
+					lprintf(LOG_NOTICE,"%04d %s !UNKNOWN SUB-BOARD: %s", socket, client.protocol, p);
+					sockprintf(socket,client.protocol,session, "550 Unknown sub-board: %s", p);
 					continue;
 				}
 				subnum=i;
@@ -4738,8 +4719,8 @@ static void smtp_thread(void* arg)
 #if 0	/* should we fall-through to the sysop account? */
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTEXT),1);
 #endif
-				lprintf(LOG_INFO,"%04d %s %s Routing mail for %s to External Mail Processor: %s"
-					,socket, client.protocol, client_id, rcpt_addr, mailproc_list[mailproc_match].name);
+				lprintf(LOG_INFO,"%04d %s Routing mail for %s to External Mail Processor: %s"
+					,socket, client.protocol, rcpt_addr, mailproc_list[mailproc_match].name);
 				sockprintf(socket,client.protocol,session,ok_rsp);
 				state=SMTP_STATE_RCPT_TO;
 				continue;
@@ -4757,8 +4738,8 @@ static void smtp_thread(void* arg)
 				}
 				if(i<scfg.total_qhubs) {	/* found matching QWKnet Hub */
 
-					lprintf(LOG_INFO,"%04d %s %s Routing mail for %s <%s> to QWKnet Hub: %s"
-						,socket, client.protocol, client_id, rcpt_addr, p, scfg.qhub[i]->id);
+					lprintf(LOG_INFO,"%04d %s Routing mail for %s <%s> to QWKnet Hub: %s"
+						,socket, client.protocol, rcpt_addr, p, scfg.qhub[i]->id);
 
 					fprintf(rcptlst,"[%u]\n",rcpt_count++);
 					fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENT),rcpt_addr);
@@ -4773,7 +4754,7 @@ static void smtp_thread(void* arg)
 			}
 
 			if((p==alias_buf || p==name_alias_buf || startup->options&MAIL_OPT_ALLOW_RX_BY_NUMBER)
-				&& IS_DIGIT(*p)) {
+				&& isdigit((uchar)*p)) {
 				usernum=atoi(p);			/* RX by user number */
 				/* verify usernum */
 				username(&scfg,usernum,str);
@@ -4804,48 +4785,48 @@ static void smtp_thread(void* arg)
 			if(!usernum && startup->default_user[0]) {
 				usernum=matchuser(&scfg,startup->default_user,TRUE /* sysop_alias */);
 				if(usernum)
-					lprintf(LOG_INFO,"%04d %s %s Forwarding mail for UNKNOWN USER to default user-recipient: '%s' #%u"
-						,socket, client.protocol, client_id,startup->default_user,usernum);
+					lprintf(LOG_INFO,"%04d %s Forwarding mail for UNKNOWN USER to default user-recipient: '%s' #%u"
+						,socket, client.protocol,startup->default_user,usernum);
 				else
-					lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN DEFAULT USER-RECIPIENT: '%s'"
-						,socket, client.protocol, client_id, startup->default_user);
+					lprintf(LOG_WARNING,"%04d %s !UNKNOWN DEFAULT USER-RECIPIENT: '%s'"
+						,socket, client.protocol,startup->default_user);
 			}
 
 			if(usernum==UINT_MAX) {
-				lprintf(LOG_INFO,"%04d %s %s Blocked tag: %s", socket, client.protocol, client_id, rcpt_to);
+				lprintf(LOG_INFO,"%04d %s Blocked tag: %s", socket, client.protocol, rcpt_to);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(!usernum) {
-				lprintf(LOG_WARNING,"%04d %s %s !UNKNOWN USER-RECIPIENT: '%s'", socket, client.protocol, client_id, rcpt_to);
+				lprintf(LOG_WARNING,"%04d %s !UNKNOWN USER-RECIPIENT: '%s'", socket, client.protocol, rcpt_to);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			user.number=usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user-recipient #%u (%s)"
-					,socket, client.protocol, client_id, i, usernum, p);
+				lprintf(LOG_ERR,"%04d %s !ERROR %d getting data on user-recipient #%u (%s)"
+					,socket, client.protocol, i, usernum, p);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
-				lprintf(LOG_WARNING,"%04d %s %s !DELETED or INACTIVE user-recipient #%u (%s)"
-					,socket, client.protocol, client_id, usernum, p);
+				lprintf(LOG_WARNING,"%04d %s !DELETED or INACTIVE user-recipient #%u (%s)"
+					,socket, client.protocol, usernum, p);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
 			}
 			if(cmd==SMTP_CMD_MAIL) {
 				if((user.rest&FLAG('M')) && relay_user.number==0) {
-					lprintf(LOG_NOTICE,"%04d %s %s !M-restricted user-recipient #%u (%s) cannot receive unauthenticated SMTP mail"
-						,socket, client.protocol, client_id, user.number, user.alias);
+					lprintf(LOG_NOTICE,"%04d %s !M-restricted user-recipient #%u (%s) cannot receive unauthenticated SMTP mail"
+						,socket, client.protocol, user.number, user.alias);
 					sockprintf(socket,client.protocol,session, "550 Closed mailbox: %s", rcpt_to);
 					stats.msgs_refused++;
 					continue;
 				}
 				if(startup->max_msgs_waiting && !(user.exempt&FLAG('W')) 
 					&& (waiting=getmail(&scfg, user.number, /* sent: */FALSE, /* spam: */FALSE)) > startup->max_msgs_waiting) {
-					lprintf(LOG_NOTICE,"%04d %s %s !User-recipient #%u (%s) mailbox (%lu msgs) exceeds the maximum (%u) msgs waiting"
-						,socket, client.protocol, client_id, user.number, user.alias, waiting, startup->max_msgs_waiting);
+					lprintf(LOG_NOTICE,"%04d %s !User-recipient #%u (%s) mailbox (%lu msgs) exceeds the maximum (%u) msgs waiting"
+						,socket, client.protocol, user.number, user.alias, waiting, startup->max_msgs_waiting);
 					sockprintf(socket,client.protocol,session, "450 Mailbox full: %s", rcpt_to);
 					stats.msgs_refused++;
 					continue;
@@ -4859,8 +4840,8 @@ static void smtp_thread(void* arg)
 						break;
 				}
 				if(i>=scfg.sys_nodes) {
-					lprintf(LOG_WARNING,"%04d %s %s !Attempt to send telegram to unavailable user-recipient #%u (%s)"
-						,socket, client.protocol, client_id, user.number, user.alias);
+					lprintf(LOG_WARNING,"%04d %s !Attempt to send telegram to unavailable user-recipient #%u (%s)"
+						,socket, client.protocol, user.number, user.alias);
 					sockprintf(socket,client.protocol,session,"450 User unavailable");
 					continue;
 				}
@@ -4880,12 +4861,9 @@ static void smtp_thread(void* arg)
 				&& scfg.sys_misc&SM_FWDTONET 
 				&& (user.misc&NETMAIL || forward)
 				&& tp!=NULL && smb_netaddr_type(user.netmail)==NET_INTERNET 
-				&& stricmp(tp + 1, scfg.sys_inetaddr) != 0
-				&& stricmp(tp + 1, startup->host_name) != 0
-				&& findstr(tp + 1, domain_list)==FALSE
-				) {
-				lprintf(LOG_INFO,"%04d %s %s Forwarding to: %s"
-					,socket, client.protocol, client_id, user.netmail);
+				&& !strstr(tp,scfg.sys_inetaddr)) {
+				lprintf(LOG_INFO,"%04d %s Forwarding to: %s"
+					,socket, client.protocol, user.netmail);
 				fprintf(rcptlst,"%s=%u\n",smb_hfieldtype(RECIPIENTNETTYPE),NET_INTERNET);
 				fprintf(rcptlst,"%s=%s\n",smb_hfieldtype(RECIPIENTNETADDR),user.netmail);
 				sockprintf(socket,client.protocol,session,ok_rsp);	// used to be a 251 response, changed per RFC2821
@@ -4903,7 +4881,7 @@ static void smtp_thread(void* arg)
 		/* Message Data (header and body) */
 		if(!strnicmp(buf,"DATA",4)) {
 			if(state<SMTP_STATE_RCPT_TO) {
-				lprintf(LOG_WARNING,"%04d %s %s !MISSING 'RCPT TO' command", socket, client.protocol, client_id);
+				lprintf(LOG_WARNING,"%04d %s !MISSING 'RCPT TO' command", socket, client.protocol);
 				sockprintf(socket,client.protocol,session, badseq_rsp);
 				continue;
 			}
@@ -4912,8 +4890,8 @@ static void smtp_thread(void* arg)
 			}
 			remove(msgtxt_fname);
 			if((msgtxt=fopen(msgtxt_fname,"w+b"))==NULL) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d opening %s"
-					,socket, client.protocol, client_id, errno, msgtxt_fname);
+				lprintf(LOG_ERR,"%04d %s !ERROR %d opening %s"
+					,socket, client.protocol, errno, msgtxt_fname);
 				sockprintf(socket,client.protocol,session, insuf_stor);
 				continue;
 			}
@@ -4936,15 +4914,15 @@ static void smtp_thread(void* arg)
 				state=SMTP_STATE_DATA_BODY;	/* No RFC headers in Telegrams */
 			else
 				state=SMTP_STATE_DATA_HEADER;
-			lprintf(LOG_INFO,"%04d %s %s Receiving %s message from %s to <%s>"
-				,socket, client.protocol, client_id, telegram ? "telegram":"mail", reverse_path, rcpt_addr);
+			lprintf(LOG_INFO,"%04d %s Receiving %s message from: %s to %s"
+				,socket, client.protocol, telegram ? "telegram":"mail", reverse_path, rcpt_addr);
 			hdr_lines=0;
 			continue;
 		}
 		if(session == -1 && !stricmp(buf,"STARTTLS")) {
 			if (get_ssl_cert(&scfg, &estr, &level) == -1) {
 				if (estr) {
-					lprintf(level, "%04d %s %s !%s", socket, client.protocol, client_id, estr);
+					lprintf(level, "%04d %s !%s", socket, client.protocol, estr);
 					free_crypt_attrstr(estr);
 				}
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
@@ -4966,7 +4944,7 @@ static void smtp_thread(void* arg)
 			if ((cstat=cryptSetAttribute(session, CRYPT_SESSINFO_PRIVATEKEY, scfg.tls_certificate)) != CRYPT_OK) {
 				unlock_ssl_cert();
 				GCES(cstat, "SMTPS", socket, session, "setting private key");
-				lprintf(LOG_ERR, "%04d SMTPS %s !Unable to set private key", socket, client_id);
+				lprintf(LOG_ERR, "%04d !SMTP Unable to set private key", socket);
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
@@ -5001,9 +4979,9 @@ static void smtp_thread(void* arg)
 			continue;
 		}
 		sockprintf(socket,client.protocol,session,"500 Syntax error");
-		lprintf(LOG_WARNING,"%04d %s %s !UNSUPPORTED COMMAND: '%s'", socket, client.protocol, client_id, buf);
-		if(++badcmds > SMTP_MAX_BAD_CMDS) {
-			lprintf(LOG_WARNING,"%04d %s %s !TOO MANY INVALID COMMANDS (%lu)",socket, client.protocol, client_id, badcmds);
+		lprintf(LOG_WARNING,"%04d %s !UNSUPPORTED COMMAND: '%s'", socket, client.protocol, buf);
+		if(++badcmds>9) {
+			lprintf(LOG_WARNING,"%04d %s !TOO MANY INVALID COMMANDS (%lu)",socket, client.protocol, badcmds);
 			break;
 		}
 	}
@@ -5024,15 +5002,14 @@ static void smtp_thread(void* arg)
 
 	status(STATUS_WFC);
 
-	listRemoveTaggedNode(&current_logins, socket, /* free_data */TRUE);
-	(void)protected_uint32_adjust(&active_clients, -1);
+	protected_uint32_adjust(&active_clients, -1);
 	update_clients();
 	client_off(socket);
 
 	{
 		int32_t remain = thread_down();
-		lprintf(LOG_INFO,"%04d %s %s Session thread terminated (%u threads remain, %lu clients served)"
-			,socket, client.protocol, client_id, remain, ++stats.smtp_served);
+		lprintf(LOG_INFO,"%04d %s Session thread terminated (%u threads remain, %lu clients served)"
+			,socket, client.protocol, remain, ++stats.smtp_served);
 	}
 	free(mailproc_to_match);
 
@@ -5072,11 +5049,8 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	msg->hdr.attr|=MSG_DELETE;
 
 	i=smb_updatemsg(smb,msg);
-	if(msg->hdr.auxattr&MSG_FILEATTACH) {
-		if(!delfattach(&scfg,msg))
-			lprintf(LOG_ERR, "%04d SEND !ERROR %d deleting attachment: %s"
-				,sock, errno, msg->subj);
-	}
+	if(msg->hdr.auxattr&MSG_FILEATTACH)
+		delfattach(&scfg,msg);
 	if(i!=SMB_SUCCESS) {
 		lprintf(LOG_ERR,"%04d SEND !BOUNCE ERROR %d (%s) deleting message"
 			,sock, i, smb->last_error);
@@ -5176,7 +5150,7 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 	msg->hdr.netattr&=~MSG_INTRANSIT;
 	i=smb_putmsghdr(smb,msg);
 	smb_unlockmsghdr(smb,msg);
-
+	
 	if(i!=0)
 		lprintf(LOG_ERR,"0000 SEND !ERROR %d (%s) writing message header #%u"
 			,i, smb->last_error, msg->idx.number);
@@ -5190,7 +5164,7 @@ void get_dns_server(char* dns_server, size_t len)
 	size_t		count;
 
 	sprintf(dns_server,"%.*s",(int)len-1,startup->dns_server);
-	if(!IS_ALPHANUMERIC(dns_server[0])) {
+	if(!isalnum(dns_server[0])) {
 		if((list=getNameServerList())!=NULL) {
 			if((count=strListCount(list))>0) {
 				sprintf(dns_server,"%.*s",(int)len,list[xp_random(count)]);
@@ -5251,7 +5225,9 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 	ulong nb = 0;
 	int status;
 	char		buf[512];
-	char		err[1024] = "UNKNOWN ERROR";
+	char		err[1024];
+
+	strcpy(err,"UNKNOWN ERROR");
 
 	for (tls_retry = 0; tls_retry < 2; tls_retry++) {
 		if (!sendmail_open_socket(&sock, session))
@@ -5270,7 +5246,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			ip_addr=resolve_ip(server);
 			if(ip_addr==INADDR_NONE) {
 				SAFEPRINTF(err, "Error resolving hostname %s", server);
-				lprintf(LOG_WARNING,"%04d SEND !Failure resolving hostname: %s", sock, server);
+				lprintf(LOG_WARNING,"%04d SEND !failure resolving hostname: %s", sock, server);
 				continue;
 			}
 
@@ -5353,7 +5329,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 					lprintf(LOG_DEBUG, "%04d SEND Starting TLS session", sock);
 					if(get_ssl_cert(&scfg, &estr, &level) == -1) {
 						if (estr) {
-							lprintf(level, "%04d SEND/TLS !%s", sock, estr);
+							lprintf(level, "%04d !SEND/TLS %s", sock, estr);
 							free_crypt_attrstr(estr);
 						}
 						continue;
@@ -5431,9 +5407,9 @@ static void sendmail_thread(void* arg)
 	char		err[1024];
 	char		buf[512];
 	char		str[128];
-	char		tmp[256];
 	char		resp[512];
 	char		toaddr[256];
+	char		fromext[128];
 	char		fromaddr[256];
 	char		challenge[256];
 	char		secret[64];
@@ -5563,29 +5539,11 @@ static void sendmail_thread(void* arg)
 				smb_unlockmsghdr(&smb,&msg);
 				continue;
 			}
-			if(msg.from_net.type==NET_INTERNET && msg.reverse_path!=NULL)
-				angle_bracket(fromaddr, sizeof(fromaddr), msg.reverse_path);
-			else 
-				angle_bracket(fromaddr, sizeof(fromaddr), usermailaddr(&scfg, str, msg.from));
-
-			char sender_info[512];
-			if(msg.from_ext != NULL)
-				SAFEPRINTF2(sender_info, "'%s' #%s", msg.from, msg.from_ext);
-			else if(strstr(fromaddr, msg.from) == fromaddr + 1)
-				SAFECOPY(sender_info, fromaddr);
-			else
-				SAFEPRINTF2(sender_info, "'%s' %s", msg.from, fromaddr);
-
-			char rcpt_info[512];
-			if(compare_addrs(msg.to, (char*)msg.to_net.addr) == 0)
-				angle_bracket(rcpt_info, sizeof(rcpt_info), msg.to);
-			else
-				safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", msg.to, angle_bracket(tmp, sizeof(tmp), (char*)msg.to_net.addr));
 
 			if(!(startup->options&MAIL_OPT_SEND_INTRANSIT) && msg.hdr.netattr&MSG_INTRANSIT) {
 				smb_unlockmsghdr(&smb,&msg);
 				lprintf(LOG_NOTICE,"0000 SEND Message #%u from %s to %s - in transit"
-					,msg.hdr.number, sender_info, rcpt_info);
+					,msg.hdr.number, msg.from, (char*)msg.to_net.addr);
 				continue;
 			}
 			msg.hdr.netattr|=MSG_INTRANSIT;	/* Prevent another sendmail thread from sending this msg */
@@ -5594,8 +5552,18 @@ static void sendmail_thread(void* arg)
 
 			active_sendmail=1, update_clients();
 
-			lprintf(LOG_INFO,"0000 SEND Message #%u (%u of %u) from %s to %s"
-				,msg.hdr.number, u+1, msgs, sender_info, rcpt_info);
+			fromext[0]=0;
+			if(msg.from_ext)
+				SAFEPRINTF(fromext," #%s", msg.from_ext);
+			if(msg.from_net.type==NET_INTERNET && msg.reverse_path!=NULL)
+				SAFECOPY(fromaddr,msg.reverse_path);
+			else 
+				usermailaddr(&scfg,fromaddr,msg.from);
+			truncstr(fromaddr," ");
+
+			lprintf(LOG_INFO,"0000 SEND Message #%u (%u of %u) from %s%s %s to %s [%s]"
+				,msg.hdr.number, u+1, msgs, msg.from, fromext, fromaddr
+				,msg.to, (char*)msg.to_net.addr);
 			SAFEPRINTF2(str,"Sending (%u of %u)", u+1, msgs);
 			status(str);
 #ifdef _WIN32
@@ -5724,7 +5692,7 @@ static void sendmail_thread(void* arg)
 					}
 					switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
 						case MAIL_OPT_RELAY_AUTH_LOGIN:
-							b64_encode(p=resp,sizeof(resp),startup->relay_user,strlen(startup->relay_user));
+							b64_encode(p=resp,sizeof(resp),startup->relay_user,0);
 							break;
 						case MAIL_OPT_RELAY_AUTH_CRAM_MD5:
 							p=buf;
@@ -5745,7 +5713,7 @@ static void sendmail_thread(void* arg)
 							MD5_calc(digest,md5_data,sizeof(secret)+sizeof(digest));
 							
 							safe_snprintf(buf,sizeof(buf),"%s %s",startup->relay_user,MD5_hex((BYTE*)str,digest));
-							b64_encode(p=resp,sizeof(resp),buf,strlen(buf));
+							b64_encode(p=resp,sizeof(resp),buf,0);
 							break;
 						default:
 							p="<unknown>";
@@ -5760,7 +5728,7 @@ static void sendmail_thread(void* arg)
 						}
 						switch(startup->options&MAIL_OPT_RELAY_AUTH_MASK) {
 							case MAIL_OPT_RELAY_AUTH_LOGIN:
-								b64_encode(p=buf,sizeof(buf),startup->relay_pass,strlen(startup->relay_pass));
+								b64_encode(p=buf,sizeof(buf),startup->relay_pass,0);
 								break;
 							default:
 								p="<unknown>";
@@ -5777,7 +5745,10 @@ static void sendmail_thread(void* arg)
 			}
 
 			/* MAIL */
-			sockprintf(sock,prot,session,"MAIL FROM:%s",fromaddr);
+			if(fromaddr[0]=='<')
+				sockprintf(sock,prot,session,"MAIL FROM: %s",fromaddr);
+			else
+				sockprintf(sock,prot,session,"MAIL FROM: <%s>",fromaddr);
 			if(!sockgetrsp(sock,prot,session,"250", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"250");
@@ -5798,7 +5769,10 @@ static void sendmail_thread(void* arg)
 					&& tp > p)
 					*tp=0;	/* Remove ":port" designation from envelope */
 			}
-			sockprintf(sock, prot, session, "RCPT TO:%s", angle_bracket(tmp, sizeof(tmp), toaddr));
+			if(*toaddr == '<')
+				sockprintf(sock,prot,session,"RCPT TO: %s", toaddr);
+			else
+				sockprintf(sock,prot,session,"RCPT TO: <%s>", toaddr);
 			if(!sockgetrsp(sock,prot,session,"25", buf, sizeof(buf))) {
 				remove_msg_intransit(&smb,&msg);
 				SAFEPRINTF3(err,badrsp_err,server,buf,"25*");
@@ -5828,8 +5802,9 @@ static void sendmail_thread(void* arg)
 					continue;
 				}
 			}
-			lprintf(LOG_INFO, "%04d %s Successfully sent message #%u (%lu bytes, %lu lines) from %s to '%s' %s"
-				,sock, prot, msg.hdr.number, bytes, lines, sender_info, msg.to, toaddr);
+			lprintf(LOG_INFO, "%04d %s Successfully sent message #%u (%lu bytes, %lu lines) from %s%s %s to %s [%s]"
+				,sock, prot, msg.hdr.number, bytes, lines, msg.from, fromext, fromaddr
+				,msg.to, toaddr);
 
 			/* Now lets mark this message for deletion without corrupting the index */
 			if((msg.hdr.netattr & MSG_KILLSENT) || msg.from_ext == NULL)
@@ -5839,11 +5814,8 @@ static void sendmail_thread(void* arg)
 			if((i=smb_updatemsg(&smb,&msg))!=SMB_SUCCESS)
 				lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) deleting message #%u"
 					,sock, prot, i, smb.last_error, msg.hdr.number);
-			if(msg.hdr.auxattr&MSG_FILEATTACH) {
-				if(!delfattach(&scfg,&msg))
-					lprintf(LOG_ERR, "%04d %s !ERROR %d deleting attachment: %s"
-						,sock, prot, errno, msg.subj);
-			}
+			if(msg.hdr.auxattr&MSG_FILEATTACH)
+				delfattach(&scfg,&msg);
 
 			/* QUIT */
 			sockprintf(sock,prot,session,"QUIT");
@@ -5851,7 +5823,7 @@ static void sendmail_thread(void* arg)
 			mail_close_socket(&sock, &session);
 
 			if(msg.from_agent==AGENT_PERSON && !(startup->options&MAIL_OPT_NO_AUTO_EXEMPT))
-				exempt_email_addr("SEND Auto-exempting", sender_info, toaddr);
+				exempt_email_addr("SEND Auto-exempting",msg.from,fromext,fromaddr,toaddr);
 		}
 		status(STATUS_WFC);
 		/* Free up resources here */
@@ -5915,14 +5887,7 @@ static void cleanup(int code)
 	mail_set=NULL;
 	terminated=TRUE;
 
-	while(savemsg_mutex_created && pthread_mutex_destroy(&savemsg_mutex)==EBUSY)
-		mswait(1);
-	savemsg_mutex_created = false;
-
 	update_clients();	/* active_clients is destroyed below */
-
-	listFree(&current_logins);
-	listFree(&current_connections);
 
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %d active clients", protected_uint32_value(active_clients));
@@ -5938,8 +5903,6 @@ static void cleanup(int code)
 	if(terminate_server || code) {
 		char str[1024];
 		sprintf(str,"%lu connections served", stats.connections_served);
-		if(stats.connections_exceeded)
-			sprintf(str+strlen(str),", %lu exceeded max", stats.connections_exceeded);
 		if(stats.connections_refused)
 			sprintf(str+strlen(str),", %lu refused", stats.connections_refused);
 		if(stats.connections_ignored)
@@ -5969,16 +5932,18 @@ const char* DLLCALL mail_ver(void)
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(ver,"%s %s%c%s  "
-		"Compiled %s/%s %s %s with %s"
+	sscanf("$Revision: 1.734 $", "%*s %s", revision);
+
+	sprintf(ver,"%s %s%s  SMBLIB %s  "
+		"Compiled %s %s with %s"
 		,server_name
-		,VERSION, REVISION
+		,revision
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
-		,git_branch, git_hash
+		,smb_lib_ver()
 		,__DATE__, __TIME__, compiler
 		);
 
@@ -6006,8 +5971,10 @@ void DLLCALL mail_server(void* arg)
 	smtp_t*			smtp;
 	FILE*			fp;
 	str_list_t		sec_list;
-	char*			servprot = "N/A";
+	void			*cbdata;
 	CRYPT_SESSION	session = -1;
+
+	mail_ver();
 
 	startup=(mail_startup_t*)arg;
 
@@ -6031,9 +5998,9 @@ void DLLCALL mail_server(void* arg)
 	}
 
 	ZERO_VAR(js_server_props);
-	SAFEPRINTF3(js_server_props.version,"%s %s%c",server_name, VERSION, REVISION);
+	SAFEPRINTF2(js_server_props.version,"%s %s",server_name,revision);
 	js_server_props.version_detail=mail_ver();
-	js_server_props.clients=&active_clients;
+	js_server_props.clients=&active_clients.value;
 	js_server_props.options=&startup->options;
 	js_server_props.interfaces=&startup->interfaces;
 
@@ -6044,12 +6011,10 @@ void DLLCALL mail_server(void* arg)
 	terminate_server=FALSE;
 
 	SetThreadName("sbbs/mailServer");
-	(void)protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	do {
-		listInit(&current_logins, LINK_LIST_MUTEX);
-		listInit(&current_connections, LINK_LIST_MUTEX);
-		(void)protected_uint32_init(&active_clients, 0);
+		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
 		if(startup->relay_port==0)				startup->relay_port=IPPORT_SMTP;
@@ -6063,17 +6028,18 @@ void DLLCALL mail_server(void* arg)
 		if(startup->max_inactivity==0) 			startup->max_inactivity=MAIL_DEFAULT_MAX_INACTIVITY; /* seconds */
 		if(startup->sem_chk_freq==0)			startup->sem_chk_freq=DEFAULT_SEM_CHK_FREQ;
 		if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+		if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
-		(void)protected_uint32_adjust(&thread_count,1);
+		protected_uint32_adjust(&thread_count,1);
 		thread_up(FALSE /* setuid */);
 
 		status("Initializing");
 
 		memset(&scfg, 0, sizeof(scfg));
 
-		lprintf(LOG_INFO,"%s Version %s%c%s"
+		lprintf(LOG_INFO,"%s Revision %s%s"
 			,server_name
-			,VERSION, REVISION
+			,revision
 #ifdef _DEBUG
 			," Debug"
 #else
@@ -6083,7 +6049,9 @@ void DLLCALL mail_server(void* arg)
 
 		DESCRIBE_COMPILER(compiler);
 
-		lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+		lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+
+		lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
 		sbbs_srand();
 
@@ -6104,7 +6072,7 @@ void DLLCALL mail_server(void* arg)
 		lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size=sizeof(scfg);
 		SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-		if(!load_cfg(&scfg, text, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+		if(!load_cfg(&scfg, text, TRUE, error)) {
 			lprintf(LOG_CRIT,"!ERROR %s",error);
 			lprintf(LOG_CRIT,"!Failed to load configuration files");
 			cleanup(1);
@@ -6192,30 +6160,30 @@ void DLLCALL mail_server(void* arg)
 		}
 		terminated=FALSE;
 		if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-			, startup->smtp_port, "SMTP Transfer Agent", mail_open_socket, startup->seteuid, (void*)servprot_smtp))
+			, startup->smtp_port, "SMTP Transfer Agent", mail_open_socket, startup->seteuid, "smtp"))
 			lprintf(LOG_INFO,"SMTP No extra interfaces listening");
 
 		if(startup->options&MAIL_OPT_USE_SUBMISSION_PORT) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-				, startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, (void*)servprot_submission);
+				, startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, "submission");
 		}
 
 		if(startup->options&MAIL_OPT_TLS_SUBMISSION) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port
-				, "SMTPS Submission Agent", mail_open_socket, startup->seteuid, (void*)servprot_submissions);
+				, "SMTPS Submission Agent", mail_open_socket, startup->seteuid, "submissions");
 		}
 
 		if(startup->options&MAIL_OPT_ALLOW_POP3) {
 			/* open a socket and wait for a client */
 			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port
-				, "POP3 Server", mail_open_socket, startup->seteuid, (void*)servprot_pop3))
+				, "POP3 Server", mail_open_socket, startup->seteuid, "pop3"))
 				lprintf(LOG_INFO,"POP3 No extra interfaces listening");
 		}
 
 		if(startup->options&MAIL_OPT_TLS_POP3) {
 			/* open a socket and wait for a client */
 			if(!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces
-				, startup->pop3s_port, "POP3S Server", mail_open_socket, startup->seteuid, (void*)servprot_pop3s))
+				, startup->pop3s_port, "POP3S Server", mail_open_socket, startup->seteuid, "pop3s"))
 				lprintf(LOG_INFO,"POP3S No extra interfaces listening");
 		}
 
@@ -6223,7 +6191,7 @@ void DLLCALL mail_server(void* arg)
 
 		if(!(startup->options&MAIL_OPT_NO_SENDMAIL)) {
 			sendmail_running=TRUE;
-			(void)protected_uint32_adjust(&thread_count,1);
+			protected_uint32_adjust(&thread_count,1);
 			_beginthread(sendmail_thread, 0, NULL);
 		}
 
@@ -6240,9 +6208,6 @@ void DLLCALL mail_server(void* arg)
 			semfile_list_check(&initialized,recycle_semfiles);
 			semfile_list_check(&initialized,shutdown_semfiles);
 		}
-
-		pthread_mutex_init(&savemsg_mutex, NULL);
-		savemsg_mutex_created = true;
 
 		/* signal caller that we've started up successfully */
 		if(startup->started!=NULL)
@@ -6277,30 +6242,13 @@ void DLLCALL mail_server(void* arg)
 
 			/* now wait for connection */
 			client_addr_len = sizeof(client_addr);
-			client_socket = xpms_accept(mail_set,&client_addr, &client_addr_len, startup->sem_chk_freq*1000, XPMS_FLAGS_NONE, (void**)&servprot);
+			client_socket = xpms_accept(mail_set,&client_addr, &client_addr_len, startup->sem_chk_freq*1000, &cbdata);
 			if(client_socket != INVALID_SOCKET) {
-				bool is_smtp = (servprot != servprot_pop3 && servprot != servprot_pop3s);
 				if(startup->socket_open!=NULL)
 					startup->socket_open(startup->cbdata,TRUE);
 				stats.sockets++;
 
 				inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
-
-				if(startup->max_concurrent_connections > 0) {
-					int ip_len = strlen(host_ip)+1;
-					int connections = listCountMatches(&current_connections, host_ip, ip_len);
-					int logins = listCountMatches(&current_logins, host_ip, ip_len);
-
-					if(connections - logins >= (int)startup->max_concurrent_connections
-						&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
-						lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
- 							,client_socket, servprot, host_ip, startup->max_concurrent_connections, ++stats.connections_exceeded);
-						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
-						mail_close_socket(&client_socket, &session);
-						continue;
-					}
-				}
-
 				if(trashcan(&scfg,host_ip,"ip-silent")) {
 					mail_close_socket(&client_socket, &session);
 					stats.connections_ignored++;
@@ -6309,8 +6257,8 @@ void DLLCALL mail_server(void* arg)
 
 				if(protected_uint32_value(active_clients)>=startup->max_clients) {
 					lprintf(LOG_WARNING,"%04d %s !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
-						,client_socket, servprot, startup->max_clients, ++stats.connections_refused);
-					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum active clients reached");
+						,client_socket, (char *)cbdata, startup->max_clients, ++stats.connections_refused);
+					sockprintf(client_socket, cbdata, session,"-ERR Maximum active clients reached, please try again later.");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);
 					continue;
@@ -6320,18 +6268,17 @@ void DLLCALL mail_server(void* arg)
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
 					lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) disabling blocking on socket"
-						,client_socket, servprot, i, ERROR_VALUE);
-					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "ioctlsocket error");
+						,client_socket, (char *)cbdata, i, ERROR_VALUE);
+					sockprintf(client_socket, cbdata, session,"-ERR System error, please try again later.");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);
 					continue;
 				}
 
-				if(is_smtp) {
+				if(strcmp((char *)cbdata, "pop3") && strcmp((char *)cbdata, "pop3s")) { /* Not POP3 */
 					if((smtp=malloc(sizeof(smtp_t)))==NULL) {
 						lprintf(LOG_CRIT,"%04d SMTP !ERROR allocating %lu bytes of memory for smtp_t"
 							,client_socket, (ulong)sizeof(smtp_t));
-						sockprintf(client_socket, servprot, session, smtp_error, "malloc failure");
 						mail_close_socket(&client_socket, &session);
 						continue;
 					}
@@ -6339,14 +6286,14 @@ void DLLCALL mail_server(void* arg)
 					smtp->socket=client_socket;
 					memcpy(&smtp->client_addr, &client_addr, client_addr_len);
 					smtp->client_addr_len=client_addr_len;
-					smtp->tls_port = (servprot == servprot_submissions);
-					(void)protected_uint32_adjust(&thread_count,1);
+					smtp->tls_port = (strcmp((char *)cbdata, "submissions") == 0);
+					protected_uint32_adjust(&thread_count,1);
 					_beginthread(smtp_thread, 0, smtp);
 					stats.connections_served++;
 				}
 				else {
 					if((pop3=malloc(sizeof(pop3_t)))==NULL) {
-						lprintf(LOG_CRIT,"%04d POP3 !ERROR allocating %lu bytes of memory for pop3_t"
+						lprintf(LOG_CRIT,"%04d !POP3 ERROR allocating %lu bytes of memory for pop3_t"
 							,client_socket,(ulong)sizeof(pop3_t));
 						sockprintf(client_socket, "POP3", session,"-ERR System error, please try again later.");
 						mswait(3000);
@@ -6357,8 +6304,8 @@ void DLLCALL mail_server(void* arg)
 					pop3->socket=client_socket;
 					memcpy(&pop3->client_addr, &client_addr, client_addr_len);
 					pop3->client_addr_len=client_addr_len;
-					pop3->tls_port = (servprot == servprot_pop3s);
-					(void)protected_uint32_adjust(&thread_count,1);
+					pop3->tls_port = (strcmp((char *)cbdata, "pop3s") == 0);
+					protected_uint32_adjust(&thread_count,1);
 					_beginthread(pop3_thread, 0, pop3);
 					stats.connections_served++;
 				}

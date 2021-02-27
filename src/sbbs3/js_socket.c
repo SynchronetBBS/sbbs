@@ -1,4 +1,7 @@
 /* Synchronet JavaScript "Socket" Object */
+// vi: tabstop=4
+
+/* $Id: js_socket.c,v 1.247 2020/08/09 02:29:52 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -396,9 +411,8 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 
 	do_js_close(p, true);
 
-	if(!p->external)
-		free(p->set);
-	free(p->hostname);
+	if(p->hostname)
+		free(p->hostname);
 	free(p);
 
 	JS_SetPrivate(cx, obj, NULL);
@@ -444,7 +458,7 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 	if(JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx,val);
 		JSSTRING_TO_ASTRING(cx, str, cp, 16, NULL);
-		if(IS_DIGIT(*cp))
+		if(isdigit(*cp))
 			return((ushort)strtol(cp,NULL,0));
 		rc=JS_SUSPENDREQUEST(cx);
 		serv = getservbyname(cp,type==SOCK_STREAM ? "tcp":"udp");
@@ -554,10 +568,9 @@ void DLLCALL js_timeval(JSContext* cx, jsval val, struct timeval* tv)
 	if(JSVAL_IS_INT(val))
 		tv->tv_sec = JSVAL_TO_INT(val);
 	else if(JSVAL_IS_DOUBLE(val)) {
-		if(JS_ValueToNumber(cx,val,&jsd)) {
-			tv->tv_sec = (int)jsd;
-			tv->tv_usec = (int)(jsd*1000000.0)%1000000;
-		}
+		JS_ValueToNumber(cx,val,&jsd);
+		tv->tv_sec = (int)jsd;
+		tv->tv_usec = (int)(jsd*1000000.0)%1000000;
 	}
 }
 
@@ -678,7 +691,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(p->set) {
-		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,XPMS_FLAGS_NONE,NULL))==INVALID_SOCKET) {
+		if((new_socket=xpms_accept(p->set,&(p->remote_addr),&addrlen,XPMS_FOREVER,NULL))==INVALID_SOCKET) {
 			p->last_error=ERROR_VALUE;
 			dbprintf(TRUE, p, "accept failed with error %d",ERROR_VALUE);
 			JS_RESUMEREQUEST(cx, rc);
@@ -841,7 +854,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	ret = js_socket_sendsocket(p,cp,len,TRUE);
 	if(ret >= 0) {
-		dbprintf(FALSE, p, "sent %d of %lu bytes",ret,len);
+		dbprintf(FALSE, p, "sent %d of %u bytes",ret,len);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(ret));
 	} else {
 		p->last_error=ERROR_VALUE;
@@ -1180,7 +1193,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 			JS_ValueToInt32(cx,argv[n],&len);
 	}
 
-	addrlen=sizeof(addr.addr);
+	addrlen=sizeof(addr);
 
 	if(binary) {	/* Binary/Integer Data */
 
@@ -1502,8 +1515,8 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	int			opt;
-	int			level = 0;
-	int			val = 0;
+	int			level;
+	int			val;
 	js_socket_private_t*	p;
 	LINGER		linger;
 	void*		vp=&val;
@@ -1728,8 +1741,10 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* socket_prop_desc[] = {
+	/* statically-defined properties: */
+	 "array of socket option names supported by the current platform"
 	/* Regular properties */
-	 "error status for the last socket operation that failed - <small>READ ONLY</small>"
+	,"error status for the last socket operation that failed - <small>READ ONLY</small>"
 	,"error description for the last socket operation that failed - <small>READ ONLY</small>"
 	,"<i>true</i> if socket is in a connected state - <small>READ ONLY</small>"
 	,"<i>true</i> if socket can accept written data - Setting to false will shutdown the write end of the socket."
@@ -1748,9 +1763,6 @@ static char* socket_prop_desc[] = {
 	,"<i>true</i> if binary data is to be sent in Network Byte Order (big end first), default is <i>true</i>"
 	,"set to <i>true</i> to enable SSL as a client on the socket"
 	,"set to <i>true</i> to enable SSL as a server on the socket"
-
-	/* statically-defined properties: */
-	,"array of socket option names supported by the current platform"
 	,NULL
 };
 #endif
@@ -2078,7 +2090,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{	"remote_ip_address"	,SOCK_PROP_REMOTE_IP	,SOCK_PROP_FLAGS,	310 },
 	{	"remote_port"		,SOCK_PROP_REMOTE_PORT	,SOCK_PROP_FLAGS,	310 },
 	{	"type"				,SOCK_PROP_TYPE			,SOCK_PROP_FLAGS,	310 },
-	{	"family"			,SOCK_PROP_FAMILY		,SOCK_PROP_FLAGS,	318 },
+	{	"family"			,SOCK_PROP_FAMILY		,SOCK_PROP_FAMILY,	318 },
 	{	"network_byte_order",SOCK_PROP_NETWORK_ORDER,JSPROP_ENUMERATE,	311 },
 	{	"ssl_session"		,SOCK_PROP_SSL_SESSION	,JSPROP_ENUMERATE,	316	},
 	{	"ssl_server"		,SOCK_PROP_SSL_SERVER	,JSPROP_ENUMERATE,	316	},
@@ -2687,6 +2699,9 @@ connected:
 		return(JS_FALSE);
 	}
 
+	if(!js_DefineSocketOptionsArray(cx, obj, type))
+		return(JS_FALSE);
+
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for outgoing TCP/IP socket communications",317);
 	js_DescribeSyncConstructor(cx,obj,"To create a new ConnectedSocket object: "
@@ -2701,9 +2716,6 @@ connected:
 		);
 	JS_DefineProperty(cx,obj,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
 #endif
-
-	if(!js_DefineSocketOptionsArray(cx, obj, type))
-		return(JS_FALSE);
 
 	dbprintf(FALSE, p, "object constructed");
 	return(JS_TRUE);
@@ -2751,7 +2763,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	uint16_t port;
 	jsrefcount rc;
 	scfg_t *scfg;
-	struct xpms_set *set = NULL;
+	struct xpms_set *set;
 	struct ls_cb_data cb;
 	jsuint count;
 	int i;
@@ -2859,8 +2871,8 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if((p=(js_socket_private_t*)malloc(sizeof(js_socket_private_t)))==NULL) {
 		JS_ReportError(cx,"malloc failed");
-		free(protocol);
-		free(set);
+		if(protocol)
+			free(protocol);
 		return(JS_FALSE);
 	}
 	memset(p,0,sizeof(js_socket_private_t));
@@ -2876,15 +2888,11 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
 		free(p);
-		free(set);
 		return(JS_FALSE);
 	}
 
-	if(!js_DefineSocketOptionsArray(cx, obj, type)) {
-		free(p);
-		free(set);
+	if(!js_DefineSocketOptionsArray(cx, obj, type))
 		return(JS_FALSE);
-	}
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for incoming TCP/IP socket communications",317);
@@ -2909,7 +2917,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 fail:
 	if (protocol)
 		free(protocol);
-	free(set);
 	return JS_FALSE;
 }
 
@@ -2993,6 +3000,9 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
+	if(!js_DefineSocketOptionsArray(cx, obj, type))
+		return(JS_FALSE);
+
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx,obj,"Class used for TCP/IP socket communications",310);
 	js_DescribeSyncConstructor(cx,obj,"To create a new Socket object: "
@@ -3005,9 +3015,6 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", socket_prop_desc, JSPROP_READONLY);
 #endif
-
-	if(!js_DefineSocketOptionsArray(cx, obj, type))
-		return(JS_FALSE);
 
 	dbprintf(FALSE, p, "object constructed");
 	return(JS_TRUE);
@@ -3050,7 +3057,6 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
-	(void)csockobj;
 	lsockobj = JS_InitClass(cx, parent, sockproto
 		,&js_listening_socket_class
 		,js_listening_socket_constructor
@@ -3058,7 +3064,6 @@ JSObject* DLLCALL js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		,NULL /* props, specified in constructor */
 		,NULL /* funcs, specified in constructor */
 		,NULL,NULL);
-	(void)lsockobj;
 
 	return(sockobj);
 }

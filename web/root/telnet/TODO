@@ -1,0 +1,22 @@
+The Java(tm) Telnet Applet 
+
+-- TODO LIST --
+
+May, 27, 1997
+
+	* connection timeout
+
+tools/proxy.java
+	* additional log file
+
+March, 14, 1997
+
+
+display/vt320.java
+	* should add an edit line when using line mode
+	* vttest compliance
+	* 80/132 columns switching to resize the window instead of the font
+
+display/CharDisplay.java
+	* Needs to be refined. The Font resizing in one method and the usage
+	  of addNotify() is recommendet.

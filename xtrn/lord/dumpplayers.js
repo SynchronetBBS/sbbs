@@ -2,7 +2,7 @@ load('recordfile.js');
 
 require('recorddefs.js', 'Player_Def');
 
-var pfile = new RecordFile(argv[0] || 'player.bin',Player_Def);
+var pfile = new RecordFile('/synchronet/sbbs/xtrn/lord/player.dat',Player_Def);
 var i;
 var pl;
 for (i=0; i<pfile.length; i++) {

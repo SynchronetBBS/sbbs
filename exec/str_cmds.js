@@ -59,23 +59,12 @@ function str_cmds(str)
 	if(str=="HELP")
 		write("\r\nAvailable STR commands (prefix with a semi-colon)\r\n\r\n");
 
-	var node_action = bbs.node_action;
 	if(bbs.compare_ars("SYSOP")) {
 		// Change node action to "sysop activities"
 		bbs.node_action=NODE_SYSP;
 		//sync
 
 		// ######################## SYSOP Functions ##############################
-		if(str=="HELP") {
-			writeln("AVAIL\tToggle sysop chat availability");
-		}
-		if(str=="AVAIL") {
-			system.operator_available = !system.operator_available;
-			write(format(bbs.text(text.LiSysopIs)
-				, bbs.text(system.operator_available ? text.LiSysopAvailable : text.LiSysopNotAvailable)));
-			return;
-		}
-
 		if(str=="HELP") {
 			writeln("ERR\tDisplay currrent error log and opptionally delete it as well as");
 			writeln("\toptionally clearing all nodes error counters.");
@@ -446,21 +435,11 @@ function str_cmds(str)
 		}
 
 		if(str=="HELP") {
-			writeln("LOAD [filespec]");
-			writeln("\tLoads the text.dat from the specified filespec.");
-		}
-		if(word=="LOAD") {
-			str=str.substr(4);
-			bbs.load_text(get_filename(str));
-			return;
-		}
-
-		if(str=="HELP") {
 			writeln("DIR [path]");
 			writeln("\tDisplays a full directory of specified path or the current file area if");
 			writeln("\tnot specified");
 		}
-		if(str=="DIR" && node_action == NODE_XFER) {
+		if(str=="DIR") {
 			// Dir of current lib:
 			if(bbs.check_syspass()) {
 				var files=0;
@@ -469,7 +448,7 @@ function str_cmds(str)
 				str=file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].path;
 				write("\r\nDirectory of: "+str+"\r\n\r\n");
 				a=directory(str+"*",GLOB_NOSORT);
-				for(i=0; i<a.length && !console.aborted; i++) {
+				for(i=0; i<a.length; i++) {
 					j=file_date(a[i]);
 					if(system.settings & SYS_EURODATE)
 						write(strftime("%d/%m/%Y  %I:%M %p    ",j).toUpperCase());
@@ -488,14 +467,13 @@ function str_cmds(str)
 					write(file_getname(a[i]));
 					console.crlf();
 				}
-				write(add_commas(files,16)+" File(s)");
-				writeln(add_commas(bytes,15)+" bytes");
+                write(add_commas(files,16)+" File(s)");
+                writeln(add_commas(bytes,15)+" bytes");
 				write(add_commas(dirs,16)+" Dir(s)");
 				writeln(add_commas(dir_freespace(str),16)+" bytes free");
 			}
 			return;
 		}
-
 		if(word=="DIR") {
 			if(bbs.check_syspass()) {
 				var files=0;
@@ -506,7 +484,7 @@ function str_cmds(str)
 				str=backslash(str);
 				write("\r\nDirectory of: "+str+"\r\n\r\n");
 				a=directory(str+"*",GLOB_NOSORT);
-				for(i=0; i<a.length && !console.aborted; i++) {
+				for(i=0; i<a.length; i++) {
 					j=file_date(a[i]);
 					write(system.datestr(j)+"  ");
 					write(strftime("%I:%M %p    ",j).toUpperCase());
@@ -523,180 +501,186 @@ function str_cmds(str)
 					write(file_getname(a[i]));
 					console.crlf();
 				}
-								write(add_commas(files,16)+" File(s)");
-								writeln(add_commas(bytes,15)+" bytes");
+                                write(add_commas(files,16)+" File(s)");
+                                writeln(add_commas(bytes,15)+" bytes");
 				write(add_commas(dirs,16)+" Dir(s)");
 				writeln(add_commas(dir_freespace(str),16)+" bytes free");
 			}
 			return;
 		}
 
+		if(str=="HELP") {
+			writeln("LOAD [filespec]");
+			writeln("\tLoads the text.dat from the specified filespec.");
+		}
+		if(word=="LOAD") {
+			str=str.substr(4);
+			bbs.load_text(get_filename(str));
+			return;
+		}
 
-		if(node_action == NODE_XFER) {
-
-			if(str=="HELP") {
-				writeln("UPLOAD [areaspec]");
-				writeln("\tPerforms a bulk upload in areaspec where area spec is ALL, LIB, or");
-				writeln("\tomitted.");
-				writeln("\tIf areaspec is ALL performs the bulk upload in all file areas.");
-				writeln("\tIf areaspec is LIB, does the same in all areas of the current lib.");
-			}
-			if(word=="UPLOAD") {
-				str=str.substr(7);
-				if(str.toUpperCase()=="ALL") {
-					for(i=0; i<file_area.lib_list.length; i++) {
-						for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-							if(file_area.lib_list[i].offline_dir != undefined
-								&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
-								continue;
-							bbs.bulk_upload(file_area.lib_list[i].dir_list[j].number);
-						}
-					}
-					return;
-				}
-				if(str.toUpperCase()=="LIB") {
-					for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
-						if(file_area.lib_list[bbs.curlib].offline_dir != undefined
-							&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+		if(str=="HELP") {
+			writeln("UPLOAD [areaspec]");
+			writeln("\tPerforms a bulk upload in areaspec where area spec is ALL, LIB, or");
+			writeln("\tomitted.");
+			writeln("\tIf areaspec is ALL performs the bulk upload in all file areas.");
+			writeln("\tIf areaspec is LIB, does the same in all areas of the current lib.");
+		}
+		if(word=="UPLOAD") {
+			str=str.substr(7);
+			if(str.toUpperCase()=="ALL") {
+				for(i=0; i<file_area.lib_list.length; i++) {
+					for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
+						if(file_area.lib_list[i].offline_dir != undefined
+							&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
 							continue;
-						bbs.bulk_upload(file_area.lib_list[bbs.curlib].dir_list[i].number);
+						bbs.bulk_upload(file_area.lib_list[i].dir_list[j].number);
 					}
-					return;
 				}
-				bbs.bulk_upload();
 				return;
 			}
-
-			if(str=="HELP") {
-				writeln("ALTUL [path]");
-				writeln("\tSets the ALT upload path to <path>.  If path is omitted, turns off the");
-				writeln("\talt upload path.");
-			}
-			if(word=="ALTUL") {
-				str=str.substr(6);
-				bbs.alt_ul_dir=(str+0);
-				printf(bbs.text(text.AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(text.OFF));
+			if(str.toUpperCase()=="LIB") {
+				for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
+					if(file_area.lib_list[bbs.curlib].offline_dir != undefined
+						&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+						continue;
+					bbs.bulk_upload(file_area.lib_list[bbs.curlib].dir_list[i].number);
+				}
 				return;
 			}
+			bbs.bulk_upload();
+			return;
+		}
 
-			if(str=="HELP") {
-				writeln("RESORT [ALL|LIB|blank]");
-				writeln("\tResorts the specified file areas.");
+		if(str=="HELP") {
+			writeln("ALTUL [path]");
+			writeln("\tSets the ALT upload path to <path>.  If path is omitted, turns off the");
+			writeln("\talt upload path.");
+		}
+		if(word=="ALTUL") {
+			str=str.substr(6);
+			bbs.alt_ul_dir=(str+0);
+			printf(bbs.text(text.AltULPathIsNow),bbs.alt_ul_dir?bbs.alt_ul_dir:bbs.text(text.OFF));
+			return;
+		}
+
+		if(str=="HELP") {
+			writeln("RESORT [ALL|LIB|blank]");
+			writeln("\tResorts the specified file areas.");
+		}
+		if(word=="RESORT") {
+			for(i=0;i<system.nodes;i++) {
+				if(i!=bbs.node_num-1) {
+					if(system.node_list[i].stats==NODE_INUSE
+							|| system.node_list[i].stats==NODE_QUIET)
+						break;
+				}
 			}
-			if(word=="RESORT") {
-				for(i=0;i<system.nodes;i++) {
-					if(i!=bbs.node_num-1) {
-						if(system.node_list[i].stats==NODE_INUSE
-								|| system.node_list[i].stats==NODE_QUIET)
-							break;
-					}
-				}
-				if(i<system.nodes) {
-					write(bbs.text(text.ResortWarning));
-					return;
-				}
-				if(str.search(/^ALL$/i)!=-1) {
-					for(i=0;i<file_area.lib_list.length;i++) {
-						for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
-							bbs.resort_dir(file_area.lib_list[i].dir_list[j].number);
-						}
-					}
-				}
-				else if(str.search(/^LIB$/i)!=-1) {
-					for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
-						bbs.resort_dir(file_area.lib_list[bbs.curlib].dir_list[j].number);
-					}
-				}
-				else {
-					bbs.resort_dir(undefined);
-				}
-				str=str.substr(7);
+			if(i<system.nodes) {
+				write(bbs.text(text.ResortWarning));
 				return;
 			}
-
-			if(str=="HELP") {
-				writeln("OLDUL [ALL|LIB|blank]");
-				writeln("\tLists all files uploaded before your last scan time.");
-				writeln("OLD [ALL|LIB|blank]");
-				writeln("\tLists all files not downloaded since your last scan time.");
-				writeln("OFFLINE [ALL|LIB|blank]");
-				writeln("\tLists all offline files.");
-				writeln("CLOSE [ALL|LIB|blank]");
-				writeln("\tLists all files currently open.");
+			if(str.search(/^ALL$/i)!=-1) {
+				for(i=0;i<file_area.lib_list.length;i++) {
+					for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
+						bbs.resort_dir(file_area.lib_list[i].dir_list[j].number);
+					}
+				}
 			}
-			if(word=="OLDUL" || word=="OLD" || word=="OFFLINE" || word=="CLOSE") {
-				str=str.replace(/^[A-Z]*\s/,"");
-				if(file_area.lib_list.length<1)
-					return;
-				s=bbs.get_filespec();
-				if(s==null)
-					return;
-				s=s.replace(/^(.*)(\..*)?$/,
-					function(s, p1, p2, oset, s) {
-						if(p2==undefined)
-							return(format("%-8.8s    ",p1));
-						return(format("%-8.8s%-4.4s",p1,p2));
-					}
-				);
-				write("\r\nSearching ");
-				if(str.toUpperCase()=="ALL")
-					write("all libraries");
-				else if(str.toUpperCase()=="LIB")
-					write("library");
-				else
-					write("directory");
-				write(" for files ");
-				if(word=="OLDUL") {
-					printf("uploaded before %s\r\n", system.timestr(bbs.new_file_time));
-					m=FI_OLDUL;
+			else if(str.search(/^LIB$/i)!=-1) {
+				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
+					bbs.resort_dir(file_area.lib_list[bbs.curlib].dir_list[j].number);
 				}
-				else if(word=="OLD") {
-					printf("not downloaded since %s\r\n", system.timestr(bbs.new_file_time));
-					m=FI_OLD;
+			}
+			else {
+				bbs.resort_dir(undefined);
+			}
+			str=str.substr(7);
+			return;
+		}
+
+		if(str=="HELP") {
+			writeln("OLDUL [ALL|LIB|blank]");
+			writeln("\tLists all files uploaded before your last scan time.");
+			writeln("OLD [ALL|LIB|blank]");
+			writeln("\tLists all files not downloaded since your last scan time.");
+			writeln("OFFLINE [ALL|LIB|blank]");
+			writeln("\tLists all offline files.");
+			writeln("CLOSE [ALL|LIB|blank]");
+			writeln("\tLists all files currently open.");
+		}
+		if(word=="OLDUL" || word=="OLD" || word=="OFFLINE" || word=="CLOSE") {
+			str=str.replace(/^[A-Z]*\s/,"");
+			if(file_area.lib_list.length<1)
+				return;
+			s=bbs.get_filespec();
+			if(s==null)
+				return;
+			s=s.replace(/^(.*)(\..*)?$/,
+				function(s, p1, p2, oset, s) {
+					if(p2==undefined)
+						return(format("%-8.8s    ",p1));
+					return(format("%-8.8s%-4.4s",p1,p2));
 				}
-				else if(word=="OFFLINE") {
-					write("not online...\r\n");
-					m=FI_OFFLINE;
-				}
-				else {
-					write("currently open...\r\n");
-					m=FI_CLOSE;
-				}
-				k=0;
-				if(str.toUpperCase()=="ALL") {
-					for(i=0;i<file_area.lib_list.length;i++) {
-						for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
-							if(file_area.lib_list[i].offline_dir != undefined
-								&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
-								continue;
-							l=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number,s,m);
-							if(l==-1)
-								return;
-							k+=l;
-						}
-					}
-				}
-				else if(str.toUpperCase()=="LIB") {
-					for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
-						if(file_area.lib_list[bbs.curlib].offline_dir != undefined
-							&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+			);
+			write("\r\nSearching ");
+			if(str.toUpperCase()=="ALL")
+				write("all libraries");
+			else if(str.toUpperCase()=="LIB")
+				write("library");
+			else
+				write("directory");
+			write(" for files ");
+			if(word=="OLDUL") {
+				printf("uploaded before %s\r\n", system.timestr(bbs.new_file_time));
+				m=FI_OLDUL;
+			}
+			else if(word=="OLD") {
+				printf("not downloaded since %s\r\n", system.timestr(bbs.new_file_time));
+				m=FI_OLD;
+			}
+			else if(word=="OFFLINE") {
+				write("not online...\r\n");
+				m=FI_OFFLINE;
+			}
+			else {
+				write("currently open...\r\n");
+				m=FI_CLOSE;
+			}
+			k=0;
+			if(str.toUpperCase()=="ALL") {
+				for(i=0;i<file_area.lib_list.length;i++) {
+					for(j=0;j<file_area.lib_list[i].dir_list.length;j++) {
+						if(file_area.lib_list[i].offline_dir != undefined
+							&& file_area.lib_list[i].offline_dir == file_area.lib_list[i].dir[j])
 							continue;
-						l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
+						l=bbs.list_file_info(file_area.lib_list[i].dir_list[j].number,s,m);
 						if(l==-1)
 							return;
 						k+=l;
 					}
 				}
-				else {
-					l=bbs.list_file_info(undefined,s,m);
+			}
+			else if(str.toUpperCase()=="LIB") {
+				for(j=0;j<file_area.lib_list[bbs.curlib].dir_list.length;j++) {
+					if(file_area.lib_list[bbs.curlib].offline_dir != undefined
+						&& file_area.lib_list[bbs.curlib].offline_dir == file_area.lib_list[bbs.curlib].dir[j])
+						continue;
+					l=bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[j].number,s,m);
 					if(l==-1)
 						return;
 					k+=l;
 				}
-				if(k>1)
-					printf(bbs.text(text.NFilesListed),k);
-				return;
 			}
+			else {
+				l=bbs.list_file_info(undefined,s,m);
+				if(l==-1)
+					return;
+				k+=l;
+			}
+			if(k>1)
+				printf(bbs.text(text.NFilesListed),k);
+			return;
 		}
 
 		if(str=="HELP") {
@@ -850,47 +834,6 @@ function str_cmds(str)
 				console.editfile(plan);
 				if(file_exists(plan))
 					console.printfile(plan);
-			}
-		}
-	}
-
-	if(str=="HELP") {
-		writeln("FIND [word]");
-		writeln("\tFind a message area or file area.");
-	}
-	if(word == "FIND" && node_action == NODE_MAIN) {
-		str = get_arg(str.substr(4).trim(), "Find").toLowerCase();
-		if(!str)
-			return;
-		print("Searching for message areas with '" + str + "'");
-		for(var g = 0; g < msg_area.grp_list.length; g++) {
-			var grp = msg_area.grp_list[g];
-			for(var s = 0; s < grp.sub_list.length; s++) {
-				var sub = grp.sub_list[s];
-				if(sub.name.toLowerCase().indexOf(str) >= 0
-					|| sub.description.toLowerCase().indexOf(str) >= 0) {
-					writeln(format("\1n[\1h%u\1n] %-15s [\1h%2u\1n] %s"
-						,g + 1, grp.name
-						,s + 1, sub.description));
-					}
-			}
-		}
-	}
-	if(word == "FIND" && node_action == NODE_XFER) {
-		str = get_arg(str.substr(4).trim(), "Find").toLowerCase();
-		if(!str)
-			return;
-		print("Searching for file areas with '" + str + "'");
-		for(var g = 0; g < file_area.lib_list.length; g++) {
-			var lib = file_area.lib_list[g];
-			for(var s = 0; s < lib.dir_list.length; s++) {
-				var dir = lib.dir_list[s];
-				if(dir.name.toLowerCase().indexOf(str) >= 0
-					|| dir.description.toLowerCase().indexOf(str) >= 0) {
-					writeln(format("\1n[\1h%u\1n] %-15s [\1h%2u\1n] %s"
-						,g + 1, lib.name
-						,s + 1, dir.description));
-					}
 			}
 		}
 	}

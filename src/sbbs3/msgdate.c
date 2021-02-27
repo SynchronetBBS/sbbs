@@ -1,4 +1,8 @@
+/* msgdate.c */
+
 /* Synchronet RFC822 message date/time string conversion routines */
+
+/* $Id: msgdate.c,v 1.7 2018/07/24 11:37:38 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,16 +17,25 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "msgdate.h"
-#include "smblib.h"
-#include "datewrap.h"
-#include "date_str.h"
+#include "sbbs.h"
 
 /****************************************************************************/
 /* Convert when_t structure to RFC822 date header field (string)			*/
@@ -73,10 +86,10 @@ when_t DLLCALL rfc822date(char* date)
 	memset(&when,0,sizeof(when));
 
 	while(*p && *p<=' ') p++;
-	while(*p && !IS_DIGIT(*p)) p++;
+	while(*p && !isdigit(*p)) p++;
 	/* DAY */
 	tm.tm_mday=atoi(p);
-	while(*p && IS_DIGIT(*p)) p++;
+	while(*p && isdigit(*p)) p++;
 	/* MONTH */
 	while(*p && *p<=' ') p++;
 	sprintf(month,"%3.3s",p);
@@ -112,23 +125,23 @@ when_t DLLCALL rfc822date(char* date)
 	else if(tm.tm_year>1900)
 		tm.tm_year-=1900;
 
-	while(*p && IS_DIGIT(*p)) p++;
+	while(*p && isdigit(*p)) p++;
 	/* HOUR */
 	while(*p && *p<=' ') p++;
 	tm.tm_hour=atoi(p);
-	while(*p && IS_DIGIT(*p)) p++;
+	while(*p && isdigit(*p)) p++;
 	/* MINUTE */
 	if(*p) p++;
 	tm.tm_min=atoi(p);
-	while(*p && IS_DIGIT(*p)) p++;
+	while(*p && isdigit(*p)) p++;
 	/* SECONDS */
 	if(*p) p++;
 	tm.tm_sec=atoi(p);
-	while(*p && IS_DIGIT(*p)) p++;
+	while(*p && isdigit(*p)) p++;
 	/* TIME ZONE */
 	while(*p && *p<=' ') p++;
 	if(*p) {
-		if(IS_DIGIT(*p) || *p=='-' || *p=='+') { /* [+|-]HHMM format */
+		if(isdigit(*p) || *p=='-' || *p=='+') { /* [+|-]HHMM format */
 			if(*p=='+') p++;
 			sprintf(str,"%.*s",*p=='-'? 3:2,p);
 			when.zone=atoi(str)*60;

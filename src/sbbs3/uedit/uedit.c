@@ -1,5 +1,8 @@
 /* Synchronet for *nix user editor */
 
+/* $Id: uedit.c,v 1.65 2020/08/17 00:48:48 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -220,9 +235,9 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 	char 	**opt;
 	char	str[256];
 
-	if((opt=(char **)alloca(sizeof(char *)*(11+1)))==NULL)
-		allocfail(sizeof(char *)*(11+1));
-	for(i=0;i<11;i++)
+	if((opt=(char **)alloca(sizeof(char *)*(10+1)))==NULL)
+		allocfail(sizeof(char *)*(10+1));
+	for(i=0;i<(10+1);i++)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
@@ -239,11 +254,9 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Pause            %s",user->misc & UPAUSE?"Yes":"No");
 		sprintf(opt[i++],"Hot Keys         %s",user->misc & COLDKEYS?"No":"Yes");
 		sprintf(opt[i++],"Spinning Cursor  %s",user->misc & SPIN?"Yes":"No");
-		sprintf(str,"%u",user->cols);
-		sprintf(opt[i++],"Screen Columns   %s",user->cols?str:"Auto");
 		sprintf(str,"%u",user->rows);
-		sprintf(opt[i++],"Screen Rows      %s",user->rows?str:"Auto");
-		opt[i] = NULL;
+		sprintf(opt[i++],"Number of Rows   %s",user->rows?str:"Auto");
+		opt[i][0]=0;
 		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Terminal Settings",opt)) {
 			case -1:
 				return(0);
@@ -294,21 +307,12 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 				putuserrec(cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
 				break;
 			case 9:
-				/* Columns */
-				SAFEPRINTF(str,"%u",user->cols);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Columns (0=auto-detect)", str, LEN_COLS, K_EDIT|K_NUMBER);
-				if(uifc.changes) {
-					user->cols=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_COLS,0,ultoa(user->cols,str,10));
-				}
-				break;
-			case 10:
 				/* Rows */
-				SAFEPRINTF(str,"%u",user->rows);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0, "Rows (0=auto-detect)", str, LEN_ROWS, K_EDIT|K_NUMBER);
+				sprintf(str,"%u",user->rows);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Rows",str,2,K_EDIT|K_NUMBER);
 				if(uifc.changes) {
 					user->rows=strtoul(str,NULL,10);
-					putuserrec(cfg,user->number,U_ROWS,0,ultoa(user->rows,str,10));
+					putuserrec(cfg,user->number,U_ROWS,2,ultoa(user->rows,str,10));
 				}
 				break;
 		}
@@ -1502,7 +1506,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 5:
 			    /* D.O.B */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B. (YYYYMMDD)",user->birth,LEN_BIRTH,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"D.O.B.",user->birth,LEN_BIRTH,K_EDIT);
 				if(uifc.changes)
 					putuserrec(cfg,user->number,U_BIRTH,LEN_BIRTH,user->birth);
 				break;
@@ -1785,12 +1789,29 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 /* Create a Default User: "New User" */
 /*      Adapted from makeuser.c      */
 
-int createdefaults(scfg_t* cfg)
+int createdefaults()
 
 {
 	int		i;
 	time_t	now;
+	scfg_t cfg;
 	user_t	user;
+	char	error[512];
+	char* environ;
+
+	environ=getenv("SBBSCTRL");
+
+	memset(&cfg,0,sizeof(cfg));
+	cfg.size=sizeof(cfg);
+	SAFECOPY(cfg.ctrl_dir,environ);
+
+	if(chdir(cfg.ctrl_dir)!=0)
+		lprintf("!ERROR changing directory to: %s", cfg.ctrl_dir);
+
+	if(!load_cfg(&cfg,NULL,TRUE,error)) {
+		lprintf("!ERROR loading configuration files: %s\n",error);
+		exit(1);
+	}
 
 	now=time(NULL);
 
@@ -1798,9 +1819,9 @@ int createdefaults(scfg_t* cfg)
 
     SAFECOPY(user.alias,"New Alias");
     SAFECOPY(user.name,"New User");
-    SAFECOPY(user.handle,"Handle");
+    SAFECOPY(user.handle,"New Handle");
     SAFECOPY(user.pass,"PASSWORD");
-    SAFECOPY(user.birth,"19800101");
+    SAFECOPY(user.birth,"01/01/80");
 
     SAFECOPY(user.address,"123 My Street");
     SAFECOPY(user.location,"City, St");
@@ -1814,30 +1835,30 @@ int createdefaults(scfg_t* cfg)
 
     SAFECOPY(user.netmail,"name@address.com");
 
-	user.level=cfg->new_level;
-	user.flags1=cfg->new_flags1;
-	user.flags2=cfg->new_flags2;
-	user.flags3=cfg->new_flags3;
-	user.flags4=cfg->new_flags4;
-	user.rest=cfg->new_rest;
-	user.exempt=cfg->new_exempt;
+	user.level=cfg.new_level;
+	user.flags1=cfg.new_flags1;
+	user.flags2=cfg.new_flags2;
+	user.flags3=cfg.new_flags3;
+	user.flags4=cfg.new_flags4;
+	user.rest=cfg.new_rest;
+	user.exempt=cfg.new_exempt;
 
-	user.cdt=cfg->new_cdt;
-	user.min=cfg->new_min;
-	user.freecdt=cfg->level_freecdtperday[user.level];
+	user.cdt=cfg.new_cdt;
+	user.min=cfg.new_min;
+	user.freecdt=cfg.level_freecdtperday[user.level];
 
-	if(cfg->total_fcomps)
-		strcpy(user.tmpext,cfg->fcomp[0]->ext);
+	if(cfg.total_fcomps)
+		strcpy(user.tmpext,cfg.fcomp[0]->ext);
 	else
 		strcpy(user.tmpext,"ZIP");
-	for(i=0;i<cfg->total_xedits;i++)
-		if(!stricmp(cfg->xedit[i]->code,cfg->new_xedit))
+	for(i=0;i<cfg.total_xedits;i++)
+		if(!stricmp(cfg.xedit[i]->code,cfg.new_xedit))
 			break;
-	if(i<cfg->total_xedits)
+	if(i<cfg.total_xedits)
 		user.xedit=i+1;
 
-	user.shell=cfg->new_shell;
-	user.misc=(cfg->new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
+	user.shell=cfg.new_shell;
+	user.misc=(cfg.new_misc&~(DELETED|INACTIVE|QUIET|NETMAIL));
     user.misc^=AUTOTERM;
     user.misc^=ANSI;
     user.misc^=COLOR;
@@ -1847,11 +1868,11 @@ int createdefaults(scfg_t* cfg)
 	user.pwmod=now;
 	user.logontime=now;
 	user.sex=' ';
-	user.prot=cfg->new_prot;
-	if(cfg->new_expire)
-		user.expire=now+((long)cfg->new_expire*24L*60L*60L);
+	user.prot=cfg.new_prot;
+	if(cfg.new_expire)
+		user.expire=now+((long)cfg.new_expire*24L*60L*60L);
 
-	if((i=matchuser(cfg,user.alias,FALSE))!=0) {
+	if((i=matchuser(&cfg,user.alias,FALSE))!=0) {
 	    lprintf("Error!  Default User already in Userfile");
 		return(2);
 	}
@@ -1861,7 +1882,7 @@ int createdefaults(scfg_t* cfg)
 	if(user.name[0]==0)
 		SAFECOPY(user.name,user.alias);
 
-	if((i=newuserdat(cfg, &user))!=0) {
+	if((i=newuserdat(&cfg, &user))!=0) {
 	    lprintf("%s %d", "Error creating Default User.  Error # ",i);
 		return(i);
 	}
@@ -1930,7 +1951,7 @@ int main(int argc, char** argv)  {
     memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir,bbs_startup.ctrl_dir);
-	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
+	if(!load_cfg(&cfg, NULL, TRUE, str)) {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
@@ -2087,7 +2108,7 @@ int main(int argc, char** argv)  {
 
 		if(j==0) {
 			/* New User */
-			    createdefaults(&cfg);
+			    createdefaults();
 			    lprintf("Please edit defaults using next screen.");
 			    getuser(&cfg,&user,"New User");
 		}

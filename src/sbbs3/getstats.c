@@ -1,4 +1,8 @@
-/* Synchronet C-exported statistics retrieval functions */
+/* getstats.c */
+
+/* Synchronet C-export statistics retrieval functions */
+
+/* $Id: getstats.c,v 1.5 2020/04/11 04:01:35 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,15 +17,25 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "getstats.h"
-#include "nopen.h"
-#include "smblib.h"
+#include "sbbs.h"
 
 /****************************************************************************/
 /* Reads data from dsts.dab into stats structure                            */
@@ -65,25 +79,14 @@ long DLLCALL getfiles(scfg_t* cfg, uint dirnum)
 /****************************************************************************/
 ulong DLLCALL getposts(scfg_t* cfg, uint subnum)
 {
-	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
-		char path[MAX_PATH + 1];
-		off_t l;
+	char str[128];
+	ulong l;
 
-		SAFEPRINTF2(path, "%s%s.sid", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
-		l = flength(path);
-		if(l < sizeof(idxrec_t))
-			return 0;
-		return l / sizeof(idxrec_t);
-	}
-	smb_t smb = {{0}};
-	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
-	smb.retry_time = cfg->smb_retry_time;
-	smb.subnum = subnum;
-	if(smb_open_index(&smb) != SMB_SUCCESS)
-		return 0;
-	size_t result = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
-	smb_close(&smb);
-	return result;
+	sprintf(str,"%s%s.sid",cfg->sub[subnum]->data_dir,cfg->sub[subnum]->code);
+	l=(long)flength(str);
+	if((long)l==-1)
+		return(0);
+	return(l/sizeof(idxrec_t));
 }
 
 BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
@@ -92,19 +95,19 @@ BOOL inc_sys_upload_stats(scfg_t* cfg, ulong files, ulong bytes)
 	int		file;
 	uint32_t	val;
 
-	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
+	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
 		return(FALSE);
 
-	(void)lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	(void)read(file,&val,4);        /* Uploads today         */
+	lseek(file,20L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	read(file,&val,4);        /* Uploads today         */
 	val+=files;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
-	(void)read(file,&val,4);        /* Upload bytes today    */
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	read(file,&val,4);        /* Upload bytes today    */
 	val+=bytes;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
 	close(file);
 	return(TRUE);
 }
@@ -115,19 +118,19 @@ BOOL inc_sys_download_stats(scfg_t* cfg, ulong files, ulong bytes)
 	int		file;
 	uint32_t	val;
 
-	SAFEPRINTF(str,"%sdsts.dab",cfg->ctrl_dir);
+	sprintf(str,"%sdsts.dab",cfg->ctrl_dir);
 	if((file=nopen(str,O_RDWR))==-1) 
 		return(FALSE);
 
-	(void)lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
-	(void)read(file,&val,4);        /* Downloads today         */
+	lseek(file,28L,SEEK_SET);   /* Skip timestamp, logons and logons today */
+	read(file,&val,4);        /* Downloads today         */
 	val+=files;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
-	(void)read(file,&val,4);        /* Download bytes today    */
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
+	read(file,&val,4);        /* Download bytes today    */
 	val+=bytes;
-	(void)lseek(file,-4L,SEEK_CUR);
-	(void)write(file,&val,4);
+	lseek(file,-4L,SEEK_CUR);
+	write(file,&val,4);
 	close(file);
 	return(TRUE);
 }

@@ -1,0 +1,56 @@
+###############################
+# Makefile for SMBUTIL        #
+# For use with Borland C++    #
+# Tabstop=8		      #
+###############################
+
+# ATTN: To use this MAKEFILE, you must create a directory "l" off of the
+#       current directory to store the large model .OBJ files
+
+# Macros
+CC	= bcc
+LD	= tlink
+INCLUDE = \bc31\include
+LIB	= \bc31\lib
+MODEL	= l
+CFLAGS	= -d -N -C -m$(MODEL) -I$(INCLUDE) -DLZH_DYNAMIC_BUF -w-pro
+LFLAGS	= -n -c
+MAIN	= smbutil.exe
+OBJS	= $(MODEL)\smbutil.obj $(MODEL)\smblib.obj $(MODEL)\smbvars.obj \
+          $(MODEL)\lzh.obj
+HEADERS = smbutil.h smblib.h smbdefs.h crc32.h lzh.h
+
+!ifdef __OS2__
+CC      = c:\bcos2\bin\bcc
+LD      = c:\bcos2\bin\tlink
+INCLUDE = c:\bcos2\include;smb
+LIB     = c:\bcos2\lib
+MODEL	= os2
+CFLAGS	= -d -C -I$(INCLUDE)
+#-DLZH_DYNAMIC_BUF
+LFLAGS	= -c -w-srf
+!endif
+
+# Implicit C Compile Rule
+{.}.c.obj:
+	@echo Compiling (I) $< to $@ ...
+	$(CC) $(CFLAGS) -n$(MODEL) -c $<
+
+# Main EXE Link Rule
+$(MAIN): $(OBJS)
+    	@echo Linking $< ...
+!ifdef __OS2__
+	$(LD) $(LFLAGS) @&&+
+$(LIB)\c02.obj $(OBJS) $(LIB)\wildargs.obj
++, $*, $*, $(LIB)\os2.lib $(LIB)\c2.lib
+!else
+	$(LD) $(LFLAGS) @&&+
+$(LIB)\c0$(MODEL) $(OBJS) $(LIB)\wildargs.obj
++, $*, $*, $(LIB)\c$(MODEL).lib $(LIB)\math$(MODEL).lib $(LIB)\emu.lib
+!endif
+
+# All .obj modules
+$(MODEL)\smbutil.obj:	$(HEADERS)
+$(MODEL)\smbvars.obj:	$(HEADERS)
+$(MODEL)\smblib.obj:	$(HEADERS)
+$(MODEL)\lzh.obj:	$(HEADERS)

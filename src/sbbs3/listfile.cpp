@@ -1164,8 +1164,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 								&& findfile(&cfg,f.dir,path))
 								bprintf(text[FileAlreadyThere],path);
 							else {
-								SAFEPRINTF2(path,"%s%s",dirpath,fname);
-								SAFEPRINTF2(tmp,"%s%s",dirpath,str);
+								sprintf(path,"%s%s",dirpath,fname);
+								sprintf(tmp,"%s%s",dirpath,str);
 								if(fexistcase(path) && rename(path,tmp))
 									bprintf(text[CouldntRenameFile],path,tmp);
 								else {
@@ -1226,7 +1226,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					update_uldate(&cfg, &f);
 					break;
 				case 'F':   /* delete file only */
-					SAFEPRINTF2(str,"%s%s",dirpath,fname);
+					sprintf(str,"%s%s",dirpath,fname);
 					if(!fexistcase(str))
 						bprintf(text[FileDoesNotExist],str);
 					else {
@@ -1245,7 +1245,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					if(noyes(text[RemoveFileQ]))
 						break;
 					removefile(&f);
-					SAFEPRINTF2(str,"%s%s",dirpath,fname);
+					sprintf(str,"%s%s",dirpath,fname);
 					if(fexistcase(str)) {
 						if(dir_op(dirnum)) {
 							if(!noyes(text[DeleteFileQ])) {
@@ -1340,7 +1340,7 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 					break; } 
 		}
 		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
-			SAFEPRINTF2(path,"%s%s",dirpath,fname);
+			sprintf(path,"%s%s",dirpath,fname);
 			if(f.size<1L) { /* getfiledat will set this to -1 if non-existant */
 				SYNC;       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
@@ -1417,8 +1417,8 @@ int sbbs_t::listfileinfo(uint dirnum, char *filespec, long mode)
 							lncntr=0;
 							seqwait(cfg.dir[f.dir]->seqdev);
 							bprintf(text[RetrievingFile],fname);
-							SAFEPRINTF2(str,"%s%s",dirpath,fname);
-							SAFEPRINTF2(path,"%s%s",cfg.temp_dir,fname);
+							sprintf(str,"%s%s",dirpath,fname);
+							sprintf(path,"%s%s",cfg.temp_dir,fname);
 							mv(str,path,1); /* copy the file to temp dir */
 							if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 								thisnode.aux=0xf0;

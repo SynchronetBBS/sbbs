@@ -1,10 +1,14 @@
+/* uifcdefs.js */
+
 /* Synchronet User Interface constants */
+
+/* $Id: uifcdefs.js,v 1.3 2009/01/30 06:46:34 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright 2005 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -13,23 +17,37 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 /* This file must remain in-sync with src/uifc/uifc.h */
 
+/* Would rather use const than var, but end up with redeclaration errors.	*/
+
+							    
 const MAX_OPTS	= 10000;
 const MSK_ON	= 0xf0000000;
 const MSK_OFF 	= 0x0fffffff;
 const MSK_INS 	= 0x10000000;
 const MSK_DEL 	= 0x20000000;
-const MSK_COPY 	= 0x30000000;
-const MSK_CUT 	= 0x40000000;
-const MSK_PASTE = 0x50000000;
-const MSK_EDIT 	= 0x60000000;
+const MSK_GET 	= 0x30000000;
+const MSK_PUT 	= 0x40000000;
+const MSK_EDIT 	= 0x50000000;
 /* Dont forget, negative return values are used for extended keys (if WIN_EXTKEYS used)! */
 const MAX_OPLN	= 75;	/* Maximum length of each option per menu call */
 const MAX_BUFS	= 7;	/* Maximum number of screen buffers to save */
@@ -63,12 +81,12 @@ const WIN_DELACT	= (1<<8);	/* Remains active after delete key */
 const WIN_ESC 		= (1<<9);	/* Screen is active when escape is hit			 */
 const WIN_RHT 		= (1<<10);	/* Place window against right side of screen */
 const WIN_BOT 		= (1<<11);	/* Place window against botton of screen */
-const WIN_COPY 		= (1<<12);	/* Allows F5 to Get (copy) a menu item */
-const WIN_PASTE		= (1<<13);	/* Allows F6 to Put (paste) a menu item */
+const WIN_GET 		= (1<<12);	/* Allows F5 to Get a menu item */
+const WIN_PUT 		= (1<<13);	/* Allows F6 to Put a menu item */
 const WIN_CHE 		= (1<<14);	/* Stay active after escape if changes */
 const WIN_XTR 		= (1<<15);	/* Add extra line at end for inserting at end */
 const WIN_DYN 		= (1<<16);	/* Dynamic window - return at least every second */
-const WIN_CUT		= (1<<17);	/* Allow ^X (cut) a menu item */
+const WIN_HLP 		= (1<<17);	/* Parse 'Help codes' */
 const WIN_PACK 		= (1<<18);	/* Pack text in window (No padding) */
 const WIN_IMM 		= (1<<19);	/* Draw window and return immediately */
 const WIN_FAT		= (1<<20);	/* Do not pad outside borders */
@@ -81,12 +99,7 @@ const WIN_FIXEDHEIGHT= (1<<25);	/* Use list_height from uifc struct */
 const WIN_UNGETMOUSE= (1<<26);	/* If the mouse is clicked outside the window, */
 								/* Put the mouse event back into the event queue */
 const WIN_EDIT		= (1<<27);	/* Allow F2 to edit a menu item */
-const WIN_PASTEXTR	= (1<<28);	/* Allow paste into extra (blank) item */
-const WIN_INACT		= (1<<29);	/* Draw window inactive... intended for use with WIN_IMM */
-const WIN_POP		= (1<<30);	/* Exit the list. Act as though ESC was pressed. */
-								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
-const WIN_SEL		= (1<<31);	/* Exit the list. Act as though ENTER was pressed. */
-								/* Intended for use after a WIN_EXTKEYS or WIN_DYN */
+const WIN_EDITACT	= (1<<28);	/* Remain active after edit key */
 
 const WIN_MID		= WIN_L2R|WIN_T2B;/* Place window in middle of screen */
 
@@ -105,6 +118,4 @@ const K_DEUCEEXIT	= (1<<14);	/* Return whenever Deuce wants to exit		*/
 const K_MOUSEEXIT	= (1<<15);	/* Returns when mouse is clicked outside of */
 								/* Input area (NOT outside of window!)		*/
 								/* And ungets the mouse event.				*/
-const K_PASSWORD	= (1<<16);	/* Does not display text while editing		*/
-const K_FIND		= (1<<17);	/* Don't set the "changes" flag				*/
 								/********************************************/

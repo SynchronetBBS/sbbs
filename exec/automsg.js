@@ -11,7 +11,7 @@ function automsg()
 {
 	const quote_fmt=" > %.*s\r\n";
 	var automsg = system.data_dir + "msgs/auto.msg";
-	while(bbs.online && !js.termiated && !console.aborted) {
+	while(bbs.online && !js.termiated) {
 		bbs.nodesync();
 		console.mnemonics(bbs.text(AutoMsg));
 		switch(console.getkeys("RWQD",0)) {
@@ -20,7 +20,7 @@ function automsg()
 				break;
 			case 'W':
 				if(user.security.restrictions&UFLAG_W) {
-					console.print(bbs.text(R_AutoMsg));
+					console.print(bbs.text[R_AutoMsg]);
 					break;
 				}
 				bbs.action=NODE_AMSG;

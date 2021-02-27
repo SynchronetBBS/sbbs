@@ -1,0 +1,321 @@
+Step-by-Step instructions for setting up FidoNet using SBBSecho and InterMail
+=============================================================================
+
+One of the most difficult tasks that the novice sysop will encounter is the
+setting up of FidoNet.	These instructions will take you step by step through
+the process of setting up FidoNet on your BBS.	Be warned that these steps are
+very basic, just enough to get FidoNet up and running on your system, but it
+may still be necessary for you to refer to the documentation which accompanies
+the programs referred to in these steps.  For any advanced operations you will
+definitely need to refer to the documentation of programs referred to in these
+steps.	If you know of anyone who is already on FidoNet that is willing to help
+you out, by all means ask them for their help!
+
+NOTE that while it doesn't cost anything to have a node number (for sending
+and receiving netmail) or to receive local conferences, there is usually a
+nominal fee (called "cost recovery") to receive conferences from the FidoNet
+backbone or files from the FidoNet filebone.
+
+ 1) First of all you will need to obtain a copy of FidoNet's Policy 4 document
+    (the filename is usually POLICY4.ZIP or POLICY4.TXT), a recent nodelist
+    (usually named NODELIST.???), AND a front-end mailer program.  All three of
+    these can normally be downloaded from any local BBS which carries FidoNet
+    (if not, an e-mail to the sysop of a FidoNet BBS can usually point you in
+    the right direction).  There are several front-end mailers available such
+    as FrontDoor, InterMail, D'Bridge, SEAdog, Dutchie, BinkleyTerm, and Portal
+    of Power to name a few (the latter two are referred to as "FLO-Style"
+    mailers and the others are referred to as "Attach-Style" mailers).  Most
+    front-end mailers offer a limited evaluation version which you can try out
+    before you decide to purchase the program.
+
+ 2) Read the Policy 4 document, it will give you information about FidoNet as
+    well as some specifics on how to obtain a node number for your system.
+
+ 3) If you do not plan to run InterMail (or FrontDoor which is very similar)
+    you must set up the front-end mailer you plan to use by following the
+    directions which accompany the program and then skip to step number 9.
+    The documentation will also tell you how to "compile" the nodelist file
+    you've downloaded so that your front-end mailer can use it.  Use the
+    temporary address specified in Policy 4 when specifying your node address
+    in the front-end mailer.
+
+Setting up InterMail v2.xx or FrontDoor v2.xx
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 4) Install InterMail per IM.DOC (included with InterMail).
+
+    a) If using FrontDoor, follow the FD.DOC file and substitute the letters FD
+       where ever you see an IM in this section.
+
+ 5) Copy the MAILER.BAT included with SBBSecho and the EXEBBS.BAT from the
+    Synchronet DOCS directory into the InterMail directory (C:\IM).
+
+ 6) Change into the InterMail directory, run IMSETUP, and perform the
+    following:
+
+    a) Under Global->Address->Main, enter your FidoNet address (or the
+       temporary address specified in Policy 4 until such time as you have
+       received your own address).
+
+    b) Under Global->Filenames, verify that the paths are set similar to the
+       following:
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออ Filenames and paths ป
+  บ									      บ
+  บ System    C:\IM\SYSTEM\	  (or C:\FD\ for FrontDoor)		      บ
+  บ Netmail   C:\IM\MAIL\						      บ
+  บ Files     C:\IM\INBOUND\						      บ
+  บ Sec Files C:\IM\INBOUND\						      บ
+  บ*Packets   C:\IM\PACKETS\						      บ
+  บ*Log file  C:\IM\IM.LOG						      บ
+  บ Banner								      บ
+  บ Nodelist  C:\IM\NODELIST\						      บ
+  บ In-event								      บ
+  บ Hudsonfmt								      บ
+  บ Wildcat!								      บ
+  บ Swapping  C:\IM\							      บ
+  บ Semaphore C:\IM\							      บ
+  บ									      บ
+  บ * = Must be unique for each Mail Server				      บ
+  ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+    c) Under Modem->Advanced Setup->Connect Strings set ALL "BBSexit" levels
+       to 100.	(For FrontDoor under Mailer->Errorlevels set all baud rates to
+       100, Received Mail to 50, and Create .BAT file to Yes).
+
+    d) Under Manager->Events, make sure all your events are set to exit when
+       mail is received (under Event Behavior). This allows for the immediate
+       importation of new messages into the BBS.
+
+    e) Under Manager->Events, add the following event:
+
+  ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออ Edit ป
+  บ Tag 	X							      บ
+  บ Days	-------A						      บ
+  บ Modifier	Ignore eventbase (*)					      บ
+  บ Start time	04:30							      บ
+  บ Length	00:01							      บ
+  บ Errorlevel	75							      บ
+  บ Not used								      บ
+  บ Behavior								      บ
+  บ Use alias	1:103/705						      บ
+  บ Retry delay 0							      บ
+  บ Comment	Synchronet exclusive event				      บ
+  บฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤฤบ
+  บ Event tag A..YZ - eXternal event, errorlevel is required		      บ
+  ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+    f) Under Mailer->Misc, set "Trigger exit upon receipt of netmail" and
+       "Upon receipt of ANY file" to Yes. This will allow for the immediate
+       importation of NetMail and any File Distribution Echoes you may carry.
+
+    g) Under Modem->Hardware, set "Lower DTR when busy" to "No".
+
+    h) Under Modem->Command strings, set the "Down" string to "ATM0H1|".
+
+    i) Exit IMSETUP.
+
+ 7) Unarc the nodelist file (NODELIST.???) that you downloaded previously
+    into your nodelist directory.
+
+ 8) Now run IMNC to compile the nodelist.
+
+Settup up FidoNet in SCFG
+~~~~~~~~~~~~~~~~~~~~~~~~~
+ 9) Run SCFG from one of your node directories, or hit 'C' from the waiting for
+    caller screen.  Then select Networks->FidoNet EchoMail and NetMail.
+    You'll then be brought to a menu that should be set up similar to this:
+
+	  ษ[þ][?]ออออออออออออออออออออออออออออออออออออออออออออออออออออป
+	  บ		  FidoNet EchoMail and NetMail		     บ
+	  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+	  บ ณSystem Addresses		1:103/705		     บ
+	  บ ณDefault Outbound Address	No			     บ
+	  บ ณDefault Origin Line				     บ
+	  บ ณNetMail Semaphore		C:\IM\IMRESCAN.NOW	     บ
+	  บ ณEchoMail Semaphore 	C:\IM\IMEXIT.025	     บ
+	  บ ณInbound File Directory	C:\IM\INBOUND\		     บ
+	  บ ณEchoMail Base Directory				     บ
+	  บ ณNetMail Directory		C:\IM\MAIL\		     บ
+	  บ ณAllow Sending of NetMail	Yes			     บ
+	  บ ณAllow File Attachments	Yes			     บ
+	  บ ณSend NetMail Using Alias	No			     บ
+	  บ ณNetMail Defaults to Crash	No			     บ
+	  บ ณNetMail Defaults to Direct No			     บ
+	  บ ณNetMail Defaults to Hold	No			     บ
+	  บ ณKill NetMail After Sent	Yes			     บ
+	  บ ณCost to Send NetMail	102400			     บ
+	  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+    a) For FrontDoor the NetMail Semaphore file should be set to
+       C:\FD\FDRESCAN.NOW and the EchoMail Semaphore file should be set
+       to C:\FD\FDEXIT.025.
+
+    b) For FrontDoor version 2.11, the EchoMail Semaphore file should be
+       set to C:\FD\FDXIT.025.
+
+    c) For FrontDoor version 2.20 (commercial, multinode), the EchoMail
+       Semaphore file should be set to C:\FD\FDXIT#.025, where # is the
+       node number (0 based).
+
+10) Set your address to your system's FidoNet address (or the temporary address
+    specified in Policy 4 until such time as you have received your own
+    address).  This is the address used for sending and receiving NetMail. It
+    will also be used as the default address for message sub-boards.
+
+11) Create an origin line for your system that most likely contains your BBS
+    name and phone number.
+
+12) Following is an overview of the remaining options available on this menu:
+
+    a) System Addresses:
+       This option will bring you to a sub-menu to allow you to configure
+       different addresses (AKAs) for your system. Following is an example
+       for a BBS configured for two fido type networks.
+
+			 ษ[þ][?]ออออออออออออออออออออออป
+			 บ	System Addresses      บ
+			 ฬออออออออออออออออออออออออออออน
+			 บ ณMain     1:103/705	      บ
+			 บ ณAKA 1    1:103/706	      บ
+			 บ ณAKA 2    85:805/205       บ
+			 บ ณ			      บ
+			 ศออออออออออออออออออออออออออออผ
+
+    b) Default Outbound Address:
+       When a user sends netmail, this is the 'send to' address that is used
+       as a default (useful for FidoNet<->Internet gateways).
+
+    c) NetMail Semaphore:
+       This is the name of the trigger file which will cause your front-end
+       mailer to exit and scan for outgoing netmail.
+
+    d) EchoMail Semaphore:
+       This is the name of the trigger file which will cause your front-end
+       mailer to exit and scan for outgoing echomail.
+
+    e) Inbound File Directory:
+       This is the name of the directory where your front-end mailer stores
+       incoming files.
+
+    f) EchoMail Base Directory:
+       This is the base directory for your echomail subdirectories
+
+    g) NetMail Directory:
+       This is the name of the directory where your front-end mailer looks for
+       and places netmail.
+
+    h) Allow Sending of NetMail:
+       When set to 'Yes' users can send netmail from your system.
+
+    i) Allow File Attachments:
+       When set to 'Yes' users can send netmail file attachments from your
+       system.
+
+    j) Send NetMail Using Alias:
+       When set to 'Yes' the user alias will be used (rather than their
+       real name) on outgoing netmail.
+
+    k) NetMail Defaults to Crash:
+       If set to 'Yes' netmail sent from your system will default to crash
+       status (send immediately and directly).
+
+    l) NetMail Defaults to Direct:
+       If set to 'Yes' netmail sent from your system will default to direct
+       status (send directly).
+
+    m) NetMail Defaults to Hold:
+       If set to 'Yes', netmail sent from your system will default to hold
+       status.
+
+    n) Kill NetMail After Sent:
+       Setting this to 'Yes' will delete outgoing netmail after it has been
+       sent.
+
+    o) Cost to Send NetMail:
+       This is the cost (in credits) that a user will be charged when sending
+       netmail.
+
+13) Setup SBBSecho by running the ECHOCFG program and reading the documentation
+    for information on the available options.
+
+    a) Under Paths...->Outbound Directory be sure to enter the path where
+       outgoing mail packets and bundles should be placed (ie: C:\IM\OUTBOUND).
+
+    b) Select the appropriate Mailer Type.
+
+    c) Enter your registration number (if you are a registered owner of the
+       SBBSecho program).
+
+14) Once you have done this you must now run the file MAILER.BAT (if using an
+    Attach-Style mailer) to use Synchronet with your front-end mailer.
+    MAILER.BAT must be run from your front-end mailer's directory (e.g. C:\IM).
+    You will no longer run the file SBBS.BAT to start this node (if you run a
+    multi-node system, you will still use SBBS.BAT to start those nodes which
+    are not using a front-end mailer).
+
+    a) If you are NOT using InterMail as your front-end mailer, be sure to
+       modify your MAILER.BAT file to reflect the front-end mailer that you
+       are using.
+
+15) Follow the instructions given in the Policy 4 document to determine who
+    you should send netmail to in order to obtain your own node number.
+
+16) Now, from your front end mailer, send a netmail to this person following
+    the instructions contained in the Policy 4 document.  Once you have done
+    this and the netmail has been sent, you should patiently await a netmail
+    reply containing your node number and the node number of your hub (where
+    you will send/receive your echomail and netmail to/from).
+
+17) Once you have received your node number, you'll want to replace the
+    temporary node number you used in your front-end mailer as well as in
+    SCFG->Networks->FidoNet Echomail and Netmail->System Addresses to it.
+
+18) Send your hub a message with the Area Manager (for the backbone <echomail>)
+    and Areafix (for the filebone <files>) passwords you wish to use on their
+    systems.  You will need to remember these passwords as you will be using
+    them to do remote maintenance (such as adding and removing conferences and
+    file areas that you wish to receive).
+
+19) Your hub should respond with Area Manager instructions and a list of areas
+    available for you to connect to.  If not, contact your hub for more
+    information.
+
+20) Look through the list of areas available to you and determine which
+    conferences you'd like to carry.  In SCFG->Message Areas create a
+    message group(s) for the conferences you'd like to carry.  When setting
+    up a sub-board for a conference, be sure to use the "Area Tag" name
+    given in the area list as the sub-board Short Name.
+
+    a) Under Network Options... for each sub-board toggle the FidoNet
+       Echomail option toggled to YES.
+
+    b) If the conference requires a different address, configure the address
+       under Network Options...
+
+    c) If you allow aliases on your system, under Toggle Options... set Use
+       Real Names to YES.
+
+    d) If you are unfamiliar with adding message groups and/or sub-boards,
+       consult that section of the Synchronet System Operator's Manual.
+
+    e) For a more complete list of conferences available on the FidoNet
+       backbone you may wish to download the file FIDONET.NA from either your
+       hub or a local FidoNet BBS.  This file contains a list of ALL
+       conferences carried on the backbone.
+
+21) Once you have set up all of the conferences you'd like to carry, you'll
+    need to go to SCFG->Message Areas-><group>->Export Areas...->AREAS.BBS
+    (SBBSecho) to create an AREAS.BBS file for SBBSecho to use.
+
+22) Now following the Area Manager instructions, send a message to your hub's
+    Area Manager and turn on all of the conferences you wish to carry.	Note
+    that there are some administrative conferences for FidoNet that your
+    users shouldn't be able to read or post on, and some that even you
+    shouldn't post on, there is also usually a "test" conference which you may
+    want to set up to post messages on and insure that echomail is being sent
+    and received properly.
+
+23) That's about all there is to it.  You are now set up on FidoNet and should
+    be able to send and receive FidoNet echomail and netmail.
+
+

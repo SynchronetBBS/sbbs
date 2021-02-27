@@ -122,7 +122,7 @@ extern long cost_per_min,times_per_day,total_cost;
 
 extern char     redraw_screen;
 extern long     record_number;
-extern int      chfile,rmfile,weapon_ready,invisible,strong,tpic,lasthit,ateof;
-extern clock_t	clock_tick;
+extern int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
+                tpic,lasthit,clock_tick,clock_tick2,ateof;
 extern uchar    map[LEVELS][SQUARE][SQUARE];
 

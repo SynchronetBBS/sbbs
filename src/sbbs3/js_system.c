@@ -1,4 +1,7 @@
 /* Synchronet JavaScript "system" Object */
+// vi: tabstop=4
+
+/* $Id: js_system.c,v 1.179 2020/03/31 18:32:34 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,15 +16,26 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 #include "sbbs.h"
 #include "js_request.h"
-#include "ver.h"
 
 #ifdef JAVASCRIPT
 
@@ -37,7 +51,6 @@ extern JSClass js_system_class;
 enum {
 	 SYS_PROP_NAME
 	,SYS_PROP_OP
-	,SYS_PROP_OP_AVAIL
 	,SYS_PROP_ID
 	,SYS_PROP_MISC
 	,SYS_PROP_INETADDR
@@ -133,9 +146,6 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_OP:
 			p=cfg->sys_op;
 			break;
-		case SYS_PROP_OP_AVAIL:
-			*vp=BOOLEAN_TO_JSVAL(sysop_available(cfg));
-			break;
 		case SYS_PROP_ID:
 			p=cfg->sys_id;
 			break;
@@ -162,7 +172,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = INT_TO_JSVAL(cfg->sys_pwdays);
 			break;
 		case SYS_PROP_MINPWLEN:
-			*vp = INT_TO_JSVAL(cfg->min_pwlen);
+			*vp = INT_TO_JSVAL(MIN_PASS_LEN);
 			break;
 		case SYS_PROP_MAXPWLEN:
 			*vp = INT_TO_JSVAL(LEN_PASS);
@@ -349,16 +359,10 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		case SYS_PROP_MISC:
 			JS_ValueToInt32(cx, *vp, &sys->cfg->sys_misc);
 			break;
-		case SYS_PROP_OP_AVAIL:
-			if(!set_sysop_availability(sys->cfg, JSVAL_TO_BOOLEAN(*vp))) {
-				JS_ReportError(cx, "%s: Failed to set sysop availability", __FUNCTION__);
-				return JS_FALSE;
-			}
-			break;
 	}
 #endif
 
-	return JS_TRUE;
+	return(TRUE);
 }
 
 
@@ -370,7 +374,6 @@ static jsSyncPropertySpec js_system_properties[] = {
 #ifndef JSDOOR
 	{	"name",						SYS_PROP_NAME,		SYSOBJ_FLAGS,		310  },
 	{	"operator",					SYS_PROP_OP,		SYSOBJ_FLAGS,		310  },
-	{	"operator_available",		SYS_PROP_OP_AVAIL,	JSPROP_ENUMERATE,	31801  },
 	{	"qwk_id",					SYS_PROP_ID,		SYSOBJ_FLAGS,		310  },
 	{	"settings",					SYS_PROP_MISC,		JSPROP_ENUMERATE,	310  },
 	{	"inetaddr",					SYS_PROP_INETADDR,	JSPROP_READONLY,	310  },	/* alias */
@@ -449,7 +452,6 @@ static jsSyncPropertySpec js_system_properties[] = {
 static char* sys_prop_desc[] = {
 	 "BBS name"
 	,"operator name"
-	,"operator is available for chat"
 	,"system QWK-ID (for QWK packets)"
 	,"settings bitfield (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	,"Internet address (host or domain name)"
@@ -530,8 +532,6 @@ static char* sys_prop_desc[] = {
 	,"Synchronet version notice (includes version and platform)"
 	,"Synchronet version number in decimal (e.g. 31301 for v3.13b)"
 	,"Synchronet version number in hexadecimal (e.g. 0x31301 for v3.13b)"
-	,"Synchronet Git repository branch name"
-	,"Synchronet Git repository commit hash"
 	,"platform description (e.g. 'Win32', 'Linux', 'FreeBSD')"
 	,"architecture description (e.g. 'i386', 'i686', 'x86_64')"
 	,"message base library version information"
@@ -987,46 +987,24 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*	js_fname;
 	jsrefcount	rc;
 	BOOL		ret;
-	str_list_t	list = NULL;
 
-	if(JSVAL_IS_OBJECT(argv[0]) && !JSVAL_IS_NULL(argv[0])) {
-		JSObject* array = JSVAL_TO_OBJECT(argv[0]);
-		if(!JS_IsArrayObject(cx, array))
-			return(JS_TRUE);
-		jsuint count;
-		if(!JS_GetArrayLength(cx, array, &count))
-			return(JS_TRUE);
-		char* tmp = NULL;
-		size_t tmplen = 0;
-		for(jsuint i = 0; i < count; i++) {
-			jsval val;
-			if(!JS_GetElement(cx, array, i, &val))
-				break;
-			if(!JSVAL_IS_STRING(val))	/* must be an array of strings */
-				break;
-			JSVALUE_TO_RASTRING(cx, val, tmp, &tmplen, NULL);
-			HANDLE_PENDING(cx, tmp);
-			strListPush(&list, tmp);
-		}
-		free(tmp);
-	}
-	else {
-		if((js_fname=JS_ValueToString(cx, argv[0]))==NULL) {
-			JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-			return(JS_TRUE);
-		}
-		JSSTRING_TO_MSTRING(cx, js_fname, fname, NULL);
-		HANDLE_PENDING(cx, fname);
-		if(fname==NULL) {
-			JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-			return(JS_TRUE);
-		}
-	}
-	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+	if((js_fname=JS_ValueToString(cx, argv[0]))==NULL) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
-		free(fname);
 		return(JS_TRUE);
 	}
+
+	if((js_str=JS_ValueToString(cx, argv[1]))==NULL) {
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
+		return(JS_TRUE);
+	}
+
+	JSSTRING_TO_MSTRING(cx, js_fname, fname, NULL);
+	HANDLE_PENDING(cx, fname);
+	if(fname==NULL) {
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
+		return(JS_TRUE);
+	}
+
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
 	if(JS_IsExceptionPending(cx)) {
 		FREE_AND_NULL(str);
@@ -1040,13 +1018,9 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(list != NULL)
-		ret = findstr_in_list(str, list);
-	else
-		ret = findstr(str, fname);
+	ret = findstr(str,fname);
 	free(str);
 	free(fname);
-	strListFree(&list);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 	return(JS_TRUE);
@@ -1106,8 +1080,7 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc<1)
 		ti=(jsdouble)time(NULL);	/* use current time */
 	else
-		if(!JS_ValueToNumber(cx,argv[0],&ti))
-			return JS_TRUE;
+		JS_ValueToNumber(cx,argv[0],&ti);
 	rc=JS_SUSPENDREQUEST(cx);
 	timestr(sys->cfg,(time32_t)ti,str);
 	JS_RESUMEREQUEST(cx, rc);
@@ -1163,13 +1136,9 @@ js_secondstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
- 	if(!js_argc(cx, argc, 1))
-		return JS_FALSE;
+	if(argc<1)
+		return(JS_TRUE);
 
-	if(JSVAL_NULL_OR_VOID(argv[0])) {
-		JS_ReportError(cx, "Invalid argument");
-		return JS_FALSE;
-	}
 	JS_ValueToInt32(cx,argv[0],&t);
 	sectostr(t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
@@ -1441,10 +1410,8 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t* cfg = sys->cfg;
 
 	node_num=cfg->node_num;
-	if(argc)  {
-		if(!JS_ValueToInt32(cx,argv[0],&node_num))
-			return JS_TRUE;
-	}
+	if(argc) 
+		JS_ValueToInt32(cx,argv[0],&node_num);
 	if(node_num<1)
 		node_num=1;
 
@@ -1698,13 +1665,11 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	scfg_t* cfg = sys->cfg;
 
- 	if(!js_argc(cx, argc, 1))
-		return JS_FALSE;
-
-	if(JSVAL_NULL_OR_VOID(argv[0])) {
-		JS_ReportError(cx, "Invalid argument");
+	if(argc<1 || JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_ReportError(cx,"Missing or invalid argument");
 		return JS_FALSE;
 	}
+
 	JSVALUE_TO_ASTRING(cx, argv[0], alias, LEN_ALIAS+2, NULL);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1733,11 +1698,9 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	if(client!=NULL) {
-		if(client->protocol != NULL)
-			SAFECOPY(user.modem,client->protocol);
+		SAFECOPY(user.modem,client->protocol);
 		SAFECOPY(user.comp,client->host);
-		if(client->addr != NULL)
-			SAFECOPY(user.ipaddr,client->addr);
+		SAFECOPY(user.ipaddr,client->addr);
 	}
 
 	user.sex=' ';
@@ -1864,13 +1827,9 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
- 	if(!js_argc(cx, argc, 1))
-		return JS_FALSE;
+	if(argc<1)
+		return(JS_TRUE);
 
-	if(JSVAL_NULL_OR_VOID(argv[0])) {
-		JS_ReportError(cx, "Invalid argument");
-		return JS_FALSE;
-	}
 	if((array=JS_NewArrayObject(cx,0,NULL))==NULL)
 		return(JS_FALSE);
 
@@ -1963,13 +1922,9 @@ js_chkpid(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
- 	if(!js_argc(cx, argc, 1))
-		return JS_FALSE;
+	if(argc<1)
+		return(JS_TRUE);
 
-	if(JSVAL_NULL_OR_VOID(argv[0])) {
-		JS_ReportError(cx, "Invalid argument");
-		return JS_FALSE;
-	}
 	JS_ValueToInt32(cx,argv[0],&pid);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1988,13 +1943,9 @@ js_killpid(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
- 	if(!js_argc(cx, argc, 1))
-		return JS_FALSE;
+	if(argc<1)
+		return(JS_TRUE);
 
-	if(JSVAL_NULL_OR_VOID(argv[0])) {
-		JS_ReportError(cx, "Invalid argument");
-		return JS_FALSE;
-	}
 	JS_ValueToInt32(cx,argv[0],&pid);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -2004,39 +1955,6 @@ js_killpid(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-static JSBool
-js_text(JSContext *cx, uintN argc, jsval *arglist)
-{
-	JSObject* obj=JS_THIS_OBJECT(cx, arglist);
-	jsval* argv=JS_ARGV(cx, arglist);
-	uint32		i=0;
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
- 	if(!js_argc(cx, argc, 1))
-		return JS_FALSE;
-
-	if(JSVAL_NULL_OR_VOID(argv[0])) {
-		JS_ReportError(cx, "Invalid argument");
-		return JS_FALSE;
-	}
-	js_system_private_t* sys;
-	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class)) == NULL)
-		return JS_FALSE;
-
-	if(sys->cfg == NULL || sys->cfg->text == NULL)
-		return JS_TRUE;
-
-	if(!JS_ValueToECMAUint32(cx, argv[0], &i))
-		return JS_FALSE;
-
-	if(i > 0  && i <= TOTAL_TEXT) {
-		JSString* js_str = JS_NewStringCopyZ(cx, sys->cfg->text[i - 1]);
-		if(js_str==NULL)
-			return JS_FALSE;
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
-	}
-	return JS_TRUE;
-}
 
 static jsSyncMethodSpec js_system_functions[] = {
 #ifndef JSDOOR
@@ -2064,8 +1982,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("search <tt>text/<i>basename</i>.can</tt> for pseudo-regexp")
 	,310
 	},		
-	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename or array, find_string")
-	,JSDOCSTR("search any file or array of strings for pseudo-regexp string (in <tt>*.can</tt> format)")
+	{"findstr",			js_findstr,			2,	JSTYPE_BOOLEAN,	JSDOCSTR("path/filename, find_string")
+	,JSDOCSTR("search any file for pseudo-regexp")
 	,310
 	},		
 	{"zonestr",			js_zonestr,			0,	JSTYPE_STRING,	JSDOCSTR("[timezone=<i>local</i>]")
@@ -2166,10 +2084,6 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,JSDOCSTR("terminates executing process on the system with the specified process ID, "
 		"returns <i>true</i> on success")
 	,315
-	},
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("number")
-	,JSDOCSTR("returns specified text string from text.dat (like <tt>bbs.text()</tt>) or returns <i>null</i> upon error")
-	,31802
 	},
 	{0}
 };
@@ -2505,10 +2419,6 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 	/* Numeric version properties */
 	LAZY_INTEGER("version_num", VERSION_NUM);
 	LAZY_INTEGER("version_hex", VERSION_HEX);
-
-	/* Git repo details */
-	LAZY_STRING("git_branch", git_branch);
-	LAZY_STRING("git_hash", git_hash);
 
 	LAZY_STRING("platform", PLATFORM_DESC);
 	LAZY_STRING("architecture", ARCHITECTURE_DESC);

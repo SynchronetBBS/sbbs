@@ -174,7 +174,6 @@ SMBUTIL_OBJS = \
 
 SBBSECHO_OBJS = \
 			$(OBJODIR)$(DIRSEP)sbbsecho$(OFILE) \
-			$(OBJODIR)$(DIRSEP)ver$(OFILE) \
 			$(OBJODIR)$(DIRSEP)ars$(OFILE) \
 			$(OBJODIR)$(DIRSEP)date_str$(OFILE) \
 			$(OBJODIR)$(DIRSEP)load_cfg$(OFILE) \
@@ -278,8 +277,6 @@ JSDOOR_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)wordwrap$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)userdat$(OFILE)\
 			$(MTOBJODIR)$(DIRSEP)msgdate$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)filedat$(OFILE)\
-			$(MTOBJODIR)$(DIRSEP)getstats$(OFILE)\
 
 SEXYZ_OBJS = \
 			$(MTOBJODIR)$(DIRSEP)sexyz$(OFILE) \

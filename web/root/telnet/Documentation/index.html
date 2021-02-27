@@ -1,0 +1,696 @@
+<!doctype HTML public "-//W30//DTD W3 HTML 3.0//EN">
+<HTML>
+  <HEAD><TITLE>The Java(tm) Telnet Applet: Documentation</TITLE></HEAD>
+  <BODY BGCOLOR="#ffffff">
+    <A NAME="TOP"></A>
+    <H1>The <A HREF="http://java.sun.com/">Java<SUP>(tm)</SUP></A>
+      Telnet Applet: Documentation</H1>
+    &copy; 1996-98 <A HREF="mailto:leo@mud.de">Matthias L. Jugel</A>,
+    <A HREF="mailto:marcus@mud.de">Marcus Mei&szlig;ner</A> 
+    <HR>
+    <P> 
+      The package contains several parts of which the most important one is the
+      <B>Telnet Applet/Application</B>. Select from the list below what you
+      are interested in. If you only want to use the applet choose <A
+	HREF="#SetupTelnet">Telnet</A> from <B>Setup</B> and if you want to use the
+      <A HREF="Source/packages.html">packages</A> in your own programming, select the
+      appropriate from <B>Source Code</B>.
+    <H3 ALIGN=CENTER><A HREF="#Readme">READ THIS FIRST</A></H3>
+    <H3 ALIGN=CENTER><A HREF="#SetupDoc">Setup</A></H3>
+    <P ALIGN=CENTER>
+      <B>[
+	<A HREF="#SetupTelnet">Telnet</A> |
+	<A HREF="#SetupTerminal">Terminal Emulation</A> |
+	<A HREF="#SetupModules">Modules</A> 
+	]<BR>[
+	<A HREF="#SetupAppWrapper">Applet Wrapper</A> |
+	<A HREF="#SetupProxy">Proxy Server</A>
+	]</B>
+    <H3 ALIGN=CENTER><A HREF="#SourceDoc">Source Code</A></H3>
+    <P ALIGN=CENTER>
+      <B>[
+	<A HREF="Source/telnet.html">Telnet</A> |
+	<A HREF="#SourceTerminal">Terminal Emulation</A> |
+	<A HREF="#SourceModules">Modules</A>
+	]<BR>[
+	<A HREF="Source/appWrapper.html">Applet Wrapper</A> |
+	<A HREF="Source/proxy.html">Proxy Server</A>
+	]<BR>[
+	<A HREF="Source/packages.html">Packages</A> |
+	<A HREF="Source/AllNames.html">Field and Method Index</A> |
+	<A HREF="Source/tree.html">Class Tree</A>
+	]</B>
+    <P>
+      <A HREF="../index.html">
+	<IMG SRC="images/left.gif" BORDER=0 ALT="[BACK]"></A>
+      <B>Get the <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet">latest
+	  version</A> here!</B>
+    <HR>
+
+    <A NAME="Readme"></A>
+    <H1>READ THIS FIRST</H1>
+
+    We found that some people have no knowlegde whatsoever of java and its
+    restrictions. We have compiled a few questions and answers here as well
+    as some reasons why you should or should not use 
+    <B>The Java<SUP>(tm)</SUP> Telnet Applet</B>:
+
+    <DL>
+      <DT><B>Some web page told me I need telnet, is this it?</B>
+      <DD>Yes and No! The Applet is a fully featured Telnet and Terminal
+	  emulator, but usually you're better off using the program that
+	  comes with your system. Most of the UNIX based systems have very
+	  good terminal emulators (xterm) and alway have a telnet 
+	  application. Windows 95 comes with a telnet if you have the network
+	  stuff installed it's there: c:\windows\telnet.exe. It should be
+	  sufficient. If you want better terminal emulation and <I>colours</I>
+	  the better choice is <B>The Java<SUP>(tm)</SUP> Telnet Applet</B>!
+	  <P>
+      <DT><B>I cannot connect to some.where.com? It only says 
+          &quot;Trying some.where.com ...&quot;</B>
+      <DD>A Java applet is restricted in several ways. One of the restrictions
+	  is that it may <I>only</I> connect to the web server where it was
+	  downloaded from! So if you put the applet on <I>www.where.com</I> but
+	  set the &quot;address&quot; field to <I>some.where.com</I> you 
+	  won't get a connection. Read about our 
+	  <A HREF="#SetupProxy">relayd daemons</A>!
+          <P>
+      <DT><B>But I loaded the HTML file from my harddisk and it still does
+             not work!</B>
+      <DD>Netscape and Internet Explorer do not accept your hard disk as 
+          secure space. So they will prevent the applet from accessing any
+	  resource, such as the network. You may overcome that by adding the
+          directory where the applet is stored to your &quot;CLASSPATH&quot;
+	  environment variable <I>before</I> running the browser.
+	  <P>
+    </DL>
+    <HR>
+    <A NAME="SetupDoc"></A>
+    <H1>Setup Documentation</H1>
+    <A NAME="SetupTelnet"></A>
+    <H2>How to setup the Telnet Applet</H2>
+    Make sure, you got the
+    <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet">latest version</A>
+    of the Java<SUP>(tm)</SUP> Telnet Applet. Refer to the
+    <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet/index.download.html">
+      download page</A> on how to get it and how to
+    extract the files from the archive. After successfully extracting the complete
+    package you should have a directory <B>Telnet/</B> containing <B>*.html</B>,
+    <B>*.java</B> and <B>*.class</B> files as well as the directores
+    <B>Documentation/</B>, <B>display/</B>, <B>modules/</B>, <B>socket/</B> and
+    <B>tools</B>.<P>
+      To install the applet on your web page you need as least the following files
+      and directories. Make sure that all files and directories are <B>readable
+	by other users</B>!
+    <PRE>
+  index.test.html
+  telnet.class
+  appWrapper.class
+  display/
+  display/SoftFont.class
+  display/CharDisplay.class
+  display/Terminal.class
+  display/TerminalHost.class
+  display/vt320.class
+  socket/
+  socket/TelnetIO.class
+  socket/StatusPeer.class
+  modules/
+  modules/Module.class
+  modules/Script.class
+  modules/ButtonBar.class
+  modules/MudConnector.class
+    </PRE>
+    Now edit <B>index.test.html</B> to adapt it to your needs or look at the
+    example below! The file is documented and if you have questions about
+    the <I>Modules</I> refer to the
+    <A HREF="#SetupModules">Module Documentation</A> or look at the <A
+      HREF="Source/Package-modules.html">Source Code</A>. You will find, that not
+    <B>telnet.class</B> is loaded as applet, but <B>appWrapper.class</B> instead.
+    This is necessary to enable the <B>detach</B> feature!
+    <P>
+    <DL>
+      <DT><B><I>Important Note:</I></B>
+      <DD>We would appreciate to see <B>credits</B> on a page using the applet
+	which includes a link to the <I>
+	  <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet">applets home
+	    page</A></I> and names of the <I>authors</I> as mentioned on
+	<A HREF="#TOP">top</A> of this page. You may simply use our
+	<A HREF="../index.test.html">test page</A> and edit it to your needs.<BR>
+	In response we will include a link to your page on our
+	<I><A HREF="user.html">user page</A></I>, if you like.
+    </DL>
+    <P>
+      The telnet applet can be customized using the following parameters:
+    <PRE>
+    &lt;PARAM NAME=address    VALUE="tanis.first.gmd.de"&gt;
+    &lt;PARAM NAME=port       VALUE="23"&gt;
+    &lt;PARAM NAME=emulation  VALUE="vt320"&gt;
+
+    &lt;PARAM NAME=proxy      VALUE="www.first.gmd.de"&gt;
+    &lt;PARAM NAME=proxyport  VALUE="31415"&gt;
+    </PRE>
+    The <B><I>proxy</I></B> and <B><I>proxyport</I></B> parameters may be left
+    out. They are needed if your target host is NOT the same as your web server
+    and you are using the <A HREF="#mrelayd">relay daemon</A>.
+    <P>
+      <A NAME="Example_1"></A>
+    <H3>Example:</H3>
+    (all possible parameters)
+    <PRE>
+    &lt;APPLET CODE="<A HREF="Source/appWrapper.html">appWrapper.class</A>" WIDTH=600 HEIGHT=480&gt;
+
+    &lt;!-- appWrapper parameters --&gt;
+    &lt;PARAM NAME="applet"      VALUE="<A HREF="Source/telnet.html">telnet</A>"&gt;
+
+    &lt;!-- optional (WIDTH and HEIGHT should be changed!) --&gt;
+    &lt;PARAM NAME="startButton" VALUE="Connect to www.first.gmd.de!"&gt;
+    &lt;PARAM NAME="stopButton" VALUE="Shutdown telnet!"&gt;
+    &lt;PARAM NAME="frameTitle" VALUE="The Java Telnet Applet: WWW"&gt;
+
+    &lt;!-- applet parameters: address and port and emulation --&gt;
+    &lt;PARAM NAME="address"     VALUE="www.first.gmd.de"&gt;
+    &lt;PARAM NAME="port"        VALUE="23"&gt;
+    &lt;PARAM NAME="emulation"   VALUE="vt320"&gt;
+
+    &lt;!-- terminal emulation parameters (optional)--&gt;
+    &lt;PARAM NAME="VTscrollbar" VALUE="true"&gt;
+    &lt;PARAM NAME="VTresize"    VALUE="font"&gt;
+    &lt;PARAM NAME="VTfont"      VALUE="Courier"&gt;
+    &lt;PARAM NAME="VTfontsize"  VALUE="13"&gt;
+    &lt;PARAM NAME="VTid"        VALUE="vt220"&gt;
+    &lt;PARAM NAME="VTcharset"   VALUE="ibm"&gt;
+
+    &lt;!-- module parameters: #1 is a buttonbar (optional) --&gt;
+    &lt;PARAM NAME="module#1"    VALUE="<A HREF="#ButtonBar">ButtonBar</A>@North"&gt;
+    &lt;PARAM NAME="1#Button"    VALUE="connect|\$connect()"&gt;
+    &lt;PARAM NAME="2#Button"    VALUE="disconnect|\$disconnect()"&gt;
+    &lt;PARAM NAME="3#Button"    VALUE="Detach/Delete Window|\$detach()"&gt;
+    &lt;PARAM NAME="4#Button"    VALUE="Send:|\@send@\r\n"&gt;
+    &lt;PARAM NAME="5#Input"     VALUE="send#10|who"&gt;
+
+    &lt;!-- module parameter: #2 is a scripting module (optional) --&gt;
+    &lt;PARAM NAME="module#2"    VALUE="<A HREF="#Script">Script</A>"&gt;
+    &lt;PARAM NAME="script"      VALUE="login:|leo"&gt;
+
+    &lt;!-- make sure, non-java-capable browser get a message: --&gt;
+    &lt;B&gt;
+    Your Browser seems to have no <A HREF="http://java.sun.com/">Java</A>
+    support. Please get a new browser or enable Java to see this applet!
+    &lt;/B&gt;
+    &lt;/APPLET&gt;
+    </PRE>
+    <P>
+    <HR>
+    <A NAME="SetupTerminal"></A>
+    <H2>Setting up the Terminal Emulation</H2>
+    The Terminal Emulation is a very important part of the Telnet Applet, because
+    it enables you to use programs that make use of certain features of hardware
+    terminals like <B>VT100</B> or <B>ANSI</B>. Supplied with the package is an
+    almost <B>VT320 compliant</B> terminal emulation, that should include the two
+    mentioned earlier. This means that the applet can do colors, even if the
+    original <B>VT320</B> terminal cannot!<P>
+      The applet supports the <B><I>special graphical character set</I></B> of VT
+      terminals. The new implementation supports all graphical characters with a
+      small drawback. The more graphical characters on the screen the slower is the
+      display. We will remove the current implementation when full UNICODE support
+      is available from all browsers (full JDK 1.2 compatibility).
+    <P>
+      To configure the terminal emulation look at the list of parameters below:<BR>
+      <I>Note:</I> Default values are typeset in <I>italics</I> and other possible
+      values in <B>bold</B>.
+    <DL>
+      <DT><TT><B>&lt;PARAM NAME="localecho" VALUE="<I>auto</I>"&gt;</B></TT>
+      <DD>Sets the mode the local echo should be handled. If using auto,
+        or if this parameter is not present, the applet autodetects localecho
+        mode using telnet option negotiation. If set to <I>no</I>, nothing
+        will be echoed, ever. Any other value enables every character to be 
+	echoed.
+      <DT><TT><B>&lt;PARAM NAME="VTcolumns" VALUE="<I>80</I>"&gt;</B></TT>
+      <DD>Sets the columns of the terminal initially. If the parameter
+	VTresize is set to <B>screen</B> this may change, else it is fixed.
+      <DT><B><TT>&lt;PARAM NAME="VTrows" VALUE="<I>24</I>"&gt;</TT></B>
+      <DD>Sets the rows of the terminal initially. If the parameter
+	value of VTresize <B>screen</B> this may change!
+      <DT><B><TT>&lt;PARAM NAME="VTfont" VALUE="<I>Courier</I>"&gt;</TT></B>
+      <DD>Sets the font to be used for the terminal. It is recommended to
+	use <I>Courier</I> or at least a fixed width font.
+      <DT><B><TT>&lt;PARAM NAME="VTfontsize" VALUE="<I>14</I>"&gt;</TT></B>
+      <DD>Sets the font size for the terminal. If the parameter 
+	value of VTresize is set to <B>font</B> this may change!
+      <DT><B><TT>&lt;PARAM NAME="VTresize" VALUE="<I>font</I>"&gt;</TT></B>
+      <DD>This parameter determines what the terminal should do if the window
+	is resized. The default setting <I><B>font</B></I> will result in 
+	resizing the font until is matches the window best. Other possible 
+	values are <B>none</B> or <B>screen</B>. <B>none</B> will let nothing
+	happen and <B>screen</B> will let the display try to change the
+	amount of rows and columns to match the window best.
+      <DT><B><TT>&lt;PARAM NAME="VTscrollbar" VALUE="<I>false</I>"&gt;</TT></B>
+      <DD>Setting this parameter to <B>true</B> will add a scrollbar west to
+	the terminal. Other possible values include <B>left</B> to put the
+	scrollbar on the left side of the terminal and <B>right</B> to put it
+	explicitely to the right side.
+      <DT><B><TT>&lt;PARAM NAME="VTid" VALUE="<I>vt320</I>"&gt;</TT></B>
+      <DD>This parameter will override the terminal id <I>vt320</I>. It may
+	be used to determine special terminal abilities of VT Terminals.
+      <DT><B><TT>&lt;PARAM NAME="VTbuffer" VALUE="<I>xx</I>"&gt;</TT></B>
+      <DD>Initially this parameter is the same as the VTrows parameter. It
+	cannot be less than the amount of rows on the display. It determines
+	the available scrollback buffer.
+      <DT><B><TT>&lt;PARAM NAME="VTcharset" VALUE="<I>none</I>"&gt</TT></B>
+      <DD>Setting this parameter to <B>ibm</B> will enable mapping of ibm
+	characters (as used in PC BBS systems) to UNICODE characters. Note 
+	that those special characters probably won't show on UNIX systems
+	due to lack in X11 UNICODE support.
+      <DT><B><TT>&lt;PARAM NAME="VTvms" VALUE="<I>false</I>"&gt</TT></B>
+      <DD>Setting this parameter to <B>true</B> will change the Backspace key
+        into a delete key, cause the numeric keypad keys to emit VT100
+        codes when Ctrl is pressed, and make other VMS-important keyboard
+        definitions.
+      <DT><B><TT>&lt;PARAM NAME="F<I>nr</I>" VALUE="<I>string</I>"&gt</TT></B>
+      <DD>Function keys from <I>F1</I> to <I>F20</I> are programmable. You can
+        install any possible string including special characters, such as 
+        <TABLE BORDER>
+	<TR><TD><TT>\e</TT></TD><TD>Escape</TD><TD></TD>
+	    <TD><TT>\b</TT></TD><TD>Backspace</TD><TD></TD>
+	    <TD><TT>\n</TT></TD><TD>Newline</TD><TD></TD>
+	    <TD><TT>\r</TT></TD><TD>Return</TD>
+	    <TD><TT>\xxxx</TT></TD><TD>Character xxxx (decimal)</TD>
+        </TABLE>
+    </DL>
+    <P>
+      Please look at the <A HREF="#Example_1">example above</A>.
+    <P>
+    <HR>
+    <A NAME="SetupModules"></A>
+    <H2>Setting up Modules</H2>
+    Another feature of the Java<SUP>(tm)</SUP> Telnet Applet is the ability to
+    dynamically load <B>modules</B>. A module is a java class that is loaded
+    after the applet has been initialized and may be used to <I>enhance</I> the
+    user interface or to background work in some way.<P>
+      To load a module a special parameter has to be added to the applet PARAM tags:
+    <P>
+      <TT><B>&lt;PARAM NAME=module#<I>number</I> VALUE="<I>modulename</I>@<I>direction</I>"&gt;</B>
+      </TT>
+    <UL>
+      <LI><B><I>number</I></B> is a sequence number, used by the applet to
+	determine the modules. Numbers must be adjacent or modules may not
+	be loaded.
+      <LI><B><I>modulename</I></B> is the name of the modules to be
+	loaded. Modules already in the package are described below.
+      <LI><B>@<I>direction</I></B> is the position of the applet in relation to
+	the window. Possible values are: <B>North, South, East, West</B>. The
+	module will then be placed accordingly. It is <I>not</I> possible to
+	place two modules at the same position! <I>The positional parameter may
+	  be left out and the module will then be placed <B>North</B></I>.
+    </UL>
+    <P>
+
+      At the moment the package features three modules:
+    <DL>
+      <DT><A HREF="#ButtonBar"><B>ButtonBar</B></A>
+      <DD>The ButtonBar is a modules to enhance the user interface. Using
+	PARAM tags <B>buttons</B> and <B>input fields</B> can be added to
+	send text to the remote host or to <B>detach</B> the applet.<P>
+      <DT><A HREF="#Script"><B>Script</B></A>
+      <DD>Sometimes it is useful to have simple script abilities. This module
+	<B>executes a script</B> based on text received from the remote host.
+	<P>
+      <DT><A HREF="#MudConnector"><B>MudConnector</B></A>
+      <DD>This module is a special program for the <A
+	  HREF="http://www.mudconnect.com">Mud Connector</A> by Andrew Cowan. It
+	loads a list of muds and displays information like host and port.
+    </DL>
+    <P>
+      <A NAME="ButtonBar"></A>
+    <H3>The ButtonBar</H3>
+    The ButtonBar may be used to add <A HREF="#buttons">buttons</A> to the applet
+    that execute functions or simply send a specified text to the remote host.
+    In addition it is possible to specify <A HREF="#fields">input
+      fields</A> as external input means.<P>
+      To load the module include the following tag into the <B>.html</B> file
+      (example):<P>
+      <TT><B>&lt;PARAM NAME=module#<I>1</I> VALUE="<I>ButtonBar</I>"&gt;</B>
+      </TT><P>
+      Below is a description of possible PARAM tags and a description of supported
+      functions:
+    <DL>
+      <DT><A NAME="buttons"></A><B>Buttons:</B>
+      <DD><TT>&lt;PARAM NAME=<B><I>number</I></B>#Button VALUE=&quot;<B><I>buttontext</I></B>|<B><I>buttonaction</I></B>&quot;&gt;</TT>
+      <DD><B><I>number</I></B> is the sequence number and determines the place
+	of the button on the row.
+	<P>
+      <DD><B><I>buttontext</I></B> is a string displayed on the button.
+	<P>
+      <DD><A NAME="buttonaction"><B><I>buttonaction</I></B></A> may be one
+	of the following functions or strings<BR>
+	<FONT SIZE=-1>(<I>Note:</I> the backslash character
+	  in front of the dollar sign is mandatory!)</FONT>
+	<UL>
+	  <LI><TT><I>simple text</I></TT>
+	    to be sent to the remote host. Newline and/or carriage return
+	    characters may be added in C syntax <B>\n</B> and <B>\r</B>.
+	    To support unimplemented function keys the <B>\e</B> escape
+	    character may be useful. The <B>\b</B> backspace character is
+	    also supported.
+	    The text may contain <A HREF="#fieldreference"><B><I>field 
+		  reference(s)</I></B></A>.<BR>
+	    <P>
+	  <LI><TT>\$connect(<B><I>host</I></B>[,<B><I>port</I></B>])</TT> 
+	    tries to initiate a connection to the <B><I>host</I></B>
+	    at the <B><I>port</I></B>, if given. The standard port is
+	    23. <B><I>host</I></B> and <B><I>port</I></B> may be hostname
+	    and number or <A HREF="#fieldreference"><B><I>field
+		  reference(s)</I></B></A>. If a connection already exists
+	    nothing will happen.<BR>
+	    <FONT SIZE=-1>(<I>Note:</I> It is not allowed to have
+	      spaces anywhere inside the parenthesis!)</FONT>
+	    <P>
+	  <LI><TT>\$disconnect()</TT>
+	    terminates the current connection, but if there was no
+	    connection nothing will happen.
+	    <P>
+	  <LI><A NAME="detach"><TT>\$detach()</TT></A>
+	    detaches the applet from the web browser window and
+	    creates a new frame externally. This may be used to allow
+	    users to use the applet while browsing the web with the
+	    same browser window.<BR>
+	    <FONT SIZE=-1>(<I>Note:</I> You need to load the applet via the
+	      <A HREF="#SetupAppWrapper">Applet Wrapper</A> or
+	      it will not work properly!)</FONT>
+	</UL>
+	<P>
+      <DD><A NAME="Example_2"><B>Examples:</B></A><BR>
+	<FONT SIZE=-1>(<I>Note:</I> It makes sense if you look at the
+	  examples for <A HREF="#Example_3">input fields</A> below.)</FONT>
+	<PRE>
+       &lt;PARAM NAME=1#Button VALUE="HELP!|help\r\n"&gt;
+       &lt;PARAM NAME=2#Button VALUE="HELP:|help \@help@\r\n"&gt;
+       &lt;PARAM NAME=4#Button VALUE="simple|\$connect(localhost)"&gt;
+       &lt;PARAM NAME=5#Button VALUE="complete|\$connect(www,4711)"&gt;
+       &lt;PARAM NAME=6#Button VALUE="connect|\$connect(\@address@)"&gt;
+       &lt;PARAM NAME=8#Button VALUE="connect to port|\$connect(\@address@,\@port@)"&gt;
+       &lt;PARAM NAME=10#Button VALUE="window|\$detach()"&gt;
+	</PRE>
+	<P>
+	  <A NAME="fields"></A>
+      <DT><B>Input fields</B>
+      <DD><TT>&lt;PARAM NAME=<B><I>number</I></B>#Input VALUE=&quot;<B><I>fieldname</I></B>[#<I><B>length</B></I>]|<B><I>initial text</I></B>[|<B><I>action</I></B>]&quot;&gt;</TT>
+      <DD><B><I>number</I></B> is the sequence number and determines the place
+	of the field on the row.
+	<P>
+      <DD><A NAME="fieldreference"><B><I>fieldname</I></B></A> is a
+	symbolic name to reference the input field. A reference may be used in 
+	<A HREF="#buttonaction"><B><I>button actions</I></B></A> and
+	is constructed as follows:
+	<TT>\@<B><I>fieldname</I></B>@</TT>
+	The <B>\@fieldname@</B> macro will be replaced by the string entered in
+	the text field.
+	<P>
+      <DD><B><I>length</I></B> is the length of the input field in numbers of
+	characters.
+	<P>
+      <DD><B><I>initial text</I></B> is the text to be placed into the input
+	field on startup
+	<P>
+      <DD><B><I>action</I></B> may be used similar to a 
+	<A HREF="#buttonaction"><B><I>button action</I></B></A>. This action 
+	will be used if the users presses Return in the inputfield. Leave
+	empty if you only want to use a button to send the text!
+	<P>
+      <DD><A NAME="Example_3"><B>Examples:</B></A><BR>
+	<FONT SIZE=-1>(<I>Note:</I> It makes sense if you look at the
+	  examples for <A HREF="#Example_2">buttons</A> before.)</FONT>
+	<PRE>
+	  &lt;PARAM NAME=3#Input VALUE="help#10|"&gt;
+	  &lt;PARAM NAME=7#Input VALUE="address|www.first.gmd.de"&gt;
+	  &lt;PARAM NAME=9#Input VALUE="port#5|4711"&gt;
+	</PRE>
+	<P>
+    </DL>
+    <A NAME="Script"></A>
+    <H3>The Script Module</H3>
+    The script module gives a very simple implementation of an <I>input
+      triggered</I> script executor. This means it sends text to the remote host
+    when the received text matches a <I>pattern</I> that can be programmed. It
+    executes each <I>pair of pattern and text</I> only once and stops working
+    after all patterns have been matched. It will start working again upon a
+    new connection.
+    <P>
+      To load the module include the following tag into the <B>.html</B> file
+      (example):<P>
+      <TT><B>&lt;PARAM NAME=module#<I>1</I> VALUE="<I>Script</I>"&gt;</B>
+      </TT><P>
+      Below is a description of possible PARAM tags and a description of script:
+    <DL>
+      <DT><B>Scripts:</B>
+      <DD><TT>&lt;PARAM NAME=script VALUE=&quot;<B><I>pattern</I></B>|<B><I>text</I></B>|<B><I>...</I></B>&quot;&gt;</TT>
+      <DD>A script contains of pairs of <I>pattern</I> and <I>text</I> strings.
+	If the pattern is matched against the output from the remote host,
+	the corresponding text will be sent. Each pattern will match only
+	<B>once</B> per connected session.
+	Thus it is possible to program an autologin as follows:<BR>
+	<TT><B>"login:|leo|Password:|mypassword|leo@www|ls"</B></TT>
+	Newlines will be added automatically to the string sent! At the
+	moment the order of the pattern and text pairs is <I>not</I> relevant.
+	<P>
+        It is possible to prompt the user for input if a match occurs. If the
+        corresponding <I>text</I> is a string enclosed in braces ([] or {}) a
+        dialog window is opened with <I>text</I> as prompt. A special case 
+        is an empty prompt in which case the <I>pattern</I> will be shown as 
+        prompt. &quot;[Your name:]&quot; would open a dialog window with the
+        text &quot;Your name&quot; as prompt. Curly braces have a special
+        meaning; any user input will be shown as &quot;*&quot; which makes
+        it possible to program password prompts. Example: 
+        &quot;{Your password:}&quot;.<P>
+        A special match like: &quot;login:|[]&quot; can be used to open a
+        dialog and display &quot;login:&quot; as prompt. This works for
+        &quot;{}&quot; as well.
+    </DL>
+    <P>
+      <A NAME="MudConnector"></A>
+    <H3>MudConnector</H3>
+    This module is a special edition for the <A
+      HREF="http://www.mudconnect.com/">Mud Connector</A>. It features a list of
+    MUDs and a few buttons to connect, disconnect and get infos about the MUDs.
+    A very nice example for a specialized module.
+    To load the module include the following tag into the <B>.html</B> file
+    (example):<P>
+      <TT><B>&lt;PARAM NAME=module#<I>1</I> VALUE="<I>MudConnector</I>"&gt;</B>
+      </TT>
+      The MudConnector expects the following PARAM tags:
+    <DL>
+      <DT><B>Mudlist URL:</B>
+      <DD><TT>&lt;PARAM NAME=mudlist VALUE=&quot;<B><I>URL</I></B>&quot;&gt;</TT>
+      <DD>The URL should be a file containing line by line the <I>MUD name</I>, the
+	<I>Mud address</I> and the <I>MUD port</I>, separated by tabulators.
+	The first line in the file should be the number of MUDs in the file.
+	<P>
+      <DD><B>Example:</B><BR>
+	<TT>&lt;PARAM NAME=mudlist VALUE="http://www.mud.de/~leo/mudlist.data"&gt;</TT>
+	<P>
+    </DL>
+    <P>
+    <HR>
+    <A NAME="SetupAppWrapper"></A>
+    <H2>The Applet Wrapper Setup</H2>
+    The applet wrapper is an applet that does nothing else than loading the, for
+    example, telnet applet. To understand why this is necessary you have to look
+    at the experiences we have made.<P>
+      Simply using the telnet applet in the following manner:<P>
+      <TT>&lt;APPLET CODE="telnet.class" WIDTH=600 HEIGHT=480&gt;</TT>
+      and using the <A HREF="#detach">detach</A> function stops the applet after
+      you have detached the applet and want to browse the web again. It seems that
+      the Web browser stops all threads connected to the applet if you leave the
+      page where the applet is located and thus it doesn't even update its display
+      anymore.<P>
+      We have found out that this is not true for applets loaded within the applet
+      on the page (e.g. the appWrapper). Look at the following description on how
+      to setup the appWrapper. It will probably work with any given applet out on
+      the web!
+    <P>
+      <PRE>
+	&lt;APPLET CODE="appWrapper.class" WIDTH=600 HEIGHT=480&gt;
+	&lt;PARAM NAME=applet VALUE="<I>telnet</I>&gt;
+
+	&lt;!-- optional (WIDTH and HEIGHT should be changed!) --&gt;
+	&lt;PARAM NAME=startButton VALUE="<I>text</I>"&gt;
+	&lt;PARAM NAME=stopButton VALUE="<I>text</I>"&gt;
+	&lt;PARAM NAME=frameTitle VALUE="<I>text</I>"&gt;
+	&lt;!-- all other telnet applet parameters go here --&gt;
+	&lt;/APPLET&gt;
+      </PRE>
+      The <B>appWrapper</B> knows only about the PARAM tag <B>applet</B>, which is
+      the applet to be loaded. In this case it must be in the same directory as the
+      <B>appWrapper.class</B>. Refer to the <A HREF="#Example_1">telnet example</A>
+      above for the telnet parameters.<P>
+      If a <B>startButton</B> is specified the applet won't start automatically,
+      but instead the appWrapper will display a button with the <I>text</I> on
+      it. The <B>stopButton</B> defines the text that appears on the button when
+      the applet is loaded and running and <B>frameTitle</B> specifies the frame
+      title text of the window the applet runs in.
+    <P>
+    <HR>
+    <A NAME="SetupProxy"></A>
+    <H2>Setting up the proxy server</H2>
+    There are two proxy servers provided with the telnet applet. The first one
+    is written in java and does support connections to <B>one</B> target host only
+    and the second one is written in C and supports different targets (called
+    relay daemon).<P>
+    <H4 ALIGN=CENTER>
+      [<A HREF="#javaproxy">Java Proxy</A> |
+      <A HREF="#relayd">Simple Relay Daemon</A> |
+      <A HREF="#mrelayd">Relay Daemon</A>]
+    </H4>
+    <P>
+      <A NAME="javaproxy"></A>
+    <H3>The Java Proxy Server</H3>
+    The proxy server is a small java program
+    to overcome the security restrictions of java capable web browsers.<P>
+      The proxy is used to redirect a connection to a given
+      host. Usually an applet can only connect to the web server it has
+      been loaded from. Installing the proxy on your web server allows the
+      applet to connect to a host you would like to connect to.<P>
+    <DL>
+      <DT><B>How to run the proxy application?</B>
+      <DD>To run the proxy you require the following:
+	<OL>
+	  <LI>A java interpreter (usually included in the JDK)
+	  <LI>A compiled version of the proxy 
+	    (<A HREF="tools/proxy.class">proxy.class</A>)
+	</OL><P>
+	  On the <I>WWW-Server command line</I> run the proxy server as follows:
+	  <TT>java proxy 9999 remotehostname 23
+	  </TT>
+	  This lets the proxy listen on port 9999 and it redirects
+	  all connections to the host "remotehostname" at port 23. You
+	  can leave the port parameter out if it is 23 (telnet port).
+	<P>
+	  The proxy should start with something like the output below:
+	  <TT>
+	    proxy: destination host is remotehostname at port 23
+	    proxy: listening on port 9999
+	  </TT>
+	  Upon successful connection the output should produce something
+	  like this:
+	  <TT>
+	    proxy: accepted connection from augra.first.gmd.de
+	    proxy: connecting www.first.gmd.de &lt;-&gt; remotehostname
+	  </TT>
+      <DT><B>How to shut down the proxy?</B>
+      <DD>To shut down the proxy press ^C (Ctrl+C or Strg+C on a german
+	keyboard) if you have startet it normally. More advanced users
+	will run the proxy like 
+	<TT>java proxy 9999 remotehost 23 >&amp; errorlog &amp;</TT>
+	to put it into the background. The "errorlog" file should then
+	contain any messages. You can kill that process by looking for
+	the process id (ps | grep proxy) and issuing the kill 
+	&lt;processid&gt; command (this applies to UNIX only).
+	<P>
+      <DT><B>I get an error message like "class proxy not found"!</B>
+      <DD>You may have to set the CLASSPATH environment variable to
+        point to the current directory or to the directory where
+	proxy.class is located.
+    </DL>
+    <P>
+      <A NAME="relayd"></A>
+    <H3>The Simple Relay Daemon</H3>
+    The <I>simple</I> relay daemon works just like the
+    <A HREF="#javaproxy">proxy</A> above, but is a C version. It allows
+    connections only to a specified host and port which is preferrable for
+    security reasons. You can run the program (after compiling it) with the
+    following command line:
+    <TT>
+      relayd serverport targethost targetport
+      or just
+      relayd serverport targethost
+    </TT>
+    It will then listen on the <I>serverport</I> of the machine you started it and
+    connect to the <I>targethost</I>. The standard <I>targetport</I> is 23.
+    <P>
+      <A NAME="mrelayd"></A>
+    <H3>The Relay Daemon</H3>
+    The relay daemon is a program written by Marcus Mei&szlig;ner to support
+    different target hosts. It relays the connections from the applet to a
+    host that must be given to the relay daemon after connecting.<P>
+      The daemon expects a string
+      <TT>relay <I>address port</I></TT>
+      It must be run on the web server of the applet.
+      The relay daemon is not included in compiled form, because we would have to
+      support a number of platforms. However, you can write to us if you need a
+      special compiled version for your hardware platform.<P>
+      You should include the following tags to tell <A
+	HREF="#SetupTelnet">telnet</A> that it is supposed to use the prox server
+    <PRE>
+    &lt;PARAM NAME=proxy      VALUE="www.first.gmd.de"&gt;
+    &lt;PARAM NAME=proxyport  VALUE="31415"&gt;
+    </PRE>
+    <HR>
+    <A NAME="SourceDoc"></A>
+    <H1>Source Code Documentation</H1>
+    The Source Code of <B>The Java<SUP>(tm)</SUP> Telnet Applet</B> is available
+    under the terms of the <A HREF="http://www.fsf.org/copyleft/gpl.html"><B>GNU
+	General Public License</B></A> as documented in the file <A
+      HREF="../COPYING">COPYING</A>. In case you would like to use the packages as
+    libraries please apply the <A HREF="http://www.fsf.org/copyleft/lgpl.html"><B>
+	GNU Library General Public License</B></A> as documented in the file <A
+      HREF="../COPYING.LIB">COPYING.LIB</A>.<P>
+      Select from the structure below, what you would like to see. Each file
+      contains a <B>Version:</B> field determining its current status and version.
+      If you are not sure to have the most current version, please
+      <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet/index.download.html">
+	look here</A>.<P>
+      If you are unsure, whether you've got the newest version, compare your
+      copy of the file <A HREF="../REVISION"><B>REVISION</B></A> and this
+      <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet/REVISION">
+	<B>REVISION</B></A>, which is a direct link to the
+      <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet/">home page</A>.
+      The latest changes are documented in the file
+      <A HREF="../CHANGES"><B>CHANGES</B></A>.
+    <UL>
+      <LI><A HREF="Source/appWrapper.html">appWrapper.java</A>
+      <LI><A HREF="Source/telnet.html">telnet.java</A>
+	<UL>
+	  <LI><A HREF="Source/Package-socket.html">Socket Package</A>
+	    <UL>	  
+	      <LI><A HREF="Source/socket.TelnetIO.html">socket/TelnetIO.java</A>
+	      <LI><A HREF="Source/socket.StatusPeer.html">socket/StatusPeer.java</A>
+	    </UL>
+	  <LI><A NAME="SourceTerminal"></A>
+	    <A HREF="Source/Package-display.html">Display Package</A>
+	    <UL>
+	      <LI><A HREF="Source/display.CharDisplay.html">display/CharDisplay.java</A>
+	      <LI><A HREF="Source/display.SoftFont.html">display/SoftFont.java</A>
+	      <LI><A HREF="Source/display.Terminal.html">display/Terminal.java</A>
+	      <LI><A HREF="Source/display.TerminalHost.html">display/TerminalHost.java</A>
+	      <LI><A HREF="Source/display.vt320.html">display/vt320.java</A>
+	    </UL>
+	  <LI><A NAME="SourceModules"></A>
+	    <A HREF="Source/Package-modules.html">Module Package</A>
+	    <UL>
+	      <LI><A HREF="Source/modules.Module.html">modules/Module.java</A>
+	      <LI><A HREF="Source/modules.ButtonBar.html">modules/ButtonBar.java</A>
+	      <LI><A HREF="Source/modules.Script.html">modules/Script.java</A>
+	      <LI><A HREF="Source/modules.MudConnector.html">modules/MudConnector.java</A>
+	    </UL>
+	</UL>
+      <LI><A HREF="Source/IOtest.html">IOtest.java</A>
+      <LI><A HREF="Source/CharDisplayTest.html">CharDisplayTest.html</A>
+      <LI>Tools
+	<UL>
+	  <LI><A HREF="Source/proxy.html">tools/proxy</A>
+	  <LI><A HREF="Source/redirector.html">tools/redirector</A> (proxy.java)
+	  <LI><A HREF="../tools/relayd.c">tools/relayd.c</A> (simple proxy)
+	  <LI><A HREF="../tools/mrelayd.c">tools/mrelayd.c</A> (enhanced proxy)
+	</UL>
+    </UL>
+    <HR>
+    <A HREF="../index.html">
+      <IMG ALIGN=LEFT SRC="images/left.gif" BORDER=0 ALT="[BACK]"></A>
+    <B>Get the <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet">latest
+	version</A> here!</B> <BR>
+    <!-- html-ts start -->
+    Last modified: Wed Jul 23 14:55:15 1997 by Matthias L. Jugel
+    <!-- html-ts end -->
+  </BODY>
+</HTML>

@@ -1,5 +1,7 @@
 /* Synchronet QWK packet-related functions */
 
+/* $Id: qwk.cpp,v 1.97 2020/08/10 00:43:42 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -220,7 +234,7 @@ void sbbs_t::update_qwkroute(char *via)
 					continue;
 				if(i==total_qwknodes) {
 					if((qwknode=(struct qwknode*)realloc(qwknode,sizeof(struct qwknode)*(i+1)))==NULL) {
-						errormsg(WHERE,ERR_ALLOC,via,sizeof(struct qwknode)*(i+1));
+						errormsg(WHERE,ERR_ALLOC,str,sizeof(struct qwknode)*(i+1));
 						break;
 					}
 					total_qwknodes++;
@@ -252,7 +266,7 @@ void sbbs_t::update_qwkroute(char *via)
 				break;
 		if(i==total_qwknodes) {		/* Not in list */
 			if((qwknode=(struct qwknode*)realloc(qwknode,sizeof(struct qwknode)*(total_qwknodes+1)))==NULL) {
-				errormsg(WHERE,ERR_ALLOC,node,sizeof(struct qwknode)*(total_qwknodes+1));
+				errormsg(WHERE,ERR_ALLOC,str,sizeof(struct qwknode)*(total_qwknodes+1));
 				break;
 			}
 			total_qwknodes++;

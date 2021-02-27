@@ -1,4 +1,8 @@
+/* js_console.cpp */
+
 /* Synchronet JavaScript "Console" Object */
+
+/* $Id: js_console.cpp,v 1.154 2020/05/24 08:16:52 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +17,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -442,7 +458,6 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	char		key[2];
-	int			ch;
 	int32		mode=0;
 	int32		timeout=0;
 	sbbs_t*		sbbs;
@@ -452,7 +467,7 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc) {
 		if(!JS_ValueToInt32(cx,argv[0],&mode))
@@ -463,15 +478,14 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
-	ch = sbbs->inkey(mode,timeout);
-	if(ch != NOINP) {
-		key[0]=ch;
-		key[1]=0;
-		if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
-			return(JS_FALSE);
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
-	}
+	key[0]=sbbs->inkey(mode,timeout);
 	JS_RESUMEREQUEST(cx, rc);
+	key[1]=0;
+
+	if((js_str = JS_NewStringCopyZ(cx, key))==NULL)
+		return(JS_FALSE);
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
     return(JS_TRUE);
 }
 
@@ -810,10 +824,8 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 
 	for(i=0;i<argc;i++) {
 		if(JSVAL_IS_NUMBER(argv[i])) {
-			if(!JS_ValueToInt32(cx, argv[i], &val)) {
-				free(cstr);
+			if(!JS_ValueToInt32(cx, argv[i], &val))
 				return JS_FALSE;
-			}
 			if(!maxnum_specified) {
 				maxnum_specified = true;
 				maxnum = val;
@@ -823,7 +835,6 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if(JSVAL_IS_STRING(argv[i])) {
 			js_str = JS_ValueToString(cx, argv[i]);
-			free(cstr);
 			JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
 			if(cstr==NULL)
 				return JS_FALSE;
@@ -832,7 +843,7 @@ js_getkeys(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	val=sbbs->getkeys(cstr, maxnum, mode);
-	free(cstr);
+	FREE_AND_NULL(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 
 	if(val==-1) {			// abort
@@ -958,10 +969,8 @@ js_yesno(JSContext *cx, uintN argc, jsval *arglist)
 	if(cstr==NULL)
 		return JS_FALSE;
 	if(argc > 1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx, argv[1], &mode)) {
-			free(cstr);
+		if(!JS_ValueToInt32(cx, argv[1], &mode))
 			return JS_FALSE;
-		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->yesno(cstr, mode)));
@@ -992,10 +1001,8 @@ js_noyes(JSContext *cx, uintN argc, jsval *arglist)
 	if(cstr==NULL)
 		return JS_FALSE;
 	if(argc > 1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToInt32(cx, argv[1], &mode)) {
-			free(cstr);
+		if(!JS_ValueToInt32(cx, argv[1], &mode))
 			return JS_FALSE;
-		}
 	}
 	rc=JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->noyes(cstr, mode)));
@@ -1225,10 +1232,8 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_RASTRING(cx, argv[0], cstr, &cstr_sz, NULL);
 		if(cstr==NULL)
 		    return(JS_FALSE);
-		if(!JS_ValueToInt32(cx, argv[1], &pmode)) {
-			free(cstr);
+		if(!JS_ValueToInt32(cx, argv[1], &pmode))
 			return JS_FALSE;
-		}
 		rc=JS_SUSPENDREQUEST(cx);
 		sbbs->bputs(cstr, pmode);
 		JS_RESUMEREQUEST(cx, rc);
@@ -1242,7 +1247,8 @@ js_print(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->bputs(cstr);
 		JS_RESUMEREQUEST(cx, rc);
 	}
-	free(cstr);
+	if(cstr)
+		free(cstr);
 
     return(JS_TRUE);
 }
@@ -1266,7 +1272,7 @@ js_strlen(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc > 1)
-		(void)JS_ValueToInt32(cx, argv[1], &pmode);
+		JS_ValueToInt32(cx, argv[1], &pmode);
 
 	JSSTRING_TO_MSTRING(cx, str, cstr, NULL);
 	if(cstr==NULL)
@@ -1761,11 +1767,11 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_OBJECT(argv[0])) {
-		if(!JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"x", &val)
-			|| !JS_ValueToInt32(cx,val,&x))
+		JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"x", &val);
+		if(!JS_ValueToInt32(cx,val,&x))
 			return JS_FALSE;
-		if(!JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"y", &val)
-			|| !JS_ValueToInt32(cx,val,&y))
+		JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"y", &val);
+		if(!JS_ValueToInt32(cx,val,&y))
 			return JS_FALSE;
 	} else {
 		if((!JS_ValueToInt32(cx,argv[0],&x)) ||
@@ -2093,26 +2099,10 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
     return(JS_TRUE);
 }
 
-static JSBool
-js_term_updated(JSContext *cx, uintN argc, jsval *arglist)
-{
-	sbbs_t*		sbbs;
-	jsrefcount	rc;
-
-	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
-		return JS_FALSE;
-
-	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->update_nodeterm()));
-	JS_RESUMEREQUEST(cx, rc);
-
-    return JS_TRUE;
-}
-
 static jsSyncMethodSpec js_console_functions[] = {
 	{"inkey",			js_inkey,			0, JSTYPE_STRING,	JSDOCSTR("[mode=<tt>K_NONE</tt>] [,timeout=<tt>0</tt>]")
 	,JSDOCSTR("get a single key with optional <i>timeout</i> in milliseconds (defaults to 0, for no wait).<br>"
-		"Returns an empty string (or <tt>null</tt> when the <tt>K_NUL</tt> mode flag is used) if there is no input (e.g. timeout occurs).<br>"
+		"Returns an empty string if there is no input (e.g. timeout occurs).<br>"
 		"See <tt>K_*</tt> in <tt>sbbsdefs.js</tt> for <i>mode</i> flags.")
 	,311
 	},
@@ -2323,10 +2313,6 @@ static jsSyncMethodSpec js_console_functions[] = {
 		"supports all the specified <i>terminal_flags</i>, or returns the current user/client's "
 		"<i>terminal_flags</i> (numeric bit-field) if no <i>terminal_flags</i> were specified")
 	,314
-	},
-	{"term_updated",	js_term_updated,	1, JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("update the node's <tt>terminal.ini</tt> file to match the current terminal settings")
-	,31802
 	},
 	{"backspace",		js_backspace,		0, JSTYPE_VOID,		JSDOCSTR("[count=<tt>1</tt>]")
 	,JSDOCSTR("send a destructive backspace sequence")

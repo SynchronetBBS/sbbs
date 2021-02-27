@@ -1,9 +1,8 @@
 load('sbbsdefs.js');
-var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
+var settings = load('modopts.js', 'web');
 
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
-load(settings.web_lib + 'files.js');
 require('filebase.js', 'FileBase');
 
 var CHUNK_SIZE = 1024;
@@ -21,13 +20,12 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
                 file_area.dir[http_request.query.dir[0]].index >= 0 &&
 				file_area.dir[http_request.query.dir[0]].can_download &&
 				typeof http_request.query.file !== 'undefined'
-				&& user.compare_ars(file_area.dir[http_request.query.dir[0]].download_ars)
 			) {
 				var dircode = file_area.dir[http_request.query.dir[0]].code;
 				var fileBase = new FileBase(dircode);
 				var file = null;
 				fileBase.some(function (e) {
-					if (e.name.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
+					if (e.base.toLowerCase() + '.' + e.ext.toLowerCase() !== http_request.query.file[0].toLowerCase()) {
 						return false;
 					} else if (typeof e.path !== 'undefined') {
 						file = e;
@@ -42,18 +40,8 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') &&
 					reply.error = 'Not enough credits to download this file';
 					break;
 				}
-				var mt;
-				if (!settings.files_inline || settings.files_inline_blacklist.indexOf(file.ext) > -1) {
-					mt = 'application/octet-stream';
-				} else {
-					mt = getMimeType(file);
-				}
-				http_reply.header['Content-Type'] = mt;
-				if (mt === 'application/octet-stream') {
-					http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
-				} else {
-					http_reply.header['Content-Disposition'] = 'inline';
-				}
+				http_reply.header['Content-Type'] = 'application/octet-stream';
+				http_reply.header['Content-Disposition'] = 'attachment; filename="' + file.base + '.' + file.ext + '"';
 				http_reply.header['Content-Encoding'] = 'binary';
 				http_reply.header['Content-Length'] = file_size(file.path);
 				var f = new File(file.path);

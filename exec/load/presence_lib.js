@@ -88,8 +88,6 @@ function node_misc(node, is_sysop)
 			flags += 'D';
 		if(node_misc&NODE_LCHAT)
 			flags += 'C';
-		if(node_misc&NODE_FCHAT)
-			flags += 'F';
 		if(node.status == NODE_QUIET)
 			flags += 'Q';
 		if(flags)
@@ -286,19 +284,19 @@ function web_users(max_inactivity)
         const f = new File(e);
         if (f.open('r')) {
             const session = f.iniGetObject();
-			users.push({
-				name: user.alias,
-				usernum: un,
-				action: session.action,
-				age: user.age,
-				gender: user.gender,
-				location: user.location,
-				logontime: file_date(e), // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
-				do_not_disturb: (user.chat_settings & CHAT_NOPAGE) ? true : undefined,
-				msg_waiting: (file_size(format(system.data_dir + "msgs/%04u.msg", un)) > 0) ? true : undefined
-			});
             f.close();
         }
+		users.push({
+			name: user.alias,
+			usernum: un,
+			action: session.action,
+			age: user.age,
+			gender: user.gender,
+			location: user.location,
+			logontime: file_date(e), // TODO: this is probably not the actual logon time, but more like "last activity" time (?)
+			do_not_disturb: (user.chat_settings & CHAT_NOPAGE) ? true : undefined,
+			msg_waiting: (file_size(format(system.data_dir + "msgs/%04u.msg", un)) > 0) ? true : undefined
+		});
 	});
 	return users;
 }
@@ -323,8 +321,7 @@ function nodelist(print, active, listself, is_sysop, options)
 	var n;
 	for(n = 0; n < system.node_list.length; n++) {
 		var node = system.get_node(n + 1);
-		if(active && node.status != NODE_INUSE
-			&& (!is_sysop || node.status != NODE_QUIET))
+		if(active && node.status != NODE_INUSE)
 			continue;
 		if(js.global.bbs && n == (bbs.node_num - 1)) {
 			if(!listself)

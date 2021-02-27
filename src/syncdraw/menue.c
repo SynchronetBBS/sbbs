@@ -135,7 +135,7 @@ Menues(int x, int y)
 int 
 menue(void)
 {
-	int             a, b, i;
+	int             x, a, b, i;
 	char			buf[80*2*2];
 	b = 0;
 	ActiveMenue = 1;
@@ -144,7 +144,7 @@ menue(void)
 		if (ActiveMenue != b) {
 			ShowScreen(0, 0);
 			i=0;
-			buf[i++]='\xdf';
+			buf[i++]=223;
 			buf[i++]=ATTR_NORM_LOW;
 			i+=bufprintf(buf+i,ActiveMenue==1?ATTR_NORM_BAR_CURR:ATTR_NORM_BAR," FILES      ");
 			i+=bufprintf(buf+i,ActiveMenue==2?ATTR_NORM_BAR_CURR:ATTR_NORM_BAR,"FONTS      ");
@@ -153,11 +153,11 @@ menue(void)
 			i+=bufprintf(buf+i,ActiveMenue==5?ATTR_NORM_BAR_CURR:ATTR_NORM_BAR,"MISC.        ");
 			i+=bufprintf(buf+i,ActiveMenue==6?ATTR_NORM_BAR_CURR:ATTR_NORM_BAR,"TOGGLES    ");
 			i+=bufprintf(buf+i,ActiveMenue==7?ATTR_NORM_BAR_CURR:ATTR_NORM_BAR,"HELP");
-			buf[i++]='\xdb';
+			buf[i++]=219;
 			buf[i++]=ATTR_NORM_LOW;
-			buf[i++]='\xdc';
+			buf[i++]=220;
 			buf[i++]=ATTR_NORM_LOW;
-			buf[i++]='\xdf';
+			buf[i++]=223;
 			buf[i]=ATTR_NORM_LOW;
 			puttext(1,1,80,1,buf);
 		}

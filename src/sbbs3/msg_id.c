@@ -1,5 +1,7 @@
 /* Synchronet Message-ID generation routines */
 
+/* $Id: msg_id.c,v 1.16 2020/07/15 06:12:56 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,15 +15,25 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "msg_id.h"
-#include "smblib.h"
-#include "ver.h"
+#include "sbbs.h"
 
 static ulong msg_number(smbmsg_t* msg)
 {
@@ -167,7 +179,8 @@ BOOL DLLCALL add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg
  	if(msg->ftn_msgid == NULL) {
 		if(smb->subnum == INVALID_SUB && msg->to_net.type == NET_FIDO) {
 			safe_snprintf(msg_id, sizeof(msg_id)
-				,"%s %08lx"
+				,"%lu@%s %08lx"
+				,msg_number(msg)
 				,smb_faddrtoa(&cfg->faddr[nearest_sysfaddr(cfg, msg->to_net.addr)], NULL)
 				,msgid_serialno(msg)
 				);
@@ -242,9 +255,8 @@ char* DLLCALL msg_program_id(char* pid, size_t maxlen)
 	char compiler[64];
 
 	DESCRIBE_COMPILER(compiler);
-	snprintf(pid, maxlen, "%.10s %s%c-%s %s/%s %s %s"
+	snprintf(pid, maxlen, "%.10s %s%c-%s  %s %s"
 		,VERSION_NOTICE,VERSION,REVISION,PLATFORM_DESC
-		,git_branch, git_hash
 		,__DATE__,compiler);
 	return pid;
 }

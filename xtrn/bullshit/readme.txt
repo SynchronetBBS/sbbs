@@ -90,12 +90,6 @@ Contents
 			is available to be displayed to the user. Bullshit will exit
 			silently.
 
-			If 'newOnly' is set to the string "logon", then only new bulletins
-			will be shown to the user at logon time (and will silently exit
-			if none are available), but all bulletins will be shown at other
-			times (for example, adding bullshit to the external programs menu)
-
-
 	In the 'colors' section:
 
 		-	'title' and 'text' are the colors used when viewing an item

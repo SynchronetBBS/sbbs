@@ -190,7 +190,7 @@ prompt:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
-	console.print("\1n\xfe \1h\1bInterBBS \1n\xfe ");
+	console.print("\1n\1h\1bInterBBS: ");
 	console.mnemonics("Anyone: ~Telegram, Active-Users: ~Message/~List, or ~Quit: ");
 	console.aborted = false;
 	var key;
@@ -255,7 +255,7 @@ while(bbs.online) {
 				break;
 			}
 			done=false;
-			while(bbs.online && !done && !console.aborted && imsg_user[last_user]) {
+			while(bbs.online && !done && !console.aborted) {
 				printf("\1[\1n\1h\x11\1n-[\1hQ\1nuit/\1hA\1nll]-\1h\x10 \1y%-25s \1c%s\1>"
 					,imsg_user[last_user].name,imsg_user[last_user].bbs);
 				switch(console.getkey(K_UPPER|K_NOECHO)) {

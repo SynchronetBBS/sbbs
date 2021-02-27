@@ -1,9 +1,5 @@
 require('sbbsdefs.js', 'MSG_DELETE');
-require('xjs.js', 'xjs_compile');
 load(settings.web_lib + 'mime-decode.js');
-load(settings.web_lib + 'avatars.js');
-
-var avatars = new Avatars();
 
 function listGroups() {
     const response = [];
@@ -43,61 +39,60 @@ function listSubs(group) {
             moderated_ars: sub.moderated_ars,
             is_moderated: sub.is_moderated,
             scan_ptr: sub.scan_ptr,
-            scan_cfg: sub.scan_cfg,
+            scan_cfg: sub.scan_cfg
         };
     });
 }
 
-function getNewestMessageInSub(sub) {
-    const mb = new MsgBase(sub.code);
-    if (!mb.open()) return;
-    var h;
-    var ret;
-    for (var m = mb.last_msg; m >= mb.first_msg; m--) {
-        h = mb.get_msg_header(m);
-        if (h === null) continue;
-        ret = {
-            from: h.from,
-            subject: h.subject,
-            date: h.when_written_time, // should just be a timestamp; all date formatting should be client-side in forum.xjs
-        };
-        break;
-    }
-    mb.close();
-    return ret;
-}
+function listThreads(sub, offset, count, page_offset) {
 
-function getNewestMessagePerSub(grp) {
-    grp = parseInt(grp, 10);
-    if (isNaN(grp) || grp < 0 || !msg_area.grp_list[grp]) return [];
-    return msg_area.grp_list[grp].sub_list.reduce(function (a, c) {
-        const s = getNewestMessageInSub(c);
-        if (s !== undefined) a[c.code] = s;
-        return a;
-    }, {});
+    offset = parseInt(offset);
+    if (isNaN(offset) || offset < 0) return false;
+    count = parseInt(count);
+    if (isNaN(count) || count < 1) return false;
+
+    if (page_offset) offset = offset * count;
+
+    var threads = getMessageThreads(sub, settings.max_messages);
+    if (offset >= threads.order.length) return false;
+
+    var stop = Math.min(threads.order.length, offset + count);
+    var ret = { total: threads.order.length, threads : [] };
+    for (var n = offset; n < stop; n++) {
+        var thread = threads.thread[threads.order[n]];
+        var msgs = Object.keys(thread.messages);
+        thread.first = thread.messages[msgs[0]];
+        thread.last = thread.messages[msgs[msgs.length - 1]];
+        thread.messages = msgs.length;
+        ret.threads.push(thread);
+    }
+
+    return ret;
+
 }
 
 function getSubUnreadCount(sub) {
     var ret = {
-        scanned: 0,
-        total: 0,
+        scanned : 0,
+        total : 0
     };
-    if (msg_area.sub[sub] === undefined) return ret;
+    if (typeof msg_area.sub[sub] === 'undefined') return ret;
     try {
-        var sy = msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY;
-        var sn = msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW;
         var msgBase = new MsgBase(sub);
         msgBase.open();
         for (var m = msg_area.sub[sub].scan_ptr + 1; m <= msgBase.last_msg; m++) {
-            var h = msgBase.get_msg_header(m);
-            if (h === null || h.attr&MSG_DELETE || h.attr&MSG_NODISP) continue;
-            if ((sy && (h.to_ext === user.number || h.to === user.alias || h.to === user.name)) || sn) ret.scanned++;
+            var i = msgBase.get_msg_index(m);
+            if (i === null || i.attr&MSG_DELETE || i.attr&MSG_NODISP) continue;
+            if ((   msg_area.sub[sub].scan_cfg&SCAN_CFG_YONLY &&
+                    i.to === crc16_calc(user.alias.toLowerCase()) ||
+                    i.to === crc16_calc(user.name.toLowerCase()) ||
+                    (sub === 'mail' && i.to === crc16_calc(user.number))
+                ) ||
+                msg_area.sub[sub].scan_cfg&SCAN_CFG_NEW
+            ) {
+                ret.scanned++;
+            }
             ret.total++;
-            ret.newest = {
-                from: h.from,
-                subject: h.subject,
-                date: h.when_written_time
-            };
         }
         msgBase.close();
     } catch (err) {
@@ -118,7 +113,7 @@ function getGroupUnreadCount(group) {
         scanned : 0,
         total : 0
     };
-    if (msg_area.grp_list[group] === undefined) return ret;
+    if (typeof msg_area.grp_list[group] === 'undefined') return ret;
     msg_area.grp_list[group].sub_list.forEach(function (sub) {
         var count = getSubUnreadCount(sub.code);
         ret.scanned += count.scanned;
@@ -137,7 +132,7 @@ function getGroupUnreadCounts() {
 function getUnreadInThread(sub, thread, mkeys) {
     if (typeof thread == 'number') {
         var threads = getMessageThreads(sub, settings.max_messages);
-        if (threads.thread[thread] === undefined) return 0;
+        if (typeof threads.thread[thread] == 'undefined') return 0;
         thread = threads.thread[thread];
     }
     var count = 0;
@@ -149,7 +144,6 @@ function getUnreadInThread(sub, thread, mkeys) {
 }
 
 function getThreadVoteTotals(thread, mkeys) {
-    if (!mkeys) mkeys = Object.keys(thread.messages); // Not sure why it doesn't just do this already - does anything else call getThreadVoteTotals?
     return mkeys.reduce(function (a, c, i) {
         if (thread.messages[c].upvotes > 0) {
             if (i == 0) a.up.p++;
@@ -164,88 +158,58 @@ function getThreadVoteTotals(thread, mkeys) {
     }, { up: { p: 0, t: 0 }, down: { p: 0, t: 0 }, total: 0 });
 }
 
-// Called from lib/events/forum.js to scan a sub for updates
-// Very similar to listThreads, but the reply is smaller and there is no paging/offset
-function getThreadStats(sub, guest) {
+// { [thread_id]: { total, unread, votes: { up: { parent, total }, down: { parent, total }, total }, newest } }
+function getThreadStats(sub, offset, page_size) {
     const threads = getMessageThreads(sub, settings.max_messages);
-    const ret = {
-        sub: sub.code,
-        scan_cfg: sub.scan_cfg,
-    };
-    threads.order.forEach(function (e) {
-        const thread = threads.thread[e];
-        const mkeys = Object.keys(thread.messages);
-        ret[e] = {
-            id: e,
-            last: {
-                from: thread.messages[mkeys[mkeys.length - 1]].from,
-                when_written_time: thread.messages[mkeys[mkeys.length - 1]].when_written_time,
-            },
-            messages: mkeys.length,
-            unread: guest ? 0 : getUnreadInThread(sub, thread, mkeys),
-            votes: getThreadVoteTotals(thread, mkeys),
-        };
-    });
-    return ret;
-}
-
-function listThreads(sub, count, after) {
-
-    count = parseInt(count, 10);
-    if (isNaN(count) || count < 1) return false;
-
-    var threads = getMessageThreads(sub, settings.max_messages);
-    var offset = 0;
-    if (after) offset = threads.order.indexOf(after) + 1;
-
-    var msgs;
-    var thread;
-    var stop = Math.min(threads.order.length, offset + count);
-    var ret = { total: threads.order.length, threads : [] };
-    if (sub.scan_cfg&SCAN_CFG_NEW) {
-        ret.scan_cfg = 'new';
-    } else if (sub.scan_cfg&SCAN_CFG_YONLY) {
-        ret.scan_cfg = 'you_only';
-    }
+    const ret = {};
+    if (!offset) offset = 0;
+    if (!page_size) page_size = threads.order.length - offset;
+    offset = offset * page_size;
+    var stop = Math.min(threads.order.length, offset + page_size);
     for (var n = offset; n < stop; n++) {
-        thread = threads.thread[threads.order[n]];
-        msgs = Object.keys(thread.messages);
-        ret.threads.push({
-            id: thread.id,
-            subject: thread.subject,
-            first: thread.messages[msgs[0]],
-            last: thread.messages[msgs[msgs.length - 1]],
-            messages: msgs.length,
-            unread: is_user() ? getUnreadInThread(sub, thread) : 0,
-            votes: getThreadVoteTotals(thread),
-        });
+        var thread = threads.thread[threads.order[n]];
+        var mkeys = Object.keys(thread.messages);
+        ret[threads.order[n]] = {
+            total: mkeys.length,
+            unread: getUnreadInThread(sub, thread, mkeys),
+            votes: getThreadVoteTotals(thread, mkeys),
+            newest: {
+                from: thread.messages[mkeys[mkeys.length - 1]].from,
+                date: system.timestr(thread.messages[mkeys[mkeys.length - 1]].when_written_time)
+            }
+        };
     }
-
     return ret;
-
 }
 
 function getVotesInThread(sub, thread) {
     var ret = { t : { u : 0, d : 0 }, m : {} };
-    if (msg_area.sub[sub] === undefined) return ret;
+    if (typeof msg_area.sub[sub] === 'undefined') return ret;
     if (typeof thread === 'number') {
         var threads = getMessageThreads(sub, settings.max_messages);
-        if (threads.thread[thread] === undefined) return ret;
+        if (typeof threads.thread[thread] === 'undefined') return ret;
         thread = threads.thread[thread];
     }
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return ret;
-    Object.keys(thread.messages).forEach(function (m) {
-        if (thread.messages[m].upvotes > 0 || thread.messages[m].downvotes > 0) {
-            ret.t.up += thread.messages[m].upvotes;
-            ret.t.down += thread.messages[m].downvotes;
-            ret.m[thread.messages[m].number] = {
-                u: thread.messages[m].upvotes,
-                d: thread.messages[m].downvotes,
-                v: msgBase.how_user_voted(thread.messages[m].number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias),
-            };
+    Object.keys(thread.messages).forEach(
+        function (m) {
+            if (thread.messages[m].upvotes > 0 ||
+                thread.messages[m].downvotes > 0
+            ) {
+                ret.t.up += thread.messages[m].upvotes;
+                ret.t.down += thread.messages[m].downvotes;
+                ret.m[thread.messages[m].number] = {
+                    u : thread.messages[m].upvotes,
+                    d : thread.messages[m].downvotes,
+                    v : msgBase.how_user_voted(
+                        thread.messages[m].number,
+                        msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+                    )
+                };
+            }
         }
-    });
+    );
     msgBase.close();
     return ret;
 }
@@ -253,36 +217,40 @@ function getVotesInThread(sub, thread) {
 function getVotesInThreads(sub) {
     var threads = getMessageThreads(sub, settings.max_messages);
     var ret = {};
-    Object.keys(threads.thread).forEach(function (t) {
-        Object.keys(threads.thread[t].messages).forEach(function (m, i) {
-            if (threads.thread[t].messages[m].upvotes < 1 && threads.thread[t].messages[m].downvotes < 1) return;
-            if (ret[t] === undefined) {
-                ret[t] = { p: { u: 0, d: 0 }, t: { u: 0, d: 0 } };
-                if (i < 1) {
-                    ret[t].p.u = threads.thread[t].messages[m].upvotes;
-                    ret[t].p.d = threads.thread[t].messages[m].downvotes;
+    Object.keys(threads.thread).forEach(
+        function(t) {
+            Object.keys(threads.thread[t].messages).forEach(
+                function (m, i) {
+                    if (threads.thread[t].messages[m].upvotes < 1 &&
+                        threads.thread[t].messages[m].downvotes < 1
+                    ) {
+                        return;
+                    }
+                    if (typeof ret[t] === 'undefined') {
+                        ret[t] = { p : { u : 0, d : 0 }, t : { u : 0, d : 0 } };
+                        if (i < 1) {
+                            ret[t].p.u = threads.thread[t].messages[m].upvotes;
+                            ret[t].p.d = threads.thread[t].messages[m].downvotes;
+                        }
+                    }
+                    ret[t].t.u += threads.thread[t].messages[m].upvotes;
+                    ret[t].t.d += threads.thread[t].messages[m].downvotes;
                 }
-            }
-            ret[t].t.u += threads.thread[t].messages[m].upvotes;
-            ret[t].t.d += threads.thread[t].messages[m].downvotes;
-        });
-    });
+            );
+        }
+    );
     return ret;
 }
 
 function getUserPollData(sub, id) {
-    var ret = {
-        answers: 0,
-        tally: [],
-        show_results: false,
-    };
-    if (msg_area.sub[sub] === undefined) return ret;
+    var ret = { answers : 0, tally : [], show_results : false };
+    if (typeof msg_area.sub[sub] === 'undefined') return ret;
     id = parseInt(id);
     if (isNaN(id)) return ret;
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return ret;
     // var header = msgBase.get_msg_header(id);
-    // Temporary use of get_all_msg_headers() to get header.tally for polls -- lol, "temporary"
+    // Temporary use of get_all_msg_headers() to get header.tally for polls
     var headers = msgBase.get_all_msg_headers();
     var header = null;
     for (var h in headers) {
@@ -296,7 +264,10 @@ function getUserPollData(sub, id) {
         return ret;
     }
     if (header.tally && Array.isArray(header.tally)) ret.tally = header.tally;
-    ret.answers = msgBase.how_user_voted(header.number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias);
+    ret.answers = msgBase.how_user_voted(
+        header.number,
+        msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+    );
     msgBase.close();
     var pollAttr = header.auxattr&POLL_RESULTS_MASK;
     if (header.from === user.alias || header.from === user.name) {
@@ -312,19 +283,32 @@ function getUserPollData(sub, id) {
 }
 
 function getMailHeaders(sent, ascending) {
-    if (sent !== undefined && sent && user.security.restrictions&UFLAG_K) return []; // They'll just see nothing.  Provide actual feedback?  Does anyone use REST K?
+    if (typeof sent !== 'undefined' &&
+        sent &&
+        user.security.restrictions&UFLAG_K
+    ) {
+        return []; // They'll just see nothing.  Provide actual feedback?  Does anyone use REST K?
+    }
     var headers = [];
     var msgBase = new MsgBase('mail');
     if (!msgBase.open()) return headers;
     for (var m = msgBase.first_msg; m <= msgBase.last_msg; m++) {
         var h = msgBase.get_msg_header(m);
         if (h === null || h.attr&MSG_DELETE) continue;
-        if ((sent !== undefined && sent) && h.from_ext != user.number) continue;
-        if ((sent === undefined || !sent) && h.to_ext != user.number) continue;
+        if (    (typeof sent != 'undefined' && sent) &&
+                h.from_ext != user.number
+        ) {
+            continue;
+        } else if (
+            (typeof sent == 'undefined' || !sent) &&
+            h.to_ext != user.number
+        ) {
+            continue;
+        }
         headers.push(h);
     }
     msgBase.close();
-    if (ascending === undefined || !ascending) headers.reverse(); // not sure why the double !checks re: ascending and sent
+    if (typeof ascending === 'undefined' || !ascending) headers.reverse();
     return headers;
 }
 
@@ -337,7 +321,7 @@ function get_mail_headers(filter, ascending) {
         headers: [],
         sent: { read: 0, unread: 0 },
         spam: { read: 0, unread: 0 },
-        inbox: { read: 0, unread: 0 },
+        inbox: { read: 0, unread: 0 }
     };
     if (filter == 'sent' && user.security.restrictions&UFLAG_K) return ret; // I don't remember what this is for.
     const msg_base = new MsgBase('mail');
@@ -349,7 +333,7 @@ function get_mail_headers(filter, ascending) {
             h.attr&MSG_READ ? ret.sent.read++ : (ret.sent.unread++);
             if (filter == 'sent') ret.headers.push(h);
         }
-    	if (h.to_ext == user.number) {
+	if (h.to_ext == user.number) {
             if (is_spam(h)) {
                 h.attr&MSG_READ ? ret.spam.read++ : (ret.spam.unread++);
                 if (filter == 'spam') ret.headers.push(h);
@@ -366,8 +350,8 @@ function get_mail_headers(filter, ascending) {
 
 function mimeDecode(header, body, code) {
     const ret = {
-        type: '',
-        body: [],
+        type : '',
+        body : []
     };
     const msg = mime_decode(header, body, code);
     if (msg.inlines) {
@@ -394,8 +378,8 @@ function mimeDecode(header, body, code) {
 function getMailBody(number) {
 
     var ret = {
-        type: '',
-        body: ''
+        type : '',
+        body : ''
     };
 
     number = Number(number);
@@ -420,23 +404,8 @@ function getMailBody(number) {
     ret.body = formatMessage(pt_body == body ? decoded.body : pt_body); // See above re: pt_body
     ret.inlines = decoded.inlines;
     ret.attachments = decoded.attachments;
-    if (user.is_sysop) {
-        ret.buttons = [
-            format(xjs_eval(settings.web_components + 'twit-button.xjs', true), number, number, header.from, header.from_net_addr),
-        ];
-    }
 
     return ret;
-}
-
-function addTwit(str) {
-    const f = new File(system.ctrl_dir + 'twitlist.cfg');
-    if (!f.open('a')) {
-        log(LOG_ERR, 'Failed to add ' + str + ' to twitlist');
-        return;
-    }
-    f.writeln(str);
-    f.close();
 }
 
 // Returns the user's signature, or an empty String
@@ -445,11 +414,10 @@ function getSignature() {
     if (!file_exists(fn)) return '';
     var f = new File(fn);
     f.open('r');
-    if (js.global.utf8_encode) {
-    	var signature = utf8_encode(f.read());
-    } else {
+    if(js.global.utf8_encode)
+	var signature = utf8_encode(f.read());
+    else
         var signature = ascii_str(f.read());
-    }
     f.close();
     return signature;
 }
@@ -459,7 +427,7 @@ function getSignature() {
 function postMessage(sub, header, body) {
     var ret = false;
     if (user.alias === settings.guest ||
-        msg_area.sub[sub] === undefined ||
+        typeof msg_area.sub[sub] === 'undefined' ||
         !msg_area.sub[sub].can_post ||
         typeof header.to !== 'string' ||
         header.to === '' ||
@@ -494,10 +462,15 @@ function postMessage(sub, header, body) {
 // Called by postNew/postReply, not directly
 function postMail(header, body) {
     // Lazy ARS checks; we could check the *type* of email being sent, I guess.
-    if (user.security.restrictions&UFLAG_E || user.security.restrictions&UFLAG_M) {
+    if (user.security.restrictions&UFLAG_E ||
+        user.security.restrictions&UFLAG_M
+    ) {
         return false;
     }
-    if (typeof header.to !== 'string' || typeof header.subject !== 'string' || typeof body !== 'string') {
+    if (typeof header.to !== 'string' ||
+        typeof header.subject !== 'string' ||
+        typeof body !== 'string'
+    ) {
         return false;
     }
     var ret = false;
@@ -551,7 +524,12 @@ function postNew(sub, to, subject, body) {
 // Add a new message to 'sub' in reply to parent message 'pid'
 function postReply(sub, body, pid) {
     var ret = false;
-    if (typeof sub !== 'string' || typeof body !== 'string' || typeof pid !== 'number') return ret;
+    if (    typeof sub !== 'string' ||
+            typeof body !== 'string' ||
+            typeof pid !== 'number'
+    ) {
+        return ret;
+    }
     try {
         var msgBase = new MsgBase(sub);
         msgBase.open();
@@ -559,15 +537,20 @@ function postReply(sub, body, pid) {
         msgBase.close();
         if (pHeader === null) return ret;
         var header = {
-            to: pHeader.from == user.alias ? pHeader.to : pHeader.from,
-            from: user.alias,
-            from_ext: user.number,
-            subject: pHeader.subject,
-            thread_id: pHeader.thread_id === undefined ? pHeader.number : pHeader.thread_id,
-            thread_back: pHeader.number,
+            'to' : pHeader.from == user.alias ? pHeader.to : pHeader.from,
+            'from' : user.alias,
+            'subject' : pHeader.subject,
+            'thread_id' : (
+                typeof pHeader.thread_id === 'undefined'
+                ? pHeader.number
+                : pHeader.thread_id
+            ),
+            'thread_back' : pHeader.number
         };
         if (sub === 'mail') {
-            if (typeof pHeader.from_net_addr !== 'undefined') header.to_net_addr = pHeader.from_net_addr;
+            if (typeof pHeader.from_net_addr !== 'undefined') {
+                header.to_net_addr = pHeader.from_net_addr;
+            }
             ret = postMail(header, body);
         } else {
             ret = postMessage(sub, header, body);
@@ -580,9 +563,16 @@ function postReply(sub, body, pid) {
 
 function postPoll(sub, subject, votes, results, answers, comments) {
 
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
-    if (typeof msg_area.sub[sub] === 'undefined' || !msg_area.sub[sub].can_post) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+        return false;
+    }
+
+    if (typeof msg_area.sub[sub] === 'undefined' || !msg_area.sub[sub].can_post) {
+        return false;
+    }
+
     if (typeof subject !== 'string' || subject.length < 1) return false;
+
     if (!Array.isArray(answers) || answers.length < 2) return false;
 
     votes = parseInt(votes);
@@ -590,34 +580,38 @@ function postPoll(sub, subject, votes, results, answers, comments) {
     if (votes > answers) votes = answers;
 
     results = parseInt(results);
-    if (isNaN(results) || results < 0 || results > 3) return false;
+    if (isNaN(results) || results < 0 || results > 3) {
+        return false;
+    }
 
     var header = {
-        attr: MSG_POLL,
-        subject: subject.substr(0, LEN_TITLE),
-        from: msg_area.sub[sub].settings&SUB_AONLY ? 'Anonymous' : (msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias),
-        from_ext: user.number,
-        to: 'All',
-        field_list: [],
-        auxattr: (results<<POLL_RESULTS_SHIFT) | MSG_HFIELDS_UTF8,
-        votes: votes
+        attr : MSG_POLL,
+        subject : subject.substr(0, LEN_TITLE),
+        from : msg_area.sub[sub].settings&SUB_AONLY ? "Anonymous" : (msg_area.sub[sub].settings&SUB_NAME ? user.name : user.alias),
+        from_ext : user.number,
+        to : 'All',
+        field_list : [],
+        auxattr : (results<<POLL_RESULTS_SHIFT) | MSG_HFIELDS_UTF8,
+        votes : votes
     };
 
     if (Array.isArray(comments)) {
-        comments.forEach(function (e) {
-            header.field_list.push({
-                type: SMB_COMMENT,
-                data: e.substr(0, LEN_TITLE),
-            });
-        });
+        comments.forEach(
+            function (e) {
+                header.field_list.push(
+                    { type : SMB_COMMENT, data : e.substr(0, LEN_TITLE) }
+                );
+            }
+        );
     }
 
-    answers.forEach(function (e) {
-        header.field_list.push({
-            type: SMB_POLL_ANSWER,
-            data: e.substr(0, LEN_TITLE),
-        });
-    });
+    answers.forEach(
+        function (e) {
+            header.field_list.push(
+                { type : SMB_POLL_ANSWER, data : e.substr(0, LEN_TITLE) }
+            );
+        }
+    );
 
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
@@ -634,12 +628,16 @@ function postPoll(sub, subject, votes, results, answers, comments) {
 // - This is another sub on which the user is an operator
 function deleteMessage(sub, number) {
     number = parseInt(number);
-    if (msg_area.sub[sub] === undefined && sub !== 'mail') return false;
+    if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') {
+        return false;
+    }
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var header = msgBase.get_msg_header(number);
     if (header === null) return false;
-    if (sub === 'mail' && (header.to_ext == user.number || header.from_ext == user.number)) {
+    if (sub === 'mail' &&
+        (header.to_ext == user.number || header.from_ext == user.number)
+    ) {
         var ret = msgBase.remove_msg(number);
     } else if (sub !== 'mail' && msg_area.sub[sub].is_operator) {
         var ret = msgBase.remove_msg(number);
@@ -651,25 +649,31 @@ function deleteMessage(sub, number) {
 }
 
 function deleteMail(numbers) {
-    if (numbers === undefined || !Array.isArray(numbers)) return false;
+    if (typeof numbers === 'undefined' || !Array.isArray(numbers)) return false;
     var msgBase = new MsgBase('mail');
     if (!msgBase.open()) return false;
-    numbers.forEach(function (e) {
-        e = parseInt(e);
-        if (isNaN(e) || e < msgBase.first_msg || e > msgBase.last_msg) return;
-        var header = msgBase.get_msg_header(e);
-        if (header === null) return;
-        if (header.to_ext == user.number || header.from_ext == user.number) {
-            msgBase.remove_msg(e);
+    numbers.forEach(
+        function (e) {
+            e = parseInt(e);
+            if (isNaN(e) || e < msgBase.first_msg || e > msgBase.last_msg) return;
+            var header = msgBase.get_msg_header(e);
+            if (header === null) return;
+            if (header.to_ext == user.number || header.from_ext == user.number) {
+                msgBase.remove_msg(e);
+            }
         }
-    });
+    );
     msgBase.close();
     return true;
 }
 
 function voteMessage(sub, number, up) {
-    if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') return false;
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
+    if (typeof msg_area.sub[sub] === 'undefined' && sub !== 'mail') {
+        return false;
+    }
+    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+        return false;
+    }
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
     number = parseInt(number);
     if (isNaN(number)) return false;
@@ -682,14 +686,16 @@ function voteMessage(sub, number, up) {
         msgBase.close();
         return false;
     }
-    var uv = msgBase.how_user_voted(header.number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias);
+    var uv = msgBase.how_user_voted(
+        header.number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+    );
     if (uv === 0) {
         var vh = {
-            from: msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
-            from_ext: user.number,
-            from_net_type: NET_NONE,
-            thread_back: header.number,
-            attr: up ? MSG_UPVOTE : MSG_DOWNVOTE,
+            'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
+            'from_ext' : user.number,
+            'from_net_type' : NET_NONE,
+            'thread_back' : header.number,
+            'attr' : up ? MSG_UPVOTE : MSG_DOWNVOTE
         };
         var ret = msgBase.vote_msg(vh);
     }
@@ -700,30 +706,44 @@ function voteMessage(sub, number, up) {
 function submitPollAnswers(sub, number, answers) {
     if (typeof msg_area.sub[sub] === 'undefined') return false;
     if (msg_area.sub[sub].settings&SUB_NOVOTING) return false;
-    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) return false;
+    if (user.alias == settings.guest || user.security.restrictions&UFLAG_V) {
+        return false;
+    }
     number = parseInt(number);
     if (isNaN(number)) return false;
     var msgBase = new MsgBase(sub);
     if (!msgBase.open()) return false;
     var ret = false;
     var header = msgBase.get_msg_header(number);
-    if (header !== null && header.attr&MSG_POLL && !(header.auxattr&POLL_CLOSED) && answers.length > 0 && (answers.length <= header.votes || (answers.length == 1 && header.votes == 0))) {
-        var uv = msgBase.how_user_voted(number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias);
+    if (header !== null &&
+        header.attr&MSG_POLL &&
+        !(header.auxattr&POLL_CLOSED) &&
+        answers.length > 0 &&
+        (   answers.length <= header.votes ||
+            (answers.length == 1 && header.votes == 0)
+        )
+    ) {
+        var uv = msgBase.how_user_voted(
+            number, msgBase.cfg.settings&SUB_NAME ? user.name : user.alias
+        );
         if (uv === 0) {
             var a = 0;
-            answers.forEach(function (e) {
-                e = parseInt(e);
-                if (isNaN(e) || e < 0 || e > 15) return;
-                a|=(1<<e);
-            });
-            ret = msgBase.vote_msg({
-                from: msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
-                from_ext: user.number,
-                from_net_type: NET_NONE,
-                thread_back: number,
-                attr: MSG_VOTE,
-                votes: a,
-            });
+            answers.forEach(
+                function (e) {
+                    e = parseInt(e);
+                    if (isNaN(e) || e < 0 || e > 15) return;
+                    a|=(1<<e);
+                }
+            );
+            ret = msgBase.vote_msg(
+                {   'from' : msgBase.cfg.settings&SUB_NAME ? user.name : user.alias,
+                    'from_ext' : user.number,
+                    'from_net_type' : NET_NONE,
+                    'thread_back' : number,
+                    'attr' : MSG_VOTE,
+                    'votes' : a
+                }
+            );
         }
     }
     msgBase.close();
@@ -733,15 +753,18 @@ function submitPollAnswers(sub, number, answers) {
 // Deuce's URL-ifier
 function linkify(body) {
     urlRE = /(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/gi;
-    body = body.replace(urlRE, function (str) {
-        var ret = '';
-        var p = 0;
-        var link = str.replace(/\.*$/, '');
-        var linktext = link;
-        if (link.indexOf('://') === -1) link = 'mailto:' + link;
-        return ('<a class="ulLink" href="' + link + '">' + linktext + '</a>' + str.substr(linktext.length));
-    });
-    return body;
+    body = body.replace(
+        urlRE,
+        function (str) {
+            var ret=''
+            var p=0;
+            var link=str.replace(/\.*$/, '');
+            var linktext=link;
+            if (link.indexOf('://') === -1) link = 'mailto:' + link;
+            return ('<a class="ulLink" href="' + link + '">' + linktext + '</a>' + str.substr(linktext.length));
+        }
+    );
+    return (body);
 }
 
 // Somewhat modified version of Deuce's "magical quoting stuff" from v3
@@ -750,37 +773,47 @@ function quotify(body) {
     var blockquote_start = '<blockquote>';
     var blockquote_end = '</blockquote>';
 
+    var lines = body.split(/\r?\n/);
+    body = '';
+
     var quote_depth=0;
     var prefixes = [];
 
-    const ret = body.split(/\r?\n/).reduce(function (a, c) {
-        var line = '';
+    for (l in lines) {
+
         var line_prefix = '';
-        var m = c.match(/^((?:\s?[^\s]{0,3}&gt;\s?)+)/);
+        var m = lines[l].match(/^((?:\s?[^\s]{0,3}&gt;\s?)+)/);
+
         if (m !== null) {
-            var p;
-            var broken = false;            
+
             var new_prefixes = m[1].match(/\s?[^\s]{0,3}&gt;\s?/g);
-            line = c;
+            var p;
+            var broken = false;
+
+            line = lines[l];
+
             // If the new length is smaller than the old one, close the extras
             for (p = new_prefixes.length; p < prefixes.length; p++) {
                 if (quote_depth < 1) continue;
                 line_prefix = line_prefix + blockquote_end;
                 quote_depth--;
             }
+
             for (p in new_prefixes) {
                 // Remove prefix from start of line
                 line = line.substr(new_prefixes[p].length);
-                if (prefixes[p] === undefined) {
+
+                if (typeof prefixes[p] === "undefined") {
                     /* New depth */
                     line_prefix = line_prefix + blockquote_start;
                     quote_depth++;
                 } else if (broken) {
                     line_prefix = line_prefix + blockquote_start;
                     quote_depth++;
-                } else if (prefixes[p].replace(/^\s*(.*?)\s*$/, '$1') != new_prefixes[p].replace(/^\s*(.*?)\s*$/, '$1')) {
+                } else if (prefixes[p].replace(/^\s*(.*?)\s*$/,"$1") != new_prefixes[p].replace(/^\s*(.*?)\s*$/,"$1")) {
                     // Close all remaining old prefixes and start one new one
-                    for (var o = p; o < prefixes.length && o < new_prefixes.length; o++) {
+                    var o;
+                    for (o = p; o < prefixes.length && o < new_prefixes.length; o++) {
                         if (quote_depth > 0) {
                             line_prefix = blockquote_end + line_prefix;
                             quote_depth--;
@@ -791,27 +824,33 @@ function quotify(body) {
                     broken = true;
                 }
             }
+
             prefixes = new_prefixes.slice();
             line = line_prefix + line;
+
         } else {
+
             for (p = 0; p < prefixes.length; p++) {
                 if (quote_depth < 1) continue;
                 line_prefix = line_prefix + blockquote_end;
                 quote_depth--;
             }
             prefixes = [];
-            line = line_prefix + c;
+            line = line_prefix + lines[l];
+
         }
-        return a + line + '\r\n';
-    }, '');
+
+        body = body + line + "\r\n";
+
+    }
 
     if (quote_depth !== 0) {
         for (;quote_depth > 0; quote_depth--) {
-            ret += blockquote_end;
+            body += blockquote_end;
         }
     }
 
-    return ret.replace(/\<\/blockquote\>\r\n<blockquote\>/g, '\r\n');
+    return body.replace(/\<\/blockquote\>\r\n<blockquote\>/g, "\r\n");
 
 }
 
@@ -881,7 +920,7 @@ function setScanCfg(sub, cfg) {
         SCAN_CFG_YONLY
     ];
 
-    if (msg_area.sub[sub] === undefined) return false;
+    if (typeof msg_area.sub[sub] === 'undefined') return false;
 
     cfg = parseInt(cfg);
     if (isNaN(cfg) || cfg < 0 || cfg > 2) return false;
@@ -895,17 +934,14 @@ function setScanCfg(sub, cfg) {
 
 function getMessageThreads(sub, max) {
 
-    var threads = {
-        thread: {},
-        order: [],
-    };
+    var threads = { thread : {}, order : [] };
     var subjects = {};
 
-    if (msg_area.sub[sub] === undefined) return threads;
+    if (typeof msg_area.sub[sub] === 'undefined') return threads;
     if (!msg_area.sub[sub].can_read) return threads;
 
     function addToThread(thread_id, header, subject) {
-        if (subject !== undefined) subjects[subject] = thread_id;
+        if (typeof subject !== 'undefined') subjects[subject] = thread_id;
         if (header.when_written_time > threads.thread[thread_id].newest) {
             threads.thread[thread_id].newest = header.when_written_time;
         }
@@ -913,33 +949,42 @@ function getMessageThreads(sub, max) {
             threads.thread[thread_id].unread++;
         }
         threads.thread[thread_id].messages[header.number] = {
-            attr: header.attr,
-            auxattr: header.auxattr,
-            number: header.number,
-            from: (header.attr&MSG_ANONYMOUS) ? "Anonymous" : (header.is_utf8 ? header.from : utf8_encode(header.from)),
-            from_ext: header.from_ext,
-            from_net_addr: header.from_net_addr,
-            to: header.is_utf8 ? header.to : utf8_encode(header.to),
-            when_written_time: header.when_written_time,
-            upvotes: (header.attr&MSG_POLL ? 0 : (header.upvotes || 0)),
-            downvotes: (header.attr&MSG_POLL ? 0 : (header.downvotes || 0)),
+            attr : header.attr,
+            auxattr : header.auxattr,
+            number : header.number,
+            from : (header.attr&MSG_ANONYMOUS) ? "Anonymous" : (header.is_utf8 ? header.from : utf8_encode(header.from)),
+            from_ext : header.from_ext,
+            from_net_addr : header.from_net_addr,
+            to : header.is_utf8 ? header.to : utf8_encode(header.to),
+            when_written_time : header.when_written_time,
+            upvotes : (header.attr&MSG_POLL ? 0 : (header.upvotes || 0)),
+            downvotes : (header.attr&MSG_POLL ? 0 : (header.downvotes || 0)),
             is_utf8: header.is_utf8
         };
         if (header.attr&MSG_POLL) {
-            header.field_list.sort(function (a, b) {
-                if (a.type === 0x62) return -1;
-                if (b.type === 0x62) return 1;
-                return 0;
-            });
+            header.field_list.sort(
+                function (a, b) {
+                    if (a.type === 0x62) return -1;
+                    if (b.type === 0x62) return 1;
+                    return 0;
+                }
+            );
             threads.thread[thread_id].messages[header.number].poll_comments = [];
             threads.thread[thread_id].messages[header.number].poll_answers = [];
-            header.field_list.forEach(function (e) {
-                if (e.type === SMB_COMMENT) {
-                    threads.thread[thread_id].messages[header.number].poll_comments.push(e);
-                } else if (e.type === SMB_POLL_ANSWER) {
-                    threads.thread[thread_id].messages[header.number].poll_answers.push(e);
+            header.field_list.forEach(
+                function (e) {
+                    switch (e.type) {
+                        case SMB_COMMENT:
+                            threads.thread[thread_id].messages[header.number].poll_comments.push(e);
+                            break;
+                        case SMB_POLL_ANSWER:
+                            threads.thread[thread_id].messages[header.number].poll_answers.push(e);
+                            break;
+                        default:
+                            break;
+                    }
                 }
-            });
+            );
             threads.thread[thread_id].messages[header.number].votes = header.votes;
             threads.thread[thread_id].messages[header.number].tally = header.tally || [];
             threads.thread[thread_id].messages[header.number].subject = header.subject;
@@ -975,38 +1020,101 @@ function getMessageThreads(sub, max) {
     msgBase.close();
     if (!headers) return threads;
 
-    Object.keys(headers).forEach(function (h) {
+    Object.keys(headers).forEach(
 
-        if (headers[h] === null || headers[h].attr&MSG_DELETE) {
-            delete headers[h];
-            return;
-        }
+        function(h) {
 
-        if (settings.forum_no_spam && is_spam(header)) {
-            delete headers[h];
-            return;
-        }
+            if (headers[h] === null || headers[h].attr&MSG_DELETE) {
+                delete headers[h];
+                return;
+            }
 
-        if (sub === 'mail' &&
-            headers[h].to !== user.alias &&
-            headers[h].to !== user.name &&
-            headers[h].to_ext !== user.number &&
-            headers[h].from !== user.alias &&
-            headers[h].from !== user.name &&
-            headers[h].from_ext !== user.number
-        ) {
-            delete headers[h];
-            return;
-        }
+            if (settings.forum_no_spam && is_spam(header)) {
+                delete headers[h];
+                return;
+            }
 
-        var subject = headers[h].subject.replace(/^(re:\s*)*/ig, '');
+            if (sub === 'mail' &&
+                headers[h].to !== user.alias &&
+                headers[h].to !== user.name &&
+                headers[h].to_ext !== user.number &&
+                headers[h].from !== user.alias &&
+                headers[h].from !== user.name &&
+                headers[h].from_ext !== user.number
+            ) {
+                delete headers[h];
+                return;
+            }
 
-        if (subjects[subject] !== undefined) {
-            addToThread(subjects[subject], headers[h]);
-        } else if (headers[h].thread_id !== 0) {
-            if (threads.thread[headers[h].thread_id] === undefined) {
-                threads.thread[headers[h].thread_id] = {
-                    id: headers[h].thread_id,
+            var subject = headers[h].subject.replace(/^(re:\s*)*/ig, '');
+
+            if (typeof subjects[subject] !== 'undefined') {
+
+                addToThread(subjects[subject], headers[h]);
+
+            } else if (headers[h].thread_id !== 0) {
+
+                if (typeof threads.thread[headers[h].thread_id]
+                    !== 'undefined'
+                ) {
+                    addToThread(headers[h].thread_id, headers[h], subject);
+                } else {
+                    threads.thread[headers[h].thread_id] = {
+                        id: headers[h].thread_id,
+                        newest : 0,
+                        subject: headers[h].subject,
+                        messages: {},
+                        votes: {
+                            up: 0,
+                            down: 0
+                        },
+                        unread: 0
+                    };
+                    addToThread(headers[h].thread_id, headers[h], subject);
+                }
+
+            } else if (headers[h].thread_back !== 0) {
+
+                if (typeof threads.thread[headers[h].thread_back]
+                    !== 'undefined'
+                ) {
+                    addToThread(headers[h].thread_back, headers[h], subject);
+                } else {
+                    var threaded = false;
+                    for (var t in threads.thread) {
+                        if (typeof
+                            threads.thread[t].messages[headers[h].thread_back]
+                            !== 'undefined'
+                        ) {
+                            addToThread(t, headers[h], subject);
+                            threaded = true;
+                            break;
+                        }
+                    }
+                    if (!threaded) {
+                        threads.thread[headers[h].thread_back] = {
+                            id: headers[h].thread_back,
+                            newest: 0,
+                            subject: headers[h].subject,
+                            messages: {},
+                            votes: {
+                                up: 0,
+                                down: 0
+                            },
+                            unread: 0
+                        };
+                        addToThread(
+                            headers[h].thread_back,
+                            headers[h],
+                            subject
+                        );
+                    }
+                }
+
+            } else {
+
+                threads.thread[headers[h].number] = {
+                    id: headers[h].number,
                     newest: 0,
                     subject: headers[h].subject,
                     messages: {},
@@ -1016,53 +1124,15 @@ function getMessageThreads(sub, max) {
                     },
                     unread: 0
                 };
+                addToThread(headers[h].number, headers[h], subject);
+
             }
-            addToThread(headers[h].thread_id, headers[h], subject);
-        } else if (headers[h].thread_back !== 0) {
-            if (threads.thread[headers[h].thread_back] !== undefined) {
-                addToThread(headers[h].thread_back, headers[h], subject);
-            } else {
-                var threaded = false;
-                for (var t in threads.thread) {
-                    if (threads.thread[t].messages[headers[h].thread_back] !== undefined) {
-                        addToThread(t, headers[h], subject);
-                        threaded = true;
-                        break;
-                    }
-                }
-                if (!threaded) {
-                    threads.thread[headers[h].thread_back] = {
-                        id: headers[h].thread_back,
-                        newest: 0,
-                        subject: headers[h].subject,
-                        messages: {},
-                        votes: {
-                            up: 0,
-                            down: 0
-                        },
-                        unread: 0
-                    };
-                    addToThread(headers[h].thread_back, headers[h], subject);
-                }
-            }
-        } else {
-            threads.thread[headers[h].number] = {
-                id: headers[h].number,
-                newest: 0,
-                subject: headers[h].subject,
-                messages: {},
-                votes: {
-                    up: 0,
-                    down: 0
-                },
-                unread: 0
-            };
-            addToThread(headers[h].number, headers[h], subject);
+
+            delete headers[h];
+
         }
 
-        delete headers[h];
-
-    });
+    );
 
     threads.order = Object.keys(threads.thread).sort(function (a, b) {
         return threads.thread[b].newest - threads.thread[a].newest;
@@ -1072,54 +1142,15 @@ function getMessageThreads(sub, max) {
 
 }
 
-function getMessageThread(sub, thread, count, after) {
-
-    thread = parseInt(thread, 10);
-    if (isNaN(thread)) return [];
-    count = parseInt(count, 10);
-    if (isNaN(count)) return [];
-
-    const t = getMessageThreads(sub, settings.max_messages).thread[thread];
-    const mkeys = Object.keys(t.messages);
-    var m; // Current message
-    var r = 0; // Messages returned
-    var n = 0; // Index into t.messages
-    if (after) n = mkeys.indexOf(after) + 1;
-
-    const msgBase = new MsgBase(sub);
-
-    return function threadIterator() {
-        if (r >= count || n >= mkeys.length) {
-            if (msgBase.is_open) msgBase.close();
-            return null; // Done
-        }
-        if (!msgBase.is_open && !msgBase.open()) {
-            throw new Error('Failed to open ' + sub);
-        }
-        m = t.messages[mkeys[n]];
-        const body = msgBase.get_msg_body(m.number);
-        if (body === null) {
-            n++;
-            return threadIterator();
-        }
-        if (r == 0) m.subject = t.subject;
-        m.body = formatMessage(body);
-        n++;
-        r++;
-        return m;
-    }
-
-}
-
 function isValidRequest() {
     if (Request.has_param('group')) {
         const grp = Request.get_param('group');
-        if (msg_area.grp_list[grp] === undefined) return false;
+        if (typeof msg_area.grp_list[grp] == 'undefined') return false;
         if (!user.compare_ars(msg_area.grp_list[grp].ars)) return false;
     }
     if (Request.has_param('sub')) {
         const sub = Request.get_param('sub');
-        if (msg_area.sub[sub] === undefined) return false;
+        if (typeof msg_area.sub[sub] == 'undefined') return false;
     }
     return true;
 }

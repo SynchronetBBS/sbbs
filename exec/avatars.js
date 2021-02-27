@@ -366,12 +366,8 @@ function export_users(msgbase, realnames, all)
 				if(!list.disabled)
 					list.disabled = [];
 				list.disabled.push(u.alias);
-				if(u.name != u.alias) {
-					if(realnames)
-						list.disabled.push(u.name);
-					else if(realnames !== false)
-						list.disabled.push("md5:" + md5_calc(u.name));
-				}
+				if(realnames)
+					list.disabled.push(u.name);
 			} else {
 				if(!lib.is_enabled(avatar))	{
 					alert("Invalid avatar for user #" + n);
@@ -382,12 +378,8 @@ function export_users(msgbase, realnames, all)
 				if(!list[data])
 					list[data] = [];
 				list[data].push(u.alias);
-				if(u.name != u.alias) {
-					if(realnames)
-						list[data].push(u.name);
-					else if(realnames !== false)
-						list[data].push("md5:" + md5_calc(u.name));
-				}
+				if(realnames)
+					list[data].push(u.name);
 			}
 			avatar.last_exported = new Date();
 			avatar.export_count++;
@@ -549,7 +541,7 @@ function main()
 	var cmd;
 	var i;
 	var offset;
-	var realnames;
+	var realnames = false;
 	var ptr;
 	var limit;
 	var all;
@@ -578,9 +570,6 @@ function main()
 				break;
 			case '-realnames':
 				realnames = true;
-				break;
-			case '-aliasonly':
-				realnames = false;
 				break;
 			case "-ptr":
 				ptr = val;

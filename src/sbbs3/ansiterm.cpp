@@ -1,4 +1,8 @@
+/* ansiterm.cpp */
+
 /* Synchronet ANSI terminal functions */
+
+/* $Id: ansiterm.cpp,v 1.27 2020/05/24 08:26:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +17,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -194,8 +210,7 @@ char* sbbs_t::ansi(int atr, int curatr, char* str)
 
 void sbbs_t::ansi_getlines()
 {
-	if(sys_status&SS_USERON && useron.misc&ANSI
-		&& (useron.rows == TERM_ROWS_AUTO || useron.cols == TERM_COLS_AUTO)
+	if(sys_status&SS_USERON && useron.misc&ANSI && !useron.rows /* Auto-detect rows */
 		&& online==ON_REMOTE) {									/* Remote */
 		SYNC;
 		putcom("\x1b[s\x1b[255B\x1b[255C\x1b[6n\x1b[u");
@@ -209,10 +224,8 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 	int		ch;
 	char	str[128];
 
-	if(x != NULL)
-		*x=0;
-	if(y != NULL)
-		*y=0;
+    *x=0;
+    *y=0;
 
 	putcom("\x1b[6n");	/* Request cursor position */
 
@@ -229,7 +242,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             	rsp++;
 				start=time(NULL);
 			}
-            else if(IS_DIGIT(ch) && rsp==2) {
+            else if(isdigit(ch) && rsp==2) {
 				if(y!=NULL) {
                		(*y)*=10;
 					(*y)+=(ch&0xf);
@@ -240,7 +253,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             	rsp++;
 				start=time(NULL);
 			}
-            else if(IS_DIGIT(ch) && rsp==3) {
+            else if(isdigit(ch) && rsp==3) {
 				if(x!=NULL) {
             		(*x)*=10;
 					(*x)+=(ch&0xf);
@@ -250,7 +263,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
             else if(ch=='R' && rsp)
             	break;
 			else {
-				str[rsp] = 0;
+				str[rsp + 1] = 0;
 #ifdef _DEBUG
 				char dbg[128];
 				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */true);

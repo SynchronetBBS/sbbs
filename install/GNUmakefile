@@ -12,7 +12,6 @@
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
 # SBBSDIR = Directory to do install to
 # REPODIR = Directory where source files are cloned
-# NOCAP = Set to defeat sbbs3 bind-capabilities (setcap) build target on Linux
 # bcc = Set to use Borland compiler
 # os = Set to the OS name (Not required)
 # SBBSUSER = Owner for the installed files
@@ -28,6 +27,7 @@
 # NO_X = Don't include build conio library (ciolib) for X
 # NO_GTK = Don't build GTK-based sysop tools
 # X_PATH = /path/to/X (if not /usr/X11R6)
+# USE_DOSEMU = Set to 1 to enable Linux-DOSEMU support
 
 # the magic bit:
 MKFLAGS += MAKEFLAGS=
@@ -40,7 +40,7 @@ endif
 ifdef SYMLINK
  INSBIN	:=	ln -sf
 else
- INSBIN	:=	cp -r
+ INSBIN	:=	cp
 endif
 
 ifdef bcc
@@ -78,12 +78,6 @@ else
 endif
 
 MKFLAGS	+=	os=$(os)
-
-ifndef NOCAP
-ifeq (($os),linux)
-	SETCAP 	:=	setcap
-endif
-endif
 
 ifdef DEBUG
  BUILD  :=  debug
@@ -130,6 +124,10 @@ ifdef X_PATH
  MKFLAGS	+=	X_PATH=$(X_PATH)
 endif
 
+ifdef USE_DOSEMU
+ MKFLAGS	+=	USE_DOSEMU=$(USE_DOSEMU)
+endif
+
 # Check for GLADE
 ifndef NO_GTK
  ifeq ($(shell pkg-config libglade-2.0 --exists && echo YES),YES)
@@ -149,7 +147,11 @@ binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
 externals:	sbj dpoker tbd
 
 sbbs3:	src
-	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) $(SETCAP)
+ifeq ($(os),linux)
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) setcap
+else
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS)
+endif
 
 sexpots:	src
 	$(MAKE) -C $(REPODIR)/src/sexpots $(MKFLAGS)
@@ -158,13 +160,13 @@ baja:	run sbbs3
 	$(MAKE) -C $(SBBSDIR)/exec $(MKFLAGS) BAJAPATH=$(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja
 
 sbj:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/sbj $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/xtrn/sbj $(MKFLAGS)
 
 dpoker:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/dpoker $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/xtrn/dpoker $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 tbd:	run
-	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/xtrn/tbd $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
 
 gtkuseredit:	src
 ifdef USE_GLADE
@@ -243,49 +245,36 @@ endif
 $(REPODIR):
 	git clone https://gitlab.com/SynchronetBBS/sbbs.git $(REPODIR) \
 		|| git clone https://github.com/SynchronetBBS/sbbs.git $(REPODIR) \
-		|| git clone https://gitlab.synchro.net/main/sbbs.git $(REPODIR)
-	git -C $(REPODIR) remote set-url origin https://gitlab.synchro.net/main/sbbs.git
+		|| git clone https://gitlab.synchro.net/sbbs/sbbs.git $(REPODIR)
+	git -C $(REPODIR) remote set-url origin https://gitlab.synchro.net/sbbs/sbbs.git
 ifdef TAG
 	git -C $(REPODIR) checkout tags/$(TAG)
 endif
 
 src: $(REPODIR)
 
-run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn \
-	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
+run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/node1 $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/xtrn
 
 $(SBBSDIR)/ctrl: $(REPODIR)
 	cp -r $(REPODIR)/ctrl $(SBBSDIR)
 
 $(SBBSDIR)/docs: $(REPODIR)
-	$(INSBIN) $(REPODIR)/docs $(SBBSDIR)
+	cp -r $(REPODIR)/docs $(SBBSDIR)
 
 $(SBBSDIR)/exec: $(REPODIR)
-	$(INSBIN) $(REPODIR)/exec $(SBBSDIR)
+	cp -r $(REPODIR)/exec $(SBBSDIR)
 
 $(SBBSDIR)/node1: $(REPODIR)
-	cp -r $(REPODIR)/node1 $@
-
-$(SBBSDIR)/node2: $(REPODIR)
-	cp -r $(REPODIR)/node1 $@
-
-$(SBBSDIR)/node3: $(REPODIR)
-	cp -r $(REPODIR)/node1 $@
-
-$(SBBSDIR)/node4: $(REPODIR)
-	cp -r $(REPODIR)/node1 $@
+	cp -r $(REPODIR)/node1 $(SBBSDIR)
 
 $(SBBSDIR)/text: $(REPODIR)
-	$(INSBIN) $(REPODIR)/text $(SBBSDIR)
+	cp -r $(REPODIR)/text $(SBBSDIR)
 
 $(SBBSDIR)/web: $(REPODIR)
-	$(INSBIN) $(REPODIR)/web $(SBBSDIR)
-
-$(SBBSDIR)/webv4: $(REPODIR)
-	$(INSBIN) $(REPODIR)/webv4 $(SBBSDIR)
+	cp -r $(REPODIR)/web $(SBBSDIR)
 
 $(SBBSDIR)/xtrn: $(REPODIR)
-	$(INSBIN) $(REPODIR)/xtrn $(SBBSDIR)
+	cp -r $(REPODIR)/xtrn $(SBBSDIR)
 
 $(SBBSDIR):
 	@[ ! -e $(SBBSDIR) ] && mkdir $(SBBSDIR);

@@ -46,7 +46,7 @@ with the following command:
 hdiutil convert ~/Desktop/SyncTERM.dmg -format UDRO -o /Volumes/Synchronet/sbbs/web/root/syncterm.bbsdev.net/SyncTERM.dmg -ov
 
 Release builds for Win32 using MinGW32 use the following command line:
-gmake CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres
+gmake DONT_CLOBBER_CC=yes CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres
 
 Release builds of jsdoor (not related at all)
-gmake jsdoor NO_LD_RUN_PATH=dumbass CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs
+gmake jsdoor DONT_CLOBBER_CC=yes CC=mingw32-gcc VERBOSE=please AR=mingw32-ar RANLIB=mingw32-ranlib RELEASE=1 CXX=mingw32-g++ WINDRES=mingw32-windres JSLIBDIR=../../3rdp/win32.release/mozjs/bin/ JSINCLUDE=../../3rdp/win32.release/mozjs/include/ JSLIB=mozjs

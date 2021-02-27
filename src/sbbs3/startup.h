@@ -1,5 +1,8 @@
 /* Synchronet main/telnet server thread startup structure */
 
+/* $Id: startup.h,v 1.84 2019/03/22 21:28:27 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -35,6 +50,7 @@
 
 typedef struct {
 	ulong	max_bytes;		/* max allocated bytes before garbage collection */
+	ulong	cx_stack;		/* bytes for script execution stack */
 	ulong	time_limit;		/* maximum number of ticks (for infinite loop detection) */
 	ulong	gc_interval;	/* number of ticks between garbage collection attempts */
 	ulong	yield_interval;	/* number of ticks between time-slice yields */
@@ -113,14 +129,12 @@ typedef struct {
 	/* Paths */
     char    ctrl_dir[128];
     char	dosemu_path[128];
-    char    dosemuconf_path[128];
     char	temp_dir[128];
 	char	answer_sound[128];
 	char	hangup_sound[128];
 	char	ini_fname[128];
 
 	/* Miscellaneous */
-	BOOL    usedosemu;
 	char	xtrn_term_ansi[32];		/* external ANSI terminal type (e.g. "ansi-bbs") */
 	char	xtrn_term_dumb[32];		/* external dumb terminal type (e.g. "dumb") */
 	char	host_name[128];
@@ -176,7 +190,6 @@ static struct init_field {
 #define BBS_OPT_ALLOW_SSH			(1<<12)	/* Allow logins via BSD SSH			*/
 #define BBS_OPT_NO_DOS				(1<<13) /* Don't attempt to run 16-bit DOS programs */
 #define BBS_OPT_NO_NEWDAY_EVENTS	(1<<14)	/* Don't check for a new day in event thread */
-#define BBS_OPT_HAPROXY_PROTO   	(1<<26)	/* Incoming requests are via HAproxy */
 #define BBS_OPT_NO_RECYCLE			(1<<27)	/* Disable recycling of server		*/
 #define BBS_OPT_GET_IDENT			(1<<28)	/* Get Identity (RFC 1413)			*/
 #define BBS_OPT_NO_JAVASCRIPT		(1<<29)	/* JavaScript disabled				*/
@@ -184,7 +197,7 @@ static struct init_field {
 
 /* bbs_startup_t.options bits that require re-init/recycle when changed */
 #define BBS_INIT_OPTS	(BBS_OPT_ALLOW_RLOGIN|BBS_OPT_ALLOW_SSH|BBS_OPT_NO_EVENTS|BBS_OPT_NO_SPY_SOCKETS \
-						|BBS_OPT_NO_JAVASCRIPT|BBS_OPT_HAPROXY_PROTO)
+						|BBS_OPT_NO_JAVASCRIPT)
 
 #if defined(STARTUP_INI_BITDESC_TABLES)
 static ini_bitdesc_t bbs_options[] = {
@@ -205,7 +218,6 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
 	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
 	{ BBS_OPT_NO_JAVASCRIPT			,"NO_JAVASCRIPT"		},
-	{ BBS_OPT_HAPROXY_PROTO			,"HAPROXY_PROTO"		},
 	{ BBS_OPT_MUTE					,"MUTE"					},
 	/* terminator */										
 	{ 0								,NULL					}

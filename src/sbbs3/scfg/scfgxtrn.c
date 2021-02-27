@@ -1,3 +1,6 @@
+/* $Id: scfgxtrn.c,v 1.71 2020/08/08 20:18:07 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -11,18 +14,33 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
+/****************************************************************************/
+/* Synchronet configuration utility 										*/
+/****************************************************************************/
 
 #include "scfg.h"
 
 char *daystr(char days);
 static void hotkey_cfg(void);
 
-static char* use_shell_opt = "Use Shell or New Context";
+static char* use_shell_opt = "Use Shell / New Context";
 static char* use_shell_help =
 	"`Use System Shell or New JavaScript Context to Execute:`\n"
 	"\n"
@@ -36,12 +54,6 @@ static char* use_shell_help =
 	"context for it to execute within, for every invocation."
 	;
 static char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
-static char* native_help =
-	"`Native Executable/Script:`\n"
-	"\n"
-	"If this program is `16-bit MS-DOS` executable, set this option to `No`,\n"
-	"otherwise (it is a native program or script) set this option to `Yes`.\n"
-	;
 
 #define CUT_XTRNSEC_NUM	USHRT_MAX
 
@@ -165,7 +177,7 @@ static char* monthstr(uint16_t months)
 			continue;
 		if(str[0])
 			strcat(str," ");
-		SAFECAT(str,mon[i]);
+		strcat(str,mon[i]);
 	}
 	
 	return(str);
@@ -346,9 +358,9 @@ void fevents_cfg()
 
 	while(1) {
 		i=0;
-		sprintf(opt[i++],"%-32.32s%s","Logon Event",cfg.sys_logon);
-		sprintf(opt[i++],"%-32.32s%s","Logout Event",cfg.sys_logout);
-		sprintf(opt[i++],"%-32.32s%s","Daily Event",cfg.sys_daily);
+		sprintf(opt[i++],"%-32.32s%.40s","Logon Event",cfg.sys_logon);
+		sprintf(opt[i++],"%-32.32s%.40s","Logout Event",cfg.sys_logout);
+		sprintf(opt[i++],"%-32.32s%.40s","Daily Event",cfg.sys_daily);
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`External Events:`\n"
@@ -420,7 +432,7 @@ void tevents_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_events && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-8.8s      %s",cfg.event[i]->code,cfg.event[i]->cmd);
+			sprintf(opt[i],"%-8.8s      %.50s",cfg.event[i]->code,cfg.event[i]->cmd);
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_events)
@@ -487,8 +499,8 @@ void tevents_cfg()
 		while(!done) {
 			k=0;
 			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.event[i]->code);
-			sprintf(opt[k++],"%-32.32s%s","Start-up Directory",cfg.event[i]->dir);
-			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.event[i]->cmd);
+			sprintf(opt[k++],"%-32.32s%.40s","Start-up Directory",cfg.event[i]->dir);
+			sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.event[i]->cmd);
 			sprintf(opt[k++],"%-32.32s%s","Enabled"
 				,cfg.event[i]->misc&EVENT_DISABLED ? "No":"Yes");
 			if(cfg.event[i]->node == NODE_ANY)
@@ -513,7 +525,7 @@ void tevents_cfg()
 				,cfg.event[i]->misc&EVENT_EXCL ? "Yes":"No");
 			sprintf(opt[k++],"%-32.32s%s","Force Users Off-line For Event"
 				,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
-			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
+			sprintf(opt[k++],"%-32.32s%s","Native Executable"
 				,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -539,7 +551,7 @@ void tevents_cfg()
 					done=1;
 					break;
 				case 0:
-					SAFECOPY(str,cfg.event[i]->code);
+					strcpy(str,cfg.event[i]->code);
 					uifc.helpbuf=
 						"`Timed Event Internal Code:`\n"
 						"\n"
@@ -550,7 +562,7 @@ void tevents_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						SAFECOPY(cfg.event[i]->code,str);
+						strcpy(cfg.event[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -611,7 +623,7 @@ void tevents_cfg()
 						SAFEPRINTF(str, "%u", cfg.event[i]->node);
 					if(uifc.input(WIN_MID|WIN_SAV,0,0,"Execution Node Number (or Any)"
 						,str,3,K_EDIT) > 0) {
-						if(IS_DIGIT(*str))
+						if(isdigit(*str))
 							cfg.event[i]->node=atoi(str);
 						else
 							cfg.event[i]->node = NODE_ANY;
@@ -631,7 +643,7 @@ void tevents_cfg()
 					for(p=str;*p;p++) {
 						if(atoi(p)) {
 							cfg.event[i]->months|=(1<<(atoi(p)-1));
-							while(*p && IS_DIGIT(*p))
+							while(*p && isdigit(*p))
 								p++;
 						} else {
 							for(j=0;j<12;j++)
@@ -660,7 +672,7 @@ void tevents_cfg()
 						if(!isdigit(*p))
 							continue;
 						cfg.event[i]->mdays|=(1<<atoi(p));
-						while(*p && IS_DIGIT(*p))
+						while(*p && isdigit(*p))
 							p++;
 					}
 					break;
@@ -683,7 +695,7 @@ void tevents_cfg()
 						if(k==-1)
 							break;
 						if(k==7)
-							cfg.event[i]->days=0x7f;
+							cfg.event[i]->days=(uchar)0xff;
 						else if(k==8)
 							cfg.event[i]->days=0;
 						else
@@ -785,9 +797,14 @@ void tevents_cfg()
 
 				case 11:
 					k=(cfg.event[i]->misc&EX_NATIVE) ? 0:1;
-					uifc.helpbuf=native_help;
+					uifc.helpbuf=
+						"`Native Executable:`\n"
+						"\n"
+						"If this event program is a native (e.g. non-DOS) executable, set this\n"
+						"option to `Yes`.\n"
+					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native Executable/Script",uifcYesNoOpts);
+						,"Native Executable",uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
 						cfg.event[i]->misc|=EX_NATIVE;
 						uifc.changes=TRUE;
@@ -981,16 +998,16 @@ void xtrn_cfg(uint section)
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.xtrn[i]->name);
 			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrn[i]->code);
-			sprintf(opt[k++],"%-27.27s%s","Start-up Directory",cfg.xtrn[i]->path);
-			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.xtrn[i]->cmd);
-			sprintf(opt[k++],"%-27.27s%s","Clean-up Command Line",cfg.xtrn[i]->clean);
+			sprintf(opt[k++],"%-27.27s%.40s","Start-up Directory",cfg.xtrn[i]->path);
+			sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.xtrn[i]->cmd);
+			sprintf(opt[k++],"%-27.27s%.40s","Clean-up Command Line",cfg.xtrn[i]->clean);
 			if(cfg.xtrn[i]->cost)
 				sprintf(str,"%"PRIu32" credits",cfg.xtrn[i]->cost);
 			else
 				strcpy(str,"None");
 			sprintf(opt[k++],"%-27.27s%s","Execution Cost",str);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.xtrn[i]->arstr);
-			sprintf(opt[k++],"%-27.27s%s","Execution Requirements"
+			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.xtrn[i]->arstr);
+			sprintf(opt[k++],"%-27.27s%.40s","Execution Requirements"
 				,cfg.xtrn[i]->run_arstr);
 			sprintf(opt[k++],"%-27.27s%s","Multiple Concurrent Users"
 				,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
@@ -1001,7 +1018,7 @@ void xtrn_cfg(uint section)
 					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr
 				,(cfg.xtrn[i]->misc&(XTRN_STDIO|XTRN_NOECHO))
 					==(XTRN_STDIO|XTRN_NOECHO) ? ", No Echo" : nulstr);
-			sprintf(opt[k++],"%-27.27s%s","Native Executable/Script"
+			sprintf(opt[k++],"%-27.27s%s","Native Executable"
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-27.27s%s",use_shell_opt
 				,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -1045,7 +1062,7 @@ void xtrn_cfg(uint section)
 				,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
 				,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
 			sprintf(opt[k++],"%-27.27s%s","Place Drop File In"
-				,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc&XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
+				,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":"Node Directory");
 			sprintf(opt[k++],"Time Options...");
 			opt[k][0]=0;
 			uifc.helpbuf=
@@ -1067,10 +1084,10 @@ void xtrn_cfg(uint section)
 						"\n"
 						"This is the name or description of the online program (door).\n"
 					;
-					SAFECOPY(str,cfg.xtrn[i]->name);
+					strcpy(str,cfg.xtrn[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Online Program Name"
 						,cfg.xtrn[i]->name,sizeof(cfg.xtrn[i]->name)-1,K_EDIT))
-						SAFECOPY(cfg.xtrn[i]->name,str);
+						strcpy(cfg.xtrn[i]->name,str);
 					break;
 				case 1:
 					uifc.helpbuf=
@@ -1080,11 +1097,11 @@ void xtrn_cfg(uint section)
 						"refer to it internally. This code is usually an abbreviation of the\n"
 						"online program name.\n"
 					;
-					SAFECOPY(str,cfg.xtrn[i]->code);
+					strcpy(str,cfg.xtrn[i]->code);
 					uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
 						,str,LEN_CODE,K_UPPER|K_EDIT);
 					if(code_ok(str))
-						SAFECOPY(cfg.xtrn[i]->code,str);
+						strcpy(cfg.xtrn[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -1249,7 +1266,12 @@ void xtrn_cfg(uint section)
 					break;
 				case 10:
 					k=(cfg.xtrn[i]->misc&XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf=native_help;
+					uifc.helpbuf=
+						"`Native Executable:`\n"
+						"\n"
+						"If this online program is a native (e.g. non-DOS) executable,\n"
+						"set this option to `Yes`.\n"
+					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 						,"Native",uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
@@ -1428,41 +1450,24 @@ void xtrn_cfg(uint section)
 					}
 					break;
 				case 16:
-					k = (cfg.xtrn[i]->misc & STARTUPDIR) ? 1 : (cfg.xtrn[i]->misc & XTRN_TEMP_DIR) ? 2 : 0;
+					k=0;
 					strcpy(opt[0],"Node Directory");
 					strcpy(opt[1],"Start-up Directory");
-					strcpy(opt[2],"Temporary Directory");
-					opt[3][0]=0;
+					opt[2][0]=0;
 					uifc.helpbuf=
 						"`Directory for Drop File:`\n"
 						"\n"
-						"You can have the data (drop) file created in the current `Node Directory`,\n"
-						"current `Temporary Directory`, or the `Start-up Directory` (if specified).\n"
-						"\n"
-						"For multi-user doors, you usually will `not` want the drop files placed\n"
-						"in the start-up directory due to potential conflict with other nodes.\n"
-						"\n"
-						"The safest option is the `Temp Directory`, as this directory is unique per\n"
-						"terminal server node and is automatically cleared-out for each logon.\n"
-						"\n"
-						"`Note:`\n"
-						"Many classic Synchronet (XSDK) doors assume the drop file will be\n"
-						"located in the `Node Directory`.\n"
+						"You can have the data file created in the current `Node Directory` or the\n"
+						"`Start-up Directory` (if one is specified).\n"
 					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Create Drop File In"
 						,opt);
-					if(!k && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != 0) {
-						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
+					if(!k && cfg.xtrn[i]->misc&STARTUPDIR) {
+						cfg.xtrn[i]->misc&=~STARTUPDIR;
 						uifc.changes=TRUE; 
 					}
-					else if(k==1 && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != STARTUPDIR) {
-						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
-						cfg.xtrn[i]->misc |= STARTUPDIR;
-						uifc.changes=TRUE; 
-					}
-					else if(k==2 && (cfg.xtrn[i]->misc&(STARTUPDIR | XTRN_TEMP_DIR)) != XTRN_TEMP_DIR) {
-						cfg.xtrn[i]->misc &= ~(STARTUPDIR | XTRN_TEMP_DIR);
-						cfg.xtrn[i]->misc |= XTRN_TEMP_DIR;
+					else if(k==1 && !(cfg.xtrn[i]->misc&STARTUPDIR)) {
+						cfg.xtrn[i]->misc|=STARTUPDIR;
 						uifc.changes=TRUE; 
 					}
 					break;
@@ -1583,7 +1588,7 @@ void xedit_cfg()
 
 	while(1) {
 		for(i=0;i<cfg.total_xedits && i<MAX_OPTS;i++)
-			sprintf(opt[i],"%-8.8s    %s",cfg.xedit[i]->code,cfg.xedit[i]->rcmd);
+			sprintf(opt[i],"%-8.8s    %.40s",cfg.xedit[i]->code,cfg.xedit[i]->rcmd);
 		opt[i][0]=0;
 		j=WIN_SAV|WIN_ACT|WIN_CHE|WIN_RHT;
 		if(cfg.total_xedits)
@@ -1668,14 +1673,14 @@ void xedit_cfg()
 			k=0;
 			sprintf(opt[k++],"%-32.32s%s","Name",cfg.xedit[i]->name);
 			sprintf(opt[k++],"%-32.32s%s","Internal Code",cfg.xedit[i]->code);
-			sprintf(opt[k++],"%-32.32s%s","Command Line",cfg.xedit[i]->rcmd);
-			sprintf(opt[k++],"%-32.32s%s","Access Requirements",cfg.xedit[i]->arstr);
+			sprintf(opt[k++],"%-32.32s%.40s","Command Line",cfg.xedit[i]->rcmd);
+			sprintf(opt[k++],"%-32.32s%.40s","Access Requirements",cfg.xedit[i]->arstr);
 			sprintf(opt[k++],"%-32.32s%s%s","Intercept I/O"
 				,cfg.xedit[i]->misc&XTRN_STDIO ? "Standard"
 					:cfg.xedit[i]->misc&XTRN_CONIO ? "Console":"No"
 				,(cfg.xedit[i]->misc&(XTRN_STDIO|WWIVCOLOR))
 					==(XTRN_STDIO|WWIVCOLOR) ? ", WWIV Color" : nulstr);
-			sprintf(opt[k++],"%-32.32s%s","Native Executable/Script"
+			sprintf(opt[k++],"%-32.32s%s","Native Executable"
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			sprintf(opt[k++],"%-32.32s%s",use_shell_opt
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -1693,11 +1698,8 @@ void xedit_cfg()
 			sprintf(opt[k++],"%-32.32s%s","Automatically Quoted Text"
 				,cfg.xedit[i]->misc&QUOTEALL ? "All":cfg.xedit[i]->misc&QUOTENONE
 					? "None" : "Prompt User");
-			SAFECOPY(str, cfg.xedit[i]->misc&QUICKBBS ? "MSGINF/MSGTMP ": "EDITOR.INF/RESULT.ED");
-			if(cfg.xedit[i]->misc&XTRN_LWRCASE)
-				strlwr(str);
-			sprintf(opt[k++],"%-32.32s%s %s","Editor Information Files"
-				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS":"WWIV", str);
+			sprintf(opt[k++],"%-32.32s%s","Editor Information Files"
+				,cfg.xedit[i]->misc&QUICKBBS ? "QuickBBS MSGINF/MSGTMP":"WWIV EDITOR.INF/RESULT.ED");
 			sprintf(opt[k++],"%-32.32s%s","Expand Line Feeds to CRLF"
 				,cfg.xedit[i]->misc&EXPANDLF ? "Yes":"No");
 			const char* p;
@@ -1745,13 +1747,13 @@ void xedit_cfg()
 						"\n"
 						"This is the name or description of the external editor.\n"
 					;
-					SAFECOPY(str,cfg.xedit[i]->name);
+					strcpy(str,cfg.xedit[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"External Editor Name"
 						,cfg.xedit[i]->name,sizeof(cfg.xedit[i]->name)-1,K_EDIT))
-						SAFECOPY(cfg.xedit[i]->name,str);
+						strcpy(cfg.xedit[i]->name,str);
 					break;
 				case 1:
-					SAFECOPY(str,cfg.xedit[i]->code);
+					strcpy(str,cfg.xedit[i]->code);
 					uifc.helpbuf=
 						"`External Editor Internal Code:`\n"
 						"\n"
@@ -1762,7 +1764,7 @@ void xedit_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						SAFECOPY(cfg.xedit[i]->code,str);
+						strcpy(cfg.xedit[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -1848,7 +1850,11 @@ void xedit_cfg()
 					break;
 				case 5:
 					k=(cfg.xedit[i]->misc&XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf=native_help;
+					uifc.helpbuf=
+						"`Native Executable:`\n"
+						"\n"
+						"If this editor is a native (non-DOS) executable, set this option to `Yes`.\n"
+					;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 						,"Native",uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
@@ -2011,7 +2017,6 @@ void xedit_cfg()
 						cfg.xedit[i]->misc&=~QUICKBBS;
 						uifc.changes=TRUE; 
 					}
-					goto lowercase_filename;
 					break;
 				case 11:
 					k=(cfg.xedit[i]->misc&EXPANDLF) ? 0:1;
@@ -2136,7 +2141,6 @@ void xedit_cfg()
 						uifc.changes=TRUE; 
 					}
 					if(cfg.xedit[i]->type) {
-						lowercase_filename:
 						k=(cfg.xedit[i]->misc&XTRN_LWRCASE) ? 0:1;
 						k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Lowercase Filename",uifcYesNoOpts);
 						if(k==0 && !(cfg.xedit[i]->misc&XTRN_LWRCASE)) {
@@ -2173,10 +2177,10 @@ int natvpgm_cfg()
 		uifc.helpbuf=
 			"`Native Program List:`\n"
 			"\n"
-			"This is a list of all native (non-DOS) external program names that\n"
-			"you may execute in the Terminal Server. Any programs `not` listed\n"
-			"here will be assumed to be DOS programs (unless otherwise flagged as\n"
-			"'`Native`') and executed accordingly, or not, depending on the system.\n"
+			"This is a list of all native (non-DOS) external program (executable file)\n"
+			"names that you may execute under `Synchronet`. This list is not\n"
+			"used in Synchronet for DOS. Any programs not listed here will be assumed\n"
+			"to be DOS programs and executed accordingly.\n"
 			"\n"
 			"Use ~ INS ~ and ~ DELETE ~ to add and remove native program names.\n"
 			"\n"
@@ -2211,7 +2215,7 @@ int natvpgm_cfg()
 				continue; 
 			}
 			memset((natvpgm_t *)cfg.natvpgm[i],0,sizeof(natvpgm_t));
-			SAFECOPY(cfg.natvpgm[i]->name,str);
+			strcpy(cfg.natvpgm[i]->name,str);
 			cfg.total_natvpgms++;
 			uifc.changes=TRUE;
 			continue; 
@@ -2231,10 +2235,10 @@ int natvpgm_cfg()
 			"\n"
 			"This is the executable filename of the Native external program.\n"
 		;
-		SAFECOPY(str,cfg.natvpgm[i]->name);
+		strcpy(str,cfg.natvpgm[i]->name);
 		if(uifc.input(WIN_MID|WIN_SAV,0,5,"Native Program Name",str,12
 			,K_EDIT)>0)
-			SAFECOPY(cfg.natvpgm[i]->name,str);
+			strcpy(cfg.natvpgm[i]->name,str);
 		}
 	return(0);
 }
@@ -2242,7 +2246,7 @@ int natvpgm_cfg()
 
 void xtrnsec_cfg()
 {
-	static int xtrnsec_dflt,xtrnsec_bar,xtrnsec_opt;
+	static int xtrnsec_dflt,xtrnsec_opt;
 	char str[128],code[128],done=0;
 	int j,k;
 	uint i;
@@ -2271,7 +2275,7 @@ void xtrnsec_cfg()
 			"\n"
 			"To configure an online program section, select it and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(j,0,0,45,&xtrnsec_dflt,&xtrnsec_bar,"Online Program Sections",opt);
+		i=uifc.list(j,0,0,45,&xtrnsec_dflt,0,"Online Program Sections",opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;
@@ -2368,7 +2372,7 @@ void xtrnsec_cfg()
 			k=0;
 			sprintf(opt[k++],"%-27.27s%s","Name",cfg.xtrnsec[i]->name);
 			sprintf(opt[k++],"%-27.27s%s","Internal Code",cfg.xtrnsec[i]->code);
-			sprintf(opt[k++],"%-27.27s%s","Access Requirements"
+			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements"
 				,cfg.xtrnsec[i]->arstr);
 			sprintf(opt[k++],"%s","Available Online Programs...");
 			opt[k][0]=0;
@@ -2384,14 +2388,14 @@ void xtrnsec_cfg()
 						"\n"
 						"This is the name of this section.\n"
 					;
-					SAFECOPY(str,cfg.xtrnsec[i]->name);	 /* save */
+					strcpy(str,cfg.xtrnsec[i]->name);	 /* save */
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10
 						,"Program Section Name"
 						,cfg.xtrnsec[i]->name,sizeof(cfg.xtrnsec[i]->name)-1,K_EDIT))
-						SAFECOPY(cfg.xtrnsec[i]->name,str);
+						strcpy(cfg.xtrnsec[i]->name,str);
 					break;
 				case 1:
-					SAFECOPY(str,cfg.xtrnsec[i]->code);
+					strcpy(str,cfg.xtrnsec[i]->code);
 					uifc.helpbuf=
 						"`Online Program Section Internal Code:`\n"
 						"\n"
@@ -2402,7 +2406,7 @@ void xtrnsec_cfg()
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code (unique)"
 						,str,LEN_CODE,K_EDIT|K_UPPER);
 					if(code_ok(str))
-						SAFECOPY(cfg.xtrnsec[i]->code,str);
+						strcpy(cfg.xtrnsec[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -2431,7 +2435,7 @@ void hotkey_cfg(void)
 
 	while(1) {
 		for(i=0;i<cfg.total_hotkeys && i<MAX_OPTS;i++)
-			sprintf(opt[i],"Ctrl-%c    %s"
+			sprintf(opt[i],"Ctrl-%c    %.40s"
 				,cfg.hotkey[i]->key+'@'
 				,cfg.hotkey[i]->cmd);
 		opt[i][0]=0;
@@ -2516,7 +2520,7 @@ void hotkey_cfg(void)
 			k=0;
 			sprintf(opt[k++],"%-27.27sCtrl-%c","Global Hot Key"
 				,cfg.hotkey[i]->key+'@');
-			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.hotkey[i]->cmd);
+			sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.hotkey[i]->cmd);
 			opt[k][0]=0;
 			uifc.helpbuf=
 				"`Global Hot Key Event:`\n"

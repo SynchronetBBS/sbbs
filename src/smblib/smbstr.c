@@ -1,5 +1,7 @@
 /* Synchronet message base (SMB) library routines returning strings */
 
+/* $Id: smbstr.c,v 1.38 2020/05/25 19:17:06 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,12 +15,25 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <ctype.h>		/* is*() */
 #include <string.h>		/* strcpy, strcat, memset, strchr */
 #include <genwrap.h> 		/* stricmp */
 #include "smblib.h"
@@ -81,7 +96,6 @@ char* SMBCALL smb_hfieldtype(uint16_t type)
 		case FIDOFLAGS:			return("X-FTN-Flags");
 		case FIDOTID:			return("X-FTN-TID");
 		case FIDOCHARSET:		return("X-FTN-CHRS");
-		case FIDOBBSID:			return("X-FTN-BBSID");
 
 		case RFC822HEADER:		return("OtherHeader");
 		case RFC822MSGID:		return("Message-ID");			/* RFC-compliant */
@@ -117,7 +131,7 @@ uint16_t SMBCALL smb_hfieldtypelookup(const char* str)
 {
 	uint16_t type;
 
-	if(IS_DIGIT(*str))
+	if(isdigit(*str))
 		return((uint16_t)strtol(str,NULL,0));
 
 	for(type=0;type<=UNUSED;type++)
@@ -381,13 +395,13 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 	char* colon = strchr(p,':');
 	char* slash = strchr(p,'/');
 
-	if(at == NULL && IS_ALPHA(*p) && dot == NULL && colon == NULL)
+	if(at == NULL && isalpha(*p) && dot == NULL && colon == NULL)
 		return NET_QWK;
 
 	char last = 0;
 	for(tp = p; *tp != '\0'; tp++) {
 		last = *tp;
-		if(IS_DIGIT(*tp))
+		if(isdigit(*tp))
 			continue;
 		if(*tp == ':') {
 			if(tp != colon)
@@ -412,9 +426,9 @@ enum smb_net_type SMBCALL smb_get_net_type_by_addr(const char* addr)
 		}
 		break;
 	}
-	if(at == NULL && IS_DIGIT(*p) && *tp == '\0' && IS_DIGIT(last))
+	if(at == NULL && isdigit(*p) && *tp == '\0' && isdigit(last))
 		return NET_FIDO;
-	if(slash == NULL && (IS_ALPHANUMERIC(*p) || p == colon))
+	if(slash == NULL && (isalnum(*p) || p == colon))
 		return NET_INTERNET;
 
 	return NET_UNKNOWN;

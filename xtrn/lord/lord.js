@@ -2856,7 +2856,6 @@ function daily_maint()
 				}
 				else if (settings.del_1xp && pl.exp === 1 && pl.drag_kills === 0) {
 					pl.name = 'X';
-					pl.real_name = 'X';
 					pl.put();
 					killmail(pl.Record);
 					if (state.married_to_seth === i) {
@@ -2880,7 +2879,6 @@ function daily_maint()
 				}
 				else if (settings.delete_days > 0 && pl.time < (state.days - settings.delete_days)) {
 					pl.name = 'X';
-					pl.real_name = 'X';
 					pl.put();
 					killmail(pl.Record);
 					if (state.married_to_seth === i) {
@@ -16042,7 +16040,6 @@ function main()
 		sln('');
 		player.on_now = false;
 		player.put();
-		generate_rankings(gamedir('scores.lrd'), true)
 		exit(0);
 	}
 
@@ -16578,7 +16575,6 @@ function start() {
 		sclrscr();
 		sln('');
 		sln('');
-		generate_rankings(gamedir('scores.lrd'), true)
 		sln('  Leaving the realm.');
 	}
 }
@@ -16769,7 +16765,7 @@ function cmdline()
 			settings.menu_dir = argv[i];
 		}
 		else if (argv[i].toUpperCase() === 'RESET') {
-			if(!js.global.bbs || !deny("Reset LORD")) {
+			if(!bbs || !deny("Reset LORD")) {
 				file_remove(gamedir('state.bin'));
 				file_remove(gamedir('player.bin'));
 			}

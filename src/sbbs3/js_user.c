@@ -1,4 +1,7 @@
 /* Synchronet JavaScript "User" Object */
+// vi: tabstop=4
+
+/* $Id: js_user.c,v 1.119 2020/08/11 03:54:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -51,10 +66,7 @@ enum {
 	,USER_PROP_ZIPCODE
 	,USER_PROP_PASS
 	,USER_PROP_PHONE  	
-	,USER_PROP_BIRTH
-	,USER_PROP_BIRTHYEAR
-	,USER_PROP_BIRTHMONTH
-	,USER_PROP_BIRTHDAY
+	,USER_PROP_BIRTH  
 	,USER_PROP_AGE		/* READ ONLY */
 	,USER_PROP_MODEM     
 	,USER_PROP_LASTON	
@@ -73,9 +85,6 @@ enum {
 	,USER_PROP_ETODAY	
 	,USER_PROP_PTODAY
 	,USER_PROP_MAIL_WAITING
-	,USER_PROP_READ_WAITING
-	,USER_PROP_UNREAD_WAITING
-	,USER_PROP_SPAM_WAITING
 	,USER_PROP_MAIL_PENDING
 	,USER_PROP_ULB       
 	,USER_PROP_ULS       
@@ -90,8 +99,7 @@ enum {
 	,USER_PROP_FLAGS4	
 	,USER_PROP_EXEMPT	
 	,USER_PROP_REST		
-	,USER_PROP_ROWS
-	,USER_PROP_COLS
+	,USER_PROP_ROWS		
 	,USER_PROP_SEX		
 	,USER_PROP_MISC		
 	,USER_PROP_LEECH 	
@@ -133,7 +141,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsval idval;
 	char*		s=NULL;
 	char		tmp[128];
-	int64_t		val=0;
+	uint64_t	val=0;
     jsint       tiny;
 	JSString*	js_str;
 	private_t*	p;
@@ -200,15 +208,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_BIRTH:
 			s=p->user->birth;
-			break;
-		case USER_PROP_BIRTHYEAR:
-			val = getbirthyear(p->user->birth);
-			break;
-		case USER_PROP_BIRTHMONTH:
-			val = getbirthmonth(scfg, p->user->birth);
-			break;
-		case USER_PROP_BIRTHDAY:
-			val = getbirthday(scfg, p->user->birth);
 			break;
 		case USER_PROP_AGE:
 			val=getage(scfg,p->user->birth);
@@ -303,9 +302,6 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case USER_PROP_ROWS:
 			val=p->user->rows;
 			break;
-		case USER_PROP_COLS:
-			val=p->user->cols;
-			break;
 		case USER_PROP_SEX:
 			sprintf(tmp,"%c",p->user->sex);
 			s=tmp;
@@ -379,16 +375,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val=scfg->level_freecdtperday[p->user->level];
 			break;
 		case USER_PROP_MAIL_WAITING:
-			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */0);
-			break;
-		case USER_PROP_READ_WAITING:
-			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */MSG_READ);
-			break;
-		case USER_PROP_UNREAD_WAITING:
-			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */~MSG_READ);
-			break;
-		case USER_PROP_SPAM_WAITING:
-			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* attr: */MSG_SPAM);
+			val=getmail(scfg,p->user->number,/* sent? */FALSE, /* SPAM: */FALSE);
 			break;
 		case USER_PROP_MAIL_PENDING:
 			val=getmail(scfg,p->user->number,/* sent? */TRUE, /* SPAM: */FALSE);
@@ -519,18 +506,6 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			SAFECOPY(p->user->birth,str);
 			putuserrec(scfg,p->user->number,U_BIRTH,LEN_BIRTH,str);
 			break;
-		case USER_PROP_BIRTHYEAR:
-			SAFEPRINTF(tmp, "%04u", atoi(str));
-			putuserrec(scfg,p->user->number, U_BIRTH, 4, tmp);
-			break;
-		case USER_PROP_BIRTHMONTH:
-			SAFEPRINTF(tmp, "%02u", atoi(str));
-			putuserrec(scfg,p->user->number, U_BIRTH + 4, 2, tmp);
-			break;
-		case USER_PROP_BIRTHDAY:
-			SAFEPRINTF(tmp, "%02u", atoi(str));
-			putuserrec(scfg,p->user->number, U_BIRTH + 6, 2, tmp);
-			break;
 		case USER_PROP_MODEM:     
 			SAFECOPY(p->user->modem,str);
 			putuserrec(scfg,p->user->number,U_MODEM,LEN_MODEM,str);
@@ -538,10 +513,6 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		case USER_PROP_ROWS:	
 			p->user->rows=atoi(str);
 			putuserrec(scfg,p->user->number,U_ROWS,0,str);	/* base 10 */
-			break;
-		case USER_PROP_COLS:	
-			p->user->cols=atoi(str);
-			putuserrec(scfg,p->user->number,U_COLS,0,str);	/* base 10 */
 			break;
 		case USER_PROP_SEX:		 
 			p->user->sex=toupper(str[0]);
@@ -783,14 +754,10 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"zipcode"			,USER_PROP_ZIPCODE	 	,USER_PROP_FLAGS,		310},
 	{	"phone"				,USER_PROP_PHONE  	 	,USER_PROP_FLAGS,		310},
 	{	"birthdate"			,USER_PROP_BIRTH  	 	,USER_PROP_FLAGS,		310},
-	{	"birthyear"			,USER_PROP_BIRTHYEAR   	,USER_PROP_FLAGS,		31802},
-	{	"birthmonth"		,USER_PROP_BIRTHMONTH  	,USER_PROP_FLAGS,		31802},
-	{	"birthday"			,USER_PROP_BIRTHDAY  	,USER_PROP_FLAGS,		31802},
 	{	"age"				,USER_PROP_AGE			,USER_PROP_FLAGS|JSPROP_READONLY,		310},
 	{	"connection"		,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
 	{	"modem"				,USER_PROP_MODEM      	,USER_PROP_FLAGS,		310},
 	{	"screen_rows"		,USER_PROP_ROWS		 	,USER_PROP_FLAGS,		310},
-	{	"screen_columns"	,USER_PROP_COLS		 	,USER_PROP_FLAGS,		31802},
 	{	"gender"			,USER_PROP_SEX		 	,USER_PROP_FLAGS,		310},
 	{	"cursub"			,USER_PROP_CURSUB	 	,USER_PROP_FLAGS,		310},
 	{	"curdir"			,USER_PROP_CURDIR	 	,USER_PROP_FLAGS,		310},
@@ -828,16 +795,12 @@ static char* user_prop_desc[] = {
 	,"location (e.g. city, state)"
 	,"zip/postal code"
 	,"phone number"
-	,"birth date in 'YYYYMMDD' format or legacy format: 'MM/DD/YY' or 'DD/MM/YY', depending on system configuration"
-	,"birth year"
-	,"birth month (1-12)"
-	,"birth day of month (1-31)"
+	,"birth date in either MM/DD/YY or DD/MM/YY format depending on system configuration"
 	,"calculated age in years - <small>READ ONLY</small>"
 	,"connection type (protocol)"
 	,"AKA connection"
-	,"terminal rows (0 = auto-detect)"
-	,"terminal columns (0 = auto-detect)"
-	,"gender type (e.g. M or F or any single-character)"
+	,"terminal rows (lines)"
+	,"gender type (e.g. M or F)"
 	,"current/last message sub-board (internal code)"
 	,"current/last file directory (internal code)"
 	,"current/last external program (internal code) run"
@@ -957,9 +920,6 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 	{	"files_downloaded"	,USER_PROP_DLS        	,USER_PROP_FLAGS,		310 },
 	{	"leech_attempts"	,USER_PROP_LEECH 	 	,USER_PROP_FLAGS,		310 },
 	{	"mail_waiting"		,USER_PROP_MAIL_WAITING	,USER_PROP_FLAGS,		312	},
-	{	"read_mail_waiting"	,USER_PROP_READ_WAITING	,USER_PROP_FLAGS,		31802 },
-	{	"unread_mail_waiting",USER_PROP_UNREAD_WAITING,USER_PROP_FLAGS,		31802 },
-	{	"spam_waiting"		,USER_PROP_SPAM_WAITING	,USER_PROP_FLAGS,		31802 },
 	{	"mail_pending"		,USER_PROP_MAIL_PENDING	,USER_PROP_FLAGS,		312	},
 	{0}
 };
@@ -972,8 +932,8 @@ static char* user_stats_prop_desc[] = {
 	,"total number of logons"
 	,"total logons today"
 	,"total time used (in minutes)"
-	,"time used today (in minutes)"
-	,"time used last session (in minutes)"
+	,"time used today"
+	,"time used last session"
 	,"total messages posted"
 	,"total e-mails sent"
 	,"total feedback messages sent"
@@ -984,10 +944,7 @@ static char* user_stats_prop_desc[] = {
 	,"total bytes downloaded"
 	,"total files downloaded"
 	,"suspected leech downloads"
-	,"total number of e-mail messages currently waiting in inbox"
-	,"number of read e-mail messages currently waiting in inbox"
-	,"number of unread e-mail messages currently waiting in inbox"
-	,"number of SPAM e-mail messages currently waiting in inbox"
+	,"number of e-mail messages currently waiting"
 	,"number of e-mail messages sent, currently pending deletion"
 	,NULL
 };

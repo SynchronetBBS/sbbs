@@ -2902,7 +2902,7 @@ function climb() {
 		break;
 			
 		case 6:
-			reward = Math.round(player.exp / 10);
+			reward = Math,round(player.exp / 10);
 			player.hp += reward;
 			lln('  YOU GRABBED AN EMPTY POUCH!');
 			more_nomail();
@@ -3014,6 +3014,24 @@ function run_maint(b)
 var bs;
 load('array.js'); // probably no longer needed
 var mnum = undefined;
+if (player.level === 1)
+{
+	mnum = random(10);
+}
+else
+{
+	if (random(6) !== 2)
+	{
+		mnum = ((player.level-1)*11)+random(10);
+	}
+	else
+	{
+		mnum = (random(player.level) * 11) + random(10);
+	}
+}
+
+var husband = load_monster(mnum); // sets up monster battle and nymph husband
+
 // end globals
 
 function main()
@@ -3167,24 +3185,6 @@ if (argc == 1 && argv[0] == 'INSTALL') {
 	exit(0);
 }
 else {
-	if (player.level === 1)
-	{
-		mnum = random(10);
-	}
-	else
-	{
-		if (random(6) !== 2)
-		{
-			mnum = ((player.level-1)*11)+random(10);
-		}
-		else
-		{
-			mnum = (random(player.level) * 11) + random(10);
-		}
-	}
-
-	var husband = load_monster(mnum); // sets up monster battle and nymph husband
-
 	main();
 	exit(0); // most routines end with good_bye();
 }

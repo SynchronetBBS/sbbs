@@ -690,7 +690,7 @@ Graphic.prototype.load = function(filename, offset)
 	var l;
 
 	if(!file_type)
-		throw new Error("unsupported file type: " + filename);
+		throw("unsupported file type: " + filename);
 
 	switch(file_type.substr(1).toUpperCase()) {
 	case "ANS":
@@ -716,7 +716,7 @@ Graphic.prototype.load = function(filename, offset)
 			this.putmsg(undefined,undefined,l,true);
 		break;
 	default:
-		throw new Error("unsupported file type: " + filename);
+		throw("unsupported file type: " + filename);
 	}
 	return(true);
 };

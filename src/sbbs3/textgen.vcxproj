@@ -151,7 +151,7 @@
       </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>$(OutputPath)textgen ..\..\ctrl ..\..\exec</Command>
+      <Command>$(OutputPath)textgen</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

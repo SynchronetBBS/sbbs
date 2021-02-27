@@ -1,4 +1,7 @@
 /* Synchronet public message reading function */
+// vi: tabstop=4
+
+/* $Id: readmsgs.cpp,v 1.133 2020/05/14 03:04:51 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -787,7 +802,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 			domsg = true;
 			continue; 
 		}
-		if(thread_mode && (IS_ALPHA(l) || l=='?')) {
+		if(thread_mode && (isalpha(l) || l=='?')) {
 			thread_mode = false;
 			domsg = true;
 		}
@@ -934,7 +949,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 					} 
 				}
 				FREE_AND_NULL(post);
-				editmsg(&smb, &msg);
+				editmsg(&msg,subnum);
 				break;
 			case 'F':   /* find text in messages */
 				domsg=0;
@@ -1230,7 +1245,7 @@ int sbbs_t::scanposts(uint subnum, long mode, const char *find)
 							break;
 						case 'E':   /* edit last post */
 							FREE_AND_NULL(post);
-							editmsg(&smb, &msg);
+							editmsg(&msg,subnum);
 							break;
 						case 'H':   /* View message header */
 							dump_msghdr(&msg);

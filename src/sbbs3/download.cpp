@@ -1,4 +1,8 @@
+/* download.cpp */
+
 /* Synchronet file download routines */
+
+/* $Id: download.cpp,v 1.58 2019/08/31 22:40:36 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +17,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -203,7 +219,13 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		p=cfg.temp_dir;
 	else
 		p=NULL;
-
+	cmdline=cmdstr(protcmdline(prot,type),fpath,fspec,NULL);
+	SAFEPRINTF(msg,"Transferring %s",cmdline);
+	spymsg(msg);
+	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
+	/* enable telnet binary transmission in both directions */
+	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
+	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
 	ex_mode = EX_BIN;
 	if(prot->misc&PROT_NATIVE)
 		ex_mode|=EX_NATIVE;
@@ -211,14 +233,6 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	if(!(prot->misc&PROT_SOCKET))
 		ex_mode|=EX_STDIO;
 #endif
-
-	cmdline=cmdstr(protcmdline(prot,type), fpath, fspec, NULL, ex_mode);
-	SAFEPRINTF(msg,"Transferring %s",cmdline);
-	spymsg(msg);
-	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
-	/* enable telnet binary transmission in both directions */
-	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
-	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
 
 	i=external(cmdline,ex_mode,p);
 	/* Got back to Text/NVT mode */
@@ -250,8 +264,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 /****************************************************************************/
 void sbbs_t::autohangup()
 {
-    int		a,c;
-	char	k;
+    char	a,c,k;
 	char 	tmp[512];
 
 	if(online!=ON_REMOTE)

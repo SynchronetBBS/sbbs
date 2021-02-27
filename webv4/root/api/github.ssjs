@@ -21,7 +21,7 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 require('hmac.js', 'hmac_sha1');
 var options = load({}, 'modopts.js', 'github_notify');
-load(system.exec_dir + '../webv4/lib/init.js');
+load(system.exec_dir + '../web/lib/init.js');
 
 function b2h(str) {
 	return str.split('').map(function (e) {

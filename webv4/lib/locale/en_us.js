@@ -63,10 +63,6 @@ EN_US.prototype.group_numbers = function (n) {
     ).split('').reverse().join('') + (d > -1 ? n.substring(d) : '');
 }
 
-EN_US.prototype.get = function (str, sec) {
-    return this.strings[sec || this.section][str];
-}
-
 EN_US.prototype.write = function (str, sec) {
     write(this.strings[sec || this.section][str]);
 }

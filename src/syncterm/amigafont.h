@@ -36,21 +36,7 @@ struct FontList {
 	} entry[];
 };
 
-#if defined(_WIN32) || defined(__BORLANDC__)
-	#define PRAGMA_PACK
-#endif
-
-#if defined(PRAGMA_PACK) || defined(__WATCOMC__)
-	#define _PACK
-#else
-	#define _PACK __attribute__ ((packed))
-#endif
-
-#if defined(PRAGMA_PACK)
-	#pragma pack(push,1)			/* Disk image structures must be packed */
-#endif
-
-struct _PACK FontHeader {
+struct FontHeader {
 	uint8_t		ignore[0x6E];
 	uint16_t	height;
 	uint8_t		style;
@@ -66,10 +52,6 @@ struct _PACK FontHeader {
 	uint32_t	charlocOffset;
 	uint32_t	fontSpaceOffset;
 	uint32_t	kernOffset;
-};
-
-#if defined(PRAGMA_PACK)
-#pragma pack(pop)		/* original packing */
-#endif
+} __attribute__((packed));	// TODO: Deal with Microsoft.
 
 #endif

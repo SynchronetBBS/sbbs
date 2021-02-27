@@ -1,0 +1,79 @@
+ Distribution list format:
+
+ R <sp> File revision information
+
+ C <sp> Text description of release
+		Indicates a CVS release... contains one AND ONLY ONE tag line,
+		then a number of server lines.
+
+ T <sp> Text description of release
+ 		Indicates a Tarball release... contains multiples file lines
+ 		then numtiple server lines
+ 
+ t <sp> Text
+ 		A tag line defines a CVS tag to use.
+
+ m <sp> Make options
+        A list of command-line options to pass to make/gmake.
+
+ f <sp> Text
+ 		A file line.
+		%s is replaced with sysname-machine from uname.
+
+ s <sp> Address <tab> Text description of server
+		A server line.  Address is either the CVSROOT for C sections or the URL
+		for T sections %s is replaced by the current file name for URLs.
+
+ D <sp> <sysname-machine>[,<PLATFORM> ...] <sp> <LINE>
+ 		A depends line.  Line is only parsed if the current sysname/machine is <sysname-machine>
+
+ Lines that start with anything but a C, T, f, t, D or s are ignored.
+
+R $Revision: 1.15 $
+
+ T Current Source Tarball (v3.11A beta)
+ m NOCVS=1
+ f sbbs_src.tgz
+ f lib-%s.tgz
+ s ftp://ftp.synchro.net/								Official FTP server (T1)
+ s ftp://vert.synchro.net/								Vertrauen FTP server (256kbps)
+ s ftp://rob.synchro.net/								Vertrauen FTP server (256kbps)
+ s ftp://cvs.synchro.net/								Vertrauen FTP server (256kbps)
+ s ftp://freebsd.synchro.net/Synchronet/					Deuce's FTP server (128kbps)
+ s http://freebsd.synchro.net/synchronet/3.10a/		Deuce's HTTP server (128kbps)
+
+ T v3.10L beta Tarball
+ m NOCVS=1
+ f sbbs_src.tgz
+ f lib-%s.tgz
+ s ftp://ftp.synchro.net/								Official FTP server (T1)
+ s ftp://vert.synchro.net/								Vertrauen FTP server (256kbps)
+ s ftp://rob.synchro.net/								Vertrauen FTP server (256kbps)
+ s ftp://cvs.synchro.net/								Vertrauen FTP server (256kbps)
+ s ftp://freebsd.synchro.net/Synchronet/					Deuce's FTP server (128kbps)
+ s http://freebsd.synchro.net/synchronet/3.10l/		Deuce's HTTP server (128kbps)
+
+C Current Development Code from CVS (unstable)
+t HEAD
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
+s :pserver:anonymous@cvs-mirror.synchro.net:/cvsroot/sbbs	Deuce's CVS Mirror (128kbps)
+
+C Version 3.12A beta from CVS (stable)
+t sbbs312a
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
+s :pserver:anonymous@cvs-mirror.synchro.net:/cvsroot/sbbs	Deuce's CVS Mirror (128kbps)
+
+C Version 3.11B beta from CVS (stable)
+t sbbs311b
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
+s :pserver:anonymous@cvs-mirror.synchro.net:/cvsroot/sbbs	Deuce's CVS Mirror (128kbps)
+
+C Version 3.11A beta from CVS (stable)
+t sbbs311a
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
+s :pserver:anonymous@cvs-mirror.synchro.net:/cvsroot/sbbs	Deuce's CVS Mirror (128kbps)
+
+C Version 3.10L beta from CVS (stable)
+t sbbs310l
+s :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs	Official CVS Server (256kbps)
+s :pserver:anonymous@cvs-mirror.synchro.net:/cvsroot/sbbs	Deuce's CVS Mirror (128kbps)

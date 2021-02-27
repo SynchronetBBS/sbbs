@@ -214,7 +214,7 @@ static struct section_len get_ws_len(char *buf, int col)
 	for(ret.bytes=0; ; ret.bytes++) {
 		if (!buf[ret.bytes])
 			break;
-		if (!IS_WHITESPACE(buf[ret.bytes]))
+		if (!isspace((unsigned char)buf[ret.bytes]))
 			break;
 		if(buf[ret.bytes] == '\t') {
 			ret.len++;
@@ -246,7 +246,7 @@ static struct section_len get_word_len(char *buf, int maxlen, BOOL is_utf8)
 		len = 1;
 		if (!buf[ret.bytes])
 			break;
-		else if (IS_WHITESPACE(buf[ret.bytes]))
+		else if (isspace((unsigned char)buf[ret.bytes]))
 			break;
 		else if (buf[ret.bytes]==DEL)
 			continue;
@@ -294,9 +294,6 @@ struct paragraph {
 static void free_paragraphs(struct paragraph *paragraph, int count)
 {
 	int i;
-
-	if (paragraph == NULL)
-		return;
 
 	for(i=0; count == -1 || i<count ;i++) {
 		FREE_AND_NULL(paragraph[i].prefix.bytes);
@@ -354,14 +351,18 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 		incol = 0;
 		/* Start of a new paragraph (ie: after a hard CR) */
 		newret = realloc(ret, (paragraph+1) * sizeof(struct paragraph));
-		if (newret == NULL)
-			goto fail_return;
+		if (newret == NULL) {
+			free_paragraphs(ret, paragraph);
+			return NULL;
+		}
 		ret = newret;
 		ret[paragraph].text = (char *)malloc(alloc_len);
 		ret[paragraph].len = 0;
 		ret[paragraph].prefix.bytes = NULL;
-		if (ret[paragraph].text == NULL)
-			goto fail_return;
+		if (ret[paragraph].text == NULL) {
+			free_paragraphs(ret, paragraph+1);
+			return NULL;
+		}
 		ret[paragraph].alloc_size = alloc_len;
 		ret[paragraph].text[0] = 0;
 		if (handle_quotes) {
@@ -467,8 +468,10 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 	}
 
 	newret = realloc(ret, (paragraph+1) * sizeof(struct paragraph));
-	if (newret == NULL)
-		goto fail_return;
+	if (newret == NULL) {
+		free_paragraphs(ret, paragraph);
+		return NULL;
+	}
 	ret = newret;
 	memset(&ret[paragraph], 0, sizeof(ret[0]));
 
@@ -476,7 +479,6 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, BOOL handle_quotes
 
 fail_return:
 	free_paragraphs(ret, paragraph+1);
-	free(ret);
 	return NULL;
 }
 

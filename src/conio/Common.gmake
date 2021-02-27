@@ -26,8 +26,8 @@ endif
 
 ifneq ($(os),win32)
  ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
-  CIOLIB-MT_LIBS += $(shell pkg-config ncursesw --libs)
-  CIOLIB-MT_CFLAGS += $(shell pkg-config ncursesw --cflags)
+  CIOLIB-MT_LIBS += `pkg-config ncursesw --libs`
+  CIOLIB-MT_CFLAGS += `pkg-config ncursesw --cflags`
  else
   ifdef USE_SYSTEM_CURSES
    CIOLIB-MT_LIBS		+=	$(UL_PRE)curses$(UL_SUF)

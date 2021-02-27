@@ -1,5 +1,8 @@
 /* Execute a Synchronet JavaScript module from the command-line */
 
+/* $Id: jsexec.c,v 1.217 2020/08/17 00:48:28 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -35,13 +50,12 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "jsdebug.h"
-#include "git_branch.h"
-#include "git_hash.h"
 
 #define DEFAULT_LOG_LEVEL	LOG_INFO
 #define DEFAULT_ERR_LOG_LVL	LOG_WARNING
 
 static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
+static const char*	strJavaScriptContextStack	="JavaScriptContextStack";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
@@ -54,10 +68,12 @@ js_callback_t	cb;
 scfg_t		scfg;
 char*		text[TOTAL_TEXT];
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
+ulong		js_cx_stack=JAVASCRIPT_CONTEXT_STACK;
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
 FILE*		statfp;
+char		revision[16];
 char		compiler[32];
 char*		host_name=NULL;
 char		host_name_buf[128];
@@ -85,11 +101,11 @@ BOOL		debugger=FALSE;
 
 void banner(FILE* fp)
 {
-	fprintf(fp,"\n" PROG_NAME " v%s%c-%s %s/%s%s - "
+	fprintf(fp,"\n" PROG_NAME " v%s%c-%s (rev %s)%s - "
 		"Execute Synchronet JavaScript Module\n"
 		,VERSION,REVISION
 		,PLATFORM_DESC
-		,GIT_BRANCH, GIT_HASH
+		,revision
 #ifdef _DEBUG
 		," Debug"
 #else
@@ -101,15 +117,12 @@ void banner(FILE* fp)
 		,__DATE__, __TIME__, compiler);
 }
 
-void usage()
+void usage(FILE* fp)
 {
-	banner(stdout);
+	banner(fp);
 
-	fprintf(stdout, "\nusage: " PROG_NAME_LC " [-opts] [[path/]module[.js] [args]\n"
-		"   or: " PROG_NAME_LC " [-opts] -r js-expression [args]\n"
-		"   or: " PROG_NAME_LC " -v\n"
+	fprintf(fp,"\nusage: " PROG_NAME_LC " [-opts] [path]module[.js] [args]\n"
 		"\navailable opts:\n\n"
-		"    -r<expression> run (compile and execute) JavaScript expression\n"
 #ifdef JSDOOR
 		"    -c<ctrl_dir>   specify path to CTRL directory\n"
 #else
@@ -120,6 +133,7 @@ void usage()
 		"    -d             run in background (daemonize)\n"
 #endif
 		"    -m<bytes>      set maximum heap size (default=%u bytes)\n"
+		"    -s<bytes>      set context stack size (default=%u bytes)\n"
 		"    -t<limit>      set time limit (default=%u, 0=unlimited)\n"
 		"    -y<interval>   set yield interval (default=%u, 0=never)\n"
 		"    -g<interval>   set garbage collection interval (default=%u, 0=never)\n"
@@ -134,12 +148,8 @@ void usage()
 		"    -i<path_list>  set load() comma-sep search path list (default=\"%s\")\n"
 		"    -f             use non-buffered stream for console messages\n"
 		"    -a             append instead of overwriting message output files\n"
-		"    -A             send all message to stdout\n"
-		"    -A<filename>   send all message to file instead of stdout/stderr\n"
 		"    -e<filename>   send error messages to file in addition to stderr\n"
 		"    -o<filename>   send console messages to file instead of stdout\n"
-		"    -S<filename>   send status messages to file instead of stderr\n"
-		"    -S             send status messages to stdout\n"
 		"    -n             send status messages to %s instead of stderr\n"
 		"    -q             send console messages to %s instead of stdout\n"
 		"    -v             display version details and exit\n"
@@ -147,8 +157,9 @@ void usage()
 		"    -l             loop until intentionally terminated\n"
 		"    -p             wait for keypress (pause) on exit\n"
 		"    -!             wait for keypress (pause) on error\n"
-		"    -D             load the script into an interactive debugger\n"
+		"    -D             debugs the script\n"
 		,JAVASCRIPT_MAX_BYTES
+		,JAVASCRIPT_CONTEXT_STACK
 		,JAVASCRIPT_TIME_LIMIT
 		,JAVASCRIPT_YIELD_INTERVAL
 		,JAVASCRIPT_GC_INTERVAL
@@ -815,7 +826,10 @@ static BOOL js_init(char** env)
 	if((js_runtime = jsrt_GetNew(js_max_bytes, 5000, __FILE__, __LINE__))==NULL)
 		return(FALSE);
 
-    if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+	fprintf(statfp,"JavaScript: Initializing context (stack: %lu bytes)\n"
+		,js_cx_stack);
+
+    if((js_cx = JS_NewContext(js_runtime, js_cx_stack))==NULL)
 		return(FALSE);
 #ifdef JSDOOR
 	JS_SetOptions(js_cx, JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING);
@@ -912,7 +926,7 @@ char *dbg_getline(void)
 #endif
 }
 
-long js_exec(const char *fname, const char* buf, char** args)
+long js_exec(const char *fname, char** args)
 {
 	int			argc=0;
 	uint		line_no;
@@ -975,11 +989,12 @@ long js_exec(const char *fname, const char* buf, char** args)
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
 	JS_DefineProperty(js_cx, js_glob, PROG_NAME_LC "_revision"
-		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx, GIT_BRANCH "/" GIT_HASH))
+		,STRING_TO_JSVAL(JS_NewStringCopyZ(js_cx,revision))
 		,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-	safe_snprintf(rev_detail, sizeof(rev_detail), PROG_NAME " " GIT_BRANCH "/" GIT_HASH "%s  "
+	sprintf(rev_detail,PROG_NAME " %s%s  "
 		"Compiled %s %s with %s"
+		,revision
 #ifdef _DEBUG
 		," Debug"
 #else
@@ -996,46 +1011,38 @@ long js_exec(const char *fname, const char* buf, char** args)
 
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
 
-	if(fname == NULL && buf != NULL) {
-		SAFECOPY(path, "cmdline");
-		fp = NULL;
-		js_buf = (char*)buf;
-		js_buflen = strlen(buf);
-	} else {
-		if(fp==stdin) 	 /* Using stdin for script source */
-			SAFECOPY(path,"stdin");
+	if(fp==stdin) 	 /* Using stdin for script source */
+		SAFECOPY(path,"stdin");
 
-		fprintf(statfp,"Reading script from %s\n",path);
-		line_no=0;
-		js_buflen=0;
-		while(!feof(fp)) {
-			if(!fgets(line,sizeof(line),fp))
-				break;
-			line_no++;
-			/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
-			if(line_no==1 && strncmp(line,"#!",2)==0)
-				strcpy(line,"\n");	/* To keep line count correct */
-			len=strlen(line);
-			if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
-				lprintf(LOG_ERR,"!Error allocating %lu bytes of memory"
-					,(ulong)(js_buflen+len));
-				if(fp!=stdin)
-					fclose(fp);
-				return(-1);
-			}
-			memcpy(js_buf+js_buflen,line,len);
-			js_buflen+=len;
+	fprintf(statfp,"Reading script from %s\n",path);
+	line_no=0;
+	js_buflen=0;
+	while(!feof(fp)) {
+		if(!fgets(line,sizeof(line),fp))
+			break;
+		line_no++;
+		/* Support Unix Shell Scripts that start with #!/path/to/jsexec */
+		if(line_no==1 && strncmp(line,"#!",2)==0)
+			strcpy(line,"\n");	/* To keep line count correct */
+		len=strlen(line);
+		if((js_buf=realloc(js_buf,js_buflen+len))==NULL) {
+			lprintf(LOG_ERR,"!Error allocating %lu bytes of memory"
+				,(ulong)(js_buflen+len));
+			if(fp!=stdin)
+				fclose(fp);
+			return(-1);
 		}
-		if(fp!=stdin)
-			fclose(fp);
+		memcpy(js_buf+js_buflen,line,len);
+		js_buflen+=len;
 	}
+	if(fp!=NULL && fp!=stdin)
+		fclose(fp);
+
 	start=xp_timer();
 	if(debugger)
 		init_debugger(js_runtime, js_cx, dbg_puts, dbg_getline);
 	if((js_script=JS_CompileScript(js_cx, js_glob, js_buf, js_buflen, fname==NULL ? NULL : path, 1))==NULL) {
 		lprintf(LOG_ERR,"!Error compiling script from %s",path);
-		if(js_buf != buf)
-			free(js_buf);
 		return(-1);
 	}
 	if((diff=xp_timer()-start) > 0)
@@ -1051,14 +1058,10 @@ long js_exec(const char *fname, const char* buf, char** args)
 		result = EXIT_FAILURE;
 	} else {
 		exec_result = JS_ExecuteScript(js_cx, js_glob, js_script, &rval);
-		char	*p;
-		if(buf != NULL) {
-			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
-			mfprintf(statfp,"Result (%s): %s", JS_GetTypeName(js_cx, JS_TypeOfValue(js_cx, rval)), p);
-			free(p);
-		}
 		JS_GetProperty(js_cx, js_glob, "exit_code", &rval);
 		if(rval!=JSVAL_VOID && JSVAL_IS_NUMBER(rval)) {
+			char	*p;
+
 			JSVALUE_TO_MSTRING(js_cx, rval, p, NULL);
 			mfprintf(statfp,"Using JavaScript exit_code: %s",p);
 			free(p);
@@ -1075,7 +1078,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 			,path
 			,diff);
 
-	if(js_buf!=NULL && js_buf!=buf)
+	if(js_buf!=NULL)
 		free(js_buf);
 
 	return(result);
@@ -1108,7 +1111,7 @@ int parseLogLevel(const char* p)
 	str_list_t logLevelStringList=iniLogLevelStringList();
 	int i;
 
-	if(IS_DIGIT(*p))
+	if(isdigit(*p))
 		return strtol(p,NULL,0);
 
 	/* Exact match */
@@ -1134,6 +1137,7 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 	umask_val = iniGetInteger(ini, section, "umask", umask_val);
 
 	js_max_bytes		= (ulong)iniGetBytes(ini, section, strJavaScriptMaxBytes	,/* unit: */1, js_max_bytes);
+	js_cx_stack			= (ulong)iniGetBytes(ini, section, strJavaScriptContextStack,/* unit: */1, js_cx_stack);
 	cb->limit			= iniGetInteger(ini, section, strJavaScriptTimeLimit		, cb->limit);
 	cb->gc_interval		= iniGetInteger(ini, section, strJavaScriptGcInterval		, cb->gc_interval);
 	cb->yield_interval	= iniGetInteger(ini, section, strJavaScriptYieldInterval	, cb->yield_interval);
@@ -1149,7 +1153,6 @@ int main(int argc, char **argv, char** env)
 	char	error[512];
 #endif
 	char*	module=NULL;
-	char*	js_buf=NULL;
 	char*	p;
 	char*	omode="w";
 	int		argn;
@@ -1183,6 +1186,7 @@ int main(int argc, char **argv, char** env)
 	cb.gc_interval=JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate=TRUE;
 
+	sscanf("$Revision: 1.217 $", "%*s %s", revision);
 	DESCRIBE_COMPILER(compiler);
 
 	memset(&scfg,0,sizeof(scfg));
@@ -1224,7 +1228,7 @@ int main(int argc, char **argv, char** env)
 	errfp = fopen("error.log", "a");
 #endif
 
-	for(argn=1;argn<argc && module==NULL && js_buf==NULL;argn++) {
+	for(argn=1;argn<argc && module==NULL;argn++) {
 		if(argv[argn][0]=='-') {
 			p=argv[argn]+2;
 			switch(argv[argn][1]) {
@@ -1234,7 +1238,6 @@ int main(int argc, char **argv, char** env)
 				case 'E':
 				case 'g':
 				case 'i':
-				case 'r':
 				case 'L':
 				case 'm':
 				case 'o':
@@ -1246,8 +1249,8 @@ int main(int argc, char **argv, char** env)
 					char opt = argv[argn][1];
 					if(*p==0) {
 						if(argn + 1 >= argc) {
-							fprintf(stderr,"\n!Option requires a parameter value: %s\n", argv[argn]);
-							usage();
+							fprintf(errfp,"\n!Option requires a parameter value: %s\n", argv[argn]);
+							usage(errfp);
 							return(do_bail(1));
 						}
 						p=argv[++argn];
@@ -1273,9 +1276,6 @@ int main(int argc, char **argv, char** env)
 						case 'i':
 							load_path_list=p;
 							break;
-						case 'r':
-							js_buf = p;
-							break;
 						case 'L':
 							log_level=parseLogLevel(p);
 							break;
@@ -1287,6 +1287,9 @@ int main(int argc, char **argv, char** env)
 								perror(p);
 								return(do_bail(1));
 							}
+							break;
+						case 's':
+							js_cx_stack=(ulong)parse_byte_count(p, /* units: */1);
 							break;
 						case 't':
 							cb.limit=strtoul(p,NULL,0);
@@ -1302,22 +1305,6 @@ int main(int argc, char **argv, char** env)
 				}
 				case 'a':
 					omode="a";
-					break;
-				case 'A':
-					if (errfp != stderr)
-						fclose(errfp);
-					if(*p == '\0') {
-						errfp = stdout;
-						confp = stdout;
-						statfp = stdout;
-					} else {
-						if((errfp = fopen(p, omode)) == NULL) {
-							perror(p);
-							return(do_bail(1));
-						}
-						statfp = errfp;
-						confp = errfp;
-					}
 					break;
 				case 'C':
 					change_cwd = FALSE;
@@ -1342,16 +1329,6 @@ int main(int argc, char **argv, char** env)
 				case 'l':
 					loop=TRUE;
 					break;
-				case 'S':
-					if(*p == '\0')
-						statfp = stdout;
-					else {
-						if((statfp = fopen(p,omode))==NULL) {
-							perror(p);
-							return(do_bail(1));
-						}
-					}
-					break;
 				case 'n':
 					statfp=nulfp;
 					break;
@@ -1372,9 +1349,9 @@ int main(int argc, char **argv, char** env)
 					pause_on_error=TRUE;
 					break;
 				default:
-					fprintf(stderr,"\n!Unsupported option: %s\n",argv[argn]);
+					fprintf(errfp,"\n!Unsupported option: %s\n",argv[argn]);
 				case '?':
-					usage();
+					usage(errfp);
 					return(do_bail(1));
 			}
 			continue;
@@ -1390,9 +1367,9 @@ int main(int argc, char **argv, char** env)
 	if(umask_val >= 0)
 		umask(umask_val);
 
-	if(module==NULL && js_buf==NULL && isatty(fileno(stdin))) {
-		fprintf(stderr,"\n!No JavaScript module-name or expression specified\n");
-		usage();
+	if(module==NULL && isatty(fileno(stdin))) {
+		fprintf(errfp,"\n!Module name not specified\n");
+		usage(errfp);
 		return(do_bail(1)); 
 	}
 
@@ -1410,7 +1387,7 @@ int main(int argc, char **argv, char** env)
 		fprintf(errfp,"!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp,"\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg, text, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&scfg,text,TRUE,error)) {
 		fprintf(errfp,"!ERROR loading configuration files: %s\n",error);
 		return(do_bail(1));
 	}
@@ -1424,7 +1401,6 @@ int main(int argc, char **argv, char** env)
 #if defined(__unix__)
 	if(daemonize) {
 		fprintf(statfp,"\nRunning as daemon\n");
-		cooked_tty();
 		if(daemon(TRUE,FALSE))  { /* Daemonize, DON'T switch to / and DO close descriptors */
 			fprintf(statfp,"!ERROR %d (%s) running as daemon\n", errno, strerror(errno));
 			daemonize=FALSE;
@@ -1475,13 +1451,13 @@ int main(int argc, char **argv, char** env)
 		}
 		fprintf(statfp,"\n");
 
-		result=js_exec(module, js_buf, &argv[argn]);
+		result=js_exec(module,&argv[argn]);
 		JS_RemoveObjectRoot(js_cx, &js_glob);
 		JS_ENDREQUEST(js_cx);
 		YIELD();
 
 		if(result)
-			lprintf(LOG_ERR,"!Module (%s) set exit_code: %ld", module == NULL ? "cmdline" : module, result);
+			lprintf(LOG_ERR,"!Module (%s) set exit_code: %ld", module, result);
 
 		fprintf(statfp,"\n");
 		fprintf(statfp,"JavaScript: Destroying context\n");

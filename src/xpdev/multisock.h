@@ -26,8 +26,6 @@ struct xpms_set {
 };
 
 #define XPMS_FOREVER	UINT_MAX
-#define XPMS_FLAGS_NONE 0
-#define XPMS_ACCEPT_FLAG_HAPROXY	(1<<0)
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +44,7 @@ DLLEXPORT BOOL DLLCALL xpms_add_chararray_list(struct xpms_set *xpms_set, int do
 	int protocol, const char *list, uint16_t default_port, const char *prot,
 	void (*sock_init)(SOCKET, void *), int(*bind_init)(BOOL), void *cbdata);
 DLLEXPORT SOCKET DLLCALL xpms_accept(struct xpms_set *, union xp_sockaddr * addr, 
-	socklen_t * addrlen, unsigned int timeout, uint32_t flags, void **cb_data);
+	socklen_t * addrlen, unsigned int timeout, void **cb_data);
 
 #ifdef __cplusplus
 }

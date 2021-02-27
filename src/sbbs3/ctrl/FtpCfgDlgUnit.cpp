@@ -1,10 +1,12 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
+/* $Id: FtpCfgDlgUnit.cpp,v 1.13 2016/05/27 08:55:02 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -69,16 +83,17 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
     PasvIpLookupCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_LOOKUP_PASV_IP;
 	PasvPortLowEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_low);
   	PasvPortHighEdit->Text=AnsiString((int)MainForm->ftp_startup.pasv_port_high);
-    MaxConConEdit->Text = AnsiString((int)MainForm->ftp_startup.max_concurrent_connections);
 
     IndexFileNameEdit->Text=AnsiString(MainForm->ftp_startup.index_file_name);
+    HtmlFileNameEdit->Text=AnsiString(MainForm->ftp_startup.html_index_file);
+    HtmlJavaScriptEdit->Text=AnsiString(MainForm->ftp_startup.html_index_script);
     AnswerSoundEdit->Text=AnsiString(MainForm->ftp_startup.answer_sound);
     HangupSoundEdit->Text=AnsiString(MainForm->ftp_startup.hangup_sound);
     HackAttemptSoundEdit->Text=AnsiString(MainForm->ftp_startup.hack_sound);    
     CmdLogCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_RX;
 	DebugTxCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_TX;
 	DebugDataCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DEBUG_DATA;
-    AllowBounceCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_ALLOW_BOUNCE;
+    DirFilesCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_DIR_FILES;
     AllowQWKCheckBox->Checked
         =MainForm->ftp_startup.options&FTP_OPT_ALLOW_QWK;
     LocalFileSysCheckBox->Checked
@@ -87,9 +102,10 @@ void __fastcall TFtpCfgDlg::FormShow(TObject *Sender)
         =!(MainForm->ftp_startup.options&FTP_OPT_NO_HOST_LOOKUP);
 	AutoIndexCheckBox->Checked=MainForm->ftp_startup.options&FTP_OPT_INDEX_FILE;
 	AutoIndexCheckBoxClick(Sender);
+	HtmlIndexCheckBox->Checked
+        =MainForm->ftp_startup.options&FTP_OPT_HTML_INDEX_FILE;
+	HtmlIndexCheckBoxClick(Sender);
     PasvIpLookupCheckBoxClick(Sender);
-    QwkTimeoutEdit->Enabled = AllowQWKCheckBox->Checked;
-    QwkTimeoutLabel->Enabled = AllowQWKCheckBox->Checked;
 
     PageControl->ActivePage=GeneralTabSheet;
 }
@@ -125,7 +141,6 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->ftp_startup.max_inactivity=MaxInactivityEdit->Text.ToIntDef(FTP_DEFAULT_MAX_INACTIVITY);
     MainForm->ftp_startup.qwk_timeout=QwkTimeoutEdit->Text.ToIntDef(FTP_DEFAULT_QWK_TIMEOUT);
     MainForm->ftp_startup.port=PortEdit->Text.ToIntDef(IPPORT_FTP);
-    MainForm->ftp_startup.max_concurrent_connections = MaxConConEdit->Text.ToIntDef(0);
     MainForm->FtpAutoStart=AutoStartCheckBox->Checked;
     MainForm->FtpLogFile=LogFileCheckBox->Checked;
 
@@ -134,6 +149,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
 
     SAFECOPY(MainForm->ftp_startup.index_file_name
         ,IndexFileNameEdit->Text.c_str());
+    SAFECOPY(MainForm->ftp_startup.html_index_file
+        ,HtmlFileNameEdit->Text.c_str());
+    SAFECOPY(MainForm->ftp_startup.html_index_script
+        ,HtmlJavaScriptEdit->Text.c_str());
 
     SAFECOPY(MainForm->ftp_startup.answer_sound
         ,AnswerSoundEdit->Text.c_str());
@@ -162,10 +181,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->ftp_startup.options|=FTP_OPT_ALLOW_QWK;
     else
 	    MainForm->ftp_startup.options&=~FTP_OPT_ALLOW_QWK;
-	if(AllowBounceCheckBox->Checked==true)
-    	MainForm->ftp_startup.options|=FTP_OPT_ALLOW_BOUNCE;
+	if(DirFilesCheckBox->Checked==true)
+    	MainForm->ftp_startup.options|=FTP_OPT_DIR_FILES;
     else
-	    MainForm->ftp_startup.options&=~FTP_OPT_ALLOW_BOUNCE;
+	    MainForm->ftp_startup.options&=~FTP_OPT_DIR_FILES;
 	if(LocalFileSysCheckBox->Checked==false)
     	MainForm->ftp_startup.options|=FTP_OPT_NO_LOCAL_FSYS;
     else
@@ -174,6 +193,10 @@ void __fastcall TFtpCfgDlg::OKBtnClick(TObject *Sender)
     	MainForm->ftp_startup.options|=FTP_OPT_INDEX_FILE;
     else
 	    MainForm->ftp_startup.options&=~FTP_OPT_INDEX_FILE;
+	if(HtmlIndexCheckBox->Checked==true)
+    	MainForm->ftp_startup.options|=FTP_OPT_HTML_INDEX_FILE;
+    else
+	    MainForm->ftp_startup.options&=~FTP_OPT_HTML_INDEX_FILE;
     if(PasvIpLookupCheckBox->Checked==true)
         MainForm->ftp_startup.options|=FTP_OPT_LOOKUP_PASV_IP;
     else
@@ -218,17 +241,27 @@ void __fastcall TFtpCfgDlg::AutoIndexCheckBoxClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
-void __fastcall TFtpCfgDlg::PasvIpLookupCheckBoxClick(TObject *Sender)
+
+void __fastcall TFtpCfgDlg::HtmlJavaScriptButtonClick(TObject *Sender)
 {
-    PasvIPv4AddrEdit->Enabled = !PasvIpLookupCheckBox->Checked;
+	OpenDialog->FileName=HtmlJavaScriptEdit->Text;
+	if(OpenDialog->Execute()==true) {
+    	HtmlJavaScriptEdit->Text=OpenDialog->FileName;
+	}
 }
 //---------------------------------------------------------------------------
 
-
-void __fastcall TFtpCfgDlg::AllowQWKCheckBoxClick(TObject *Sender)
+void __fastcall TFtpCfgDlg::HtmlIndexCheckBoxClick(TObject *Sender)
 {
-    QwkTimeoutEdit->Enabled = AllowQWKCheckBox->Checked;
-    QwkTimeoutLabel->Enabled = AllowQWKCheckBox->Checked;
+    HtmlFileNameEdit->Enabled=HtmlIndexCheckBox->Checked;
+    HtmlJavaScriptEdit->Enabled=HtmlIndexCheckBox->Checked;
+    HtmlJavaScriptLabel->Enabled=HtmlIndexCheckBox->Checked;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TFtpCfgDlg::PasvIpLookupCheckBoxClick(TObject *Sender)
+{
+    PasvIPv4AddrEdit->Enabled = !PasvIpLookupCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 

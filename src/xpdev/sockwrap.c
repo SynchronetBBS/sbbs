@@ -1,4 +1,8 @@
+/* sockwrap.c */
+
 /* Berkley/WinSock socket API wrappers */
+
+/* $Id: sockwrap.c,v 1.74 2020/08/09 02:13:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -6,19 +10,32 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
  *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
+ *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <ctype.h>		/* isdigit */
 #include <stdlib.h>		/* alloca/free on FreeBSD */
 #include <string.h>		/* bzero (for FD_ZERO) on FreeBSD */
 #include <errno.h>		/* ENOMEM */
@@ -143,7 +160,7 @@ int getSocketOptionByName(const char* name, int* level)
 			return(socket_options[i].value);
 		}
 	}
-	if(!IS_DIGIT(*name))	/* unknown option name */
+	if(!isdigit(*name))	/* unknown option name */
 		return(-1);
 	return(strtol(name,NULL,0));
 }
@@ -335,7 +352,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			   ,int (*lprintf)(int level, const char *fmt, ...))
 {
 	char	port_str[128];
-	char	err[256];
+	char	err[128];
 	int		result=-1;
 	uint	i;
 
@@ -348,7 +365,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			break;
 		if(lprintf!=NULL)
 			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d binding %s socket%s: %s", s, ERROR_VALUE, prot, port_str, socket_strerror(socket_errno, err, sizeof(err)));
+				,"%04d !ERROR %d (%s) binding %s socket%s", s, ERROR_VALUE, socket_strerror(socket_errno, err, sizeof(err)), prot, port_str);
 		if(i<retries) {
 			if(lprintf!=NULL)
 				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
@@ -492,60 +509,16 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 	buf[buflen - 1] = 0;
 	if(error_number > 0 && error_number < WSABASEERR)
 		error_number += WSABASEERR;
-	if(!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
 		NULL,			// lpSource
 		error_number,	// dwMessageId
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId
 		buf,
 		buflen,
-		NULL))
-		safe_snprintf(buf, buflen, "Error %d getting error description", GetLastError());
+		NULL);
 	truncsp(buf);
 	return buf;
 #else
 	return safe_strerror(error_number, buf, buflen);
 #endif
-}
-
-DLLEXPORT void set_socket_errno(int err)
-{
-#if defined(_WINSOCKAPI_)
-	WSASetLastError(err);
-#else
-	errno = err;
-#endif
-}
-
-DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
-{
-	struct addrinfo hints = {0};
-	struct addrinfo *res, *cur;
-
-	if (af != AF_INET && af != AF_INET6) {
-		set_socket_errno(EAFNOSUPPORT);
-		return -1;
-	}
-
-	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
-	if(getaddrinfo(src, NULL, &hints, &res))
-		return -1;
-
-	for(cur = res; cur; cur++) {
-		if(cur->ai_addr->sa_family == af)
-			break;
-	}
-	if(!cur) {
-		freeaddrinfo(res);
-		return 0;
-	}
-	switch(af) {
-		case AF_INET:
-			memcpy(dst, &(((struct sockaddr_in *)cur)->sin_addr), sizeof(((struct sockaddr_in *)cur)->sin_addr));
-			break;
-		case AF_INET6:
-			memcpy(dst, &(((struct sockaddr_in6 *)cur)->sin6_addr), sizeof(((struct sockaddr_in6 *)cur)->sin6_addr));
-			break;
-	}
-	freeaddrinfo(res);
-	return 1;
 }

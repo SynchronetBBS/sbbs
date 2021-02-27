@@ -1,10 +1,12 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
+/* $Id: MailCfgDlgUnit.cpp,v 1.34 2018/03/05 05:35:13 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -81,10 +95,10 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         MaxMsgsWaitingEdit->Text="N/A";
     else
         MaxMsgsWaitingEdit->Text=AnsiString(MainForm->mail_startup.max_msgs_waiting);
-    if(MainForm->mail_startup.max_concurrent_connections == 0)
-        MaxConConEdit->Text="N/A";
+    if(MainForm->mail_startup.lines_per_yield == 0)
+        LinesPerYieldEdit->Text="N/A";
     else
-        MaxConConEdit->Text=AnsiString((int)MainForm->mail_startup.max_concurrent_connections);
+        LinesPerYieldEdit->Text=AnsiString(MainForm->mail_startup.lines_per_yield);
 
     AutoStartCheckBox->Checked=MainForm->MailAutoStart;
     LogFileCheckBox->Checked=MainForm->MailLogFile;
@@ -93,6 +107,7 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     UseSubPortCheckBox->Checked=MainForm->mail_startup.options&MAIL_OPT_USE_SUBMISSION_PORT;
     TLSSubPortCheckBox->Checked=MainForm->mail_startup.options&MAIL_OPT_TLS_SUBMISSION;
 
+    DefCharsetEdit->Text=AnsiString(MainForm->mail_startup.default_charset);
     RelayServerEdit->Text=AnsiString(MainForm->mail_startup.relay_server);
     RelayAuthNameEdit->Text=AnsiString(MainForm->mail_startup.relay_user);
     RelayAuthPassEdit->Text=AnsiString(MainForm->mail_startup.relay_pass);
@@ -219,8 +234,10 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->mail_startup.max_msgs_waiting=MaxMsgsWaitingEdit->Text.ToIntDef(0);
     MainForm->mail_startup.max_delivery_attempts=DeliveryAttemptsEdit->Text.ToIntDef(MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS);
     MainForm->mail_startup.rescan_frequency=RescanFreqEdit->Text.ToIntDef(MAIL_DEFAULT_RESCAN_FREQUENCY);
-    MainForm->mail_startup.max_concurrent_connections=MaxConConEdit->Text.ToIntDef(0);
+    MainForm->mail_startup.lines_per_yield=LinesPerYieldEdit->Text.ToIntDef(0);
 
+    SAFECOPY(MainForm->mail_startup.default_charset
+        ,DefCharsetEdit->Text.c_str());
     SAFECOPY(MainForm->mail_startup.default_user
         ,DefaultUserEdit->Text.c_str());
     if(isalnum(*DNSServerEdit->Text.c_str()))
@@ -417,6 +434,8 @@ void __fastcall TMailCfgDlg::SendMailCheckBoxClick(TObject *Sender)
     OutboundSoundEdit->Enabled=checked;
     OutboundSoundLabel->Enabled=checked;
     OutboundSoundButton->Enabled=checked;
+    DefCharsetLabel->Enabled=checked;
+    DefCharsetEdit->Enabled=checked;
     ConnectTimeoutLabel->Enabled=checked;
     ConnectTimeoutEdit->Enabled=checked;
 

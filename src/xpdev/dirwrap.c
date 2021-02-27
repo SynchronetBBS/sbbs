@@ -1,4 +1,7 @@
 /* Directory-related system-call wrappers */
+// vi: tabstop=4
+
+/* $Id: dirwrap.c,v 1.113 2020/05/25 22:15:09 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +16,20 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -68,7 +83,6 @@
 
 #include "genwrap.h"	/* strupr/strlwr */
 #include "dirwrap.h"	/* DLLCALL */
-#include "filewrap.h"	/* filetime() */
 
 #if !defined(S_ISDIR)
 	#define S_ISDIR(x)	((x)&S_IFDIR)
@@ -598,7 +612,7 @@ BOOL DLLCALL fexistcase(char *path)
 	SAFECOPY(fname,p);
 	*p=0;
 	for(i=0;fname[i];i++)  {
-		if(IS_ALPHA(fname[i]))
+		if(isalpha(fname[i]))
 			sprintf(tmp,"[%c%c]",toupper(fname[i]),tolower(fname[i]));
 		else
 			sprintf(tmp,"%c",fname[i]);
@@ -719,7 +733,7 @@ int removecase(const char *path)
 	p=getfname(inpath);
 	fname[0]=0;
 	for(i=0;p[i];i++)  {
-		if(IS_ALPHA(p[i]))
+		if(isalpha(p[i]))
 			sprintf(tmp,"[%c%c]",toupper(p[i]),tolower(p[i]));
 		else
 			sprintf(tmp,"%c",p[i]);
@@ -765,7 +779,7 @@ long DLLCALL delfiles(const char *inpath, const char *spec, size_t keep)
 	for(i = 0; i < g.gl_pathc && files < g.gl_pathc - keep; i++) {
 		if(isdir(g.gl_pathv[i]))
 			continue;
-		(void)CHMOD(g.gl_pathv[i],S_IWRITE);	/* In case it's been marked RDONLY */
+		CHMOD(g.gl_pathv[i],S_IWRITE);	/* In case it's been marked RDONLY */
 		if(remove(g.gl_pathv[i])==0)
 			files++;
 		else
@@ -1085,7 +1099,7 @@ BOOL DLLCALL isfullpath(const char* filename)
 {
 	return(filename[0]=='/'
 #ifdef WIN32
-		|| filename[0]=='\\' || (IS_ALPHA(filename[0]) && filename[1]==':')
+		|| filename[0]=='\\' || (isalpha(filename[0]) && filename[1]==':')
 #endif
 		);
 }
@@ -1222,7 +1236,6 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 		return FALSE;
 	}
 
-	time_t	ftime = filetime(fileno(in));
 	while(!feof(in)) {
 		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), in);
 		if(rd < 1)
@@ -1236,7 +1249,6 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 
 	fclose(in);
 	fclose(out);
-	setfdate(dest,ftime);
 
 	return success;
 }

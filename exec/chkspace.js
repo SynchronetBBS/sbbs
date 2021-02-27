@@ -20,7 +20,12 @@ for(i=0;i<argc;i++)
 if(!dirs.length)
 	dirs.push(system.temp_dir);	// default to temp dir if none specified
 
-var msgbase;
+msgbase = new MsgBase("mail");
+if(msgbase.open()==false) {
+	log(LOG_ERR,"!ERROR " + msgbase.last_error);
+	exit();
+}
+
 for(i in dirs) {
 
 	var freespace = dir_freespace(dirs[i],1024);
@@ -28,13 +33,6 @@ for(i in dirs) {
 	if(freespace==-1 || freespace >= minspace)
 		continue;	// everything's fine
 
-	if(!msgbase) {
-		msgbase = new MsgBase("mail");
-		if(msgbase.open()==false) {
-			log(LOG_ERR,"!ERROR " + msgbase.last_error);
-			exit();
-		}
-	}
 	log(LOG_WARNING,"!Low disk space: " + freespace + " kilobytes on " + dirs[i]);
 
 	hdr = { to: 'sysop', to_ext: '1', from: 'chkspace', subject: 'Low disk space notification' }
@@ -46,5 +44,4 @@ for(i in dirs) {
 	log(LOG_INFO,"E-mailed low disk space notification to sysop");
 }
 
-if(msgbase)
-	msgbase.close();
+msgbase.close();

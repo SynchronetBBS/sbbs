@@ -192,7 +192,7 @@ function read_netuser(username, netaddr)
 	return obj;
 }
 
-function read(usernum, username, netaddr, bbsid)
+function read(usernum, username, netaddr)
 {
 	var usernum = parseInt(usernum, 10);
 	var obj = cache_get(usernum >= 1 ? usernum : username, netaddr);
@@ -202,17 +202,8 @@ function read(usernum, username, netaddr, bbsid)
 		obj = read_localuser(usernum);
 	else if(!netaddr)
 		obj = read_localuser(system.matchuser(username));
-	else {
+	else
 		obj = read_netuser(username, netaddr);
-		if(!obj && bbsid)
-			obj = read_netuser(username, bbsid);
-		if(!obj) {
-			var namehash = "md5:" + md5_calc(username);
-			obj = read_netuser(namehash, netaddr);
-			if(!obj && bbsid)
-				obj = read_netuser(namehash, bbsid);
-		}
-	}
 	cache_set(usernum >= 1 ? usernum : username, obj, netaddr);
 	return obj;
 }
@@ -271,7 +262,7 @@ function is_enabled(obj)
 // Uses Graphic.draw() at an absolute screen coordinate
 function draw(usernum, username, netaddr, above, right, top)
 {
-	var avatar = this.read(usernum, username, netaddr, usernum);
+	var avatar = this.read(usernum, username, netaddr);
 	if(!is_enabled(avatar))
 		return false;
 	return draw_bin(avatar.data, above, right, top);
@@ -306,7 +297,7 @@ function draw_bin(data, above, right, top)
 // Uses console.write() where-ever the cursor happens to be
 function show(usernum, username, netaddr)
 {
-	var avatar = this.read(usernum, username, netaddr, usernum);
+	var avatar = this.read(usernum, username, netaddr);
 	if(!is_enabled(avatar))
 		return false;
 	return show_bin(avatar.data);

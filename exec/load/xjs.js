@@ -1,5 +1,5 @@
 function xjs_compile(filename) {
-	if(typeof cwd == 'string' && cwd != '') {
+	if(cwd != '') {
 		if(filename.search(/^((\/)|([A-Za-z]:[\/\\]))/)==-1)
 			filename=cwd+filename;
 	}
@@ -90,30 +90,4 @@ function xjs_compile(filename) {
 		}
 	}
 	return(ssjs_filename);
-}
-
-function xjs_eval(filename, str) {
-	const ssjs = xjs_compile(filename);
-	const f = new File(filename + '.html');
-	if (!f.open('w+', false)) {
-		log(LOG_ERR, "!ERROR " + f.error + " creating " + f.name);
-		return '';
-	}
-	function write(s) {
-		f.write(s);
-	}
-	function writeln(s) {
-		f.writeln(s);
-	}
-	load(ssjs);
-	if (str) {
-		f.rewind();
-		const ret = f.read();
-		f.close();
-		f.remove();
-		return ret;
-	} else {
-		f.close();
-		return filename + '.html';
-	}
 }

@@ -96,7 +96,7 @@ function FileBase(dir) {
 	Object.defineProperty(FileEntry.prototype, "name", {
 		enumerable: true,
 		get: function() {
-			return this.ext ? this.base+'.'+this.ext : this.base;
+			return this.base+'.'+this.ext;
 		}
 	});
 

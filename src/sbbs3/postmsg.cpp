@@ -63,16 +63,6 @@ int msgbase_open(scfg_t* cfg, smb_t* smb, unsigned int subnum, int* storage, lon
 	return i;
 }
 
-static uchar* findsig(char* msgbuf)
-{
-	char* tail = strstr(msgbuf, "\n-- \r\n");
-	if(tail != NULL) {
-		*tail = '\0';
-		tail++;
-		truncsp(msgbuf);
-	}
-	return (uchar*)tail;
-}
 
 /****************************************************************************/
 /* Posts a message on sub-board number 'subnum'								*/
@@ -323,7 +313,7 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	if(tags[0])
 		smb_hfield_str(&msg, SMB_TAGS, tags);
 
-	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf, findsig(msgbuf));
+	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf,NULL);
 	free(msgbuf);
 
 	if(i==SMB_DUPE_MSG) {
@@ -345,22 +335,6 @@ bool sbbs_t::postmsg(uint subnum, long wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	sprintf(str,"posted on %s %s"
 		,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
-
-	if(!(msgattr & MSG_ANONYMOUS)
-		&& stricmp(touser, "All") != 0
-		&& (remsg == NULL || remsg->from_net.type == NET_NONE)) {
-		if(cfg.sub[subnum]->misc&SUB_NAME)
-			i = userdatdupe(0, U_NAME, LEN_NAME, touser);
-		else
-			i = matchuser(&cfg, touser, TRUE /* sysop_alias */);
-		if(i > 0 && i != useron.number) {
-			SAFEPRINTF4(str, text[MsgPostedToYouVia]
-				,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias
-				,connection
-				,cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
-			putsmsg(&cfg, i, str);
-		}
-	}
 
 	signal_sub_sem(&cfg,subnum);
 
@@ -414,10 +388,8 @@ extern "C" int DLLCALL msg_client_hfields(smbmsg_t* msg, client_t* client)
 	return SMB_SUCCESS;
 }
 
-/* Note: finds signature delimiter automatically and (if applicable) separates msgbuf into body and tail */
+/* Note: support MSG_BODY only, no tails or other data fields (dfields) */
 /* Adds/generates Message-IDs when needed */
-/* Auto-sets the UTF-8 indicators for UTF-8 encoded header fields and body text */
-/* If you want to save a message body with CP437 chars that also happen to be valid UTF-8 sequences, you'll need to preset the ftn_charset header */
 extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client, const char* server, char* msgbuf, smbmsg_t* remsg)
 {
 	ushort	xlat=XLAT_NONE;
@@ -498,48 +470,14 @@ extern "C" int DLLCALL savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t*
 		|| (msg->subj != NULL && !str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj)))
 		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
 
-	if(msg->ftn_charset == NULL && !str_is_ascii(msgbuf) && utf8_str_is_valid(msgbuf))
-		smb_hfield_str(msg, FIDOCHARSET, FIDO_CHARSET_UTF8);
-
-	msgbuf = strdup(msgbuf);
-	if(msgbuf == NULL)
-		return SMB_FAILURE;
-	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, findsig(msgbuf)))==SMB_SUCCESS
+	if((i=smb_addmsg(smb,msg,smb_storage_mode(cfg, smb),dupechk_hashes,xlat,(uchar*)msgbuf, /* tail: */NULL))==SMB_SUCCESS
 		&& msg->to!=NULL	/* no recipient means no header created at this stage */) {
 		if(smb->subnum == INVALID_SUB) {
 			if(msg->to_net.type == NET_FIDO && cfg->netmail_sem[0])
 				ftouch(cmdstr(cfg,NULL,cfg->netmail_sem,nulstr,nulstr,NULL));
 		} else
 			signal_sub_sem(cfg,smb->subnum);
-
-		if(msg->to_net.type == NET_NONE && !(msg->hdr.attr & MSG_ANONYMOUS) && cfg->text != NULL) {
-			int usernum = 0;
-			if(msg->to_ext != NULL)
-				usernum = atoi(msg->to_ext);
-			else if(smb->subnum != INVALID_SUB && (cfg->sub[smb->subnum]->misc & SUB_NAME))
-				usernum = userdatdupe(cfg, 0, U_NAME, LEN_NAME, msg->to, /* del: */FALSE, /* next: */FALSE, NULL, NULL);
-			else
-				usernum = matchuser(cfg, msg->to, TRUE /* sysop_alias */);
-			if(usernum > 0 && (client == NULL || usernum != (int)client->usernum)) {
-				char str[256];
-				if(smb->subnum == INVALID_SUB) {
-					safe_snprintf(str, sizeof(str), cfg->text[UserSentYouMail], msg->from);
-					putsmsg(cfg, usernum, str);
-				} else {
-					char fido_buf[64];
-					const char* via = smb_netaddrstr(&msg->from_net, fido_buf);
-					if(via == NULL)
-						via = (client == NULL) ? "" : client->protocol;
-					safe_snprintf(str, sizeof(str), cfg->text[MsgPostedToYouVia]
-						,msg->from
-						,via
-						,cfg->grp[cfg->sub[smb->subnum]->grp]->sname,cfg->sub[smb->subnum]->lname);
-					putsmsg(cfg, usernum, str);
-				}
-			}
-		}
 	}
-	free(msgbuf);
 	return(i);
 }
 

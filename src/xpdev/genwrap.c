@@ -157,27 +157,27 @@ char DLLCALL c_unescape_char_ptr(const char* str, char** endptr)
 		int digits = 0;		// \x## for hexadecimal character literals (only 2 digits supported)
 		++str;
 		ch = 0;
-		while(digits < 2 && IS_HEXDIGIT(*str)) {
+		while(digits < 2 && isxdigit(*str)) {
 			ch *= 0x10;	
 			ch += HEX_CHAR_TO_INT(*str);
 			str++;
 			digits++;
 		}
 #ifdef C_UNESCAPE_OCTAL_SUPPORT
-	} else if(IS_OCTDIGIT(*str)) {
+	} else if(isodigit(*str)) {
 		int digits = 0;		// \### for octal character literals (only 3 digits supported)
 		ch = 0;
-		while(digits < 3 && IS_OCTDIGIT(*str)) {
+		while(digits < 3 && isodigit(*str)) {
 			ch *= 8;
 			ch += OCT_CHAR_TO_INT(*str);
 			str++;
 			digits++;
 		}
 #else
-	} else if(IS_DIGIT(*str)) {
-		int digits = 0;		// \### for decimal character literals (only 3 digits supported)
+	} else if(isdigit(*str)) {
+		int digits = 0;		// \### for decimal charater literals (only 3 digits supported)
 		ch = 0;
-		while(digits < 3 && IS_DIGIT(*str)) {
+		while(digits < 3 && isdigit(*str)) {
 			ch *= 10;
 			ch += DEC_CHAR_TO_INT(*str);
 			str++;
@@ -725,7 +725,7 @@ char* DLLCALL truncsp(char* str)
 
 	if(str!=NULL) {
 		i=len=strlen(str);
-		while(i && IS_WHITESPACE(str[i-1]))
+		while(i && isspace((unsigned char)str[i-1]))
 			i--;
 		if(i!=len)
 			str[i]=0;	/* truncate */
@@ -877,7 +877,7 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 
 #if defined(_MSC_VER)
 	strerror_s(buf, buflen, errnum);
-#elif defined(_WIN32)
+#elif defined(__BORLANDC__)
 	strncpy(buf, strerror(errnum), buflen);
 	buf[buflen - 1] = 0;
 #elif defined(_GNU_SOURCE)

@@ -1,0 +1,660 @@
+       Synchronet BBS Software and Utilities C Source Code Documentation
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			Created April 1997, Rob Swindell
+		      Updated September 1997, Rob Swindell
+		      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Official Synchronet Web Site:
+	http://www.weedpuller.com/synchronet
+Latest version of the source code and this document stored at:
+	ftp://ftp.weedpuller.com/synchronet
+Post public questions are comments on the freelance Synchronet listserv:
+	mailto:synchronet@freelance.com
+Send bug fixes or comments
+	mailto:sbbs@weedpuller.com
+
+I no-longer monitor any BBS-related newsgroups (too flakey and spam-ridden).
+
+History
+=======
+
+The Synchronet BBS software project began in December of 1990 when I started
+writing my very own BBS program from the ground up. While it is true that I ran
+Wayne Bell's WWIV BBS software for a number of years and an illicit copy of the
+WWIV source code was my first exposure to the C Programming Language, I didn't
+steal, borrow, or otherwise copy the WWIV source code for use in Synchronet in
+any way. I did refer to Wayne's code from time to time when implementing
+WWIV-compatible features like WWIV color codes, but I didn't need (or want) to
+copy his source. I do wish to take this moment, however, to extend my
+appreciation to Wayne Bell for his contributions to the BBS and hacker
+communities, and for personally inspiring me to write a better BBS! ;-)
+
+In 1992, Synchronet became a commercial venture for me (under the company name
+Digital Dynamics) and was my sole source of income for over three years. The
+commercialization of the Internet, and in paticular, the Wolrd Wide Web, has
+all but eliminated the commercial BBS software market and in 1996, I officially
+announced the end of Digital Dynamics (in the "Digital Manifesto"). In February
+of 1997, my own BBS, Vertrauen, was abruptly shut-down. This time for good.
+From September of 1988 to February of 1997, Vertrauen (German for "Trust")
+answered the phone at 714-529-9525 24 hours a day, 7 days a week. It went from
+a 1 line "pirate" BBS running WWIV on an 8mhz 8088 to a 7 node Synchronet
+BBS running on two 66mhz 486s connected to a Novell NetWare 3.12 file server
+with many gigabytes of disk space, 7 CD-ROMS, Planet Connect Fidonet feed, the
+whole nine yards - pretty much everything except Internet access (never could
+justify the monthly costs of a full-time connection).
+
+Today, I personally have very little interest in BBSs (using or operating them)
+and my programming interests have been focused elsewhere for quite some time
+(Internet communication products). For this reason, I am releasing the
+complete source code (in C) for Synchronet BBS software and all other Digital
+Dynamics' utilites. Since I expect no futher income from Synchronet BBS
+software and have no plans on enhancing or supporting the product in any way, I
+thought the least I could do was to package up, document, and publicly release
+the source code for others to continue enhancing as they wish.
+
+
+Disclaimer
+==========
+
+The accompanying source code (and this documentation) are not intended for the
+beginning, or possibly even intermediate, programmer. You must have a healthy
+knowledge of DOS, MAKEFILES, and the C Programming Language for this source
+code to be of any use to you. Of course, beginners are encouraged to learn
+(hopefully with the help of a friend or two) from the included projects - just
+don't get too irritated if things don't compile and link the first time.
+
+It is my hope that a hand full of capable young hackers will take Synchronet
+into new directions. Hopefully, retaining the original name (Synchronet) in
+some form, although there is no way for me to enforce this. I assume that some
+will make minor modifications and re-release compiled versions under their name
+with no credit to my work or the history of Synchronet, but while that isn't
+"cool", it isn't illegal either. I am releasing the rights to every piece of
+code accompanying this document to the public domain. That means that anyone
+and everyone can do with it whatever they like as far as I'm concerned.
+
+I, Rob Swindell, author of Synchronet, owner of Digital Dynamics, hereby
+relinquish the copyright of Synchronet BBS software and all Synchronet-related
+Digital Dynamics' utilities to the public domain. I am offering no warranties
+of any kind. Use at your own risk.
+
+
+Required Tools				Version 		Project(s)
+==============				------- 		----------
+
+Borland C++ for DOS and Windows 	3.1			SBBS.EXE
+								SBJ.EXE
+								SBL.EXE
+								SCB.EXE
+								SMM.EXE
+								UTI*.EXE
+								ADDFILES.EXE
+								DELFILES.EXE
+								DUPEFIND.EXE
+								FILELIST.EXE
+								SMBACTIV.EXE
+
+  Note: Newer versions of Borland C++ tended to create larger, more memory
+	hungry executables, so I stayed with 3.1 for these 16-bit DOS versions
+	(where available DOS memory was a never ending issue with sysops).
+	Newer versions of Borland C++ will work (with slight changes to the
+	appropriate MAKEFILEs) for the above projects. The last five projects
+	listed above are built with MAKEFILE.BC (i.e. make -fmakefile.bc)
+	instead of MAKEFILE (used for Watcom).
+
+Borland C++ for DOS, Windows, and Win32 4.5			SCFG.EXE
+								SCFG32.EXE
+								BAJA.EXE
+								BAJA32.EXE
+								SBBS4W32.EXE
+								INSTALL.EXE
+								QWKNODES.EXE
+								SBBSECHO.EXE
+								SMB2SBL.EXE
+								SBL2SMB.EXE
+								SMB2SMM.EXE
+								SMM2SMB.EXE
+								NODE.COM
+								SLOG.EXE
+								DSTSEDIT.EXE
+								ANS2MSG.EXE
+                                                                MSG2ANS.EXE
+								EXECSBBS.COM
+
+  Note: SBBS4W32.EXE, the 32-bit Windows version of Synchronet, is incomplete.
+	Again, newer versions of Borland C++ (4.51, 5.x, etc) will probably
+	work fine with slight changes to the appropriate MAKEFILEs. SCFG32.EXE
+	is a native Win32 app that also runs under DOS (using Borland's DOS
+	extender) - I don't know why the gettext/puttext is messed up.
+	You'll need EXE2BIN.EXE (included with MS-DOS) to create EXECSBBS.COM.
+
+
+Borland C++ for OS/2			2.0			SBBS4OS2.EXE
+								SCFG4OS2.EXE
+								SBBSECHO.EXE
+								ADDFILES.EXE
+								BAJA4OS2.EXE
+								DELFILES.EXE
+								DUPEFIND.EXE
+								FILELIST.EXE
+								INSTALL.EXE
+								NODE.EXE
+								SLOG.EXE
+								CHKSMB.EXE
+								FIXSMB.EXE
+								SMBUTIL.EXE
+								SMBACTIV.EXE
+								DSTSEDIT.EXE
+								ANS2MSG.EXE
+								MSG2ANS.EXE
+								EXECSBBS.EXE
+								
+  Note: Watcom makefiles are available for many of these projects and have
+	the advantage of being able to be built from any environment (DOS,
+	Windows, or OS/2) and create executables that run under all those
+	environments. Borland C++ for OS/2, on the otherhand, can only be
+	used in an OS/2 environment and can only create OS/2 executables.
+	While Borland's C++ compilers definitely compile faster, the resulting
+	exectubles created by Watcom C++ are usually smaller and faster.
+	Any of the projects that don't already have support for Borland C++
+	for OS/2, can probably be easily modified to do so (this excludes
+	XSDK apps). Most popular executables are already supported.
+
+
+Watcom C++				10.0a			ADDFILES.EXE
+								AUTONODE.EXE
+								DELFILES.EXE
+								DUPEFIND.EXE
+								FILELIST.EXE
+								SBBSECHO.EXE
+								SMBUTIL.EXE
+								SMBACTIV.EXE
+
+  Note: All flavors (16-bit DOS, 32-bit DOS, 32-bit OS/2, and 32-bit Windows)
+	Love the cross-platform capabilites of Watcom C++!
+	The NT\*.EXE files are Win32 executables that run native under either
+	Windows 95 or Windows NT.
+	The DOSX\*.EXE and DOS4G\*.EXE files are extended DOS executables that
+	need DOS4G.EXE or DOS4GW.EXE (included with Watcom C++) in the search
+	path. (Sorry 'bout the inconsistency in the sub-directory names,
+	there's no difference between DOSX and DOS4G except that I used to have
+	some extended DOS Borland projects write to the DOSX directories).
+
+	*** IMPORTANT ***
+	1) It is important that you delete all the files from the DOS and OS2
+	   destination sub-directories (use CLEANALL.BAT) if you've previously
+	   built a project using Borland C++ and wish to re-build it using
+	   Watcom. The .OBJ files are NOT compatible between Watcom and Borland
+	   (without some special effort).
+	2) You must copy \WATCOM\SRC\STARTUP\WILDARGV.C from the Watcom C++
+	   installation directory (or CD-ROM) into the SBBS\SMB\SMBUTIL
+	   directory before attempting a Watcom build on the SMBUTIL project.
+	   It's a copyrighted file, so I couldn't include it.
+
+	Watcom can be/could have been used for some of the Borland-only
+	projects, but due to its slow compile speed, I only used it for the
+	projects that needed the best extended DOS support (DOS4G blows away
+	Borland's DOS extender) and cross-platform compile (it was a pain to
+	boot OS/2 every time I needed to build an OS/2 executable with Borland
+	C++ for OS/2). Plus, Watcom's text-mode screen-libraries were sorely
+	lacking (hence no CFG.EXE projects are built with Watcom).
+
+Tool Notes
+==========
+
+As noted aboved, Borland C++ v4.5 (or possibly newer versions) may be used for
+SBBS.EXE (and other BC v3.1 projects), but you will have less available DOS
+memory (the executable will consume more memory).
+
+Borland C++ v4.5 can also be used for many of the Watcom compiled utilities.
+If you find MAKEFILE.BC in any of the Watcom compiled project directories, you
+can use this makefile to build a 16-bit DOS, 32-bit OS/2, and in some cases
+32-bit DOS executable with Borland C++. Likewise, any *.WAT makefiles (and most
+of the MAEKALL.BAT files) are intended for use with Watcom C++.
+
+
+Project Notes
+=============
+
+Most projects are built via MAKEFILE and/or .BAT/.CMD file. If you find a
+MAKEALL.BAT or MAKEALL.CMD (for OS/2) file in any of the project directories,
+this batch file is used to compile and link versions for all supported
+platforms (e.g. DOS-16, DOS-32, OS/2, Win32, etc).
+
+If a MAKEFILE or *.MAK file doesn't exist in the project directory, there may
+be a simple MAKE.BAT/MAKE.CMD to build the executable. The simplest projects
+may not include any type of MAKEFILE, BAT, or CMD file, but just require a
+basic CC command line to compile and link into an executable (only the most
+independant and smallest projects fit into this category).
+
+The MAKEALL.BAT file in the source ROOT directory is used to build ALL
+Borland C++ DOS and Win32 projects.
+
+The MAKEALL.CMD file in the source ROOT directory is used to build ALL
+Borland C++ OS/2 projects.
+
+The WMAKEALL.BAT file in the source ROOT directory is used to build ALL
+Watcom C++ DOS, DOS4G, OS/2 and Win32 projects.
+
+Sub-directories are usually used to house the output files (.OBJ, .EXE, .MAP,
+etc) for each supported platform. Sub-directories with the name DOS are used
+for 16-bit DOS output files; sub-directories of DOSX, DOS32, or DOS4G are used
+for 32-bit extended DOS output files; sub-directories of OS2 contain 32-bit
+OS/2 output files; subdirectories of NT or W32 contain 32-bit Windows
+(Windows NT or Windows 95) output files. In the more simple projects (e.g.
+BAJA*.EXE), no sub-directories are utilized.
+
+The makefiles (MAKEFILE.*, *.MAK, *.BC, *.WAT) are setup for my environment.
+You will most likely need to make changes to these makefiles for your
+environment. For reference purposes, these are the path locations of the
+various tools in my environment:
+
+Path			Tool
+----			----
+N:\BC31 		Borland C++ for DOS and Windows v3.1
+N:\BC45 		Borland C++ for DOS, Windows, and Win32 v4.5
+C:\BCOS2		Borland C++ for OS/2 v2.0
+N:\WATCOM		Watcom C++ v10.0a
+
+My system PATH environment variable contains N:\BC45\BIN, N:\WATCOM\BINB,
+and N:\WATCOM\BIN. So if you see references (without path) to BCC, then that
+would indicate Borland C++ v4.5. MAKE and MAKER are Borland's MAKE utilities
+(included with Borland C++ v4.5, the latter being the 16-bit real mode
+version). WMAKE is the Watcom MAKE utility.
+
+My N:\BCxx\BIN\TURBOC.CFG file contains:
+
+-IN:\BCxx\INCLUDE
+-LN:\BCxx\LIB
+
+I've made an effort to eliminate the project drive letter (N:) from all
+MAKEFILEs and BATch files, but some references may still remain. If you only
+have one hard disk on your system (C:) or your projects are stored on the same
+drive the compiler(s) is/are installed on, then simply eliminating any drive
+letter specifications is suggested.
+
+Efforts have been made to eliminate all compiler warnings, but in some cases
+warnings may persist. Especially when using a different compiler or version
+than I have used. Any warnings in the source code I'm releasing may be safely
+ignored. If you or anyone else has modified the code, then warnings in the
+modified files should be investigated at your discretion.
+
+
+Directory Hierachry
+===================
+
+If extracted correctly, the archive that contained this document should have
+created a directory hierarchy similar to the following:
+
+ÚÄ SBBS ÄÄÄÄÄÄÄÄÄÂÄ ADDFILES ÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOSX
+³		 ³		  ÃÄ NT
+³		 ³		  ÀÄ OS2
+³		 ÃÄ ALLUSERS
+³		 ÃÄ ANS2MSG
+³		 ÃÄ AUTONODE
+³		 ÃÄ BAJA
+³		 ÃÄ DCDWATCH
+³		 ÃÄ DELFILES ÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOSX
+³		 ³		  ÃÄ NT
+³		 ³		  ÀÄ OS2
+³		 ÃÄ DOS
+³		 ÃÄ DSTSEDIT
+³		 ÃÄ DUPEFIND ÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOSX
+³		 ³		  ÃÄ NT
+³		 ³		  ÀÄ OS2
+³		 ÃÄ ECHO ÄÄÄÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOS4G
+³		 ³		  ÃÄ NT
+³		 ³		  ÀÄ OS2
+³		 ÃÄ EXECDOS
+³		 ÃÄ EXECSBBS ÄÄÄÄÄÂÄ DOS
+³		 ³		  ÀÄ OS2
+³		 ÃÄ FILELIST ÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOSX
+³		 ³		  ÃÄ NT
+³		 ³		  ÀÄ OS2
+³		 ÃÄ INSTALL ÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ÀÄ OS2
+³		 ÃÄ MLABELS
+³		 ÃÄ MSG2ANS
+³		 ÃÄ MSWAIT ÄÄÄÄÄÄÄÄÄ DOS
+³		 ÃÄ NODE ÄÄÄÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ÀÄ OS2
+³		 ÃÄ OS2
+³		 ÃÄ QWKNODES
+³		 ÃÄ RIO
+³		 ÃÄ SBL
+³		 ÃÄ SBJ
+³		 ÃÄ SCB
+³		 ÃÄ SCFG ÄÄÄÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOS32
+³		 ³		  ÀÄ OS2
+³		 ÃÄ SDK
+³		 ÃÄ SLOG ÄÄÄÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ÀÄ OS2
+³		 ÃÄ SMB ÄÄÄÄÄÄÄÄÄÄÂÄ CHKSMB ÄÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ³		   ÀÄ OS2
+³		 ³		  ÃÄ FIXSMB ÄÄÄÄÄÄÄÂÄ DOS
+³		 ³		  ³		   ÀÄ OS2
+³		 ³		  ÀÄ SMBUTIL ÄÄÄÄÄÄÂÄ DOS
+³		 ³				   ÃÄ DOS4G
+³		 ³				   ÃÄ NT
+³		 ³				   ÀÄ OS2
+³		 ÃÄ SMBACTIV ÄÄÄÄÄÂÄ DOS
+³		 ³		  ÃÄ DOSX
+³		 ³		  ÃÄ NT
+³		 ³		  ÀÄ OS2
+³		 ÃÄ SMM
+³		 ÃÄ UTI
+³		 ÀÄ W32
+ÃÄ MSWAIT ÄÄÄÄÄÄÄÄÄ DOS
+ÃÄ SPAWNO
+ÃÄ STP
+ÃÄ TONE
+ÀÄ UIFC
+
+Directory Descriptions
+----------------------
+SBBS\		Synchronet source code and shared header files
+SBBS\SMB\	Synchronet Message Base library and header files
+...\CHKSMB\	Source for utility to check Synchronet message bases for errors
+...\FIXSMB\	Source for utility to rebuild Synchronet message base indices
+...\SMBUTIL\	Synchronet message base maintenance utility (SMBUTIL) source
+SBBS\RIO\	OS/2 and Win32 Remote I/O library source and header files
+SBBS\SDK\	Synchronet External program SDK (XSDK) source and header files
+SBBS\SMM\	Synchronet Match Maker and utility source
+SBBS\SCB\	Synchronet Callback source
+SBBS\SBJ\	Synchronet Blackjack source
+SBBS\SBL\	Synchronet BBS List source
+SBBS\UTI\	Synchronet UTI driver (for PostLink/RelayNet/RIME) source
+SBBS\SCFG\	Synchronet Configuration program source
+SBBS\BAJA\	Synchronet shell/module compiler (BAJA.EXE) source
+SBBS\ECHO\	SBBSecho (FidoNet echomail program) source
+SBBS\EXECDOS\	Synchronet for OS/2's EXECDOS.EXE source
+SBBS\EXECSBBS\	EXECSBBS.COM/EXE (for SBBS4DOS/OS2) source
+SBBS\DCDWATCH\	DCDWATCH.EXE source
+SBBS\ADDFILES\	ADDFILES.EXE source
+SBBS\DELFILES\	DELFILES.EXE source
+SBBS\DUPEFIND\	DUPEFIND.EXE source
+SBBS\FILELIST\	FILELIST.EXE source
+SBBS\ALLUSERS\	ALLUSERS.EXE source
+SBBS\MLABELS\	MLABLES.EXE source
+SBBS\ANS2MSG\	ANS2MSG.EXE source
+SBBS\MSG2ANS\	MSG2ANS.EXE source
+SBBS\AUTONODE\	AUTONODE.EXE source
+SBBS\SMBACTIV\	SMBACTIV.EXE source
+SBBS\QWKNODES\	QWKNODES.EXE source
+SBBS\SLOG\	SLOG.EXE source
+SBBS\NODE\	NODE.COM/EXE source
+SBBS\DSTSEDIT\	DSTSEDIT.EXE source
+SBBS\INSTALL\	INSTALL.EXE source
+MSWAIT\ 	MSWAIT\DOS\MSWAIT.OBJ (millisecond wait) source
+SPAWNO\ 	Ralf Brown's EMS/XMS/disk swapping replacement for spawn...()
+STP\		Synchronet Transfer Protocols (X/Y/Zmodem) [incomplete]
+TONE\		Tone generator (used for external sysop chat pager)
+UIFC\		User Interface library source and header files (for *CFG.EXE)
+
+Note: If you don't recognize the name of a program or utility, see SYSOP.DOC.
+Note: Source code for SBBS\DOS\RCIOL.OBJ is not provided because I don't have
+      it (the consultant that developed this module never supplied me with the
+      latest version of the source code).
+
+
+C Header File Notes
+===================
+
+SBBS\SBBS.H
+-----------
+This is the main shared header file for Synchronet and Synchronet related
+utilities. This header file contains prototypes for most all functions
+contained in SBBS.EXE. But, more importantly, it #includes SMBLIB.H (which
+indirectly #includes SMBDEFS.H), ARS_DEFS.H (which indirectly #includes
+GEN_DEFS.H), SCFGVARS.C (which indirectly #includes SBBSDEFS.H, which
+indirectly #includes NODEDEFS.H), SCFGLIB.H, RIOLIB.H, RIODEFS.H, and if "SBBS"
+is defined (only in the MAKEFILE for SBBS) VARS.C (which indirectly #includes
+text.h). So, as you can see, SBBS.H pretty much covers it in the header file
+department for Synchronet and its related utilities. The only header files
+that SBBS.H doesn't directly or indirectly #include are QWK.H, POST.H, ETEXT.H,
+CMDSHELL.H, and SPAWNO.H. You will find this header file is the most commonly
+#included header file in SBBS modules and Sycnhronet related utilities. The
+comments are quite antiquated and may be safely ignored (e.g. /* DATIO.H */).
+
+SBBS\SBBSDEFS.H
+---------------
+This file contains most constants, macros, and type definitions used for
+Synchronet and its utilities. Since it is indirectly #included with SBBS.H,
+you won't find it specifically #included very often.
+
+SBBS\SCFGLIB.H
+--------------
+Contains type defintions and function protoypes only used in the initialization
+of Synchronet's configuration structures. Used by the SBBS and SCFG projects
+and all utilities that read Synchronet's configuration (*.CNF) files.
+
+SBBS\GEN_DEFS.H
+---------------
+A small header file that contains general application independant constant
+defintions and macros. This header file is #included directly or indirectly
+with nearly every project.
+
+SBBS\ARS_DEFS.H
+---------------
+Synchronet's Access Requirement Strings function prototype and constants.
+This function prototype and constants were broken out for use in the SBBS\BAJA
+(shell/module compiler) project.
+
+SBBS\CMDSHELL.H
+---------------
+Contains constants, typedefs, and function prototypes specific to Synchronet's
+command shell/module interpreter. Also used in the SBBS\BAJA (shell/module
+compiler) project.
+
+SBBS\POST.H
+-----------
+Contains type defintions for post_t and shared function prototypes for
+the SBBS and SBBSecho projects.
+
+SBBS\QWK.H
+----------
+Contains constants, type definitions, and function prototypes only used in
+the QWK related portions of the SBBS project.
+
+SBBS\TEXT.H
+-----------
+Contains constant defintions (via enum) for every text item in Synchronet's
+TEXT.DAT file. Since this header file is indirectly #included with SBBS.H
+in the SBBS project, you won't find it specifically #included very often.
+
+SBBS\ETEXT.H
+------------
+Contains extern variable declarations for the encrypted text strings in the
+SBBS project. This file is automatically created (along with ETEXT.C) from
+ETEXT.DAT by the GENETEXT.EXE utility. The encrypted text strings are left
+over from the commercial version of SBBS.
+
+SBBS\VARS.C
+-----------
+This is a dual-purpose file. If GLOBAL isn't defined, then it's a C source
+file for all of Synchronet's global variables. SBBS.H automatically #defines
+GLOBAL to extern and #includes this file to automatically declare all global
+variables as extern. This eliminates the double-entry work of creating
+separate definitions and declarations for global variables. This file is
+only used in the SBBS project.
+
+SBBS\RIO\RIOLIB.H
+-----------------
+This file contains function prototypes for the Remote I/O Library API. This API
+is consistent between DOS, OS/2 and Win32 versions.
+
+SBBS\RIO\RIODEFS.H
+------------------
+Contains constants required for using the Remote I/O Library.
+
+SBBS\SMB\SMBLIB.H
+-----------------
+Contains constants and function prototypes for the Synchronet Message Base
+Library.
+
+SBBS\SMB\SMBDEFS.H
+------------------
+Contains constants and type definitions required for using the Synchronet
+Message Base Library.
+
+SBBS\SMB\CRC32.H
+----------------
+Standard 32-bit CRC table and macro. Also included in BAJA, SBBSecho, and
+other projects.
+
+SBBS\SCFG\SCFG.H
+----------------
+Contains constant defintions, macros, global variable declarations, and
+function prototypes for modules in the SCFG project.
+
+SBBS\ECHO\SBBSECHO.H
+--------------------
+Contains constants, type definitions, and function prototypes for the
+SBBSecho project.
+
+SBBS\UTI\UTI.H
+--------------
+Small header file containing global variable declarations, constants, macros,
+and a function prototype for modules in the UTI driver project.
+
+SBBS\SDK\XSDK.H
+---------------
+Main header file for Synchronet external programs using the External
+program SDK (XSDK). This header file #includes XSDKVARS.C (global variable
+declarations) which indirectly #includes XSDKDEFS.H (constants and type
+defintions).
+
+UIFC\UIFC.H
+-----------
+Contains constants, macros, type definitions, and function prototypes for
+the local console User Interface library. Used by the SCFG, SCBCFG, SMMCFG
+and ECHOCFG projects.
+
+SPWANO\SPANWO.H
+---------------
+Ralf Brown's spawno function prototypes. Used for swaping SBBS.EXE (16-bit
+DOS) out of memory.
+
+
+C Source File Notes
+===================
+
+Overlays
+--------
+The SBBS project (SBBS.EXE/SBBS4OS2.EXE/SBBS4W32.EXE) contains the largest
+number of C source files and has the longest history. For a few years, SBBS.EXE
+was a small 16-bit DOS executable that executed completely in memory (no
+overlays). With each additional group of features, the executable file
+(SBBS.EXE) inevitably increased in size and memory consumption. At one point I
+started compiling two separate versions of SBBS.EXE, one with some of the
+modules overlaid (dynamically swapped to/from disk), and another without
+overlays (faster, but consumed more memory). This was the time with I began to
+split off less-commonly called functions into modules that were specifically
+overlaid (and given a filename ending in OVL.C, e.g. MAIN.C contains
+non-overlaid code, and MAIN_OVL.C contains overlaid code).
+
+As the exectuable grew larger and my knowledge and experience with optimization
+of overlaid modules grew, I stopped making the non-overlaid version
+altogether. The performance difference had become negligible and the memory
+consumption of the non-overlaid version was unwieldly. Anyway, the point of
+this little story is to help explain why so many of the filenames end in OVL.
+Eventually, I ended up overlaying most of the modules (not just the ones named
+with OVL). But still, you'll find that the code in the modules with the OVL
+names is of the less-frequently executed variety. Only the 16-bit versions of
+SBBS.EXE and SCFG.EXE use overlaid modules. All other projects (and the 32-bit
+versions of SBBS/SCFG) do not explicitly use overlays.
+
+Hi/Mid/Low Level
+----------------
+The modules with filenames containing HI (e.g. XFER_HI.C) contain high-level
+code (mostly user-interface type functions); modules with filenames containing
+MID (e.g. CON_MID.C) contain mid-level code (larger functions that don't
+contain direct user-interfaces;, and modules with filenames containing LO
+(e.g. XFER_LO.C) contain low-level code (smaller functions called frequently
+from mid or high level code).
+
+Comments
+--------
+Please excuse the sparse comments; I never planned on giving the source code
+out. The source code that was originally distributed freely (SMB library and
+XSDK) is better commented.
+
+
+C Source Content Notes
+======================
+
+First off, make sure you're using an editor with tab stops set to 4 spaces
+for *.C and *.H files (QEdit works nicely), otherwise the source will be mostly
+unreadable (don't try to print the files without first exanding all tabs to
+4 space tabstops). All MAKEFILES and other text files use 8 space tab stops.
+
+If you're an experienced C programmer, the first thing you'll notice when
+examining any of the source code is my somewhat unique style. It's your basic
+K&R style C with significantly compressed whitespace. Most notably, I don't
+put closing curly braces (}) on their own line (except at the end of a
+function). Instead, I use consitent indentation to indicate nested logic and
+control flow. Also, I don't indent the base code of a function, but I do indent
+automatic variables. And I don't put white space between any operators except
+&& and ||. This style comes from the usefulness of getting as much code as
+possible in an 80x25 window (and saving printer paper). You'll notice, I do use
+blank lines to enhance readability, but there are no strict rules I follow in
+the blank line department. If my style really bugs you and you just can't get
+used to it, then run the source through a C beautifier or other such C
+formatting utility (but don't cry if it doesn't compile after that).
+
+Example (K&R style):
+
+main()
+{
+    char line[MAXLINE];
+    int found = 0;
+
+    while (getline(line, MAXLINE) > 0)
+	if (strindex(line, pattern) >= 0) {
+	    printf("%s", line);
+	    found++;
+	}
+    return found;
+}
+
+Example (my style):
+
+main()
+{
+    char line[MAXLINE];
+    int found=0;
+
+while(getline(line,MAXLINE)>0)
+    if(strindex(line,pattern)>=0) {
+	printf("%s",line);
+	found++; }
+return(found);
+}
+
+If you find blocks of code contained in "#if 0" and "#endif" or "/***" and
+"***/", you can safely ignore or even delete this code (the compiler is
+ignoring it). For some reason, I found it necessary or preferable to remove or
+replace the code in question but wished to leave the old code temporarily
+intact in case I changed my mind... I'm not going to be changing me mind. :-)
+
+I've deleted all sections of code refering to registration numbers, keys, etc.
+If you find some code remaining that appears to require a registration number
+or key of some sort, it probably can be safely ignored (unless you've found it
+impeding the operation of the program) - but there shouldn't be any.
+
+
+Last Minute Updates
+===================
+
+The UTI, FIXSMB, QWKNODES, and SBL2SMB/SMB2SBL projects were all converted from
+SMBLIB 1.x to 2.x at the last minute. They all compile, but haven't been
+tested. The differences between SMBLIB 1.x and 2.x are mainly in the calling
+conventions, so these programs should run fine, but I suppose you never know
+what could've happened.
+
+/* End of SBBS_SRC.DOC */

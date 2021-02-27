@@ -1,3 +1,5 @@
+/* $Id: allusers.c,v 1.7 2018/02/20 11:56:26 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -11,8 +13,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -23,8 +37,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "sbbsdefs.h"
-#include "str_util.h"
+#include "sbbs.h"
 
 int  min=0,max=99;
 long reqflags[4]={0},reqrest=0,reqexempt=0;
@@ -169,22 +182,22 @@ int main(int argc, char **argv)
 				case 'F':                       /* Set required flags */
 					j=3;
 					set=1;
-					if(IS_DIGIT(argv[i][2]))
+					if(isdigit(argv[i][2]))
 						set=argv[i][2]&0xf;
 					else
 						j=2;
 					for(;argv[i][j];j++)
-						if(IS_ALPHA(argv[i][j]))
+						if(isalpha(argv[i][j]))
 							reqflags[set-1]|=FLAG(toupper(argv[i][j]));
 					break;
 				case 'R':                       /* Set required restrictions */
 					for(j=2;argv[i][j];j++)
-						if(IS_ALPHA(argv[i][j]))
+						if(isalpha(argv[i][j]))
 							reqrest|=FLAG(toupper(argv[i][j]));
 					break;
 				case 'E':                       /* Set required exemptions */
 					for(j=2;argv[i][j];j++)
-						if(IS_ALPHA(argv[i][j]))
+						if(isalpha(argv[i][j]))
 							reqexempt|=FLAG(toupper(argv[i][j]));
 					break;
 				default:						/* Unrecognized include */
@@ -197,7 +210,7 @@ int main(int argc, char **argv)
 				case 'F':   /* flags */
 					j=3;
 					set=1;
-					if(IS_DIGIT(argv[i][2]))
+					if(isdigit(argv[i][2]))
 						set=argv[i][2]&0xf;
 					else
 						j=2;
@@ -208,9 +221,9 @@ int main(int argc, char **argv)
 						sub=1; 
 					}
 					for(;argv[i][j];j++)
-						if(IS_ALPHA(argv[i][j]))
+						if(isalpha(argv[i][j]))
 							flags|=FLAG(toupper(argv[i][j]));
-					SAFEPRINTF(str,"%suser.dat",dir);
+					sprintf(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 						printf("Error opening %s\n",str);
 						exit(1); 
@@ -272,9 +285,9 @@ int main(int argc, char **argv)
 						sub=1; 
 					}
 					for(;argv[i][j];j++)
-						if(IS_ALPHA(argv[i][j]))
+						if(isalpha(argv[i][j]))
 							flags|=FLAG(toupper(argv[i][j]));
-					SAFEPRINTF(str,"%suser.dat",dir);
+					sprintf(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 						printf("Error opening %s\n",str);
 						exit(1); 
@@ -329,7 +342,7 @@ int main(int argc, char **argv)
 						j=99;
 					if(j<0)
 						j=0;
-					SAFEPRINTF(str,"%suser.dat",dir);
+					sprintf(str,"%suser.dat",dir);
 					if(!fexistcase(str) || (file=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
 						printf("Error opening %s\n",str);
 						exit(1); 

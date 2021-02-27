@@ -1,5 +1,8 @@
 /* Functions to create and parse .ini files */
 
+/* $Id: ini_file.c,v 1.175 2020/08/08 23:26:38 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -22,6 +37,7 @@
 #include "ini_file.h"
 #include <stdlib.h>		/* strtol */
 #include <string.h>		/* strlen */
+#include <ctype.h>		/* isdigit */
 #include <math.h>		/* fmod */
 #include "xpdatetime.h"	/* isoDateTime_t */
 #include "datewrap.h"	/* ctime_r */
@@ -1301,7 +1317,7 @@ iniGetNamedStringList(str_list_t list, const char* section)
 		return(NULL);
 
 	i=find_section(list,section);
-	if(section!=ROOT_SECTION && list[i]==NULL)
+	if(list[i]==NULL)
 		return(NULL);
 
 	/* New behavior, if section exists but is empty, return single element array (terminator only) */
@@ -1342,7 +1358,7 @@ static BOOL isTrue(const char* value)
 	char*	p;
 	BOOL	is_true;
 
-	if(!IS_ALPHA(*value))
+	if(!isalpha(*value))
 		return FALSE;
 
 	if((str=strdup(value)) == NULL)
@@ -1917,7 +1933,7 @@ static unsigned parseEnum(const char* value, str_list_t names, unsigned deflt)
 			return(i);
 
     i=strtoul(val, &endptr, 0);
-	if(*endptr != 0 && !IS_WHITESPACE(*endptr))
+	if(*endptr != 0 && !isspace(*endptr))
 		return deflt;
 	if(i>=count)
 		i=count-1;
@@ -2307,7 +2323,6 @@ BOOL iniCloseFile(FILE* fp)
 str_list_t iniReadFile(FILE* fp)
 {
 	char		str[INI_MAX_LINE_LEN];
-	char		err[512];
 	char*		p;
 	size_t		i;
 	size_t		inc_len;
@@ -2326,33 +2341,22 @@ str_list_t iniReadFile(FILE* fp)
 	inc_len=strlen(INI_INCLUDE_DIRECTIVE);
 	for(i=0; list[i]!=NULL; i++) {
 		if(strnicmp(list[i],INI_INCLUDE_DIRECTIVE,inc_len)==0) {
-			glob_t gl = {0};
-			size_t j;
 			p=list[i]+inc_len;
 			SKIP_WHITESPACE(p);
 			truncsp(p);
- 			(void)glob(p, GLOB_MARK, NULL, &gl);
-			safe_snprintf(str, sizeof(str), "; %s - %lu matches found", list[i], (ulong)gl.gl_pathc);
+			if(inc_counter >= INI_INCLUDE_MAX)
+				SAFEPRINTF2(str, ";%s - MAXIMUM INCLUDES REACHED: %u", list[i], INI_INCLUDE_MAX);
+			else if((insert_fp=fopen(p,"r"))==NULL)
+				SAFEPRINTF2(str, ";%s - FAILURE: %s", list[i], STRERROR(errno));
+			else
+				SAFEPRINTF(str, ";%s", list[i]);
 			strListReplace(list, i, str);
-			for(j = 0; j < gl.gl_pathc; j++) {
-				char* fname = gl.gl_pathv[j];
-				if(*lastchar(fname) == '/')
-					continue;
-				if(inc_counter >= INI_INCLUDE_MAX)
-					SAFEPRINTF2(str, "; %s - MAXIMUM INCLUDES REACHED: %u", fname, INI_INCLUDE_MAX);
-				else if((insert_fp=fopen(fname,"r"))==NULL)
-					SAFEPRINTF2(str, "; %s - FAILURE: %s", fname, safe_strerror(errno, err, sizeof(err)));
-				else
-					SAFEPRINTF(str, "; %s", fname);
-				strListInsert(&list, str, i + 1);
-				if(insert_fp!=NULL) {
-					strListInsertFile(insert_fp, &list, i + 2, INI_MAX_LINE_LEN);
-					fclose(insert_fp);
-					insert_fp=NULL;
-					inc_counter++;
-				}
+			if(insert_fp!=NULL) {
+				strListInsertFile(insert_fp, &list, i+1, INI_MAX_LINE_LEN);
+				fclose(insert_fp);
+				insert_fp=NULL;
+				inc_counter++;
 			}
-			globfree(&gl);
 		}
 	}
 

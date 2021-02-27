@@ -5,23 +5,6 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.41     2021-02-12   Bug fix: When changing to another area with the lightbar
-                      interface, if the user's current sub-board is a
-                      high-numbered sub-board and they select a message group
-                      with fewer sub-boards, the highlighted sub-board in that
-                      group would be set to that high number and would be
-                      incorrect.  That has been fixed.  Copied a fix from my
-                      stand-alone message area chooser.  In that scenario, the
-                      current highlighted sub-board in the other group will be
-                      the first one.
-1.40     2021-01-31   (Michael Long) Fixed left/right colors not being
-                      customizable on message list lightbar
-1.39     2020-12-01   When forwarding a message, added the ability to optinally
-                      edit the message before forwarding it.
-1.38     2020-11-26   Bug fix: When forwarding a message, it now correctly sets
-                      sets the to_net_type property in the message header to
-                      FidoNet or internet for those types of message
-                      destinations
 1.37     2020-07-11   Added mouse support to the scrollable reader interface.
                       The integrated area changer functionality doesn't have
                       mouse support yet.

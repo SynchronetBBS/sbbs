@@ -1,0 +1,65 @@
+Synchronet Message Base (SMB) Specification v1.21 - READ.ME -
+=============================================================
+
+Files:
+
+        Miscellaneous
+        -------------
+        SMB_READ.ME     This file
+        FILE_ID.DIZ     Description of archive
+        SMB.HST         History of changes made since v1.00
+
+	Technical Specification
+        -----------------------
+        SMB.PRN         Paginated, to be printed at 12cpi (!)
+        SMB.TXT         Not paginated, for online viewing
+
+        Message Base C Library
+        ----------------------
+        SMBDEFS.H       C data types and constants
+        SMBVARS.C       C global variables
+        SMBLIB.H        C function prototypes
+        SMBLIB.C        C library functions
+	CRC32.H 	C header file for 32-bit CRC calculations
+        CRC16.C         C source file for 16-bit CRC calculations
+        LZH.H           C header file for LZH compression functions
+        LZH.C           C source file for LZH compression functions
+
+        Message Base Utility
+        --------------------
+        SMBUTIL.H       C header file
+        SMBUTIL.C       C source file
+        SMBUTIL.BOR     C makefile (for Borland C: make -f smbutil.bor)
+	SMBUTIL.WAT     C makefile (for Watcom C: wmake -f smbutil.wat
+                                      32-bit OS2: wmake -f smbutil.wat OS=OS2
+				      32-bit DOS: wmake -f smbutil.wat OS=DOSX)
+        SMBUTIL.EXE     Compiled and linked for 16-bit DOS
+
+        Check Message Base for Corruption
+        ---------------------------------
+        CHKSMB.C        C source file
+        CHKSMB.MAK      C makefile (for Borland C: make -f chksmb)
+        CHKSMB.EXE      Compiled and linked for 16-bit DOS
+
+	Rebuild Message Base Index and Allocation Files
+	-----------------------------------------------
+	FIXSMB.C	C source file
+	FIXSMB.MAK	C makefile (for Borland C: make -f fixsmb)
+	FIXSMB.EXE	Compiled and linked for 16-bit DOS
+
+        Convert from FidoNet (FTSC-1) to SMB
+        ------------------------------------
+        FIDO2SMB.C      C source file
+        FIDO2SMB.MAK    C makefile (for Borland C: make -f fido2smb)
+
+        Convert from Internet (RFC-822) to SMB
+        --------------------------------------
+        INET2SMB.C      C source file
+        INET2SMB.MAK    C makefile (for Borland C: make -f inet2smb)
+
+        Convert from QWK to SMB
+        -----------------------
+        QWK2SMB.C       C source file
+        QWK2SMB.MAK     C makefile (for Borland C: make -f qwk2smb)
+
+/* END of SMB_READ.ME */

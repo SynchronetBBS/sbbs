@@ -592,7 +592,6 @@ object PropertiesDlg: TPropertiesDlg
         Height = 19
         AutoSize = False
         Caption = 'Context Stack'
-        Enabled = false
       end
       object Label12: TLabel
         Left = 7
@@ -647,7 +646,6 @@ object PropertiesDlg: TPropertiesDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        Enabled = false
       end
       object JS_TimeLimitEdit: TEdit
         Left = 98

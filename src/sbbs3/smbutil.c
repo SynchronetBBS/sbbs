@@ -1,5 +1,8 @@
 /* Synchronet message base (SMB) utility */
 
+/* $Id: smbutil.c,v 1.136 2020/05/25 00:40:34 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -38,6 +53,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #endif
 
 #if defined(_WIN32)
+	#include <ctype.h>	/* isdigit() */
 	#include <conio.h>	/* getch() */
 #endif
 
@@ -48,10 +64,8 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 #include <string.h>		/* strrchr */
 #include <ctype.h>		/* toupper */
 
-#include "fidodefs.h"
-#include "smblib.h"
-#include "str_util.h"
 #include "utf8.h"
+#include "sbbs.h"
 #include "conwrap.h"
 
 /* gets is dangerous */
@@ -433,7 +447,7 @@ void config(void)
 	printf("Last Message  =%-6"PRIu32" New Value (CR=No Change): "
 		,smb.status.last_msg);
 	gets(str);
-	if(IS_DIGIT(str[0]))
+	if(isdigit(str[0]))
 		last_msg = atol(str);
 	printf("Header offset =%-5"PRIu32"  New value (CR=No Change): "
 		,smb.status.header_offset);
@@ -465,15 +479,15 @@ void config(void)
 	}
 	if(last_msg != 0)
 		smb.status.last_msg = last_msg;
-	if(IS_DIGIT(max_msgs[0]))
+	if(isdigit(max_msgs[0]))
 		smb.status.max_msgs=atol(max_msgs);
-	if(IS_DIGIT(max_crcs[0]))
+	if(isdigit(max_crcs[0]))
 		smb.status.max_crcs=atol(max_crcs);
-	if(IS_DIGIT(max_age[0]))
+	if(isdigit(max_age[0]))
 		smb.status.max_age=atoi(max_age);
-	if(IS_DIGIT(header_offset[0]))
+	if(isdigit(header_offset[0]))
 		smb.status.header_offset=atol(header_offset);
-	if(IS_DIGIT(attr[0]))
+	if(isdigit(attr[0]))
 		smb.status.attr=atoi(attr);
 	i=smb_putstatus(&smb);
 	smb_unlocksmbhdr(&smb);
@@ -512,8 +526,8 @@ void listmsgs(ulong start, ulong count)
 				,beep,i,smb.last_error);
 			break; 
 		}
-		printf("%4lu/#%-4"PRIu32" %-25.25s %-25.25s %s\n"
-			,start + l, msg.hdr.number,msg.from,msg.to,msg.subj);
+		printf("%4"PRIu32" %-25.25s %-25.25s %s\n"
+			,msg.hdr.number,msg.from,msg.to,msg.subj);
 		smb_freemsgmem(&msg);
 		l++; 
 	}
@@ -763,11 +777,7 @@ void maint(void)
 	}
 
 	printf("Scanning for read messages to be killed...\n");
-	uint32_t total_msgs = 0;
 	for(m=f=0;m<l;m++) {
-		enum smb_msg_type type = smb_msg_type(idx[m].attr);
-		if(type == SMB_MSG_TYPE_NORMAL || type == SMB_MSG_TYPE_POLL)
-			total_msgs++;
 //		printf("\r%2lu%%",m ? (long)(100.0/((float)l/m)) : 0);
 		if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
 			continue;
@@ -775,16 +785,16 @@ void maint(void)
 			f++;
 			flagged++;
 			idx[m].attr|=MSG_DELETE; 
-		}
+		} 
 	}
 	printf("\r100%% (%lu flagged for deletion due to read status)\n",f);
 
-	if(smb.status.max_msgs && total_msgs - flagged > smb.status.max_msgs) {
+	if(smb.status.max_msgs && l-flagged>smb.status.max_msgs) {
 		printf("Flagging excess messages for deletion...\n");
-		for(m=n=0,f=flagged; total_msgs - flagged > smb.status.max_msgs && m<l; m++) {
+		for(m=n=0,f=flagged;l-flagged>smb.status.max_msgs && m<l;m++) {
 			if(idx[m].attr&(MSG_PERMANENT|MSG_DELETE))
 				continue;
-			printf("%lu of %lu\r",++n,(total_msgs - f)-smb.status.max_msgs);
+			printf("%lu of %lu\r",++n,(l-f)-smb.status.max_msgs);
 			flagged++;
 			idx[m].attr|=MSG_DELETE; 
 		}			/* mark for deletion */
@@ -1075,9 +1085,6 @@ void packmsgs(ulong packable)
 			smb_close_ha(&smb);
 			smb_close_da(&smb); 
 		}
-		if(tmp_sdt != NULL) fclose(tmp_sdt);
-		if(tmp_shd != NULL) fclose(tmp_shd);
-		if(tmp_sid != NULL) fclose(tmp_sid);
 		fprintf(errfp,"\n%s!Error opening temp files\n",beep);
 		return; 
 	}
@@ -1370,11 +1377,10 @@ int setmsgattr(smb_t* smb, ulong number, uint16_t attr)
 /****************************************************************************/
 /* Read messages in message base											*/
 /****************************************************************************/
-void readmsgs(ulong start, ulong count)
+void readmsgs(ulong start)
 {
 	char	*inbuf;
 	int 	i,done=0,domsg=1;
-	ulong	rd = 0;
 	smbmsg_t msg;
 
 	if(start)
@@ -1416,8 +1422,6 @@ void readmsgs(ulong start, ulong count)
 			printf("\n\n");
 
 			if((inbuf=smb_getmsgtxt(&smb,&msg, msgtxtmode))!=NULL) {
-				char* p;
-				REPLACE_CHARS(inbuf, ESC, '.', p);
 				printf("%s",remove_ctrl_a(inbuf, inbuf));
 				free(inbuf); 
 			}
@@ -1428,16 +1432,9 @@ void readmsgs(ulong start, ulong count)
 					,beep,i,smb.last_error);
 				break; 
 			}
-			smb_freemsgmem(&msg);
-			rd++;
+			smb_freemsgmem(&msg); 
 		}
 		domsg=1;
-		if(count) {
-			if(rd >= count)
-				break;
-			msg.offset++;
-			continue;
-		}
 		printf("\nReading %s (?=Menu): ",smb.file);
 		switch(toupper(getch())) {
 			case '?':
@@ -1500,7 +1497,7 @@ short str2tzone(const char* str)
 	char tmp[32];
 	short zone;
 
-	if(IS_DIGIT(*str) || *str=='-' || *str=='+') { /* [+|-]HHMM format */
+	if(isdigit(*str) || *str=='-' || *str=='+') { /* [+|-]HHMM format */
 		if(*str=='+') str++;
 		sprintf(tmp,"%.*s",*str=='-'? 3:2,str);
 		zone=atoi(tmp)*60;
@@ -1615,7 +1612,7 @@ int main(int argc, char **argv)
 			argv[x][0]=='/' ||		/* for backwards compatibilty */
 #endif
 			argv[x][0]=='-') {
-			if(IS_DIGIT(argv[x][1])) {
+			if(isdigit(argv[x][1])) {
 				count=strtol(argv[x]+1,NULL,10);
 				continue;
 			}
@@ -1815,7 +1812,7 @@ int main(int argc, char **argv)
 								fprintf(errfp, "\nError %d (%s) unlocking %s\n", i, smb.last_error, smb.file);
 							break;
 						case 'r':
-							readmsgs(getmsgnum(cmd+1), count);
+							readmsgs(getmsgnum(cmd+1));
 							y=strlen(cmd)-1;
 							break;
 						case 'R':

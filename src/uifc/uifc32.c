@@ -770,7 +770,7 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 	if(mode&WIN_DYN && mode&WIN_NODRAW)
 		is_redraw=0;
 
-	if(mode&WIN_ORG && !(mode&WIN_SAV)) {		/* Clear all save buffers on WIN_ORG */
+	if(mode&WIN_ORG) {		/* Clear all save buffers on WIN_ORG */
 		for(i=0; i< MAX_BUFS; i++)
 			FREE_AND_NULL(sav[i].buf);
 		api->savnum=0;
@@ -927,16 +927,14 @@ int ulist(int mode, int left, int top, int width, int *cur, int *bar
 				(*bar)=opts-1;
 			if((*bar)<0)
 				(*bar)=0;
+			if((*cur)<(*bar))
+				(*cur)=(*bar);
 			i=(*cur)-(*bar);
-			if (i < 0) {
-				*bar += i;
-				i = 0;
-			}
 			if(i+(height-vbrdrsize-1)>=opts) {
-				(*bar)=(height-vbrdrsize);
-				if (*bar > *cur)
-					*bar = *cur;
-				i=(*cur)-(*bar)+1;
+				i=opts-(height-vbrdrsize);
+				if(i<0)
+					i=0;
+				(*cur)=i+(*bar);
 			}
 		}
 		if((*cur)<0)
@@ -2530,88 +2528,83 @@ void bottomline(int mode)
 char *utimestr(time_t *intime)
 {
 	static char str[25];
-	const char* wday="";
-	const char* mon="";
-	const char* mer= "";
-	int hour;
+	char wday[4],mon[4],mer[3],hour;
 	struct tm *gm;
 
 	gm=localtime(intime);
 	switch(gm->tm_wday) {
 		case 0:
-			wday = "Sun";
+			strcpy(wday,"Sun");
 			break;
 		case 1:
-			wday = "Mon";
+			strcpy(wday,"Mon");
 			break;
 		case 2:
-			wday = "Tue";
+			strcpy(wday,"Tue");
 			break;
 		case 3:
-			wday = "Wed";
+			strcpy(wday,"Wed");
 			break;
 		case 4:
-			wday = "Thu";
+			strcpy(wday,"Thu");
 			break;
 		case 5:
-			wday = "Fri";
+			strcpy(wday,"Fri");
 			break;
 		case 6:
-			wday = "Sat";
+			strcpy(wday,"Sat");
 			break;
 	}
 	switch(gm->tm_mon) {
 		case 0:
-			mon = "Jan";
+			strcpy(mon,"Jan");
 			break;
 		case 1:
-			mon = "Feb";
+			strcpy(mon,"Feb");
 			break;
 		case 2:
-			mon = "Mar";
+			strcpy(mon,"Mar");
 			break;
 		case 3:
-			mon = "Apr";
+			strcpy(mon,"Apr");
 			break;
 		case 4:
-			mon = "May";
+			strcpy(mon,"May");
 			break;
 		case 5:
-			mon = "Jun";
+			strcpy(mon,"Jun");
 			break;
 		case 6:
-			mon = "Jul";
+			strcpy(mon,"Jul");
 			break;
 		case 7:
-			mon = "Aug";
+			strcpy(mon,"Aug");
 			break;
 		case 8:
-			mon = "Sep";
+			strcpy(mon,"Sep");
 			break;
 		case 9:
-			mon = "Oct";
+			strcpy(mon,"Oct");
 			break;
 		case 10:
-			mon = "Nov";
+			strcpy(mon,"Nov");
 			break;
 		case 11:
-			mon = "Dec";
+			strcpy(mon,"Dec");
 			break;
 	}
 	if(gm->tm_hour>=12) {
-		mer = "pm";
-		hour=gm->tm_hour;
-		if (hour > 12)
-			hour-=12;
+		strcpy(mer,"pm");
+		hour=gm->tm_hour-12;
 	}
 	else {
 		if(!gm->tm_hour)
 			hour=12;
 		else
 			hour=gm->tm_hour;
-		mer = "am";
+		strcpy(mer,"am");
 	}
-	safe_snprintf(str, sizeof(str), "%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
+	sprintf(str,"%s %s %02d %4d %02d:%02d %s",wday,mon,gm->tm_mday,1900+gm->tm_year
 		,hour,gm->tm_min,mer);
 	return(str);
 }

@@ -1,8 +1,10 @@
+// $Id: localcopy.js,v 1.3 2020/05/14 01:25:32 rswindell Exp $
+
 // A simple script that just copies a file on the local/server side
 
 // Install using 'jsexec localcopy.js install'
 
-// Or manually in SCFG->File Options->File Transfer Protocols:
+// Or manually in SCFG->File Options->File Transfer Protcools:
 // Mnemonic (Command Key)        L                                   
 // Protocol Name                 Local                               
 // Access Requirements           SYSOP                               
@@ -11,11 +13,9 @@
 // Batch Upload Command Line     ?localcopy send %g                                    
 // Batch Download Command Line   ?localcopy recv %s
 // Bi-dir Command Line                                               
-// Native Executable/Script      Yes
-// Supports DSZLOG               No
-// Socket I/O                    No
-
-require("sbbsdefs.js", "PROT_NATIVE");
+// Native (32-bit) Executable    No                                  
+// Supports DSZLOG               No                                  
+// Socket I/O                    No                                  
 
 // Copy a file, confirm over-write, preserving original date/time stamp
 function fcopy(src, dest)
@@ -41,12 +41,11 @@ function main(cmd) {
 
 	switch(cmd) {
 		case 'install':
-		case '-install':
 			var cnflib = load({}, "cnflib.js");
 			var file_cnf = cnflib.read("file.cnf");
 			if(!file_cnf) {
 				alert("Failed to read file.cnf");
-				exit(-1);
+				return(-1);
 			}
 			file_cnf.prot.push({ 
 				  key: 'L'
@@ -56,14 +55,13 @@ function main(cmd) {
 				, batulcmd: '?localcopy send %g'
 				, batdlcmd: '?localcopy recv %s'
 				, ars: 'SYSOP'
-				, settings: PROT_NATIVE
 				});
 		
 			if(!cnflib.write("file.cnf", undefined, file_cnf)) {
 				alert("Failed to write file.cnf");
-				exit(-1);
+				return(-1);
 			}
-			exit(0);
+			return(0);
 	
 		case 'send':
 			if(file_isdir(argv[1])) { /* batch upload */
@@ -122,4 +120,4 @@ var result = main(argv[0]);
 while(bbs.online && console.output_buffer_level && !js.terminated) {
 	sleep(100);
 }
-exit(result);
+result;

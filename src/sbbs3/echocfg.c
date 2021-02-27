@@ -1,5 +1,7 @@
 /* FidoNet configuration utility 											*/
 
+/* $Id: echocfg.c,v 3.58 2020/08/17 00:48:28 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -31,10 +45,8 @@
 #define __COLORS
 #include "ciolib.h"
 #include "uifc.h"
-#include "scfgdefs.h"
+#include "sbbs.h"
 #include "sbbsecho.h"
-#include "sockwrap.h"
-#include "str_util.h"
 
 char **opt;
 
@@ -2427,13 +2439,13 @@ int main(int argc, char **argv)
 				break;
 
 			case 8:
+	uifc.helpbuf=
+	"~ EchoLists ~\n\n"
+	"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\n"
+	"format, which are utilized in `addition` to your Area File (e.g. \n"
+	"`areas.bbs`) for advanced AreaFix (Area Management) operations.\n";
 				i=0;
 				while(1) {
-					uifc.helpbuf=
-					"~ EchoLists ~\n\n"
-					"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\n"
-					"format, which are utilized in `addition` to your Area File (e.g. \n"
-					"`areas.bbs`) for advanced AreaFix (Area Management) operations.\n";
 					for(u=0;u<cfg.listcfgs;u++)
 						snprintf(opt[u],MAX_OPLN-1,"%s",cfg.listcfg[u].listpath);
 					opt[u][0]=0;
@@ -2493,13 +2505,7 @@ int main(int argc, char **argv)
 					while(1) {
 						j=0;
 						uifc.helpbuf=
-						"~ Configuring an EchoList ~\n\n"
-						"The `EchoList Path/Name`, `Required Key` and `Hub Address` must be configured\n"
-						"correctly and any one of the Required Keys added to the `EchoList Keys`\n"
-						"of the `Linked Nodes` of interest.\n"
-						"\n"
-						"The other settings are only for forwarding received Area Manager\n"
-						"requests 'upstream' (to your hub) when needed.\n"
+						"Configuring an EchoList"
 						;
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","EchoList Path/Name"
 							,cfg.listcfg[i].listpath);
@@ -2537,7 +2543,6 @@ int main(int argc, char **argv)
 								"A linked node need only have one of the required keys to have access\n"
 								"the echolist."
 								;
-								x=0;
 								while(1) {
 									for(u=0; cfg.listcfg[i].keys!=NULL && cfg.listcfg[i].keys[u] != NULL;u++)
 										strcpy(opt[u],cfg.listcfg[i].keys[u]);
@@ -2561,7 +2566,6 @@ int main(int argc, char **argv)
 									if((x&MSK_ON)==MSK_DEL) {
 										x&=MSK_OFF;
 										strListRemove(&cfg.listcfg[i].keys,x);
-										uifc.changes = TRUE;
 										continue;
 									}
 									SAFECOPY(str,cfg.listcfg[i].keys[x]);

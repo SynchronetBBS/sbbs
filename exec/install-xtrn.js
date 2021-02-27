@@ -1,3 +1,5 @@
+// $Id: install-xtrn.js,v 1.14 2020/04/26 06:58:46 rswindell Exp $
+
 // Installer for Synchronet External Programs
 
 // This script parses a .ini file (default filename is install-xtrn.ini)
@@ -23,15 +25,8 @@
 //
 // The .ini sections and keys supported (zero or more of each may be included):
 //
-// [pre-exec:<file>.js [args]] ; execute file.js before installing programs
-//		startup_dir		= directory to make current before execution
-//
-// [pre-eval:<js-expression>] ; evaluate js-expression before installing progs
-//      cmd             = evaluate this string rather than the js-expression
-//
 // [prog:<code>]
 // 		name 			= program name or description (40 chars max)
-//      cats            = additional target installation categories (sections)
 //		cmd 			= command-line to execute (63 chars max)
 //		clean_cmd 		= clean-up command-line, if needed (63 chars max)
 //		settings 		= bit-flags (see XTRN_* in sbbsdefs.js)
@@ -65,10 +60,10 @@
 // [service:<protocol>]
 //      see ctrl/services.ini 
 //
-// [exec:<file>.js [args]] ; execute file.js with these arguments - after
+// [exec:<file>.js [args]]  ; execute file.js with these arguments
 //		startup_dir		= directory to make current before execution
 //
-// [eval:<js-expression>] ; evaluate js-expression after installing programs
+// [eval:<js-expression>]
 //      cmd             = evaluate this string rather than the js-expression
 //
 // [ini:<filename.ini>[:section]]
@@ -79,9 +74,8 @@
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
 //		note			= note to sysop displayed before installation
-//		fail			= note to sysop displayed upon failure
 //      prompt          = confirmation prompt (or false if no prompting)
-//		required		= if true, this item must be successful to continue
+//		required		= if true, this item must be installed to continue
 //      last            = if true, this item will be the last of its type
 //      done            = if true, no more installer items will be processed
 //
@@ -96,7 +90,7 @@
 
 "use strict";
 
-const REVISION = "3.18c";
+const REVISION = "$Revision: 1.14 $".split(' ')[1];
 const ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");
@@ -121,12 +115,7 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 
 	if (!item.name)
 		item.name = name || item.code;
-
-	if(item.cats)
-		item.cats = item.cats.split(',').concat(cats);
-	else
-		item.cats = cats;
-
+	
 	function find_code(objs, code)
 	{
 		if (!options.overwrite) {
@@ -170,11 +159,10 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 		if (!xtrn_area.sec_list.length)
 			return "No external program sections have been created";
 
-		for (var i = 0; i < item.cats.length; i++) {
-			var code = item.cats[i].toLowerCase();
-			if(xtrn_area.sec[code]
-				&& confirm("Install " + item.name + " into " + xtrn_area.sec[code].name + " section")) {
-				item.sec = xtrn_area.sec[code].number;
+		for (var i = 0; i < xtrn_area.sec_list.length; i++) {
+			if(cats.indexOf(xtrn_area.sec_list[i].name) >= 0
+				&& confirm("Install " + item.name + " into " + xtrn_area.sec_list[i].name + " section")) {
+				item.sec = xtrn_area.sec_list[i].number;
 				break;
 			}
 		}
@@ -212,76 +200,6 @@ function install_xtrn_item(cnf, type, name, desc, item, cats)
 		print(JSON.stringify(cnf[type], null, 4));
 	
 	print(desc + " (" + item.name + ") installed successfully");
-	return true;
-}
-
-function install_exec_cmd(ini_file, section, startup_dir)
-{
-	var list = ini_file.iniGetAllObjects("cmd", section);
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		var js_args = item.cmd.split(/\s+/);
-		var js_file = js_args.shift();
-
-		if (file_getext(js_file).toLowerCase() != ".js")
-			return "Only '.js' files may be executed: " + js_file;
-
-		if (item.note)
-			print(item.note);
-
-		var prompt = "Execute: " + item.cmd;
-		if (item.prompt !== undefined)
-			prompt = item.prompt;
-
-		if (prompt && !confirm(prompt)) {
-			if (item.required == true)
-				return prompt + " is required to continue";
-			continue;
-		}
-
-		if (item.startup_dir === undefined)
-			item.startup_dir = startup_dir;
-		if (!item.args)
-			item.args = "";
-		var result = js.exec.apply(null
-			,[js_file, item.startup_dir, {}].concat(js_args));
-		if (result !== 0 && item.required)
-			return item.fail || ("Error " + result + " executing " + item.cmd);
-		if (item.last === true)
-			break;
-		if (item.done)
-			return false;
-	}
-	return true;
-}
-
-function install_eval_cmd(ini_file, section, startup_dir)
-{
-	var list = ini_file.iniGetAllObjects("str", section);
-	for (var i = 0; i < list.length; i++) {
-		var item = list[i];
-		if (!item.cmd)
-			item.cmd = item.str; // the str can't contain [], so allow cmd to override
-		var prompt = "Evaluate: " + item.cmd;
-		if (item.prompt !== undefined)
-			prompt = item.prompt;
-		if (prompt && !confirm(prompt)) {
-			if (item.required == true)
-				return prompt + " is required to continue";
-			continue;
-		}
-		try {
-			var result = eval(item.cmd);
-		} catch(e) {
-			return e;
-		}
-		if (!result && item.required)
-			return item.fail || ("Truthful evaluation of '" + item.cmd + "' is required to continue");
-		if (item.last === true)
-			break;
-		if (item.done)
-			return false;
-	}
 	return true;
 }
 
@@ -329,14 +247,6 @@ function install(ini_fname)
 	var startup_dir = ini_fname.substr(0, Math.max(ini_fname.lastIndexOf("/"), ini_fname.lastIndexOf("\\"), 0));
 	startup_dir = relpath.get(system.ctrl_dir, startup_dir);
 
-	var result = install_exec_cmd(ini_file, "pre-exec:", startup_dir);
-	if(result !== true)
-		return result;
-
-	result = install_eval_cmd(ini_file, "pre-eval:", startup_dir);
-	if(result !== true)
-		return result;
-
 	const types = {
 		prog:	{ desc: "External Program", 	struct: "xtrn" },
 		event:	{ desc: "External Timed Event", struct: "event" },
@@ -359,7 +269,7 @@ function install(ini_fname)
 				return false;
 			if(item.last === true)
 				break;
-			done = Boolean(item.done);
+			done = item.done;
 		}
 	}
 	
@@ -401,7 +311,7 @@ function install(ini_fname)
 			return false;
 		if(item.last === true)
 			break;
-		done = Boolean(item.done);
+		done = item.done;
 	}
 
 	var services_ini = new File(file_cfgname(system.ctrl_dir, "services.ini"));
@@ -441,21 +351,69 @@ function install(ini_fname)
 			return false;
 		if(item.last === true)
 			break;
-		done = Boolean(item.done);
+		done = item.done;
 	}
 	
-	if(done === false) {
-		result = install_exec_cmd(ini_file, "exec:", startup_dir);
-		if(typeof result !== 'boolean')
-			return result;
-		done = !result;
-	}
+	var list = ini_file.iniGetAllObjects("cmd", "exec:");
+	for (var i = 0; i < list.length && !done; i++) {
+		var item = list[i];
+		var js_args = item.cmd.split(/\s+/);
+		var js_file = js_args.shift();
+		
+		if (file_getext(js_file).toLowerCase() != ".js")
+			return "Only '.js' files may be executed: " + js_file;
 
-	if(done === false) {
-		result = install_eval_cmd(ini_file, "eval:", startup_dir);
-		if(typeof result !== 'boolean')
-			return result;
-		done = !result;
+		if (item.note)
+			print(item.note);
+		
+		var prompt = "Execute: " + item.cmd;
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+	
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+
+		if (item.startup_dir === undefined)
+			item.startup_dir = startup_dir;
+		if (!item.args)
+			item.args = "";
+		var result = js.exec.apply(null
+			,[js_file, item.startup_dir, {}].concat(js_args));
+		if (result !== 0 && item.required)
+			return "Error " + result + " executing " + item.cmd;
+		if(item.last === true)
+			return true;
+		done = item.done;
+	}
+	
+	var list = ini_file.iniGetAllObjects("str", "eval:");
+	for (var i = 0; i < list.length && !done; i++) {
+		var item = list[i];
+		if (!item.cmd)
+			item.cmd = item.str; // the str can't contain [], so allow cmd to override
+		var prompt = "Evaluate: " + item.cmd;
+		if (item.prompt !== undefined)
+			prompt = item.prompt;
+		if (prompt && !confirm(prompt)) {
+			if (item.required == true)
+				return prompt + " is required to continue";
+			continue;
+		}
+		try {
+			var result = eval(item.cmd);
+		} catch(e) {
+			return e;
+		}
+		if (!result) {
+			if (item.required == true)
+				return "Truthful evaluation of '" + item.cmd + "' is required to continue";
+		}
+		if(item.last === true)
+			return true;
+		done = item.done;
 	}
 
 	if (installed) {
@@ -476,14 +434,6 @@ for (var i = 0; i < argc; i++) {
 		options[argv[i].substr(1)] = true;
 	else
 		ini_list.push(argv[i]);
-}
-
-if(!ini_list.length) {
-	var lib = load({}, "install-3rdp-xtrn.js");
-	var out = lib.scan(options);
-	for (var i in out) {
-		print(out[i]);
-	}
 }
 
 function find_startup_dir(dir)
@@ -560,14 +510,8 @@ for(var i in ini_list) {
 	else if (typeof result !== 'boolean')
 		alert(result);
 }
-if (options.debug) {
-	print("Would have Installed " + installed + " external programs.");
-	print("No programs installed due to DEBUG mode.");
-} else {
-	print("Installed " + installed + " external programs.");
-}
-
-if((installed > 0) && !options.debug) {
+print("Installed " + installed + " external programs.");
+if(installed > 0) {
 	print("Requesting Synchronet recycle (configuration-reload)");
 	if(!file_touch(system.ctrl_dir + "recycle"))
 		alert("Recycle semaphore file update failure");

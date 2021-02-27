@@ -1,5 +1,7 @@
 /* Synchronet log file routines */
 
+/* $Id: logfile.cpp,v 1.69 2020/08/08 19:32:30 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -225,28 +239,21 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 					  ,long access, const char *extinfo)
 {
     char	str[2048];
-	char	errno_str[128];
-	char	errno_info[256] = "";
 
 	/* prevent recursion */
 	if(errormsg_inside)
 		return;
 	errormsg_inside=true;
 
-	if(strcmp(action, ERR_CHK) != 0)
-		safe_snprintf(errno_info, sizeof(errno_info), "%d (%s) "
-	#ifdef _WIN32
-			"(WinError %u) "
-	#endif
-			,errno, safe_strerror(errno, errno_str, sizeof(errno_str))
-	#ifdef _WIN32
-			,GetLastError()
-	#endif
-		);
-
-	safe_snprintf(str,sizeof(str),"ERROR %s"
+	safe_snprintf(str,sizeof(str),"ERROR %d (%s) "
+#ifdef _WIN32
+		"(WinError %u) "
+#endif
 		"in %s line %u (%s) %s \"%s\" access=%ld %s%s"
-		,errno_info
+		,errno,STRERROR(errno)
+#ifdef _WIN32
+		,GetLastError()
+#endif
 		,src, line, function, action, object, access
 		,extinfo==NULL ? "":"info="
 		,extinfo==NULL ? "":extinfo);

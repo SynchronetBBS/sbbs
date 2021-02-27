@@ -1,0 +1,182 @@
+<!doctype HTML public "-//W30//DTD W3 HTML 3.0//EN">
+<HTML>
+  <HEAD>
+    <TITLE>The Java(tm) Telnet Applet: Downloading and Unpacking</TITLE>
+  </HEAD>
+  <BODY BGCOLOR="#ffffff">
+    <H1>The <A HREF="http://java.sun.com/">Java<SUP>(tm)</SUP></A>
+      Telnet Applet: Download</H1>
+    &copy; 1996, 97 <A HREF="mailto:leo@mud.de">Matthias L. Jugel</A>,
+    <A HREF="mailto:marcus@mud.de">Marcus Mei&szlig;ner</A> 
+    <HR>
+    <H2 ALIGN=CENTER>
+      [<A HREF="#package">Package</A> | <A HREF="#class">Classes</A>]
+    </H2>
+    <HR>
+    <P>
+      <A NAME="package"></A>
+    <H2>Package download and Unpacking</H2>
+    Select the package according to your operating system. Apple users may
+    choose to select the <A HREF="../telnet.zip">telnet.zip</A> file. Please be
+    aware that the packages contain <I>long filenames</I> and may not work with
+    systems not supporting these, such as Windows 3.x.<P>
+      If you have problems unpacking one of the packages read the notes below the
+      table or <A HREF="mailto:leo@mud.de,marcus@mud.de">contact us</A> if it doesn't make
+      sense.
+    <P>
+    <CENTER>
+      <TABLE BORDER=1>
+	<TR ALIGN=CENTER>
+	  <TD><TD><B>UNIX</B> <TD><B>Windows NT/95 &amp; Apple</B></TD>
+	<TR ALIGN=CENTER>
+	  <TD><B>full package</B>
+	  <TD><A HREF="../telnet.tgz">telnet.tgz</A></TD>
+	  <TD><A HREF="../telnet.zip">telnet.zip</A></TD>
+	<TR ALIGN=CENTER>
+	  <TD><B>classes only</B>
+	  <TD><A HREF="../classes.tgz">classes.tgz</A></TD>
+	  <TD><A HREF="../classes.zip">classes.zip</A></TD>
+	<TR ALIGN=CENTER>
+	<TR ALIGN=CENTER>
+	  <TD><B>patches</B>
+	  <TD COLSPAN=2>
+	    <A HREF="../telnet-srp-diff.tar.gz">secure authentication</A><BR>
+	  </TD>
+	<TR ALIGN=CENTER>
+	  <TD><B>full package</B>
+	  <TD><A HREF="../telnet_p.tgz">telnet_p.tgz</A></TD>
+	  <TD><A HREF="../telnet_p.zip">telnet_p.zip</A></TD>
+	<TR ALIGN=CENTER>
+	  <TD><B>classes only</B>
+	  <TD><A HREF="../class_p.tgz">class_p.tgz</A></TD>
+	  <TD><A HREF="../class_p.zip">class_p.zip</A></TD>
+      </TABLE>
+      <P>
+	<I>Note:</I> <A HREF="http://srp.stanford.edu/srp/"><B>Secure 
+	    Remote Password Authentication (SRP)</B></A>, &copy;  
+	    <A HREF="http://www.stanford.edu">Stanford University</A>,
+	    <A HREF="http://srp.stanford.edu/srp/export/eps-1.3.tar.gz">
+	    official distribution</A><BR> download the <B>patched</B> 
+	    version if you don't want to do it yourself.<P>
+	<I>Note:</I> We recommend you download the classes.zip in any case and
+	use the <BR><TT>&lt;APPLET ARCHIVE="classes.zip" ...&gt;</TT> parameter.<BR>
+	This <B>decreases the download time</B> for the applet!
+      <P>
+      <TABLE BORDER=1>
+	<TR ALIGN=CENTER>
+	  <TD><TD><B>Linux</B> <TD><B>Windows NT</B></TD>
+	<TR ALIGN=CENTER>
+	  <TD><B>simple relayd</B>
+	  <TD><A HREF="tools/relayd">relayd</A></TD>
+	  <TD><A HREF="tools/relayd.exe">relayd.exe</A></TD>
+	<TR ALIGN=CENTER>
+	  <TD><B>multi relayd</B>
+	  <TD><A HREF="tools/mrelayd">mrelayd</A></TD>
+	  <TD><A HREF="tools/mrelayd.exe">mrelayd.exe</A></TD>
+      </TABLE>
+      <P>
+	<I>Note:</I> Do a <B>chmod +x relayd</B> after download to make the
+	             file executable.<BR>If you need a binary for a different
+	             platform <A HREF="mailto:leo@mud.de,marcus@mud.de">please
+	             ask.</A>
+    </CENTER>
+    <P>
+    <DL>
+      <DT><B>Apple Computers:</B><P>
+      <DD>Unless you have a UNIX tar and gzip implementation download the
+	<A HREF="../telnet.zip">telnet.zip</A> file.<P>
+	  <DT><B>Windows NT/95:</B><P>
+	  <DD>Select the <A HREF="../telnet.zip">telnet.zip</A> file and unpack it
+	    using one of the publicly available tools, like
+	    <A HREF="http://www.winzip.com">WinZIP</A>. Make sure you have selected
+	    the checkbox to <B>extract subdirectories</B>!<P>
+	      <DT><B>UNIX:</B><P>
+	      <DD>Extract the files from the <A HREF="../telnet.tgz">telnet.tgz</A> file
+		using the following command:
+		<PRE><B>gunzip -c telnet.tgz | tar xvf -</B></PRE>
+		This will extract a directory called <B>Telnet/</B> containing the
+		full source code + documentation and precompiled classes. <B>gunzip</B>
+		(GNU unzip) can be found on a public ftp server.<P>
+		</DL>
+		  For further information on using and installing the applet please refer to the
+		  <A HREF="Documentation/index.html">Documentation</A>.
+		<HR>
+		<A NAME="class"></A>
+    <H2>Direct CLASS download:</H2>
+    Sometimes it is not necessary to download the complete package just to update
+    one class. Below is the tree of classes to directly download the class you
+    may need. If you are not sure, which classes have changed have a look at
+    your copy of the file REVISION and the same file on the home page of the
+    applet. If you are viewing this page from your own copy,
+    <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet/index.download.html">
+      go to the home page download</A>. Higher revision numbers indicate changes.
+    <P>
+      Right click on the link and select <I>Save as ...</I>. Please make sure you
+      download all needed classes. If you're downloading the first time, please
+      use the <A HREF="#package">package download</A> links above!
+    <P>
+      If you want all classes at once download either 
+      <A HREF="../classes.tgz">classes.tgz</A> (<B>UNIX</B>) or
+      <A HREF="../classes.zip">classes.zip</A> (<B>Windows/Apple</B>).
+    <P>
+    <UL>
+      <LI><A HREF="appWrapper.class">appWrapper.class</A> (applet wrapper)
+      <LI><A HREF="frame.class">frame.class</A> (appWrapper needs it!)<P>
+      <LI><B><A HREF="telnet.class">telnet.class</A></B> (applet/application)
+	<UL>
+	  <LI><A HREF="display/CharDisplay.class">display/CharDisplay.class</A>
+	    (character display class)
+	  <LI><A HREF="display/SoftFont.class">display/SoftFont.class</A>
+	    (software font for special characters)
+	  <LI><A HREF="display/Terminal.class">display/Terminal.class</A>
+	    (abstract terminal)
+	  <LI><A HREF="display/TerminalHost.class">display/TerminalHost.class</A>
+	    (abstract host interface)
+	  <LI><A HREF="display/vt320.class">display/vt320.class</A>
+	    (VT/ANSI terminal emulation)
+	    <P>
+	  <LI><A HREF="socket/TelnetIO.class">socket/TelnetIO.class</A>
+	    (telnet io handling)
+	  <LI><A HREF="socket/StatusPeer.class">socket/StatusPeer.class</A>
+	    (status peer interface)
+	    <P>
+	  <LI><A HREF="modules/Module.class">modules/Module.class</A>
+	    (abstract module interface)
+	  <LI><A HREF="modules/ButtonBar.class">modules/ButtonBar.class</A>
+	    (programmable button bar)
+	  <LI><A HREF="modules/Script.class">modules/Script.class</A>
+	    (simple script module)
+	  <LI><A HREF="modules/MudConnector.class">modules/MudConnector.class</A>
+	    (a specialized specialized example module)
+	  <LI><A HREF="modules/BSXModule.class">modules/BSXModule</A> 
+	    (a graphical MUD extension)
+	  <UL>
+	      <LI><A HREF="modules/bsx/BSXDisplay.class">modules/bsx/BSXDisplay.class</A>
+	      <LI><A HREF="modules/bsx/BSXGraphic.class">modules/bsx/BSXGraphic.class</A>
+	      <LI><A HREF="modules/bsx/BSXInputStream.class">modules/bsx/BSXInputStream.class</A>
+	      <LI><A HREF="modules/bsx/BSXObject.class">modules/bsx/BSXObject.class</A>
+	      <LI><A HREF="modules/bsx/BSXPolygon.class">modules/bsx/BSXPolygon.class</A>
+	      <LI><A HREF="modules/bsx/BSXScene.class">modules/bsx/BSXScene.class</A>
+	   </UL>
+	</UL><P>
+      <LI><B>additional tools:</B>
+	<UL>
+	  <LI><A HREF="tools/proxy.class">tools/proxy.class</A> (application)<BR>
+	    Standalone program to be run as server for telnet redirection.
+	  <LI><A HREF="tools/redirector.class">tools/redirector.class</A>
+	    (internal redirector)
+	</UL><P>
+      <LI><A HREF="IOtest.class">IOtest.class</A> (application)
+      <LI><A HREF="TelnetWrapper.class">TelnetWrapper.class</A> (application)
+      <LI><A HREF="CharDisplayTest.class">CharDisplayTest.class</A>
+    </UL>		
+    <HR>
+    <A HREF="index.html">
+      <IMG ALIGN=LEFT SRC="Documentation/images/left.gif" BORDER=0 ALT="[BACK]"></A>
+    <B>Get the <A HREF="http://www.first.gmd.de/persons/leo/java/Telnet">latest
+	version</A> here!</B> <BR>
+    <!-- html-ts start -->
+    Last modified: Wed Jul 23 14:46:07 1997 by Matthias L. Jugel
+    <!-- html-ts end -->
+  </BODY>
+</HTML>

@@ -53,28 +53,23 @@ function verstr(ver)
 	return str;
 }
 
-function document_methods(name,obj,type)
+function document_methods(name,obj)
 {
 	var method;
 	var func;
-
-	if(type === undefined)
-		type="object";
-
-	var l = (name + " " + type).replace(/\s+/g, '_');
 
 	if(obj._method_list == undefined)
 		return;
 
 	f.writeln(li_tag);
-	f.writeln("<a href=#" + l +"_methods>methods</a>");
+	f.writeln("<a href=#" + name +"_methods>methods</a>");
 
 	table_close();
 	table_open(name);
 
 	
 	docwriteln("<caption align=left><b><tt>" + name + "</tt>");
-	docwriteln("<a name=" + l + "_methods> methods</a>");
+	docwriteln("<a name=" + name + "_methods> methods</a>"); 
 	docwriteln("</b></caption>");
 	docwriteln("<tr bgcolor=gray>");
 	docwriteln("<th align=left width=100>");
@@ -117,19 +112,17 @@ function document_methods(name,obj,type)
 
 function object_header(name, obj, type)
 {
-	if(type === undefined)
+	if(type==undefined)
 		type="object";
-
-	var l = (name + " " + type).replace(/\s+/g, '_');
 
 	f.writeln(li_tag);
 	if(!object_depth)
 		f.write("[+] &nbsp");
-	f.writeln(name.bold().link("#"+l) + " " + type);
+	f.writeln(name.bold().link("#"+name) + " " + type);
 
 	if(table_depth)
 		table_close();
-	docwriteln("<h2><a name=" + l + ">" + name + " " + type + "</a>");
+	docwriteln("<h2><a name=" + name + ">" + name + " " + type + "</a>");
 	if(obj._description!=undefined)
 		docwriteln("<br><font size=-1>"+obj._description+"</font>");
 	if(!min_ver && obj._ver>310)
@@ -139,13 +132,11 @@ function object_header(name, obj, type)
 		docwriteln("<p>" + obj._constructor + "</p>");
 }
 
-function properties_header(name, obj, type)
+function properties_header(name, obj)
 {
-	if (type === undefined)
-		type = 'object';
-	var l = (name + " " + type).replace(/\s+/g, '_');
+
 	f.writeln(li_tag);
-	f.writeln("<a href=#" + l +"_properties>properties</a>");
+	f.writeln("<a href=#" + name +"_properties>properties</a>");
 
 	table_close();
 	if(obj._method_list != undefined)
@@ -153,7 +144,7 @@ function properties_header(name, obj, type)
 
 	table_open(name);
 	docwriteln("<caption align=left><b><tt>" + name + "</tt>");
-	docwriteln("<a name=" + l + "_properties> properties</a>");
+	docwriteln("<a name=" + name + "_properties> properties</a>"); 
 	docwriteln("</b></caption>");
 	docwriteln("<tr bgcolor=gray>");
 	docwriteln("<th align=left width=100>");
@@ -168,7 +159,7 @@ function properties_header(name, obj, type)
 	docwriteln("Description".fontcolor("white"));
 }
 
-function document_properties(name, obj, type)
+function document_properties(name, obj)
 {
 	var prop_name;
 	var count=0;
@@ -177,8 +168,6 @@ function document_properties(name, obj, type)
 	var prop_hdr=false;
 	var p;
 
-	if (type === undefined)
-		type = typeof(obj);
 	p=0;
 	for(prop in obj) {
 		prop_num=count++;
@@ -246,13 +235,9 @@ function document_object(name, obj, type)
 				break;
 			}
 		f.writeln("<ul>");
-		document_methods(name,obj,type);
+		document_methods(name,obj);
 		object_depth++;
-		document_properties(name,obj,type);
-		if (type === 'class') {
-			if (Object.keys(js.global[obj.constructor.name]).length > 0)
-				document_object(obj.constructor.name, js.global[obj.constructor.name], "class object");
-		}
+		document_properties(name,obj);
 		object_depth--;
 		f.writeln("</ul>");
 		table_close();
@@ -319,16 +304,10 @@ if(js.global.console != undefined)		document_object("console"	,console);
 if(js.global.msg_area != undefined)		document_object("msg_area"	,msg_area);
 if(js.global.file_area != undefined)	document_object("file_area"	,file_area);
 if(js.global.xtrn_area != undefined)	document_object("xtrn_area"	,xtrn_area);
+if(js.global.uifc != undefined)			document_object("uifc"		,uifc);
 if(js.global.MsgBase != undefined)		document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
 if(js.global.File != undefined)			document_object("File"		,new File(system.devnull), "class");
 if(js.global.Queue != undefined)		document_object("Queue"		,new Queue(), "class");
-if(js.global.Socket != undefined) {
-	var sock=new Socket();
-	sock.close();
-	if(js.global.client != undefined)
-		sock.descriptor=client.socket.descriptor;
-	if(sock != undefined)		document_object("Socket"	,sock, "class");
-}
 if(js.global.ConnectedSocket != undefined) {
 	var sock=new ConnectedSocket("www.google.com", 80);
 	sock.close();
@@ -339,6 +318,13 @@ if(js.global.ListeningSocket != undefined) {
 	sock.close();
 	if(sock != undefined)		document_object("ListeningSocket"	,sock, "class");
 }
+if(js.global.Socket != undefined) {
+	var sock=new Socket();
+	sock.close();
+	if(js.global.client != undefined)
+		sock.descriptor=client.socket.descriptor;
+	if(sock != undefined)		document_object("Socket"	,sock, "class");
+}
 if(js.global.COM != undefined) {
 	var com;
 	if(system.platform=="Win32")
@@ -348,25 +334,19 @@ if(js.global.COM != undefined) {
 	com.close();
 	if(com != undefined)		document_object("COM"	,com, "class");
 }
-if(js.global.conio != undefined) {
-	document_object("conio",js.global.conio);
-}
-if(js.global.uifc != undefined)			document_object("uifc"		,uifc);
-
 if(js.global.CryptContext != undefined) {
 	var cc = new CryptContext(CryptContext.ALGO.AES);
 	if(cc != undefined)			document_object("CryptContext",cc, "class");
 }
 if(js.global.CryptKeyset != undefined) {
-	var cks = new CryptKeyset(system.temp_dir + "tmpkeyset", CryptKeyset.KEYOPT.CREATE);
+	var cks = new CryptKeyset("/tmp/tmpkeyset", CryptKeyset.KEYOPT.CREATE);
 	if(cks != undefined)			document_object("CryptKeyset",cks, "class");
 }
-if(js.global.CryptCert != undefined) {
-	var ccert = new CryptCert(CryptCert.TYPE.CERTIFICATE);
-	if(ccert != undefined) {
-		document_object("CryptCert",ccert, "class");
-	}
+if(js.global.conio != undefined) {
+	document_object("conio",js.global.conio);
 }
+
+
 f.writeln("</ol>");
 
 f.write(body);

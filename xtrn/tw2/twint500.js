@@ -36,7 +36,7 @@ function ConfigureSettings()
 		for(i=0; i<GameSettingProperties.length; i++)
 			list.push(format("%-35s %s",GameSettingProperties[i].name,Settings[GameSettingProperties[i].prop]));
 
-		i=uifc.list(WIN_MID|WIN_ORG|WIN_ACT|WIN_ESC, 0, 0, 0, last, last, "Trade Wars 2 Configuration", list);
+		i=uifc.list(WIN_MID|WIN_ORG|WIN_ACT|WIN_ESC, 0, 0, 0, last, last, "Configuration", list);
 		if(i==-1) {
 			if(uifc.changes) {
 				var q=uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, 0, 0, "Save Changes?", ["Yes", "No"]);
@@ -104,7 +104,7 @@ var reset = false;
 if(this.uifc == undefined) {
 
 	while(!js.terminated && (!this.console || !console.aborted)) {
-		print("Trade Wars 2 Configuration:");
+		print("Configuration:");
 		print();
 		for(var i=0; i< GameSettingProperties.length; i++)
 			print(format("%2d: %-35s = %s", i + 1, GameSettingProperties[i].name, Settings[GameSettingProperties[i].prop]));
@@ -149,7 +149,7 @@ if(this.uifc == undefined) {
 		alert("WARNING: Unable to connect to server: " + e);
 	}
 } else {
-	uifc.init("Trade Wars 2 Initialization", /* ciolibmode: */argv[0]);
+	uifc.init("TradeWars 2 Initialization", /* ciolibmode: */argv[0]);
 	ConfigureSettings();
 
 	if(js.global.db != undefined) {
@@ -158,27 +158,28 @@ if(this.uifc == undefined) {
 	}
 }
 
-if(reset) {
-	print("Resetting game");
-	load(fname("ports.js"));
-	load(fname("planets.js"));
-	load(fname("teams.js"));
-	load(fname("sectors.js"));
-	load(fname("maint.js"));
-	load(fname("players.js"));
-	load(fname("messages.js"));
-	load(fname("computer.js"));
-	load(fname("input.js"));
+if(!reset)
+	exit(0);
 
-	ResetAllPlayers();
-	ResetAllPlanets();
-	ResetAllMessages();
-	InitializeTeams();
-	InitializeSectors();
-	InitializePorts();
-	InitializeCabal();
-	db.write(Settings.DB,'twopeng',[],LOCK_WRITE);
-}
+print("Resetting game");
+load(fname("ports.js"));
+load(fname("planets.js"));
+load(fname("teams.js"));
+load(fname("sectors.js"));
+load(fname("maint.js"));
+load(fname("players.js"));
+load(fname("messages.js"));
+load(fname("computer.js"));
+load(fname("input.js"));
+
+ResetAllPlayers();
+ResetAllPlanets();
+ResetAllMessages();
+InitializeTeams();
+InitializeSectors();
+InitializePorts();
+InitializeCabal();
+db.write(Settings.DB,'twopeng',[],LOCK_WRITE);
 if(this.uifc) {
 	uifc.pop();
 	uifc.bail();

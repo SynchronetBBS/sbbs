@@ -438,8 +438,6 @@ void printnodedat(int number, node_t node)
 			putchar('D');
 		if(node.misc&NODE_LCHAT)
 			putchar('C');
-		if(node.misc&NODE_FCHAT)
-			putchar('F');
 		putchar(']'); }
 	if(node.errors)
 		printf(" %d error%c",node.errors, node.errors>1 ? 's' : '\0' );

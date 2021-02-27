@@ -6,41 +6,10 @@ function getFileContents(file) {
 	return ret;
 }
 
-function moduleName(m) {
-	return file_getname(m).replace(/^\d*-/, '');
-}
-
-function mergeModuleLists(stock, mods) {
-	return mods.reduce(function (a, c) {
-		const idx = a.findIndex(function (e) {
-			return moduleName(e) == moduleName(c);
-		});
-		if (idx < 0) {
-			a.push(c);
-		} else {
-			a[idx] = c;
-		}
-		return a;
-	}, stock).sort(function (a, b) {
-		const fna = file_getname(a);
-		const fnb = file_getname(b);
-		if (fna < fnb) return -1;
-		if (fna > fnb) return 1;
-		return 0;
-	});
-}
-
-function _getSidebarModules(dir) {
-	if (!file_isdir(dir)) return [];
-	return directory(dir + '*').filter(function (e) {
+function getSidebarModules() {
+	return directory(settings.web_sidebar + '*').filter(function (e) {
 		return (!file_isdir(e));
 	});
-}
-
-function getSidebarModules() {
-	const stock = _getSidebarModules(settings.web_sidebar);
-	const mods = _getSidebarModules(settings.web_mods_sidebar);
-	return mergeModuleLists(stock, mods);
 }
 
 function getSidebarModule(module) {
@@ -52,10 +21,14 @@ function getSidebarModule(module) {
 	switch (ext) {
 		case '.SSJS':
 			if (ext === '.SSJS' && module.search(/\.xjs\.ssjs$/i) >= 0) break;
-			js.exec(module, new function () {});
+			(function () {
+				load(module, true);
+			})();
 			break;
 		case '.XJS':
-			js.exec(xjs_compile(module), new function () {});
+			(function () {
+				load(xjs_compile(module), true);
+			})();
 			break;
 		case '.HTML':
 			ret = getFileContents(module);

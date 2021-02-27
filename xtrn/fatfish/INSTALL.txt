@@ -1,4 +1,4 @@
-------------------------------------------------
+﻿------------------------------------------------
  FatFish: the fishing simulation door game.
 ------------------------------------------------
 FatFish is a fishing simulation door game for Synchronet BBS systems.
@@ -13,7 +13,9 @@ Requirements
 	- exec/load/frame.js
 	- exec/load/mapgenerator.js
 	- exec/load/json-client.js
-  You can grab these from the Synchronet git repository.
+  You can grab these from the Synchronet CVS repository.
+
+- You need to have a fairly updated Synchronet environment. Your exec/ and exec/load/ directories should be updated to 2 September 2012 from CVS.
 
 -------------------
 Supported Platforms
@@ -29,7 +31,7 @@ FatFish has been tested on:
 ------------
 Installation
 ------------
-1. Included with Sychronet. If you don't have them, they can be found on gitlab.synchro.net, the official Synchronet repository.
+1. Get the sources. They can be found on cvs.synchro.net, the official Synchronet repository.
 
 2. Configure the door in SCFG, if not already done:
 	╔[■][?]════════════════════════════════════════════════════╗

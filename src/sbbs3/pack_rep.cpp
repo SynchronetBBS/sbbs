@@ -1,5 +1,7 @@
 /* Synchronet QWK reply (REP) packet creation routine */
 
+/* $Id: pack_rep.cpp,v 1.51 2020/04/11 04:01:36 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -32,8 +46,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	char 		tmp[MAX_PATH+1],tmp2[MAX_PATH+1];
 	char		hubid_upper[LEN_QWKID+1];
 	char		hubid_lower[LEN_QWKID+1];
-	int 		mode;
-	const char* fmode;
+	int 		file,mode;
 	uint		i,j,k;
 	long		msgcnt,submsgs,packedmail,netfiles=0,deleted;
 	uint32_t	u;
@@ -68,19 +81,18 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/* Create SYSID.MSG, write header and leave open */
 	/*************************************************/
 	SAFEPRINTF2(str,"%s%s.MSG",cfg.temp_dir,hubid_upper);
-	if(fexistcase(str))
-		fmode="r+b";
-	else
-		fmode="w+b";
-	if((rep=fopen(str, fmode))==NULL) {
-		errormsg(WHERE, ERR_CREATE, str, 0, fmode);
-		return false;
+	fexistcase(str);
+	if((rep=fnopen(&file,str,O_CREAT|O_WRONLY|O_TRUNC))==NULL) {
+		errormsg(WHERE,ERR_CREATE,str,O_CREAT|O_WRONLY|O_TRUNC);
+		return(false);
 	}
-	fseek(rep, 0, SEEK_END);
-	if(ftell(rep) < 1) { 						/* New REP packet */
-		fprintf(rep, "%-*s"
-			,QWK_BLOCK_LEN, hubid_upper);		/* So write header */
+	if(filelength(file)<1) { 							/* New REP packet */
+		SAFEPRINTF2(str,"%-*s"
+			,QWK_BLOCK_LEN,hubid_upper);		/* So write header */
+		fwrite(str,QWK_BLOCK_LEN,1,rep); 
 	}
+	fseek(rep,0L,SEEK_END);
+
 	if(!(cfg.qhub[hubnum]->misc&QHUB_NOHEADERS)) {
 		SAFEPRINTF(str,"%sHEADERS.DAT",cfg.temp_dir);
 		fexistcase(str);
@@ -140,8 +152,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 			mode |= (cfg.qhub[hubnum]->misc&(QHUB_EXT | QHUB_CTRL_A | QHUB_UTF8));
 			/* For an unclear reason, kludge lines (including @VIA and @TZ) were not included in NetMail previously */
 			if(!(cfg.qhub[hubnum]->misc&QHUB_NOHEADERS)) mode|=(QM_VIA|QM_TZ|QM_MSGID|QM_REPLYTO);
-			if(msgtoqwk(&msg, rep, mode, &smb, /* confnum: */0, hdrs) > 0)
-				packedmail++;
+			msgtoqwk(&msg, rep, mode, &smb, /* confnum: */0, hdrs);
+			packedmail++;
 			smb_unlockmsghdr(&smb,&msg);
 			smb_freemsgmem(&msg); 
 			YIELD();	/* yield */
@@ -216,13 +228,12 @@ bool sbbs_t::pack_rep(uint hubnum)
 			if(msg.from_net.type!=NET_QWK)
 				mode|=QM_TAGLINE;
 
-			if(msgtoqwk(&msg, rep, mode, &smb, cfg.qhub[hubnum]->conf[i], hdrs, voting) > 0) {
-				msgcnt++;
-				submsgs++; 
-			}
+			msgtoqwk(&msg, rep, mode, &smb, cfg.qhub[hubnum]->conf[i], hdrs, voting);
 
 			smb_freemsgmem(&msg);
 			smb_unlockmsghdr(&smb,&msg);
+			msgcnt++;
+			submsgs++; 
 			if(!(u%50))
 				YIELD(); /* yield */
 		}

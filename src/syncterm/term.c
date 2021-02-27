@@ -460,10 +460,8 @@ static int lputs(void* cbdata, int level, const char* str)
 	OutputDebugString(msg);
 #endif
 
-	if(log_fp!=NULL && level <= log_level) {
-		time_t t = time(NULL);
-		fprintf(log_fp,"%.15s %s\n", ctime(&t) + 4, str);
-	}
+	if(log_fp!=NULL && level <= log_level)
+		fprintf(log_fp,"Xfer %s: %s\n",log_levels[level], str);
 
 	if(level > LOG_INFO)
 		return 0;
@@ -817,11 +815,10 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 	int i;
 	FILE*	fp;
 	struct file_pick fpick;
-	char	*opts[7]={
+	char	*opts[6]={
 			 "ZMODEM"
 			,"YMODEM"
-			,"XMODEM-1K"
-			,"XMODEM-128"
+			,"XMODEM"
 			,"ASCII"
 			,"Raw"
 			,""
@@ -891,12 +888,9 @@ void begin_upload(struct bbslist *bbs, BOOL autozm, int lastch)
 				xmodem_upload(bbs, fp, path, XMODEM|SEND, lastch);
 				break;
 			case 3:
-				xmodem_upload(bbs, fp, path, XMODEM|SEND|XMODEM_128B, lastch);
-				break;
-			case 4:
 				ascii_upload(fp);
 				break;
-			case 5:
+			case 4:
 				raw_upload(fp);
 				break;
 			default:
@@ -914,12 +908,11 @@ void begin_download(struct bbslist *bbs)
 {
 	char	path[MAX_PATH+1];
 	int i;
-	char	*opts[6]={
+	char	*opts[5]={
 			 "ZMODEM"
 			,"YMODEM-g"
 			,"YMODEM"
-			,"XMODEM-CRC"
-			,"XMODEM-CHKSUM"
+			,"XMODEM"
 			,""
 		};
 	struct	text_info txtinfo;
@@ -931,10 +924,10 @@ void begin_download(struct bbslist *bbs)
 
     gettextinfo(&txtinfo);
     savscrn = savescreen();
-    setfont(0, FALSE, 1);
-    setfont(0, FALSE, 2);
-    setfont(0, FALSE, 3);
-    setfont(0, FALSE, 4);
+		setfont(0, FALSE, 1);
+		setfont(0, FALSE, 2);
+		setfont(0, FALSE, 3);
+		setfont(0, FALSE, 4);
 
 	init_uifc(FALSE, FALSE);
 
@@ -957,10 +950,6 @@ void begin_download(struct bbslist *bbs)
 		case 3:
 			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename",path,sizeof(path),0)!=-1)
 				xmodem_download(bbs, XMODEM|CRC|RECV,path);
-			break;
-		case 4:
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Filename",path,sizeof(path),0)!=-1)
-				xmodem_download(bbs, XMODEM|RECV,path);
 			break;
 	}
 	hold_update=old_hold;
@@ -2481,7 +2470,7 @@ BOOL doterm(struct bbslist *bbs)
 #endif
 	int ooii_mode=0;
 	recv_byte_buffer_len=recv_byte_buffer_pos=0;
-	struct mouse_state ms = {0};
+	struct mouse_state ms = {};
 	int speedwatch = 0;
 
 	gettextinfo(&txtinfo);

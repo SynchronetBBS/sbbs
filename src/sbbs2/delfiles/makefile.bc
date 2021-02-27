@@ -1,0 +1,77 @@
+############################################
+# Makefile for Synchronet ADDFILES Utility #
+# For use with Borland C++ for DOS or OS/2 #
+############################################
+
+# Macros
+CC	= bcc
+LD	= tlink
+!ifdef __OS2__
+OS	= OS2
+INCLUDE = c:\bcos2\include;..;..\smb;..\rio
+LIB	= c:\bcos2\lib
+CFLAGS  = -N -d -C -I$(INCLUDE)
+LFLAGS  = -c
+!else
+OS	= DOS
+INCLUDE = \bc31\include;..;..\smb;..\rio
+LIB	= \bc31\lib
+MODEL	= l
+CFLAGS	= -N -d -C -m$(MODEL) -I$(INCLUDE)
+LFLAGS	= -n -c
+!endif
+MAIN	= $(OS)\delfiles.exe
+OBJS	= $(OS)\delfiles.obj $(OS)\scfgvars.obj $(OS)\scfglib1.obj \
+	  $(OS)\ars.obj $(OS)\scfglib2.obj
+HEADERS = ..\sbbs.h ..\sbbsdefs.h ..\gen_defs.h ..\scfgvars.c
+
+# Implicit C Compile Rule
+{.}.c.obj:
+	@echo Compiling (I) $< to $@ ...
+	$(CC) $(CFLAGS) -n$(OS) -c $<
+
+# Main EXE Link Rule
+$(MAIN): $(OBJS) 
+    	@echo Linking $< ...
+!ifdef __OS2__
+	$(LD) $(LFLAGS) @&&+
+$(LIB)\c02.obj $(OBJS)
++, $*, $*, $(LIB)\os2.lib $(LIB)\c2.lib
+!else
+	$(LD) $(LFLAGS) @&&+
+$(LIB)\c0$(MODEL).obj $(OBJS)
++, $*, $*, $(LIB)\c$(MODEL).lib $(LIB)\math$(MODEL).lib $(LIB)\emu.lib
+!endif
+
+# Global Variables
+$(OS)\scfgvars.obj: ..\scfgvars.c ..\sbbsdefs.h
+	@echo Compiling ..\$&.c to $< ...
+	$(CC) $(CFLAGS) -c -n$(OS) ..\$&.c
+
+# ARS
+$(OS)\ars.obj: ..\ars.c ..\ars_defs.h
+        @echo Compiling ..\$&.c to $< ...
+        $(CC) $(CFLAGS) -c -n$(OS) ..\$&.c
+
+# Shared Functions
+$(OS)\scfglib1.obj: ..\sbbs.h ..\sbbsdefs.h ..\scfglib1.c ..\scfgvars.c
+        @echo Compiling ..\$&.c to $< ...
+        $(CC) $(CFLAGS) -c -n$(OS) @&&!
+-DNO_MSGS_CFG
+-DNO_TEXT_CFG
+-DNO_XTRN_CFG 
+-DNO_CMDS_CFG
+-DNO_CHAT_CFG
+! ..\$&.c
+
+# Shared Functions
+$(OS)\scfglib2.obj: ..\sbbs.h ..\sbbsdefs.h ..\scfglib2.c ..\scfgvars.c
+        @echo Compiling ..\$&.c to $< ...
+        $(CC) $(CFLAGS) -c -n$(OS) @&&!
+-DNO_MSGS_CFG
+-DNO_TEXT_CFG
+-DNO_XTRN_CFG 
+-DNO_CMDS_CFG
+-DNO_CHAT_CFG
+! ..\$&.c
+

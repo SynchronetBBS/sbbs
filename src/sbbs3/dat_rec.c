@@ -1,4 +1,8 @@
+/* dat_rec.c */
+
 /* Synchronet text data-related routines (exported) */
+
+/* $Id: dat_rec.c,v 1.3 2018/02/20 11:56:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,21 +17,31 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "dat_rec.h"
-#include "gen_defs.h"
-#include <string.h>
+#include "sbbs.h"
 
 /****************************************************************************/
 /* Places into 'strout' CR or ETX terminated string starting at             */
 /* 'start' and ending at 'start'+'length' or terminator from 'strin'        */
 /****************************************************************************/
-int DLLCALL getrec(const char *strin,int start,int length,char *strout)
+void DLLCALL getrec(const char *strin,int start,int length,char *strout)
 {
     int i=0,stop;
 
@@ -38,7 +52,6 @@ int DLLCALL getrec(const char *strin,int start,int length,char *strout)
 		strout[i++]=strin[start++]; 
 	}
 	strout[i]=0;
-	return i;
 }
 
 /****************************************************************************/

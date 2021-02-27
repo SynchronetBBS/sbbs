@@ -1,5 +1,7 @@
 /* Synchronet DLL-exported mail-related routines */
 
+/* $Id: getmail.c,v 1.20 2018/12/30 04:33:48 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +15,32 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "getmail.h"
+#include "sbbs.h"
 
 /****************************************************************************/
 /* Returns the number of pieces of mail waiting for usernumber              */
 /* If sent is non-zero, it returns the number of mail sent by usernumber    */
 /* If usernumber is 0, it returns all mail on the system                    */
 /****************************************************************************/
-int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
+int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr)
 {
     char    path[MAX_PATH+1];
     int     i=0;
@@ -55,9 +69,7 @@ int DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, int attr)
 			continue;
 		if(idx.attr&MSG_DELETE)
 			continue;
-		if(attr < 0 && (idx.attr & (~attr)) != 0)
-			continue;
-		if(attr > 0 && (idx.attr & attr) != attr)
+		if((idx.attr&attr) != attr)
 			continue;
 		if(usernumber == 0
 			|| (!sent && idx.to==usernumber)

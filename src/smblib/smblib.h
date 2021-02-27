@@ -160,7 +160,6 @@ SMBEXPORT int		SMBCALL smb_hfield_append(smbmsg_t* msg, uint16_t type, size_t le
 SMBEXPORT int		SMBCALL smb_hfield_append_str(smbmsg_t* msg, uint16_t type, const char* data);
 SMBEXPORT int		SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hfield_dat, BOOL insert);
 SMBEXPORT int		SMBCALL smb_hfield_add_netaddr(smbmsg_t* msg, uint16_t type, const char* str, uint16_t* nettype, BOOL insert);
-SMBEXPORT int		SMBCALL	smb_hfield_string(smbmsg_t*, uint16_t type, const char*);
 /* Convenience macro: */
 #define smb_hfield_bin(msg, type, data) smb_hfield_add(msg, type, sizeof(data), &(data), /* insert: */FALSE)
 /* Backward compatibility macros: */
@@ -191,8 +190,6 @@ SMBEXPORT uint32_t	SMBCALL smb_next_in_thread(smb_t*, smbmsg_t*, msghdr_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_branch(smb_t*, smbmsg_t*);
 SMBEXPORT uint32_t	SMBCALL smb_last_in_thread(smb_t*, smbmsg_t*);
 SMBEXPORT BOOL		SMBCALL smb_msg_is_utf8(const smbmsg_t*);
-SMBEXPORT size_t	SMBCALL smb_msg_count(smb_t*, unsigned types);
-SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t);
 
 /* smbadd.c */
 SMBEXPORT int		SMBCALL smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, long dupechk_hashes

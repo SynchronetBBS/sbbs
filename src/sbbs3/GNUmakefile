@@ -11,10 +11,11 @@
 # Optional build targets: dlls, utils, mono, all (default)				#
 #########################################################################
 
+# $Id: GNUmakefile,v 1.248 2020/04/03 19:54:31 rswindell Exp $
+
 PWD	:=	$(shell pwd)
 SRC_ROOT	?=	${PWD}/..
 include $(SRC_ROOT)/build/Common.gmake
-include extdeps.mk
 
 UTIL_LDFLAGS	:=	$(LDFLAGS)
 UTIL_LDFLAGS	+=	$(SMBLIB_LDFLAGS) $(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV_LDFLAGS) $(ENCODE_LDFLAGS)
@@ -41,6 +42,10 @@ ifdef PREFIX
  CFLAGS += -DPREFIX=$(PREFIX)
 endif
 
+ifdef USE_DOSEMU
+ CFLAGS += -DUSE_DOSEMU
+endif
+
 ifdef DONT_BLAME_SYNCHRONET
  CFLAGS += -DDONT_BLAME_SYNCHRONET
 endif
@@ -64,25 +69,23 @@ endif
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS)
 
-ifndef NO_LD_RUN_PATH
- # Set up LD_RUN_PATH for run-time locating of the .so files
- ifdef SBBSDIR
-  ifeq ($(os),sunos)
-   LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
-  else
-   LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
-  endif
+# Set up LD_RUN_PATH for run-time locating of the .so files
+ifdef SBBSDIR
+ ifeq ($(os),sunos)
+  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
  else
-  ifeq ($(os),sunos)
-   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
-  else
-   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
-  endif
+  LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
  endif
- export LD_RUN_PATH
- ifeq ($(CCPRE),clang)
-  LDFLAGS += -rpath $(LD_RUN_PATH)
+else
+ ifeq ($(os),sunos)
+  LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
+ else
+  LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
  endif
+endif
+export LD_RUN_PATH
+ifeq ($(CCPRE),clang)
+ LDFLAGS += -rpath $(LD_RUN_PATH)
 endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices

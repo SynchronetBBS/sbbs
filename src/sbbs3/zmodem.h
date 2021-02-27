@@ -281,7 +281,6 @@ typedef struct {
 	int32_t		crc_request;
 	unsigned	errors;
 	unsigned	consecutive_errors;
-	int64_t		current_window_size;	/* "current transmitter file offset - last reported receiver file offset" */
 
 	/* Configuration */
 	BOOL		escape_telnet_iac;
@@ -293,8 +292,6 @@ typedef struct {
 	unsigned	block_size;
 	unsigned	max_block_size;
 	int64_t		max_file_size;		/* 0 = unlimited */
-	int64_t		max_window_size;	/* 0 = unlimited */
-	unsigned	target_window_size;	/* Target Transmit Window Size, in Seconds, 0 = no-auto-adjustment of window size */
 	int			*log_level;
 
 	/* Callbacks */
@@ -342,7 +339,7 @@ BOOL		zmodem_send_file(zmodem_t*, char* name, FILE* fp, BOOL request_init, time_
 int			zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_received);
 int			zmodem_recv_init(zmodem_t* zm);
 unsigned	zmodem_recv_file_data(zmodem_t*, FILE*, int64_t offset);
-int			zmodem_recv_file_frame(zmodem_t* zm, FILE* fp, int* type);
+int			zmodem_recv_file_frame(zmodem_t* zm, FILE* fp);
 int			zmodem_recv_header_and_check(zmodem_t* zm);
 #endif
 

@@ -18,7 +18,7 @@ function mouse_getkey(mode, timeout, enabled)
 	var safe_mode = mode & ~(K_UPPER|K_UPRLWR|K_NUMBER|K_ALPHA|K_NOEXASC);
 
 	if (safe_mode != mode) {
-		throw new Error("Invalid mode "+mode+" for mouse_getkey()");
+		throw("Invalid mode "+mode+" for mouse_getkey()");
 	}
 	
 	function mouse_enable(enable)

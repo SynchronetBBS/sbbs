@@ -2,7 +2,7 @@
 
 /* Synchronet External Program Software Development Kit	*/
 
-/* $Id: xsdk.c,v 1.41 2020/09/20 18:57:00 rswindell Exp $ */
+/* $Id: xsdk.c,v 1.41 2016/08/13 18:57:00 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -581,7 +581,6 @@ int keyhit()
 char inkey(long mode)
 {
 	static in_ctrl_p;
-	static ansi_len;
 	uchar ch=0,hour,min,sec;
 	long tleft;
 	int i=0;
@@ -622,63 +621,25 @@ char inkey(long mode)
 			i=stdin_getch();
 			switch(i) {
 				case 0x47:	/* Home - Same as Ctrl-B */
-					return TERM_KEY_HOME;	/* ctrl-b beginning of line */
+					return(2);	/* ctrl-b beginning of line */
 				case 0x4b:		/* Left Arrow - same as ctrl-] */
-					return TERM_KEY_LEFT;
+					return(0x1d);
 				case 0x4d:		/* Right Arrow - same as ctrl-f */
-					return TERM_KEY_RIGHT;
+					return(6);
 				case 0x48:		/* Up arrow - same as ctrl-^ */
-					return TERM_KEY_UP;
+					return(0x1e);
 				case 0x50:		/* Down arrow - same as CR */
-					return TERM_KEY_DOWN;
+					return(CR);
 				case 0x4f:	  /* End	  - same as Ctrl-E */
-					return TERM_KEY_END;
+					return(5);  /* ctrl-e - end of line */
 				case 0x52:	/* Insert */
-					return TERM_KEY_INSERT;	/* ctrl-minus - insert mode */
+					return(0x1f);	/* ctrl-minus - insert mode */
 				case 0x53:	/* Delete */
 					return(0x7f);   /* ctrl-bkspc - del cur char */
 				}
 			return(0); } 
 		ch=i;
 	}
-
-	if(ch == ESC) {
-		ansi_len = !ansi_len;
-	}
-	else if(ansi_len == 1) {
-		if(ch == '[')
-			ansi_len++;
-		else
-			ansi_len = 0;
-	}
-	else if(ansi_len == 2) {
-		ansi_len =0 ;
-		switch(ch) {
-			case 'A':
-				return TERM_KEY_UP;
-			case 'B':
-				return TERM_KEY_DOWN;
-			case 'C':
-				return TERM_KEY_RIGHT;
-			case 'D':
-				return TERM_KEY_LEFT;
-			case 'H':
-				return TERM_KEY_HOME;
-			case 'V':
-				return TERM_KEY_PAGEUP;
-			case 'U':
-				return TERM_KEY_PAGEDN;
-			case 'F':
-			case 'K':
-				return TERM_KEY_END;
-			case '@':
-				return TERM_KEY_INSERT;
-			default:
-				return 0;
-		}
-	}
-	if(ansi_len)
-		return 0;
 
 	if(ch==0x10 || ch==0x1e) {	/* Ctrl-P or Ctrl-^ */
 		if(in_ctrl_p || !ctrl_dir[0])	/* keep from being recursive */
@@ -1013,7 +974,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 				}
 				outchar(str1[i++]=1);
 				break;
-			case TERM_KEY_HOME:	/* Ctrl-B Beginning of Line */
+			case 2:	/* Ctrl-B Beginning of Line */
 				if(user_misc&ANSI && i) {
 					bprintf("\x1b[%dD",i);
 					i=0; 
@@ -1044,7 +1005,7 @@ int getstr(char *strout, size_t maxlen, long mode)
 					l-=x-i; 						/* l=new length */
 				}
 				break;
-			case TERM_KEY_END:	/* Ctrl-E End of line */
+			case 5:	/* Ctrl-E End of line */
 				if(user_misc&ANSI && i<l) {
 					bprintf("\x1b[%dC",l-i);  /* move cursor right one */
 					i=l; 
@@ -1726,7 +1687,7 @@ int nopen(const char *str, int access)
 		bprintf("\r\nNOPEN COLLISION - File: %s Count: %d\r\n"
 			,str,count);
 	if(file==-1 && errno==EACCES)
-		bprintf("\7\r\nNOPEN: ACCESS DENIED: %s\r\n\7", str);
+		bputs("\7\r\nNOPEN: ACCESS DENIED\r\n\7");
 	return(file);
 }
 
@@ -2247,7 +2208,7 @@ uint usernumber(char *username)
 char *ultoac(ulong l, char *string)
 {
 	char str[81];
-	int i,j,k;
+	char i,j,k;
 
 	sprintf(str,"%lu",l);
 	i=strlen(str)-1;

@@ -1082,7 +1082,7 @@ function browse(list)
 	var num_entries_on_page = 0;
 	var prompt_row = 0;
 	var previous_prompt_row = 0;
-	while(js.global.bbs.online && !js.terminated) {
+	while(!js.terminated) {
 //		console.clear(LIGHTGRAY);
 		console.home();
 		console.current_column = 0;
@@ -1590,7 +1590,7 @@ function view(list, current)
 {
 	console.line_counter = 0;
 	console.clear(LIGHTGRAY);
-	while(js.global.bbs.online && !js.terminated) {
+	while(!js.terminated) {
 
 		/* Bounds checking: */
 		if(current < 0) {
@@ -2459,22 +2459,19 @@ function main()
 				var ibbs = [];
 				for(i in list) {
 					var bbs = list[i];
-					if(!bbs.entry.autoverify)
-						continue;
-					if(!bbs.entry.autoverify.last_success && !bbs.entry.autoverify.last_failure)
+					if(!bbs.entry.autoverify || !bbs.entry.autoverify.success)
 						continue;
 					if(!lib.imsg_capable_system(bbs))
 						continue;
-					var last = bbs.entry.autoverify.last_success || bbs.entry.autoverify.last_failure;
 					if(!ibbs.every(function(element) {
-							return element.service_address != last.service.address
-								&& element.ip_address != last.ip_address
+							return element.service_address != bbs.entry.autoverify.last_success.service.address
+								&& element.ip_address != bbs.entry.autoverify.last_success.ip_address
 								&& element.name != bbs.name;
 							}))
 						continue;
 					ibbs.push( {
-						service_address: last.service.address,
-						ip_address: last.ip_address,
+						service_address: bbs.entry.autoverify.last_success.service.address,
+						ip_address: bbs.entry.autoverify.last_success.ip_address,
 						name: bbs.name
 						} );
 				}

@@ -61,7 +61,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 	useron.number=0;
 	username = parse_login(username);
 
-	if(!(cfg.node_misc&NM_NO_NUM) && IS_DIGIT(username[0])) {
+	if(!(cfg.node_misc&NM_NO_NUM) && isdigit((uchar)username[0])) {
 		useron.number=atoi(username);
 		getuserdat(&cfg,&useron);
 		if(useron.number && useron.misc&(DELETED|INACTIVE))
@@ -71,7 +71,7 @@ int sbbs_t::login(char *username, char *pw_prompt, const char* user_pw, const ch
 	if(!useron.number) {
 		useron.number=matchuser(&cfg,username,FALSE);
 		if(!useron.number && (uchar)username[0]<0x7f && username[1]
-			&& IS_ALPHA(username[0]) && strchr(username,' ') && cfg.node_misc&NM_LOGON_R)
+			&& isalpha(username[0]) && strchr(username,' ') && cfg.node_misc&NM_LOGON_R)
 			useron.number=userdatdupe(0,U_NAME,LEN_NAME,username);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);

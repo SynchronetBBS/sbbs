@@ -205,7 +205,7 @@ Return: Select the currently highlighted option.  If there is a blank
 
 Escape: Exit the current menu.
 Backspace: An alias for Escape.
-CTRL-C: An alias for Escape (Except when F5 is available)
+CTRL-C: An alias for Escape.
 
 Home: Jump to the beginning of the menu
 CTRL-B: An alias for Home
@@ -230,7 +230,7 @@ F2: Edit
 
 F5: Copy
 CTRL-Insert: An alias for F5
-CTRL-C: An alias for F5 (Overrides the alias for ESC)
+CTRL-C: An alias for F5
 
 Shift-Delete: Cut
 CTRL-X: An alias for Shift-Delete

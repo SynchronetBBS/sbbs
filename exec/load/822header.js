@@ -3,7 +3,7 @@
 require("utf8_ascii.js", 'utf8_ascii');
 require("smbdefs.js", 'RFC822HEADER');
 
-MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default_content_type)
+MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold)
 {
 	var content_type;
 	var i;
@@ -17,8 +17,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 		if(this.cc_list)
 			this.rfc822 += "Cc: " + this.cc_list + "\r\n";
 		this.rfc822 += "Subject: "+this.subject+"\r\n";
-		if(this.id)
-			this.rfc822 += "Message-ID: "+this.id+"\r\n";
+		this.rfc822 += "Message-ID: "+this.id+"\r\n";
 		this.rfc822 += "Date: "+this.date+"\r\n";
 
 		var quoted_from = '"' + this.from + '"';
@@ -106,7 +105,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 					this.rfc822 += this.field_list[i].data+"\r\n";
 				}
 		}
-		if(content_type==undefined && default_content_type !== false) {
+		if(content_type==undefined) {
 			var charset = this.text_charset || (this.is_utf8 ? "UTF-8" : "IBM437");
 			this.rfc822 += "Content-Type: text/plain; charset=" + charset + "\r\n";
 			this.rfc822 += "Content-Transfer-Encoding: 8bit\r\n";

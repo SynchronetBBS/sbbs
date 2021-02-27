@@ -16,7 +16,7 @@
     template.ftp_url += host; 
     if(ftp_port!=21)
         template.ftp_url += ftp_port;
-    template.ftpidx ="/";
+    template.ftpidx ="/00index.html?$" + new Date().valueOf().toString(36);
     template.ftpqwk = "/" + system.qwk_id.toLowerCase() + ".qwk";
  }
 

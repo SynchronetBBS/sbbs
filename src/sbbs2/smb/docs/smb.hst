@@ -1,0 +1,327 @@
+Synchronet Message Base Specification Modification History
+==========================================================
+
+******************************
+01/20/94 Initial Release v1.00
+******************************
+
+Quite a few spelling errors in SMB.TXT corrected.
+
+Estimated maximum number of messages (in Introduction of SMB.TXT) formula
+corrected (1500 rounded to nearest 256 is 1536, not 2048).
+
+Pages 32 and 38 (SENDEREXT and RECIPIENTEXT header field types) incorrectly
+stated the index record contains CRC-32s, when in fact the index contains
+CRC-16s of the agent names or extensions.
+
+FORWARDTO header field types incorrectly stated they were for replies, rather
+than forwarding instructions.
+
+Trigger header field types incorrectly stated they were "attachments" rather
+than triggers.
+
+Bug fixed in smb_open() function in smblib.c: was allocating buffer via
+setvbuf for wrong file pointer when opening header file. Caused loss of 
+memory (2k) everytime smb_open() was called.
+
+Bug fixed in smb_getmsghdr() function in smblib.c: msg->from_agent,to_agent,
+and replyto_agent were not initialized properly.
+
+Added from_ext, to_ext, and replyto_ext fields to msg struct. Initialized
+with call to smb_getmsghdr() function. These are convenience pointers for
+the to, from, and replyto agent extensions (user numbers, usually).
+
+Fixed a nasty bug in the smb_freemsgdat() function, causing odd values in the
+SDA file and cross-linked messages when fast allocation mode was not used for
+new messages.
+
+smb_putmsghdr() function replaced by smb_putmsg() and it calls smb_putmsghdr()
+and smb_putmsgidx() - previously smb_putmsghdr() actually wrote the header
+and the index. So you must change any occurances of smb_putmsghdr() to
+smb_putmsg() if you intend to write to both the index and header records.
+
+smb_open() now takes a "retry_time" parameter (number of seconds) to lock
+and read the message base header and verify the "id" and "version". Added
+new error codes: -1 indicates failure to lock message base header, -2 indicates
+id mismatch, and -3 indicates incompatible message base version.
+
+rewind() and clearerr() calls added to library functions to eliminate the
+problem of "sticky" error flags when using fread() and fwrite(). Reordered
+the use of chsize() to force seeking (with fseek()) before using the file
+descriptor operation (chsize()) would would fail under some circumstances.
+
+smb_getmsgidx() function now uses "fast" message number look-up algorythm.
+
+Added smb_getlastidx() function to retrieve the last index in the message
+base.
+
+Allocation strategy for hfield and dfield elements of the smbmsg_t structure
+were changed to require less memory. Rather than an array of pointers (pointer
+to a pointer) of type hfield_t or dfield_t, they are simply an array (pointer)
+of type hfield_t or dfield_t. The only change you need to make are any
+references to "smbmsg_t.hfield[x]->etc" to "smbmsg_t.hfield[x].etc".
+
+Added several new error codes to smb_getmsghdr(). -7 indicates missing one
+of the three mandatory header fields (sender, recipient, or subject). -8
+indicates that total_dfields element of smbhdr_t is incorrect (extends beyond
+smbhdr_t.length). -9 indicates incompatible header version.
+
+New error code to smb_addcrc(), -4 indicates error getting length of file.
+
+smb_putmsghdr() returns -2 on failure write header, -3 on failure to write
+dfield, -4 on failure to write hfield (fixed), -5 on failure to write hfield
+(data), and -6 on failure to pad record with NULLs.
+
+Bugs fixed in sample conversion source code and SMBUTIL: Overwriting first
+two bytes of next record when using self-packing storage, SBBSFIDO would
+crash on blank kludge lines, SEEN-BYs weren't converted properly by SBBSFIDO,
+and more.
+
+*** IMPORTANT ***
+Index format changed, added message time field to idxrec_t for fast pointer
+manipulation by (import) date/time stamp. This is SMB format v1.10 and is
+not compatible with the v1.00 format. A conversion program (100TO110.EXE)
+is included with source code for converted any existing message bases.
+
+CHKSMB, a utility for checking message bases for corruption, included with
+SMBLIB.
+
+SMBUTIL and CHKSMB both accept wildcard arguments for processing multiple
+message bases.
+
+idxrec_t.to and idxrec_t.from may contain USER NUMBER instead of CRC of user
+names. This implementation is currently specific to E-mail boxes on Synchronet
+BBS. E-mail from non-local users are stored with a "from" field of 0.
+
+**********************
+03/28/94 Release v1.10
+**********************
+
+Forgot to include this file (oops).
+
+***********************
+03/28/94 Release v1.10a
+***********************
+
+Fixed problem with buffered fread() routine attempting to read into a locked
+regions.
+
+Added smb_stack() function for saving (pushing) currently open message base
+and ability to pop it off later.
+
+Added fix for keeping original sender information in smbmsg_t structure when
+a message has been forwarded.
+
+CHKSMB now correctly support multiple destination messages (without reporting
+missallocated active data blocks) and now reports packable bytes available.
+
+SMBUTIL can now conditionally compress a message base, only if so many K are
+compressable.
+
+Fixed problem with incorrect UTC value.
+
+Added NET_WWIV network type.
+
+**********************
+06/02/94 Release v1.11
+**********************
+
+Created Watcom compatible MAKEFILE for DOS, 32-bit DOS, and 32-bit OS/2
+versions of SMBUTIL.
+
+Enhanced macro definitions in SMBDEFS.H for MALLOC, FREE, and REALLOC to
+support Watcom and other compilers other than Borland. Also added LMALLOC
+and LFREE macros for large allocation (>64k) operations.
+
+Fixed problem with multiple calls to setvbuf() when using Watcom C libraries.
+Memory allocated by setvbuf() would never be released. To work around this
+Watcom C bug, a static buffer, shd_buf[], is now used instead.
+
+Fixed bug in smb_getmsghdr() that would cause it to return -6 when attempting
+to allocate 0 length header fields.
+
+Added LZH.C to SMBLIB for message data compression/decompression.
+
+Removed the 16-bit CRC functions from SMBUTIL and put them in CRC16.C (now part
+of SMBLIB) for easier integration into other applications.
+
+Added Hyper Allocation storage method to specification: smbstatus_t.reserved
+changed to smbstatus_t.attr and SMB_HYPERALLOC bit is set when Hyper Allocation
+storage is used for a message base. This is the only change between v1.10 and 
+v1.20 of the message base format. No other bits in smbstatus_t.attr are 
+currently defined. See the specification for definition of the Hyper Allocation
+storage method.
+
+Changed SMB Storage and Retrieval Protocol chapters in the specification to
+Pseudo-code examples.
+
+Added SMBLIB Storage and Retrieval C example chapters to the specification.
+
+Added field descriptions for message base header record fields and Status Info
+(base header #1) record fields to the specification.
+
+Changed SMBLIB smb_addmsghdr() 'fast' argument to 'storage' to specify the
+storage method to use (either SMB_SELFPACK, SMB_FASTALLOC, or SMB_HYPERALLOC).
+Previous usage (0 for self-pack, 1 for fast) still compatible.
+
+Added smb_hallocdat() and smb_hallochdr() to SMBLIB functions for the Hyper
+Allocation storage method.
+
+Added SMB_STACK_XCHNG operation to smb_stack() function, to exchange the top
+of the stack with the currently open message base.
+
+**********************
+02/14/95 Release v1.20
+**********************
+
+smb_close() was modified in the following ways:
+	Only attempts to close non-NULL file pointers
+	If shd_fp is currently open, calls smb_unlocksmbhdr() before closing
+		(just in case it was left locked by application)
+
+smb_open() was modified in the following ways:
+	Initializes all file pointers to NULL
+	calls smb_close() if any of the files couldn't be opened
+
+smb_locksmbhdr() was modified in the following ways:
+	If lock fails, attempts to unlock the header before next lock
+		attempt (just incase application attempts to lock a locked
+		header without first unlocking it)
+
+smb_lockmsghdr() was modified in the following ways:
+	If lock fails, attempts to unlock the header before next lock
+		attempt (same reason stated above)
+
+CHKSMB (1.21) was modified in the following ways:
+	Tests for valid translations strings in the .SDT files
+	Displays totals for bytes used by header and data blocks, bytes used
+		by deleted messages, and bytes saved by LZH compression
+
+SMBUTIL (1.21) underwent some minor cosmetic changes.
+
+***********************
+03/18/95 Release v1.20a
+***********************
+
+SMBUTIL (1.22) now compiles correctly under Watcom, using correct time zone
+information. SMBUTIL maint() will no longer delete messages if max_age is
+specified in the SMB header and the when_imported time for a message is in the
+future.
+
+Fixed problem in LZH.C that would cause lzh_decode() to generate exception
+errors when compiled with a 32-bit compiler.
+
+CHKSMB (1.22) now supports /E command line switch to display extended
+information about corrupted messages. CHKSMB.C is now Watcom compatible.
+
+Added fflush() calls to all smblib functions that write to the SDT, SHA, or SDA
+files. This eliminates the problem of duplicate data offsets (data blocks for
+multiple messages pointing to the same location) causing corrupted SDT files
+(unsupported translation types reported by CHKSMB).
+
+Added fflush() call after writing to SDT file in SMB_PUT example in SMB.TXT.
+
+Fixed example *2SMB.C files to be compatible with SMBLIB v1.20 smb_create()
+function.
+
+Fixed smb_hallocdat() function prototype to stop redeclaration warnings.
+
+Minor typos in specification fixed.
+
+***********************
+04/24/95 Release v1.20b
+***********************
+
+Added SMB_EMAIL (1<<0) attribute definition for the message base status header
+to specify a local e-mail message base where index "to" and "from" fields are
+stored as user numbers, not CRC-16s (this is the only change between v1.20
+and v1.21 of the SMB format).
+
+Version 1.21 of FIXSMB no longer needs the "/M" switch to correctly fix a
+Synchronet e-mail message base (as long as the SMB_EMAIL status attr is set).
+
+Version 1.23 of SMBUTIL can now import text into a Synchronet e-mail message
+base (as long as the SMB_EMAIL status attr has been set). It will ask for the
+sender and recipient user numbers. Fixed an apparently nasty bug that would
+cause damage to message bases when (I)mporting (check for SMB_HYPERALLOC
+attribute was backwards). Excess baggage in the SMBUTIL source code was also
+removed (no longer supports /L, /F, and /D command line switches). Only
+supports self-packing and hyper-allocated message bases (it will not damage
+fast allocated bases, however). "SMBUTIL M" now correctly handles message bases
+that contain messages that have been pre-flagged for deletion (MSG_DELETE attr
+set).
+
+Changed smb_open(int retry_count) function: if retry_count is 0, then a "fast
+open" method is used which doesn't lock and read the status header to check
+for compatibility and validity of message base.
+
+Added SMBLIB_VERSION definition (string constant) to contain the current
+version and revision (if applicable) of the SMB library. This version number
+may not always be the same as SMB_VERSION (version of the SMB format) or the
+current version of the specification. It may be helpful to include a display
+of this version number somewhere in your application (i.e. printf("SMBLIB v%s"
+,SMBLIB_VERSION);).
+
+Changed smb_stack() example in the Performance Issues chapter to keep two
+message bases always open using SMB_STACK_XCHNG.
+
+Fixed bug in SMBUTIL that would cause an infinite loop when analysing an
+extrememly corrupted HyperAllocated message base.
+
+Fixed bug in smb_stack() function when using SMB_STACK_XCHNG operation. Would
+previously set current message base to an undefined message base, rather than
+the message base on top of the stack (last pushed or exchanged).
+
+CHKSMB v1.22 compiled in the 1.20b release did not support wildcards (wasn't
+linked with WILDARGS.OBJ) - this has been fixed and is the only change in
+CHKSMB v1.23.
+
+**********************
+05/31/95 Release v1.21
+**********************
+
+Add uchar forwarded element to smbmsg_t structure. This variable is initialized
+by the smb_getmsghdr() function. If the message has been forwarded, it will
+be set to non-zero.
+
+Fixed bug in LZH.C which caused lzh_decode() to produce incorrect results
+(usually t's and spaces) when compiled with a 32-bit compiler.
+
+Added HUGE16 and FAR16 macros to SMBDEFS.H for huge and far pointers for
+16-bit compilers only (default pointer type for 32-bit compilers).
+
+Fixed bug in FIXSMB.C that would initialize the SDA file to the wrong length.
+
+Added net type NET_MHS for MHS gateways.
+
+SMBUTIL (1.24) will no longer free deleted headers when maintaining a message
+base if the /A (no analysis) command line switch is used. This speeds up the
+message base maintenance/pack operation significantly by using: SMBUTIL /A MP
+
+***********************
+08/31/95 Release v1.21a
+***********************
+
+All smb_*() functions changed to accept pointers to an smb_t structure. This
+eliminates the use of global variables (making DLLs difficult or impossible
+to program). A pointer is used even if the function doesn't modify the data
+to maintain a consistent API and compatibility with languages that don't
+support the passing of user defined types by value (e.g. Visual Basic).
+
+The smb_t structure contains a retry_time element that defines the maximum
+number of seconds to wait while trying to open a locked message base or record.
+If this element of the passed smb_t variable is 0, a default value of 10
+seconds is used.
+
+Added smb_getmsgtxt() and smb_freemsgtxt() functions to SMBLIB.C (only included
+if SMB_GETMSGTXT is defined).
+
+*******************
+11/18/95 Beta v2.00
+*******************
+
+Bug in smb_getmsgtxt() with message data field lengths less than 2.
+
+**********************
+03/22/96 Release v2.01
+**********************

@@ -1,0 +1,5661 @@
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	                     Synchronet Message Base Specification
+	                                 Version 1.21
+	                               Updated 08/31/95
+	
+	                        Copyright 1995 Digital Dynamics
+	
+	                                  PO Box 501
+	                             Yorba Linda, CA 92686
+	
+	                 Voice: 714-529-6328   BBS: 714-529-9525 V.32/V.32bis
+	                   FAX: 714-529-9721        714-529-9547 V.FC
+	                  Fido: 1:103/705      ftp: netcom.com /pub/sb/sbbs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	Table of Contents
+	=================
+	
+	Introduction.............................................................3
+	Implementation Levels....................................................8
+	Definitions.............................................................10
+	        Acronyms........................................................12
+	        Data Types......................................................13
+	File Formats............................................................18
+	        Index.....................(*.SID)...............................18
+	        Header....................(*.SHD)...............................20
+	        Header Allocation.........(*.SHA)...............................30
+	        Data......................(*.SDT)...............................31
+	        Data Allocation...........(*.SDA)...............................32
+	        CRC History...............(*.SCH)...............................33
+	Header Field Types......................................................34
+	Data Field Types........................................................58
+	Messsage Attributes.....................................................60
+	Translation Types.......................................................61
+	Agent Types.............................................................62
+	Network Types...........................................................63
+	Media Types.............................................................64
+	Message Storage Pseudo Code.............................................67
+	Message Retrieval Pseudo Code...........................................69
+	SMBUTIL.................................................................70
+	CHKSMB..................................................................71
+	FIXSMB..................................................................72
+	SMBLIB (C library)......................................................73
+	        Data Types and Constants..(SMBDEFS.H)...........................74
+	        Global Variables..........(SMBVARS.C)...........................75
+	        Function Prototypes.......(SMBLIB.H)............................76
+	        Library Functions.........(SMBLIB.C)............................77
+	        Miscellaneous.............(CRC*.* and LZH.*)....................84
+	SMBLIB Storage Example..................................................86
+	SMBLIB Retrieval Example................................................89
+	SMBLIB Performance Issues...............................................91
+	Bibliography............................................................95
+	Implementations.........................................................96
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                            2                                Contents
+
+
+	Introduction
+	============
+	
+	Q. What is SMB?
+	
+	A. SMB (Synchronet Message Base) is a technical specification for the storage
+	   format of electronic mail messages. These e-mail messages may all be
+	   contained in one database, or, more commonly, separated into catagorized
+	   databases. These message databases (or message bases) are also referred to
+	   as "sub-boards", "forums", "conferences", and "SIGs". The messages may be
+	   directed to an individual person, sent to a group of individuals, or sent
+	   to everyone who can read messages in that message base. Messages may be
+	   created and read soley at one physical location, or imported from and
+	   exported to a message network that may span continents. Message bases that
+	   are connected to a message network are often called "echoes".
+	
+	
+	Q. Why SMB?
+	
+	A. The Synchronet Message Base is designed to store high volumes of messages
+	   while maintaining optimum search, retrieval, and creation performance.
+	   These messages are not limited to mere text. In addition to text, SMB
+	   defines the storage of digitized sound, MIDI, graphics, fonts, animation,
+	   as well as other multimedia data and triggers for localized multimedia.
+	   SMB thrives on a multi-user environment where messages are being created,
+	   read, modified, and deleted by multiple tasks simultaneously. With the
+	   large message networks of today being the rule, rather than the exception,
+	   and high volumes of messages being imported on a daily, sometimes hourly
+	   basis, creation and deletion speed is of the utmost importance. This is
+	   where SMB really shines. Being extensible enough to handle message formats
+	   from networks of today and tomorrow, and fast enough to import more messages
+	   that humanly readable, the SMB format will more than meet your message
+	   storage needs.
+	
+	
+	Q. Why a specification?
+	
+	A. Message bases are often accessed and modified by a number of different
+	   programs. Often these programs are developed by individuals or companies
+	   other than the original designer of the message base format. This
+	   specification is an attempt to aid developers in creating programs that
+	   access or modify a message base stored in the SMB format.
+	
+	
+	Q. Who can use this specification?
+	
+	A. Anyone that has interest in the Synchronet Message Base format at either
+	   an educational or professional level. Specifically, software developers
+	   interested or currently involved in the development of message readers,
+	   editors, echomail (toss/scan) programs, message transfer agents (MTAs),
+	   network gateways, and bulletin board systems. Much of the information in
+	   this specification is intended for those with preexisting programming
+	   knowledge, so those with little or no programming experience may find it
+	   hard to comprehend.
+
+	_______________________________________________________________________________
+	Synchronet                            3                            Introduction
+
+
+	
+	
+	Q. What does the SMB specification include?
+	
+	A. The text you are reading is part of the SMB specification: a single text
+	   document that defines the storage format of each of the six files of an
+	   SMB format message base and how they are related to each other.
+	
+	   Included with this specification is C source code to be used as an example
+	   to programmers of how to access an SMB format message base and public domain
+	   library functions (SMBLIB) that can be compiled and linked into programs
+	   that access an SMB format message base developed by third parties. An SMB
+	   utility program (SMBUTIL) is also included with C source code as an example
+	   of how to use the SMBLIB functions.
+	
+	
+	Q. Where did the SMB specification come from?
+	
+	A. Digital Dynamics (southern California based software development company)
+	   released "Synchronet Multinode BBS Software Version 1a" in June of 1992 as
+	   one of the first BBS packages to be designed from the ground-up to operate
+	   in a multinode environment with incredible speed and reliability, with a
+	   large suite of multinode specific features and design innovations.
+	
+	   The original message base format was designed with localized messaging and
+	   low volume message networks in mind. By January of 1993, it was clear that
+	   high volume message networks (FidoNet, RelayNet, Usenet, etc.) were the
+	   preference of most BBS users and a new message base format was required to
+	   allow for high volume message storage, improved storage, retrieval, and
+	   maintenance performance, as well as lower storage space requirements.
+	
+	   Rather than introduce another new message format, Digital Dynamics sought
+	   to implement an existing public specification for a format that would meet
+	   current and future message storage needs. More than a few specifications
+	   were seriously considered at one time or another, but after careful
+	   examination, design flaws and lack of extensibility eliminated them from the
+	   long term plans of Digital Dynamics and Synchronet BBS Software. Thus began
+	   the design of the "Synchronet Message Base" (SMB) format.
+	
+	   At the request of many message related program developers, Digital Dynamics
+	   created and released the SMB specification before the release of "Synchronet
+	   Version 2.00" to allow lead-time on developing support programs for the new
+	   format.
+	
+	   Digital Dynamics strongly encourages developers of message related programs
+	   (including software that directly competes with Synchronet or other Digital
+	   Dynamics products) to implement support for SMB. Though this is a public
+	   specification and Digital Dynamics encourages developer suggestions, it will
+	   remain under the sole control of Digital Dynamics unless specifically stated
+	   otherwise in a future revision of this specification.
+	
+	   Digital Dynamics requests that any organizations that wish to adopt or
+	   ratify this specification, in part or whole, notify Digital Dynamics through
+	   any of the contact methods listed at the beginning of this document.
+
+	_______________________________________________________________________________
+	Synchronet                            4                            Introduction
+
+
+	
+	
+	Q. How does SMB store messages?
+	
+	A. Each message base is stored in a set of binary files. This set consists
+	   of between three and six files depending the storage method used. The base
+	   filename (maximum of eight characters under DOS) is the same for all six
+	   files of the same message base and unique amoung the filenames of other
+	   message bases in the same directory. The six files each have a different
+	   three character extension. The first character of the extension is always
+	   the letter 'S' (for SMB), while the second and third characters define the
+	   contents of the file.
+	
+	   Two of the six files associated with each message base are not recreatable
+	   and therefore are the most important when considering data integrity. These
+	   two files are the data file (with a .SDT extension) and header file (.SHD
+	   extension). Both of these files use 256 byte blocks and have associated
+	   block allocation tables (stored in .SDA and .SHA respectively) so that
+	   deleted message blocks may be used by new messages without creating odd
+	   sized unused 'holes' in the files. The block allocation table files (.SDA
+	   and .SHA) can be recreated with the information stored in the header (.SHD)
+	   file. When using Hyper Allocation storage method, the allocation files (.SDA
+	   and .SHA) are not used.
+	
+	   For fast indexing, there is a small fixed length index file (with a .SID
+	   extension). This file allows for the immediate location of message header
+	   records based on sender's name or user number, recipient's name or user
+	   number, subject, message number, or message attributes. This file can be
+	   recreated with the data stored in the header (.SHD) file.
+	
+	   The last file is an optional CRC history (.SCH) file. It contains 32-bit
+	   CRCs of a configurable number of messages imported or created locally. This
+	   is to help eliminate duplicate messages created by user or program error.
+	   The CRC history file can be recreated with the combination of information
+	   stored in the data (.SDT) and header (.SHD) files.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                            5                            Introduction
+
+
+	Q. How fast do messages import into an SMB message base?
+	
+	A. This is a very important question for systems for that import large volumes
+	   of messages. Of course, the answer depends on the storage format which you
+	   are importing from, the average length of messages, the design of the
+	   program which is peforming the import process, as well as the hardware and
+	   system software being used. What's important is that SMB will allow the
+	   fastest import process possible with any given combination of the above
+	   factors.
+	
+	   Since system storage capacity is rarely infinite, neither is the number
+	   of messages which can be stored in a message base. System operators must
+	   define the maximum number of messages to be stored in a message base, the
+	   maximum age of the messages in that message base, or a combination of both.
+	   When using the Self-packing storage method (defined later in this document),
+	   the smaller the number of messages stored in a message base, the faster the
+	   import process. The SMB format is flexible enough to support multiple levels
+	   of import performance based on optimizations for storage space or speed.
+	   Most system operators will almost invariably choose speed over space, but
+	   which choices are available is determined by the importing program. This
+	   specification defines three storage methods, from slowest to fastest:
+	   Self-packing, Fast Allocation, and Hyper Allocation. Other options defined
+	   in this specification may affect storage performance, including duplicate
+	   message checking and message compression/encryption.
+	
+	
+	Q. How much storage is required for an SMB message base?
+	
+	A. The biggest factor in determining storage requirements for a message base
+	   is the maximum number of messages to be stored in the base (defined by the
+	   system operator) and the average size of each message. The minimum required
+	   storage for a message base is 32 bytes plus 532 bytes per message (plus four
+	   bytes per message if duplicate message checking is used and three bytes
+	   per message if Self-packing or Fast Allocation storage methods are used).
+	
+	   The SMB format was originally designed to be "self-packing", meaning purged
+	   (deleted) message header and data blocks will be used automatically by new
+	   messages. Relying solely on self-packing, an SMB format message base will
+	   never "shrink" in size. This is not to say that it will continually "grow"
+	   in size, but that without specific packing procedures, deleted message
+	   blocks may remain unused for extended periods of time, meanwhile using some
+	   amount of storage space that could be recovered using specific packing
+	   procedures. The Fast Allocation and Hyper Allocation storage methods do not
+	   use deleted message blocks for new messages so specific packing procedures
+	   must be used if any messages are deleted and that storage space is to ever
+	   be recovered.
+	
+	   Limiting the maximum age of messages in an SMB message base is another way
+	   to control the storage requirements. While maximum message age definition is
+	   optional, the definition of the maximum number of messages is not.
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                            6                            Introduction
+
+
+	Q. How many messages can be stored per SMB message base?
+	
+	A. Without considering storage limitations or message data lengths greater than
+	   256, the theoretical maximum number of messages that can be stored in a
+	   single SMB message base is 16.7 million. Considering the variable length
+	   nature of message and header data, it is suggested that the system operator
+	   allow no more than 1 million messages per base.
+	
+	   To determine an estimated maximum number of messages for a message base
+	   using the average message data length as a factor, use the following
+	   formula:
+	
+	   4.2 billion divided by the average message length rounded up to be evenly
+	   divisible by 256.
+	
+	   If the average message data length is 1500 bytes, the estimated maximum
+	   number of messages would be 2,734,375 (4.2 billion divided by 1536).
+	
+	   Implementations of this format may be further limited by available system
+	   memory.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                            7                            Introduction
+
+
+	Implementation Levels
+	=====================
+	The SMB format can be implemented to varying degrees between programs without
+	creating compatibilty issues. Rather than have developers specifically state
+	which features they have and have not implemented, we have defined seven levels
+	of implementation (represented by Roman numerals I through VII). For a program
+	or software package to meet an implementation level, it must have all of the
+	features listed for that level and all of those for each level below it. The
+	minimum suggested imlementation is level I. The SMBUTIL program included with
+	this specification is an example of a level I implementation with features
+	from some of the higher implementation levels.
+	
+	Level I
+	-------
+	The minimum suggested level of implementation. Messages contain merely ASCII
+	text displayable on an ANSI terminal. Messages can be added to the message
+	base and if the maximum number of messages is exceeded, messages are removed
+	or marked for deletion.
+	
+	Level II
+	--------
+	The addition of file attachments, multiple index/header entries per message
+	(multiple destinations), multiple text bodies for the separation of message
+	text and tag/origin lines (for example), forwarding, threading, and specific
+	FidoNet kludge header field support makes this level of implementation more
+	realistic for bulletin board system and EchoMail software implementation.
+	
+	Synchronet Multinode BBS Software v2.00 has a level II implementation of this
+	specification.
+	
+	Level III
+	---------
+	This implementation adds support for translation strings defined later in this
+	document for data compression, encryption, escaping, and encoding. This level
+	is still limited to basic ASCII text and ANSI escape sequence entry and
+	retrieval.
+	
+	Synchronet Multinode BBS Software v2.10 has a level III implementation of this
+	specification.
+	
+	Level IV
+	--------
+	The storage and retrieval of embedded and attached images is added in this
+	level of implementation. Supported images are limited to single binary or text
+	data blocks that can be displayed or transferred to the user (automatically,
+	or by request) if their display and translation protocols define specific
+	support for the image type.
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                            8                   Implementation Levels
+
+
+	Level V
+	-------
+	This level of implementation adds support for embedded and attached sound data.
+	This includes digitized sound and MIDI data. Supported sounds are limited to
+	single binary or text data blocks that can be played or transferred to the user
+	(automatically or by request) if their presentation and translation protocols
+	define specific support for the sound type.
+	
+	Level VI
+	--------
+	Localized sound and image data can be triggered by messages stored and
+	retrieved in an implementation of this level.
+	
+	Level VII
+	---------
+	Complete multimedia support is reached in this implementation level with
+	support for embedded and attached animation, sound, and video data.
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                            9                   Implementation Levels
+
+
+	Definitions
+	===========
+	
+	Control Characters
+	------------------
+	When specifying control characters (ASCII 1 through 31), the caret symbol "^"
+	or the abreviation "ctrl-" followed by a character will be used to indicate the
+	value. ^A is equivalent to ASCII 1, ^B ASCII 2, etc. The case of the control
+	character is not significant (i.e. ^z and ^Z are equivalent). The control
+	character ^@ (ASCII 0) will be specified as NULL or 0.
+	
+	
+	Hexadecimal
+	-----------
+	Base sixteen numbering system which includes the digits 0-9 and A-F.
+	Hexadecimal numbers are represented in this document with a prefix of "0x" or
+	"\x" or a suffix of "h". Hexadecimal letter digits are not case sensitive
+	(i.e. the number 0xff is the same as 0xFF).
+	
+	
+	File dump
+	---------
+	When example file dumps are displayed, the format is similar to that of the
+	output from the DOS DEBUG program. With the exception of the ASCII characters,
+	all numbers are in hexadecimal.
+	
+	Offset    Byte values                                          ASCII characters
+	
+	000000    53 4D 42 1A 10 01 20 00   F4 01 00 00 F4 01 00 00    SMB... .ô...ô...
+	000010    20 00 00 00 D0 07 00 00   D0 07 00 00 00 00 00 00     ...Ð...Ð.......
+	
+	
+	Bit values
+	----------
+	Bit (or flag) values are represented in C notation as (1<<x) where x is the bit
+	number. (i.e. bit number 7 (1<<7) is the same as 0x80).
+	
+	
+	Word storage
+	------------
+	All words (16-bit) and double words (32-bit) are stored in Intel 80x86 (little
+	endian) format with bytes stored from low to high (reverse of the Motorola
+	680x0 word storage format).
+	
+	A 16-bit word with the value 1234h is stored as 34h 12h.
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           10                             Definitions
+
+
+	Translation strings
+	-------------------
+	Translation strings (xlat variables) are arrays of words (16-bit) in the order
+	of the original storage translation. The last translation type is followed by a
+	16-bit zero (defined later as XLAT_NONE). If there are no translations, then
+	the first and only element of the array is XLAT_NONE.
+	
+	If multiple translations are used, the translation order must be reversed
+	upon retrieval to obtain the proper data.
+	
+	
+	Local e-mail
+	------------
+	When referring to the local e-mail message base of a Synchronet BBS, we are
+	referring specifically the message base with the name "MAIL" stored in the
+	"DATA" directory (e.g. \SBBS\DATA\MAIL).
+	
+	Messages stored in this message base are different in the following respects:
+	
+	    The SMB_EMAIL status header attribute is set ON
+	    Hyper Allocation storage method is not supported
+	    The "To" and and "From" fields of the message indexes do NOT contain CRCs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           11                             Definitions
+
+
+	Acronyms:
+	========
+	
+	ANSI            American National Standards Institute
+	ASCII           American Standard Code for Information Interchange
+	BBS             Bulletin Board System
+	C               The C programming language as defined by ANSI X3.159-1989
+	CR              Carriage Return character (ASCII 13)
+	CRC             Cyclic Redundancy Check
+	CRC-16          Standard 16-bit CRC using 1021h polynomial (seed 0)
+	CRC-32          Standard 32-bit CRC using EDB88320h polynomial (seed -1)
+	CRLF            Carriage Return character followed by a Line Feed character
+	FSC             FidoNet Standards Commitee (FTS proposal)
+	FTN             FidoNet Technology Network
+	FTS             FidoNet Technical Standard
+	LF              Line Feed character (ASCII 10)
+	QWK             Compressed message packet format for message reading/networking
+	RFC             Request for Comments
+	SMB             Synchronet Message Base
+	UT              Universal Time (formerly called "Greenwhich Mean Time")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           12                  Definition of Acronyms
+
+
+	Data types
+	==========
+	
+	uchar           Unsigned 8-bit value (0 through 255).
+	                C example:
+	
+	                #define uchar unsigned char
+	
+	
+	short           Signed 16-bit value (-32768 through 32767).
+	                "short" is a C keyword indicating "short int".
+	
+	
+	ushort          Unsigned 16-bit value (0 through 65535).
+	                C example:
+	
+	                #define ushort unsigned short
+	
+	
+	ulong           Unsigned 32-bit value (0 through 4294967295).
+	                C example:
+	
+	                #define ulong unsigned long
+	
+	
+	time_t          Unsigned 32-bit value.
+	                Seconds since 00:00 Jan 01 1970 (Unix format).
+	                Used for all time/date storage in SMB as part of the when_t
+	                data type. This time format will support dates through the year
+	                2105.
+	                time_t is defined by ANSI C as a long (signed) which can
+	                limit its date support to the year 2038 depending on the
+	                library routines used.
+	
+	
+	ASCII           String (aka character array) of 8-bit ASCII characters.
+	                Characters with the bit 7 set (80h through FFh) represent
+	                the IBM PC extended ASCII character set. When data or header
+	                fields of this type are stored in the header, a NULL
+	                terminator may or may not be present.
+	                C example:
+	
+	                uchar str[80];
+	
+	
+	ASCIIZ          ASCII string with (non-optional) NULL terminator.
+	                C example:
+	
+	                uchar str[81];
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           13                Definition of Data Types
+
+
+	nulstr          ASCII string immediately terminated by NULL.
+	                C example:
+	
+	                uchar *nulstr="";
+	
+	
+	undef           Data buffer with undefined contents.
+	                C example:
+	
+	                uchar buf[BUF_LEN];
+	
+	when_t          Date/Time stamp including time-zone adjustment information.
+	                C example:
+	
+	                typedef struct {
+	
+	                    time_t  time;   // Time stamp (in local time)
+	                    short   zone;   // Zone constant or Minutes (+/-) from UT
+	
+	                    } when_t;
+	
+	                time:
+	
+	                A time value of 0 is invalid and indicates an uninitialized
+	                time stamp.
+	
+	                Time stamps are always stored in universal time. i.e.
+	                Regardless of what the local time zone is, Jan 1st 1994 00:00
+	                will always be stored as 2D24BD00h.
+	
+	                zone:
+	
+	                If the zone is in the range -720 to +720, it represents the
+	                number of minutes east or west of UT. Values in this range
+	                should only be used for time zones not otherwise represented
+	                here.
+	
+	                If the zone is greater than 720 or less than -720, then the
+	                following bits have special meaning:
+	
+	                (1<<12)         // Non-US time zone     (east of UT)
+	                (1<<13)         // Non-US time zone     (west of UT)
+	                (1<<14)         // U.S. time zone
+	                (1<<15)         // Daylight savings
+	
+	                The lower 12 bits (0 through 11) contain the number of minutes
+	                east or west of UT (not accounting for daylight savings).
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           14                Definition of Data Types
+
+
+	                If the time zone is one specified in the U.S. Uniform Time Act,
+	                the following values represent the zone:
+	
+	                AST 0x40F0      // Atlantic             (-04:00)
+	                EST 0x412C      // Eastern              (-05:00)
+	                CST 0x4168      // Central              (-06:00)
+	                MST 0x41A4      // Mountain             (-07:00)
+	                PST 0x41E0      // Pacific              (-08:00)
+	                YST 0x421C      // Yukon                (-09:00)
+	                HST 0x4258      // Hawaii/Alaska        (-10:00)
+	                BST 0x4294      // Bering               (-11:00)
+	
+	                With bit 15 set, the following values represent the same zone
+	                with the presence of daylight savings:
+	
+	                ADT 0xC0F0      // Atlantic             (-03:00)
+	                EDT 0xC12C      // Eastern              (-04:00)
+	                CDT 0xC168      // Central              (-05:00)
+	                MDT 0xC1A4      // Mountain             (-06:00)
+	                PDT 0xC1E0      // Pacific              (-07:00)
+	                YDT 0xC21C      // Yukon                (-08:00)
+	                HDT 0xC258      // Hawaii/Alaska        (-09:00)
+	                BDT 0xC294      // Bering               (-10:00)
+	
+	                The following non-standard time zone specifications may also be
+	                used:
+	
+	                MID 0x2294      // Midway               (-11:00)
+	                VAN 0x21E0      // Vancouver            (-08:00)
+	                EDM 0x21A4      // Edmonton             (-07:00)
+	                WIN 0x2168      // Winnipeg             (-06:00)
+	                BOG 0x212C      // Bogota               (-05:00)
+	                CAR 0x20F0      // Caracas              (-04:00)
+	                RIO 0x20B4      // Rio de Janeiro       (-03:00)
+	                FER 0x2078      // Fernando de Noronha  (-02:00)
+	                AZO 0x203C      // Azores               (-01:00)
+	                LON 0x1000      // London               (+00:00)
+	                BER 0x103C      // Berlin               (+01:00)
+	                ATH 0x1078      // Athens               (+02:00)
+	                MOS 0x10B4      // Moscow               (+03:00)
+	                DUB 0x10F0      // Dubai                (+04:00)
+	                KAB 0x110E      // Kabul                (+04:30)
+	                KAR 0x112C      // Karachi              (+05:00)
+	                BOM 0x114A      // Bombay               (+05:30)
+	                KAT 0x1159      // Kathmandu            (+05:45)
+	                DHA 0x1168      // Dhaka                (+06:00)
+	                BAN 0x11A4      // Bangkok              (+07:00)
+	                HON 0x11E0      // Hong Kong            (+08:00)
+	                TOK 0x121C      // Tokyo                (+09:00)
+	                SYD 0x1258      // Sydney               (+10:00)
+	                NOU 0x1294      // Noumea               (+11:00)
+	                WEL 0x12D0      // Wellington           (+12:00)
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           15                Definition of Data Types
+
+
+	fidoaddr_t      FidoNet address stored as four ushorts that represent the zone,
+	                network, node, and point (in that order).
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort zone,
+	                           net,
+	                           node,
+	                           point;
+	
+	                    } fidoaddr_t;
+	
+	
+	typestr_t       ASCIIZ string with ushort type prefix.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  type;   // Specifier for type of 'str'
+	                    uchar   str[];  // ASCIIZ filename or other string data
+	
+	                    } typestr_t;
+	
+	
+	mattach_t       File attachment information with type prefix, translation
+	                string, and filename.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  type;   // Attachment type
+	                    ushort  xlat[]; // Translations of data in attachment
+	                    uchar   str[];  // ASCIIZ filename
+	
+	                    } mattach_t;
+	
+	vattach_t       Video file attachment information with type, compression,
+	                translation string, and filename.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  type;   // Attachment type
+	                    ushort  comp;   // Compression method
+	                    ushort  xlat[]; // Translations of data in attachment
+	                    uchar   str[];  // ASCIIZ filename
+	
+	                    } vattach_t;
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           16                Definition of Data Types
+
+
+	mtext_t         Message text with translation string prefix.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  xlat[]; // Translations of text
+	                    uchar   text[]; // Actual text data
+	
+	                    } mtext_t;
+	
+	
+	ftext_t         Formatted message text with translation string prefix and
+	                format type.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  type;   // See Image Types for valid types
+	                    ushort  xlat[]; // Translations of data
+	                    uchar   data[]; // Actual formatted text data
+	
+	                    } ftext_t;
+	
+	
+	membed_t        Embedded data with type prefix, translation string, and ASCIIZ
+	                description.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  type;   // Specifier for type of 'dat'
+	                    ushort  xlat[]; // Translations of embedded data
+	                    uchar   name[]; // ASCIIZ char description of embedded data
+	                    uchar   dat[];  // Binary data
+	
+	                    } membed_t;
+	
+	vembed_t        Embedded video data with type, compression method, translation
+	                string, and ASCIIZ description.
+	                C example:
+	
+	                typedef struct {
+	
+	                    ushort  type;   // Specifier for type of 'dat'
+	                    ushort  comp;   // Compression method
+	                    ushort  xlat[]; // Translations of embedded data
+	                    uchar   name[]; // ASCIIZ char description of embedded data
+	                    uchar   dat[];  // Binary data
+	
+	                    } vembed_t;
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           17                Definition of Data Types
+
+
+	File formats
+	============
+	
+	Index File (*.SID)
+	------------------
+	The index file for each message base contains one record per message in the
+	base. Each record is fixed length using the following format:
+	
+	Index Record:
+	------------
+	C example:
+	
+	typedef struct {
+	
+	    ushort  to;     // 16-bit CRC of recipient name (lower case) or user number
+	    ushort  from;   // 16-bit CRC of sender name (lower case) or user number
+	    ushort  subj;   // 16-bit CRC of title/subject (lower case)
+	    ushort  attr;   // attributes (MSG_PRIVATE, MSG_READ, etc. flags)
+	    ulong   offset; // byte offset of message header in header file
+	    ulong   number; // message serial number (1 based)
+	    time_t  time;   // import date/time stamp (Unix format)
+	
+	    } idxrec_t;
+	
+	
+	Example file dump (16 messages starting with message number 15):
+	---------------------------------------------------------------
+	000000    36 4F 13 07 2A 77 00 00   20 00 00 00 0F 00 00 00    6O..*w.. .......
+	000010    BE 62 76 2C 36 4F 46 0A   7F B2 00 00 20 01 00 00    ¾bv,6OF.².. ...
+	000020    10 00 00 00 C7 29 78 2C   36 4F 70 6F 46 FF 00 00    ....Ç)x,6OpoFÿ..
+	000030    20 02 00 00 11 00 00 00   AD D3 7A 2C 70 6F 13 07     .......­Óz,po..
+	000040    46 FF 00 00 20 03 00 00   12 00 00 00 D6 F8 7F 2C    Fÿ.. .......Öø,
+	000050    36 4F E1 EA E7 E9 00 00   20 04 00 00 13 00 00 00    6Oáêçé.. .......
+	000060    1E 7B 85 2C 37 0D 2E DF   4D 79 00 00 20 05 00 00    .{…,7..ßMy.. ...
+	000070    14 00 00 00 5C E1 A1 2C   90 54 2D 5A 86 62 00 00    ....\á¡,T-Z†b..
+	000080    20 06 00 00 15 00 00 00   39 2E A2 2C 70 6F 1A 8B     .......9.¢,po.‹
+	000090    46 FF 00 00 20 07 00 00   16 00 00 00 D0 7B A8 2C    Fÿ.. .......Ð{¨,
+	0000A0    2E DF 1A 8B 4D 79 00 00   20 08 00 00 17 00 00 00    .ß.‹My.. .......
+	0000B0    FF 7B A8 2C B4 D9 35 7C   23 B1 00 00 20 09 00 00    ÿ{¨,´Ù5|#±.. ...
+	0000C0    18 00 00 00 CE D4 BA 2C   36 4F BC D8 B2 E7 00 00    ....ÎÔº,6O¼Ø²ç..
+	0000D0    20 0A 00 00 19 00 00 00   14 5F C3 2C BA A8 4E B0     ........_Ã,º¨N°
+	0000E0    67 76 00 00 20 0B 00 00   1A 00 00 00 6F 89 C3 2C    gv.. .......o‰Ã,
+	0000F0    36 4F 0C 01 19 9C 00 00   20 0C 00 00 1B 00 00 00    6O...œ.. .......
+	000100    F8 30 C6 2C 36 4F FA 48   0E 55 00 00 20 0D 00 00    ø0Æ,6OúH.U.. ...
+	000110    1C 00 00 00 6A 94 D3 2C   36 4F F1 CE CF A2 00 00    ....j”Ó,6OñÎÏ¢..
+	000120    20 0E 00 00 1D 00 00 00   53 DB D5 2C 8D A6 21 CE     .......SÛÕ,¦!Î
+	000130    F7 AB 00 00 20 0F 00 00   1E 00 00 00 31 29 DC 2C    ÷«.. .......1)Ü,
+	
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           18               Index (*.SID) File Format
+
+
+	Field descriptions:
+	------------------
+	To:
+	The 'To' field is the CRC-16 of the name of the intended recipient agent of
+	this message or the intended recipient's user number. If the CRC is stored, the
+	text must be converted to lower case (A-Z changed to a-z) before the CRC is
+	calculated. If the message is forwarded to another agent, the original or new
+	index record must be changed to contain the CRC-16 of the new recipient name or
+	user number. This field must always contain the recipient user number for local
+	e-mail on a Synchronet BBS. Outbound netmail stored in the Synchronet local
+	e-mail message base will contain 0 in this field.
+	
+	From:
+	This field, similar to the 'To' field, contains the CRC-16 of the name of the
+	sending agent of this message or the sender's user number. If the CRC is
+	stored, the text must be converted to lower case (A-Z changed to a-z) before
+	the CRC is calculated. If the message is forwarded to another agent, the
+	original or new index record must be changed to contain the CRC-16 of the new
+	sender name or user number. If the message was imported into the local e-mail
+	message base on a Synchronet BBS via netmail, this field will contain 0.
+	
+	Subj:
+	The 'Subj' field contains the CRC-16 of the message's subject. The subject
+	must be converted to lower case (A-Z changed to a-z) and all preceeding
+	"re: "'s and "re:"'s removed before calculating the CRC-16.
+	
+	Attr:
+	This ushort is a bit field of the specific attributes for this message.
+	It is a clone of the 'attr' element of the msghdr_t structure.
+	
+	Offset:
+	This ulong is the offset (in bytes) in the header file for this message's
+	header record.
+	
+	Number:
+	This ulong is the serial number of this message. Valid values are 1 through
+	0xffffffff. No two index records in the same message base may have the same
+	message number. All index records must have sequential, but not necessarily
+	consequetive, message numbers.
+	
+	Time:
+	This field is the date/time stamp the message was imported to or posted in
+	the message base. It is a clone of the 'when_imported.time' element of the
+	msghdr_t structure.
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           19               Index (*.SID) File Format
+
+
+	Header File (*.SHD)
+	===================
+	
+	Each SMB header file is made up of two distinct sections: base header records
+	and message header records (usually the bulk of the file).
+	
+	Base Header Records:
+	-------------------
+	Base header records are blocks of data that apply to the entire message base
+	and are of variable length. This specification defines only one base header
+	record, the "Status info" (smbstatus_t) record. This status info record must be
+	the first base header record in the file and must be modified if additional
+	base header records are added.
+	
+	Additional header records allow other developers to store configuration and
+	status information particular to their application needs. It also allows for
+	future header record definitions as part of this specification without causing
+	backward compatibility issues.
+	
+	Each base header record contains a fixed length portion (smbhdr_t) and an
+	optional variable length portion.
+	
+	Whenever a base header record is read or updated (written), it must first
+	be successfully locked and subsequently unlocked.
+	
+	The first base header record (Status Info) is used as a semaphore when writing
+	to the message index (.SID) file and, when using the Hyper Allocation storage
+	method, writing to the message data (.SDT) file. This record must be
+	succesfully locked before writing and subsequently unlocked. This is to insure
+	that multiple applications simultaneously writing to the same message base
+	does result in corrrupted data.
+	
+	
+	Message Header Records:
+	----------------------
+	Following the last base header record is the first message header record. Each
+	header record is stored in one or more 256 byte blocks. There must be exactly
+	one active message header record for every index record in the index file.
+	(Note: This does not include deleted message headers that have not been
+	overwritten by a new message header).
+	
+	Each message header record contains a fixed length portion (msghdr_t), a list
+	of zero or more fixed length data fields (dfield_t), and a list of three or
+	more variable length header fields (hfield_t).
+	
+	The value of the data stored in the zero or more unused bytes of the last
+	header record block have an undefined value, though whenever possible
+	developers should initialize to binary zero for human readability.
+	
+	Whenever a message header record is read or updated (written), it must first
+	be successfully locked and subsequently unlocked.
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           20              Header File (*.SHD) Format
+
+
+	Base Header Record (Fixed Portion):
+	----------------------------------
+	C example:
+	
+	typedef struct {
+	
+	    uchar   id[4];          // text or binary unique hdr ID
+	    ushort  version;        // version number (initially 100h for 1.00)
+	    ushort  length;         // length including this struct
+	
+	    } smbhdr_t;
+	
+	
+	Base Header Record Field Descriptions:
+	-------------------------------------
+	Id:
+	This is a four byte unique ID identifying the type of the base header record.
+	The bytes may contain any value, but printable ASCII characters are preferred.
+	The only ID defined in this specification is "SMB^Z" used by the Status Info
+	base header record.
+	
+	Version:
+	This is a version number of the base header record type. Base header records
+	of different versions may have different formats or contain different
+	information. This is to aid the application in determining if the record
+	is pertinent and if so, to what degree. The Status Info base header record
+	uses this version field to define the version of the format for the entire
+	message base (currently 0x121 for version 1.21).
+	
+	Length:
+	This is entire length in bytes of this header record (including both fixed
+	and variable portions).
+	
+	
+	Base Header #1 (Status info) Record (Variable Portion):
+	------------------------------------------------------
+	C example:
+	
+	typedef struct {
+	
+	    ulong   last_msg;       // last message number posted or imported
+	    ulong   total_msgs;     // total messages currently in message base
+	    ulong   header_offset;  // byte offset to first header record
+	    ulong   max_crcs;       // Maximum number of CRCs to keep in history
+	    ulong   max_msgs;       // Maximum number of messages to keep in base
+	    ushort  max_age;        // Maximum age of messages (days) to keep in base
+	    ushort  attr;           // Attribute bits
+	
+	    } smbstatus_t;
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           21              Header File (*.SHD) Format
+
+
+	Base Header #1 (Status Info) Record (Variable Portion) Field Descriptions:
+	-------------------------------------------------------------------------
+	Last_msg:
+	This is the serial number of the last message imported or posted into this
+	message base. The index, header, and data records for this message may possibly
+	not exist (due to deletion). This field is used for determining the message
+	number to give to a new message being imported or posted into this message
+	base. This field must be updated for every message added to the message base.
+	
+	Total_msgs:
+	This is the total number of active messages currently in the message base.
+	This number should match the number of records in the index (.SID) file
+	and active header records in the header (.SHD) file. This field must be
+	updated whenever a message is added to or removed from the message base.
+	
+	Header_offset:
+	This is the byte offset to the first message header record. It is useful
+	for skipping all the base header records and going directly to the first
+	message header record.
+	
+	Max_crcs:
+	This is the maximum number of message CRCs to store in the CRC history (.SCH)
+	file for duplicate message checking. If this field contains 0, then duplicate
+	message checking is disabled.
+	
+	Max_msgs:
+	This is the preferred maximum number of messages to keep in this message
+	base as specified by the system operator. It is used by maintenance programs
+	that trim the message base down by removing old messages. This field should
+	be ignored by applications importing or posting messages allowing them to
+	exceed this maximum at will.
+	
+	Max_age:
+	This field is the maximum age (in days) of messages to keep in the message
+	base. It is used by maintenance programs to purge out-dated messages from
+	the message base.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           22              Header File (*.SHD) Format
+
+
+	Attr:
+	This is a bit field containing specific attributes (or flags) that may define
+	the way messages are stored or retrieved from the this message base. The
+	following attributes are defined:
+	
+	    SMB_EMAIL       (1<<0)
+	
+	    Indicates the message base is specifically for messages to or from local
+	    users. When this bit is set, the idxrec.to and idxrec.from fields will
+	    contain the user numbers (or 0 for non-user destination/source) instead of
+	    the CRC-16 of the agent name.
+	
+	    SMB_HYPERALLOC  (1<<1)
+	
+	    Indicates the message base uses the Hyper Allocation storage method. This
+	    bit should not be cleared by an application without first deleting all the
+	    messages in the message base. This is due to the fact the Hyper Allocation
+	    is not downward compatible with the Self-packing and Fast Allocation
+	    storage methods.
+	
+	When used with Synchronet BBS software, a message base must NOT have both of
+	the above attributes set. The only message base that should have the SMB_EMAIL
+	attribute set is the DATA\MAIL message base.
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           23              Header File (*.SHD) Format
+
+
+	Base Header #1 (Status info) Record Contents:
+	--------------------------------------------
+	smbhdr.id="SMB\x1a";        // SMB^Z
+	smbhdr.version=0x121;       // v1.21
+	smbhdr.length=sizeof(smbhdr_t)+sizeof(smbstatus_t); smbstatus_t status;
+	
+	
+	Additional Base Headers:
+	-----------------------
+	Additional headers from developers must have initial 8 bytes in smbhdr_t
+	format, length must include size of smbhdr_t, and header_offset of smbstatus_t
+	must be changed to include the size of the additional header(s).
+	
+	
+	Example file dump (base header portion only):
+	--------------------------------------------
+	000000    53 4D 42 1A 20 01 20 00   F4 01 00 00 F4 01 00 00    SMB. . .ô...ô...
+	000010    20 00 00 00 D0 07 00 00   D0 07 00 00 00 00 00 00     ...Ð...Ð.......
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           24              Header File (*.SHD) Format
+
+
+	Message Header Record (Fixed portion):
+	-------------------------------------
+	C example:
+	
+	typedef struct {
+	
+	    uchar   id[4];          // SHD^Z (same for all types and versions)
+	    ushort  type;           // Message type (this is the definition of type 0)
+	    ushort  version;        // Version of type (initially 100h for 1.00)
+	    ushort  length;         // Total length of fixed portion + all fields
+	    ushort  attr;           // Attributes (bit field) (duplicated in SID)
+	    ulong   auxattr;        // Auxillary attributes (bit field)
+	    ulong   netattr;        // Network attributes (bit field)
+	    when_t  when_written;   // Date/Time message was originally created
+	    when_t  when_imported;  // Date/Time message was imported (locally)
+	    ulong   number;         // Message number (unique, not necessarily seq.)
+	    ulong   thread_orig;    // Original message number in thread
+	    ulong   thread_next;    // Next message in thread
+	    ulong   thread_first;   // Number of first reply to this message
+	    uchar   reserved[16];   // 16 reserved bytes for future use
+	    ulong   offset;         // Offset for buffer into data file (0 or mod 256)
+	    ushort  total_dfields;  // Total number of data fields
+	
+	    } msghdr_t;
+	
+	typedef struct {
+	
+	    ushort  type;           // See "Data Field Types" values
+	    ulong   offset;         // Offset into buffer 
+	    ulong   length;         // Length of data field in buffer
+	
+	    } dfield_t;
+	
+	typedef struct {
+	
+	    ushort  type;           // See "Header Field Types" for values
+	    ushort  length;         // Length of buffer
+	    uchar   dat[length];
+	
+	    } hfield_t;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           25              Header File (*.SHD) Format
+
+
+	Example file dump (one header record, both fixed and variable length portions):
+	------------------------------------------------------------------------------
+	000020    53 48 44 1A 00 00 20 01   F5 00 00 00 00 00 00 00    SHD... .õ.......
+	000030    00 00 00 00 46 DB F7 2C   00 00 7D D7 29 2D 00 00    ....FÛ÷,..}×)-..
+	000040    01 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00    ................
+	000050    00 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00    ................
+	000060    00 00 00 00 02 00 00 00   00 00 00 00 4A 01 00 00    ............J...
+	000070    02 00 4A 01 00 00 53 00   00 00 00 00 13 00 4D 61    ..J...S.......Ma
+	000080    72 69 61 6E 6E 65 20 4D   6F 6E 74 67 6F 6D 65 72    rianne Montgomer
+	000090    79 30 00 0C 00 43 61 72   6F 6C 20 47 61 69 73 65    y0...Carol Gaise
+	0000A0    72 60 00 07 00 46 61 72   6E 68 61 6D A4 00 14 00    r`...Farnham¤...
+	0000B0    31 3A 31 33 38 2F 31 30   32 2E 30 20 32 63 66 38    1:138/102.0 2cf8
+	0000C0    30 35 37 36 A5 00 14 00   31 3A 33 34 33 2F 31 30    0576¥...1:343/10
+	0000D0    30 2E 30 20 32 63 66 33   62 39 30 61 A3 00 23 00    0.0 2cf3b90a£.#.
+	0000E0    31 33 38 2F 31 30 32 20   31 20 32 37 30 2F 31 30    138/102 1 270/10
+	0000F0    31 20 32 30 39 2F 32 30   39 20 31 30 33 2F 30 20    1 209/209 103/0 
+	000100    33 35 35 02 00 02 00 02   00 03 00 08 00 01 00 8A    355............Š
+	000110    00 66 00 00 00 00 00 00   00 00 00 00 00 00 00 00    .f..............
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           26              Header File (*.SHD) Format
+
+
+	Contents of example header:
+	--------------------------
+	id                   SHD^Z
+	type                 0000h
+	version              0120h
+	length               245
+	attr                 0000h
+	auxattr              00000000h
+	netattr              00000000h
+	when_written         Sat Nov 27 17:57:10 1993
+	when_imported        Tue Jan 04 15:54:21 1994
+	number               1
+	thread_orig          0
+	thread_next          0
+	thread_first         0
+	reserved[16]         
+	offset               0
+	total_dfields        2
+	
+	dfield[0].type       00h
+	dfield[0].offset     0
+	dfield[0].length     330
+	dfield[1].type       02h
+	dfield[1].offset     330
+	dfield[1].length     83
+	
+	hfield[0].type       00h
+	hfield[0].length     19
+	hfield[0]_dat        Marianne Montgomery
+	hfield[1].type       30h
+	hfield[1].length     12
+	hfield[1]_dat        Carol Gaiser
+	hfield[2].type       60h
+	hfield[2].length     7
+	hfield[2]_dat        Farnham
+	hfield[3].type       A4h
+	hfield[3].length     20
+	hfield[3]_dat        1:138/102.0 2cf80576
+	hfield[4].type       A5h
+	hfield[4].length     20
+	hfield[4]_dat        1:343/100.0 2cf3b90a
+	hfield[5].type       A3h
+	hfield[5].length     35
+	hfield[5]_dat        138/102 1 270/101 209/209 103/0 355
+	hfield[6].type       02h
+	hfield[6].length     2
+	hfield[6]_dat        02 00
+	hfield[7].type       03h
+	hfield[7].length     8
+	hfield[7]_dat        01 00 8A 00 66 00 00 00
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           27              Header File (*.SHD) Format
+
+
+	Fixed Portion Field descriptions:
+	--------------------------------
+	Id:
+	This field (regardless of the header type or version) must always contain the
+	the string "SHD^Z". This is to aid in the restoration of a corrupted header
+	file and give a visual indication of the beginning of a new header record when
+	viewing dumps of the header file.
+	
+	Type:
+	This is the message header type. Only one type is currently defined by this
+	specification (type 0). Any and all future header types will have the first
+	4 fields (10 bytes) in the same format of type 0. This allows other types
+	(with different lengths) to be skipped because the 4th field (length) will
+	always be in the same position.
+	
+	Version:
+	This is the version of this header type. This specification defines version
+	1.21 of message header type 0 (stored as 121h).
+	
+	Length:
+	This is the total length of this message header record (including both fixed
+	and variable length portions, but NOT including unused block space).
+	
+	Attr:
+	This is a bit field (16-bit) containing basic message attributes (flags) for
+	this message. An exact duplicate of this field is stored in the index file as
+	well. They must always match.
+	
+	Auxattr:
+	This is a bit field (32-bit) containing the auxillary attributes (flags) for
+	this message. The attributes stored in this variable are more specific in
+	nature and less critical than those in the Attr field.
+	
+	Netattr:
+	This is a bit field (32-bit) containing the network attributes (flags) for this
+	message. The attributes stored in this variable are related solely to message
+	networking.
+	
+	When_written:
+	This is the date and time when the message was originally created.
+	
+	When_imported:
+	This is the date and time when the message was posted on or imported into the
+	local message system.
+	
+	Number:
+	This is the message's unique serial number (from 1 to FFFFFFFFh). This field
+	is duplicated in the index file. They must always match.
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           28              Header File (*.SHD) Format
+
+
+	Thread_orig:
+	If this message is a reply, then this field contains the number of the original
+	message that was replied to. If this message was not a reply, this field will
+	contain the value 0.
+	
+	Thread_next:
+	If this message is a reply, and there are later replies to that message
+	(the message number contained in the Thread_orig field), then this field will
+	contain the number of the next reply in the chain. If this message is the only
+	reply to the orignal message, this field will contain the value 0.
+	
+	Thread_first:
+	If there are any replies to this message (after it has been posted), this field
+	will contain the number of the first reply to this message. If there are no
+	replies to this message, this field will contain the value 0.
+	
+	Reserved:
+	Unused bytes, reserved for future definition in the message header type 0
+	specification.
+	
+	Offset:
+	The byte offset into the data file, specifying the start of the buffer for
+	all data associated with this message. This value must be either 0 or modula
+	256. When retrieving the actual data portion of data fields, the physical
+	offset into the file will be the offset of the message data buffer (this field)
+	plus the offset of the individual data field (msghdr_t.offset+dfield_t.offset).
+	
+	Total_dfields:
+	This field contains the total number of data fields associated with this
+	message. The value of this field must match the actual number of data fields
+	stored in the header (dfield_t data types following the fixed portion of the
+	message header).
+	
+	
+	Variable Portion Field descriptions:
+	-----------------------------------
+	See the Header Field Type and Data Field Type sections for the descriptions
+	of the values contained in these fields.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           29              Header File (*.SHD) Format
+
+
+	Message Header Block Allocation (*.SHA)
+	=======================================
+	
+	If this message base uses the Hyper Allocation storage method (the
+	SMB_HYPERALLOC bit is set in the smbstatus_t.attr field), then this file is
+	not created or used.
+	
+	This file contains no header or signature data. Each byte (uchar) in the file
+	specifies the allocation state of the corresponding 256 byte block in the
+	header (*.SHD) file. A value of 0 indicates a free header block, and a value of
+	1 indicates an allocated block. Other non-zero values are undefined.
+	
+	This file must always be opened DENY ALL (non-shareable).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           30   Header Allocation File (*.SHA) Format
+
+
+	Message Data (*.SDT)
+	====================
+	
+	This file contains no header or signature data. It contains the text and other
+	embedded data for the messages in a single message base. The data for each
+	message always begins on a 256 byte block boundary. The data in the unused
+	portion of a data block is undefined, but should be initialized to NULL
+	whenever possible.
+	
+	This file must always be opened DENY NONE (shareable).
+	
+	Data fields of type TEXT_BODY and TEXT_TAIL must have all trailing white space
+	and control characters removed (i.e. the last character of the data record
+	must be in the range 21h to FFh). The only exception to this rule, is if the
+	TEXT_BODY is terminated with multiple contiguous CRLFs, only the last CRLF
+	should be removed. A CRLF should always be appended to the text data when it is
+	displayed.
+	
+	When reading from this file, it is a good idea to make sure the message header
+	for the data being read is currently locked (though no single message header
+	should be locked for extended durations of time). This will insure that no
+	other application will write to this portion of the file while it's being
+	read (read from disk, not displayed).
+	
+	When using the Hyper Allocation storage method, the Status Info message base
+	header must be successfully locked before writing to this file and subsequently
+	unlocked.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           31                Data File (*.SDT) Format
+
+
+	Message Data Block Allocation (*.SDA)
+	=====================================
+	
+	If this message base uses the Hyper Allocation storage method (the
+	SMB_HYPERALLOC bit is set in the smbstatus_t.attr field), then this file is
+	not created or used.
+	
+	This file contains no header or signature data. Each word (ushort) in the file
+	specifies the allocation state of the corresponding 256 byte block in the data
+	(*.SDT) file. A value of 0 indicates a free block, and a non-zero value
+	indicates the number of message header records associated with this message
+	data (most often 1). Each block can be used by up to 65,535 header records.
+	
+	This file must always be opened DENY ALL (non-shareable).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           32     Data Allocation File (*.SDA) Format
+
+
+	CRC history for duplicate message checking (*.SCH)
+	==================================================
+	
+	This file is optional and contains no header or signature data. Each long word
+	(ulong) in the file contains a CRC-32 of previously posted/imported messages.
+	These CRCs can be used to check a candidate message for posting/import to be
+	sure the message isn't a duplicate created by human or program error. The
+	maximum number of CRCs to store is defined in the first message base header
+	record (smbstatus_t.max_crcs).
+	
+	The CRC is calculated on the first TEXT_BODY data field before any translations
+	are applied (e.g. encoding, compression, encryption).
+	
+	This file must always be opened DENY ALL (non-shareable).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           33         CRC History File (*.SCH) Format
+
+
+	Header Field Types:
+	==================
+	
+	These are the defined valid values for hfield_t.type:
+	
+	Name     : SENDER
+	Value    : 00h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : Yes
+	Summary  : Name of agent that sent this message
+	
+	If blank (0 length or nulstr), assumed "Anonymous". If multiple SENDER fields
+	exist, then the message has been forwarded and the order of the fields in the
+	record must match the forwarding order (chronologically). When forwarding a
+	message, the original SENDER field should be left intact and new SENDER,
+	FORWARDED, and RECIPIENT fields added to the end of the record.
+	
+	
+	Name     : SENDERAGENT
+	Value    : 01h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : AGENT_PERSON or previous SENDERAGENT if exists
+	Summary  : Type of agent that sent this message
+	
+	If multiple SENDER fields exist, then the message has been forwarded. If any of the
+	forwarding agents is of a type other than AGENT_PERSON, then this field must
+	follow that SENDER field to specify the agent type.
+	
+	Name     : SENDERNETTYPE
+	Value    : 02h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : NET_NONE or previous SENDERNETTYPE if exists
+	Summary  : Type of network message was sent from
+	
+	If multiple SENDERNETADDR fields are included, a SENDERNETTYPE field should be
+	included before each to determine what data type the address is stored in.
+	
+	Name     : SENDERNETADDR
+	Value    : 03h
+	Data     : undef
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous SENDERNETADDR if exists
+	Summary  : Network address for agent that sent this message
+	
+	The SENDERNETTYPE field indicates the data type of this field. If the
+	SENDERNETTYPE is of type NET_INTERNET, the local-part of the Internet
+	address is optional. If the local-part separator character ('@') is omitted,
+	the SENDER field is assumed to be the local-part of the address.
+
+	_______________________________________________________________________________
+	Synchronet                           34                      Header Field Types
+
+
+	
+	Name     : SENDEREXT
+	Value    : 04h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous SENDEREXT if exists
+	Summary  : Extension of sending agent
+	
+	This field is useful for storing the sending agent's extension, when the
+	agent's extension binds more tightly than the agent's name.
+	
+	For example, Synchronet Multinode BBS Software stores local e-mail with the
+	sending and receiving agent's user numbers stored as their respective
+	extensions. This is done so that if a user name changes for some reason,
+	messages will not "disappear" from the user's mail box.
+	
+	If the SMB_EMAIL status header attribute is set, then the "From" field in the
+	index must contain the binary value of this field rather than the CRC-16 of the
+	SENDER (name) field.
+	
+	Name     : SENDERPOS
+	Value    : 05h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous SENDERPOS if exists
+	Summary  : Position of sending agent
+	
+	Primarily for documentary purposes, this field contains the position of the
+	sending agent (i.e. President, Sysop, C.E.O., MIS Director, etc).
+	
+	It can also be useful for getting a message or reply to the intended
+	recipient when the agent name is not located or is unknown, but the position
+	of the agent is known and specified.
+	
+	Name     : SENDERORG
+	Value    : 06h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous SENDERORG if exists
+	Summary  : Organization name of sending agent
+	
+	Primarily for documentary purposes, this field contains the organization to
+	which the sending agent belongs (i.e. Microsoft, Joe's BBS, SoCal User's Group,
+	etc).
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           35                      Header Field Types
+
+
+	Name     : AUTHOR
+	Value    : 10h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Default  : First SENDER
+	Summary  : Name of agent that created this message
+	
+	This field can only be added by the process that originally creates the
+	message. It should not be included if same as first SENDER field. If multiple
+	AUTHOR fields exist, then the message was created by multiple agents and is
+	considered valid. The order of multiple AUTHOR fields in the record is not
+	significant.
+	
+	Name     : AUTHORAGENT
+	Value    : 11h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : SENDERAGENT or previous AUTHORAGENT if exists
+	Summary  : Type of agent that created this message
+	
+	This field can only be added by the process that originally creates the
+	message. It should not be included if same as first SENDERAGENT field. If
+	multiple AUTHOR fields exist, then the message was created by multiple agents
+	and if the agent type for any of the authors is other than AGENT_PERSON, an
+	AUTHORAGENT field must follow to specify the agent type.
+	
+	Name     : AUTHORNETTYPE
+	Value    : 12h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : SENDERNETTYPE or previous AUTHORNETTYPE if exists
+	Summary  : Type of network this author is member of
+	
+	Name     : AUTHORNETADDR
+	Value    : 13h
+	Data     : undef
+	Multiple : Yes, order significant
+	Required : No
+	Default  : SENDERNETADDR or previous AUTHORNETADDR if exists
+	Summary  : Network address of this author
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           36                      Header Field Types
+
+
+	Name     : AUTHOREXT
+	Value    : 14h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : SENDEREXT or previous AUTHOREXT if exists
+	Summary  : Extension of this author
+	
+	Name     : AUTHORPOS
+	Value    : 15h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : SENDERPOS or previous AUTHORPOS if exists
+	Summary  : Position of this author
+	
+	Name     : AUTHORORG
+	Value    : 16h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : SENDERORG or previous AUTHORORG if exists
+	Summary  : Organization this author belongs to
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           37                      Header Field Types
+
+
+	Name     : REPLYTO
+	Value    : 20h
+	Data     : ASCII
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDER
+	Summary  : Name of agent that replies should go to
+	
+	Name     : REPLYTOAGENT
+	Value    : 21h
+	Data     : ushort
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDERAGENT
+	Summary  : Type of agent that replies should go to
+	
+	Name     : REPLYTONETTYPE
+	Value    : 22h
+	Data     : ushort
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDERNETTYPE
+	Summary  : Type of network that replies should go to
+	
+	Name     : REPLYTONETADDR
+	Value    : 23h
+	Data     : undef
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDERNETADDR
+	Summary  : Network address that replies should go to
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           38                      Header Field Types
+
+
+	Name     : REPLYTOEXT
+	Value    : 24h
+	Data     : ASCII
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDEREXT
+	Summary  : Extension of agent that replies should go to
+	
+	Name     : REPLYTOPOS
+	Value    : 25h
+	Data     : ASCII
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDERPOS
+	Summary  : Position of agent that replies should go to
+	
+	Name     : REPLYTOORG
+	Value    : 26h
+	Data     : ASCII
+	Multiple : Yes, but only last is valid
+	Required : No
+	Default  : SENDERORG
+	Summary  : Organization of agent that replies should go to
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           39                      Header Field Types
+
+
+	Name     : RECIPIENT
+	Value    : 30h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : Yes
+	Default  : "All"
+	Summary  : Name of agent to receive this message
+	
+	If multiple RECIPIENT fields exist, the message has been forwarded and for each
+	additional RECIPIENT field (after the initial RECIPIENT), there should be a
+	FORWARDED field. The order of the RECIPIENT fields in the record must match the
+	order in which the message was sent and forwarded (chronologically).
+	
+	Name     : RECIPIENTAGENT
+	Value    : 31h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : AGENT_PERSON or previous RECIPIENTAGENT if exists
+	Summary  : Type of agent to receive this message
+	
+	If multiple RECIPIENT fields exist, the message has been forwarded. If any of
+	the recipient agents are of a type other than AGENT_PERSON, this field must
+	follow the RECIPIENT field to specify the agent type.
+	
+	Name     : RECIPIENTNETTYPE
+	Value    : 32h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : NET_NONE or previous RECIPIENTNETTYPE if exists
+	Summary  : Type of network to receive this message
+	
+	Name     : RECIPIENTNETADDR
+	Value    : 33h
+	Data     : undef
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous RECIPIENTNETADDR if exists
+	Summary  : Address of network to receive this message
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           40                      Header Field Types
+
+
+	Name     : RECIPIENTEXT
+	Value    : 34h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous RECIPIENTEXT if exists
+	Summary  : Extension of agent to receive this message
+	
+	If SMB_EMAIL status header attribute is set, then the "To" field in the index
+	must contain the binary value of this field rather than the CRC-16 of the
+	RECIPIENT (name) field. This is the case specifically with the local e-mail
+	message base on a Synchronet BBS.
+	
+	Name     : RECIPIENTPOS
+	Value    : 35h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous RECIPIENTPOS if exists
+	Summary  : Position of agent to receive this message
+	
+	Name     : RECIPIENTORG
+	Value    : 36h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : Previous RECIPIENTORG if exists
+	Summary  : Type of agent to receive this message
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           41                      Header Field Types
+
+
+	Name     : FORWARDTO
+	Value    : 40h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Name of agent this message is to be forwarded to
+	
+	Name     : FORWARDTOAGENT
+	Value    : 41h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTAGENT or previous FORWARDTOAGENT if exists
+	Summary  : Type of agent this message is to be forwarded to
+	
+	Name     : FORWARDTONETTYPE
+	Value    : 42h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTNETTYPE or previous FORWARDTONETTYPE if exists
+	Summary  : Type of network this message is to be forwarded to
+	
+	Name     : FORWARDTONETADDR
+	Value    : 43h
+	Data     : undef
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTNETADDR or previous FORWARDTONETADDR if exists
+	Summary  : Network address this message is to be forwarded to
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           42                      Header Field Types
+
+
+	Name     : FORWARDTOEXT
+	Value    : 44h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTEXT or previous FORWARDTOEXT if exists
+	Summary  : Extension of agent this message is to be forwarded to
+	
+	Name     : FORWARDTOPOS
+	Value    : 45h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTPOS or previous FORWARDTOPOS if exists
+	Summary  : Position of agent this message is to be forwarded to
+	
+	Name     : FORWARDTOORG
+	Value    : 46h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTORG or previous FORWARDTOORG if exists
+	Summary  : Organization of agent this message is to be forwarded to
+	
+	Name     : FORWARDED
+	Value    : 48h
+	Data     : when_t
+	Multiple : Yes, order significant
+	Required : Yes, if forwarded
+	Summary  : Date/Time this message was forwarded to another agent
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           43                      Header Field Types
+
+
+	Name     : RECEIVEDBY
+	Value    : 50h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : Yes, if receiving agent is other than RECIPIENT
+	Summary  : Name of agent that received this message
+	
+	Name     : RECEIVEDBYAGENT
+	Value    : 51h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTAGENT or previous RECEIVEDBYAGENT if exists
+	Summary  : Type of agent that received this message
+	
+	Name     : RECEIVEDBYNETTYPE
+	Value    : 52h
+	Data     : ushort
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTNETTYPE or previous RECEIVEDBYNETTYPE if exists
+	Summary  : Type of network that received this message
+	
+	Name     : RECEIVEDBYNETADDR
+	Value    : 53h
+	Data     : undef
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTNETADDR or previous RECEIVEDBYNETADDR if exists
+	Summary  : Network address that received this message
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           44                      Header Field Types
+
+
+	Name     : RECEIVEDBYEXT
+	Value    : 54h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTEXT or previous RECEIVEDBYEXT if exists
+	Summary  : Extension of agent that received this message
+	
+	Name     : RECEIVEDBYPOS
+	Value    : 55h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTPOS or previous RECEIVEDBYPOS if exists
+	Summary  : Position of agent that received this message
+	
+	Name     : RECEIVEDBYORG
+	Value    : 56h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Default  : RECIPIENTORG or previous RECEIVEDBYORG if exists
+	Summary  : Organization of agent that received this message
+	
+	Name     : RECEIVED
+	Value    : 58h
+	Data     : when_t
+	Multiple : Yes, order significant
+	Required : Yes, if received
+	Default  : NULL
+	Summary  : Date/Time this message was received
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           45                      Header Field Types
+
+
+	Name     : SUBJECT
+	Value    : 60h
+	Data     : ASCII
+	Multiple : No
+	Required : Yes, but may be blank (0 length or nulstr)
+	Summary  : Subject/title of message
+	
+	Name     : SUMMARY
+	Value    : 61h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Summary  : Summary of message contents, created by AUTHOR
+	
+	Name     : COMMENT
+	Value    : 62h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Comment about this message, created by SENDER
+	
+	This field is useful for adding notes to a message when forwarding to a new
+	recipient.
+	
+	Name     : CARBONCOPY
+	Value    : 63h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : List of agents this message was also sent to
+	
+	This field is optional and only for the use of notifying the recipient of who
+	else received the message.
+	
+	Name     : GROUP
+	Value    : 64h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Name of group of users to receive message on recipient system
+	
+	This field is used when sending to a group name across a network, where the
+	group can be expanded into multiple header records for each agent on the
+	destination system.
+	
+	Name     : EXPIRATION
+	Value    : 65h
+	Data     : when_t
+	Multiple : No
+	Required : No
+	Summary  : Date/Time that this message will expire
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           46                      Header Field Types
+
+
+	Name     : PRIORITY
+	Value    : 66h
+	Data     : ulong
+	Multiple : No
+	Required : No
+	Default  : 0
+	Summary  : Message priority (0 is lowest, FFFFFFFFh is highest)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           47                      Header Field Types
+
+
+	Name     : FILEATTACH
+	Value    : 70h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Name/file specification of attached file(s)
+	
+	Name of attached file(s). Wildcards allowed. MSG_FILEATTACH attribute must be
+	set. If the MSG_FILEATTACH attribute is set but this field is not included,
+	the SUBJECT field is assumed to be the filename(s).
+	
+	Name     : DESTFILE
+	Value    : 71h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Destination name for attached file(s)
+	
+	Wildcards allowed. FILEATTACH field must also be included.
+	
+	Name     : FILEATTACHLIST
+	Value    : 72h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Name of ASCII list of attached filenames
+	
+	Wildcards not allowed in ASCII list filename. Wildcards allowed in ASCII list.
+	MSG_FILEATTACH attribute must be set.
+	
+	Name     : DESTFILELIST
+	Value    : 73h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Name of ASCII list of destination filenames
+	
+	Wildcards not allowed in ASCII list filename. Wildcards allowed in ASCII list.
+	
+	Name     : FILEREQUEST
+	Value    : 74h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Name of requested file
+	
+	Wildcards allowed. MSG_FILEREQUEST attribute must be set
+	
+	Name     : FILEPASSWORD
+	Value    : 75h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Password for FILEREQUEST
+
+	_______________________________________________________________________________
+	Synchronet                           48                      Header Field Types
+
+
+	
+	Name     : FILEREQUESTLIST
+	Value    : 76h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Name of ASCII list of filenames to request
+	
+	Wildcards allowed.
+	
+	Name     : FILEPASSWORDLIST
+	Value    : 77h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Name of ASCII list of passwords for FILEREQUESTLIST
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           49                      Header Field Types
+
+
+	Name     : IMAGEATTACH
+	Value    : 80h
+	Data     : mattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of attached image file for display
+	
+	MSG_FILEATTACH attribute must be set. See Image Types for valid
+	mattach_t.type values.
+	
+	Name     : ANIMATTACH
+	Value    : 81h
+	Data     : mattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of attached graphical animation file for display
+	
+	MSG_FILEATTACH attribute must be set. See Animation Types for valid
+	mattach_t.type values.
+	
+	Name     : FONTATTACH
+	Value    : 82h
+	Data     : mattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of attached font definition file
+	
+	MSG_FILEATTACH attribute must be set. See Font Types for valid mattach_t.type
+	values.
+	
+	Name     : SOUNDATTACH
+	Value    : 83h
+	Data     : mattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of attached sound file for playback
+	
+	MSG_FILEATTACH attribute must be set. See Sound Types for valid mattach_t.type
+	values.
+	
+	Name     : PRESENTATTACH
+	Value    : 84h
+	Data     : mattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of attached presentation definition file
+	
+	MSG_FILEATTACH attribute must be set. See Present Types for valid
+	mattach_t.type values.
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           50                      Header Field Types
+
+
+	Name     : VIDEOATTACH
+	Value    : 85h
+	Data     : vattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of attached interleaved video/sound file
+	
+	MSG_FILEATTACH attribute must be set. See Video Types for valid
+	vattach_t.type values and Video Compression Types for valid vattach_t.comp
+	values.
+	
+	Name     : APPDATAATTACH
+	Value    : 86h
+	Data     : mattach_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Name of attached application data file for process/display
+	
+	MSG_FILEATTACH attribute must be set. See Application Data Types for valid
+	mattach_t.type values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           51                      Header Field Types
+
+
+	Name     : IMAGETRIGGER
+	Value    : 90h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of image file to trigger for display
+	
+	See Image Types for valid typestr_t.type values.
+	
+	Name     : ANIMTRIGGER
+	Value    : 91h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of animation file to trigger for display
+	
+	See Animation Types for valid typestr_t.type values.
+	
+	Name     : FONTTRIGGER
+	Value    : 92h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of font definition file to trigger
+	
+	See Font Types for valid typestr_t.type values.
+	
+	Name     : SOUNDTRIGGER
+	Value    : 93h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of sound file to trigger for playback
+	
+	See Sound Types for valid typestr_t.type values.
+	
+	Name     : PRESENTTRIGGER
+	Value    : 94h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of presentation definition file to trigger
+	
+	See Present Types for valid typestr_t.type values.
+	
+	Name     : VIDEOTRIGGER
+	Value    : 95h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of interleaved video/sound file to trigger
+	
+	See Video Types for valid typestr_t.type values.
+	
+
+	_______________________________________________________________________________
+	Synchronet                           52                      Header Field Types
+
+
+	Name     : APPDATATRIGGER
+	Value    : 96h
+	Data     : typestr_t
+	Multiple : Yes, order significant
+	Required : No
+	Summary  : Type and filename of application data file to trigger
+	
+	See Application Data Types for valid typestr_t.type values.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           53                      Header Field Types
+
+
+	Name     : FIDOCTRL
+	Value    : A0h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Format   : keyword ":" [" "] appdata
+	Summary  : FTS/FSC-compliant control information line
+	
+	Any FidoNet FTS/FSC-compliant control information ("kludge") line that
+	does not have an equivalent representation here. All data not unique to the
+	actual control line, including leading and trailing white space, Ctrl-A (01h)
+	character and terminating CR must be ommited. Defined in FTS-0001.
+	
+	Name     : FIDOAREA
+	Value    : A1h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Summary  : FTN EchoMail conference name.
+	
+	Defined in FTS-0004.
+	
+	Name     : FIDOSEENBY
+	Value    : A2h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Format   : net"/"node [" "[net"/"]node] [...]
+	Summary  : Used to store two-dimensional (net/node) SEEN-BY information
+	
+	Often used in FTN EchoMail environments. Only the actual SEEN-BY data is stored
+	and SEEN-BY: is stripped along with any leading and trailing white space
+	characters. Defined in FTS-0004.
+	
+	Name     : FIDOPATH
+	Value    : A3h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Format   : net"/"node [" "[net"/"]node] [...]
+	Summary  : Used to store two-dimensional (net/node)
+	
+	Defined in FTS-0004. ^aPATH: is stripped along with any leading and trailing
+	white space characters.
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           54                      Header Field Types
+
+
+	Name     : FIDOMSGID
+	Value    : A4h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Format   : origaddr " " serialno
+	Summary  : MSGID field as specified in FTS-0009.
+	
+	Name     : FIDOREPLYID
+	Value    : A5h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Format   : origaddr " " serialno
+	Summary  : REPLY field as specified in FTS-0009.
+	
+	Name     : FIDOPID
+	Value    : A6h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Format   : pID " " version [" "serialno]
+	Summary  : Indentification string of program that created this message
+	
+	Defined FSC-0046. "^aPID:" and any white space is not included.
+	
+	Name     : FIDOFLAGS
+	Value    : A7h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Used to store the FTN FLAGS kludge information
+	
+	Note that all FLAG options that have binary representation in the message
+	header must be removed from the FLAGS string prior to storing it. Only the
+	actual flags option string is stored and ^aFLAGS is stripped along with any
+	leading and trailing white space characters. Defined in FSC-0053.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           55                      Header Field Types
+
+
+	Name     : RFC822HEADER
+	Value    : B0h
+	Data     : ASCII
+	Multiple : Yes, order significant
+	Required : No
+	Format   : field-name ":" [field-body] [CRLF]
+	Summary  : Undefined RFC-822 header field
+	
+	Internet Message storage format, that does not have an equivalent
+	representation here. Folded header fields are allowed. Terminating CRLF may be
+	ommited.
+	
+	Name     : RFC822MSGID
+	Value    : B1h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Format   : "<" addr-spec ">"
+	Summary  : Message-ID field as specified in RFC-822.
+	
+	Name     : RFC822REPLYID
+	Value    : B2h
+	Data     : ASCII
+	Multiple : No
+	Required : No
+	Format   : "<" addr-spec ">"
+	Summary  : In-Reply-To field as specified in RFC-822.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           56                      Header Field Types
+
+
+	Name     : UNKNOWN
+	Value    : F0h
+	Data     : undef
+	Multiple : Yes
+	Required : No
+	Summary  : Undefined header field of undefined type
+	
+	This field is useful for retaining binary header fields (that do not have an
+	equivalent representation here) between message storage formats.
+	
+	Name     : UNKNOWNASCII
+	Value    : F1h
+	Data     : ASCII
+	Multiple : Yes
+	Required : No
+	Summary  : Undefined header field of type ASCII
+	
+	This field is useful for retaining ASCII header fields (that do not have an
+	equivalent representation here) between message storage formats.
+	
+	Name     : UNUSED
+	Value    : FFh
+	Data     : undef
+	Multiple : Yes
+	Required : No
+	Summary  : Unused (deleted) header field
+	
+	The data contained in this header field is of an unknown type and should not be
+	processed.
+	
+	
+	Note:
+	----
+	Specifically, not defined are the values F000h through FFFFh. These values
+	are to be used for user or system defined header fields. Digital Dynamics
+	requests that any developers or organizations that wish to have additional
+	header fields added to this specification notify Digital Dynamics through any
+	of the contact methods listed at the beginning of this document.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           57                      Header Field Types
+
+
+	Data Field Types:
+	================
+	
+	These are the defined valid values for dfield_t.type:
+	
+	
+	Val Name                Data        Description
+	--- ----                ----        -----------
+	00h TEXT_BODY           mtext_t     Displayable text (body of message).
+	                                    Included in duplicate message checking.
+	                                    All terminating white space and control
+	                                    characters are to be truncated from data
+	                                    (except when multiple contiguous CRLFs
+	                                    terminate the text, only the last CRLF
+	                                    is removed).
+	
+	01h TEXT_SOUL           mtext_t     Non-displayed text.
+	                                    Not normally displayed. Not necessarily
+	                                    displayable.
+	                                    Included in duplicate message checking.
+	
+	02h TEXT_TAIL           mtext_t     Displayable text (tag/tear/origin lines,
+	                                    etc).
+	                                    Not included in duplicate message checking.
+	                                    All terminating white space and control
+	                                    characters are to be truncated from data.
+	
+	03h TEXT_WING           mtext_t     Non-displayed text.
+	                                    Not normally displayed. Not necessarily
+	                                    displayable.
+	                                    Not included in duplicate message checking.
+	
+	10h FTEXT_BODY          ftext_t     Formatted equivalent of TEXT_BODY to be
+	                                    displayed in place of TEXT_BODY if format
+	                                    is supported. See Image Types for valid
+	                                    values of ftext_t.type.
+	
+	12h FTEXT_TAIL          ftext_t     Formatted equivalent of TEXT_TAIL to be
+	                                    displayed in place of TEXT_TAIL if format
+	                                    is supported. See Image Types for valid
+	                                    values of ftext_t.type.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           58                        Data Field Types
+
+
+	20h IMAGEEMBED          membed_t    Type and data of embedded raster image file
+	                                    for display.
+	                                    See Image Types for valid membed.type
+	                                    values.
+	
+	21h ANIMEMBED           membed_t    Type and data of embedded graphical
+	                                    animation file for display.
+	                                    See Animation Types for valid membed.type
+	                                    values.
+	
+	22h FONTEMBED           membed_t    Type and data of embedded font definition
+	                                    file. See Font Types for valid
+	                                    membed_t.type values.
+	
+	23h SOUNDEMBED          membed_t    Type and data of embedded sound file for
+	                                    playback.
+	                                    See Sound Types for valid membed_t.type
+	                                    values.
+	
+	24h PRESENTEMBED        membed_t    Type and data of embedded presentation
+	                                    definition file.
+	                                    See Present Types for valid membed_t.type
+	                                    values.
+	
+	25h VIDEOEMBED          vembed_t    Type and data of embedded video/sound file
+	                                    for playback.
+	                                    See Video Types for valid vembed_t.type
+	                                    values.
+	                                    See Video Compression Types for valid
+	                                    vembed_t.comp values.
+	
+	26h APPDATAEMBED        membed_t    Type and data of embedded application data
+	                                    file for process/display.
+	                                    See Application Data Types for valid
+	                                    membed_t.type values.
+	
+	FFh UNUSED              undef       Space allocated for future update/expansion
+	
+	
+	Specifically, not defined are the values F000h through FFFFh. These values
+	are to be used for user or system defined data fields. Digital Dynamics
+	requests that any developers or organizations that wish to have additional
+	data fields added to this specification notify Digital Dynamics through any
+	of the contact methods listed at the beginning of this document.
+	
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           59                        Data Field Types
+
+
+	Message Attributes:
+	------------------
+	
+	These are the bit values for idxrec_t.attr and msghdr_t.attr:
+	
+	MSG_PRIVATE         (1<<0)  // Private
+	MSG_READ            (1<<1)  // Read by addressee
+	MSG_PERMANENT       (1<<2)  // Permanent
+	MSG_LOCKED          (1<<3)  // Msg is locked, no editing possible
+	MSG_DELETE          (1<<4)  // Msg is marked for deletion
+	MSG_ANONYMOUS       (1<<5)  // Anonymous author
+	MSG_KILLREAD        (1<<6)  // Delete message after it has been read
+	MSG_MODERATED       (1<<7)  // This message must be validated before export
+	MSG_VALIDATED       (1<<8)  // This message has been validated by a moderator
+	
+	
+	Auxillary Attributes:
+	--------------------
+	These are the bit values for msghdr_t.auxattr:
+	
+	MSG_FILEREQUEST     (1<<0)  // File request
+	MSG_FILEATTACH      (1<<1)  // File(s) attached to Msg
+	MSG_TRUNCFILE       (1<<2)  // Truncate file(s) when sent
+	MSG_KILLFILE        (1<<3)  // Delete file(s) when sent
+	MSG_RECEIPTREQ      (1<<4)  // Return receipt requested
+	MSG_CONFIRMREQ      (1<<5)  // Confirmation receipt requested
+	MSG_NODISP          (1<<6)  // Msg may not be displayed to user
+	
+	
+	Network Attributes:
+	------------------
+	These are the bit values for msghdr_t.netattr:
+	
+	MSG_LOCAL           (1<<0)  // Msg created locally
+	MSG_INTRANSIT       (1<<1)  // Msg is in-transit
+	MSG_SENT            (1<<2)  // Sent to remote
+	MSG_KILLSENT        (1<<3)  // Kill when sent
+	MSG_ARCHIVESENT     (1<<4)  // Archive when sent
+	MSG_HOLD            (1<<5)  // Hold for pick-up
+	MSG_CRASH           (1<<6)  // Crash
+	MSG_IMMEDIATE       (1<<7)  // Send Msg now, ignore restrictions
+	MSG_DIRECT          (1<<8)  // Send directly to destination
+	MSG_GATE            (1<<9)  // Send via gateway
+	MSG_ORPHAN          (1<<10) // Unknown destination
+	MSG_FPU             (1<<11) // Force pickup
+	MSG_TYPELOCAL       (1<<12) // Msg is for local use only
+	MSG_TYPEECHO        (1<<13) // Msg is for conference distribution
+	MSG_TYPENET         (1<<14) // Msg is direct network mail
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           60                      Message Attributes
+
+
+	Translation Types:
+	-----------------
+	
+	Definition for values of *.xlat[x]:
+	
+	XLAT_NONE           0       // No translation/End of translation list
+	XLAT_LF2CRLF        1       // Expand sole LF to CRLF
+	XLAT_ESCAPED        2       // 7-bit ASCII escaping for ctrl and 8-bit data
+	XLAT_HUFFMAN        3       // Static and adaptive Huffman coding compression
+	XLAT_LZW            4       // LZW (Lempel-Ziv-Welch) encoding for compression
+	                            // Terry Welch, IEEE Computer Vol 17, No 6
+	                            // June 1984, pp 8-19
+	XLAT_LZC            5       // LZC (modified LZW) encoding for compression
+	                            // Unix compress program
+	XLAT_RLE            6       // Run length encoding compression
+	XLAT_IMPLODE        7       // Implode compression (PKZIP v1.x)
+	XLAT_SHRINK         8       // Shrink compression (PKZIP v1.x)
+	XLAT_LZH            9       // LZH dynamic Huffman coding
+	                            // Haruyasu Yoshizaki, LHarc
+	                            // November, 1988
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           61                       Translation Types
+
+
+	Agent Types:
+	-----------
+	
+	AGENT_PERSON        0       // To or from person
+	AGENT_PROCESS       1       // Unknown process, identified by agent name
+	
+	Agent types E000h through EFFFh are reserved for Synchronet process types
+	(defined specifically by Digital Dynamics).
+	
+	Note:
+	----
+	Specifically not defined are agent types F000h through FFFFh. These values
+	are to be used for user or system defined agent types. Digital Dynamics
+	requests that any developers or organizations that wish to have additional
+	agent types added to this specification notify Digital Dynamics through any
+	of the contact methods listed at the beginning of this document.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           62                             Agent Types
+
+
+	Network Types:
+	-------------
+	
+	                            // Net Type             Address Format
+	                            // -----------------------------------
+	NET_NONE            0       // Locally created      none
+	NET_UNKNOWN         1       // Unknown              undef
+	NET_FIDO            2       // FTN network          fidoaddr_t
+	NET_POSTLINK        3       // PostLink network     none
+	NET_QWK             4       // QWK based network    ASCII
+	NET_INTERNET        5       // The Internet         ASCII
+	NET_WWIV            6       // WWIV based network   ulong
+	NET_MHS             7       // MHS network          ASCII
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           63                           Network Types
+
+
+	Media Types:
+	===========
+	
+	Image Types:
+	-----------
+	
+	IMAGE_UNKNOWN       0x00    // Use image signature header to determine format
+	IMAGE_ASC           0x01    // ASCII text/IBM extended ASCII graphics
+	IMAGE_ANS           0x02    // ANSI X3.64 terminal escape sequences
+	IMAGE_AVT           0x03    // AVATAR terminal escape sequences
+	IMAGE_LVI           0x04    // LVI terminal escape sequences
+	IMAGE_GIF           0x05    // Compuserve Graphics Interchange Format (GIF)
+	IMAGE_TIF           0x06    // Tagged Image Format (AKA TIFF)
+	IMAGE_JPG           0x07    // Joint Photographers Electronics Group (JPEG)
+	IMAGE_T16           0x08    // TrueVision 16-bit bitmap (TGA)
+	IMAGE_T24           0x09    // TrueVision 24-bit bitmap (TGA)
+	IMAGE_T32           0x0a    // TrueVision 32-bit bitmpa (TGA)
+	IMAGE_PCX           0x0b    // ZSoft PaintBrush graphics
+	IMAGE_BMP           0x0c    // Windows bitmap
+	IMAGE_RLE           0x0d    // Windows bitmap (compressed)
+	IMAGE_DIB           0x0e    // Display independant bitmap
+	IMAGE_PCD           0x0f    // Kodak PhotoCD
+	IMAGE_G3F           0x10    // Group 3 FAX
+	IMAGE_EPS           0x11    // Ecapsulated PostScript
+	IMAGE_RTF           0x12    // Rich text format
+	IMAGE_RIP           0x13    // Remote Imaging Protocol Script (RIPscrip)
+	IMAGE_NAP           0x14    // NAPLPS
+	IMAGE_CDR           0x15    // Corel Draw!
+	IMAGE_CGM           0x16    // Computer graphics metafile
+	IMAGE_WMF           0x17    // Windows metafile
+	IMAGE_DFX           0x18    // Autodesk AutoCAD
+	IMAGE_IFF           0x19    // Amiga Interchange File Format
+	
+	
+	Animation Types:
+	---------------
+	
+	ANIM_UNKNOWN        0       // Use file signature header to determine format
+	ANIM_FLI            1       // Autodesk animator
+	ANIM_FLC            2       // Autodesk
+	ANIM_GL             3       // Grasprt
+	ANIM_IFF            4       // Amiga Interchange File Format
+	
+	
+	Video Types:
+	-----------
+	
+	VIDEO_UNKNOWN       0       // Use file signature header to determine format
+	VIDEO_QTIME         1       // Apple Quick-time
+	VIDEO_FQTIME        2       // Apple Flattened Quick-time
+	VIDEO_AVI           3       // Windows Auto/Video Interleave
+	VIDEO_ULT           4       // OS/2 Ultimotion
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           64                             Media Types
+
+
+	Video Compression Types:
+	-----------------------
+	
+	VCOMP_UNKNOWN       0       // Use file signature header to determine codec
+	VCOMP_RLE           1       // Apple animation
+	VCOMP_SMC           2       // Apple graphics
+	VCOMP_RPZA          3       // Apple video
+	VCOMP_KLIC          4       // Captain crunch
+	VCOMP_CVID          5       // CinePak
+	VCOMP_RT21          6       // Intel indeo R2
+	VCOMP_IV31          7       // Intel indeo R3
+	VCOMP_YVU9          8       // Intel YVU9
+	VCOMP_JPEG          9       // JPEG
+	VCOMP_MRLE          10      // Microsoft RLE
+	VCOMP_MSVC          11      // Microsoft video 1
+	
+	
+	Font Types:
+	----------
+	
+	FONT_UNKNOWN        0       // Use file signature header to determine format
+	FONT_TTF            1       // Windows TrueType
+	FONT_PFB            2       // PostScript Type 1 Font Binary
+	FONT_PFM            3       // PostScript Type 1 Font Metric
+	FONT_AMIGA          4       // Amiga Bitmapped
+	FONT_AGFA           5       // CompuGraphic Fonts
+	
+	
+	Sound Types:
+	-----------
+	
+	SOUND_UNKNOWN       0       // Use file signature header to determine format
+	SOUND_MOD           1       // MOD format
+	SOUND_VOC           2       // Sound Blaster VOC format
+	SOUND_WAV           3       // Windows 3.1 WAV RIFF format
+	SOUND_MID           4       // MIDI format
+	SOUND_GMID          5       // General MIDI format (standardized patches)
+	SOUND_SMP           6       // Turtle Beach SampleVision format
+	SOUND_SF            7       // IRCAM format
+	SOUND_AU            8       // Sun Microsystems AU format
+	SOUND_IFF           9       // Amiga Interchange File Format
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           65                             Media Types
+
+
+	Application Data Types:
+	----------------------
+	
+	APPDATA_UNKNOWN     0       // Use file signature header to determine format
+	APPDATA_WORDPERFECT 1       // WordPerfect Document
+	APPDATA_WKS         2       // Lotus 123 Worksheet (?)
+	APPDATA_WK1         3       // Lotus 123 Worksheet rev 1
+	APPDATA_WK2         4       // Lotus 123 Worksheet rev 2
+	APPDATA_WK3         5       // Lotus 123 Worksheet rev 3
+	APPDATA_DBF         6       // dBase III data file
+	APPDATA_PDX         7       // Paradox data file
+	APPDATA_EXCEL       8       // Excel data file
+	APPDATA_QUATRO      9       // Borland Quatro Pro file
+	APPDATA_WORD        10      // Microsoft Word
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           66                             Media Types
+
+
+	Message Storage Pseudo Code
+	===========================
+	
+	The following is a "C like" pseudo code listing example of adding a message to
+	an SMB message base. SMBLIB contains C functions to do most of the following
+	operations. We are supplying this pseudo code as a general definition of the
+	order of required operations in writing to the message base. Many details have
+	been left out to simplify the code and to demonstrate only the basic
+	principles.
+	
+	shd = open ( MSGBASE.SHD , READ/WRITE/DENY_NONE )
+	sdt = open ( MSGBASE.SDT , READ/WRITE/DENY_NONE )
+	sid = open ( MSGBASE.SDT , READ/WRITE/DENY_NONE )
+	
+	lock ( shd , smbhdr )
+	read ( shd , smbstatus )
+	
+	if ( smbstatus.attr & SMB_HYPERALLOC )
+	    msg.hdr.offset = filelength ( sdt )
+	
+	else {
+	    number_of_blocks = length_of_message_data / SDT_BLOCK_LEN
+	    if ( length_of_message_data % SDT_BLOCK_LEN )   /* unevenly divisible */
+	        number_of_blocks = number_of_blocks + 1
+	
+	    sda = open ( MSGBASE.SDA , READ/WRITE/DENY_ALL )
+	
+	    if ( fast_allocation_mode )
+	        seek ( sda , END_OF_FILE )
+	
+	    else {
+	        seek ( sda , BEGINNING_OF_FILE )
+	        while ( not end_of_file ( sda ) ) {
+	            read ( sda , allocated , number_of_blocks * 2 )
+	            if ( allocated = 0 ) {
+	                seek_backwards ( sda , number_of_blocks * 2 )
+	                break
+	            }
+	        }
+	    }
+	
+	    msg.hdr.offset = ( current_position ( sda ) / 2 ) * SDT_BLOCK_LEN
+	
+	    allocated = 1
+	
+	    write ( sda , allocated , number_of_blocks * 2 )
+	
+	    close ( sda )
+	}
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           67             Message Storage Pseudo Code
+
+
+	seek ( sdt , msg.hdr.offset )
+	
+	write ( sdt , message_data )
+	
+	if ( smbstatus.attr & SMB_HYPERALLOC )
+	    msg.idx.offset = filelength ( shd )
+	
+	else {
+	    number_of_blocks = length_of_message_header / SHD_BLOCK_LEN
+	    if ( length_of_message_header % SHD_BLOCK_LEN )   /* unevenly divisible */
+	        number_of_blocks = number_of_blocks + 1
+	
+	    sha = open ( MSGBASE.SHA , READ/WRITE/DENY_ALL )
+	
+	    if ( fast_allocation_mode )
+	        seek ( sha , END_OF_FILE )
+	
+	    else {
+	        seek ( sha , BEGINNING_OF_FILE )
+	        while ( not end_of_file ( sha ) ) {
+	            read ( sha , allocated , number_of_blocks )
+	            if ( allocated = 0 ) {
+	                seek_backwards ( sha , number_of_blocks )
+	                break
+	            }
+	        }
+	    }
+	
+	    msg.idx.offset = ( current_position ( sha ) * SHD_BLOCK_LEN )
+	    msg.idx.offset = msg.idx.offset + smbstatus.header_offset
+	
+	    allocated = 1
+	
+	    write ( sha , allocated , number_of_blocks )
+	
+	    close ( sha )
+	}
+	
+	seek ( shd , msg.idx.offset )
+	
+	msg.hdr.number = smbstatus.last_msg+1
+	
+	write ( shd , msg.hdr )
+	
+	smbstatus.total_msgs = smbstatus.total_msgs + 1
+	smbstatus.last_msg = msg.hdr.number
+	
+	write ( shd , smbstatus )
+	
+	write ( sid , msg.idx )
+	
+	unlock ( shd , smbstatus )
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           68             Message Storage Pseudo Code
+
+
+	Message Retrieval Pseudo Code
+	=============================
+	
+	shd = open ( MSGBASE.SHD , READ/WRITE/DENY_NONE )
+	sdt = open ( MSGBASE.SDT , READ/WRITE/DENY_NONE )
+	sid = open ( MSGBASE.SDT , READ/WRITE/DENY_NONE )
+	
+	read ( sid , msg.idx )
+	
+	seek ( shd , msg.idx.offset )
+	
+	lock ( shd , msg.hdr )
+	
+	read ( shd , msg.hdr )
+	
+	seek ( sdt , msg.hdr.offset )
+	
+	read ( sdt , msg.hdr.data_length )
+	
+	unlock ( shd , msg.hdr )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           69           Message Retrieval Pseudo Code
+
+
+	SMBUTIL
+	=======
+	
+	SMBUTIL is a utility that can perform various functions on an SMB message base.
+	The primary purpose of SMBUTIL is as an example to C programmers of how to use
+	the SMBLIB functions to access and modify an SMB message base. The complete C
+	source code for SMBUTIL is included and functions from it can be used or
+	modified by developers at their own discretion. The following files make up
+	SMBUTIL:
+	
+	SMBUTIL.EXE     Compiled and linked for 16-bit DOS (ready to run)
+	SMBUTIL.C       C functions
+	SMBUTIL.H       C definitions and variable prototypes
+	SMBUTIL.WAT     Makefile for Watcom C/C++ (type wmake -f smbutil.wat)
+	SMBUTIL.BOR     Makefile for Borland C/C++ (type make -f smbutil.bor)
+	
+	The usage syntax is as follows:
+	
+	SMBUTIL [/opts] cmd smb_filespec.shd
+	
+	where cmd is one or more of the following:
+	
+	       l[n] = list msgs starting at number n
+	       r[n] = read msgs starting at number n
+	       v[n] = view msg headers starting at number n
+	       k[n] = kill (delete) n msgs
+	       i<f> = import from text file f
+	       s    = display msg base status
+	       c    = change msg base status
+	       m    = maintain msg base - delete old msgs and msgs over max
+	       p[k] = pack msg base (k specifies minimum packable Kbytes)
+	
+	where opts is one or more of the following:
+	
+	       a    = always (force) packing
+	       z<n> = set time zone (n=min +/- from UT or 'EST','EDT','CST',etc)
+	
+	and smb_filespec is the base filename or file specification (wildcards) for the
+	message base. If wildcards are used, the ".SHD" extension must be specified.
+	
+	An example command line:
+	
+	SMBUTIL MP C:\SBBS\DATA\SUBS\*.SHD
+	
+	would maintain and pack all the message bases found in the C:\SBBS\DATA\SUBS
+	directory.
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           70                                 SMBUTIL
+
+
+	CHKSMB
+	======
+	
+	CHKSMB is a utility that performs a comprehensive analysis of a message base
+	to find any possible errors and calculate the number of packable bytes. It does
+	not "fix" a message base if any errors are found, it only reports the specific
+	errors (and exits with a non-zero error level). If any errors are reported,
+	packing the message base with SMBUTIL may rebuild the damaged files. If that
+	doesn't work, then use FIXSMB as a last resort.
+	
+	C source code for CHKSMB is also included as an example to programmers of how
+	to use SMBLIB functions.
+	
+	The usage syntax is as follows:
+	
+	CHKSMB [/opts] smb_filespec.shd
+	
+	where opts is one or more of the following:
+	
+	        q   = quiet mode (no beeps)
+	        s   = stop after an errored message base (for use with wildcards)
+	        p   = pause after an errored message base (wait for key press)
+	        t   = don't check for unsupported translation strings (faster)
+	        e   = display extended information on corrupted messages
+	
+	An example command line:
+	
+	CHKSMB /QP C:\SBBS\DATA\SUBS\*.SHD
+	
+	would check all the message bases in the C:\SBBS\DATA\SUBS directory, without
+	beeping on errors, and pausing after an errored message base.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           71                                  CHKSMB
+
+
+	FIXSMB
+	======
+	
+	FIXSMB is a utility that will rebuild the index and allocation files for a
+	message base. Since the message headers are not necessarily stored
+	sequentially, the order of the messages in the index may be changed when the
+	index is rebuilt. Messages are also re-numbered, so only use this program if
+	the index is corrupted and the messages are extremely important.
+	
+	C source code for FIXSMB is also included as an example to programmers of how
+	to use SMBLIB functions.
+	
+	The usage syntax is as follows:
+	
+	FIXSMB [/M] smb_file
+	
+	An example command line:
+	
+	FIXSMB \SBBS\DATA\MAIL
+	
+	Only use the "/M" command line switch if fixing an older Synchronet e-mail
+	message base (created with SBBS v2.1 or earlier). Once the SMB_EMAIL status
+	attr is set ("SMBUTIL S" will report a status attr of 1), the "/M" is not
+	required.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           72                                  FIXSMB
+
+
+	SMBLIB
+	======
+	
+	SMBLIB is a library of C functions for accessing and storing messages in an
+	SMB format message base. It can eliminate much of the development time for
+	developers that wish to use the library in whole or in part, or use the
+	functions as examples for their own message base function library. The library
+	consists of the following files:
+	
+	SMBDEFS.H       Constant definitions, macros, and data types
+	SMBLIB.H        Library constants and function prototypes
+	SMBLIB.C        Function definitions
+	SMBVARS.C       Global variable definitions (doubles as declaration file)
+	
+	For developers to use this library with their program, they must include the
+	"SMBLIB.H" header file at the top of each C file that uses any of the library
+	functions, global variables, data types, macros, and constants. This can be
+	done by simply adding the following line to each .C file:
+	
+	#include "smblib.h"
+	
+	If SMBLIB.H is included, there is no need to include SMBDEFS.H or SMBVARS.C.
+	
+	To link the library functions and variables with a main program, the files
+	SMBVARS.OBJ and SMBLIB.OBJ must be linked with the main program .OBJ files.
+	If the operating system is DOS, be sure that all .OBJ files are compiled for
+	the same memory model.
+	
+	Example MAKEFILEs for compiling and linking SMBUTIL with Borland C/C++
+	(SMBUTIL.BOR) and Watcom C/C++ (SMBUTIL.WAT) are included.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           73                                  SMBLIB
+
+
+	SMBDEFS.H
+	=========
+	
+	The SMBDEFS.H file contains important constant definitions and data types (also
+	defined in this document). If ever this document and SMBDEFS.H are inconsistent
+	with each other, then SMBDEFS.H is to be considered correct and this document
+	in error. If such a discrepency is found, please notifiy Digital Dynamics so it
+	can be corrected in a future revision of the specification.
+	
+	Most notable of the data types is a structure called smbmsg_t (not defined
+	in this document). It contains the fixed and variable portions of a message's
+	header record as well as convenience pointers to the sender's name
+	(smbmsg_t.to), recipient's name (smbmsg_t.from), network addresses, and more.
+	If multiple SENDER header fields are included (for example), then smbmsg_t.to
+	will point to the last SENDER header field in the header record. Convenience
+	pointers for other data items work in the same fasion if multiple header fields
+	of the same type exist in the header record.
+	
+	Variables of the smbmsg_t data type (and pointers to variables of smbmsg_t
+	type) are used as arguments to many of the SMBLIB functions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           74                               SMBDEFS.H
+
+
+	SMBVARS.C
+	=========
+	
+	The SMBVARS.C file contains definitions of the global variables used by the
+	SMBLIB functions. It is a fairly small file since their are a small number of
+	global variables (by design). This file is used for both definitions and
+	declarations, so no "extern" declarations need to be made in developers source
+	code as long as SMBVARS.C or (preferably) SMBLIB.H is included in the source
+	code.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           75                               SMBVARS.C
+
+
+	SMBLIB.H
+	=======
+	
+	The SMBLIB.H file contains prototypes of all the functions in the SMBLIB.C
+	file. It is necessary to include this file in C source code if any of the
+	SMBLIB functions are used. The following C source line will include this file:
+	
+	#include "smblib.h"
+	
+	and should be placed near the top of all C source files that use SMBLIB
+	functions, variables, constants, or data types.
+	
+	Function prototypes are necessary for compilers to know the correct calling
+	syntax of a function and detect incorrect usage. Prototypes are also useful
+	as a quick reference for programmers as to the correct calling syntax of a
+	specific function.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           76                                SMBLIB.H
+
+
+	SMBLIB.C
+	=======
+	
+	The SMBLIB.C file contains the actual SMBLIB library functions. This source
+	file is not a stand alone program, but instead must be compiled and linked
+	with a main source file to create the executable program.
+	
+	The functions in this file are organized in a logical order, but their order
+	is actually irrelevant to the compiling, linking, and execution of the
+	resulting program.
+	
+	A comment block preceeds each function, explaining what the function does,
+	how the passed parameters are used, and what the return code (if any)
+	indicates. A more detailed explanation of each function is included here:
+	
+	int smb_open(int retry_time)
+	----------------------------
+	The smb_open() function must be called before the message base is accessed
+	(read from or written to). The parameter, retry_time, is the maximum number
+	of seconds to wait while retrying to lock the message base header. If
+	retry_time is 0, then the message base header is not locked or read (this is
+	called "Fast Open" and should only be used when speed is more important than
+	checking for compatibility and validity upon opening). The global variable
+	smb_file must be initialized with the path and base filename of the message
+	base. This function returns 0 on success, 1 if the .SDT file could not be
+	opened, 2 if the .SHD file could not be opened, and 3 if the .SID file could
+	not be opened. If the message base header could not be locked, this function
+	returns -1. If the message base ID is incorrect, it returns -2. And if the
+	message base is of an incompatible version, it returns -3.
+	
+	The errno global variable (standard of most C libraries) will most likely
+	contain the error code for open failure.
+	
+	int smb_open_da(int retry_time)
+	-------------------------------
+	The smb_open_da() function is used to open the data block allocation file for
+	writing messages to a message base. The parameter, retry_time, is the maximum
+	number of seconds to wait while retrying to open the file. This function
+	returns 0 on success. -1 is returned if an open error other than "Access
+	Denied" is returned from the operating system, and the global variable errno
+	will contain the error code. -2 is returned if the retry_time has been
+	reached, and -3 is returned if the file descriptor could not be converted to
+	a stream by the fdopen() function.
+	
+	fclose(sda_fp) should be called immediately after all necessary file access
+	has been completed.
+	
+	This function is not used with the Hyper Allocation storage method.
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           77                                SMBLIB.C
+
+
+	int smb_open_ha(int retry_time)
+	-------------------------------
+	The smb_open_ha() function is used to open the header block allocation file for
+	writing messages to a message base. The parameter, retry_time, is the maximum
+	number of seconds to wait while retrying to open the file. This function
+	returns 0 on success. -1 is returned if an open error other than "Access
+	Denied" is returned from the operating system, and the global variable errno
+	will contain the error code. -2 is returned if the retry_time has been
+	reached, and -3 is returned if the file descriptor could not be converted to
+	a stream by the fdopen() function.
+	
+	fclose(sha_fp) should be called immediately after all necessary file access
+	has been completed.
+	
+	This function is not used with the Hyper Allocation storage method.
+	
+	int smb_create(ulong max_crcs, ulong max_msgs, ushort max_age, ushort attr
+	    ,int retry_time)
+	--------------------------------------------------------------------------
+	The smb_create() function is used to create a new message base or reset an
+	existing message base. The parameters max_crcs, max_msgs, max_age, and attr
+	are used to set the initial status of the message base status header. The
+	parameter, retry_time is the maximum number of seconds to wait while retrying
+	to lock the message base header. This functions returns 0 on success or 1 if
+	the message base header could not be locked.
+	
+	int smb_trunchdr(int retry_time)
+	--------------------------------
+	The smb_trunchdr() function is used to truncate the header file when packing
+	the message base and writing the new header information back to the header
+	file. The parameter, retry_time is the maximum number of seconds to wait while
+	retrying to truncate the header file. Returns 0 on success, -1 if error was
+	other than "Access Denied", or -2 if retry_time reached.
+	
+	int smb_locksmbhdr(int retry_time)
+	----------------------------------
+	The smb_locksmbhdr() function is used to lock the first message base (status)
+	header. The parameter, retry_time is the number of seconds to wait while
+	retrying to lock the header. The smb_unlocksmbhdr() function should always be
+	used to unlock the header after accessing the message base header (usually
+	with smb_getstatus() and/or smb_putstatus()). Returns 0 if successful, -1 if
+	unsuccessful.
+	
+	int smb_unlocksmbhdr()
+	----------------------
+	The smb_unlocksmbhdr() function is used to unlock a previously locked message
+	base header (using smb_lockmsghdr()). Returns 0 on success, non-zero on
+	failure.
+	
+	int smb_getstatus(smbstatus_t *hdr)
+	-----------------------------------
+	The smb_getstatus() function is used to read the status message base header
+	into the hdr structure. Returns 0 on success, 1 on failure.
+
+
+	_______________________________________________________________________________
+	Synchronet                           78                                SMBLIB.C
+
+
+	int smb_putstatus(smbstatus_t hdr)
+	----------------------------------
+	The smb_putstatus() function is used to write the status information to the
+	first message base header. The parameter hdr, contains the status information
+	to be written. Returns 0 on success, 1 on failure.
+	
+	int smb_getmsgidx(smbmsg_t *msg)
+	--------------------------------
+	The smb_getmsgidx() function is used to get the byte offset for a specific
+	message header in the message header file based on the message base index.
+	
+	If msg->hdr.number is non-zero when this function is called, then the index
+	will be searched for this message number. If the message number is found in
+	the index, the msg->idx.offset is set to the byte offset of the message header
+	record in the header file and msg->offset is set to the record offset of the
+	index record in the index file, and the function returns 0. If the message
+	number is not found in the index, the function returns 1.
+	
+	If msg->hdr.number is zero, msg->idx.offset and msg->idx.number are obtained
+	from the index record at record offset msg->offset. If msg->offset is an
+	invalid record offset when this function is called, the function returns 1.
+	Otherwise, the function returns 0.
+	
+	int smb_getlastidx(idxrec_t *idx)
+	---------------------------------
+	Reads the last index record of the currently open message base into the
+	idxrec_t structure pointed to by idx. Returns 0 if successful, -1 if the index
+	is empty or unopened, or -2 if the record can't be read.
+	
+	int smb_getmsghdrlen(smbmsg_t msg)
+	----------------------------------
+	The smb_getmsghdrlen() function is used to calculate the total length of
+	message header msg including both fixed and variable length portions. This
+	function returns the length of the header record in bytes.
+	
+	long smb_getmsgdatlen(smbmsg_t msg)
+	-----------------------------------
+	The smb_getmsgdatlen() function is used to calculate the total length of the
+	data for message msg. This function returns the length of all data fields
+	combined.
+	
+	int smb_lockmsghdr(smbmsg_t msg, int retry_time)
+	------------------------------------------------
+	The smb_lockmsghdr() function is used to lock the header record for message
+	msg. The parameter retry_time is the maximum number of seconds to wait while
+	retrying to lock the header. Returns 0 on success, -1 on failure. The function
+	smb_unlockmsghdr() should immediately be called after accessing the message
+	header (usually with smb_getmsghdr() or smb_putmsghdr()).
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           79                                SMBLIB.C
+
+
+	int smb_getmsghdr(smbmsg_t *msg)
+	--------------------------------
+	The function smb_getmsghdr() is used to read the header record for message
+	msg. msg->idx.offset must be initialized to the byte offset of the header
+	record in the header file before this function is called. The function
+	smb_freemsgmem() must be called to free the memory allocated by this function
+	for the header and data felds. This function returns 0 on success, -1 if
+	the fixed portion of the message header record could not be read, -2 if the
+	message header ID was incorrect, -3 if memory could not be allocated, -4
+	if a data field could not be read, -5 if the fixed length portion of a header
+	field could not be read, -6 if the variable length portion of a header field
+	could not be read, -7 if one or more of the mandatory header fields (SENDER,
+	RECIPIENT, or SUBJECT) are missing, -8 if total_dfields extends beyond the
+	end of the header record, or -9 if incompatible header version.
+	
+	Several convenience pointers in the msg structure are initialized by this
+	function to point to the last occurance of the SENDER (msg->from), RECIPIENT
+	(msg->to), SUBJECT (msg->subj), etc.
+	
+	int smb_unlockmsghdr(smbmsg_t msg)
+	----------------------------------
+	The smb_unlockmsghdr() function is used to unlock a previously locked message
+	header (with smb_lockmsghdr()). This function returns 0 on success, non-zero
+	on failure.
+	
+	int smb_addcrc(ulong max_crcs, ulong crc, int retry_time)
+	---------------------------------------------------------
+	The smb_addcrc() function is used to add a CRC-32 to the CRC history file
+	for a message base, automatically checking for duplicates. The parameter
+	max_crcs should be the max_crcs defined in the status header of the message
+	base. The parameter crc, is the CRC-32 of the TEXT_BODY and TEXT_SOUL data
+	fields for the message. The parameter retry_time is the maximum number of
+	seconds to wait when retrying to open the CRC history file.
+	
+	This function returns -1 if there was an open error, -2 if the retry_time
+	was reached, -3 if there was a memory allocation error, 1 if the CRC already
+	exists in the CRC history file (indicating a duplicate message), or 0 on
+	success (and no duplicate).
+	
+	int smb_hfield(smbmsg_t *msg, ushort type, ushort length, void *data)
+	---------------------------------------------------------------------
+	The smb_hfield() function is used to add a header field to the structure msg.
+	The parameters type, length, and data, must be specified according to the
+	header field values listed in this specification. This function returns 0
+	on success, non-zero on memory allocation error. The function smb_freemsgmem()
+	must be called to free the memory allocated by this function.
+	
+	int smb_dfield(smbmsg_t *msg, ushort type, ulong length)
+	--------------------------------------------------------
+	The smb_dfield() function is used to add a data field to the structure msg.
+	The parameters type and length must be specified according to the data field
+	values listed in this specification. This function returns 0 on success,
+	non-zero on memory allocation error. The function smb_freemsgmem() must be
+	called to free the memory allocated by this function.
+
+	_______________________________________________________________________________
+	Synchronet                           80                                SMBLIB.C
+
+
+	int smb_addmsghdr(smbmsg_t *msg,smbstatus_t *status,int storage,int retry_time)
+	-------------------------------------------------------------------------------
+	The smb_addmsghdr() function is used to add a new message header to the message
+	header file and update the index file. The msg and status structures are
+	updated to reflect the new total messages, last message number, etc. The
+	storage parameter is used to indicate the storage method to use (either
+	SMB_SELFPACK, SMB_FASTALLOC, or SMB_HYPERALLOC). If the storage type is
+	SMB_SELFPACK, the header block allocation file will be searched for unused
+	block(s) to store this header. If the storage type is SMB_FASTALLOC or
+	SMB_HYPERALLOC, the header is stored at the end of the header file. Returns 0
+	on success, non-zero on failure. The parameter retry_time is the maximum number
+	of seconds to wait while retrying to lock and open files.
+	
+	int smb_putmsg(smbmsg_t msg)
+	----------------------------
+	The smb_putmsg() function calls both the smb_putmsghdr() and smb_putmsgidx()
+	functions to write the header and index elements of a message to the
+	appropriate files. Returns 0 on success, non-zero on failure.
+	
+	int smb_putmsgidx(smbmsg_t msg)
+	-------------------------------
+	The smb_putmsgidx() function is used to store a message index in the message
+	index file. The message index can be for a new message or an existing
+	message. Returns 0 on success, non-zero on failure.
+	
+	int smb_putmsghdr(smbmsg_t msg)
+	-------------------------------
+	The smb_putmsghdr() function is used to store a message header in the message
+	header file. The message header can be for a new message or an existing
+	message. Returns 0 on success, non-zero on failure.
+	
+	void smb_freemsgmem(smbmsg_t msg)
+	---------------------------------
+	Frees allocated memory for the header and data fields in the msg structure.
+	This function must be called to free the memory allocated by the functions
+	smb_hfield(), smb_dfield(), and smb_getmsghdr().
+	
+	long smb_hdrblocks(ulong length)
+	--------------------------------
+	The smb_hdrblocks() function is used to calculate the number of blocks
+	required to store a message header of length size (in bytes). This function
+	returns the number of blocks required.
+	
+	long smb_datblocks(ulong length)
+	--------------------------------
+	The smb_datblocks() function is used to calculate the number of blocks
+	required to store message data of length size (in byte). This function returns
+	the number of blocks required.
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           81                                SMBLIB.C
+
+
+	long smb_allochdr(ulong length)
+	-------------------------------
+	The smb_allochdr() function is used to search for free blocks to store a
+	message header of length bytes and mark the free blocks as allocated in the
+	header allocation file. This function returns the byte offset to the header
+	record or a negative number on error. The function smb_open_ha() should be
+	called prior to calling this function and fclose(sha_fp) should be called
+	after. The function is called from smb_addmsghdr(), so you probably have no
+	need to call this function directly.
+	
+	long smb_fallochdr(ulong length)
+	--------------------------------
+	The smb_fallochdr() function works exactly the same as the smb_allochdr()
+	function except it is much faster because the header allocation file is not
+	searched for free blocks. The function is called from smb_addmsghdr(), so you
+	probably have no need to call this function directly.
+	
+	long smb_hallochdr(ulong header_offset)
+	---------------------------------------
+	This smb_hallochdr() functions works exactly the same as the smb_fallochdr()
+	function except the status.header_offset is passed as the argument and the
+	header allocation (.SHA) file is not updated so smb_open_ha() need not be
+	called. The function is called from smb_addmsghdr(), so you probably have no
+	need to call this function directly.
+	
+	long smb_allocdat(ulong length, ushort headers)
+	-----------------------------------------------
+	The smb_allocdat() function is used to search for free blocks to store length
+	amount of data for a message. The parameter headers, indicates the number of
+	message headers that are associated with this data. Normally, the headers
+	parameter will be 1, unless this message is part of a mass mailing. The offset
+	to the allocated data blocks is returned, or a negative value on error. The
+	function smb_open_da() should be called prior to calling this function and
+	fclose(sda_fp) should be called after.
+	
+	long smb_fallocdat(ulong length, ushort headers)
+	------------------------------------------------
+	The smb_fallocdat() function works exactly the same as the smb_allocdat()
+	function except it is much faster because the data allocation file is not
+	searched for free blocks.
+	
+	long smb_hallocdat()
+	--------------------
+	The smb_hallocdat() function works exactly the same as the smb_hallocdat()
+	function except no argument is passed and the data allocation file (.SDA) is
+	not updated so smb_open_da() need not be called.
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           82                                SMBLIB.C
+
+
+	int smb_incdat(ulong offset, ulong length, ushort headers)
+	----------------------------------------------------------
+	The smb_incdat() function is used to increment the header counter in the data
+	allocation file for the data starting at the byte offset and length size in
+	bytes. The parameter headers, indicates the number of headers to add to the
+	current allocation value in the data allocation file. Returns 0 on success,
+	non-zero on failure.
+	
+	int smb_freemsg(smbmsg_t msg, smbstatus_t status)
+	-------------------------------------------------
+	The smb_freemsg() function is used to free the disk space allocated for the
+	header and data fields of the message msg. Returns 0 on success, non-zero on
+	failure. The parameter, status, must be the current status from the message
+	base header for this message base.
+	
+	int smb_freemsgdat(ulong offset, ulong length, ushort headers)
+	--------------------------------------------------------------
+	The smb_freemsgdat() function is used to decrement the data block allocation
+	records in the data allocation file associated with the data in the data file
+	by the value of the headers parameter (normally 1). The parameter offset
+	indicates the byte offset to the beginning of the message data in the data
+	file and the parameter length is the total length of the message data.
+	Returns 0 on success, non-zero on failure.
+	
+	int smb_freemsghdr(ulong offset, ulong length)
+	----------------------------------------------
+	The smb_freemsghdr() function is used to set the header block allocation
+	records in the header allocation file to 0 (indicated non-allocated block).
+	The parameter offset indicates the byte offset to the beginning of the header
+	record being freed and the parameter length indicates the total length of the
+	header record. Returns 0 on success, non-zero on failure.
+	
+	int smb_stack(int op)
+	---------------------
+	The smb_stack() function is used to save and restore message base information
+	so that multiple message bases can be open simultaneously. The stack can
+	save up to 4 message bases (allowing 5 simultaneously open message bases).
+	The stack is a "last in, first out" storage area for open message bases.
+	If the op parameter is SMB_STACK_PUSH, smb_stack() will save (push) the current
+	message base onto the stack. Calling smb_stack(SMB_STACK_POP) will restore
+	(pop) the most recently pushed message base off the stack. Calling
+	smb_stack(SMB_STACK_XCHNG) will exchange the most recently pushed message base
+	and the current message base (replacing the top of the stack with the current
+	message base).
+	
+	void smb_close()
+	----------------
+	Closes the header, data, and index files for the currently open message base.
+	
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           83                                SMBLIB.C
+
+
+	Miscellaneous SMBLIB Files
+	==========================
+	
+	CRC32.H         C header file for CRC-32 calculations
+	-----------------------------------------------------
+	This file contains a static 32-bit CRC table (crc32tbl[]) and a macro (ucrc32)
+	that uses this table to calculate 32-bit CRCs one byte at a time.
+	
+	Example:
+	
+	    ulong crc=0xffffffff;
+	
+	for(i=0;i<length;i++)
+	    crc=ucrc32(buf[i],crc);
+	crc=~crc;
+	
+	
+	CRC16.C         C functions for 16-bit CRC calculations
+	-------------------------------------------------------
+	This file contains a function (ucrc16), to calculate 16-bit CRCs one byte at a
+	time and a function (crc16) that uses the ucrc16() function to calculate the
+	16-bit CRC of an ASCIIZ character string.
+	
+	Example:
+	
+	    ushort crc;
+	
+	crc=crc16("Text");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           84              Miscellaneous SMBLIB Files
+
+
+	LZH.H           Function prototypes for LZH.C
+	---------------------------------------------
+	This file contains function prototypes for the two most important functions
+	in LZH.C, lzh_encode() and lzh_decode().
+	
+	Example:
+	
+	    uchar str[256],lzh[512];
+	    long length;
+	
+	strcpy(str,"This is a string of text");
+	length=lzh_encode(str,strlen(str),lzh);
+	lzh_decode(lzh,length,str);
+	
+	
+	LZH.C           C functions for LZH encoding (compression/decompression)
+	------------------------------------------------------------------------
+	This file contains the functions for encoding and decoding LZH compressed
+	data. If the macro LZH_DYNAMIC_BUF is defined when this file is compiled,
+	temporary buffers will be dynamically allocated as opposed to static. This
+	may be slower than the static buffer method, but frees the allocated memory
+	after encoding or decoding. If free memory for your application is an issue,
+	then define this macro when compiling this file.
+	
+	Example (Borland C):
+	
+	bcc -c -DLZH_DYNAMIC_BUF lzh
+	
+	Example (Watcom C):
+	
+	wcc -dLZH_DYNAMIC_BUF lzh
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           85              Miscellaneous SMBLIB Files
+
+
+	SMBLIB Storage Example
+	======================
+	
+	#include "smblib.h"
+	#include "crc16.c"
+	
+	int main(void)
+	{
+	    char    str[256]                        // General purpose string
+	           ,*msg_text="Hello, world!"       // Message text
+	           ,nul_buf[SDT_BLOCK_LEN]={0}      // NULL initialized buffer
+	           ;
+	    int     i                               // General purpose integer
+	           ,storage=SMB_SELFPACK            // Default storage method
+	           ,retry=10                        // Retry for opening/locking files
+	           ;
+	    ushort  max_age=0                       // Default maximum age of messages
+	           ,xlat=XLAT_NONE                  // Translation string
+	           ,tzone=PST                       // Time zone
+	           ,copies=1                        // Number of copies of this msg
+	           ;
+	    ulong   max_msgs=500                    // Default max number of msgs
+	           ,max_crcs=0                      // Default max crcs
+	           ,length                          // Length of msg text
+	           ,offset                          // Offset to msg text in data file
+	           ;
+	    smbmsg_t    msg;                        // Message structure
+	    smbstatus_t status;                     // Message base status record
+	
+	strcpy(smb_file,"MSGBASE");                 // We'll use "MSGBASE" for the name
+	if((i=smb_open(retry))!=0) {                // Can't open!?!
+	    printf("smb_open returned %d\n",i);
+	    return(1); }
+	
+	if(!filelength(fileno(shd_fp)))             // Message base not created yet
+	    smb_create(max_crcs                     // Create with default settings
+	              ,max_msgs
+	              ,max_age
+	              ,storage==SMB_HYPERALLOC
+	                    ? SMB_HYPERALLOC : 0    // SMB_EMAIL if this was e-mail
+	              ,retry
+	              );
+	
+	if((i=smb_locksmbhdr(retry))!=0) {          // Can't lock status base header
+	    printf("smb_locksmbhdr returned %d\n",i);
+	    smb_close();
+	    return(1); }
+	
+	if((i=smb_getstatus(&status))!=0) {         // Can't read status base header
+	    smb_unlocksmbhdr();
+	    smb_close();
+	    printf("smb_getstatus returned %d\n",i);
+	    return(1); }
+
+
+	_______________________________________________________________________________
+	Synchronet                           86                  SMBLIB Storage Example
+
+
+	if(status.attr&SMB_HYPERALLOC)
+	    storage=SMB_HYPERALLOC;
+	else
+	    storage=SMB_SELFPACK;
+	
+	length=strlen(msg_text);                    // Get length of message
+	length+=sizeof(xlat);                       // Add length of xlat string
+	
+	if(storage==SMB_HYPERALLOC)                 // Allocate space for message text
+	    offset=smb_hallocdat();
+	else {
+	    if((i=smb_open_da(retry))!=0) {
+	        smb_unlocksmbhdr();
+	        printf("smb_open_da returned %d\n",i);
+	        smb_close();
+	        return(1); }
+	    if(storage==SMB_FASTALLOC)
+	        offset=smb_fallocdat(length,copies);
+	    else
+	        offset=smb_allocdat(length,copies);
+	    fclose(sda_fp); }
+	
+	fseek(sdt_fp,offset,SEEK_SET);              // Seek to beginning of data block
+	fwrite(&xlat,sizeof(xlat),1,sdt_fp);        // Write xlat string
+	fwrite(msg_text,strlen(msg_text),1,sdt_fp); // Write message text
+	fwrite(nul_buf,SDT_BLOCK_LEN-length         // Write NULLs out to end of block
+	    ,1,sdt_fp);
+	fflush(sdt_fp);                             // Flush output buffer
+	smb_unlocksmbhdr();                         // Unlock status base header
+	
+	memset(&msg,0,sizeof(smbmsg_t));            // Initialize header to NULL
+	memcpy(msg.hdr.id,"SHD\x1a",4);             // Always set to SHD^Z
+	msg.hdr.version=SMB_VERSION;
+	msg.hdr.when_written.time=time(NULL);
+	msg.hdr.when_written.zone=tzone;
+	msg.hdr.when_imported.time=time(NULL);
+	msg.hdr.when_imported.zone=tzone;
+	msg.hdr.offset=offset;
+	
+	strcpy(str,"All");                          // Send message to "All"
+	if((i=smb_hfield(&msg,RECIPIENT,strlen(str),str))!=0) {
+	    printf("smb_hfield returned %d\n",i);
+	    smb_freemsgdat(offset,length,copies);
+	    smb_close();
+	    return(1); }
+	strlwr(str);                                // If this were e-mail, idx.to
+	msg.idx.to=crc16(str);                      // would be the "to" user number
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           87                  SMBLIB Storage Example
+
+
+	strcpy(str,"Sysop");                        // Send message from "Sysop"
+	if((i=smb_hfield(&msg,SENDER,strlen(str),str))!=0) {
+	    printf("smb_hfield returned %d\n",i);
+	    smb_freemsgdat(offset,length,copies);
+	    smb_freemsgmem(msg);
+	    smb_close();
+	    return(1); }
+	strlwr(str);                                // If this were e-mail, idx.from
+	msg.idx.from=crc16(str);                    // would be the "from" user number
+	
+	strcpy(str,"This is a test");               // Set the message subject/title
+	if((i=smb_hfield(&msg,SUBJECT,strlen(str),str))!=0) {
+	    printf("smb_hfield returned %d\n",i);
+	    smb_freemsgdat(offset,length,copies);
+	    smb_freemsgmem(msg);
+	    smb_close();
+	    return(1); }
+	strlwr(str);
+	msg.idx.subj=crc16(str);
+	
+	if((i=smb_dfield(&msg,TEXT_BODY,length))!=0) {
+	    printf("smb_dfield returned %d\n",i);
+	    smb_freemsgdat(offset,length,copies);
+	    smb_freemsgmem(msg);
+	    smb_close();
+	    return(1); }
+	
+	if((i=smb_addmsghdr(&msg,&status,storage,retry))!=0) {
+	    printf("smb_addmsghdr returned %d\n",i);
+	    smb_freemsgdat(offset,length,copies);
+	    smb_freemsgmem(msg);
+	    smb_close();
+	    return(1); }
+	
+	smb_freemsgmem(msg);                        // Unnecessary if exiting main()
+	smb_close();                                // Unnecessary if exiting main()
+	return(0);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           88                  SMBLIB Storage Example
+
+
+	SMBLIB Retrieval Example
+	========================
+	
+	#include "smblib.h"
+	
+	int main(void)
+	{
+	    char        ch;                         // General purpose character
+	    int         i,                          // General purpose integer
+	                retry=10;                   // Retry for opening/locking files
+	    ushort      xlat;                       // Translation string
+	    ulong       l;                          // General purpose long integer
+	    smbmsg_t    msg;                        // Message structure
+	
+	strcpy(smb_file,"MSGBASE");                 // We'll use "MSGBASE" for the name
+	if((i=smb_open(retry))!=0) {                // Can't open!?!
+	    printf("smb_open returned %d\n",i);
+	    return(1); }
+	
+	if(!filelength(fileno(shd_fp))) {           // Message base not created yet
+	    printf("Empty\n");
+	    smb_close();
+	    return(0); }
+	
+	for(msg.offset=0;!ferror(sid_fp);msg.offset++) {
+	
+	    fseek(sid_fp,msg.offset*sizeof(idxrec_t),SEEK_SET);
+	    if(!fread(&msg.idx,1,sizeof(idxrec_t),sid_fp))
+	        break;
+	
+	    if((i=smb_lockmsghdr(msg,retry))!=0) {
+	        printf("smb_lockmsghdr returned %d\n",i);
+	        break; }
+	    if((i=smb_getmsghdr(&msg))!=0) {
+	        smb_unlockmsghdr(msg);
+	        printf("smb_getmsghdr returned %d\n",i);
+	        break; }
+	    if((i=smb_unlockmsghdr(msg))!=0) {
+	        smb_freemsgmem(msg);
+	        printf("smb_unlockmsghdr returned %d\n",i);
+	        break; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           89                SMBLIB Retrieval Example
+
+
+	    printf("Subj : %s\n",msg.subj);
+	    printf("To   : %s\n",msg.to);
+	    printf("From : %s\n",msg.from);
+	    printf("Date : %s\n",ctime((time_t *)&msg.hdr.when_written.time));
+	
+	    for(i=0;i<msg.hdr.total_dfields;i++)
+	        switch(msg.dfield[i].type) {
+	            case TEXT_BODY:             // Only show BODY and TAIL data fields
+	            case TEXT_TAIL:
+	                fseek(sdt_fp,msg.hdr.offset+msg.dfield[i].offset
+	                    ,SEEK_SET);
+	                fread(&xlat,sizeof(xlat),1,sdt_fp);
+	                if(xlat!=XLAT_NONE)     // No translations supported
+	                    continue;
+	                for(l=sizeof(xlat);l<msg.dfield[i].length;l++) {
+	                    ch=fgetc(sdt_fp);
+	                    if(ch)
+	                        putchar(ch); }
+	                printf("\n");
+	                break; }
+	    printf("\n");
+	
+	    smb_freemsgmem(msg); }          // Free memory allocated by smb_getmsghdr()
+	
+	smb_close();
+	return(0);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           90                SMBLIB Retrieval Example
+
+
+	SMBLIB Performance Issues
+	=========================
+	
+	Since importing messages is the usually the most time consuming task likely
+	undertaken by an SMB application, it is also the most susceptable to design
+	issues that effect performance.
+	
+	Opening and Closing
+	-------------------
+	When importing multiple messages for a single message base, it appears logical
+	to open the message base, import all the messages, then close it. This indeed
+	is preferred over opening and closing the message base for each message.
+	
+	When importing multiple messages for possibly non-consecutive message bases,
+	developers may eaily make the mistake of opening and closing the message base
+	for each message. This is not necessary and can considerably hinder the
+	import performance. The easiest solution is to only close the message base and
+	open a new one if the next message to be imported is not for the same message
+	base as the previously imported message. Example:
+	
+	smb_file[0]=0;
+	for(i=0;i<total_messages_to_be_imported;i++) {
+	    if(stricmp(get_messagebase_for_this_message(i),smb_file)) {
+	        if(smb_file[0])     /* We've already opened one */
+	            smb_close();
+	        strcpy(smb_file,get_messagebase_for_this_message(i));
+	        smb_open(10); }
+	    /* Import this message */
+	    }
+	if(smb_file[0])
+	    smb_close();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           91               SMBLIB Performance Issues
+
+
+	A more advanced method is to keep multiple message bases open at the same time.
+	Due to the likely limitation of total file handles on the system, it is
+	suggested to keep the number of simultaneously open message bases at or below
+	3. SMBLIB includes the function smb_stack() to easily "push" and "pop" message
+	bases without closing them (push is the equivalent to "save" and pop is the
+	equivalent to "restore"). The downside of this function is that you cannot
+	access message bases on the stack without actually popping them off (in reverse
+	of the order they were pushed). You can however "exchange" the current message
+	base with the message base on the top of the stack (most recently pushed).
+	To intelligently juggle more than two open message bases, the developer should
+	create their own equivalent of the smb_stack() function so they can access the
+	message bases on the stack without popping them off. An example of keeping a
+	maximum of two message bases open using smb_stack():
+	
+	    char last_messagebase[128],new_messagebase[128];
+	
+	smb_file[0]=0;
+	last_messagebase[0]=0;
+	for(i=0;i<total_messages_to_be_imported;i++) {
+	    strcpy(new_messagebase,get_messagebase_for_this_message(i));
+	    if(stricmp(new_messagebase,smb_file)) {     /* Not current message base */
+	        if(smb_file[0]) {                       /* We've already opened one */
+	            if(!stricmp(new_messagebase,last_messagebase)) { /* Same as last */
+	                strcpy(last_messagebase,smb_file);
+	                smb_stack(SMB_STACK_XCHNG); }       /* Retore previous base */
+	            else {
+	                if(last_messagebase[0]) {
+	                    smb_stack(SMB_STACK_XCHNG);
+	                    smb_close();
+	                    strcpy(last_messagebase,new_messagebase); }
+	                else {
+	                    strcpy(last_messagebase,smb_file);
+	                    smb_stack(SMB_STACK_PUSH); }    /* Save current base */
+	                strcpy(smb_file,new_messagebase);
+	                smb_open(10); } }
+	        else {
+	            strcpy(smb_file,new_messagebase);
+	            smb_open(10); } }
+	    /* Import this message */
+	    }
+	if(smb_file[0])
+	    smb_close();
+	if(last_messagebase[0]) {
+	    smb_stack(SMB_STACK_POP);
+	    smb_close(); }
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           92               SMBLIB Performance Issues
+
+
+	The second example would be of negligible performance gain over the first
+	example (6 open operations versus 7) if the messages to import were in the
+	following order:
+	
+	msg[0] --> msgbase[0]       // 0 opened
+	msg[1] --> msgbase[1]       // 0 pushed 1 opened
+	msg[2] --> msgbase[1]
+	msg[3] --> msgbase[2]       // 1 closed 0 popped 0 closed 2 opened
+	msg[4] --> msgbase[0]       // 2 pushed 0 opened
+	msg[5] --> msgbase[2]       // 0 pushed 2 popped (exchanged)
+	msg[6] --> msgbase[3]       // 2 closed 0 popped 0 closed 3 opened
+	msg[7] --> msgbase[0]       // 3 pushed 0 opened
+	
+	The second example would be of significant performance gain over the first
+	example (4 open operations versus 8) if the messages to import were in the
+	following order:
+	
+	msg[0] --> msgbase[0]       // 0 opened
+	msg[1] --> msgbase[1]       // 0 pushed 1 opened
+	msg[2] --> msgbase[0]       // 1 pushed 0 popped (exchanged)
+	msg[3] --> msgbase[1]       // 0 pushed 1 popped (exchanged)
+	msg[4] --> msgbase[0]       // 1 pushed 0 popped (exchanged)
+	msg[5] --> msgbase[2]       // 0 pushed 1 popped (exchanged) 1 closed 2 opened
+	msg[6] --> msgbase[3]       // 2 pushed 0 popped (exchanged) 0 closed 3 opened
+	msg[7] --> msgbase[2]       // 3 pushed 2 popped (exchanged)
+	
+	More advanced use of "stack-like" message base file handle storage can easily
+	reduce the number of open operations, therefore increasing import performance
+	under more adverse message base ordering conditions.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           93               SMBLIB Performance Issues
+
+
+	Compression
+	-----------
+	If any message data compression features are offered by the application, it
+	is important the the application not unnecessarily compress data that will
+	not save any storage space. While this may seem an obvious statement, please
+	review the following pseudo-code example:
+	
+	if ( message_data_length < SDT_BLOCK_LEN )
+	    // Store uncompressed data
+	else {
+	    // Compress data
+	    if ( ( compressed_data_length / SDT_BLOCK_LEN )
+	        < ( message_data_length / SDT_BLOCK_LEN ) ) // Saves a block or more
+	        // Store compressed data
+	    else
+	        // Store uncompressed data
+	    }
+	
+	Since the SMB format stores message data in fixed length blocks, there is no
+	point in storing a message in compressed format if it requires the same number
+	of blocks as the uncompressed format (i.e. a message that is two blocks in
+	length in uncompressed format and only a block and a half in length when
+	compressed should not be stored in compressed format since it still requires
+	two full blocks of storage). It is important to note that in the above example,
+	the length of the data translation string was not taken into account in
+	determining the number of required blocks. Also, the smb_datblocks() function
+	is normally used in determing the number of required blocks to store a given
+	data length and it is a little more involved than simply dividing the length of
+	the data by SDT_BLOCK_LEN.
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           94               SMBLIB Performance Issues
+
+
+	Bibliography
+	============
+	
+	Title     : The C Programming Language
+	Publisher : Prentice Hall
+	Author    : Brian W. Kernighan and Dennis M. Ritchie
+	
+	Document  : ARPANET Request for Comments (RFC) #822
+	Title     : Standard for the Format of ARPA Internet text messages
+	Publisher : SRI International
+	Author    : David H. Crocker, University of Delaware
+	
+	Document  : FTS-0001
+	Publisher : FSC
+	Author    : Randy Bush, Pacific Systems Group
+	
+	Document  : FTS-0004
+	Title     : EchoMail Specification
+	Publisher : FSC
+	Author    : Bob Hartman
+	
+	Document  : FTS-0009
+	Title     : A standard for unique message identifiers and reply chain linkage
+	Publisher : FSC
+	Author    : Jim Nutt
+	
+	Document  : FSC-00046
+	Title     : A Product Idenfifier for FidoNet Message Handlers
+	Publisher : FSC
+	Author    : Joaquim H. Homrighausen
+	
+	Document  : FSC-00053
+	Title     : Specifications for the ^aFLAGS field
+	Publisher : FSC
+	Author    : Joaquim H. Homrighausen
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           95                            Bibliography
+
+
+	Implementations
+	===============
+	
+	Product   : Synchronet Multinode BBS Software
+	Developer : Digital Dynamics
+	Level     : III
+	Version   : 2.20
+	
+	Product   : Synchronet/FidoNet Import/Export Utility (SBBSFIDO)
+	Developer : Digital Dynamics
+	Level     : III
+	Version   : 2.23
+	
+	Product   : Synchronet UTI (Universal Text Interface) Driver
+	Developer : Digital Dynamics
+	Level     : III
+	Version   : 2.23
+	
+	Product   : SBBSecho FidoNet Packet Tosser for Synchronet
+	Developer : Digital Dynamics
+	Level     : III
+	Version   : 1.11
+	
+	Product   : NetXpress Internet UUCP for Synchronet
+	Developer : Merlin Systems
+	Level     : II
+	Version   : 1.50
+	
+	Product   : InterEcho FidoNet Packet Tosser
+	Developer : InterMail Sales Inc
+	Level     : II
+	Version   : 1.11
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	_______________________________________________________________________________
+	Synchronet                           96                                   Index
+
+

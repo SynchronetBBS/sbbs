@@ -78,8 +78,6 @@ static void newscript_handler(JSContext  *cx,
 		return;
 	}
 	fname=JS_GetScriptFilename(cx, script);
-	if (fname == NULL)
-		fname = "<unknown>";
 	cs->fname=strdup(fname);
 	if(cs->fname)
 		fname=getfname(fname);

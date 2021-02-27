@@ -2,13 +2,13 @@
 
 /* Synchronet XSDK constants, macros, and type definitions */
 
-/* $Id: xsdkdefs.h,v 1.11 2020/09/20 12:45:59 deuce Exp $ */
+/* $Id: xsdkdefs.h,v 1.10 2009/01/01 12:45:59 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright 2000 Rob Swindell - http://www.synchro.net/copyright.html		*
  *																			*
  * This library is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU Lesser General Public License		*
@@ -289,57 +289,6 @@ enum {								/* Node Action */
 #ifndef _SBBSDEFS_H
 #define KEY_BUFSIZE 256
 #endif
-
-#ifndef USE_XPDEV
-enum {
-	 CTRL_AT						// NUL
-	,CTRL_A							// SOH
-	,CTRL_B							// STX
-	,CTRL_C							// ETX
-	,CTRL_D							// EOT
-	,CTRL_E							// ENQ
-	,CTRL_F							// ACK
-	,CTRL_G							// BEL
-	,CTRL_H							// BS
-	,CTRL_I							// HT
-	,CTRL_J							// LF
-	,CTRL_K							// VT
-	,CTRL_L							// FF
-	,CTRL_M							// CR
-	,CTRL_N							// SO
-	,CTRL_O							// SI
-	,CTRL_P							// DLE
-	,CTRL_Q							// DC1
-	,CTRL_R							// DC2
-	,CTRL_S							// DC3
-	,CTRL_T							// DC4
-	,CTRL_U							// NAK
-	,CTRL_V							// SYN
-	,CTRL_W							// ETB
-	,CTRL_X							// CAN
-	,CTRL_Y							// EM
-	,CTRL_Z							// SUB
-	,CTRL_OPEN_BRACKET				// ESC
-	,CTRL_BACKSLASH					// FS
-	,CTRL_CLOSE_BRACKET				// GS
-	,CTRL_CARET						// RS
-	,CTRL_UNDERSCORE				// US
-	,CTRL_QUESTION_MARK	= 0x7f		// DEL
-};
-#endif
-
-									/* Special terminal key mappings */
-#define TERM_KEY_HOME	CTRL_B
-#define TERM_KEY_END	CTRL_E
-#define TERM_KEY_UP		CTRL_CARET
-#define TERM_KEY_DOWN	CTRL_J
-#define TERM_KEY_LEFT	CTRL_CLOSE_BRACKET
-#define TERM_KEY_RIGHT	CTRL_F
-#define TERM_KEY_INSERT	CTRL_V
-#define TERM_KEY_DELETE	DEL
-#define TERM_KEY_ABORT	CTRL_C
-#define TERM_KEY_PAGEUP	CTRL_P
-#define TERM_KEY_PAGEDN	CTRL_N
 
 #define CRLF  { outchar(CR); outchar(LF); }
 

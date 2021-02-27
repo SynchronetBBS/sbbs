@@ -1,5 +1,8 @@
 /* Synchronet message base (SMB) library routines */
 
+/* $Id: smblib.c,v 1.209 2020/05/07 19:30:22 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -27,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>		/* malloc */
 #include <string.h>
+#include <ctype.h>		/* isdigit */
 #include <sys/types.h>
 #include <sys/stat.h>	/* must come after sys/types.h */
 
@@ -712,25 +728,32 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 {
 	switch(hfield_type) {	/* convenience variables */
 		case SENDER:
-			msg->from=(char*)hfield_dat;
-			break; 
-		case FORWARDED:
-			msg->forwarded = TRUE;
+			if(msg->from==NULL || *(msg->from)==0) {
+				msg->from=(char*)hfield_dat;
+				break; 
+			}
+		case FORWARDED: 	/* fall through */
+			msg->forwarded=TRUE;
 			break;
 		case SENDERAGENT:
-			msg->from_agent=*(uint16_t *)hfield_dat;
+			if(!msg->forwarded)
+				msg->from_agent=*(uint16_t *)hfield_dat;
 			break;
 		case SENDEREXT:
-			msg->from_ext=(char*)hfield_dat;
+			if(!msg->forwarded)
+				msg->from_ext=(char*)hfield_dat;
 			break;
 		case SENDERORG:
-			msg->from_org=(char*)hfield_dat;
+			if(!msg->forwarded)
+				msg->from_org=(char*)hfield_dat;
 			break;
 		case SENDERNETTYPE:
-			msg->from_net.type=*(uint16_t *)hfield_dat;
+			if(!msg->forwarded)
+				msg->from_net.type=*(uint16_t *)hfield_dat;
 			break;
 		case SENDERNETADDR:
-			msg->from_net.addr=(char*)hfield_dat;
+			if(!msg->forwarded)
+				msg->from_net.addr=(char*)hfield_dat;
 			break;
 		case SENDERIPADDR:
 			msg->from_ip=(char*)hfield_dat;
@@ -840,9 +863,6 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 		case FIDOCHARSET:
 			msg->ftn_charset=(char*)hfield_dat;
 			break;
-		case FIDOBBSID:
-			msg->ftn_bbsid=(char*)hfield_dat;
-			break;
 		case RFC822HEADER:
 		{
 			char* p = (char*)hfield_dat;
@@ -857,12 +877,6 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, void* hfiel
 				SKIP_WHITESPACE(p);
 				msg->content_type = p;
 				smb_parse_content_type(p, &(msg->text_subtype), &(msg->text_charset));
-				break;
-			}
-			if(strnicmp(p, "Content-Transfer-Encoding:", 26) == 0) {
-				p += 26;
-				SKIP_WHITESPACE(p);
-				msg->content_encoding = p;
 				break;
 			}
 			break;
@@ -903,7 +917,6 @@ static void clear_convenience_ptrs(smbmsg_t* msg)
 	msg->newsgroups=NULL;
 	msg->mime_version=NULL;
 	msg->content_type=NULL;
-	msg->content_encoding=NULL;
 	msg->text_subtype=NULL;
 	msg->text_charset=NULL;
 
@@ -1227,21 +1240,11 @@ int	SMBCALL smb_hfield_add_list(smbmsg_t* msg, hfield_t** hfield_list, void** hf
 }
 
 /****************************************************************************/
-/* Convenience function to add an ASCIIZ string header field (or blank)		*/
+/* Convenience function to add an ASCIIZ string header field				*/
 /****************************************************************************/
 int SMBCALL smb_hfield_add_str(smbmsg_t* msg, uint16_t type, const char* str, BOOL insert)
 {
 	return smb_hfield_add(msg, type, str==NULL ? 0:strlen(str), (void*)str, insert);
-}
-
-/****************************************************************************/
-/* Convenience function to add an ASCIIZ string header field (NULL ignored)	*/
-/****************************************************************************/
-int SMBCALL smb_hfield_string(smbmsg_t* msg, uint16_t type, const char* str)
-{
-	if(str == NULL)
-		return SMB_ERR_HDR_FIELD;
-	return smb_hfield_add(msg, type, strlen(str), (void*)str, /* insert */FALSE);
 }
 
 /****************************************************************************/
@@ -1707,7 +1710,7 @@ BOOL SMBCALL smb_msg_is_utf8(const smbmsg_t* msg)
 uint16_t SMBCALL smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name, enum smb_net_type net_type, void* net_addr)
 {
 	uint16_t votes = 0;
-	smbmsg_t msg = {0};
+	smbmsg_t msg;
 
 	if(smb->sid_fp==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s index not open", __FUNCTION__);
@@ -1934,13 +1937,13 @@ int SMBCALL smb_create(smb_t* smb)
 		fclose(fp);
 	}
 	SAFEPRINTF(str,"%s.sda",smb->file);
-	(void)remove(str);						/* if it exists, delete it */
+	remove(str);						/* if it exists, delete it */
 	SAFEPRINTF(str,"%s.sha",smb->file);
-	(void)remove(str);                        /* if it exists, delete it */
+	remove(str);                        /* if it exists, delete it */
 	SAFEPRINTF(str,"%s.sch",smb->file);
-	(void)remove(str);
+	remove(str);
 	SAFEPRINTF(str,"%s.hash",smb->file);
-	(void)remove(str);
+	remove(str);
 	smb_unlocksmbhdr(smb);
 	return(SMB_SUCCESS);
 }
@@ -2136,48 +2139,6 @@ uint32_t SMBCALL smb_last_in_thread(smb_t* smb, smbmsg_t* remsg)
 		return remsg->hdr.number;
 
 	return smb_last_in_branch(smb, &msg);
-}
-
-SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t attr)
-{
-	switch (attr&MSG_POLL_VOTE_MASK) {
-		case 0:
-			return SMB_MSG_TYPE_NORMAL;
-		case MSG_POLL:
-			return SMB_MSG_TYPE_POLL;
-		case MSG_POLL_CLOSURE:
-			return SMB_MSG_TYPE_POLL_CLOSURE;
-		default:
-			return SMB_MSG_TYPE_BALLOT;
-	}
-}
-
-// Return count of messages of the desired types (bit-mask), as read from index
-// Does so as fast as possible, without locking
-SMBEXPORT size_t SMBCALL smb_msg_count(smb_t* smb, unsigned types)
-{
-	off_t index_length = filelength(fileno(smb->sid_fp));
-	if(index_length < sizeof(idxrec_t))
-		return 0;
-
-	uint32_t total = index_length / sizeof(idxrec_t);
-	if(total < 1)
-		return 0;
-
-	idxrec_t*	idx;
-	if((idx = calloc(total, sizeof(*idx))) == NULL)
-		return 0;
-
-	rewind(smb->sid_fp);
-	size_t result = fread(idx, sizeof(*idx), total, smb->sid_fp);
-
-	size_t count = 0;
-	for(size_t i = 0; i < result; i++) {
-		if(types & (1 << smb_msg_type(idx[i].attr)))
-			count++;
-	}
-	free(idx);
-	return count;
 }
 
 /* End of SMBLIB.C */

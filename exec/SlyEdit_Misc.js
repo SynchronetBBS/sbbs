@@ -178,7 +178,7 @@ var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 
 
-var COPYRIGHT_YEAR = 2021;
+var COPYRIGHT_YEAR = 2020;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.

@@ -1,4 +1,6 @@
 /* Synchronet class (sbbs_t) definition and exported function prototypes */
+// vi: tabstop=4
+/* $Id: sbbs.h,v 1.583 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -276,8 +290,8 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 
 #include "smblib.h"
 #include "ars_defs.h"
+#include "scfgdefs.h"
 #include "scfglib.h"
-#include "scfgsave.h"
 #include "userdat.h"
 #include "riodefs.h"
 #include "cmdshell.h"
@@ -288,14 +302,6 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "telnet.h"
 #include "nopen.h"
 #include "text.h"
-#include "str_util.h"
-#include "date_str.h"
-#include "load_cfg.h"
-#include "filedat.h"
-#include "getstats.h"
-#include "msgdate.h"
-#include "getmail.h"
-#include "msg_id.h"
 
 /* Synchronet Node Instance class definition */
 #if defined(__cplusplus) && defined(JAVASCRIPT)
@@ -342,15 +348,7 @@ public:
 
 	scfg_t	cfg;
 
-	enum ansiState {
-		 ansiState_none		// No sequence
-		,ansiState_esc		// Escape
-		,ansiState_csi		// CSI
-		,ansiState_final	// Final byte
-		,ansiState_string	// APS, DCS, PM, or OSC
-		,ansiState_sos		// SOS
-		,ansiState_sos_esc	// ESC inside SOS
-	} outchar_esc;			// track ANSI escape seq output
+	int		outchar_esc;		   // track ANSI escape seq output
 
 	int 	rioctl(ushort action); // remote i/o control
 	bool	rio_abortable;
@@ -463,7 +461,7 @@ public:
 	char 	*text[TOTAL_TEXT];			/* Text from ctrl\text.dat */
 	char 	*text_sav[TOTAL_TEXT];		/* Text from ctrl\text.dat */
 
-	char 	dszlog[127];	/* DSZLOG environment variable */
+	char 	dszlog[127];	/* DSZLOG enviornment variable */
     int     keybuftop,keybufbot;    /* Keyboard input buffer pointers (for ungetkey) */
 	char    keybuf[KEY_BUFSIZE];    /* Keyboard input buffer */
 	size_t	keybuf_space(void);
@@ -623,7 +621,7 @@ public:
 
 	void	reset_logon_vars(void);
 
-	uint	finduser(const char* str, bool silent_failure = false);
+	uint	finduser(char *str, bool silent_failure = false);
 
 	int 	sub_op(uint subnum);
 
@@ -661,7 +659,7 @@ public:
 	bool	inputnstime32(time32_t *dt);
 	bool	inputnstime(time_t *dt);
 	bool	chkpass(char *pass, user_t* user, bool unique);
-	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, long mode = EX_UNSPECIFIED);
+	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr);
 	char	cmdstr_output[512];
 
 	void	subinfo(uint subnum);
@@ -681,16 +679,16 @@ public:
 	bool	msgabort(void);
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, long mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
+	void	forwardmail(smbmsg_t* msg, int usernum);
 	void	removeline(char *str, char *str2, char num, char skip);
 	ulong	msgeditor(char *buf, const char *top, char *title);
 	bool	editfile(char *path, bool msg=false);
 	ushort	chmsgattr(smbmsg_t);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
-	bool	editmsg(smb_t*, smbmsg_t*);
+	void	editmsg(smbmsg_t* msg, uint subnum);
 	void	editor_inf(int xeditnum, const char *to, const char* from, const char *subj, long mode
 				,uint subnum, const char* tagfile);
-	bool	copyfattach(uint to, uint from, const char* subj);
+	void	copyfattach(uint to, uint from, char *title);
 	bool	movemsg(smbmsg_t* msg, uint subnum);
 	int		process_edited_text(char* buf, FILE* stream, long mode, unsigned* lines, unsigned maxlines);
 	int		process_edited_file(const char* src, const char* dest, long mode, unsigned* lines, unsigned maxlines);
@@ -759,7 +757,7 @@ public:
 	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	inc_row(int count);
 	void	inc_column(int count);
-	void	center(const char *str, unsigned int columns = 0);
+	void	center(char *str, unsigned int columns = 0);
 	void	wide(const char*);
 	void	clearscreen(long term);
 	void	clearline(void);
@@ -778,7 +776,6 @@ public:
 	long	term_supports(long cmp_flags=0);
 	const char* term_type(long term_supports = -1);
 	const char* term_charset(long term_supports = -1);
-	bool	update_nodeterm(void);
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval=1);
 	bool	saveline(void);
@@ -824,7 +821,7 @@ public:
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
-	int		inkey(long mode, unsigned long timeout=0);
+	char	inkey(long mode, unsigned long timeout=0);
 	char	handle_ctrlkey(char ch, long mode=0);
 
 									// Terminal mouse reporting mode (mouse_mode)
@@ -888,7 +885,7 @@ public:
 	char*	parse_login(char*);
 
 	/* answer.cpp */
-	bool	answer(void);
+	bool	answer();
 
 	/* logon.ccp */
 	bool	logon(void);
@@ -930,7 +927,7 @@ public:
 	void	localguru(char *guru, int gurunum);
 	bool	sysop_page(void);
 	bool	guru_page(void);
-	void	privchat(bool forced=false, int node_num=0);
+	void	privchat(bool local=false);
 	bool	chan_access(uint cnum);
 	int		getnodetopage(int all, int telegram);
 
@@ -1027,8 +1024,8 @@ public:
 				,ulong misc);
 	bool	exec_xtrn(uint xtrnnum);			/* Executes online external program */
 	bool	user_event(user_event_t);			/* Executes user event(s) */
+	char	xtrn_access(uint xnum);			/* Does useron have access to xtrn? */
 	void	moduserdat(uint xtrnnum);
-	const char* xtrn_dropdir(const xtrn_t*, char* buf, size_t);
 
 	/* logfile.cpp */
 	void	logentry(const char *code,const char *entry);
@@ -1075,7 +1072,7 @@ public:
 	bool	unpack_rep(char* repfile=NULL);
 
 	/* msgtoqwk.cpp */
-	long	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
+	ulong	msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, long mode, smb_t*, int conf, FILE* hdrs_dat, FILE* voting_dat = NULL);
 
 	/* qwktomsg.cpp */
 	bool	qwk_new_msg(ulong confnum, smbmsg_t* msg, char* hdrblk, long offset, str_list_t headers, bool parse_sender_hfields);
@@ -1160,6 +1157,20 @@ extern "C" {
 	DLLEXPORT int		DLLCALL sbbs_random(int);
 	DLLEXPORT void		DLLCALL sbbs_srand(void);
 
+	/* getstats.c */
+	DLLEXPORT BOOL		DLLCALL getstats(scfg_t* cfg, char node, stats_t* stats);
+	DLLEXPORT ulong		DLLCALL	getposts(scfg_t* cfg, uint subnum);
+	DLLEXPORT long		DLLCALL getfiles(scfg_t* cfg, uint dirnum);
+	DLLEXPORT BOOL		DLLCALL inc_sys_upload_stats(scfg_t*, ulong files, ulong bytes);
+	DLLEXPORT BOOL		DLLCALL inc_sys_download_stats(scfg_t*, ulong files, ulong bytes);
+
+	/* getmail.c */
+	DLLEXPORT int		DLLCALL getmail(scfg_t* cfg, int usernumber, BOOL sent, uint16_t attr);
+	DLLEXPORT mail_t *	DLLCALL loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
+										,int which, long mode);
+	DLLEXPORT void		DLLCALL freemail(mail_t* mail);
+	DLLEXPORT BOOL		DLLCALL delfattach(scfg_t*, smbmsg_t*);
+
 	/* postmsg.cpp */
 	DLLEXPORT int		DLLCALL savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);
 	DLLEXPORT int		DLLCALL votemsg(scfg_t*, smb_t*, smbmsg_t*, const char* msgfmt, const char* votefmt);
@@ -1168,6 +1179,99 @@ extern "C" {
 	DLLEXPORT void		DLLCALL signal_sub_sem(scfg_t*, uint subnum);
 	DLLEXPORT int		DLLCALL msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		DLLCALL notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
+
+	/* filedat.c */
+	DLLEXPORT BOOL		DLLCALL getfileixb(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL putfileixb(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL getfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL putfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT void		DLLCALL putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT void		DLLCALL getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext);
+	DLLEXPORT char*		DLLCALL getfilepath(scfg_t* cfg, file_t* f, char* path);
+
+	DLLEXPORT BOOL		DLLCALL removefiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL addfiledat(scfg_t* cfg, file_t* f);
+	DLLEXPORT BOOL		DLLCALL findfile(scfg_t* cfg, uint dirnum, char *filename);
+	DLLEXPORT char *	DLLCALL padfname(const char *filename, char *str);
+	DLLEXPORT char *	DLLCALL unpadfname(const char *filename, char *str);
+	DLLEXPORT BOOL		DLLCALL rmuserxfers(scfg_t* cfg, int fromuser, int destuser, char *fname);
+
+	DLLEXPORT int		DLLCALL update_uldate(scfg_t* cfg, file_t* f);
+
+	/* str_util.c */
+	DLLEXPORT char *	remove_ctrl_a(const char* instr, char* outstr);
+	DLLEXPORT char 		ctrl_a_to_ascii_char(char code);
+	DLLEXPORT char *	truncstr(char* str, const char* set);
+	DLLEXPORT char *	ascii_str(uchar* str);
+	DLLEXPORT char		exascii_to_ascii_char(uchar ch);
+	DLLEXPORT BOOL		findstr(const char *insearch, const char *fname);
+	DLLEXPORT BOOL		findstr_in_string(const char* insearchof, char* string);
+	DLLEXPORT BOOL		findstr_in_list(const char* insearchof, str_list_t list);
+	DLLEXPORT str_list_t findstr_list(const char* fname);
+	DLLEXPORT BOOL		trashcan(scfg_t* cfg, const char *insearch, const char *name);
+	DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
+	DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
+	DLLEXPORT char *	strip_exascii(const char *str, char* dest);
+	DLLEXPORT char *	strip_space(const char *str, char* dest);
+	DLLEXPORT char *	prep_file_desc(const char *str, char* dest);
+	DLLEXPORT char *	strip_ctrl(const char *str, char* dest);
+	DLLEXPORT char *	strip_char(const char* str, char* dest, char);
+	DLLEXPORT char *	net_addr(net_t* net);
+	DLLEXPORT BOOL		valid_ctrl_a_attr(char a);
+	DLLEXPORT BOOL		valid_ctrl_a_code(char a);
+	DLLEXPORT size_t	strip_invalid_attr(char *str);
+	DLLEXPORT char *	ultoac(ulong l,char *str);
+	DLLEXPORT char *	rot13(char* str);
+	DLLEXPORT uint32_t	str_to_bits(uint32_t currval, const char *str);
+	DLLEXPORT BOOL		str_has_ctrl(const char*);
+	DLLEXPORT BOOL		str_is_ascii(const char*);
+	DLLEXPORT char *	utf8_to_cp437_str(char* str);
+	DLLEXPORT char *	subnewsgroupname(scfg_t*, sub_t*, char*, size_t);
+	DLLEXPORT char * 	get_ctrl_dir(BOOL warn);
+
+	/* msg_id.c */
+	DLLEXPORT char *	DLLCALL ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);
+	DLLEXPORT char *	DLLCALL get_msgid(scfg_t*, uint subnum, smbmsg_t*, char* msgid, size_t);
+	DLLEXPORT char *	DLLCALL get_replyid(scfg_t*, smb_t*, smbmsg_t*, char* msgid, size_t maxlen);
+	DLLEXPORT uint32_t	DLLCALL get_new_msg_number(smb_t*);
+	DLLEXPORT BOOL		DLLCALL add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
+	DLLEXPORT BOOL		DLLCALL add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
+	DLLEXPORT char*		DLLCALL msg_program_id(char* pid, size_t);
+	DLLEXPORT uint		nearest_sysfaddr(scfg_t*, faddr_t* dest_addr);
+
+	/* date_str.c */
+	DLLEXPORT char *	DLLCALL zonestr(short zone);
+	DLLEXPORT time32_t	DLLCALL dstrtounix(scfg_t*, const char *str);
+	DLLEXPORT char *	DLLCALL unixtodstr(scfg_t*, time32_t, char *str);
+	DLLEXPORT char *	DLLCALL sectostr(uint sec, char *str);
+	DLLEXPORT char *	DLLCALL seconds_to_str(uint, char*);
+	DLLEXPORT char *	DLLCALL hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
+	DLLEXPORT char *	DLLCALL timestr(scfg_t* cfg, time32_t intime, char* str);
+
+	/* msgdate.c */
+	DLLEXPORT when_t	DLLCALL rfc822date(char* p);
+	DLLEXPORT char *	DLLCALL msgdate(when_t when, char* buf);
+	DLLEXPORT BOOL		DLLCALL newmsgs(smb_t*, time_t);
+
+	/* load_cfg.c */
+	DLLEXPORT BOOL		DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error);
+	DLLEXPORT void		DLLCALL free_cfg(scfg_t* cfg);
+	DLLEXPORT void		DLLCALL free_text(char* text[]);
+	DLLEXPORT ushort	DLLCALL sys_timezone(scfg_t* cfg);
+	DLLEXPORT char *	DLLCALL prep_dir(const char* base, char* dir, size_t buflen);
+	DLLEXPORT int 		DLLCALL md(const char *path);
+
+	/* scfgsave.c */
+	DLLEXPORT BOOL		DLLCALL save_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_node_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_main_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_msgs_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_file_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_chat_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT BOOL		DLLCALL write_xtrn_cfg(scfg_t* cfg, int backup_level);
+	DLLEXPORT void		DLLCALL refresh_cfg(scfg_t* cfg);
+	DLLEXPORT int		DLLCALL smb_storage_mode(scfg_t*, smb_t*);
+	DLLEXPORT int		DLLCALL smb_open_sub(scfg_t*, smb_t*, unsigned int subnum);
 
 	/* logfile.cpp */
 	DLLEXPORT int		DLLCALL errorlog(scfg_t* cfg, int level, const char* host, const char* text);
@@ -1179,7 +1283,6 @@ extern "C" {
 
 	/* data.cpp */
 	DLLEXPORT time_t	DLLCALL getnextevent(scfg_t* cfg, event_t* event);
-	DLLEXPORT time_t	DLLCALL getnexteventtime(event_t* event);
 
 	/* sockopt.c */
 	DLLEXPORT int		DLLCALL set_socket_options(scfg_t* cfg, SOCKET sock, const char* section
@@ -1212,7 +1315,7 @@ extern "C" {
 
 	typedef struct {
 		const char      *name;
-		int             tinyid;
+		int8_t          tinyid;
 		uint8_t         flags;
 		int				ver;		/* version added/modified */
 	} jsSyncPropertySpec;
@@ -1227,7 +1330,7 @@ extern "C" {
 		const char*	version_detail;
 		str_list_t*	interfaces;
 		uint32_t*	options;
-		protected_uint32_t*	clients;
+		uint32_t*	clients;
 	} js_server_props_t;
 
 	enum {
@@ -1281,12 +1384,6 @@ extern "C" {
 										,js_server_props_t* props);
 
 	/* js_global.c */
-	struct js_onexit_scope {
-		JSObject *scope;
-		str_list_t onexit;
-		struct js_onexit_scope *next;
-	};
-
 	typedef struct {
 		scfg_t*				cfg;
 		jsSyncMethodSpec*	methods;
@@ -1294,7 +1391,6 @@ extern "C" {
 		unsigned			bg_count;
 		sem_t				bg_sem;
 		str_list_t			exit_func;
-		struct js_onexit_scope	*onexit;
 	} global_private_t;
 	DLLEXPORT BOOL DLLCALL js_argc(JSContext *cx, unsigned argc, unsigned min);
 	DLLEXPORT BOOL DLLCALL js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
@@ -1398,6 +1494,17 @@ extern "C" {
 
 #endif
 
+/* str_util.c */
+char*	backslashcolon(char *str);
+ulong	ahtoul(const char *str);	/* Converts ASCII hex to ulong */
+char *	hexplus(uint num, char *str); 	/* Hex plus for 3 digits up to 9000 */
+uint	hptoi(const char *str);
+int		pstrcmp(const char **str1, const char **str2);  /* Compares pointers to pointers */
+int		strsame(const char *str1, const char *str2);	/* Compares number of same chars */
+
+/* load_cfg.c */
+char*	prep_code(char *str, const char* prefix);
+
 #ifdef SBBS /* These aren't exported */
 
 	/* main.c */
@@ -1434,11 +1541,19 @@ extern "C" {
 
 #endif /* SBBS */
 
+extern const char* wday[];	/* abbreviated weekday names */
+extern const char* mon[];	/* abbreviated month names */
 extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
 
 #ifdef __cplusplus
 }
 #endif
+
+extern
+#ifdef __cplusplus
+ "C"
+#endif
+	const char* beta_version;
 
 /* Global data */
 

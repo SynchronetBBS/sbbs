@@ -304,14 +304,14 @@ function MessageList(root,name,ext)
 			while(!this.file.eof)
 			{
 				var text=strip_ctrl(this.file.readln());
-				if(text=="null" || !text) break;
+				if(text=="null") break;
 				var author=text.substring(0,text.indexOf("@"));
 				var date=text.substr(text.indexOf("@")+1);
 				var message=[];
 				while(!this.file.eof)
 				{
 					var temp=this.file.readln();
-					if(!temp || strip_ctrl(temp)=="null" || strip_ctrl(temp)=="") break;
+					if(strip_ctrl(temp)=="null" || strip_ctrl(temp)=="") break;
 					message.push(temp);
 				}
 				this.array.push(new Post(author,date,message));

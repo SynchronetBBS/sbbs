@@ -1,21 +1,2 @@
 *.ssjs gitlab-language=javascript
-*.js   text
-*.ssjs text
-*.src  text
-*.inc  text
-*.ini  text
-*.cfg  text
-*.html text
-*.xml  text
-*.txt  text
-*.TXT  text
-*.json text
-*.bat  text
-*.mak  text
-*.mk   text
-makefile text
-Makefile text
-GNUmakefile text
-*.bin  -text
-*.cnf  -text
 

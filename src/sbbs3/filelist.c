@@ -1,6 +1,10 @@
+/* filelist.c */
+
 /* Utility to create list of files from Synchronet file directories */
 /* Default list format is FILES.BBS, but file size, uploader, upload date */
 /* and other information can be included. */
+
+/* $Id: filelist.c,v 1.22 2020/08/17 00:48:28 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -15,20 +19,25 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "datewrap.h"
-#include "load_cfg.h"
-#include "str_util.h"
-#include "date_str.h"
-#include "nopen.h"
-#include "filedat.h"
-#include "dat_rec.h"
-#include <stdarg.h>
+#include "sbbs.h"
 
 #define FILELIST_VER "3.15"
 
@@ -153,7 +162,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&scfg,NULL,TRUE,error)) {
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
 		exit(1);
 	}
@@ -405,7 +414,7 @@ int main(int argc, char **argv)
 			}
 
 			if(misc&MINUS) {
-				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,fname);
+				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
 				if(!fexistcase(str))
 					fputc('-',out);
 				else
@@ -416,7 +425,7 @@ int main(int argc, char **argv)
 			desc_off++;
 
 			if(misc&DFD) {
-				SAFEPRINTF2(str,"%s%s",scfg.dir[i]->path,fname);
+				sprintf(str,"%s%s",scfg.dir[i]->path,fname);
 				fprintf(out,"%s ",unixtodstr(&scfg,(time32_t)fdate(str),str));
 				desc_off+=9; 
 			}

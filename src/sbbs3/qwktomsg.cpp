@@ -1,4 +1,8 @@
+/* qwktomsg.cpp */
+
 /* Synchronet QWK to SMB message conversion routine */
+
+/* $Id: qwktomsg.cpp,v 1.87 2020/05/06 00:51:15 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +17,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -252,7 +268,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 		(hdrblk[0]=='*' || hdrblk[0]=='-' || hdrblk[0]=='`'))
 		msg->hdr.attr|=MSG_READ;
 
-	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->mod_ar[0]
+	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->mod_ar!=NULL && cfg.sub[subnum]->mod_ar[0]
 		&& chk_ar(cfg.sub[subnum]->mod_ar,&useron,&client))
 		msg->hdr.attr|=MSG_MODERATED;
 	if(subnum!=INVALID_SUB && !fromhub && cfg.sub[subnum]->misc&SUB_SYSPERM
@@ -350,9 +366,10 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, ulong blocks
 			if(!bodylen && !taillen)		/* Ignore blank lines at top of message */
 				continue;
 			if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
-				&& body[bodylen-2]=='-' && (body[bodylen-1]=='-' || body[bodylen-1]==' ')) {
-				taillen = sprintf(tail, "--%c", body[bodylen-1]); /* DO NOT USE SAFECOPY */
+				&& body[bodylen-2]=='-' && body[bodylen-1]=='-') {
 				bodylen-=3;
+				strcpy(tail,"---");	/* DO NOT USE SAFECOPY */
+				taillen=3; 
 			}
 			col=0;
 			if(taillen) {

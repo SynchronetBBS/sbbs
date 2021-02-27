@@ -7,7 +7,8 @@ var frame,
 	inputLine,
 	oneliners,
 	inInput = false,
-	attr = console.attributes;
+	attr = console.attributes,
+	status = bbs.sys_status;
 
 var initFrames = function() {
 
@@ -134,7 +135,6 @@ var initJSON = function() {
 }
 
 var init = function() {
-	js.on_exit("bbs.sys_status = " + bbs.sys_status);
 	bbs.sys_status |= SS_MOFF;
 	initFrames();
 	initInput();
@@ -245,6 +245,7 @@ var cleanUp = function() {
 	}
 	frame.close();
 	console.clear(attr);
+	bbs.sys_status = status;
 }
 
 init();

@@ -29,13 +29,11 @@ insertfont(char *Name)
 	fseek(fp, 0, SEEK_SET);
 	/* Read Font Header in TDFont */
 	TDFont.Sign[0] = fgetc(fp);
-	for (x = 1; x < 20; x++)
+	for (x = 0; x < 19; x++)
 		TDFont.Sign[x] = fgetc(fp);
-	TDFont.Sign[19] = 0;
-	if (strcmp(TDFont.Sign, "\x13" "TheDraw FONTS file") != 0) {
-		printf("Invalid font file %s\n", Name);
+	TDFont.Sign[18] = 0;
+	if (strcmp(TDFont.Sign, "TheDraw FONTS file") != 0)
 		return;
-	}
 	for (x = 0; x <= 3; x++)
 		TDFont.a[x] = fgetc(fp);
 	for (x = 0; x <= 16; x++)
@@ -52,7 +50,7 @@ insertfont(char *Name)
 	Header.NumberofFonts++;
 
 	/* Make FontRecord */
-	memcpy(&fr[Header.NumberofFonts].FontName, &TDFont.Name, 17);
+	memcpy(&fr[Header.NumberofFonts].FontName, &TDFont.Name, 16);
 	fr[Header.NumberofFonts].Length = size;
 	fr[Header.NumberofFonts].FilePos = FilePos;
 	FilePos += size;
@@ -84,6 +82,9 @@ int main(int argnum, char *args[])
 		printf("can't open %s for read\n",args[1]);
 		return(1);
 	}
+	CreateFontFile();
+	/*Huh ? It 's not open! */
+		/* fseek(font, 0, SEEK_SET); */
 	while (1) {
 		fgets(filename, 255, fp);
 		if (!feof(fp)) {
@@ -106,13 +107,13 @@ int main(int argnum, char *args[])
 		return(1);
 	}
 	/* Header */
-	fwrite("\x09" "Font File", 10, 1, font);
+	fwrite(&Header.sign, 1, 10, font);
 	Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 	fwrite(&Header.NumberofFonts, 2, 1, font);
 	Header.NumberofFonts=LE_SHORT(Header.NumberofFonts);
 	/* Font Headers */
 	for (x = 1; x <= Header.NumberofFonts; x++) {
-		for (y = 0; y < 17; y++)
+		for (y = 0; y <= 16; y++)
 			fputc(fr[x].FontName[y], font);
 		fr[x].FilePos=LE_LONG(fr[x].FilePos);
 		fwrite(&fr[x].FilePos, 4, 1, font);

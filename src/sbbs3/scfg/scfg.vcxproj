@@ -40,7 +40,6 @@
     <Import Project="..\..\build\target_ia32.props" />
     <Import Project="..\..\hash\hash.props" />
     <Import Project="..\..\encode\encode.props" />
-    <Import Project="..\..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -53,7 +52,6 @@
     <Import Project="..\..\build\target_ia32.props" />
     <Import Project="..\..\hash\hash.props" />
     <Import Project="..\..\encode\encode.props" />
-    <Import Project="..\..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -90,7 +88,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\msvc.win32.exe.debug/scfg.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -133,7 +131,7 @@
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>odbc32.lib;odbccp32.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>.\msvc.win32.exe.release/scfg.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <ProgramDatabaseFile>.\msvc.win32.exe.release/scfg.pdb</ProgramDatabaseFile>
@@ -249,9 +247,6 @@
     <ProjectReference Include="..\load_cfg.vcxproj">
       <Project>{08fc395f-bc60-499d-9ce9-170ed718bb94}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\..\conio\ciolib.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

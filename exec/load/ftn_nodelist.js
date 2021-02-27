@@ -63,12 +63,12 @@ function NodeList(filename, warn)
 	});
 
 	if (!f.open("r"))
-		throw new Error("Unable to open '"+f.name+"'.");
+		throw("Unable to open '"+f.name+"'.");
 
 	// Validate first line...
 	var line = f.readln(2048);
 	if (line == undefined)
-		throw new Error("Unable to read first line in '"+f.name+"'");
+		throw("Unable to read first line in '"+f.name+"'");
 	var m;
 	if ((m=line.match(/^;A (.*) Nodelist for (.*) -- Day number ([0-9]+) : ([0-9]{5})$/)) !== null) {
 		this.domain = m[1];
@@ -107,10 +107,10 @@ function NodeList(filename, warn)
 		switch(fields[0]) {
 			case 'Zone':
 				node.zone = parseInt(fields[1], 10);
-				node.net = node.zone;
+				node.net = 0;
 				node.node = 0;
 				hub.zone = node.zone;
-				hub.net = node.zone;
+				hub.net = 0;
 				hub.node = 0;
 				break;
 			case 'Region':

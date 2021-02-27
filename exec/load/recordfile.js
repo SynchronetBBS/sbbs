@@ -116,7 +116,7 @@ RecordFileRecord.prototype.flushRead = function(keeplocked)
 		}
 		this.parent.file.close();
 		if (!this.parent.file.open('rb+', true, this.parent.RecordLength)) {
-			throw new Error('Unable to re-open '+this.parent.file.name);
+			throw('Unable to re-open '+this.parent.file.name);
 		}
 		if (locked) {
 			this.lock();

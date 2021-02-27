@@ -1,3 +1,5 @@
+/* $Id: scfgmsg.c,v 1.74 2020/08/18 06:03:09 rswindell Exp $ */
+
 /* Configuring Message Options and Message Groups (but not sub-boards) */
 
 /****************************************************************************
@@ -13,15 +15,26 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 #include "scfg.h"
 #include "strwrap.h"	/* itoa() */
-#include "str_util.h"
 #include <stdbool.h>
 
 #define CUT_GROUPNUM	USHRT_MAX
@@ -640,7 +653,7 @@ void msgs_cfg()
 			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.grp[grpnum]->lname);
 			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.grp[grpnum]->sname);
 			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.grp[grpnum]->code_prefix);
-			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
+			sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 				,cfg.grp[grpnum]->arstr);
 			sprintf(opt[j++],"%-27.27s%s","Sort Group by Sub-board", area_sort_desc[cfg.grp[grpnum]->sort]);
 			strcpy(opt[j++],"Clone Options");

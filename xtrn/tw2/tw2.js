@@ -41,7 +41,7 @@ var LOCK_READ=1;
 
 Settings=new GameSettings();
 if(db==undefined) {
-	alert("ERROR: Configuration invalid");
+	alert("ERROR: Configuation invalid");
 	exit(1);
 }
 
@@ -322,7 +322,6 @@ try {
 		console.attributes="R";
 		console.writeln("The game has not been initialized.");
 		console.writeln("Please notify the SysOp.");
-		console.pause();
 		exit(0);
 	}
 	
@@ -333,10 +332,8 @@ try {
 	console.attributes="W";
 	console.writeln("Initializing...");
 	console.writeln("Searching my records for your name.");
-	if(!LoadPlayer()) {
-		console.pause();
+	if(!LoadPlayer())
 		exit(0);
-	}
 
 	console.pause();
 	while(player.KilledBy==0 && exit_tw2==false) {

@@ -116,17 +116,13 @@ load("http.js");
 const Item = function (i) {
 
 	this.id = i.guid.length() ? i.guid[0].toString() : (i.id.length() ? i.id[0].toString() : '');
-	this.title = i.title.length() ? i.title[0].toString() : ''; // uh ...
+	this.title = ''; // uh ...
 	this.date = i.pubDate.length() ? i.pubDate[0].toString() : (i.updated.length() ? i.updated[0].toString() : '');
 	this.author = i.author.length() ? i.author.toString() : '';
-	this.body = '';
+	this.body = i.description.length() ? i.description[0].toString() : (i.summary.length() ? i.summary[0].toString() : '');
 	this.content = i.encoded.length() ? i.encoded.toString() : '';
 	this.link = i.link.length() ? skipsp(truncsp(i.link[0].toString())) : '';
 	this.enclosures = [];
-
-	if (i.description.length()) this.body += i.description[0].toString();
-	if (i.summary.length()) this.body += i.summary[0].toString();
-	if (i.content.length()) this.body += i.content[0].toString();
 
 	var enclosures = i.enclosure.length();
 	for (var n = 0; n < enclosures; n++) {
@@ -159,14 +155,6 @@ const Channel = function (c) {
 
 }
 
-function toLocal(x) {
-    for each(var e in x) {
-        e.setName(e.localName());
-        toLocal(e);
-    }
-    return x;
-}
-
 const Feed = function (url, follow_redirects) {
 
 	this.channels = [];
@@ -188,8 +176,8 @@ const Feed = function (url, follow_redirects) {
 			}
 			httpRequest = undefined;
 		}
-        var feed = toLocal(new XML(doc.replace(/^<\?xml.*\?>/g, "")));
-        doc = undefined;
+		var feed = new XML(doc.replace(/^<\?xml.*\?>/g, ""));
+		doc = undefined;
 		switch (feed.localName()) {
 			case "rss":
 				var channels = feed.channel.length();

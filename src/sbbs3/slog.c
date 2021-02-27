@@ -54,7 +54,7 @@ if(!dir[0]) {
 
 backslash(dir);
 
-SAFEPRINTF(str,"%scsts.dab",dir);
+sprintf(str,"%scsts.dab",dir);
 if(!fexistcase(str)) {
 	printf("%s does not exist\r\n",str);
 	return(1); }
@@ -111,10 +111,9 @@ while(l>-1L) {
 		,fbacks,ulb/1024,uls,dlb/1024,dls);
 	lncntr++;
 	if(pause && lncntr>=20) {
-		printf("More (Y/n) ? ");
+		printf("[Hit a key]");
 		fflush(stdout);
-		char ch = getchar();
-		if(ch == CTRL_C || toupper(ch) == 'N')
+		if(getchar()==3)
 			break;
 		printf("\r");
 		lncntr=0; } }

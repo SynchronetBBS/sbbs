@@ -3,13 +3,13 @@
  Nigel Reed - nigel@nigelreed.net sysop@endofthelinebbs.com
 
  This short crappy bit of code will create a tickit.ini file for you. You won't have
- edit it by hand any more and it's easy to add a new network or new file areas.
+ edit it by hang any more and it's easy to add a new network or new file areas.
  It will parse init-tickit.ini and automatically create /sbbs/ctrl/tickit.ini
 */
 
 "use strict";
 
-var init_ini = js.exec_dir + "init-tickit.ini";
+var init_ini = js.exec_dir + "init-tickit.ini";     
 var tickit_ini = system.ctrl_dir + "tickit.ini";
 
 var ini = [];

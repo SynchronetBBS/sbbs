@@ -1,5 +1,8 @@
 /* Synchronet terminal server thread and related functions */
 
+/* $Id: main.cpp,v 1.794 2020/08/08 20:17:02 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -27,7 +42,6 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "ssl.h"
-#include "ver.h"
 #include <multisock.h>
 #include <limits.h>		// HOST_NAME_MAX
 
@@ -57,8 +71,8 @@
 			lprintf(LOG_ERR, "%04d SSH Error %d destroying Cryptlib Session %d from line %d"
 				, sock, result, session, line);
 		else {
-			uint32_t remain = protected_uint32_adjust_fetch(&ssh_sessions, -1);
-			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%u remain)"
+			int32_t remain = protected_uint32_adjust(&ssh_sessions, -1);
+			lprintf(LOG_DEBUG, "%04d SSH Cryptlib Session: %d destroyed from line %d (%d remain)"
 				, sock, session, line, remain);
 		}
 	}
@@ -91,8 +105,6 @@ struct xpms_set				*ts_set;
 static	sbbs_t*	sbbs=NULL;
 static	scfg_t	scfg;
 static	char *	text[TOTAL_TEXT];
-static	scfg_t	node_scfg[MAX_NODES];
-static	char *	node_text[MAX_NODES][TOTAL_TEXT];
 static	WORD	first_node;
 static	WORD	last_node;
 static	bool	terminate_server=false;
@@ -358,7 +370,7 @@ u_long resolve_ip(char *addr)
 		return((u_long)INADDR_NONE);
 
 	for(p=addr;*p;p++)
-		if(*p!='.' && !IS_DIGIT(*p))
+		if(*p!='.' && !isdigit((uchar)*p))
 			break;
 	if(!(*p))
 		return(inet_addr(addr));
@@ -540,15 +552,9 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 		return(JS_FALSE);
 
 	for(i=0;props[i].name;i++) {
-		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-			if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
-			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-				return(JS_FALSE);
-		}
-		else {
-			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-				return(JS_FALSE);
-		}
+		if(!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
+			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+			return(JS_FALSE);
 		if(props[i].flags&JSPROP_ENUMERATE) {	/* No need to version invisible props */
 			if((ver=props[i].ver) < 10000)		/* auto convert 313 to 31300 */
 				ver*=100;
@@ -692,17 +698,10 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
-	for(i=0;props[i].name;i++) {
-		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-			if(!JS_DefinePropertyWithTinyId(cx, obj,
-			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-				return(JS_FALSE);
-		}
-		else {
-			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-				return(JS_FALSE);
-		}
-	}
+	for(i=0;props[i].name;i++)
+		if(!JS_DefinePropertyWithTinyId(cx, obj,
+			props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+			return(JS_FALSE);
 
 	return(JS_TRUE);
 }
@@ -728,15 +727,9 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 	if(props) {
 		for(i=0;props[i].name;i++) {
 			if(name==NULL || strcmp(name, props[i].name)==0) {
-				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-					if(!JS_DefinePropertyWithTinyId(cx, obj,
-					    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-						return(JS_FALSE);
-				}
-				else {
-					if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
-						return(JS_FALSE);
-				}
+				if(!JS_DefinePropertyWithTinyId(cx, obj,
+						props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+					return(JS_FALSE);
 				if(name)
 					return(JS_TRUE);
 			}
@@ -1109,12 +1102,11 @@ static JSBool
 js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char		instr[128] = "";
+	char		instr[81];
     JSString *	str;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
     char*		prompt=NULL;
-	int32		mode = K_EDIT;
 	size_t		result;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
@@ -1122,24 +1114,16 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)JS_GetContextPrivate(cx))==NULL)
 		return(JS_FALSE);
 
-	uintN argn = 0;
-	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_MSTRING(cx, argv[argn], prompt, NULL);
+	if(argc) {
+		JSVALUE_TO_MSTRING(cx, argv[0], prompt, NULL);
 		if(prompt==NULL)
 			return(JS_FALSE);
-		argn++;
 	}
-	if(argc > argn && JSVAL_IS_STRING(argv[argn])) {
-		JSVALUE_TO_STRBUF(cx, argv[argn], instr, sizeof(instr), NULL);
-		argn++;
-	}
-	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
-		if(!JS_ValueToInt32(cx,argv[argn], &mode)) {
-			free(prompt);
-			return JS_FALSE;
-		}
-		argn++;
-	}
+
+	if(argc>1) {
+		JSVALUE_TO_STRBUF(cx, argv[1], instr, sizeof(instr), NULL);
+	} else
+		instr[0]=0;
 
 	rc=JS_SUSPENDREQUEST(cx);
 	if(prompt != NULL) {
@@ -1147,7 +1131,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 		free(prompt);
 	}
 
-	result = sbbs->getstr(instr, sizeof(instr)-1, mode);
+	result = sbbs->getstr(instr,sizeof(instr)-1,K_EDIT);
 	sbbs->attr(LIGHTGRAY);
 	if(!result) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -1200,8 +1184,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 	,JSDOCSTR("print an alert message (ala client-side JS)")
 	,310
 	},
-	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[text] [,value] [,mode=K_EDIT]")
-	,JSDOCSTR("displays a prompt (<i>text</i>) and returns a string of user input (ala client-side JS)")
+	{"prompt",			js_prompt,			1,	JSTYPE_STRING,	JSDOCSTR("[value]")
+	,JSDOCSTR("displays a prompt (<i>value</i>) and returns a string of user input (ala clent-side JS)")
 	,310
 	},
 	{"confirm",			js_confirm,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("value")
@@ -1268,13 +1252,17 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 	JSContext* js_cx;
 
 	if(startup->js.max_bytes==0)			startup->js.max_bytes=JAVASCRIPT_MAX_BYTES;
+	if(startup->js.cx_stack==0)				startup->js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
 
 	lprintf(LOG_DEBUG,"JavaScript: Creating %s runtime: %lu bytes"
 		,desc, startup->js.max_bytes);
 	if((*runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__)) == NULL)
 		return NULL;
 
-    if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
+	lprintf(LOG_DEBUG,"JavaScript: Initializing %s context (stack: %lu bytes)"
+		,desc, startup->js.cx_stack);
+
+    if((js_cx = JS_NewContext(*runtime, startup->js.cx_stack))==NULL)
 		return NULL;
 	JS_BEGINREQUEST(js_cx);
 
@@ -1299,7 +1287,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 					,uptime, server_host_name(), SOCKLIB_DESC	/* system */
 					,&js_callback								/* js */
 					,&startup->js
-					,client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
+					,&client, client_socket, -1					/* client */
 					,&js_server_props							/* server */
 					,glob
 			))
@@ -1780,14 +1768,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
 		sprintf(buf,"%c%c",TELNET_IAC,cmd);
-		(void)sendsocket(client_socket, buf, 2);
+		putcom(buf,2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
 		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
-		(void)sendsocket(client_socket, buf, 3);
+		putcom(buf,3);
 	}
 }
 
@@ -2085,7 +2073,7 @@ void input_thread(void *arg)
 		if(sbbs->passthru_socket_active == true) {
 			BOOL writable = FALSE;
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable)
-				(void)sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
+				sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr);
 			else
 				lprintf(LOG_WARNING, "Node %d could not write to passthru socket (writable=%d)"
 					, sbbs->cfg.node_num, (int)writable);
@@ -2498,10 +2486,10 @@ void output_thread(void* arg)
 			}
 			/* Spy on the user remotely */
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				(void)sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				(void)sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
+				sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i);
 #endif
 		}
 
@@ -2683,7 +2671,7 @@ void event_thread(void* arg)
 					} else {
 						char badpkt[MAX_PATH+1];
 						SAFEPRINTF2(badpkt, "%s.%lx.bad", g.gl_pathv[i], time(NULL));
-						(void)remove(badpkt);
+						remove(badpkt);
 						if(rename(g.gl_pathv[i], badpkt) == 0)
 							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
 						else
@@ -3317,7 +3305,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		SAFECOPY(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		SAFEPRINTF2(syspage_semfile, "%ssyspage.%u", cfg.ctrl_dir, node_num);
-		(void)remove(syspage_semfile);
+		remove(syspage_semfile);
 	} else {	/* event thread needs exclusive-use temp_dir */
 		if(startup->temp_dir[0])
 			SAFECOPY(cfg.temp_dir,startup->temp_dir);
@@ -3381,7 +3369,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	pause_hotspot = NULL;
 	console = 0;
 	online = 0;
-	outchar_esc = ansiState_none;
+	outchar_esc = 0;
 	nodemsg_inside = 0;	/* allows single nest */
 	hotkey_inside = 0;	/* allows single nest */
 	event_time = 0;
@@ -3496,33 +3484,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	qwknode=NULL;
 	total_qwknodes=0;
 
-	qwkmail_last = 0;
-	logon_ulb = 0;
-    logon_dlb = 0;
-    logon_uls = 0;
-    logon_dls = 0;
-    logon_posts = 0;
-    logon_emails = 0;
-    logon_fbacks = 0;
-    logon_ml = 0;
-    main_cmds = 0;
-    xfer_cmds = 0;
-    posts_read = 0;
-    temp_cdt = 0;
-    autohang = 0;
-    curgrp = 0;
-    curlib = 0;
-    usrgrps = 0;
-    usrlibs = 0;
-    comspec = 0;
-    altul = 0;
-    noaccess_str = 0;
-    noaccess_val = 0;
-    cur_output_rate = output_rate_unlimited;
-    getstr_offset = 0;
-    lastnodemsg = 0;
-    xtrn_mode = 0;
-	last_ns_time = 0;
+	spymsg("Connected");
 }
 
 //****************************************************************************
@@ -3530,7 +3492,6 @@ bool sbbs_t::init()
 {
 	char		str[MAX_PATH+1];
 	char		tmp[128];
-	char		tmp2[128];
 	int			result;
 	uint		i,j,k,l;
 	node_t		node;
@@ -3570,22 +3531,9 @@ bool sbbs_t::init()
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
-		SAFEPRINTF(str, "%sclient.ini", cfg.node_dir);
-		FILE* fp = fopen(str, "wt");
-		if(fp != NULL) {
-			fprintf(fp, "sock=%d\n", client_socket);
-			fprintf(fp, "addr=%s\n", client.addr);
-			fprintf(fp, "host=%s\n", client.host);
-			fprintf(fp, "port=%u\n", (uint)client.port);
-			fprintf(fp, "time=%lu\n", (ulong)client.time);
-			fprintf(fp, "prot=%s\n", client.protocol);
-			fprintf(fp, "local_addr=%s\n", local_addr);
-			fprintf(fp, "local_port=%u\n", (uint)inet_addrport(&addr));
-			fclose(fp);
-		}
 		lprintf(LOG_INFO,"socket %u attached to local interface %s port %u"
 			,client_socket, local_addr, inet_addrport(&addr));
-		spymsg("Connected");
+
 	}
 
 	if((comspec=os_cmdshell())==NULL) {
@@ -3646,13 +3594,11 @@ bool sbbs_t::init()
 			now=time(NULL);
 			struct tm tm;
 			localtime_r(&now,&tm);
-			time_t ftime = fdate(str);
 			safe_snprintf(str,sizeof(str),"%s  %s %s %02d %u  "
-				"End of preexisting log entry (possible crash on %.24s)"
+				"End of preexisting log entry (possible crash)"
 				,hhmmtostr(&cfg,&tm,tmp)
 				,wday[tm.tm_wday]
-				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900
-				,ctime_r(&ftime, tmp2));
+				,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900);
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(TRUE);
@@ -4061,12 +4007,14 @@ void sbbs_t::spymsg(const char* msg)
 	}
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		(void)sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
+		sendsocket(spy_socket[cfg.node_num-1],str,strlen(str));
 #ifdef __unix__
 	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET)
-		(void)sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
+		sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str));
 #endif
 }
+
+#define MV_BUFLEN	4096
 
 /****************************************************************************/
 /* Moves or copies a file from one dir to another                           */
@@ -4075,6 +4023,13 @@ void sbbs_t::spymsg(const char* msg)
 /****************************************************************************/
 int sbbs_t::mv(char *src, char *dest, char copy)
 {
+	char	str[MAX_PATH+1],*buf,atr=curatr;
+	int		ind,outd;
+	uint	chunk=MV_BUFLEN;
+	ulong	length,l;
+	time_t	ftime;
+	FILE *inp,*outp;
+
     if(!stricmp(src,dest))	 /* source and destination are the same! */
         return(0);
     if(!fexistcase(src)) {
@@ -4098,10 +4053,67 @@ int sbbs_t::mv(char *src, char *dest, char copy)
         return(0);
 	}
 #endif
-	if(!CopyFile(src, dest, /* fail if exists: */true)) {
-		errormsg(WHERE, "CopyFile", src, 0, dest);
-		return -1;
+    attr(WHITE);
+    if((ind=nopen(src,O_RDONLY))==-1) {
+        errormsg(WHERE,ERR_OPEN,src,O_RDONLY);
+        return(-1);
 	}
+    if((inp=fdopen(ind,"rb"))==NULL) {
+        close(ind);
+        errormsg(WHERE,ERR_FDOPEN,str,O_RDONLY);
+        return(-1);
+	}
+    setvbuf(inp,NULL,_IOFBF,32*1024);
+    if((outd=nopen(dest,O_WRONLY|O_CREAT|O_TRUNC))==-1) {
+        fclose(inp);
+        errormsg(WHERE,ERR_OPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
+        return(-1);
+	}
+    if((outp=fdopen(outd,"wb"))==NULL) {
+        close(outd);
+        fclose(inp);
+        errormsg(WHERE,ERR_FDOPEN,dest,O_WRONLY|O_CREAT|O_TRUNC);
+        return(-1);
+	}
+    setvbuf(outp,NULL,_IOFBF,8*1024);
+	ftime=filetime(ind);
+    length=(long)filelength(ind);
+    if(length) {	/* Something to copy */
+		if((buf=(char *)malloc(MV_BUFLEN))==NULL) {
+			fclose(inp);
+			fclose(outp);
+			errormsg(WHERE,ERR_ALLOC,nulstr,MV_BUFLEN);
+			return(-1);
+		}
+		l=0L;
+		while(l<length) {
+			bprintf("%2lu%%",l ? (long)(100.0/((float)length/l)) : 0L);
+			if(l+chunk>length)
+				chunk=length-l;
+			if(fread(buf,1,chunk,inp)!=chunk) {
+				free(buf);
+				fclose(inp);
+				fclose(outp);
+				errormsg(WHERE,ERR_READ,src,chunk);
+				return(-1);
+			}
+			if(fwrite(buf,1,chunk,outp)!=chunk) {
+				free(buf);
+				fclose(inp);
+				fclose(outp);
+				errormsg(WHERE,ERR_WRITE,dest,chunk);
+				return(-1);
+			}
+			l+=chunk;
+			bputs("\b\b\b");
+		}
+		bputs("   \b\b\b");  /* erase it */
+		attr(atr);
+		free(buf);
+	}
+    fclose(inp);
+    fclose(outp);
+	setfdate(dest,ftime);	/* Would be nice if we could use futime() instead */
     if(!copy && remove(src)) {
         errormsg(WHERE,ERR_REMOVE,src,0);
         return(-1);
@@ -4325,7 +4337,7 @@ void sbbs_t::reset_logon_vars(void)
 /****************************************************************************/
 void sbbs_t::catsyslog(int crash)
 {
-	char str[MAX_PATH+1] = "node.log";
+	char str[MAX_PATH+1];
 	char *buf;
 	int  i,file;
 	long length;
@@ -4438,7 +4450,7 @@ void sbbs_t::logoffstats()
 
 void node_thread(void* arg)
 {
-	char			str[MAX_PATH + 1];
+	char			str[128];
 	int				file;
 	uint			curshell=0;
 	node_t			node;
@@ -4473,8 +4485,7 @@ void node_thread(void* arg)
 	if(sbbs->answer()) {
 
 		login_success = true;
-		if(sbbs->useron.pass[0])
-			listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
+		listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr)+1, sbbs->cfg.node_num, LAST_NODE);
 		if(sbbs->sys_status&SS_QWKLOGON) {
 			sbbs->getsmsg(sbbs->useron.number);
 			sbbs->qwk_sec();
@@ -4538,15 +4549,6 @@ void node_thread(void* arg)
 
 	sbbs->logout();
 	sbbs->logoffstats();	/* Updates both system and node dsts.dab files */
-
-	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
-	FILE* fp = fopen(str, "at");
-	if(fp != NULL) {
-		fprintf(fp, "user=%u\n", sbbs->useron.number);
-		fprintf(fp, "name=%s\n", sbbs->useron.alias);
-		fprintf(fp, "done=%lu\n", (ulong)time(NULL));
-		fclose(fp);
-	}
 
 	if(sbbs->sys_status&SS_DAILY) {	// New day, run daily events/maintenance
 		sbbs->daily_maint();
@@ -4621,7 +4623,7 @@ void node_thread(void* arg)
 		/* crash here on Aug-4-2015:
 		node_thread_running already destroyed
 		bbs_thread() timed out waiting for 1 node thread(s) to terminate */
-		uint32_t remain = protected_uint32_adjust_fetch(&node_threads_running, -1);
+		int32_t remain = protected_uint32_adjust(&node_threads_running, -1);
 		lprintf(LOG_INFO,"Node %d thread terminated (%u node threads remain, %lu clients served)"
 			,sbbs->cfg.node_num, remain, served);
 	}
@@ -4661,7 +4663,7 @@ bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
 	if(!fexist(fname))
 		return false;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, (long)flength(fname));
+	lprintf(LOG_DEBUG, "Backing-up %s (%lu bytes)", fname, flength(fname));
 	return ::backup(fname, backup_level, rename) ? true : false;
 }
 
@@ -4871,7 +4873,7 @@ const char* DLLCALL bbs_ver(void)
 	if(ver[0]==0) {	/* uninitialized */
 		DESCRIBE_COMPILER(compiler);
 
-		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  Compiled %s/%s %s %s with %s"
+		safe_snprintf(ver,sizeof(ver),"%s %s%c%s  SMBLIB %s  Compiled %s %s with %s"
 			,TELNET_SERVER
 			,VERSION, REVISION
 #ifdef _DEBUG
@@ -4879,7 +4881,7 @@ const char* DLLCALL bbs_ver(void)
 #else
 			,""
 #endif
-			,git_branch, git_hash
+			,smb_lib_ver()
 			,__DATE__, __TIME__, compiler
 			);
 	}
@@ -4912,12 +4914,6 @@ static void cleanup(int code)
 
 	free_cfg(&scfg);
 	free_text(text);
-
-	for(int i = 0; i < MAX_NODES; i++) {
-		free_text(node_text[i]);
-		free_cfg(&node_scfg[i]);
-		memset(&node_scfg[i], 0, sizeof(node_scfg[i]));
-	}
 
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
@@ -4993,7 +4989,7 @@ void DLLCALL bbs_thread(void* arg)
 	ZERO_VAR(js_server_props);
 	SAFEPRINTF3(js_server_props.version,"%s %s%c",TELNET_SERVER,VERSION,REVISION);
 	js_server_props.version_detail=bbs_ver();
-	js_server_props.clients=&node_threads_running;
+	js_server_props.clients=&node_threads_running.value;
 	js_server_props.options=&startup->options;
 	js_server_props.interfaces=&startup->telnet_interfaces;
 
@@ -5042,17 +5038,18 @@ void DLLCALL bbs_thread(void* arg)
 	char compiler[32];
 	DESCRIBE_COMPILER(compiler);
 
-	lprintf(LOG_INFO,"%s Version %s%c%s"
+	lprintf(LOG_INFO,"%s Version %s Revision %c%s"
 		,TELNET_SERVER
 		,VERSION
-		,REVISION
+		,toupper(REVISION)
 #ifdef _DEBUG
 		," Debug"
 #else
 		,""
 #endif
 		);
-	lprintf(LOG_INFO,"Compiled %s/%s %s %s with %s", git_branch, git_hash, __DATE__, __TIME__, compiler);
+	lprintf(LOG_INFO,"Compiled %s %s with %s", __DATE__, __TIME__, compiler);
+	lprintf(LOG_DEBUG,"SMBLIB %s (format %x.%02x)",smb_lib_ver(),smb_ver()>>8,smb_ver()&0xff);
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "sizeof: int=%d, long=%d, off_t=%d, time_t=%d"
@@ -5095,7 +5092,7 @@ void DLLCALL bbs_thread(void* arg)
 	scfg.size=sizeof(scfg);
 	scfg.node_num=startup->first_node;
 	SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, text, /* prep: */TRUE, /* node_req: */TRUE, logstr, sizeof(logstr))) {
+	if(!load_cfg(&scfg, text, TRUE, logstr)) {
 		lprintf(LOG_CRIT,"!ERROR %s",logstr);
 		lprintf(LOG_CRIT,"!FAILED to load configuration files");
 		cleanup(1);
@@ -5318,6 +5315,23 @@ NO_SSH:
 		YIELD();
 		if(protected_uint32_value(node_threads_running)==0) {	/* check for re-run flags and recycle/shutdown sem files */
 			if(!(startup->options&BBS_OPT_NO_RECYCLE)) {
+
+				bool rerun=false;
+				for(i=first_node;i<=last_node;i++) {
+					if(sbbs->getnodedat(i,&node,0)!=0)
+						continue;
+					if(node.misc&NODE_RRUN) {
+						sbbs->getnodedat(i,&node,1);
+						if(!rerun)
+							lprintf(LOG_INFO,"Node %d flagged for re-run",i);
+						rerun=true;
+						node.misc&=~NODE_RRUN;
+						sbbs->putnodedat(i,&node);
+					}
+				}
+				if(rerun)
+					break;
+
 				if((p=semfile_list_check(&initialized,recycle_semfiles))!=NULL) {
 					lprintf(LOG_INFO,"Recycle semaphore file (%s) detected"
 						,p);
@@ -5349,7 +5363,7 @@ NO_SSH:
 		/* now wait for connection */
 		client_addr_len = sizeof(client_addr);
 		client_socket=xpms_accept(ts_set, &client_addr
-	        	,&client_addr_len, startup->sem_chk_freq*1000, (startup->options & BBS_OPT_HAPROXY_PROTO) ? XPMS_ACCEPT_FLAG_HAPROXY : XPMS_FLAGS_NONE, &ts_cb);
+	        	,&client_addr_len, startup->sem_chk_freq*1000, &ts_cb);
 
 		if(terminate_server)	/* terminated */
 			break;
@@ -5699,48 +5713,11 @@ NO_SSH:
 			continue;
 		}
 
-		// Load the configuration files for this node, only if/when needed/updated
-		scfg_t* cfg = &node_scfg[i - 1];
-		if(cfg->size != sizeof(*cfg) || (node.misc & NODE_RRUN)) {
-			sbbs->bprintf("Loading configuration...");
-			cfg->size = sizeof(*cfg);
-			cfg->node_num = i;
-		    SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
-			lprintf(LOG_INFO,"Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
-			SAFECOPY(logstr,UNKNOWN_LOAD_ERROR);
-			if(!load_cfg(cfg, node_text[i - 1], /* prep: */TRUE, /* node_req: */TRUE, logstr, sizeof(logstr))) {
-				lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
-				cfg->node_num = first_node;
-				if(!load_cfg(cfg, node_text[i - 1], /* prep: */TRUE, /* node: */TRUE, logstr, sizeof(logstr))) {
-					lprintf(LOG_CRIT,"!ERROR %s",logstr);
-					lprintf(LOG_CRIT,"!FAILED to load configuration files");
-					sbbs->bprintf("\r\nFAILED: %s", logstr);
-					client_off(client_socket);
-					SSH_END(client_socket);
-					close_socket(client_socket);
-					sbbs->getnodedat(cfg->node_num,&node,true);
-					node.status = NODE_WFC;
-					sbbs->putnodedat(cfg->node_num,&node);
-					continue;
-				}
-				cfg->node_num = i; // correct the node number
-			}
-			if(node.misc & NODE_RRUN) {
-				sbbs->getnodedat(cfg->node_num,&node,true);
-				node.misc &= ~NODE_RRUN;
-				sbbs->putnodedat(cfg->node_num,&node);
-			}
-			sbbs->bputs(crlf);
-		}
-		// Copy event last-run info from global config
-		for(int e=0; e < cfg->total_events && e < scfg.total_events; e++)
-			cfg->event[e]->last = scfg.event[e]->last;
-
         node_socket[i-1]=client_socket;
 
 		sbbs_t* new_node = new sbbs_t(/* node_num: */i, &client_addr, client_addr_len, host_name
         	,client_socket
-			,cfg, node_text[i-1], &client);
+			,&scfg, text, &client);
 
 		new_node->client=client;
 #ifdef USE_CRYPTLIB
@@ -5863,7 +5840,7 @@ NO_SSH:
 			new_node->client_socket_dup=accept(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len);
 
 			if(new_node->client_socket_dup == INVALID_SOCKET) {
-				lprintf(LOG_ERR,"Node %d !ERROR (%d) accepting on passthru socket"
+				lprintf(LOG_ERR,"Node %d !ERROR (%d) connecting accept()ing on passthru socket"
 					,new_node->cfg.node_num, ERROR_VALUE);
 				lprintf(LOG_WARNING,"Node %d !WARNING native doors which use sockets will not function"
 					,new_node->cfg.node_num);

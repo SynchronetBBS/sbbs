@@ -131,7 +131,6 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 			memcpy(y, z, zcnt);
 			y64 = malloc(zcnt*4/3+3);
 			if (y64 == NULL) {
-				free(x64);
 				free(y);
 				return 0;
 			}
@@ -654,7 +653,28 @@ enum {
 
 #ifdef BUILD_JSDOCS
 static char* cryptcon_prop_desc[] = {
-	 "Algorithm constant (CryptContext.ALGO.XXX)"
+	 "Algorithm constant (CryptContext.ALGO.XXX):<ul class=\"showList\">\n"
+	 "<li>CryptContext.ALGO.NONE</li>\n"
+	 "<li>CryptContext.ALGO.DES</li>\n"
+	 "<li>CryptContext.ALGO.3DES</li>\n"
+	 "<li>CryptContext.ALGO.IDEA</li>\n"
+	 "<li>CryptContext.ALGO.CAST</li>\n"
+	 "<li>CryptContext.ALGO.RC2</li>\n"
+	 "<li>CryptContext.ALGO.RC4</li>\n"
+	 "<li>CryptContext.ALGO.AES</li>\n"
+	 "<li>CryptContext.ALGO.DH</li>\n"
+	 "<li>CryptContext.ALGO.RSA</li>\n"
+	 "<li>CryptContext.ALGO.DSA</li>\n"
+	 "<li>CryptContext.ALGO.ELGAMAL</li>\n"
+	 "<li>CryptContext.ALGO.ECDSA</li>\n"
+	 "<li>CryptContext.ALGO.ECDH</li>\n"
+	 "<li>CryptContext.ALGO.MD5</li>\n"
+	 "<li>CryptContext.ALGO.SHA1</li>\n"
+	 "<li>CryptContext.ALGO.SHA2</li>\n"
+	 "<li>CryptContext.ALGO.SHAng</li>\n"
+	 "<li>CryptContext.ALGO.HMAC-SHA1</li>\n"
+	 "<li>CryptContext.ALGO.HMAC-SHA2</li>\n"
+	 "<li>CryptContext.ALGO.HMAC-SHAng</li></ul>"
 	,"Cipher block size in bytes"
 	,"Output of hasing algorithms (ie: MD5, SHA1, etc)"
 	,"Cipher IV"
@@ -664,7 +684,12 @@ static char* cryptcon_prop_desc[] = {
 	,"The salt value used to derive an encryption key from a key (Length must be between 8 and 64)"
 	,"Key size in bytes"
 	,"Key label"
-	,"Mode constant (CryptContext.MODE.XXX)"
+	,"Mode constant (CryptContext.MODE.XXX):<ul class=\"showList\">\n"
+	 "<li>CryptContext.MODE.None</li>\n"
+	 "<li>CryptContext.MODE.ECB</li>\n"
+	 "<li>CryptContext.MODE.CBC</li>\n"
+	 "<li>CryptContext.MODE.CFB</li>\n"
+	 "<li>CryptContext.MODE.GCM</li></ul>"
 	,"Algorithm name"
 	,"Mode name"
 	,NULL
@@ -812,6 +837,8 @@ js_cryptcon_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if ((p=(struct js_cryptcon_private_data *)JS_GetPrivate(cx,obj))==NULL) {
 		return JS_TRUE;
+		JS_ReportError(cx, getprivate_failure, WHERE);
+		return JS_FALSE;
 	}
 
     JS_IdToValue(cx, id, &idval);
@@ -1010,51 +1037,6 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-#ifdef BUILD_JSDOCS
-static char* cryptcon_algo_prop_desc[] = {
-	"No encryption",
-	"<p>DES is a 64-bit block cipher with a 56-bit key. Note that this algorithm is no longer considered secure and should not be used. It is present in cryptlib only for compatibility with legacy applications.</p>"
-	 "<p>Although cryptlib uses 64-bit DES keys, only 56 bits of the key are actually used. The least significant bit in each byte is used as a parity bit (cryptlib will set the correct parity values for you, so you don't have to worry about this). You can treat the algorithm as having a 64-bit key, but bear in mind that only the high 7 bits of each byte are actually used as keying material.</p>"
-	 "<p>Loading a key will return a CRYPT_ERROR_PARAM3 error if the key is a weak key. cryptExportKey will export the correct parity-adjusted version of the key.</p>",
-	"<p>Triple DES is a 64-bit block cipher with a 112/168-bit key.</p>"
-	 "<p>Although cryptlib uses 128, or 192-bit DES keys (depending on whether two- or three-key triple DES is being used), only 112 or 168 bits of the key are actually used. The least significant bit in each byte is used as a parity bit (cryptlib will set the correct parity values for you, so you don't have to worry about this). You can treat the algorithm as having a 128 or 192-bit key, but bear in mind that only the high 7 bits of each byte are actually used as keying material.</p>"
-	 "<p>Loading a key will return a CRYPT_ERROR_PARAM3 error if the key is a weak key. cryptExportKey will export the correct parity-adjusted version of the key.</p>",
-	"IDEA is a 64-bit block cipher with a 128-bit key. IDEA was formerly covered by patents, but these have now all expired.",
-	"CAST-128 is a 64-bit block cipher with a 128-bit key",
-	"RC2 (disabled by default, used for PKCS #12)",
-	"RC4 is an 8-bit stream cipher with a key of up to 1024 bits. Some weaknesses have been found in this algorithm, and it's proven to be extremely difficult to employ in a safe manner. For this reason it should not be used any more except for legacy application support, and is disabled by default.</p>"
-	 "<p>The term \"RC4\" is trademarked in the US. It may be necessary to refer to it as \"an algorithm compatible with RC4\" in products that use RC4 and are distributed in the US. Common practice is to refer to it as ArcFour.</p>",
-	"AES is a 128-bit block cipher with a 128-bit key.",
-	"<p>Diffie-Hellman is a key-agreement algorithm with a key size of up to 4096 bits.</p>"
-	 "<p>Diffie-Hellman was formerly covered by a patent in the US, this has now expired.</p>",
-	"<p>RSA is a public-key encryption/digital signature algorithm with a key size of up to 4096 bits.</p>"
-	 "<p>RSA was formerly covered by a patent in the US, this has now expired.</p>",
-	"<p>DSA is a digital signature algorithm with a key size of up to 1024 bits and has the cryptlib algorithm identifier CRYPT_ALGO_DSA.</p>"
-	 "<p>DSA is covered by US patent 5,231,668, with the patent held by the US government. This patent has been made available royalty-free to all users world-wide. The US Department of Commerce is not aware of any other patents that would be infringed by the DSA. US patent 4,995,082, \"Method for identifying subscribers and for generating and verifying electronic signatures in a data exchange system\" (\"the Schnorr patent\") relates to the DSA algorithm but only applies to a very restricted set of smart-card based applications and does not affect the DSA implementation in cryptlib.</p>",
-	"<p>Elgamal is a public-key encryption/digital signature algorithm with a key size of up to 4096 bits.</p>"
-	 "<p>Elgamal was formerly covered (indirectly) by a patent in the US, this has now expired.</p>",
-	"ECDSA is a digital signature algorithm with a key size of up to 521 bits.",
-	"ECDH is a key-agreement algorithm with a key size of up to 521 bits.",
-	"MD5 (only used for TLS 1.0/1.1)",
-	"SHA1 is a message digest/hash algorithm with a digest/hash size of 160 bits. This algorithm has poor long-term security prospects and should be deprecated in favour of SHA-2.",
-	"SHA2/SHA256 is a message digest/hash algorithm with a digest/hash size of 256 bits.",
-	"Future SHA-nextgen standard",
-	"HMAC-SHA1 is a MAC algorithm with a key size of up to 1024 bits.",
-	"HMAC-SHA2 is a MAC algorithm with a key size of up to 1024 bits.",
-	"HMAC-future-SHA-nextgen",
-	NULL
-};
-
-static char* cryptcon_mode_prop_desc[] = {
-	"No encryption mode",
-	"ECB",
-	"CBC",
-	"CFB",
-	"GCM",
-	NULL
-};
-#endif
-
 JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 {
 	JSObject*	ccobj;
@@ -1122,10 +1104,6 @@ JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			/* CRYPT_ALGO_HMAC_RIPEMD160 no longer supported */
 			JS_DefineProperty(cx, algo, "HMAC-SHAng", INT_TO_JSVAL(CRYPT_ALGO_HMAC_SHAng), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-#ifdef BUILD_JSDOCS
-			js_CreateArrayOfStrings(cx, algo, "_property_desc_list", cryptcon_algo_prop_desc, JSPROP_READONLY);
-			js_DescribeSyncObject(cx, algo, "Associative array of crypto algorithm constants",318);
-#endif
 			JS_DeepFreezeObject(cx, algo);
 		}
 		mode = JS_DefineObject(cx, constructor, "MODE", NULL, NULL, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1141,10 +1119,6 @@ JSObject* DLLCALL js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			/* CRYPT_MODE_OFB no longer supported */
 			JS_DefineProperty(cx, mode, "GCM", INT_TO_JSVAL(CRYPT_MODE_GCM), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-#ifdef BUILD_JSDOCS
-			js_CreateArrayOfStrings(cx, mode, "_property_desc_list", cryptcon_mode_prop_desc, JSPROP_READONLY);
-			js_DescribeSyncObject(cx, mode, "Associative array of crypto mode constants",318);
-#endif
 			JS_DeepFreezeObject(cx, mode);
 		}
 	}

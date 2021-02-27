@@ -1,4 +1,8 @@
+/* ars.c */
+
 /* Synchronet Access Requirement String (ARS) functions */
+
+/* $Id: ars.c,v 1.24 2020/05/14 07:49:58 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,13 +17,25 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "ars_defs.h"
+#include "sbbs.h"
 
 static BOOL ar_string_arg(int artype)
 {
@@ -86,7 +102,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 		if(str[i]=='&')
 			continue;
 
-		if(IS_ALPHA(str[i])) {
+		if(isalpha(str[i])) {
 			p=np=str+i;
 			SKIP_ALPHA(np);
 			n=np-p;
@@ -232,7 +248,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			continue; 
 		}
 
-		if(!arg_expected && IS_ALPHA(str[i])) {
+		if(!arg_expected && isalpha(str[i])) {
 			n=i;
 			if(!strnicmp(str+i,"AGE",3)) {
 				artype=AR_AGE;
@@ -534,7 +550,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			ar[j++]=AR_EQUAL;
 		not=equal=0;
 
-		if(artype==AR_FLAG1 && IS_DIGIT(str[i])) {   /* flag set specified */
+		if(artype==AR_FLAG1 && isdigit(str[i])) {   /* flag set specified */
 			switch(str[i]) {
 				case '2':
 					artype=AR_FLAG2;
@@ -551,15 +567,15 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 
 		arg_expected=FALSE;
 
-		if(artype==AR_SUB && !IS_DIGIT(str[i]))
+		if(artype==AR_SUB && !isdigit(str[i]))
 			artype=AR_SUBCODE;
-		if(artype==AR_DIR && !IS_DIGIT(str[i]))
+		if(artype==AR_DIR && !isdigit(str[i]))
 			artype=AR_DIRCODE;
 
 		if(artype==AR_INVALID)
 			artype=AR_LEVEL;
 		ar[j++]=artype;
-		if(IS_DIGIT(str[i]) && !ar_string_arg(artype)) {
+		if(isdigit(str[i]) && !ar_string_arg(artype)) {
 			if(artype==AR_TIME) {
 				n=atoi(str+i)*60;
 				p=strchr(str+i,':');
@@ -567,7 +583,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 					n+=atoi(p+1);
 				*((short *)(ar+j))=n;
 				j+=2;
-				while(IS_DIGIT(str[i+1]) || str[i+1]==':') i++;
+				while(isdigit(str[i+1]) || str[i+1]==':') i++;
 				continue; 
 			}
 			n=atoi(str+i);
@@ -619,7 +635,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 					j--;
 					break; 
 			}
-			while(IS_DIGIT(str[i+1])) i++;
+			while(isdigit(str[i+1])) i++;
 			continue; 
 		}
 		maxlen=128;
@@ -665,7 +681,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				}
 				else        /* Unknown sub-board */
 					j--;
-				while(IS_ALPHA(str[i+1])) i++;
+				while(isalpha(str[i+1])) i++;
 				break;
 			case AR_DIR:
 				for(n=0;n<(uint)cfg->total_dirs;n++)
@@ -677,7 +693,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				}
 				else        /* Unknown directory */
 					j--;
-				while(IS_ALPHA(str[i+1])) i++;
+				while(isalpha(str[i+1])) i++;
 				break;
 			case AR_DAY:
 				if(toupper(str[i])=='S' 
@@ -696,7 +712,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				else if(toupper(str[i])=='F')               /* Friday */
 					ar[j++]=5;
 				else ar[j++]=6;                             /* Saturday */
-				while(IS_ALPHA(str[i+1])) i++;
+				while(isalpha(str[i+1])) i++;
 				break;
 			default:	/* Badly formed ARS, digit expected */
 				j--;

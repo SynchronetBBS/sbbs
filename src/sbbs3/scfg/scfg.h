@@ -1,3 +1,6 @@
+/* $Id: scfg.h,v 1.35 2020/06/12 15:57:17 rswindell Exp $ */
+// vi: tabstop=4
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -11,8 +14,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -22,16 +37,9 @@
 #include <stdbool.h>
 #include <limits.h>	/* USHRT_MAX */
 
-#include "scfgsave.h"
-#include "scfglib.h"
-#include "date_str.h"
-#include "str_util.h"
 #include "gen_defs.h"
-#include "smblib.h"
-#include "load_cfg.h"
-#include "ini_file.h"
 #include "uifc.h"
-#include "nopen.h"
+#include "sbbs.h"
 
 /**********/
 /* Macros */
@@ -153,12 +161,12 @@ void sort_subs(int grpnum);
 void sort_dirs(int libnum);
 unsigned subs_in_group(unsigned grpnum);
 char random_code_char(void);
-BOOL load_main_cfg(scfg_t*, char*, size_t);
-BOOL load_node_cfg(scfg_t*, char*, size_t);
-BOOL load_msgs_cfg(scfg_t*, char*, size_t);
-BOOL load_file_cfg(scfg_t*, char*, size_t);
-BOOL load_chat_cfg(scfg_t*, char*, size_t);
-BOOL load_xtrn_cfg(scfg_t*, char*, size_t);
+BOOL load_main_cfg(scfg_t*, char*);
+BOOL load_node_cfg(scfg_t*, char*);
+BOOL load_msgs_cfg(scfg_t*, char*);
+BOOL load_file_cfg(scfg_t*, char*);
+BOOL load_chat_cfg(scfg_t*, char*);
+BOOL load_xtrn_cfg(scfg_t*, char*);
 BOOL save_main_cfg(scfg_t*, int);
 BOOL save_node_cfg(scfg_t*, int);
 BOOL save_msgs_cfg(scfg_t*, int);

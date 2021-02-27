@@ -1,54 +1,36 @@
 <?xjs
-	var settings = load('modopts.js', 'web') || { web_directory: web_root_dir + '/..' };
+	var settings = load('modopts.js', 'web');
 	load(settings.web_directory + '/lib/init.js');
+
 	load(settings.web_lib + 'auth.js');
 	load(settings.web_lib + 'pages.js');
 	load(settings.web_lib + 'sidebar.js');
 
 	var page = typeof http_request.query.page == 'undefined' ? '000-home.xjs' : http_request.query.page[0];
-	if (page.search(/\.link$/) > -1) {
-		var loc = getExternalLink(page);
+    if (page.search(/(?:https?|ftp|telnet|ssh|gopher|rlogin|news):\/\/[^\s'"'<>()]*|[-\w.+]+@(?:[-\w]+\.)+[\w]{2,6}/i) > -1) {
         http_reply.status = '301 Moved Permanently';
-        http_reply.header['Location'] = loc;
+        http_reply.header['Location'] = page;
         exit();
     }
-	var pagePath = getPagePath(page);
-	if (pagePath == null) page = '000-home.xjs';
-	var page_ctrl = getCtrlLine(pagePath);
+
+    if (!file_exists(fullpath(settings.web_pages + page)) || fullpath(settings.web_pages + page).indexOf(fullpath(settings.web_pages)) !== 0) {
+        page = '000-home.xjs';
+    }
+	var page_ctrl = getCtrlLine(settings.web_pages + page);
 ?>
 
-<? function _sidebar() { ?>
-	<? if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return; ?>
-		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
-<? } ?>
-
 <?xjs
-	function loadComponent(fn) {
-		return (function () {
-			const cdir = backslash(fullpath(settings.web_mods + 'components'));
-			if (file_isdir(cdir) && file_exists(cdir + fn)) {
-				load(xjs_compile(cdir + fn));
-				return true;
-			}
-			if (file_exists(settings.web_components + fn)) {
-				load(xjs_compile(settings.web_components + fn));
-				return true;
-			}
-			return false;
-		})();
+	function _sidebar() {
+		if (settings.layout_sidebar_off || page_ctrl.options.no_sidebar) return;
+?>
+		<div class="col-xs-6 col-sm-3 sidebar-offcanvas" id="sidebar"><? writeSidebarModules(); ?></div>
+<?xjs
 	}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<style type="text/css">
-			.hidden { display:none; }
-		</style>
-		<script src="./js/jquery.min.js"></script>
-		<script type="text/javascript">
-			jQuery('html').addClass('hidden');
-		</script>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -57,43 +39,59 @@
 		<link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
 		<link href="./css/offcanvas.css" rel="stylesheet">
 		<link href="./css/style.css" rel="stylesheet">
-<?xjs if (settings.darkmode_allow) { ?>
-		<link href="./css/checkbox.css" rel="stylesheet">
-<?xjs } ?>
-		<? if (file_exists(settings.web_root + 'css/custom.css')) { ?>
+		<?xjs if (file_exists(settings.web_root + 'css/custom.css')) { ?>
 			<link href="./css/custom.css" rel="stylesheet">
-		<? } ?>
+		<?xjs } ?>
 	</head>
 
 	<body>
 
+		<script src="./js/jquery.min.js"></script>
 		<script src="./bootstrap/js/bootstrap.min.js"></script>
 		<script src="./js/common.js"></script>
 
 		<?xjs
-			loadComponent('modal.xjs');
-			loadComponent('header.xjs');
-			loadComponent('navbar.xjs');
+			(function () {
+				load(xjs_compile(settings.web_components + 'modal.xjs'));
+			})();
+
+			if (file_exists(settings.web_components + 'header.xjs')) {
+				(function () {
+					load(xjs_compile(settings.web_components + 'header.xjs'));
+				})();
+			}
+
+			(function () {
+				load(xjs_compile(settings.web_components + 'navbar.xjs'));
+			})();
 		?>
 
 		<div class="container<?xjs if (settings.layout_full_width) write('-fluid'); ?>">
 			<div class="row row-offcanvas row-offcanvas-<?xjs write(settings.layout_sidebar_left ? 'left' : 'right'); ?>">
-				<? if (settings.layout_sidebar_left) _sidebar(); ?>
+				<?xjs if (settings.layout_sidebar_left) _sidebar(); ?>
 				<div class="col-xs-12 col-sm-<?xjs write(settings.layout_sidebar_off || page_ctrl.options.no_sidebar ? 12 : 9); ?>">
 					<div style="clear:both;">
 					<p class="pull-<?xjs write(settings.layout_sidebar_left ? 'left' : 'right'); ?> visible-xs">
 						<button title="Toggle sidebar" type="button" class="btn btn-primary btn-xs" data-toggle="offcanvas"><span class="glyphicon glyphicon-tasks"></span><?xjs write(locale.strings.main.label_sidebar); ?></button>
 					</p>
 					</div>
-					<? writePage(page); ?>
+					<?xjs writePage(page); ?>
 				</div>
-				<? if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
+				<?xjs if (!settings.layout_sidebar_left || settings.layout_sidebar_right) _sidebar(); ?>
 			</div>
 		  	<hr>
 			<footer>
-				<? if (!loadComponent('footer.xjs')) { ?>
-					<p>&copy; <? write(system.name + ", " + strftime("%Y")); ?></p>
-				<? } ?>
+				<?xjs
+					if (file_exists(settings.web_components + 'footer.xjs')) {
+						(function () {
+							load(xjs_compile(settings.web_components + 'footer.xjs'));
+						})();
+					} else {
+				?>
+						<p>&copy; <?xjs write(system.name + ", " + strftime("%Y")); ?></p>
+				<?xjs
+					}
+				?>
 			</footer>
 		</div>
 
@@ -111,6 +109,7 @@
     			return false;
 			});
 		</script>
+
 	</body>
 
 </html>

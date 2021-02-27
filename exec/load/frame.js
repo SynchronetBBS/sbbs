@@ -189,14 +189,14 @@ Frame.prototype.__defineSetter__("child", function(frame) {
 	if(frame instanceof Frame)
 		this.__relations__.child.push(frame);
 	else
-		throw new Error("child not an instance of Frame()");
+		throw("child not an instance of Frame()");
 });
 Frame.prototype.__defineGetter__("attr", function() {
 	return this.__properties__.attr;
 });
 Frame.prototype.__defineSetter__("attr", function(attr) {
 	if(attr !== undefined && isNaN(attr))
-		throw new Error("invalid Frame attribute: " + attr);
+		throw("invalid attribute: " + attr);
 	this.__properties__.attr = attr;
 });
 Frame.prototype.__defineGetter__("x", function() {
@@ -208,7 +208,7 @@ Frame.prototype.__defineSetter__("x", function(x) {
 	if(x == undefined)
 		return;
 	if(!this.__checkX__(x))
-		throw new Error("invalid Frame x coordinate: " + x);
+		throw("invalid x coordinate: " + x);
 	this.__properties__.x = Number(x);
 });
 Frame.prototype.__defineGetter__("y", function() {
@@ -220,7 +220,7 @@ Frame.prototype.__defineSetter__("y", function(y) {
 	if(y == undefined)
 		return;
 	if(!this.__checkY__(y))
-		throw new Error("invalid Frame y coordinate: " + y);
+		throw("invalid y coordinate: " + y);
 	this.__properties__.y = Number(y);
 });
 Frame.prototype.__defineGetter__("width", function() {
@@ -232,7 +232,7 @@ Frame.prototype.__defineSetter__("width", function(width) {
 	if(width == undefined)
 		return;
 	if(!this.__checkWidth__(this.x,Number(width)))
-		throw new Error("invalid Frame width: " + width);
+		throw("invalid width: " + width);
 	this.__properties__.width = Number(width);
 });
 Frame.prototype.__defineGetter__("height", function() {
@@ -244,7 +244,7 @@ Frame.prototype.__defineSetter__("height", function(height) {
 	if(height == undefined)
 		return;
 	if(!this.__checkHeight__(this.y,Number(height)))
-		throw new Error("invalid Frame height: " + height);
+		throw("invalid height: " + height);
 	this.__properties__.height = Number(height);
 });
 
@@ -289,7 +289,7 @@ Frame.prototype.__defineSetter__("checkbounds", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.checkbounds=bool;
 	else
-		throw new Error("non-boolean Frame checkbounds: " + bool);
+		throw("non-boolean checkbounds: " + bool);
 });
 Frame.prototype.__defineGetter__("transparent", function() {
 	return this.__settings__.transparent;
@@ -298,7 +298,7 @@ Frame.prototype.__defineSetter__("transparent", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.transparent=bool;
 	else
-		throw new Error("non-boolean Frame transparent: " + bool);
+		throw("non-boolean transparent: " + bool);
 });
 Frame.prototype.__defineGetter__("lf_strict", function() {
 	return this.__settings__.lf_strict;
@@ -307,7 +307,7 @@ Frame.prototype.__defineSetter__("lf_strict", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.lf_strict=bool;
 	else
-		throw new Error("non-boolean Frame lf_strict: " + bool);
+		throw("non-boolean lf_strict: " + bool);
 });
 Frame.prototype.__defineGetter__("scrollbars", function() {
 	return this.__settings__.scrollbars;
@@ -316,7 +316,7 @@ Frame.prototype.__defineSetter__("scrollbars", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.scrollbars=bool;
 	else
-		throw new Error("non-boolean Frame scrollbars: " + bool);
+		throw("non-boolean scrollbars: " + bool);
 });
 Frame.prototype.__defineGetter__("v_scroll", function() {
 	return this.__settings__.v_scroll;
@@ -325,7 +325,7 @@ Frame.prototype.__defineSetter__("v_scroll", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.v_scroll=bool;
 	else
-		throw new Error("non-boolean Frame v_scroll: " + bool);
+		throw("non-boolean v_scroll: " + bool);
 });
 Frame.prototype.__defineGetter__("word_wrap", function() {
 	return this.__settings__.word_wrap;
@@ -334,7 +334,7 @@ Frame.prototype.__defineSetter__("word_wrap", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.word_wrap=bool;
 	else
-		throw new Error("non-boolean Frame word_wrap: " + bool);
+		throw("non-boolean word_wrap: " + bool);
 });
 Frame.prototype.__defineGetter__("h_scroll", function() {
 	return this.__settings__.h_scroll;
@@ -343,19 +343,10 @@ Frame.prototype.__defineSetter__("h_scroll", function(bool) {
 	if(typeof bool == "boolean")
 		this.__settings__.h_scroll=bool;
 	else
-		throw new Error("non-boolean Frame h_scroll: " + bool);
+		throw("non-boolean h_scroll: " + bool);
 });
 Frame.prototype.__defineGetter__("is_open",function() {
 	return this.__properties__.open;
-});
-Frame.prototype.__defineGetter__("atcodes", function() {
-	return this.__settings__.atcodes;
-});
-Frame.prototype.__defineSetter__("atcodes", function(bool) {
-	if(typeof bool == "boolean")
-		this.__settings__.atcodes=bool;
-	else
-		throw new Error("non-boolean Frame atcode: " + bool);
 });
 
 /* public methods */
@@ -367,7 +358,7 @@ Frame.prototype.getData = function(x,y,use_offset) {
 		py += this.__position__.offset.y;
 	}
 	// if(!this.__properties__.data[py] || !this.__properties__.data[py][px])
-		// throw new Error("Frame.getData() - invalid coordinates: " + px + "," + py);
+		// throw("Frame.getData() - invalid coordinates: " + px + "," + py);
 	if(!this.__properties__.data[py] || !this.__properties__.data[py][px])
 		return new Char();
 	return this.__properties__.data[py][px];
@@ -381,7 +372,7 @@ Frame.prototype.setData = function(x,y,ch,attr,use_offset) {
 	}
 	//I don't remember why I did this, but it was probably important at the time
 	//if(!this.__properties__.data[py] || !this.__properties__.data[py][px])
-		// throw new Error("Frame.setData() - invalid coordinates: " + px + "," + py);
+		// throw("Frame.setData() - invalid coordinates: " + px + "," + py);
 	if(!this.__properties__.data[py])
 		this.__properties__.data[py] = [];
 	if(!this.__properties__.data[py][px])
@@ -613,7 +604,13 @@ Frame.prototype.load = function(filename,width,height) {
 		while(lines.length > 0) {
 			var x = 0;
 			var line = lines.shift();
-
+			/* parse 'ATCODES'??
+			line = line.replace(/@(.*)@/g,
+				function (str, code, offset, s) {
+					return bbs.atcode(code);
+				}
+			);
+			*/
 			while(line.length > 0) {
 				/* parse an attribute sequence*/
 				var m = line.match(/^\x1b\[(\d*);?(\d*);?(\d*)m/);
@@ -812,21 +809,19 @@ Frame.prototype.load = function(filename,width,height) {
     case "BIN":
         if (!this.load_bin(contents, width, height, 0)) return false;
 		break;
-	case "ASC":
-	case "MSG":
 	case "TXT":
-		var lines=contents.split(/\r*\n/);
+		var lines=contents.split(/\r\n/);
 		while(lines.length > 0)
 			this.putmsg(lines.shift() + "\r\n");
 		break;
 	default:
-		throw new Error("unsupported Frame.load filetype");
+		throw("unsupported filetype");
 		break;
 	}
 }
 Frame.prototype.load_bin = function(contents, width, height, offset) {
     if(width == undefined || height == undefined)
-        throw new Error("unknown Frame graphic dimensions");
+        throw("unknown graphic dimensions");
     if(offset == undefined) offset = 0;
     for(var y=0; y<height; y++) {
         for(var x=0; x<width; x++) {
@@ -964,8 +959,8 @@ Frame.prototype.erase = function(ch, attr) {
 			if(!this.__properties__.data[py + y][px + x]) {
 				continue;
 			}
-			if((this.__properties__.data[py + y][px + x].ch === undefined ||
-				this.__properties__.data[py + y][px + x].ch === ch) &&
+			if((this.__properties__.data[py + y][px + x].ch === undefined || 
+				this.__properties__.data[py + y][px + x].ch === ch) && 
 				this.__properties__.data[py + y][px + x].attr == attr) {
 				continue;
 			}
@@ -1009,73 +1004,17 @@ Frame.prototype.cleartoeol = function(attr) {
 		}
 	}
 }
-
 Frame.prototype.crlf = function() {
 	this.__position__.cursor.x = 0;
 	if(this.__position__.cursor.y < this.height-1)
 		this.__position__.cursor.y += 1;
 	else {}
 }
-
-Frame.prototype.__parseAtCodes__ = function(str) {
-	return str.replace(/(?:@(.+?)@)/g, function (match, code, rinput) {
-		// Don't allow ATCODES incompatible with the Frame system (things that take over the cursor,
-		// mess up the output, etc.) or atcodes that will require special support (which can be added later)
-		switch (code) {
-			case 'CLS':
-			case 'CLEAR':
-			case 'PAUSE':
-			case 'EOF':
-			case 'PON':
-			case 'POFF':
-			case 'RESETPAUSE':
-			case 'HOME':
-			case 'CLRLINE':
-			case 'CLR2EOL':
-			case 'CLR2EOS':
-			case 'PUSHXY':
-			case 'POPXY':
-			case 'HANGUP':
-			case 'WORDWRAP':
-			case 'WRAPOFF':
-			case 'CENTER':
-				return '';
-			case 'SYSONLY':
-				return '@SYSONLY@'; // make it obvious this doesn't work
-		}
-
-		if (code.indexOf('DELAY:') == 0) return;
-		if (code.indexOf('UP:') == 0) return;
-		if (code.indexOf('DOWN:') == 0) return;
-		if (code.indexOf('LEFT:') == 0) return;
-		if (code.indexOf('RIGHT:') == 0) return;
-		if (code.indexOf('GOTOXY:') == 0) return;
-		if (code.indexOf('POS:x') == 0) return;
-		if (code.indexOf('MENU:') == 0) return;
-		if (code.indexOf('CONDMENU:') == 0) return;
-		if (code.indexOf('TYPE:') == 0) return;
-		if (code.indexOf('INCLUDE:') == 0) return;
-		if (code.indexOf('EXEC:') == 0) return;
-		if (code.indexOf('EXEC_XTRN:') == 0) return;
-		if (code.indexOf('JS:') == 0) return;
-		if (code.indexOf('FILL:') == 0) return;
-		if (code.indexOf('WIDE:') == 0) return;
-
-		// parse remaining valid codes
-		return bbs.atcode(code);
-	});
-}
-
 Frame.prototype.write = function(str,attr) {
 	if(str == undefined)
 		return;
 	if(this.__settings__.word_wrap)
 		str = word_wrap(str, this.width,str.length, false);
-
-	if (this.__settings__.atcodes) {
-		str = this.__parseAtCodes__(str);
-	}
-
 	str = str.toString().split('');
 
 	if(attr)
@@ -1101,11 +1040,6 @@ Frame.prototype.putmsg = function(str,attr) {
 			if(!trailing_newline) str = str.trimRight();
 		}
 	}
-
-	if (this.__settings__.atcodes) {
-		str = this.__parseAtCodes__(str);
-	}
-
 	str = str.toString().split('');
 
 	if(attr)
@@ -1246,8 +1180,7 @@ Frame.prototype.putmsg = function(str,attr) {
 				this.__putChar__.call(this,ch,this.__properties__.curr_attr);
 				pos.x++;
 				break;
-			}
-
+			}
 		}
 	}
 }
@@ -1516,7 +1449,7 @@ Display.prototype.__defineSetter__("x", function(x) {
 	if(x == undefined)
 		this.__properties__.x = 1;
 	else if(isNaN(x))
-		throw new Error("invalid Display x coordinate: " + x);
+		throw("invalid x coordinate: " + x);
 	else
 		this.__properties__.x = Number(x);
 });
@@ -1527,7 +1460,7 @@ Display.prototype.__defineSetter__("y", function(y) {
 	if(y == undefined)
 		this.__properties__.y = 1;
 	else if(isNaN(y) || y < 1 || y > console.screen_rows)
-		throw new Error("invalid Display y coordinate: " + y);
+		throw("invalid y coordinate: " + y);
 	else
 		this.__properties__.y = Number(y);
 });
@@ -1538,7 +1471,7 @@ Display.prototype.__defineSetter__("width", function(width) {
 	if(width == undefined)
 		this.__properties__.width = console.screen_columns;
 	else if(isNaN(width) || (this.x + Number(width) - 1) > (console.screen_columns))
-		throw new Error("invalid Display width: " + width);
+		throw("invalid width: " + width);
 	else
 		this.__properties__.width = Number(width);
 });
@@ -1549,7 +1482,7 @@ Display.prototype.__defineSetter__("height", function(height) {
 	if(height == undefined)
 		this.__properties__.height = console.screen_rows;
 	else if(isNaN(height) || (this.y + Number(height) - 1) > (console.screen_rows))
-		throw new Error("invalid Display height: " + height);
+		throw("invalid height: " + height);
 	else
 		this.__properties__.height = Number(height);
 });
@@ -1763,7 +1696,7 @@ function Cursor(x,y,frame) {
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
 	else
-		throw new Error("the Cursor frame is not a frame");
+		throw("the frame is not a frame");
 
 	this.x = x;
 	this.y = y;
@@ -1774,7 +1707,7 @@ Cursor.prototype.__defineGetter__("x", function() {
 });
 Cursor.prototype.__defineSetter__("x", function(x) {
 	if(isNaN(x))
-		throw new Error("invalid Cursor x coordinate: " + x);
+		throw("invalid x coordinate: " + x);
 	this.__properties__.x = x;
 });
 Cursor.prototype.__defineGetter__("y", function() {
@@ -1782,7 +1715,7 @@ Cursor.prototype.__defineGetter__("y", function() {
 });
 Cursor.prototype.__defineSetter__("y", function(y) {
 	if(isNaN(y))
-		throw new Error("invalid Cursor y coordinate: " + y);
+		throw("invalid y coordinate: " + y);
 	this.__properties__.y = y;
 });
 
@@ -1799,7 +1732,7 @@ function Offset(x,y,frame) {
 	if(frame instanceof Frame)
 		this.__properties__.frame = frame;
 	else
-		throw new Error("the Offset frame is not a frame");
+		throw("the frame is not a frame");
 
 	this.x = x;
 	this.y = y;
@@ -1810,7 +1743,7 @@ Offset.prototype.__defineGetter__("x", function() {
 });
 Offset.prototype.__defineSetter__("x", function(x) {
 	if(x == undefined)
-		throw new Error("invalid Offset x offset: " + x);
+		throw("invalid x offset: " + x);
 	else if(x < 0)
 		x = 0;
 	this.__properties__.x = x;
@@ -1820,7 +1753,7 @@ Offset.prototype.__defineGetter__("y", function() {
 });
 Offset.prototype.__defineSetter__("y", function(y) {
 	if(y == undefined)
-		throw new Error("invalid Offset y offset: " + y);
+		throw("invalid y offset: " + y);
 	else if(y < 0)
 		y = 0;
 	this.__properties__.y = y;

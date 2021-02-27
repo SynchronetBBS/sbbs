@@ -1,4 +1,8 @@
+/* filewrap.c */
+
 /* File-related system-call wrappers */
+
+/* $Id: filewrap.c,v 1.50 2019/08/31 20:59:39 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +17,20 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -267,10 +283,10 @@ int lock(int file, off_t offset, off_t size)
    
 	pos=tell(file);
 	if(offset!=pos)
-		(void)lseek(file, offset, SEEK_SET);
+		lseek(file, offset, SEEK_SET);
 	i=_locking(file,LK_NBLCK,(long)size);
 	if(offset!=pos)
-		(void)lseek(file, pos, SEEK_SET);
+		lseek(file, pos, SEEK_SET);
 	return(i);
 }
 
@@ -281,10 +297,10 @@ int unlock(int file, off_t offset, off_t size)
    
 	pos=tell(file);
 	if(offset!=pos)
-		(void)lseek(file, offset, SEEK_SET);
+		lseek(file, offset, SEEK_SET);
 	i=_locking(file,LK_UNLCK,(long)size);
 	if(offset!=pos)
-		(void)lseek(file, pos, SEEK_SET);
+		lseek(file, pos, SEEK_SET);
 	return(i);
 }
 

@@ -56,7 +56,6 @@ static const KNOWNFOLDERID FOLDERID_ProgramData =		{0x62AB5D82,0xFDC1,0x4DC3,{0x
 #include "window.h"
 
 char* syncterm_version = "SyncTERM 1.2a"
-#define ALPHA
 #ifdef _DEBUG
 	" Debug ("__DATE__")"
 #endif
@@ -1617,28 +1616,6 @@ int main(int argc, char **argv)
 
 #ifdef __unix__
 	umask(077);
-#endif
-
-#ifdef ALPHA
-	init_uifc(TRUE, TRUE);
-	uifc.showbuf(WIN_SAV|WIN_MID|WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "WARNING: ALPHA VERSION", 
-	     "This is an ~`ALPHA`~ version\n"
-	     "\n"
-	     "It has both known and unknown issues and is not believed to be suitable\n"
-	     "for use. By using it, you are agreeing to be free QA to find and report bugs.\n"
-	     "\n"
-	     "There are expected to be many bugs.\n"
-	     "\n"
-	     "Bugs should be reported at `http://sf.net/p/syncterm/tickets/`\n"
-	     "when reporting bugs, please register with a valid email so I can follow\n"
-	     "up with additional questions.\n"
-	     "\n"
-	     "This message will appear every time you start this program.  Please\n"
-	     "consider running the latest release from:\n"
-	     "`https://sourceforge.net/projects/syncterm/files/latest/download`\n"
-	     "if you want a terminal that works.",
-	     NULL, NULL);
-	uifcbail();
 #endif
 
 	/* Auto-connect URL */

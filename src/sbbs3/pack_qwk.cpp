@@ -1,5 +1,7 @@
 /* Synchronet pack QWK packet routine */
 
+/* $Id: pack_qwk.cpp,v 1.85 2020/04/11 04:01:35 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -375,20 +389,18 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 				size=msgtoqwk(&msg, qwk, mode|QM_REPLYTO, &smb, /* confnum: */0, hdrs);
 				smb_unlockmsghdr(&smb,&msg);
 				smb_freemsgmem(&msg);
-				if(size >= 0) {
+				if(ndx && size) {
 					msgndx++;
-					if(ndx && size > 0) {
-						f=ltomsbin(msgndx); 	/* Record number */
-						ch=0;					/* Sub number, not used */
-						if(personal) {
-							fwrite(&f,4,1,personal);
-							fwrite(&ch,1,1,personal); 
-						}
-						fwrite(&f,4,1,ndx);
-						fwrite(&ch,1,1,ndx);
-						msgndx+=size/QWK_BLOCK_LEN; 
+					f=ltomsbin(msgndx); 	/* Record number */
+					ch=0;					/* Sub number, not used */
+					if(personal) {
+						fwrite(&f,4,1,personal);
+						fwrite(&ch,1,1,personal); 
 					}
-				}
+					fwrite(&f,4,1,ndx);
+					fwrite(&ch,1,1,ndx);
+					msgndx+=size/QWK_BLOCK_LEN; 
+				} 
 				YIELD();	/* yield */
 			}
 			if(online == ON_REMOTE)
@@ -516,24 +528,24 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 
 					size=msgtoqwk(&msg, qwk, mode, &smb, conf, hdrs, voting);
 					smb_unlockmsghdr(&smb,&msg);
-					if(size >= 0) {
+
+					if(ndx && size) {
 						msgndx++;
-						if(ndx && size > 0) {
-							f=ltomsbin(msgndx); 	/* Record number */
-							ch=0;					/* Sub number, not used */
-							if(personal
-								&& (!stricmp(msg.to,useron.alias)
-									|| !stricmp(msg.to,useron.name))) {
-								fwrite(&f,4,1,personal);
-								fwrite(&ch,1,1,personal); 
-							}
-							fwrite(&f,4,1,ndx);
-							fwrite(&ch,1,1,ndx);
-							msgndx+=size/QWK_BLOCK_LEN; 
+						f=ltomsbin(msgndx); 	/* Record number */
+						ch=0;					/* Sub number, not used */
+						if(personal
+							&& (!stricmp(msg.to,useron.alias)
+								|| !stricmp(msg.to,useron.name))) {
+							fwrite(&f,4,1,personal);
+							fwrite(&ch,1,1,personal); 
 						}
+						fwrite(&f,4,1,ndx);
+						fwrite(&ch,1,1,ndx);
+						msgndx+=size/QWK_BLOCK_LEN; 
 					}
+
 					smb_freemsgmem(&msg);
-					if(size > 0) {
+					if(size) {
 						(*msgcnt)++;
 						submsgs++;
 					}
@@ -570,17 +582,16 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		time_t elapsed = time(NULL)-start;
 		if(elapsed < 1)
 			elapsed = 1;
-		byte_estimate_to_str(ftell(qwk), tmp, sizeof(tmp), 1024, 1);
 		if(online == ON_REMOTE)
-			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%s bytes) in %lu seconds "
+			bprintf("\r\n\r\n\1n\1hPacked %lu messages (%lu bytes) in %lu seconds "
 				"(%lu messages/second)."
 				,(*msgcnt)+mailmsgs
-				,tmp
-				,(ulong)elapsed
+				,ftell(qwk)
+				,elapsed
 				,((*msgcnt)+mailmsgs) / elapsed);
-		lprintf(LOG_INFO, "packed %lu messages (%s bytes) in %lu seconds (%lu msgs/sec)"
+		lprintf(LOG_INFO, "packed %lu messages (%lu bytes) in %lu seconds (%lu msgs/sec)"
 			,(*msgcnt)+mailmsgs
-			,tmp
+			,ftell(qwk)
 			,(ulong)elapsed
 			,((*msgcnt)+mailmsgs)/elapsed);
 	}
@@ -699,7 +710,7 @@ bool sbbs_t::pack_qwk(char *packet, ulong *msgcnt, bool prepack)
 		for(i=0;i<(uint)g.gl_pathc;i++) { 			/* Copy BLT-*.* files */
 			fname=getfname(g.gl_pathv[i]);
 			padfname(fname,str);
-			if(IS_DIGIT(str[4]) && IS_DIGIT(str[9])) {
+			if(isdigit(str[4]) && isdigit(str[9])) {
 				SAFEPRINTF2(str,"%sQWK/%s",cfg.text_dir,fname);
 				SAFEPRINTF2(tmp2,"%s%s",cfg.temp_dir,fname);
 				mv(str,tmp2,/* copy: */TRUE); 

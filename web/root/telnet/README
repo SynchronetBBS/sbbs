@@ -1,0 +1,55 @@
+The Java Telnet Applet
+
+Authors: Matthias L. Jugel (leo@first.gmd.de)
+	 Marcus Meiﬂner (msmeissn@cip.informatik.uni-erlangen.de)
+
+This applet is the result of our attempt to make a useful java application
+and to provide better access to the world of internet through the almost
+everywhere available Web browser.
+
+We hope you find this piece of software as useful as we do. The source code
+is publicly available under the GPL.
+
+If you encounter any problems, bugs or else don't hesitate to contact us.
+
+	http://www.first.gmd.de/persons/leo/java/Telnet
+
+will always have the newest version.
+
+This distibution should contain the following files and directories:
+
+README 			  - this file
+REVISION 		  - contains version information about .java files
+CHANGES                   - all changes are logged here
+INSTALL 		  - how to install the applet
+COPYING 		  - GNU General Public Licence
+COPYING.LIB 		  - GNU Library General Public Licence
+BUGS 			  - known bugs
+Makefile 		  - to create .class files and documentation
+
+telnet.java		  - the telnet applet/application
+socket/TelnetIO.java 	  - all telnet negotiation handling
+socket/StatusPeer.java 	  - a status peer interface
+display/Terminal.java 	  - an abstract terminal class
+display/TerminalHost.java - a virtual terminal host interface
+display/CharDisplay.java  - a general purpose character display
+display/vt320.java	  - a VT320/ANSI emulation class using CharDisplay
+modules/ButtonBar.java	  - a programmable button bar
+modules/Script.java	  - a simple script module
+
+The package contains also all precompiled classes!
+
+tools/IOtest.java 	  - an example program which works like a 
+			    script executor
+tools/TelnetWrapper.java  - another example program provided by
+			    George Ruban
+tools/CharDisplayTest.java- a test class for display/CharDisplay.java
+
+tools/proxy.java 	  - a simple proxy server
+
+*.html 			  - various test files
+examples/*.html           - example files for different usage
+
+Documentation/ 		  - documentation of the JAVA source code
+CVS/			  - revision control, contains the history of 
+			    the source code

@@ -1,7 +1,7 @@
 // $Id: fido_syscfg.js,v 1.24 2020/05/16 20:10:19 rswindell Exp $
 /*
  * Parse as much as needed from the SBBSecho configuration.
- * v3+ uses sbbsecho.ini by default, other filenames are supported.
+ * v3+ uses sbbsecho.ini.
  *
  * SBBSEchoCfg Properties:
  * inbound			non-secure default inbound directory path
@@ -20,7 +20,7 @@
  */
 var fidoaddr = load({}, 'fidoaddr.js');
 
-function SBBSEchoCfg (fname)
+function SBBSEchoCfg ()
 {
 	var line;
 	var m;
@@ -38,9 +38,9 @@ function SBBSEchoCfg (fname)
 	this.outbound = undefined;
 	var packer = undefined;
 
-	ecfg = new File(file_cfgname(system.ctrl_dir, fname || 'sbbsecho.ini'));
+	ecfg = new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
 	if (!ecfg.open("r"))
-		throw new Error(ecfg.error + " opening '"+ecfg.name+"'");
+		throw("Unable to open '"+ecfg.name+"'");
 
 	this.inbound = backslash(ecfg.iniGetValue(null, "Inbound", "../fido/nonsecure"));
 	if (this.inbound !== null)
@@ -154,11 +154,11 @@ SBBSEchoCfg.prototype.match_pw = function(node, pw)
 	return false;
 };
 
-function FTNDomains(fname)
+function FTNDomains()
 {
-	var f = new File(file_cfgname(system.ctrl_dir, fname || 'sbbsecho.ini'));
+	var f = new File(file_cfgname(system.ctrl_dir, 'sbbsecho.ini'));
 	var used_zones = {};
-	var ecfg = new SBBSEchoCfg(fname);
+	var ecfg = new SBBSEchoCfg();
 	var domains;
 
 	if (f.open("r")) {

@@ -605,14 +605,14 @@ LoadFile(char *Name)
 	TxtCol = 7;
 	LastLine = 0;
 	ch = strlen(Name) - 3;
-	if ((toupper(Name[ch++]) == 'B') && (toupper(Name[ch++]) == 'I') && (toupper(Name[ch]) == 'N')) {
+	if ((toupper(Name[ch++]) == 'B') & (toupper(Name[ch++]) == 'I') & (toupper(Name[ch]) == 'N')) {
 		unsigned char   line[160];
 		do {
 			fread(&line, 1, 160, fp);
 			memcpy(Screen[ActivePage][CursY], &line, 160);
 			CursY++;
 		} while (!feof(fp));
-	} else {
+	} else
 		/* Check for "known" extensions */
 		ext=getfext(Name);
 		if(ext) {
@@ -665,7 +665,6 @@ LoadFile(char *Name)
 				}
 			} while ((avt_rep && b == 3) || (ans_rep > 0));
 		} while (!feof(fp));
-	}
 	ReadSauce(fp);
 	fclose(fp);
 	LastLine = CursY;
@@ -800,7 +799,7 @@ load(void)
 						attr=(7 + 16);
 					else
 						attr=(7);
-					buf[(x*77+13)*2]='\xfa';
+					buf[(x*77+13)*2]=250;
 					buf[(x*77+13)*2+1]=attr;
 					if (y == x)
 						attr=(15 + 16);
@@ -811,7 +810,7 @@ load(void)
 						attr=(7 + 16);
 					else
 						attr=(7);
-					buf[(x*77+42)*2]='\xfa';
+					buf[(x*77+42)*2]=250;
 					buf[(x*77+42)*2+1]=attr;
 					if (y == x)
 						attr=(15 + 16);
@@ -822,7 +821,7 @@ load(void)
 						textattr(7 + 16);
 					else
 						textattr(7);
-					buf[(x*77+61)*2]='\xfa';
+					buf[(x*77+61)*2]=250;
 					buf[(x*77+61)*2+1]=attr;
 					if (y == x)
 						attr=(15 + 16);

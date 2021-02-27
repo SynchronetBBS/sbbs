@@ -4,7 +4,6 @@ var last_subs;
 var last_groups;
 var last_threads;
 var last_run = 0;
-const is_real_user = is_user();
 const frequency = (settings.refresh_interval || 60000) / 1000;
 
 // Where 'a' is the previous data and 'b' is new
@@ -21,13 +20,7 @@ function shallow_diff(a, b) {
 }
 
 function forum_emit(evt, data) {
-    emit({
-        event: 'forum',
-        data: JSON.stringify({
-            type: evt,
-            data: data
-        })
-    });
+    emit({ event: 'forum', data: JSON.stringify({ type: evt, data: data }) });
 }
 
 function scan_groups() {
@@ -52,8 +45,8 @@ function scan_subs(group) {
     last_subs = scan;
 }
 
-function scan_threads(sub) {
-    const scan = getThreadStats(sub, !is_real_user);
+function scan_threads(sub, offset, page_size) {
+    const scan = getThreadStats(sub, offset, page_size);
     if (!last_threads) {
         forum_emit('threads', scan);
     } else {
@@ -73,11 +66,12 @@ function scan_threads(sub) {
 }
 
 function cycle() {
+    if (!is_user()) return;
     if (time() - last_run <= frequency) return;
     last_run = time();
-    if (is_real_user && Request.has_param('groups_unread')) scan_groups();
-    if (is_real_user && Request.has_param('subs_unread')) scan_subs(Request.get_param('subs_unread'));
-    if (Request.has_param('sub')) scan_threads(Request.get_param('sub'));
+    if (Request.has_param('groups_unread')) scan_groups();
+    if (Request.has_param('subs_unread')) scan_subs(Request.get_param('subs_unread'));
+    if (Request.has_param('threads')) scan_threads(Request.get_param('threads'), Request.get_param('offset'), Request.get_param('page_size'));
 }
 
 this;

@@ -269,8 +269,9 @@ function onSubUnreadCount(data) {
 	}
 }
 
-async function getSubUnreadCounts(grp) {
-	const res = await v4_get('./api/forum.ssjs?call=get-sub-unread-counts&group=' + grp);
+// 'sub' can be a single sub code, or a string of <sub1>&sub=<sub2>&sub=<sub3>...
+async function getSubUnreadCount(sub) {
+	const res = await v4_get('./api/forum.ssjs?call=get-sub-unread-count&sub=' + sub);
 	onSubUnreadCount(res);
 }
 
@@ -287,8 +288,9 @@ function onGroupUnreadCount(data) {
 	}
 }
 
-async function getGroupUnreadCounts() {
-	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-counts');
+// 'group' can be a single group index, or a string of 0&group=1&group=2...
+async function getGroupUnreadCount(group) {
+	const res = await v4_get('./api/forum.ssjs?call=get-group-unread-count&group=' + group);
 	onGroupUnreadCount(res);
 }
 
@@ -350,19 +352,18 @@ function onThreadStats(data) {
 /*  Fetch a private mail message's body (with links to attachments) where 'id'
 	is the message number.	Output it to an element with id 'message-<id>'. */
 async function getMailBody(id) {
-	const tgt = `#message-${id}`;
-	if (!$(tgt).attr('hidden')) {
-		$(tgt).attr('hidden', true);
-	} else if ($(tgt).html() != '') {
-		$(tgt).attr('hidden', false);
+	if (!$('#message-' + id).attr('hidden')) {
+		$('#message-' + id).attr('hidden', true);
+	} else if ($('#message-' + id).html() != '') {
+		$('#message-' + id).attr('hidden', false);
 	} else {
-		const data = await v4_get(`./api/forum.ssjs?call=get-mail-body&number=${id}`);
+		const data = await v4_get('./api/forum.ssjs?call=get-mail-body&number=' + id);
 		var str = data.body;
 		if (data.inlines && data.inlines.length > 0) {
-			str += `<br>Inline attachments: ${data.inlines.join('<br>')}<br>`;
+			str += '<br>Inline attachments: ' + data.inlines.join('<br>') + '<br>';
 		}
 		if (data.attachments && data.attachments.length > 0) {
-			str += `<br>Attachments: ${data.attachments.join('<br>')}<br>`;
+			str += '<br>Attachments: ' + data.attachments.join('<br>') + '<br>';
 		}
 		str +=
 			'<button class="btn btn-default icon" ' +
@@ -376,15 +377,9 @@ async function getMailBody(id) {
 			'title="Delete this message" onclick="deleteMessage(\'mail\',' + id + ')">' +
 			'<span class="glyphicon glyphicon-trash"></span>' +
 			'</button>';
-		if (data.buttons) str += data.buttons.join('');
-		$(tgt).html(str);
-		$(tgt).attr('hidden', false);
+		$('#message-' + id).html(str);
+		$('#message-' + id).attr('hidden', false);
 	}
-}
-
-async function blockSender(id, from, from_net) {
-	const data = await v4_get(`./api/forum.ssjs?call=block-sender&from=${from}&from_net=${from_net}`);
-	if (!data.err) $(`#bsb-${id}`).attr('disabled', true);
 }
 
 async function setScanCfg(sub, cfg) {

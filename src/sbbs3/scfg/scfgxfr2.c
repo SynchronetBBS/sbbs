@@ -1,3 +1,5 @@
+/* $Id: scfgxfr2.c,v 1.62 2019/08/12 06:21:28 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -11,8 +13,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -374,11 +388,11 @@ void xfer_cfg()
 			sprintf(opt[j++],"%-27.27s%s","Long Name",cfg.lib[i]->lname);
 			sprintf(opt[j++],"%-27.27s%s","Short Name",cfg.lib[i]->sname);
 			sprintf(opt[j++],"%-27.27s%s","Internal Code Prefix",cfg.lib[i]->code_prefix);
-			sprintf(opt[j++],"%-27.27s%s","Parent Directory"
+			sprintf(opt[j++],"%-27.27s%.40s","Parent Directory"
 				,cfg.lib[i]->parent_path);
-			sprintf(opt[j++],"%-27.27s%s","Access Requirements"
+			sprintf(opt[j++],"%-27.27s%.40s","Access Requirements"
 				,cfg.lib[i]->arstr);
-			sprintf(opt[j++],"%-27.27s%s","Access to Sub-directories"
+			sprintf(opt[j++],"%-27.27s%.40s","Access to Sub-directories"
 				,cfg.lib[i]->misc&LIB_DIRS ? "Yes":"No");
 			sprintf(opt[j++],"%-27.27s%s","Sort Library By Directory", area_sort_desc[cfg.lib[i]->sort]);
 			strcpy(opt[j++],"Clone Options");
@@ -495,11 +509,6 @@ void xfer_cfg()
 						"\n"
 						"If you want to clone the options of the template directory of this\n"
 						"library into all directories of this library, select `Yes`.\n"
-						"\n"
-						"If no directory has been configured as the template directory, then\n"
-						"the `first` directory is used as the template to be cloned.\n"
-						"A directory is marked as the template for the library in its\n"
-						"`Toggle Options` menu.\n"
 						"\n"
 						"The options cloned are upload requirements, download requirements,\n"
 						"operator requirements, exempted user requirements, toggle options,\n"
@@ -979,7 +988,6 @@ void dir_cfg(uint libnum)
 		if(uifc.changes && cfg.lib[libnum]->sort)
 			sort_dirs(libnum);
 		int maxlen = 0;
-		bool template_shown = false;
 		for(i=0,j=0;i<cfg.total_dirs && j<MAX_OPTS;i++) {
 			if(cfg.dir[i]->lib != libnum)
 				continue;
@@ -997,9 +1005,7 @@ void dir_cfg(uint libnum)
 				default:	/* Defeat stupid GCC warning */
 					break;
 			}
-			sprintf(str, "%-*s %c", name_len, name, (cfg.dir[i]->misc&DIR_TEMPLATE && !template_shown) ? '*' : ' ');
-			if(cfg.dir[i]->misc&DIR_TEMPLATE)
-				template_shown = true;
+			sprintf(str, "%-*s %c", name_len, name, cfg.dir[i]->misc&DIR_TEMPLATE ? '*' : ' ');
 			truncsp(str);
 			int len = sprintf(opt[j], "%s", str);
 			if(len > maxlen)
@@ -1132,15 +1138,15 @@ void dir_cfg(uint libnum)
 			sprintf(opt[n++],"%-27.27s%s","Short Name",cfg.dir[i]->sname);
 			sprintf(opt[n++],"%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
-			sprintf(opt[n++],"%-27.27s%s","Access Requirements"
+			sprintf(opt[n++],"%-27.27s%.40s","Access Requirements"
 				,cfg.dir[i]->arstr);
-			sprintf(opt[n++],"%-27.27s%s","Upload Requirements"
+			sprintf(opt[n++],"%-27.27s%.40s","Upload Requirements"
 				,cfg.dir[i]->ul_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Download Requirements"
+			sprintf(opt[n++],"%-27.27s%.40s","Download Requirements"
 				,cfg.dir[i]->dl_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Operator Requirements"
+			sprintf(opt[n++],"%-27.27s%.40s","Operator Requirements"
 				,cfg.dir[i]->op_arstr);
-			sprintf(opt[n++],"%-27.27s%s","Exemption Requirements"
+			sprintf(opt[n++],"%-27.27s%.40s","Exemption Requirements"
 				,cfg.dir[i]->ex_arstr);
 			SAFECOPY(path, cfg.dir[i]->path);
 			if(!path[0]) {
@@ -1160,7 +1166,7 @@ void dir_cfg(uint libnum)
 				SAFECOPY(str, path);
 			else
 				SAFEPRINTF(str, "[%s]", path);
-			sprintf(opt[n++],"%-27.27s%s","Transfer File Path"
+			sprintf(opt[n++],"%-27.27s%.40s","Transfer File Path"
 				,str);
 			sprintf(opt[n++],"%-27.27s%u","Maximum Number of Files"
 				,cfg.dir[i]->maxfiles);
@@ -1856,9 +1862,9 @@ void dir_cfg(uint libnum)
 						sprintf(str,"[%sdirs/]",cfg.data_dir);
 					else
 						strcpy(str,cfg.dir[i]->data_dir);
-					sprintf(opt[n++],"%-27.27s%s","Data Directory"
+					sprintf(opt[n++],"%-27.27s%.40s","Data Directory"
 						,str);
-					sprintf(opt[n++],"%-27.27s%s","Upload Semaphore File"
+					sprintf(opt[n++],"%-27.27s%.40s","Upload Semaphore File"
 						,cfg.dir[i]->upload_sem);
 					sprintf(opt[n++],"%-27.27s%s","Sort Value and Direction"
 						, cfg.dir[i]->sort==SORT_NAME_A ? "Name Ascending"

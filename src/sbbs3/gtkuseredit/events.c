@@ -2050,7 +2050,7 @@ int get_date(GtkWidget *t, isoDate_t *date)
 	gtk_calendar_get_date(GTK_CALENDAR(w), &year, &month, &day);
 	gtk_widget_hide(GTK_WIDGET(gtk_widget_get_toplevel(GTK_WIDGET(w))));
 	*date=isoDate_create(year, month+1, day);
-	return odate == *date;
+	return(odate!=*date);
 }
 
 G_MODULE_EXPORT void get_expiration(GtkWidget *t, gpointer data)
@@ -2094,19 +2094,18 @@ G_MODULE_EXPORT void get_birthdate(GtkWidget *t, gpointer data)
 	GtkWidget	*w;
 	int			year;
 
-
-	if(user.birth[2] == '/') {
-		year=atoi(user.birth+6)+1900;
-		if(year<Y2K_2DIGIT_WINDOW)
-			year+=100;
-		if(cfg.sys_misc&SM_EURODATE)
-			date=isoDate_create(year, atoi(user.birth+3), atoi(user.birth));
-		else
-			date=isoDate_create(year, atoi(user.birth), atoi(user.birth+3));
-	} else
-		date = atoi(user.birth);
+	year=atoi(user.birth+6)+1900;
+	if(year<Y2K_2DIGIT_WINDOW)
+		year+=100;
+	if(cfg.sys_misc&SM_EURODATE)
+		date=isoDate_create(year, atoi(user.birth+3), atoi(user.birth));
+	else
+		date=isoDate_create(year, atoi(user.birth), atoi(user.birth+3));
 	if(!get_date(t, &date)) {
-		SAFEPRINTF3(user.birth,"%04u%02u%02u",isoDate_year(date),isoDate_month(date),isoDate_day(date));
+		if(cfg.sys_misc&SM_EURODATE)
+			sprintf(user.birth,"%02u/%02u/%02u",isoDate_day(date),isoDate_month(date),isoDate_year(date)%100);
+		else
+			sprintf(user.birth,"%02u/%02u/%02u",isoDate_month(date),isoDate_day(date),isoDate_year(date)%100);
 		user_changed(t, data);
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "eBirthdate"));
 		if(w==NULL)

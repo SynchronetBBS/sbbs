@@ -38,7 +38,6 @@
 /*******************************************************************/
 
 #include "sbbs.h"
-#include "petdefs.h"
 
 #define SEARCH_TXT 0
 #define SEARCH_ARS 1
@@ -102,8 +101,7 @@ void sbbs_t::useredit(int usernumber)
 			,user.level>useron.level && console&CON_R_ECHO
 			? "XXX-XXX-XXXX" : user.phone);
 		bprintf(text[UeditAddressBirthday]
-			,user.address,getage(&cfg,user.birth),user.sex
-			,format_birthdate(&cfg, user.birth, tmp, sizeof(tmp)));
+			,user.address,getage(&cfg,user.birth),user.sex,user.birth);
 		bprintf(text[UeditLocationZipcode],user.location,user.zipcode);
 		bprintf(text[UeditNoteHandle],user.note,user.handle);
 		bprintf(text[UeditComputerModem],user.comp,user.modem);
@@ -188,12 +186,12 @@ void sbbs_t::useredit(int usernumber)
 				putuserrec(&cfg,user.number,U_HANDLE,LEN_HANDLE,user.handle);
 				break;
 			case 'B':
-				bprintf(text[EnterYourBirthday], birthdate_format(&cfg));
-				format_birthdate(&cfg, user.birth, str, sizeof(str));
-				if(gettmplt(str, "nn/nn/nnnn", kmode) == 10) {
-					parse_birthdate(&cfg, str, user.birth, sizeof(user.birth));
-					putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
-				}
+				bprintf(text[EnterYourBirthday]
+					,cfg.sys_misc&SM_EURODATE ? "DD/MM/YY" : "MM/DD/YY");
+				gettmplt(user.birth,"nn/nn/nn",kmode);
+				if(sys_status&SS_ABORT)
+					break;
+				putuserrec(&cfg,user.number,U_BIRTH,LEN_BIRTH,user.birth);
 				break;
 			case 'C':
 				bputs(text[EnterYourComputer]);
@@ -293,7 +291,7 @@ void sbbs_t::useredit(int usernumber)
 						menu(str);
 						continue; 
 					}
-					if(IS_DIGIT(c)) {
+					if(isdigit(c)) {
 						i=c&0xf;
 						continue; 
 					}
@@ -337,13 +335,13 @@ void sbbs_t::useredit(int usernumber)
 							putuserrec(&cfg,user.number,U_FLAGS4,8
 								,ultoa(user.flags4,tmp,16));
 							break; 
-					}
+					} 
 				}
 				break;
 			case 'G':
 				bputs(text[GoToUser]);
 				if(getstr(str,LEN_ALIAS,K_UPPER|K_LINE)) {
-					if(IS_DIGIT(str[0])) {
+					if(isdigit(str[0])) {
 						i=atoi(str);
 						if(i>lastuser(&cfg))
 							break;
@@ -503,7 +501,7 @@ void sbbs_t::useredit(int usernumber)
 				ASYNC;
 				bputs(text[QuickValidatePrompt]);
 				c=getkey(0);
-				if(!IS_DIGIT(c))
+				if(!isdigit(c))
 					break;
 				i=c&0xf;
 				user.level=cfg.val_level[i];
@@ -598,7 +596,7 @@ void sbbs_t::useredit(int usernumber)
 					user.min+=l;
 				putuserrec(&cfg,user.number,U_MIN,10,ultoa(user.min,tmp,10));
 				break;
-			case '#': /* read new user questionnaire */
+			case '#': /* read new user questionaire */
 				SAFEPRINTF2(str,"%suser/%4.4u.dat", cfg.data_dir,user.number);
 				if(!cfg.new_sof[0] || !fexist(str))
 					break;
@@ -806,17 +804,14 @@ void sbbs_t::maindflts(user_t* user)
 	while(online) {
 		CLS;
 		getuserdat(&cfg,user);
-		if(user->rows != TERM_ROWS_AUTO)
-			rows = user->rows;
-		if(user->cols != TERM_COLS_AUTO)
-			cols = user->cols;
+		if(user->rows)
+			rows=user->rows;
 		bprintf(text[UserDefaultsHdr],user->alias,user->number);
-		if(user == &useron)
-			update_nodeterm();
 		long term = (user == &useron) ? term_supports() : user->misc;
 		if(term&PETSCII)
-			safe_snprintf(str,sizeof(str),"%sCBM/PETSCII"
-							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr);
+			safe_snprintf(str,sizeof(str),"%sPETSCII %lu %s"
+							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
+							,cols, text[TerminalColumns]);
 		else
 			safe_snprintf(str,sizeof(str),"%s%s / %s %s%s%s"
 							,user->misc&AUTOTERM ? text[TerminalAutoDetect]:nulstr
@@ -827,10 +822,12 @@ void sbbs_t::maindflts(user_t* user)
 							,term&SWAP_DELETE ? "DEL=BS" : nulstr);
 		add_hotspot('T');
 		bprintf(text[UserDefaultsTerminal], truncsp(str));
-		safe_snprintf(str, sizeof(str), "%s%ld %s,", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
-		safe_snprintf(tmp, sizeof(tmp), "%s%ld %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
+		if(user->rows)
+			ultoa(user->rows,tmp,10);
+		else
+			SAFEPRINTF2(tmp,"%s%ld", text[TerminalAutoDetect], rows);
 		add_hotspot('L');
-		bprintf(text[UserDefaultsRows], str, tmp);
+		bprintf(text[UserDefaultsRows], tmp, text[TerminalRows]);
 		if(cfg.total_shells>1) {
 			add_hotspot('K');
 			bprintf(text[UserDefaultsCommandSet]
@@ -977,21 +974,15 @@ void sbbs_t::maindflts(user_t* user)
 					else
 						user->misc&=~NO_EXASCII;
 					user->misc &= ~SWAP_DELETE;
-					while(text[HitYourBackspaceKey][0] && !(user->misc&(PETSCII|SWAP_DELETE)) && online) {
+					while(text[HitYourBackspaceKey][0] && !(user->misc&SWAP_DELETE) && online) {
 						bputs(text[HitYourBackspaceKey]);
-						uchar key = getkey(K_CTRLKEYS);
+						uchar key = getkey(K_NONE);
 						bprintf(text[CharacterReceivedFmt], key, key);
 						if(key == '\b')
 							break;
 						if(key == DEL) {
 							if(text[SwapDeleteKeyQ][0] == 0 || yesno(text[SwapDeleteKeyQ]))
 								user->misc |= SWAP_DELETE;
-						}
-						else if(key == PETSCII_DELETE) {
-							autoterm |= PETSCII;
-							user->misc |= PETSCII;
-							outcom(PETSCII_UPPERLOWER);
-							bputs(text[PetTerminalDetected]);
 						}
 						else
 							bprintf(text[InvalidBackspaceKeyFmt], key, key);
@@ -1038,21 +1029,13 @@ void sbbs_t::maindflts(user_t* user)
 					putuserrec(&cfg,user->number,U_TMPEXT,3,cfg.fcomp[i]->ext);
 				break;
 			case 'L':
-				bputs(text[HowManyColumns]);
-				if((i = getnum(TERM_COLS_MAX)) < 0)
-					break;
-				putuserrec(&cfg,user->number,U_COLS,0,ultoa(i,tmp,10));
-				if(user==&useron) {
-					useron.cols = i;
-					ansi_getlines();
-				}
 				bputs(text[HowManyRows]);
-				if((i = getnum(TERM_ROWS_MAX)) < 0)
-					break;
-				putuserrec(&cfg,user->number,U_ROWS,0,ultoa(i,tmp,10));
-				if(user==&useron) {
-					useron.rows = i;
-					ansi_getlines();
+				if((ch=(char)getnum(99))!=-1) {
+					putuserrec(&cfg,user->number,U_ROWS,2,ultoa(ch,tmp,10));
+					if(user==&useron) {
+						useron.rows=ch;
+						ansi_getlines();
+					}
 				}
 				break;
 			case 'P':
@@ -1098,11 +1081,11 @@ void sbbs_t::maindflts(user_t* user)
 				getstr(user->netmail,LEN_NETMAIL,K_LINE|K_EDIT|K_AUTODEL|K_TRIM);
 				if(sys_status&SS_ABORT)
 					break;
+				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
 				user->misc &= ~NETMAIL;
 				if(is_supported_netmail_addr(&cfg, user->netmail) && !noyes(text[ForwardMailQ]))
 					user->misc |= NETMAIL;
 				putuserrec(&cfg,user->number,U_MISC,8,ultoa(user->misc,str,16));
-				putuserrec(&cfg,user->number,U_NETMAIL,LEN_NETMAIL,user->netmail); 
 				break;
 			case 'C':
 				user->misc^=CLRSCRN;
@@ -1129,7 +1112,7 @@ void sbbs_t::maindflts(user_t* user)
 						pause();
 						break; 
 					}
-					bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
+					bprintf(text[NewPasswordPromptFmt], MIN_PASS_LEN, LEN_PASS);
 					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM))
 						break;
 					truncsp(str);
@@ -1191,7 +1174,7 @@ void sbbs_t::maindflts(user_t* user)
 			default:
 				clear_hotspots();
 				return; 
-		}
+		} 
 	}
 }
 

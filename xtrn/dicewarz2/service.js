@@ -14,14 +14,10 @@ load(root + "diceobj.js");
 
 var game_id = "dicewarz2";
 var timer = new Timer();
-try {
-	var client = new JSONClient(serverAddr,serverPort);
-	var settings = loadSettings("dice.ini");
-	var ai = loadAI("ai.ini");
-	var aiTakingTurns = {};
-} catch(e) {
-	throw new Error(e);
-}
+var client = new JSONClient(serverAddr,serverPort);
+var settings = loadSettings("dice.ini");
+var ai = loadAI("ai.ini");
+var aiTakingTurns = {};
 
 var data = { 
 	games:client.read(game_id,"games",1),

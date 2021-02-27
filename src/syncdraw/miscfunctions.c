@@ -266,31 +266,31 @@ SelectColor(void)
 	memset(buf,0,sizeof(buf));
 	bufprintf(buf+(5*51+21)*2,8,"B - BLINK");
 	i=(1*51+2)*2;
-	buf[i++]='\xb0';
+	buf[i++]=176;
 	buf[i++]=15;
-	buf[i++]='\xb0';
+	buf[i++]=176;
 	buf[i++]=15;
 	buf[i++]=32;
 	buf[i++]=15;
 	for (a = 1; a <= 15; a++) {
-		buf[i++]='\xdb';
+		buf[i++]=219;
 		buf[i++]=a;
-		buf[i++]='\xdb';
+		buf[i++]=219;
 		buf[i++]=a;
 		buf[i++]=32;
 		buf[i++]=a;
 	}
 	i=(3*51+13)*2;
-	buf[i++]='\xb0';
+	buf[i++]=176;
 	buf[i++]=15;
-	buf[i++]='\xb0';
+	buf[i++]=176;
 	buf[i++]=15;
 	buf[i++]=32;
 	buf[i++]=15;
 	for (a = 1; a <= 7; a++) {
-		buf[i++]='\xdb';
+		buf[i++]=219;
 		buf[i++]=a;
-		buf[i++]='\xdb';
+		buf[i++]=219;
 		buf[i++]=a;
 		buf[i++]=32;
 		buf[i++]=a;
@@ -415,7 +415,7 @@ translate(char a)
 	case 'N':
 		return 'ã';
 	case 'u':
-		return '\x96';
+		return 150;
 	case 'U':
 		return 'ï';
 	case 'Y':
@@ -464,7 +464,7 @@ inputfield(char *Str, int length, int x1, int y)
 	oldy=wherey();
 	do {
 		for (x = 1; x <= length; x++) {
-			buf[(x-1)*2]='\xfa';
+			buf[(x-1)*2]=250;
 			buf[(x-1)*2+1]=8;
 		}
 		bufprintf(buf,7,"%.*s",length,nul);

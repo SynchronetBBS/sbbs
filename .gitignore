@@ -15,8 +15,8 @@ gcc.*
 *.lib
 *.map
 *.dcu
-*.drc
-*.tds
+src/sbbs3/ctrl/*.drc
+src/sbbs3/ctrl/*.tds
 src/sbbs3/ctrl/sbbsctrl.mak
 3rdp/src
 localdefs.mk
@@ -27,4 +27,3 @@ node4
 *.?.cnf
 ctrl/recycle
 exec/*.bin
-exec/*.so

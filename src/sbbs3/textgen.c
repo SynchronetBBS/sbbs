@@ -27,9 +27,9 @@ char *readtext(FILE *stream, char **comment_ret)
 	}
 	comment[0]=0;
 	if(*(p+1)=='\\') {	/* merge multiple lines */
-		for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
+		for(cp=p+2; *cp && isspace(*cp); cp++);
 		truncsp(cp);
-		SAFECAT(comment, cp);
+		strcat(comment, cp);
 		while(strlen(buf)<2000) {
 			if(!fgets(str,255,stream))
 				return(NULL);
@@ -39,17 +39,17 @@ char *readtext(FILE *stream, char **comment_ret)
 			strcpy(p,p2+1);
 			p=strrchr(p,'"');
 			if(p && *(p+1)=='\\') {
-				for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
+				for(cp=p+2; *cp && isspace(*cp); cp++);
 				truncsp(cp);
-				SAFECAT(comment, cp);
+				strcat(comment, cp);
 				continue;
 			}
 			break; 
 		}
 	}
 	else {
-		for(cp=p+2; *cp && IS_WHITESPACE(*cp); cp++);
-		SAFECAT(comment, cp);
+		for(cp=p+2; *cp && isspace(*cp); cp++);
+		strcat(comment, cp);
 		truncsp(comment);
 	}
 	*(p)=0;
@@ -57,10 +57,10 @@ char *readtext(FILE *stream, char **comment_ret)
 	for(i=1,j=0;i<k;j++) {
 		if(buf[i]=='\\')	{ /* escape */
 			i++;
-			if(IS_DIGIT(buf[i])) {
+			if(isdigit(buf[i])) {
 				str[j]=atoi(buf+i); 	/* decimal, NOT octal */
-				if(IS_DIGIT(buf[++i]))	/* skip up to 3 digits */
-					if(IS_DIGIT(buf[++i]))
+				if(isdigit(buf[++i]))	/* skip up to 3 digits */
+					if(isdigit(buf[++i]))
 						i++;
 				continue; 
 			}
@@ -167,18 +167,15 @@ int main(int argc, char **argv)
 	FILE			*text_js;
 	FILE			*text_defaults_c;
 
-	if(argc > 1)
-		p = argv[1];
-	else
-		p = get_ctrl_dir(/* warn: */TRUE);
+	p = get_ctrl_dir(/* warn: */TRUE);
 	SAFEPRINTF(path,"%s/text.dat",p);
 	if((text_dat=fopen(path,"r"))==NULL) {
 		perror(path);
-		return __LINE__;
+		return(1);
 	}
 	if((text_h=fopen("text.h", "w"))==NULL) {
 		perror("text.h");
-		return __LINE__;
+		return(1);
 	}
 	fputs("/* text.h */\n",text_h);
 	fputs("\n",text_h);
@@ -194,16 +191,12 @@ int main(int argc, char **argv)
 	fputs("\n",text_h);
 	fputs("enum {\n",text_h);
 
-	if(argc > 2)
-		p = argv[2];
-	else
-		p = getenv("SBBSEXEC");
-	if(p==NULL)
-		p = "/sbbs/exec";
-	SAFEPRINTF(path,"%s/load/text.js",p);
+	if((p=getenv("SBBSEXEC"))==NULL)
+		p="/sbbs/exec";
+	sprintf(path,"%s/load/text.js",p);
 	if((text_js=fopen(path, "w"))==NULL) {
 		perror(path);
-		return __LINE__;
+		return(1);
 	}
 	fputs("/* Synchronet static text string constants */\n",text_js);
 	fputs("\n",text_js);
@@ -216,7 +209,7 @@ int main(int argc, char **argv)
 	fputs("\n",text_js);
 	if((text_defaults_c=fopen("text_defaults.c","w"))==NULL) {
 		fprintf(stderr,"Can't open text_defaults.c!\n");
-		return __LINE__;
+		return(1);
 	}
 	fputs("/* Synchronet default text strings */\n",text_defaults_c);
 	fputs("\n",text_defaults_c);
@@ -234,7 +227,7 @@ int main(int argc, char **argv)
 				fprintf(stderr,"Error creating C string! for %d\n", i+1);
 			}
 			lno=strtoul(comment, &macro, 10);
-			while(IS_WHITESPACE(*macro))
+			while(isspace(*macro))
 				macro++;
 			if((int)lno != i) {
 				fprintf(stderr,"Mismatch! %s has %ld... should be %d\n", comment, lno, i);

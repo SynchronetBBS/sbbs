@@ -74,9 +74,9 @@ var FIDO = {
 				set: function(val) {
 					net = parseInt(val, 10);
 					if (typeof net !== 'number')
-						throw new Error('net is not a number!');
+						throw('net is not a number!');
 					if (net < 0 || net > 65535)
-						throw new Error('net out of range');
+						throw('net out of range');
 				}
 			},
 			"node": {
@@ -85,7 +85,7 @@ var FIDO = {
 				set: function(val) {
 					node = parseInt(val, 10);
 					if (typeof node !== 'number')
-						throw new Error('node is not a number!');
+						throw('node is not a number!');
 					if (node < 0 || node > 65535)
 						throw ('node out of range');
 				}
@@ -103,9 +103,9 @@ var FIDO = {
 					else
 						zone = parseInt(val, 10);
 					if (typeof zone !== 'number')
-						throw new Error('zone is not a number!');
+						throw('zone is not a number!');
 					if (zone < -1 || zone > 65535)
-						throw new Error('zone out of range');
+						throw('zone out of range');
 				}
 			},
 			"point": {
@@ -121,7 +121,7 @@ var FIDO = {
 					else
 						point = parseInt(val, 10);
 					if (typeof point !== 'number')
-						throw new Error('point is not a number!');
+						throw('point is not a number!');
 					if (point < 0 || point > 65535)
 						throw ('point out of range');
 				}
@@ -139,7 +139,7 @@ var FIDO = {
 					else
 						domain = val.toString().toLowerCase().substr(0, 8);
 					if (typeof domain !== 'string')
-						throw new Error('domain is not a string');
+						throw('domain is not a string');
 				}
 			}
 		});
@@ -153,7 +153,7 @@ var FIDO = {
 		if(addr)
 			m = addr.toString().match(/^(?:([0-9]+):)?([0-9]+)\/([0-9]+)(?:\.([0-9]+))?(?:@(.*))?$/);
 		if (!m)
-			throw new Error('invalid address '+addr);
+			throw('invalid address '+addr);
 		zone = m[1];
 		domain = m[5];
 		if (zone == undefined)
@@ -174,14 +174,14 @@ var FIDO = {
 		var ext;
 
 		if (default_zone === undefined)
-			throw new Error("Default zone unspecified");
+			throw("Default zone unspecified");
 		m = path.match(/(?:\.([0-9a-f]{3,4})[\/\\])?([0-9a-f]{4})([0-9a-f]{4})\.(...)(?:[\/\\]([0-9a-f]{8})\.(...))?$/i);
 		if (m === null)
-			throw new Error("Invalid flo file path");
+			throw("Invalid flo file path");
 		ext = m[4];
 		if (m[5] != null) {
 			if (m[4].toUpperCase() !== 'PNT')
-				throw new Error("Invalid flo file path");
+				throw("Invalid flo file path");
 			ext = m[6];
 		}
 		switch(ext.toLowerCase()) {
@@ -200,7 +200,7 @@ var FIDO = {
 			case 'try':
 				break;
 			default:
-				throw new Error("Invalid flo file path");
+				throw("Invalid flo file path");
 		}
 		zone = m[1];
 		if (zone == null)
@@ -230,12 +230,12 @@ var FIDO = {
 			domain = '';
 
 		if (!f.open("r"))
-			throw new Error("Unable to open '"+f.name+"'.");
+			throw("Unable to open '"+f.name+"'.");
 
 		// Validate first line...
 		var line = f.readln(2048);
 		if (line == undefined)
-			throw new Error("Unable to read first line in '"+f.name+"'");
+			throw("Unable to read first line in '"+f.name+"'");
 		var m;
 		if ((m=line.match(/^;A (.*) Nodelist for (.*) -- Day number ([0-9]+) : ([0-9]{5})$/)) !== null) {
 			ret.domain = m[1];
@@ -502,7 +502,7 @@ Object.defineProperties(FIDO.Addr.prototype, {
 
 			// TODO: Use default zone from system.fido_addr_list[0]?
 			if (this.zone === undefined)
-				throw new Error('zone is undefined');
+				throw('zone is undefined');
 
 			// TODO: These don't need to be loaded into different objects since we're doing 5D
 			if (FIDO.FTNDomains.nodeListFN[this.domain] !== undefined && file_exists(FIDO.FTNDomains.nodeListFN[this.domain])) {
@@ -530,7 +530,7 @@ Object.defineProperties(FIDO.Addr.prototype, {
 		get: function() {
 			// TODO: Use default zone from system.fido_addr_list[0]?
 			if (this.zone === undefined)
-				throw new Error('zone is undefined');
+				throw('zone is undefined');
 
 			// TODO: These don't need to be loaded into different objects since we're doing 5D
 			if (FIDO.FTNDomains.nodeListFN[this.domain] !== undefined && file_exists(FIDO.FTNDomains.nodeListFN[this.domain])) {
@@ -643,7 +643,7 @@ FIDO.Packet.prototype.setBin = function(offset, len, val) {
 	var str = '';
 
 	if (typeof(val) !== 'number')
-		throw new Error('Invalid setBin value type');
+		throw('Invalid setBin value type');
 	for (i=0; i<len; i++) {
 		str += ascii(val & 0xff);
 		val >>= 8;

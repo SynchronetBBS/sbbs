@@ -1,4 +1,9 @@
-/* Synchronet version info */
+/* ver.cpp */
+// vi: tabstop=4
+
+/* Synchronet version display */
+
+/* $Id: ver.cpp,v 1.31 2019/10/08 02:07:26 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,31 +18,28 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
 #include "sbbs.h"
-#ifdef SBBS
 #include "ssl.h"
-#endif
-#include "git_hash.h"
-#include "git_branch.h"
-#include "ver.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-const char* git_hash = GIT_HASH;
-const char* git_branch = GIT_BRANCH;
 const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
-
-#ifdef __cplusplus
-}
-#endif
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -69,7 +71,7 @@ char* socklib_version(char* str, char* winsock_ver)
 	return(str);
 }
 
-#if defined(SBBS) && !defined(JSDOOR)
+#ifndef JSDOOR
 void sbbs_t::ver()
 {
 	char str[128],compiler[32];
@@ -94,10 +96,7 @@ void sbbs_t::ver()
 	center(str);
 	CRLF;
 
-	center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH); 
-	CRLF;
-
-	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);
+	sprintf(str,"%s - http://www.synchro.net", COPYRIGHT_NOTICE);
 	center(str);
 	CRLF;
 
@@ -116,7 +115,7 @@ void sbbs_t::ver()
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MINORVERSION, &cl_minor);
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &cl_step);
 		(void)result;
-		safe_snprintf(str, sizeof(str), "cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
+		sprintf(str, "  cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
 		center(str);
 		CRLF;
 	}

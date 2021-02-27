@@ -1,5 +1,7 @@
 /* Synchronet (oh, so old) data access routines */
 
+/* $Id: data.cpp,v 1.32 2020/04/27 07:42:23 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -31,7 +45,7 @@
 /* Returns the number of the matched user or 0 if unsuccessful				*/
 /* Called from functions main_sec, useredit and readmailw					*/
 /****************************************************************************/
-uint sbbs_t::finduser(const char* instr, bool silent_failure)
+uint sbbs_t::finduser(char *instr, bool silent_failure)
 {
 	int file,i;
 	char str[128],str2[256],str3[256],ynq[25],c,pass=1;
@@ -134,69 +148,46 @@ int sbbs_t::getuserxfers(int fromuser, int destuser, char *fname)
 }
 
 /****************************************************************************/
-/* Return date/time that the specified event should run next				*/
-/****************************************************************************/
-extern "C" time_t DLLCALL getnexteventtime(event_t* event)
-{
-	struct tm tm;
-	time_t	t = time(NULL);
-	time_t	now = t;
-
-	if(event->misc & EVENT_DISABLED)
-		return 0;
-
-	if((event->days & 0x7f) == 0 || event->freq != 0)
-		return 0;
-
-	if(localtime_r(&t, &tm) == NULL)
-		return 0;
-
-	tm.tm_hour = event->time / 60;
-	tm.tm_min = event->time % 60;
-	tm.tm_sec = 0;
-	tm.tm_isdst = -1;	/* Do not adjust for DST */
-	t = mktime(&tm);
-
-	if(event->last >= t)
-		t += 24 * 60 * 60; /* already ran today, so add 24hrs */
-
-	do {
-		if(t > now + (1500 * 24 * 60 * 60)) /* Handle crazy configs, e.g. Feb-29, Apr-31 */
-			return 0;
-		if(localtime_r(&t, &tm) == NULL)
-			return 0;
-		if((event->days & (1 << tm.tm_wday))
-			&& (event->mdays == 0 || (event->mdays & (1 << tm.tm_mday)))
-			&& (event->months == 0 || (event->months & (1 << tm.tm_mon))))
-			break;
-		t += 24 * 60 * 60;
-	} while(t > 0);
-
-	return t;
-}
-
-/****************************************************************************/
 /* Return time of next forced timed event									*/
 /* 'event' may be NULL														*/
 /****************************************************************************/
 extern "C" time_t DLLCALL getnextevent(scfg_t* cfg, event_t* event)
 {
     int     i;
+	time_t	now=time(NULL);
 	time_t	event_time=0;
 	time_t	thisevent;
+	time_t	tmptime;
+    struct  tm tm, last_tm;
+
+	if(localtime_r(&now,&tm) == NULL)
+		return 0;
 
 	for(i=0;i<cfg->total_events;i++) {
 		if(!cfg->event[i]->node || cfg->event[i]->node>cfg->sys_nodes
 			|| cfg->event[i]->misc&EVENT_DISABLED)
 			continue;
 		if(!(cfg->event[i]->misc&EVENT_FORCE)
-			|| (!(cfg->event[i]->misc&EVENT_EXCL) && cfg->event[i]->node!=cfg->node_num))
+			|| (!(cfg->event[i]->misc&EVENT_EXCL) && cfg->event[i]->node!=cfg->node_num)
+			|| !(cfg->event[i]->days&(1<<tm.tm_wday))
+			|| (cfg->event[i]->mdays!=0 && !(cfg->event[i]->mdays&(1<<tm.tm_mday)))
+			|| (cfg->event[i]->months!=0 && !(cfg->event[i]->months&(1<<tm.tm_mon)))) 
 			continue;
 
-		thisevent = getnexteventtime(cfg->event[i]);
-		if(thisevent <= 0)
+		tm.tm_hour=cfg->event[i]->time/60;
+		tm.tm_min=cfg->event[i]->time%60;
+		tm.tm_sec=0;
+		tm.tm_isdst=-1;	/* Do not adjust for DST */
+		thisevent=mktime(&tm);
+		if(thisevent == -1)
 			continue;
 
+		tmptime=cfg->event[i]->last;
+		if(localtime_r(&tmptime,&last_tm) == NULL)
+			memset(&last_tm,0,sizeof(last_tm));
+
+		if(tm.tm_mday==last_tm.tm_mday && tm.tm_mon==last_tm.tm_mon)
+			thisevent+=24L*60L*60L;     /* already ran today, so add 24hrs */
 		if(!event_time || thisevent<event_time) {
 			event_time=thisevent;
 			if(event!=NULL)

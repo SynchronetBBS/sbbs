@@ -322,14 +322,6 @@ function help()
 	console.pause();
 }
 
-function pause()
-{
-	if(typeof options.pause == "number")
-		mswait(Number(options.pause) * 1000);
-	else if(options.pause !== false)
-		console.pause();
-}
-
 function list_msg(msg, digits, selected, sort, msg_ctrl, exclude, is_operator)
 {
 	var color = color_cfg.column[0];
@@ -406,7 +398,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 //	console.clear();
 	msg.lines = lines.length;
 	
-	while(bbs.online && !js.terminated) {
+	while(!js.terminated) {
 		if(show_hdr) {
 			console.home();
 			console.status |= CON_CR_CLREOL;
@@ -430,7 +422,7 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 		var i = line_num;
 		var row = hdr_len;
 		var pmode = msg_pmode(msgbase, msg);
-		while(row < (console.screen_rows - 2) && bbs.online) {
+		while(row < (console.screen_rows - 2)) {
 			console.line_counter = 0;
 			if(i < lines.length)
 				console.putmsg(lines[i++].trimRight(), pmode);
@@ -456,10 +448,6 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 			, sub_name
 			, msg.num
 			, total_msgs));
-		if((msgbase.attributes & SMB_EMAIL) && !(msg.attr&MSG_READ) && (msg.to_ext == user.number)) {
-			if(!update_msg_attr(msgbase, msg, msg.attr |= MSG_READ))
-				alert("failed to add read attribute");
-		}
 		// Only message text nav keys are handled here
 		var key = console.getkeys(total_msgs, K_UPPER|K_NOCRLF);
 		switch(key) {
@@ -672,7 +660,7 @@ function mail_reply(msg, reply_all)
 	}
 }
 
-function download_msg(msg, plain_text)
+function download_msg_source(msg)
 {
 	var fname = system.temp_dir + "msg_" + msg.number + ".txt";
 	var f = new File(fname);
@@ -682,9 +670,8 @@ function download_msg(msg, plain_text)
 				,/* strip ctrl-a */false
 				,/* dot-stuffing */false
 				,/* tails */true
-				,plain_text);
-	f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false
-		,/* default_content_type */!plain_text));
+				,/* plain-text */false);	
+	f.write(msg.get_rfc822_header(/* force_update: */false, /* unfold: */false));
 	f.writeln(text);
 	f.close();
 	return bbs.send_file(fname);
@@ -760,7 +747,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 
 	console.line_counter = 0;
 	console.status |= CON_MOUSE_SCROLL;
-	while(bbs.online && !js.terminated) {
+	while(!js.terminated) {
 		if(!last_msg)
 			last_msg = msgbase.last_msg;
 		else if(msgbase.last_msg != last_msg)
@@ -987,7 +974,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 			case '\r':
 				console.clear();
 				var viewed_msg = current;
-				while(bbs.online && !js.terminated && list[current]
+				while(!js.terminated && list[current]
 					&& (key = view_msg(msgbase, list[current]
 						,get_msg_lines(msgbase, list[current], view_hdr, view_source, view_hex, view_wrapped)
 						,orglist.length
@@ -1046,43 +1033,16 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case 'A':
 						case 'R':
-							if(mail) {
+							if(mail)
 								mail_reply(list[current], key == 'A');
-								pause();
-							} else {
+							else {
 								console.clear();
 								bbs.post_msg(msgbase.subnum, list[current]);
-								pause();
 								return true;
-							}
-							break;
-						case 'E':
-							if((msgbase.cfg && msg_area.sub[msgbase.cfg.code].is_operator)
-								|| list[current].from_ext == user.number)
-								bbs.edit_msg(list[current]);
-							break;
-						case 'F':
-							if(mail) {
-								console.clearline();
-								var dest = prompt("To", "", K_NOCRLF);
-								if(dest) {
-									if(!bbs.forward_msg(list[current], dest))
-										alert("failed");
-								}
 							}
 							break;
 						case 'M':
 							mail_reply(list[current]);
-							pause();
-							break;
-						case 'D':
-							console.clearline();
-							if(!console.noyes("Download message", P_NOCRLF)) {
-								if(!download_msg(list[current], msgbase, console.yesno("Plain-text only")))
-									alert("failed");
-							}
-							console.creturn();
-							bbs.download_msg_attachments(list[current]);
 							break;
 						case 'S':
 							view_source = !view_source;
@@ -1100,18 +1060,18 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						case 'O':
 							if(!is_operator)
 								break;
-							while(bbs.online && !js.terminated) {
+							while(bbs.online) {
 								if(!(user.settings & USER_EXPERT)) {
 									console.clear(LIGHTGRAY);
 									bbs.menu("sysmscan");
 									console.crlf();
 								}
 								console.putmsg(options.operator_prompt || "\x01[\x01>\x01y\x01hOperator: ", K_NOCRLF);
-								switch(console.getkeys("?QHC\r", 0, K_NOCRLF|K_UPPER)) {
+								switch(console.getkeys("?QHC", 0, K_NOCRLF|K_UPPER)) {
 									case '?':
 										if(user.settings & USER_EXPERT) {
 											console.line_counter = 0;
-											bbs.menu("sysmscan", P_NOCRLF);
+											bbs.menu("sysmscan");
 											console.crlf();
 										}
 										continue;
@@ -1144,11 +1104,19 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 						viewed_msg = current;
 					}
 				}
+				
+				if(list[current]) {
+					var msg = list[current];
+					if(mail && msg.to_ext == user.number) {
+						if(!update_msg_attr(msgbase, msg, msg.attr | MSG_READ))
+							alert("failed to add read attribute");
+					}
+				}
 				break;
 			case 'D':
 				console.clearline();
-				if(!console.noyes("Download message", P_NOCRLF)) {
-					if(!download_msg(list[current], msgbase, console.yesno("Plain-text only")))
+				if(!console.noyes("Download message source", P_NOCRLF)) {
+					if(!download_msg_source(list[current], msgbase))
 						alert("failed");
 					continue;
 				}
@@ -1244,19 +1212,16 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 				break;
 			case 'A':
 			case 'R':
-				if(mail) {
+				if(mail)
 					mail_reply(list[current], key.toUpperCase() == 'A');
-					pause();
-				} else {
+				else {
 					console.clear();
 					bbs.post_msg(msgbase.subnum, list[current]);
-					pause();
 					return true; // reload msgs
 				}
 				break;
 			case 'M':
 				mail_reply(list[current]);
-				pause();
 				break;
 			case 'S':
 				if(sort == undefined)
@@ -1659,6 +1624,6 @@ do {
 		curmsg = msg_area.sub[msgbase.cfg.code].last_read;
 	else
 		curmsg = userprops.last_read_mail;
-} while(list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name) === true && bbs.online && !js.terminated);
+} while(list_msgs(msgbase, list, curmsg, preview, grp_name, sub_name) === true);
 
 userprops_lib.set(userprops_section, userprops);

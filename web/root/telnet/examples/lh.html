@@ -1,0 +1,34 @@
+<HTML>
+<HEAD>
+<TITLE>The JAVA Telnet Applet - localhost</TITLE>
+</HEAD>
+
+<H1>A JAVA Telnet Applet - localhost</H1>
+
+<P>&copy; 1996 <A HREF="mailto:leo@first.gmd.de">Matthias L. Jugel</A>, 
+&copy; 1996 <A HREF="mailto:msmeissn@cip.informatik.uni-erlangen.de">Marcus 
+Mei&szlig;ner</A> 
+<P>
+Another example using the telnet applet only. Without the appWrapper it
+causes the applet to hange when you leave the page. It is customized with
+a buttonbar for usage on UNIX systems.
+<P>
+<APPLET CODEBASE="../" CODE="telnet.class" WIDTH=640 HEIGHT=480>
+<PARAM NAME=address VALUE="localhost">
+<PARAM NAME=port VALUE="23">
+<PARAM NAME=emulation VALUE="vt320">
+<PARAM NAME=VTcolumns VALUE="80">
+<PARAM NAME=VTrows VALUE="24">
+<PARAM NAME=VTfont VALUE="Courier">
+<PARAM NAME=VTfontsize VALUE="12">
+<PARAM NAME=VTbuffer VALUE="1000">
+<PARAM NAME=VTscrollbar VALUE="true">
+<PARAM NAME=1#Button VALUE="List Users|who\n">
+<PARAM NAME=2#Button VALUE="Execute:|sag \@exec@\n">
+<PARAM NAME=3#Input VALUE="exec#10|ps">
+<PARAM NAME=4#Button VALUE="Connect:|\$connect(\@addr@)">
+<PARAM NAME=5#Input VALUE="addr#20|localhost">
+<PARAM NAME=6#Button VALUE="Disconnect!|\$disconnect()">
+<PARAM NAME=script VALUE="login:|leo|TERM =|vt100">
+</APPLET>
+</HTML>

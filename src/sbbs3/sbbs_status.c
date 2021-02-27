@@ -128,7 +128,7 @@ static void sendsmsg(struct sbbs_status_msg *msg)
 			sock = node->data;
 			client_off(*sock);
 			free(sock);
-			(void)protected_uint32_adjust(&active_clients, -1);
+			protected_uint32_adjust(&active_clients, -1);
 			update_clients();
 		}
 		listFree(&off_socks);
@@ -354,10 +354,10 @@ void status_client_on(enum sbbs_status_service svc, BOOL on, SOCKET sock, client
 	pthread_mutex_lock(&status_mutex[svc]);
 	if(on) {
 		prot = client->protocol;
-		if (prot == NULL)
+		if (client == NULL || prot == NULL)
 			prot = "<null>";
 		user = client->user;
-		if (user == NULL)
+		if (client == NULL || user == NULL)
 			user = "<null>";
 		if(update) {
 			list_node_t*	node;
@@ -477,12 +477,12 @@ void status_thread(void *arg)
 		return;
 	}
 
-	(void)protected_uint32_init(&thread_count, 0);
+	protected_uint32_init(&thread_count, 0);
 
 	pthread_once(&init_once, init_lists);
 	startup->status(startup->cbdata, "Initializing");
-	SAFECOPY(client.addr, startup->sock_fname);
-	SAFECOPY(client.host, "<unix-domain>");
+	strcpy(client.addr, startup->sock_fname);
+	strcpy(client.host, "<unix-domain>");
 	client.protocol = "STATUS";
 	client.size = sizeof(client);
 
@@ -496,7 +496,7 @@ void status_thread(void *arg)
 	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
 	scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
-	if(!load_cfg(&scfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&scfg, NULL, TRUE, error)) {
 		lprintf(LOG_CRIT,"!ERROR %s",error);
 		lprintf(LOG_CRIT,"!Failed to load configuration files");
 		return;
@@ -505,7 +505,7 @@ void status_thread(void *arg)
 	if(startup->host_name[0]==0)
 		SAFECOPY(startup->host_name,scfg.sys_inetaddr);
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
-	(void)protected_uint32_init(&active_clients, 0);
+	protected_uint32_init(&active_clients, 0);
 	update_clients();
 
 	startup->thread_up(startup->cbdata, TRUE, TRUE);
@@ -706,7 +706,7 @@ void status_thread(void *arg)
 					// Send current status
 					listUnlock(&status_sock);
 					client_on(*csock, &client, FALSE);
-					(void)protected_uint32_adjust(&active_clients, 1);
+					protected_uint32_adjust(&active_clients, 1);
 					update_clients();
 				}
 				else {

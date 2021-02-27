@@ -6,6 +6,7 @@ require("acmev2.js", "ACMEv2");
 var ks_fname = backslash(system.ctrl_dir)+"letsyncrypt.key";
 var setting_fname = backslash(system.ctrl_dir)+"letsyncrypt.ini";
 var sks_fname = backslash(system.ctrl_dir)+"ssl.cert";
+var sbbsini_fname = backslash(system.ctrl_dir)+"sbbs.ini";
 var maincnf_fname = backslash(system.ctrl_dir)+"main.cnf";
 var recycle_sem = backslash(system.ctrl_dir)+"recycle.web";
 
@@ -102,6 +103,8 @@ function authorize_order(acme, order, webroots)
 								token.close();
 							} else
 								log(LOG_ERR, "Error " + errno + " opening/creating " + token.name);
+						} else {
+							log(LOG_WARNING, "Token not found: " + token.name);
 						}
 					}
 					acme.accept_challenge(authz.challenges[challenge]);
@@ -163,6 +166,7 @@ var revoke = false;
 var rsa;
 var sks;
 var sks_group_readable = false;
+var sbbsini = new File(sbbsini_fname);
 var settings = new File(setting_fname);
 var syspass;
 var webroot;
@@ -171,13 +175,19 @@ var usersa = true;	// TODO: Make configurable
 var keysize = 256;	// TODO: Make configurable... ECC sizes are 32, 48, and 66 (66 is not supported by Let's Encrypt)
 var waittime;
 var TOSAgreed=false;
-var sbbsini = load("sbbsini.js");
-var sysop_email = "sysop@" + system.inet_addr;
+
+/*
+ * Get the Web Root
+ */
+if (!sbbsini.open("r"))
+	throw("Unable to open "+sbbsini.name);
+webroot = backslash(sbbsini.iniGetValue("Web", "RootDirectory", "../web/root"));
+sbbsini.close();
 
 /*
  * Now read the settings and state.
  */
-webroots[sbbsini.web.host_name] = sbbsini.web.root_dir;
+webroots[system.inet_addr] = webroot;
 if (settings.open("r")) {
 	domain_list = settings.iniGetObject("Domains");
 	for (i in domain_list) {
@@ -194,7 +204,6 @@ if (settings.open("r")) {
 	dir_path = settings.iniGetValue(null, "Directory", dir_path);
 	TOSAgreed = settings.iniGetValue(null, "TOSAgreed", TOSAgreed);
 	sks_group_readable = settings.iniGetValue(null, "GroupReadableKeyFile", sks_group_readable);
-	sysop_email = settings.iniGetValue(null, "SysopEmail", sysop_email);
 
 	settings.close();
 }
@@ -280,10 +289,10 @@ if (renew || rekey || revoke || print_tos) {
 	if (renew || rekey || revoke) {
 		if (acme.key_id === undefined) {
 			if (TOSAgreed)
-				acme.create_new_account({termsOfServiceAgreed:TOSAgreed,contact:["mailto:"+sysop_email]});
+				acme.create_new_account({termsOfServiceAgreed:TOSAgreed,contact:["mailto:sysop@"+system.inet_addr]});
 			else {
 				try {
-					acme.create_new_account({contact:["mailto:"+sysop_email]});
+					acme.create_new_account({contact:["mailto:sysop@"+system.inet_addr]});
 				}
 				catch (e) {
 					log(LOG_ERR, "Creating account without agreeing to ToS failed.");
@@ -337,7 +346,7 @@ if (revoke) {
 
 if (renew) {
 	/*
-	 * Create the order, using sbbsini.web.host_name
+	 * Create the order, using system.inet_addr
 	 */
 	for (i in webroots)
 		identifiers.push({type:"dns",value:i});
@@ -369,7 +378,7 @@ if (renew) {
 
 	csr.subjectpublickeyinfo=rsa;
 	csr.oganizationname=system.name;
-	csr.commonname=sbbsini.web.host_name;
+	csr.commonname=system.inet_addr;
 	for (i in webroots)
 		dnsnames.push(i);
 	csr.add_extension("2.5.29.17", false, create_dnsnames(dnsnames));

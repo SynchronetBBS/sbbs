@@ -57,7 +57,7 @@ function fonts(key)
 	}
 }
 
-if(bbs.online && cterm.supports_fonts() != false)
+if(cterm.supports_fonts() != false)
 	for(var i in argv)
 		fonts(argv[i]);
 

@@ -1,4 +1,8 @@
+/* sockwrap.h */
+
 /* Berkley/WinSock socket API wrappers */
+
+/* $Id: sockwrap.h,v 1.61 2020/08/08 23:26:38 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -6,15 +10,27 @@
  *																			*
  * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
  *																			*
- * This program is free software; you can redistribute it and/or			*
- * modify it under the terms of the GNU General Public License				*
+ * This library is free software; you can redistribute it and/or			*
+ * modify it under the terms of the GNU Lesser General Public License		*
  * as published by the Free Software Foundation; either version 2			*
  * of the License, or (at your option) any later version.					*
- * See the GNU General Public License for more details: gpl.txt or			*
- * http://www.fsf.org/copyleft/gpl.html										*
+ * See the GNU Lesser General Public License for more details: lgpl.txt or	*
+ * http://www.fsf.org/copyleft/lesser.html									*
+ *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
  *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -224,11 +240,6 @@ DLLEXPORT uint16_t inet_addrport(union xp_sockaddr *addr);
 DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 DLLEXPORT BOOL inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
 DLLEXPORT char* socket_strerror(int, char*, size_t);
-DLLEXPORT void set_socket_errno(int);
-DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst);
-#if defined(_WIN32) // mingw and WinXP's WS2_32.DLL don't have inet_pton():
-	#define inet_pton	xp_inet_pton
-#endif
 
 #ifdef __cplusplus
 }

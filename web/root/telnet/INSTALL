@@ -1,0 +1,55 @@
+** The Java(tm) Telnet Applet **
+
+-------------------------------------------------------------
+If you want to use the classes only do the following:
+
+* UNIX:
+	gzip -cd telnet.tgz | tar xf - \*.class
+
+* DOS/Windows:
+	pkunzip -d telnet.zip
+	* Maybe you can unzip it by just clicking on the
+	  package or Netscape knows how to handle .zip.
+
+This will extract the classes and create the required 
+directory structure (/ is \ on DOS/Windows):
+
+	telnet.class
+	socket/TelnetIO.class
+	socket/StatusPeer.class
+	display/CharDisplay.class
+	display/Terminal.class
+	display/TerminalHost.class
+	display/vt320.class
+	modules/ButtonBar.class
+	modules/Script.class
+
+-------------------------------------------------------------
+In case you like to compile the sources yourself extract
+everything and type the following:
+
+	make realclean
+	make telnet.class
+
+The Makefile will compile all classes recursively even though
+the java compiler would do this by itself when running 
+"java telnet.java".
+
+Just typing "make" will print you all available make targets:
+
+	make test         - compile applet and run appletviewer
+	make telnet       - compile standalone and run telnet
+	make doc          - create documentation
+	make clean        - delete backup files
+	make realclean    - make clean and delete .class files
+
+-------------------------------------------------------------
+
+Hint: Always remember that the applet can only connect to the
+      server it has been loaded from! You will get a security
+      exception when trying to connect to some other host.
+
+      If you load your applet locally via the file:// URL
+      don't forget to set the CLASSPATH environment variable
+      to the directory, where the telnet.class resides _before_
+      you start your appletviewer or web browser!

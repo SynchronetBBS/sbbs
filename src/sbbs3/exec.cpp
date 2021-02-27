@@ -1,4 +1,9 @@
+/* exec.cpp */
+// vi: tabstop=4
+
 /* Synchronet command shell/module interpretter */
+
+/* $Id: exec.cpp,v 1.116 2020/08/01 18:34:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +18,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -577,7 +594,6 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	if(p!=NULL) {
 		*p=0;
 		args=p+1;
-		SKIP_WHITESPACE(args);
 	}
 	fname=cmdline;
 
@@ -608,10 +624,10 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	if(js_scope!=NULL) {
 
 		if (scope != NULL) {
-			if(JS_GetProperty(js_cx, scope, "argv", &old_js_argv))
-				JS_AddValueRoot(js_cx, &old_js_argv);
-			if(JS_GetProperty(js_cx, scope, "argc", &old_js_argc))
-				JS_AddValueRoot(js_cx, &old_js_argc);
+			JS_GetProperty(js_cx, scope, "argv", &old_js_argv);
+			JS_AddValueRoot(js_cx, &old_js_argv);
+			JS_GetProperty(js_cx, scope, "argc", &old_js_argc);
+			JS_AddValueRoot(js_cx, &old_js_argc);
 		}
 
 		JSObject* argv=JS_NewArrayObject(js_cx, 0, NULL);
@@ -619,17 +635,13 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 		JS_DefineProperty(js_cx, js_scope, "argv", OBJECT_TO_JSVAL(argv)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-		/* Handle quoted "one arg" syntax here */
+		/* TODO: Handle quoted "one arg" syntax here? */
 		if(args!=NULL && argv!=NULL) {
 			while(*args) {
-				if(*args == '"') {
-					args++;
-					p = strchr(args, '"');
-				}
-				else
-					p = strchr(args, ' ');
+				p=strchr(args,' ');
 				if(p!=NULL)
 					*p=0;
+				while(*args && *args==' ') args++; /* Skip spaces */
 				JSString* arg = JS_NewStringCopyZ(js_cx, args);
 				if(arg==NULL)
 					break;
@@ -639,8 +651,7 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 				argc++;
 				if(p==NULL)	/* last arg */
 					break;
-				args = p + 1;
-				SKIP_WHITESPACE(args);
+				args+=(strlen(args)+1);
 			}
 		}
 		JS_DefineProperty(js_cx, js_scope, "argc", INT_TO_JSVAL(argc)
@@ -685,11 +696,13 @@ long sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* sco
 	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
 	sys_status &=~ SS_ABORT;
 
-	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
-	if(rval!=JSVAL_VOID)
-		JS_ValueToInt32(js_cx,rval,&result);
+	if(scope==NULL) {
+		JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
+		if(rval!=JSVAL_VOID)
+			JS_ValueToInt32(js_cx,rval,&result);
 
-	js_EvalOnExit(js_cx, js_scope, &js_callback);
+		js_EvalOnExit(js_cx, js_scope, &js_callback);
+	}
 
 	JS_ReportPendingException(js_cx);	/* Added Dec-4-2005, rswindell */
 
@@ -789,10 +802,6 @@ long sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 		SAFEPRINTF2(str,"%s%s",cfg.exec_dir,modname);
 		fexistcase(str);
-	}
-	if(!fexist(str)) {
-		errormsg(WHERE, ERR_EXEC, mod, 0, "module doesn't exist");
-		return -1;
 	}
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -1514,9 +1523,9 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic=*csi->ip++;
 				return(0);
 			case CS_CMDKEY:
-				if( ((*csi->ip)==CS_DIGIT && IS_DIGIT(csi->cmd))
+				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
 					|| ((*csi->ip)==CS_EDIGIT && csi->cmd&0x80
-					&& IS_DIGIT(csi->cmd&0x7f))) {
+					&& isdigit(csi->cmd&0x7f))) {
 					csi->ip++;
 					return(0); 
 				}
@@ -1590,9 +1599,9 @@ int sbbs_t::exec(csi_t *csi)
 					memmove(csi->str,csi->str+i,j+1);
 				return(0);
 			case CS_COMPARE_KEY:
-				if( ((*csi->ip)==CS_DIGIT && IS_DIGIT(csi->cmd))
+				if( ((*csi->ip)==CS_DIGIT && isdigit(csi->cmd))
 					|| ((*csi->ip)==CS_EDIGIT && csi->cmd&0x80
-					&& IS_DIGIT(csi->cmd&0x7f))) {
+					&& isdigit(csi->cmd&0x7f))) {
 					csi->ip++;
 					csi->logic=LOGIC_TRUE; 
 				}
@@ -1621,7 +1630,7 @@ int sbbs_t::exec(csi_t *csi)
 				}
 				switch(*(csi->ip++)) {
 					case USER_STRING_ALIAS:
-						if(!IS_ALPHA(csi->str[0]) || trashcan(csi->str,"name"))
+						if(!isalpha(csi->str[0]) || trashcan(csi->str,"name"))
 							break;
 						i=matchuser(&cfg,csi->str,TRUE /*sysop_alias*/);
 						if(i && i!=useron.number)

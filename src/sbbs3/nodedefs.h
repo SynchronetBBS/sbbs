@@ -76,7 +76,6 @@ enum node_status {                  /* Node Status */
 #define NODE_NMSG   (1<<11)         /* Node message waiting (new way) */
 #define NODE_EXT    (1<<12)         /* Extended info on node action */
 #define NODE_LCHAT	(1<<13)			/* Being pulled into local chat */
-#define NODE_FCHAT	(1<<14)			/* Being forced into private chat */
 
 enum node_action {                  /* Node Action */
      NODE_MAIN                      /* Main Prompt */

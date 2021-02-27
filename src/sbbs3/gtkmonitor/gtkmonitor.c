@@ -76,7 +76,7 @@ void refresh_events(void)
 
     /* Read .cfg files here */
 	free_cfg(&cfg);
-    if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
+    if(!load_cfg(&cfg, NULL, TRUE, str)) {
 		char error[256];
 		SAFEPRINTF(error, "ERROR Loading Configuration Files: %s", str);
 		display_message("Load Error",error,"gtk-dialog-error");
@@ -264,7 +264,7 @@ int refresh_data(gpointer data)
 			sprintf(str,"Error reading node data (%d)!",j);
 			node.status=NODE_WFC;
 		}
-		j=(node.status >= NODE_LOGON && node.status <= NODE_QUIET);
+		j=(node.status==NODE_QUIET || node.status==NODE_INUSE);
 
 		w=GTK_WIDGET(gtk_builder_get_object (builder, "bChatWithUser"));
 		gtk_widget_set_sensitive(w, j);

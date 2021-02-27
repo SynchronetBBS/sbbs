@@ -324,7 +324,7 @@ function main() {
   scrollbar.cycle();
 
   var user_input;
-  while ((user_input = console.getkey(K_NOSPIN).toLowerCase()) != 'q') {
+  while ((user_input = console.getkey(K_NONE).toLowerCase()) != 'q') {
     if (user_input == 's') {
       search(frame, settings);
     } else {

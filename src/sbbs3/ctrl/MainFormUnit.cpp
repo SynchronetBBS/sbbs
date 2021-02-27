@@ -1,10 +1,12 @@
 /* Synchronet Control Panel (GUI Borland C++ Builder Project for Win32) */
 
+/* $Id: MainFormUnit.cpp,v 1.213 2020/04/17 20:38:56 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
  *																			*
- * Copyright Rob Swindell - http://www.synchro.net/copyright.html			*
+ * Copyright Rob Swindell - http://www.synchro.net/copyright.html		    *
  *																			*
  * This program is free software; you can redistribute it and/or			*
  * modify it under the terms of the GNU General Public License				*
@@ -13,8 +15,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -783,6 +797,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     memset(&global,0,sizeof(global));
     SAFECOPY(global.ctrl_dir,"c:\\sbbs\\ctrl\\");
     global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
+    global.js.cx_stack=JAVASCRIPT_CONTEXT_STACK;
     global.js.time_limit=JAVASCRIPT_TIME_LIMIT;
     global.js.gc_interval=JAVASCRIPT_GC_INTERVAL;
     global.js.yield_interval=JAVASCRIPT_YIELD_INTERVAL;
@@ -866,9 +881,11 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     ftp_startup.client_on=client_on;
     ftp_startup.socket_open=socket_open;
 	ftp_startup.options
-        =FTP_OPT_INDEX_FILE | FTP_OPT_ALLOW_QWK;
+        =FTP_OPT_INDEX_FILE|FTP_OPT_HTML_INDEX_FILE|FTP_OPT_ALLOW_QWK;
     ftp_startup.max_clients=10;
     strcpy(ftp_startup.index_file_name,"00index");
+    strcpy(ftp_startup.html_index_file,"00index.html");
+    strcpy(ftp_startup.html_index_script,"ftp-html.js");
 	ftp_startup.login_attempt_list=&login_attempt_list;
 
     memset(&web_startup,0,sizeof(web_startup));
@@ -1950,7 +1967,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 
    	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Loading configuration...";
-	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
@@ -2957,6 +2974,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
     PropertiesDlg->FileAssociationsCheckBox->Checked=UseFileAssociations;
     PropertiesDlg->PasswordEdit->Text=Password;
     PropertiesDlg->JS_MaxBytesEdit->Text=byte_count_to_str(global.js.max_bytes, str, sizeof(str));
+    PropertiesDlg->JS_ContextStackEdit->Text=byte_count_to_str(global.js.cx_stack, str, sizeof(str));
     PropertiesDlg->JS_TimeLimitEdit->Text=IntToStr(global.js.time_limit);
     PropertiesDlg->JS_GcIntervalEdit->Text=IntToStr(global.js.gc_interval);
     PropertiesDlg->JS_YieldIntervalEdit->Text=IntToStr(global.js.yield_interval);
@@ -3026,6 +3044,8 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
         js_startup_t js=global.js; // save for later comparison
         global.js.max_bytes
         	=parse_byte_count(PropertiesDlg->JS_MaxBytesEdit->Text.c_str(), 1);
+        global.js.cx_stack
+        	=parse_byte_count(PropertiesDlg->JS_ContextStackEdit->Text.c_str(), 1);
         global.js.time_limit
         	=PropertiesDlg->JS_TimeLimitEdit->Text.ToIntDef(JAVASCRIPT_TIME_LIMIT);
         global.js.gc_interval
@@ -3036,6 +3056,7 @@ void __fastcall TMainForm::PropertiesExecute(TObject *Sender)
 
         /* Copy global settings, if appropriate (not unique) */
         if(memcmp(&bbs_startup.js,&js,sizeof(js))==0)       bbs_startup.js=global.js;
+        if(memcmp(&ftp_startup.js,&js,sizeof(js))==0)       ftp_startup.js=global.js;
         if(memcmp(&web_startup.js,&js,sizeof(js))==0)       web_startup.js=global.js;
         if(memcmp(&mail_startup.js,&js,sizeof(js))==0)      mail_startup.js=global.js;
         if(memcmp(&services_startup.js,&js,sizeof(js))==0)  services_startup.js=global.js;
@@ -3121,7 +3142,7 @@ void __fastcall TMainForm::reload_config(void)
 	char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
    	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Reloading configuration...";
-	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&cfg, NULL, TRUE, error)) {
     	Application->MessageBox(error,"ERROR Re-loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();

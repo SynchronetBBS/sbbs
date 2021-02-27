@@ -129,7 +129,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	int		in,out;
 	char	inpath[MAX_PATH];
 	char	outpath[MAX_PATH];
-	char	usrname[128] = "Unknown user";
+	char	usrname[128];
 	char	*p;
 	char	ch;
 	time_t	now;
@@ -139,35 +139,34 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 
 	gettextinfo(&ti);
 	if((buf=(char *)alloca(ti.screenwidth*ti.screenheight*2))==NULL) {
-		return __LINE__;
+		return(-1);
 	}
 
 	if(getnodedat(cfg,nodenum,node,FALSE,NULL))
-		return __LINE__;
+		return(-1);
 
 	username(cfg,node->useron,usrname);
+
+	gettext(1,1,ti.screenwidth,ti.screenheight,buf);
+	drawchatwin(boxch,usrname,cfg->sys_op);
 
 	sprintf(outpath,"%slchat.dab",cfg->node_path[nodenum-1]);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,DEFFILEMODE))==-1)
-		return __LINE__;
+		return(-1);
 
 	sprintf(inpath,"%schat.dab",cfg->node_path[nodenum-1]);
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,O_DENYNONE
 		,DEFFILEMODE))==-1) {
 		close(out);
-		return __LINE__;
+		return(-1);
     }
 
 	if((p=(char *)alloca(PCHAT_LEN))==NULL) {
 		close(in);
 		close(out);
-		return __LINE__;
+		return(-1);
     }
-
-	gettext(1,1,ti.screenwidth,ti.screenheight,buf);
-	drawchatwin(boxch,usrname,cfg->sys_op);
-
 	memset(p,0,PCHAT_LEN);
 	write(in,p,PCHAT_LEN);
 	write(out,p,PCHAT_LEN);
@@ -177,7 +176,7 @@ int chat(scfg_t *cfg, int nodenum, node_t *node, box_t *boxch, void(*timecallbac
 	togglechat(cfg,nodenum,node,TRUE);
 
 	while(in != -1) {
-
+		
 		now=time(NULL);
 		if(now!=last_nodechk) {
 

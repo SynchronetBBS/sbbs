@@ -1,5 +1,7 @@
 /* Program to add files to a Synchronet file database */
 
+/* $Id: addfiles.c,v 1.63 2020/08/17 00:48:27 rswindell Exp $ */
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,23 +15,28 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "nopen.h"
-#include "str_util.h"
-#include "datewrap.h"
-#include "date_str.h"
-#include "userdat.h"
-#include "filedat.h"
-#include "load_cfg.h"
+#include "sbbs.h"
 #include <stdbool.h>
-#include <stdarg.h>
 
-#define ADDFILES_VER "3.05"
+#define ADDFILES_VER "3.04"
 
 scfg_t scfg;
 
@@ -84,7 +91,7 @@ void prep_desc(char *str)
 			tmp[j++]=str[i];
 		else if(j && str[i]<=' ' && str[i] > 0&& tmp[j-1]==' ')
 			continue;
-		else if(i && !IS_ALPHANUMERIC(str[i]) && str[i]==str[i-1])
+		else if(i && !isalnum((uchar)str[i]) && str[i]==str[i-1])
 			continue;
 		else if(str[i]>=' ' || str[i]<0)
 			tmp[j++]=str[i];
@@ -241,7 +248,7 @@ bool get_file_diz(file_t* f, const char* filepath, char* ext)
 		sprintf(tmpext,"%.256s",ext);
 		prep_desc(tmpext);
 		for(i=0;tmpext[i];i++)
-			if(IS_ALPHA(tmpext[i]))
+			if(isalpha((uchar)tmpext[i]))
 				break;
 		sprintf(f->desc,"%.*s",LEN_FDESC,tmpext+i);
 		for(i=0;(f->desc[i]>=' ' || f->desc[i]<0) && i<LEN_FDESC;i++)
@@ -404,7 +411,7 @@ void addlist(char *inpath, file_t f, uint dskip, uint sskip)
 		else				   /* no space after filename? */
 			continue;
 #endif
-		if(!IS_ALPHANUMERIC(*fname)) {	// filename doesn't begin with an alpha-numeric char?
+		if(!isalnum(*fname)) {	// filename doesn't begin with an alpha-numeric char?
 			continue;
 		}
 		SAFEPRINTF2(filepath,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
@@ -593,7 +600,7 @@ void synclist(char *inpath, int dirnum)
 		printf("ERR_ALLOC %s\n",str);
 		return;
 	}
-	if(read(file,ixbbuf,length)!=length) {
+	if(lread(file,ixbbuf,length)!=length) {
 		close(file);
 		free((char *)ixbbuf);
 		printf("ERR_READ %s\n",str);
@@ -660,13 +667,12 @@ void synclist(char *inpath, int dirnum)
 		printf("\nDeleting %s\n",listpath);
 		remove(listpath);
 	}
-	fclose(stream);
 }
 
 char *usage="\nusage: addfiles code [.alt_path] [-opts] +list "
 			 "[desc_off] [size_off]"
 	"\n   or: addfiles code [.alt_path] [-opts] file "
-		"[\"description\"]\n"
+		"\"description\"\n"
 	"\navailable opts:"
 	"\n      -a         import ASCII only (no extended ASCII)"
 	"\n      -b         synchronize database with file list (use with caution)"
@@ -733,7 +739,7 @@ int main(int argc, char **argv)
 		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
 
 	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&scfg,NULL,TRUE,error)) {
 		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
 		exit(1);
 	}
@@ -750,7 +756,7 @@ int main(int argc, char **argv)
 		mode|=AUTO_ADD;
 		i=0;
 	} else {
-		if(!IS_ALPHANUMERIC(argv[1][0]) && argc==2) {
+		if(!isalnum((uchar)argv[1][0]) && argc==2) {
 			puts(usage);
 			return(1);
 		}
@@ -856,7 +862,7 @@ int main(int argc, char **argv)
 						return(1);
 			}
 		}
-		else if(IS_DIGIT(argv[j][0])) {
+		else if(isdigit((uchar)argv[j][0])) {
 			if(desc_offset==0)
 				desc_offset=atoi(argv[j]);
 			else
@@ -866,9 +872,9 @@ int main(int argc, char **argv)
 		else if(argv[j][0]=='+') {      /* filelist - FILES.BBS */
 			listgiven=1;
 			if(argc > j+1
-				&& IS_DIGIT(argv[j+1][0])) { /* skip x characters before description */
+				&& isdigit((uchar)argv[j+1][0])) { /* skip x characters before description */
 				if(argc > j+2
-					&& IS_DIGIT(argv[j+2][0])) { /* skip x characters before size */
+					&& isdigit((uchar)argv[j+2][0])) { /* skip x characters before size */
 					addlist(argv[j]+1,f,atoi(argv[j+1]),atoi(argv[j+2]));
 					j+=2;
 				}
@@ -899,7 +905,7 @@ int main(int argc, char **argv)
 #endif
 			if(j+1==argc) {
 				printf("%s no description given.\n",f.name);
-				SAFECOPY(f.desc, "no description given");
+				continue;
 			}
 			sprintf(str,"%s%s",cur_altpath ? scfg.altpath[cur_altpath-1]
 				: scfg.dir[f.dir]->path,argv[j]);
@@ -923,10 +929,8 @@ int main(int argc, char **argv)
 					SAFECOPY(f.desc, unixtodstr(&scfg,(time32_t)file_timestamp,tmp));
 				SAFECAT(f.desc, "  ");
 			}
-			if(j+1 < argc) {
-				j++;
-				SAFECAT(f.desc, argv[j]);
-			}
+			j++;
+			SAFECAT(f.desc, argv[j]);
 			l=flength(str);
 			if(l==-1) {
 				printf("%s not found.\n",str);
@@ -996,7 +1000,7 @@ int main(int argc, char **argv)
 					synclist(str,i);
 				continue;
 			}
-			SAFEPRINTF2(str,"%s%s",scfg.dir[f.dir]->path,auto_name);
+			sprintf(str,"%s%s",scfg.dir[f.dir]->path,auto_name);
 			if(fexistcase(str) && flength(str)>0L) {
 				printf("Auto-adding %s\n",str);
 				addlist(str,f,desc_offset,size_offset);
@@ -1011,7 +1015,7 @@ int main(int argc, char **argv)
 		if(!listgiven && !namegiven) {
 			sprintf(str,"%s%s.lst",scfg.dir[f.dir]->path, scfg.dir[f.dir]->code);
 			if(!fexistcase(str) || flength(str)<=0L)
-				SAFEPRINTF2(str,"%s%s",scfg.dir[f.dir]->path, auto_name);
+				sprintf(str,"%s%s",scfg.dir[f.dir]->path, auto_name);
 			addlist(str,f,desc_offset,size_offset);
 			if(mode&SYNC_LIST)
 				synclist(str,f.dir);

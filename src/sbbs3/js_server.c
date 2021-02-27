@@ -88,7 +88,7 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SERVER_PROP_CLIENTS:
 			if(p->clients!=NULL)
-				*vp=UINT_TO_JSVAL(protected_uint32_value(*p->clients));
+				*vp=UINT_TO_JSVAL(*p->clients);
 			break;
 	}
 
@@ -150,7 +150,7 @@ static void remove_port_part(char *host)
 {
 	char *p=strchr(host, 0)-1;
 
-	if (IS_DIGIT(*p)) {
+	if (isdigit(*p)) {
 		/*
 		 * If the first and last : are not the same, and it doesn't
 		 * start with '[', there's no port part.
@@ -164,7 +164,7 @@ static void remove_port_part(char *host)
 				*p = 0;
 				break;
 			}
-			if (!IS_DIGIT(*p))
+			if (!isdigit(*p))
 				break;
 		}
 	}

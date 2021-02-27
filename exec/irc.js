@@ -112,7 +112,6 @@ if(argv[cmdarg]!=undefined)
 default_channel=default_channel.replace(/\s+/g,"_");
 
 sock=new Socket();
-sock.bind(0,server.interface_ip_address);	// Use globally defined intereface in sbbs.ini
 history=new History();
 screen=new Screen();
 
@@ -155,7 +154,7 @@ while(!quit)  {
 		sock.close();
 		clean_exit();
 	}
-
+	
 	if(!client.socket.is_connected)  {
 		send_cmd("QUIT",":Dropped Carrier");
 		quit=1;
@@ -485,7 +484,7 @@ function handle_command(tag, prefix, command, message)  {
 			}
 			screen.print_line("\x01N\x01B\1hPeople in "+tmp_str+" right now: "+message.join(" "));
 			break;
-
+			
 		case "366":		// End of Names
 			break;
 
@@ -930,7 +929,7 @@ function Channels()  {
 function Channels_nick_change(from,to)  {
 	var i=0;
 	var j=0;
-
+	
 	for(i=0;i<this.channel.length;i++)  {
 		for(j=0;j<this.channel[i].nick.length;j++)  {
 			if(this.channel[i].nick[j].toUpperCase()==from.toUpperCase())  {
@@ -1090,7 +1089,7 @@ function Screen_print_line(line)  {
 			var ending=null;
 			var codes=[null];
 			var ret=null;
-
+			
 			ending="";
 			codes=p1.split(",");
 			p1=codes[0];
@@ -1286,7 +1285,7 @@ function Screen_update_input_line()  {
 	if(line_start+78 < line_len)  {
 		line_str=line_str.slice(0,77)+'+';
 	}
-
+	
 	console.line_counter=0;	// defeat pause
 	console.ansi_gotoxy(1,console.screen_rows);
 	console.clearline();

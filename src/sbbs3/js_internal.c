@@ -1,4 +1,8 @@
+/* js_internal.c */
+
 /* Synchronet "js" object, for internal JavaScript callback and GC control */
+
+/* $Id: js_internal.c,v 1.99 2020/03/29 23:40:57 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +17,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -202,11 +218,6 @@ static char* prop_desc[] = {
 #endif
 	,"global (top level) object - <small>READ ONLY</small>"
 	/* New properties go here... */
-	,"full path and filename of JS file executed"
-	,"JS filename executed (with no path)"
-	,"directory of executed JS file"
-	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
-	,"global scope for this script"
 	,"load() search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
 		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
 		"and is searched accordingly. "
@@ -215,6 +226,11 @@ static char* prop_desc[] = {
 		"exec/load/somefile.js<br>"
 		"mods/somefile.js<br>"
 		"exec/somefile.js<br>"
+	,"full path and filename of JS file executed"
+	,"JS filename executed (with no path)"
+	,"directory of executed JS file"
+	,"Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
+	,"global scope for this script"
 	,NULL
 };
 #endif
@@ -278,7 +294,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*	pscope;
 	JSObject*	js_script=NULL;
 	JSObject*	nargv;
-	jsval		rval = JSVAL_VOID;
+	jsval		rval;
 	jsrefcount	rc;
 	uintN		i;
 	jsval		val;
@@ -415,11 +431,11 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			val = OBJECT_TO_JSVAL(load_path_list);
 			JS_SetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val);
-			if(JS_GetArrayLength(cx, pload_path_list, &plen))
-				for (pcnt = 0; pcnt < plen; pcnt++) {
-					if(JS_GetElement(cx, pload_path_list, pcnt, &val))
-						JS_SetElement(cx, load_path_list, pcnt, &val);
-				}
+			JS_GetArrayLength(cx, pload_path_list, &plen);
+			for (pcnt = 0; pcnt < plen; pcnt++) {
+				JS_GetElement(cx, pload_path_list, pcnt, &val);
+				JS_SetElement(cx, load_path_list, pcnt, &val);
+			}
 		}
 		else {
 			JS_ReportError(cx, "Unable to get parent js."JAVASCRIPT_LOAD_PATH_LIST" array.");
@@ -449,9 +465,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		JS_GetPendingException(cx, &rval);
 	}
 	else {
-		jsval exit_code = JSVAL_VOID;
-		if(JS_GetProperty(cx, js_scope, "exit_code", &exit_code) && exit_code != JSVAL_VOID)
-			rval = exit_code;
+		JS_GetProperty(cx, js_scope, "exit_code", &rval);
 	}
 	JS_SET_RVAL(cx, arglist, rval);
 	JS_ClearPendingException(cx);
@@ -587,41 +601,25 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *glob=JS_GetGlobalObject(cx);
 	jsval *argv=JS_ARGV(cx, arglist);
 	global_private_t*	pd;
-	struct js_onexit_scope *oes = NULL;
-	str_list_t	oldlist;
 	str_list_t	list;
+	str_list_t	oldlist;
 	char		*p = NULL;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if((pd=(global_private_t*)JS_GetPrivate(cx,glob))==NULL)
-		return(JS_FALSE);
 	if(glob==scope) {
+		if((pd=(global_private_t*)JS_GetPrivate(cx,glob))==NULL)
+			return(JS_FALSE);
 		if(pd->exit_func==NULL)
 			pd->exit_func=strListInit();
 		list=pd->exit_func;
 	}
 	else {
-		/* First, look for an existing onexit scope for this scope */
-		for (oes = pd->onexit; oes; oes = oes->next) {
-			if (oes->scope == scope)
-				break;
+		list=(str_list_t)JS_GetPrivate(cx,scope);
+		if(list==NULL) {
+			list=strListInit();
+			JS_SetPrivate(cx,scope,list);
 		}
-
-		/* If one isn't found, insert it */
-		if (oes == NULL) {
-			oes = malloc(sizeof(*oes));
-			if (oes == NULL) {
-				JS_ReportError(cx, "Unable to allocate memory for onexit scope");
-				return JS_FALSE;
-			}
-			oes->next = pd->onexit;
-			pd->onexit = oes;
-			oes->scope = scope;
-			oes->onexit = strListInit();
-			JS_AddObjectRoot(cx, &oes->scope);
-		}
-		list = oes->onexit;
 	}
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL);
@@ -635,7 +633,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		if(glob==scope)
 			pd->exit_func=list;
 		else
-			oes->onexit = list;
+			JS_SetPrivate(cx,scope,list);
 	}
 	return(JS_TRUE);
 }
@@ -776,45 +774,14 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	BOOL	auto_terminate=cb->auto_terminate;
 	JSObject	*glob=JS_GetGlobalObject(cx);
 	global_private_t *pt;
-	str_list_t	list = NULL;
-	struct js_onexit_scope **prev_oes_next = NULL;
-	struct js_onexit_scope *oes = NULL;
+	str_list_t	list;
 
-	pt=(global_private_t *)JS_GetPrivate(cx,JS_GetGlobalObject(cx));
 	if(glob==obj) {
-		/* Yes, this is recursive to one level */
-		while (pt->onexit) {
-			if (pt->onexit->scope == glob) {
-				// This shouldn't happen, but let's not go inifinite eh?
-				JS_ReportError(cx, "js_EvalOnExit() extra scope is global");
-				return;
-			}
-			else {
-				oes = pt->onexit;
-				js_EvalOnExit(cx, pt->onexit->scope, cb);
-				if (oes == pt->onexit) {
-					// This *really* shouldn't happen...
-					JS_ReportError(cx, "js_EvalOnExit() did not pop on_exit stack");
-					return;
-				}
-			}
-		}
+		pt=(global_private_t *)JS_GetPrivate(cx,JS_GetGlobalObject(cx));		
 		list=pt->exit_func;
 	}
-	else {
-		/* Find this scope in onexit list */
-		for (prev_oes_next = &pt->onexit, oes = pt->onexit; oes; prev_oes_next = &(oes->next), oes = oes->next) {
-			if (oes->scope == obj) {
-				(*prev_oes_next) = oes->next;
-				list = oes->onexit;
-				JS_RemoveObjectRoot(cx, &oes->scope);
-				free(oes);
-				break;
-			}
-		}
-		if (oes == NULL)
-			return;
-	}
+	else
+		list=JS_GetPrivate(cx,obj);
 
 	cb->auto_terminate=FALSE;
 
@@ -826,7 +793,9 @@ void DLLCALL js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	}
 
 	strListFree(&list);
-	if(glob == obj)
+	if(glob != obj)
+		JS_SetPrivate(cx,obj,NULL);
+	else
 		pt->exit_func=NULL;
 
 	if(auto_terminate)
@@ -921,7 +890,7 @@ void DLLCALL js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filen
 		JS_DefineProperty(cx, js, "scope", OBJECT_TO_JSVAL(scope)
 			,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 	}
-	JS_DefineProperty(cx, scope, "exit_code", JSVAL_VOID
+	JS_DefineProperty(cx, scope, "exit_code", JSVAL_NULL
 		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_PERMANENT);
 #if defined(_MSC_VER)
 	_set_invalid_parameter_handler(msvc_invalid_parameter_handler);

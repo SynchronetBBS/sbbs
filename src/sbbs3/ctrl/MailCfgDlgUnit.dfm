@@ -1,6 +1,6 @@
 object MailCfgDlg: TMailCfgDlg
-  Left = 1214
-  Top = 710
+  Left = 1213
+  Top = 393
   BorderStyle = bsDialog
   Caption = 'Mail Server Configuration'
   ClientHeight = 246
@@ -53,8 +53,8 @@ object MailCfgDlg: TMailCfgDlg
     Top = 3
     Width = 278
     Height = 199
-    ActivePage = GeneralTabSheet
-    TabIndex = 0
+    ActivePage = POP3TabSheet
+    TabIndex = 2
     TabOrder = 3
     object GeneralTabSheet: TTabSheet
       Caption = 'General'
@@ -84,13 +84,13 @@ object MailCfgDlg: TMailCfgDlg
         AutoSize = False
         Caption = 'Max Inactivity'
       end
-      object MaxConConLabel: TLabel
+      object LinesPerYieldLabel: TLabel
         Left = 7
         Top = 140
         Width = 85
         Height = 19
         AutoSize = False
-        Caption = 'Max Con-Conn'
+        Caption = 'Lines Per Yield'
       end
       object MaxMsgsLabel: TLabel
         Left = 7
@@ -178,12 +178,14 @@ object MailCfgDlg: TMailCfgDlg
         ShowHint = True
         TabOrder = 10
       end
-      object MaxConConEdit: TEdit
+      object LinesPerYieldEdit: TEdit
         Left = 92
         Top = 140
         Width = 39
         Height = 21
-        Hint = 'Maximum Concurrent Connections from same IP (0=unlimited)'
+        Hint = 
+          'Number of lines of message text sent/received between time-slice' +
+          ' yields'
         ParentShowHint = False
         ShowHint = True
         TabOrder = 6
@@ -482,6 +484,14 @@ object MailCfgDlg: TMailCfgDlg
         Height = 13
         Caption = 'DNS Server'
       end
+      object DefCharsetLabel: TLabel
+        Left = 7
+        Top = 62
+        Width = 85
+        Height = 19
+        AutoSize = False
+        Caption = 'Default Charset'
+      end
       object ConnectTimeoutLabel: TLabel
         Left = 7
         Top = 146
@@ -570,6 +580,16 @@ object MailCfgDlg: TMailCfgDlg
         ShowHint = True
         TabOrder = 0
         OnClick = SendMailCheckBoxClick
+      end
+      object DefCharsetEdit: TEdit
+        Left = 92
+        Top = 62
+        Width = 65
+        Height = 21
+        Hint = 'Character set specified for locally generated e-mail messages'
+        ParentShowHint = False
+        ShowHint = True
+        TabOrder = 3
       end
       object ConnectTimeoutEdit: TEdit
         Left = 92

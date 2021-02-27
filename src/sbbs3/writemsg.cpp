@@ -1,4 +1,7 @@
 /* Synchronet message creation routines */
+// vi: tabstop=4
+
+/* $Id: writemsg.cpp,v 1.175 2020/05/24 19:34:02 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -13,8 +16,20 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
+ * Anonymous FTP access to the most recent released source is available at	*
+ * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
+ *																			*
+ * Anonymous CVS access to the development source and modification history	*
+ * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
+ *     (just hit return, no password is necessary)							*
+ * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
+ *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
+ *																			*
+ * You are encouraged to submit any modifications (preferably in Unix diff	*
+ * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -22,8 +37,6 @@
 #include "sbbs.h"
 #include "wordwrap.h"
 #include "utf8.h"
-#include "git_branch.h"
-#include "git_hash.h"
 
 #define MAX_LINES		10000
 #define MAX_LINE_LEN	(cols - 1)
@@ -78,7 +91,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 		useron_xedit = 0;
 
 	quotes_fname(useron_xedit,fname,sizeof(fname));
-	(void)removecase(fname);
+	removecase(fname);
 
 	if((fp=fopen(fname,"wb"))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,0);
@@ -300,9 +313,9 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		mode|=WM_NOTOP;
 
 	msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
-	(void)removecase(msgtmp);
+	removecase(msgtmp);
 	SAFEPRINTF(tagfile,"%seditor.tag",cfg.temp_dir);
-	(void)removecase(tagfile);
+	removecase(tagfile);
 	SAFEPRINTF(draft_desc, "draft.%s.msg", subnum >= cfg.total_subs ? "mail" : cfg.sub[subnum]->code);
 	SAFEPRINTF3(draft, "%suser/%04u.%s", cfg.data_dir, useron.number, draft_desc);
 
@@ -311,7 +324,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		if(mv(draft, msgtmp, /* copy: */true) == 0) {
 			lprintf(LOG_NOTICE, "draft message restored: %s (%lu bytes)", draft, (ulong)flength(msgtmp));
 			draft_restored = true;
-			(void)removecase(quotes_fname(useron_xedit, str, sizeof(str)));
+			removecase(quotes_fname(useron_xedit, str, sizeof(str)));
 		} else
 			lprintf(LOG_ERR, "ERROR %d (%s) restoring draft message: %s", errno, strerror(errno), draft);
 	}
@@ -409,7 +422,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 					continue; 
 				}
 
-				if(!IS_DIGIT(quote[0]))
+				if(!isdigit(quote[0]))
 					break;
 				p=quote;
 				while(p) {
@@ -456,7 +469,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		} 
 	}
 	else {
-		(void)removecase(quotes_fname(useron_xedit, str, sizeof(str)));
+		removecase(quotes_fname(useron_xedit, str, sizeof(str)));
 	}
 
 	if(!online || sys_status&SS_ABORT) {
@@ -509,7 +522,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 	if(console&CON_RAW_IN) {
 
 		if(editor != NULL)
-			*editor = "Synchronet writemsg " GIT_BRANCH "/" GIT_HASH;
+			*editor = "Synchronet writemsg $Revision: 1.175 $";
 
 		bprintf(text[EnterMsgNowRaw]
 			,(ulong)cfg.level_linespermsg[useron_level]*MAX_LINE_LEN);
@@ -575,7 +588,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 		if(!draft_restored) {
 			if(!linesquoted)
-				(void)removecase(msgtmp);
+				removecase(msgtmp);
 			else {
 				qlen=(long)flength(msgtmp);
 				qtime=(long)fdate(msgtmp); 
@@ -584,7 +597,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
-		const char* cmd = cmdstr(cfg.xedit[useron_xedit-1]->rcmd, msgtmp, nulstr, NULL, ex_mode);
+		const char* cmd = cmdstr(cfg.xedit[useron_xedit-1]->rcmd, msgtmp, nulstr, NULL);
 		int result = external(cmd, ex_mode, cfg.node_dir);
 		lprintf(LOG_DEBUG, "'%s' returned %d", cmd, result);
 		rioctl(IOSM|PAUSE|ABORT); 
@@ -632,31 +645,21 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 			return(false); 
 		}
 		length=(long)filelength(file);
-		if(length < 0) {
-			errormsg(WHERE, ERR_LEN, msgtmp, length);
-			free(buf);
-			return false;
-		}
 		l=strlen((char *)buf);	  /* reserve space for top and terminating null */
 		/* truncate if too big */
 		if(length>(long)((cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1))) {
 			length=(cfg.level_linespermsg[useron_level]*MAX_LINE_LEN)-(l+1);
 			bputs(text[OutOfBytes]); 
 		}
-		long rd = read(file,buf+l,length);
+		lread(file,buf+l,length);
 		close(file);
-		if(rd != length) {
-			errormsg(WHERE, ERR_READ, msgtmp, length);
-			free(buf);
-			return false;
-		}
 		// remove(msgtmp); 	   /* no need to save the temp input file */
 		buf[l+length]=0; 
 	}
 	else {
 
 		if(editor != NULL)
-			*editor = "Synchronet msgeditor " GIT_BRANCH "/" GIT_HASH;
+			*editor = "Synchronet msgeditor $Revision: 1.175 $";
 
 		buf[0]=0;
 		if(linesquoted || draft_restored) {
@@ -688,7 +691,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 	now=time(NULL);
 	bputs(text[Saving]);
-	(void)removecase(fname);
+	removecase(fname);
 	if((stream=fnopen(NULL,fname,O_WRONLY|O_CREAT|O_TRUNC))==NULL) {
 		errormsg(WHERE,ERR_OPEN,fname,O_WRONLY|O_CREAT|O_TRUNC);
 		free(buf);
@@ -713,7 +716,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 				while(!feof(sig)) {
 					if(!fgets(str,sizeof(str),sig))
 						break;
-					truncnl(str);
+					truncsp(str);
 					if(utf8) {
 						char buf[sizeof(str)*4];
 						cp437_to_utf8_str(str, buf, sizeof(buf) - 1, /* minval: */'\x02');
@@ -746,7 +749,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 		}
 	}
 
-	(void)remove(draft);
+	remove(draft);
 	fclose(stream);
 	free((char *)buf);
 	bprintf(text[SavedNBytes],l,lines);
@@ -755,8 +758,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, long mode,
 
 void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* charset)
 {
-	smb_hfield_string(msg, SMB_EDITOR, editor);
-	smb_hfield_string(msg, FIDOCHARSET, charset);
+	if(editor != NULL)
+		smb_hfield_str(msg, SMB_EDITOR, editor);
+
+	if(charset != NULL)
+		smb_hfield_str(msg, FIDOCHARSET, charset);
 
 	ushort useron_xedit = useron.xedit;
 
@@ -791,10 +797,10 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 	xeditnum--;
 
 	SAFEPRINTF(path,"%sresult.ed",cfg.node_dir);
-	(void)removecase(path);
+	removecase(path);
 	if(cfg.xedit[xeditnum]->misc&QUICKBBS) {
 		SAFEPRINTF2(path,"%s%s",cfg.node_dir, cfg.xedit[xeditnum]->misc&XTRN_LWRCASE ? "msginf":"MSGINF");
-		(void)removecase(path);
+		removecase(path);
 		if((fp=fopen(path,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -814,7 +820,7 @@ void sbbs_t::editor_inf(int xeditnum, const char *to, const char* from, const ch
 	}
 	else {
 		SAFEPRINTF2(path,"%s%s",cfg.node_dir,cfg.xedit[xeditnum]->misc&XTRN_LWRCASE ? "editor.inf" : "EDITOR.INF");
-		(void)removecase(path);
+		removecase(path);
 		if((fp=fopen(path,"wb"))==NULL) {
 			errormsg(WHERE,ERR_OPEN,path,O_WRONLY|O_CREAT|O_TRUNC);
 			return; 
@@ -855,7 +861,7 @@ void sbbs_t::removeline(char *str, char *str2, char num, char skip)
 		errormsg(WHERE,ERR_ALLOC,str,flen);
 		return; 
 	}
-	if(read(file,buf,flen)!=flen) {
+	if(lread(file,buf,flen)!=flen) {
 		close(file);
 		errormsg(WHERE,ERR_READ,str,flen);
 		free(buf);
@@ -1133,7 +1139,7 @@ ulong sbbs_t::msgeditor(char *buf, const char *top, char *title)
 				upload:
 				char	fname[MAX_PATH + 1];
 				SAFEPRINTF(fname, "%sUPLOAD.MSG", cfg.temp_dir);
-				(void)removecase(fname);
+				removecase(fname);
 				if(!recvfile(fname, prot, /* autohang: */false)) {
 					bprintf(text[FileNotReceived], "File");
 					continue;
@@ -1220,7 +1226,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 	else
 		maxlines=MAX_LINES;
 	quotes_fname(useron_xedit, path, sizeof(path));
-	(void)removecase(path);
+	removecase(path);
 
 	if(useron_xedit) {
 
@@ -1228,8 +1234,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 
 		msg_tmp_fname(useron_xedit, msgtmp, sizeof(msgtmp));
 		if(stricmp(msgtmp,path)) {
-			if(removecase(msgtmp) != 0)
-				errormsg(WHERE, ERR_REMOVE, msgtmp, 0);
+			removecase(msgtmp);
 			if(fexistcase(path))
 				CopyFile(path, msgtmp, /* failIfExists: */FALSE);
 		}
@@ -1246,7 +1251,7 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		}
 		CLS;
 		rioctl(IOCM|PAUSE|ABORT);
-		if(external(cmdstr(cfg.xedit[useron_xedit-1]->rcmd,msgtmp,nulstr,NULL,mode), mode, cfg.node_dir)!=0)
+		if(external(cmdstr(cfg.xedit[useron_xedit-1]->rcmd,msgtmp,nulstr,NULL),mode,cfg.node_dir)!=0)
 			return false;
 		l=process_edited_file(msgtmp, path, /* mode: */WM_EDIT, &lines,maxlines);
 		if(l>0) {
@@ -1257,8 +1262,8 @@ bool sbbs_t::editfile(char *fname, bool msg)
 		rioctl(IOSM|PAUSE|ABORT); 
 		return true; 
 	}
-	if((buf=(char *)malloc((maxlines*MAX_LINE_LEN) + 1))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,nulstr, (maxlines*MAX_LINE_LEN) + 1);
+	if((buf=(char *)malloc(maxlines*MAX_LINE_LEN))==NULL) {
+		errormsg(WHERE,ERR_ALLOC,nulstr,maxlines*MAX_LINE_LEN);
 		return false; 
 	}
 	if((file=nopen(fname,O_RDONLY))!=-1) {
@@ -1307,12 +1312,11 @@ bool sbbs_t::editfile(char *fname, bool msg)
 /*************************/
 /* Copy file attachments */
 /*************************/
-bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
+void sbbs_t::copyfattach(uint to, uint from, char *title)
 {
 	char str[128],str2[128],str3[128],*tp,*sp,*p;
-	bool result = false;
 
-	strcpy(str, subj);
+	strcpy(str,title);
 	tp=str;
 	while(1) {
 		p=strchr(tp,' ');
@@ -1324,219 +1328,96 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 			,cfg.data_dir,to,tp);
 		SAFEPRINTF3(str3,"%sfile/%04u.in/%s"  /* str2 is path/fname */
 			,cfg.data_dir,from,tp);
-		if(strcmp(str2,str3)) {
-			if(mv(str3, str2, /* copy */true) != 0)
-				return false;
-			result = true;
-		}
+		if(strcmp(str2,str3))
+			mv(str3,str2,1);
 		if(!p)
 			break;
 		tp=p+1; 
 	}
-	return result;
 }
 
+
 /****************************************************************************/
-/* Forwards msg 'orgmsg' to 'to' with optional 'comment'					*/
-/* If comment is NULL, comment lines will be prompted for.					*/
-/* If comment is a zero-length string, no comments will be included.		*/
+/* Forwards mail (fname) to usernumber                                      */
+/* Called from function readmail											*/
 /****************************************************************************/
-bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char* subject, const char* comment)
+void sbbs_t::forwardmail(smbmsg_t *msg, int usernumber)
 {
 	char		str[256],touser[128];
 	char 		tmp[512];
-	char		subj[LEN_TITLE + 1];
-	int			result;
-	smbmsg_t	msg;
+	int			i;
 	node_t		node;
-	uint usernumber = 0;
-
-	if(to == NULL)
-		return false;
-
-	uint16_t net_type = NET_NONE;
-	if(strchr(to, '@') != NULL)
-		net_type = smb_netaddr_type(to);
-	if(net_type == NET_NONE) {
-		usernumber = finduser(to);
-		if(usernumber < 1)
-			return false;
-	} else if(!is_supported_netmail_addr(&cfg, to)) {
-		bprintf(text[InvalidNetMailAddr], to);
-		return false;
-	}
+	msghdr_t	hdr=msg->hdr;
+	idxrec_t	idx=msg->idx;
+	time32_t	now32;
 
 	if(useron.etoday>=cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt&FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
-		return false; 
+		return; 
 	}
 	if(useron.rest&FLAG('F')) {
 		bputs(text[R_Forward]);
-		return false;
+		return; 
 	}
 	if(usernumber==1 && useron.rest&FLAG('S')) {
 		bprintf(text[R_Feedback],cfg.sys_op);
-		return false;
+		return; 
 	}
 	if(usernumber!=1 && useron.rest&FLAG('E')) {
 		bputs(text[R_Email]);
-		return false;
+		return; 
 	}
 
-	if(subject == NULL) {
-		subject = subj;
-		SAFEPRINTF(subj, "Fwd: %s", orgmsg->subj);
-		bputs(text[SubjectPrompt]);
-		if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM))
-			return false;
-	}
+	msg->idx.attr&=~(MSG_READ|MSG_DELETE);
+	msg->hdr.attr=msg->idx.attr;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.hdr.auxattr = orgmsg->hdr.auxattr & (MSG_HFIELDS_UTF8 | MSG_MIMEATTACH);
-	msg.hdr.when_imported.time = time32(NULL);
-	msg.hdr.when_imported.zone = sys_timezone(&cfg);
-	msg.hdr.when_written = msg.hdr.when_imported;
 
-	smb_hfield_str(&msg, SUBJECT, subject);
-	add_msg_ids(&cfg, smb, &msg, orgmsg);
-
-	smb_hfield_str(&msg,SENDER,useron.alias);
+	smb_hfield_str(msg,SENDER,useron.alias);
 	SAFEPRINTF(str,"%u",useron.number);
-	smb_hfield_str(&msg,SENDEREXT,str);
+	smb_hfield_str(msg,SENDEREXT,str);
 
 	/* Security logging */
-	msg_client_hfields(&msg,&client);
-	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
+	msg_client_hfields(msg,&client);
+	smb_hfield_str(msg,SENDERSERVER, server_host_name());
 
-	if(usernumber > 0) {
-		username(&cfg,usernumber,touser);
-		smb_hfield_str(&msg, RECIPIENT,touser);
-		SAFEPRINTF(str,"%u",usernumber);
-		smb_hfield_str(&msg, RECIPIENTEXT,str);
-	} else {
-		SAFECOPY(touser, to);
-		char* p;
-		if((p = strchr(touser, '@')) != NULL)
-			*p = '\0';
-		smb_hfield_str(&msg, RECIPIENT, touser);
-		SAFECOPY(touser, to);
-		const char* addr = touser;
-		if(net_type != NET_INTERNET && p != NULL)
-			addr = p + 1;
-		char fulladdr[128];
-		if(net_type == NET_QWK) {
-			usernumber = qwk_route(&cfg, addr, fulladdr, sizeof(fulladdr) - 1);
-			if(*fulladdr == '\0') {
-				bprintf(text[InvalidNetMailAddr], addr);
-				smb_freemsgmem(&msg);
-				return false; 
-			}
-			addr = fulladdr;
-			SAFEPRINTF(str, "%u", usernumber);
-			smb_hfield_str(&msg, RECIPIENTEXT, str);
-			usernumber = 0;
-		}
-		smb_hfield_bin(&msg, RECIPIENTNETTYPE, net_type);
-		smb_hfield_netaddr(&msg, RECIPIENTNETADDR, addr, &net_type);
-	}
-	if(orgmsg->mime_version != NULL) {
-		safe_snprintf(str, sizeof(str), "MIME-Version: %s", orgmsg->mime_version);
-		smb_hfield_str(&msg, RFC822HEADER, str);
-	}
-	if(orgmsg->content_type != NULL) {
-		safe_snprintf(str, sizeof(str), "Content-type: %s", orgmsg->content_type);
-		smb_hfield_str(&msg, RFC822HEADER, str);
-	}
-	// This header field not strictly required any more:
-	time32_t now32 = time32(NULL);
-	smb_hfield(&msg, FORWARDED, sizeof(now32), &now32);
+	username(&cfg,usernumber,touser);
+	smb_hfield_str(msg,RECIPIENT,touser);
+	SAFEPRINTF(str,"%u",usernumber);
+	smb_hfield_str(msg,RECIPIENTEXT,str);
+	msg->idx.to=usernumber;
 
-	const char* br = NULL;
-	const char* pg = nulstr;
-	const char* lt = "<";
-	const char* gt = ">";
-	if(orgmsg->text_subtype != NULL && stricmp(orgmsg->text_subtype, "html") == 0) {
-		lt = "&lt;";
-		gt = "&gt;";
-		br = "<br>";
-		pg = "<p>";
+	now32=time32(NULL);
+	smb_hfield(msg,FORWARDED,sizeof(time32_t),&now32);
+
+
+	if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+		return; 
+	}
+	if((i=smb_incmsg_dfields(&smb,msg,1))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_WRITE,smb.file,i);
+		return; 
+	}
+	smb_close_da(&smb);
+
+
+	if((i=smb_addmsghdr(&smb,msg,smb_storage_mode(&cfg, &smb)))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+		smb_freemsg_dfields(&smb,msg,1);
+		return; 
 	}
 
-	if(comment == NULL) {
-		while(online && !msgabort()) {
-			bputs(text[UeditComment]);
-			if(!getstr(str, 70, K_WRAP))
-				break;
-			smb_hfield_string(&msg, SMB_COMMENT, str);
-			smb_hfield_string(&msg, SMB_COMMENT, br);
-		}
-		if(!online || msgabort()) {
-			smb_freemsgmem(&msg);
-			return false; 
-		}
-	} else {
-		if(*comment)
-			smb_hfield_string(&msg, SMB_COMMENT, comment);
-	}
-	if(smb_get_hfield(&msg, SMB_COMMENT, NULL) != NULL)
-		smb_hfield_string(&msg, SMB_COMMENT, pg);
-	smb_hfield_string(&msg, SMB_COMMENT, "-----Forwarded Message-----");
-	smb_hfield_string(&msg, SMB_COMMENT, br);
-	if(orgmsg->from_net.addr != NULL)
-		safe_snprintf(str, sizeof(str), "From: %s %s%s%s"
-			,orgmsg->from, lt, smb_netaddrstr(&orgmsg->from_net, tmp), gt);
-	else
-		safe_snprintf(str, sizeof(str), "From: %s", orgmsg->from);
-	smb_hfield_string(&msg, SMB_COMMENT, str);
-	smb_hfield_string(&msg, SMB_COMMENT, br);
-	safe_snprintf(str, sizeof(str), "Date: %s", msgdate(orgmsg->hdr.when_written, tmp));
-	smb_hfield_string(&msg, SMB_COMMENT, str);
-	smb_hfield_string(&msg, SMB_COMMENT, br);
-	if(orgmsg->to_net.addr != NULL)
-		safe_snprintf(str, sizeof(str), "To: %s %s%s%s"
-			,orgmsg->to, lt, smb_netaddrstr(&orgmsg->to_net, tmp), gt);
-	else
-		safe_snprintf(str, sizeof(str), "To: %s", orgmsg->to);
-	smb_hfield_string(&msg, SMB_COMMENT, str);
-	smb_hfield_string(&msg, SMB_COMMENT, br);
-	safe_snprintf(str, sizeof(str), "Subject: %s", orgmsg->subj);
-	smb_hfield_string(&msg, SMB_COMMENT, str);
-	smb_hfield_string(&msg, SMB_COMMENT, pg);
+	if(msg->hdr.auxattr&MSG_FILEATTACH)
+		copyfattach(usernumber,useron.number,msg->subj);
 
-	// Re-use the original message's data
-	if((result = smb_open_da(smb)) != SMB_SUCCESS) {
-		smb_freemsgmem(&msg);
-		errormsg(WHERE, ERR_OPEN, smb->file, result, smb->last_error);
-		return false;
-	}
-	if((result = smb_incmsg_dfields(smb, orgmsg, 1)) != SMB_SUCCESS) {
-		smb_freemsgmem(&msg);
-		errormsg(WHERE, ERR_WRITE, smb->file, result, smb->last_error);
-		return false;
-	}
-	smb_close_da(smb);
-
-	msg.dfield = orgmsg->dfield;
-	msg.hdr.offset = orgmsg->hdr.offset;
-	msg.hdr.total_dfields = orgmsg->hdr.total_dfields;
-
-	if(orgmsg->hdr.auxattr&MSG_FILEATTACH) {
-		copyfattach(usernumber, useron.number, orgmsg->subj);
-		msg.hdr.auxattr |= MSG_FILEATTACH;
-	}
-
-	result = smb_addmsghdr(smb, &msg, smb_storage_mode(&cfg, smb));
-	msg.dfield = NULL;
-	smb_freemsgmem(&msg);
-	if(result != SMB_SUCCESS) {
-		errormsg(WHERE, ERR_WRITE, smb->file, result, smb->last_error);
-		smb_freemsg_dfields(smb, orgmsg, 1);
-		return false;
-	}
-
-	bprintf(text[Forwarded], touser, usernumber);
-	SAFEPRINTF(str, "forwarded mail to %s", touser);
+	bprintf(text[Forwarded],username(&cfg,usernumber,str),usernumber);
+	SAFEPRINTF2(str,"forwarded mail to %s #%d"
+		,username(&cfg,usernumber,tmp)
+		,usernumber);
 	logline("E+",str);
+	msg->idx=idx;
+	msg->hdr=hdr;
+
 
 	if(usernumber==1) {
 		useron.fbacks++;
@@ -1551,26 +1432,19 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 	useron.etoday++;
 	putuserrec(&cfg,useron.number,U_ETODAY,5,ultoa(useron.etoday,tmp,10));
 
-	if(usernumber > 0) {
-		int i;
-		for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
-			getnodedat(i,&node,0);
-			if(node.useron==usernumber && !(node.misc&NODE_POFF)
-				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
-				SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
-				putnmsg(&cfg,i,str);
-				break; 
-			} 
-		}
-		if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
-			SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
-			putsmsg(&cfg,usernumber,str); 
-		}
-	} else {
-		if(net_type == NET_FIDO && cfg.netmail_sem[0])
-			ftouch(cmdstr(cfg.netmail_sem, nulstr, nulstr, NULL));
+	for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
+		getnodedat(i,&node,0);
+		if(node.useron==usernumber && !(node.misc&NODE_POFF)
+			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
+			SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);
+			putnmsg(&cfg,i,str);
+			break; 
+		} 
 	}
-	return true;
+	if(i>cfg.sys_nodes) {	/* User wasn't online, so leave short msg */
+		SAFEPRINTF(str,text[UserSentYouMail],useron.alias);
+		putsmsg(&cfg,usernumber,str); 
+	}
 }
 
 /****************************************************************************/
@@ -1587,7 +1461,7 @@ void sbbs_t::automsg()
 /****************************************************************************/
 /* Edits messages															*/
 /****************************************************************************/
-bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
+void sbbs_t::editmsg(smbmsg_t *msg, uint subnum)
 {
 	char	buf[SDT_BLOCK_LEN];
 	char	msgtmp[MAX_PATH+1];
@@ -1597,37 +1471,36 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	FILE	*instream;
 
 	if(!msg->hdr.total_dfields)
-		return false;
+		return;
 
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
-	if(removecase(msgtmp) != 0)
-		return false;
-	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
+	removecase(msgtmp);
+	msgtotxt(&smb, msg, msgtmp, /* header: */false, /* mode: */GETMSGTXT_ALL);
 	if(!editfile(msgtmp, /* msg: */true))
-		return false;
+		return;
 	length=(long)flength(msgtmp);
 	if(length<1L)
-		return false;
+		return;
 
 	length+=2;	 /* +2 for translation string */
 
-	if((i=smb_locksmbhdr(smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_LOCK,smb->file,i,smb->last_error);
-		return false;
+	if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
+		return; 
 	}
 
-	if((i=smb_getstatus(smb))!=SMB_SUCCESS) {
-		errormsg(WHERE,ERR_READ,smb->file,i,smb->last_error);
-		return false;
+	if((i=smb_getstatus(&smb))!=SMB_SUCCESS) {
+		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
+		return; 
 	}
 
-	if(!(smb->status.attr&SMB_HYPERALLOC)) {
-		if((i=smb_open_da(smb))!=SMB_SUCCESS) {
-			errormsg(WHERE,ERR_OPEN,smb->file,i,smb->last_error);
-			return false;
+	if(!(smb.status.attr&SMB_HYPERALLOC)) {
+		if((i=smb_open_da(&smb))!=SMB_SUCCESS) {
+			errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+			return; 
 		}
-		if((i=smb_freemsg_dfields(smb,msg,1))!=SMB_SUCCESS)
-			errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error); 
+		if((i=smb_freemsg_dfields(&smb,msg,1))!=SMB_SUCCESS)
+			errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
 	}
 
 	msg->dfield[0].type=TEXT_BODY;				/* Make one single data field */
@@ -1640,30 +1513,30 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	}
 
 
-	if(smb->status.attr&SMB_HYPERALLOC)
-		offset=smb_hallocdat(smb); 
+	if(smb.status.attr&SMB_HYPERALLOC)
+		offset=smb_hallocdat(&smb); 
 	else {
-		if((smb->subnum!=INVALID_SUB && cfg.sub[smb->subnum]->misc&SUB_FAST)
-			|| (smb->subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL))
-			offset=smb_fallocdat(smb,length,1);
+		if((subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_FAST)
+			|| (subnum==INVALID_SUB && cfg.sys_misc&SM_FASTMAIL))
+			offset=smb_fallocdat(&smb,length,1);
 		else
-			offset=smb_allocdat(smb,length,1);
-		smb_close_da(smb);
+			offset=smb_allocdat(&smb,length,1);
+		smb_close_da(&smb); 
 	}
 
 	msg->hdr.offset=offset;
 	if((file=open(msgtmp,O_RDONLY|O_BINARY))==-1
 		|| (instream=fdopen(file,"rb"))==NULL) {
-		smb_unlocksmbhdr(smb);
-		smb_freemsgdat(smb,offset,length,1);
+		smb_unlocksmbhdr(&smb);
+		smb_freemsgdat(&smb,offset,length,1);
 		errormsg(WHERE,ERR_OPEN,msgtmp,O_RDONLY|O_BINARY);
-		return false;
+		return; 
 	}
 
 	setvbuf(instream,NULL,_IOFBF,2*1024);
-	fseek(smb->sdt_fp,offset,SEEK_SET);
+	fseek(smb.sdt_fp,offset,SEEK_SET);
 	xlat=XLAT_NONE;
-	fwrite(&xlat,2,1,smb->sdt_fp);
+	fwrite(&xlat,2,1,smb.sdt_fp);
 	x=SDT_BLOCK_LEN-2;				/* Don't read/write more than 255 */
 	while(!feof(instream)) {
 		memset(buf,0,x);
@@ -1672,17 +1545,16 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 			break;
 		if(j>1 && (j!=x || feof(instream)) && buf[j-1]==LF && buf[j-2]==CR)
 			buf[j-1]=buf[j-2]=0;	/* Convert to NULL */
-		fwrite(buf,j,1,smb->sdt_fp);
+		fwrite(buf,j,1,smb.sdt_fp);
 		x=SDT_BLOCK_LEN; 
 	}
-	fflush(smb->sdt_fp);
+	fflush(smb.sdt_fp);
 	fclose(instream);
 
-	smb_unlocksmbhdr(smb);
+	smb_unlocksmbhdr(&smb);
 	msg->hdr.length=(ushort)smb_getmsghdrlen(msg);
-	if((i=smb_putmsghdr(smb,msg))!=SMB_SUCCESS)
-		errormsg(WHERE,ERR_WRITE,smb->file,i,smb->last_error);
-	return i == SMB_SUCCESS;
+	if((i=smb_putmsghdr(&smb,msg))!=SMB_SUCCESS)
+		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 }
 
 /****************************************************************************/
