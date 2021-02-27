@@ -817,7 +817,7 @@ function replace_vars(str)
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
-	str = str.replace(/(`[nexd\\\*])/g, function(m, r1) { return getvar(r1, true); });
+	str = str.replace(/(`[nexdNEXD\\\*])/g, function(m, r1) { return getvar(r1, true); });
 	return str;
 }
 
@@ -1619,8 +1619,24 @@ function run_ref(sec, fname)
 			line = files[fname].section[args[0]].line;
 		},
 		'move':function(args) {
+			var x, y;
 			if (args.length > 1) {
-				dk.console.gotoxy(clamp_integer(getvar(args[0]), '8') - 1, clamp_integer(getvar(args[1]), '8') - 1);
+				// Per CNW gametxt.ref @#stats, @do move 1 25 moves to the last line...
+				// I assume Y is clamped the same way.
+				x = clamp_integer(getvar(args[0]), '8');
+				if (x > dk.console.cols)
+					x = dk.console.cols;
+				y = clamp_integer(getvar(args[1]), '8');
+				if (y > dk.console.rows)
+					y = dk.console.rows;
+				if (x == 0) {
+					dk.console.movey((y - 1) - scr.pos.y);
+				}
+				else if (y == 0) {
+					dk.console.movex((x - 1) - scr.pos.x);
+				}
+				else
+					dk.console.gotoxy(x - 1, y - 1);
 				return;
 			}
 			throw new Error('Invalid move at '+fname+':'+line);
@@ -1658,7 +1674,18 @@ function run_ref(sec, fname)
 			var dl = displen(str);
 			var l = parseInt(getvar(args[1]), 10);
 
-			str += spaces(l - dl);
+			// NOTE: '@do pad' also trims down (see status screen in CNW with wildberries equipped)
+			//       however, REFDoor documentation specifically says it doesn't do this!
+			if (dl > l) {
+				// Keep shortening the string until it's max width is short enough.
+				// This ensures we keep as many codes as possible.
+				while (dl > l) {
+					str = str.slice(0, -1);
+					dl = displen(str);
+				}
+			}
+			else
+				str += spaces(l - dl);
 			setvar(args[0], str);
 		},
 		'quebar':function(args) {
@@ -2439,8 +2466,11 @@ function run_ref(sec, fname)
 					case 'bottom':
 						dk.console.gotoxy(0,23);
 						break;
+					// Any other argument is the same as no argument... CNW reset.ref uses '@key noshow'
 					default:
-						throw new Error('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
+						//throw new Error('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
+						lw('\r');
+						break;
 				}
 			}
 			else
@@ -2989,14 +3019,17 @@ function getpoffset() {
 
 function erase(x, y) {
 	var off = getoffset(x,y);
-	var mi = map.mapinfo[off];
+	var mi;
 	var attr = dk.console.attr.value;
 
-	foreground(mi.forecolour);
-	background(mi.backcolour);
-	dk.console.gotoxy(x, y);
-	dk.console.print(mi.ch === '' ? ' ' : mi.ch);
-	dk.console.attr.value = attr;
+	if (map !== undefined) {
+		mi = map.mapinfo[off];
+		foreground(mi.forecolour);
+		background(mi.backcolour);
+		dk.console.gotoxy(x, y);
+		dk.console.print(mi.ch === '' ? ' ' : mi.ch);
+		dk.console.attr.value = attr;
+	}
 }
 
 function update_update()
@@ -3346,59 +3379,63 @@ function update(skip) {
 	var done;
 	var orig_attr = dk.console.attr.value;
 
-	if ((!skip) || now > next_update) {
-		next_update = now + game.delay;
-		// First, update player data
-		update_players();
+	if (map !== undefined) {
+		dk.console.gotoxy(player.x - 1, player.y - 1);
+		foreground(15);
+		background(map.mapinfo[getpoffset()].backcolour);
+		dk.console.print('\x02');
+		dk.console.gotoxy(player.x - 1, player.y - 1);
+		update_update();
+		if ((!skip) || now > next_update) {
+			next_update = now + game.delay;
+			// First, update player data
+			update_players();
 
-		// First, erase any moved players and update other_players
-		done = new Array(80*20);
-		players.forEach(function(u, i) {
-			if (i === player.Record)
-				return;
-			if (u.deleted)
-				return;
-			if (u.map === player.map) {
-				nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
-				// Erase old player pos...
-				if (other_players[i] !== undefined) {
-					op = other_players[i];
-					if (done[getoffset(u.x, u.y)] === undefined && (op.x !== u.x || op.y !== u.y || op.map !== u.map) && (op.x !== player.x || op.y !== player.y)) {
-						erase(op.x - 1, op.y - 1);
-						done[getoffset(u.x, u.y)] = true;
+			// First, erase any moved players and update other_players
+			done = new Array(80*20);
+			players.forEach(function(u, i) {
+				if (i === player.Record)
+					return;
+				if (u.deleted)
+					return;
+				if (u.map === player.map) {
+					nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
+					// Erase old player pos...
+					if (other_players[i] !== undefined) {
+						op = other_players[i];
+						if (op.x !== player.x || op.y != player.y) {
+							if (done[getoffset(u.x, u.y)] === undefined && (op.x !== u.x || op.y !== u.y || op.map !== u.map) && (op.x !== player.x || op.y !== player.y)) {
+								erase(op.x - 1, op.y - 1);
+								done[getoffset(u.x, u.y)] = true;
+							}
+						}
 					}
 				}
-			}
-		});
+			});
 
-		// Now, draw all players on the map
-		done = new Array(80*20);
-		Object.keys(nop).forEach(function(k) {
-			u = nop[k];
-			// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
-			if (done[getoffset(u.x, u.y)] === undefined && u.busy === 0 && (u.x !== player.x || u.y !== player.y)) {
-				dk.console.gotoxy(u.x - 1, u.y - 1);
-					foreground(4);
-				if (u.battle)
-					foreground(4);
-				else
-					foreground(7);
-				background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
-				dk.console.print('\x02');
-				done[getoffset(u.x, u.y)] = true;
-			}
-		});
-		other_players = nop;
+			// Now, draw all players on the map
+			done = new Array(80*20);
+			Object.keys(nop).forEach(function(k) {
+				u = nop[k];
+				// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
+				if (done[getoffset(u.x, u.y)] === undefined && u.busy === 0 && (u.x !== player.x || u.y !== player.y)) {
+					dk.console.gotoxy(u.x - 1, u.y - 1);
+						foreground(4);
+					if (u.battle)
+						foreground(4);
+					else
+						foreground(7);
+					background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
+					dk.console.print('\x02');
+					done[getoffset(u.x, u.y)] = true;
+				}
+			});
+			other_players = nop;
 
-		timeout_bar();
-		mail_check(true);
+			timeout_bar();
+			mail_check(true);
+		}
 	}
-	dk.console.gotoxy(player.x - 1, player.y - 1);
-	foreground(15);
-	background(map.mapinfo[getpoffset()].backcolour);
-	dk.console.print('\x02');
-	dk.console.gotoxy(player.x - 1, player.y - 1);
-	update_update();
 	dk.console.attr.value = orig_attr;
 }
 
@@ -3408,6 +3445,9 @@ function draw_map() {
 	var off;
 	var mi;
 	var s;
+
+	if (map === undefined || map.Record !== world.mapdatindex[player.map - 1] - 1)
+		map = load_map(player.map);
 
 	dk.console.attr.value = 7;
 	// No need to clear screen since we're overwriting the whole thing.
@@ -3663,10 +3703,12 @@ function view_inventory()
 	var desc;
 	var ret;
 	var choice;
+	var y;
 
 rescan:
 	while(1) {
 		run_ref('stats', 'gametxt.ref');
+		y = scr.pos.y + 1;
 		inv = get_inventory();
 		if (inv.length === 0) {
 			dk.console.gotoxy(0, 12);
@@ -3679,7 +3721,7 @@ rescan:
 		else {
 newpage:
 			while (1) {
-				choice = items_menu(inv, cur, false, false, 'D', 12, 22);
+				choice = items_menu(inv, cur, false, false, 'D', y, 22);
 				cur = choice.cur;
 				switch(choice.ch) {
 					case 'D':
@@ -5412,20 +5454,6 @@ for (arg in argv) {
 if (done)
 	exit(0);
 
-if (player.Record === undefined) {
-	if (pfile.length >= 200) {
-		pick_deleted();
-		if (player.Record === undefined) {
-			run_ref('full', 'gametxt.ref');
-			exit(0);
-		}
-	}
-	run_ref('newplayer', 'gametxt.ref');
-}
-
-if (player.Record === undefined)
-	exit(0);
-
 js.on_exit('killfiles.forEach(function(f) { if (f.is_open) { f.close(); } file_remove(f.name); });');
 
 var tfile = new File(getfname(maildir + 'talk'+(player.Record + 1)+'.tmp'));
@@ -5445,6 +5473,20 @@ if (!cfile.open('ab'))
 	throw new Error('Unable to open '+cfile.name);
 killfiles.push(cfile);
 cfile.close();
+
+if (player.Record === undefined) {
+	if (pfile.length >= 200) {
+		pick_deleted();
+		if (player.Record === undefined) {
+			run_ref('full', 'gametxt.ref');
+			exit(0);
+		}
+	}
+	run_ref('newplayer', 'gametxt.ref');
+}
+
+if (player.Record === undefined)
+	exit(0);
 
 if (player.battle) {
 	run_ref('busy', 'gametxt.ref');
