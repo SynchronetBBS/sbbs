@@ -309,21 +309,21 @@ SauceSet(void)
 	do {
 		bufprintf(buf,15,"%s",SauceDescr.Title);
 		for (b = strlen(SauceDescr.Title); b < 35; b++) {
-			buf[b*2]=250;
+			buf[b*2]='\xfa';
 			buf[b*2+1]=7;
 		}
 		puttext(29,11,63,11,buf);
 
 		bufprintf(buf,15,"%s", SauceDescr.Author);
 		for (b = strlen(SauceDescr.Author); b < 20; b++) {
-			buf[b*2]=250;
+			buf[b*2]='\xfa';
 			buf[b*2+1]=7;
 		}
 		puttext(29,12,48,12,buf);
 
 		bufprintf(buf,15,"%s", SauceDescr.Group);
 		for (b = strlen(SauceDescr.Group); b < 20; b++) {
-			buf[b*2]=250;
+			buf[b*2]='\xfa';
 			buf[b*2+1]=7;
 		}
 		puttext(29, 13, 48, 13, buf);

@@ -6,14 +6,14 @@
 #include "homedir.h"
 #include "fonts.h"
 
-#define TheDrawFontSize    254
+#define TheDrawFontSize    252
 
 MysticDrawFontHeader Header;
 FontRecord      FontRec;
 TheDrawFont     TDFont;
 unsigned short  SFont;
 unsigned char   Outline, MaxX, MaxY;
-unsigned char   Chars[60][24];
+unsigned char   Chars[61][25];
 char           *OutlineCharSet[20] = {
 	"ÄÄ³³Ú¿Ú¿ÀÙÀÙ´Ã   ",
 	"ÍÄ³³Õ¸Ú¿Ô¾ÀÙµÃ   ",

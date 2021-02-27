@@ -326,7 +326,7 @@ int SMBCALL smb_freemsghdr(smb_t* smb, ulong offset, ulong length)
 	}
 
 	if(fseek(smb->sha_fp, sha_offset, SEEK_SET)) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, sha_offset);
+		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s seeking to %ld", __FUNCTION__, (long)sha_offset);
 		return(SMB_ERR_SEEK);
 	}
 	for(l=0;l<blocks;l++)

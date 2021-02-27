@@ -24,7 +24,7 @@ var guest = options.guest && system.matchuser("guest");
 
 if(!bbs.online)
 	exit();
-if(!console.autoterm) {
+if(!(console.autoterm&(USER_ANSI | USER_PETSCII | USER_UTF8))) {
 	console.inactivity_hangup = options.inactive_hangup;
 	log(LOG_NOTICE, "terminal not detected, reducing inactivity hang-up timeout to " + console.inactivity_hangup + " seconds");
 }

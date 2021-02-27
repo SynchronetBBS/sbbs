@@ -100,3 +100,40 @@ if (argv.indexOf('--import') > -1) {
 	print("Certificate imported, delete "+csr_fname+" after verifying.");
 	file_touch(recycle_sem);
 }
+if (argv.indexOf('--import-pkcs12') > -1) {
+	i = argv.indexOf('--import-pkcs12') + 1;
+	if (i>=argc)
+		throw("No cert filename specified");
+	ks = new CryptKeyset(argv[i], CryptKeyset.KEYOPT.READONLY);
+	rsa = ks.get_private_key("[none]", syspass);
+	ks.close();
+
+	for (i=0; i < 10; i++) {
+		if (file_remove(sks_fname))
+			break;
+		mswait(100);
+	}
+	if (i == 10)
+		throw("Unable to delete file "+sks_fname);
+
+	ks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.CREATE);
+	ks.add_private_key(rsa, syspass);
+	ks.close();
+	print("Certificate imported.");
+	file_touch(recycle_sem);
+}
+if (argv.indexOf('--export-pkcs12') > -1) {
+	i = argv.indexOf('--export-pkcs12') + 1;
+	if (i>=argc)
+		throw("No cert filename specified");
+	if (argv[i].search(/\.p12$/) === -1)
+		throw("Filename must end in .p12");
+	ks = new CryptKeyset(sks_fname, CryptKeyset.KEYOPT.READONLY);
+	rsa = ks.get_private_key("ssl_cert", syspass);
+	ks.close();
+
+	ks = new CryptKeyset(argv[i], CryptKeyset.KEYOPT.CREATE);
+	ks.add_private_key(rsa, syspass);
+	ks.close();
+	print("Certificate exported.");
+}

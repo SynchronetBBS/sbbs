@@ -1,7 +1,5 @@
 /* Synchronet configuration load routines (exported) */
 
-/* $Id: load_cfg.c,v 1.82 2020/05/26 01:49:22 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,25 +13,17 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "load_cfg.h"
+#include "scfglib.h"
+#include "str_util.h"
+#include "nopen.h"
+#include "datewrap.h"
 #include "text.h"	/* TOTAL_TEXT */
 #ifdef USE_CRYPTLIB
 #include "cryptlib.h"
@@ -44,10 +34,13 @@ static void free_attr_cfg(scfg_t* cfg);
 
 int 	lprintf(int level, const char *fmt, ...);	/* log output */
 
+/* readtext.c */
+char *	readtext(long *line, FILE *stream, long dflt);
+
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
+BOOL load_cfg(scfg_t* cfg, char* text[], BOOL prep, BOOL req_node, char* error, size_t maxerrlen)
 {
 	int		i;
 #ifdef SBBS
@@ -57,7 +50,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 #endif
 
 	if(cfg->size!=sizeof(scfg_t)) {
-		sprintf(error,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
+		safe_snprintf(error, maxerrlen,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
 			,cfg->size,sizeof(scfg_t));
 		return(FALSE);
 	}
@@ -71,7 +64,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		cfg->node_num=1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, error)==FALSE)
+	if(read_main_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
 
 	if(prep)
@@ -80,17 +73,17 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error)==FALSE)
+	if(read_node_cfg(cfg, error, maxerrlen)==FALSE && req_node)
 		return(FALSE);
-	if(read_msgs_cfg(cfg, error)==FALSE)
+	if(read_msgs_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_file_cfg(cfg, error)==FALSE)
+	if(read_file_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_xtrn_cfg(cfg, error)==FALSE)
+	if(read_xtrn_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_chat_cfg(cfg, error)==FALSE)
+	if(read_chat_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
-	if(read_attr_cfg(cfg, error)==FALSE)
+	if(read_attr_cfg(cfg, error, maxerrlen)==FALSE)
 		return(FALSE);
 
 #ifdef SBBS
@@ -101,7 +94,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 
 		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
 		if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-			sprintf(error,"%d opening %s",errno,str);
+			safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
 			return(FALSE); 
 		}
 		for(i=0;i<TOTAL_TEXT;i++)
@@ -112,7 +105,7 @@ BOOL DLLCALL load_cfg(scfg_t* cfg, char* text[], BOOL prep, char* error)
 		fclose(instream);
 
 		if(i<TOTAL_TEXT) {
-			sprintf(error,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
+			safe_snprintf(error, maxerrlen,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
 				,i
 				,TOTAL_TEXT,str);
 			return(FALSE); 
@@ -185,29 +178,6 @@ void prep_cfg(scfg_t* cfg)
 			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path, sizeof(cfg->lib[i]->parent_path));
 	}
 
-	for(i=0;i<cfg->total_dirs;i++) {
-
-		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
-			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
-		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
-
-		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
-		SAFEPRINTF2(cfg->dir[i]->code,"%s%s"
-			,cfg->lib[cfg->dir[i]->lib]->code_prefix
-			,cfg->dir[i]->code_suffix);
-
-		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
-
-		if(!cfg->dir[i]->path[0])
-			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
-		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
-			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
-		else
-			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
-
-		prep_path(cfg->dir[i]->upload_sem);
-	}
-
 	for(i=0;i<cfg->total_libs;i++) {
 		if((cfg->lib[i]->misc&LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
 			continue;
@@ -262,6 +232,28 @@ void prep_cfg(scfg_t* cfg)
 		}
 	}
 
+	for(i=0;i<cfg->total_dirs;i++) {
+
+		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
+			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
+		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
+
+		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
+		SAFEPRINTF2(cfg->dir[i]->code,"%s%s"
+			,cfg->lib[cfg->dir[i]->lib]->code_prefix
+			,cfg->dir[i]->code_suffix);
+
+		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
+
+		if(!cfg->dir[i]->path[0])
+			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
+		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
+		else
+			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
+
+		prep_path(cfg->dir[i]->upload_sem);
+	}
 
 	/* make data filenames are all lowercase */
 	for(i=0;i<cfg->total_shells;i++)
@@ -347,8 +339,11 @@ int md(const char* inpath)
 		*p = '\0';
 
 	if(!isdir(path)) {
-		if(mkpath(path) != 0)
-			return errno;
+		if(mkpath(path) != 0) {
+			int result = errno;
+			if(!isdir(path)) // race condition: did another thread make the directory already?
+				return result;
+		}
 	}
 	
 	return 0;
@@ -357,7 +352,7 @@ int md(const char* inpath)
 /****************************************************************************/
 /* Reads in ATTR.CFG and initializes the associated variables               */
 /****************************************************************************/
-BOOL read_attr_cfg(scfg_t* cfg, char* error)
+BOOL read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	uint*	clr;
     char    str[256];
@@ -366,12 +361,12 @@ BOOL read_attr_cfg(scfg_t* cfg, char* error)
 
 	SAFEPRINTF(str,"%sattr.cfg",cfg->ctrl_dir);
 	if((instream=fnopen(NULL,str,O_RDONLY))==NULL) {
-		sprintf(error,"%d opening %s",errno,str);
+		safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
 		return(FALSE); 
 	}
 	FREE_AND_NULL(cfg->color);
 	if((cfg->color=malloc(MIN_COLORS * sizeof(uint)))==NULL) {
-		sprintf(error,"Error allocating memory (%u bytes) for colors"
+		safe_snprintf(error, maxerrlen,"Error allocating memory (%u bytes) for colors"
 			,MIN_COLORS);
 		fclose(instream);
 		return(FALSE);
@@ -421,7 +416,7 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 		else
 			SAFEPRINTF3(str,"%s%c%s",base,PATH_DELIM,path);
 	} else
-		strcpy(str,path);
+		SAFECOPY(str,path);
 
 #ifdef __unix__				/* Change backslashes to forward slashes on Unix */
 	for(p=str;*p;p++)
@@ -430,7 +425,7 @@ char* DLLCALL prep_dir(const char* base, char* path, size_t buflen)
 #endif
 
 	backslashcolon(str);
-	strcat(str,".");                /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
+	SAFECAT(str,".");               /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
 	FULLPATH(abspath,str,buflen);	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
 	backslash(abspath);
 
@@ -471,7 +466,7 @@ char* prep_code(char *str, const char* prefix)
 	strcpy(str,tmp);
 	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
 		for(i=j=0;str[i];i++)
-			if(isalnum(str[i]))
+			if(IS_ALPHANUMERIC(str[i]))
 				tmp[j++]=str[i];
 		tmp[j]=0;
 		strcpy(str,tmp);

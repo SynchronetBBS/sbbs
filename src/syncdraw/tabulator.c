@@ -48,10 +48,10 @@ tabsetup(void)
 		memset(buf,0,sizeof(buf));
 		for (y = 1; y <= 80; y++) {
 			if (tabs[y] == TRUE) {
-				buf[(y-1)*2]=254;
+				buf[(y-1)*2]='\xfe';
 				buf[(y-1)*2+1]=7;
 			} else {
-				buf[(y-1)*2]=250;
+				buf[(y-1)*2]='\xfa';
 				buf[(y-1)*2+1]=7;
 			}
 		}

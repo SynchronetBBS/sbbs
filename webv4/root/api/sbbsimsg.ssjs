@@ -1,7 +1,7 @@
 
 require('sbbsdefs.js', 'SYS_CLOSED'); // Is this actually used?
 require('nodedefs.js', 'NODE_WFC'); // Is this actually used?
-var settings = load('modopts.js', 'web');
+var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 load(settings.web_directory + '/lib/init.js');
 load(settings.web_lib + 'auth.js');
 var sbbsimsg = load({}, "sbbsimsg_lib.js");

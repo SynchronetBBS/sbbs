@@ -1143,7 +1143,7 @@ var tests = [
 	{'name':'DECRQCRA', 'func':function() {
 		console.write("\x1b[1;1;1;1;1;1*y");
 		var ras = read_ansi_string(500);
-		if (ras === null || ras.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) !== -1)
+		if (ras !== null && ras.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) !== -1)
 			return true;
 		return false;
 	}},

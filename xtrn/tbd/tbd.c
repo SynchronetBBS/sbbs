@@ -32,8 +32,8 @@ unsigned _stklen=20000;
 
 char     redraw_screen;
 long     record_number;
-int      create_log,chfile,rmfile,weapon_ready,invisible,strong,
-                tpic,lasthit,clock_tick,clock_tick2,ateof;
+int      chfile,rmfile,weapon_ready,invisible,strong,tpic,lasthit,ateof;
+clock_t  clock_tick,clock_tick2;
 uchar    map[LEVELS][SQUARE][SQUARE];
 
 void exitfunc(void)
@@ -53,7 +53,7 @@ void exitfunc(void)
 int main(int argc, char **argv)
 {
     FILE *fp;
-    char str[256],chbuf[8],*buf,*p,name[26];
+    char str[256],*buf,*p,name[26];
     int file,x,r1,r2,ch,times_played=0,lev,maint_only=0;
     long lastrun,length,l,exp;
     uchar uch;
@@ -308,7 +308,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
     long timeleftmin;
     time_t strength_timer,invis_timer,now,timeout,health_timer;
     node_t node;
-    int tick_offset=0;
+    clock_t tick_offset=0;
 
     clock_tick=invisible=strong=0; clock_tick2=40;
     printfile("tbd.mnu"); game_commands(0,-1);
@@ -336,9 +336,9 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                                object[rmobj[(gy*11)+gx].item].name); } }
 
     timeout=time(NULL);                         /* Set timer on entry point */
-    tick_offset=(int)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19;
+    tick_offset=(clock_t)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19;
     do {
-        clock_tick=(int)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19-tick_offset;
+        clock_tick=(clock_t)(msclock()/(MSCLOCKS_PER_SEC/18.2))%19-tick_offset;
         if(clock_tick<0)
             clock_tick+=19;
         ++clock_tick2;
@@ -370,6 +370,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '4':                           /* Move West */
             case 'A':
+            case TERM_KEY_LEFT:
                 check=inway(x,y,z,gx-1,gy);
                 if(weapon_ready) { tpic=LEFT;
                     if(check)
@@ -404,6 +405,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '6':                           /* Move East */
             case 'D':
+            case TERM_KEY_RIGHT:
                 check=inway(x,y,z,gx+1,gy);
                 if(weapon_ready) { tpic=RIGHT;
                     if(check)
@@ -438,6 +440,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '2':                           /* Move South */
             case 'X':
+            case TERM_KEY_DOWN:
                 check=inway(x,y,z,gx,gy+1);
                 if(weapon_ready) { tpic=DOWN;
                     if(check)
@@ -474,6 +477,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '8':                           /* Move North */
             case 'W':
+            case TERM_KEY_UP:
                 check=inway(x,y,z,gx,gy-1);
                 if(weapon_ready) { tpic=UP;
                     if(check)
@@ -512,6 +516,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '7':                           /* Move NorthWest */
             case 'Q':
+            case TERM_KEY_HOME:
                 check=inway(x,y,z,gx-1,gy-1);
                 if(weapon_ready) { tpic=UP;
                     if(check)
@@ -534,6 +539,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '9':                           /* Move NorthEast */
             case 'E':
+            case TERM_KEY_PAGEUP:
                 check=inway(x,y,z,gx+1,gy-1);
                 if(weapon_ready) { tpic=UP;
                     if(check)
@@ -556,6 +562,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '1':                           /* Move SouthWest */
             case 'Z':
+            case TERM_KEY_END:
                 check=inway(x,y,z,gx-1,gy+1);
                 if(weapon_ready) { tpic=DOWN;
                     if(check)
@@ -578,6 +585,7 @@ void movement(int sx,int sy,int sz,int sgx,int sgy)
                 break;
             case '3':                           /* Move SouthEast */
             case 'C':
+            case TERM_KEY_PAGEDN:
                 check=inway(x,y,z,gx+1,gy+1);
                 if(weapon_ready) { tpic=DOWN;
                     if(check)

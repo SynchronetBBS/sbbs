@@ -1,7 +1,4 @@
 /* Synchronet answer "caller" function */
-// vi: tabstop=4
-
-/* $Id: answer.cpp,v 1.116 2020/08/02 03:37:24 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -109,7 +94,6 @@ bool sbbs_t::answer()
 				useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 			if(useron.number) {
 				getuserdat(&cfg,&useron);
-				useron.misc&=~TERM_FLAGS;
 				SAFEPRINTF(path,"%srlogin.cfg",cfg.ctrl_dir);
 				if(!findstr(client.addr,path)) {
 					SAFECOPY(tmp, rlogin_pass);
@@ -158,7 +142,7 @@ bool sbbs_t::answer()
 							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
 						}
-						lprintf(LOG_WARNING,"!CLIENT IP NOT LISTED in %s", path);
+						lprintf(LOG_DEBUG,"!CLIENT IP (%s) NOT LISTED in %s", client.addr, path);
 						useron.number=0;
 						hangup();
 					}
@@ -213,7 +197,6 @@ bool sbbs_t::answer()
 		useron.number=matchuser(&cfg, rlogin_name, /* sysop_alias: */FALSE);
 		if(useron.number) {
 			getuserdat(&cfg,&useron);
-			useron.misc&=~TERM_FLAGS;
 			for(i=0;i<3 && online;i++) {
 				if(stricmp(tmp,useron.pass)) {
 					if(cfg.sys_misc&SM_ECHO_PW)
@@ -390,6 +373,7 @@ bool sbbs_t::answer()
 		else
 			SAFECOPY(terminal,"DUMB");
 	}
+	update_nodeterm();
 
 	/* AutoLogon via IP or Caller ID here */
 	if(!useron.number && !(sys_status&SS_RLOGIN)
@@ -437,6 +421,16 @@ bool sbbs_t::answer()
 			} else {
 				if(telnet_location[0]) {			/* Telnet Location info provided */
 					lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
+					if(trashcan(telnet_location, "ip-silent")) {
+						hangup();
+						return false;
+					}
+					if(trashcan(telnet_location, "ip")) {
+						lprintf(LOG_NOTICE, "%04d %s !TELNET LOCATION BLOCKED in ip.can: %s"
+							,client_socket, client.protocol, telnet_location);
+						hangup();
+						return false;
+					}
 					SAFECOPY(cid, telnet_location);
 				}
 			}
@@ -452,7 +446,7 @@ bool sbbs_t::answer()
 			if(telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
 				rows = telnet_rows;
 		} else {
-			lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw/TCP mode");
+			lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw TCP mode");
 			telnet_mode |= TELNET_MODE_OFF;
 			client.protocol = "Raw";
 			client_on(client_socket, &client,/* update: */true);

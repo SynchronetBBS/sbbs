@@ -1,18 +1,44 @@
+This version of doorscan has been updated to work with the new pre/post 
+xtrn modules, and a file locking issue that would crash webv4 has also been
+fixed. A new webv4 module has been added. No other functionality has been added.
+
+Current unfinished status of doorscan:
+1. It will scan for door usage and display it on the web page only
+2. There is no logon/terminal module to display door usage
+3. The bulletin functionality was never implemented
+4. The user preferences may not be fully implemented
+
+-----
+
 DoorScan is a utility to notify users of which externals have been ran, how
 often, and by whom.
 
 To function properly, doorscan must be used to launch all the monitored doors
 on your BBS.  Integrating doorscan into your BBS is done as follows:
 
-Setting up the login event:
-===========================
-The actual scan should be ran during the users login.  There are a few
-different ways of accomplishing this:
-1) As a logon fixed event:
+1. Add to modopts.ini under [xtrn_sec]
+
+eval_before_exec=js.exec("/sbbs/xtrn/doorscan/doorscan.js",{},"pre",prog.code);
+eval_after_exec=js.exec("/sbbs/xtrn/doorscan/doorscan.js",{},"post",prog.code);
+
+(If you are upgrading from a prior version of doorscan, it should still work but the
+preferred method would be to remove the doorscan.js run call from your shell and use
+the above hooks)
+
+2. Scan for new doors
+
+The command to scan for new doors is:
+/sbbs/exec/jsexec.js /sbbs/xtrn/doorscan/doorscan.js scan
+
+You have many options:
+-Run it manually when you add a door
+-Add it to crontab (for Linux)
+-Run it as a fixed login or daily event. Example:
+
 	SCFG -> External Programs -> Fixed Events -> Logon Event
 	Set to "*../xtrn/doorscan/doorscan.js scan"
 
-2) As an External
+-Add it as an external to be run manually:
 	SCFG -> External Programs -> Online Programs (Doors) -> Main 
 	-> Available Online Programs -> Add
 
@@ -34,26 +60,14 @@ different ways of accomplishing this:
 	BBS Drop File Type         None                         
 	Place Drop File In         Node Directory               
 
-3) In your logon script.
-	For logon.js, add the following line where appropriate:
-	load("../xtrn/doorscan/doorscan.js","scan");
+3. Enable the web interface
 
-Integrating Doorscan Into your Shell
-====================================
-If your shell uses xtrn_sec.js (as most do) edit xtrn_sec.js and look for the
-line "bbs.exec_xtrn(xtrn_area.sec_list[xsec].prog_list[i].code);"
-Comment out that line and replace it with:
-//bbs.exec_xtrn(xtrn_area.sec_list[xsec].prog_list[i].code);
-try {
-    load("../xtrn/doorscan/doorscan.js","run",xtrn_area.sec_list[xsec].prog_list[i].code);
-}
-catch(e) {
-    console.writeln("DOORSCAN ERROR: "+e);
-    log("Error running "+xtrn_area.sec_list[xsec].prog_list[i].code+" "+e);
-}
+For original web (ie runemaster), copy doorscan.xjs to your web root
 
-If your shell does not use xtrn_sec.js, you should be able to figure out how to
-modify it to accomlish the same end.
+For webv4, copy 003-doorscan.xjs to webv4/pages/More/003-doorscan.xjs 
+
+For either web page, you may need to edit the load() line in the web page to 
+point to your doorscan.js file's location.
 
 Adding a Door Scan Configuration Item
 =====================================

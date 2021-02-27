@@ -1,5 +1,3 @@
-/* $Id: scfgchat.c,v 1.23 2018/06/21 20:22:07 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -13,20 +11,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -96,7 +82,7 @@ void page_cfg()
 				continue; 
 			}
 			memset((page_t *)cfg.page[i],0,sizeof(page_t));
-			strcpy(cfg.page[i]->cmd,str);
+			SAFECOPY(cfg.page[i]->cmd,str);
 			cfg.total_pages++;
 			uifc.changes=1;
 			continue; 
@@ -126,8 +112,8 @@ void page_cfg()
 		done=0;
 		while(!done) {
 			k=0;
-			sprintf(opt[k++],"%-27.27s%.40s","Command Line",cfg.page[i]->cmd);
-			sprintf(opt[k++],"%-27.27s%.40s","Access Requirements",cfg.page[i]->arstr);
+			sprintf(opt[k++],"%-27.27s%s","Command Line",cfg.page[i]->cmd);
+			sprintf(opt[k++],"%-27.27s%s","Access Requirements",cfg.page[i]->arstr);
 			sprintf(opt[k++],"%-27.27s%s","Intercept I/O"
 				,(cfg.page[i]->misc&XTRN_STDIO) ? "Standard"
 					:cfg.page[i]->misc&XTRN_CONIO ? "Console":"No");
@@ -149,10 +135,10 @@ void page_cfg()
 						SCFG_CMDLINE_PREFIX_HELP
 						SCFG_CMDLINE_SPEC_HELP
 					;
-					strcpy(str,cfg.page[i]->cmd);
+					SAFECOPY(str,cfg.page[i]->cmd);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Command Line"
 						,cfg.page[i]->cmd,sizeof(cfg.page[i]->cmd)-1,K_EDIT))
-						strcpy(cfg.page[i]->cmd,str);
+						SAFECOPY(cfg.page[i]->cmd,str);
 					break;
 				case 1:
 					getar(str,cfg.page[i]->arstr);
@@ -325,8 +311,8 @@ void chan_cfg()
 				continue; 
 			}
 			memset((chan_t *)cfg.chan[i],0,sizeof(chan_t));
-			strcpy(cfg.chan[i]->name,str);
-			strcpy(cfg.chan[i]->code,code);
+			SAFECOPY(cfg.chan[i]->name,str);
+			SAFECOPY(cfg.chan[i]->code,code);
 			cfg.total_chans++;
 			uifc.changes=1;
 			continue; 
@@ -386,10 +372,10 @@ void chan_cfg()
 						"\n"
 						"This is the name or description of the chat channel.\n"
 					;
-					strcpy(str,cfg.chan[i]->name);
+					SAFECOPY(str,cfg.chan[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Channel Name"
 						,cfg.chan[i]->name,sizeof(cfg.chan[i]->name)-1,K_EDIT))
-						strcpy(cfg.chan[i]->name,str);
+						SAFECOPY(cfg.chan[i]->name,str);
 					break;
 				case 1:
 					uifc.helpbuf=
@@ -399,12 +385,12 @@ void chan_cfg()
 						"to it internally. This code is usually an abbreviation of the chat\n"
 						"channel name.\n"
 					;
-					strcpy(str,cfg.chan[i]->code);
+					SAFECOPY(str,cfg.chan[i]->code);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Internal Code"
 						,str,LEN_CODE,K_UPPER|K_EDIT))
 						break;
 					if(code_ok(str))
-						strcpy(cfg.chan[i]->code,str);
+						SAFECOPY(cfg.chan[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -588,8 +574,8 @@ void chatact_cfg(uint setnum)
 				continue; 
 			}
 			memset((chatact_t *)cfg.chatact[chatnum[i]],0,sizeof(chatact_t));
-			strcpy(cfg.chatact[chatnum[i]]->cmd,cmd);
-			strcpy(cfg.chatact[chatnum[i]]->out,out);
+			SAFECOPY(cfg.chatact[chatnum[i]]->cmd,cmd);
+			SAFECOPY(cfg.chatact[chatnum[i]]->out,out);
 			cfg.chatact[chatnum[i]]->actset=setnum;
 			cfg.total_chatacts++;
 			uifc.changes=1;
@@ -622,10 +608,10 @@ void chatact_cfg(uint setnum)
 			"\n"
 			"This is the command that triggers this chat action.\n"
 		;
-		strcpy(str,cfg.chatact[chatnum[i]]->cmd);
+		SAFECOPY(str,cfg.chatact[chatnum[i]]->cmd);
 		if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Chat Action Command"
 			,cfg.chatact[chatnum[i]]->cmd,LEN_CHATACTCMD,K_EDIT|K_UPPER)) {
-			strcpy(cfg.chatact[chatnum[i]]->cmd,str);
+			SAFECOPY(cfg.chatact[chatnum[i]]->cmd,str);
 			continue; 
 		}
 		uifc.helpbuf=
@@ -633,10 +619,10 @@ void chatact_cfg(uint setnum)
 			"\n"
 			"This is the output string that results from this chat action.\n"
 		;
-		strcpy(str,cfg.chatact[chatnum[i]]->out);
+		SAFECOPY(str,cfg.chatact[chatnum[i]]->out);
 		if(!uifc.input(WIN_MID|WIN_SAV,0,10,""
 			,cfg.chatact[chatnum[i]]->out,LEN_CHATACTOUT,K_EDIT|K_MSG))
-			strcpy(cfg.chatact[chatnum[i]]->out,str); 
+			SAFECOPY(cfg.chatact[chatnum[i]]->out,str); 
 	}
 }
 
@@ -717,8 +703,8 @@ void guru_cfg()
 				continue; 
 			}
 			memset((guru_t *)cfg.guru[i],0,sizeof(guru_t));
-			strcpy(cfg.guru[i]->name,str);
-			strcpy(cfg.guru[i]->code,code);
+			SAFECOPY(cfg.guru[i]->name,str);
+			SAFECOPY(cfg.guru[i]->code,code);
 			cfg.total_gurus++;
 			uifc.changes=1;
 			continue; 
@@ -768,10 +754,10 @@ void guru_cfg()
 						"\n"
 						"This is the name of the selected Guru.\n"
 					;
-					strcpy(str,cfg.guru[i]->name);
+					SAFECOPY(str,cfg.guru[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Guru Name"
 						,cfg.guru[i]->name,sizeof(cfg.guru[i]->name)-1,K_EDIT))
-						strcpy(cfg.guru[i]->name,str);
+						SAFECOPY(cfg.guru[i]->name,str);
 					break;
 				case 1:
 	uifc.helpbuf=
@@ -780,12 +766,12 @@ void guru_cfg()
 		"Every Guru must have its own unique code for Synchronet to refer to\n"
 		"it internally. This code is usually an abbreviation of the Guru name.\n"
 	;
-					strcpy(str,cfg.guru[i]->code);
+					SAFECOPY(str,cfg.guru[i]->code);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,0,"Guru Internal Code"
 						,str,LEN_CODE,K_EDIT|K_UPPER))
 						break;
 					if(code_ok(str))
-						strcpy(cfg.guru[i]->code,str);
+						SAFECOPY(cfg.guru[i]->code,str);
 					else {
 						uifc.helpbuf=invalid_code;
 						uifc.msg("Invalid Code");
@@ -861,7 +847,7 @@ void actsets_cfg()
 				continue; 
 			}
 			memset((actset_t *)cfg.actset[i],0,sizeof(actset_t));
-			strcpy(cfg.actset[i]->name,str);
+			SAFECOPY(cfg.actset[i]->name,str);
 			cfg.total_actsets++;
 			uifc.changes=1;
 			continue; 
@@ -912,10 +898,10 @@ void actsets_cfg()
 						"\n"
 						"This is the name of the selected action set.\n"
 					;
-					strcpy(str,cfg.actset[i]->name);
+					SAFECOPY(str,cfg.actset[i]->name);
 					if(!uifc.input(WIN_MID|WIN_SAV,0,10,"Action Set Name"
 						,cfg.actset[i]->name,sizeof(cfg.actset[i]->name)-1,K_EDIT))
-						strcpy(cfg.actset[i]->name,str);
+						SAFECOPY(cfg.actset[i]->name,str);
 					break;
 				case 1:
 					chatact_cfg(i);

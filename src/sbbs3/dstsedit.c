@@ -37,11 +37,12 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "sbbs.h"
+#include "str_util.h"
 #include "dirwrap.h"
 #include "nopen.h"
-#include "sbbsdefs.h"
+#include "scfgdefs.h"
 #include "conwrap.h"
+#include "date_str.h"
 
 int 
 main(int argc, char **argv)
@@ -63,7 +64,7 @@ main(int argc, char **argv)
 	}
 	backslash(path);
 
-	sprintf(str, "%sdsts.dab", path);
+	SAFEPRINTF(str, "%sdsts.dab", path);
 	if ((file = nopen(str, O_RDONLY)) == -1) {
 		printf("Can't open %s\r\n", str);
 		exit(1);
@@ -179,7 +180,7 @@ main(int argc, char **argv)
 				stats.nusers = atoi(str);
 			break;
 		case 'Q':
-			sprintf(str, "%sdsts.dab", path);
+			SAFEPRINTF(str, "%sdsts.dab", path);
 			if ((file = nopen(str, O_WRONLY)) == -1) {
 				printf("Error opening %s\r\n", str);
 				exit(1);

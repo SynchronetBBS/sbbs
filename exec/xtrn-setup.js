@@ -1,6 +1,15 @@
 // $Id: xtrn-setup.js,v 1.10 2020/05/09 03:37:35 echicken Exp $
 // vi: tabstop=4
 
+// Locate/copy 3rd party door installer files
+{
+	var lib = load({}, 'install-3rdp-xtrn.js');
+	var out = lib.scan();
+	for(var i in out) {
+		alert(out[i]);
+	}
+}
+
 load('sbbsdefs.js');
 load('frame.js');
 load('tree.js');
@@ -37,8 +46,23 @@ tree.colors.lfg = WHITE;
 tree.colors.lbg = BG_CYAN;
 tree.colors.kfg = LIGHTCYAN;
 
+function find_startup_dir(dir)
+{
+	for (var i in xtrn_area.prog) {
+		if (!xtrn_area.prog[i].startup_dir)
+			continue;
+		var path = backslash(fullpath(xtrn_area.prog[i].startup_dir));
+		if (path == dir)
+			return i;
+	}
+	return false;
+}
+
 var longest = 0;
 directory(system.exec_dir + '../xtrn/*', GLOB_ONLYDIR).forEach(function (e) {
+	var dir = backslash(fullpath(e));
+	if (find_startup_dir(dir) !== false)
+		return;
     const ini = e + '/install-xtrn.ini';
     if (!file_exists(ini)) return;
     const f = new File(ini);
@@ -63,6 +87,11 @@ directory(system.exec_dir + '../xtrn/*', GLOB_ONLYDIR).forEach(function (e) {
     item.__xtrn_setup = xtrn;
     if (xtrn.Name.length > longest) longest = xtrn.Name.length;
 });
+
+if (!tree.items.length) {
+	alert("No installable external programs found");
+	exit(0);
+}
 
 tree_frame.width = longest + 1;
 info_frame.x = tree_frame.width + 2;

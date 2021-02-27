@@ -853,6 +853,7 @@ enum {
 	,SpinningCursor7
 	,SpinningCursor8
 	,SpinningCursor9
+	,HowManyColumns
 
 	,TOTAL_TEXT
 };

@@ -436,10 +436,10 @@ Sprite.Aerial = function(fileName, parentFrame, x, y, bearing, position) {
 	if(!file_exists(fileName + ".ini"))
 		fileName = js.exec_dir + "sprites/" + fileName;
 	if(!file_exists(fileName + ".ini")) {
-		throw("Sprite file missing: " + fileName + ".ini");
+		throw new Error("Sprite file missing: " + fileName + ".ini");
 	}
 	if(!file_exists(fileName + ".bin")) {
-		throw("Sprite file missing: " + fileName + ".bin");
+		throw new Error("Sprite file missing: " + fileName + ".bin");
 	}
 
 	this.x = x;
@@ -958,10 +958,10 @@ Sprite.Profile = function(fileName, parentFrame, x, y, bearing, position) {
 	if(!file_exists(fileName + ".ini"))
 		fileName = js.exec_dir + "sprites/" + fileName;
 	if(!file_exists(fileName + ".ini")) {
-		throw("Sprite file missing: " + fileName + ".ini");
+		throw new Error("Sprite file missing: " + fileName + ".ini");
 	}
 	if(!file_exists(fileName + ".bin")) {
-		throw("Sprite file missing: " + fileName + ".bin");
+		throw new Error("Sprite file missing: " + fileName + ".bin");
 	}
 
 	this.x = x;

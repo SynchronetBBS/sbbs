@@ -17,8 +17,9 @@ load("json-sock.js");
 	-	JSONClient.read(scope,location,lock);
 	-	JSONClient.pop(scope,location,lock);
 	-	JSONClient.shift(scope,location,lock);
-	-	JSONClient.write(scope,location,lock);
-	-	JSONClient.push(scope,location,lock);
+	-	JSONClient.write(scope,location,data,lock);
+	-	JSONClient.push(scope,location,data,lock);
+	-	JSONClient.remove(scope,location,lock);
 	-	JSONClient.unshift(scope,location,lock);
 	-	JSONClient.splice(scope,location,start,end,data,lock)
 	-	JSONClient.slice(scope,location,start,end,lock)
@@ -69,11 +70,11 @@ function JSONClient(serverAddr,serverPort) {
 	this.VERSION = "$Revision: 1.29 $".replace(/\$/g,'').split(' ')[1];
 	this.serverAddr=serverAddr;
     if(this.serverAddr==undefined) 
-		throw("no host specified");
+		throw new Error("no host specified");
 
 	this.serverPort=serverPort;
     if(this.serverPort==undefined)
-		throw("no port specified");
+		throw new Error("no port specified");
 	
 	this.settings={
 		CONNECTION_TIMEOUT:		10,
@@ -102,9 +103,10 @@ function JSONClient(serverAddr,serverPort) {
 			
         this.socket=new Socket();
 		if(!this.socket.connect(this.serverAddr,this.serverPort,this.settings.CONNECTION_TIMEOUT)) {
-			var connect_error = this.socket.error 
+			var connect_error = this.socket.error;
+			var connect_error_str = this.socket.error_str;
 			this.socket.close();
-			throw("error " + connect_error + " (" + socket_errno_str + ") connecting to TCP port " + this.serverPort + " on server " + this.serverAddr);
+			throw new Error(connect_error + " connecting to TCP port " + this.serverPort + " on server " + this.serverAddr + ": " + connect_error_str);
 		}
 		return true;
     }
@@ -348,7 +350,7 @@ function JSONClient(serverAddr,serverPort) {
 	/* package a query and send through the socket */
 	this.send=function(packet) {
 		if(!this.socket.is_connected)
-			throw("socket disconnected 1");
+			throw new Error("socket disconnected 1");
 		this.socket.sendJSON(packet);
 	}
 
@@ -368,7 +370,7 @@ function JSONClient(serverAddr,serverPort) {
 				this.socket.pingIn(packet);
 				return false;
 			case "ERROR":
-				throw(packet.data.description);
+				throw new Error(packet.data.description);
 				return false;
 			}
 			return packet;
@@ -390,7 +392,7 @@ function JSONClient(serverAddr,serverPort) {
 			else 
 				this.updates.push(packet);
 		} while(Date.now() - start < this.settings.SOCK_TIMEOUT);
-		throw("timed out waiting for server response");
+		throw new Error("timed out waiting for server response");
 	}
 
 	/* check socket for data, and process it if a callback is specified */

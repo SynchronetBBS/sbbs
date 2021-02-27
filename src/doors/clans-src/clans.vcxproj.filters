@@ -1,0 +1,297 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3d849d65-4774-4d8c-8125-80ee8cf3ac3b}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{27ef69f4-aa3d-4f60-8a03-0dac91411d3f}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{bbe8815f-e3b2-4398-b8fe-c1a0eea06ab3}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ALLIANCE.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CLANS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CLANSINI.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CLASS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cmdline.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CRC.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DOOR.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EMPIRE.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EVENT.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FIGHT.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GAME.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HELP.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IBBS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="INPUT.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ITEMS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LANGUAGE.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MAIL.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MAINT.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MENUS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MENUS2.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MISC.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MYIBBS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MYOPEN.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NEWS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NPC.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PARSING.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PAWN.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QUESTS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="REG.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SCORES.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SPELLS.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="system.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TRADES.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TSLICER.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="USER.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VIDEO.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VILLAGE.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VOTING.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WB_FAPND.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ALLIANCE.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLANS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLANSF.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLANSINI.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CLASS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cmdline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CRC.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DEFINES.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DOOR.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EMPIRE.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FIGHT.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GAME.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HELP.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IBBS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INIT.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INPUT.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INTERBBS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ITEMS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="K_CLANSI.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="K_COMMAN.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="K_CONFIG.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="K_IBBS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="K_QUESTS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LANGUAGE.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MAIL.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MAINT.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MENUS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MENUS2.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MISC.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MSTRINGS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MYIBBS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MYOPEN.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NEWS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NPC.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OPENDOOR.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PACKET.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PARSING.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PAWN.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QUESTS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="REG.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SCORES.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SNIPFILE.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SPELLS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="STRUCTS.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SYSTEM.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SYSTEMF.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TASKER.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TRADES.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TSLICER.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="USER.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VIDEO.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VILLAGE.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VOTING.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

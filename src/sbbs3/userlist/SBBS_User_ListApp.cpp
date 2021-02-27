@@ -46,7 +46,7 @@ bool SBBS_User_ListApp::OnInit()
         dlg->ShowModal();
         return false;
     }
-    if(!load_cfg(&cfg, NULL, TRUE, errstr)) {
+    if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, errstr, sizeof(errstr))) {
         wxString str(errstr,wxConvUTF8);
         wxMessageDialog *dlg = new wxMessageDialog(NULL, _("ERROR: \"")+str+_("\"loading config"), _("Config Error"));
         dlg->ShowModal();

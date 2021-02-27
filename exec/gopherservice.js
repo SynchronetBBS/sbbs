@@ -50,6 +50,13 @@ function send_file(fname)
 		writeln(strip_ctrl(txt[l]));
 }
 
+function getQwkBulletins() {
+	var dir = system.text_dir + 'qwk';
+	if (!file_isdir(dir)) return [];
+	var bulletins = directory(backslash(dir) + '*');
+	return bulletins;
+}
+
 var msgbase=null;
 
 if(!login("guest"))
@@ -81,19 +88,41 @@ if(gopher_plus)
 
 
 if(request=="" || request=='/') { /* "root" */
-	for(g in msg_area.grp_list) 
-		writeln(prefix 
-			+ "1" + msg_area.grp_list[g].description 
-			+ "\tgrp:" + msg_area.grp_list[g].name.toLowerCase() 
-			+ "\t" + system.host_name
-			+ "\t" + GOPHER_PORT);
-	for(l in file_area.lib_list) 
-		writeln(format("1%s\tlib:%s\t%s\t%u"
-			,file_area.lib_list[l].description
-			,file_area.lib_list[l].name.toLowerCase()
-			,system.host_name
-			,GOPHER_PORT
+	if (msg_area.grp_list.length) {
+		writeln(prefix + 'iMessage Groups\t\tfake\t1');
+		for(g in msg_area.grp_list) {
+			writeln(
+				prefix
+				+ "1" + msg_area.grp_list[g].description 
+				+ "\tgrp:" + msg_area.grp_list[g].name.toLowerCase() 
+				+ "\t" + system.host_name
+				+ "\t" + GOPHER_PORT
+			);
+		}
+		writeln(prefix + 'i \t\tfake\t1');
+	}
+	if (file_area.lib_list.length) {
+		writeln(prefix + 'iFile Libraries\t\tfake\t1');
+		for(l in file_area.lib_list) {
+			writeln(format("1%s\tlib:%s\t%s\t%u"
+				,file_area.lib_list[l].description
+				,file_area.lib_list[l].name.toLowerCase()
+				,system.host_name
+				,GOPHER_PORT
 			));
+		}
+		writeln(prefix + 'i \t\tfake\t1');
+	}
+	var qwkBulletins = getQwkBulletins();
+	if (qwkBulletins.length) {
+		writeln(prefix + 'iQWK Bulletins\t\tfake\t1');
+		qwkBulletins.forEach(function (e) {
+			var f = file_getname(e);
+			writeln(prefix + '0' + f + '\tqwkbulletin:' + f + '\t' + system.host_name + '\t' + GOPHER_PORT);
+		});
+		writeln(prefix + 'i \t\tfake\t1');
+	}
+	writeln(prefix + 'iSystem Information\t\tfake\t1');
 	writeln(prefix
 		+ "0Node List\tnodelist"
 		+"\t" + system.host_name
@@ -307,6 +336,12 @@ switch(field[0]) {
 						log(LOG_NOTICE,"!ERROR sending file: " + fname);
 				}	
 			}
+		}
+		break;
+	case "qwkbulletin":
+		if (field.length == 2) {
+			var fname = backslash(system.text_dir + 'qwk') + field[1];
+			if (file_exists(fname)) client.socket.sendfile(fname);
 		}
 		break;
 }

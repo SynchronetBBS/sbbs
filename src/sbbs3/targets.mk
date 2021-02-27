@@ -51,7 +51,9 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(SEXYZ) $(DSTSEDIT) $(READSAUCE) $(SHOWSTAT) \
 			  $(PKTDUMP) $(FMSGDUMP)
 
-all:	dlls utils console scfg uedit umonitor
+GIT_INFO	= git_hash.h git_branch.h
+
+all:	$(GIT_INFO) dlls utils console scfg uedit umonitor
 
 console:	$(JS_DEPS) xpdev-mt smblib \
 		$(MTOBJODIR) $(LIBODIR) $(EXEODIR) \
@@ -77,11 +79,11 @@ scfg:
 	$(MAKE) -C scfg $(MAKEFLAGS)
 
 .PHONY: uedit
-uedit:
+uedit: uifc-mt
 	$(MAKE) -C uedit $(MAKEFLAGS)
 
 .PHONY: umonitor
-umonitor:
+umonitor: uifc-mt
 	$(MAKE) -C umonitor $(MAKEFLAGS)
 
 .PHONY: gtkmonitor
@@ -114,6 +116,21 @@ symlinks: all
 	ln -sfr */$(EXEODIR)/* $(SBBSEXEC)
 endif
 
+.PHONY: FORCE
+FORCE:
+
+ifneq ($(GIT), NO)
+git_hash.h: FORCE ../../.git
+	$(QUIET)echo '#define GIT_HASH "'`git log -1 HEAD --format=%h`\" > $@.tmp
+	$(QUIET)diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)rm -f $@.tmp
+
+git_branch.h: FORCE ../../.git
+	$(QUIET)echo '#define GIT_BRANCH "'`git rev-parse --abbrev-ref HEAD`\" > $@.tmp
+	$(QUIET)diff $@.tmp $@ || cp $@.tmp $@
+	$(QUIET)rm -f $@.tmp
+endif
+
 ifeq ($(os),linux)
 .PHONY: setcap
 setcap: all
@@ -124,10 +141,10 @@ endif
 sexyz:	$(SEXYZ)
 
 .PHONY: jsdoor
-jsdoor: $(JS_DEPS) $(CRYPT_DEPS) $(XPDEV-MT_LIB) $(SMBLIB) $(UIFCLIB-MT) $(CIOLIB-MT) $(JSDOOR)
+jsdoor: $(GIT_INFO) $(JS_DEPS) $(CRYPT_DEPS) $(XPDEV-MT_LIB) $(SMBLIB) $(UIFCLIB-MT) $(CIOLIB-MT) $(JSDOOR)
 
 # Library dependencies
-$(SBBS): 
+$(SBBS):
 $(FTPSRVR): 
 $(WEBSRVR):
 $(MAILSRVR):

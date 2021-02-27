@@ -1,7 +1,5 @@
 /* Synchronet message base (SMB) message text library routines */
 
-/* $Id: smbtxt.c,v 1.49 2019/11/19 22:04:55 rswindell Exp $ */
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -15,20 +13,8 @@
  * See the GNU Lesser General Public License for more details: lgpl.txt or	*
  * http://www.fsf.org/copyleft/lesser.html									*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -42,9 +28,10 @@
 #include "base64.h"
 #include "lzh.h"
 
-char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
+char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 {
 	char*	buf;
+	char*	preamble;
 	char*	lzhbuf;
 	char*	p;
 	char*	str;
@@ -107,6 +94,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 			buf[l] = 0;
 		}
 	}
+	preamble = strdup(buf);
 
 	for(i=0;i<(uint)msg->hdr.total_dfields;i++) {
 		if(msg->dfield[i].length<=sizeof(xlat))
@@ -146,6 +134,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					,"%s malloc failure of %ld bytes for LZH buffer"
 					, __FUNCTION__, length);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			if(smb_fread(smb,lzhbuf,length,smb->sdt_fp) != length) {
@@ -154,6 +143,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					, __FUNCTION__, length);
 				free(lzhbuf);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			lzhlen=*(int32_t*)lzhbuf;
@@ -163,6 +153,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					, __FUNCTION__, l+lzhlen+3L);
 				free(lzhbuf);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			buf=p;
@@ -176,6 +167,7 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 					,"%s realloc failure of %ld bytes for text buffer"
 					, __FUNCTION__, l+length+3L);
 				free(buf);
+				free(preamble);
 				return(NULL);
 			}
 			buf=p;
@@ -196,13 +188,22 @@ char* SMBCALL smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, ulong mode)
 
 	if(mode&GETMSGTXT_PLAIN) {
 		char* plaintext = smb_getplaintext(msg, buf);
-		if(plaintext != NULL)
-			return plaintext;
+		if(plaintext != NULL) {
+			buf = malloc(strlen(preamble) + strlen(plaintext) + 1);
+			if(buf == NULL)
+				buf = plaintext;
+			else {
+				strcpy(buf, preamble);
+				strcat(buf, plaintext);
+				free(plaintext);
+			}
+		}
 	}
+	free(preamble);
 	return(buf);
 }
 
-void SMBCALL smb_freemsgtxt(char* buf)
+void smb_freemsgtxt(char* buf)
 {
 	if(buf!=NULL)
 		free(buf);
@@ -234,7 +235,7 @@ char* qp_decode(char* buf)
 				break;
 			if(*p == '\n')
 				continue;
-			if(isxdigit(*p) && isxdigit(*(p+1))) {
+			if(IS_HEXDIGIT(*p) && IS_HEXDIGIT(*(p+1))) {
 				uchar ch = HEX_CHAR_TO_INT(*p) << 4;
 				p++;
 				ch |= HEX_CHAR_TO_INT(*p);
@@ -260,6 +261,22 @@ static size_t strStartsWith_i(const char* buf, const char* match)
 	return 0;
 }
 
+static enum content_transfer_encoding mime_encoding(const char* str)
+{
+	const char* p = str;
+
+	if(str ==  NULL)
+		return CONTENT_TRANFER_ENCODING_NONE;
+	SKIP_WHITESPACE(p);
+	if(strnicmp(p, "base64", 6) == 0)
+		return CONTENT_TRANFER_ENCODING_BASE64;
+	if(strnicmp(p, "quoted-printable", 16) == 0)
+		return CONTENT_TRANFER_ENCODING_QUOTED_PRINTABLE;
+	if(strnicmp(p, "7bit", 4) == 0 || strnicmp(p, "8bit", 4) == 0 || strnicmp(p, "binary", 6) == 0)
+		return CONTENT_TRANFER_ENCODING_NONE;
+	return CONTENT_TRANFER_ENCODING_OTHER;
+}
+
 static enum content_transfer_encoding mime_getxferencoding(const char* beg, const char* end)
 {
 	const char* p = beg;
@@ -271,15 +288,7 @@ static enum content_transfer_encoding mime_getxferencoding(const char* beg, cons
 			FIND_CHAR(p, '\n');
 			continue;
 		}
-		p += len;
-		SKIP_WHITESPACE(p);
-		if(strnicmp(p, "base64", 6) == 0)
-			return CONTENT_TRANFER_ENCODING_BASE64;
-		if(strnicmp(p, "quoted-printable", 16) == 0)
-			return CONTENT_TRANFER_ENCODING_QUOTED_PRINTABLE;
-		if(strnicmp(p, "7bit", 4) == 0 || strnicmp(p, "8bit", 4) == 0 || strnicmp(p, "binary", 6) == 0)
-			return CONTENT_TRANFER_ENCODING_NONE;
-		return CONTENT_TRANFER_ENCODING_OTHER;
+		return mime_encoding(p + len);
 	}
 
 	return CONTENT_TRANFER_ENCODING_NONE;
@@ -339,7 +348,7 @@ static BOOL mime_getattachment(const char* beg, const char* end, char* attachmen
 }
 
 // Parses a MIME text/* content-type header field
-void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, char** charset)
+void smb_parse_content_type(const char* content_type, char** subtype, char** charset)
 {
 	if(subtype != NULL) {
 		FREE_AND_NULL(*subtype);
@@ -367,23 +376,31 @@ void SMBCALL smb_parse_content_type(const char* content_type, char** subtype, ch
 				*tp = 0;
 			}
 		}
-		if(charset != NULL && (p = strcasestr(p, "charset=")) != NULL) {
-			p += 8;
-			if(*p == '"')
+		char* parms = p;
+		if(charset != NULL && ((p = strcasestr(parms, " charset=")) != NULL || (p = strcasestr(parms, ";charset=")) != NULL)) {
+			BOOL quoted = FALSE;
+			p += 9;
+			if(*p == '"') {
+				quoted = TRUE;
 				p++;
+			}
 			char* tp = p;
 			FIND_WHITESPACE(tp);
 			*tp = 0;
 			tp = p;
-			FIND_CHAR(tp, '"');
+			if(quoted) {
+				FIND_CHAR(tp, '"');
+			} else {
+				FIND_CHAR(tp, ';');
+			}
 			*tp = 0;
 			*charset = strdup(p);
 		}
 	}
 }
 
-/* Find the specified content-type in a multi-pat MIME-encoded message body, recursively */
-static const char* mime_getcontent(const char* buf, const char* content_type, const char* content_match
+/* Find the specified content-type in a multi-part MIME-encoded message body, recursively */
+static const char* mime_getpart(const char* buf, const char* content_type, const char* content_match
 	,int depth, enum content_transfer_encoding* encoding, char** charset, char* attachment, size_t attachment_len, int index)
 {
 	const char*	txt;
@@ -442,12 +459,12 @@ static const char* mime_getcontent(const char* buf, const char* content_type, co
 		const char* cp;
 		if((match_len && strnicmp(content_type, match1, match_len) && strnicmp(content_type, match2, match_len))
 			|| (attachment != NULL && !mime_getattachment(txt, p, attachment, attachment_len))) {
-			if((cp = mime_getcontent(p, content_type, content_match, depth + 1, encoding, charset, attachment, attachment_len, index)) != NULL)
+			if((cp = mime_getpart(p, content_type, content_match, depth + 1, encoding, charset, attachment, attachment_len, index)) != NULL)
 				return cp;
 			continue;
 		}
 		if(found++ != index) {
-			if((cp = mime_getcontent(p, content_type, content_match, depth + 1, encoding, charset, attachment, attachment_len, index)) != NULL)
+			if((cp = mime_getpart(p, content_type, content_match, depth + 1, encoding, charset, attachment, attachment_len, index)) != NULL)
 				return cp;
 			continue;
 		}
@@ -467,27 +484,41 @@ static const char* mime_getcontent(const char* buf, const char* content_type, co
 
 /* Get just the (first) plain-text or HTML portion of a MIME-encoded multi-part message body */
 /* Returns NULL if there is no MIME-encoded plain-text/html portion of the message */
-char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
+char* smb_getplaintext(smbmsg_t* msg, char* buf)
 {
+	size_t len;
 	const char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
-	FREE_AND_NULL(msg->text_subtype);
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
-	txt = mime_getcontent(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset
-		,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
-	if(txt == NULL) {
-		txt = mime_getcontent(buf, msg->content_type, "text/html", 0, &xfer_encoding, &msg->text_charset
+	if(strStartsWith_i(msg->content_type, "multipart/") > 0) {
+		txt = mime_getpart(buf, msg->content_type, "text/plain", 0, &xfer_encoding, &msg->text_charset
 			,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
-		if(txt == NULL)
-			return NULL;
-		msg->text_subtype = strdup("html");
-	} else
-		msg->text_subtype = strdup("plain");
+		if(txt == NULL) {
+			txt = mime_getpart(buf, msg->content_type, "text/html", 0, &xfer_encoding, &msg->text_charset
+				,/* attachment: */NULL, /* attachment_len: */0, /* index: */0);
+			if(txt == NULL)
+				return NULL;
+			free(msg->text_subtype);
+			msg->text_subtype = strdup("html");
+		} else {
+			free(msg->text_subtype);
+			msg->text_subtype = strdup("plain");
+		}
 
-	memmove(buf, txt, strlen(txt)+1);
-	if(*buf == 0)	/* No decoding necessary */
+		len = strlen(txt);
+		memmove(buf, txt, len + 1);
+	} else {
+		/* Single-part MIME */
+		if(strStartsWith_i(msg->content_type, "text/") < 1) {
+			*buf = '\0';
+			return buf;
+		}
+		xfer_encoding = mime_encoding(msg->content_encoding);
+		len = strlen(buf);
+	}
+	if(len == 0)	/* No decoding necessary */
 		return buf;
 	if(xfer_encoding == CONTENT_TRANFER_ENCODING_QUOTED_PRINTABLE)
 		qp_decode(buf);
@@ -495,41 +526,75 @@ char* SMBCALL smb_getplaintext(smbmsg_t* msg, char* buf)
 		char* decoded = strdup(buf);
 		if(decoded == NULL)
 			return NULL;
-		if(b64_decode(decoded, strlen(decoded), buf, strlen(buf)) > 0)
+		if(b64_decode(decoded, len, buf, len) > 0)
 			strcpy(buf, decoded);
 		free(decoded);
 	}
-
 	return buf;
 }
 
-/* Get just a base64-encoded attachment (just one) from MIME-encoded message body */
-/* This function is destructive (over-writes 'buf' with decoded attachment)! */
-uint8_t* SMBCALL smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t filename_len, uint32_t* filelen, int index)
+/* Get an attachment (just one) from single-part or multi-part MIME-encoded message body */
+/* This function can be destructive (over-write 'buf' with decoded attachment)! */
+uint8_t* smb_getattachment(smbmsg_t* msg, char* buf, char* filename, size_t filename_len, uint32_t* filelen, int index)
 {
 	const char*	txt;
 	enum content_transfer_encoding xfer_encoding = CONTENT_TRANFER_ENCODING_NONE;
 
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return NULL;
-	txt = mime_getcontent(buf, msg->content_type, /* match-type: */NULL, 0, &xfer_encoding, /* charset: */NULL
-		,/* attachment: */filename, filename_len, index);
-	if(txt != NULL && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
-		memmove(buf, txt, strlen(txt)+1);
-		int result = b64_decode(buf, strlen(buf), buf, strlen(buf));
+	if(strStartsWith_i(msg->content_type, "multipart/") > 0) {
+		txt = mime_getpart(buf, msg->content_type, /* match-type: */NULL, 0, &xfer_encoding, /* charset: */NULL
+			,/* attachment: */filename, filename_len, index);
+		if(txt != NULL && *txt && xfer_encoding == CONTENT_TRANFER_ENCODING_BASE64) {
+			size_t len = strlen(txt);
+			memmove(buf, txt, len + 1);
+			int result = b64_decode(buf, len, buf, len);
+			if(result < 1)
+				return NULL;
+			if(filelen != NULL)
+				*filelen = result;
+			return (uint8_t*)buf;
+		}
+		return NULL;	/* No attachment */
+	}
+	/* Single-part MIME */
+	if(index > 0)
+		return NULL;
+	if(strStartsWith_i(msg->content_type, "text/") > 0)
+		return NULL;
+	if(filename != NULL) {
+		char* fname = strstr(msg->content_type, "name=");
+		if(fname == NULL)
+			return NULL;
+		fname += 5;
+		char* term = NULL;
+		if(*fname == '"') {
+			fname++;
+			term = strchr(fname, '"');
+		} else
+			term = strchr(fname, ';');
+		if(term != NULL)
+			*term = '\0';
+		strncpy(filename, fname, filename_len);
+		filename[filename_len - 1] = '\0';
+	}
+	if(mime_encoding(msg->content_encoding) == CONTENT_TRANFER_ENCODING_BASE64) {
+		size_t len = strlen(buf);
+		int result = b64_decode(buf, len, buf, len);
 		if(result < 1)
 			return NULL;
 		if(filelen != NULL)
 			*filelen = result;
-		return (uint8_t*)buf;
+	} else {
+		if(filelen != NULL)
+			*filelen = strlen(buf);
 	}
-
-	return NULL;	/* No attachment */
+	return (uint8_t*)buf;
 }
 
 /* Return number of file attachments contained in MIME-encoded message body */
 /* 'body' may be NULL if the body text is not already read/available */
-ulong SMBCALL smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
+ulong smb_countattachments(smb_t* smb, smbmsg_t* msg, const char* body)
 {
 	if(msg->mime_version == NULL || msg->content_type == NULL)	/* not MIME */
 		return 0;

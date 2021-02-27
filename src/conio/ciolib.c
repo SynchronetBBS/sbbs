@@ -39,7 +39,6 @@
 #include <stdarg.h>
 #include <stdlib.h>	/* alloca */
 #include <stdio.h>
-#include <stdbool.h>
 #if defined(_WIN32)
  #include <malloc.h>	/* alloca() on Win32 */
 #endif
@@ -1677,7 +1676,7 @@ CIOLIBEXPORT struct ciolib_screen * CIOLIBCALL ciolib_savescreen(void)
 	}
 
 	if (vmode != -1) {
-		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, true);
+		ret->pixels = ciolib_getpixels(0, 0, vparams[vmode].charwidth * vparams[vmode].cols - 1, vparams[vmode].charheight * vparams[vmode].rows - 1, TRUE);
 	}
 	ciolib_vmem_gettext(1, 1, ret->text_info.screenwidth, ret->text_info.screenheight, ret->vmem);
 	ret->fg_colour = ciolib_fg;

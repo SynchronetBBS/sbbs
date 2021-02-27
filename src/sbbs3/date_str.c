@@ -1,8 +1,4 @@
-/* date_str.c */
-
 /* Synchronet date/time string conversion routines */
-
-/* $Id: date_str.c,v 1.29 2016/05/27 07:44:46 rswindell Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -17,25 +13,14 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include "sbbs.h"
+#include "date_str.h"
+#include "datewrap.h"
 
 const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
@@ -54,18 +39,18 @@ time32_t DLLCALL dstrtounix(scfg_t* cfg, const char *instr)
 	if(!instr[0] || !strncmp(instr,"00/00/00",8))
 		return(0);
 
-	if(isdigit(instr[0]) && isdigit(instr[1])
-		&& isdigit(instr[3]) && isdigit(instr[4])
-		&& isdigit(instr[6]) && isdigit(instr[7]))
+	if(IS_DIGIT(instr[0]) && IS_DIGIT(instr[1])
+		&& IS_DIGIT(instr[3]) && IS_DIGIT(instr[4])
+		&& IS_DIGIT(instr[6]) && IS_DIGIT(instr[7]))
 		p=instr;	/* correctly formatted */
 	else {
 		p=instr;	/* incorrectly formatted */
-		while(*p && isdigit(*p)) p++;
+		while(*p && IS_DIGIT(*p)) p++;
 		if(*p==0)
 			return(0);
 		p++;
 		day=p;
-		while(*p && isdigit(*p)) p++;
+		while(*p && IS_DIGIT(*p)) p++;
 		if(*p==0)
 			return(0);
 		p++;

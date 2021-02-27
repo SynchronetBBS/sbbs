@@ -85,7 +85,7 @@ function loadList(settings) {
         }
 	});
 
-    if (settings.msgBase) {
+    if (settings.messageBase) {
         const msgBase = new MsgBase(settings.messageBase);
         msgBase.open();
         var shown = 0;

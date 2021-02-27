@@ -1,8 +1,5 @@
 /* Synchronet vanilla/console-mode "front-end" */
 
-/* $Id: sbbscon.c,v 1.282 2020/08/17 00:48:28 rswindell Exp $ */
-// vi: tabstop=4
-
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -16,20 +13,8 @@
  * See the GNU General Public License for more details: gpl.txt or			*
  * http://www.fsf.org/copyleft/gpl.html										*
  *																			*
- * Anonymous FTP access to the most recent released source is available at	*
- * ftp://vert.synchro.net, ftp://cvs.synchro.net and ftp://ftp.synchro.net	*
- *																			*
- * Anonymous CVS access to the development source and modification history	*
- * is available at cvs.synchro.net:/cvsroot/sbbs, example:					*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs login			*
- *     (just hit return, no password is necessary)							*
- * cvs -d :pserver:anonymous@cvs.synchro.net:/cvsroot/sbbs checkout src		*
- *																			*
  * For Synchronet coding style and modification guidelines, see				*
  * http://www.synchro.net/source.html										*
- *																			*
- * You are encouraged to submit any modifications (preferably in Unix diff	*
- * format) via e-mail to mods@synchro.net									*
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
@@ -55,6 +40,7 @@
 #include "ftpsrvr.h"	/* ftp_startup_t, ftp_server */
 #include "mailsrvr.h"	/* mail_startup_t, mail_server */
 #include "services.h"	/* services_startup_t, services_thread */
+#include "ver.h"
 
 /* XPDEV headers */
 #include "conwrap.h"	/* kbhit/getch */
@@ -713,7 +699,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sterm %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -778,7 +764,7 @@ static int stat_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sstat %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sstat %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -845,7 +831,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sftp  %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -911,7 +897,7 @@ static int mail_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%smail %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -977,7 +963,7 @@ static int services_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%ssrvc %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -1043,7 +1029,7 @@ static int event_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sevnt %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -1085,7 +1071,7 @@ static int web_lputs(void* p, int level, const char *str)
 			,tm.tm_mon+1,tm.tm_mday
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
 
-	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-32,str);
+	sprintf(logline,"%sweb  %.*s",tstr,(int)sizeof(logline)-70,str);
 	truncsp(logline);
 	lputs(level,logline);
 
@@ -1445,7 +1431,7 @@ int main(int argc, char** argv)
     bbs_startup.clients=status_term_clients;
 #endif
 	bbs_startup.login_attempt_list=&login_attempt_list;
-    strcpy(bbs_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(bbs_startup.ctrl_dir,ctrl_dir);
 
 #ifdef __unix__
 
@@ -1468,7 +1454,7 @@ int main(int argc, char** argv)
 	status_startup.setuid=do_setuid;
 	status_startup.clients=status_status_clients;
 	status_startup.status=status_status_status;	// Heh.
-    strcpy(status_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(status_startup.ctrl_dir,ctrl_dir);
 #endif
 
 	/* Initialize FTP startup structure */
@@ -1491,8 +1477,8 @@ int main(int argc, char** argv)
 	ftp_startup.status=status_ftp_status;
 #endif
 	ftp_startup.login_attempt_list=&login_attempt_list;
-    strcpy(ftp_startup.index_file_name,"00index");
-    strcpy(ftp_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(ftp_startup.index_file_name,"00index");
+    SAFECOPY(ftp_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Web Server startup structure */
     memset(&web_startup,0,sizeof(web_startup));
@@ -1514,7 +1500,7 @@ int main(int argc, char** argv)
 	web_startup.status=status_web_status;
 #endif
 	web_startup.login_attempt_list=&login_attempt_list;
-    strcpy(web_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(web_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Mail Server startup structure */
     memset(&mail_startup,0,sizeof(mail_startup));
@@ -1536,7 +1522,7 @@ int main(int argc, char** argv)
 	mail_startup.status=status_mail_status;
 #endif
 	mail_startup.login_attempt_list=&login_attempt_list;
-    strcpy(mail_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(mail_startup.ctrl_dir,ctrl_dir);
 
 	/* Initialize Services startup structure */
     memset(&services_startup,0,sizeof(services_startup));
@@ -1558,7 +1544,7 @@ int main(int argc, char** argv)
 	services_startup.status=status_services_status;
 #endif
 	services_startup.login_attempt_list=&login_attempt_list;
-    strcpy(services_startup.ctrl_dir,ctrl_dir);
+    SAFECOPY(services_startup.ctrl_dir,ctrl_dir);
 
 	/* Pre-INI command-line switches */
 	for(i=1;i<argc;i++) {
@@ -1566,12 +1552,10 @@ int main(int argc, char** argv)
 		while(*arg=='-')
 			arg++;
 		if(strcspn(arg,"\\/")!=strlen(arg)) {
-			strcpy(ini_file,arg);
+			SAFECOPY(ini_file,arg);
 			continue;
 		}
 		if(stricmp(arg, "version") == 0) {
-			char revision[16];
-			sscanf("$Revision: 1.282 $", "%*s %s", revision);
 			char compiler[32];
 			DESCRIBE_COMPILER(compiler);
 			printf("%s\n", bbs_ver());
@@ -1579,13 +1563,14 @@ int main(int argc, char** argv)
 			printf("%s\n", ftp_ver());
 			printf("%s\n", web_ver());
 			printf("%s\n", services_ver());
-			printf("Synchronet Console %s%s  Compiled %s %s with %s\n"
-				,revision
+			printf("Synchronet Console %s%c%s  Compiled %s/%s %s %s with %s\n"
+				,VERSION, REVISION
 #ifdef _DEBUG
 				," Debug"
 #else
 				,""
 #endif
+				,git_branch, git_hash
 				,__DATE__, __TIME__, compiler);
 			return EXIT_SUCCESS;
 		}
@@ -1723,7 +1708,7 @@ int main(int argc, char** argv)
 						mail_startup.options=strtoul(arg,NULL,0);
 						break;
 					case 'S':	/* SMTP/SendMail */
-						if(isdigit(*arg)) {
+						if(IS_DIGIT(*arg)) {
 							mail_startup.smtp_port=atoi(arg);
 							break;
 						}
@@ -1737,7 +1722,7 @@ int main(int argc, char** argv)
 						}
 						break;
 					case 'P':	/* POP3 */
-						if(isdigit(*arg)) {
+						if(IS_DIGIT(*arg)) {
 							mail_startup.pop3_port=atoi(arg);
 							break;
 						}
@@ -1929,7 +1914,7 @@ int main(int argc, char** argv)
     scfg.size=sizeof(scfg);
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 	lprintf(LOG_INFO,"Loading configuration files from %s", scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL /* text.dat */, TRUE /* prep */, error)) {
+	if(!load_cfg(&scfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, error, sizeof(error))) {
 		lprintf(LOG_ERR,"!ERROR Loading Configuration Files: %s", error);
         return(-1);
     }
@@ -2356,7 +2341,7 @@ int main(int argc, char** argv)
 							login_attempt=node->data;
 							localtime32(&login_attempt->time,&tm);
 							if(inet_addrtop(&login_attempt->addr, ip_addr, sizeof(ip_addr))==NULL)
-								strcpy(ip_addr, "<invalid address>");
+								SAFECOPY(ip_addr, "<invalid address>");
 							printf("%lu attempts (%lu duplicate) from %s, last via %s on %u/%u %02u:%02u:%02u (user: %s, password: %s)\n"
 								,login_attempt->count
 								,login_attempt->dupes

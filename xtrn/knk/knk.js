@@ -1,5 +1,3 @@
-// TODO: dk.system.name doesn't get populated...
-
 load("dorkit.js");
 load("lockfile.js");
 var game_dir='.';
@@ -1426,7 +1424,7 @@ function update_userfile(player, computer, won)
 	var lines=[];
 	var line;
 	var now=new Date();
-	var nowmonth=['January','February','March','April','May','June','July','August','September','Optober','November','December'][now.getMonth()];
+	var nowmonth=['January','February','March','April','May','June','July','August','September','October','November','December'][now.getMonth()];
 	var all_ud=[];
 
 	if(!Lock(f.name, dk.connection.node, true, 1))
@@ -1500,12 +1498,12 @@ function update_userfile(player, computer, won)
 		}
 		f.writeln("--------------------------------------------------------------------");
 		f.writeln("");
-		f.writeln("* Kannons and Katapults Total Score for the Month of January *");
+		f.writeln("* Kannons and Katapults Total Score for the Month of "+nowmonth+" *");
 		f.writeln("");
 		f.writeln("Rank  Name                   Games  Wins  Losses  Win %       Score");
 		f.writeln("--------------------------------------------------------------------");
 		for(line=0; line<2; line++) {
-			if((computer_total <= player_total && line==0) || (computer_total > player_total && line==1)) {
+			if((computer_total <= player_total && line==1) || (computer_total > player_total && line==0)) {
 				f.writeln(format("%3u   %-22s %5u  %4u  %6u  %3u %% %11s"
 								,line+1
 								,'All Users'

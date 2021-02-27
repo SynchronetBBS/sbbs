@@ -1,4 +1,3 @@
-// $Id: binkit.js,v 2.39 2020/05/04 22:58:33 rswindell Exp $
 // vi: tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 /*
  * Intentionally simple "Advanced BinkleyTerm Style Outbound"
@@ -22,11 +21,12 @@ load('fidocfg.js');
 load('binkp.js');
 load('freqit_common.js');
 
-var REVISION = "$Revision: 2.39 $".split(' ')[1];
+var REVISION = 2.41;
 var version_notice = "BinkIT/" + REVISION;
 var semaphores = [];
 // data/binkstats.ini
 var stats = { inbound: { true: {}, false: {} }, callout: { true: {}, false: {} }, totals: {} };
+var cfgfname;
 
 function update_stats(stats, addr, bp, host)
 {
@@ -54,7 +54,7 @@ function update_stats(stats, addr, bp, host)
 	if(bp.sent_files.length)
 		stats[addr].sent_files = bp.sent_files;
 	if(bp.failed_sent_files.length)
-		stats[addr].failed_sent_files = bp.failed_sent_files;
+		stats[addr].failed_sent_files = bp.failed_sent_files.map(function(i) { return i.path; });
 	if(bp.received_files.length)
 		stats[addr].received_files = bp.received_files;
 	if(bp.failed_received_files.length)
@@ -136,7 +136,7 @@ function lock_flow(file)
 		}
 		if (!f.open("wb")) {
 			f.date = orig_date;
-			log(LOG_WARNING, "Error " + f.error + " opening " + f.name);
+			log(LOG_WARNING, "Error " + f.error + " opening lock file: " + f.name);
 			return false;
 		}
 		f.date = now;
@@ -146,7 +146,7 @@ function lock_flow(file)
 	if(!mkpath(ret.bsy.name.slice(0, -file_getname(ret.bsy.name).length)))
 		log(LOG_WARNING, "MKPATH ERROR " + errno + " (" + errno_str + "): " + ret.bsy.name);
 	if (!ret.bsy.open("wb")) {	// Used to include 'e' mode flag (which never worked)
-		log(LOG_WARNING, "Error " + ret.bsy.error + " creating " + ret.bsy.name);
+		log(LOG_WARNING, "Error " + ret.bsy.error + " creating lock file: " + ret.bsy.name);
 		if (!take_lockfile(ret.bsy)) {
 			log(LOG_NOTICE, "Lock on "+ret.bsy.name+" failed.");
 			return undefined;
@@ -219,7 +219,7 @@ function add_outbound_files(addrs, bp)
 				var fnchars = '0123456789abcdefghijklmnopqrstuvwxyz';
 				var fname;
 
-				if(file_isdir(file))
+				if(file_isdir(file) || !file_exists(file))
 					return;
 				var ext = file_getext(file);
 				if (ext !== undefined)
@@ -233,7 +233,7 @@ function add_outbound_files(addrs, bp)
 					case '.ilo':
 						flo = new File(file);
 						if (!flo.open("r")) {
-							log(LOG_ERROR, "Unable to open FLO file '"+flo.name+"'.");
+							log(LOG_ERROR, "Error " + flo.error + " opening FLO file: " + flo.name);
 							break;
 						}
 						if (bp.cb_data.binkit_flow_contents[flo.name] === undefined)
@@ -337,7 +337,7 @@ function remove_file(fname)
 	if (file_remove(fname))
 		log(LOG_INFO, "Deleted file: " + fname);
 	else
-		log(LOG_ERROR, "Unable to delete file: " + fname);
+		log(LOG_ERROR, "Error " + errno + " (" + errno_str + ") deleting file: " + fname);
 }
 
 
@@ -388,6 +388,7 @@ function handle_freq(reqfname, bp)
 		// Now, check for the file...
 		FREQIT.handle_regular(fname, bp, bp.authenticated === 'secure', pw, cfg);
 	}
+	req.close();
 }
 
 function rename_or_move(src, dst_dir, dst_fname)
@@ -406,12 +407,12 @@ function rename_or_move(src, dst_dir, dst_fname)
 		return true;
 	sf = new File(src);
 	if (!sf.open("rb")) {
-		log(LOG_ERR, "Error " + sf.error + " opening " + sf.name);
+		log(LOG_ERR, "Error " + sf.error + " opening source file for move: " + sf.name);
 		return false;
 	}
 	df = new File(dst);
 	if (!df.open("wb")) {		// Used to include 'e' mode flag (which never worked)
-		log(LOG_ERR, "Error " + df.error + " opening " + df.name);
+		log(LOG_ERR, "Error " + df.error + " opening destination file for move: " + df.name);
 		sf.close();
 		return false;
 	}
@@ -554,7 +555,7 @@ function callout_done(bp)
 			// We have some unsent files in here... re-write the flo file...
 			f = new File(key);
 			if (!f.open("r+")) {
-				log(LOG_ERROR, "Unable to update flow file '"+key+"'.");
+				log(LOG_ERROR, "Error " + f.error + " opening flow file for update: " + key);
 				return;
 			}
 			lines = f.readAll(2048);
@@ -583,6 +584,7 @@ function callout_done(bp)
 						break;
 				}
 			});
+			f.close();
 		}
 	});
 
@@ -608,7 +610,7 @@ function callout(addr, scfg, locks, bicfg)
 
 	log(LOG_INFO, format("%s callout to %s started", bp.revision, addr));
 	if (bicfg === undefined)
-		bicfg = new BinkITCfg();
+		bicfg = new BinkITCfg(cfgfname);
 	bp.system_operator = bicfg.sysop;
 	bp.plain_auth_only = bicfg.plain_auth_only;
 	bp.crypt_support = bicfg.crypt_support;
@@ -679,7 +681,7 @@ function check_held(addr, scfg, myaddr)
 	if (!f.exists)
 		return false;
 	if (!f.open("r")) {
-		log(LOG_ERROR, "Unable to open hold file '"+f.name+"'");
+		log(LOG_ERROR, "Error " + f.error + " opening hold file: " + f.name);
 		return true;
 	}
 	until = f.readln();
@@ -844,8 +846,8 @@ function run_outbound(ran)
 	var scfg_ob;
 
 	log(LOG_DEBUG, "Running outbound");
-	scfg = new SBBSEchoCfg();
-	bicfg = new BinkITCfg();
+	scfg = new SBBSEchoCfg(cfgfname);
+	bicfg = new BinkITCfg(cfgfname);
 
 	if (!scfg.is_flo) {
 		log(LOG_ERROR, "sbbsecho not configured for FLO-style mailers.");
@@ -911,59 +913,6 @@ function run_outbound(ran)
 	}
 }
 
-/*
- * MysticBBS v1.12A39 at least has an issue when the CRYPT
- * option is included after the CRAM-MD5 challenge.  It appends
- * three NULs to the end of the challenge data.  If the remote told
- * us it was Mystic, see if that matches.
- */
-function mystic_broken_cram(bp)
-{
-	var dot;
-	var min;
-	var ver;
-
-	if (bp.remote_ver === undefined)
-		return false;
-	if (bp.remote_ver.substr(0, 7) !== 'Mystic/')
-		return false;
-	if (bp.wont_crypt)
-		return false;
-	/*
-	 * TODO: This is in case Mystic/1.12A39 has both a working and
-	 * non-working build.  Hopefully, this is not the case, and this
-	 * block can be removed.
-	 */
-	if (bp.remote_ver === 'Mystic/1.12A39')
-		return false;
-
-	ver = bp.remote_ver.substr(7);
-
-	for (dot = 0; dot < ver.length; dot++) {
-		if (ver[dot] == '.')
-			break;
-	}
-	if (parseInt(ver.substr(0, dot), 10) < 1)
-		return true;
-	if (parseInt(ver.substr(0, dot), 10) > 1)
-		return false;
-	for (min = dot + 1; min < ver.length; min++) {
-		if (ver[min] < '0' || ver[min] > '9')
-			break;
-	}
-	if (parseInt(ver.substr(dot+1, min-1), 10) < 12)
-		return true;
-	if (parseInt(ver.substr(dot+1, min-1), 10) > 12)
-		return false;
-	if (min > ver.length)
-		return false;
-	if (ver[min] != 'A')
-		return false;
-	if (parseInt(ver.substr(min+1), 10) <= 39)
-		return true;
-	return false;
-}
-
 function inbound_auth_cb(pwd, bp)
 {
 	/*
@@ -994,8 +943,6 @@ function inbound_auth_cb(pwd, bp)
 			if (!cpw)
 				cpw = '-';
 			if (pwd[0].substr(0, 9) === 'CRAM-MD5-') {
-				if (mystic_broken_cram(bp))
-					bp.cram.challenge += '\x00\x00\x00';
 				var expected = bp.getCRAM('MD5', cpw);
 				if (expected === pwd[0]) {
 					log(LOG_INFO, "CRAM-MD5 password match for " + addr);
@@ -1005,26 +952,7 @@ function inbound_auth_cb(pwd, bp)
 				} else {
 					log(LOG_WARNING, "CRAM-MD5 password mismatch for " + addr
 						+ format(" (expected: %s, received: %s)", expected, pwd[0]));
-					/*
-					 * TODO: This is in case Mystic/1.12A39 has both a working and
-					 * non-working build.  Hopefully, this is not the case, and this
-					 * block can be removed.
-					 */
-					if (bp.remote_ver !== undefined && bp.remote_ver === 'Mystic/1.12A39') {
-						log(LOG_INFO, "Checking Mystic pass...");
-						bp.cram.challenge += '\x00\x00\x00';
-						expected = bp.getCRAM('MD5', cpw);
-						if (expected === pwd[0]) {
-							log(LOG_INFO, "Mystic CRAM-MD5 password match for " + addr);
-							addrs.push(addr);
-							check_nocrypt(bp.cb_data.binkitcfg.node[addr]);
-							ret = cpw;
-						}
-						else
-							invalid = true;
-					}
-					else
-						invalid = true;
+					invalid = true;
 				}
 			}
 			else {
@@ -1084,8 +1012,8 @@ function run_inbound(sock)
 
 	log(LOG_INFO, bp.revision + " inbound connection from " +sock.remote_ip_address+":"+sock.remote_port);
 	bp.cb_data = {
-		binkitcfg:new BinkITCfg(),
-		binkit_scfg:new SBBSEchoCfg(),
+		binkitcfg:new BinkITCfg(cfgfname),
+		binkit_scfg:new SBBSEchoCfg(cfgfname),
 		binkit_file_actions:{},
 		binkit_flow_contents:{},
 		binkit_locks:locks
@@ -1130,7 +1058,7 @@ function poll_node(addr_str, scfg, bicfg, myaddr)
 	var locks = [];
 
 	if (scfg === undefined)
-		scfg = new SBBSEchoCfg();
+		scfg = new SBBSEchoCfg(cfgfname);
 
 	if (myaddr === undefined)
 		myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
@@ -1165,8 +1093,8 @@ function run_polls(ran)
 	var locks = [];
 
 	log(LOG_DEBUG, "Running polls");
-	scfg = new SBBSEchoCfg();
-	bicfg = new BinkITCfg();
+	scfg = new SBBSEchoCfg(cfgfname);
+	bicfg = new BinkITCfg(cfgfname);
 	myaddr = FIDO.parse_addr(system.fido_addr_list[0], 1, 'fidonet');
 
 	Object.keys(bicfg.node).forEach(function(addr_str) {
@@ -1265,6 +1193,11 @@ log(LOG_INFO, version_notice + " invoked with options: " + argv.join(' '));
 if (system.fido_addr_list.length < 1) {
 	alert("No system FidoNet address configured");
 	exit(1);
+}
+
+for (i = 0; i < argv.length; i++) {
+	if(file_getext(argv[i]) == ".ini")
+		cfgfname = argv[i];
 }
 
 // If we're running as a service, call run_inbound().
