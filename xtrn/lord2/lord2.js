@@ -2909,7 +2909,6 @@ rescan:
 			m = l.match(/^\s*@#([^;]+)/);
 			if (m !== null) {
 				cs = m[1].toLowerCase().replace(/\s*$/,'');
-
 				// SIGH... duplicates are allowed... see Stonebridge.
 				//if (obj.section[cs] !== undefined)
 				//	throw new Error('Duplicate section name '+cs+' in '+fname);
