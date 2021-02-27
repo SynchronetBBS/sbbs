@@ -2906,9 +2906,10 @@ rescan:
 				l = l.replace(/^\s+/,'');
 			}
 			obj.lines[n] = l;
-			m = l.match(/^\s*@#([^\s;]+)/);
+			m = l.match(/^\s*@#([^;]+)/);
 			if (m !== null) {
-				cs = m[1].toLowerCase();
+				cs = m[1].toLowerCase().replace(/\s*$/,'');
+
 				// SIGH... duplicates are allowed... see Stonebridge.
 				//if (obj.section[cs] !== undefined)
 				//	throw new Error('Duplicate section name '+cs+' in '+fname);
@@ -2920,11 +2921,13 @@ rescan:
 			// Labels *can* have spaces in them (see extitems.ref)
 			m = l.match(/^\s*@label\s+([^;]+)/i);
 			if (m !== null) {
-				var lab = m[1].toLowerCase();
+				var lab = m[1].toLowerCase().replace(/\s*$/,'');
 				// SIGH... duplicates are allowed... see Stonebridge.
 				//if (obj.section[lab] !== undefined)
 				//	throw new Error('Duplicate label name '+lab+' in section '+cs+' in '+fname);
-				obj.section[lab] = {line:n};
+				// But the *FIRST* match is the right one!
+				if (obj.section[cs] === undefined)
+					obj.section[cs] = {line:n};
 				return;
 			}
 		});
