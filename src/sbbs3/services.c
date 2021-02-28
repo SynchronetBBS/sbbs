@@ -1167,7 +1167,7 @@ static void js_service_thread(void* arg)
 	}
 	FREE_AND_NULL(service_client.subscan);
 
-	protected_uint32_adjust(&service->clients, -1);
+	ulong remain = protected_uint32_adjust(&service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1178,8 +1178,8 @@ static void js_service_thread(void* arg)
 
 	thread_down();
 	if(service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
-			,socket, service->protocol, service->clients, active_clients(), service->served);
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
+			,socket, service->protocol, remain, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
@@ -1486,7 +1486,7 @@ static void native_service_thread(void* arg)
 
 	system(fullcmd);
 
-	protected_uint32_adjust(&service->clients, -1);
+	ulong remain = protected_uint32_adjust(&service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1497,8 +1497,8 @@ static void native_service_thread(void* arg)
 
 	thread_down();
 	if(service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO,"%04d %s service thread terminated (%u clients remain, %lu total, %lu served)"
-			,socket, service->protocol, service->clients, active_clients(), service->served);
+		lprintf(LOG_INFO,"%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
+			,socket, service->protocol, remain, active_clients(), service->served);
 
 	client_off(socket);
 	close_socket(socket);
