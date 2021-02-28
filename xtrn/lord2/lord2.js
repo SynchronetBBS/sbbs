@@ -12,7 +12,7 @@ if (dk.user.full_name == 'Local User')
 dk.console.auto_pause = false;
 if (js.global.console !== undefined) {
 	console.ctrlkey_passthru = dk_old_ctrlkey_passthru;
-	console.ctrlkey_passthru = '+[';
+	console.ctrlkey_passthru = '+[UOPTKZ';
 }
 
 var scr;
