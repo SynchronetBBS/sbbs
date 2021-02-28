@@ -1798,6 +1798,8 @@ function run_ref(sec, fname)
 			if (line >= files[fname].lines.length)
 				throw new Error('Trailing saybar at '+fname+':'+line);
 			update_bar(files[fname].lines[line], true, 5);
+			// Required (at least) by the BEGGER.REF and TALQUIZ.REF.
+			dk.console.gotoxy(78, 20);
 		},
 		'statbar':function(args) {
 			status_bar();
@@ -1952,11 +1954,12 @@ function run_ref(sec, fname)
 			var cur = 0;
 			var ch;
 			var choice;
+			var y = scr.pos.y;
 
 			for (i = 0; i < itms.length; i++)
 				itms[i] = parseInt(itms[i], 10);
 			// Don't clear the screen first?  Interesting...
-			dk.console.gotoxy(0, 9);
+			dk.console.gotoxy(0, y);
 			lw('`r5`%  Item To Buy                         Price                                     ');
 			dk.console.gotoxy(0, 23);
 			lw('`r5                                                                               ');
@@ -1972,7 +1975,7 @@ function run_ref(sec, fname)
 			}
 
 			while(1) {
-				choice = items_menu(itms, cur, true, false, '', 10, 22)
+				choice = items_menu(itms, cur, true, false, '', y+1, 22)
 				cur = choice.cur;
 				switch(choice.ch) {
 					case 'Q':
@@ -2000,6 +2003,7 @@ function run_ref(sec, fname)
 						break;
 				}
 			}
+			clearrows(y, 23);
 			draw_map();
 		},
 		'checkmail':function(args) {
@@ -2245,12 +2249,12 @@ function run_ref(sec, fname)
 				}
 				return;
 			}
-			if (args.length == 2 && args[1].toLowerCase() === 'begin') {
-				line++;
-				return;
-			}
 			if (do_handlers[args[0].toLowerCase()] !== undefined) {
 				do_handlers[args[0].toLowerCase()](args.slice(1));
+				return;
+			}
+			if (args.length == 2 && args[1].toLowerCase() === 'begin') {
+				line++;
 				return;
 			}
 			if (args.length > 2 && (args[1].toLowerCase() === 'is' || args[1] === '=')) {
@@ -2486,14 +2490,19 @@ function run_ref(sec, fname)
 					// Any other argument is the same as no argument... CNW reset.ref uses '@key noshow'
 					default:
 						//throw new Error('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
-						lw('\r');
+						// No, this would be the sane thing to do... don't do it.
+						//lw('\r');
 						break;
 				}
 			}
-			else
-				lw('\r');
+			else {
+				// No, this would be the sane thing to do... don't do it.
+				//lw('\r');
+			}
 			dk.console.cleareol();
-			lw(spaces(40-(displen(morestr)/2))+morestr);
+			// NOTE: This doesn't actually use the "More" prompt that you can override... and it's not centred like the docs claim.
+			//lw(spaces(40-(displen(morestr)/2))+morestr);
+			lw('  `2<`0MORE`2>');
 			getkey();
 			lw('\r');
 			dk.console.cleareol();
@@ -2662,8 +2671,9 @@ function run_ref(sec, fname)
 			var ch;
 			var choice;
 			var box;
+			var y = scr.pos.y;
 
-			dk.console.gotoxy(0, 6);
+			dk.console.gotoxy(0, y);
 			lw('`r5`%  Item To Sell                        Amount Owned                              `r0');
 			dk.console.gotoxy(0, 23);
 			lw('`r5  `$Q `2to quit, `$ENTER `2to sell item.                                               `r0');
@@ -2686,7 +2696,7 @@ rescan:
 					cur = 0;
 
 				while(1) {
-					choice = items_menu(inv, cur, false, true, '', 7, 22);
+					choice = items_menu(inv, cur, false, true, '', y + 1, 22);
 					cur = choice.cur;
 					switch(choice.ch) {
 						case 'Q':
@@ -2728,6 +2738,7 @@ rescan:
 				}
 				draw_map();
 			}
+			clearrows(y, 23);
 		},
 		'shell':function(args) {
 			// TODO?  I mean... likely not.
