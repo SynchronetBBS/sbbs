@@ -11,7 +11,7 @@ var lib = argv[0];
 var list = argv[1];
 var query_string=argv[2];
 
-if(lib==undefined)
+if(lib == null || typeof lib != "object")
     lib = load(new Object, "sbbslist_lib.js");
 
 if(list == undefined)
