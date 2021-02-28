@@ -3799,7 +3799,7 @@ newpage:
 								player.armournumber = 0;
 								break;
 							case 'S':
-								clearrows(12, 22);
+								dk.console.attr.value = 2;
 								ret = run_ref(items[inv[cur] - 1].refsection, 'items.ref');
 								if (items[inv[cur] - 1].useonce) {
 									player.i[inv[cur] - 1]--;
