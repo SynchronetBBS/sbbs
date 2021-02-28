@@ -5,6 +5,7 @@
 require('graphic.js', 'Graphic');
 if (js.global.conio !== undefined && dk.console.local) {
 	conio.init();
+	conio.settitle(js.exec_file);
 	conio.clrscr();
 	conio.setcursortype(2);
 	dk.console.input_queue_callback.push(function() {

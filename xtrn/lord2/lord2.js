@@ -1110,6 +1110,7 @@ function sclrscr()
 function clearrows(start, end)
 {
 	var row;
+
 	if (end === undefined)
 		end = start;
 
@@ -1346,6 +1347,16 @@ function update_bar(str, msg, timeout)
 	str = replace_vars(str);
 	var dl = displen(str);
 	var l;
+
+	// Trim to 76 spaces to fit... required by @#clearBar in MORTAL.REF
+	if (dl > 76) {
+		// Keep shortening the string until it's max width is short enough.
+		// This ensures we keep as many codes as possible.
+		while (dl > 76) {
+			str = str.slice(0, -1);
+			dl = displen(str);
+		}
+	}
 
 	if (msg && str.indexOf(':') > -1) {
 		if (!lfile.open('ab'))
@@ -1647,7 +1658,6 @@ function run_ref(sec, fname)
 			throw new Error('Invalid move at '+fname+':'+line);
 		},
 		'moveback':function(args) {
-			erase_player();
 			player.x = player.lastx;
 			player.y = player.lasty;
 		},
@@ -1788,6 +1798,8 @@ function run_ref(sec, fname)
 			if (line >= files[fname].lines.length)
 				throw new Error('Trailing saybar at '+fname+':'+line);
 			update_bar(files[fname].lines[line], true, 5);
+			// Required (at least) by the BEGGER.REF and TALQUIZ.REF.
+			dk.console.gotoxy(78, 20);
 		},
 		'statbar':function(args) {
 			status_bar();
@@ -1942,11 +1954,12 @@ function run_ref(sec, fname)
 			var cur = 0;
 			var ch;
 			var choice;
+			var y = scr.pos.y;
 
 			for (i = 0; i < itms.length; i++)
 				itms[i] = parseInt(itms[i], 10);
 			// Don't clear the screen first?  Interesting...
-			dk.console.gotoxy(0, 9);
+			dk.console.gotoxy(0, y);
 			lw('`r5`%  Item To Buy                         Price                                     ');
 			dk.console.gotoxy(0, 23);
 			lw('`r5                                                                               ');
@@ -1962,7 +1975,7 @@ function run_ref(sec, fname)
 			}
 
 			while(1) {
-				choice = items_menu(itms, cur, true, false, '', 10, 22)
+				choice = items_menu(itms, cur, true, false, '', y+1, 22)
 				cur = choice.cur;
 				switch(choice.ch) {
 					case 'Q':
@@ -1990,6 +2003,7 @@ function run_ref(sec, fname)
 						break;
 				}
 			}
+			clearrows(y, 23);
 			draw_map();
 		},
 		'checkmail':function(args) {
@@ -2235,12 +2249,12 @@ function run_ref(sec, fname)
 				}
 				return;
 			}
-			if (args.length == 2 && args[1].toLowerCase() === 'begin') {
-				line++;
-				return;
-			}
 			if (do_handlers[args[0].toLowerCase()] !== undefined) {
 				do_handlers[args[0].toLowerCase()](args.slice(1));
+				return;
+			}
+			if (args.length == 2 && args[1].toLowerCase() === 'begin') {
+				line++;
 				return;
 			}
 			if (args.length > 2 && (args[1].toLowerCase() === 'is' || args[1] === '=')) {
@@ -2476,14 +2490,19 @@ function run_ref(sec, fname)
 					// Any other argument is the same as no argument... CNW reset.ref uses '@key noshow'
 					default:
 						//throw new Error('Unhandled key arg "'+args[0]+'" at '+fname+':'+line);
-						lw('\r');
+						// No, this would be the sane thing to do... don't do it.
+						//lw('\r');
 						break;
 				}
 			}
-			else
-				lw('\r');
+			else {
+				// No, this would be the sane thing to do... don't do it.
+				//lw('\r');
+			}
 			dk.console.cleareol();
-			lw(spaces(40-(displen(morestr)/2))+morestr);
+			// NOTE: This doesn't actually use the "More" prompt that you can override... and it's not centred like the docs claim.
+			//lw(spaces(40-(displen(morestr)/2))+morestr);
+			lw('  `2<`0MORE`2>');
 			getkey();
 			lw('\r');
 			dk.console.cleareol();
@@ -2652,8 +2671,9 @@ function run_ref(sec, fname)
 			var ch;
 			var choice;
 			var box;
+			var y = scr.pos.y;
 
-			dk.console.gotoxy(0, 6);
+			dk.console.gotoxy(0, y);
 			lw('`r5`%  Item To Sell                        Amount Owned                              `r0');
 			dk.console.gotoxy(0, 23);
 			lw('`r5  `$Q `2to quit, `$ENTER `2to sell item.                                               `r0');
@@ -2676,7 +2696,7 @@ rescan:
 					cur = 0;
 
 				while(1) {
-					choice = items_menu(inv, cur, false, true, '', 7, 22);
+					choice = items_menu(inv, cur, false, true, '', y + 1, 22);
 					cur = choice.cur;
 					switch(choice.ch) {
 						case 'Q':
@@ -2718,6 +2738,7 @@ rescan:
 				}
 				draw_map();
 			}
+			clearrows(y, 23);
 		},
 		'shell':function(args) {
 			// TODO?  I mean... likely not.
@@ -3000,6 +3021,13 @@ function load_player()
 	player = new RecordFileRecord(pfile);
 	player.reInit();
 	player.realname = dk.user.full_name;
+	map = load_map(player.map);
+	// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
+	if (map === null) {
+		player.map = 0;
+		player.x = 0;
+		player.y = 0;
+	}
 	player.lastx = player.x;
 	player.lasty = player.y;
 }
@@ -3467,12 +3495,14 @@ function draw_map() {
 	var mi;
 	var s;
 
-	if (map === undefined || map.Record !== world.mapdatindex[player.map - 1] - 1)
+	// We can't auto-load the players map here because of ORACLE2.REF in CNW
+	if (map === null || map === undefined)
 		map = load_map(player.map);
 
 	dk.console.attr.value = 7;
 	// No need to clear screen since we're overwriting the whole thing.
 	// TODO: If dk.console had a function to clear to end of screen, that would help.
+	last_draw = undefined;
 	for (y = 0; y < 20; y++) {
 		for (x = 0; x < 80; x++) {
 			off = getoffset(x,y);
@@ -3532,6 +3562,7 @@ function move_player(xoff, yoff) {
 	var special = false;
 	var newmap = false;
 	var perday;
+	var start = {x:player.x, y:player.y, map:player.map};
 
 	if (getvar('`v05') > 0) {
 		if (player.p[10] <= 0) {
@@ -3563,17 +3594,25 @@ function move_player(xoff, yoff) {
 		if (world.hideonmap[player.map] === 0)
 			player.lastmap = player.map;
 		map = load_map(player.map);
-		draw_map();
-		update();
+		if (map === null) {
+			// Handles "start on warp" stupidity in CNW glendale.ref:enterglen
+			// You can move down from the map at block 823 into an empty block.
+			player.x = start.x;
+			player.y = start.y;
+			player.map = start.map;
+			map = load_map(player.map);
+		}
+		else {
+			draw_map();
+			update();
+		}
 	}
 	else {
 		player.lastx = player.x;
 		player.lasty = player.y;
 		if (map.mapinfo[getoffset(x-1, y-1)].terrain === 1) {
-			erase_player();
 			player.x = x;
 			player.y = y;
-			update(true);
 			moved = true;
 		}
 	}
@@ -3595,18 +3634,18 @@ function move_player(xoff, yoff) {
 				}
 				player.x = s.warptox;
 				player.y = s.warptoy;
-				update();
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
-				update_update();
 			}
 		}
 	});
-	if (moved && getvar('`v05') > 0) {
+	erase_player();
+	update(true);
+	perday = getvar('`v05');
+	if (moved && perday > 0) {
 		player.p[10]--;
-		perday = getvar('`v05');
 		if (perday > 0) {
 			if (time_warnings.indexOf(player.p[10]) !== -1)
 				tfile_append(get_timestr());
