@@ -1110,6 +1110,7 @@ function sclrscr()
 function clearrows(start, end)
 {
 	var row;
+
 	if (end === undefined)
 		end = start;
 
@@ -1346,6 +1347,16 @@ function update_bar(str, msg, timeout)
 	str = replace_vars(str);
 	var dl = displen(str);
 	var l;
+
+	// Trim to 76 spaces to fit... required by @#clearBar in MORTAL.REF
+	if (dl > 76) {
+		// Keep shortening the string until it's max width is short enough.
+		// This ensures we keep as many codes as possible.
+		while (dl > 76) {
+			str = str.slice(0, -1);
+			dl = displen(str);
+		}
+	}
 
 	if (msg && str.indexOf(':') > -1) {
 		if (!lfile.open('ab'))
@@ -1647,7 +1658,6 @@ function run_ref(sec, fname)
 			throw new Error('Invalid move at '+fname+':'+line);
 		},
 		'moveback':function(args) {
-			erase_player();
 			player.x = player.lastx;
 			player.y = player.lasty;
 		},
@@ -3000,6 +3010,13 @@ function load_player()
 	player = new RecordFileRecord(pfile);
 	player.reInit();
 	player.realname = dk.user.full_name;
+	map = load_map(player.map);
+	// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
+	if (map === null) {
+		player.map = 0;
+		player.x = 0;
+		player.y = 0;
+	}
 	player.lastx = player.x;
 	player.lasty = player.y;
 }
@@ -3467,12 +3484,14 @@ function draw_map() {
 	var mi;
 	var s;
 
-	if (map === undefined || map.Record !== world.mapdatindex[player.map - 1] - 1)
+	// We can't auto-load the players map here because of ORACLE2.REF in CNW
+	if (map === null || map === undefined)
 		map = load_map(player.map);
 
 	dk.console.attr.value = 7;
 	// No need to clear screen since we're overwriting the whole thing.
 	// TODO: If dk.console had a function to clear to end of screen, that would help.
+	last_draw = undefined;
 	for (y = 0; y < 20; y++) {
 		for (x = 0; x < 80; x++) {
 			off = getoffset(x,y);
@@ -3532,6 +3551,7 @@ function move_player(xoff, yoff) {
 	var special = false;
 	var newmap = false;
 	var perday;
+	var start = {x:player.x, y:player.y, map:player.map};
 
 	if (getvar('`v05') > 0) {
 		if (player.p[10] <= 0) {
@@ -3563,17 +3583,25 @@ function move_player(xoff, yoff) {
 		if (world.hideonmap[player.map] === 0)
 			player.lastmap = player.map;
 		map = load_map(player.map);
-		draw_map();
-		update();
+		if (map === null) {
+			// Handles "start on warp" stupidity in CNW glendale.ref:enterglen
+			// You can move down from the map at block 823 into an empty block.
+			player.x = start.x;
+			player.y = start.y;
+			player.map = start.map;
+			map = load_map(player.map);
+		}
+		else {
+			draw_map();
+			update();
+		}
 	}
 	else {
 		player.lastx = player.x;
 		player.lasty = player.y;
 		if (map.mapinfo[getoffset(x-1, y-1)].terrain === 1) {
-			erase_player();
 			player.x = x;
 			player.y = y;
-			update(true);
 			moved = true;
 		}
 	}
@@ -3595,18 +3623,18 @@ function move_player(xoff, yoff) {
 				}
 				player.x = s.warptox;
 				player.y = s.warptoy;
-				update();
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
-				update_update();
 			}
 		}
 	});
-	if (moved && getvar('`v05') > 0) {
+	erase_player();
+	update(true);
+	perday = getvar('`v05');
+	if (moved && perday > 0) {
 		player.p[10]--;
-		perday = getvar('`v05');
 		if (perday > 0) {
 			if (time_warnings.indexOf(player.p[10]) !== -1)
 				tfile_append(get_timestr());
