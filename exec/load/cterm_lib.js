@@ -271,7 +271,7 @@ function supports_sixel()
 //	undefined:	unsure if font activation was successful (e.g. SyncTERM 1.0)
 //	number:		font activation failure (error number)
 //	false:		incorrect usage
-function activate_font(style, slot)
+function activate_font(style, slot, wantblink)
 {
 	if(style == undefined) {
 		log(LOG_WARNING, "CTerm activate_font: style is undefined");
@@ -294,7 +294,7 @@ function activate_font(style, slot)
 
 	if(console.status != console_status) {
 		if(console.status&(CON_BLINK_FONT|CON_HBLINK_FONT))
-			console.write("\x1b[?34h\x1b[?35h");
+			console.write("\x1b[?34h\x1b[?35" + (wantblink === true ? "l":"h"));
 		else
 			console.write("\x1b[?34l\x1b[?35l");
 		if(console.status&(CON_HIGH_FONT|CON_HBLINK_FONT))
