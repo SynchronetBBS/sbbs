@@ -2010,30 +2010,32 @@ function run_ref(sec, fname)
 					do {
 						m = l.match(/^([-\+=\!><])([`&0-9a-zA-Z]+) ([^ ]+) /)
 						if (m !== null) {
+							var left = getvar(m[2]);
+							var right = getvar(m[3]);
 							l = l.substr(m[0].length);
 							switch(m[1]) {
 								case '=':
-									if (getvar(m[2]).toString() !== m[3])
+									if (left.toString().toLowerCase() !== right.toLowerCase())
 										return;
 									break;
 								case '!':
-									if (getvar(m[2]).toString() === m[3])
+									if (left.toString().toLowerCase() === right.toLowerCase())
 										return;
 									break;
 								case '<':
-									if (getvar(m[2]) >= parseInt(m[3], 10))
+									if (parseInt(left, 10) >= parseInt(right, 10))
 										return;
 									break;
 								case '>':
-									if (getvar(m[2]) <= parseInt(m[3], 10))
+									if (parseInt(left, 10) <= parseInt(right, 10))
 										return;
 									break;
 								case '+':
-									if (!(getvar(m[2]) & (1 << parseInt(m[3], 10))))
+									if (!(left & (1 << parseInt(right, 10))))
 										return;
 									break;
 								case '-':
-									if (getvar(m[2]) & (1 << parseInt(m[3], 10)))
+									if (left & (1 << parseInt(right, 10)))
 										return;
 									break;
 								default:
