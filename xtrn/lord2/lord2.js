@@ -38,6 +38,7 @@ var saved_cursor = {x:0, y:0};
 var progname = '';
 var time_warnings = [];
 var file_pos = {con:0};
+var last_draw;
 
 var items = [];
 var other_players = {};
@@ -596,8 +597,8 @@ var vars = {
 	'`d':{type:'const', val:'\b'},
 	'`\\':{type:'const', val:'\r\n'},
 	'`*':{type:'const', val:dk.connection.node},
-	x:{type:'fn', get:function() { return player.x }, set:function(x) { erase(player.x-1, player.y-1); player.x = clamp_integer(x, 's8'); update(true); } },
-	y:{type:'fn', get:function() { return player.y }, set:function(y) { erase(player.x-1, player.y-1); player.y = clamp_integer(y, 's8'); update(true); } },
+	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8'); } },
+	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8'); } },
 	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
 	dead:{type:'fn', get:function() { return player.dead }, set:function(dead) { player.dead = clamp_integer(dead, 's8') } },
 	sexmale:{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
@@ -1646,7 +1647,7 @@ function run_ref(sec, fname)
 			throw new Error('Invalid move at '+fname+':'+line);
 		},
 		'moveback':function(args) {
-			erase(player.x - 1, player.y - 1);
+			erase_player();
 			player.x = player.lastx;
 			player.y = player.lasty;
 		},
@@ -2999,6 +3000,8 @@ function load_player()
 	player = new RecordFileRecord(pfile);
 	player.reInit();
 	player.realname = dk.user.full_name;
+	player.lastx = player.x;
+	player.lasty = player.y;
 }
 
 function foreground(col)
@@ -3040,6 +3043,13 @@ function erase(x, y) {
 	}
 }
 
+function erase_player()
+{
+	if (last_draw !== undefined) {
+		erase(last_draw.x, last_draw.y);
+	}
+}
+
 function update_update()
 {
 	update_rec.x = player.x;
@@ -3066,9 +3076,11 @@ function update_space(x, y)
 			return;
 		// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
 		if (i === player.Record) {
+			erase_player();
 			foreground(15);
 			background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
 			dk.console.print('\x02');
+			last_draw = {x:player.x - 1, y:player.y - 1};
 		}
 		else {
 			if (u.busy === 0) {
@@ -3392,7 +3404,7 @@ function update(skip) {
 		foreground(15);
 		background(map.mapinfo[getpoffset()].backcolour);
 		dk.console.print('\x02');
-		dk.console.gotoxy(player.x - 1, player.y - 1);
+		last_draw = {x:player.x - 1, y:player.y - 1};
 		update_update();
 		if ((!skip) || now > next_update) {
 			next_update = now + game.delay;
@@ -3443,6 +3455,7 @@ function update(skip) {
 			timeout_bar();
 			mail_check(true);
 		}
+		dk.console.gotoxy(player.x - 1, player.y - 1);
 	}
 	dk.console.attr.value = orig_attr;
 }
@@ -3557,7 +3570,7 @@ function move_player(xoff, yoff) {
 		player.lastx = player.x;
 		player.lasty = player.y;
 		if (map.mapinfo[getoffset(x-1, y-1)].terrain === 1) {
-			erase(player.x-1, player.y-1);
+			erase_player();
 			player.x = x;
 			player.y = y;
 			update(true);
@@ -3578,7 +3591,7 @@ function move_player(xoff, yoff) {
 					draw_map();
 				}
 				else {
-					erase(player.x - 1, player.y - 1);
+					erase_player();
 				}
 				player.x = s.warptox;
 				player.y = s.warptoy;
