@@ -267,7 +267,7 @@ while(client.socket.is_connected && !quit) {
 	}
 
 	if(!logged_in) {
-		writeln("502 Authentication required");
+		writeln("480 Authentication required");
 		log(LOG_WARNING,"!Authentication required");
 		continue;
 	}
