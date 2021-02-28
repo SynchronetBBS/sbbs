@@ -2267,12 +2267,22 @@ function run_ref(sec, fname)
 					setvar(args[0], getvar(args[3]).length);
 				}
 				else if (args[2].toLowerCase() === 'getname') {
-					tmp = pfile.get(clamp_integer(getvar(args[3]), '8'));
-					setvar(args[0], tmp.name);
+					tmp = clamp_integer(getvar(args[3]), '8') - 1;
+					if (tmp >= pfile.length)
+						setvar(args[0], '');
+					else {
+						tmp = pfile.get(tmp);
+						setvar(args[0], tmp.name);
+					}
 				}
 				else if (args[2].toLowerCase() === 'deleted') {
-					tmp = pfile.get(clamp_integer(getvar(args[3]), '8'));
-					setvar(args[0], tmp.deleted);
+					tmp = clamp_integer(getvar(args[3]), '8') - 1;
+					if (tmp >= pfile.length)
+						setvar(args[0], 1);
+					else {
+						tmp = pfile.get(clamp_integer(getvar(args[3]), '8') - 1);
+						setvar(args[0], tmp.deleted);
+					}
 				}
 				else if (args[2].toLowerCase() === 'random') {
 					setvar(args[0], random(clamp_integer(getvar(args[3]), 's32')) + clamp_integer(getvar(args[4]), 's32'));
@@ -2383,6 +2393,29 @@ function run_ref(sec, fname)
 			var tmp3;
 			var tmp4;
 
+			function check_begin(arg) {
+				if (arg < args.length && args[arg].toLowerCase() === 'do') {
+					if (args.length > (arg + 1) && args[arg + 1].toLowerCase() === 'begin') {
+						handlers.begin(args.slice(arg + 2));
+					}
+					else {
+						// Remove empty arguments from end...
+						while (args[args.length - 1] === '')
+							args.pop();
+						// Was the 'do' the last argument?
+						if (args.length == arg + 1) {
+							// Check next line for @begin
+							if (line < files[fname].lines.length - 1) {
+								if (files[fname].lines[line + 1].search(/^\s*@begin/i) === 0) {
+									line++;
+									handlers.begin([]);
+								}
+							}
+						}
+					}
+				}
+			}
+
 			if (args[0].toLowerCase() === 'checkdupe') {
 				tmp2 = remove_colour(getvar(args[1]));
 				tmp4 = false;
@@ -2397,8 +2430,8 @@ function run_ref(sec, fname)
 				}
 				if (tmp4 === (getvar(args[2]).toLowerCase() === 'true'))
 					handlers.do(args.slice(4));
-				else if (args[4].toLowerCase() === 'begin')
-					handlers.begin(args.slice(5));
+				else
+					check_begin(4);
 				return;
 			}
 			else if (args[0].toLowerCase() === 'bitcheck') {
@@ -2411,8 +2444,8 @@ function run_ref(sec, fname)
 					tmp3 = true;
 				if ((!!(tmp & tmp2)) === tmp3)
 					handlers.do(args.slice(5));
-				else if (args[5].toLowerCase() === 'begin')
-					handlers.begin(args.slice(6));
+				else
+					check_begin(5);
 				return;
 			}
 			switch(args[1].toLowerCase()) {
@@ -2420,23 +2453,23 @@ function run_ref(sec, fname)
 				case '>':
 					if (parseInt(getvar(args[0]), 10) > parseInt(getvar(args[2]), 10))
 						handlers.do(args.slice(4));
-					else if (args[4].toLowerCase() === 'begin')
-						handlers.begin(args.slice(5));
+					else
+						check_begin(4);
 					break;
 				case '<':
 				case 'less':
 					if (parseInt(getvar(args[0]), 10) < parseInt(getvar(args[2]), 10))
 						handlers.do(args.slice(4));
-					else if (args[4].toLowerCase() === 'begin')
-						handlers.begin(args.slice(5));
+					else
+						check_begin(4);
 					break;
 				case '!':
 				case 'not':
 				case "isn't":
 					if (getvar(args[0]).toString().toLowerCase() !== getvar(args[2]).toString().toLowerCase())
 						handlers.do(args.slice(4));
-					else if (args[4].toLowerCase() === 'begin')
-						handlers.begin(args.slice(5));
+					else
+						check_begin(4);
 					break;
 				case '=':
 				case 'equals':
@@ -2453,23 +2486,22 @@ function run_ref(sec, fname)
 					tmp2++;
 					if (getvar(args[0]).toString().toLowerCase() === tmp.toString().toLowerCase())
 						handlers.do(args.slice(tmp2 + 1));
-					else if (args[tmp2].toLowerCase() === 'begin')
-						handlers.begin(args.slice(tmp2 + 1));
+					else
+						check_begin(tmp2 + 1);
 					break;
 				case 'exist':
 				case 'exists':
 					if (file_exists(getfname(args[0])) === (args[2].toLowerCase() === 'true')) {
 						handlers.do(args.slice(4));
 					}
-					else if (args[4].toLowerCase() === 'begin') {
-						handlers.begin(args.slice(5));
-					}
+					else
+						check_begin(4);
 					break;
 				case 'inside':
 					if (getvar(args[2]).toLowerCase().indexOf(getvar(args[0]).toLowerCase()) !== -1)
 						handlers.do(args.slice(4));
-					else if (args[4].toLowerCase() === 'begin')
-						handlers.begin(args.slice(5));
+					else
+						check_begin(4);
 					break;
 				default:
 					throw new Error('Unhandled condition '+args[1]+' at '+fname+':'+line);
