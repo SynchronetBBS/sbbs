@@ -2929,8 +2929,8 @@ rescan:
 				//if (obj.section[lab] !== undefined)
 				//	throw new Error('Duplicate label name '+lab+' in section '+cs+' in '+fname);
 				// But the *FIRST* match is the right one!
-				if (obj.section[cs] === undefined)
-					obj.section[cs] = {line:n};
+				if (obj.section[lab] === undefined)
+					obj.section[lab] = {line:n};
 				return;
 			}
 		});
