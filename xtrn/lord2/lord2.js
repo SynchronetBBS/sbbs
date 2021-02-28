@@ -1491,19 +1491,21 @@ function chooseplayer()
 {
 	var i;
 	var pl;
-	var pn;
+	var needle;
+	var haystack;
 	var ch;
 
 	lln('`r0`2  Who would you like to send a message to?');
 	sln('');
 	lln('  `2(`0full or `%PARTIAL`0 name`2).')
 	lw('  `2NAME `8: `%');
-	pn = superclean(dk.console.getstr({len:26}));
+	needle = superclean(dk.console.getstr({len:26})).toLowerCase();
 	sln('');
 
 	for (i = 0; i < pfile.length; i++) {
 		pl = pfile.get(i);
-		if (pl.name.indexOf(pn) !== 0) {
+		haystack = superclean(pl.name).toLowerCase();
+		if (haystack.indexOf(needle) !== -1) {
 			lw('\r');
 			dk.console.cleareol();
 			lw('  `2You mean `0'+pl.name+'`2?  [`0Y`2] `8: ');
