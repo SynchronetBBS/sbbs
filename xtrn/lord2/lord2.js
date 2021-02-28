@@ -1538,6 +1538,8 @@ function yes_no(y, title, question) {
 			case 'KEY_DOWN':
 			case '6':
 			case 'KEY_RIGHT':
+			case 'KEY_END':
+			case 'KEY_HOME':
 				ret = !ret;
 				dk.console.gotoxy(box.x + 3, box.y + 4);
 				if (ret)
@@ -3865,6 +3867,12 @@ function hbar(x, y, opts, cur)
 
 		ch = getkey();
 		switch(ch) {
+			case 'KEY_HOME':
+				cur = 0;
+				break;
+			case 'KEY_END':
+				cur = opts.length - 1;
+				break;
 			case '8':
 			case 'KEY_UP':
 			case '4':
@@ -4241,6 +4249,9 @@ function vbar(choices, args)
 			return ret;
 		}
 		switch(ch) {
+			case 'KEY_HOME':
+				ret.cur = 0;
+				break;
 			case '8':
 			case 'KEY_UP':
 			case '4':
@@ -4270,6 +4281,9 @@ function vbar(choices, args)
 					}
 					ret.cur = 0;
 				}
+				break;
+			case 'KEY_END':
+				ret.cur = choices.length - 1;
 				break;
 			case '\r':
 				movetoend();
@@ -4850,6 +4864,17 @@ function hail()
 					if ((cur % 9) < 6)
 						cur += 3;
 					break;
+				case 'KEY_HOME':
+					cur = 0;
+					if (page != 0)
+						erase_menu();
+					page = 0;
+					break;
+				case 'KEY_END':
+					cur = pl.length - 1;
+					if (page != pages - 1)
+						erase_menu();
+					page = pages - 1;
 				case '\r':
 					break;
 			}
