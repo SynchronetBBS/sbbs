@@ -3466,6 +3466,7 @@ function update(skip) {
 	var orig_attr = dk.console.attr.value;
 
 	if (map !== undefined) {
+		erase_player();
 		dk.console.gotoxy(player.x - 1, player.y - 1);
 		foreground(15);
 		background(map.mapinfo[getpoffset()].backcolour);
