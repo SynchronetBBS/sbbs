@@ -2396,7 +2396,13 @@ function run_ref(sec, fname)
 			function check_begin(arg) {
 				if (arg < args.length && args[arg].toLowerCase() === 'do') {
 					if (args.length > (arg + 1) && args[arg + 1].toLowerCase() === 'begin') {
-						handlers.begin(args.slice(arg + 2));
+						// Check next line for @begin
+						if (line < files[fname].lines.length - 1) {
+							if (files[fname].lines[line + 1].search(/^\s*@begin/i) === 0) {
+								line++;
+								handlers.begin([]);
+							}
+						}
 					}
 					else {
 						// Remove empty arguments from end...
