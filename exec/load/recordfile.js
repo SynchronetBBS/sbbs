@@ -344,9 +344,27 @@ RecordFileRecord.prototype.put = function(keeplocked)
 			{}		// Forever
 	}
 
-	for(i=0; i<this.parent.fields.length; i += 1) {
-		this.parent.writeField(this[this.parent.fields[i].prop], this.parent.fields[i].type, eval(this.parent.fields[i].def.toSource()).valueOf());
+	function put_object(obj, def, rf) {
+		var i;
+		var j;
+
+		for (i = 0; i < def.length; i += 1) {
+			if (typeof def[i].type === 'object') {
+				if (typeof def[i].type.array !== undefined) {
+					for (j = 0; j < def[i].type.array; j++)
+						put_object(obj[def[i].prop][j], def[i].type.recordDef, rf);
+				}
+				else {
+					put_object(obj[def[i].prop], def[i].type.recordDef, rf);
+				}
+			}
+			else {
+				rf.writeField(obj[def[i].prop], def[i].type, eval(def[i].def.toSource()).valueOf());
+			}
+		}
 	}
+
+	put_object(this, this.parent.fields, this.parent);
 	this.parent.file.flush();
 
 	if (!keeplocked) {
@@ -370,8 +388,8 @@ RecordFileRecord.prototype.reInit = function()
 		for(i=0; i<def.length; i += 1) {
 			if (typeof def[i].type === 'object') {
 				if (def[i].type.array !== undefined) {
-					this[def[i].prop] = [];
-					for (j = 0; i < def[i].type.array; j++) {
+					obj[def[i].prop] = [];
+					for (j = 0; j < def[i].type.array; j++) {
 						obj[def[i].prop][j] = {};
 						doinit(obj[def[i].prop][j], def[i].type.recordDef);
 					}
