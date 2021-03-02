@@ -41,7 +41,7 @@
 #include "wrapdll.h"	/* DLLEXPORT and DLLCALL */
 
 #if !__STDC_NO_ATOMICS__
-	#if defined __GNUC__ && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9))
+	#if defined __GNUC__ && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 9)) && !defined(__llvm__) && !defined(__INTEL_COMPILER)
 		#define __STDC_NO_ATOMICS__ 1
 	#elif defined __BORLANDC__ || defined _MSC_VER
 		#define __STDC_NO_ATOMICS__ 1
