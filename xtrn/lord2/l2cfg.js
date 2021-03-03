@@ -5,7 +5,7 @@ load("dorkit.js", "-l");
 require("l2lib.js", "Player_Def");
 
 var copied;
-var save = {map:{}};
+var save = {map:{}, player:{}, item:{}};
 
 function menu(title, blank_line, opts, cur)
 {
@@ -17,13 +17,6 @@ function menu(title, blank_line, opts, cur)
 	var done = false;
 	if (cur === undefined)
 		cur = 0;
-	var mctx = {
-		title:title,
-		blank_line:blank_line,
-		opts:opts,
-		cur:cur
-	};
-
 	function draw_menu() {
 		sclrscr();
 		lw(mctx.title);
@@ -41,8 +34,17 @@ function menu(title, blank_line, opts, cur)
 		}
 	}
 
+	var mctx = {
+		title:title,
+		blank_line:blank_line,
+		opts:opts,
+		cur:cur,
+		draw:draw_menu
+	};
+
 	draw_menu();
 	while(!done) {
+		// TODO: It looks like they're all always nojump...
 		dk.console.attr.value = 2;
 		dk.console.gotoxy(0, y + mctx.cur);
 		lw(ascii(251));
@@ -74,6 +76,12 @@ function menu(title, blank_line, opts, cur)
 				idx = legal.indexOf(ret);
 				if (idx === -1)
 					break;
+				if (mctx.opts[idx].nojump) {
+					done = mctx.opts[idx].callback(mctx);
+					if (!done)
+						draw_menu();
+					break;
+				}
 				mctx.cur = idx;
 				// Fall-through
 			case '\r':
@@ -468,6 +476,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							redraw = true;
 							break;
 						case 'e':	// Edit .REF file... hah!
+							// TODO: Deal with this mess...
 							break;
 						case 'L':	// Load from map.dat file
 							dk.console.gotoxy(0, 23);
@@ -757,9 +766,624 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 			}
 		}
 	}},
-	{text:'  `2(`%U`2)se Player Editor', shortcut:'U', callback:function() {}},
-	{text:'  `2(`%I`2)tem Editor', shortcut:'I', callback:function() {}},
-	{text:'  `2(`%R`2)eset Game', shortcut:'R', callback:function() {}},
+	{text:'  `2(`%U`2)se Player Editor', shortcut:'U', callback:function() {
+		var varnames;
+
+		if (pfile.length === 0) {
+			lln('`r0`2`cDamn it!  Come back when people are playing.');
+			sln('');
+			more();
+			return true;
+		}
+
+		function menu_title() {
+			return '`r0`2`c  `r1`%LORD II PLAYER EDITOR`r0  `2Editing player (`%'+(player.Record + 1)+'`2 of `%'+(pfile.length)+'`2)';
+		}
+
+		function get_player(num) {
+			if (save.player[num] !== undefined)
+				player = save.player[num];
+			else {
+				player = pfile.get(num);
+				// Only really needs to be saved if modified
+				save.player[num] = player;
+			}
+		}
+
+		function load_varnames() {
+			var f = new File(getfname('varlist.dat'));
+
+			if (varnames === undefined) {
+				if (f.open('rb')) {
+					varnames = {p:{}, t:{}, v:{}, s:{}};
+					f.readAll().forEach(function(ln) {
+						var m = ln.match(/^\s*`([ptvs])([0-9]+)\s+(.*)$/i);
+						if (m !== null) {
+							varnames[m[1].toLowerCase()][parseInt(m[2], 10)] = m[3];
+						}
+					});
+				}
+			}
+		}
+
+		function options() {
+			return [
+				{text:'  `2(`%A`2) Game Name         : `%'+player.name+'`r0`2', shortcut:'A', callback:function(ctx) {
+					dk.console.gotoxy(26, 3);
+					conio.setcursortype(2);
+					player.name = dk.console.getstr({edit:player.name, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:25});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 3);
+					dk.console.attr.value = 2;
+					lw(player.name);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%B`2) BBS Name          : `%'+player.realname+'`r0`2', shortcut:'B', callback:function(ctx) {
+					dk.console.gotoxy(26, 4);
+					conio.setcursortype(2);
+					player.realname = dk.console.getstr({edit:player.realname, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:40});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 4);
+					dk.console.attr.value = 2;
+					lw(player.realname);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%C`2) Gold (in hand)    : `%'+pretty_int(player.money)+'`r0`2', shortcut:'C', callback:function(ctx) {
+					dk.console.gotoxy(26, 5);
+					conio.setcursortype(2);
+					player.money = parseInt(dk.console.getstr({edit:player.money.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 5);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.money));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%D`2) Experience        : `%'+pretty_int(player.experience)+'`r0`2', shortcut:'D', callback:function(ctx) {
+					dk.console.gotoxy(26, 6);
+					conio.setcursortype(2);
+					player.experience = parseInt(dk.console.getstr({edit:player.experience.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 6);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.experience));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%E`2) Items', shortcut:'E', callback:function(ctx) {
+					var i;
+					var x;
+					var y;
+					var he = player.sexmale ? 'he' : 'she';
+
+					while(1) {
+						lln('`r0`2`c  `r1`%Items ' + he + ' has...`r0');
+						sln('');
+						for (i = 0; i < 99; i++) {
+							if (player.i[i] > 0) {
+								lln('  `2Item '+(i + 1)+' - `0'+items[i].name+'`r0`2 (amount: `%'+pretty_int(player.i[i])+'`2)');
+							}
+						}
+						sln('');
+						lw('`r0`2Enter # of item to change, enter to quit: ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						i = parseInt(dk.console.getstr({edit:'0', crlf:false, input_box:true, attr:new Attribute(31), sel_attr:new Attribute(112), len:2, integer:true, min:0, max:99}), 10);
+						dk.console.attr.value = 2;
+						if (i < 1 || i > 99)
+							return false;
+						dk.console.gotoxy(x, y);
+						lw('`%' + i);
+						dk.console.cleareol();
+						sln('');
+						lw('`r0`2How many '+items[i - 1].name+'\'s should ' + he + ' have? ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						player.i[i - 1] = parseInt(dk.console.getstr({edit:player.i[i-1].toString(), crlf:false, input_box:true, attr:new Attribute(31), sel_attr:new Attribute(112), len:5, integer:true, min:0, max:32767}), 10);
+						dk.console.attr.value = 2;
+						dk.console.gotoxy(x, y);
+						lw('`%' + player.i[i-1]);
+						dk.console.cleareol();
+					}
+				}},
+				{text:'  `2(`%F`2) Byte Variables', shortcut:'F', callback:function(ctx) {
+					load_varnames();
+					var i;
+					var x;
+					var y;
+
+					while(1) {
+						lln('`r0`2`c  `r1`%Byte variables that are not set to 0...`r0');
+						sln('');
+						for (i = 0; i < 99; i++) {
+							if (varnames.t[i] !== undefined) {
+								lln('  `2Var `0'+space_pad(i.toString(), 2)+'`2 is `%'+space_pad(player.t[i].toString(),10)+'`r0`2(`0'+varnames.t[i]+'`2)');
+							}
+						}
+						sln('');
+						lw('`r0`2Enter # of variable to change, enter to quit: ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						i = parseInt(dk.console.getstr({edit:'0', crlf:false, input_box:true, attr:new Attribute(31), sel_attr:new Attribute(112), len:2, integer:true, min:0, max:99}), 10);
+						dk.console.attr.value = 2;
+						if (i < 1 || i > 99)
+							return false;
+						dk.console.gotoxy(x, y);
+						lw('`%' + i);
+						dk.console.cleareol();
+						sln('');
+						lw('`r0`2What is variable `0'+i+'`2\'s value? (max of 255): ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						player.t[i - 1] = parseInt(dk.console.getstr({edit:player.t[i-1].toString(), crlf:false, input_box:true, attr:new Attribute(31), sel_attr:new Attribute(112), len:5, integer:true, min:0, max:255}), 10);
+						dk.console.attr.value = 2;
+						dk.console.gotoxy(x, y);
+						lw('`%' + player.t[i-1]);
+						dk.console.cleareol();
+					}
+				}},
+				{text:'  `2(`%G`2) Longint Variables', shortcut:'G', callback:function(ctx) {
+					load_varnames();
+					var i;
+					var x;
+					var y;
+
+					while(1) {
+						lln('`r0`2`c  `r1`%Long vars being used...`r0');
+						sln('');
+						for (i = 0; i < 99; i++) {
+							if (varnames.p[i] !== undefined) {
+								lln('  `2Var `0'+space_pad(i.toString(), 2)+'`2 is `%'+space_pad(player.p[i].toString(),10)+'`r0`2(`0'+varnames.p[i]+'`2)');
+							}
+						}
+						sln('');
+						lw('`r0`2Enter # of variable to change, enter to quit: ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						i = parseInt(dk.console.getstr({edit:'0', crlf:false, input_box:true, attr:new Attribute(31), sel_attr:new Attribute(112), len:2, integer:true, min:0, max:99}), 10);
+						dk.console.attr.value = 2;
+						if (i < 1 || i > 99)
+							return false;
+						dk.console.gotoxy(x, y);
+						lw('`%' + i);
+						dk.console.cleareol();
+						sln('');
+						lw('`r0`2What is variable `0'+i+'`2\'s value? (max of 2.2 bil): ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						player.p[i - 1] = parseInt(dk.console.getstr({edit:player.p[i-1].toString(), crlf:false, input_box:true, attr:new Attribute(31), sel_attr:new Attribute(112), len:11, integer:true, min:-2147483648, max:2147483647}), 10);
+						dk.console.attr.value = 2;
+						dk.console.gotoxy(x, y);
+						lw('`%' + player.p[i-1]);
+						dk.console.cleareol();
+					}
+				}},
+				{text:'  `2(`%H`2) Players X         : `%'+player.x+'`r0`2', shortcut:'H', callback:function(ctx) {
+					dk.console.gotoxy(26, 10);
+					conio.setcursortype(2);
+					player.x = parseInt(dk.console.getstr({edit:player.x.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:2, integer:true, min:0, max:80}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 10);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.x));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%I`2) Players Y         : `%'+player.y+'`r0`2', shortcut:'I', callback:function(ctx) {
+					dk.console.gotoxy(26, 11);
+					conio.setcursortype(2);
+					player.y = parseInt(dk.console.getstr({edit:player.y.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:2, integer:true, min:0, max:20}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 11);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.y));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%J`2) Players Map #     : `%'+pretty_int(player.map)+'`r0`2', shortcut:'J', callback:function(ctx) {
+					dk.console.gotoxy(26, 12);
+					conio.setcursortype(2);
+					player.map = parseInt(dk.console.getstr({edit:player.map.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:4, integer:true, min:0, max:1600}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 12);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.map));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%K`2) Account Status    : `%'+(player.deleted ? '`bDELETED' : 'Active') + '`r0`2', shortcut:'K', callback:function(ctx) {
+					player.deleted = player.deleted ? 0 : 1;
+					dk.console.gotoxy(26, 13);
+					lw(player.deleted ? '`bDELETED`2' : '`%Active`2');
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%L`2) Last played on day: `%'+pretty_int(player.lastdayon)+'`r0`2', shortcut:'L', callback:function(ctx) {
+					dk.console.gotoxy(26, 14);
+					conio.setcursortype(2);
+					player.lastdayon = parseInt(dk.console.getstr({edit:player.lastdayon.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:5, integer:true, min:0, max:32767}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 14);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.lastdayon));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%M`2) Health Status     : `%'+(player.dead ? '`bRat Food' : 'Alive')+'`r0`2', shortcut:'M', callback:function(ctx) {
+					player.dead = player.dead ? 0 : 1;
+					dk.console.gotoxy(26, 15);
+					lw(player.dead ? '`bRat Food`2' : '`%Alive`2');
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%N`2) Sex is            : `%'+(player.sexmale === 1 ? 'Male' : '`#Female')+'`r0`2', shortcut:'N', callback:function(ctx) {
+					player.sexmale = player.sexmale ? 0 : 1;
+					dk.console.gotoxy(26, 16);
+					lw(player.sexmale === 1 ? '`%Male`2' : '`#Female`2');
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%O`2) Bank account      : `%'+pretty_int(player.bank)+'`r0`2', shortcut:'O', callback:function(ctx) {
+					dk.console.gotoxy(26, 17);
+					conio.setcursortype(2);
+					player.bank = parseInt(dk.console.getstr({edit:player.bank.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 17);
+					dk.console.attr.value = 2;
+					lw(pretty_int(player.bank));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%S`2) Search by name', shortcut:'S', nojump:true, callback:function(ctx) {
+					var ch;
+					var op;
+					var i;
+					var x;
+					var y;
+					var needle;
+
+					lln('`r0`2`c  `r1`%  SEARCHING FOR A PLAYER  `r0`2');
+					sln('');
+					lw('  Search by (`0B`2)BS name or `%LORD II `2(`0H`2)andle? : `%');
+					ch = getkey().toUpperCase();
+					lln(ch);
+					sln('');
+					if (ch === 'H') {
+						lw('`2  Enter handle : ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						needle = remove_colour(dk.console.getstr({crlf:false, input_box:true, select:false, attr:new Attribute(31), len:40}));
+						dk.console.attr.value = 2;
+						dk.console.gotoxy(x, y);
+						lw('`%'+needle);
+						dk.console.cleareol();
+						sln('');
+						sln('');
+						for (i = 0; i < pfile.length; i++) {
+							op = pfile.get(i);
+							if (remove_colour(op.name).toUpperCase().search(needle.toUpperCase()) !== -1) {
+								lw('  `0'+op.name+'`r0`2? (Real name `0'+op.realname+'`r0`2) [`0Y`2] : `%');
+								ch = getkey().toUpperCase();
+								if (ch === '\r')
+									ch = 'Y';
+								lln(ch);
+								if (ch === 'Y')
+									break;
+							}
+						}
+						if (i === pfile.length) {
+							lln('  `%PLAYER NOT FOUND!');
+							sln('');
+							more();
+						}
+						else {
+							player = get_player(i);
+						}
+					}
+					else {
+						lw('`2  Enter BBS Name : ');
+						x = scr.pos.x;
+						y = scr.pos.y;
+						needle = remove_colour(dk.console.getstr({crlf:false, input_box:true, select:false, attr:new Attribute(31), len:40}));
+						dk.console.attr.value = 2;
+						dk.console.gotoxy(x, y);
+						lw('`%'+needle);
+						dk.console.cleareol();
+						sln('');
+						sln('');
+						for (i = 0; i < pfile.length; i++) {
+							op = pfile.get(i);
+							if (remove_colour(op.realname).toUpperCase().search(needle.toUpperCase()) !== -1) {
+								lw('  `0'+op.name+'`r0`2? (Real name `0'+op.realname+'`r0`2) [`0Y`2] : `%');
+								ch = getkey().toUpperCase();
+								if (ch === '\r')
+									ch = 'Y';
+								lln(ch);
+								if (ch === 'Y')
+									break;
+							}
+						}
+						if (i === pfile.length) {
+							lln('  `%PLAYER NOT FOUND!');
+							sln('');
+							more();
+						}
+						else {
+							player = get_player(i);
+						}
+					}
+					ctx.title = menu_title();
+					ctx.opts = options();
+					ctx.draw();
+					return false;
+				}},
+				{text:'  `2(`%[`2) Go back an account', shortcut:'[', nojump:true, callback:function(ctx) {
+					if (player.Record === 0)
+						get_player(pfile.length - 1);
+					else
+						get_player(player.Record - 1);
+					ctx.title = menu_title();
+					ctx.opts = options();
+					ctx.draw();
+					return false;
+				}},
+				{text:'  `2(`%]`2) Go forward an account', shortcut:']', nojump:true, callback:function(ctx) {
+					if (player.Record === (pfile.length - 1))
+						get_player(0);
+					else
+						get_player(player.Record + 1);
+					ctx.title = menu_title();
+					ctx.opts = options();
+					ctx.draw();
+					return false;
+				}},
+				{text:'  `2(`%Q`2) Quit', shortcut:'Q', callback:function() {return true}}
+			];
+		}
+
+		player = get_player(0);
+		menu(menu_title(), false, options(), 0);
+	}},
+	{text:'  `2(`%I`2)tem Editor', shortcut:'I', callback:function() {
+		var varnames;
+		var item;
+
+		function menu_title() {
+			return '`r0`2`c  `r1`%LORD II ITEM EDITOR`r0  `2Editing item (`%'+(item.Record + 1)+'`2 of `%'+(ifile.length)+'`2)';
+		}
+
+		function get_item(num) {
+			if (save.item[num] !== undefined)
+				item = save.item[num];
+			else {
+				item = items[num];
+				save.item[num] = items[num];
+			}
+		}
+
+		function yn(val) {
+			return val ? '`%Yes`2' : '`4No`2';
+		}
+
+		function options() {
+			return [
+				{text:'  `2(`%A`2) Name of the item  : `%'+item.name+'`r0`2', shortcut:'A', callback:function(ctx) {
+					dk.console.gotoxy(26, 3);
+					conio.setcursortype(2);
+					item.name = dk.console.getstr({edit:item.name, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:30});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 3);
+					dk.console.attr.value = 2;
+					lw(item.name);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%B`2) Action string     : `%'+item.hitaction+'`r0`2', shortcut:'B', callback:function(ctx) {
+					dk.console.gotoxy(26, 4);
+					conio.setcursortype(2);
+					item.hitaction = dk.console.getstr({edit:item.hitaction, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:40});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 4);
+					dk.console.attr.value = 2;
+					lw(item.hitaction);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%C`2) Used as armour?   : `%'+yn(item.armour)+'`r0`2', shortcut:'C', callback:function(ctx) {
+					item.armour = !item.armour;
+					dk.console.gotoxy(26, 5);
+					lw(yn(item.armour));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%D`2) Used as weapon?   : `%'+yn(item.weapon)+'`r0`2', shortcut:'D', callback:function(ctx) {
+					item.weapon = !item.weapon;
+					dk.console.gotoxy(26, 6);
+					lw(yn(item.weapon));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%E`2) Can be sold?      : `%'+yn(item.sell)+'`r0`2', shortcut:'E', callback:function(ctx) {
+					item.sell = !item.sell;
+					dk.console.gotoxy(26, 7);
+					lw(yn(item.sell));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%F`2) Ref. If "Usable"? : `%'+item.refsection+'`r0`2', shortcut:'F', callback:function(ctx) {
+					dk.console.gotoxy(26, 8);
+					conio.setcursortype(2);
+					item.refsection = dk.console.getstr({edit:item.refsection, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:12});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 8);
+					dk.console.attr.value = 2;
+					lw(item.refsection);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%G`2) Use string        : `%'+item.useaction+'`r0`2', shortcut:'F', callback:function(ctx) {
+					dk.console.gotoxy(26, 9);
+					conio.setcursortype(2);
+					item.useaction = dk.console.getstr({edit:item.useaction, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:12});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 9);
+					dk.console.attr.value = 2;
+					lw(item.useaction);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%H`2) Gold value        : `%'+pretty_int(item.value)+'`r0`2', shortcut:'H', callback:function(ctx) {
+					dk.console.gotoxy(26, 10);
+					conio.setcursortype(2);
+					item.value = parseInt(dk.console.getstr({edit:item.value.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:10, integer:true, min:0, max:2147483647}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 10);
+					dk.console.attr.value = 2;
+					lw(pretty_int(item.value));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%I`2) Used only once?   : `%'+yn(item.useonce)+'`r0`2', shortcut:'I', callback:function(ctx) {
+					item.useonce = !item.useonce;
+					dk.console.gotoxy(26, 11);
+					lw(yn(item.useonce));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%J`2) Breaks 1 out of   : `%'+(item.breakage === 0 ? 'Never breaks.' : pretty_int(item.breakage))+'`r0`2', shortcut:'J', callback:function(ctx) {
+					dk.console.gotoxy(26, 12);
+					dk.console.cleareol();
+					conio.setcursortype(2);
+					item.breakage = parseInt(dk.console.getstr({edit:item.breakage.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:5, integer:true, min:0, max:32768}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 12);
+					dk.console.attr.value = 2;
+					lw(item.breakage === 0 ? 'Never breaks.' : pretty_int(item.breakage));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%K`2) Description       : `%'+item.description+'`r0`2', shortcut:'K', callback:function(ctx) {
+					dk.console.gotoxy(26, 13);
+					conio.setcursortype(2);
+					item.description = dk.console.getstr({edit:item.description, crlf:false, input_box:true, select:false, attr:new Attribute(31), len:30});
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 13);
+					dk.console.attr.value = 2;
+					lw(item.description);
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%L`2) Weapon Strength   : `%'+pretty_int(item.strength)+'`r0`2', shortcut:'L', callback:function(ctx) {
+					dk.console.gotoxy(26, 14);
+					conio.setcursortype(2);
+					item.strength = parseInt(dk.console.getstr({edit:item.strength.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:5, integer:true, min:0, max:32768}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 14);
+					dk.console.attr.value = 2;
+					lw(pretty_int(item.strength));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%M`2) Armour Defence    : `%'+pretty_int(item.defence)+'`r0`2', shortcut:'M', callback:function(ctx) {
+					dk.console.gotoxy(26, 15);
+					conio.setcursortype(2);
+					item.defence = parseInt(dk.console.getstr({edit:item.defence.toString(), crlf:false, input_box:true, select:false, attr:new Attribute(31), len:5, integer:true, min:0, max:32768}), 10);
+					conio.setcursortype(0);
+					dk.console.gotoxy(26, 15);
+					dk.console.attr.value = 2;
+					lw(pretty_int(item.defence));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%N`2) Quest item?       : `%'+yn(item.questitem)+'`r0`2', shortcut:'I', callback:function(ctx) {
+					item.questitem = !item.questitem;
+					dk.console.gotoxy(26, 11);
+					lw(yn(item.questitem));
+					dk.console.cleareol();
+					ctx.opts = options();
+				}},
+				{text:'  `2(`%*`2) Show all items.', shortcut:'*', nojump:true, callback:function(ctx) {
+					lw('`r0`2`c');
+					for (i = 0; i < 99; i++) {
+						if (items[i].name !== '')
+							lln('`2  #'+(i+1)+' '+items[i].name+'`r0`2  (cost: '+items[i].value+')');
+					}
+					more();
+					return false;
+				}},
+				{text:'  `2(`%[`2) Go back an account', shortcut:'[', nojump:true, callback:function(ctx) {
+					if (item.Record === 0)
+						get_item(ifile.length - 1);
+					else
+						get_item(item.Record - 1);
+					ctx.title = menu_title();
+					ctx.opts = options();
+					ctx.draw();
+					return false;
+				}},
+				{text:'  `2(`%]`2) Go forward an account', shortcut:']', nojump:true, callback:function(ctx) {
+					if (item.Record === (ifile.length - 1))
+						get_item(0);
+					else
+						get_item(item.Record + 1);
+					ctx.title = menu_title();
+					ctx.opts = options();
+					ctx.draw();
+					return false;
+				}},
+				{text:'  `2(`%Q`2) Quit', shortcut:'Q', callback:function() {return true}}
+			];
+		}
+
+		get_item(0);
+		menu(menu_title(), false, options(), 0);
+	}},
+	{text:'  `2(`%R`2)eset Game', shortcut:'R', callback:function() {
+		var i;
+
+		lln('`r0`2`c  `%Resetting LORD II: New World');
+		lln('`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-`2');
+		lln('  This option will COMPLETELY restart the game by deleting');
+		lln('  the TRADER.DAT file, daily happenings, etc.');
+		sln('');
+		lw('  Do it? [`!N`2] : ');
+		ch = getkey.toUpperCase();
+		if (ch !== 'Y')
+			ch = 'N';
+		lw('`%'+ch);
+		if (ch === 'Y') {
+			sln('');
+			sln('');
+			lln('`%  **STANDBY, NOW RESETTING GAME**');
+			pfile.close();
+			file_removecase(js.exec_dir + 'trader.dat');
+			file_removecase(js.exec_dir + 'bar.txt');
+			file_removecase(js.exec_dir + 'lognow.txt');
+			file_removecase(js.exec_dir + 'logold.txt');
+			file_removecase(js.exec_dir + 'time.dat');
+			file_removecase(js.exec_dir + 'update.tmp');
+			file_removecase(js.exec_dir + 'castle1.dat');
+			file_removecase(js.exec_dir + 'castle2.dat');
+			file_removecase(js.exec_dir + 'castle3.dat');
+			file_removecase(js.exec_dir + 'castle4.dat');
+			file_removecase(js.exec_dir + 'castle4a.dat');
+			file_removecase(js.exec_dir + 'tres1.dat');
+			file_removecase(js.exec_dir + 'tres2.dat');
+			file_removecase(js.exec_dir + 'tres3.dat');
+			file_removecase(js.exec_dir + 'tres4.dat');
+			for (i = 1; i <= 200; i++) {
+				file_removecase(js.exec_dir + 'bounty.'+i);
+			}
+			// TODO: Do we need to reset variables in world.dat?
+			sln('');
+			lln('  `r1`%  All finished!  `r0`2');
+			sln('');
+			more();
+		}
+		return false;
+	}},
 	{text:'  `2(`4Q`2)uit & Save', shortcut:'Q', callback:function() {
 		var tmp;
 
@@ -772,7 +1396,13 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 		for (tmp in save.map) {
 			save.map[tmp].put();
 		}
-		
+		for (tmp in save.player) {
+			save.player[tmp].put();
+		}
+		for (tmp in save.item) {
+			save.item[tmp].put();
+		}
+
 		return true
 	}}
 ]);
