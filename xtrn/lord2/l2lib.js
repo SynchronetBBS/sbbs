@@ -188,7 +188,7 @@ var Map_Def = [
 				{
 					prop:'forecolour',
 					type:'SignedInteger8',
-					def:7
+					def:3
 				},
 				{
 					prop:'backcolour',
@@ -198,7 +198,7 @@ var Map_Def = [
 				{
 					prop:'ch',
 					type:'String:1',
-					def:' '
+					def:ascii(176)
 				},
 				{
 					prop:'t',
@@ -1315,12 +1315,13 @@ function getoffset(x, y) {
 	return (x * 20 + y);
 }
 
-function draw_map() {
+function draw_map(opt) {
 	var x;
 	var y;
 	var off;
 	var mi;
 	var s;
+	var aster;
 
 	// We can't auto-load the players map here because of ORACLE2.REF in CNW
 	if (map === null || map === undefined)
@@ -1334,12 +1335,34 @@ function draw_map() {
 		for (x = 0; x < 80; x++) {
 			off = getoffset(x,y);
 			mi = map.mapinfo[off];
-			foreground(mi.forecolour);
-			background(mi.backcolour);
 			dk.console.gotoxy(x, y);
-			if (x == 79)
+			if (x == 79) {
+				dk.console.attr.value = 2;
 				dk.console.cleareol();
-			dk.console.print(mi.ch === '' ? ' ' : mi.ch);
+			}
+			aster = false;
+			if (opt === 'HOT') {
+				map.hotspots.forEach(function(spot) {
+					if (spot.hotspotx === x + 1 && spot.hotspoty === y + 1) {
+						aster = true;
+					}
+				});
+				dk.console.attr.value = 148;
+			}
+			else if (opt === 'HARD') {
+				if (mi.terrain !== 1) {
+					aster = true;
+					dk.console.attr.value = 20;
+				}
+			}
+			if (aster) {
+				dk.console.print('*');
+			}
+			else {
+				foreground(mi.forecolour);
+				background(mi.backcolour);
+				dk.console.print(mi.ch === '' ? ' ' : mi.ch);
+			}
 		}
 	}
 	clearrows(21, dk.console.rows - 1);
@@ -1361,9 +1384,11 @@ function box_top(width, title)
 	return str;
 }
 
-function box_bottom(width)
+function box_bottom(width, footer)
 {
-	return '`r1`0'+ascii(192)+repeat_chars(ascii(196), (width - 2))+ascii(217);
+	if (footer === undefined)
+		return '`r1`0'+ascii(192)+repeat_chars(ascii(196), (width - 2))+ascii(217);
+	return '`r1`0'+ascii(192)+ascii(196)+footer+'`r1`0'+repeat_chars(ascii(196), (width - 3 - displen(footer)))+ascii(217);
 }
 
 function box_middle(width, text, highlight)
@@ -1378,10 +1403,8 @@ function box_middle(width, text, highlight)
 	return str;
 }
 
-function draw_box(y, title, lines, width)
+function draw_box(y, title, lines, width, x, footer)
 {
-	var x;
-
 	if (width === undefined) {
 		width = displen(title) + 6;
 		lines.forEach(function(l) {
@@ -1391,7 +1414,8 @@ function draw_box(y, title, lines, width)
 		});
 	}
 
-	x = Math.floor((80-width) / 2);
+	if (x === undefined)
+		x = Math.floor((80-width) / 2);
 
 	dk.console.gotoxy(x, y);
 	lw(box_top(width, title));
@@ -1400,7 +1424,7 @@ function draw_box(y, title, lines, width)
 		lw(box_middle(width, l));
 	});
 	dk.console.gotoxy(x, y + lines.length + 1);
-	lw(box_bottom(width));
+	lw(box_bottom(width, footer));
 	return {width:width, y:y, x:x};
 }
 
@@ -1457,17 +1481,31 @@ function build_index()
 	}
 }
 
-function erase(x, y) {
+function erase(x, y, opt) {
 	var off = getoffset(x,y);
 	var mi;
 	var attr = dk.console.attr.value;
+	var aster = false;
 
 	if (map !== undefined) {
 		mi = map.mapinfo[off];
-		foreground(mi.forecolour);
-		background(mi.backcolour);
 		dk.console.gotoxy(x, y);
-		dk.console.print(mi.ch === '' ? ' ' : mi.ch);
+		if (opt === 'HOT') {
+			map.hotspots.forEach(function(spot) {
+				if (spot.hotspotx === x + 1 && spot.hotspoty === y + 1) {
+					aster = true;
+				}
+			});
+		}
+		if (aster) {
+			dk.console.attr.value = 148;
+			dk.console.print('*');
+		}
+		else {
+			foreground(mi.forecolour);
+			background(mi.backcolour);
+			dk.console.print(mi.ch === '' ? ' ' : mi.ch);
+		}
 		dk.console.attr.value = attr;
 	}
 }
