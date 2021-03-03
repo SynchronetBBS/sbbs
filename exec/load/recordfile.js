@@ -773,3 +773,16 @@ RecordFile.prototype.WriteField = function(val, fieldtype, def)
 	'use strict';
 	return this.writeField(val, fieldtype, def);
 };
+
+RecordFile.prototype.close = function()
+{
+	while (this.locks.length > 0) {
+		this.unlock(this.locks[0]);
+	}
+	this.file.close();
+};
+RecordFile.prototype.Close = function()
+{
+	'use strict';
+	return this.close();
+};
