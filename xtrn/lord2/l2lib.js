@@ -1604,6 +1604,13 @@ function getpoffset() {
 	return (player.x - 1)*20+(player.y - 1);
 }
 
+function copy_map(from, to)
+{
+	Map_Def.forEach(function(prop) {
+		to[prop.prop] = from[prop.prop];
+	});
+}
+
 var player;
 var players = [];
 var map;
