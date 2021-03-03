@@ -1497,7 +1497,7 @@ rescan:
 					else
 						pl = pfile.get(i);
 					mp = load_map(pl.lastmap);
-					lw('  `2'+space_pad(pl.name, 29)+'`%'+space_pad(pl.p[8].toString(), 14)+'`0'+mp.name);
+					lln('  `2'+space_pad(pl.name, 29)+'`%'+space_pad(pl.p[8].toString(), 14)+'`0'+mp.name);
 				}
 			});
 		},
@@ -2321,15 +2321,15 @@ newpage:
 				cur = choice.cur;
 				switch(choice.ch) {
 					case 'D':
-						draw_box(12, items[inv[cur] - 1].name, ['','`$Drop how many?             ','']);
-						dk.console.gotoxy(38, 14);
+						i = draw_box(12, items[inv[cur] - 1].name, ['','`$Drop how many?                  ','']);
+						dk.console.gotoxy(i.x + 18, i.y + 2);
 						// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
 						ch = dk.console.getstr({edit:player.i[inv[cur] - 1].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
 						lw('`r1`0');
 						ch = parseInt(ch, 10);
 						if (!isNaN(ch) && ch <= player.i[inv[cur] - 1]) {
+							dk.console.gotoxy(i.x + 3, i.y + 2);
 							if (items[inv[cur] - 1].questitem) {
-								dk.console.gotoxy(21, 14);
 								lw('`$Naw, it might be useful later...');
 							}
 							else {
@@ -2340,11 +2340,10 @@ newpage:
 									if (player.armournumber === inv[cur])
 										player.armournumber = 0;
 								}
-								dk.console.gotoxy(21, 14);
 								if (ch === 1)
-									lw('`$You go ahead and throw it away.`0');
+									lw('`$You go ahead and throw it away. `0');
 								else
-									lw('`$You drop the offending items!`0');
+									lw('`$ You drop the offending items!  `0');
 							}
 							getkey();
 						}
