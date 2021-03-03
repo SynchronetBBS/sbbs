@@ -2053,6 +2053,7 @@ function update(skip) {
 		foreground(15);
 		background(map.mapinfo[getpoffset()].backcolour);
 		dk.console.print('\x02');
+		dk.console.gotoxy(player.x - 1, player.y - 1);
 		last_draw = {x:player.x - 1, y:player.y - 1};
 		update_update();
 		if ((!skip) || now > next_update) {
@@ -2227,6 +2228,8 @@ function move_player(xoff, yoff) {
 			}
 		}
 	});
+	while (enemy !== undefined)
+		offline_battle();
 	erase_player();
 	update(true);
 	perday = getvar('`v05');
@@ -3688,10 +3691,6 @@ function do_map()
 
 	ch = ''
 	while (ch != 'Q') {
-		if (enemy !== undefined) {
-			offline_battle();
-			continue;
-		}
 		while (!dk.console.waitkey(game.delay)) {
 			update();
 		};
