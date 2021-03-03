@@ -1064,7 +1064,7 @@ function space_pad(str, len)
 
 function pretty_int(int, rpad)
 {
-	var ret = parseInt(int, 10).toString();
+	var ret = parseInt(Math.abs(int), 10).toString();
 	var i;
 	if (rpad === undefined)
 		rpad = 0;
@@ -1072,6 +1072,8 @@ function pretty_int(int, rpad)
 	for (i = ret.length - 3; i > 0; i-= 3) {
 		ret = ret.substr(0, i)+','+ret.substr(i);
 	}
+	if (int < 0)
+		ret = '-' + ret;
 	ret = space_pad(ret, rpad);
 	return ret;
 }
