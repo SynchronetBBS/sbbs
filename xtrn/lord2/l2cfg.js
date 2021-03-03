@@ -500,9 +500,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 								tmp.close();
 								break;
 							}
-							Map_Def.forEach(function(prop) {
-								map[prop.prop] = ch[prop.prop];
-							});
+							copy_map(ch, map);
 							ch = undefined;
 							tmp.close();
 							break;
@@ -736,9 +734,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							f.close();
 							break;
 						}
-						Map_Def.forEach(function(prop) {
-							emap[prop.prop] = tmap[prop.prop];
-						});
+						copy_map(tmap, emap);
 						emap.put();
 						dk.console.gotoxy(2, 23);
 						lw('`%MAP ADDED AS RECORD '+f.length+' `2(press a key)');
@@ -1377,6 +1373,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 				file_removecase(js.exec_dir + 'bounty.'+i);
 			}
 			// TODO: Do we need to reset variables in world.dat?
+			// TODO: Remove mail/* files
 			sln('');
 			lln('  `r1`%  All finished!  `r0`2');
 			sln('');
