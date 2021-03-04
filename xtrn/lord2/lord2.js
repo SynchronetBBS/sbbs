@@ -183,6 +183,7 @@ function chooseplayer()
 			ch = getkey().toUpperCase();
 			if (ch !== 'N')
 				ch = 'Y';
+			lln('`%' + ch);
 			if (ch === 'Y')
 				return i;
 		}
