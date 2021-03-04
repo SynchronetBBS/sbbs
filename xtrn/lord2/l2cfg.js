@@ -1075,7 +1075,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							more();
 						}
 						else {
-							player = get_player(i);
+							get_player(i);
 						}
 					}
 					else {
@@ -1107,7 +1107,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							more();
 						}
 						else {
-							player = get_player(i);
+							get_player(i);
 						}
 					}
 					ctx.title = menu_title();
@@ -1139,7 +1139,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 			];
 		}
 
-		player = get_player(0);
+		get_player(0);
 		menu(menu_title(), false, options(), 0);
 	}},
 	{text:'  `2(`%I`2)tem Editor', shortcut:'I', callback:function() {
