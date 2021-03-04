@@ -4,6 +4,7 @@
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
 // TODO: Detect disconnections better
+// TODO: Move other players on screen during battles?
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -2289,6 +2290,8 @@ function move_player(xoff, yoff) {
 			update_update();
 			if (pending_timeout !== undefined)
 				handle_timeout(pending_timeout);
+			while (enemy !== undefined)
+				offline_battle();
 		}
 	}
 }
