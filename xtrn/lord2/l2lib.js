@@ -802,7 +802,7 @@ function broken_displen(str)
 {
 	var i;
 
-	str = expand_ticks(replace_vars(str));
+	str = expand_ticks(replace_vars(replace_svars(str)));
 	return str.length;
 }
 
@@ -1304,7 +1304,6 @@ function replace_vars(str)
 {
 	if (typeof str !== 'string')
 		return str;
-	str = str.replace(/([Ss]?&[A-Za-z]+)/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`[Vv][0-4][0-9])/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`[Ss][0-1][0-9])/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`[Pp][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
@@ -1313,6 +1312,14 @@ function replace_vars(str)
 	str = str.replace(/(`[Ii][0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`\+[0-9][0-9])/g, function(m, r1) { return getvar(r1, true); });
 	str = str.replace(/(`[nexdNEXD\\\*])/g, function(m, r1) { return getvar(r1, true); });
+	return str;
+}
+
+function replace_svars(str)
+{
+	if (typeof str !== 'string')
+		return str;
+	str = str.replace(/([Ss]?&[A-Za-z]+)/g, function(m, r1) { return getvar(r1, true); });
 	return str;
 }
 
