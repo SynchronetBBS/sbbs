@@ -125,6 +125,31 @@ bool sbbs_t::uploadfile(smbfile_t* f)
 		return false; 
 	}
 
+	bputs(text[SearchingForDupes]);
+	/* Note: Hashes file *after* running upload-testers (which could modify file) */
+	if(hashfile(&cfg, f)) {
+		for(uint i=0, k=0; i < usrlibs; i++) {
+			for(uint j=0; j < usrdirs[i]; j++,k++) {
+				outchar('.');
+				if(k && (k%5) == 0)
+					bputs("\b\b\b\b\b     \b\b\b\b\b");
+				if(cfg.dir[usrdir[i][j]]->misc&DIR_DUPES
+					&& findfile(&cfg, usrdir[i][j], /* filename: */NULL, f)) {
+					bprintf(text[FileAlreadyOnline], f->name);
+					if(!dir_op(f->dir)) {
+						remove(path);
+						safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (duplicate hash)"
+							,f->name
+							,cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);
+						logline(LOG_NOTICE, "U!", str);
+						return(false); 	 /* File is in database for another dir */
+					}
+				}
+			}
+		}
+	}
+	bputs(text[SearchedForDupes]);
+
 	if(cfg.dir[f->dir]->misc&DIR_DIZ) {
 		lprintf(LOG_DEBUG, "Extracting DIZ from: %s", path);
 		if(extract_diz(&cfg, f, /* diz_fnames: */NULL, str, sizeof(str))) {

@@ -511,6 +511,27 @@ ulong gettimetodl(scfg_t* cfg, smbfile_t* f, uint rate_cps)
 	return (ulong)(f->size / rate_cps);
 }
 
+bool hashfile(scfg_t* cfg, smbfile_t* f)
+{
+	bool result = false;
+	smb_t smb;
+
+	if(cfg->dir[f->dir]->misc & DIR_NOHASH)
+		return false;
+
+	if(smb_open_dir(cfg, &smb, f->dir) != SMB_SUCCESS)
+		return false;
+
+	if(!(smb.status.attr & SMB_NOHASH)) {
+		char fpath[MAX_PATH + 1];
+		getfilepath(cfg, f, fpath);
+		if((f->file_idx.hash.flags = smb_hashfile(fpath, getfilesize(cfg, f), &f->file_idx.hash.data)) != 0)
+			result = true;
+	}
+	smb_close(&smb);
+	return result;
+}
+
 bool addfile(scfg_t* cfg, uint dirnum, smbfile_t* f, const char* extdesc)
 {
 	char fpath[MAX_PATH + 1];

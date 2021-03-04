@@ -221,11 +221,12 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 	smbfile_t file_ = {0};
 	if(f == NULL)
 		f = &file_;
-	char fname[SMB_FILEIDX_NAMELEN + 1];
-	smb_fileidxname(filename, fname, sizeof(fname));
+	char fname[SMB_FILEIDX_NAMELEN + 1] = "";
+	if(filename != NULL)
+		smb_fileidxname(filename, fname, sizeof(fname));
 
 	if(smb->sid_fp == NULL) {
-		safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msgbase not open", __FUNCTION__);
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
 		return SMB_ERR_NOT_OPEN;
 	}
 	rewind(smb->sid_fp);
@@ -336,7 +337,7 @@ int smb_addfile(smb_t* smb, smbfile_t* file, int storage, const char* extdesc, c
 	if(path != NULL) {
 		file->size = flength(path);
 		file->hdr.when_written.time = (uint32_t)fdate(path);
-		if(!(smb->status.attr & SMB_NOHASH))
+		if(!(smb->status.attr & SMB_NOHASH) && file->file_idx.hash.flags == 0)
 			file->file_idx.hash.flags = smb_hashfile(path, file->size, &file->file_idx.hash.data);
 	}
 	file->hdr.attr |= MSG_FILE;
