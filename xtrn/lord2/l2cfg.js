@@ -383,7 +383,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 							dk.console.gotoxy(tmp.x + 32, tmp.y + 4);
 							map.refsection = dk.console.getstr({edit:map.refsection, crlf:false, input_box:true, attr:new Attribute(95), sel_attr:new Attribute(112), len:12});
 							dk.console.gotoxy(tmp.x + 32, tmp.y + 4);
-							lw(space_pad('`r1`%'+map.reffile, 12));
+							lw(space_pad('`r1`%'+map.refsection, 12));
 
 							dk.console.gotoxy(tmp.x + 40, tmp.y + 5);
 							map.battleodds = parseInt(dk.console.getstr({edit:map.battleodds, crlf:false, input_box:true, attr:new Attribute(95), sel_attr:new Attribute(112), len:10, integer:true, min:0, max:2147483647}), 10);
