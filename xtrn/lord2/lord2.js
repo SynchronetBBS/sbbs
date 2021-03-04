@@ -2285,7 +2285,10 @@ function move_player(xoff, yoff) {
 	if (moved && !special && map.battleodds > 0 && map.reffile !== '' && map.refsection !== '') {
 		if (random(map.battleodds) === 0) {
 			run_ref(map.refsection, map.reffile);
-			// TODO: Is this where we clear battle?!?!
+			player.battle = 0;
+			update_update();
+			if (pending_timeout !== undefined)
+				handle_timeout(pending_timeout);
 		}
 	}
 }
