@@ -506,25 +506,31 @@ var Game_Def = [
 	}
 ];
 
+var lastkey = time();
+var time_callback;
+var idle_timeout = 60 * 5;	// Seconds
 function getkeyw()
 {
-	var timeout = time() + 60 * 5;
+	var timeout = lastkey + idle_timeout;
 	var tl;
 	var now;
 
 	do {
-		now = time();
-		// TODO: dk.console.getstr() doesn't support this stuff... (yet)
-		tl = (dk.user.seconds_remaining + dk.user.seconds_remaining_from - 30) - now;
-		if (tl < 1) {
-			// TODO message etc
-			exit(0);
-		}
-		if (now >= timeout) {
-			// TODO message etc
-			exit(0);
+		if (time_callback !== undefined) {
+			now = time();
+			// TODO: dk.console.getstr() doesn't support this stuff... (yet)
+			tl = (dk.user.seconds_remaining + dk.user.seconds_remaining_from - 30) - now;
+			if (tl < 1) {
+				time_callback('BBS_NO_TIME');
+				return 'BBS_NO_TIME';
+			}
+			if (now >= timeout) {
+				time_callback('IDLE');
+				return 'IDLE';
+			}
 		}
 	} while(!dk.console.waitkey(1000));
+	lastkey = time();
 	return dk.console.getkey();
 }
 
@@ -1639,4 +1645,3 @@ world = wfile.get(0);
 load_players();
 load_items();
 load_game();
-
