@@ -3,6 +3,7 @@
 // TODO: More optimal horizontal lightbars
 // TODO: Save player after changes in case process crashes
 // TODO: run NOTIME in HELP.REF on idle timeout
+// TODO: Detect disconnections better
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -16,6 +17,7 @@ if (js.global.console !== undefined) {
 }
 
 require("l2lib.js", 'Player_Def');
+abortontime = true;
 
 var update_rec;
 var killfiles = [];
@@ -25,6 +27,30 @@ var progname = '';
 var time_warnings = [];
 var file_pos = {con:0};
 var last_draw;
+
+var online = true;
+var abortontime = false;
+var pending_timeout;
+
+function handle_timeout(reason)
+{
+	if (player.battle) {
+		pending_timeout = reason;
+		return;
+	}
+	switch (reason) {
+		case 'BBS_NO_TIME':
+			sclrscr();
+			lln('`r0`2`c  `%The BBS has reported that you do not have any more time left.');
+			break;
+		case 'IDLE':
+			run_ref('notime', 'help.ref');
+			break;
+	}
+	run_ref('endgame', 'gameref.ref');
+	exit(0);
+}
+time_callback = handle_timeout;
 
 function savetime()
 {
@@ -143,7 +169,8 @@ function chooseplayer()
 	sln('');
 	lln('  `2(`0full or `%PARTIAL`0 name`2).')
 	lw('  `2NAME `8: `%');
-	needle = superclean(dk.console.getstr({len:26})).toLowerCase();
+	needle = superclean(dk.console.getstr({len:26, timeout:idle_timeout * 1000})).toLowerCase();
+	lastkey = time();
 	sln('');
 
 	for (i = 0; i < pfile.length; i++) {
@@ -257,6 +284,7 @@ function run_ref(sec, fname)
 		'getkey':function(args) {
 			if (!dk.console.waitkey(0))
 				return '_';
+			lastkey = now();
 			return dk.console.getkey();
 		},
 		'goto':function(args) {
@@ -364,7 +392,8 @@ function run_ref(sec, fname)
 				if (isNaN(val))
 					throw new Error('Invalid default "'+args[0]+'" for readnum at '+fname+':'+line);
 			}
-			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true});
+			s = dk.console.getstr({crlf:false, len:len, edit:val.toString(), input_box:true, attr:new Attribute((bg<<4) | fg), integer:true, timeout:idle_timeout * 1000});
+			lastkey = time();
 			setvar('`v40', s);
 			dk.console.gotoxy(x, y);
 			while (remove_colour(s).length < len)
@@ -393,7 +422,8 @@ function run_ref(sec, fname)
 
 			if (args.length === 2)
 				args.push('`s10');
-			s = dk.console.getstr({crlf:false, len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31)});
+			s = dk.console.getstr({crlf:false, len:len, edit:(args[1].toLowerCase() === 'nil' ? '' : getvar(args[1])), input_box:true, attr:new Attribute(31), timeout:idle_timeout * 1000});
+			lastkey = time();
 			setvar(args[2], s);
 			dk.console.gotoxy(x, y);
 			while (remove_colour(s).length < len)
@@ -1371,7 +1401,8 @@ rescan:
 								box = draw_box(14, items[itm.Record].name, ['', '`$Sell how many?            ',''])
 								dk.console.gotoxy(box.x + 18, box.y + 2);
 								// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
-								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
+								ch = dk.console.getstr({edit:player.i[itm.Record].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11, timeout:idle_timeout * 1000});
+								lastkey = time();
 								lw('`r1`0');
 								amt = parseInt(ch, 10);
 								if (isNaN(amt) || amt <= 0 || amt > player.i[itm.Record]) {
@@ -1863,8 +1894,10 @@ function chat(op)
 			}
 		}
 		if (dk.console.waitkey(game.delay)) {
+			lastkey = now();
 			sw('  ');
-			l = clean_str(dk.console.getstr({len:72, attr:new Attribute(31), input_box:true, crlf:false}));
+			l = clean_str(dk.console.getstr({len:72, attr:new Attribute(31), input_box:true, crlf:false, timeout:idle_timeout * 1000}));
+			lastkey = time();
 			lw('`r0`2`r');
 			dk.console.cleareol();
 			switch (l.toUpperCase()) {
@@ -1952,9 +1985,10 @@ function hailed(pl)
 			break;
 		}
 		if (dk.console.waitkey(game.delay)) {
-			if (getkey().toUpperCase() === 'A') {
-				exit = true;
-				break;
+			switch(getkey().toUpperCase()) {
+				case 'A':
+					exit = true;
+					break;
 			}
 		}
 		op.reLoad();
@@ -1990,6 +2024,8 @@ function con_check()
 				player.battle = 0;
 				update_update();
 				player.put();
+				if (pending_timeout !== undefined)
+					handle_timeout(pending_timeout);
 				break;
 			case 'UPDATE':
 				// Not sure which this does, but no reason not to do both...
@@ -2225,6 +2261,8 @@ function move_player(xoff, yoff) {
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
+				if (pending_timeout !== undefined)
+					handle_timeout(pending_timeout);
 			}
 		}
 	});
@@ -2324,7 +2362,8 @@ newpage:
 						i = draw_box(12, items[inv[cur] - 1].name, ['','`$Drop how many?                  ','']);
 						dk.console.gotoxy(i.x + 18, i.y + 2);
 						// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
-						ch = dk.console.getstr({edit:player.i[inv[cur] - 1].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11});
+						ch = dk.console.getstr({edit:player.i[inv[cur] - 1].toString(), integer:true, input_box:true, attr:new Attribute(47), len:11, timeout:idle_timeout * 1000});
+						lastkey = time();
 						lw('`r1`0');
 						ch = parseInt(ch, 10);
 						if (!isNaN(ch) && ch <= player.i[inv[cur] - 1]) {
@@ -2542,6 +2581,7 @@ function offline_battle(no_super, skip_see)
 	if (skip_see === undefined)
 		skip_see = false;
 	var ret;
+	var oldbattle = player.battle;
 
 	enemy = undefined;
 	switch(enm.sex) {
@@ -2568,6 +2608,9 @@ function offline_battle(no_super, skip_see)
 		lw('`r0`2');
 	else
 		lw('`r0`2'+enm.see);
+	player.battle = 1;
+	player.put();
+	update_update();
 	while(1) {
 		if (skip_see) {
 			ch = 0;
@@ -2576,51 +2619,53 @@ function offline_battle(no_super, skip_see)
 		else {
 			ch = hbar(2, 23, ['Attack', 'Run For it']);
 		}
-		dk.console.gotoxy(2,21);
-		dk.console.cleareol();
-		if (ch === 1) {
-			if (random(10) === 0) {
-				dk.console.gotoxy(2, 21);
-				dk.console.cleareol();
-				lw('`r0`2`e  `4blocks your path!');
-			}
-			else {
-				if (enm.run_reffile !== '' && enm.run_refname !== '')
-					run_ref(enm.run_refname, enm.run_reffile);
-				ret = 'RAN';
-				break;
-			}
-		}
-		else {
-			if (no_super)
-				supr = false;
-			else
-				supr = (random(10) === 0);
-			dmg = hstr + random(hstr) + 1 - enm.defence;
-			if (supr)
-				dmg *= 2;
-			if (dmg < 1) {
-				if (supr)
-					lw('`4Your `%SUPER STRIKE misses!');
-				else
-					lw('`4You completely miss!');
-			}
-			else {
-				if (supr)
-					astr = '`2You `%SUPER STRIKE`2';
-				else if (wep === undefined) {
-					astr = fist_string(enm.name);
+		if (pending_timeout !== undefined) {
+			dk.console.gotoxy(2,21);
+			dk.console.cleareol();
+			if (ch === 1) {
+				if (random(10) === 0) {
+					dk.console.gotoxy(2, 21);
+					dk.console.cleareol();
+					lw('`r0`2`e  `4blocks your path!');
 				}
-				else
-					astr = wep.hitaction;
-				lw('`2' + astr + '`2 for `0'+pretty_int(dmg)+'`2 damage!');
-				enm.hp -= dmg;
-				enemy_hp(enm);
+				else {
+					if (enm.run_reffile !== '' && enm.run_refname !== '')
+						run_ref(enm.run_refname, enm.run_reffile);
+					ret = 'RAN';
+					break;
+				}
 			}
+			else {
+				if (no_super)
+					supr = false;
+				else
+					supr = (random(10) === 0);
+				dmg = hstr + random(hstr) + 1 - enm.defence;
+				if (supr)
+					dmg *= 2;
+				if (dmg < 1) {
+					if (supr)
+						lw('`4Your `%SUPER STRIKE misses!');
+					else
+						lw('`4You completely miss!');
+				}
+				else {
+					if (supr)
+						astr = '`2You `%SUPER STRIKE`2';
+					else if (wep === undefined) {
+						astr = fist_string(enm.name);
+					}
+					else
+						astr = wep.hitaction;
+					lw('`2' + astr + '`2 for `0'+pretty_int(dmg)+'`2 damage!');
+					enm.hp -= dmg;
+					enemy_hp(enm);
+				}
+			}
+			lw('`r0`2');
+			dk.console.gotoxy(2, 22);
+			dk.console.cleareol();
 		}
-		lw('`r0`2');
-		dk.console.gotoxy(2, 22);
-		dk.console.cleareol();
 		if (enm.hp < 1) {
 			lw('`r0`0You killed '+him+'!')
 			dk.console.gotoxy(2, 23);
@@ -2640,6 +2685,8 @@ function offline_battle(no_super, skip_see)
 			atk = enm.attacks[random(enm.attacks.length)];
 			ehstr = atk.strength >> 1;
 			dmg = ehstr + random(ehstr) + 1 - def;
+			if (pending_timeout)
+				dmg = player.p[1];
 			if (dmg < 1) {
 				switch(random(5)) {
 					case 0:
@@ -2675,6 +2722,13 @@ function offline_battle(no_super, skip_see)
 	lw('`r0`2');
 	clearrows(21, 23);
 	redraw_bar(true);
+	player.battle = oldbattle;
+	player.put();
+	update_update();
+	if (player.battle === 0) {
+		if (pending_timeout !== undefined)
+			handle_timeout(pending_timeout);
+	}
 	return ret;
 }
 
@@ -3211,7 +3265,10 @@ function online_battle(op, attack_first) {
 		cur = 0;
 		while (!doneMenu) {
 			clearrows(23, 23);
-			cur = hbar(0, 23, ['Attack', 'Yell Something', 'Leave'], cur);
+			if (pending_timeout !== undefined)
+				chr = 2;
+			else
+				cur = hbar(0, 23, ['Attack', 'Yell Something', 'Leave'], cur);
 			switch(cur) {
 				case 0:	// Attack
 					doneMenu = true;
@@ -3221,7 +3278,8 @@ function online_battle(op, attack_first) {
 					clearrows(23, 23);
 					dk.console.gotoxy(2, 23);
 					lw('`r0`2Message? : ');
-					ln = clean_str(dk.console.getstr({input_box:true, attr:new Attribute(31), len:66, crlf:false}));
+					ln = clean_str(dk.console.getstr({input_box:true, attr:new Attribute(31), len:66, crlf:false, timeout:idle_timeout * 1000}));
+					lastkey = time();
 					if (!ebat.open('ab'))
 						throw new Error('Unable to open '+ebat.name);
 					ebat.write(ln + "|-1000\r\n");
@@ -3314,7 +3372,8 @@ function hail()
 					else {
 						draw_box(12, items[inv[choice.cur] - 1].name, ['','`$Give how many?`2        ','']);
 						dk.console.gotoxy(44, 14);
-						ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true}));
+						ch = parseInt(dk.console.getstr({len:7, crlf:false, integer:true, timeout:idle_timeout * 1000}));
+						lastkey = time();
 					}
 					if ((!isNaN(ch)) && ch > 0 && ch <= player.i[inv[choice.cur] - 1]) {
 						if (yes_no(14, items[inv[choice.cur] - 1].name, '`$Give '+pretty_int(ch)+' of \'em to '+op.name+'`$?')) {
@@ -3544,7 +3603,8 @@ function hail()
 					dk.console.gotoxy(1, 22);
 					lw('`r0`2Give `0'+op.name+'`2 how much of your `$$'+pretty_int(player.money)+'`2? : ');
 					// TODO: This isn't exactly right... cursor is in wrong position, and selected colour is used.
-					ch = dk.console.getstr({edit:player.money.toString(), integer:true, input_box:true, attr:new Attribute(31), len:11});
+					ch = dk.console.getstr({edit:player.money.toString(), integer:true, input_box:true, attr:new Attribute(31), len:11, timeout:idle_timeout * 1000});
+					lastkey = time();
 					ch = parseInt(ch, 10);
 					clearrows(22);
 					if (ch > 0) {
@@ -3614,6 +3674,8 @@ function hail()
 				player.battle = 0;
 				update_update();
 				player.put();
+				if (pending_timeout !== undefined)
+					handle_timeout(pending_timeout);
 				hail_cleanup();
 				return;
 			}
@@ -3622,7 +3684,10 @@ function hail()
 		done = false;
 		cur = 0;
 		while (!done) {
-			cur = hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Chat'], cur);
+			if (pending_timeout)
+				cur = 0;
+			else
+				cur = hbar(2, 23, ['Leave', 'Attack', 'Give Item', 'Chat'], cur);
 			switch(cur) {
 				case 0:
 					done = true;
@@ -3670,6 +3735,8 @@ function hail()
 	update_update();
 	player.put();
 	hail_cleanup();
+	if (pending_timeout !== undefined)
+		handle_timeout(pending_timeout);
 	erase_menu();
 	update();
 
@@ -4046,6 +4113,8 @@ players[player.Record] = update_rec;
 player.onnow = 1;
 player.busy = 0;
 player.battle = 0;
+if (pending_timeout !== undefined)
+	handle_timeout(pending_timeout);
 player.lastdayon = state.time;
 player.lastdayplayed = state.time;
 player.lastsaved = savetime();
