@@ -12,7 +12,6 @@ if (dk.user.full_name == 'Local User')
 	dk.user.full_name = 'SYSOP';
 dk.console.auto_pause = false;
 if (js.global.console !== undefined) {
-	js.load_path_list.unshift(js.exec_dir);	// For in-process?
 	console.ctrlkey_passthru = dk_old_ctrlkey_passthru;
 	console.ctrlkey_passthru = '+[UOPTKZ';
 }
