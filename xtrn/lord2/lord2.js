@@ -321,6 +321,7 @@ function run_ref(sec, fname)
 		'moveback':function(args) {
 			player.x = player.lastx;
 			player.y = player.lasty;
+			update_update();
 		},
 		'numreturn':function(args) {
 			var ret = 0;
@@ -2105,8 +2106,9 @@ function update(skip) {
 					return;
 				if (u.deleted)
 					return;
-				if (u.map === player.map) {
-					nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
+				if (u.map === player.map || (other_players[i] !== undefined && other_players[i].map === player.map)) {
+					if (u.map === player.map)
+						nop[i] = {x:u.x, y:u.y, map:u.map, onnow:u.onnow, busy:u.busy, battle:u.battle}
 					// Erase old player pos...
 					if (other_players[i] !== undefined) {
 						op = other_players[i];
@@ -2262,6 +2264,7 @@ function move_player(xoff, yoff) {
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
+				update_update();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 			}
