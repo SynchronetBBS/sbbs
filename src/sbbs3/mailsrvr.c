@@ -907,8 +907,11 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 					break;
 			} else
 				*tp = '\0';
-			SAFEPRINTF2(filepath, "%s/%s", dirname, getfname(truncsp(p)));
-			strListPush(&file_list, filepath);
+			char* fname = getfname(truncsp(p));
+			if(strcspn(fname, ILLEGAL_FILENAME_CHARS) == strlen(fname)) {
+				SAFEPRINTF2(filepath, "%s/%s", dirname, fname);
+				strListPush(&file_list, filepath);
+			}
 			if(tp == NULL)
 				break;
 			p = tp + 1;
