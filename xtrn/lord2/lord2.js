@@ -1164,7 +1164,7 @@ function run_ref(sec, fname)
 					break;
 				case 'exist':
 				case 'exists':
-					if (file_exists(getfname(args[0])) === (args[2].toLowerCase() === 'true')) {
+					if (file_exists(getfname(getvar(args[0]))) === (getvar(args[2]).toLowerCase() === 'true')) {
 						handlers.do(args.slice(4));
 					}
 					else
