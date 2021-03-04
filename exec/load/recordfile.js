@@ -70,7 +70,9 @@ function RecordFile(filename, definition)
 	this.fields=definition;
 	this.RecordLength=getRecordLength(this.fields);
 	// A vbuf of a record length prevents more than one record from being in the buffer.
-	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength)) {
+	// Nope, it doesn't... use zero an force unbuffered.
+	// This will be super-slow until/unless some serialization is added.
+	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,0)) {
 		return(null);
 	}
 	Object.defineProperty(this, 'length', {
@@ -97,6 +99,8 @@ RecordFileRecord.prototype.flushRead = function(keeplocked)
 	var flushed = false;
 	var tmp;
 
+	// With buffer size of zero, this isn't needed
+	return;
 	locked = (this.parent.locks.indexOf(this.Record) !== -1);
 	if (keeplocked === undefined) {
 		if (locked) {
@@ -115,7 +119,7 @@ RecordFileRecord.prototype.flushRead = function(keeplocked)
 			this.unLock();
 		}
 		this.parent.file.close();
-		if (!this.parent.file.open('rb+', true, this.parent.RecordLength)) {
+		if (!this.parent.file.open('rb+', true, 0)) {
 			throw new Error('Unable to re-open '+this.parent.file.name);
 		}
 		if (locked) {
