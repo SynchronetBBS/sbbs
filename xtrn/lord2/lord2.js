@@ -79,7 +79,7 @@ function redraw_bar(updstatus)
 
 function update_bar(str, msg, timeout)
 {
-	str = replace_vars(str);
+	str = replace_vars(replace_svars(str));
 	var dl = displen(str);
 	var l;
 
@@ -261,7 +261,7 @@ function run_ref(sec, fname)
 				return;
 			if (f.open('ab')) {
 				cl = files[fname].lines[line];
-				f.write(replace_vars(cl)+'\r\n');
+				f.write(replace_vars(replace_svars(cl))+'\r\n');
 				f.close();
 			}
 		},
@@ -548,7 +548,7 @@ function run_ref(sec, fname)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			lw(replace_vars(cl));
+			lw(replace_vars(replace_svars(cl)));
 		},
 	};
 	var handlers = {
@@ -1242,7 +1242,7 @@ function run_ref(sec, fname)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			morestr = replace_vars(cl);
+			morestr = replace_vars(replace_svars(cl));
 		},
 		'nocheck':function(args) {
 			// We don't really support this because there's no need for it.
@@ -1269,7 +1269,7 @@ function run_ref(sec, fname)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			progname = replace_vars(cl);
+			progname = replace_vars(replace_svars(cl));
 		},
 		'rank':function(args) {
 			// TODO: No real clue what the filename is for...
@@ -1447,7 +1447,7 @@ rescan:
 
 			if (args.length === 0) {
 				l.forEach(function(l) {
-					lln(replace_vars(l));
+					lln(replace_vars(replace_svars(l)));
 				});
 			}
 			else if (args[0].toLowerCase() === 'scroll') {
@@ -1543,7 +1543,7 @@ rescan:
 			if (!f.open('ab'))
 				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
-				f.write(replace_vars(l)+'\r\n');
+				f.write(replace_vars(replace_svars(l))+'\r\n');
 			});
 			f.close();
 		},
