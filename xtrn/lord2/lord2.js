@@ -3863,7 +3863,6 @@ function do_map()
 		}
 	}
 	run_ref('endgame', 'gametxt.ref');
-	mswait(2500);
 }
 
 function dump_items()
@@ -4042,7 +4041,7 @@ if (player.battle) {
 
 run_ref('startgame', 'gametxt.ref');
 
-js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.file.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.lastsaved = savetime(); player.put(); pfile.file.close() }');
+js.on_exit('if (player !== undefined) { update_rec.onnow = 0; update_rec.busy = 0; update_rec.battle = 0; update_rec.map = player.map; update_rec.x = player.x; update_rec.y = player.y; update_rec.put(); ufile.close(); player.onnow = 0; player.busy = 0; player.battle = 0; player.lastsaved = savetime(); player.put(); pfile.close() }');
 players[player.Record] = update_rec;
 player.onnow = 1;
 player.busy = 0;
