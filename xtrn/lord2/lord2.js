@@ -2872,7 +2872,8 @@ function vbar(choices, args)
 
 	ret.cur = opt.cur;
 	oldcur = ret.cur;
-	opt.extras = opt.extras.toUpperCase();
+	if (opt.extras.type === 'string')
+		opt.extras = opt.extras.toUpperCase();
 
 	function draw_choice(c) {
 		dk.console.gotoxy(opt.x, opt.y + c);
@@ -2913,6 +2914,13 @@ function vbar(choices, args)
 		}
 		switch(ch) {
 			case 'KEY_HOME':
+				if (opt.return_on_wrap) {
+					draw_choice(oldcur);
+					ret.wrap = true;
+					movetoend();
+					ret.cur = -2147483648;
+					return ret;
+				}
 				ret.cur = 0;
 				break;
 			case '8':
@@ -2946,6 +2954,13 @@ function vbar(choices, args)
 				}
 				break;
 			case 'KEY_END':
+				if (opt.return_on_wrap) {
+					draw_choice(oldcur);
+					ret.wrap = true;
+					movetoend();
+					ret.cur = 2147483647;
+					return ret;
+				}
 				ret.cur = choices.length - 1;
 				break;
 			case '\r':
@@ -2967,6 +2982,11 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 	var off;
 	var desc;
 	var str;
+	var keys;
+
+	keys = ('QNP'+extras).split('');
+	keys.push('KEY_PGUP');
+	keys.push('KEY_PGDOWN');
 
 	function draw_page() {
 		choices = [];
@@ -3025,35 +3045,35 @@ function items_menu(itms, cur, buying, selling, extras, starty, endy)
 
 	draw_page();
 	while(1) {
-		choice = vbar(choices, {cur:cur % cnt, drawall:false, extras:'QNP'+extras, x:0, y:starty, return_on_wrap:true, highlight:'`r1`2', norm:'`r0`2'});
+		choice = vbar(choices, {cur:cur % cnt, drawall:false, extras:keys, x:0, y:starty, return_on_wrap:true, highlight:'`r1`2', norm:'`r0`2'});
+		oldcur = cur;
+		cur = off + choice.cur;
 		if (choice.wrap) {
-			oldcur = cur;
-			cur = off + choice.cur;
-			if (cur < 0)
+			if (cur == -1)
 				cur = itms.length - 1;
-			if (cur >= itms.length)
+			if (cur == itms.length)
 				cur = 0;
+			if (cur < 0)
+				cur = 0;
+			if (cur > itms.length)
+				cur = itms.length - 1;
 			if (Math.floor(oldcur / cnt) !== Math.floor(cur / cnt))
 				draw_page();
 		}
 		else {
 			switch(choice.ch) {
+				case 'KEY_PGDOWN':
 				case 'N':
-					oldcur = cur;
 					cur += cnt;
 					if (cur >= itms.length)
 						cur = itms.length - 1;
-					if (Math.floor(oldcur / cnt) !== Math.floor(cur / cnt))
-						draw_page();
-					cur = oldcur;
+					draw_page();
 					break;
+				case 'KEY_PGUP':
 				case 'P':
-					oldcur = cur;
 					cur -= cnt;
-					if (cur < 0) {
-						cur = oldcur;
-						break;
-					}
+					if (cur < 0)
+						cur = 0;
 					draw_page();
 					break;
 				default:
