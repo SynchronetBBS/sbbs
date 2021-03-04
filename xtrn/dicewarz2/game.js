@@ -104,7 +104,11 @@ function lobby() {
 		while(1) {
 			cycle();
 			var cmd=input.getkey(hotkeys);
-			if(cmd === undefined) 
+			if(typeof cmd == "object") {
+				log(LOG_DEBUG,JSON.stringify(cmd));
+				cmd = cmd.key;
+			}
+			if(cmd === undefined || cmd === null) 
 				continue;
 			switch(cmd) {
 			case KEY_UP:
@@ -1314,7 +1318,12 @@ function playGame(gameNumber) {
 			
 			listFrame.gotoxy(1,p+1);
 			listFrame.putmsg("\xDE",BG_BLACK|fg);
-			listFrame.putmsg(printPadded(plyr.name,16),bg|txt);
+			if(game.hidden_names) {
+				listFrame.putmsg(printPadded(plyr.name,16),bg|txt);
+			}
+			else {
+				listFrame.putmsg(printPadded("<hidden>",16),bg|txt);
+			}
 			listFrame.putmsg("\xDD",BG_BLACK|fg);
 			
 			infoFrame.gotoxy(1,p+1);
