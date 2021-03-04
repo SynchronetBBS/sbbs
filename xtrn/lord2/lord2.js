@@ -48,7 +48,7 @@ function handle_timeout(reason)
 			run_ref('notime', 'help.ref');
 			break;
 	}
-	run_ref('endgame', 'gameref.ref');
+	run_ref('endgame', 'gametxt.ref');
 	exit(0);
 }
 time_callback = handle_timeout;
@@ -2363,6 +2363,8 @@ rescan:
 			return;
 		}
 		else {
+			if (cur >= inv.length)
+				cur = inv.length - 1;
 newpage:
 			while (1) {
 				choice = items_menu(inv, cur, false, false, 'D', y, 22);
