@@ -871,6 +871,8 @@ function foreground(col)
 
 function background(col)
 {
+	// PukeWorld uses a background colour of 13...
+	col &= 0x07;
 	if (col > 7 || col < 0) {
 		return;
 	}
