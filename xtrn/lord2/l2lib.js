@@ -571,10 +571,7 @@ function clean_str(str)
 	var i;
 
 	for (i = 0; i < str.length; i += 1) {
-		if (str[i] === '$') {
-			// Just skip it.
-		}
-		else if (str[i] !== '`') {
+		if (str[i] !== '`') {
 			ret += str[i];
 		}
 		else {
