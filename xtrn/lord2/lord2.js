@@ -2619,7 +2619,7 @@ function offline_battle(no_super, skip_see)
 		else {
 			ch = hbar(2, 23, ['Attack', 'Run For it']);
 		}
-		if (pending_timeout !== undefined) {
+		if (pending_timeout === undefined) {
 			dk.console.gotoxy(2,21);
 			dk.console.cleareol();
 			if (ch === 1) {
