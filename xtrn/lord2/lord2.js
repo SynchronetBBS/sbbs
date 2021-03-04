@@ -373,7 +373,7 @@ function run_ref(sec, fname)
 		},
 		'readchar':function(args) {
 			// TODO: It's possible to "abort" input and get a zero-length string.
-			setvar(arg[0], getkey());
+			setvar(args[0], getkey());
 		},
 		'readnum':function(args) {
 			var x = scr.pos.x;
