@@ -1772,11 +1772,14 @@ function update_space(x, y)
 		else {
 			if (u.busy === 0) {
 				dk.console.gotoxy(u.x - 1, u.y - 1);
-					foreground(4);
 				if (u.battle)
 					foreground(4);
-				else
-					foreground(7);
+				else {
+					if (map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour == 7)
+						foreground(8);
+					else
+						foreground(7);
+				}
 				background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
 				dk.console.print('\x02');
 			}
@@ -2136,11 +2139,14 @@ function update(skip) {
 				// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
 				if (done[getoffset(u.x, u.y)] === undefined && u.busy === 0 && (u.x !== player.x || u.y !== player.y)) {
 					dk.console.gotoxy(u.x - 1, u.y - 1);
-						foreground(4);
 					if (u.battle)
 						foreground(4);
-					else
-						foreground(7);
+					else {
+						if (map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour == 7)
+							foreground(8);
+						else
+							foreground(7);
+					}
 					background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
 					dk.console.print('\x02');
 					done[getoffset(u.x, u.y)] = true;
