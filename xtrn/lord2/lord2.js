@@ -880,6 +880,7 @@ function run_ref(sec, fname)
 			throw new Error('Unsupported display at '+fname+':'+line);
 		},
 		'displayfile':function(args) {
+			// TODO: This seems to be the only way the moremap string is used.
 			var lines;
 			if (args.length < 1)
 				throw new Error('No filename for displayfile at '+fname+':'+line);
@@ -2634,9 +2635,6 @@ function offline_battle(no_super, skip_see)
 		lw('`r0`2');
 	else
 		lw('`r0`2'+enm.see);
-	player.battle = 1;
-	player.put();
-	update_update();
 	while(1) {
 		if (skip_see) {
 			ch = 0;
@@ -2645,53 +2643,51 @@ function offline_battle(no_super, skip_see)
 		else {
 			ch = hbar(2, 23, ['Attack', 'Run For it']);
 		}
-		if (pending_timeout === undefined) {
-			dk.console.gotoxy(2,21);
-			dk.console.cleareol();
-			if (ch === 1) {
-				if (random(10) === 0) {
-					dk.console.gotoxy(2, 21);
-					dk.console.cleareol();
-					lw('`r0`2`e  `4blocks your path!');
-				}
-				else {
-					if (enm.run_reffile !== '' && enm.run_refname !== '')
-						run_ref(enm.run_refname, enm.run_reffile);
-					ret = 'RAN';
-					break;
-				}
+		dk.console.gotoxy(2,21);
+		dk.console.cleareol();
+		if (ch === 1) {
+			if (random(10) === 0) {
+				dk.console.gotoxy(2, 21);
+				dk.console.cleareol();
+				lw('`r0`2`e  `4blocks your path!');
 			}
 			else {
-				if (no_super)
-					supr = false;
-				else
-					supr = (random(10) === 0);
-				dmg = hstr + random(hstr) + 1 - enm.defence;
-				if (supr)
-					dmg *= 2;
-				if (dmg < 1) {
-					if (supr)
-						lw('`4Your `%SUPER STRIKE misses!');
-					else
-						lw('`4You completely miss!');
-				}
-				else {
-					if (supr)
-						astr = '`2You `%SUPER STRIKE`2';
-					else if (wep === undefined) {
-						astr = fist_string(enm.name);
-					}
-					else
-						astr = wep.hitaction;
-					lw('`2' + astr + '`2 for `0'+pretty_int(dmg)+'`2 damage!');
-					enm.hp -= dmg;
-					enemy_hp(enm);
-				}
+				if (enm.run_reffile !== '' && enm.run_refname !== '')
+					run_ref(enm.run_refname, enm.run_reffile);
+				ret = 'RAN';
+				break;
 			}
-			lw('`r0`2');
-			dk.console.gotoxy(2, 22);
-			dk.console.cleareol();
 		}
+		else {
+			if (no_super)
+				supr = false;
+			else
+				supr = (random(10) === 0);
+			dmg = hstr + random(hstr) + 1 - enm.defence;
+			if (supr)
+				dmg *= 2;
+			if (dmg < 1) {
+				if (supr)
+					lw('`4Your `%SUPER STRIKE misses!');
+				else
+					lw('`4You completely miss!');
+			}
+			else {
+				if (supr)
+					astr = '`2You `%SUPER STRIKE`2';
+				else if (wep === undefined) {
+					astr = fist_string(enm.name);
+				}
+				else
+					astr = wep.hitaction;
+				lw('`2' + astr + '`2 for `0'+pretty_int(dmg)+'`2 damage!');
+				enm.hp -= dmg;
+				enemy_hp(enm);
+			}
+		}
+		lw('`r0`2');
+		dk.console.gotoxy(2, 22);
+		dk.console.cleareol();
 		if (enm.hp < 1) {
 			lw('`r0`0You killed '+him+'!')
 			dk.console.gotoxy(2, 23);
@@ -2748,13 +2744,6 @@ function offline_battle(no_super, skip_see)
 	lw('`r0`2');
 	clearrows(21, 23);
 	redraw_bar(true);
-	player.battle = oldbattle;
-	player.put();
-	update_update();
-	if (player.battle === 0) {
-		if (pending_timeout !== undefined)
-			handle_timeout(pending_timeout);
-	}
 	return ret;
 }
 
