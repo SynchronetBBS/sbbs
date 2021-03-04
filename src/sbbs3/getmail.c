@@ -92,9 +92,11 @@ BOOL DLLCALL delfattach(scfg_t* cfg, smbmsg_t* msg)
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
-		SAFEPRINTF2(path, "%s/%s", dir, tp);
-		if(remove(path) != 0)
-			return FALSE;
+		if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
+			SAFEPRINTF2(path, "%s/%s", dir, tp);
+			if(remove(path) != 0)
+				return FALSE;
+		}
 		if(!p)
 			break;
 		tp=p+1; 

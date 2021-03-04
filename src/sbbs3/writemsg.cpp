@@ -1306,13 +1306,14 @@ bool sbbs_t::editfile(char *fname, bool msg)
 
 /*************************/
 /* Copy file attachments */
+/* TODO: Quoted filename support */
 /*************************/
 bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 {
-	char str[128],str2[128],str3[128],*tp,*sp,*p;
+	char str[128], dest[MAX_PATH + 1], src[MAX_PATH + 1], *tp, *sp, *p;
 	bool result = false;
 
-	strcpy(str, subj);
+	SAFECOPY(str, subj);
 	tp=str;
 	while(1) {
 		p=strchr(tp,' ');
@@ -1320,12 +1321,13 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 		sp=strrchr(tp,'/');              /* sp is slash pointer */
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
-		SAFEPRINTF3(str2,"%sfile/%04u.in/%s"  /* str2 is path/fname */
-			,cfg.data_dir,to,tp);
-		SAFEPRINTF3(str3,"%sfile/%04u.in/%s"  /* str2 is path/fname */
-			,cfg.data_dir,from,tp);
-		if(strcmp(str2,str3)) {
-			if(mv(str3, str2, /* copy */true) != 0)
+		if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
+			if(to == 0)
+				SAFEPRINTF3(dest,"%sfile/%04u.out/%s", cfg.data_dir, from, tp);
+			else
+				SAFEPRINTF3(dest,"%sfile/%04u.in/%s", cfg.data_dir, to, tp);
+			SAFEPRINTF3(src,"%sfile/%04u.in/%s", cfg.data_dir, from, tp);
+			if(mv(src, dest, /* copy */true) != 0)
 				return false;
 			result = true;
 		}
