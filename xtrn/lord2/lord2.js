@@ -1697,6 +1697,18 @@ function load_player()
 	var i;
 	var p;
 
+	function post_load() {
+		map = load_map(player.map);
+		// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
+		if (map === null) {
+			player.map = 0;
+			player.x = 0;
+			player.y = 0;
+		}
+		player.lastx = player.x;
+		player.lasty = player.y;
+	}
+
 	for (i = 0; i < pfile.length; i++) {
 		p = pfile.get(i);
 		if (p.deleted === 1)
@@ -1708,21 +1720,14 @@ function load_player()
 				ufile.new();
 				update_rec = ufile.get(player.Record);
 			}
+			post_load();
 			return;
 		}
 	}
 	player = new RecordFileRecord(pfile);
 	player.reInit();
 	player.realname = dk.user.full_name;
-	map = load_map(player.map);
-	// Force move to home on invalid map (can be triggered by a crash in the glen which no longer happens. :)
-	if (map === null) {
-		player.map = 0;
-		player.x = 0;
-		player.y = 0;
-	}
-	player.lastx = player.x;
-	player.lasty = player.y;
+	post_load();
 }
 
 function erase_player()
@@ -1747,7 +1752,6 @@ function update_space(x, y)
 {
 	var oa = dk.console.attr.value;
 
-	dk.console.gotoxy(x, y);
 	x += 1;
 	y += 1;
 
@@ -1759,10 +1763,11 @@ function update_space(x, y)
 		// Note that 'busy' is what 'offmap' toggles, not what 'busy' does. *sigh*
 		if (i === player.Record) {
 			erase_player();
+			dk.console.gotoxy(x - 1, y - 1);
 			foreground(15);
 			background(map.mapinfo[getoffset(u.x-1, u.y-1)].backcolour);
 			dk.console.print('\x02');
-			last_draw = {x:player.x - 1, y:player.y - 1};
+			last_draw = {x:u.x - 1, y:u.y - 1};
 		}
 		else {
 			if (u.busy === 0) {
