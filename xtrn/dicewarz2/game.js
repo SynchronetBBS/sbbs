@@ -1142,7 +1142,7 @@ function playGame(gameNumber) {
 				msgAlert("\1c\1hIt is your turn");
 				menu.draw();
 			}
-			else {
+			else if(!game.hidden_names) {
 				msgAlert("\1n\1cIt is " + game.players[game.turn].name + "'s turn");
 			}
 		}
@@ -1319,10 +1319,10 @@ function playGame(gameNumber) {
 			listFrame.gotoxy(1,p+1);
 			listFrame.putmsg("\xDE",BG_BLACK|fg);
 			if(game.hidden_names) {
-				listFrame.putmsg(printPadded(plyr.name,16),bg|txt);
+				listFrame.putmsg(printPadded("<hidden>",16),bg|txt);
 			}
 			else {
-				listFrame.putmsg(printPadded("<hidden>",16),bg|txt);
+				listFrame.putmsg(printPadded(plyr.name,16),bg|txt);
 			}
 			listFrame.putmsg("\xDD",BG_BLACK|fg);
 			
