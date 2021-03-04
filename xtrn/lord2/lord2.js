@@ -2,9 +2,7 @@
 
 // TODO: More optimal horizontal lightbars
 // TODO: Save player after changes in case process crashes
-// TODO: run NOTIME in HELP.REF on idle timeout
 // TODO: Detect disconnections better
-// TODO: Move other players on screen during battles?
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -1024,13 +1022,13 @@ function run_ref(sec, fname)
 				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
 					return;
 
-				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:getvar(l[0])});
+				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:replace_svars(getvar(l[0])}));
 			}
 
 			enemy = {
 				name:getvar(l[0]),
-				see:getvar(l[1]),
-				killstr:getvar(l[2]),
+				see:replace_svars(getvar(l[1])),
+				killstr:replace_svars(getvar(l[2])),
 				sex:parseInt(getvar(l[3]), 10),
 				defence:parseInt(getvar(l[9]), 10),
 				gold:parseInt(getvar(l[10]), 10),
@@ -3274,7 +3272,6 @@ function online_battle(op, attack_first) {
 						if (player.p[1] < 1) {
 							player.p[1] = 0;
 							player.put();
-							// TODO: Dead notification, etc...
 							run_ref('die', 'gametxt.ref');
 							ret = 'LOST';
 							doneBattle = true;
