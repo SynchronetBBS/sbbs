@@ -610,6 +610,7 @@ function run_ref(sec, fname)
 			// Turn red for other players, and run @#busy if other player interacts
 			// this toggles battle...
 			player.battle = 1;
+			player.put();
 			update_update();
 		},
 		'buymanager':function(args) {
@@ -2266,6 +2267,7 @@ function move_player(xoff, yoff) {
 				run_ref(s.refsection, s.reffile);
 				player.battle = 0;
 				update_update();
+				player.put();
 				if (pending_timeout !== undefined)
 					handle_timeout(pending_timeout);
 			}
@@ -2288,6 +2290,7 @@ function move_player(xoff, yoff) {
 			run_ref(map.refsection, map.reffile);
 			player.battle = 0;
 			update_update();
+			player.put();
 			if (pending_timeout !== undefined)
 				handle_timeout(pending_timeout);
 			while (enemy !== undefined)
