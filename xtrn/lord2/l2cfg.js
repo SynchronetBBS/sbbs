@@ -199,7 +199,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 				lw(space_pad('`r1`2X: `%'+(x+1)+' `2Y: `%'+(y+1), 14) + space_pad('`2Type: `%'+typestr(), 25) + '`r0');
 			}
 
-			mapindex = world.mapdatindex[mapnum - 1];
+			mapindex = world.mapdatindex[mapnum] - 1;
 			if (save.map[mapindex] !== undefined) {
 				map = save.map[mapindex];
 			}
