@@ -723,7 +723,7 @@ function run_ref(sec, fname)
 							}
 						}
 					} while (m != null);
-					choices.push(l);
+					choices.push(replace_svars(l));
 					cmap.push(i);
 				});
 			}
