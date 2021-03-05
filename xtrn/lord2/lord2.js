@@ -1022,7 +1022,7 @@ function run_ref(sec, fname)
 				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
 					return;
 
-				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:replace_svars(getvar(l[0])}));
+				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:replace_svars(getvar(l[0]))});
 			}
 
 			enemy = {
@@ -2237,12 +2237,15 @@ function move_player(xoff, yoff) {
 			player.y = start.y;
 			player.map = start.map;
 			map = load_map(player.map);
+			if (world.hideonmap[player.map] === 0)
+				player.lastmap = player.map;
 		}
 		else {
 			draw_map();
 			redraw_bar(true);
 			update();
 		}
+		player.put();
 	}
 	else {
 		player.lastx = player.x;
@@ -2272,6 +2275,7 @@ function move_player(xoff, yoff) {
 				}
 				player.x = s.warptox;
 				player.y = s.warptoy;
+				player.put();
 			}
 			else if (s.reffile !== '' && s.refsection !== '') {
 				run_ref(s.refsection, s.reffile);
