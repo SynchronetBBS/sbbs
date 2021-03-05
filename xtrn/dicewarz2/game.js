@@ -21,10 +21,11 @@ function open() {
 	splash("dicewarz2.bin");
 }
 function close() {
+	client.disconnect();
+	splash("exit.bin");
 	console.ctrlkey_passthru=oldpass;
 	bbs.sys_status&=~SS_MOFF;
 	bbs.sys_status&=~SS_PAUSEOFF;
-	splash("exit.bin");
 }
 function loadGraphic(filename) {
 	var f=new Frame(1,1,80,24,undefined,frame);
@@ -101,7 +102,7 @@ function lobby() {
 	}	
 	function main() {
 		var hotkeys=true;
-		while(1) {
+		while(!js.terminated) {
 			cycle();
 			var cmd=input.getkey(hotkeys);
 			if(typeof cmd == "object") {
@@ -698,7 +699,7 @@ function playGame(gameNumber) {
 	}
 	function main()	{
 		
-		while(1) {
+		while(!js.terminated) {
 			cycle();
 			var cmd=input.getkey(hotkeys);
 			if(cmd === undefined)
