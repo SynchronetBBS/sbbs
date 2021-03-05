@@ -1148,7 +1148,7 @@ var vars = {
 	'`*':{type:'const', val:dk.connection.node},
 	x:{type:'fn', get:function() { return player.x }, set:function(x) { player.x = clamp_integer(x, 's8'); } },
 	y:{type:'fn', get:function() { return player.y }, set:function(y) { player.y = clamp_integer(y, 's8'); } },
-	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16') } },
+	map:{type:'fn', get:function() { return player.map }, set:function(map) { player.map = clamp_integer(map, 's16'); if (world.hideonmap[player.map] === 0) player.lastmap = player.map; } },
 	dead:{type:'fn', get:function() { return player.dead }, set:function(dead) { player.dead = clamp_integer(dead, 's8') } },
 	sexmale:{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
 	narm:{type:'fn', get:function() { return player.armournumber }, set:function(narm) { player.armournumber = clamp_integer(narm, 's8') } },
