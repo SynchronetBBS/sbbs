@@ -1247,9 +1247,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 
 	if(JSREPORT_IS_WARNING(report->flags)) {
 		if(JSREPORT_IS_STRICT(report->flags))
-			warning="strict warning";
+			warning="strict warning ";
 		else
-			warning="warning";
+			warning="warning ";
 		log_level = LOG_WARNING;
 	} else {
 		warning=nulstr;
@@ -1276,6 +1276,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 
     if((js_cx = JS_NewContext(*runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return NULL;
+	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
 	memset(&js_callback,0,sizeof(js_callback));

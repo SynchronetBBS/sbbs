@@ -66,6 +66,7 @@
 #define JAVASCRIPT_GC_INTERVAL		100
 #define JAVASCRIPT_LOAD_PATH		"load"
 #define JAVASCRIPT_LOAD_PATH_LIST	"load_path_list"
+#define JAVASCRIPT_OPTIONS			0xC810	// JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING
 
 struct js_callback;
 typedef struct js_callback {
