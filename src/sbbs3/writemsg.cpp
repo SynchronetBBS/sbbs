@@ -1312,6 +1312,16 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 {
 	char str[128], dest[MAX_PATH + 1], src[MAX_PATH + 1], *tp, *sp, *p;
 	bool result = false;
+	char dir[MAX_PATH + 1];
+
+	if(to == 0)
+		SAFEPRINTF2(dir, "%sfile/%04u.out", cfg.data_dir, from);
+	else
+		SAFEPRINTF2(dir, "%sfile/%04u.in", cfg.data_dir, to);
+	if(mkpath(dir) != 0) {
+		errormsg(WHERE, ERR_MKDIR, dir, 0);
+		return false;
+	}
 
 	SAFECOPY(str, subj);
 	tp=str;
@@ -1322,10 +1332,7 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 		if(!sp) sp=strrchr(tp,'\\');
 		if(sp) tp=sp+1;
 		if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
-			if(to == 0)
-				SAFEPRINTF3(dest,"%sfile/%04u.out/%s", cfg.data_dir, from, tp);
-			else
-				SAFEPRINTF3(dest,"%sfile/%04u.in/%s", cfg.data_dir, to, tp);
+			SAFEPRINTF2(dest, "%s/%s", dir, tp);
 			SAFEPRINTF3(src,"%sfile/%04u.in/%s", cfg.data_dir, from, tp);
 			if(mv(src, dest, /* copy */true) != 0)
 				return false;
@@ -1387,10 +1394,14 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 
 	if(subject == NULL) {
 		subject = subj;
-		SAFEPRINTF(subj, "Fwd: %s", orgmsg->subj);
-		bputs(text[SubjectPrompt]);
-		if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM))
-			return false;
+		if(orgmsg->hdr.auxattr & MSG_FILEATTACH)
+			SAFECOPY(subj, orgmsg->subj);
+		else {
+			SAFEPRINTF(subj, "Fwd: %s", orgmsg->subj);
+			bputs(text[SubjectPrompt]);
+			if(!getstr(subj, sizeof(subj) - 1, K_LINE | K_EDIT | K_AUTODEL | K_TRIM))
+				return false;
+		}
 	}
 
 	memset(&msg, 0, sizeof(msg));
