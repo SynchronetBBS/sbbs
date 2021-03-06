@@ -1069,6 +1069,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 									console.clear();
 									if(!bbs.forward_msg(list[current], dest))
 										alert("failed");
+									pause();
 								}
 							}
 							break;
