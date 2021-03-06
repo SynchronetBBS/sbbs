@@ -854,6 +854,9 @@ enum {
 	,SpinningCursor8
 	,SpinningCursor9
 	,HowManyColumns
+	,InternetMailSent
+	,FidoNetMailSent
+	,QWKNetMailSent
 
 	,TOTAL_TEXT
 };
