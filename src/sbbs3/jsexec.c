@@ -29,6 +29,7 @@
 #include <termios.h>
 #endif
 
+#define STARTUP_INI_BITDESC_TABLES
 #include "sbbs.h"
 #include "ciolib.h"
 #include "ini_file.h"
@@ -45,6 +46,7 @@ static const char*	strJavaScriptMaxBytes		="JavaScriptMaxBytes";
 static const char*	strJavaScriptTimeLimit		="JavaScriptTimeLimit";
 static const char*	strJavaScriptGcInterval		="JavaScriptGcInterval";
 static const char*	strJavaScriptYieldInterval	="JavaScriptYieldInterval";
+static const char*	strJavaScriptOptions		="JavaScriptOptions";
 
 js_startup_t	startup;
 JSRuntime*	js_runtime;
@@ -54,6 +56,7 @@ js_callback_t	cb;
 scfg_t		scfg;
 char*		text[TOTAL_TEXT];
 ulong		js_max_bytes=JAVASCRIPT_MAX_BYTES;
+ulong		js_opts = JAVASCRIPT_OPTIONS;
 FILE*		confp;
 FILE*		errfp;
 FILE*		nulfp;
@@ -700,6 +703,28 @@ js_putenv(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
+// Forked from mozilla/js/src/shell/js.cpp: AssertEq()
+static JSBool
+js_AssertEq(JSContext *cx, uintN argc, jsval *vp)
+{
+    if (!(argc == 2 || (argc == 3 && JSVAL_IS_STRING(JS_ARGV(cx, vp)[2])))) {
+        JS_ReportError(cx, "assertEq: missing or invalid args");
+        return JS_FALSE;
+    }
+
+    jsval *argv = JS_ARGV(cx, vp);
+    JSBool same;
+    if (!JS_SameValue(cx, argv[0], argv[1], &same))
+        return JS_FALSE;
+    if (!same) {
+		JS_ReportError(cx, "not equal");
+        return JS_FALSE;
+    }
+    JS_SET_RVAL(cx, vp, JSVAL_VOID);
+    return JS_TRUE;
+}
+
+
 static jsSyncMethodSpec js_global_functions[] = {
 	{"log",				js_log,				1},
 	{"read",			js_read,            1},
@@ -710,13 +735,14 @@ static jsSyncMethodSpec js_global_functions[] = {
     {"write",           js_write,           0},
     {"writeln",         js_writeln,         0},
     {"print",           js_writeln,         0},
-    {"printf",          jse_printf,          1},	
+    {"printf",          jse_printf,         1},	
 	{"alert",			js_alert,			1},
 	{"prompt",			js_prompt,			1},
 	{"confirm",			js_confirm,			1},
 	{"deny",			js_deny,			1},
 	{"chdir",			js_chdir,			1},
 	{"putenv",			js_putenv,			1},
+	{"assertEq",		js_AssertEq,		2},
     {0}
 };
 
@@ -817,9 +843,7 @@ static BOOL js_init(char** env)
 
     if((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(FALSE);
-#ifdef JSDOOR
-	JS_SetOptions(js_cx, JSOPTION_JIT | JSOPTION_METHODJIT | JSOPTION_COMPILE_N_GO | JSOPTION_PROFILING);
-#endif
+	JS_SetOptions(js_cx, js_opts);
 	JS_BEGINREQUEST(js_cx);
 
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
@@ -1138,6 +1162,7 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 	cb->gc_interval		= iniGetInteger(ini, section, strJavaScriptGcInterval		, cb->gc_interval);
 	cb->yield_interval	= iniGetInteger(ini, section, strJavaScriptYieldInterval	, cb->yield_interval);
 	cb->auto_terminate	= iniGetBool(ini, section, "AutoTerminate"					, cb->auto_terminate);
+	js_opts				= iniGetBitField(ini, section, strJavaScriptOptions			, js_options, js_opts);
 }
 
 /*********************/

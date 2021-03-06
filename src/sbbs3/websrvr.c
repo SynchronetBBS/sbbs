@@ -5754,9 +5754,11 @@ js_initcx(http_session_t *session)
 
     if((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 		return(NULL);
+	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
-	lprintf(LOG_DEBUG,"%04d JavaScript: Context created",session->socket);
+	lprintf(LOG_DEBUG,"%04d JavaScript: Context created with options: %lx"
+		,session->socket, (long)startup->js.options);
 
     JS_SetErrorReporter(js_cx, js_ErrorReporter);
 

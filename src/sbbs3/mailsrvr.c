@@ -2257,7 +2257,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 	*result = 0;
 	do {
 		if(*js_runtime==NULL) {
-			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %lu bytes\n"
+			lprintf(LOG_DEBUG,"%04d %s JavaScript: Creating runtime: %lu bytes"
 				,sock, log_prefix, startup->js.max_bytes);
 
 			if((*js_runtime = jsrt_GetNew(startup->js.max_bytes, 1000, __FILE__, __LINE__))==NULL)
@@ -2267,6 +2267,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		if(*js_cx==NULL) {
 			if((*js_cx = JS_NewContext(*js_runtime, JAVASCRIPT_CONTEXT_STACK))==NULL)
 				return FALSE;
+			JS_SetOptions(*js_cx, startup->js.options);
 		}
 		JS_BEGINREQUEST(*js_cx);
 
