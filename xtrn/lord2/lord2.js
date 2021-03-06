@@ -1040,25 +1040,25 @@ function insane_run_ref(sec, fname)
 			}
 
 			enemy = {
-				name:getvar(l[0]),
-				see:replace_svars(getvar(l[1])),
-				killstr:replace_svars(getvar(l[2])),
-				sex:parseInt(getvar(l[3]), 10),
-				defence:parseInt(getvar(l[9]), 10),
-				gold:parseInt(getvar(l[10]), 10),
-				experience:parseInt(getvar(l[11]), 10),
-				hp:parseInt(getvar(l[12]), 10),
-				maxhp:parseInt(getvar(l[12]), 10),
+				name:getvar(l[1]),
+				see:replace_svars(getvar(l[3])),
+				killstr:replace_svars(getvar(l[5])),
+				sex:parseInt(getvar(l[7]), 10),
+				defence:parseInt(getvar(l[15]), 10),
+				gold:parseInt(getvar(l[17]), 10),
+				experience:parseInt(getvar(l[19]), 10),
+				hp:parseInt(getvar(l[21]), 10),
+				maxhp:parseInt(getvar(l[21]), 10),
 				attacks:[]
 			};
-			add_attack(l[4]);
-			add_attack(l[5]);
-			add_attack(l[6]);
-			add_attack(l[7]);
-			add_attack(l[8]);
-			split_ref(l[13], 'win');
-			split_ref(l[14], 'lose');
-			split_ref(l[15], 'run');
+			add_attack(l[9]);
+			add_attack(l[10]);
+			add_attack(l[11]);
+			add_attack(l[12]);
+			add_attack(l[13]);
+			split_ref(l[23], 'win');
+			split_ref(l[25], 'lose');
+			split_ref(l[27], 'run');
 		},
 		'graphics':function(args) {
 			// TODO: Sets the graphics support level (3 is ANSI)
