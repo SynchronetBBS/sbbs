@@ -1324,10 +1324,8 @@ function insane_run_ref(sec, fname)
 			var fn = fname;
 			var ret;
 
-			if (args.length > 1 && args[1].toLowerCase() === 'in') {
+			if (args.length > 1 && args[1].toLowerCase() === 'in')
 				fn = replace_vars(args[2]);
-				return;
-			}
 			if (insane_run_ref(s, fn, true) === 'ROUTINEABORT')
 				return 'ROUTINEABORT';
 		},
