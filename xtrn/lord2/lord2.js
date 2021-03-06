@@ -255,7 +255,7 @@ function insane_run_ref(sec, fname)
 	function getlines() {
 		var ret = [];
 
-		while (line < files[fname].lines.length && files[fname].lines[line+1].search(/^\s*@/) === -1) {
+		while (line < (files[fname].lines.length - 1) && files[fname].lines[line+1].search(/^\s*@/) === -1) {
 			// NOTE: "Comments" are not special in any way (see top of loop in main body of insane_run_ref()
 			//if (files[fname].lines[line+1].search(/^\s*;/) === -1)
 				ret.push(files[fname].lines[line+1]);
