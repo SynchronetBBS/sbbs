@@ -3,6 +3,7 @@
 // TODO: More optimal horizontal lightbars
 // TODO: Save player after changes in case process crashes
 // TODO: Detect disconnections better
+// TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -1951,7 +1952,7 @@ function chat(op)
 			sw('  ');
 			l = clean_str(dk.console.getstr({len:72, attr:new Attribute(31), input_box:true, crlf:false, timeout:idle_timeout * 1000}));
 			lastkey = time();
-			lw('`r0`2`r');
+			lw('`r0`2\r');
 			dk.console.cleareol();
 			switch (l.toUpperCase()) {
 				case 'X':
