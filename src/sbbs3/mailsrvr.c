@@ -811,18 +811,18 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			charset = "IBM437";
 	}
 
-	/* Default MIME Content-Type for non-Internet messages */
-	if(msg->from_net.type!=NET_INTERNET && msg->content_type==NULL) {
-		sockprintf(socket,prot,sess, "Content-Type: text/plain; charset=%s", charset);
-		sockprintf(socket,prot,sess, "Content-Transfer-Encoding: 8bit");
-	}
-
 	if(strListCount(file_list)) {	/* File attachments */
         mimeheaders(socket,prot,sess,mime_boundary);
         sockprintf(socket,prot,sess,"");
         mimeblurb(socket,prot,sess,mime_boundary);
         sockprintf(socket,prot,sess,"");
         mimetextpartheader(socket,prot,sess,mime_boundary, msg->text_subtype, charset);
+	} else {
+		/* Default MIME Content-Type for non-Internet messages */
+		if(msg->from_net.type!=NET_INTERNET && msg->content_type==NULL) {
+			sockprintf(socket,prot,sess, "Content-Type: text/plain; charset=%s", charset);
+			sockprintf(socket,prot,sess, "Content-Transfer-Encoding: 8bit");
+		}
 	}
 	if(!sockprintf(socket,prot,sess,""))	/* Header Terminator */
 		return(0);
