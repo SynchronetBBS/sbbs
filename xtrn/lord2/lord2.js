@@ -1858,7 +1858,7 @@ function mail_check(messenger)
 	// TODO: Not sure what happens on windows if someone else has the file open...
 	// We likely need a file mutex here.
 	file_delete(f.name)
-	file_rename(fn, f.name);
+	file_remove(fn, f.name);
 	if (!f.open('r'))
 		throw new Error('Unable to open '+f.name);
 	while(1) {
