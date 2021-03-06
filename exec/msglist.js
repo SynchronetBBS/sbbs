@@ -1066,6 +1066,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 								console.clearline();
 								var dest = prompt("To", "", K_NOCRLF);
 								if(dest) {
+									console.clear();
 									if(!bbs.forward_msg(list[current], dest))
 										alert("failed");
 								}
