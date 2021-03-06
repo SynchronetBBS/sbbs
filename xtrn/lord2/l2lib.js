@@ -802,7 +802,7 @@ function broken_displen(str)
 {
 	var i;
 
-	str = expand_ticks(replace_vars(replace_svars(str)));
+	str = expand_ticks(replace_vars(str));
 	return str.length;
 }
 
@@ -1026,7 +1026,7 @@ function handle_lordcodes(str)
 }
 
 function lw(str) {
-	str = replace_vars(str);
+	str = replace_vars_only(str);
 	handle_lordcodes(str);
 }
 
@@ -1302,7 +1302,7 @@ function expand_ticks(str)
 	return str;
 }
 
-function replace_vars(str)
+function replace_vars_only(str)
 {
 	if (typeof str !== 'string')
 		return str;
@@ -1317,12 +1317,12 @@ function replace_vars(str)
 	return str;
 }
 
-function replace_svars(str)
+function replace_vars(str)
 {
 	if (typeof str !== 'string')
 		return str;
 	str = str.replace(/([Ss]?&[A-Za-z]+)/g, function(m, r1) { return getvar(r1, true); });
-	return str;
+	return replace_vars_only(str);
 }
 
 function getoffset(x, y) {
