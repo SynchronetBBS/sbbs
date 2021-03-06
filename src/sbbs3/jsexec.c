@@ -1148,6 +1148,7 @@ int parseLogLevel(const char* p)
 	return DEFAULT_LOG_LEVEL;
 }
 
+#ifndef JSDOOR
 void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 {
 	log_level = iniGetLogLevel(ini, section, "LogLevel" , log_level);
@@ -1164,6 +1165,7 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 	cb->auto_terminate	= iniGetBool(ini, section, "AutoTerminate"					, cb->auto_terminate);
 	js_opts				= iniGetBitField(ini, section, strJavaScriptOptions			, js_options, js_opts);
 }
+#endif
 
 /*********************/
 /* Entry point (duh) */
@@ -1404,12 +1406,14 @@ int main(int argc, char **argv, char** env)
 			}
 			continue;
 		}
+#ifndef JSDOOR
 		char ini_section[MAX_PATH + 1];
 		module=argv[argn];
 		SAFECOPY(ini_section, getfname(module));
 		if((p = getfext(ini_section)) != NULL)
 			*p = 0;
 		get_ini_values(ini, ini_section, &cb);
+#endif
 	}
 
 	if(umask_val >= 0)
