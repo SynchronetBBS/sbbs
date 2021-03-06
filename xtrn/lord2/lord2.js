@@ -297,7 +297,7 @@ function insane_run_ref(sec, fname, refret)
 		'getkey':function(args) {
 			if (!dk.console.waitkey(0))
 				setvar(args[0], '_');
-			lastkey = now();
+			lastkey = time();
 			setvar(args[0], dk.console.getkey());
 		},
 		'goto':function(args) {
@@ -1947,7 +1947,7 @@ function chat(op)
 			}
 		}
 		if (dk.console.waitkey(game.delay)) {
-			lastkey = now();
+			lastkey = time();
 			sw('  ');
 			l = clean_str(dk.console.getstr({len:72, attr:new Attribute(31), input_box:true, crlf:false, timeout:idle_timeout * 1000}));
 			lastkey = time();
