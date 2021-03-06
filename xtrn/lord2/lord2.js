@@ -229,24 +229,24 @@ function yes_no(y, title, question) {
 
 function run_ref(sec, fname)
 {
+	var refret = {itemexit:false};
 	calldepth = 0;
-	insane_run_ref(sec, fname);
+	return insane_run_ref(sec, fname, refret);
 }
 
 var calldepth = 0;
-function insane_run_ref(sec, fname)
+function insane_run_ref(sec, fname, refret)
 {
 	var line;
 	var m;
 	var cl;
 	var args;
 	var ret;
-	var refret;
 
 	if (++calldepth > 2)
 		calldepth = 2;
 	if (calldepth < 1)
-		return;
+		return refret;
 
 	fname = fname.toLowerCase();
 	sec = sec.toLowerCase();
@@ -1292,7 +1292,7 @@ function insane_run_ref(sec, fname)
 			rp.forEach(function(pl, i) {
 				player = pl;
 				// TODO: It is assumed this takes a stack frame.
-				insane_run_ref(format('`p%02d', getvar(args[2])), fname);
+				insane_run_ref(format('`p%02d', getvar(args[2])), fname, refret);
 			});
 			player = op;
 		},
@@ -1326,8 +1326,8 @@ function insane_run_ref(sec, fname)
 
 			if (args.length > 1 && args[1].toLowerCase() === 'in')
 				fn = replace_vars(args[2]);
-			if (insane_run_ref(s, fn, true) === 'ROUTINEABORT')
-				return 'ROUTINEABORT';
+			ret = insane_run_ref(s, fn, refret);
+			return ret;
 		},
 		'routineabort':function(args) {
 			// TODO: Implemented in line parser
@@ -1687,6 +1687,11 @@ rescan:
 		 * an '@' is either ignored or used by the previous command.
 		 * That means we can just toss out overthing before parsing the next command.
 		 */
+		// Returns false to abort.
+		if (calldepth < 1)
+			break;
+		if (ret === false)
+			break;
 		getlines();
 		line++;
 		if (line >= files[fname].lines.length)
@@ -1697,11 +1702,11 @@ rescan:
 		if (cl.search(/^\s*@closescript/i) !== -1)
 			break;
 		if (cl.search(/^\s*@itemexit/i) !== -1) {
-			refret = 'ITEMEXIT';
+			refret.itemexit = true;
 			continue;
 		}
 		if (cl.search(/^\s*@routineabort/i) !== -1) {
-			refret = 'ROUTINEABORT';
+			calldepth = 1;
 			continue;
 		}
 		if (cl.search(/^;/) !== -1)
@@ -1719,18 +1724,12 @@ rescan:
 		while (args !== undefined && args.length > 1 && args[args.length - 1] === '')
 			args.pop();
 		ret = handle(args);
-		// Returns false to abort.
-		if (calldepth < 1)
-			ret = 'ROUTINEABORT';
-		if (ret === 'ROUTINEABORT') {
-			refret = ret;
-			ret = false;
+		if (typeof ret === 'object') {
+			if (ret.itemexit)
+				refret.itemexit = true;
 		}
-		if (ret === false)
-			break;
 	}
-	if (--calldepth < 1)
-		refret == 'ROUTINEABORT';
+	calldepth--;
 	return refret;
 }
 
@@ -2510,11 +2509,11 @@ newpage:
 								}
 								break;
 						}
-						if (ret === undefined || ret !== 'ITEMEXIT')
+						if (ret === undefined || !ret.itemexit)
 							continue rescan;
-						if (ret == 'ITEMEXIT') {
+						if (ret.itemexit) {
 							dk.console.attr.value = attr;
-							return ret;
+							return 'ITEMEXIT';
 						}
 						// Fallthrough(?)
 					case 'Q':
