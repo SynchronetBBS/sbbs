@@ -229,12 +229,24 @@ function yes_no(y, title, question) {
 
 function run_ref(sec, fname)
 {
+	calldepth = 0;
+	insane_run_ref(sec, fname);
+}
+
+var calldepth = 0;
+function insane_run_ref(sec, fname)
+{
 	var line;
 	var m;
 	var cl;
 	var args;
 	var ret;
 	var refret;
+
+	if (++calldepth > 2)
+		calldepth = 2;
+	if (calldepth < 1)
+		return;
 
 	fname = fname.toLowerCase();
 	sec = sec.toLowerCase();
@@ -244,7 +256,8 @@ function run_ref(sec, fname)
 		var ret = [];
 
 		while (line < files[fname].lines.length && files[fname].lines[line+1].search(/^\s*@/) === -1) {
-			if (files[fname].lines[line+1].search(/^\s*;/) === -1)
+			// NOTE: "Comments" are not special in any way (see top of loop in main body of insane_run_ref()
+			//if (files[fname].lines[line+1].search(/^\s*;/) === -1)
 				ret.push(files[fname].lines[line+1]);
 			line++;
 		}
@@ -283,9 +296,9 @@ function run_ref(sec, fname)
 		},
 		'getkey':function(args) {
 			if (!dk.console.waitkey(0))
-				return '_';
+				setvar(args[0], '_');
 			lastkey = now();
-			return dk.console.getkey();
+			setvar(args[0], dk.console.getkey());
 		},
 		'goto':function(args) {
 			// NOTE: This doesn't use getvar() because GREEN.REF has 'do goto bank'
@@ -561,6 +574,7 @@ function run_ref(sec, fname)
 				if (tmp.Record >= 200) {
 					pfile.file.position = pfile.RecordLength * 200;
 					pfile.truncate(pfile.RecordLength * 200);
+					// TODO: What is the stack depth here?
 					run_ref('full','gametxt.ref');
 					exit(0);
 				}
@@ -1277,7 +1291,8 @@ function run_ref(sec, fname)
 
 			rp.forEach(function(pl, i) {
 				player = pl;
-				run_ref(format('`p%02d', getvar(args[2])), fname);
+				// TODO: It is assumed this takes a stack frame.
+				insane_run_ref(format('`p%02d', getvar(args[2])), fname);
 			});
 			player = op;
 		},
@@ -1306,25 +1321,26 @@ function run_ref(sec, fname)
 		},
 		'routine':function(args) {
 			var s = replace_vars(args[0]).toLowerCase();
-			if (args.length === 1) {
-				run_ref(s, fname);
+			var fn = fname;
+			var ret;
+
+			if (args.length > 1 && args[1].toLowerCase() === 'in') {
+				fn = replace_vars(args[2]);
 				return;
 			}
-			if (args[1].toLowerCase() === 'in') {
-				run_ref(s, args[2]);
-				return;
-			}
-			throw new Error('Unable to parse routine "'+s+'" at '+fname+':'+line);
+			if (insane_run_ref(s, fn, true) === 'ROUTINEABORT')
+				return 'ROUTINEABORT';
 		},
 		'routineabort':function(args) {
-			// TODO: Implement this.
-			throw new Error('RoutineAbort is not implemented');
+			// TODO: Implemented in line parser
 		},
 		'run':function(args) {
 			// TODO: Test if the ref that's ran actually returns here, or if it simple aborts execution!
 			var f = fname;
 			var s = replace_vars(args[0]).toLowerCase();
 
+			if (calldepth > 1)
+				return false;
 			if (args.length > 2 && args[1].toLowerCase() === 'in') {
 				f = getvar(args[2]).toLowerCase();
 			}
@@ -1334,10 +1350,17 @@ function run_ref(sec, fname)
 				load_ref(f);
 			if (files[f] === undefined)
 				throw new Error('Unable to load REF "'+f+'"');
-			if (files[f].section[s] === undefined)
-				throw new Error('Unable to find run section '+s+' in '+f+' at '+fname+':'+line);
-			fname = f;
-			line = files[f].section[s].line;
+			if (files[f].section[s] === undefined) {
+				sln('');
+				lln('ERROR = '+s+' not found in '+fname+'!');
+				// Throwing this error breaks NPCs in baraks.
+				// But you still end up with no map and looking bad.
+				//throw new Error('Unable to find run section '+s+' in '+f+' at '+fname+':'+line);
+			}
+			else {
+				fname = f;
+				line = files[f].section[s].line;
+			}
 		},
 		'savecursor':function(args) {
 			saved_cursor = {x:scr.pos.x, y:scr.pos.y};
@@ -1661,16 +1684,26 @@ rescan:
 	line = files[fname].section[sec].line;
 
 	while (1) {
+		/* 
+		 * Actually ANY LINE where the first non-whitespace is not
+		 * an '@' is either ignored or used by the previous command.
+		 * That means we can just toss out overthing before parsing the next command.
+		 */
+		getlines();
 		line++;
 		if (line >= files[fname].lines.length)
-			return refret;
+			break;
 		cl = files[fname].lines[line].replace(/^\s*/,'');
 		if (cl.search(/^@#/) !== -1)
-			return refret;
+			break;
 		if (cl.search(/^\s*@closescript/i) !== -1)
-			return refret;
+			break;
 		if (cl.search(/^\s*@itemexit/i) !== -1) {
 			refret = 'ITEMEXIT';
+			continue;
+		}
+		if (cl.search(/^\s*@routineabort/i) !== -1) {
+			refret = 'ROUTINEABORT';
 			continue;
 		}
 		if (cl.search(/^;/) !== -1)
@@ -1688,7 +1721,19 @@ rescan:
 		while (args !== undefined && args.length > 1 && args[args.length - 1] === '')
 			args.pop();
 		ret = handle(args);
+		// Returns false to abort.
+		if (calldepth < 1)
+			ret = 'ROUTINEABORT';
+		if (ret === 'ROUTINEABORT') {
+			refret = ret;
+			ret = false;
+		}
+		if (ret === false)
+			break;
 	}
+	if (--calldepth < 1)
+		refret == 'ROUTINEABORT';
+	return refret;
 }
 
 function load_player()
