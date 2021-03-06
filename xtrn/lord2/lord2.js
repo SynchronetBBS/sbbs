@@ -4,6 +4,7 @@
 // TODO: Save player after changes in case process crashes
 // TODO: Detect disconnections better
 // TODO: Clear flags after a timeout... stuck with battle bit and you're locked out.
+// TODO: Does using an item take a turn?
 
 js.yield_interval = 0;
 js.load_path_list.unshift(js.exec_dir+"dorkit/");
@@ -78,7 +79,7 @@ function redraw_bar(updstatus)
 
 function update_bar(str, msg, timeout)
 {
-	str = replace_vars(replace_svars(str));
+	str = replace_vars(str);
 	var dl = displen(str);
 	var l;
 
@@ -273,7 +274,7 @@ function insane_run_ref(sec, fname, refret)
 				return;
 			if (f.open('ab')) {
 				cl = files[fname].lines[line];
-				f.write(replace_vars(replace_svars(cl))+'\r\n');
+				f.write(replace_vars(cl)+'\r\n');
 				f.close();
 			}
 		},
@@ -560,7 +561,7 @@ function insane_run_ref(sec, fname, refret)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			lw(replace_vars(replace_svars(cl)));
+			lw(replace_vars(cl));
 		},
 	};
 	var handlers = {
@@ -738,7 +739,7 @@ function insane_run_ref(sec, fname, refret)
 							}
 						}
 					} while (m != null);
-					choices.push(replace_svars(l));
+					choices.push(replace_vars(l));
 					cmap.push(i);
 				});
 			}
@@ -1037,13 +1038,13 @@ function insane_run_ref(sec, fname, refret)
 				if (l.length < 2 || l[0].toUpperCase() === 'NONE' || l[1].toUpperCase() === 'NONE')
 					return;
 
-				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:replace_svars(getvar(l[0]))});
+				enemy.attacks.push({strength:parseInt(getvar(l[1]), 10), hitaction:replace_vars(getvar(l[0]))});
 			}
 
 			enemy = {
 				name:getvar(l[1]),
-				see:replace_svars(getvar(l[3])),
-				killstr:replace_svars(getvar(l[5])),
+				see:replace_vars(getvar(l[3])),
+				killstr:replace_vars(getvar(l[5])),
 				sex:parseInt(getvar(l[7]), 10),
 				defence:parseInt(getvar(l[15]), 10),
 				gold:parseInt(getvar(l[17]), 10),
@@ -1256,7 +1257,7 @@ function insane_run_ref(sec, fname, refret)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			morestr = replace_vars(replace_svars(cl));
+			morestr = replace_vars(cl);
 		},
 		'nocheck':function(args) {
 			// We don't really support this because there's no need for it.
@@ -1283,7 +1284,7 @@ function insane_run_ref(sec, fname, refret)
 			if (line > files[fname].lines.length)
 				return;
 			cl = files[fname].lines[line];
-			progname = replace_vars(replace_svars(cl));
+			progname = replace_vars(cl);
 		},
 		'rank':function(args) {
 			// TODO: No real clue what the filename is for...
@@ -1468,7 +1469,7 @@ rescan:
 
 			if (args.length === 0) {
 				l.forEach(function(l) {
-					lln(replace_vars(replace_svars(l)));
+					lln(replace_vars(l));
 				});
 			}
 			else if (args[0].toLowerCase() === 'scroll') {
@@ -1564,7 +1565,7 @@ rescan:
 			if (!f.open('ab'))
 				throw new Error('Unable to open '+f.name+' at '+fname+':'+line);
 			getlines().forEach(function(l) {
-				f.write(replace_vars(replace_svars(l))+'\r\n');
+				f.write(replace_vars(l)+'\r\n');
 			});
 			f.close();
 		},
