@@ -2856,6 +2856,7 @@ void event_thread(void* arg)
 					sbbs->putnodedat(i,&node);
 				}
 			}
+			sbbs->event_code = nulstr;
 
 			/* QWK Networking Call-out semaphores */
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
