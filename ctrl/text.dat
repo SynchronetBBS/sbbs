@@ -1024,3 +1024,6 @@
 "\xfa\xf9\xfe\xf9"                                        842 SpinningCursor9
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal columns "\      843 HowManyColumns
 	"[\1wAuto\1y]: \1n"
+"\1[\1n\1mInternet mail sent to \1h%s\1n\r\n"              844 InternetMailSent
+"\1[\1n\1mFido NetMail sent to \1h%s @%s\1n\r\n"           845 FidoNetMailSent
+"\1[\1n\1mQWK NetMail sent to \1h%s (%s)\1n\r\n"           846 QWKNetMailSent
