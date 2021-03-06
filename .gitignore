@@ -18,6 +18,7 @@ gcc.*
 *.drc
 *.tds
 src/sbbs3/ctrl/sbbsctrl.mak
+src/cscope.files
 3rdp/src
 localdefs.mk
 data
