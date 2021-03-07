@@ -1,4 +1,52 @@
-let __v4_forum_offset = 0; // Feels hacky
+function LoadingMessage() {
+
+    let pos = 0;
+    let cursor = ['|', '/', '—', '\\' ];
+    let evt;
+
+    const flc = document.getElementById('forum-list-container');
+    
+    this.start = function () {
+        const elem = document.querySelector('div[data-loading-template]').cloneNode(true);
+        const sc = elem.querySelector('span[data-spinning-cursor]');
+        elem.removeAttribute('hidden');
+        flc.appendChild(elem);
+        evt = setInterval(() => {
+            sc.innerHTML = cursor[pos % cursor.length];
+            pos++;
+        }, 250);
+    }
+    
+    this.stop = function () {
+        flc.removeChild(flc.querySelector('div[data-loading-template]'));
+        clearInterval(evt);
+    }
+
+}
+
+function formatMessageDate(t) {
+    return (new Date(t * 1000)).toLocaleString();
+}
+
+async function setScanCfg(sub, cfg) {
+	var opts = [
+        'scan-cfg-off',
+        'scan-cfg-new',
+        'scan-cfg-youonly',
+    ];
+	const data = await v4_get(`./api/forum.ssjs?call=set-scan-cfg&sub=${sub}&cfg=${cfg}`);
+	if (!data.success) return;
+	opts.forEach((e, i) => {
+        const elem = document.getElementById(`${e}`);
+        if (cfg == i) {
+            elem.classList.add('btn-primary');
+            elem.classList.remove('btn-default');
+        } else {
+            elem.classList.add('btn-default');
+            elem.classList.remove('btn-primary');
+        }
+	});
+}
 
 async function addNew(sub) {
 
@@ -170,61 +218,15 @@ function addPollField(type, target) {
 
 }
 
-async function setScanCfg(sub, cfg) {
-	var opts = [
-        'scan-cfg-off',
-        'scan-cfg-new',
-        'scan-cfg-youonly',
-    ];
-	const data = await v4_get(`./api/forum.ssjs?call=set-scan-cfg&sub=${sub}&cfg=${cfg}`);
-	if (!data.success) return;
-	opts.forEach((e, i) => {
-        const elem = document.getElementById(`${e}`);
-        if (cfg == i) {
-            elem.classList.add('btn-primary');
-            elem.classList.remove('btn-default');
-        } else {
-            elem.classList.add('btn-default');
-            elem.classList.remove('btn-primary');
-        }
-	});
-}
 
-function LoadingMessage() {
+// Message list
 
-    let pos = 0;
-    let cursor = ['|', '/', '—', '\\' ];
-    let evt;
-
-    const flc = document.getElementById('forum-list-container');
-    
-    this.start = function () {
-        const elem = document.querySelector('div[data-loading-template]').cloneNode(true);
-        const sc = elem.querySelector('span[data-spinning-cursor]');
-        elem.removeAttribute('hidden');
-        flc.appendChild(elem);
-        evt = setInterval(() => {
-            sc.innerHTML = cursor[pos % cursor.length];
-            pos++;
-        }, 250);
-    }
-    
-    this.stop = function () {
-        flc.removeChild(flc.querySelector('div[data-loading-template]'));
-        clearInterval(evt);
-    }
-
-}
-
-function loading(l) {
-    var flc = document.getElementById('forum-list-container');
-    if (l) {
-        var elem = document.querySelector('div[data-loading-template]').cloneNode(true);
-        elem.removeAttribute('hidden');
-        flc.appendChild(elem);
-    } else {
-        flc.removeChild(flc.querySelector('div[data-loading-template]'));
-    }
+function lastVisibleMessage() {
+    const lastMessageElement = Array.from(document.querySelectorAll('li[data-message]')).pop();
+    if (!lastMessageElement) return null;
+    const ret = parseInt(lastMessageElement.getAttribute('data-message'), 10);
+    if (isNaN(ret) || ret < 0) return null;
+    return ret;
 }
 
 async function listMessages(sub, thread, count, after) {
@@ -234,24 +236,46 @@ async function listMessages(sub, thread, count, after) {
     dlmm.setAttribute('hidden', true);
     blmm.setAttribute('disabled', true);
 
-    const lm = new LoadingMessage();
-    lm.start();
     let _data;
+    const loadingMessage = new LoadingMessage();
+    loadingMessage.start();
     let data = JSON.parse(localStorage.getItem(`${sub}-${thread}`));
-    if (data === null) {
-        data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}`);
+    if (data === null) { // We have no local cache
+        if (after) { // User clicked "Load more" but we don't know what the newest visible message is meant to be
+            const lastMessage = lastVisibleMessage();
+            if (lastMessage === null) { // No messages in view, so start at the beginning
+                data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}`);
+            } else { // Messages are in view, but we have no cache
+                // Rebuild cache and get next 'count' messages
+                data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}&after=${lastMessage}&reload=true`);
+                const lmi = data.findIndex(e => e.number === lastMessage);
+                if (lmi > -1) _data = data.slice(lmi + 1); // If our lastMessage is cached, set _data to everything after it
+            }
+        } else { // A clean first load of the page, or reload of first 'count' messages
+            data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}`);
+        }
     } else if (after) {
         _data = await v4_fetch_jsonl(`./api/forum.ssjs?call=get-thread&sub=${sub}&thread=${thread}&count=${count}&after=${data[data.length - 1].number}`);
         data = data.concat(_data);
+    } else {
+        // TO DO: check for any newer messages than the newest we have on hand; prepend them
     }
     localStorage.setItem(`${sub}-${thread}`, JSON.stringify(data));
-    lm.stop();
+    loadingMessage.stop();
 
+    // TO DO: what about poll messages? If they may show up in (_data || data) then they need to be handled differently and a template created in forum.xjs
     const users = [];
     (_data || data).forEach((e, i) => {
         let akey;
-        const elem = document.getElementById('forum-message-template').cloneNode(true);
-        elem.id = elem.id.replace(/template$/, e.number);
+        let elem;
+        let append = false;
+        const elemId = `forum-message-${e.number}`;
+        if ((elem = document.getElementById(elemId)) === null) {
+            elem = document.getElementById('forum-message-template').cloneNode(true);
+            elem.id = elemId;
+            elem.setAttribute('data-message', e.number);
+            append = true;
+        }
         elem.querySelector('a[data-message-anchor]').id = e.number;
         if (i == 0 && !after && e.subject !== undefined) elem.querySelector('strong[data-message-subject]').innerHTML = e.subject;
         elem.querySelector('strong[data-message-from]').innerHTML = e.from;
@@ -270,7 +294,7 @@ async function listMessages(sub, thread, count, after) {
         elem.querySelector('div[data-message-body]').innerHTML = e.body;
         elem.querySelector('a[data-direct-link]').setAttribute('href', `#${e.number}`);
         elem.removeAttribute('hidden');
-        document.getElementById('forum-list-container').appendChild(elem);
+        if (append) document.getElementById('forum-list-container').appendChild(elem);
         if (users.indexOf(akey) < 0) users.push(akey);
     });
 
@@ -280,6 +304,9 @@ async function listMessages(sub, thread, count, after) {
     if (Avatars) Avatars.draw(users);
 
 }
+
+
+// Thread list
 
 function onThreadStats(data) {
 
@@ -348,6 +375,74 @@ function onThreadStats(data) {
 
 }
 
+function lastVisibleThread() {
+    const lastThreadElement = Array.from(document.querySelectorAll('li[data-thread]')).pop();
+    if (!lastThreadElement) return null;
+    const ret = parseInt(lastThreadElement.getAttribute('data-thread'), 10);
+    if (isNaN(ret) || ret < 0) return null;
+    return ret;
+}
+
+async function listThread(e) {
+    let elem;
+    let append = false;
+    const elemId = `forum-thread-link-${e.id}`;
+
+    if ((elem = document.getElementById(elemId)) === null) {
+        elem = document.getElementById('forum-thread-link-template').cloneNode(true);
+        elem.id = elemId;
+        elem.setAttribute('data-thread', e.id);
+        elem.setAttribute('href', `${elem.getAttribute('href')}&thread=${e.id}`);
+        append = true;
+    }
+
+    elem.querySelector('strong[data-thread-subject]').innerHTML = e.subject;
+    elem.querySelector('strong[data-thread-from]').innerHTML = e.first.from;
+    elem.querySelector('span[data-thread-date-start]').innerHTML = formatMessageDate(e.first.when_written_time);
+
+    if (e.messages > 1) {
+        elem.querySelector('strong[data-message-count]').innerHTML = e.messages - 1;
+        if (e.messages == 2) {
+            elem.querySelector('span[data-suffix-reply]').removeAttribute('hidden');
+        } else {
+            elem.querySelector('span[data-suffix-replies]').removeAttribute('hidden');
+        }
+        elem.querySelector('strong[data-last-from]').innerHTML = e.last.from;
+        elem.querySelector('span[data-last-time]').innerHTML = formatMessageDate(e.last.when_written_time);
+        elem.querySelector('div[data-replies]').removeAttribute('hidden');
+    }
+
+    const stats = elem.querySelector('div[data-stats]');
+    if (e.unread) {
+        const sub = await sbbs.forum.getSub(e.sub);
+        const urm = stats.querySelector('span[data-unread-messages]');
+        if (urm !== null) { // If user is guest, this element will not exist
+            urm.innerHTML = e.unread;
+            if (sub.scan_cfg&(1<<1) || sub.scan_cfg&5 || sub.scan_cfg&(1<<8)) {
+                urm.classList.add('scanned');
+            } else {
+                urm.classList.remove('scanned');
+            }
+            urm.removeAttribute('hidden');
+            stats.removeAttribute('hidden');
+        }
+    }
+    if (e.votes.total) {
+        if (e.votes.up.t) {
+            stats.querySelector('span[data-upvotes]').innerHTML = `${e.votes.up.p}/${e.votes.up.t}`;
+            stats.querySelector('span[data-upvotes-badge]').style.setProperty('display', '');
+        }
+        if (e.votes.down.t) {
+            stats.querySelector('span[data-downvotes]').innerHTML = `${e.votes.down.p}/${e.votes.down.t}`;
+            stats.querySelector('span[data-downvotes-badge]').style.setProperty('display', '');
+        }
+        stats.removeAttribute('hidden');
+    }
+
+    elem.removeAttribute('hidden');
+    if (append) document.getElementById('forum-list-container').appendChild(elem);
+}
+
 async function listThreads(sub, count, after) {
 
     const dlmt = document.getElementById('forum-load-more-threads');
@@ -357,144 +452,181 @@ async function listThreads(sub, count, after) {
 
     const lm = new LoadingMessage();
     lm.start();
-    let _data;
-    let data = JSON.parse(localStorage.getItem(`${sub}-threadList`));
-    if (data === null) {
-        data = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}`);
+    let response;
+    let data = await sbbs.forum.getThreads(v => v.sub === sub);
+    if (data === undefined || !data.length) { // We have no local cache
+        if (after) { // User clicked "Load more" but we don't know what the newest visible thread is meant to be
+            const lastThread = lastVisibleThread();
+            if (lastThread === null) { // No threads in view, so start at the beginning
+                response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}`);
+            } else { // Threads are in view, but we have no cache
+                // Rebuild cache and get next 'count' threads
+                response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}&after=${lastThread}&reload=true`);
+            }
+        } else { // A clean first load of the page, or reload of first 'count' threads
+            response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}`);
+        }
     } else if (after) {
-        _data = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}&after=${data.threads[data.threads.length - 1].id}`);
-        data.total = _data.total;
-        data.threads = data.threads.concat(_data.threads);
+        response = await v4_get(`./api/forum.ssjs?call=list-threads&sub=${sub}&count=${count}&after=${data[data.length - 1].id}`);
+        data = data.concat(response.threads);
+    } else {
+        // TO DO: check for NEWER threads than what we have on hand
+        // fetch however many newer threads there are
+        // prepend them to the list
     }
-    localStorage.setItem(`${sub}-threadList`, JSON.stringify(data));
     lm.stop();
 
-    (_data || data).threads.forEach(e => {
-
-        const elem = document.getElementById('forum-thread-link-template').cloneNode(true);
-        elem.id = elem.id.replace(/template$/, e.id);
-        elem.setAttribute('href', `${elem.getAttribute('href')}&thread=${e.id}`);
-        elem.querySelector('strong[data-thread-subject]').innerHTML = e.subject;
-        elem.querySelector('strong[data-thread-from]').innerHTML = e.first.from;
-        elem.querySelector('span[data-thread-date-start]').innerHTML = formatMessageDate(e.first.when_written_time);
-
-		if (e.messages > 1) {
-			elem.querySelector('strong[data-message-count]').innerHTML = e.messages - 1;
-			if (e.messages == 2) {
-				elem.querySelector('span[data-suffix-reply]').removeAttribute('hidden');
-			} else {
-				elem.querySelector('span[data-suffix-replies]').removeAttribute('hidden');
-			}
-			elem.querySelector('strong[data-last-from]').innerHTML = e.last.from;
-            elem.querySelector('span[data-last-time]').innerHTML = formatMessageDate(e.last.when_written_time);
-            elem.querySelector('div[data-replies]').removeAttribute('hidden');
-		}
-
-        const stats = elem.querySelector('div[data-stats]');
-        if (e.unread) {
-			const urm = stats.querySelector('span[data-unread-messages]');
-			if (urm !== null) { // If user is guest, this element will not exist
-                urm.innerHTML = e.unread;
-                if (data.scan_cfg&(1<<1) || data.scan_cfg&5 || data.scan_cfg&(1<<8)) {
-                    urm.classList.add('scanned');
-                } else {
-                    urm.classList.remove('scanned');
-                }
-				urm.removeAttribute('hidden');
-				stats.removeAttribute('hidden');
-			}
-        }
-		if (e.votes.total) {
-			if (e.votes.up.t) {
-				stats.querySelector('span[data-upvotes]').innerHTML = `${e.votes.up.p}/${e.votes.up.t}`;
-				stats.querySelector('span[data-upvotes-badge]').style.setProperty('display', '');
-			}
-			if (e.votes.down.t) {
-				stats.querySelector('span[data-downvotes]').innerHTML = `${e.votes.down.p}/${e.votes.down.t}`;
-				stats.querySelector('span[data-downvotes-badge]').style.setProperty('display', '');
-			}
-			stats.removeAttribute('hidden');
-		}
-
-        elem.removeAttribute('hidden');
-        document.getElementById('forum-list-container').appendChild(elem);
-
-    });
+    if (response) {
+        response.threads.forEach(e => {
+            sbbs.forum.setThread(e);
+            listThread(e);
+        });
+    } else {
+        data.forEach(listThread);
+    }
 
     dlmt.removeAttribute('hidden');
     blmt.removeAttribute('disabled');
 
 }
 
-async function listGroups() {
 
-    loading(true);
-    const data = await v4_get(`./api/forum.ssjs?call=list-groups`);
-    loading(false);
+// Sub list
 
-    data.forEach(e => {
-        const elem = document.getElementById('forum-group-link-template').cloneNode(true);
-        elem.id = elem.id.replace(/template$/, e.index);
-        elem.setAttribute('href', `${elem.getAttribute('href')}&group=${e.index}`);
-        elem.querySelector('strong[data-group-name]').innerHTML = e.name;
-        elem.querySelector('span[data-unread-unscanned]').innerHTML = '';
-        elem.querySelector('span[data-unread-scanned]').innerHTML = '';
-        elem.querySelector('span[data-group-description]').innerHTML = e.description;
-        elem.querySelector('span[data-group-sub-count]').innerHTML = e.sub_count;
-        document.getElementById('forum-list-container').appendChild(elem);
-    });
-
-}
-
-async function listSubs(group) {
-
-    loading(true);
-    const data = await v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`);
-    loading(false);
-
-    data.forEach(e => {
-        const elem = document.getElementById('forum-sub-link-template').cloneNode(true);
-        elem.id = elem.id.replace(/template$/, e.code);
-        elem.setAttribute('href', `${elem.getAttribute('href')}&sub=${e.code}`);
-        elem.querySelector('strong[data-sub-name]').innerHTML = e.name;
-        elem.querySelector('p[data-sub-description]').innerHTML = e.description;
-        document.getElementById('forum-list-container').appendChild(elem);
-    });
-
-}
-
-function onNewestSubMessage(sub, msg) {
-    const elem = document.getElementById(`forum-sub-link-${sub}`);
+function showNewestMessage(elem, msg) {
     elem.querySelector('strong[data-newest-message-subject]').innerHTML = msg.subject;
     elem.querySelector('span[data-newest-message-from]').innerHTML = msg.from;
     elem.querySelector('span[data-newest-message-date]').innerHTML = formatMessageDate(msg.date);
     elem.querySelector('span[data-newest-message-container]').removeAttribute('hidden');
 }
 
+async function onNewestSubMessage(sub, msg) {
+    const rec = await sbbs.forum.getSub(sub);
+    if (rec !== undefined) {
+        rec.newest_message = msg;
+        sbbs.forum.setSub(rec);
+    }
+    const elem = document.getElementById(`forum-sub-link-${sub}`);
+    if (elem !== null) showNewestMessage(elem, msg);
+}
+
 async function getNewestMessagePerSub(group) {
     const data = await v4_get(`./api/forum.ssjs?call=get-newest-message-per-sub&group=${group}`);
-    Object.entries(data).forEach(([k, v]) => {
-        onNewestSubMessage(k, v)
-    });
+    Object.entries(data).forEach(([k, v]) => onNewestSubMessage(k, v));
 }
 
-function formatMessageDate(t) {
-    return (new Date(t * 1000)).toLocaleString();
-}
-
-function onGroupUnreadCount(data) {
-    Object.entries(data).forEach(([k, v]) => {
-        const elem = document.getElementById(`forum-group-link-${k}`);
-        if (v.total - v.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = v.total - v.scanned;
-        if (v.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = v.scanned;
-    });
+function showSubUnreadCount(elem, s, u) { // sub link element, sub code, { total, scanned, newest }
+    if (u.total - u.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = u.total - u.scanned;
+    if (u.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = u.scanned;
 }
 
 function onSubUnreadCount(data) {
-    Object.entries(data).forEach(([k, v]) => {
+    Object.entries(data).forEach(async ([k, v]) => {
+        const sub = await sbbs.forum.getSub(k);
+        if (sub !== undefined) {
+            sub.unread = v;
+            await sbbs.forum.setSub(sub);
+        }
         const elem = document.getElementById(`forum-sub-link-${k}`);
-        if (v.total - v.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = v.total - v.scanned;
-        if (v.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = v.scanned;
-        if (v.newest) onNewestSubMessage(k, v.newest);
+        if (elem !== null) showSubUnreadCount(elem, k, v);
     });
+}
+
+function onSubList(data) {
+    data.sort((a, b) => a.index < b.index ? -1 : 1).forEach(e => {
+        let elem;
+        let append = false;
+        const elemId = `forum-sub-link-${e.code}`;
+        if ((elem = document.getElementById(elemId)) === null) {
+            elem = document.getElementById('forum-sub-link-template').cloneNode(true);
+            elem.id = elem.id.replace(/template$/, e.code);
+            elem.setAttribute('href', `${elem.getAttribute('href')}&sub=${e.code}`);
+            append = true;
+        }
+        elem.querySelector('strong[data-sub-name]').innerHTML = e.name;
+        elem.querySelector('p[data-sub-description]').innerHTML = e.description;
+        showNewestMessage(elem, e.newest);
+        if (e.unread !== null) showSubUnreadCount(elem, e.code, e.unread);
+        if (append) document.getElementById('forum-list-container').appendChild(elem);
+    });
+}
+
+async function listSubs(group) {
+
+    const lm = new LoadingMessage();
+    lm.start();
+ 
+    let data = await sbbs.forum.getSubs(v => v.grp_index === group);
+    if (data === undefined || !data.length) {
+        data = await v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`);
+        data.forEach(async e => await sbbs.forum.setSub(e));
+    } else {
+        // TO DO: add a TTL for this data instead of refreshing every time
+        v4_get(`./api/forum.ssjs?call=list-subs&group=${group}`).then(onSubList);
+    }
+    lm.stop();
+    onSubList(data);
+
+}
+
+
+// Group list
+
+function showGroupUnreadCount(elem, u) {
+    if (u.total - u.scanned > 0) elem.querySelector('span[data-unread-unscanned]').innerHTML = u.total - u.scanned;
+    if (u.scanned > 0) elem.querySelector('span[data-unread-scanned]').innerHTML = u.scanned;
+}
+
+function onGroupUnreadCount(data) {
+    Object.entries(data).forEach(async ([k, v]) => {
+        const elem = document.getElementById(`forum-group-link-${k}`);
+        showGroupUnreadCount(elem, v);
+        const grp = await sbbs.forum.getGroup(parseInt(k, 10));
+        if (grp !== undefined) {
+            grp.unread = v;
+            await sbbs.forum.setGroup(grp);
+        }
+    });
+}
+
+function onGroupList(data) {
+    data.forEach(e => {
+        let elem;
+        let append = false;
+        const elemId = `forum-group-link-${e.index}`;
+        if ((elem = document.getElementById(elemId)) === null) {
+            elem = document.getElementById('forum-group-link-template').cloneNode(true);
+            elem.id = elem.id.replace(/template$/, e.index);
+            elem.setAttribute('href', `${elem.getAttribute('href')}&group=${e.index}`);
+            append = true;
+        }
+        elem.querySelector('strong[data-group-name]').innerHTML = e.name;
+        elem.querySelector('span[data-unread-unscanned]').innerHTML = '';
+        elem.querySelector('span[data-unread-scanned]').innerHTML = '';
+        elem.querySelector('span[data-group-description]').innerHTML = e.description;
+        elem.querySelector('span[data-group-sub-count]').innerHTML = e.sub_count;
+        if (e.unread !== null) showGroupUnreadCount(elem, e.unread);
+        if (append) document.getElementById('forum-list-container').appendChild(elem);
+    });
+}
+
+async function listGroups() {
+    const lm = new LoadingMessage();
+    lm.start();
+    let data = await sbbs.forum.getGroups();
+    if (data === undefined) {
+        console.debug('groups not in cache, fetching');
+        data = await v4_get('./api/forum.ssjs?call=list-groups');
+        data.forEach(async e => await sbbs.forum.setGroup(e));
+    } else {
+        // TO DO: add a TTL for this data instead of refreshing every time
+        v4_get('./api/forum.ssjs?call=list-groups').then(async data => {
+            for (const e of data) {
+                await sbbs.forum.setGroup(e);
+            }
+            onGroupList(data);
+        });
+    }
+    onGroupList(data);
+    lm.stop();
 }
