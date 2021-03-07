@@ -3839,7 +3839,7 @@ function do_map()
 	var al;
 	var oldmore;
 
-	if (map === undefined || map.Record !== world.mapdatindex[player.map - 1] - 1)
+	if (map === undefined || map === null || map.Record !== world.mapdatindex[player.map - 1] - 1)
 		map = load_map(player.map);
 	draw_map();
 	redraw_bar(true);
