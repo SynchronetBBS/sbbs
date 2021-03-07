@@ -57,9 +57,7 @@ function validateSession(cookies) {
 
 		try {
 			usr.number = cookie[0];
-			if (usr.number < 1) {
-				throw 'Invalid user number ' + cookie[0] + ' in cookie.';
-			}
+			if (usr.number < 1) throw new Error('Invalid user number ' + cookie[0] + ' in cookie.');
 		} catch (err) {
 			log(LOG_DEBUG, err);
 			continue;
@@ -67,9 +65,7 @@ function validateSession(cookies) {
 
 		var session = getSession(usr.number);
 		if (typeof session !== 'object') continue;
-		if (typeof session.key != 'string' || session.key != cookie[1]) {
-			continue;
-		}
+		if (typeof session.key != 'string' || session.key != cookie[1]) continue;
 
 		var _usr = authenticate(usr.alias, usr.security.password, false);
 		_usr = undefined;
@@ -78,8 +74,7 @@ function validateSession(cookies) {
 		if (session.session_start === undefined || time() - parseInt(session.session_start, 10) > settings.timeout) {
 			setSessionValue(usr.number, 'session_start', time());
 			if(!usr.is_sysop || (system.settings&SYS_SYSSTAT)) {
-				const logonlist_lib = load({}, 'logonlist_lib.js');
-				logonlist_lib.add({ node: 'Web' });
+				load({}, 'logonlist_lib.js').add({ node: 'Web' });
 			}
 		}
 		break;
@@ -102,16 +97,16 @@ function destroySession(cookies) {
 
 			usr.number = cookie[0];
 			if(usr.number < 1) {
-				throw 'Invalid user number ' + cookie[0] + ' in cookie.';
+				throw new Error('Invalid user number ' + cookie[0] + ' in cookie.');
 			}
 
 			var session = getSession(usr.number);
 			if (typeof session !== 'object') {
-				throw 'Invalid session for user #' + usr.number;
+				throw new Error('Invalid session for user #' + usr.number);
 			}
 
 			if (session.key !== cookie[1]) {
-				throw 'Invalid session key for user #' + user.number;
+				throw new Error('Invalid session key for user #' + user.number);
 			}
 
 			set_cookie(
