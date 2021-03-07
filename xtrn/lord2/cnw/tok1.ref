@@ -1,0 +1,335 @@
+; Script file TOK1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE teledoor 000000430
+@DECLARE lockdoor 000000588
+@DECLARE baseguard 000000659
+@DECLARE krystal 000000921
+@DECLARE kstart 000001256
+@DECLARE stash 000002736
+@DECLARE krystal2 000003928
+@DECLARE krystal3 000005420
+@DECLARE k3start 000005494
+@DECLARE rand 000006353
+@DECLARE end 000007337
+@NOCHECK
+; End of .REF index
+
+@#TeleDoor
+@dataload tok.idf &playernum `p20
+@if `p20 is 3 then do
+@begin
+@closescript
+@end
+@do moveback
+@do saybar
+The door seems to be locked...
+
+@#LockDoor
+@do moveback
+@do saybar
+The door seems to be locked...
+@#BaseGuard
+@dataload TOK.IDF &playernum `p20
+@if `p20 more 0 then do
+@begin
+@do saybar
+The guard smiles and lets you pass.
+@closescript
+@end
+@if `p20 is 0 then do
+@begin
+@do moveback
+@do saybar
+The guard rudely pushes you back.
+@closescript
+@end
+
+@#Krystal
+;Her Ladyship! :)
+@busy
+@do moveback
+@do `p20 is 0
+@dataload TOK.IDF &playernum `p21
+
+@if `p21 is 1 then do
+@begin
+@run Krystal2 in TOK1.REF
+@end
+
+@if `p21 is 2 then do
+@begin
+@run Krystal2 in TOK1.REF
+@end
+
+@if `p21 is 3 then do
+@begin
+@run Krystal3 in TOK1.REF
+@end
+
+@do `p20 is 0
+@do `p22 is 0
+@label KStart
+@do `v01 is 1
+@show
+`r0`c`r1  `%Lady Krystal the Enchantress  `r0
+
+      `2You nearly wretch from the heavy smell of inscence that heavely covers
+      `2the room.  Across the room, on an thrown made of ivory, a woman sits.
+      `2As you approch, you can make out her features and are awestruck by her
+      `2beauty.
+
+      `2She looks at you and raises an eyebrow.  `0"You have business with me
+      `0me, warrior?"
+
+@choice
+<`p20 1 By the Gods!  You're beautiful!
+<`p22 1 I heard you're stashing cash in the basement...
+<`p22 1 Are you really breading monsters in the basement?
+=`p22 1 I'll help you and rid your basement of this Evil!
+Blush and leave.
+@if responce is 5 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 4 then do
+@begin
+@do write
+`\`\
+@show
+      `0"Thank the Gods!  A hero to save us!  I'll send word to the basement
+      `0guard to let you pass!"
+@key
+@datasave TOK.IDF &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 3 then do
+@begin
+@show
+`c`r0  `%`0"No! I'm not breading monsters!"
+@display Stash in TOK1.REF
+@key
+@do `p22 is 1
+@do goto KStart
+@end
+
+@if responce is 2 then do
+@begin
+@show
+`c`r0  `%The Stash of Krystals
+
+@display Stash in TOK1.REF
+@key
+@do `p22 is 1
+@do goto KStart
+@end
+
+@if responce is 1 then do
+@begin
+@show
+`\
+      `0"Why thank-you, s&boy.  Now, you have business with me?
+
+@key
+@do `p20 is 1
+@do goto KStart
+@end
+
+@#Stash
+
+      `2She sighs loudly.  `0"You see, warrior, when I heard of the `4Dragon
+      `4Tooth Clan`0, I knew that eventually, there would be a time for us all
+      `0to rise back against them.  So I started to hoard my magic krystals...
+`k
+      `$"Wait a minute...  You have magical krystals?  What do they look like?"
+`k
+      `2She looks upset at being interupted.  `0"Well, they look much like the
+      `0gems the barkeep in Greentree collects.  Anyway, I started to hoard them
+      `0in my basement."
+`k
+      `$"So you are storing riches in the basement!" `2you exclaim feeling
+      `2very intelligent.
+`k
+      `0"Will you please shut up and let me finish!?"
+`k
+      `$"Oh fine!"
+`k
+      `0"Now, as I was saying...  Oh yes, I started to hoard them in the
+      `0basement so they could be used in the upcoming war!  Unfortunately...
+      `0I hadn't fully assessed the power of the krystals...  They... well...
+`k
+      `$"They what?" `2you ask stupidly.
+`k
+      `2She blushes and continues, `0"They started to form into creatures!  They
+      `0then started to attack my people...  I think that some powerful evil
+      `0is at work here."
+@#Krystal2
+@do `v01 is 1
+@show
+`r0`c`r1  `%Lady Krystal the Enchantress  `r0
+
+      `2You nearly wretch from the heavy smell of inscence that heavely covers
+      `2the room.  Across the room, on an thrown made of ivory, a woman sits.
+      `2As you approch, you can make out her features and are awestruck by her
+      `2beauty.
+
+      `2She looks at you and smiles.  `0"You have rid my basement of Evil?"
+
+@choice
+=`p21 2 I have rid your basement of Evil, m'Lady.
+=`p21 1 I have yet to do so.
+@if responce is 2 then do
+@begin
+@do write
+`\`\
+@show
+      `0"Please hurry.  There isn't much time!"
+@key
+@drawmap
+@update
+@closescript
+@end
+
+@If responce is 1 then do
+@begin
+@show
+`r0`c`r1  `%VICTORY!  `r0
+
+      `%You tell the tale of you valient battle with the hoards of creatures
+      `%made of krystal and their leader, the Krystal Golem...  Leaving out,
+      `%of course, the part about taking some of the remains.
+
+      `0"You have done my keep a great service!"  `2She pauses and thinks.
+      `0"For your valor, I shall reward you!  You may use the teleportation
+      `0stone on top of the tower, you will recieve 3 gems, and you may ask
+      `0me for my magical aid when ever I can provide it!"
+
+      `4You get 3 gems and 20 quest points!
+
+      `%You feel you have done a good deed.  Alignment goes up by 10!
+
+@key
+@do `p18 + 20
+@do `p19 + 3
+@do `p07 + 10
+@datasave TOK.idf &playernum 3
+@drawmap
+@update
+@closescript
+@end
+
+@#Krystal3
+@datanewday TOK1.IDF
+@dataload TOK1.IDF &playernum `p22
+@label K3START
+@do `v01 is 1
+@show
+`r0`c`r1  `%Lady Krystal the Enchantress  `r0
+
+      `2You nearly wretch from the heavy smell of inscence that heavely covers
+      `2the room.  Across the room, on an thrown made of ivory, a woman sits.
+      `2As you approch, you can make out her features and are awestruck by her
+      `2beauty.
+
+      `2Lady Krystal smiles at you.  `0"My hero returns to talk!  Of what
+      `0do you wish to speak?" 
+
+@choice
+<`p20 1 By the Gods!  You're beautiful!
+<`p22 1 You said something about magical aid...
+Sorry, I need to leave.
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 1 then do
+@begin
+@show
+`\
+      `0"Why thank-you, `N.  Now, of what do you wish to speak?
+
+@key
+@do `p20 is 1
+@do goto K3Start
+@end
+
+@if responce is 2 then do
+@run Rand in TOK1.REF
+
+@#RAND
+@show
+`c
+     `%A Blessing
+
+      `2She smiles hugely at you.  (What a pleasent sight!)  `0"I did promise
+      `0you a blessing when I could, didn't I?"
+
+      `2You nod your head eagerly.
+
+@do write
+      `0"Well then, your blessing today is.`L.`L.`L.
+
+
+@do `v04 random 5 1
+
+@if `v04 is 2 then do
+@begin
+@do write
+  `0dexterity!"`\`\      `4You feel faster!`\
+@key
+@do `p05 + 2
+@do goto end
+@end
+
+@if `v04 is 3 then do
+@begin
+@do write
+  `0charm!"`\`\      `4You feel better looking!`\
+@key
+@do `p08 + 1
+@do goto end
+@end
+
+@if `v04 is 4 then do
+@begin
+@do write
+  `0morality!"`\`\      `4You feel like a better person!`\
+@key
+@do `p07 is + 5
+@do goto end
+@end
+
+@if `v04 is 5 then do
+@begin
+@do write
+  `0krystals!"`\`\      `4She gives you 2 gems!`\
+@key
+@do `p19 + 2
+@do goto end
+@end
+
+@if `v04 is 1 then do
+@begin
+@do write
+  `0strength!"`\`\      `4You feel stronger!`\
+@key
+@do `p04 + 3
+@do goto end
+@end
+
+@label end
+@if `v04 more 0 then do
+@begin
+@datasave TOK1.IDF &playernum 1
+@do `p22 is 1
+@run krystal3 in TOK1.REF
+@end
+

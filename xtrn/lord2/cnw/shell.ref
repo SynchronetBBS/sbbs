@@ -1,0 +1,244 @@
+; Script file SHELL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE game3 000000306
+@DECLARE g3 000000317
+@DECLARE shell 000001692
+@DECLARE guess 000002054
+@DECLARE g3help 000003589
+@DECLARE nogame 000003935
+@DECLARE nomore 000004190
+@NOCHECK
+; End of .REF index
+
+@#game3
+@label g3
+@if `p33 is 0 then do
+  @begin
+  @do goto nogame
+  @end
+@do `v01 is 1
+@do `p28 is 0
+@do `p30 is money
+@show
+`r0`c `r1 `%A Game Of 3 Shells `r0
+
+   `0How much would you like to bet?
+   `2(you have `$$`p30 `2and `0`p33 `2gambles left)
+
+@do write
+`x`x
+@choice
+Bet $5
+Bet $10
+Bet $20
+Bet $50
+Bet $100
+Ask for help on 3 Shells
+Return to the Other Games Menu
+Leave
+@if responce is 8 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 7 then do
+  @begin
+  @run othergames in knuckle.ref
+  @end
+
+@if responce is 6 then do
+  @begin
+  @do goto g3help
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 5
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do goto shell
+  @end
+
+@if responce is 2 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 10
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do goto shell
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 20
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do goto shell
+  @end
+
+@if responce is 4 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 50
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do goto shell
+  @end
+
+@if responce is 5 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 100
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do goto shell
+  @end
+
+@#shell
+@do `p25 random 3 1
+@if `p25 is 1 then do
+  @begin
+  @do `p20 is 1
+  @do `p21 is 0
+  @do `p22 is 0
+  @do goto guess
+  @end
+@if `p25 is 2 then do
+  @begin
+  @do `p21 is 1
+  @do `p20 is 0
+  @do `p22 is 0
+  @do goto guess
+  @end
+@if `p25 is 3 then do
+  @begin
+  @do `p22 is 1
+  @do `p20 is 0
+  @do `p21 is 0
+  @do goto guess
+  @end
+
+@#guess
+@pauseoff
+@displayfile shell.ans
+@pauseon
+@do `v01 is 1
+@do move 2 16
+@show
+@choice
+Shell #1
+Shell #2
+Shell #3
+@if responce is 1 then do
+  @begin
+  @if `p20 is 1 then do
+    @begin
+    @show
+`r0`c `r1 `%Way To Go! `r0
+
+  `0"Good choice, S&sir. You win `$$`p28`0," `2the employee tells you.
+
+`k
+    @do money + `p28
+    @do goto game3
+    @end
+  @if `p20 is 0 then do
+    @begin
+    @show
+`r0`c `r1 `%I'm Sorry! `r0
+
+  `0"Ohh, bad choice, S&sir. You lose `$$`p28`0," `2the employee tells you.
+
+`k
+    @do money - `p28
+    @do goto game3
+    @end
+  @end
+
+@if responce is 2 then do
+  @begin
+  @if `p21 is 1 then do
+    @begin
+    @show
+`r0`c `r1 `%Way To Go! `r0
+
+  `0"Good choice, S&sir. You win `$$`p28`0," `2the employee tells you.
+
+`k
+    @do money + `p28
+    @do goto game3
+    @end
+  @if `p21 is 0 then do
+    @begin
+    @show
+`r0`c `r1 `%I'm Sorry! `r0
+
+  `0"Ohh, bad choice, S&sir. You lose `$$`p28`0," `2the employee tells you.
+
+`k
+    @do money - `p28
+    @do goto game3
+    @end
+  @end
+
+@if responce is 3 then do
+  @begin
+  @if `p22 is 1 then do
+    @begin
+    @show
+`r0`c `r1 `%Way To Go! `r0
+
+  `0"Good choice, S&sir. You win `$$`p28`0," `2the employee tells you.
+
+`k
+    @do money + `p28
+    @do goto game3
+    @end
+  @if `p22 is 0 then do
+    @begin
+    @show
+`r0`c `r1 `%I'm Sorry! `r0
+
+  `0"Ohh, bad choice, S&sir. You lose `$$`p28`0," `2the employee tells you.
+
+`k
+    @do money - `p28
+    @do goto game3
+    @end
+  @end
+
+@#g3help
+@show
+`r0`c `r1`%Help On 3 Shells `r0
+
+    `03 Shells is a game of chance. A ball is hidden under a shell, the
+    shells are moved around, and then you must try to guess which shell
+    the ball is hidden under. If you guess correctly, then you win your
+    bet. Otherwise, you lose your bet. Good luck.
+
+`k
+@do goto game3
+
+@#nogame
+@show
+`r0`c `r1 `%Our Apologies `r0
+
+   `0"I'm sorry, but we can't allow you to gameble anymore today," `2a
+   casino employee tells you.
+
+   Looks like you're out of gambles. You'll have to come back tomorrow.
+
+`k
+@drawmap
+@update
+
+@#nomore

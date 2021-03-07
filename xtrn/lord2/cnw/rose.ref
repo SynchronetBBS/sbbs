@@ -1,0 +1,292 @@
+; Script file ROSE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE roses 000000520
+@DECLARE loadloop 000000552
+@DECLARE seeroses 000004593
+@DECLARE enter 000004707
+@DECLARE fred 000004771
+@DECLARE sign 000006829
+@DECLARE nomore 000006910
+@NOCHECK
+; End of .REF index
+
+;
+;  Updated by CNW for CNW.
+;
+;
+;  -Now has ansi/ascii roses art
+;  -you get charm if the player accepts the rose
+;  -added did flirt with player#, for listings.
+;
+;  --todo--
+;  -add npc support
+;
+@#roses
+@do `p22 is 0
+@label loadloop
+ @do `p22 + 1
+ @if `p22 > &totalaccounts then do
+        @begin
+        @closescript
+        @end
+ @dataload rose&playernum.idf `p22 `p25
+ @if `p25 is 0 then goto loadloop
+ @if `p25 is 52 then do
+  @begin
+  @do `p08 - 1
+  @datasave rose&playernum.idf `p22 0
+  @do goto loadloop
+  @end
+ @if `p25 is 53 then do
+  @begin
+  @do `p08 - 2
+  @do `p07 - 1
+  @datasave rose&playernum.idf `p22 0
+  @do goto loadloop
+  @end
+ @if `p25 is 51 then do
+  @begin
+  @do `p08 + 2
+  @datasave rose&playernum.idf `p22 0
+  @do goto loadloop
+  @end
+ @if `p25 is 50 then do
+  @begin
+  @do `p08 + 1
+  @datasave rose&playernum.idf `p22 0
+  @do goto loadloop
+  @end
+ @if `p25 > 0 then do
+        @begin
+        @do `s02 is getname `p22
+        @show
+`r0`c
+
+       `2 A very happy and determined messanger approaches you with
+    great excitement. 
+
+`k
+
+       `2"`%It's about time I have found you, I've been looking everywhere
+       for you. I've got something special for you from `s02.`2"
+
+`l`l`l`l`l`l`k
+        @displayfile rose`p25.ans
+        @do move 1 1
+        @show
+      `$-The Card-
+`$ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+`$³                          ³
+`$³                          ³
+`$³                          ³
+`$³                          ³
+`$ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+        @do move 2 3
+        @show
+    `%With love
+ `4From: `%`s02
+ `4To: `%`n
+        @do move 1 23
+        @key
+        @do `v01 is 1
+        @do move 1 1
+        @show
+      `$You react by:
+`$ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+`$³                          ³
+`$³                          ³
+`$³                          ³
+`$³                          ³
+`$ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ @do move 2 3
+ @choice
+`%Ignore it
+`%Send it BACK in disgust!
+`%Accept it
+`@Accept with great pleasure
+@if responce is 1 then do
+        @begin
+        @writefile mail\mail`p22.dat
+  `@Ralphie's Roses:
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+   `@Rose delivered to `n
+   `4Your act of kindness and love was totally ignore.
+   `$-1 Charm
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+ `\`\`\`k
+ `2You're losing your touch.
+ `l`k
+        @datasave rose&playernum.idf `p22 52
+        @CLEAR SCREEN
+        @do goto loadloop
+        @end
+@if responce is 2 then do
+        @begin
+        @writefile mail\mail`p22.dat
+  `@Ralphie's Roses:
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+   `@Rose delivered to `n
+   `4The rose was sent BACK to you! `n did not accept it.
+   `4S&he was very disgusted with your actions.
+   `$-2 Charm and -1 Alignment
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+ `\`\`\`k
+ `2Damn! that REALLY pisses you off!
+ `l`k
+        @datasave rose&playernum.idf `p22 53
+        @datasave rose`p22.idf &playernum `p25
+        @CLEAR SCREEN
+        @do goto loadloop
+        @end
+
+@if responce is 3 then do
+        @begin
+        @writefile mail\mail`p22.dat
+  `@Ralphie's Roses:
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+   `@Rose delivered to `n
+   `4Your rose was delivered and `n accepted your kindness.
+   `$+1 Charm
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+        @datasave rose`p22.idf &playernum 50
+        @datasave rose&playernum.idf `p22 0
+        @CLEAR SCREEN
+        @do goto loadloop
+        @end
+
+@if responce is 4 then do
+        @begin
+        @writefile mail\mail`p22.dat
+  `@Ralphie's Roses:
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+   `@Rose delivered to `n
+   `4Your rose was delivered and `n accepted your kindness with great
+   `4PLEASURE!
+   `$+2 Charm
+`0+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+        @datasave rose`p22.idf &playernum 51
+        @datasave rose&playernum.idf `p22 0
+        @CLEAR SCREEN
+        @do goto loadloop
+        @end
+@do goto loadloop
+ @end
+@end
+@closescript
+
+@#seeroses
+@do moveback
+@do saybar
+`$You could see a huge bed of beautiful `@red roses`$. 
+@end
+@closescript
+
+@#enter
+@do moveback
+@offmap
+@routine roses in rose.ref
+@label fred
+@do `v01 is 1
+@show
+`r0`c `r1 `%Ralphie's Roses & More `r0
+
+  `2As you walk in to this cozy little hut, you are greeted by a big, hairy man.
+
+  `0"Hi. I'm Ralphie. What can I get for you?"`2, asks.
+
+@do write
+`x`x
+@choice
+>&money 49 `%Buy a rose for `$$50
+<&money 50 `%Leave cuz you don't have enough.
+Nevermind
+@if responce is 3 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do `v01 is 1
+  @show
+`r0`c `r1 `%Say It With Flowers `r0
+
+  `$"I'd like to buy a rose please," `2you tell the man.
+
+  `0"Sure. It'll cost you `$$50 `0to buy a rose," `2says Ralphie.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+`%Buy the rose
+Leave
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+  
+@if responce is 1 then do
+  @begin
+  @show
+`r0`c
+  `$"Sure!"`2, you say, and then proceed to pay the man.
+
+  `2Who do you want to send it to?
+    @chooseplayer `p20
+
+@dataload rose`p20.idf &playernum `p21
+@if `p21 > 0 then do
+        @begin
+        @do `s02 is getname `p20
+        @show
+ `0"`$S&sir, you're already sending one to `%`s02 `$and is still on its way?`0"`\
+ `0"`$You can not send another one until the person receives the first one.`0"`\`\`k
+        @key
+        @do goto fred
+        @end
+    @if `p20 is &playernum then do
+        @begin
+        @show
+  `2You can't send yourself a rose!`\`\`k
+        @do goto fred
+        @end
+    @if `p20 is 0 then do
+      @begin
+      @show
+  `2You decide to keep your money - for now.`\`\`k
+      @do goto fred
+      @end
+    @do money - 50
+    @do `s02 is getname `p20
+@do `p25 random 10 1
+    @do addlog
+  `0`n`2 has sent `0`s02`2 a `@rose`2!
+    @routine seperate in gametxt.ref
+    @do `t72 is 1
+    @do `t71 is `p20
+    @datasave rose`p20.idf &playernum `p25
+    @show
+`\`\  `2Ok! The rose has been sent. `S02 `2will be notified.`\`\`k
+    @do goto fred
+    @end
+
+
+@#sign
+@do moveback
+@do saybar
+`%<ÄÄÄÄ Ralphie's Roses
+@end
+@closescript
+@#nomore
+

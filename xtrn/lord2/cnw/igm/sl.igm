@@ -1,0 +1,48 @@
+
+                The Crazy Man's House by Seth A. Robinson V1.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : Beta 6 or Higher
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  An IGM that is just a simple thing...
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM SL.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the screen with the TreeHouse and you will see a blue tree
+  right above... Walk into it and be transported to another screen and see
+  a few things..
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4Shangri La `2by `5Nicholas Morrissey `0(`!FLiNK`0)`2
+replacescreen: 1279 1 show
+
+replacescreen: 171 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, this is my second IGM and it was made in about 2 hours.. It's not
+  too shabby. If you don't want your users taking advantage of this, get rid
+  of it, cause a user can keep coming in and getting better stats (fixed in a
+  later version, I am too lazy to finish it now...
+
+                  BY: `5F`#L`%i`#N`5K

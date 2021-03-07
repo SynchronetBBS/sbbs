@@ -1,0 +1,414 @@
+; Script file BACKDOOR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE start 000000433
+@DECLARE barak 000000616
+@DECLARE barother 000002634
+@DECLARE fee 000003490
+@DECLARE turgon 000004312
+@DECLARE turgother 000006340
+@DECLARE bardonation 000007217
+@DECLARE turgdonation 000007813
+@DECLARE leave 000008402
+@DECLARE broke 000008524
+@DECLARE nomore 000008944
+@NOCHECK
+; End of .REF index
+
+@#start
+@do moveback
+@offmap
+@clear screen
+@show
+`9You quietly enter through the back door of the training center.
+@key
+@if bitcheck `t19 1 1 then goto turgon
+@do goto barak
+@#barak
+@pauseoff
+@clear screen
+@show
+`9Sitting behind the desk is Sauraman, Barak's accountant and record keeper.
+@key
+@show
+[0;1m[46C[0;33mÜÜÜÜÜ
+[43C[1;37mÛÛ[0;33mÛÛÛÛÛÛÛ[1;37mÛÛ
+[42CÛÛ[43m   [0;33mÛ[43m     [1;37;40mÛÛ
+[42CÛ[0;33mÛÛ[1;37;43m\ [0;33mÛÛ[43m  [1;37m- [0;33mÛ[1;37mÛ
+[43C[0;33mÛ[43m [1;34mø[0;33mÛÛ[43m [40mÛÛ[1;34;43mø [40m[A
+[53C[0;33mÛ
+[43CÛÛÛÛÛ[1;30;43m [D[0;33mÛÛÛÛÛ
+[44C[46mÛÛ[40mÛÛ[1;31;43m  [0;33;46mÛÛ[40m
+[1;34mHe looks at you with his[21C[0;33mßßÛ[1;37;43m [D[40m[A
+[49C[0;33mÛßß
+[15C[1;34mbeady little eyes.[10C____/ \____
+[41C/// ||||||| \\\
+[40C|||  |||||||  |||
+[41C\\\  |||||  ///
+[42C\\\/// \\\ [0;31mÝ[1;34m/
+[40C[0;35mÜ[1;37;45mßßßßßßß[0;30;45m³[1;37mßßßßßßß[0;35mÜ   [A
+[60C[1;34mÜÜ
+[32C[0;33m°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+[32C°°[8C[1;34m|||||||||||||[7C[0;33m°°
+[32C°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+[32C°°[7C[1;34m|||||||||||||||[6C[0;33m°°
+[32C°°[7C[1;34m|||||||||||||||[6C[0;33m°°[0m[255D
+@key
+@pauseon
+@clear screen
+@show
+`2"Can I help you, `N?"
+ 
+@do `v01 is 1
+@choice
+`%How do you know my name?
+`%What are you doing here?
+`%Sorry, wrong door.
+@if response is 3 then do
+@begin
+@do goto leave
+@end
+@if response is 1 then do
+@begin
+@show
+ 
+ 
+ 
+`2"It's my job to know everyone at the training center."
+@key
+@clear screen
+@do goto barak
+@end
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`2"Mostly I am doing this accursed paper work.  But I am also collecting
+gold for Barak's birthday present, and occasionally I provide other
+services."
+ 
+@key
+@do `v01 is 1
+@choice
+`%Sounds like fun.  See ya!
+`%I'd like to help with Barak's present.
+`%What other services?
+@if response is 1 then do
+@begin
+@do goto leave
+@end
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`2"Oh, how nice of you!  How much would you like to give me?"
+ 
+@do goto bardonation
+@end
+@if response is 3 then goto barother
+@#barother
+@clear screen
+@show
+`2"Well, sometimes I sell used watches, and sometimes I have information
+available."
+@key
+@show
+ 
+`2"But not right now."
+@key
+@show
+ 
+`2"What I can do is... umm.... alter the records a bit in your favor."
+@key
+@show
+ 
+`2"You see, Barak is too busy to remember who has and has not had a failed
+attempt in the training center each day."
+@key
+@clear screen
+@if `t04 is 0 then do
+@begin
+@show
+`2"I see here that you have not failed yet today.  But if you should fail,
+come see me.  One... shall we say 'mis-stroke'... of my pen, and you will
+get another chance."
+ 
+@key
+@do goto leave
+@end
+@if `t04 is 1 then do
+@begin
+@show
+`2"I see here that you have already failed in the center today.  But with
+one... shall we say 'mis-stroke'... of my pen, you can have another chance."
+ 
+@key
+@do goto fee
+@#fee
+@do `v01 is 1
+@choice
+`%No thanks.  That doesn't seem fair.
+`%What's in it for you?
+@if response is 1 then do
+@begin
+@do goto leave
+@end
+@clear screen
+@do `p20 is `p09
+@do `p20 * 500
+@show
+`2"Well, I don't get paid much here, so I must supplement my income somehow.
+Since I like you, I will only charge you `p20."
+ 
+@key
+@do `v01 is 1
+@choice
+`%That's too rich for my blood.
+`%That seems reasonable. Deal!
+@if response is 1 then do
+@begin
+@do goto leave
+@end
+@if `p20 > money then do
+@begin
+@do goto broke
+@end
+@clear screen
+@show
+`9Sauraman takes your money and quickly scratches through some writing in his
+record book.
+@do money - `p20
+@do `t04 is 0
+@key
+@show
+ 
+`2"Nice doing business with you `N.  And let's just keep this our
+little secret."
+@key
+@do goto leave
+ 
+@#turgon
+@pauseoff
+@clear screen
+@show
+`9Sitting behind the desk is Sauraman, Turgon's accountant and record keeper.
+@key
+@show
+[0;1m[46C[0;33mÜÜÜÜÜ
+[43C[1;37mÛÛ[0;33mÛÛÛÛÛÛÛ[1;37mÛÛ
+[42CÛÛ[43m   [0;33mÛ[43m     [1;37;40mÛÛ
+[42CÛ[0;33mÛÛ[1;37;43m\ [0;33mÛÛ[43m  [1;37m- [0;33mÛ[1;37mÛ
+[43C[0;33mÛ[43m [1;34mø[0;33mÛÛ[43m [40mÛÛ[1;34;43mø [40m[A
+[53C[0;33mÛ
+[43CÛÛÛÛÛ[1;30;43m [D[0;33mÛÛÛÛÛ
+[44C[46mÛÛ[40mÛÛ[1;31;43m  [0;33;46mÛÛ[40m
+[1;34mHe looks at you with his[21C[0;33mßßÛ[1;37;43m [D[40m[A
+[49C[0;33mÛßß
+[15C[1;34mbeady little eyes.[10C____/ \____
+[41C/// ||||||| \\\
+[40C|||  |||||||  |||
+[41C\\\  |||||  ///
+[42C\\\/// \\\ [0;31mÝ[1;34m/
+[40C[0;35mÜ[1;37;45mßßßßßßß[0;30;45m³[1;37mßßßßßßß[0;35mÜ   [A
+[60C[1;34mÜÜ
+[32C[0;33m°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+[32C°°[8C[1;34m|||||||||||||[7C[0;33m°°
+[32C°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°°
+[32C°°[7C[1;34m|||||||||||||||[6C[0;33m°°
+[32C°°[7C[1;34m|||||||||||||||[6C[0;33m°°[0m[255D
+@key
+@pauseon
+@clear screen
+@show
+`2"Can I help you, `N?"
+ 
+@do `v01 is 1
+@choice
+`%How do you know my name?
+`%What are you doing here?
+`%Sorry, wrong door.
+@if response is 3 then do
+@begin
+@do goto leave
+@end
+@if response is 1 then do
+@begin
+@show
+ 
+ 
+ 
+`2"It's my job to know everyone at the training center."
+@key
+@clear screen
+@do goto turgon
+@end
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`2"Mostly I am doing this accursed paper work.  But I am also collecting
+gold for Turgon's birthday present, and I occasionally provide other
+services."
+ 
+@key
+ 
+@do `v01 is 1
+@choice
+`%Sounds like fun.  See ya!
+`%I'd like to help with Turgon's present.
+`%What other services?
+@if response is 1 then do
+@begin
+@do goto leave
+@end
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`2"Oh, how nice of you!  How much would you like to give me?"
+ 
+@do goto turgdonation
+@end
+@if response is 3 then goto turgother
+@#turgother
+@clear screen
+@show
+`2"Well, sometimes I sell used watches, and sometimes I have information
+available."
+@key
+@show
+ 
+`2"But not right now."
+@key
+@show
+ 
+`2"What I can do is... umm.... alter the records a bit in your favor."
+@key
+@show
+ 
+`2"You see, Turgon is too busy to remember who has and has not had a failed
+attempt in the training center each day."
+@key
+@clear screen
+@if `t04 is 0 then do
+@begin
+@show
+`2"I see here that you have not failed yet today.  But if you should fail,
+come see me.  One... shall we say 'mis-stroke'... of my pen, and you will
+get another chance."
+ 
+@key
+@do goto leave
+@end
+ 
+@if `t04 is 1 then do
+@begin
+@show
+`2"I see here that you have already failed in the center today.  But with
+one... shall we say 'mis-stroke'... of my pen, you can have another chance."
+ 
+@key
+@do goto fee
+@end
+ 
+@#bardonation
+@do readnum 10 0
+@if `v40 > money then do
+@begin
+;@show
+;
+;
+;`0You don't have `@`v40 `0with you.  You only have `@&money`0.
+;@key
+@do goto broke
+@end
+@if `v40 is 0 then do
+@begin
+@show
+ 
+ 
+`2"Nothing?  Remember, I won't put your name on the card unless you contribute."
+@key
+@do goto leave
+@end
+@if `v40 < 0 then do
+@begin
+@show
+ 
+`9You think about stealing from Sauraman, but realize that would be a BAD idea.
+ 
+@key
+@do goto leave
+@end
+@do money - `v40
+@show
+ 
+`2"Thank you.  `v40 will help, but we can always use more."
+@key
+@do goto leave
+ 
+@#turgdonation
+@do readnum 10 0
+@if `v40 > money then do
+@begin
+;@show
+;
+;
+;`0You don`t have `@`v40 `0with you.  You only have `@&money`0.
+;@key
+@do goto broke
+@end
+@if `v40 is 0 then do
+@begin
+@show
+ 
+ 
+`2"Nothing?  Remember, I won't put your name on the card unless you contribute."
+@key
+@do goto leave
+@end
+@if `v40 < 0 then do
+@begin
+@show
+ 
+`9You think about stealing from Sauraman, but realize that would be a BAD idea.
+ 
+@key
+@do goto leave
+@end
+@do money - `v40
+@show
+ 
+`2"Thank you.  `v40 will help, but we can always use more."
+@key
+@do goto leave
+ 
+@#leave
+@clear screen
+@drawmap
+@update
+@do saybar
+That Sauraman sure is a seedy looking character.
+@closescript
+ 
+@#broke
+@clear screen
+@show
+`9You search through your pockets and realize that you don't have that much
+with you.
+@key
+@show
+ 
+`9Sauraman looks at you in disgust and snarls.
+@key
+@show
+ 
+`2"You imbecile.  If that's all the brains you have, no wonder you were forced
+to become a lowly warrior!"
+@key
+@show
+ 
+`2"Now get out of here!  And don't come back til you have the cash!"
+@key
+@do goto leave
+ 
+@#nomore

@@ -1,0 +1,49 @@
+
+            Cleft to the Unknown Version v1.0 By: ArticNight IGMs
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A REAL simple IGM designed to give more excitement to the game. You must
+enter the area and solve complex puzzle to win. Very nice. Not to ugly...
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM Cleft.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, follow the desert river from porttown to flagcity. You will see
+an island with a black area there. That is my igm!
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Cleft to the Unknown v1.0 `2by `3ArticNight IGMs
+;1352
+replacescreen: 1432 2 show
+
+replacescreen: 628 1 noshow
+
+replacescreen: 1110 2 show
+
+installmessage:
+
+`r0`c   `2 A REAL simple IGM designed to give more excitement to the game. You must
+`2enter the area and solve complex puzzle to win. Very nice. Not too ugly...
+
+Stephen Walls
+Proud CEO of DarkForest Software!
+

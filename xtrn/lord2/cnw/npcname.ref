@@ -1,0 +1,212 @@
+; Script file NPCNAME.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:13 2001
+
+@DECLARE getname 000000214
+@NOCHECK
+; End of .REF index
+
+;
+; To check the name of the current NPC with player
+;
+@#getname
+@if `p70 is 0 then `s01 is Nobody
+@if `p70 is 1 then `s01 is Violet
+@if `p70 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p70 is 3 then `s01 is Wryn
+@if `p70 is 4 then `s01 is Kess
+@if `p70 is 5 then `s01 is Sherra
+@if `p70 is 6 then `s01 is Hattie
+@if `p70 is 7 then `s01 is Ninna
+@if `p70 is 8 then `s01 is Georgie
+@if `p70 is 9 then `s01 is Nicki
+@if `p70 is 10 then `s01 is Gei
+@if `p70 is 11 then `s01 is Sally
+@if `p70 is 12 then `s01 is Yowli
+@if `p70 is 13 then `s01 is Chip
+@if `p70 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p70 is 15 then `s01 is Laura
+@if `p70 is 16 then `s01 is Sheep`xMan
+@if `p70 is 17 then `s01 is Elle
+@if `p70 is 18 then `s01 is Ma
+@if `p70 is 19 then `s01 is Estella
+@if `p70 is 20 then `s01 is Lango
+;porttown
+@if `p70 is 21 then `s01 is Guy
+;Voodoo Temple
+@if `p70 is 22 then `s01 is Mickey
+@if `p70 is 23 then `s01 is Aerith
+@if `p70 is 24 then `s01 is Invisible`xMan
+@if `p70 is 25 then `s01 is Rudy
+@if `p70 is 26 then `s01 is Julia
+@if `p70 is 27 then `s01 is Kita
+@if `p70 is 28 then `s01 is Elay
+;Gypsy Camp
+@if `p70 is 29 then `s01 is Lilliana
+@if `p70 is 30 then `s01 is Chandler
+@if `p70 is 31 then `s01 is Lela
+@if `p70 is 32 then `s01 is Mirella
+@if `p70 is 33 then `s01 is Sherif
+@if `p70 is 34 then `s01 is Viollica
+@if `p70 is 35 then `s01 is Gimi
+;South of FlagCity
+@if `p70 is 36 then `s01 is Spence
+@if `p70 is 37 then `s01 is Lost`xMan
+@if `p70 is 38 then `s01 is Chance
+@if `p70 is 39 then `s01 is Johnny
+@if `p70 is 40 then `s01 is Old`xWarrior
+;Sosin Village
+@if `p70 is 41 then `s01 is Matt`xLongsword
+@if `p70 is 42 then `s01 is Wiscard
+@if `p70 is 43 then `s01 is Basil
+@if `p70 is 44 then `s01 is Somebody
+@if `p70 is 45 then `s01 is Somebody
+@if `p70 is 46 then `s01 is Somebody
+@if `p70 is 47 then `s01 is Somebody
+;PawnShop
+@if `p70 is 48 then `s01 is Somebody
+@if `p70 is 49 then `s01 is Nick
+;Far North
+@if `p70 is 50 then `s01 is Prince`xCorin
+@if `p70 is 51 then `s01 is Somebody
+@if `p70 is 52 then `s01 is Somebody
+@if `p70 is 53 then `s01 is Somebody
+@if `p70 is 54 then `s01 is Somebody
+@if `p70 is 55 then `s01 is Somebody
+@if `p70 is 56 then `s01 is Somebody
+@if `p70 is 57 then `s01 is Somebody
+@if `p70 is 58 then `s01 is Somebody
+@if `p70 is 59 then `s01 is Somebody
+; Loki Inn
+@if `p70 is 60 then `s01 is Loki`xGuard
+@if `p70 is 61 then `s01 is oDiN
+@if `p70 is 62 then `s01 is Hilda
+@if `p70 is 63 then `s01 is Somebody
+@if `p70 is 64 then `s01 is Somebody
+@if `p70 is 65 then `s01 is Somebody
+@if `p70 is 66 then `s01 is Somebody
+@if `p70 is 67 then `s01 is Somebody
+@if `p70 is 68 then `s01 is Somebody
+@if `p70 is 69 then `s01 is Somebody
+@if `p70 is 70 then `s01 is Somebody
+@if `p70 is 71 then `s01 is Somebody
+@if `p70 is 72 then `s01 is Somebody
+@if `p70 is 73 then `s01 is Somebody
+@if `p70 is 74 then `s01 is Somebody
+@if `p70 is 75 then `s01 is Gorilla`xGirl
+; GreenTree (again)
+@if `p70 is 76 then `s01 is Minister
+@if `p70 is 77 then `s01 is Somebody
+@if `p70 is 78 then `s01 is Somebody
+@if `p70 is 79 then `s01 is Somebody
+;Scorpian's Den
+@if `p70 is 80 then `s01 is Old`xMan`xScorp
+@if `p70 is 81 then `s01 is Famous`xDrunk
+@if `p70 is 82 then `s01 is Scorpian`xLady
+@if `p70 is 83 then `s01 is Drunk`xLady
+@if `p70 is 84 then `s01 is Scorpian`xMaid
+@if `p70 is 85 then `s01 is Somebody
+@if `p70 is 86 then `s01 is Somebody
+@if `p70 is 87 then `s01 is Somebody
+@if `p70 is 88 then `s01 is Somebody
+@if `p70 is 89 then `s01 is Somebody
+;desert figaro's castle
+@if `p70 is 90 then `s01 is Chancellor
+@if `p70 is 91 then `s01 is Edgar
+@if `p70 is 92 then `s01 is Edgars`xGuard
+@if `p70 is 93 then `s01 is Edgars`xGuard
+@if `p70 is 94 then `s01 is Forga
+@if `p70 is 95 then `s01 is Fatiguel
+@if `p70 is 96 then `s01 is Somebody
+@if `p70 is 97 then `s01 is Somebody
+@if `p70 is 98 then `s01 is Somebody
+;Sandcity
+@if `p70 is 99 then `s01 is Maverick
+;KnotWood
+@if `p70 is 100 then `s01 is Andrew
+@if `p70 is 101 then `s01 is Mr.`xAndrew
+@if `p70 is 102 then `s01 is Mrs.`xAndrew
+;Wizards Castle (near StoneBrook)
+@if `p70 is 103 then `s01 is Violetta
+@if `p70 is 104 then `s01 is Sand`xTiger
+@if `p70 is 105 then `s01 is Direct
+;path from stonebrook to greentree and around greentree
+@if `p70 is 106 then `s01 is Begger
+@if `p70 is 107 then `s01 is Sherie
+@if `p70 is 108 then `s01 is Grizelda
+@if `p70 is 109 then `s01 is Edward
+;Sword Castle
+@if `p70 is 110 then `s01 is Thug
+@if `p70 is 111 then `s01 is Mann
+@if `p70 is 112 then `s01 is Mordin
+@if `p70 is 113 then `s01 is Aqua
+@if `p70 is 114 then `s01 is Somebody
+@if `p70 is 115 then `s01 is Somebody
+;BoneTown
+@if `p70 is 116 then `s01 is Dad
+@if `p70 is 117 then `s01 is Rich`xWoman
+@if `p70 is 118 then `s01 is Jesse
+@if `p70 is 119 then `s01 is Boy
+@if `p70 is 120 then `s01 is John
+@if `p70 is 121 then `s01 is Big`xMa
+@if `p70 is 122 then `s01 is Kelley                        ;a whore
+@if `p70 is 123 then `s01 is Selena
+@if `p70 is 124 then `s01 is Drunk`xMan
+@if `p70 is 125 then `s01 is Bouncer
+@if `p70 is 126 then `s01 is D.J.
+@if `p70 is 127 then `s01 is Somebody
+@if `p70 is 128 then `s01 is Somebody
+@if `p70 is 129 then `s01 is Somebody
+;PortTown - Odin's Keep area
+@if `p70 is 130 then `s01 is Grey`xMan
+@if `p70 is 131 then `s01 is Jennie
+@if `p70 is 132 then `s01 is Rosie
+@if `p70 is 133 then `s01 is Somebody
+;Resort + Glendale near StoneBrook
+@if `p70 is 134 then `s01 is Happy`xPappy
+@if `p70 is 135 then `s01 is Dan
+@if `p70 is 136 then `s01 is Don
+@if `p70 is 137 then `s01 is Lone
+@if `p70 is 138 then `s01 is Dance
+@if `p70 is 139 then `s01 is Somebody
+@if `p70 is 140 then `s01 is Somebody
+@if `p70 is 141 then `s01 is Somebody
+@if `p70 is 142 then `s01 is Somebody
+@if `p70 is 143 then `s01 is Somebody
+@if `p70 is 144 then `s01 is Somebody
+@if `p70 > 144 then `s01 is Somebody
+;--All the Whores!--
+; Female
+@if `p70 is 170 then `s01 is Kelli
+@if `p70 is 171 then `s01 is Karen
+@if `p70 is 172 then `s01 is Mundin
+@if `p70 is 173 then `s01 is Mulan
+@if `p70 is 174 then `s01 is Pocahontas
+@if `p70 is 175 then `s01 is Samira
+@if `p70 is 176 then `s01 is Linda
+@if `p70 is 177 then `s01 is White
+@if `p70 is 178 then `s01 is Red
+@if `p70 is 179 then `s01 is Jasmine
+@if `p70 is 180 then `s01 is Marilyn
+@if `p70 is 181 then `s01 is Yewanda
+@if `p70 is 182 then `s01 is Karlita
+@if `p70 is 183 then `s01 is Kelly
+@if `p70 is 184 then `s01 is Sheila
+@if `p70 is 185 then `s01 is Bibianna
+@if `p70 is 186 then `s01 is Yuko
+@if `p70 is 187 then `s01 is Lisa
+@if `p70 is 188 then `s01 is Kina
+@if `p70 is 189 then `s01 is Kiko
+@if `p70 is 190 then `s01 is Kimbery
+@if `p70 is 191 then `s01 is Cindy
+@if `p70 is 192 then `s01 is Yurri
+@if `p70 is 193 then `s01 is Tina
+@if `p70 is 194 then `s01 is Tanya
+@if `p70 is 195 then `s01 is Saby
+@if `p70 is 196 then `s01 is Asada
+;@if `p70 is 197 then `s01 is Nobody
+@if `p70 is 198 then `s01 is Fast`xFreddy
+@if `p70 is 199 then `s01 is SysOp
+;;now 125
+@datasave npc\npcdy`p70.idf &playernum &time
+@closescript

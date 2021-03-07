@@ -1,0 +1,436 @@
+; Script file VOYAGE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE seaman 000000747
+@DECLARE warning 000001001
+@DECLARE table1 000001509
+@DECLARE table2 000001765
+@DECLARE lostman 000001842
+@DECLARE chance 000002366
+@DECLARE shop 000002561
+@DECLARE start 000002613
+@DECLARE fightdem 000003150
+@DECLARE demrun 000003747
+@DECLARE beatdem 000003844
+@DECLARE enemy 000004461
+@DECLARE goneguy 000005742
+@DECLARE goneguy2 000005850
+@DECLARE gone 000005908
+@DECLARE sign1 000006671
+@DECLARE arstart 000006725
+@DECLARE poeda 000007114
+@DECLARE white 000007223
+@DECLARE skipwhite 000008276
+@DECLARE back 000008491
+@DECLARE table5 000008597
+@DECLARE dodge 000008682
+@NOCHECK
+; End of .REF index
+
+@#SEAMAN
+@do moveback
+@do `p20 random 2 1
+@if `p20 is 1 then saybar
+`!SeaMan:`%This IGM has a quest to complete...What are you waiting for?
+@if `p20 is 2 then saybar
+`!SeaMan:`%This IGM's quest is hard, in a physical way...You gotta be strong!
+
+@#WARNING
+@do `p70 is 36
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p20 random 3 1
+@if `p20 is 1 then saybar
+`!Spence:`%Only way out is through death, unless you actually complete igm.
+@if `p20 is 2 then saybar
+`!Spence:`%You get a MASSIVE prize if you can complete the igm.
+@if `p20 is 3 then saybar
+`!Spence:`%These monsters are a taste of what you see when you get in!
+@if `p20 is 4 then saybar
+`!Spence:`%This IGM was created By Spencer Vickers.
+@end
+@end
+
+@#table1
+@do moveback
+@if money more 300 then do
+ @begin
+@do saybar
+What do you know? There's nothing on the table!
+ @closescript
+ @end
+@do saybar
+`#There's 100000 gold pieces on the table,`%you manage pick up `$300! `0Woohoo!
+@do money + 300
+
+@#TABLE2
+@do saybar
+"Money doesn't grow on trees, or tables you know!"
+
+@#lostman
+@do `p70 is 37
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p20 random 5 1
+@if `p20 is 1 then saybar
+`!Lost Soul:`7There's warps all around the place!
+@if `p20 is 2 then saybar
+`!Lost Soul:`7It looked easy, It's hard!
+@if `p20 is 3 then saybar
+`!Lost Soul:`7I wish I could leave, but death doesen't come to me!
+@if `p20 is 4 then saybar
+`!Lost Soul:`7There are many blocks around too..
+@if `p20 is 5 then saybar
+`!Lost Soul:`7What's the colour of the sky again?
+@end
+
+@#CHANCE
+@do `p70 is 38
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Chance:`%These Monsters are only a taste of what you'll get in there!
+@end
+@end
+
+@#SHOP
+@offmap
+@do moveback
+@do `v01 is 1
+@label start
+@show
+`r0`c   `1 Last Stop Shop
+
+`3      Okay, here are the items you may need to pass the igm. I say
+        Stock up now, because you'll never get a chance to stock up again
+        until you get out, if you get out......
+
+@do write
+`x`x
+@choice
+Check out his vast collection of items
+Get on your way
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @clear screen
+@buymanager
+64
+58
+39
+49
+60
+68
+62      
+59
+36
+37
+66
+55
+40
+5
+@end
+
+if response is not 2 then goto start
+@drawmap
+@update
+
+@#fightdem
+@fight
+;name
+CAVE DEMON
+;string said when you see him
+You lunge at  your `0s&weapon `2ready!
+;power move kill string
+You Lunge Your s&weapon                   
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Runs you threw with his sword|600
+Steps On You|750
+Tears off your leg|650
+NONE|NONE
+NONE|NONE
+;defense
+3500
+;gold reward
+10000
+;experience
+5000
+;hit points
+10000
+;if win: ref file|name or NONE
+VOYAGE.REF|BEATDEM
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;If runs: ref file|name or NONE
+VOYAGE.REF|DEMRUN
+
+@#demRUN
+@show
+`c  `r1 THE CHALENGE `r0
+
+  `2"Ughaaabugghaaa!!!!"
+
+`k
+@DRAWMAP
+@UPDATE
+@#BEATDEM
+@do `s01 is BITCH
+@if `v06 is 1 then `s01 is punk
+;clean mode fix
+@show
+`c  `r1 WOW YOU BEAT HIM! `r0
+
+
+  `$"Now, that we have completed the fight you are alowed to go and try to
+     go home!! Here, you also receive an additional:
+
+
+`!       YOU RECEIVE 100   `#    QUEST POINTS!   `$Woohooo!!!
+`!       YOU RECEICE 10    `#    MUSLE POINTS!   `$Wooohoo!!!
+`!       YOU RECEIVE  5    `#    DODGE POINTS!   `$Wooohoo!!!
+`!       YOU RECEIVE 7,500 `#    EXPERIENCE!     `$Wooohoo!!!
+
+
+`k
+@do `p04 + 10
+@do `p05 + 5
+@do `p01 + 7500
+@do `p18 + 100
+@do `t65 = 2
+@drawmap
+@update
+@end
+
+@#ENEMY
+@drawmap
+@update
+@if `t65 more 1 then do
+  @begin
+  @do saybar
+`2You walk over the Cave Demon's dead body.
+  @closescript
+  @end
+
+@do moveback
+@busy
+@show
+`r0`c  `r1 CAVE DEMON `r0
+
+@if `t65 > 2 then do
+ @begin
+ @do `t65 < 2
+ @show
+
+`1     " Uggghaaaabugggaaa!!!! "
+  `$                             Yelled the Cave Demon.
+
+ `!    "I just want to get outa here!!" 
+   `$                                 You say.
+
+`1     " Ugghabuga! "            
+  `$                   Yells back the Cave Demon.
+
+ `!    " Okay then! Lets play! "
+   `$                    You shout.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Yes, Of course....
+I Guess we can play....
+@show
+
+           `! Uggghhaaaaabuggaaa!!!
+
+@end
+@show
+`r0`c       Encounter With The Cave Demon
+
+     `3      "Ughaaaabugggaaa"
+
+                                 `$             Swore the cave demon
+
+`!            "I'll Kill you for that remark!!!!"
+
+                                   `$              You call out
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Okay, I'm sure.... IT'S NOW OR NEVER!!
+Explore the caves, a bit more....
+@if response is 1 then do
+  @begin
+  @do goto fightdem
+  @end
+
+@if response is 2 then do
+ @do moveback
+ @drawmap
+ @update
+ @end
+
+@#goneguy
+@do saybar
+`bOnce you pass me you lose most of your items! Except your armor/weapons/food`k
+
+@#goneguy2
+@do saybar
+`4YOU WILL LOSE ALL SPECIAL ITEMS!
+
+@#gone
+@loadmap 1169
+@do X is 79
+@do Y is 11
+@do `i07 = 0
+@do `i08 = 0
+@do `i02 = 0
+@do `i12 = 0
+@do `i17 = 0
+@do `i18 = 0
+@do `i19 = 0
+@do `i20 = 0
+@do `i21 = 0
+@do `i22 = 0
+@do `i23 = 0
+@do `i24 = 0
+@do `i25 = 0
+@do `i26 = 0
+@do `i27 = 0
+@do `i28 = 0
+@do `i29 = 0
+@do `i30 = 0
+@do `i31 = 0
+@do `i32 = 0
+@do `i33 = 0
+@do `i33 = 0
+@do `i41 = 0
+@do `i42 = 0
+@do `i43 = 0
+@do `i44 = 0
+@do `i45 = 0
+@do `i46 = 0
+@do `i47 = 0
+@do `i48 = 0
+@do `i50 = 0
+@do `i51 = 0
+@do `i52 = 0
+@do `i53 = 0
+@do `i54 = 0
+@do `i55 = 0
+@do `i57 = 0
+@do `i61 = 0
+@do `i67 = 0
+@do `i72 = 0
+@do `i73 = 0
+@do `i83 = 0
+@do `i84 = 0
+@do `i85 = 0
+@do `i95 = 0
+@do `i96 = 0
+@do `i97 = 0
+@do `i98 = 0
+@do `i56 = 0
+@update
+@drawmap
+@end
+
+@#sign1
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c   `1 Sign Erected By One Of The Travelers
+`k
+
+`!      If you have come this far, you must be a brave warrior...
+        This sign is a warning to those who are around here, a warp is
+        very near...... There is also a hole in the wall close by...
+        Watch out!!!!
+`k
+@do write
+`x`x
+@choice
+Get on your way, carefully.....
+
+@drawmap
+@update
+
+@#poeda
+@do moveback
+@do saybar
+`7Stephen:`0Walk on the Cave Demon to Get Home!  (After You KILL It!!)
+
+@#white
+@do `p70 is 39
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@if bitcheck `t12 3 1 then do
+        @begin
+        @dataload npc/ellequst.idf &playernum `p23
+        @if `p23 > 210 then goto skipwhite
+        @do saybar
+`4`N `%: `2So, its you who knocked up Elle?`l`k
+        @do saybar
+`4Johnny `%: `2WHAT?`l`l`l who?`l`l who's Elle?`l`k
+        @do saybar
+`4`N `%: `2She's that chick in GreenTree, remember her?`l`k
+        @do saybar
+`4Johnny `%: `2Her!`l I don't even know her very well, we chatted for`l`k
+        @do saybar
+`4Johnny `%: `2a while in Red Dragon INN when I was there like 50`l`k
+        @do saybar
+`4Johnny `%: `2days ago.`l`k
+        @do saybar
+`4Johnny `%: `2I wanted to meet Violet's daughter!`l`k
+        @do saybar
+`4Johnny `%: `2I tell yah, it wasn't me!!`l`k
+        @do quebar
+`8< `$Interesting news, you should go tell Ma about this `8>
+        @datasave npc/ellequst.idf &playernum 1
+        @drawmap
+        @update
+        @closescript
+        @end
+@label skipwhite
+@if `i19 more 0 then do
+ @begin
+@do saybar
+`4Johnny `0Appleseed`%:`!Go and use that apple wisely!
+ @closescript
+ @end
+@do saybar
+`4Johnny `0Appleseed`%:`!Hello, have an apple..
+@do `i19 + 1
+@end
+
+@#back
+@do moveback
+@do saybar
+`6Magical tree that takes you back to the maze. ( Only way 'out' )
+
+@#table5
+@do saybar
+`$Why do people always expect tables to give you something? 
+
+@#dodge
+@do `p70 is 42
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`4Old Warrior:`2You should have over `$2500 `2dodge to even attempt the voyage!
+@end

@@ -1,0 +1,530 @@
+;ref file for GARGOYLE'S LANDING IGM by NiGHT fLYER
+
+@#Library1
+@do moveback
+@do `p20 random 8 1
+@if `p20 is 1 then saybar
+`%Anonymous: `0101 way to wok your dog
+@if `p20 is 2 then saybar
+`%Lord Mir: `0Objects are closer than they appear!
+@if `p20 is 3 then saybar
+`%Grimtooth: `0Tricks and Traps, an amatures handbook.
+@if `p20 is 4 then saybar
+`#Violet: `0All is fair in love and war
+@if `p20 is 5 then saybar
+`%Barak: `0FRAMED!
+@if `p20 is 6 then saybar
+`%Seth Able: `0I write the songs
+@if `p20 is 7 then saybar
+`%NiGHT fLYER: `0Gargoyles ROCK!!!
+@if `p20 is 8 then saybar
+`%Cooking for Canibals in 10 easy steps
+
+@#library2
+@do moveback
+ @do saybar
+  now THIS is a Chair!
+
+
+@#darkhall
+@do moveback
+@dataload gargfind.idf &playernum `p20
+@if `p20 is 1 then do
+        @begin
+        @do saybar
+`7you find nothing more in this damp cellar
+        @closescript
+        @end
+; @if `i57 is 0 then do
+; @begin
+ @do saybar
+  you find a `+57
+ @do `i57 + 1
+@datasave gargfind.idf &playernum 1
+; @do `i75 = 1
+ @closescript
+; @end
+
+@if `i75 is 1 then do
+ @begin
+ @do saybar
+  you find nothing more in this damp cellar
+ @end
+
+
+@#warm
+@do moveback
+ @do saybar
+  it's nice and toasty by the fire
+
+@#bow
+@do moveback
+ @do saybar
+`6Bow: `%must have been used a long time ago defending this castle...
+
+@#spear
+@do moveback
+ @do saybar
+`6Spear: `%it's worthless now after years of weather
+
+@#noise1
+@do moveback
+ @do saybar
+  you think you hear something upstairs!
+
+@#noise2
+@do moveback
+ @do saybar
+  What was THAT? There is Definitely something up there!
+
+@#food
+:free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Well Prepared Meal  `r0
+
+  `2You dive fork first into the food.
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#showgargoyle
+@pauseoff
+@show
+
+
+
+
+[0;37;40m[6C     [7C[1;33m.[10C[37mú[11C[33m.[9C[0mú
+[6C    [14C[1;30mÞ[0m°[1;30mÜ   Ü±Ý    [37mú[7Cú[9C[0mú[7C[1m.[0m
+[7C   [1;32m    [30mÞÜÜÜÜÜÜÜÜ²þ[0m±[1;30m²²V²Û±þ²ÜÜÜÜÜÜÜÜÜÝ[16C[0m.
+[7C   [1;32m     [30mÜ²²±±±±ß² [0;31mO [1;30m²±² [0;31mO [1;30m²ß[8C[0;31m  [37m.
+[7C   [1;32m  [30mÜ±±²²²²[0m°[1;30m²²²³²ß[0mÝ[1;30mßßß[0mÞ[1;30mß²³[0m
+[6C   [1;30mÜ±±²²²²[0m°[1;30m²²²[0m°[1;30m²²²ß²±²³²±²ß     [37mú    [5C[0mYou Stand Face-to-face
+[7C[1;30mÜ±²²²²[0m°[1;30m²²²[0m°[1;30m²²²[0m°[1;30mß  °Þß°ßÝ[17C[0m.  with the massive 
+[32m     [1;30mÜ±²²²²[0m°[1;30m²²[0m°[1;30m²²²[0m°[1;30m²ß °°°±±±Ý    [37m.[9C[0;31m  [1;37m.[3C[0m   [CStone Beast    
+[32m   [1;30mÜ±²²²[0m°[1;30m²²²[0m°[1;30m²²[0m°[1;30m²ßß°°°±º±±²Ý[9C[0m                
+[32m  [1;30mÜ±²²[0m°[1;30m²²[0m°[1;30m²²²[0m°[1;30m²ß±±±±±º±±±²Ý[10C[0m [17C[1;33m. [0m
+[32m  [1;30m±²²²²[0m°[1;30m²²[0m°[1;30m²ßß±±±±±º±±±±²Ý[11C[0m [1;30m     [37mú[0m
+[32m  [1;30m²²²²²²[0m°[1;30m²²Û±±±±±º±±±±±²Ý[10C[0m    
+[32m  [1;30m²²²²²²²[0m°[1;30m²²ÜÜÜ³±±±±±±²ÝÜ[9C[0m      [5C[1;33m.[0m
+[32m  [1;30m²²²²²²²²[0m°[1;30m²²²²²Ü°°°±²Ý[0m°±Ý[7C       
+[32m  [1;30m°°°°°°°°°°°°ß²ß²²[0m±[1;30mÛ[0m± °±Ü[5C          
+[32m  [1;30mßßßßßßßßßßßßß[47mÜÜÜÜÜÜÜÜÜÜ[0mß       [1;30mßßßßßßßßßßßßß[47mÜÜÜÜÜÜÜÜÜÜ[0mß        [1;30mßßßßßßßßßßßßß[47mÜ[40m
+[0;32m  [1;30m°°°°°°°°°°°°°Þ[0m°°°°°°°°Ý        [1;30m°°°°°°°°°°°°°Þ[0m°°°°°°°°Ý         [1;30m°°°°°°°°°°°°°Þ
+[0;32m  [1;30m°°°°°°°°°°°°°Þ[0m°±±±±±°°Ý        [1;30m°°°°°°°°°°°°°Þ[0m°±±±±±°°Ý         [1;30m°°°°°°°°°°°°°Þ
+[0;32m  [1;30m°°°°°°°°°°°°°Þ[0m±±±±±±°°Ý        [1;30m°°°°°°°°°°°°°Þ[0m±±±±±±°°Ý         [1;30m°°°°°°°°°°°°°Þ
+[0m                             
+
+`k
+@pauseon
+
+
+@#gargoyle
+@do moveback
+@do `v01 is 1
+
+@busy
+@label gargoylestart
+@show
+`r0`c  `r1 `%The Keeper of the Castle `r0
+
+  `7You've heard of these mythical creatures, but you didnt think
+  that they REALLY existed!!!
+
+   Now you are on a rooftop with this Graet stone beast perched on
+   a ledge in from of you
+
+  `%"Greetings, `n.`% I heard you down below," `7his booming voice
+  echoes through your head.
+
+@do write
+`x`x
+@choice
+You have wings, can you travel?
+What is this place?
+Make a wish!
+Look at him
+>`i57 0 What is the deal with this stone?
+Leave
+@if responce is 4 then do
+  @begin
+  @routine showgargoyle
+  @do goto gargoylestart
+  @end
+
+@if responce is 5 then do
+  @begin
+  @show
+`\`\  `$"Why was this just laying around in you basement?" `2you
+  ask him.
+
+`k  `0"Its just a trinket that the master of this household left behind"
+
+`k
+  @do goto gargoylestart
+  @end
+
+@if response is 6 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`r0`c  `r1 `%This is my domain now. `r0
+
+  `%"This was once the domain of my master...a powerful mage who has bound
+  me to this place to protect it until his return."
+
+`k  `$"Well if you believe him to be gone forever why dont you leave?"
+`7you ask.
+
+ `%"Because of his great power I will always be drawn back to this place...
+ Besides...it's home
+
+`k
+  @do goto gargoylestart
+  @end
+
+@if responce is 3 then do
+  @begin
+  @show
+`r0`c  `r1 `%????? `r0
+
+  `%"What do I look like, a Djinn?"
+
+`k  `$"Sorry, wasnt thinking."`7you reply.
+
+`k
+  @do goto gargoylestart
+  @end
+ 
+
+
+  @show
+`r0`c  `r1 `%Ready for a trip! `r0
+
+  `$"I wanna leave!  This place is not for me." `7you explain.
+
+  `%"Well you are not a prisoner here,  Where would you like
+  to go?" `7He asks  - while looking out over the land beneath.
+
+@do write
+`x`x
+@choice
+Stonebrook
+Stonepass Lodge
+Soshen Village
+"Aww...forget it, You are nothing more than a stupid rock"
+"actually, I'll stay here a while longer"
+@if response is 5 then do
+ @begin
+ @do goto gargoyle 
+ @end
+
+@show
+`\`\  `%"Lets GO!!" `7he says suddenly. 
+
+  `$"Whoa wait...." `7you demand.
+
+`k  `%"I dont have all day!!!" `7he responds.
+
+  `7Before you can reply, he grabs
+   you by the shoulders and carries you away
+
+`k
+ @if response is 1 then do
+ @begin
+ @do map is 1359
+ @loadmap 1359
+ @do x is 50
+ @do y is 6
+ @end
+
+ @if response is 2 then do
+ @begin
+ @do map is 880
+ @loadmap 880
+ @do x is 38
+ @do y is 12
+ @end
+
+ @if response is 3 then do
+ @begin
+ @do map is 536
+ @loadmap 536
+ @do x is 36
+ @do y is 7
+ @end
+
+ 
+ @if response is 4 then do
+ @begin     
+ @do map is 132
+ @loadmap 132
+ @do x is 5
+ @do y is 10
+ @end
+
+@drawmap
+@update
+
+;ALL MONSTERS ARE BELOW HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+@#monster1
+@fight
+;name
+Great White Shark
+;string said when you see him
+Duh.Duh...Duh.Duh...
+;power move kill string
+`$"Shark steaks for dinner tonight!" `2 you laugh.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Rips at you with it' teeth|160
+pulls you under|84
+gets a hold with his teeth|94
+NONE|NONE
+NONE|NONE
+;defense
+45
+;gold reward
+176
+;experience
+120
+;hit points
+175
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Giant squid
+;string said when you see him
+A large black tentacle emerges from the water.
+;power move kill string
+"I wonder what squid tastes like"
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+chokes you with it's tentacle|89
+gets a good gash in your leg|98
+squeezes your head|120
+sprays black "ink" into your eyes|85
+NONE|NONE
+;defense
+37
+;gold reward
+187
+;experience
+165
+;hit points
+260
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Sea Worm
+;string said when you see him
+The water in front of you begins to move
+;power move kill string
+`$"Go back below the waves," `2 you command.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+draws blood with its teeth|83
+wraps around & squeezes you legs|114
+gets ahold with his sucker|127
+NONE|NONE
+NONE|NONE
+;defense
+42
+;gold reward
+0
+;experience
+189
+;hit points
+102
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Sea Serpent
+;string said when you see him
+A large serpentine head appears from the waves.
+;power move kill string
+One less serpent to deal with.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+chomps down on your arm|132
+trys to drown you|95
+gets you in a strangle hold|126
+Spews a water spout at you|87
+NONE|NONE
+;defense
+19
+;gold reward
+173
+;experience
+197
+;hit points
+183
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Man o' War
+;string said when you see him
+Foolishly you approach a blubbery organism
+;power move kill string
+`$"I think it's really dead this time," `2you hope.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+touches you with a blubbery tentacle|130
+lashes out with smile|95
+rubs against your leg with paralysing poison|140
+rolls into you|92
+NONE|NONE
+;defense
+35
+;gold reward
+103
+;experience
+177
+;hit points
+180
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Giant Crab
+;string said when you see him
+You see a rather large looking crab, but it also sees you!
+;power move kill string
+`$"I had a bad case of crabs, but killed em."
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+snaps at your leg|115
+cracks into your leg|118
+grabs your hand with a pincher|125
+tramples into you|112
+NONE|NONE
+;defense
+42
+;gold reward
+145
+;experience
+172
+;hit points
+150
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Pirate
+;string said when you see him
+Ahoy there!
+;power move kill string
+"Yo ho ho yourself"
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slices with his hook|110
+attempts to chop you in two|115
+smacks you with his parrot|113
+NONE|NONE
+NONE|NONE
+;defense
+43
+;gold reward
+340
+;experience
+126
+;hit points
+140
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+gargoyle.REF|PIRATE
+;if runs: ref file|name or NONE
+NONE|NONE
+              
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 7 1
+@do goto monster`p20
+
+@#PIRATE
+@do money / 4
+@do money * 3
+@SHOW
+`r0`c  `r1`% Defeat by the Pirate `r0
+
+  `2The Pirate raises his cutlass to deliver the blow to your skull...
+
+`k  `0"Don't worry, I'm not all about killing, I'm about money.  So I'm sure
+  you'll understand if I relieve you of a little." `2He proceeds to raid
+  your gold bag.  But at least you have your life.
+
+`4  You lose `b1/4th`4 of your treasure.
+
+`k
+@do `p02 is 5
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+
+@#done

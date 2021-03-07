@@ -1,0 +1,2305 @@
+;                          Odin's Keep Version 2.00
+;                          Here it is as promised !
+;                        10.5% better than Version 1.02
+;                        Added : Towers in the castle. 
+;                        Uses  : Ericsbar.ref
+;                      This is the last version folks !
+;
+;
+;
+;   Added to CNW NPCs. :)
+;
+;
+@#LAIR
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Dragons Lair `r0
+
+  `2As you walk into the Lair, atop a huge pile of treasure consisting
+  of various gold and silver items, sits a 40 foot tall adult, male gold
+  dragon. You hear a faint Mooing sound, upon closer inspection you see
+  a half eaten cow in the corner of the room.
+
+  
+  `0"Greetings, s&sir!  I am Vincent your servant. Where will we be
+  flying off to today?" `2the dragon grumbles.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Sosen Village
+Stonepass Lodge
+Bonetown
+Flagcity
+I'll stay here, thanks
+@if responce not 5 then do
+  @begin
+@show
+`c
+`\`\  `0"Climb on my back master, it's a good day for flying!" `2Vincent roars.
+
+`k  `2You climb up in the saddle, the magnificent beast lifts off the  
+    ground effortlessly. Before too long you are at your destination. A few
+    peasants scatter in fear as Vincent makes a soft landing.
+
+  `0"We are here master, watch your back amongst these other humans."
+
+  `2You watch as Vincent's sparkling golden form disappears into the horizon.
+
+`k
+@if responce is 1 then do
+  @begin
+   ;Sosen village
+   @do x is 38
+   @do y is 5
+   @do map is 456
+  @end
+
+@if responce is 2 then do
+  @begin
+   ;Stonepass Lodge
+   @do x is 40
+   @do y is 11
+   @do map is 880
+  @end
+
+@if responce is 3 then do
+  @begin
+   ;Bonetown
+   @do x is 53
+   @do y is 17
+   @do map is 1572
+  @end
+
+@if responce is 4 then do
+  @begin      
+   ;Flagcity
+   @do x is 69
+   @do y is 19
+   @do map is 1092
+  @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#NOSWIM
+@do saybar
+`$The water was too cold, try again tomorrow ...
+@end
+
+@#NOMOREFAIRY
+ @show
+
+ `r0`c
+                     `0"Come back and see me tomorrow" 
+
+`k
+  @drawmap
+  @update
+  @end
+@#NOMORE
+
+@#NOMOREWHORE
+ @show
+
+`r0`c `r1 Booked solid `r0
+
+
+ `0"We are booked up until tomorrow." `2he says.
+  `2You decide to wait until then.
+`\`k
+  @drawmap
+  @update
+  @end
+
+
+
+@#DOC
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healers `r0
+
+  `2The old doc looks you over for wounds carefully.
+
+`k
+`k
+
+        `%Your wounds are completely healed!
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+@#NOMORE
+;-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+;---------------------------SWIM ROUTINE---------------------------------
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+@#SWIM
+@do moveback
+@datanewday swim.idf
+@dataload swim.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto NOSWIM
+@end
+
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2Do you want to go swimming ? `2[`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+
+@begin
+  @show
+`r0`c  `r1  The Swimming Hole `r0
+
+`2You jump into the ice cold water.
+
+`k
+`$`lCo`l-`lCo`l-`lCo`l-Cold  Brrrrrr !
+
+`k
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `c`\`\
+                            `%YOU FEEL STRONGER !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `c`\`\
+                           `%YOU FEEL MORE AGILE !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `c`\`\
+                   `%YOU FIND A GEM AT THE BOTTOM OF THE POOL !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `c`\`\
+                        `%YOU GAIN 1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `c`\`\
+                       `%YOU GAIN 1 EXTRA CHARM POINT !
+
+ `k
+ @end
+
+@datasave swim.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@do saybar
+`%You are tired of swimming ! Maybe tomorrow ...
+@#NOMORE
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+;-----------------------FAIRY ROUTINE-------------------------------------
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#FAIRY
+@do moveback
+@datanewday fairy.idf
+@dataload fairy.idf &playernum `p20
+@offmap
+@if `p20 = 1 then do
+ @begin
+ @do goto NOMOREFAIRY
+ @end
+
+@show
+`r0`c `r1 Fairy Garden `r0
+
+  `2You have encountered a fairy bathing in the garden pool.
+
+  `0"Oh no not another human ! Spying on me huh? Now that you've seen me
+   I guess I'll have to grant you a wish"`2 she sighs.
+
+`k
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Make a wish
+Try to catch her
+Clap your hands
+Forget the whole thing
+@if responce not 4 then do
+@begin
+@end
+
+@if responce is 1 then do
+
+
+  @begin
+  ;hopefully randomly gives stuff  ;>
+@show
+`c
+`0"Ok sweetie, close your eyes and make your wish." `2she says smiling.
+
+`k
+`2You close your eyes and make a wish
+`2When you open your eyes
+
+`2You find `l.`l.`l.`l.
+  @do `p21 random 10 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `i28 + 1
+ @show
+                               `%a fishing Pole!
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 2 then do
+ @begin
+ @do `i08 + 1
+ @show
+                               `%a Berry pie!
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+                               `%a Gem !
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `i01 + 1
+ @show
+                               `%some Wildberries !
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+                               `%1 extra charm point !
+
+`k
+  @datasave fairy.idf &playernum 1
+  @end
+
+@if `p21 is 6 then do
+ @begin
+ @do `i05 + 1
+ @show
+                               `%a Green Potion !
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 7 then do
+ @begin
+ @do `i21 + 1
+ @show
+                               `%a Travel Pass !
+          
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 8 then do
+ @begin
+ @do `i20 + 1
+ @show
+                               `%a World Map !
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 9 then do 
+ @begin
+ @do `i40 + 1
+ @show
+                               `%a Blue Potion !
+
+`k
+ @datasave fairy.idf &playernum 1
+ @end
+
+@if `p21 is 10 then do
+ @begin
+ @do `i17 + 1
+ @show
+                               `%a Gloworm !
+         
+`k
+  @datasave fairy.idf &playernum 1
+  @end
+@end  
+
+@if responce is 2 then do
+  @begin      
+  ;She is pissed
+  @do `p04 - 1
+  @show
+
+`c`2You make a valiant effort to catch the tiny fairy.
+
+`k
+
+`2Your hand connects with a `l.`l.`l.`l.`l.`l. `@VERY ANGRY FAIRY !
+
+`k
+`\ `0"That might have worked somewhere else, but HERE us fairies rule!"
+  `2she slips out of your grasp, and hits you with her wand
+`k
+`\               `%YOU LOSE 1 MUSCLE POINT 
+`k
+  @end
+
+@if responce is 3 then do
+ @begin
+ @do `p01 + 1
+ @show
+
+`c`\ `0"Silly thing"`2! `2she smiles `0"You should only clap if I'm near death!
+  `0Here's a gift for being so sweet!"
+
+`k
+  `2She waves her wand over you.
+
+`k
+`\           `%YOU GAIN AN EXTRA EXPERIENCE POINT !
+
+`k
+  @end
+
+ @end
+@end
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+;--------------------------BEGIN BAR ROUTINES-------------------------------
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+
+@#MAN2
+@do moveback
+    @do `p20 random 10 1
+    @if `p20 is 1 then saybar
+`$Man: `%oDiN is rumored to visit this bar often.
+  @if `p20 is 2 then saybar
+`$Man: `%I've heard tell of a secret passage here.
+  @if `p20 is 3 then saybar
+`$Man: `%I like visiting the women companions here..
+  @if `p20 is 4 then saybar
+`$Man: `%oDiN made this IGM !
+  @if `p20 is 5 then saybar
+`$Man: `%My name is Tim.
+  @if `p20 is 6 then saybar
+`$Man: `%Have you visited the Fairy behind the castle ?
+  @if `p20 is 7 then saybar
+`$Man: `%Buy Odin's Keep it's worth the money.
+  @if `p20 is 8 then saybar
+`$Man: `%I tried catching the fairy once.
+  @if `p20 is 9 then saybar
+`$Man: `%I once slew the spirit of the mighty Red Dragon !
+  @if `p20 is 10 then saybar
+`$Man: `%I'm in love with Yewanda. 
+   
+
+@#NOMORE
+
+@#WOMAN1
+@do moveback
+    @do `p20 random 6 1
+    @if `p20 is 1 then saybar
+`$Woman: `%I'm in love with oDiN !
+  @if `p20 is 2 then saybar
+`$Woman: `%I never kiss on the first date.
+  @if `p20 is 3 then saybar
+`$Woman: `%I found a secret passage here once.
+  @if `p20 is 4 then saybar
+`$Woman: `%My name is Yin.
+  @if `p20 is 5 then saybar
+`$Woman: `%The Bartender is a wimp.
+  @if `p20 is 6 then saybar
+`$Woman: `%The fire sure adds romance.
+
+@#NOMORE
+
+@#DRUNK
+@do moveback
+    @do `p20 random 6 1
+    @if `p20 is 1 then saybar
+`$Drunk: `%Buurrrrpppp ! 
+  @if `p20 is 2 then saybar
+`$Drunk: `%Give me lib-er-tea or gimmi -hic-  sex.
+  @if `p20 is 3 then saybar
+`$Drunk: `%How dry I -hic- am.
+  @if `p20 is 4 then saybar
+`$Drunk: `%Bring on the dancing -hic- gals.
+  @if `p20 is 5 then saybar
+`$Drunk: `%Glad to meet all six of you -hic-.
+  @if `p20 is 6 then saybar
+`$Drunk: `%The -hic- drinks are free here !
+
+@#NOMORE
+
+
+@#BARDRINK
+@do `v01 is 1
+@show
+`r0`c `r1 Pick your poison `r0
+
+ `0"Whatta ya want ?"
+
+@do write
+`x
+@choice
+oDiN's Ale
+Ben's Beer
+Wispy Whisky
+Eric's Cure all
+I'm not thirsty
+@if responce is 1 then do
+@begin
+@show
+`\`c
+                          `2Eric hands you the Ale.`l.`l.`l.
+`\`k
+                `$Ahhh. That hit the spot. Better than a blu moon !
+`\`k
+@end
+@if responce is 2 then do
+@begin
+@show
+`\`c
+                          `2Eric hands you the beer.`l.`l.`l.
+`\`k
+                      `$Burppp... Better than a Budweezer !
+`\`k
+@end
+@if responce is 3 then do
+@begin
+@show
+`\`c
+                         `2Eric hands you the whiskey.`l.`l.`l.
+`\`k
+                 `$Ewww...Ahhh.... St`l-`lSt`l-`ltrong stuff!  WOW !
+`\`k
+@end
+
+@if responce is 4 then do
+    @begin
+@show
+`\`c
+                     `2Eric hands you his special concoction.
+                    `0"Enjoy it! `2he says laughing.
+`\`k
+                  `2You quaff down the strong smelling drink.`l.`l.`l.
+`\`k
+                     `$St`l-St`l-St`l-St`l-St-rong stuff !
+`\`k
+         `2You feel Strange.`l.`l.`l.`l.everything is blurry.`l.`l.`l.`l.you feel
+         yourself slipping away into darkness.`l.`l.`l.`l.`l.`l.`l.`l.`l.
+
+`k
+ @run SPIRIT in ericsbar.ref 
+ @end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+
+
+
+@#BARTENDER
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `r1 Eric the Bartender `r0
+
+  `0"What can I help you with s&boy ?"
+
+@do write
+`x`x
+@choice
+Order a drink
+Ask Eric about his bar
+Conduct business with Eric
+Trade in gems for potions
+Leave
+@if responce is 1 then goto BARDRINK
+@end
+@if responce is 2 then do
+ @begin
+ @show
+`\`c
+ `0"I built this place back when I used to own Odin's keep. I always wanted
+  my own bar, but never could afford to build it.
+
+  I'm real careful with my money now though, I got it hid away real good."
+
+ `%"Um-Uh That's nice.." `2you say boringly. `%"Gotta go now.."
+
+`k
+@end
+
+@if responce is 3 then do
+  @begin
+  @do `p20 is 1
+  @run getquest in quest.ref
+  @end
+@if response is 4 then do
+@begin
+;3 gems for `i54 Silver potion,  3 gems for `i53 Gold, `i52 red.
+ @if `p19 < 3 then do
+   @begin
+   @show
+`\`\  `0"Hey, you need at least three gems to get a potion!"
+`\`k
+   @do goto bartender
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `0"Okay, what kind a potion you want?"`2
+
+  @do write
+  `x`x
+  @choice
+Silver Potion
+Gold Potion
+Red Potion
+   @if response is 1 then do
+    @begin
+    @do `p19 - 3
+    @do `i54 + 1
+    @show
+`\`\  `0"Alright, there you go"`2
+`\`k
+    @end
+   @if response is 2 then do
+    @begin
+    @do `p19 - 3
+    @do `i53 + 1
+    @show
+`\`\  `0"Alright, there you go"`2
+`\`k
+    @end
+   @if response is 3 then do
+    @begin
+    @do `p19 - 3
+    @do `i52 + 1
+    @show
+`\`\  `0"Alright, there you go"`2
+`\`k
+    @end
+  @end
+@drawmap
+@update
+
+
+
+
+@#SEXPRISEF1
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l`l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEF2
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your wild love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your wild love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your wild love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your wild love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your wild love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEF3
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEF4
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your flawless love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEF5
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your probing love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your probing love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your probing love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your probing love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your probing love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#WOMAN
+@show
+`r0`c `r1 A Woman's Touch `r0
+
+ `2You enjoy a Woman's Touch. You are led into a room full of
+ different kinds of women, all are beyond beautiful. 
+
+`0"Take your Pick s&man" `2he urges.
+   
+
+
+@do `v01 is 1
+@do write
+`x
+@choice
+Carlina-Puerto Rican Beauty
+Yewanda-African Princess
+Marilyn-Blonde "All American" Bombshell
+Bibianna-Indian love goddess
+Yuko-Asian love slave
+Lisa-Mutt but what a butt
+Leave this place
+ 
+@if responce not 7 then do
+@begin
+@end
+
+@if responce is 1 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Karlita `r0
+
+`0"I won't disappoint you s&man " `2she says smiling.
+
+
+`\`2Karlita leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1  Aye Karumba `r0
+
+ `2You spend what seems like hours in pure sexual delight, exploring every   
+ possible love making technique. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. Knowing that you'll
+ savor this experience for a long time. Karlita gives you one last 
+ long kiss. `0"Adios lover" `2she says as she walks out of the bedroom.
+
+`k
+@do goto SEXPRISEF1
+@end
+
+
+@if responce is 2 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Yewanda `r0
+
+`0"Love awaits s&man " `2she says smiling.
+
+
+`\`2Yewanda leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1 Ritual Passion `r0
+
+ `2Yewanda pounces on you like a wild cat. You gently grab her wrists and
+ show her a few of the finer points of sex.    
+  
+`k  
+ `2When it's all over you get up, and get dressed. Still soaked with
+ sweat from your wild ride. Yewanda licks your face, 
+`0"Let's do this again soon" `2she says as she prances out of the bedroom.
+
+`k
+@do goto SEXPRISEF2
+ @end
+
+@if responce is 3 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Marilyn `r0
+
+`0"Ewww ww your are a sexy s&man " `2she says licking her lips.
+
+
+`\`2Marilyn leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1 Sex with a Legend `r0
+
+ `2As Marilyn undresses you discover all that you heard about her was    
+ true, and then some. She purrs and moans while you take her
+ again and again.
+  
+`k  
+ `2When it's all over you get up, and get dressed. You can't wait 
+ to run go tell your friends about it. Marilyn blows you a kiss. 
+`0"Come back and see me sexy, mmm." `2she says as she swishes out
+ of the bedroom.
+
+`k
+@do goto SEXPRISEF3
+ @end
+
+@if responce is 4 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with BiBiAnna `r0
+
+`0"I want your hot sex s&man " `2she says smiling.
+
+
+`\`2BiBiAnna leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1 Sheeva Awakens `r0
+
+ `2She takes you to an astral plane with her superb style. 
+ You are completely at her whim as you reach your climax repeatedly. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. Wondering if 
+ she is a mere mortal.  
+ `0"Goodbye, see me again" she says as she walks out of the bedroom.
+
+`k
+@do goto SEXPRISEF4
+ @end
+
+@if responce is 6 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Yuko `r0
+
+`0"I know you can tame me." `2she says smiling.
+
+
+`\`2Yuko leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1  Eastern Delight `r0
+
+ `2You probe deep into this beauty's sexual being. You gasp for breath     
+ as she works her body up and down in unison with yours. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. You'll never 
+ be the same. You are now an asian master lover.
+`0"So long master" `2she says as she walks out of the bedroom.
+
+`k
+@do goto SEXPRISEF5
+@end
+
+@if responce is 6 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Lisa `r0
+
+`0"I think I could love a s&man like you." `2she says smiling.
+
+
+`\`2Lisa leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1  Best Buns `r0
+
+ `2You probe deep into this beauty's sexual being. You gasp for breath     
+ as she works her body up and down in unison with yours. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. You'll never 
+ be the same. You are now a butt lover.
+`0"So long lover" `2she says as she walks out of the bedroom.
+
+`k
+@do goto SEXPRISEF6
+@end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEM1
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your superb love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your superb love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your superb love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l`l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your superb love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your superb love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEM2
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your cat-like love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your cat-like love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your cat-like love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your cat-like love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your cat-like love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEM3
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your love making with a legend you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEM4
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your enriching love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your enriching love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your enriching love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your enriching love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your enriching love making you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#SEXPRISEM5
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+@drawmap
+@update
+@end
+
+@#SEXPRISEM6
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 STRENGTH POINT !
+
+ `k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 DODGE POINT !
+
+ `k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 GEM !
+
+ `k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA HITPOINT !
+
+ `k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `2For your phreaking you gain `l.`l.`l.`l.`l.`l.`l.
+ `\ `l.`l.`l.`l.`l.`l.`l.`l.`%1 EXTRA CHARM POINT !
+
+ `k
+ @end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#MAN
+@show
+`r0`c `r1 A Man's Touch `r0
+
+ `2You Love Men. You are led into a room full of
+ different kinds of men, all are beyond handsome. 
+
+`0"Take your Pick s&man" `2he urges.
+   
+
+
+@do `v01 is 1
+@do write
+`x
+@choice
+Juan-Puerto Rican Stud
+Jamal-African Power House
+Peter-also known as oDiN
+Raj-Indian love god
+Seth-Mixed Breed Mack Daddy
+Leave this place
+ 
+@if responce not 6 then do
+@begin
+@end
+
+@if responce is 1 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Juan `r0
+
+`0"I need a s&man like you." `2he says smiling.
+
+
+`\`2Juan leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1  Aye Karumba `r0
+
+ `2You spend what seems like hours in pure sexual delight, exploring every   
+ possible love making technique. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. Knowing that you'll
+ savor this experience for a long time. Juan gives you one last 
+ long kiss. `0"Adios my lover" `2he says as he walks out of the bedroom.
+
+`k
+@do goto SEXPRISEM1
+@end
+
+
+@if responce is 2 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Jamal `r0
+
+`0"Love waits for no s&man." `2he says laughing.
+
+
+`\`2Jamal leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1 Ritual Passion `r0
+
+ `2Jamal pounces on you like a wild cat. You gently grab his shoulders and
+ show him a few of the finer points of sex.    
+  
+`k  
+ `2When it's all over you get up, and get dressed. Still soaked with
+ sweat from your wild ride. Jamal licks your face, 
+`0"Let's do this again soon" `2he says as he struts out of the bedroom.
+
+`k
+@do goto SEXPRISEM2
+ @end
+
+@if responce is 3 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Peter `r0
+
+`0"I'm only doing this for the hell of it. " `2he says, grinning.
+
+
+`\`2Peter leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1 Sex with a Legend `r0
+
+ `2You can't believe this man's stamina, as he pleases you in ways    
+ you've only imagined. 
+   
+`k  
+ `2When it's all over you get up, and get dressed. You can't wait 
+ to run go tell your friends about it.  
+`0"Come back and see me ." `2he says as he eases out of the bedroom.
+
+`k
+@do goto SEXPRISEM3
+ @end
+
+@if responce is 4 then do
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Raj `r0
+
+`0"A s&man like you is hard to find." `2he says smiling.
+
+
+`\`2Raj leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1 Ganesh Awakens `r0
+
+ `2He takes your breath away with his superb style. 
+ You are completely at his whim as you reach your climax repeatedly. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. Wondering if 
+ he is a mere mortal.  
+ `0"Goodbye, see me again" he says as he walks out of the bedroom.
+
+`k
+@do goto SEXPRISEM4
+ @end
+
+@if responce is 5 then do
+ ;Seth, Gotta Love it huh? :>
+ ;    oDiN
+ @begin
+ @show
+
+`r0`c  `r1`% Fun with Seth `r0
+
+`0"With a s&man like you, this will be fun." `2he says smiling.
+
+
+`\`2Seth leads you into a back room to a comfortable looking bed.
+
+`k`c  `r1  LORD FREAK `r0
+
+ `2You can't get over how lucky you are to make it with the      
+ creator of LORD. His flawless routines leave you breathless. 
+  
+`k  
+ `2When it's all over you get up, and get dressed. You'll never 
+ be the same. You decide to come back for more.
+`0"E-mail me baby" `2he says as he walks out of the bedroom.
+
+`k
+@do goto SEXPRISEM5
+@end
+@drawmap
+@update
+@end
+@#NOMORE
+
+
+@#WHATEVER
+@show
+`r0`c `r1 Male or Female `r0
+
+  `2You can't make up your mind. 
+     
+ `0"Do a little soul searching s&man ! Come back when you've made up
+  your mind" `2the man says giggling.
+   
+`k
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#COMPARED
+@do moveback
+@offmap
+@show
+`r0`c `r1 Companion For Rent `r0
+
+
+ `2You find yourself longing for the touch of another.
+
+ Your guide leads you to a large room, he turns around and faces you.
+
+`0"Listen up s&man ! We got ONLY the cleanest, best who..Ur..Mmm companions
+ this side of heaven, Whatta ya need ?"
+   
+
+`k
+@do `v01 is 1
+@do write
+`x
+@choice
+I like women
+I want a man
+I'll take whatever I can get
+I do good with myself
+
+@if responce not 4 then do
+@begin
+@end
+
+@if responce is 1 then do
+    @begin
+    @do goto WOMAN
+    @end
+
+@if responce is 2 then do
+   @begin
+   @do goto MAN
+   @end
+
+@if responce is 3 then do
+   @begin
+   @do goto WHATEVER
+   @end
+
+@end
+
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#PIMPDADDY
+@do moveback
+@offmap
+;I love this part
+@datanewday compadre.idf
+@dataload compadre.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto NOMOREWHORE
+@end
+
+@datasave compadre.idf &playernum 1
+
+@if `v06 is 1 then do
+ @begin
+ ;Clean mode is on - you don't know what you're missing dude or dudette 
+ @do saybar
+Sorry but your Sysop has selected clean mode for this game. 
+ @closescript
+ @end
+
+@show
+`r0`c  `r1`% Gueedo the Pimp `r0
+
+ `2A surly looking man approaches you.
+
+
+`0"You found the right place if you're looking for a nice, clean, male or
+ female companion. The best method of relaxation at the best price.
+ Only `$$50 `0bucks."
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Yea, I'll try it out
+I don't think so
+@if responce = 2 then do
+  @begin
+   @drawmap
+   @update
+   @end
+
+@if responce is 1 then do
+  @begin
+  @if money < 50 then do
+    @begin
+    @show
+
+`\`c
+ `0"You stupid idiot ! You can't afford it ! Come back and see us
+  when you have the money" `2he says, frowning.
+
+`k
+  @drawmap
+   @update
+    @closescript
+   @end
+
+  @do `p30 is 3 
+  @do `v40 is 50
+  @routine deposit in vaults.ref
+ @do money - 50
+  ;Gives player 1 lay point don't matter if they chicken out- at least they
+  ;paid for it.
+  @do `p34 + 1
+  @do goto COMPARED
+
+  @drawmap
+   @update
+  @closescript
+ @end
+@#NOMORE
+
+@#GRAFFITTI
+;Thanks ring out to Seth for the template :>
+@do moveback
+@busy
+@show
+`r0`c  `r1  THE GRAFFITTI WALL  `r0
+
+@if wall.txt exist false then do
+ @begin
+ @writefile wall.txt
+  `%oDiN `2: `0Hello ladies !
+ @end
+
+@if wall.txt exist true then do
+ @begin
+ @displayfile wall.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+   
+ @writefile wall.txt
+  `%`n`2 : `0`s03
+ @do trim wall.txt 17
+ @drawmap
+ @update
+
+@#WEAPONS
+@offmap
+@do moveback
+@label weapons
+@show
+`r0`c `r1 `%Odin's Weapons, Armor and General Goods `r0
+
+  `2A scruffy looking blacksmith approaches
+ `0"Waddaya need today?" `2he asks.
+ 
+
+@do `v01 is 1
+@do write
+`x
+@choice
+Examine his Weaponry
+Check out the Armory
+List other Goods
+Sell something
+Leave
+@show
+`\`c
+
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  60
+  49
+  39
+  58
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@buymanager
+  37
+  59
+  62
+  68
+  @end
+
+@if responce is 3 then do begin
+ @begin
+@buymanager
+  3
+  17
+  20
+  5
+  40
+  50
+  @end
+
+@if responce is 4 then do begin
+ @begin
+ @clearblock 8 14
+ @do move 1 7
+ @sellmanager
+  @end
+
+@if responce not 5 then goto WEAPONS
+@drawmap
+@update
+@end
+@#NOMORE
+
+@#BAR
+@do x is 73
+@do y is 19
+@do map is 796
+@loadmap 796
+@do goto DONE
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+;-------------------------END BAR ROUTINES---------------------------------
+;-=-=-=-=-=-=-=--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@#GUARD
+@do moveback
+@label startg
+@if keep.dat exist false then do
+  @begin
+  @do saybar
+`0 "You have 5 seconds to make yourself scarce!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile keep.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You nod to the door guard, he gives you a Stoney stare.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+`2 As you approach, the huge door guard snaps to attention when he
+   sees you are going to speak to him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+`%Make `#Odin's Keep `%your home
+Leave
+@if responce is 3 then do
+        @begin
+        @do `p69 is 27
+        @show
+`r0`c
+
+   `#Odin's Keep `%is now home sweet home.
+
+       @key
+       @end
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$25000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your property to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete keep.dat
+  @writefile keep.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Odin's Keep to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Odin's Keep`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transferred.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your property back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not in this lifetime !
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete keep.dat
+  @do `p30 is 3 
+  @do `v40 is 25000
+  @routine widthdraw in vaults.ref
+  @do money + 25000
+  @show
+`\`\  `%PROPERTY SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Odin's Keep`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\ 
+`2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete keep.dat
+  @writefile keep.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#SIGN
+@do moveback
+
+ @if keep.dat exist false then do
+ @begin
+ @do saybar
+Odin's Keep - For sale inquire within
+ @end 
+
+@if keep.dat exist true then do
+ @begin
+@readfile keep.dat
+`p20
+`s01
+@do `s01 is getname `p20
+ @do saybar
+`%Welcome to Odin's Keep - Property of `0`s01`%.
+ @end 
+
+@#SIGN2
+;No I'm really not vain - just ran outta ideas :>
+@do moveback
+    @do `p20 random 10 1
+    @if `p20 is 1 then saybar
+`$oDiN: `%I went swimming- WOW -I feel better !
+  @if `p20 is 2 then saybar
+`$oDiN: `%Visit Eric's bar, it rocks !
+  @if `p20 is 3 then saybar
+`$oDiN: `%Led Zepplin rocks !
+  @if `p20 is 4 then saybar
+`$oDiN: `%I made this IGM !
+  @if `p20 is 5 then saybar
+`$oDiN: `%Carlos is in prison !
+  @if `p20 is 6 then saybar
+`$oDiN: `%Have you visited the Fairy behind the Castle ?
+  @if `p20 is 7 then saybar
+`$oDiN: `%Smashing Pumpkins song, "EYE" rules.
+  @if `p20 is 8 then saybar
+`$oDiN: `%I caught the fairy !
+  @if `p20 is 9 then saybar
+`$oDiN: `%I Love Yin, have you seen her ?
+  @if `p20 is 10 then saybar
+`$oDiN: `%Calypso made Audacity BBS. 
+   
+  
+
+@#SIGN3
+@do moveback
+@do saybar
+`@The Dragon's Lair
+@end
+
+@#SIGN4
+@do moveback
+@do saybar
+`$The Healer's Hut
+@end
+
+
+@#ENTER
+@do moveback
+@offmap
+@if keep.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Odin's Keep rumored to have been created by it's namesake
+  hundreds of years ago.
+
+  Comes fully stocked with the following :
+
+  `0* `2You're very own pet Dragon "Vincent" , who will fly you to
+    `0Porttown`2, `0Sosen Village`2, `0Flagcity`2, `0etc.`2!
+
+  `0* `2The meanest, toughest Guard you've ever seen
+  
+  `0* `2A private doc, to patch up your wounds !
+
+  `0* `2Much.. much.. more included ! 
+
+  `2The asking price is `$$50,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 49999 Buy it ! What a bargain !
+<&money 50000 Mark it on your map and come back later to buy it.
+>&money 49999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if keep.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh hells bells!  Someone  else bought it while you weren't looking
+  You could kick yourself for letting this slip by. .`\`\`k
+    @do goto done
+    @end
+
+  @writefile keep.dat
+&playernum
+NONE
+0
+0
+0
+0
+  @do `p30 is 3 
+  @do `v40 is 50000
+  @routine deposit in vaults.ref
+    @do money - 50000
+    @do addlog
+  `0`n `2buys `%Odin's Keep`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this property!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile keep.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+    @do delete keep.dat
+    @do addlog
+  `%Odin's Keep`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+`\`k
+   @update
+   @drawmap
+   @closescript
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%Odin's Keep`0,"`2 the guard frowns as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Odin's Keep Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 73
+@do y is 19
+@do map is 796
+@loadmap 796
+@do goto done
+@#done
+@drawmap
+@closescript
+@end
+@NOMORE

@@ -1,0 +1,67 @@
+The Wizard's Castle v1.3
+by Bobby Queen & Robby Dittmann
+
+Welcome to the latest version of Bobby Queen & MamooSoft Programming's 
+Wizard's Castle!  This file is available on The Wizard's Castle BBS for FREQ
+or on MamooSoft Programming's home page at home.sprynet.com/sprynet/robbyd!
+
+
+INSTALLATION:
+
+1) Unzip the file in your LORD II directory.
+
+2) Type IGM WIZCAST.IGM
+
+3) Crank up LORD II and go to The Wizard's Castle!
+
+
+TO UNINSTALL:
+
+1) Type IGM WIZCAST.IGM a second time
+
+
+HISTORY:
+
+v1.0
+Original release
+
+v1.1
+Fixed the bug that allowed you to keep bumping into the guy who had the
+treasure to get unlimited cash and gems.  We should have saw this coming.
+:)  Bad Authors, Bad Authors. :)
+
+v1.2
+Fixed where a part of the Wizard.ref was left out in v1.1.  This came
+from 2 people working on the file and sending it back and forth. :)
+
+v1.3
+Fixed up the outside of the Wizard's Castle and added a sign outside.  Also
+changed the Giant Centipede to Giant Scorpion (Thanks Crystal).  And changed
+the name of the files from WIZARD to WIZCAST to avoid confusion over another
+IGM using WIZARD for Wizard's Tower.  Also included a patch to let those who
+want to run Felicity's Temple along with Wizard's Castle since we both chose
+the same page to put our IGM's on. This patch was originally did for the 1st
+version of Wizard's Castle by Ben Tiefert, so I just left his information in
+the file & redid the screen.  BE SURE TO INSTALL BOTH IGM'S FIRST! THEN THIS
+FILE LAST!
+
+SPECIAL THANKS TO:
+
+Seth Able for LORD II itself without which this IGM would have been useless.
+Mariam Dittmann for alpha, beta, and gamma testing!
+Jane Queen for alpha, beta and gamma testing!
+Behind Great Authors always stand their wives!
+
+
+REGISTRATION:
+
+The Wizard's Castle is absolutely FREE.  Of course, the authors takes no
+responsibility for any damage or problems you may incur.
+
+Please let us know if you have any problems or questions.  And let us know
+what you think!
+
+Bobby Queen                       Robby Dittmann
+The Wizard's Castle BBS           MamooSoft Programming
+1:3667/5                          1:133/8003
+wizards@shelby.net                robbyd@sprynet.com

@@ -1,0 +1,1801 @@
+@#getvars
+@do `p30 is 5
+@do `v40 is 10000
+@routine widthdraw in vaults.ref
+@writefile coliseum.dat
+0
+`v40
+1
+10
+10
+1000
+@#sign
+@do moveback
+@do move 42 10
+@do write
+`r1`%⁄ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒø`r0
+@do move 42 11
+@do write
+`r1≥ Northlands Coliseum  ≥`r0
+@do move 42 12
+@if coliseum.dat exist false then do
+        @begin
+@do write
+`r1≥     - FOR SALE      ≥ ≥`r0
+        @end
+@if coliseum.dat exist true then do
+        @begin
+@do write
+`r1≥                     ≥ ≥`r0
+        @end
+@do move 42 13
+@do write
+`r1≥        3 Miles      ≥ ≥`r0
+@do move 42 14
+@do write
+`r1¿ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒŸ`r0`l`l`l`l`l`l`l
+@do move 42 10
+@do write
+`r2`0                         `r0
+@do move 42 11
+@do write
+`r2                         `r0
+@do move 42 12
+@do write
+`r2                         `r0
+@do move 42 13
+@do write
+`r2                         `r0
+@do move 42 14
+@do write
+`r2                         `r0
+@update
+@closescript
+
+@#top
+@do moveback
+@busy
+@offmap
+@do `p20 is 0
+@datanewday colfite.idf
+@dataload colfite.idf &playernum `p20
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+@if `p20 > `p40 then goto nogame
+@do `p44 is 1
+@readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+@do `p21 is deleted `p45
+@if `p21 is 1 then do
+        @begin
+        @do delete coliseum.dat
+        @do addlog
+  `%NorthLand Coliseum`2 is put on the market today.
+        @routine seperate in gametxt.ref
+        @end
+@if `p45 is 0 then `p44 is 0
+@if `p45 is &playernum then `p44 is 2
+@do `v01 is 1
+@show
+`r0`c   `r1 `%The Coliseum `r0
+
+  `2A hugely muscled man greets you at the door.
+
+  `0Hi! Welcome to the Coliseum! Would you like to bet on a fight?
+
+@do write
+`x`x
+@choice
+You betcha!
+No way josä
+What are the rules?
+=`p44 0 I want to buy this place
+Who runs this operation?
+=`p44 2 Go to the office
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@if responce is 3 then do
+  @begin
+  @run rulz
+  @end
+@if responce is 1 then do
+  @begin
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat        ;name/vault/combo/bets/min bet$/max bet$
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+  @do `p20 is 0
+  @do `p20 is money
+  @if `p20 < `p41 then do
+    @begin
+    @run nodough
+    @closescript
+    @end
+  @run pickmon
+  @closescript
+  @end
+@if responce is 4 then goto forsale
+@if responce is 5 then do
+        @begin
+        @do `s05 is King`xSysOp
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @if `p45 > 0 then do
+                @begin
+                @do `s05 is getname `p45
+                @end
+        @show
+`r0`c   `r1 `%The Coliseum `r0
+
+  `2The hugely muscled man answers you.
+   `%"`$Why of course, `s05 owns this great place.`%"
+
+
+        @key
+        @do goto top
+        @end
+@if responce is 6 then do
+        @begin
+@label office
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @do `v01 is 1
+        @show
+`r0`c                    `r1 In Your Office `r0
+
+   You sit down in front of your desk on your nice hardwood block chair.
+
+        @do write
+`x`x
+        @do `p45 is 1
+       @label deskloop
+        @if coldesk`p45.txt exist false then do
+                @begin
+                @writefile coldesk`p45.txt
+`r6                                                                               `r0
+                @do `p45 + 1
+                @if `p45 < 10 then goto deskloop
+                @end
+        @choice
+Change Vault Combination
+Ownership options
+Open the Vault
+Change limits
+Look at the desk
+Home Sweet Home
+Leave the office
+        @if responce is 5 then do
+                @begin
+                @show
+`c`\
+`r6`8- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -`r0
+`r6                                              `%',Made in China,'                `r0
+                @displayfile coldesk1.txt
+                @displayfile coldesk2.txt
+                @displayfile coldesk3.txt
+                @displayfile coldesk4.txt
+                @displayfile coldesk5.txt
+                @displayfile coldesk6.txt
+                @displayfile coldesk7.txt
+                @displayfile coldesk8.txt
+                @displayfile coldesk9.txt
+                @show
+`r6                                                                               `r0
+`r6`8- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -`r0
+                @key bottom
+                @end
+        @if responce is 4 then do
+                @begin
+@label limits
+                @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                @clear screen
+                @do move 25 2
+                @do write
+`r1`$   NorthLands Coliseum Limits   `r0
+                @do move 15 4
+                @do write
+`2-Players can BET `%`p40 `2times.
+                @do move 15 5
+                @do write
+`2-Players can BET a MAX of `%`p42`2.
+                @do move 15 6
+                @do write
+`2-Players can BET as LOW as `%`p41`2.
+                @do move 30 9
+                @do write
+`r0`5⁄/ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ\ø
+                @do move 30 10
+                @do write
+`r0`5≥                         ≥
+                @do move 30 11
+                @do write
+`r0`5≥                         ≥
+                @do move 30 12
+                @do write
+`r0`5≥                         ≥
+                @do move 30 13
+                @do write
+`r0`5≥                         ≥
+                @do move 30 14
+                @do write
+`r0`5¿\ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ/Ÿ
+                @do move 31 10
+                @do `v01 is 1
+                @choice
+`$Change MAX Amount of bets
+`$Change MAX Bet
+`$Change MIN Bet
+`$Change Nothing
+                @if responce is 4 then goto office
+                @if responce is 1 then do
+                        @begin
+                        @do move 20 17
+                        @do write
+`$Change AMOUNT OF BETS to what? :
+                        @do readnum 8
+                        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @do `p40 is `v40
+                        @do delete coliseum.dat
+                        @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @do goto limits
+                        @end
+                 @if responce is 2 then do
+                        @begin
+                        @do move 20 17
+                        @do write
+`$Change MAX BETS to what? :
+                        @do readnum 8
+                        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @do `p42 is `v40
+                        @do delete coliseum.dat
+                        @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @do goto limits
+                        @end
+                 @if responce is 3 then do
+                        @begin
+                        @do move 20 17
+                        @do write
+`$Change MIN BETS to what? :
+                        @do readnum 8
+                        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @do `p41 is `v40
+                        @do delete coliseum.dat
+                        @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @do goto limits
+                        @end
+                @end
+        @if responce is 3 then do
+
+                @begin
+                @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                @clear screen
+                @do move 20 6
+                @do write
+`$You need to know the combonation to open the Vault.
+                @do move 35 10
+                @do write        
+⁄\ƒƒƒƒƒƒƒƒ/ø
+                @do move 35 11
+                @do write
+≥          ≥
+                @do move 35 12
+                @do write
+¿\ƒƒƒƒƒƒƒƒ/Ÿ
+                @do move 36 11
+                @do readnum 8 000
+                @do `p49 is 0
+                @if `v40 is `p47 then goto openvault
+                @if `v40 not `p47 then do
+                        @begin
+                        @do move 20 15
+                        @do write
+`@Lock doesn't budge. Must be wrong combination.`\`\
+                        @key
+                        @do goto office
+                        @end
+                @do goto office
+                @end
+        @if responce is 7 then goto top
+        @if responce is 6 then do
+                @begin
+                @do `p69 is 20
+                @show
+`\`\  This is your HOME now. Living at work is great!`\
+                @key
+                @end
+        @if responce is 2 then do
+                 @begin
+                 @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+                 @do `v01 is 1
+                 @do write
+`x`x
+                 @choice
+Transfer deed to someone else
+Sell property back to the bank for `$100,000`%.
+Do nothing of the sort
+                 @if response is 1 then do
+                         @begin
+                         @show
+`\`\  `2Transfer to whom?
+                         @chooseplayer `p20
+                         @if `p20 is 0 then do
+                                 @begin
+                                 @show
+  `2You decide to keep your domain - for now.`\`\`k
+                                 @do goto office
+                                 @end
+                         @do `s02 is getname `p20
+                         @show
+`2  Are you sure you wish to give your keep to `0`s02`2?
+                         @do write
+`x`x
+                         @choice
+Yes
+Not on your life.
+                         @if responce is 2 then do
+                                @begin
+                                        @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+                                        @do goto office
+                                        @end
+                                @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                                @do delete coliseum.dat
+                                @writefile coliseum.dat
+`p20
+`p46
+`p47
+`p40
+`p41
+`p42
+                                @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of NorthLand Coliseum to you. 
+  Vault Combination to open the safe will remain `0"`p47"`2 unless
+  `2you come by and change it.
+
+                                @do addlog
+  `0`n`2 has given `%NorthLand Coliseum`2 to `0`s02`2!
+                                @routine seperate in gametxt.ref
+                                @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+                                @do goto office
+                                @end
+                        @if response is 2 then do
+                                @begin
+                                @show
+`\`\`2  Are you sure you wish to sell your keep back to the bank?`\
+                                @do `v01 is 1
+                                @do write
+`x`x
+                                @choice
+Yes
+Not on your life.
+                                @if responce is 2 then do
+                                        @begin
+                                        @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+                                        @do goto office
+                                        @end
+                                @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+                                @do `p30 is 5
+                                @do `v40 is 100000
+                                @routine widthdraw in vaults.ref
+                                @do delete coliseum.dat
+                                @do money + 100000
+                                @show
+`\`\  `%KEEP SOLD!`2`\`\`k
+                                @do addlog
+  `0`n`2 has sold `%NorthLand Coliseum`2 back to the bank!
+                                @routine seperate in gametxt.ref
+                                @drawmap
+                                @do goto top
+                                @end
+                        @do goto top
+                        @end
+                @if responce is 1 then do
+                        @begin
+                       @label combo
+                        @do write
+`\`\  `0The new Combination? (Digits ONLY): `x
+                        @DO READNUM 8 `p47
+                        @if `v40 < 100 then do
+                                @begin
+                                @show
+`\`\  `2Damn, it didn't work like that, the combo is too short.`l  `2MIN 3 Digits.`\`\`k
+                                @do goto combo
+                                @end
+                        @readfile coliseum.dat
+`p45
+`p46
+`p43
+`p40
+`p41
+`p42
+                        @do `p47 is `v40
+                        @do delete coliseum.dat
+                        @writefile coliseum.dat
+&playernum
+`p46
+`p47
+`p40
+`p41
+`p42
+                        @show
+`\`\  `0Don't forget it.`\Do you want to engrave the combo in the desk? [Y/n]`\
+                        @do readspecial `s05 YN
+                        @if `s05 is Y then do
+                                @begin
+                                @do `s06 is `x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+                                @do `s07 is `x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+                                @do `p49 random 68 1
+                                @do pad `s06 `p49
+                                @do `p48 is 67
+                                @do `p48 - `p49
+                                @do pad `s07 `p48
+                                @do `p45 random 11 1
+                                @if `p45 is 1 then `s05 is ,
+                                @if `p45 is 2 then `s05 is /
+                                @if `p45 is 3 then `s05 is ;
+                                @if `p45 is 4 then `s05 is "
+                                @if `p45 is 5 then `s05 is '
+                                @if `p45 is 6 then `s05 is ~
+                                @if `p45 is 7 then `s05 is !
+                                @if `p45 is 8 then `s05 is *
+                                @if `p45 is 9 then `s05 is )
+                                @if `p45 is 10 then `s05 is (
+                                @if `p45 is 11 then `s05 is -
+                                @do `s05 add `p47
+                                @do `p45 random 11 1
+                                @if `p45 is 1 then `s05 add ,
+                                @if `p45 is 2 then `s05 add /
+                                @if `p45 is 3 then `s05 add ;
+                                @if `p45 is 4 then `s05 add "
+                                @if `p45 is 5 then `s05 add '
+                                @if `p45 is 6 then `s05 add ~
+                                @if `p45 is 7 then `s05 add !
+                                @if `p45 is 8 then `s05 add *
+                                @if `p45 is 9 then `s05 add )
+                                @if `p45 is 10 then `s05 add (
+                                @if `p45 is 11 then `s05 add -
+                                @do pad `s05 12
+                                @do `p45 random 9 1
+                                @do delete coldesk`p45.txt
+                                @writefile coldesk`p45.txt
+`r6`s06`s05`s07
+                                @do goto office
+                                @end
+                        @do goto office
+                        @end
+                @do goto office
+                @end
+        @do goto office
+        @end
+
+@#forsale
+@do moveback
+@offmap
+  @show
+`r0`c  `r1 `%For Sale `r0
+  `$- `2NorthLands Coliseum `$-
+
+      `%"`$A classic sporting gambling establishment.`%"
+
+        `2Features:
+              `%-`$You get a secured vault.
+              `%-`$You must leave money in the vault to pay
+                `$out winning bets (if any).
+              `%-`$You collect all player lossing bets.
+              `%-`$When & if the vault is empty the Coliseum is closed.
+              `%-`$You set the min and max wagers.
+
+              `2The asking price is, just `$$100,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 99999 Purchase it.
+<&money 100000 Sigh wistfully and leave since you don't have enough.
+>&money 99999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @readfile coliseum.dat
+`p45
+  @if `p45 > 0 then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto top
+    @end
+  @readfile coliseum.dat
+`p45
+`p44
+`p45
+`p40
+`p41
+`p42
+  @do delete coliseum.dat
+  @writefile coliseum.dat
+&playernum
+`p44
+`p45
+`p40
+`p41
+`p42
+    @do money - 100000
+    @do `p30 is 5
+    @do `v40 is 100000
+    @routine deposit in vaults.ref
+    @do addlog
+  `0`n `2buys `%NorthLand Coliseum`2!
+     @routine seperate in gametxt.ref
+
+  @show      
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this business now!
+
+`2Enjoy your new business.`\`\`k
+  @do goto top
+  @end
+@do goto top
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+
+@#pickmon
+@dataload colfite.idf &playernum `p20
+@if `p20 is 0 then do
+  @begin
+  @datasave colfite.idf &playernum 1
+  @end
+@do `p20 + 1
+@datasave colfite.idf &playernum `p20
+@do `p26 is 0
+@do `p23 is 0
+@do `p20 is 0
+@show
+`\`\`%Calculating Monster 1. Please Hold...
+@do `p20 random 10 1
+@do goto mon`p20
+
+@#mon1
+;Monster Name
+@do `s01 is Nibbet
+;Monster's Color
+@do `s02 is !
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon2
+;Monster Name
+@do `s01 is Branch`xDividian
+;Monster's Color
+@do `s02 is 4
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon3
+;Monster Name
+@do `s01 is Evil`xTreant
+;Monster's Color
+@do `s02 is 6
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon4
+;Monster Name
+@do `s01 is Slime`xBeast
+;Monster's Color
+@do `s02 is 0
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon5
+;Monster Name
+@do `s01 is Alligator
+;Monster's Color
+@do `s02 is 2
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon6
+;Monster Name
+@do `s01 is Behemoth
+;Monster's Color
+@do `s02 is 9
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon7
+;Monster Name
+@do `s01 is Commando
+;Monster's Color
+@do `s02 is 0
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon8
+;Monster Name
+@do `s01 is Goblin
+;Monster's Color
+@do `s02 is 2
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon9
+;Monster Name
+@do `s01 is Bear
+;Monster's Color
+@do `s02 is 6
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#mon10
+;Monster Name
+@do `s01 is Chimera
+;Monster's Color
+@do `s02 is 0
+;Current HP
+@do `p24 random 50 50
+;Total HP
+@do `p27 is `p24
+;Attack Strength
+@do `p26 random 50 50
+;Weapon Strength
+@do `p23 random `p26 1
+@show
+`\`%Calculating Monster 2. Please Hold...
+@run rand
+
+@#rand
+@do `p41 is 0
+@do `p42 is 0
+@do `p20 is 0
+@do `p20 random 10 1
+@do goto mons`p20
+
+@#mons1
+;Monster Name
+@do `s03 is Nibbet
+;Monster's Color
+@do `s04 is !
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons2
+;Monster Name
+@do `s03 is Branch`xDividian
+;Monster's Color
+@do `s04 is 4
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons3
+;Monster Name
+@do `s03 is Evil`xTreant
+;Monster's Color
+@do `s04 is 6
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons4
+;Monster Name
+@do `s03 is Slime`xBeast
+;Monster's Color
+@do `s04 is 0
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons5
+;Monster Name
+@do `s03 is Alligator
+;Monster's Color
+@do `s04 is 2
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons6
+;Monster Name
+@do `s03 is Behemoth
+;Monster's Color
+@do `s04 is 9
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons7
+;Monster Name
+@do `s03 is Commando
+;Monster's Color
+@do `s04 is 0
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons8
+;Monster Name
+@do `s03 is Goblin
+;Monster's Color
+@do `s04 is 2
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons9
+;Monster Name
+@do `s03 is Bear
+;Monster's Color
+@do `s04 is 6
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#mons10
+;Monster Name
+@do `s03 is Chimera
+;Monster's Color
+@do `s04 is 0
+;Current HP
+@do `p28 random 50 50
+;Total HP
+@do `p29 is `p28
+;Attack Strength
+@do `p42 random 50 50
+;Weapon Strength
+@do `p41 random `p42 1
+@if `s03 = `s01 then do
+  @begin
+  @run rand
+  @end
+@run bet
+
+@#bet
+@do `p30 is 0
+@do `v01 is 1
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+@show
+`r0`c   `r1 `%Picking A Winner `r0
+
+   `0The next battle is about to begin! Here are the challengers:
+
+   `0Challenger #1: `l`l`l``s02`s01`2`%!
+
+   `0Challenger #2: `l`l`l``s04`s03`2`%!
+
+   `0Who would you like to bet on?
+
+@do write
+`x`x
+@choice
+`s01
+`s03
+@if responce is 1 then do
+  @begin
+  @do `p30 is 1
+  @do `s09 is ``s02`s01
+  @run bet2
+  @closescript
+  @end
+@if responce is 2 then do
+  @begin
+  @do `p30 is 2
+  @do `s09 is ``s04`s03
+  @run bet2
+  @closescript
+  @end
+
+@#bet2
+@do `p22 is 0
+@do `v01 is 1
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+@if `p46 < `p42 then `p42 is `p46
+@if `p46 < `p41 then goto broke
+        @end
+@show
+`r0`c   `r1 `%Place Your Bets `r0
+
+   `0How much would you like to bet?
+
+   `0Minimum is `$`p41`0 gold, Maximum `$`p42`0 gold
+
+   `#(`0You have `$&money gold`#)
+
+@label pik
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+@do move 3 11
+@do readnum 8 NIL `% `1
+@if `v40 is 0 then goto NOBET
+@if `v40 less `p41 then do
+  @begin
+  @do goto pik
+  @end
+@if `v40 more `p42 then do
+  @begin
+  @do goto pik
+  @end
+@do `p22 is `v40
+@do goto fitescr
+
+@#fitescr
+@do map is 54
+@loadmap 54
+@drawmap
+@do `p40 is 1
+@do move 5 2
+@do write
+`r0``s02`s01
+@do move 5 6
+@do write
+`r0``s04`s03
+@do move 12 9
+@do write
+`%1
+@do move 46 2
+@do write
+`s09
+@do move 43 4
+@do write
+`$`p22
+@do `p22 + `p22
+@do move 70 4
+@do write
+`$`p22
+@do move 3 14
+@do write
+`r0``s02  
+@do move 3 15
+@do write
+ -≈-
+@do move 3 16
+@do write
+ / \
+@do move 3 18
+@do write
+``s02`s01
+@do move 3 19
+@do write
+`2HP: `%`p24 `2of `%`p27
+@do move 74 14
+@do write
+`r0``s04  
+@do move 74 15
+@do write
+ -≈-
+@do move 74 16
+@do write
+ / \
+@do move 55 18
+@do write
+``s04`s03
+@do move 55 19
+@do write
+`2HP: `%`p28 `2of `%`p29
+@run battle
+@closescript
+
+@#battle
+@do `p20 is 0
+@do `p25 is 0
+@do `p21 is 0
+@do `p21 random 10 1
+@if `p21 < 4 then do
+  @begin
+  @do move 35 6
+  @do write
+``s04`s03 `!misses`%!
+  @do move 35 7
+  @do write
+`k
+  @run battle2
+  @closescript
+  @end
+@do `p25 is `p26
+@do `p25 + `p23
+@do `p20 random `p25 1
+@do move 35 6
+@do write
+``s04`s03 `4hits `%for `@`p20 `%damage!
+@do move 35 7
+@do write
+`k
+@do `p24 - `p20
+@if `p24 < 1 then `p24 is 0
+@do move 3 19
+@show
+`2HP: `%`p24 `2of `%`p27`x`x`x`x`x`x
+@if `p24 is 0 then do
+  @begin
+  @run deadguy
+  @closescript
+  @end
+@run battle2
+@closescript
+@end
+
+@#battle2
+@do `p20 is 0
+@do `p25 is 0
+@do `p21 is 0
+@do `p21 random 10 1
+@if `p21 < 4 then do
+  @begin
+  @do move 35 8
+  @do write
+``s02`s01 `!misses`%!
+  @do move 35 9
+  @do write
+`k
+  @routine cleartext
+  @run battle
+  @closescript
+  @end
+@do `p25 is `p26
+@do `p25 + `p23
+@do `p20 random `p25 1
+@do move 35 8
+@do write
+``s02`s01 `4hits `%for `@`p20 `%damage!
+@do move 35 9
+@do write
+`k
+@do `p28 - `p20
+@if `p28 < 1 then `p28 is 0
+@do move 55 19
+@do write
+`2HP: `%`p28 `2of `%`p29`x`x`x 
+@if `p28 is 0 then do
+  @begin
+  @run youdead
+  @closescript
+  @end
+@routine cleartext
+@run battle
+@closescript
+@end
+
+@#deadguy
+@do move 3 12
+@do write
+`r0                             `%
+@do move 3 13
+@do write
+                             `%
+@do move 3 14
+@do write
+                             `%
+@do move 3 15
+@do write
+                             `%
+@do move 3 16
+@do write
+                             `%
+@do move 3 17
+@do write
+                             `%
+@do move 3 18
+@do write
+                             `%
+@do move 3 19
+@do write
+                             `%
+@if `p30 is 2 then do
+  @begin
+  @do move 3 14
+  @do write
+`0Your monster has won!
+  @do move 3 15
+  @do write
+`0You win `$$`p22!
+  @do `p22 / 2
+  @do money + `p22
+  @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+@do `p46 - `p22
+@do delete coliseum.dat
+@writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @run endbattle1
+  @closescript
+  @end
+@if `p30 is 1 then do
+  @begin
+  @do move 3 14
+  @do write
+`0Your monster has lost!
+  @do `p22 / 2
+  @do money - `p22
+  @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @do `p46 + `p22
+  @do delete coliseum.dat
+  @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @run endbattle1
+  @closescript
+  @end
+@closescript
+@end
+
+@#youdead
+@do move 42 12
+@do write
+                                     `%
+@do move 42 13
+@do write
+                                     `%
+@do move 42 14
+@do write
+                                     `%
+@do move 42 15
+@do write
+                                     `%
+@do move 42 16
+@do write
+                                     `%
+@do move 42 17
+@do write
+                                     `%
+@do move 42 18
+@do write
+                                     `%
+@do move 42 19
+@do write
+                                     `%
+@if `p30 is 1 then do
+  @begin
+  @do move 42 14
+  @do write
+`0Your monster has won!
+  @do move 42 15
+  @do write
+`0You win `$$`p22!
+  @do `p22 / 2
+  @do money + `p22
+  @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @do `p46 - `p22
+  @do delete coliseum.dat
+  @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @run endbattle2
+  @closescript
+  @end
+@if `p30 is 2 then do
+  @begin
+  @do move 42 14
+  @do write
+`0Your monster has lost!
+  @do `p22 / 2
+  @do money - `p22
+  @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @do `p46 + `p22
+  @do delete coliseum.dat
+  @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+  @run endbattle2
+  @closescript
+  @end
+@closescript
+@end
+
+@#cleartext
+@do move 27 5
+@do write
+                                                   `%
+@do move 27 6
+@do write
+                                                   `%
+@do move 27 7
+@do write
+                                                   `%
+@do move 27 8
+@do write
+                                                   `%
+@do move 27 9
+@do write
+                                                   `%
+@do `p40 + 1
+@do move 12 9
+@do write
+`%`p40
+@closescript
+
+@#endbattle1
+@do `s01 is NIL
+@do move 3 17
+@do write
+`0Do you want to bet again? (Y/N) `%
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @do `p20 is 0
+  @dataload colfite.idf &playernum `p20
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+  @if `p20 > `p40 then goto nogame2
+  @clear screen
+  @run pickmon
+  @closescript
+  @end
+@if `s01 is N then do
+  @begin
+  @do map is 57
+  @loadmap 57
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@#endbattle2
+@do `s01 is NIL
+@do move 42 17
+@do write
+`0Do you want to bet again? (Y/N) `%
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @do `p20 is 0
+  @dataload colfite.idf &playernum `p20
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+  @if `p20 > `p40 then goto nogame2
+  @clear screen
+  @run pickmon
+  @closescript
+  @end
+@if `s01 is N then do
+  @begin
+  @do map is 57
+  @loadmap 57
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@#openvault
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+@clear screen
+@do move 25 4
+@do write
+`r1`$   NorthLands Coliseum Vault   `r0
+@do move 15 6
+@do write
+`2The vault has a total of `$`p46`2 gold in it.
+@do move 15 7
+@do write
+`2You have `$&money `2gold.
+@do move 30 8
+@do write
+`r0`5⁄/ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ\ø
+@do move 30 9
+@do write
+`r0`5≥                 ≥
+@do move 30 10
+@do write
+`r0`5≥                 ≥
+@do move 30 11
+@do write
+`r0`5≥                 ≥
+@do move 30 12
+@do write
+`r0`5≥                 ≥
+@do move 30 13
+@do write
+`r0`5¿\ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ/Ÿ
+@do move 31 9
+@do `v01 is 1
+@choice
+`$Deposit Gold
+`$Withdraw Gold
+`$Close the Vault
+@if responce is 1 then do
+        @begin
+        @do move 20 15
+        @do write
+`$How much do you wish to deposit into the vault? :
+        @do readnum 9
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @if `v40 > money then goto idiot
+        @do `p46 + `v40
+        @do delete coliseum.dat
+        @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @do money - `v40
+        @do goto openvault
+        @end
+@if responce is 2 then do
+        @begin
+        @do move 5 15
+        @do write
+`$Remeber if there is not much in the vault, not many players can gamble.`\     `$How much do you wish to withdraw into the vault? :
+        @do readnum 8
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @if `v40 > `p46 then goto idiot
+        @do `p46 - `v40
+        @do delete coliseum.dat
+        @writefile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @do money + `v40
+        @do goto openvault
+        @end
+@if `p49 is 0 then goto office
+
+@#idiot
+@do write
+`\`\`$Who do you think you are? You think you can do the imposible here?`\`\
+@key
+@do goto openvault
+
+@#rulz
+@if coliseum.dat exist false then do
+        @begin
+        @routine getvars
+        @end
+@if coliseum.dat exist true then do
+        @begin
+        @readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+        @end
+@show
+`r0`c   `r1 `%The Rules of The Coliseum `r0
+
+   `0The rules are very simple. We pick two monsters to fight each other,
+   and you bet on which one you think will win. If your monster wins,
+   then you double your bet. If it loses, then you lose your bet.
+
+   The House Minimum is `$$`p41`0, and the House Maximum is `$$`p42`0.
+
+   Also, you are limited to `p40 fights per day.
+
+   Like I said, it's pretty simple, eh?
+
+`k
+@run top
+@closescript
+
+@#nogame
+@show
+`r0`c   `r1 `%The Coliseum `r0
+
+     `2A hugely muscled man greets you at the door.
+
+     `0I'm sorry, but you have already made your `p40 bets today.
+     Please come back tomorrow.
+
+     `2He then ushers you outside.
+
+`k
+@drawmap
+@update
+@closescript
+
+@#nogame2
+@show
+`r0`c   `r1 `%The Coliseum `r0
+
+    `2You walk back to the man to place your bet. Just as you get there,
+    the bouncer stops you.
+
+    `0"I'm sorry, but you have already made your `p40 bets today," `2he says.
+    `0"Please come back tomorrow."
+
+    `2He then ushers you outside.
+
+`k
+@do map is 57
+@loadmap 57
+@drawmap
+@update
+@closescript
+
+@#broke
+@do `s05 is King`xSysOp
+@readfile coliseum.dat
+`p45
+`p46
+`p47
+`p40
+`p41
+`p42
+@if `p45 > 0 then do
+        @begin
+        @do `s05 is getname `p45
+        @end
+@show
+`c`r0
+`\`\   `0I'm sorry, but our account is empty, we are waiting for
+  our boss, `s05, to come and fill it up.
+
+  Please come back another day.
+@if `p45 > 0 then do
+        @begin
+        @writefile mail\mail`p45.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  Your vault at the NorthLand Coliseum is almost empty.
+`0  There is exactly `$`p46 `0gold left, please refill the
+`0  vault so we can continue business here. 
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+        @end
+@if `p45 is 0 then do
+        @begin
+        @do `p30 is 5
+        @do `v40 is 10000
+        @routine widthdraw in vaults.ref
+        @readfile coliseum.dat
+`p20
+`p21
+        @do `p21 + `v40
+        @do delete coliseum.dat
+        @writefile coliseum.dat
+0
+`p21
+1
+10
+10
+1000
+        @end
+@key bottom
+@drawmap
+@update
+@closescript
+@#nodough
+@show
+`\`\   `0I'm sorry, but you need at least `$`p41 `0to bet.
+
+   Please come back when you have that much.
+
+   `2He then ushers you outside.
+
+   `k
+@do map is 57
+@loadmap 57
+@drawmap
+@update
+@closescript
+
+@#NOBET
+@show
+`\`\   `0You decide to not bet anything.
+
+   Please come back when you feel like gambling.
+
+   `k
+@do map is 57
+@loadmap 57
+@drawmap
+@update
+@closescript
+@#nothing

@@ -1,0 +1,97 @@
+; Script file CASTLE32.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE dance 000000263
+@DECLARE servent1 000000336
+@DECLARE servent2 000000418
+@DECLARE chair 000000463
+@DECLARE agent 000000522
+@NOCHECK
+; End of .REF index
+
+@#DANCE
+@do saybar
+ `2 Ah Ah Ah Ah Stayin' Alive! Stayin' Alive!
+
+@#SERVENT1
+@do `s01 is getname `p20
+@do saybar
+ `2 All Hail King `0`s01`2! 
+
+@#SERVENT2
+@do saybar
+ `2 Lets Dance `s03!
+
+@#CHAIR
+@do saybar
+ `2 Power.... How I love thee.....
+
+@#AGENT
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Travel Agent  `r0
+
+  `0"Hello sir. Where do you wish to go today?" `2Asks Patrica.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+GreenTree
+PortTown
+BoneTown
+FlagCity
+Sosen Village
+ArrisVille
+Nevermind
+@if response not 7 then do
+  @begin
+@show
+`\`\  `0"Okay sir, here we go, I'll just grab my purse."
+
+`k  `2Smack! Ouch! <Clonk!> You wake up.
+
+  `2Then suddenly, you are there, on your own.
+`\`k
+@if response is 1 then do
+  @begin
+   @do x is 10
+   @do y is 15
+   @do map is 1356
+  @end
+@if response is 2 then do
+  @begin
+   @do x is 38
+   @do y is 16
+   @do map is 956
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 53
+   @do y is 18
+   @do map is 1572
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 71
+   @do y is 19
+   @do map is 1092
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 36
+   @do y is 5
+   @do map is 456
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 19
+   @do y is 9
+   @do map is 523
+  @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+

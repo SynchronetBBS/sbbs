@@ -1,0 +1,30 @@
+
+         UNIVERSITY OF GREATER ARRISVILLE by MAMOOSOFT PROGRAMMING
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : Yes?
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (4)
+  Free?                                           : Yes!
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0University of Greater Arrisville `2from `0 Mamoosoft Programming
+
+replacescreen: 522 1 show
+replacescreen: 1577 2 noshow
+replacescreen: 1578 3 noshow
+replacescreen: 1579 4 noshow
+replacescreen: 523 5 show
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2University of Greater Arrisville adds an institute of higher learning to
+  the Greater Arrisville area.

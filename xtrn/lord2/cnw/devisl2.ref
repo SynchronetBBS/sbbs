@@ -1,0 +1,278 @@
+; Script file DEVISL2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE fight 000000751
+@DECLARE monster1 000000815
+@DECLARE monster2 000001344
+@DECLARE monster3 000001884
+@DECLARE monster4 000002409
+@DECLARE monster5 000002927
+@DECLARE monster6 000003485
+@DECLARE monster7 000004003
+@DECLARE monster8 000004570
+@NOCHECK
+; End of .REF index
+
+; Ref File for Devils Island Version v1.50
+; MetaLHeaD Softwares, Copyright 1997(c), All Rights Reserved...
+; DarkLandsBBS 2i5.487.73i5 Call it...
+;-----------------///DONT TOUCH USED BY INSTALL.EXE///-----------------------
+; REGISTERED
+; VERSION 1.50
+; REL: 12-07-97 : 10:22am
+;-----------------///HELL'S MONSTERS, SCREEN 864///--------------------------
+
+@#Fight
+@busy
+@do `p20 random 8 1
+@do goto monster`p20
+
+@#monster1
+@fight
+;name
+Devils Advocate
+;string said when you see him
+Devillsh looking person.
+;power move kill string
+It floats into the air disappears!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+burns you|80
+throws fire balls|100
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+60
+;gold reward
+289
+;experience
+122
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Gremlin
+;string said when you see him
+Little weird looking thing.
+;power move kill string
+Green slim on the floor ich!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Shoots you with slime|90
+squeezes your crotch|80
+Runs you over|100
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+400
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Hell Hound
+;string said when you see him
+Huge dog, with glowing red eyes.
+;power move kill string
+It flies back as you kill it.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Bites you|60
+bits your|60
+Jumps on you|100
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Magma dude
+;string said when you see him
+Fiery looking guy.
+;power move kill string
+Burns out.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Shoots you with firebals|190
+Burns you|180
+Surrounds you in fire|200
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+190
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Baby dragon
+;string said when you see him
+A half sized dragon. Aww aint it so cute NOT!
+;power move kill string
+It falls to the ground
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Shoots you with firebals|190
+Burns you|110
+Surrounds you in fire|100
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+990
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Pyro Jelly
+;string said when you see him
+Pyro Lunatic, careful!
+;power move kill string
+Die's.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Lights you with a ligter|190
+Burns you|180
+Surrounds you in fire|200
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+190
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Druid
+;string said when you see him
+Dressed in a brown robe, some blood on the side of his mouth!
+;power move kill string
+Disappear's
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Wacks you with a stick|190
+Performs magic on you|180
+Surrounds you in fire|200
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+190
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster8
+@fight
+;name
+Moving Flame
+;string said when you see him
+Moving Fire, with teeth!
+;power move kill string
+Disappear's
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Burns you|190
+Melts you skin|180
+Spread
+s around you|200
+NONE|NONE
+NONE|NONE
+;defense
+34
+;gold reward
+289
+;experience
+122
+;hit points
+190
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+;-----------------///END OFHELL'S MONSTERS, SCREEN 864///---------------------

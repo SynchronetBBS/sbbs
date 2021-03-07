@@ -1,0 +1,706 @@
+; Script file REDDTOWN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE sign 000000794
+@DECLARE sign1 000000865
+@DECLARE town 000000944
+@DECLARE statue 000002328
+@DECLARE halder 000002431
+@DECLARE ok 000002541
+@DECLARE toolate 000003912
+@DECLARE halwin 000003963
+@DECLARE halrun 000004470
+@DECLARE healer 000004653
+@DECLARE honey1 000006443
+@DECLARE man911 000007159
+@DECLARE bank 000008072
+@DECLARE bankstart 000008200
+@DECLARE bankagain 000009314
+@DECLARE deposit 000010851
+@DECLARE withdraw 000011404
+@DECLARE talkbar 000012281
+@DECLARE inn 000012373
+@DECLARE man 000012423
+@DECLARE return 000012923
+@DECLARE choice 000012986
+@DECLARE manny 000014830
+@DECLARE manny2 000014927
+@DECLARE manny3 000015010
+@NOCHECK
+; End of .REF index
+
+@#sign
+@do saybar
+`7Welcome to the famous `4RED DRAGON TOWN `7!
+ 
+@#sign1
+@do saybar
+`7DO NOT ENTER THE FOREST! Still alot of monsters! -->
+ 
+@#town
+@do moveback
+@clear screen
+@show
+ 
+`%  Legend Of The Red Dragon - `2Town Square
+`0-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  `2The streets are alot less crowder as they
+  `2used to be... no mob, no nothing!!!
+ 
+  (`5F`2)orest                             (`5S`2)laughter other players
+  (`5K`2)ing Arthurs Weapons               (`5A`2)bduls Armour
+  (`5H`2)ealers Hut                        (`5V`2)iew your stats
+  (`5I`2)nn                                (`5T`2)urgons Warrior Training
+  (`5Y`2)e Old Bank                        (`5L`2)ist Warriors
+  (`5W`2)rite Mail                         (`5D`2)aily News
+  (`5C`2)onjugality List                   (`5O`2)ther Places
+  (`%X`2)pert Mode                         (`5M`2)ake Announcement 
+  (`5P`2)eople Online                      (`0Q`2)uit to Fields  
+ 
+ 
+`5The Town Square `8(? for menu)
+(F,S,K,A,H,V,I,T,Y,L,W,D,C,O,X,M,P,Q)
+ 
+`2Your command, `n`2? `2[`%999:99`2]
+@key
+@show
+ 
+`2                              JUST KIDDING!!!
+`2        VooDoo KnighT presents: `0THE TOWN FROM LORD 1 `2in `0LORD 2 STYLE`2!
+`2        Be sure to check out our HOMEPAGE and to get more LORD 2 IGMs!
+`2               http://www.angelfire.com/ks/knightsoft/index.html
+@key
+@loadmap 1000
+@do map is 1000
+@do x is 39
+@do y is 17
+@drawmap
+@update
+@closescript
+@end
+ 
+@#statue
+@do saybar
+`7This statue was built in memory of the hero who slayed the `4Red Dragon`7!
+ 
+@#halder
+@dataload reddhald.idf &playernum `p25
+@if `p25 is 4 then goto toolate
+@if `p25 is 0 then goto ok
+ 
+@#ok
+@do moveback
+@datasave reddhald.idf &playernum 4
+@clear screen
+@show
+ 
+`0     "What are you looking at!?" `2the man says.
+ 
+`$     "What is this place!? It smells really bad in here..."
+ 
+`0     "This happens to be the Training Area, great Turgons used to live
+     here and make pathetic losers into great mighty warriors! Well, not
+     only him! I was chosen to be the master who made the pathetic losers
+     into well known pathetic losers! I am the great HALDER!"
+ 
+`$     "Sounds to me you were just a leftover trainer, so Turgons put you
+     in the low class level! Ha! Ha! Ha!" `2you say with a good laugh.
+ 
+`0     "ARGH! How dare you insult a great warrior such as myself... en
+     garde you pathetic fool!"
+ 
+`2     Halder pulls out a Dagger and charges at you...
+ 
+@key
+@fight
+;name
+Halder
+;string said when you see him
+Halder gives you the finger and raises his dagger
+;power move kill string
+You knock the bastard uncounsious!!!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+dagger slash|10
+dagger pummel|15
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+125
+;experience
+50
+;hit points
+100
+;if win: ref file|name or NONE
+REDDTOWN.REF|HALWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+REDDTOWN.REF|HALRUN
+ 
+@#toolate
+@do saybar
+`0Halder: `2Go away kid!
+ 
+@#halwin
+@clear screen
+@show
+ 
+`2     After giving Halder a couple of blows with your s&weapon `2...
+     he starts begging for you to stop!
+ 
+`0     "Argh! I've been beaten again! Why can't I ever win!?"
+ 
+`$     "Gimme something NOW you old man! Or I'll give you a taste of my
+     s&weapon `$again!"
+ 
+`0     "NO!!! Please! Here... here... take this! Just leave me alone!"
+ 
+`2     Halder hands you a `%Moonstone`2! Cool!!!
+ 
+@do `i57 + 1
+@key
+@drawmap
+@update
+@closescript
+@end
+ 
+@#halrun
+@show
+`2
+`2     CHICKEN!!! If only this was LORD 1... you wouldn't be able to run
+     away!!!  ^.^
+               U
+ 
+@key
+@drawmap
+@update
+@closescript
+@end
+ 
+@#healer
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+ 
+`2   Evan looks you over for wounds.
+ 
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+ 
+ 
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+ 
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+ 
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+ 
+ 
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+ 
+`k
+ @end
+ 
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+ 
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Evan informs you.
+ 
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+ 
+  `2You gulp down the weird black pills
+ 
+  `4HIT POINTS GO DOWN TO 1.
+ 
+`k
+ @end
+ 
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@do `p30 is 17
+@do `v40 is `p20
+@routine deposit in vaults.ref
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+ 
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+ 
+@show
+`0"You have no ailments, come back later," `2Evan laughs.
+ 
+`k
+@drawmap
+@update
+ 
+@#honey1
+@IF &lastx is 21 then do
+@BEGIN
+@DO SAYBAR
+`2Wise choice! You decide that sex for money is a bad idea!
+@CLOSESCRIPT
+@END
+ 
+@BUSY
+@DO `v01 is 1
+@SHOW
+`r0`c  `r1 A big guy stops you as you attempt to enter the next room `r0
+ 
+@if sexmale is 1 then goto man911
+@show
+`0     "Sorry baby! But men only!"
+ 
+`$     "You people make me sick! I see this LEGENDARY TOWN now has it's own
+     bordelo... I can't wait for the world to know about your trash!"
+ 
+`0     "Very nice little girl! You go now and tell your boyfriends to come
+     here for good time!"
+ 
+`2     You decide to leave the stupid hunky man alone...
+  @key
+  @do moveback
+  @end
+  @drawmap
+  @update
+  @closescript
+ 
+@#man911
+@show
+`0     "What does tiny little man want?"
+ 
+`$     "Well, whatcha guys offer!?"
+ 
+`0     "We hire Violet's daughter... `$Honey `0! She very good, you pay
+     `$$1000 `0and you do anything with `$Honey`0!"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Pay the dumb guy `$$1000
+Give the guy a weird look and leave
+@IF RESPONSE IS 1 THEN DO
+ @Begin
+  @if money < 1000 then do
+   @begin
+   @show
+`\`\`2  You don't have `$$1000`2!!! So you decide to leave.
+`k
+    @do moveback
+    @drawmap
+    @update
+    @closescript
+    @end
+ @Show
+`\`\  `2You hand the guy the money and happily head inside the room.
+`\`k
+@DRAWMAP
+@UPDATE        
+@DO SAYBAR
+`2You see the lovely `$Honey `2sitting by her bed... half naked...
+@CLOSESCRIPT
+@End
+@IF RESPONSE IS 2 THEN DO
+@Begin
+@Show
+`\`\  `0"Maybe next time... I got better things to do!"
+`\`k
+@DO MOVEBACK
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@End
+ 
+@#bank
+@do `p30 is 17
+@do `v01 is 1
+@offmap
+@do moveback
+@do `s09 is reddtown
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@show
+`r0`c  `r1 `%Ye Old Bank `r0
+ 
+`2  A young clerk eyes you nervously.
+ 
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+ 
+ @end
+ 
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+ 
+ @end
+ 
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+ 
+ 
+  `2The nervous boy asks you to sit down.
+ 
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+ 
+ 
+  `0"Your current residence?"
+ 
+  @do write
+`x`x
+  @do readstring 50 `s01
+ 
+  @show
+ 
+ 
+  `0"Your net income yearly?"
+ 
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+ 
+  @end
+ 
+  @if `v40 more 19 then do
+   @begin
+   @show
+ 
+ 
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+ 
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+ 
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+ 
+ 
+  `2You decide you really don't want to open an account with this
+  branch.
+ 
+`k
+  @do goto bankstart
+  @end
+ 
+  @if `v40 > money then do
+   @begin
+   @show
+ 
+ 
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+ 
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+ 
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+ 
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+ 
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+ 
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+ 
+`k
+@drawmap
+@update
+@closescript
+   @end
+ 
+  @show
+ 
+ 
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @routine deposit in vaults.ref
+  @do `p30 is 17  <--Bank#
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+ 
+ 
+  `0"Very good S&sir!  Your new account has been opened!"
+ 
+`k
+  @do goto bank
+  @end
+ 
+ 
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+ 
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+ 
+  @end
+ 
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+ 
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+ 
+  @if `v40 is bank then do
+   @begin
+   @show
+ 
+ 
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+ 
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+ 
+   @end
+ 
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+ 
+ 
+ 
+@drawmap
+@update
+ 
+@#talkbar
+@do saybar
+`0Big Man: `2Talk to the bartender if you wanna get yourself a room!
+ 
+@#inn
+@do saybar
+This is the Red Dragon Inn
+ 
+@#man
+@clear screen
+@do moveback
+@show
+ 
+`$     "All hail the Red Dragon!"
+ 
+`0     "Where have you been all this years!? Sheesh, the reason this town
+     is named after the Red Dragon is because a mighty warrior slayed it
+     a couple of years back... so in memory of that time, the town was
+     named `4RED DRAGON TOWN `0!" `2says the man.
+ 
+`$     "Would it bother you if I asked a couple of questions!?"
+ 
+`0     "Ask away my un-knowledge little friend!"
+ 
+@do goto choice
+@#return
+@show
+`0     "Anything else!?"
+@do goto choice
+ 
+@#choice
+@DO `V01 is 1
+@choice
+Where's the slut... what's her name again... oh ya! Where's Violet!?
+This town is strange...
+I think I'll go now!
+@if response is 1 then do
+ @begin
+ @clear screen
+ @show
+ 
+`0     "Who you calling a slut!? Violet was one of the most sexiest women
+     in the world! Maybe if she still lived in this town, I'd show you how
+     a REAL WOMAN should look like!"
+ 
+`$     "She was PlayBoy Playmate of last month's issue... I know how that
+     hot momma looks like! I'm just calling her a slut because I heard she
+     used to sleep with almost all the warriors who came to this town!"
+ 
+`0     "That's not true! It's all a lie!!!!!!!!  .................... she
+     was before last month's Playmate... not last months... sheesh... stupid
+     kid..."
+ 
+@key
+@do goto return
+ @end
+@if response is 2 then do
+ @begin
+ @clear screen
+ @show
+ 
+`0     "Well, yes it is! Both King Arthur's Weapon Shop and Abdul's Armors
+     both moved to GreenTree, so both shops are now closed... you'll also
+     notice that some parts in forest are useless too! The Dark Cloak Tavern
+     was destroyed by monsters and the small Dragon's Lair is kinda empty!
+     The Dragon's Lair which is located up north is a fake... WE OWN the
+     original Dragon's Lair, but as time goes on, it's popularity fades
+     away!"
+ 
+@key
+@do goto return
+ @end
+ 
+@if response is 3 then do
+ @begin
+ @clear screen
+ @show
+ 
+`$     "Well... believe it not, I gotta split!"
+ 
+`0     "Yes... go away... go away like everyone else did! I know our town
+     is getting worse and worse... but why!? Why is life so unfair!?"
+ 
+`2     Thinking if you should leave or stay with the sobbing man... it
+     would be alot more wise to explore the town a little more...
+ 
+@key
+@drawmap
+@update
+@closescript
+ 
+@#manny
+@do saybar
+`0Man: `2Last night was a BLAST! I did it with Honey 3 times in a row!
+ 
+@#manny2
+@do saybar
+`0Lonely Man: `2Please sit with me... I'm very lonely...
+ 
+@#manny3
+@do saybar
+`0Drunk Man: `7BURP `2... hic ... hehehe ... thissssss beeeee... hic ... good.

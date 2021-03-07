@@ -1,0 +1,528 @@
+; Script file BLUE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE house 000000286
+@DECLARE boatrent 000000859
+@DECLARE boats2 000001251
+@DECLARE boats 000001329
+@DECLARE capture 000001643
+@DECLARE dragon 000006085
+@NOCHECK
+; End of .REF index
+
+@#house
+@dataload comp.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+`%The rental place is boarded up and void of life.
+@closescript
+@end
+ 
+@do moveback
+@offmap
+@busy
+@show
+`r0`c`r1`%Harry's Fishin' Boat Rental`r0
+ 
+ 
+`2An old man with a pipe in his mouth stands behind the counter observing you.
+You notice a large picture of a blue dragon on the wall behind him.  He asks
+what you'd like.
+ 
+@do `v01 is 1
+@choice
+Rent a boat.
+Scram.
+@if responce is 1 then do
+@begin
+@routine boatrent in blue.ref
+@end
+ 
+@drawmap
+@update
+ 
+@#boatrent
+@busy
+@datasave blue.idf &playernum 1
+@show
+`r0`c`0"Enjoy the boat sir!  Take anyone from the dock."
+ 
+`%NOTE TO PLAYERS:  If you're total defense, (armour + dodge) isn't at least
+500, DO NOT attempt this IGM (in other words, don't touch the boats).  You
+will find yourself in an unescapable death trap.  You have been warned. 
+`k
+@drawmap
+@update
+@closescript
+@end
+ 
+@#boats2
+@do saybar
+`%That boat is in bad condition.  You don't want it.
+ 
+@#boats
+@dataload compboat.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do saybar
+`%You will not touch that boat again!
+@closescript
+@end
+ 
+@dataload blue.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@run capture in blue.ref
+@end
+ 
+@do saybar
+`%You have to pay before taking a boat.
+ 
+@#capture
+@clearblock 21 24
+@do move 3 22
+@do write
+`%The boat begins to shake, what the heck?
+@key nodisplay
+@clearblock 21 24
+@do move 1 8
+@do write
+`6Û
+@do move 1 8
+@do write
+`w
+@do move 2 8
+@do write
+`6Û
+@do move 2 8
+@do write
+`w
+@do move 3 8
+@do write
+`6Û
+@do move 3 8
+@do write
+`w
+@do move 4 8
+@do write
+`6Û
+@do move 4 8
+@do write
+`w
+@do move 5 8
+@do write
+`6Û
+@do move 5 8
+@do write
+`w
+@do move 6 8
+@do write
+`6Û
+@do move 6 8
+@do write
+`w
+@do move 7 8
+@do write
+`6Û
+@do move 7 8
+@do write
+`w
+@do move 8 8
+@do write
+`6Û
+@do move 8 8
+@do write
+`w
+@do move 9 8
+@do write
+`6Û
+@do move 9 8
+@do write
+`w
+@do move 10 8
+@do write
+`6Û
+@do move 10 8
+@do write
+`w
+@do move 11 8
+@do write
+`6Û
+@do move 11 8
+@do write
+`w
+@do move 12 8
+@do write
+`6Û
+@do move 12 8
+@do write
+`w
+@do move 13 8
+@do write
+`6Û
+@do move 13 8
+@do write
+`w
+@do move 14 8
+@do write
+`6Û
+@do move 14 8
+@do write
+`w
+@do move 15 8
+@do write
+`6Û
+@do move 15 8
+@do write
+`w
+@do move 16 8
+@do write
+`6Û
+@do move 16 8
+@do write
+`w
+@do move 17 8
+@do write
+`6Û
+@do move 17 8
+@do write
+`w
+@do move 18 8
+@do write
+`6Û
+@do move 18 8
+@do write
+`w
+@do move 19 8
+@do write
+`6Û
+@do move 19 8
+@do write
+`w
+@do move 20 8
+@do write
+`6Û
+@do move 20 8
+@do write
+`w
+@do move 21 8
+@do write
+`6Û
+@do move 21 8
+@do write
+`w
+@do move 22 8
+@do write
+`6Û
+@do move 22 8
+@do write
+`w
+@do move 23 8
+@do write
+`6Û
+@do move 23 8
+@do write
+`w
+@do move 24 8
+@do write
+`6Û
+@do move 24 8
+@do write
+`w
+ 
+@do move 1 8
+@do write
+`1
+@do move 1 8
+@do write
+`w`x
+@do move 2 8
+@do write
+`1
+@do move 2 8
+@do write
+`w`x
+@do move 3 8
+@do write
+`1
+@do move 3 8
+@do write
+`w`x
+@do move 4 8
+@do write
+`1
+@do move 4 8
+@do write
+`w`x
+@do move 5 8
+@do write
+`4
+@do move 5 8
+@do write
+`w`x
+@do move 6 8
+@do write
+`4
+@do move 6 8
+@do write
+`w`x
+@do move 7 8
+@do write
+`1
+@do move 7 8
+@do write
+`w`x
+@do move 8 8
+@do write
+`1
+@do move 8 8
+@do write
+`w`x
+@do move 9 8
+@do write
+`1
+@do move 9 8
+@do write
+`w`x
+@do move 10 8
+@do write
+`1
+@do move 10 8
+@do write
+`w`x
+@do move 11 8
+@do write
+`1
+@do move 11 8
+@do write
+`w`x
+@do move 12 8
+@do write
+`1
+@do move 12 8
+@do write
+`w`x
+@do move 13 8
+@do write
+`1
+@do move 13 8
+@do write
+`w`x
+@do move 14 8
+@do write
+`1
+@do move 14 8
+@do write
+`w`x
+@do move 15 8
+@do write
+`1
+@do move 15 8
+@do write
+`w`x
+@do move 16 8
+@do write
+`1
+@do move 16 8
+@do write
+`w`x
+@do move 17 8
+@do write
+`1
+@do move 17 8
+@do write
+`w`x 
+@do move 18 8
+@do write
+`1
+@do move 18 8
+@do write
+`w`x 
+@do move 19 8
+@do write
+`1
+@do move 19 8
+@do write
+`w`x
+@do move 20 8
+@do write
+`1
+@do move 20 8
+@do write
+`w`x
+@do move 21 8
+@do write
+`1
+@do move 21 8
+@do write
+`w`x
+@do move 22 8
+@do write
+`1
+@do move 22 8
+@do write
+`w`x
+@do move 23 8
+@do write
+`1
+@do move 23 8
+@do write
+`w`x
+@do move 24 8
+@do write
+`1
+@do move 24 8
+@do write
+`w`w
+ 
+@do move 25 8
+@do write
+`$|
+@do move 25 8
+@do write
+`w`w`w`x
+@do move 25 8
+@do write
+`$/
+@do move 25 8
+@do write
+`w`w`w`x
+@do move 25 8
+@do write
+`$\
+@do move 25 8
+@do write
+`w`w`w`x
+@do move 25 8
+@do write
+`$|
+@do move 25 8
+@do write
+`w`w`w`x
+@do move 25 8
+@do write
+`$/
+@do move 25 8
+@do write
+`w`w`w`x
+@do move 25 8
+@do write
+`$\
+@do move 25 8
+@do write
+`w`w`w`x
+@do move 24 8
+@do write
+`$|
+@do move 24 8
+@do write
+`w`w`w`x
+@do move 24 8
+@do write
+`$/
+@do move 24 8
+@do write
+`w`w`w`x
+@do move 24 8
+@do write
+`$\
+@do move 24 8
+@do write
+`w`w`w`x
+@do move 24 8
+@do write
+`$|
+@do move 24 8
+@do write
+`w`w`w`x
+@do move 24 8
+@do write
+`$/
+@do move 24 8
+@do write
+`w`w`w`x
+@do move 24 8
+@do write
+`$\
+@do move 24 8
+@do write
+`w`w`w`x
+ 
+@show
+`r0`c`%You reappear in a small room.  It is dark amd musky, it appears to be a
+jail cell.  You sit wondering who the heck could have done this to you.  Then
+the door opens and you are escorted away by two ugly looking ogres.  You are
+taken to a large and beautifully decorated chamber, and then you see it:
+The Blue Dragon.  He is massive, he towers above you.  He looks just like the
+dragon on the picture in the boat rental shop!
+`k
+@do map is 1187
+@do x is 38
+@do y is 9
+@loadmap &map
+@drawmap
+@update
+@run dragon in blue.ref
+ 
+@#dragon
+@clearblock 21 21
+@do move 3 21
+@do write
+`%The drgaon speaks to you, his voice booming.
+@key
+@clearblock 21 24
+@do move 3 21
+@do write
+`%You have fallen into my hands warrior!  You will now pass my tests or you
+@do move 3 22
+@do write
+will never leave this place alive.  Many have died trying to pass the tests,
+@do move 3 23
+@do write
+you may be the next!  Let the tests begin!!
+@key
+@clearblock 21 24
+ 
+@do move 38 9
+@do write
+`$|
+@do move 38 9
+@do write
+`w`w`w`x
+@do move 38 9
+@do write
+`$/
+@do move 38 9
+@do write
+`w`w`w`x
+@do move 38 9
+@do write
+`$\
+@do move 38 9
+@do write
+`w`w`w`x
+@do move 38 9
+@do write
+`$|
+@do move 38 9
+@do write
+`w`w`w`x
+@do move 38 9
+@do write
+`$/
+@do move 38 9
+@do write
+`w`w`w`x
+@do move 38 9
+@do write
+`$\
+@do move 38 9
+@do write
+`w`w`x
+ 
+@do map is 1186
+@do x is 72
+@do y is 10
+@loadmap &map
+@drawmap
+@update

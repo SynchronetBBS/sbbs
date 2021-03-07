@@ -1,0 +1,1235 @@
+; Script file GYPSYSP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE tellern 000001515
+@DECLARE storytell 000002052
+@DECLARE story1 000003336
+@DECLARE story2 000004452
+@DECLARE story3 000005941
+@DECLARE story4 000007233
+@DECLARE teller 000008637
+@DECLARE well 000009126
+@DECLARE wish1 000010619
+@DECLARE wish2 000010717
+@DECLARE wish3 000010791
+@DECLARE wish4 000010893
+@DECLARE wish5 000010977
+@DECLARE wish6 000011083
+@DECLARE wish7 000011200
+@DECLARE wish8 000011310
+@DECLARE wish9 000011421
+@DECLARE wish10 000011560
+@DECLARE fortune 000011750
+@DECLARE goodies 000015170
+@DECLARE goodies 000015186
+@DECLARE riddle 000017272
+@DECLARE q1 000018921
+@DECLARE q2 000019320
+@DECLARE q3 000019594
+@DECLARE q4 000019957
+@DECLARE q5 000020350
+@DECLARE q6 000020783
+@DECLARE q7 000021243
+@DECLARE q8 000021516
+@DECLARE q9 000021817
+@DECLARE q10 000022229
+@DECLARE q11 000022663
+@DECLARE q12 000023120
+@DECLARE q13 000023399
+@DECLARE q14 000023901
+@DECLARE q15 000024232
+@DECLARE q16 000024670
+@DECLARE q17 000025128
+@DECLARE q18 000025587
+@DECLARE q19 000026041
+@DECLARE ridwrong 000026448
+@DECLARE ridwrong 000026467
+@DECLARE ridright 000026806
+@DECLARE ridright 000026825
+@DECLARE potion 000027324
+@DECLARE potion 000027339
+@DECLARE riddlen 000028164
+@NOCHECK
+; End of .REF index
+
+;This is all the Gypsy Encampment stuff that can only be done once a day
+
+;-------------------------------------------------------------------------
+@#TELLERN
+;THE STORY TELLER
+@dataload gypsy1.idf &playernum `p30
+@if `p30 is 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c  `!You see Marcel surrounded by a group of people who are enthralled
+  by his story. He waves at you with a smile, he seems happy to be
+  telling a tale, but he also seems too busy for you.  You walk away
+  sadly, hoping to come back tomorrow.`\
+`\`k
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if `p30 not 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @label storytell
+  @do `V01 is 1
+  @show
+  `r0`c  `r1`!You see an small man sitting by the campfire. `r0
+
+  `!He sees you approach and calls out to you.`9 "Hello there stranger.
+  Why are you creeping around over there? Come closer and I may tell
+  you a tale of the Gypsies, if you have the time and the money? A
+  good tale always costs."
+              
+  @do write
+  `x`x
+  @choice
+>&money 9 Listen to a story for $10 gold
+Bid him farewell
+  @IF RESPONSE IS 1 THEN DO
+    @begin
+    @do money - 10
+    @show
+  `\`\  `9        "Good, good, now come sit by me and let me tell you a little of
+           our Gypsy ways.  I usually don't like manusha but you seem 
+           like a person I could enjoy talking to."
+  `\`k
+    @datasave gypsy1.idf &playernum 1
+    @do `p21 random 4 1
+    @routine story`p21
+    @drawmap
+    @update
+    @closescript
+    @end
+  @IF RESPONSE IS 2 THEN DO
+    @begin
+    @show
+  `\`\         `9"Well I see I have misjudged you after all!  I never trust
+          manusha and YOU seem no different then the rest!  You will
+          find that you have made an error in your judgement as well"
+          With that the storyteller turns his back and ignors you.
+  `\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+
+@#STORY1
+@show
+`c  `r1`%The Gypsy's`r0
+  `!The poor local manusha of a neighboring village went to their governor
+  and complained.  The rich drank to the accompaniment of music while they,
+  the poor and destitute, could not.  Being sympathetic, the governor re-
+  quested that 10,000 men and women who were expert musicians come to his
+  palace.  Upon their arrival he gave them each a zen and a beautiful grast
+  to put it on and to ride, and to the whole group a thousand donkey loads
+  of corn.  All in the hopes that they would settle and farm in his kingdom.
+  Being ungrateful the 10,000 men and women ate all the corn, sold the zens
+  and grasts and left.  At the end of the year they returned to the kingdom
+  hungry and tired.  The governor said to them "You should not have wasted
+  the seed-corn.  You should not have sold your things!  Now you have only
+  your donkeys!  Be gone from my Kingdom."  These men and women even now
+  wander through the world, begging a living, sleeping alongside wolves,
+  living like dogs, stealing day and night.  We call ourselves Gypsies!
+
+`\`k
+@
+
+@#STORY2
+@show
+`c  `r1`%Gypsy Familys`r0
+  `!"Let me tell you a little of my family," says Marcel as he makes
+  himself comfortable. "Ours is not any different than most Gypsy
+  households. My romni, who I have been married to for over 20
+  years, is a wonderful example of a gypsy woman. Even tho gypsy
+  women are considered mahrime, the unclean, my wife being one of
+  the oldest women in our household does not have to abide by those
+  strict standards as the other women do. For example, my sons wives,
+  my boris, must do all the cooking, cleaning and washing. All the
+  men and womens things must be washed seperately you know. Anyway,
+  not only does my wife, my sons and their wives live with me but so
+  does my binak, who was born at the same time as I. Also my bhen
+  lives with us. She was born when I was 6 years old. Oh what a cute
+  little chey, what a beautiful little girl she was." You can tell
+  Marcel is beginning to daydream so you clear your throat politely.
+  "Oh, excuse me" Marcel says "Now where was I? Oh yes lets see wife
+  ...sons...sons wives...twin brother...sister" you watch as he counts
+  them off on his fingers. "Who is left?" Marcel wonders to himself.
+  "My goodness! How could have I forgotten my mother?" he asks with a
+  wink. "Just let me say..." suddenly Marcel jumps up. "Forgive me my
+  friend but I have truly forgotten my mother! She is waiting for me!"
+  With that Marcel runs off with a wave goodbye.
+
+`\`k
+@
+
+@#STORY3
+@show
+`c  `r1`%Gypsy Lifestyles`r0
+  `!"As I am sure you already know we Gypsies are travelers, wanderers.
+  Because of this we take great care of our grasts. Without our horses
+  we could not survive. We value them more than any other animal. We
+  make special zens and grasts. Our saddles are of the finest craft-
+  manship and are made special for each horse." You raise one eyebrow
+  questioningly. "Yes, it is true. We gypsies all have unique talents."
+  Marcel assures you. "It is true we move regulary, but we only do that
+  because we enjoy camping outside. Most of us stick close to the
+  borders, hop-scotching across the borders to avoid being arrested as
+  homeless vagrants." At this Marcel sighs heavily and then looks at
+  you and smiles. "But as you can see we have adapted quite well. We
+  often camp in abandoned or inaccesible forests so as to reduce the
+  likelihood of being found." Marcel gives you his most winning smile.
+  "So, please enjoy yourself here. We have so much to see, to do and
+  even to eat! Please do not forget to visit Jeta. Even as fortune
+  tellers go `0she is truly `2amazing." brags Marcel. You smile at him
+  "Sure, Marcel, I'll do that." you say, trying to humor him. Marcel
+  just turns away laughing.
+
+`\`k
+@
+
+@#STORY4
+@show
+`c  `r1`%Great Performers`r0
+  `!"Do you see that stage over there under the big tent?" Marcel waves
+  his hand vaguely in an northernly direction, so you look towards where
+  you think he may be pointing. You see the tent easily enough but the
+  stage?? "Over there!" Marcel says impatiently. You nod your head slowly
+  even though you don't see anything. "That stage has traveled the world
+  with us" Marcel says proudly. "On it we have performed for nobility
+  and commoners alike." You look at him sceptically. "It's all true!"
+  Marcel loudly huffs. "We, that is to say, my parents, and grandparents
+  and my great-grandparents and all those that came before them have
+  performed for Prince Vlad II, and his son Prince Vlad Dracul, also
+  known as Vlad the Devil or Vlad the Impaler. I am sure you have heard
+  of him? We have also performed for Stefan the Great, Pope Sixtus IV,
+  Prince Constantin Brancoveanu of Italy and Prince Alexandru Ioan
+  Mavrocordatos." You blink for a moment, not knowing if you should be
+  impressed. Marcel looks at you and sighs sadly. "Well now we are
+  performing for the likes of you. Don't forget to see the stage at
+  night." Still not knowing what to think of his story you clap Marcel
+  on the back and thank him for his time anyway. You think that you
+  might just go and take a look at the stage after all.
+
+`\`k
+@
+
+@#TELLER
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `!As you approach the remains of the campfire you see Marcel`r0
+  `!sleeping soundly.  You try nudging him with your foot. "`9Go
+  `9away`!" he mumbles grumpily "`9Can't you see I'm sleeping?`!"
+  Perhaps he stayed up too late telling tales the night before.
+  You think you should try back later.
+`\`k
+ 
+@drawmap
+@update
+@closescript
+@end
+
+;-------------------------------------------------------------------------
+@#well
+;A good place to make wishes!
+@dataload gypsy1.idf &playernum `p30
+@if `p30 is 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @show
+`r0`c `$The wishing well has an out of order sign on it, try coming here first
+ tomorrow.`\
+  `\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p30 not 1 then do
+@begin
+@do moveback
+@busy
+@clear screen
+@pauseoff
+@show
+
+[?7h[255D[40m
+
+
+
+
+
+
+
+
+[0;1;30m[21C[33;43m°[0;33m²²²²²²±°
+[19C[1;43m°°[0;33m²²²²²±±±±°°
+[17C[1;43m°°°[0;33m²²²²±±±±±±±°°°
+[20C[43mÛ[37;40mÝ  [1mÞ Ý   [0;33;43mÛ[37;40mÝ
+[20C[33;43mÛ[37;40mÝ  [1mÞ[5C[0;33;43mÛ[37;40mÝ
+[20C[33;43mÛ[37;40mÝ  [1mÞ[5C[0;33;43mÛ[37;40mÝ
+[18C[1;30;47m²²[40m°°[47m²[40m°±°°°²²²²²
+[18C[47m²²[0m±[1;30m°°°°±±°°²²²²
+[19C[47m²[40m°[0m±±[1;30m°±°°°°°²²
+[19C°±°±°°[0m±[1;30m°°²°²²
+[17C[0;33;42m° [1;32m\³/[30;40m°°°°[0m±[1;30m°°°²[32;42m³/[0;33;42m°[40m
+[16C[42m° °      [1;32m\/     [0;33;42m°  [40m
+
+
+
+[0m[255D
+              `r0`5Look a wishing well!`r0
+`\`k
+@clear screen
+@do `V01 is 1
+@do write
+`x`x
+@choice
+>&money 0 Toss in a coin and make a wish?
+Leave the wishing well
+@if response is 2 the do
+@begin
+@show
+`\`\  `$"Wishing wells are for children" you say, and leave.`\`k
+@drawmap
+@update
+@closescript
+@end
+@if response is 1 then do
+@begin
+@do money - 1
+@do `p21 random 10 1
+@routine wish`p21
+@datasave gypsy1.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+
+@#wish1
+@show
+`c  `r1`$You make a wish and suddenly feel stronger!`r0
+`\`k
+@do `p04 + 1
+@
+
+@#wish2
+@show
+`c  `r1`$You make a wish and feel nothing.`r0
+`\`k
+@
+
+@#wish3
+@show
+`c  `r1`$You make a wish and suddenly feel more evasive!`r0
+`\`k
+@do `p05 + 1
+@
+
+@#wish4
+@show
+`c  `r1`$You make a wish, everything seems the same.`r0
+`\`k
+@
+
+@#wish5
+@show
+`c  `r1`$You make a wish & wait & wait & wait, you wonder if this works?!?`r0
+`\`k
+@
+
+@#wish6
+@show
+`c  `r1`$You make a wish, suddenly you feel like the cream of the crop!`r0
+`\`k
+@do `p08 + 1
+@
+
+@#wish7
+@show
+`c  `r1`$You make a wish and wait, feeling flustered you kick the stupid well.`r0
+`\`k
+@
+
+@#wish8
+@show
+`c  `r1`$You flip your coin in, making a wish, a moment later you feel cheated!`r0
+`\`k
+@
+
+@#wish9
+@show
+`c  `r1`$Tossing you coin in, you make a wish, suddenly you feel healthier`r0
+`\`k
+@do `p03 + 1
+@do `p02 is `p03
+@
+
+@#wish10
+@show
+`c  `r1`$You make a wish, feeling foolish, you decide to leave. Nothing happens.`r0
+`\`k
+@
+
+;-------------------------------------------------------------------------
+@#fortune
+;Jeta the Fortune teller
+@dataload gypsy2.idf &playernum `p30
+@if `p30 is 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c  `#A beautiful young woman opens the door,`5 "I'm sorry Jeta is telling
+  someone else's fortune right now, perhaps if you come back tomorrow?"`# With
+  that the young woman shut the door behind her.`\
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if `p30 not 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c `#As you aproach the wagon a beautiful woman opens the door. `5"Hello
+  there. My name is Nadja, how can we be of service today?" `#she looks
+  you over, `5"Perhaps you'ld like your fortune read?"
+
+  @do write
+  `x`x
+  @choice
+>&money 20 "Will you pay 20 gold to have your fortune read?" she asks.
+Decide your destiny is your own to be made
+ @if response is 2 then do
+   @begin
+   @show
+`\`\  `5That's too bad, for Jeta is the most powerful one in the village.
+`\`k
+   @drawmap
+   @update
+   @closescript
+   @end
+ @if response is 1 then do
+   @begin
+   @do money - 20
+   @datasave gypsy2.idf &playernum 1
+   @show
+`\`\  `#You pay her the 20 gold and watch as she puts it her purse.
+  `5"I will put it here in my kis for safe keeping." `#Nadja says and
+  then she leads you inside to a table. `5"Madam Jeta will be with
+  you in a minute" `#Nadja tells you and walks away.`l`l`l
+  Sure enough a minute later a mysterious old woman walks in,
+  `5"Greetings `N, I've been expecting you, now tell me how would
+  you like your fortune read?"
+   @do write
+   `x`x
+   @choice
+Crystal ball
+Tarot cards
+Palm reading
+Rune stones
+     @if response is 1 then do
+       @begin
+       @show
+`\`\  `#Jeta gazes into her crystal ball, as you watch her and the crystal
+  ball, you see the ball cloud up with smoke and such, you can almost
+  make out pictures of your childhood in there.  You shake your head in
+  disbelief, this can't really be happening...can it? In almost what
+  seems like an instant Jeta speaks. `5The crystal ball has told me
+       @do goto goodies       
+       @drawmap
+       @update
+       @closescript
+       @end
+     @if response is 2 then do
+       @begin
+       @show
+`\`\  `#The mystifying woman starts to lay the cards out slowly on the
+  table, flipping some over, leaving some alone. After studying them for
+  a few moment's she begins to speak. `5These tarot cards represent you
+  and your life. They have revealed to me that on this day
+       @do goto goodies      
+       @drawmap
+       @update
+       @closescript
+       @end
+     @if response is 3 then do
+       @begin
+       @show
+`\`\  `#Jeta gently takes your hand and studys it, tracing the lines on
+  your hand with one ancient finger tip she explains that you have a long
+  life line, and will be mostly happy. She also tell you that
+       @do goto goodies      
+       @drawmap
+       @update
+       @closescript
+       @end
+     @if response is 4 then do
+       @begin
+       @show
+`\`\  `#Jeta has you reach into a bag a pull out 6 smooth white stones
+  with strange symbols on them, and then has you place them on the table
+  in front of you. Jeta starts to speak `5"I can see by the way you
+  are placing them in front of you that
+       @do goto goodies      
+       @drawmap
+       @update
+       @closescript
+       @end
+
+@#goodies
+@label goodies
+@do `p21 random 6 1
+@if `p21 is 1 then do
+  @begin
+  @show
+`r0`c  `5you will aquire wealth this day. `#You feel good!
+  On your way out of the fortune teller's wagon, you find a pouch
+  with 200 gold in it!
+  `\`k
+  @do money + 200
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p21 is 2 then do
+  @begin
+  @show
+`r0`c  `5you will have great misfortune. "I'm very sorry" `#she says
+  Contemplating the meaning of your fortune outside the wagon, you
+  are jumped from behind and knocked out! When you wake you find
+  someone stole 200 gold from you.
+  `\`k
+  @do money - 200
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p21 is 3 then do
+  @begin
+  @show
+`r0`c  `5you will seek wealth from the earth itself, and prosper!
+  `#Leaving the fortune tellers wagon you notice a sparkly thing
+  on the ground, as you reach to pick it up, you realize it's a GEM!
+  You quickly pocket it.
+  `\`k
+  @do `p19 + 1
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p21 is 4 then do
+  @begin
+  @show
+`r0`c  `5you will seek to improve you life for all mankind.
+  `#After leaving the wagon, you find a small bird that seems to have
+  fallen from it's nest, you find the nest and put the bird back.
+  You feel much better about yourself.
+  `\`k
+  @do `p07 + 1
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p21 is 5 then do
+  @begin
+  @show
+`r0`c  `5you will seek to do much harm to the world for the grief
+  it has caused you! Your anger will consume you." `#Jeta look sadly
+  at you as you leave.  Hearing a chirp from the ground, you look
+  down a see a baby bird. It must have fallen out of it's nest you
+  thiink to yourself. You kick dirt on it just for fun.
+  `\`k
+  @do `p07 - 1
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p21 is 6 then do
+  @begin
+  @show
+`r0`c  `5You will lead a very boring life. `#Not understanding your
+  fortune, you leave the Gypsy feeling ripped off!
+  `\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+;-------------------------------------------------------------------------
+@#riddle
+;Nicu the Riddler, think you can answer his questions?
+@dataload gypsy2.idf &playernum `p30
+@if `p30 is 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @show
+`r0`c  `!After searching around the outside of the wagon for Nicu, you knock
+  on his door and yell loudly,"Are you in there?" Then you notice a sign on
+  his door that says "Gone Fishing". Feeling foolish you decide to come back
+  another time.`\
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@if `p30 not 1 then do
+  @begin
+  @offmap
+  @do moveback
+  @do `v01 is 1
+  @show
+`r0`c       `!A young man sits whittling on the steps of a well-traveled
+       gypsy wagon.  He smiles broadly as you approach and stands
+       to greet you.  "Hello, my friend!  Please call me Nicu!
+       Care to try your luck at a few riddles?"
+
+  @do write
+  `x`x
+  @choice
+Take a shot at a riddle?
+Decide not to waste your time.
+@if response is 1 then do
+  @begin
+  @show
+`\`\  `!       "I am so pleased!" Nicu shouts happily "So you think you can
+         answer my riddles? Let me warn you they are all about the
+         Gypsys.  He comes toward you and throws his arm around your
+         shoulder, pulls you close and whispers, "Here is your riddle
+         for today."
+`\`k
+  @datasave gypsy2.idf &playernum 1
+  @do `p20 random 19 1
+  @routine q`p20
+;@drawmap
+;@update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @show
+`\`\  `!       "Well thats too bad" Nicu sighs sadly " Nothing ventured,
+         nothing gained!" He run's inside his wagon and shuts the
+         door.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@#q1
+@do `v01 is 1
+@show
+`r0`c  `!How many limbs does a healthy chey have?
+@do write
+`x`x
+@choice
+Two
+Three
+Four
+Zero
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do 
+  @begin
+  @do goto ridright
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q2
+@do `v01 is 1
+@show
+`r0`c  `!If I told you that you were mahrime, would you be offended?
+@do write
+`x`x
+@choice
+  yes
+  no
+@if response is 1 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q3
+@do `v01 is 1
+@show
+`r0`c  `!My friend left a patrin at a crossroads for me. What did he leave?
+@do write
+`x`x
+@choice
+  Lunch
+  A sign
+  A clue
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q4
+@do `v01 is 1
+@show
+`r0`c  `!What would be better for a thief?
+@do write
+`x`x
+@choice
+ Zor
+ Zen
+ Baxt
+ Mulo
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q5
+@do `v01 is 1
+@show
+`r0`c  `!I have a binak that enjoys the same things as I, what do I have?
+@do write
+`x`x
+@choice
+ Sister
+ Twin
+ Friend
+ Brother
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q6
+@do `v01 is 1
+@show
+`r0`c  `!If I said "May the gods bless you legs" am I?
+@do write
+`x`x
+@choice
+ Welcoming you
+ Bidding you farewell
+ Showing sympathy
+ Making a pass at you
+@if response is 1 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q7
+@do `v01 is 1
+@show
+`r0`c  `!If my sons romni is my bori, would my romni have a bori too?
+@do write
+`x`x
+@choice
+ Yes
+ No
+@if response is 1 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q8
+@do `v01 is 1
+@show
+`r0`c  `!I have put sir into a meal I was preparing. Should I serve it
+ a friend or enemy?
+@do write
+`x`x
+@choice
+ Friend
+ Enemy
+@if response is 1 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q9
+@do `v01 is 1
+@show
+`r0`c  `!If I poured this warm mom into a glass. and asked you to
+ drink it what would you do?
+@do write
+`x`x
+@choice
+ Drink it down fast
+ Sip it slowly
+ Decline the offer
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridright
+  @end
+@
+
+@#q10
+@do `v01 is 1
+@show
+`r0`c  `!You have just put a zen on a grast, what would you do next?
+@do write
+`x`x
+@choice
+ Push it
+ Carry it
+ Ride it
+ Fly it
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q11
+@do `v01 is 1
+@show
+`r0`c  `!That man stole my bhens kis, what did he take?
+@do write
+`x`x
+@choice
+ My brothers horse
+ My sisters purse
+ My neighbors child
+ My black coat
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q12
+@do `v01 is 1
+@show
+`r0`c  `!A woman has just called you a berk, did she pay you a compliment?
+@do write
+`x`x
+@choice
+ yes
+ no
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@
+
+@#q13
+@do `v01 is 1
+@show
+`r0`c  `!My grandmother would say "Te bisterdon tumare anave!" what was
+  she doing?
+@do write
+`x`x
+@choice
+ Placing a curse
+ Calling us to dinner
+ Giving a blessing
+ Yelling for peace and quiet
+@if response is 1 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q14
+@do `v01 is 1
+@show
+`r0`c  `!I have two pieces of cake. One is but guli, the other but
+  bushalo. Which would you want?
+@do write
+`x`x
+@choice
+ the guli piece
+ the bushalo piece
+@if response is 1 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q15
+@do `v01 is 1
+@show
+`r0`c  `!Marcel, the storyteller avoids manusha. What doesn't he like
+@do write
+`x`x
+@choice
+ Spicy food
+ People
+ Animals
+ Children
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q16
+@do `v01 is 1
+@show
+`r0`c  `!The man hands you a glass. "It is pani nevi. Take a drink."
+  What has he given you?
+@do write
+`x`x
+@choice
+ Liquor
+ Fresh water
+ Milk
+ Juice
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q17
+@do `v01 is 1
+@show
+`r0`c  `!If a street vendor gives you mariki what would you do with it?
+@do write
+`x`x
+@choice
+ play ball
+ flip through the pages
+ eat it
+ throw it away
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q18
+@do `v01 is 1
+@show
+`r0`c  `!Which Pope has this Gypsy caravan performed for?
+@do write
+`x`x
+@choice
+ Pope Dracul II
+ Pope Sixtus IV
+ Pope Paul III
+ Pope Constantin VI
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridright
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridwrong
+  @end
+@
+
+@#q19
+@do `v01 is 1
+@show
+`r0`c  `!What would a gypsy rather have as a pet?
+@do write
+`x`x
+@choice
+ Cat
+ Dog
+ Goat
+ Horse
+@if response is 1 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 2 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 3 then do
+  @begin
+  @do goto ridwrong
+  @end
+@if response is 4 then do
+  @begin
+  @do goto ridright
+  @end
+@
+
+@#ridwrong
+  @label ridwrong
+  @show
+`r0`c         `!"HA HA HA"  snorts Nicu loudly. "You thought you knew all
+          about us gypsies but you don't know the first thing about
+          our culture!" Nicu's annoying laughter follows you as you
+          turn and walk away feeling ignorant.`\
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@#ridright
+  @label ridright
+  @show
+`r0`c  `!       I knew you were intelligent the moment I laid eyes on you,"
+         says Nicu smugly. "Now, for answering correctly, I have
+         something for you!" He runs into his wagon, closing the door
+         behind him. A moment later he returns and hands you a potion.
+         "Well done my friend, this is your prize!" Smiling, you turn
+         away from him feeling smart.`\
+`\`k
+  @do goto potion
+    @drawmap
+    @update
+    @closescript
+    @end
+
+@#potion
+@label potion
+  @do `p21 random 13 1
+@if `p21 is 1 then do
+  @begin
+  @do `i05 + 1
+  @end
+@if `p21 is 2 then do
+  @begin
+  @do `i40 + 1
+  @end
+@if `p21 is 3 then do
+  @begin
+  @do `i50 + 1
+  @end
+@if `p21 is 4 then do
+  @begin
+  @do `i55 + 1
+  @end
+@if `p21 is 5 then do
+  @begin
+  @do `i52 + 1
+  @end
+@if `p21 is 6 then do
+  @begin
+  @do `i05 + 1
+  @end
+@if `p21 is 7 then do
+  @begin
+  @do `i53 + 1
+  @end
+@if `p21 is 8 then do
+  @begin
+  @do `i40 + 1
+  @end
+@if `p21 is 9 then do
+  @begin
+  @do `i54 + 1
+  @end
+@if `p21 is 10 then do
+  @begin
+  @do `i55 + 1
+  @end
+@if `p21 is 11 then do
+  @begin
+  @do `i50 + 1
+  @end
+@if `p21 is 12 then do
+  @begin
+  @do `i40 + 1
+  @end
+@if `p21 is 13 then do
+  @begin
+  @do `i05 + 1
+  @end
+ @drawmap
+ @update
+ @closescript
+ @end
+
+@#riddlen
+@offmap
+@do moveback
+@show
+`r0`c   `!You approach Nicu's wagon cautiously and knock on the door. After
+   waiting a moment you knock again and press your ear to the door. No sound
+   is heard from within, so you per in the windows. As your eyes adjust to
+   the darkness within the wagon you see Nicu sleeping on his bed. `l. `l. `l.
+   `9STARK NAKED!!! `!You run away embarassed, wondering if you should return
+   tomorrow.`\
+`\`k
+@drawmap
+@update
+@closescript
+@end
+

@@ -1,0 +1,609 @@
+; Script file LOCKREF6.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:19 2001
+
+@DECLARE d1 000002711
+@DECLARE d2 000002793
+@DECLARE d3 000002869
+@DECLARE d4 000002945
+@DECLARE d5 000003021
+@DECLARE d6 000003097
+@DECLARE d7 000003173
+@DECLARE d8 000003365
+@DECLARE d9 000003441
+@DECLARE d10 000003518
+@DECLARE d11 000003597
+@DECLARE d12 000003676
+@DECLARE d13 000003755
+@DECLARE d14 000003834
+@DECLARE d15 000003913
+@DECLARE d16 000003992
+@DECLARE d17 000004071
+@DECLARE d18 000004150
+@DECLARE d19 000004229
+@DECLARE d20 000004308
+@DECLARE d21 000004387
+@DECLARE d22 000004481
+@DECLARE d23 000004560
+@DECLARE d24 000004639
+@DECLARE d25 000004718
+@DECLARE d26 000004797
+@DECLARE d27 000004876
+@DECLARE d28 000004955
+@DECLARE d29 000005033
+@DECLARE d30 000005112
+@DECLARE d31 000005191
+@DECLARE d32 000005270
+@DECLARE d33 000005349
+@DECLARE d34 000005428
+@DECLARE d35 000005507
+@DECLARE d36 000005586
+@DECLARE d37 000005665
+@DECLARE d38 000005744
+@DECLARE d39 000005823
+@DECLARE d40 000005902
+@DECLARE d41 000005981
+@DECLARE d42 000006060
+@DECLARE d43 000006139
+@DECLARE d44 000006218
+@DECLARE d45 000006297
+@DECLARE d46 000006376
+@DECLARE d47 000006455
+@DECLARE d48 000006534
+@DECLARE d49 000006613
+@DECLARE d50 000006692
+@DECLARE d51 000006771
+@DECLARE d52 000006858
+@DECLARE d53 000006937
+@DECLARE d54 000007016
+@DECLARE d55 000007095
+@DECLARE d56 000007173
+@DECLARE d57 000007252
+@DECLARE d58 000007331
+@DECLARE d59 000007410
+@DECLARE d60 000007489
+@DECLARE d61 000007568
+@DECLARE d62 000007647
+@DECLARE d63 000007726
+@DECLARE d64 000007813
+@DECLARE d65 000007892
+@DECLARE d66 000007971
+@DECLARE d67 000008050
+@DECLARE d68 000008129
+@DECLARE d69 000008208
+@DECLARE d70 000008287
+@DECLARE d71 000008366
+@DECLARE d72 000008445
+@DECLARE d73 000008524
+@DECLARE d74 000008603
+@DECLARE d75 000008682
+@DECLARE d76 000008761
+@DECLARE d77 000008840
+@DECLARE d78 000008919
+@DECLARE d79 000008998
+@DECLARE d80 000009077
+@DECLARE d81 000009156
+@DECLARE d82 000009235
+@DECLARE d83 000009314
+@DECLARE d84 000009393
+@DECLARE d85 000009472
+@DECLARE d86 000009551
+@DECLARE d87 000009630
+@DECLARE d88 000009709
+@DECLARE d89 000009788
+@DECLARE d90 000009866
+@DECLARE d91 000009945
+@DECLARE d92 000010024
+@DECLARE d93 000010103
+@DECLARE d94 000010182
+@DECLARE d95 000010261
+@DECLARE d96 000010340
+@DECLARE d97 000010419
+@DECLARE d98 000010498
+@NOCHECK
+; End of .REF index
+
+;
+;     Locker House version 1.2 (REF FILE #6/6)
+;       by: Joel Gathercole
+;
+;    in aliance with Complete New World 136.3+
+;
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+@label d1
+ @do `p20 is 1
+ @do `i01 + `p22
+@run items in lockref3.ref
+ @end
+
+@label d2
+ @do `p20 is 2
+ @do `i02 + `p22
+ @run items in lockref3.ref
+
+@label d3
+ @do `p20 is 3
+ @do `i03 + `p22
+ @run items in lockref3.ref
+
+@label d4
+ @do `p20 is 4
+ @do `i04 + `p22
+ @run items in lockref3.ref
+
+@label d5
+ @do `p20 is 5
+ @do `i05 + `p22
+ @run items in lockref3.ref
+
+@label d6
+ @do `p20 is 6
+ @do `i06 + `p22
+ @run items in lockref3.ref
+
+@label d7
+; There is a weird bug here, do not know why?? :(
+; This is all exatly the same as the rest, yet a bug exists.
+; @do `p20 is 7
+; @do `i07 + `p22
+; @run items in lockref3.ref
+
+@label d8
+ @do `p20 is 8
+ @do `i08 + `p22
+ @run items in lockref3.ref
+
+@label d9
+ @do `p20 is 9
+ @do `i09 + `p22
+ @run items in lockref3.ref
+
+@label d10
+ @do `p20 is 10 
+ @do `i10 + `p22
+ @run items in lockref3.ref
+
+@label d11
+ @do `p20 is 11 
+ @do `i11 + `p22
+ @run items in lockref3.ref
+
+@label d12
+ @do `p20 is 12 
+ @do `i12 + `p22
+ @run items in lockref3.ref
+
+@label d13
+ @do `i13 + `p22
+ @do `p20 is 13 
+ @run items in lockref3.ref
+
+@label d14
+ @do `i14 + `p22
+ @do `p20 is 14 
+ @run items in lockref3.ref
+
+@label d15
+ @do `i15 + `p22
+ @do `p20 is 15 
+ @run items in lockref3.ref
+
+@label d16
+ @do `i16 + `p22
+ @do `p20 is 16 
+ @run items in lockref3.ref
+
+@label d17
+ @do `i17 + `p22
+ @do `p20 is 17 
+ @run items in lockref3.ref
+
+@label d18
+ @do `i18 + `p22
+ @do `p20 is 18 
+ @run items in lockref3.ref
+
+@label d19
+ @do `i19 + `p22
+ @do `p20 is 19 
+ @run items in lockref3.ref
+
+@label d20
+ @do `i20 + `p22
+ @do `p20 is 20 
+ @run items in lockref3.ref
+
+@label d21
+ @do `i21 + `p22
+ @do `p20 is 21 
+ @run items in lockref3.ref
+        
+@label d22       
+ @do `i22 + `p22
+ @do `p20 is 22 
+ @run items in lockref3.ref
+
+@label d23
+ @do `i23 + `p22
+ @do `p20 is 23 
+ @run items in lockref3.ref
+
+@label d24
+ @do `i24 + `p22
+ @do `p20 is 24 
+ @run items in lockref3.ref
+
+@label d25
+ @do `i25 + `p22
+ @do `p20 is 25 
+ @run items in lockref3.ref
+
+@label d26
+ @do `i26 + `p22
+ @do `p20 is 26 
+ @run items in lockref3.ref
+
+@label d27
+ @do `i27 + `p22
+ @do `p20 is 27 
+ @run items in lockref3.ref
+
+@label d28
+ @do `p20 is 28
+ @do `i28 + `p22
+ @run items in lockref3.ref
+
+@label d29
+ @do `p20 is 29 
+ @do `i29 + `p22
+ @run items in lockref3.ref
+
+@label d30
+ @do `p20 is 30 
+ @do `i30 + `p22
+ @run items in lockref3.ref
+
+@label d31
+ @do `p20 is 31 
+ @do `i31 + `p22
+ @run items in lockref3.ref
+
+@label d32
+ @do `p20 is 32 
+ @do `i32 + `p22
+ @run items in lockref3.ref
+
+@label d33
+ @do `i33 + `p22
+ @do `p20 is 33 
+ @run items in lockref3.ref
+
+@label d34
+ @do `i34 + `p22
+ @do `p20 is 34 
+ @run items in lockref3.ref
+
+@label d35
+ @do `i35 + `p22
+ @do `p20 is 35 
+ @run items in lockref3.ref
+
+@label d36
+ @do `i36 + `p22
+ @do `p20 is 36 
+ @run items in lockref3.ref
+
+@label d37
+ @do `i37 + `p22
+ @do `p20 is 37 
+ @run items in lockref3.ref
+
+@label d38
+ @do `i38 + `p22
+ @do `p20 is 38 
+ @run items in lockref3.ref
+
+@label d39
+ @do `i39 + `p22
+ @do `p20 is 39 
+ @run items in lockref3.ref
+
+@label d40
+ @do `i40 + `p22
+ @do `p20 is 40 
+ @run items in lockref3.ref
+
+@label d41
+ @do `i41 + `p22
+ @do `p20 is 41 
+ @run items in lockref3.ref
+
+@label d42
+ @do `i42 + `p22
+ @do `p20 is 42 
+ @run items in lockref3.ref
+
+@label d43
+ @do `i43 + `p22
+ @do `p20 is 43 
+ @run items in lockref3.ref
+
+@label d44
+ @do `i44 + `p22
+ @do `p20 is 44 
+ @run items in lockref3.ref
+
+@label d45
+ @do `i45 + `p22
+ @do `p20 is 45 
+ @run items in lockref3.ref
+
+@label d46
+ @do `i46 + `p22
+ @do `p20 is 46 
+ @run items in lockref3.ref
+
+@label d47
+ @do `i47 + `p22
+ @do `p20 is 47 
+ @run items in lockref3.ref
+
+@label d48
+ @do `i48 + `p22
+ @do `p20 is 48 
+ @run items in lockref3.ref
+
+@label d49
+ @do `i49 + `p22
+ @do `p20 is 49 
+ @run items in lockref3.ref
+
+@label d50
+ @do `i50 + `p22
+ @do `p20 is 50 
+ @run items in lockref3.ref
+
+@label d51
+ @do `i51 + `p22
+ @do `p20 is 51 
+ @run items in lockref3.ref
+        
+@label d52
+ @do `i52 + `p22
+ @do `p20 is 52 
+ @run items in lockref3.ref
+
+@label d53
+ @do `i53 + `p22
+ @do `p20 is 53 
+ @run items in lockref3.ref
+
+@label d54
+ @do `i54 + `p22
+ @do `p20 is 54 
+ @run items in lockref3.ref
+
+@label d55
+ @do `p20 is 55
+ @do `i55 + `p22
+ @run items in lockref3.ref
+
+@label d56
+ @do `i56 + `p22
+ @do `p20 is 56 
+ @run items in lockref3.ref
+
+@label d57
+ @do `i57 + `p22
+ @do `p20 is 57 
+ @run items in lockref3.ref
+
+@label d58
+ @do `i58 + `p22
+ @do `p20 is 58 
+ @run items in lockref3.ref
+
+@label d59
+ @do `i59 + `p22
+ @do `p20 is 59 
+ @run items in lockref3.ref
+
+@label d60
+ @do `i60 + `p22
+ @do `p20 is 60 
+ @run items in lockref3.ref
+
+@label d61
+ @do `i61 + `p22
+ @do `p20 is 61 
+ @run items in lockref3.ref
+
+@label d62
+ @do `i62 + `p22
+ @do `p20 is 62 
+ @run items in lockref3.ref
+
+@label d63
+ @do `i63 + `p22
+ @do `p20 is 63 
+ @run items in lockref3.ref
+        
+@label d64
+ @do `i64 + `p22
+ @do `p20 is 64 
+ @run items in lockref3.ref
+
+@label d65
+ @do `i65 + `p22
+ @do `p20 is 65 
+ @run items in lockref3.ref
+
+@label d66
+ @do `i66 + `p22
+ @do `p20 is 66 
+ @run items in lockref3.ref
+
+@label d67
+ @do `i67 + `p22
+ @do `p20 is 67 
+ @run items in lockref3.ref
+
+@label d68
+ @do `i68 + `p22
+ @do `p20 is 68 
+ @run items in lockref3.ref
+
+@label d69
+ @do `i69 + `p22
+ @do `p20 is 69 
+ @run items in lockref3.ref
+
+@label d70
+ @do `i70 + `p22
+ @do `p20 is 70 
+ @run items in lockref3.ref
+
+@label d71
+ @do `i71 + `p22
+ @do `p20 is 71 
+ @run items in lockref3.ref
+
+@label d72
+ @do `i72 + `p22
+ @do `p20 is 72 
+ @run items in lockref3.ref
+
+@label d73
+ @do `i73 + `p22
+ @do `p20 is 73 
+ @run items in lockref3.ref
+
+@label d74
+ @do `i74 + `p22
+ @do `p20 is 74 
+ @run items in lockref3.ref
+
+@label d75
+ @do `i75 + `p22
+ @do `p20 is 75 
+ @run items in lockref3.ref
+
+@label d76
+ @do `i76 + `p22
+ @do `p20 is 76 
+ @run items in lockref3.ref
+
+@label d77
+ @do `i77 + `p22
+ @do `p20 is 77 
+ @run items in lockref3.ref
+
+@label d78
+ @do `i78 + `p22
+ @do `p20 is 78 
+ @run items in lockref3.ref
+
+@label d79
+ @do `i79 + `p22
+ @do `p20 is 79 
+ @run items in lockref3.ref
+
+@label d80
+ @do `i80 + `p22
+ @do `p20 is 80 
+ @run items in lockref3.ref
+
+@label d81
+ @do `i81 + `p22
+ @do `p20 is 81 
+ @run items in lockref3.ref
+
+@label d82
+ @do `i82 + `p22
+ @do `p20 is 82 
+ @run items in lockref3.ref
+
+@label d83
+ @do `i83 + `p22
+ @do `p20 is 83 
+ @run items in lockref3.ref
+
+@label d84
+ @do `i84 + `p22
+ @do `p20 is 84 
+ @run items in lockref3.ref
+
+@label d85
+ @do `i85 + `p22
+ @do `p20 is 85 
+ @run items in lockref3.ref
+
+@label d86
+ @do `i86 + `p22
+ @do `p20 is 86 
+ @run items in lockref3.ref
+
+@label d87
+ @do `i87 + `p22
+ @do `p20 is 87 
+ @run items in lockref3.ref
+
+@label d88
+ @do `i88 + `p22
+ @do `p20 is 88 
+ @run items in lockref3.ref
+
+@label d89
+ @do `i89 + `p22
+ @do `p20 is 89
+ @run items in lockref3.ref
+
+@label d90
+ @do `i90 + `p22
+ @do `p20 is 90 
+ @run items in lockref3.ref
+
+@label d91
+ @do `i91 + `p22
+ @do `p20 is 91 
+ @run items in lockref3.ref
+
+@label d92
+ @do `i92 + `p22
+ @do `p20 is 91 
+ @run items in lockref3.ref
+
+@label d93
+ @do `i93 + `p22
+ @do `p20 is 93 
+ @run items in lockref3.ref
+
+@label d94
+ @do `i94 + `p22
+ @do `p20 is 94 
+ @run items in lockref3.ref
+
+@label d95
+ @do `i95 + `p22
+ @do `p20 is 95 
+ @run items in lockref3.ref
+
+@label d96
+ @do `i96 + `p22
+ @do `p20 is 96 
+ @run items in lockref3.ref
+
+@label d97
+ @do `i97 + `p22
+ @do `p20 is 97 
+ @run items in lockref3.ref
+
+@label d98
+ @do `i98 + `p22
+ @do `p20 is 98 
+ @run items in lockref3.ref
+
+@end
+

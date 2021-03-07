@@ -1,0 +1,234 @@
+; Script file SOLD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:37 2001
+
+@DECLARE treasure 000000633
+@DECLARE guard1 000000714
+@DECLARE guard2 000000770
+@DECLARE notnilc 000000834
+@DECLARE fightrd 000001393
+@DECLARE winred 000001914
+@DECLARE fight 000002590
+@DECLARE monster0 000002741
+@DECLARE drguard 000003168
+@DECLARE sci4 000003228
+@DECLARE whatis 000003341
+@DECLARE sci1 000003405
+@DECLARE sci2 000003502
+@DECLARE sci3 000003583
+@DECLARE helper 000003656
+@DECLARE locked 000003750
+@DECLARE guild 000003805
+@DECLARE spy 000004422
+@DECLARE screen 000004538
+@NOCHECK
+; End of .REF index
+
+@#treasure
+@do moveback
+@do saybar
+Treasure fills the room behind this door.
+
+@#Guard1
+@do moveback
+@do saybar
+`2Hail Soldacar!
+
+@#Guard2
+@do moveback
+@do saybar
+`2SoldaCar kicks ass.
+
+
+@#Notnilc
+@dataload df.idf &playernum `p98
+@if `p98 is 1 then do
+@begin
+@show
+`r0`c`r1  The Red Dragon  `r0
+
+      `2Dr. Notnilc stands to greet you, but he knows your intentions.
+      `2Please let me tell you something first...
+      `2
+      `3"What?" you ask, annoyed.
+      `3
+      `2The dog, Matt's dog.... She was a mean one she was... We couldn't
+      `2Get her to mutate properly... We had to burn her body... Hahahahaha!
+
+
+@key
+@run FightRd in sold.ref
+@end
+@if `p98 is 2 then do
+@do saybar
+`4You spit on his corpse.
+@end
+
+@#FightRD
+@fight
+;name
+`4Dr. Notnilc
+;string said when you see him
+I AM A GOD!!!
+;power move kill string
+How the Godly have fallen!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+smacks you|627
+shots you|634
+Kicks you|692
+Shoots fire|655
+NONE|NONE
+;defense
+600
+;gold reward
+1000
+;experience
+50000
+;hit points
+5000
+;if win: ref file|name or NONE
+SOLD.REF|WINRed
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#WinRed
+@busy
+@show
+`r0`c`r1  `%Death to the evil one!  `r0
+
+      `2You stand next to the bloody remains of Dr. Notnilc. This mission
+      `2has opened your eyes so much to what the true evil is doing out
+      `2here. That you nearly forgot about the Koshi, and the Dragon
+      `2Tooth Clan... But you must be brave... You must go back to HQ.
+
+      `5You give Notnilc one more swift kick before leaving. Some god he
+      `5was...
+@key
+@do addlog
+  `r1  `r0 `0`n`% has KILLED the `4Dr. Notnilc`%!`r1  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+
+@datasave df.idf &playernum 2
+
+@drawmap
+@update
+@closescript
+
+
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 1
+@do goto monster`p20
+
+@#monster0
+@fight
+;name
+Guard
+;string said when you see him
+Two guards move in on you.
+;power move kill string
+DarkForest Forever!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Shoots you|470
+Night Sticks you|402
+Kicks you|491
+NONE|NONE
+NONE|NONE
+;defense
+580
+;gold reward
+1000
+;experience
+1000
+;hit points
+1000
+;
+NONE|NONE
+;
+GAMETXT.REF|DIE
+;
+NONE|NONE
+
+
+@#DRGUARD
+@do moveback
+@do saybar
+Guard: `2Who are you?!
+
+@#sci4
+@do moveback
+@do saybar
+`2This test subject isn't reacting like "it" should. Hmmmm... I wonder...
+
+@#Whatis
+@do moveback
+@do saybar
+`4 WHAT THE HELL IS THAT?!
+
+@#sci1
+@do moveback
+@do saybar
+Scientist: `2We are near a breakthrough in human mutations!
+
+@#sci2
+@do moveback
+@do saybar
+Man: `2 We will create the Ultimate Weapon!
+
+@#sci3
+@do moveback
+@do saybar
+Woman: `2Something isn't right...
+
+@#Helper
+@do moveback
+@do saybar
+`3Mam: I was the last spy. Please help me! I'm scared!
+
+@#Locked
+@do moveback
+@do saybar
+`2It's Locked...
+
+@#Guild
+@do moveback
+@busy
+@show
+`r0`c  `%`r1  A Computer Image  `r0
+
+     `3You walk up to the computer to ask for directions. Suddenly the blank
+     screen turns into a face of a man.
+
+     `2"Upstairs is for employes only. So, please do not go up those stairs.
+     `2  To the West of you, many high ranking employes are in a meeting.
+     `2  Sadly, Dr. Notnilc could not attend that meeting because he is
+     `2  Working on a secret project to destroy DarkForest Software.
+     `2                    THANK YOU!
+
+
+     `3"Thanks... er..."
+`k
+   @drawmap
+   @update
+   @closescript
+   @end
+
+@#Spy
+@do moveback
+@do saybar
+`2If you havn't already gone to DarkForest HQ, Go there. Look at the screen.
+
+@#Screen
+@do moveback
+@do saybar
+DarkForest HQ located in the Big Forest, NorthEast of Sosen Village.

@@ -1,0 +1,203 @@
+; Script file BAT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:32 2001
+
+@DECLARE batfight 000000323
+@DECLARE monster1 000000898
+@DECLARE monster2 000001465
+@DECLARE monster3 000001980
+@DECLARE monster4 000002506
+@DECLARE monster5 000003034
+@DECLARE bat 000003561
+@NOCHECK
+; End of .REF index
+
+@#BATFIGHT
+@offmap
+@fight
+;name
+Vampire
+;string said when you see him
+He is pure evil
+;power move kill string
+You throw some garlic on him.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bites you|295
+hypnotizes you|250
+sends you flying across the room|286
+bitch slaps you|235
+NONE|NONE
+;defense
+250
+;gold reward
+2015
+;experience
+550
+;hit points
+575
+;if win: ref file|name or NONE
+QUESTER.REF|FINQUEST
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+QUESTER.REF|ENDQUEST
+
+@#monster1
+@fight
+;name
+Black Cloud
+;string said when you see him
+It looks like a black cloud of bats
+;power move kill string
+You chop them up into a million pieces
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|195
+smothers you|50
+lifts you up in the air and drops you|186
+NONE|NONE
+NONE|NONE
+;defense
+65
+;gold reward
+562
+;experience
+210
+;hit points
+125
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Giant Bat
+;string said when you see him
+Is that a dragon or a bat ?
+;power move kill string
+Eat this !
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+poops on you|75
+bites you|161
+beats you with her wings|91
+NONE|NONE
+NONE|NONE
+;defense
+68
+;gold reward
+628
+;experience
+158
+;hit points
+145
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Vampire bat
+;string said when you see him
+Looks like a bloodsucking bat
+;power move kill string
+Suck this !
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+drinks your blood|145
+gives you rabies|95
+flies in your face|54
+NONE|NONE
+NONE|NONE
+;defense
+82
+;gold reward
+925
+;experience
+171
+;hit points
+265
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Werewolf
+;string said when you see him
+Looks like a wolfman.
+;power move kill string
+You send him to dog heaven
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slices you with his claws|180
+bites you|95
+nips your heels|78
+NONE|NONE
+NONE|NONE
+;defense
+90
+;gold reward
+815
+;experience
+200
+;hit points
+351
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Wolf Pack
+;string said when you see him
+A pack of wolves snarl at you
+;power move kill string
+They won't be bothering anyone else !
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Rips your face|184
+pee on you|98
+bites you|87
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+526
+;experience
+165
+;hit points
+542
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#BAT
+@busy
+@do `p20 random 5 1
+@do goto monster`p20

@@ -1,0 +1,37 @@
+
+                   The Wishing Well v1.2 by David Loranger
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM WISHWELL.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, go north-east from Sosen Village, in the BigWood Forest.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%The Wishing Well `2v1.2 by `0David Loranger `7[`8FieldSoft`7]
+replacescreen: 298 1 show
+
+installmessage:
+
+  `0A single well, in a secluded forest... It is tempting to go see it. Maybe
+  drop a gold or a thousand! Is it just a legend? What lies at the bottom of
+  the well that would grand such wishes?

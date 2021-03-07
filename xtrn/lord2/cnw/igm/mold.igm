@@ -1,0 +1,50 @@
+
+                The Moldy City V1.00
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : ya
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : nop
+  Free?                                           : Yes!
+
+
+  Description:
+
+  a great igm for lord2 made my stealth From
+
+  Stealth Dreams BBS, 871-0133
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM MOLD.IGM
+
+  To uninstall, do the same thing again.
+
+  To Test it, go 2 screens down from port town
+
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0M`2o`8ldy `0C`2i`8ty `2by `0S`2t`8ealth
+replacescreen: 323 1 NOSHOW
+
+replacescreen: 324 2 NOSHOW
+
+replacescreen: 1116 3 show
+
+
+installmessage:
+
+go check out this kix ass igm
+
+  `%ABOUT THIS IGM:
+
+  `2It KiCkZ AzS!
+

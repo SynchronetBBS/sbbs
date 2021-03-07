@@ -1,0 +1,655 @@
+; Script file TST.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE sign 000000628
+@DECLARE healer 000000710
+@DECLARE abdul 000002570
+@DECLARE abstart 000002624
+@DECLARE arthur 000002963
+@DECLARE arstart 000003017
+@DECLARE bank 000003362
+@DECLARE bankstart 000003418
+@DECLARE bankagain 000004535
+@DECLARE deposit 000005961
+@DECLARE withdraw 000006471
+@DECLARE wizard 000007290
+@DECLARE correct 000010067
+@DECLARE wrong 000010337
+@DECLARE turgon 000010558
+@DECLARE dragon 000011201
+@DECLARE spirit 000011243
+@NOCHECK
+; End of .REF index
+
+;The Time Stands Still main REf file.
+ 
+@#sign
+@do saybar
+`2Greentree - `0Center `2of the `0World`2
+@do moveback
+ 
+@#healer
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healer
+ 
+`2  You see a sign on the wall that says healing cost 1/2 gold per hitpoint
+  needed.
+ 
+`2  A gorgeous young lady looks over your wounds.
+ 
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+@show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry, I'm not gonna perform those services for free!"
+@if sexmale is 1 then do
+ @begin
+ @do write
+`x`x
+ @choice
+For `$$`p20`%, you better perform some other services too, whore!
+How about I pay with my good looks, honey?
+How 'bout you and me go in the back and I show you my sword?
+Meekly accept, and compliment her on her dress
+@show
+ 
+ 
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 she laughs.
+ 
+`k
+ @end
+@if response is 1 then do
+ @begin
+ @show
+  `0"How dare you say that to me!  Get out!!!!" `2 she screams.
+ 
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I'd rather kiss a troll." `2 she informs you.
+ 
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"How 'bout I show you my fists?" `2 she yells as she sticks a needle in you!
+ 
+  `4HIT POINTS GO DOWN TO 1.
+ 
+`k
+ @end
+ @end
+  @drawmap
+  @update
+  @closescript
+  @end
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+ 
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+@show
+`0"You are a perfect picture of health, dear `$`n`$!" `2Kaila exclaims.
+ 
+`k
+@drawmap
+@update
+ 
+@#abdul
+@offmap
+@do moveback
+@do `v01 is 1
+@label abstart
+@show
+`r0`c  `%Abdul's Armour
+ 
+`2  Armour lies about and the smell of fresh wood fills your nostrils.
+ 
+@do write
+`x`x
+@choice
+Examine her wares
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  14
+  @end
+ 
+@if responce not 2 then goto abstart
+@drawmap
+@update
+ 
+@#arthur
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `%King Arthur's Weapons
+ 
+`2  Powerful weapons lay about on brand new shelves within easy reach.
+ 
+@do write
+`x`x
+@choice
+Examine his weaponry
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  4
+  9
+  15
+  16
+  @end
+ 
+@if responce not 2 then goto arstart
+@drawmap
+@update
+ 
+@#bank
+@do `v01 is 1
+@offmap
+@do moveback
+@label bankstart
+@show
+`r0`c  `r1 `%Ye ol' Bank `r0
+ 
+`2  An elderly gentleman looks at you interested.
+ 
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+ 
+ @end
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+ 
+ @end
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+ 
+ 
+  `2The nervous boy asks you to sit down.
+ 
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+ 
+ 
+  `0"Your current residence?"
+ 
+  @do write
+`x`x
+  @do readstring 50 `s01
+ 
+  @show
+ 
+ 
+  `0"Your net income yearly?"
+ 
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+ 
+  @end
+  @if `v40 more 19 then do
+   @begin
+   @show
+ 
+ 
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+ 
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+ 
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+ 
+ 
+  `2You decide you really don't want to open an account with this
+  branch.
+ 
+`k
+  @do goto bankstart
+  @end
+  @if `v40 > money then do
+   @begin
+   @show
+ 
+ 
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+ 
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+ 
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+ 
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+ 
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+ 
+`k
+@drawmap
+@update
+@closescript
+   @end
+  @show
+ 
+ 
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @show
+ 
+ 
+  `0"Very good S&sir!  Your new account has been opened!"
+ 
+`k
+  @do goto bank
+  @end
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw
+  @end
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+  @end
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+  @if `v40 is bank then do
+   @begin
+   @show
+ 
+ 
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+ 
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank
+   @end
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+@drawmap
+@update
+ 
+@#wizard
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%Wizard and his Cabin
+ 
+`0  "Hey young one, up here!" `2the cranky old wizard yells.  `0"I'll teach you
+    if you guess what number I'm thinking of!"
+ 
+@do write
+`x`x
+@choice
+Play his game.
+What's the rules
+Leave
+@show
+`\
+@if response is 3 then do begin
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @show
+  `0"Simply I choose a number between 1 and 100.  You have 5 guesses to get
+  it right.  I will tell you higher or lower than the number you guessed.
+  Guess correctly and I teach you how to last longer in battles."
+  `k
+  @run wizard in tst.ref
+  @end
+@if response is 1 then do
+  @begin
+  @datanewday tst.idf
+  @dataload tst.idf &playernum `p20
+  @if `p20 not 0 then do
+    @begin
+    @show
+  `0"Sorry, but only once a day please."
+  `k
+    @run wizard in tst.ref
+    @end
+  @do `p20 random 100 1
+ @show
+`r0`c
+                      `%THE NUMBERS GAME
+ @do move 1 5 
+ @do write
+   `7Enter choice:
+ @do move 18 5
+ @do readnum 2
+ @do `p21 is `v40
+ @if `p21 is `p20 then do
+   @begin
+   @run correct in tst.ref
+   @end
+ @if `p21 not `p20 then do
+   @begin
+   @if `p21 > `p20 then do
+     @begin
+     @show
+   `0Lower!
+     @end
+   @if `p21 < `p20 then do
+     @begin
+     @show
+   `0Higher!
+     @end
+   @end
+ @do move 1 7 
+ @do write
+   `7Enter choice:
+ @do move 18 7
+ @do readnum 2
+ @do `p21 is `v40
+ @if `p21 is `p20 then do
+   @begin
+   @run correct in tst.ref
+   @end
+ @if `p21 not `p20 then do
+   @begin
+   @if `p21 > `p20 then do
+     @begin
+     @show
+   `0Lower!
+     @end
+   @if `p21 < `p20 then do
+     @begin
+     @show
+   `0Higher!
+     @end
+   @end
+ @do move 1 9 
+ @do write
+   `7Enter choice:
+ @do move 18 9
+ @do readnum 2
+ @do `p21 is `v40
+ @if `p21 is `p20 then do
+   @begin
+   @run correct in tst.ref
+   @end
+ @if `p21 not `p20 then do
+   @begin
+   @if `p21 > `p20 then do
+     @begin
+     @show
+   `0Lower!
+     @end
+   @if `p21 < `p20 then do
+     @begin
+     @show
+   `0Higher!
+     @end
+   @end
+ @do move 1 11
+ @do write
+   `7Enter choice:
+ @do move 18 11
+ @do readnum 2
+ @do `p21 is `v40
+ @if `p21 is `p20 then do
+   @begin
+   @run correct in tst.ref
+   @end
+ @if `p21 not `p20 then do
+   @begin
+   @if `p21 > `p20 then do
+     @begin
+     @show
+   `0Lower!
+     @end
+   @if `p21 < `p20 then do
+     @begin
+     @show
+   `0Higher!
+     @end
+   @end
+ @do move 1 13
+ @do write
+   `7Enter choice:
+ @do move 18 13
+ @do readnum 2
+ @do `p21 is `v40
+ @if `p21 is `p20 then do
+   @begin
+   @run correct in tst.ref
+   @end
+ @if `p21 not `p20 then do
+   @begin
+   @run wrong in tst.ref
+   @end
+ @end
+ 
+@#correct
+@show
+`r0`c                              `%WINNER
+ 
+    `0"You're right... you won.  The number is `p21!"
+ 
+    `bGAIN 1 MUSCLE AND 1 DODGE`2
+ 
+ 
+    `k
+@do `p04 + 1
+@do `p05 + 1
+@datasave tst.idf &playernum `p21
+@drawmap
+@update
+@closescript
+ 
+@#wrong
+@show
+`r0`c                              `%LOSER
+ 
+    `0"You're right... okay... I lied! You suck!  Try again tomorrow!"
+ 
+ 
+    `k
+@datasave tst.idf &playernum `p21
+@drawmap
+@update
+@closescript
+ 
+@#turgon
+@busy
+@do moveback
+@do `v01 is 1
+@show
+`r0`c                   `%The Supreme Warrior
+ 
+  `2This young lad named Turgon looks at you as he prepares his new
+  `4Training Center `2for others.  He looks at you with a puzzled 
+  expression.
+ 
+@do write
+`x`x
+@choice
+Can you raise my level?
+Leave
+@show 
+`\
+@if response is 1 then do begin
+  @begin
+  @show
+  `0"I'm sorry, but my training center is only starting to be built.  I 
+  haven't even hired level masters yet, though a youngster named Barak
+  seems eager for the work."
+  `k
+  @end
+@if response not 2 then goto turgon
+@drawmap
+@update
+@closescript
+ 
+@#dragon
+@run dragon in tstdrgon.ref
+ 
+@#spirit
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Ghost of Time
+ 
+  `2The spirit looks at you and shows you two ways to Greentree, one looks 
+  like it is the past Greentree, the other is the present.
+ 
+@do write
+`x`x
+@choice
+Go to the Past
+Go to the Present
+@if response is 1 then do begin
+  @begin
+  @do map is 1525
+  @do x is 40
+  @do y is 15
+  @loadmap 1525
+  @drawmap
+  @update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @do map is 1593
+  @do x is 36
+  @do y is 6
+  @loadmap 1593
+  @drawmap
+  @update
+  @closescript
+  @end

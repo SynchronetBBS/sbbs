@@ -1,0 +1,1794 @@
+; Script file TLS1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE kingkey 000000836
+@DECLARE chattin 000001075
+@DECLARE screwwing 000002767
+@DECLARE chattin2 000003458
+@DECLARE innard 000005165
+@DECLARE innardt 000005219
+@DECLARE gesture 000006432
+@DECLARE blando 000008424
+@DECLARE btalkin 000008784
+@DECLARE win 000010404
+@DECLARE 1stgroon 000010610
+@DECLARE gtrans 000010828
+@DECLARE gtrans2 000015498
+@DECLARE fall 000016696
+@DECLARE sentry 000016740
+@DECLARE stalkin 000016794
+@DECLARE sbehind 000017781
+@DECLARE bartend 000017857
+@DECLARE buybar 000018081
+@DECLARE growl 000019475
+@DECLARE wanted 000019550
+@DECLARE wantfight 000020119
+@DECLARE manwin 000020717
+@DECLARE laya 000020833
+@DECLARE tira 000026255
+@DECLARE violet 000031781
+@NOCHECK
+; End of .REF index
+
+@#KingKey
+@dataload tlsscrew.dat &playernum `p20
+@do moveback
+ 
+@if `p20 is 8 then do
+  @begin
+  @do saybar
+`$King-Key: `0You've found the screw! A reward! You need a reward!
+  @closescript
+  @end
+ 
+@offmap
+@do `v01 is 1
+@label chattin
+@show
+`r0`c  `r1`% King-Key `r0
+ 
+  `2You walk up to a rather scrawny, beardless fellow.
+  `2His nicely hand-crafted Guess glasses look rather nerdish. 
+  You wonder why he spent so much to look like such a dweeb.
+ 
+  `2Nonetheless, he greets you with a handshake and a burp!
+ 
+  `0"Sup white trash! <burp>"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Chat with this creep
+Screw off..er...leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"One thing I have to say about you -- you look like a nerd!"
+ 
+`k  `0"That's terrible! Just terrible! Everything is terrible! It's awful!
+  You don't understand -- the screw! The screw! It's missing. I mean! It
+  was loose, but now it's gone -- without it, nothing. Nothing! Nothing!
+  Nothing is possible, save maybe sex and breathing and working...and, well,
+  nevermind that. Without it, our life is over!
+ 
+`k  `$"What the hell are you talking about?"
+ 
+`k  `0"The screw, goddamnit! The Loose Screw! It's gone. Vanished. Without
+  a trace. Screwy must have dropped it while he was carrying around our server.
+  (Screwy likes to carry around our server -- just for fun, you see).
+  It's gone! Gone! We can't get back on-line. We can't even put the cover
+  back on without it.
+ 
+`k  `$"That's sad and all. I don't really care, though. You're a nerd.
+ 
+`k `0"And a bastard!"
+ 
+`k  `$"And a bastard, yes -- but, just out of curiosity, what if I were
+  to find your screw?"
+ 
+`k  `0"Talk to Screwy. I'm too distraught! The screw! Oh, the screw! The
+  horror of it gone...the screw...the screw! The screw!
+ 
+`\`k
+  @do goto chattin
+  @END
+ 
+@drawmap
+@update
+@do saybar
+`0That guy needs help.
+@end
+ 
+@#ScrewWing
+@dataload tlsscrew.dat &playernum `p20
+@do moveback
+ 
+@if `p20 is 8 then do
+  @begin
+; @if `i94 < 1 then do
+;  @begin
+  @offmap
+  @show
+`\
+`r0`c  `r1`% Screw-Wing `r0
+  `2He says, `0"Here! Take this --
+ 
+`k  `2He gives you a `$Yellow Potion.
+
+  @key
+;<--removed that item, will put back in if author makes as EXT ITEM. :) -->
+;
+;  `2He says, `0"Here! Take this -- it's useless now with the
+;  internet around!"
+; 
+;`k  `2He gives you `$The Loose Screw BBS.
+; 
+;`k
+;<--end of CNW-->
+  @do `i94 + 1
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+  @do saybar
+`$Screw-Wing: `0Damn the internet!
+  @closescript
+  @end
+ 
+@offmap
+@do `v01 is 1
+@label chattin2
+@show
+`r0`c  `r1`% Screw-Wing `r0
+ 
+  `2You walk up to a frail, scrawny excuse for a human being.
+  His ratty beard makes you think of spider webs, pubic hair, dust and
+  dustmites all combined together in one spawn of terror.
+ 
+  `2Nonetheless, he greets you with a handshake and a fart!
+ 
+  `0"I'm a nerd! <fart>"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+Chat with this nerd
+Screw off..er...leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"You're a computer nerd, aren't you?"
+ 
+`k  `0"What? Computer? Oh yes, a computer...it's hopeless! The computer is
+  useless without the screw. It's my fault. All my fault! I took it out. I
+  thought I'd take it for a walk...but, that man. That crazy Blando man!
+  I'm teribbly frightened of Koshi, and he looks so much like one. I must
+  have dropped it on that cloud somewhere. I was looking for the Myphon
+  Groon. It's somewhere in that city, too, you know. But the screw! Oh!
+  Oh, if you could find the screw. Find the screw Please..."
+ 
+`k  `$"You know. You're a little hyped up over a damn screw."
+ 
+`k  `0"Without it, we can't do anything! I'm a computer nerd, for Christ's
+  sake! What do you expect me to be all hyped up over? World peace? Football?
+  I need that Myphon Groon. With it, one can go anywhere..."
+ 
+`k  `$"You're annoying."
+ 
+`k `0"Have you ever noticed how the character reponses in Lord II are always
+  rude and insulting?"
+ 
+`k  `$"Fuck you."
+ 
+`k  `0"See! See! That's exactly what I mean. Oh, I'm tired of it. Tired of it
+  all. Find the screw...the screw...the screw....the screw!
+ 
+`\`k
+  @do goto chattin2
+  @END
+ 
+@drawmap
+@update
+@do saybar
+`0He annoyed you greatly.
+@end
+ 
+@#Innard
+@do moveback
+@do `v01 is 1
+@offmap
+@label INNARDT
+@show
+`r0`c  `r1`%  Experienced Innard and his Experienced Tower `r0
+`\  `2You see just in front of you nothing other than a rat.
+  You feel there is something familiar about this place...
+ 
+  `0"Found someone you have, yes!" `2gawks Innard.
+ 
+@DO WRITE
+`x`x`x
+@CHOICE
+Ask Innard about this tower
+Play Innard's Useless Random Gesture
+Leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"What the hell are you doing up in this tower? You don't look so wise!"
+ 
+`k  `0"Judge me by my size, do you? You have much to learn..." `2Innard sadly
+  shakes his head, and talks into the air -- `0"This boy has no patience! I
+  cannot teach him."
+ 
+`k  `%"Was I any different?" `2a faintly familiar voice responds.
+ 
+`k  `$"Will you two shut the hell up and teach me something!"
+ 
+`k  `0"Very well. I am easily persuaded, yes. You may use my Useless Random
+  Gesture -- but I warn you. Beware. A dark place is it...your weapons. You
+  will not need them."
+ 
+`k  `$"Shut up with the movie innuendos!"
+ 
+`k  `0"Sorry."
+`\`k
+  @do goto INNARDT
+  @END
+ 
+@IF RESPONSE IS 2 THEN DO
+ @begin
+ @run gesture
+ @do goto INNARDT
+ @END
+ 
+@do moveback
+@drawmap
+@update
+@end
+ 
+@#gesture
+       @do `p22 is 0
+       @busy
+       @datanewday TLSINNRD.idf
+       @dataload tlsinnrd.idf &playernum `p22
+       @if `p22 MORE 0 then do
+       @begin
+       @show
+ 
+`c  `2Innard says to you, `0"Clear your mind of movie quotes. Enough have you
+  done for today..."
+ 
+`k
+       @run innard
+       @closescript
+       @end
+ 
+ @show
+ `r0`c  `r1  Useless Random Gesture -- Movie Innuendos! `r0
+`\  `2Innard says to you, `0"Say a movie line. Be it, yes, the right one --
+  much may be yours!"
+ 
+        @if tlsinnrd.txt exist false then do
+        @begin
+         @writefile tlsinnrd.txt
+       `$Marty`2 : `0"This is heavy, Doc" -- Back to the Future
+    `%Han Solo`2 : `0"I've got a bad feeling about this" --Every Star Wars flick
+  `$Sir Screwy`2 : `0"I'm making this up as I go along" -- Indiana Jones
+        @end
+ 
+        @if tlsinnrd.txt exist true then do
+         @displayfile tlsinnrd.txt
+         @begin
+         @end
+ 
+@show
+ 
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Your movie line (enter to quit)`\  `s04
+@DO READSTRING `p21 NIL `s03
+@do stripbad `s03
+ 
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@SHOW
+ 
+ @writefile tlsinnrd.txt
+  `%`n`2 : `0`s03
+ @do addlog
+ `r0 `0`n`2 has left you some wise words at `0The Loose Screw Resort
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @DO `p25 random 10 1
+ @DO `p25 * 989
+ @DO `p01 + `p25
+ @show
+ 
+  `0"My experience, and the tower's experience, are now yours!" `2 Innard says
+  to you with a smile...
+ 
+  `@Experience goes up by `p25!
+ 
+`k
+ @datasave tlsinnrd.idf &playernum 1
+ @do trim tlsinnrd.txt 17
+ @if `s03 inside del.txt.now then do
+  @begin
+  @do delete tlsinnrd.txt
+  @end
+ 
+@run Innard
+@closescript
+ @end
+ 
+@#BLANDO
+@do `p27 is 0
+@dataload TLSBLAND.DAT &playernum `p27
+      @if `p27 MORE 2 then do
+        @begin
+       ; @do x is 18
+       ; @drawmap
+        @do saybar 
+`0Like Neb and so many others, Blando sadly steps aside.
+        @update
+        @closescript
+        @end
+@busy
+@do `v01 is 1
+@do moveback
+@if `p27 LESS 3 then do
+@begin
+@label BTALKIN
+@show
+`r0`c  `r1`%  Small City in the Small Clouds `r0
+`\  `2In front of you is a very angry looking person...
+ 
+  `0"You've got a lot of nerve coming back here after what
+you pulled," `2he says to you.
+ 
+@DO WRITE
+`x`x`x
+@CHOICE
+"Let me passed, bad ass!"
+Beat the snot out of this cranky guy.
+Leave
+@IF RESPONSE IS 1 THEN DO
+  @BEGIN
+  @Show
+`\`\  `$"Let me passed, bad ass."
+ 
+`k  `0"Oh, come here, you old pirate!"
+ 
+`k   `$"Who are you!?!?"
+ 
+`k  `0"Oh, you remember me. We go way back. Me and you. Way back. Don't
+  you remember. My name is Blando. I'm sure I remember you. Maybe you just
+  remind me of someone I once knew."
+ 
+`k   `$"You're one of those Koshi things aren't you?"
+ 
+`k  `0"I may be. Strange that you wouldn't remember. Maybe it was your
+  father. He looked a little like you."
+ 
+`k   `$"Stop talking about him and let me passed you!"
+ 
+`k  `0"Sorry, can't let you do that. This place is sacred."
+ 
+`k
+@do goto BTALKIN
+@END
+ 
+@if response is 2 then do
+ @begin
+ @fight
+;name
+`9Blando
+;string said when you see him
+This old pirate doesn't look so friendly.
+;power move kill string
+You're a real hero, buddy...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bops you good|78
+slaps you silly|98 
+whacks your willy|108
+NONE|NONE
+NONE|NONE
+;defense
+90
+;gold reward
+2500
+;experience
+2000
+;hit points
+562
+;if win: ref file|name or NONE
+TLS1.REF|WIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#WIN
+@datasave tlsbland.dat &playernum 5
+@show 
+ 
+`\`\  `$Like Neb and so many others, Blando meekly steps aside to let you
+  pass.
+ 
+`k
+@do x is 18
+@drawmap
+@update
+@closescript
+@end
+ 
+@#1STGROON
+@if `i95 > 0 then do
+  @begin
+  @do saybar
+`2There ain't much but dust on this table now.
+  @closescript
+  @end
+ 
+@do saybar
+`#You find a Myphon Groon just lying here on the table!
+@do `i95 is 1
+ 
+@#GTRANS
+@do `v01 is 1
+@show
+`r0`c  `2Believe it or not, a genie appears... 
+`\  `2Wait, it isn't a genie. It's an apparition. An older, gray-bearded fellow
+  dressed in a brown tunic whispers something about "Dagobah" and then asks
+  where you'd like to go...
+ 
+@DO WRITE
+`x`x`x`x`x`x`x`x
+@CHOICE
+Stonebrook
+Greentree
+Porttown
+Flag City
+Sosen Vilage
+Bonetown
+Arrisville
+Dagobah
+No where right now, Obi...
+@IF RESPONSE IS 1 THEN DO
+;Stonebrook
+  @begin
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 1359
+  @do x is 36
+  @do y is 7
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 2 THEN DO
+;Greentree
+  @begin
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 1356
+  @do x is 10
+  @do y is 15
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 3 THEN DO
+;Porttown
+  @BEGIN
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 956
+  @do x is 38
+  @do y is 15
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 4 THEN DO
+;FlagCity
+  @BEGIN
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 1092
+  @do x is 71
+  @do y is 18
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 5 THEN DO
+;Sosen Village
+  @BEGIN
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 456
+  @do x is 32
+  @do y is 7 
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 6 THEN DO
+;Bonetown
+  @BEGIN
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 1572
+  @do x is 50
+  @do y is 18
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 7 THEN DO
+;Arrisville
+  @BEGIN
+  @do `p25 is `p11
+  @do `p25 / 5
+  @do `p11 - `p25
+  @show
+`r0`c`\   `2Being that the Myphon Groon is a very non-existent thing, it
+   takes quite a bit of energy to use it...
+ 
+   You lose `0`p25`2 turns today for rubbing the Groon...
+ 
+`k
+  @itemexit
+  @do map is 523
+  @do x is 22
+  @do y is 11
+  @loadmap &map
+  @update
+  @closescript
+  @end
+@IF RESPONSE IS 8 THEN DO
+  @BEGIN
+@if tlsyoda1.dat exist true then do
+  @begin
+  @readfile tlsyoda1.dat
+`p20
+`p21
+  @do `s01 is getname `p20
+  @do `s02 is getname `p21
+ 
+  @if `p20 is &playernum then do
+    @begin
+    @show
+`r0`c`\`\  `2The Groon trembles. Then it denies you...
+ 
+  `2Yoda's voice bellows. `0"You are not allowed in Dagobah, you are not.
+  A friend of the force you are never. This all because of the good advice
+  of `%`s02`0, it is. A friend of the force is he.."
+ 
+`k
+    @itemexit
+    @drawmap
+    @update
+    @closescript
+    @end
+  @end
+ 
+  @do `p21 is 0
+  @do `p20 is 0
+  @datanewday TLSTODAG.DAT
+  @dataload TLSTODAG.DAT &playernum `p20
+  @if `p20 is 2 then do
+   @begin
+   @show
+`c`\`\  `2The Groon feels you have already had a fair chance on Dagobah today.
+ 
+  Perhaps tomorrow, the force will be more with you...
+ 
+  `k
+   @itemexit
+   @drawmap
+   @update
+   @closescript
+   @end
+ 
+  @if `p20 is 1 then do
+   @begin
+   @show
+`c`\`\  `2The Groon shakes as you return to Dagobah...
+ 
+`k
+  @itemexit
+  @do map is 496
+  @do x is 37
+  @do y is 13
+  @loadmap &map
+  @update
+  @do bank + money
+  @do money is 0
+   @closescript
+   @end
+ 
+   @do goto GTRANS2
+   @closescript
+   @end
+ 
+   @itemexit
+   @drawmap
+   @update
+   @closescript
+   @end
+ 
+@#GTRANS2
+   @datanewday TLSTURNS.DAT
+   @do `v01 is 1
+   @do `p25 random 500 500
+   @show
+`c`\  `2The Groon shakes ominously. Your hair stands on end. In a quick burst
+  of nothingness, you are transported into a very dull black.
+ 
+  You can hear the voice of your mentor, friend, and short little troll, Yoda.
+ 
+  `0"About to enter Dagobah you are, yes. A great much help could you be
+  there, to me, even. Yes. There is a catch: all your money will be deposited
+  in your bank account, it will, yes. There pick it up can you. 
+ 
+  You will be given `%`p25 `0turns today to spend in Dagobah. You must spend 
+  them all at once, or never today can you return again...
+ 
+  There will, of course, be for my services a small fee.
+ 
+  Do you wish to continue?" `2his voice squawks at you.
+ 
+@do write
+`x`x
+@choice
+Yes
+No
+@if response is 1 then do
+  @begin 
+  @itemexit
+  @do map is 496
+  @loadmap &map
+  @drawmap
+  @update
+  @do x is 37
+  @do y is 13
+  @do bank + money
+  @do money is 0
+  @datasave TLSTURNS.DAT &playernum `p11
+  @datasave TLSTODAG.DAT &playernum 1
+  @do `p11 + `p25
+  @closescript
+  @end
+ 
+@itemexit
+@drawmap
+@update
+@closescript
+@end
+ 
+@#FALL
+  @do saybar
+`!Don't fall...
+ 
+@#SENTRY
+@do moveback
+@do `v01 is 1
+@offmap
+@label STALKIN
+@show
+`r0`c  `r1`%  Jabba's Hutt and Lounge `r0
+`\  `2A strange guy with coils around his neck approaches you.
+ 
+  `0"Jabba no bodda," `2he says to you.
+ 
+@DO WRITE
+`x`x`x
+@CHOICE
+What?
+>&money 250  Let me in! (250 gold)
+Leave
+@IF RESPONSE IS 1 THEN DO
+@begin
+@show
+`\`\  `$"What the hell did you say?"
+ 
+`k  `0"Shhhh," `2the thing whispers`0, "he's aseet!"
+ 
+`k   `$"You mean asleep."
+ 
+`k  `0"No, he's actually dead. Died a few years back. The new owner had
+  him stuffed and mounted in the center of the room. The new owner's great.
+  He turned Jabba's two-bit gambling place into a full out inn! If you want
+  to check it out, it'll be 250 gold!"
+ 
+`\`k
+@do goto STALKIN
+@END
+ 
+@IF RESPONSE is 2 THEN DO
+ @begin
+ @do money - 250
+ @do x is 15
+ @drawmap
+ @update
+ @do saybar
+`0Sentry: `2Watch your step in there...
+ @end
+ 
+@if RESPONSE is 3 THEN DO
+@drawmap
+@update
+@closescript
+@end
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#SBEHIND
+ @do x is 18
+ @do saybar
+`0 Sentry: `2See you next time...
+ 
+@#BARTEND
+@do `p20 is 0
+@dataload tlswant.dat &playernum `p20
+ 
+ @if `p20 is 1 then do
+ @begin
+ @do goto BUYBAR
+ @end
+ 
+ @if `p20 is 0 then do
+ @do saybar
+`0Bartender: `$We don't serve your kind here...
+ @end
+ 
+@#BUYBAR
+ @do `v01 is 1
+ @offmap
+ @show
+`r0`c  `r1`%  The New Owner's Bar and Grill `r0
+`\  `2This fat fellow looks very apologetic.
+ 
+  `0"Looks like I misjudged you, `2he says. `0"What'll it be?"
+ 
+@DO WRITE
+`x`x
+@CHOICE
+>&money 9999  Give me an Android Surprise (10,000 gold)
+>&money 14999  How about an Ewok Shake (15,000 gold)
+>&money 19999  Make it a Moxie Jawa (20,000 gold)
+You charge too much, craphead...
+@IF RESPONSE IS 1 THEN DO
+@begin
+@show
+`\`\  `$"Give me an Android Surprise!"
+ 
+`k  `0"You got it, Mister..."
+ 
+  `2You guzzle down the frothy liquid and feel somehow a bit more like
+  steel.
+ 
+  `#Muscle goes up by 8!
+ 
+`k
+@do `p04 + 8
+@do money - 10000
+@do goto BUYBAR
+@END
+ 
+@IF RESPONSE IS 2 THEN DO
+@begin
+@show
+`\`\  `$"How about an Ewok Shake, buddy!"
+ 
+`k  `0"You got it, Mister..."
+ 
+  `2You guzzle down the fuzzy liquid and feel somehow a bit more hairy!
+ 
+  `@Dodge goes up by 10!
+ 
+`k
+@do `p05 + 10
+@do money - 15000
+@do goto BUYBAR
+@END
+ 
+@IF RESPONSE IS 3 THEN DO
+@begin
+@show
+`\`\  `$"Make it a Moxie Jawa!"
+ 
+`k  `0"You got it, Mister..."
+ 
+`2  You guzzle down the salesman-like solution and feel somehow like you
+   could last a little longer in the desert...
+ 
+  `@Max Hitpoints raised by 8!
+ 
+`k
+@do `p03 + 8
+@do money - 20000
+@do goto BUYBAR
+@END
+ 
+@drawmap
+@update
+@closescript
+@end
+ 
+@#GROWL
+@do moveback
+@do saybar
+`0He growls gratuitously at you...
+ 
+@#WANTED
+@do moveback
+@dataload tlswant.dat &playernum `p21
+@if `p21 is 1 then do
+ @begin
+ @do saybar
+`0A Wanted Man: `2You've won everybody's respect, fellow delinquent...
+ @closescript
+ @end
+              
+ @show
+`r0`c  `r1`% A Wanted Man `r0
+ 
+  `0"He doesn't like you," `2this guy says to you.
+ 
+`k  `$"I'm sorry!"
+ 
+`k  `0"I don't like you either. I'm a wanted man! I've got the death warrant
+   on twelve systems..."
+ 
+`k  `$"I'll be careful, lard ass..."
+ 
+`k  `0"You'll be dead!"
+ 
+`\`k
+ @do goto WANTFIGHT
+ @closescript
+ @end
+ 
+@#WANTFIGHT
+@fight
+;name
+`0A Wanted Man
+;string said when you see him
+Looks like you've got the death warrant...
+;power move kill string
+I don't like YOU, either!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+bops you good|85
+slaps you silly|115
+whacks your willy|135
+NONE|NONE
+NONE|NONE
+;defense
+95
+;gold reward
+25000
+;experience
+3000
+;hit points
+215
+;if win: ref file|name or NONE
+TLS1.REF|MANWIN
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@drawmap
+@update
+@closescript
+@end
+ 
+@#MANWIN
+@datasave tlswant.dat &playernum 1
+@drawmap
+@update
+@do saybar
+`4You didn't win much but respect...
+ 
+@#LAYA
+@do moveback
+@if &sex is 0 then do
+  @begin
+  do saybar
+`0Sorry, girls. Women's flirting is, as of yet, unfinished...
+  @end
+@if &sex is 1 then do
+  @BEGIN
+  @datanewday tlslaya.idf
+  @dataload tlslaya.idf &playernum `p26
+ @if `p26 is 1 then do
+  @begin
+  @do saybar
+`0You've been suave enough for one day...
+  @closescript
+ @end
+ 
+@DO `p25 random 12 1
+  @do `v01 is 1
+  @SHOW
+`r0`c  `r1`% Princess Laya `r0
+ 
+`2  This fine-looking specimen smiles dumbly at you.
+ 
+  `0"Hi! My name's Laya. I'm a princess. Some people like to tease me. I don't 
+  like that at ALL! <giggle>. What's your name? You're kinda cute..."
+ 
+@do write
+`x`x
+@CHOICE
+>`p08 0  Wink at her
+>`p08 15  Kiss her hand
+>`p08 22  Peck her on the lips
+>`p08 43  Slap her on the behind
+>`p08 65  Make out session
+>`p08 87  Bed together!
+Sorry, you're too dumb...even for me.
+@if response is 1 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You give princess Laya a good wink! 
+ 
+  She smiles back at you and blows a kiss! Excellent!                  
+ 
+  `@Charm goes up by 1.
+`\`k
+ 
+ @datasave tlslaya.idf &playernum 1
+ @do `p08 + 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlslaya.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@end
+ 
+@if response is 2 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2Like the debonaire young man you are, you kiss her on the hand and
+  in a well-fashioned English accent sweet-talk her...
+ 
+  She kisses you on the cheek. Smooth!
+ 
+  `@Charm goes up by 1.
+`\`k
+ @do `p08 + 1
+ @datasave tlslaya.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlslaya.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 3 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You sneak in a quick flirtatious peck on the lips and, to your very
+  lucky surprise, she engulfs your peck with a good sloppy wet-one!
+ 
+  `@Charm goes up by 1.
+`\`k
+ @do `p08 + 1
+@do addlog
+ `r0 `0`n`2 has kissed quite heavily `0Miss Princess Laya
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave tlslaya.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlslaya.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 4 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You decide to take the plunge. Very confidently, you sneak your hand
+  around to the princess' backside and with a swift pump whack on her very
+  tight ass...
+ 
+  She laughs and gives you a kiss!
+ 
+  `@Charm goes up by 1.
+`\`k
+ @do `p08 + 1
+@do addlog
+ `r0 `0`n`2 has slapped `0Miss Princess Laya`2's ass
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave tlslaya.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlslaya.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 5 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `$"Hey, Laya! I feel like we've gotten to know each other fairly well,  
+  don't you? I, well, I...well...I was wondering if you'd make out with me?"
+ 
+`k  `0"Right here?"
+ 
+`k  `$"Yes...you know, if you would...please..."
+ 
+`k  `2Before you can answer, she jumps on top of you. You roll around for a bit
+  and just as you start feeling like more -- she stands up and says thank you.
+ 
+  `@Charm goes up by 1.
+`\`k
+ @do `p08 + 1
+@do addlog
+ `r0 `0`n`2 has made out with `0Miss Princess Laya
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ 
+ @datasave tlslaya.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlslaya.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 6 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2Remembering your good ol' days with Violet, you grab Laya and carry her
+  to the nearest bed you can find. 
+ 
+  `2It is refreshing. It is enlightening. It is, in short, about the third
+  best sex you have ever had...
+ 
+  `@Charm goes up by 3.
+  `@Lays go up by 1.
+`\`k
+ @do addlog
+ `7-`8= `r0 `0`n`2 has stolen the virginity of `0Miss Princess Laya! `8=`7-
+ @writefile lognow.txt
+     `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @do `p02 is `p03
+ @do `p08 + 3
+ @do `p34 + 1
+ @do x is 41
+ @do y is 2
+ @datasave tlslaya.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlslaya.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@drawmap
+@update
+@CLOSESCRIPT
+@END
+ 
+@#TIRA
+@do moveback
+@if &sex is 0 then do
+  @begin
+  do saybar
+`0Sorry, girls. Women's flirting is, as of yet, unfinished...
+  @end
+@if &sex is 1 then do
+  @BEGIN
+  @datanewday tlstira.idf
+  @dataload tlstira.idf &playernum `p26
+ @if `p26 is 1 then do
+  @begin
+  @do saybar
+`0You've been suave enough for one day...
+  @closescript
+ @end
+ 
+@DO `p25 random 10 1
+  @do `v01 is 1
+  @SHOW
+`r0`c  `r1`% Tira, 2nd only to Violet `r0
+ 
+`2  This girl is not only beautiful, but as some French poets might say, "Elle
+  a petite ma'chaureuse et chartruesse et oponumen."
+ 
+`2  It's true that no one knows what this means, but, being that French poets
+  have said it, it is safe to say it describes Tira very well...
+ 
+  `0"Well, hello there, `N.
+  `0I'd like to get to know you better..."
+ 
+@do write
+`x`x
+@CHOICE
+>`p08 10 Wink at her
+>`p08 12 Kiss her hand
+>`p08 24  Peck her on the lips
+>`p08 36  Slap her on the behind
+>`p08 52  Make out session
+>`p08 74  Bed together!
+I think I need some charm, baby...
+@if response is 1 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You give Tira a good wink! 
+ 
+  She smiles back at you and blows a kiss! Excellent!                  
+ 
+  `@Charm goes up by 2.
+`\`k
+ 
+ @datasave tlstira.idf &playernum 1
+ @do `p08 + 2
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlstira.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@end
+ 
+@if response is 2 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2Like the debonaire young man you are, you kiss her on the hand and
+  in a well-fashioned English accent sweet-talk her...
+ 
+  She kisses you on the cheek. Smooth!
+ 
+  `@Charm goes up by 2.
+`\`k
+ @do `p08 + 2
+ @datasave tlstira.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlstira.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 3 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You sneak in a quick flirtatious peck on the lips and, to your very
+  lucky surprise, she engulfs your peck with a good sloppy wet-one!
+ 
+  `@Charm goes up by 2.
+`\`k
+ @do `p08 + 2
+@do addlog
+ `r0 `0`n`2 has kissed quite heavily `0Miss Tira, 
+ @writefile lognow.txt
+  `02nd only to Violet`2 at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave tlstira.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlstira.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 4 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You decide to take the plunge. Very confidently, you sneak your hand
+  around to the Tira's backside and with a swift pump whack on her very
+  tight ass...
+ 
+  She laughs and gives you a kiss!
+ 
+  `@Charm goes up by 2.
+`\`k
+ @do `p08 + 2
+@do addlog
+ `r0 `0`n`2 has slapped `0Miss Tira`2's ass
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave tlstira.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlstira.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 5 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `$"Hey, Tira! I feel like we've gotten to know each other fairly well,  
+  don't you? I, well, I...well...I was wondering if you'd make out with me?"
+ 
+`k  `0"Right here?"
+ 
+`k  `$"Yes...you know, if you would...please..."
+ 
+`k  `2Before you can answer, she jumps on top of you. You roll around for a bit
+  and just as you start feeling like more -- she stands up and says thank you.
+ 
+  `@Charm goes up by 2.
+`\`k
+ @do `p08 + 2
+ @do addlog
+ `r0 `0`n`2 has made out with `0Miss Tira
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+ 
+ @datasave tlstira.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlstira.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 6 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2Remembering your good ol' days with Violet, you grab Tira and carry her
+  to the nearest bed you can find. 
+ 
+  `2It is refreshing. It is enlightening. It is, in short, about the `0second
+  best `2sex you have ever had...
+ 
+  `@Charm goes up by 5.
+  `@Lays go up by 1.
+`\`k
+ @do addlog
+ `7-`8= `r0 `0`n`2 has stolen the virginity of `0Miss Tira,
+ @writefile lognow.txt
+     `02nd only to Violet `2at `0The Loose Screw Resort! `8=`7-
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @do `p02 is `p03
+ @do `p08 + 5
+ @do `p34 + 1
+ @do x is 41
+ @do y is 2
+ @datasave tlstira.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlstira.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@drawmap
+@update
+@CLOSESCRIPT
+@END
+ 
+@#VIOLET
+@do moveback
+@if &sex is 0 then do
+  @begin
+  do saybar
+`0Sorry, girls. Women's flirting is, as of yet, unfinished...
+  @end
+@if &sex is 1 then do
+  @BEGIN
+  @datanewday tlsvlet.idf
+  @dataload tlsvlet.idf &playernum `p26
+ @if `p26 is 1 then do
+  @begin
+  @do saybar
+`0You've been suave enough for one day...
+  @closescript
+ @end
+ 
+@DO `p25 random 8 1
+  @do `v01 is 1
+  @SHOW
+`r0`c  `r1`% Violet! `r0
+ 
+`2  Standing before you is the mother of all women. The Venus of all Venuses.
+  The Goddess of all Goddesses...a woman comparable only to the envision of
+  sex, itself. Violet. You think to yourself, "God, I have missed her."
+ 
+  `0It's been such a long time, `N.
+  `0Perhaps we should get to know each other better..."
+ 
+@do write
+`x`x
+@CHOICE
+>`p08 16  Wink at her
+>`p08 30  Kiss her hand
+>`p08 54  Peck her on the lips
+>`p08 68  Slap her on the behind
+>`p08 86  Make out session
+>`p08 120  Bed together!
+Not enough charm for you, Violet...
+@if response is 1 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You give Violet a good wink! 
+ 
+  She smiles back at you and blows a kiss! Excellent!                  
+ 
+  `@Charm goes up by 3.
+`\`k
+ 
+ @datasave tlsvlet.idf &playernum 1
+ @do `p08 + 6
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlsvlet.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@end
+ 
+@if response is 2 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2Like the debonaire young man you are, you kiss her on the hand and
+  in a well-fashioned English accent sweet-talk her...
+ 
+  She kisses you on the cheek. Smooth!
+ 
+  `@Charm goes up by 3.
+`\`k
+ @do `p08 + 3
+ @datasave tlsvlet.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlsvlet.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 3 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You sneak in a quick flirtatious peck on the lips and, to your very
+  lucky surprise, she engulfs your peck with a good sloppy wet-one!
+ 
+  `@Charm goes up by 3.
+`\`k
+ @do `p08 + 3
+@do addlog
+ `r0 `0`n`2 has kissed quite heavily `0Miss Violet
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave tlsvlet.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlsvlet.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 4 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2You decide to take the plunge. Very confidently, you sneak your hand
+  around to the Violet's backside and with a swift pump whack on her very
+  tight ass...
+ 
+  She laughs and gives you a kiss!
+ 
+  `@Charm goes up by 3.
+`\`k
+ @do `p08 + 3
+ @do addlog
+ `r0 `0`n`2 has slapped `0Miss Violet`2's ass
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @datasave tlsvlet.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlsvlet.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 5 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `$"Hey, Violet! I feel like we've gotten to know each other fairly well,  
+  don't you? I, well, I...well...I was wondering if you'd make out with me?"
+ 
+`k  `0"Right here?"
+ 
+`k  `$"Yes...you know, if you would...please..."
+ 
+`k  `2Before you can answer, she jumps on top of you. You roll around for a bit
+  and just as you start feeling like more -- she stands up and says thank you.
+ 
+  `@Charm goes up by 3.
+`\`k
+ @do `p08 + 3
+@do addlog
+ `r0 `0`n`2 has made out with `0Miss Violet
+ @writefile lognow.txt
+  `2at `0The Loose Screw Resort!
+ @datasave tlsvlet.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlsvlet.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@if response is 6 then do
+ @begin
+ @if `p25 > 5 then do
+ @begin
+ @show
+`\`\  `2Remembering your good ol' days with her, you grab Violet and carry her
+  to the nearest bed you can find. 
+ 
+  `2It is refreshing. It is enlightening. It is, in short, the `0best damn
+  `2sex you have ever had...
+ 
+  `@Charm goes up by 10
+  `@Lays go up by 1.
+  `@Max Hitpoints go up by 10
+ 
+`\`k
+ @do addlog
+ `$*`7-`8= `r0 `0`n`2 has stolen the virginity of `0Miss Violet! `8=`7-`$*
+ @writefile lognow.txt
+      `2at `0The Loose Screw Resort!
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @do `p03 + 10
+ @do `p02 is `p03
+ @do `p08 + 10
+ @do `p34 + 1
+ @do x is 41
+ @do y is 2
+ @datasave tlsvlet.idf &playernum 1
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if `p25 < 6 then do
+ @datasave tlsvlet.idf &playernum 1
+ @show
+`\
+  `0She slaps you silly! Don't you feel like an ass...
+ 
+`k
+ @drawmap
+ @update
+ @closescript
+@end
+ 
+@end
+ 
+@drawmap
+@update
+@CLOSESCRIPT
+@END

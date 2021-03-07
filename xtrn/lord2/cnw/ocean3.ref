@@ -1,0 +1,62 @@
+; Script file OCEAN3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE equip1 000000210
+@DECLARE pontest 000000465
+@DECLARE portdock 000000817
+@NOCHECK
+; End of .REF index
+
+@#equip1
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 0 0 then do
+ @begin
+ @bitset `t70 0 1
+ @do `p20 is `t70
+ @datasave ocean3.idf &playernum `p20
+ @do saybar
+You find a pair of Pontoon Boots!
+ @end
+@closescript
+
+@#pontest
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 0 0 then do
+ @begin
+ @do moveback
+ @do quebar
+You gaze out longingly at the sea
+ @end
+@if bitcheck `t70 0 1 then do
+ @begin
+ @if x less &lastx then do
+  @begin
+  @do saybar
+You put on your Pontoon Boots and step out to sea
+  @end
+ @end
+@closescript
+
+@#portdock
+@dataload ocean3.idf &playernum `p20
+@do `t70 is `p20
+@if bitcheck `t70 0 0 then do
+ @begin
+ @do moveback
+ @do quebar
+You gaze out longingly at the sea
+ @end
+@if bitcheck `t70 0 1 then do
+ @begin
+  @do map is 956
+  @do x is 39
+  @do y is 8
+  @loadmap &map
+  @drawmap
+  @update
+  @do saybar
+You put on your Pontoon Boots and step out to sea
+ @end
+@closescript
+

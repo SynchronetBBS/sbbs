@@ -1,0 +1,529 @@
+; Script file VDHUT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE hut 000001050
+@DECLARE hut123 000002137
+@DECLARE rudy1 000002507
+@DECLARE whodeath 000003014
+@DECLARE whatdo 000003802
+@DECLARE whatdo123 000004127
+@DECLARE doll 000005012
+@DECLARE leave 000005771
+@DECLARE punch 000006165
+@DECLARE goody 000006528
+@DECLARE bill 000006858
+@DECLARE fred 000006964
+@DECLARE insult1 000007140
+@DECLARE mikey 000007530
+@DECLARE treegirl 000008054
+@DECLARE tree 000008236
+@DECLARE cutdown 000009742
+@DECLARE purple 000010474
+@DECLARE seeya1 000011010
+@DECLARE sign 000011733
+@DECLARE invisible 000011789
+@DECLARE gossip 000012457
+@DECLARE end 000013423
+@NOCHECK
+; End of .REF index
+
+;The VooDoo Temple v2.0! This IGM is getting better and better!!!
+;Feel free to Learn and/or Use stuff from this .REF! I've ONLY USED:
+;REFHELP.DOC to create this IGM! Please do not modify anything in the
+;VDHUT.REF! That's our job! Thanx to Seth Able for making such a great game!
+;-VooDoo KnighT & Åsn’m­-
+
+@#hut
+@do moveback
+@clear screen
+@show
+
+`$     "Hello? Anyone here?" `2You say by entering the Temple/Hut like building.
+
+@key
+@clear screen
+@show
+[0m                    [1;30mÜÜÜßßßßßÜ[0m
+                 [1;30mÜÛÛÛß[0m[7C[1;30mßÜ[0m
+               [1;30mÜÛ²²Û[0m[8C[1;30m°±Û[0m
+              [1;30mÜÛ²±²²[0m[3C[31mÜ[37m  [31mþ[1;30m  °±Û[0m
+              [1;30mÛ²±±²±[0m[3C[31m [37m [1;30m [0m [1;30m  [0;31m [1;30m°±Û[0m
+            [1;30mÜ²²±±²± °[0m[3C[1;30m    ° [0;33m [1;30m°°ßÜ[0m
+           [1;30mÛ²±±±²Û° °[0m[3C[1;30m  [0m [1;30m ° [0;33m [1;30m°±°°Û[0m
+           [1;30mÛ±°°°±²±  °    °°  [0;33m [1;30m°±°°Ûß²ÜÜ  [0m
+   [5C[1;30mÜÜÜÜÛÜ°°°°ßÜ[0m[5C[1;30m°   ° °°Üß[0m[5C[1;30mßßÜ[0m
+[5C[1;30mÜ²²²²²²²²²Ü    ß[0m[6C[1;30m°°°°[0m[12C[1;30m²[0m
+[3C[1;30mÜ²²²²±±±±±°° ß[0m
+
+`0     "Hello child! What can I do for you?" `2a cloaked man says.
+
+`$     "Ugh! Damn your ugly!" `2you reply with a grin.
+
+`0     "Shut up kid! Or I'll kick your ass!" `2he answers.
+
+@do goto hut123
+@#hut123
+
+@DO `V01 is 1
+@choice
+Whatcha do around here?
+Can I have a VooDoo doll?
+About Rudy!?
+You're scary! I gotta go!
+@if response is 1 then do
+ @begin
+ @do goto whatdo
+ @end
+@if response is 2 then do
+ @begin
+ @do goto doll
+ @end
+@if response is 3 then do
+ @begin
+ @do goto rudy1
+ @end
+@if response is 4 then do
+ @begin
+ @do goto leave
+ @end
+
+@#rudy1
+@clear screen
+@show
+
+`0     "Rudy? Hell, that kid is one hell of a trouble maker! Mikey told me
+     earlier that he's been working on that damn Pentagram to summon some
+     Demon God! I think it's bullshit really, you can go check yourself if
+     you really want to! DeathShift is a myth, he doesn't exist!"
+
+@DO `V01 is 1
+@choice
+Who's DeathShift!?
+Cool!!!
+@if response is 1 then do
+ @begin
+ @do goto whodeath
+ @end
+@if response is 2 then do
+ @begin
+ @do goto whatdo123
+
+@#whodeath
+@clear screen
+@show
+
+`0     "Who's DeathShift!? Apperantly he's SUPOSE TO BE the person who created
+     evil! That is why APPERANLY he is consumed by the evil of all evil in
+     the universe! He carries this Staff Of Destruction with him all the time
+     and uses it to destroy traitors, good people and people who challenge
+     him in a dual! But it's all a myth! DeathShift doesn't exist! If he does
+     or EVER DID we'd all be dead by now!" `2the cloaked man explains.
+
+`$     "Cool!"
+
+`0     "That's not cool! That's stupid! You have to be really stupid to
+     believe DeathShift exists! There's no such things as a DEMON GOD! If
+     you wanna believe in something, believe in the `4RED DRAGON `0and not
+     some myth!"
+
+@key
+@do goto whatdo123
+
+@#whatdo
+@clear screen
+@show
+
+`0     "What we do? We do lot's of things! Human sacrifice, controlling people's
+     minds, poking needles into little dolls... make cheese... you know,
+     all the fun stuff the life of VooDoo has to offer!" `2the cloaked figure
+     says with a smile.
+
+@key
+@do goto whatdo123
+@#whatdo123
+@clear screen
+@show
+[0m                    [1;30mÜÜÜßßßßßÜ[0m
+                 [1;30mÜÛÛÛß[0m[7C[1;30mßÜ[0m
+               [1;30mÜÛ²²Û[0m[8C[1;30m°±Û[0m
+              [1;30mÜÛ²±²²[0m[3C[31mÜ[37m  [31mþ[1;30m  °±Û[0m
+              [1;30mÛ²±±²±[0m[3C[31m [37m [1;30m [0m [1;30m  [0;31m [1;30m°±Û[0m
+            [1;30mÜ²²±±²± °[0m[3C[1;30m    ° [0;33m [1;30m°°ßÜ[0m
+           [1;30mÛ²±±±²Û° °[0m[3C[1;30m  [0m [1;30m ° [0;33m [1;30m°±°°Û[0m
+           [1;30mÛ±°°°±²±  °    °°  [0;33m [1;30m°±°°Ûß²ÜÜ  [0m
+   [5C[1;30mÜÜÜÜÛÜ°°°°ßÜ[0m[5C[1;30m°   ° °°Üß[0m[5C[1;30mßßÜ[0m
+[5C[1;30mÜ²²²²²²²²²Ü    ß[0m[6C[1;30m°°°°[0m[12C[1;30m²[0m
+[3C[1;30mÜ²²²²±±±±±°° ß[0m
+
+@show
+`0     "Anything else? I'm a really busy man, so make it quick!"
+
+@do goto hut123
+
+@key
+@drawmap
+@update
+@closescript
+
+@#doll
+@clear screen
+@show
+
+`0     "Listen kid, these aint your usual Barbie dolls here... these are genuine
+     VooDoo dolls and I only have 1 left in stock! I was expecting a delivery
+     yesterday except he got killed and no one else wants to take his job!
+     I'm not expecting anything until version 3.0 of THE VOODOO TEMPLE!"
+
+`$     "Have anything else buddy?"
+
+`0     "Hey `n`0, do I look like I'm running a TOY STORE? Now get
+`0     out of here before I shove that s&weapon `0up your ass!"
+
+`2     After being kicked out from the Temple you elevate your middle digit in
+`2     his general direction while yelling obcenities about his mother. =)
+`2     You're lucky he didn't notice it!
+
+@key
+@drawmap
+@update
+@closescript
+
+@#leave
+@clear screen
+@show
+
+`2     The cloaked figure pokes you gently in the abdomen as you pass by him.
+
+`0How do you respond?
+@DO `V01 is 1
+@choice
+Punch him in the head
+Walk away
+Poke him back
+@if response is 1 then do
+ @begin
+ @do goto punch
+ @end
+@if response is 2 then do
+ @begin
+ @do goto goody
+ @end
+@if response is 3 then do
+ @begin
+ @do goto insult1
+ @end
+
+@#punch
+@clear screen
+@show
+
+`2     The old man falls to the floor with a THUD! You turn around and see
+     him picking up a doll from the floor and stick a needle through it's chest.
+     Suddenly you feel a pain in your chest...
+@do `p02 is 1
+@show
+
+
+                            `4HIT POINTS REDUCED TO 1
+
+@key
+@drawmap
+@update
+@closescript
+
+@#goody
+@clear screen
+@show
+
+`2     After resisting the urge to respond with a "`%Heee Heee`2" You walk
+     out slowly grumbling to yourself about how your mother unfortunately
+     taught you to respect your elders.
+
+`0     The old man smiles as you walk out.
+@if `p55 is 5 then goto bill
+@if `p55 is 0 then goto fred
+@#bill
+@show
+
+`0    "Seeya around kid! Come back anytime!"
+
+@key
+@drawmap
+@update
+@closescript
+
+@#fred
+@do `p07 + 5
+@show
+
+      `%FOR BEING A GOOD SPORT AND PUTTING UP WITH HIM YOU GET 5 ALIGNMENT
+@do `p55 is 5
+@end
+
+
+@key
+@drawmap
+@update
+@closescript
+
+@#insult1
+@clear screen
+@show
+
+`2     You give him a slight jab in the stomach with your index finger and run
+     laughing.... No one around you finds it funny.
+
+     A little girl approaches you sobbing.
+`@     "How could you have done such a cruel thing to that man?"
+
+`2     You figure it must not have been that funny and appoligze.
+
+@key
+@drawmap
+@update
+@closescript
+
+@#mikey
+;It's Mikey! WOOHOO!
+@do `p70 is 22
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do `p20 random 4 1
+@if `p20 is 1 then saybar
+`0Mikey: `2Hi! I'm Mikey! Come visit our Master's temple!
+@if `p20 is 2 then saybar
+`0Mikey: `2Those STUPID thieves! They screwed up our Sign again!
+@if `p20 is 3 then saybar
+`0Mikey: `2VooDoo KnighT & Åsn’m­ ... what else can they come up with?!
+@if `p20 is 4 then saybar
+`0Mikey: `2WOAH! I heard Rudy is communicating with a Demon God!
+@end
+
+@#treegirl
+;Who's she?
+@do `p70 is 23
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@DO SAYBAR
+`0Aerith: `2Is it just me? Or is that tree talking?
+@end
+
+@#tree
+@do moveback
+@clear screen
+@show
+
+[0m[35m Ü°°±±²²ÛÛÛÛ²²±°ÜÜÜ[37m
+[35m°±²ÛÛÛÛÛÛ²ÛÛÛÛÛÛ°±²²[37m
+[35m°±²ÛÛÛÛ[43mÛ[40m²[33mÛ[35m²Û[43mÛ[40mÛÛÛ°°±²[37m
+[35m ß°±²²²²²[33mÛÛ[35m²²²±°°ßß[37m
+[7C[33mÞÛ²Û²Ý[37m
+[7C[33mÛ[30;43mÜ þ°[33;40m [37m
+[6C[33mÞÛ²Û²Ý[37m[4C[1;32m"Hi there! I'm Purple!"[0m
+[6C[33mÞ²[30;43mÄÄÄ[33;40mÛ[37m
+[7C[33mÛÛ²²ÛÝ[37m
+[7C[33m²Û²Û²[37m
+[7C[33mÛ²ÛÛ²[37m
+[6C[33mÜ²Û²Û²Û[37m
+
+`$     "What in Barak's tail??? A talking tree?"
+
+`0     "What? You never saw a talking tree before?" `2says the tree.
+
+`$     "I never knew Trees could talk!?"
+
+`0     "Maybe we just have nothing to say! Have you ever thought of that?" 
+@key
+@clear screen
+@show
+
+`$     "So you're saying the trees around my house can all talk, and the only
+     reason they aren't saying anything to me is because they have nothing to
+     say?"
+
+`0     "Exactly!"
+
+`$     "So why didn't the tree my dad cut down last Christmas scream for mercy
+     when we chopped him down and hanged lotta crap on his branches?"
+
+`0     "Maybe he enjoyed it! You have no clue what we Trees have in our minds!"
+
+`$"Let's change subject ok? Umm..."
+@DO `V01 is 1
+@choice
+Can I cut you down?
+You're really purple aren't you?
+I hear my mom calling me! Seeya!
+@if response is 1 then do
+ @begin
+ @do goto cutdown
+ @end
+@if response is 2 then do
+ @begin
+ @do goto purple
+ @end
+@if response is 3 then do
+ @begin
+ @do goto seeya1
+ @end
+
+@#cutdown
+@clear screen
+@show
+
+`0     "Cut me down with your s&weapon`0??? You gotta be kidding!"
+
+`$     "Fine... be that way! I was going to give you a better place to live
+     right beside my house!"
+
+`0     "Sorry! But these morons from the VooDoo cult think I'm some kind of god
+     and they gimme lotta respect! Especially this girl called Aerith... she's
+     one hot momma! I like having her around me!"
+
+`$     "You're the hornyest Tree I've ever seen in my life!"
+
+`0     "Shut up kid! Why don't you make like a tree and leave!"
+
+`$     "Hehehe! That's a good tree joke!"
+
+`0     "It wasn't a joke..."
+
+`2     You decide to leave the talking tree alone...
+
+@key
+@drawmap
+@update
+@closescript
+
+@#purple
+@clear screen
+@show
+
+`0     "Yes I am! Lady Aerith comes to visit me everyday and decided to name me
+     Purple! Ain't she sweet?"
+
+`$     "That's the best she could come up with?"
+
+`0     "Well at least she has better taste than your fat momma! What kind of a
+     name is `n `0anyways?!
+
+`$     "I happen to like the name `n`$!"
+
+`0     "For an anoying little brat as yourself it wouldn't surprise me!"
+
+`$     "I think I'll go now... I have better things to do!"
+
+@key
+@drawmap
+@update
+@closescript
+
+@#seeya1
+@clear screen
+@show
+
+`0     "Seeya later kid! Be sure to come visit me when `7THE VOODOO TEMPLE v2.1
+`0     is out by the Ultimate LORD 2 IGM Duo: VooDoo KnighT & Åsn’m­."
+
+`$     "You mean the Ultimate LORD 2 IGM Duo who are currently making this IGM
+     so incredible it will beat the competition?"
+
+`0     "Of course! I'll be able to give out Gold and transport you to other
+     parts of the world, you'll be able to enter the VooDoo Temple and explore
+     whatever the Master has to offer, enter the Misty Mountains which Rudy is
+     guarding with his life and much more!
+
+`$     "Wow! Alright buddy! I'll be back in `7THE VOODOO TEMPLE v2.1`$!!!"
+
+@key
+@drawmap
+@update
+@closescript
+
+@#sign
+@DO SAYBAR
+`7VooDoo `4NIP`7ple  `$--->
+
+@#invisible
+@do `p70 is 24
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 1 then goto end
+@clear screen
+@show
+[0m
+[7C[1;30m°°°°°°°°°[0m
+[6C[1;30m°[0m[9C[1;30m°[0m[3C[32mSitting in a corner... is a friendly little Invisible Man![37m
+[5C[1;30m°[0m[3C[34mÜ[1;30m   [0;34mþ[1;30m [0m  [1;30m°[0m[6C[1;32m [0m
+[4C[1;30m°°[0m  [1;30m [0m[8C[1;30m°°[0m[3C[1;32m"Hey buddy! Wanna gossip?"[0m
+[4C[1;30m°[0m[13C[1;30m°[0m
+[5C[1;30m°[0m[11C[1;30m°[0m
+[6C[1;30m°°[0m[7C[1;30m°°[0m
+[8C[1;30m°[0m[5C[1;30m°[0m
+[7C[1;30m°[0m[7C[1;30m°[0m
+[6C[1;30m°[0m[9C[1;30m°[0m
+
+@key
+@do goto gossip
+@#gossip
+@do moveback
+@busy
+@clear screen
+@show
+`0
+`0     "I'll make sure whoever visits me gets the Good News"
+`0
+@if gossip.txt exist false then do
+ @begin
+ @writefile gossip.txt
+  `%Rudy `2: `0I've heard that our Master will open the GateWay soon!
+ @end
+
+@if gossip.txt exist true then do
+ @begin
+ @displayfile gossip.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Whatcha wanna Gossip about? Press `0ENTER `2to exit.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile gossip.txt
+  `%`n`2 : `0`s03
+ @do trim gossip.txt 17
+ @drawmap
+ @update
+
+@#end
+;@drawmap
+@update
+@closescript
+
+;Programmed by VooDoo KnighT
+;Text & Jokes by Åsn’m­ & VooDoo KnighT
+;Ansi by VooDoo KnighT
+;The VooDoo Temple is owned by KNiGHTSoFT(R)

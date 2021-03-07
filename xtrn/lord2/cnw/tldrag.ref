@@ -1,0 +1,81 @@
+; Location added by CNW, removed all those extra REF files.
+
+@#LOCATION
+@If &map is 1274 then `p29 is 1
+@If &map is 1121 then `p29 is 1
+@If &map is 320 then `p29 is 2
+@If &map is 80 then `p29 is 2
+@If &map is 1255 then `p29 is 3
+@If &map is 1175 then `p29 is 3
+@If &map is 1028 then `p29 is 4
+@If &map is 1342 then `p29 is 4
+@If &map is 55 then `p29 is 5
+@If &map is 1340 then `p29 is 5
+
+
+@#VOITTO
+@routine LOCATION
+@do `p20 is 0
+@do `p21 is 0
+@do delete tltpet`p29.dat
+@readfile tlhouse`p29.dat
+`p20
+`s01
+@readfile tltname`p29.dat
+`s06
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0TeamLord Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has slained your pet Dragon
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+@do addlog
+  `0`n`2 has slained `s06's pet Dragon
+     @routine seperate in gametxt.ref
+
+@routine dismounth in vehicle.ref
+@if `p29 is 1 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1121
+        @end
+@if `p29 is 2 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 80
+        @end
+@if `p29 is 3 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1175
+        @end
+@if `p29 is 4 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1342
+        @end
+@if `p29 is 5 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1340
+        @end
+
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+
+@#JUOKSU
+@drawmap
+@update
+@do saybar
+`$"Aaaarrgghh A Dragooonn!!Heeellp meee!!"`2you scream in pain
+@closescript
+@end

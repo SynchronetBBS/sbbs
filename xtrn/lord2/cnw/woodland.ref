@@ -1,0 +1,1242 @@
+; Script file WOODLAND.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE cavesign 000000980
+@DECLARE genstore 000001085
+@DECLARE bank 000001306
+@DECLARE bankstart 000001434
+@DECLARE bankagain 000002542
+@DECLARE deposit 000003995
+@DECLARE withdraw 000004510
+@DECLARE sheriff 000005361
+@DECLARE sheriff_start 000005397
+@DECLARE exhibit1 000008769
+@DECLARE exhibit2 000008892
+@DECLARE exhibit3 000009008
+@DECLARE exhibit4 000009123
+@DECLARE couch 000009215
+@DECLARE sink 000009274
+@DECLARE toilet 000009383
+@DECLARE barguy1 000009466
+@DECLARE barguy2 000009587
+@DECLARE mybank 000009675
+@DECLARE order_food 000012511
+@DECLARE foodstart 000012731
+@DECLARE private_area 000014519
+@DECLARE done 000016048
+@DECLARE doorguard 000016084
+@DECLARE startg 000016113
+@DECLARE barsign 000020614
+@DECLARE enterbar 000020927
+@DECLARE done 000022205
+@DECLARE letmein 000022665
+@DECLARE done 000022746
+@NOCHECK
+; End of .REF index
+
+@#CAVESIGN
+@bitset `t93 0 1
+@do moveback
+@do saybar
+<--- Woodland Underground
+@closescript
+@end
+
+@#GENSTORE
+@do moveback
+@show
+`r0`c  `%Ebu's General Store
+
+`0  Janet Reno's ancestor sits, watching you very closely while you shop.
+
+@buymanager
+1
+3
+29
+43
+40
+55
+9
+16
+@drawmap
+@update
+@closescript
+@end
+
+@#BANK
+@do `p30 is 21
+@do `v01 is 1
+@offmap
+@do moveback
+@do `s09 is woodland
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@show
+`r0`c  `r1 `%Woodland Underground Bank `r0
+
+`2  A young clerk eyes you nervously.
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+
+@if bank is 0 then do
+ @begin
+ @show
+`2  You currently don't have an account with them.
+
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+=&bank 0 Apply for an account here.
+Leave
+@if response is 3 then do
+  @begin
+  @do `v01 is 1
+  @show
+
+
+  `2The nervous boy asks you to sit down.
+
+  `0"Your full name s&sir?"
+  @do `s01 is NIL
+  @do write
+`x`x
+  @do readstring 30 `s01
+  @show
+
+
+  `0"Your current residence?"
+
+  @do write
+`x`x
+  @do readstring 50 `s01
+
+  @show
+
+
+  `0"Your net income yearly?"
+
+  @do write
+`x`x
+  @do readnum 10
+  @if `v40 less 20 then do
+  @begin
+  @show
+
+  @end
+
+  @if `v40 more 19 then do
+   @begin
+   @show
+
+
+  `2You giggle to yourself `0-`2 how will they know you just totally lied on
+  that last question?!??  You only made `b19`2 gold pieces last year!
+  @end
+  @label bankagain
+  @show
+
+  `0"How much would you like to open your account with?" `2(you have `$$&money`2)
+
+  @do write
+`x`x
+  @do readnum 10 money
+  @if `v40 is 0 then do
+   @begin
+   @show
+
+
+  `2You decide you really don't want to open an account with this
+  branch.
+
+`k
+  @do goto bankstart
+  @end
+
+  @if `v40 > money then do
+   @begin
+   @show
+
+
+`2  You don't have this much!  Try again.
+   @do goto bankagain
+   @end
+
+  @if `v40 < 50 then do
+  @begin
+  @if money < 50 then do
+   @begin
+  @show
+
+  `2The clerk eyes your shabby clothing distastefully - as if he knew
+  this part was coming.
+
+  `0"I'm sorry s&sir, we do require `$$50 `2to open an account.  And could
+  you please leave the pen on your way out." `2he asks haughtily.
+
+`k  `2You carefully return the pen.  `$"I'll be back someday.  And you WILL
+  open an account for me then," `2you vow seriously.
+
+  `0"Of course you will, s&sir.  Please exit now, remember, the sign does
+  say no loitering.  And this means you." `2he says as he points to the
+  door.
+
+`k
+@drawmap
+@update
+@closescript
+   @end
+
+  @show
+
+
+  `0"S&Sir, `$$50 `0is required to open a new account!"
+  @do goto bankagain
+  @end
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @show
+
+
+  `0"Very good S&sir!  Your new account has been opened!"
+
+`k
+  @do goto bank
+  @end
+
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `@STOP THAT!
+  @do goto withdraw
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `2the clerk chokes.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Okay, nevermind then.
+Yeah, this bank sucks.
+@if response is 1 then goto bank
+
+   @end
+
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart
+  @end
+@drawmap
+@update
+
+@#SHERIFF
+@do moveback
+@label sheriff_start
+@show
+`r0`c`%  `r1 Sheriff's Office `r0
+
+@if `p07 < 0 then do
+@begin
+@show
+`2  Bob, the old sheriff, stands up and yells, "`0GET OUT OF HERE, YOU CRIMINAL!`2"
+
+`k  He then proceeds to kick you out of his office. Perhaps you need an
+  alignment adjustment.
+
+`k
+@drawmap
+@update
+@closescript
+@end
+
+@do `v01 is 1
+@show
+`2  Bob, the old sheriff, stands up and asks, "`0What can I do for you,
+  young s&man?`2"
+
+@end
+
+@do `p22 is 0
+@do `p25 is 0
+@do write
+`x`x
+@choice
+Chat with Bob
+Ask Bob about crime
+>`i44 0 Give your sack to Bob
+>`i45 0 Give your satchel to Bob
+>`i46 0 Give your small bag to Bob
+>`i48 0 Give your small purse to Bob
+Leave
+@if responce is 7 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 3 then do
+@begin
+@do `i44 - 1
+@do `p22 is 1
+@end
+
+@if responce is 4 then do
+@begin
+@do `i45 - 1
+@do `p22 is 1
+@end
+
+@if responce is 5 then do
+@begin
+@do `i46 - 1
+@do `p22 is 1
+@end
+
+@if responce is 6 then do
+@begin           
+@do `i48 - 1
+@do `p22 is 1
+@end
+
+@if `p22 is 1 then do
+@begin
+@do `p14 is 0
+@do `p15 is 0
+@do `p16 is 0
+@do `p17 is 0
+@do `p20 random 5 0
+@show
+`\`\`2  Bob searches through it and finds.`l.`l.`l.`l.`l.`l.
+
+@if `p20 is 2 then do
+@begin
+@show
+`0  Illegal mind-bending potions!
+
+`%  HE GIVES YOU 1000 GOLD AND 2 ALIGNMENT POINTS!
+
+`k
+@do money + 1000
+@do `p07 + 2
+@do goto sheriff_start
+@end
+
+@show
+`2  Nothing this time, but he gives you 100 gold for your trouble.
+
+`k
+@do money + 100
+@do goto sheriff_start
+@end
+
+@if responce is 1 then do
+@begin
+@show
+`\`\`2  "`0I don't have time to chit chat!`2", Sheriff Bob informs you.
+
+`k
+@do goto sheriff_start
+@end
+
+@if responce is 2 then do
+@begin
+@show
+`r0`c`%  `r1 Bob talks about crime `r0
+`\`2  "`0I suspect a number of people to be involved in the trade of illegal
+  substances and stolen property. These people will use innocent victims to
+  do their dirty work for them, by asking them to deliver small packages or
+  bags to others, then the delivery person is rewarded with money.
+  Unfortunately, I have no evidence to back up my suspicions, since many of
+  the deliveries do not have illegal substances or stolen property inside.
+  All of my staff has left to fight the red dragon, and I am left here short-
+  handed. If you're not too busy, I could hire you as a temporary deputy. You
+  would be doing a great service for this community by helping me out.`2"
+
+@do write
+`k`x`x
+@do `v01 is 1
+@choice
+Yes. Sign me up!
+Sorry, I have to go now.
+@if responce is 1 then do
+@begin
+@show
+`r0`c`%  `r1 Pursuing a career in law enforcement `r0
+`\`2  "`0Okay. Here's what I need you to do. If you bring me any packages
+  or bags that you are asked to deliver, I will search them, and if I find
+  anything wrong with it, I will give you a reward for your service to me.
+  If I find nothing wrong, I will still give you a reward for your trouble.
+  It won't be quite as much as if you had brought me something with a real
+  find inside, but still a reward.`2", Sheriff Bob says.
+
+`k  "`0I won't let you down, sir!`2", you say as you leave the sheriff's office.
+
+`k
+@drawmap
+@update
+@closescript
+@end
+
+@show
+`\`\`2  "`0I guess I'll have to find someone else. Thanks anyway.`2"
+
+`k
+@drawmap
+@update
+@closescript
+@end
+
+@#EXHIBIT1
+@do moveback
+@do saybar
+Violet's old blanket, fully restored to it's original colors.
+@closescript
+@end
+
+@#EXHIBIT2
+@do moveback
+@do saybar
+A collection of assorted stones found near Arrisville.
+@closescript
+@end
+
+@#EXHIBIT3
+@do moveback
+@do saybar
+Six red dragon eggs, hard boiled to prevent hatching.
+@closescript
+@end
+
+@#EXHIBIT4
+@do moveback
+@do saybar
+The ancient Magi statue of peace.
+@closescript
+@end
+
+@#COUCH
+@do saybar
+Nice and comfy!
+@closescript
+@end
+
+@#SINK
+@do moveback
+@do saybar
+You wash your hands in the sink... Good thinking!
+@closescript
+@end
+
+@#TOILET
+@do moveback
+@do saybar
+You relieve yourself. 
+@closescript
+@end
+
+@#BARGUY1
+@do moveback
+@do saybar
+`0Johnny: `2I'd prefer to be alone s&sir, if you don't mind.
+@closescript
+@end
+
+@#BARGUY2
+@do moveback
+@do saybar
+`0Man: `2Can't you see that this table is taken?
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if woodland.001 exist true then do
+  @begin
+  @readfile woodland.001
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile woodland.001
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete woodland.001
+  @writefile woodland.001
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile woodland.002
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Underground Bar and Grill Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile woodland.001
+`p20
+  @
+  @do `p20 + `p21
+  @do delete woodland.001
+  @writefile woodland.001
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile woodland.002
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Underground Bar and Grill Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+  @end
+
+@#ORDER_FOOD
+@do moveback
+@do `v01 is 1
+@show
+`r0`c`%  `r1 Underground Bar and Grill `r0
+
+`2  You grab a seat and wait for some service.
+
+`k  A young waitress arrives at your table to take your order.
+
+`k
+@label foodstart
+@show
+`r0`c`%  `r1 Ordering Some Food `r0
+
+@do write
+`2  "`0What'll it be?`2" (`0You have `$$&money`2)`\`\`x`x
+@do `v01 is 1
+@choice
+`2Roach Soup (`0$5`2)
+`2Lamb Fries (`0$10`2)
+`2Dragon Burger (`0$25`2)
+`2Stand up
+@if responce is 4 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@if responce is 1 then do
+@begin
+@if money < 5 then do
+@begin
+@show
+`\`\  `4You can't afford that.
+
+`k
+@end
+
+@show
+`\`\`2  You slurp up the roach soup... Better than beans! 
+
+`%  YOU FEEL A LITTLE BETTER.
+
+`k
+@do `p02 + 10
+@if `p02 more `p03 then `p02 is `p03
+@do money - 5
+
+@readfile woodland.003
+`p27
+@
+@do `p27 + 5
+@do delete woodland.003
+@writefile woodland.003
+`p27
+  @
+   @writefile woodland.005
+`0  `n`2 bought some roach soup! 
+@do goto foodstart
+@end
+
+
+@if responce is 2 then do
+@begin
+@if money < 10 then do
+@begin
+@show
+`\`\  `4You can't afford that.
+
+`k
+@end
+
+@show
+`\`\`2  You chomp down on the lamb fries... Crunchy! 
+
+`%  YOU FEEL BETTER.
+
+`k
+@do `p02 + 20
+@if `p02 more `p03 then `p02 is `p03
+@do money - 10
+
+@readfile woodland.003
+`p27
+@
+@do `p27 + 10
+@do delete woodland.003
+@writefile woodland.003
+`p27
+  @
+   @writefile woodland.005
+`0  `n`2 bought some lamb fries!
+@do goto foodstart
+@end
+
+@if responce is 3 then do
+@begin
+@if money < 25 then do
+@begin
+@show
+`\`\  `4You can't afford that.
+
+`k
+@end
+
+@show
+`\`\`2  You devour the dragon burger... Better than beef! 
+
+`%  YOU FEEL MUCH BETTER!
+
+`k
+@do `p02 + 50
+@if `p02 more `p03 then `p02 is `p03
+@do money - 25
+
+@readfile woodland.003
+`p27
+@
+@do `p27 + 25
+@do delete woodland.003
+@writefile woodland.003
+`p27
+  @
+   @writefile woodland.005
+`0  `n`2 bought a dragon burger!
+@do goto foodstart
+@end
+
+@#private_area
+@if woodland.004 exist false then do
+  @begin
+  @do moveback
+  @closescript
+  @end
+
+@if &lastx is 58 then do
+  @begin
+  @closescript
+  @end
+
+@readfile woodland.004
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @do x is 39
+  @do y is 4
+  @do map is 1598
+  @loadmap 1598
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0Bartender:  `2No one is allowed up there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The bartender looks over at you.  `0"Hey!  What business do you have
+  going up there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on up then!"`\`\`k
+    @do x is 39
+    @do y is 4
+    @do map is 1598
+    @loadmap 1598
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Underground Bar and Grill Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private area by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The bartender isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+
+@if woodland.003 exist false then do
+  @begin
+  @writefile woodland.003
+0
+  @end
+
+
+@if woodland.004 exist false then do
+  @begin
+  @do saybar
+`0"Get out please!  The bar has been sold!" `2the bartender commands.
+ @closescript
+  @end
+
+@readfile woodland.004
+`p20
+`s01
+@
+
+  @readfile woodland.003
+`p26
+`p27
+  @
+
+
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`0Bartender: `2I'm too busy to talk to you. Go find a seat, s&boy!
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The bartender stops working for a moment.
+
+@do write
+`x`x
+@choice
+Set password to private area. (currently is `0`s01`%)
+Ownership options
+Take money from register
+Recent customer list
+`%Make `#WoodLand Underground `%your home
+Leave
+@if responce is 5 then do
+        @begin
+        @do `p69 is 28
+        @show
+`r0`c
+
+   `#WoodLand Underground `%is now your home sweet home.
+
+       @key
+       @end
+@if responce is 4 then do
+  @begin
+  @if woodland.005 exist true then do
+  @begin
+  @show
+
+
+  @displayfile woodland.005
+  @do delete woodland.005
+  @show
+
+`k
+  @do goto doorguard
+  @end
+  @show
+
+
+`2  "`0There's no one on the customer list, s&sir`2", the bartender says.
+
+`k
+@do goto doorguard
+@end
+
+@if responce is 3 then do
+  @begin
+  @readfile woodland.003
+`p27
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `2Damn, it's empty.
+
+`k
+   @do goto doorguard
+   @end
+
+
+  @readfile woodland.003
+`p27
+  @
+  @do money + `p27
+  @do delete woodland.003
+  @writefile woodland.003
+0
+  @
+
+  @show
+`\`\  `2You find `$$`p27`2 in the register!
+
+`k
+  @do goto doorguard
+  @end
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+@do write
+`2  Are you sure that you want to give your bar to `0`s02`2?`\`\`x`x
+@do `v01 is 1
+@choice
+Yes.
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete woodland.004
+  @writefile woodland.004
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transfered ownership of Underground Bar and Grill to you. 
+  
+    @do addlog
+  `0`n`2 has given `%Underground Bar and Grill`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `4DEED TRANSFERED!`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your bar back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes.
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete woodland.004
+  @do delete woodland.003
+  @do `p30 is 21
+  @do `v40 is 10000
+  @routine widthdraw in vaults.ref
+  @do money + 10000
+  @show
+`\`\  `4BAR SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Underground Bar and Grill`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete woodland.004
+  @writefile woodland.004
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the bartender promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#BARSIGN
+@do moveback
+
+ @if woodland.004 exist false then do
+ @begin
+ @do saybar
+Underground Bar and Grill - For sale, inquire inside.
+ @end 
+
+@if woodland.004 exist true then do
+ @begin
+@readfile woodland.004
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#enterbar
+@do moveback
+@offmap
+
+
+@if woodland.004 exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Underground Bar and Grill - money making opportunity.
+  Buy it now, only asking `$$20,000`2.
+  
+  Buy now and recieve the following bonuses:
+
+  `0* `2Private living quarters for you and your friends
+
+  `0* `2Money from every sale goes right into your pocket! 
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Enter the bar
+>&money 19999 Purchase it.
+<&money 20000 Leave, since you don't have enough money.
+>&money 19999 Leave.
+@
+@if responce is 1 then goto letmein
+@if responce is 2 then do
+  @begin
+  @if woodland.004 exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile woodland.004
+&playernum
+NONE
+0
+0
+0
+0
+  @do `p30 is 21
+  @do `v40 is 20000
+  @routine deposit in vaults.ref
+    @do money - 20000
+    @do addlog
+  `0`n `2buys `%Underground Bar and Grill`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, land owner! `r0
+`\`2  Nice job!  You now own this bar!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile woodland.004
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete woodland.004
+   @do delete woodland.003
+    @do addlog
+  `%Underground Bar and Grill`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enterbar
+  @end
+
+;let him in
+@label letmein
+@do x is 41
+@do y is 15
+@do map is 1597
+@loadmap &map
+@do goto done
+@#done
+

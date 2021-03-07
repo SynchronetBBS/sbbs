@@ -1,0 +1,568 @@
+; Updated by CNW to handle the java telnet app
+;
+;    Taxes. v1.3
+;
+;   created by: Joel Gathercole
+;   Last Modified on Mar 6, 2000
+;   An official CNW IGM,
+;   currently will only work in CNW.
+;
+; All payable at SysOp Castle and some banks
+;
+; - Some guidelines for the taxes-
+;taxes are calculated yearly.. and must be paid before the next round of
+; taxes is calculated.
+; If taxes are not paid by the middle of the year. There is an interest
+; rate of `v16 per day. If taxes are over $10,000 and after half the year,
+; a bounty will be put out on that person.
+;
+;  Both players and NPCs MUST pay their taxes.
+;
+; On occasion in the daily random events of the npcs. they will try to
+; pay their taxes automaticly.. but everyone may not get a chance to, or
+; may not be able to afford it.
+;
+; All taxes collected are stored in secured vaults through-out the realm.
+; Guarded and unguarderd.
+;
+; Players can get quest points by bringing NPCs to the SysOp Castle so
+; the NPC can pay their taxes. If NPC does not have enough cash, they
+; will ask the player for help. If player helps.. special other bonuses.
+; if the npc taxes are not able to be paid, there is no bonus and the
+; npc still owes. No de-credit to player. It was the NPC's responsibility.
+;
+;
+; Vault #200 is the GIVE-A-WAY flag, if is more than 0 then the realm
+; will give away money to 1 lucky player or npc the next day.
+;
+@#playertaxes
+;1st check if player is old enuf to pay taxes!
+@do `p22 is `v18
+@if `p39 < `p22 then do
+        @begin
+        @datasave taxyear.idf &playernum `v12
+        @closescript
+        @end
+
+@do `p20 is 0
+@do `p29 is 0
+@do `p28 is 2000000000
+@do `p28 / `v15
+@datanewday taxes.chk
+@dataload taxes.chk 1 `p20
+@dataload taxyear.idf &playernum `p29
+@if `p29 < 0 then `p29 is 0  ; just in case it went to a neg. it happened before.
+
+@if `p29 < `v12 then do
+        @begin
+        @do `p29 + 1
+        @datasave taxyear.idf &playernum `p29
+        @do addlog
+`%Royals of the King SysOp has calculated `N taxes for last year.
+        @do `p23 is `p09
+        @do `p23 * 100
+        @do `p24 is &money
+        @do `p25 is &bank
+        @do `p24 + `p25
+        @if `p24 > `p28 then `p24 is `p28
+        @do `p24 * `v15
+        @do `p24 / 100
+        @do `p23 + `p24
+        @datasave taxes.idf &playernum `p23
+        @run FINDPROP in TAXES2.REF
+       @label doneprops
+        @dataload taxes.idf &playernum `p23
+        @dataload taxyear.idf &playernum `p29
+        @writefile mail\mail&playernum.dat
+  `0Tax Office:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0 `%You're taxes for year `p29 is `$`p23 `%gold. Please
+ pay at the amount at the Sysop castle or at a bank before the
+ middle of the year.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+        @dataload taxes.idf &playernum `p26
+        @if `p23 > 1000000000 then `p23 is 1000000000
+        @if `p26 > 1000000000 then `p26 is 1000000000
+        @do `p23 + `p26
+        @if `p23 > 2000000000 then `p23 is 2000000000
+        @end
+@closescript
+
+@#npctaxes
+@do `p20 is 0
+@do `p29 is 0
+@do `p28 is 2000000000
+@do `p28 / `v15
+
+@dataload npc/taxyear.idf 1 `p29
+
+@if `p29 < 0 then `p29 is 0  ; just in case it went to a neg. it happened before.
+
+@if `p29 < `v12 then do
+        @begin
+        @do `p29 + 1
+        @datasave npc/taxyear.idf 1 `p29
+        @do `p29 is 0
+       @label npctaxloop
+        @do `p29 + 1
+
+ ;1st check if NPC is old enuf to pay taxes!
+        @dataload npc/npcage.idf `p29 `p20
+        @if `p20 < `v18 then do
+                @begin
+                @do goto npctaxloop
+                @end
+
+        @dataload npc/npcgold.idf `p29 `p24
+        @if `p24 > `p28 then do
+                @begin
+                @do `p24 is `p28
+                @end
+        @do `p24 * `v15
+        @do `p24 / 100
+        @dataload npc/npctaxes.idf `p29 `p23
+        @if `p23 > 1000000000 then `p23 is 1000000000
+        @if `p24 > 1000000000 then `p24 is 1000000000
+        @do `p23 + `p24
+        @datasave npc/npctaxes.idf `p29 `p23
+        @if `p29 > 199 then goto npctaxdone
+        @do goto npctaxloop
+        @end
+
+@label npctaxdone
+@if `p20 is 0 then do
+        @begin
+        @do `p22 is `v10
+        @do `p22 / 2
+        @if `p22 > `v11 then do
+                @begin
+                @show
+`\ `%Royals of the SysOp are checking if citizens paid taxes.
+                @datasave taxes.chk 1 1
+                @do `p21 is 1
+                @do goto interest
+                @end
+        @datasave taxes.chk 1 1
+        @end
+@closescript
+@end
+
+;adds interest to owed taxes if not paid.
+;if taxes over $10,000, a royal bounty is put out on player or NPC.
+@#interest
+@do `p28 is 2000000000
+@do `p28 / `v16
+@dataload taxes.idf `p21 `p20
+@dataload npc/npctaxes.idf `p21 `p23
+@if `p20 > 1 then do
+        @begin
+        @do `p22 is `p20
+        @if `p22 > `p28 then do
+                @begin
+                @do `p22 is `p28
+                @end
+        @do `p22 * `v16
+        @do `p22 / 100
+        @do `p20 + `p22
+        @end
+@if `p23 > 1 then do
+        @begin
+        @do `p22 is `p23
+        @if `p22 > `p28 then do
+                @begin
+                @do `p22 is `p28
+                @end
+        @do `p22 * `v16
+        @do `p22 / 100
+        @do `p23 + `p22
+        @end
+@datasave taxes.idf `p21 `p20
+@datasave npc/npctaxes.idf `p21 `p23
+@if `p20 > `v17 then do
+        @begin
+; Bad PLAYER ... did not pay taxes!
+        @do `s01 is getname `p21
+        @do addlog
+`$ROYAL TAX BUREAU: `%"`5`s01 did not pay their taxes,
+        @do addlog
+                    `5a reward of `p20 gold is out for them, alive.`%"
+        @IF bounty.`p21 EXISTS TRUE THEN do
+                @begin
+                @readfile bounty.`p21
+`p26
+`p27
+                @if `p27 > 1000000000 then `p27 is 1000000000
+                @if `p20 > 1000000000 then `p20 is 1000000000
+                @do `p20 + `p27
+                @DO DELETE bounty.`p21
+                @end
+        @writefile bounty.`p21
+399
+`p20
+1
+        @end
+@if `p23 > `v17 then do
+        @begin
+; Bad NPC.. did not pay taxes!
+        @do `p70 is `p21
+        @routine getname in npcname.ref
+        @do addlog
+`$ROYAL TAX BUREAU: `%"`5`s01 did not pay their taxes,
+        @do addlog
+                    `5a reward of `p23 gold is out for them, alive.`%"
+        @do `p21 + 200
+        @IF bounty.`p21 EXISTS TRUE THEN do
+                @begin
+                @readfile bounty.`p21
+`p26
+`p27
+                @if `p27 > 1000000000 then `p27 is 1000000000
+                @if `p23 > 1000000000 then `p23 is 1000000000
+                @do `p23 + `p27
+                @DO DELETE bounty.`p21
+                @end
+        @writefile bounty.`p21
+399
+`p23
+1
+        @end
+
+@do `p21 + 1
+@if `p21 > 200 then goto nomore
+@do goto interest
+@closescript
+@end
+
+@#npcpay
+@do `p20 random 5 1
+@if `p20 is 2 then do
+        @begin
+@do `p20 random 199 1
+@dataload npc/npctaxes.idf `p20 `p21
+@if `p21 > 0 then do
+        @begin
+        @dataload npc/npcgold.idf `p20 `p24
+        @if `p24 < `p21 then goto nomore
+        @dataload vaults.idf 1 `p26
+        @do `p26 + `p21
+        @datasave vaults.idf 1 `p26
+        @do `p24 - `p21
+        @do `p70 is `p20
+        @routine getname in npcname.ref
+        @do `p40 random 10 1
+        @if `p40 is 1 then `s02 is joyfully
+        @if `p40 is 2 then `s02 is disgustedly
+        @if `p40 is 3 then `s02 is has
+        @if `p40 is 4 then `s02 is has
+        @if `p40 is 5 then `s02 is has
+        @if `p40 is 6 then `s02 is has
+        @if `p40 is 7 then `s02 is quickly
+        @if `p40 is 8 then `s02 is quietly
+        @if `p40 is 9 then `s02 is quietly
+        @if `p40 is 10 then `s02 is quietly
+        @do addlog
+     `!`s01 `s02 paid tribute to thy realm today.
+        @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+        @datasave npc/npctaxes.idf `p20 0
+        @datasave npc/npcgold.idf `p20 `p24
+        @end
+        @end
+@closescript
+
+@#movemoney
+@if vaults.idf exists false then do
+        @begin
+        @do `p21 is 0
+
+        @label makenew
+        @do `p21 + 1
+        @if `p21 > 199 then goto donenew
+        @do `p20 random 2000 100
+        @datasave vaults.idf `p21 `p20
+        @do goto makenew
+
+        @label donenew
+        @datasave vaults.idf 1 10000
+        @datasave vaults.idf 199 20000000
+        @datasave vaults.idf 200 0
+        @end
+
+@dataload vaults.idf 1 `p20
+
+@if `p20 > 1000 then do
+        @begin
+        @do `p25 random 12 1
+        @do `p21 random `p20 1
+        @dataload vaults.idf `p25 `p26
+        @do `p26 + `p21
+        @do `p20 - `p21
+        @datasave vaults.idf 1 `p20
+        @datasave vaults.idf `p25 `p26
+        @end
+
+@if `p20 > 1000000 then do
+        @begin
+        @do `p23 is 1000000
+        @do `p21 random 199 1
+        @if `p21 is 1 then `p21 is 2
+        @dataload vaults.idf `p21 `p22
+        @do `p29 is 0
+        @label toomuch
+        @if `p22 > 5000000 then do
+                @begin
+                @do `p29 + 1
+                @if `p29 is 100 then goto giveaway
+                @do `p21 + 1
+                @if `p21 > 199 then `p21 is 3
+                @dataload vaults.idf `p21 `p22
+                @if `p22 > 5000000 then goto toomuch
+                @end
+        
+        @do `p20 - `p23
+        @if `p22 > 1000000000 then `p22 is 1000000000
+        @if `p23 > 1000000000 then `p23 is 1000000000
+        @do `p22 + `p23
+        @if `p22 > 2000000000 then `p22 is 2000000000
+        @datasave vaults.idf `p21 `p22
+        @datasave vaults.idf 1 `p20
+        @end
+
+@if `p20 > 50000 then do
+        @begin
+        @do `p23 is `p20
+        @do `p21 random 199 1
+        @if `p21 is 1 then `p21 is 2
+        @dataload vaults.idf `p21 `p22
+        @do `p20 - `p23
+        @if `p22 > 1000000000 then `p22 is 1000000000
+        @if `p23 > 1000000000 then `p23 is 1000000000
+        @do `p22 + `p23
+        @if `p22 > 2000000000 then `p22 is 2000000000
+        @datasave vaults.idf `p21 `p22
+        @datasave vaults.idf 1 `p20
+        @end
+
+@do `p20 random 199 1
+@do `p21 random 199 1
+@if `p21 is `p20 then do
+        @begin
+        @do `p21 is 1
+        @do `p20 is 2
+        @end
+@dataload vaults.idf `p20 `p22
+@dataload vaults.idf `p21 `p23
+@if `p22 > 60000 then do
+        @begin
+        @do `p24 is `p22 
+        @end
+@if `p22 < 60000 then do
+        @begin
+        @do `p24 random `p22 1
+        @end
+@if `p22 is 60000 then do
+        @begin
+        @do `p24 random `p22 1
+        @end
+@do `p22 - `p24
+@if `p23 > 1000000000 then `p23 is 1000000000
+@if `p24 > 1000000000 then `p24 is 1000000000
+@do `p23 + `p24
+@if `p22 > 2000000000 then `p22 is 2000000000
+@if `p23 > 2000000000 then `p23 is 2000000000
+@datasave vaults.idf `p20 `p22
+@datasave vaults.idf `p21 `p23
+@closescript
+
+@#giveaway
+@writefile lognow.txt
+`$King SysOp proclaims there is too much money in the royal treasurey.
+`$We will be hosting a lottery tommorow for 
+                                 `2-`0=`2-`%=`2-`0=`2-
+@dataload vaults.idf 200 `p21
+@do `p21 + 1
+@datasave vaults.idf 200 `p21
+
+@#vault
+
+@#bank
+;playing paying at the bank.
+@if bitcheck `t50 3 1 then do
+        @begin
+        @dataload npc/npctaxes.idf `p71 `p20
+        @do `p70 is `p71
+        @routine getname in npcname.ref
+        @do move 1 1
+        @show
+`c                     `r1  Bank Tax Collector  `r0
+
+ `$Banker: `%What is your name, s&sir?`l`l`l`l`l
+
+ `$`s01: `%`s01!`l`l`l`l
+
+ `$Banker: `%One moment `s01, as I find your files.`l`l
+
+ `%<`l.`l.`l.`l>`l
+
+ `$Banker: `%Okay, you must pay tribute of `$`p20 `%gold
+                  to our fine realm.
+`l`l`k
+        @dataload npc/npcgold.idf `p71 `p22
+        @if `p22 < `p20 then do
+                @begin
+                @show
+ `$`s01: `%Hold on a second sir.`l`l
+`l`l`k
+ `%<`s01 turns to you>
+`l`l`k
+ `$`s01: `%`N, do you have `$`p20 `%gold I could borrow to pay my debts
+        to the mighty king Sysop?
+
+`l`l`k
+                @if money < `p20 then do
+                        @begin
+                        @show
+ `$`N: `%I am soo sorry, I can not afford your dues either, you'll have
+        to come by here again sometime soon.`l`l
+`l`l`k
+ `$`s01: `%Okay, sir, tax collector guy, I'll be back another day to pay
+        my dues, please be patient on me. Thank-you.`l`l
+`l`l`k
+ `%<`s01 turns to the tax collector>
+`l`l`k
+ `$Banker: `%`s01, as long as you don't let it get too high. BYE.`l
+`l`l`k
+                        @key
+                        @closescript
+                        @end
+                @show
+ `%<Y/n>
+
+                @do readspecial `s05 YN
+                @if `s05 is Y then do
+                        @begin
+                        @show
+ `$`N: `%Yah sure, I'll cover for you this time.
+       `%Here take my `$`p20 `%gold.`l`l
+`l`l`k
+ `$`s01: `%Thank you so much s&sir, I am forever in your debts.
+`l`l`k
+ `%<`s01 turns to the tax collector>
+`l`l`k
+ `$`s01: `%Sir, I have the gold for my devine sire and realm.
+       `% Will you accept?
+`l`l`k
+ `$Tax Collector: `%Of course, thank-you, the realm will not forget
+        `%you generous deeds today.
+`l`l`k
+ `%<`s01 turns back to YOU>
+`l`l`k
+ `$`s02: `%Please take me home and I'll give you some stuff. I promise.
+
+                        @datasave npc/npctaxes.idf `p71 0
+                        @do money - `p20
+                        @dataload vault.idf `p30 `p23
+                        @do `p23 + `p20
+                        @datasave vault.idf `p30 `p23
+                        @bitset `t50 3 0
+                        @bitset `t50 4 1
+                        @bitset `t50 7 1
+                        @key
+                        @closescript
+                        @end
+                @if `s05 is N then do
+                        @begin
+                        @show
+ `$`s01: `%I am sorry sir tax collector, I will have to return with
+       `%more money, as I am not carrying enough gold with me.
+`l`l`k
+ `$Banker: `%Okay sure no problem, come back when you do.
+ `l`l`k
+
+                        @bitset `t50 7 1
+                        @key
+                        @closescript
+                        @end
+                @key
+                @closescript
+                @end
+
+        @show
+ `$`s01: `%Okay sir, here I've got the `$`p20 `%gold.
+
+ `%<`s01 hands over the `$`p20 `%gold to the tax collector>
+        @do `22 - `p20
+        @datasave npc/npcgold.idf `p71 `p22
+        @dataload vaults.idf `p30 `p21
+        @do `p21 + `p20
+        @datasave vaults.idf `p30 `p21
+        @datasave taxes.idf &playernum `p21
+        @if bounty.`p71 exist TRUE then do
+                @begin
+                @readfile bounty.`p71
+`p20
+`p21
+`p22
+                @if `p20 is 201 then do
+                        @begin
+                        @do delete bounty.`p71
+                        @end
+                @end
+        @key
+        @closescript
+        @end
+
+@do `p24 is &playernum
+@dataload taxes.idf `p24 `p20
+@do move 1 1
+@show
+`c                     `r1  Bank Tax Collector  `r0
+
+ `$Banker: `%What is your name, s&sir?`l`l`l`l`l
+
+ `$`N: `%`N!`l`l`l`l
+
+ `$Banker: `%One moment `N, as I find your files.`l`l
+
+ `%<`l.`l.`l.`l>`l
+
+ `$Banker: `%Okay, you must pay tribute of `$`p20 `%gold
+                  to our fine realm.`l`l`k
+
+@if money < `p20 then do
+        @begin
+        @show
+ `$`N: `%Sorry, I will have to return with more money, as I am not
+                  carrying enough gold.
+                  `l`l`k
+        @key
+        @closescript
+        @end
+@show
+ `$`N: `%Okay sir, here I've got the `$`p20 `%gold.
+`l`l`k
+ `%<you hand over `$`p20 `%gold>
+ `l`l`k
+
+@bitset `t19 7 0
+@do money - `p20
+@dataload vaults.idf `p30 `p21
+@do `p21 + `p20
+@datasave vaults.idf `p30 `p21
+@datasave taxes.idf `p24 0
+@if bounty.&playernum exist TRUE then do
+     @begin
+     @readfile bounty.&playernum
+`p20
+`p21
+`p22
+     @if `p20 is 201 then do
+        @begin
+        @do delete bounty.&playernum
+        @end
+     @end
+@key
+@closescript
+@#nomore
+

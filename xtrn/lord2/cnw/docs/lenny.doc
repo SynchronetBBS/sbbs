@@ -1,0 +1,33 @@
+Uncle Lenny version 2.00 by Chris Curry
+
+Get updates at http://home.earthlink.net/~ccurry/thrive/soft/
+
+QUICK INFO:
+
+Version of LORD2 required to use it             : 1.00
+Is registered version of LORD2 required to use? : No!
+Using any LORD2 vars?                           : No!
+Overwrites any original .refs?                  : No!
+Saves and loads its own vars independently?     : Yes! (idf file)
+Adds new .refs?                                 : Yes! (1)
+Replaces screens?                               : Yes! (1)
+Adds screens?                                   : No!
+Free?                                           : Yes!
+
+To install, unzip into your LORD2 dir and type:
+
+IGM LENNY.IGM
+
+To uninstall, do the same thing again.
+
+Description:
+
+Ok v2.00 is a bit differnt from v1.00 instead of asking for a gift you
+have to earn one.  You place a bet on a game of Rock, Paper, Scissors with
+Uncle Lenny.
+
+Also v2.00 has been compiled using the new COMPILE.EXE by Seth Able.  So
+to run Uncle Lenny v2.00 you need to upgrade LORD II: New World to v1.01!
+
+If you find any bugs email me at ccurry@earthlink.net
+

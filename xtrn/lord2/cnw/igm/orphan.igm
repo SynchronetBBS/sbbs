@@ -1,0 +1,37 @@
+
+                The Greentree Orphanage by Mamoosoft Programming
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM ORPHAN.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0The Greentree Orphanage `2from `0 Mamoosoft Programming
+
+replacescreen: 1436 1 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Greentree Orphanage is a good way to increase/decrease alignment.

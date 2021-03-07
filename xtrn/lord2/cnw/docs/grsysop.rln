@@ -1,0 +1,138 @@
+                           Sysop Release Notes
+
+                 +        Version 1.12 - 04/01/98             +
+  
+   NOTICE: My home page is up now. To access my home page for the latest
+   updates visit http://home.att.net/~aussie.mfreeman/home.htm
+
+   There were no bugs reported to me over the Internet or in email on our
+   support bbs since the last release back in January. Wow, I must be pretty
+   good at this. No problems??? I discovered the bug about a month ago while
+   testing v1.11 on our support bbs. I'v been just sitting here waiting for
+   someone to report it. Since noone has reported it I haven't bothered to
+   release a new version since I thought well if noone has reported it, it
+   couldn't be causing to many headaches. Maybe you have noticed this bug but
+   you didn't know it was actually a bug caused by Global Registries.
+
+1. If you hold down your <-- --> key on your keyboard while moving your
+   character you'll notice on some PC's that when the buffer overflows Lord II
+   has this REALLY ANNOYING habbit of kicking you out of the screen your in to
+   display the routine that display the (Y)esterdays News (T)odays news again
+   (C)ontinue prompt. The bug appears when you try to go back into the game.
+   If you try to go back into the game, nothing happens and your left hanging.
+   Your only choice is to (Q)uit the game. Did anyone notice this?????
+
+   Because of the extreme complexity of the code written for GR, it seems it
+   was at fault. I'v removed the code I added to LOGSTUFF.REF in v1.11 and
+   placed it in another program. As we say its now more BUFFER happy and you
+   can go back into the game without a problem.
+
+2. Changed all date output to include century as well as years in displays.
+   The new format is mm/dd/ccyy for eg 03/01/2000 would denote March 01, 2000.
+3. Removed the ansi screen that displayed the name of the bbs GR was registered
+   to. When entering the module, you go straight in now with a display.
+4. Added 30day demo feature for TEST drive Sysops.
+5. Added <REGISTERED> <UN-REGISTERED> display on main menu display.
+
+                 +        Version 1.11 - 01/20/98             +
+
+1. This is a maintenance release. There were no bugs to fix, and if there were
+   any, those were not reported to me. I did rewrite/add/change a few routines
+   for optimization purposes.
+2. Ack! The left bracket of the <MORE> prompt was showing light green. Fixed
+   that to show the proper color, light green for once and for all. I told you
+   small things drive me nuts!!!!!
+3. Fixed other minor things here and there not worth mentioning dealing with
+   prompts lining up under each other for messages etc.
+
+                 +        Version 1.10 - 01/08/98             +
+
+1. Fixed 204 Range Check Error bug that occured when a player was trying to
+   purchase an additional life and when his/her money in the bank equalled the
+   amount it cost to buy an additional life.
+2. Fixed a nasty bug that occured when a user, who is only allowed one life
+   per day, and when he/she was killed in the game, and then went back into
+   the game, were able to enter without a problem. This bug was a result of a
+   modification I made to the part of the code in LOGSTUFF.REF that calls my
+   routine to display a warning when users enters the game, if they haven't
+   entered their registry. See my FIX in the update notes that adds a few extra
+   lines to LOGSTUFF.REF that fixes this problem.
+3. Fixed the <MORE> prompt not resetting after exiting from Global Registries.
+   Our <MORE> prompt in Global Registries is Slam a key...It wasn't being reset
+   properly to <MORE> after exiting Global Registries. It is now!
+4. Re-coded the routine that displays the list of users who have entered their
+   registry entries. Code is optimized for faster display.
+5. Added my Web Site address to the [I]nformation Display option. In future
+   this site will be available for updates and support. Currently under
+   Construction! Please check my Web Site often.
+6. Removed REGCNTRL.REC. One less REC file to read and no longer needed. Code
+   has been placed elsewhere.
+7. Fixed other minor things here and there not worth mentioning.
+
+                 +        Version 1.09 - 01/01/98             +
+
+1. Global Registries v1.09 goes public. Official release and out of Beta!
+
+                 +        Version 1.08áeta - 12/19/97         +
+
+1. No bugs to fix but there were internal code modifications made to the way
+   Global Registries operates.
+
+                 +        Version 1.07áeta - 12/15/97         +
+
+1. Fixed some cosmetic changes, added some color to error messages and
+   relocated error messages to line up correctly when displayed. I'm a perfect-
+   ist when it comes to things lining up correctly or when something looks out
+   of place it drives me nuts.
+
+                 +        Version 1.06áeta - 12/02/97         +
+
+1. No bugs to fix but there were internal code modifications made to the way
+   Global Registries operates.
+
+                 +        Version 1.05áeta - 11/25/97         +
+
+1. Fixed gold (in hand) going negative when purchasing a character description.
+   If you didn't have enough (in hand), the evil clerk was still taking money
+   you didn't have forcing your gold (in hand) to show negative.
+2. Fixed character discription field in the lookup another users entry display
+   which would show <NONE> even when the user had actually entered his/her
+   character description.
+
+                 +        Version 1.04áeta - 11/18/97         +
+
+1. Up till now option [L] .. Purchase An Additional Life, would return the
+   message UNDER CONSTRUCTION. Just got around to actually coding this today.
+   It was easier to code then at first I thought. Works like a charm. If you
+   dont see option [L] on your main menu, it means your Sysop has configured
+   Lord II for unlimited lives per day and unlimited turns per day. In this
+   case option [L] will not be available to players and it will not show up on
+   any menus. If option [L] does show on your menu then what this option allows
+   you to do is buy an additional life for $$, just in case you get killed and
+   want to go back into the game on the same day. The cost of purchasing an
+   additional life is configurable online by your Sysop.
+
+                 +        Version 1.03áeta - 11/15/97
+
+1. Ack! I guess this programming language was not designed to display info
+   about other people so my his&hers variable is always displaying HIS in
+   error messages. For eg. When a user types L to lookup the information on
+   another user, and that user has not entered his or her entry yet, my error
+   messages always say "SORRY THAT USER HAS NOT ENTERED [HIS] REGISTRY ENTRY
+   YET! The s&his variable returns true for yourself by not for others!!!!!!
+   Am I trying to do something I should'nt be doing? Hmm, ok Seth! I guess
+   your forcing me to program around this problem! Ok, got it! It's fixed! It
+   now returns HIS for GUYS and HERS for DOLLS. Thanks to Lisa of The Coffee
+   Break BBS and our Beta test site for pointing this out to me. Don't tell
+   Lisa but I already spotted this problem earlier, I just wasn't sure how I
+   was going to address the problem. Lisa, your the best bug hunta!
+
+                 +        Version 1.02áeta - 11/10/97         +
+
+1. Fixed bug where users sex was always begin displayed as MALE when user
+   typed L to lookup the Registry entry of another player.
+
+                 +        Version 1.01áeta - 10/28/97         +
+
+1. Global Registries goes into Beta on our 26-lines bbs.
+

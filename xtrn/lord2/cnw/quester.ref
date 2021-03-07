@@ -1,0 +1,555 @@
+; Script file QUESTER.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:31 2001
+
+@DECLARE oneaday 000000830
+@DECLARE oneaday2 000001056
+@DECLARE elfaday 000001547
+@DECLARE main1 000001751
+@DECLARE nomore 000002265
+@DECLARE main2 000002276
+@DECLARE nomore 000003281
+@DECLARE circle 000003293
+@DECLARE spiderking 000004385
+@DECLARE batking 000004941
+@DECLARE undeadking 000005395
+@DECLARE goblinking 000005792
+@DECLARE magicking 000006196
+@DECLARE finquest 000006583
+@DECLARE endquest 000008784
+@DECLARE noswim 000009388
+@DECLARE swim 000009474
+@DECLARE nomore 000011321
+@NOCHECK
+; End of .REF index
+
+;                         -=Quester Ver. 1.00=-
+;                            A Lord II IGM
+;               Brought to you by the creator of Odin's Keep
+;                                oDiN
+
+@#ONEADAY
+@do moveback
+@show
+`r0`c   `0-`2=`0- `%Tomorrow `0-`2=`0-
+
+ `0"Come back tomorrow to start another quest !"
+
+ "I certainly hope that you have enjoyed today's quest."
+
+ `0-`4oDiN
+`\`k
+@drawmap
+@update
+
+@#ONEADAY2
+@do moveback
+@show
+`r0`c   `0-`2=`0- `%The Magic Flute `0-`2=`0-
+
+ `2Gira Leafbender pops out of nowhere.
+
+ `0"So `%`n`0, you used your magic flute huh?"
+
+ "You've really gone and done it now! I'm going to have send you back to
+ the beginning of Quester and relocate both you and your flute position
+ there!"
+`\`k
+   @do `t15 = 47
+   @do `t16 = 3
+   @do `p36 = 1115
+
+   @do x is 47
+   @do y is 3
+   @do map is 1115
+  @loadmap &map
+  
+
+@drawmap
+@update
+
+
+@#ELFADAY
+@show
+`r0`c                     
+
+            `0"`lFarewell `%`n `0and good luck !" `2Gira exclaim`ls                
+                                      `l`l`l
+`\`k
+@drawmap
+@update
+
+@#MAIN1
+@datanewday quest.idf
+@dataload quest.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY
+@end
+
+@datasave quest.idf &playernum 1
+
+@show
+`r0 `c
+                        `$<<<<< `r1 `%`lQ`lu`le`ls`lt`le`lr `lV`l2`l.`l0`l1 `r0 `$>>>>>
+
+                             `%brought to you by 
+
+                               `0-`2=`0- `@`lo`lD`li`lN `0-`2=`0- 
+
+
+`\`k
+`k
+@do `p02 is `p03
+   @do x is 44
+   @do y is 19
+   @do map is 1212
+   @loadmap &map
+  
+@drawmap
+@update
+@#NOMORE
+
+@#MAIN2
+@datanewday gira.idf
+@dataload gira.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ELFADAY
+@end
+
+@datasave gira.idf &playernum 1
+
+@show
+`r0`c          `0-`2=`0- `%Leafbender `0-`2=`0-
+
+ `2As you walk into the clearing a sense of peace and healing overcomes
+ you. An elf pops out of nowhere.
+        `l`l`l
+`\`k
+ `0"Welcome `%`n`0, I'm Gira Leafbender your Quest maker, when you're
+ ready to begin your quest just step in the circle of stones."
+
+ "There are many quests but you are allowed but one per day. I choose 
+ the quest you will attempt. Once a quest has started the only exit 
+ you will find is at the end of the path."
+
+ "Stay alert on the path, be prepared to face all manner of evil. If you
+ are brave you will receive a reward at the end of your quest."
+        `l`l`l`l`l
+`\`k
+ `2You make your decision, turn and bid Gira farewell.
+`\`k
+ `0"Farewell Quester! May luck go with you." `2Gira responds.
+        `l`l`l`l
+`\`k
+@drawmap
+@update
+@#NOMORE
+
+@#CIRCLE
+@datanewday quest2.idf
+@dataload quest2.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY2
+@end
+@datasave quest2.idf &playernum 1
+@show
+`r0`c     `0-`2=`0- `%Circle of Stones `0-`2=`0-
+
+ `2As you step into the circle of stones, the stones begin to glow `9blue`2.
+ A `9blue `2aura engulfs you. When the light subsides you find yourself in
+ unfamiliar territory. 
+                            `l`l`l`l`l
+`\`k
+
+@do `p21 random 5 1
+@if `p21 is 1 then do
+  @begin
+   ;Land of Spider
+   @do x is 73
+   @do y is 19
+   @do map is 1213
+  @end
+
+
+@if `p21 is 2 then do
+  @begin
+   ;Land of Bat
+   @do x is 74
+   @do y is 18
+   @do map is 1214
+  @end
+
+@if `p21 is 3 then do
+  @begin
+   ;Land of Undead
+   @do x is 4
+   @do y is 18
+   @do map is 1384
+   @end
+
+@if `p21 is 4 then do 
+  @begin
+   ;Land of Majic
+   @do x is 4
+   @do y is 2
+   @do map is 1386
+  @end
+
+@if `p21 is 5 then do
+  @begin
+   ;Land of Goblins
+   @do x is 4
+   @do y is 3
+   @do map is 1385
+  @end
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#SPIDERKING
+@do moveback
+@datanewday quest1.idf
+@dataload quest1.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY2
+@end
+@datasave quest1.idf &playernum 1
+@show
+`r0`c       `0`l-`2`l=`0`l- `%Spider King `0`l-`2`l=`0`l-
+
+
+ `2Before you stands the biggest spider you've ever seen. It's fangs are gleaming
+ black and poison drips off their tips.
+
+ You stand horrified as the bulky creature slowly approaches. Looks like it's
+ time for you to finish this quest before it finishes you.
+ `\`k
+ @run SPIDERFIGHT in SPIDER.REF
+
+
+@#BATKING
+@do moveback
+@datanewday quest1.idf
+@dataload quest1.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY2
+@end
+@datasave quest1.idf &playernum 1
+@show
+`r0`c       `0`l-`2`l=`0`l- `%Vampire `0`l-`2`l=`0`l- 
+
+
+ `0"Prepare for death, mortal." `2a sinister voice echos behind you. 
+
+ As you turn around you are face to face with a dark creature of the night
+ known as a Vampire.
+ `\`k
+ @run BATFIGHT in BAT.REF
+
+@#UNDEADKING
+@do moveback
+@datanewday quest1.idf
+@dataload quest1.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY2
+@end
+@datasave quest1.idf &playernum 1
+@show
+`r0`c       `0`l-`2`l=`0`l- `%Skeleton King `0`l-`2`l=`0`l-
+
+
+ `2You feel a chill run down your back as you see a rather wicked looking
+ skeleton approaching you.
+ `\`k
+ @run UNDEADFIGHT in UNDEAD.REF
+
+@#GOBLINKING
+@do moveback
+@datanewday quest1.idf
+@dataload quest1.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY2
+@end
+@datasave quest1.idf &playernum 1
+@show
+`r0`c   `0`l-`2`l=`0`l- `%Goblin King `0`l-`2`l=`0`l-    
+
+
+ `2You stop in your tracks when you see this foul creature of evil, you
+ get your `4s&weapon `2ready for battle.
+`\`k
+@run GOBLINFIGHT in GOBLIN.REF
+
+@#MAGICKING
+@do moveback
+@datanewday quest1.idf
+@dataload quest1.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto ONEADAY2
+@end
+@datasave quest1.idf &playernum 1
+@show
+`r0`c   `0`l-`2`l=`0`l- `%Wizard King `0`l-`2`l=`0`l-
+
+
+ `2Before you stands a very powerful magic user. He begins to mumble and
+ chant preparing for a spell.
+`\`k
+@run MAGICFIGHT in MAJIC.REF
+
+@#FINQUEST
+@do talk `4Newsflash:`0`x`n`x`2has`xdefeated`x`0`e`2! all
+@do addlog
+  `0`n`2 has defeated the `4`e`2, completing s&his quest in `%Quester`2!
+@routine seperate in gametxt.ref
+@busy
+@show
+`r0`c `0`l-`2`l=`0`l- `%Quest Completed `0`l-`2`l=`0`l-  
+
+
+ `2Gira Leafbender appears suddenly.
+
+ `0"Excellent job on completing your quest, `$`n `0!
+
+ Now for your reward, you shall receive `$`w.`w.`w.`w. `%2 QUEST POINTS `0!
+             `l`l`l`l`l
+`\`k
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+ @show
+ `0"Also, for your bravery you gain `$.`w.`w.`w.`w.`w.`w.`w.
+
+ `w.`w.`w.`w.`w.`w.`w.`w. `%1 MUSCLE POINT `0!"
+`\`k
+ `0"Come back tomorrow and complete another quest !"
+
+ `2The elf leads you back to the main entrance.
+    `l`l`l`l`l`l`l
+ `\`k
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+ @show
+ `0"Also, for your bravery you gain `$.`w.`w.`w.`w.`w.`w.`w.
+
+ `w.`w.`w.`w.`w.`w.`w.`w. `%1 DODGE POINT `0!"
+`\`k
+ `0"Come back tomorrow and complete another quest !"
+
+ `2The elf leads you back to the main entrance.
+             `l`l`l`l`l`l
+`\`k
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+ @show
+ `0"Also, for your bravery you gain `$.`w.`w.`w.`w.`w.`w.`w.
+
+ `w.`w.`w.`w.`w.`w.`w.`w. `%1 GEM `0!"
+`\`k
+ `0"Come back tomorrow and complete another quest !"
+
+ `2The elf leads you back to the main entrance.
+          `l`l`l`l`l`l`l
+`\`k
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+ @show
+ `0"Also, for your bravery you gain `$.`w.`w.`w.`w.`w.`w.`w.
+
+ `w.`w.`w.`w.`w.`w.`w.`w. `%1 HITPOINT `0!"
+`\`k
+ `0"Come back tomorrow and complete another quest !"
+
+ `2The elf leads you back to the main entrance.
+            `l`l`l`l`l`l`l`l
+`\`k
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+ @show
+ `0"Also, for your bravery you gain `$.`w.`w.`w.`w.`w.`w.`w.
+
+ `w.`w.`w.`w.`w.`w.`w.`w. `%1 CHARM POINT `0!"
+ `\`k
+ `0"Come back tomorrow and complete another quest !"
+
+ `2The elf leads you back to the main entrance.
+          `l`l`l`l`l`l`l`l
+`\`k
+ @end
+
+
+   @do `p18 + 2
+   @do x is 47
+   @do y is 3
+   @do map is 1115
+  @loadmap &map
+  
+@drawmap
+@update
+
+@#ENDQUEST
+@do talk `4Newsflash:`0`x`n`x`2has`xchickened`xout`xof`xfighting`x`0`e`2! all
+@do addlog
+  `0`n`2 has chickened out of fighting `4`e`2! in `%Quester
+@routine seperate in gametxt.ref
+@show
+`r0`c   `0-`2=`0- `%`n `%runs from `4`e `%! `0-`2=`0-     
+
+
+ `2Gira Leafbender appears suddenly.
+
+ `0"Because you ran from battle, you will receive nothing for completing
+ your quest. Maybe next time." `2he exclaims. 
+`\`k
+ `2The elf leads you back to the main entrance.`l.`l.`l.`l.`l.`l.`l.`l.`l.
+   @do x is 47
+   @do y is 3
+   @do map is 1115
+  @loadmap &map
+  
+@drawmap
+@update
+
+@#NOSWIM
+@do moveback
+@do saybar
+`%You are tired of swimming ! Maybe tomorrow ...
+
+@#SWIM
+@do moveback
+@offmap
+@datanewday swimb.idf
+@dataload swimb.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do goto NOSWIM
+@end
+
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2Do you want to go swimming ? `2[`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+
+@begin
+@clear screen
+@do move 1 1
+@if &sex is 1 then do
+        @begin
+        @display MDIVE in people.ref
+        @end
+@if &sex is 0 then do
+        @begin
+;        @display WDIVE in people.ref
+        @display MDIVE in people.ref
+        @end
+@do move 40 2
+@do write
+`r0  `r1  `%The Magic Swimming Hole `r0
+@do move 40 4
+@do write
+`2You take off all of your clothes
+@do move 40 5
+@do write
+ and jump into the water.`l`l
+@key bottom
+@do move 40 7
+@do write
+`2After swimming around, you get out of
+@do move 40 8
+@do write
+"`9Tiny Lake`2," dry off and get dressed.`l
+@key bottom
+@do move 40 12
+@do write
+`2The swimming seems to have done you
+@do move 40 13
+@do write
+ good because `l.`l.`l.`l.`l.`l.`l.
+
+@do `p21 random 5 1
+
+@if `p21 is 1 then do
+ @begin
+ @do `p04 + 1
+@do move 40 15
+@do write
+`%YOU FEEL STRONGER !
+@key bottom
+  @end
+
+
+@if `p21 is 2 then do
+ @begin
+ @do `p05 + 1
+@do move 40 15
+@do write
+`%YOU FEEL MORE AGILE !
+@key bottom
+ @end
+
+@if `p21 is 3 then do
+ @begin
+ @do `p19 + 1
+@do move 40 15
+@do write
+`%YOU FOUND A GEM AT THE BOTTOM!
+@key bottom
+ @end
+
+@if `p21 is 4 then do 
+ @begin
+ @do `p03 + 1
+@do move 40 15
+@do write
+`%YOU GAIN 1 EXTRA HITPOINT !
+@key bottom
+ @end
+
+
+@if `p21 is 5 then do
+ @begin
+ @do `p08 + 1
+@do move 40 15
+@do write
+`%YOU GAIN 1 EXTRA CHARM POINT !
+@key bottom
+ @end
+
+@datasave swimb.idf &playernum 1
+@drawmap
+@update
+@closescript
+@end
+@do saybar
+`%You are tired of swimming ! Maybe tomorrow ...
+
+@#NOMORE

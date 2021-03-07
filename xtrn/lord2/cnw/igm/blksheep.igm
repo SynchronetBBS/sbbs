@@ -1,0 +1,46 @@
+
+ Black Sheep of the Family v1.5
+ By Adam Thompson (shadow_rider@geocities.com)
+ AN IGM FOR LORD2 1.01a and up!
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes! (`p90, `p96, `i74, `t19) 
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : No! 
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Ok.  This should be pretty painless.  :)
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM BLKSHEEP.IGM
+
+  To uninstall, do the same thing again.
+
+  I decided to make the sheep more than just scenery. :)
+  This basically just gives players an alternate way to clear Turgon's name.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `9Black Sheep of the Family `2by `8Shadow Rider
+replacescreen: 1514 1 show
+;67
+replacescreen: 227 2 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This IGM adds an alternate way to clear Turgon's name.
+   Nothing fancy, but it works. ;)
+
+
+                                                       

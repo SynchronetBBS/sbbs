@@ -1,0 +1,784 @@
+; Script file HONGWHOR.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE whore1 000000290
+@DECLARE whore2 000003944
+@DECLARE whore3 000007547
+@DECLARE whore4 000011843
+@DECLARE female 000015182
+@DECLARE whore5 000015493
+@NOCHECK
+; End of .REF index
+
+@#whore1
+@busy
+@if sexmale is 0 then do
+  @begin
+  @do goto FEMALE
+  @closescript
+  @end
+ 
+@do moveback
+@if hong3.dat exist false then do
+  @begin
+  @closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Ding Wu: `0I work'n real hard boss! Maye Later ;)!
+  @closescript
+  @end
+ 
+@if hong3a.dat exist false then do
+  @begin
+  @writefile hong3a.dat
+200
+0
+  @
+  @end
+ 
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+ 
+ 
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a whore  `r0
+ 
+`2  `0Ding Wu`2 looks at you.  `0"Good sex very good! For you only `$$`p26!`2"
+ 
+`2  She is an average looking Chinese woman, about 5'5" tall, with short
+`2  black hair, in her late 20's.  She has medium sized very well shaped
+`2  breasts. She looks seductively at you with her slanty green eyes.
+ 
+@do write
+`x`x
+@choice
+You aren't worth half that much!
+Yeah, lets go baby.
+@if responce is 1 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`0Ding Wu:`$Someone else will get good time `@GO WAY!
+  @closescript
+  @end
+ 
+@if responce is 2 then do
+  @begin
+@datanewday hong.idf
+@dataload hong.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @drawmap
+  @update
+  @do saybar
+`2Too much good thing bad grasshopper, come back tomorrow.
+  @end
+ 
+@if `p20 not 1 then do
+   @begin
+    @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2You no have enough dollar.  Go way!
+`k
+   @do goto whore1
+   @end
+  
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete hong3a.dat
+  @writefile hong3a.dat
+`p26
+`p27
+ 
+ @readfile hong3.dat
+ `p20
+ `s01
+ @
+;load owner and current password
+ 
+  @if `p20 not &playernum then do
+   @begin
+   @writefile mail\mail`p20.dat
+  `4H`@ong `4K`@ong `4S`@tudio `0Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has "rented" `0Ding Wu`2! You Make `$$`p26`2 from the sale!
+ 
+  
+  @do x is 51
+  @do y is 11
+  @do `p34 + 1
+  @do `v01 is 1
+  @datasave hong.idf &playernum 1
+  @show
+`\`\  `2She Takes off what little clothing she's wearing...
+`\`k
+`\  `2You look in amazement at her perfectly shaped breasts...
+`\`k
+`\  `0"You enjoy me long time?" `0Ding Wu `2asks as she lays down on the bed
+`\`k
+`\  `0Ding Wu`2 is experienced in her trade she pleases you like no woman
+  `2ever had before. You feel you defiantly got your `$$`p26`2's worth!
+`\`k
+@do `p20 random 6 1
+@if `p20 is 1 then do begin
+@begin
+ @show
+ `0"You give me good time! ;)" `2smiles `0Ding Wu`2`\`\`k
+ `%YOU GAIN 100 EXPERIENCE! `\`k
+ @do `p01 + 100
+  @drawmap
+  @update
+ @end
+@if `p20 is 2 then do begin
+@begin
+ @show
+ `0"You give me good time! ;)" `2smiles `0Ding Wu`2`\`\`k
+ `%YOU GAIN 100 EXPERIENCE! `\`k
+ @do `p01 + 100
+  @drawmap
+  @update
+ @end
+@if `p20 is 3 then do begin
+@begin
+ @show
+ `0"You give me good time! ;)" `2smiles `0Ding Wu`2`\`\`k
+ `%YOU GAIN 100 EXPERIENCE!`\`k
+ @do `p01 + 100
+  @drawmap
+  @update
+  @end
+ 
+@if `p20 is 4 then do begin
+@begin
+ @show
+ `0"You give me good time! ;)" `2smiles `0Ding Wu`2`\`\`k
+ `%YOU GAIN 100 EXPERIENCE!`\`k
+ @do `p01 + 100
+  @drawmap
+  @update
+ @end
+@if `p20 is 5 then do begin
+@begin
+ @show
+ `0"You give me good time! ;)" `2smiles `0Ding Wu`2`\`\`k
+ `%YOU GAIN 100 EXPERIENCE!`\`k
+ @do `p01 + 100
+  @drawmap
+  @update
+  @end
+@if `p20 is 6 then do begin
+@begin
+ @show
+ `0Ding Wu `2just lies there saying`0"ohhhh!"
+ `2Wow that was the best sex ANYONE has ever had!`\`\`k
+ `%YOU GAIN 1000 EXPERIENCE!`\`k
+ @do `p01 + 1000
+  @drawmap
+  @update
+  @end
+@drawmap
+@update
+ 
+@#whore2
+@busy
+@if sexmale is 0 then do
+  @begin
+  @do goto FEMALE
+  @closescript
+  @end
+ 
+@do moveback
+@if hong3.dat exist false then do
+  @begin
+  @closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`!Mai Chi: `0I work'n real hard boss! Maye Later ;)!
+  @closescript
+  @end
+ 
+ 
+ 
+@if hong3a.dat exist false then do
+  @begin
+  @writefile hong3a.dat
+200
+0
+  @
+  @end
+ 
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+ 
+ 
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a whore  `r0
+ 
+`2 `!Mai Chi`2 Look you over `0"You lookn' for good time?`$ Only `$$`p26`0
+`0 for good time with me!"
+ 
+`2 `!Mai Chi`2 lays on the bed with her thin and sexy legs crossed. She
+`2 is in her early 20's, and hasn't been in the "trade" a very long
+`2 time. Her breasts really aren't much to talk about, but her long black
+`2 hair and beautiful face make up for it.
+ 
+@do write
+`x`x
+@choice
+You aren't worth half that much!
+Yeah, lets go baby.
+@if responce is 1 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`!Mai Chi:`0It ok, I know you come back later everyone want good time ;)!
+  @closescript
+  @end
+ 
+@if responce is 2 then do
+  @begin
+@datanewday hong.idf
+@dataload hong.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @drawmap
+  @update
+  @do saybar
+`2Too much good thing bad grasshopper, come back tomorrow.
+  @end
+ 
+@if `p20 not 1 then do
+   @begin
+   @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2You no have enough, get money and come back later.
+`k
+   @do goto whore2
+ 
+    @end
+ 
+  
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete hong3a.dat
+  @writefile hong3a.dat
+`p26
+`p27
+ 
+ @readfile hong3.dat
+ `p20
+ `s01
+ @
+;load owner and current password
+ 
+  @if `p20 not &playernum then do
+   @begin
+   @writefile mail\mail`p20.dat
+  `4H`@ong `4K`@ong `4S`@tudio `0Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has "rented" `!Mai Chi`2! You Make `$$`p26 `2from the sale!
+ 
+  
+  @do x is 35
+  @do y is 11
+  @do `p34 + 1
+  @do `v01 is 1
+  @datasave hong.idf &playernum 1
+  @show
+`\`\`2She takes you by the hand over to the couch and sits down on it...`\`\`k
+`0"Oh damn that felt good!" `2you think to yourself when you are done.`\`\`k
+@do `p20 random 6 1
+@if `p20 is 1 then do begin
+@begin
+ @show
+ `$"Oh that sooooo good" `2says `!Mai Chi`2 with a big smile`\`\`k
+ `%YOU GAIN 1 CHARM! `\`\`k
+ @do `p08 + 1
+  @drawmap
+  @update
+ @end
+@if `p20 is 2 then do begin
+@begin
+ @show
+ `$"Oh that sooooo good" `2says `!Mai Chi `2with a big smile`\`\`k
+ `%YOU GAIN 1 CHARM! `\`\`k
+ @do `p08 + 1
+  @drawmap
+  @update
+  @end
+@if `p20 is 3 then do begin
+@begin
+ @show
+ `$"Oh that sooooo good" `2says `!Mai Chi `2with a big smile`\`\`k
+ `%YOU GAIN 1 CHARM! `\`\`k
+ @do `p08 + 1
+  @drawmap
+  @update
+  @end
+ 
+@if `p20 is 4 then do begin
+@begin
+ @show
+ `$"Oh that sooooo good" `2says `!Mai Chi `2with a big smile`\`\`k
+ `%YOU GAIN 1 CHARM! `\`\`k
+ @do `p08 + 1
+  @drawmap
+  @update
+  @end
+@if `p20 is 5 then do begin
+@begin
+ @show
+ `$"Oh that sooooo good" `2says `!Mai Chi`2 with a big smile`\`\`k
+ `%YOU GAIN 1 CHARM! `\`\`k
+ @do `p08 + 1
+  @drawmap
+  @update
+  @end
+@if `p20 is 6 then do begin
+@begin
+ @show
+ `!Mai Chi `2Looks real pleased...`\`k
+ `2As you are about to leave...`\`k
+ `2She grabs you and kisses you goodbye
+ `2You are the man!`\`k
+ 
+  `%YOU GAIN 2 CHARM!`\`\`k
+ @do `p08 + 1
+  @drawmap
+  @update
+  
+  @end
+@drawmap
+@update
+ 
+@#whore3
+@busy
+@if sexmale is 0 then do
+  @begin
+  @do goto FEMALE
+  @closescript
+  @end
+ 
+@do moveback
+@if hong3.dat exist false then do
+  @begin
+  @closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`@Nan Chi: `$I'm working real hard boss! Maybe Later ;)!
+  @closescript
+  @end
+ 
+@if hong3a.dat exist false then do
+  @begin
+  @writefile hong3a.dat
+200
+0
+  @end
+ 
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+ 
+ 
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a whore  `r0
+ 
+`2 You enter the room and see a whore watering her plants. Her back is
+`2turned twards you. She has the sexiest body you have ever seen! Especially
+`2that perfect ass of her's. `$"Hey I like your ass!" `2you say to get her
+`2attention.`\`\`k
+`2She turns around`\`\`k
+`2Your eyes focus on her big breasts, then you look at her face`\`\
+`4O`wH`w M`wY`w G`wO`wD`w!`w!`w!`w`\`\`k
+`4HER FACE IS HORRIBLE!`\`\`k`c
+`0"Hello I am `@Nan Chi" `2she says without an accent, `0"I can tell that
+`0@you came here looking for a good time, and for `$$`p26`0 I'll give you
+`0the best time you will ever have." `2she says as she sways her hips. 
+ 
+@do write
+`x`x
+@choice
+You aren't worth half that much!
+Sure, but can you put a paper bag over your head?
+Yeah, lets go baby.
+@if responce is 1 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`@Nan Chi:`0What is there something wrong with my ass?
+  @closescript
+  @end
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`@Nan Chi `2bursts into tears and tells you to go away.
+  @closescript
+  @end
+ 
+@if responce is 3 then do
+  @begin
+@datanewday hong.idf
+@dataload hong.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @drawmap
+  @update
+  @do saybar
+`2Too much good thing bad grasshopper, come back tomorrow.
+  @end
+ 
+@if `p20 not 1 then do
+   @begin
+    @if money < `p26 then do
+    @begin
+    @show
+`\`\  `@You don't have enough? You don't get this! 
+`k
+   @do goto whore3
+   @end
+ 
+  
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete hong3a.dat
+  @writefile hong3a.dat
+`p26
+`p27
+ 
+ @readfile hong3.dat
+ `p20
+ `s01
+ @
+;load owner and current password
+ 
+  @if `p20 not &playernum then do
+   @begin
+   @writefile mail\mail`p20.dat
+  `4H`@ong `4K`@ong `4S`@tudio `0Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has "rented" `@Nan Chi`2! You Make `$$`p26 `2from the sale!
+ 
+ 
+  @do x is 42
+  @do y is 17
+  @do `p34 + 1
+  @do `v01 is 1
+  @datasave hong.idf &playernum 1
+  @show
+`\`\`2You lay down on the bed and `@Nan Chi`2 gets on top of you
+`\`k`2You having a real good time and hopeing that it will never end`\`\`k
+@do `p20 random 6 1
+@if `p20 is 1 then do begin
+@begin
+ @show
+ `2Then it does...`\`\`k
+ `$"Was it good for you?"`2 you ask.`\`\`k
+ `@"Oh ya" `@Nan Chi `2says in a pleased voice`\`\`k
+ `%YOU GAIN 1 STRENGTH`\`\`k
+ @do `p04 + 1
+  @drawmap
+  @update
+ @end
+@if `p20 is 2 then do begin
+@begin
+ @show
+ `2Then it does...`\`\`k
+ `$"Was it good for you?"`2 you ask.`\`\`k
+ `@"Oh ya" `@Nan Chi`2 says in a pleased voice`\`\`k
+ `%YOU GAIN 1 STRENGTH`\`\`k
+ @do `p04 + 1
+  @drawmap
+  @update
+ @end
+@if `p20 is 3 then do begin
+@begin
+ @show
+ `2Then it does...`\`\`k
+ `$"Was it good for you?"`2 you ask.`\`\`k
+ `@"Oh ya" `@Nan Chi`2 says in a pleased voice`\`\`k
+ `%YOU GAIN 1 STRENGTH`\`\`k
+ @do `p04 + 1
+  @drawmap
+  @update
+  @end
+@if `p20 is 4 then do begin
+@begin
+ @show
+ `2Then it does...`\`\`k
+ `$"Was it good for you?"`2 you ask.`\`\`k
+ `@"Oh ya" `@Nan Chi `2says in a pleased voice`\`\`k
+ `%YOU GAIN 1 STRENGTH`\`\`k
+ @do `p04 + 1
+  @drawmap
+  @update
+  @end
+@if `p20 is 5 then do begin
+@begin
+ @show
+ `2Then it does...`\`\`k
+ `$"Was it good for you?"`2 you ask.`\`\`k
+ `@"Oh ya" `@Nan Chi `2says in a pleased voice`\`\`k
+ `%YOU GAIN 1 STRENGTH`\`\`k
+ @do `p04 + 1
+  @drawmap
+  @update
+  @
+ @end
+ 
+@if `p20 is 6 then do begin
+@begin
+ @show
+`2When it is over you think to yourself`0 "Wow that was great"`2`\`\`k
+`%THAT WAS ONE GOOD WORK-OUT YOU GAIN 2 STRENGTH`\`\`k
+ @do `p04 + 2
+ @do x is 37
+ @do y is 17
+  @drawmap
+  @update
+  @end
+  @drawmap
+  @update
+ 
+@#whore4
+@busy
+@if sexmale is 0 then do
+  @begin
+  @do goto FEMALE
+  @closescript
+  @end
+ 
+@do moveback
+@if hong3.dat exist false then do
+  @begin
+  @closescript
+  @end
+ 
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`#Tong Ho: `0I work'n real hard boss! Maye Later ;)!
+  @closescript
+  @end
+ 
+@if hong3a.dat exist false then do
+  @begin
+  @writefile hong3a.dat
+200
+0
+ @end
+ 
+  @readfile hong3a.dat
+`p26
+`p27
+  @
+ 
+ 
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a whore  `r0
+ 
+`2  `#Tong Ho`2 Smiles at you. Me love you long time only `$$`p26`2!"
+ 
+`2  `#Tong Ho`2 is a short and very sexy Chinese girl with huge tits. She
+`2  is only about`2 18, and is said to give a really good time, if not
+`2  the best for only `$$`p26`2 what do you have to lose?
+  
+ 
+@do write
+`x`x
+@choice
+You aren't worth half that much!
+Ok, lets go baby
+@if responce is 1 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`#Tong Ho:`0You no pay you no play!
+  @closescript
+  @end
+ 
+@if responce is 2 then do
+  @begin
+@datanewday hong.idf
+@dataload hong.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @drawmap
+  @update
+  @do saybar
+`2Too much good thing bad grasshopper, come back tomorrow.
+  @end
+ 
+@if `p20 not 1 then do
+   @begin
+    @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2You no have enough dollar.  Go way!
+`k
+   @do goto whore4
+   @end
+ 
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete hong3a.dat
+  @writefile hong3a.dat
+`p26
+`p27
+ 
+ @readfile hong3.dat
+ `p20
+ `s01
+ @
+;load owner and current password
+ 
+  @if `p20 not &playernum then do
+   @begin
+   @writefile mail\mail`p20.dat
+  `4H`@ong `4K`@ong `4S`@tudio `0Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has "rented" `#Tong Ho`2! You Make `$$`p26 `2from the sale!
+ 
+  
+  @do x is 51
+  @do y is 17
+  @do `p34 + 1
+  @do `v01 is 1
+  @datasave hong.idf &playernum 1
+  @show
+`\`\`2She dims the lights and walks over to the bed...`\`\`k
+`0"Wow this the best"`2 you think happily to yourself...
+`\`k
+@do `p20 random 6 1
+@if `p20 is 1 then do begin
+@begin
+ @show
+ `2That was great! The experience fills you with energy!`\`\`k
+ `%YOU GAIN 500 TURNS! `\`k
+ @do `p11 + 500
+  @drawmap
+  @update
+  @end
+@if `p20 is 2 then do begin
+@begin
+ @show
+ `2That was great! The experience fills you with energy!`\`\`k
+ `%YOU GAIN 500 TURNS! `\`k
+ @do `p11 + 500
+  @drawmap
+  @update
+  @end
+@if `p20 is 3 then do begin
+@begin
+ @show
+ `2That was great! The experience fills you with energy!`\`\`k
+ `%YOU GAIN 500 TURNS! `\`k
+ @do `p11 + 500
+  @drawmap
+  @update
+  @end
+@if `p20 is 4 then do begin
+@begin
+ @show
+ `2That was great! The experience fills you with energy!`\`\`k
+ `%YOU GAIN 500 TURNS! `\`k
+ @do `p11 + 500
+  @drawmap
+  @update
+  @end
+@if `p20 is 5 then do begin
+@begin
+ @show
+ `2That was great! The experience fills you with energy!`\`\`k
+ `%YOU GAIN 500 TURNS! `\`k
+ @do `p11 + 500
+  @drawmap
+  @update
+  @end
+ 
+@if `p20 is 6 then do begin
+@begin
+ @show
+`2WOW THAT WAS BETTER THAN GREAT!
+ `2It makes you feel full of energy!`\`\`k
+ `%YOU GAIN 1000 TURNS!`\`k
+ @do `p11 + 1000
+  @drawmap
+  @update
+  @end
+  @drawmap
+  @update
+ 
+@#FEMALE
+@readfile hong3.dat
+`p20
+`s01
+@
+ 
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Whore: `$I work'n real hard boss! Make you lotsa money :)!
+  @closescript
+  @end
+ 
+  @do moveback
+  @do saybar
+`2You look coldly at the whore on the bed.
+  @closescript
+  @end
+ 
+@#Whore5
+ 
+ 
+ 

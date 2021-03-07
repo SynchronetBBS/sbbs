@@ -1,0 +1,96 @@
+; Script file WISHWELL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:35 2001
+
+@DECLARE wellsign 000001002
+@DECLARE usewish 000001137
+@DECLARE gold 000001979
+@DECLARE nocash 000002144
+@DECLARE nowishes 000002295
+@NOCHECK
+; End of .REF index
+
+;
+; ≥∞    ≥
+; ≥±∞   ≥ Wishing well v1.00a
+; ≥≤±∞  ≥ By Michael Helliker of Mikerosoft Productions, fvhelm57@ucfv.bc.ca
+; ≥€≤±∞ ≥ Mikerosoft BBS, 604-864-8160, http://www.mindsedge.com/~mikerosoft
+; ≥€€≤±±≥
+;
+; *** NOTE ***
+;
+; I wrote this program in about 1 hour, it works fine over here, but not
+; everyones system is the same.  So backup GAMETXT.REF and MAP.DAT before
+; installing this!
+;
+; To install Wishing well, simply uncompress it into your LORD2 directory
+; and run INSTWELL.EXE  After that, wait until maintenance is run for
+; changes to take effect.      
+;
+; If you like this little IGM (i guess you could call it that) and would
+; like to see more of them, drop me a note at fvhelm57@ucfv.bc.ca
+;
+
+@#wellsign
+ @do saybar
+`2Sign reads:`0 Wishing well, may all your dreams come true (only `$$5 `0gold)
+ @do moveback
+@CLOSESCRIPT
+
+@#usewish
+ @busy
+ @clearblock 21 21
+ @do move 3 21
+ @if `p50 < 1 then goto nowishes
+ @if money < 5 then goto nocash
+ @do write
+`r0    `2You stumble across an old wishing well, care to make a wish? (`0y`2/`0n`2)
+ @do readspecial `s01 YN
+ @if `s01 is N then do
+  @begin
+   @clearblock 21 21
+   @do move 3 21
+   @do write
+`r0`2                       you decide to keep your money`L`L`L
+   @do statbar
+   @closescript
+  @end
+ @clearblock 21 21
+ @do move 3 21
+ @do write
+`r0  `2You drop `$$5 `2gold into the well...`L`L`L`L thud!`L`L
+ @do money - 5
+ @do `p50 - 1
+ @clearblock 21 21
+ @do move 3 21
+ @do write
+`r0  `2You think long and hard for a wish...`L`L`L`L`L
+ @do `p20 random 3 1
+ @if `p20 is 2 then goto gold
+ @do write
+`0  `2Nothing!  Better luck tommorow!`L`L`L`L`L
+ @do moveback
+ @do statbar
+@CLOSESCRIPT
+
+@#gold
+ @do `p20 random 5 1
+ @do `p20 * 5
+ @do money + `p20
+ @do write
+`0  `2You gain `$$`p20 `2gold!`L`L`L`L`L
+ @do moveback
+ @do statbar
+@CLOSESCRIPT
+
+@#nocash
+ @do write
+`0           `2You dont have enough gold to make a wish! (`$$5 `2needed)`L`L`L`L
+ @do moveback
+ @do statbar
+@CLOSESCRIPT
+
+@#nowishes
+ @do write
+`0                `2You have already used your wish for today!`L`L`L`L
+ @do moveback
+ @do statbar
+@CLOSESCRIPT

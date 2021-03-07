@@ -1,0 +1,213 @@
+; Script file NPCNAME2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:14 2001
+
+@DECLARE getname 000000215
+@NOCHECK
+; End of .REF index
+
+;
+; To check the name of the current NPC with player
+;
+@#getname
+@if `p26 is 0 then `s01 is Nobody
+@if `p26 is 1 then `s01 is Violet
+@if `p26 is 2 then `s01 is Seth`xAble
+;East StoneBrook
+@if `p26 is 3 then `s01 is Wryn
+@if `p26 is 4 then `s01 is Kess
+@if `p26 is 5 then `s01 is Sherra
+@if `p26 is 6 then `s01 is Hattie
+@if `p26 is 7 then `s01 is Ninna
+@if `p26 is 8 then `s01 is Georgie
+@if `p26 is 9 then `s01 is Nicki
+@if `p26 is 10 then `s01 is Gei
+@if `p26 is 11 then `s01 is Sally
+@if `p26 is 12 then `s01 is Yowli
+@if `p26 is 13 then `s01 is Chip
+@if `p26 is 14 then `s01 is Mrs`xJenkins
+;GreenTree
+@if `p26 is 15 then `s01 is Laura
+@if `p26 is 16 then `s01 is Sheep`xMan
+@if `p26 is 17 then `s01 is Elle
+@if `p26 is 18 then `s01 is Ma
+@if `p26 is 19 then `s01 is Estella
+@if `p26 is 20 then `s01 is Lango
+;porttown
+@if `p26 is 21 then `s01 is Guy
+;Voodoo Temple
+@if `p26 is 22 then `s01 is Mickey
+@if `p26 is 23 then `s01 is Aerith
+@if `p26 is 24 then `s01 is Invisible`xMan
+@if `p26 is 25 then `s01 is Rudy
+@if `p26 is 26 then `s01 is Julia
+@if `p26 is 27 then `s01 is Kita
+@if `p26 is 28 then `s01 is Elay
+;Gypsy Camp
+@if `p26 is 29 then `s01 is Lilliana
+@if `p26 is 30 then `s01 is Chandler
+@if `p26 is 31 then `s01 is Lela
+@if `p26 is 32 then `s01 is Mirella
+@if `p26 is 33 then `s01 is Sherif
+@if `p26 is 34 then `s01 is Viollica
+@if `p26 is 35 then `s01 is Gimi
+;South of FlagCity
+@if `p26 is 36 then `s01 is Spence
+@if `p26 is 37 then `s01 is Lost`xMan
+@if `p26 is 38 then `s01 is Chance
+@if `p26 is 39 then `s01 is Johnny
+@if `p26 is 40 then `s01 is Old`xWarrior
+;Sosin Village
+@if `p26 is 41 then `s01 is Matt`xLongsword
+@if `p26 is 42 then `s01 is Wiscard
+@if `p26 is 43 then `s01 is Basil
+@if `p26 is 44 then `s01 is Somebody
+@if `p26 is 45 then `s01 is Somebody
+@if `p26 is 46 then `s01 is Somebody
+@if `p26 is 47 then `s01 is Somebody
+;PawnShop
+@if `p26 is 48 then `s01 is Somebody
+@if `p26 is 49 then `s01 is Nick
+;Far North
+@if `p26 is 50 then `s01 is Prince`xCorin
+@if `p26 is 51 then `s01 is Somebody
+@if `p26 is 52 then `s01 is Somebody
+@if `p26 is 53 then `s01 is Somebody
+@if `p26 is 54 then `s01 is Somebody
+@if `p26 is 55 then `s01 is Somebody
+@if `p26 is 56 then `s01 is Somebody
+@if `p26 is 57 then `s01 is Somebody
+@if `p26 is 58 then `s01 is Somebody
+@if `p26 is 59 then `s01 is Somebody
+; Loki Inn
+@if `p26 is 60 then `s01 is Loki`xGuard
+@if `p26 is 61 then `s01 is oDiN
+@if `p26 is 62 then `s01 is Hilda
+@if `p26 is 63 then `s01 is Somebody
+@if `p26 is 64 then `s01 is Somebody
+@if `p26 is 65 then `s01 is Somebody
+@if `p26 is 66 then `s01 is Somebody
+@if `p26 is 67 then `s01 is Somebody
+@if `p26 is 68 then `s01 is Somebody
+@if `p26 is 69 then `s01 is Somebody
+@if `p26 is 70 then `s01 is Somebody
+@if `p26 is 71 then `s01 is Somebody
+@if `p26 is 72 then `s01 is Somebody
+@if `p26 is 73 then `s01 is Somebody
+@if `p26 is 74 then `s01 is Somebody
+@if `p26 is 75 then `s01 is Gorilla`xGirl
+; GreenTree (again)
+@if `p26 is 76 then `s01 is Minister
+@if `p26 is 77 then `s01 is Somebody
+@if `p26 is 78 then `s01 is Somebody
+@if `p26 is 79 then `s01 is Somebody
+;Scorpian's Den
+@if `p26 is 80 then `s01 is Old`xMan`xScorp
+@if `p26 is 81 then `s01 is Famous`xDrunk
+@if `p26 is 82 then `s01 is Scorpian`xLady
+@if `p26 is 83 then `s01 is Drunk`xLady
+@if `p26 is 84 then `s01 is Scorpian`xMaid
+@if `p26 is 85 then `s01 is Somebody
+@if `p26 is 86 then `s01 is Somebody
+@if `p26 is 87 then `s01 is Somebody
+@if `p26 is 88 then `s01 is Somebody
+@if `p26 is 89 then `s01 is Somebody
+;desert figaro's castle
+@if `p26 is 90 then `s01 is Chancellor
+@if `p26 is 91 then `s01 is Edgar
+@if `p26 is 92 then `s01 is Edgars`xGuard
+@if `p26 is 93 then `s01 is Edgars`xGuard
+@if `p26 is 94 then `s01 is Forga
+@if `p26 is 95 then `s01 is Fatiguel
+@if `p26 is 96 then `s01 is Somebody
+@if `p26 is 97 then `s01 is Somebody
+@if `p26 is 98 then `s01 is Somebody
+;Sandcity
+@if `p26 is 99 then `s01 is Maverick
+;KnotWood
+@if `p26 is 100 then `s01 is Andrew
+@if `p26 is 101 then `s01 is Mr.`xAndrew
+@if `p26 is 102 then `s01 is Mrs.`xAndrew
+;Wizards Castle (near StoneBrook)
+@if `p26 is 103 then `s01 is Violetta
+@if `p26 is 104 then `s01 is Sand`xTiger
+@if `p26 is 105 then `s01 is Direct
+;path from stonebrook to greentree and around greentree
+@if `p26 is 106 then `s01 is Begger
+@if `p26 is 107 then `s01 is Sherie
+@if `p26 is 108 then `s01 is Grizelda
+@if `p26 is 109 then `s01 is Edward
+;Sword Castle
+@if `p26 is 110 then `s01 is Thug
+@if `p26 is 111 then `s01 is Mann
+@if `p26 is 112 then `s01 is Mordin
+@if `p26 is 113 then `s01 is Aqua
+@if `p26 is 114 then `s01 is Somebody
+@if `p26 is 115 then `s01 is Somebody
+;BoneTown
+@if `p26 is 116 then `s01 is Dad
+@if `p26 is 117 then `s01 is Rich`xWoman
+@if `p26 is 118 then `s01 is Jesse
+@if `p26 is 119 then `s01 is Boy
+@if `p26 is 120 then `s01 is John
+@if `p26 is 121 then `s01 is Big`xMa
+@if `p26 is 122 then `s01 is Kelley                        ;a whore
+@if `p26 is 123 then `s01 is Selena
+@if `p26 is 124 then `s01 is Drunk`xMan
+@if `p26 is 125 then `s01 is Bouncer
+@if `p26 is 126 then `s01 is D.J.
+@if `p26 is 127 then `s01 is Somebody
+@if `p26 is 128 then `s01 is Somebody
+@if `p26 is 129 then `s01 is Somebody
+;PortTown - Odin's Keep area
+@if `p26 is 130 then `s01 is Grey`xMan
+@if `p26 is 131 then `s01 is Jennie
+@if `p26 is 132 then `s01 is Rosie
+@if `p26 is 133 then `s01 is Somebody
+;Resort + Glendale near StoneBrook
+@if `p26 is 134 then `s01 is Happy`xPappy
+@if `p26 is 135 then `s01 is Dan
+@if `p26 is 136 then `s01 is Don
+@if `p26 is 137 then `s01 is Lone
+@if `p26 is 138 then `s01 is Dance
+@if `p26 is 139 then `s01 is Somebody
+@if `p26 is 140 then `s01 is Somebody
+@if `p26 is 141 then `s01 is Somebody
+@if `p26 is 142 then `s01 is Somebody
+@if `p26 is 143 then `s01 is Somebody
+@if `p26 is 144 then `s01 is Somebody
+@if `p26 > 144 then `s01 is Somebody
+;--All the Whores!--
+; Female
+@if `p26 is 170 then `s01 is Kelli
+@if `p26 is 171 then `s01 is Karen
+@if `p26 is 172 then `s01 is Mundin
+@if `p26 is 173 then `s01 is Mulan
+@if `p26 is 174 then `s01 is Pocahontas
+@if `p26 is 175 then `s01 is Samira
+@if `p26 is 176 then `s01 is Linda
+@if `p26 is 177 then `s01 is White
+@if `p26 is 178 then `s01 is Red
+@if `p26 is 179 then `s01 is Jasmine
+@if `p26 is 180 then `s01 is Marilyn
+@if `p26 is 181 then `s01 is Yewanda
+@if `p26 is 182 then `s01 is Karlita
+@if `p26 is 183 then `s01 is Kelly
+@if `p26 is 184 then `s01 is Sheila
+@if `p26 is 185 then `s01 is Bibianna
+@if `p26 is 186 then `s01 is Yuko
+@if `p26 is 187 then `s01 is Lisa
+@if `p26 is 188 then `s01 is Kina
+@if `p26 is 189 then `s01 is Kiko
+@if `p26 is 190 then `s01 is Kimbery
+@if `p26 is 191 then `s01 is Cindy
+@if `p26 is 192 then `s01 is Yurri
+@if `p26 is 193 then `s01 is Tina
+@if `p26 is 194 then `s01 is Tanya
+@if `p26 is 195 then `s01 is Saby
+@if `p26 is 196 then `s01 is Asada
+;@if `p26 is 197 then `s01 is Nobody
+@if `p26 is 198 then `s01 is Fast`xFreddy
+@if `p26 is 199 then `s01 is SysOp
+;;now 125
+@datasave npc\npcdy`p26.idf &playernum &time
+@closescript
+

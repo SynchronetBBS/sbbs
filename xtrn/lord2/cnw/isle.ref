@@ -1,0 +1,830 @@
+; Script file ISLE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE scroll 000001041
+@DECLARE firstone 000001422
+@DECLARE friend 000001856
+@DECLARE fountain 000001951
+@DECLARE warnsign 000002136
+@DECLARE mallsign 000002236
+@DECLARE sky 000002342
+@DECLARE passtone 000002963
+@DECLARE passign 000003362
+@DECLARE stone 000003479
+@DECLARE stonez 000003572
+@DECLARE stoney 000003667
+@DECLARE warpme 000003769
+@DECLARE sign 000003845
+@DECLARE asign 000003937
+@DECLARE bsign 000004032
+@DECLARE stone1 000004119
+@DECLARE air 000004209
+@DECLARE assorted 000005943
+@DECLARE asstart 000005997
+@DECLARE armor 000006300
+@DECLARE arstart 000006354
+@DECLARE weapon 000006677
+@DECLARE wpstart 000006731
+@DECLARE junkman 000007062
+@DECLARE doorgaurd 000007210
+@DECLARE startg 000007239
+@DECLARE zsign 000010728
+@DECLARE enter 000011024
+@DECLARE done 000012329
+@DECLARE letmein 000014031
+@DECLARE done 000014107
+@DECLARE troll 000014118
+@DECLARE elf 000014512
+@NOCHECK
+; End of .REF index
+
+@#scroll
+@offmap
+@do moveback
+@show
+`r0`c      `r1 `$The Scroll! `r0
+
+    `#The teleport locations to the Isle of the Phreaks are:
+`k
+
+     North of Arrisville!
+     North of Sosen Village!
+     The Graveyard!
+     Rockholm Mountains! 
+     Snowy Pass(Closer to Bonetown)!
+     In the Koshi Mountains!
+     Dragon Tooth Castle!
+
+`k
+
+@drawmap
+@update
+@end
+
+@#firstone
+;Teleporter to the Isle of the Phreaks from many different locations
+@do moveback
+@if pisle.dat exist false then do
+@begin
+@show
+`r0`c      `r1   `%OUT OF ORDER`r0
+
+
+    `9Nobody owns Phreaks Keep, so nobody can teleport there except from
+    the main teleporter above Flagcity!
+
+`k
+@drawmap
+@update
+@end
+
+@if pisle.dat exist true then do
+@begin
+@do x is 43
+@do y is 16
+@do map is 63
+@do goto warpme
+
+@#friend
+@do moveback
+@do saybar
+`%Sign: `9Teleporter to the Isle of the Phreaks
+@end
+
+@#fountain
+@do moveback
+@show
+`r0`c    Strange Water
+`k
+
+  `%The strange water in the fountain...
+
+  
+  `bCompletely Heals you!
+`k
+
+@do `p02 is `p03
+@drawmap
+@update
+
+
+@#warnsign
+@do moveback
+@do saybar
+`%Sign: `4Under constrution... Check for it in v.5.0
+@end
+
+@#mallsign
+@do moveback
+@do saybar
+`%Sign: `9Isle of the Phreaks mall. Here for your pleasure, `n.
+@end
+
+@#sky
+;get skystaff parts
+@readfile islez.dat
+@if islez.dat exist true then do
+@begin
+@do saybar
+`2There is nothing on the table
+@do moveback
+@closescript
+@end
+@if islez.dat exist false then do
+@begin
+@if money < 400 then do
+@do saybar
+@do moveback
+You do not have enough money! Sorry!
+@end
+@if money > 399 then do
+@begin
+@do `i22 + 1
+@do `i23 + 1
+@do `i24 + 1
+@do `i25 + 1
+@do `p30 is 26
+@do `v40 is 400
+@routine deposit in vaults.ref
+@do money - 400
+@writefile islez.dat
+TRUE
+@do saybar
+`9You find `bALL `3the `bSKYSTAFF `7parts! WOW!!! For a charge of $400.`l
+@do moveback
+@end
+
+@#passtone
+;Underground Passage
+@do moveback
+@if passage2.dat exist false then do
+@begin
+@show
+`r0`c      `r1   `%OUT OF ORDER`r0
+
+
+    `9Please encourage your sysop to download Underground Passage igm
+                          by me(Max(Phreak)Walton)
+`k
+@drawmap
+@update
+@end
+
+@if passage2.dat exist true then do
+@begin
+@do x is 52
+@do y is 5
+@do map is 804
+@do goto warpme
+
+@#passign
+;Underground passage sign
+@do moveback
+@do saybar
+`%Sign: `9Teleporter to the Underground Passage
+@end
+@#stone
+;Isle of the Phreaks
+@do x is 61 
+@do y is 13
+@do map is 63
+@do goto warpme
+
+@#stonez
+;Teleport to private room
+@do x is 8
+@do y is 3
+@do map is 65
+@do goto warpme
+
+@#stoney
+;Teleport back to Phreak's Keep
+@do x is 13
+@do y is 9
+@do map is 64
+@do goto warpme
+
+@#warpme
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`%Wow, what a ride
+
+@#sign
+@do moveback
+@do saybar
+`%Sign: `0Teleporter to the Isle of the Phreaks
+@end
+
+@#asign
+@do moveback
+@do saybar
+`%Sign: `0<----<<< `bMagical `#Boat Travel Service
+@end
+
+@#bsign
+@do moveback
+@do saybar
+`%Sign: `0<--Weapons Shop, Armor Shop -->
+@end
+
+@#stone1
+;Jagged Sandy Beach
+@do x is 78
+@do y is 17
+@do map is 1012
+@do goto warpme
+
+@#air
+;Lets them warp to view places
+@offmap
+@do moveback
+@show
+`r0`c  `r1 `@Magical Boat Travel Service `r0
+
+  `0"Greetings,! "Where would you like to go today?" asks the boatmaster.
+
+  @do `v01 is 1
+  @do write
+  `x`x
+  @choice
+  Stonepass Lodge
+  North of Stonepass
+  Greentree
+  Porttown
+  Bonetown
+  Flagcity
+  Sosen Village
+  Arrisville
+  Pyramid's Place
+  I think I'll stay here!
+  @if response not 10 then do
+    @begin
+  @show
+  `\`\ `0"We will leave whenever you're ready sir." he says
+
+  `k `2It is a long journey but you finally arrive.
+
+  `0We have arrived at our destination `N `0. I'm heading back now."
+
+  `2You are glad to be rid of him!
+
+  `k
+@if responce is 1 then do
+ @begin
+  ;Stonepass Lodge
+  @do x is 40
+  @do y is 11
+  @do map is 880
+ @end
+
+@if responce is 2 then do
+ @begin
+  ;North of Stonepass
+  @do x is 48
+  @do y is 5
+  @do map is 480
+ @end
+
+@if responce is 3 then do
+ @begin
+  ;Greentree
+  @do x is 43
+  @do y is 19
+  @do map is 68
+ @end
+
+@if responce is 4 then do
+ @begin
+  ;Porttown
+  @do x is 40
+  @do y is 14
+  @do map is 152
+ @end
+ 
+@if responce is 5 then do
+  @begin
+  ;Bonetown
+  @do x is 65
+  @do y is 13
+  @do map is 1287
+ @end
+
+@if responce is 6 then do
+ @begin
+  ;Flagcity
+  @do x is 39
+  @do y is 11
+  @do map is 151
+ @end
+
+@if responce is 7 then do
+ @begin
+  ;Sosen Village
+  @do x is 39
+  @do y is 11
+  @do map is 536
+ @end
+
+@if responce is 8 then do
+ @begin
+  ;Arrisville
+  @do x is 39
+  @do y is 11
+  @do map is 444
+ @end
+
+@if responce is 9 then do
+ @begin
+  ;Pyramid's Place
+  @do x is 74
+  @do y is 9
+  @do map is 1194
+ @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#assorted
+@offmap
+@do moveback
+@do `v01 is 1
+@label asstart
+@show
+`r0`c `%Assorted Goods
+
+`2 You see an assortment of goods
+
+@do write
+`x`x
+@choice
+Examine Goods
+Go outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+ @buymanager
+  20
+  28
+  40
+  50
+  51
+  55
+  @end
+
+@if response not 2 then goto asstart
+@drawmap
+@update
+
+@#Armor
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c `%Phreak's Armor
+
+`2 You can see the finest selection of armor in all the land
+
+@do write
+`x`x
+@choice
+Examine Armor
+Go outside
+@show
+`\
+@if responce is 1 the do begin
+ @begin
+@buymanager
+ 10
+ 12
+ 13
+ 14
+ 37
+ 59
+ @end
+
+@if response not 2 then goto arstart
+@drawmap
+@update
+
+@#weapon
+@offmap
+@do moveback
+@do `v01 is 1
+@label wpstart
+@show
+`r0`c  `%Phreak's Weapons
+
+`2 You can see the fineest selection of weapons in all the land!
+
+@do write
+`x`x
+@choice
+Examine Weapons
+Go Outside
+@show
+`\
+@if responce is 1 the do begin
+@begin
+@buymanager
+ 9
+ 16
+ 35
+ 36
+ 39
+ 58
+ @end
+
+@if response not 2 then goto wpstart
+@drawmap
+@update
+
+@#junkman
+@do moveback
+@busy
+@show
+`r0`c
+
+                `0"What would you like to part with kid?"
+
+@sellmanager
+
+@drawmap
+@update
+
+@#doorgaurd
+@do moveback
+@label startg
+;guy who owns it pushes against the door gaurd symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+@if pisle.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this keep!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile pisle.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`%You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your Servants `r0
+
+ `2The huge doorguard snaps to attention when he sees you are going to
+ address him, and say to get to your private bedroom go to the docks and
+ go to the first part of it, and go down!!!
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c `r1 Ownership Options `r0
+
+ `2You retrieve your deed and carefully look it over.
+
+ @do `v01 is 1
+ @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%
+Do nothing of the sort
+ @if response is 1 then do
+  @begin
+  @show
+`\`\ `2Transfer to whom?
+  @chooseplayer `p20
+
+  @if `p20 is 0 then do
+   @begin
+   @show
+  `2You decide to keep `9Phreak's Keep`2 - for now. `\`\`k
+   @do goto startg
+   @end
+  @do `s02 is getname `p20
+  @show
+`2 Are you sure you wish to give `9Phreak's Keep `2to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+  @begin
+   @show
+`\`\  `2You decide to keep `9Phreak's Keep`2 - for now.`\`\`k
+   @do goto startg
+  @end
+
+  @do delete pisle.dat
+  @do delete islez.dat
+  @writefile pisle.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail `p20.dat
+   `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of `9Phreak's Keep`2 to you.
+Password to enter will remain `0"`s01"`2 unless
+ `2you come by and change it.
+
+  @do addlog
+  `0`n`2 has given `9Phreak's Keep`2 to `0`s02`2!
+    @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transferred. Oh well - it was fun while it lasted.`\`\`k
+ @do goto done
+ @end
+ @if responce is 2 then do
+ @begin
+ @show
+`\`\`2 Are you sure you wish to sell your keep back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life
+ @if responce is 2 then do
+  @begin
+   @show
+`\`\ `2You decide to keep `9Phreak's Keep`2 - for now.`\`\`k
+ @do goto startg
+@end
+
+@do delete pisle.dat
+@do delete islez.dat
+@do `p30 is 26
+@do `v40 is 10000
+@routine widthdraw in vaults.ref
+@do money + 10000
+@show
+`\`\ `%KEEP SOLD!`2`\`\`k
+  @do addlog
+  `0`n`2 has sold `9Phreak's Keep`2 back to the bank!
+   @routine seperate in gametxt.ref
+   @do goto done
+   @end
+
+@do goto startg
+@end
+
+@if responce is 1 then do
+ @begin
+ @do write
+`\`\ `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access)`\  `2Password: `x
+  @do readstring 40 `s01 `s01
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+  @begin
+   @show
+`\`\ `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete pisle.dat
+  @writefile pisle.dat
+&playernum
+`s01
+@show
+`\`\ `0"Yes s&sir, I will not forget is!" `2the guard promises.`\`\`k
+@do goto startg
+@end
+
+@drawmap
+@update
+
+@#zsign
+@do moveback
+
+ @if pisle.dat exist false then do
+ @begin
+ @do saybar
+`9Phreak's Keep`2 - For sale cheap, inquire inside.
+@end
+
+@if pisle.dat exist true then do
+ @begin
+@readfile pisle.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+ `2Property of `0`s01`2
+ @end
+
+@#enter
+@do moveback
+@offmap
+@if pisle.dat exist false then do
+ @begin
+ @show
+ `r0`c `r1 `%For Sale `r0
+
+ `9Phreak's Keep`2 was formerly owned by the Mightiest warriors in the Realm
+ `bPhreak
+
+ `9Buy now and receive the following bonuses:
+
+ `0* `2A private airplane service in all the major spots`2!
+
+ `0* `2A weapons shop, armor shop and a pawn shop!
+
+ `0* `2A big house with lots of rooms for guests and a main bedroom just for
+ you
+
+ `2The asking price is `$$20,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 19999 Purchase it.
+<&money 20000 Go back and work up some more money since you don't have enough
+>&money 19999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if pisle.dat exist true then do
+   @begin
+   @show
+`\`\ `2You idiot! Someone bought it while you were still thinking about it.
+You will regret your slow decision making for the rest of your life.`\`\`k
+  @do goto done
+  @end
+
+ @writefile pisle.dat
+&playernum
+NONE
+@do `p30 is 26
+@do `v40 is 20000
+@routine deposit in vaults.ref
+   @do money - 20000
+   @do addlog
+  `0`n `2buys `9Phreak's Keep`2!
+   @routine seperate in gametxt.ref
+
+@show
+`r01`c `r1 `%Why hello there, landowner! `r0
+`\`2 Excellent! You now own Phreak's Keep`2!
+
+`2Enjoy your new home.`\`\`k
+@end
+
+@label done
+@drawmap
+@update
+@closescript
+ @end
+
+@readfile pisle.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+@begin
+;owner got deleted!!! Lets put it up for sale again.
+@do delete pisle.dat
+@do delete islez.dat
+ @do addlog
+`9Phreak's Keep`2 is put on the market today.
+ @routine seperate in gametxt.ref
+
+;run script again
+@do goto enter
+@end
+
+@if `p20 not &playernum then do
+ @begin
+ @do `s02 is getname `p20
+ @do upcase `s01
+ @if `s01 is NONE then do
+  @begin
+  @show
+`r0`c `r1 None shall pass `r0
+
+ `2You pound on the door for some time before you get an answer.
+
+ `0"Master `s02`0 has declared that `4No`0 visitors shall be allowed!" `2 a
+ voice calls from behind the wall.
+
+ `4Damn!
+
+`k
+  @do goto done
+  @end
+
+ @show
+ `r0`c `r1 Stand and unfold thyself `r0
+
+`2 A head pops over the gate. `0"Halt, you! What business have you with
+my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+ @if response is 1 then do
+  @begin
+  @do write
+`\`\ `2Say what? : `x
+ @do readstring 40 NIL `s03
+ @do upcase `s03
+ @do upcase `s01
+
+ @if `s03 is `s01 then do
+ @begin
+ @show
+`\`\ `0"Welcome to `9Phreak's Keep`0,"`2 the door guard smiles as he opens
+the gate.`\`\`k
+  @do goto letmein
+  @end
+ @writefile mail\mail`p20.dat
+ `9Phreak's Keep Reports`0:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0 `n`2attempted to sweet talk the guard by saying
+ `0"`s03"`2. `2He was `bNOT`2 allowed in.
+
+ @show
+`\`\ `2The guard doesn't look too interested.`\`\`k
+ @do goto done
+ @end
+
+ @do goto done
+
+ @end
+
+;let him in
+@label letmein
+@do x is 37
+@do y is 14
+@do map is 2
+@loadmap 64
+@do goto done
+@#done
+
+@#troll
+@do moveback
+@do `p20 random 5 1
+@if `p20 is 1 then saybar
+`%Troll: `0Lord ][ rocks!!!
+@if `p20 is 2 then saybar
+`%Troll: `0Phreak rocks at making IGMS doesn't he!
+@if `p20 is 3 then saybar
+`%Troll: `0You will rule the world!!
+@if `p20 is 4 then saybar
+`%Troll: `0Become a troll(if it were possible)
+@if `p20 is 5 then saybar
+`%Troll: `0That elf over there is hot!!!
+@end
+
+@#elf
+@do moveback
+@do `p20 random 5 1
+@if `p20 is 1 then saybar
+`%Elf: `0That troll over there is the most handsom guy in lord!
+@if `p20 is 2 then saybar
+`%Elf: `0Do you think you could get me a date with the Troll?
+@if `p20 is 3 then saybar
+`%Elf: `0Lord ][ rocks!
+@if `p20 is 4 then saybar
+`%Elf: `0You are the best!
+@if `p20 is 5 then saybar
+`%Elf: `0There is a Wizard's Tower for sale north of Bonetown!
+@end
+

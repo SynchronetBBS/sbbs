@@ -1,0 +1,1039 @@
+; Script file CLOAK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:30 2001
+
+@DECLARE guard 000001351
+@DECLARE warr 000002068
+@DECLARE deal 000002792
+@DECLARE letmepass 000002870
+@DECLARE noenter 000002894
+@DECLARE clean 000002970
+@DECLARE nowarr 000003374
+@DECLARE man 000003915
+@DECLARE oldman 000007099
+@DECLARE oldgame 000007903
+@DECLARE mug 000008941
+@DECLARE mugran 000010457
+@DECLARE mugr2 000010610
+@DECLARE mugr3 000010742
+@DECLARE mugr4 000010874
+@DECLARE mugr5 000011005
+@DECLARE mugr6 000011136
+@DECLARE mugr7 000011268
+@DECLARE mugr8 000011400
+@DECLARE mugr9 000011531
+@DECLARE mugr10 000011665
+@DECLARE mugwin 000011738
+@DECLARE muglose 000012022
+@DECLARE teeth 000012372
+@DECLARE tothran 000013901
+@DECLARE tothr2 000014057
+@DECLARE tothr3 000014192
+@DECLARE tothr4 000014327
+@DECLARE tothr5 000014461
+@DECLARE tothr6 000014595
+@DECLARE tothr7 000014730
+@DECLARE tothr8 000014865
+@DECLARE tothr9 000014999
+@DECLARE tothr10 000015136
+@DECLARE tothwin 000015211
+@DECLARE tothlose 000015505
+@DECLARE nodough 000015797
+@DECLARE noplay 000015969
+@DECLARE back 000016154
+@DECLARE bar 000016256
+@DECLARE chatwall 000016342
+@DECLARE strange 000017382
+@DECLARE newname 000018091
+@DECLARE nname 000018121
+@DECLARE me 000018415
+@DECLARE nomore 000019579
+@NOCHECK
+; End of .REF index
+
+@#guard
+@do moveback
+@busy
+@if &lastx is 9 then goto letmepass
+@datanewday cloak.idf
+@dataload cloak.idf &playernum `p20
+@if `p20 is 2 then goto noenter
+@if bitcheck `t14 5 1 then goto clean
+@do `v01 is 1
+@show
+`r0`c `r1 `%The Dark Guardian `r0
+
+  `0Halt! Where do you think you're going?
+
+  `$I was gonna go into the next room. You gotta problem with that?
+
+  `0Yes! That room is for Warriors only! It is too dangerous for
+  the likes of you. Therefore, I cannot let you pass.
+
+@do write
+`x`x
+@choice
+I am a Warrior.
+Leave
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @end
+
+@if responce is 1 then do
+  @begin
+  @if `p18 less 5 then goto nowarr
+  @do goto warr
+  @end
+
+@#warr
+@do `v01 is 1
+@show
+`r0`c `r1 `%A Warriors Courage `r0
+
+  `$I am a Warrior. Let me pass.
+
+  `2The guard looks you over.
+
+`k  `0Hmmm... now that I look at you, you do seem to be worthy.
+  I'll tell you what: If you can defeat the Power the resides
+  in this room, I will help you to become more widely recognised
+  as a true Warrior. But I will warn you: it is not an easy task.
+  There are many monsters in the room who will try to kill you.
+
+  `0Do we have a deal?
+
+@do write
+`x`x
+@choice
+Sure! Bring it on!
+I think I hear my mother calling...
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do goto deal
+  @end
+
+@#deal
+@do x - 2
+@drawmap
+@update
+@do saybar
+`%Guard: Good Luck!
+
+@#letmepass
+@do x + 2
+
+@#noenter
+@do saybar
+`%Guard: Sorry. You are allowed only 1 try per day.
+
+@#clean
+@show
+`r0`c `r1 `%The Dark Guardian `r0
+
+  `0Halt! Where do you think you're going?
+
+  `$I was gonna go into the next room and fight the monsters.
+
+  `0But you have already beaten the Power that resided there....
+  Why do you want to go back?
+
+  `$Because I am a Warrior! I kill monsters to protect the land.
+
+  `0Wow! In that case, go on in!
+
+`k
+@do x - 2
+@drawmap
+@update
+
+@#nowarr
+@show
+`r0`c `r1 `%A Warriors Courage `r0
+
+  `$I am a Warrior. Let me pass.
+
+  `2The guard looks you over.
+
+`k  `0HAHAHA! You! A Warrior! Don't make me laugh!
+
+  `$What do you mean?
+
+  `0You need at least `%5 `0quest points before you are
+  considered a true Warrior. Come back when you have earned them.
+
+  `2You barely restrain yourself from killing this fool on the spot.
+  You decide to let him live only because you want to see the look
+  on his face when you return as a true Warrior.
+
+`k
+@drawmap
+@update
+
+@#man
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c  `r1 `%UPC's Or Spys? `r0
+
+   `0Hi! My name is Terrin, and I'm here to teach you about color codes.
+
+   So what would you like to know?
+
+@do write
+`x`x
+@choice
+Tell me about Standard Color Codes
+Tell me about Special Color Codes
+Leave
+@if responce is 3 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @show
+`r0`c `r1 `%Standard Color Codes `r0
+
+  `0Ok, there are 15 Standard Color Codes. If you have ever played
+  `@L.O.R.D.`0, then you probably know what they are.
+
+  But here is a refresher course, just in case:
+
+`k
+  `0In oreder to get a Color Code to work, you have to preceed the Code
+  with the `%Accent `0key, which looks similar to this: `%'`0. The `%Accent
+  `0key is the reverse of the Single Quote key shown above. It is located
+  in the upper-left corner of your keyboard, above the `%Tab `0key.
+
+  `0After pressing the `%Accent `0key, follow it with a number or symbol
+  to get a specific color. The numbers and thier colors are:
+
+`k
+  `11 is Dark Blue
+  `22 is Dark Green
+  `33 is Dark Cyan
+  `44 is Dark Red
+  `55 is Dark Magenta
+  `66 is Brown
+  `77 is Light Grey
+  `88 is Dark Grey
+  `99 is Light Blue
+  `00 is Light Green
+
+`k
+  `0The symbols and their colors are:
+
+`k
+  `!! is Light Cyan
+  `@@ is Light Red
+  `## is Light Magenta
+  `$$ is Yellow
+  `%% is White
+
+`k
+  `0Well, that's all for Standard Colors.
+
+`k
+  @do goto man
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`r0`c `r1 `%Special Color Codes `r0
+
+  `0Ok, there are 10 Special Color Codes. Most people don't know about
+  these codes. They will also work in the Flower Garden Forest Event in
+  `@L.O.R.D. 3.55+`0.
+
+`k
+  `0In oreder to get a Color Code to work, you have to preceed the Code
+  with the `%Accent `0key, which looks similar to this: `%'`0. The `%Accent
+  `0key is the reverse of the Single Quote key shown above. It is located
+  in the upper-left corner of your keyboard, above the `%Tab `0key.
+
+  `0After pressing the `%Accent `0key, follow it with a `%y `0to get a
+  `yblinking yellow `0or a `%b `0for a `bblinking red`0.
+
+  The other Special Color Codes are:
+
+`k
+  `r1 `%r1 for a Blue Background `r0
+  `r2 `%r2 for a green Background `r0
+  `r3 `%r3 for a Cyan Background `r0
+  `r4 `%r4 for a Red Background `r0
+  `r5 `%r5 for a Magenta Background `r0
+  `r6 `%r6 for a Brown Background `r0
+  `r7 `%r7 for a Grey Background `r0
+  `r1 `%r0 will turn off the background color, and must be put at the end of 
+  whatever you are typing. If you don't use r0, the background color will
+  flow over into the next line until you use the r0 code. `r0
+
+`k
+ `r1 `%You can mix and match Standard `r2`yand Special Color Codes `r0
+ `r7 `bfor some fun `!effects. `r0
+
+ `r5 `%Just be careful not to use the same foreground color as your background `r0
+ `r5 `%color, or it will be `5impossible or hard to read. `#(impossible or hard `r0
+ `r5 `#to read) `%impossible or hard to read. `r0
+
+`k
+  `0Well, that's all for Special Colors.
+
+`k
+  @do goto man
+  @end
+
+@drawmap
+@update
+
+@#oldman
+@do moveback
+@do `v01 is 1
+@busy
+@show
+`r0`c `r1 `%The Old Man `r0
+
+  `$"What are you doing in this old place, old man?" `2you ask.
+
+  `0"I used to have a lot of fun here before Chance left. I used
+  to gamble a lot with the people who managed to find the Tavern.
+  It was fun," `2the old man says.
+
+  `$"You already said that it was fun. And you didn't answer my
+  question. Why are you here?"
+
+  `0"I decided to stay so that in case anyone ever stumbled across
+  the Ruins, I could gamble with them. Would ya like to play a game?"
+
+@do write
+`x`x
+@choice
+What games do you play Old Man?
+Maybe another time Old Man.
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do goto oldgame
+  @end
+
+@#oldgame
+@do `p30 is money
+@do `v01 is 1
+@show
+`r0`c `r1 `%Playing Games With The Old Man `r0
+
+  `0Well S&sir, there are two games I used to love to play.
+
+  In the first one, I would balance a mug of ale on my head
+  and you would throw a dagger and try to knock it off without
+  spilling any ale on me.
+
+  In the second game, I would hide my teeth under an ale mug,
+  and you would try to guess which one they were under.
+
+  Doesn't that sound like fun? Do you wanna play?
+
+@do write
+`x`x
+@choice
+Play the first game.
+Play the second game.
+Leave the senile old man alone.
+@if responce is 3 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @if `p33 > 0 then do
+    @begin
+    @do goto mug
+    @end
+  @if `p33 < 1 then do
+    @begin
+    @do goto noplay
+    @end
+  @end
+
+@if responce is 2 then do
+  @begin
+  @if `p33 > 0 then do
+    @begin
+    @do goto teeth
+    @end
+  @if `p33 < 1 then do
+    @begin
+    @do goto noplay
+    @end
+  @end
+
+@#mug
+@do `p30 is money
+@do `v01 is 1
+@show
+`r0`c `r1 `%Playing Games With The Old Man `r0
+
+  `$"I've got a pretty good arm, so I'l play the dagger-throwing
+  game with you, Old Man," `2you say. 
+
+  `0"Oh gooddy! How much do you want to bet?"
+
+  `2(`0You have `$$`p30 `0and `%`p33 `0gambles left`2)
+
+@do write
+`x`x
+@choice
+Bet $1
+Bet $5
+Bet $10
+Bet $20
+Bet $50
+Bet $100
+Last chance to quit
+@if responce is 1 then do
+  @begin
+  @if &money < 1 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 1
+  @do `p20 is 0
+  @do goto mugran
+  @end
+
+@if responce is 2 then do
+  @begin
+  @if &money < 5 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 5
+  @do `p20 is 0
+  @do goto mugran
+  @end
+
+@if responce is 3 then do
+  @begin
+  @if &money < 10 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 10
+  @do `p20 is 0
+  @do goto mugran
+  @end
+
+@if responce is 4 then do
+  @begin
+  @if &money < 20 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 20
+  @do `p20 is 0
+  @do goto mugran
+  @end
+
+@if responce is 5 then do
+  @begin
+  @if &money < 50 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 50
+  @do `p20 is 0
+  @do goto mugran
+  @end
+
+@if responce is 6 then do
+  @begin
+  @if &money < 100 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 100
+  @do `p20 is 0
+  @do goto mugran
+  @end
+
+@if responce is 7 then do
+  @begin
+  @drawmap
+  @update
+  @end
+
+@#mugran
+@do `p20 random 10 1
+@if `p20 is 1 then do
+  @begin
+  @do goto mugwin
+  @end
+@if `p20 not 1 then do
+  @begin
+  @do goto mugr2
+  @end
+
+@#mugr2
+@if `p20 is 2 then do
+  @begin
+  @do goto muglose
+  @end
+@if `p20 not 2 then do
+  @begin
+  @do goto mugr3
+  @end
+
+@#mugr3
+@if `p20 is 3 then do
+  @begin
+  @do goto muglose
+  @end
+@if `p20 not 3 then do
+  @begin
+  @do goto mugr4
+  @end
+
+@#mugr4
+@if `p20 is 4 then do
+  @begin
+  @do goto mugwin
+  @end
+@if `p20 not 4 then do
+  @begin
+  @do goto mugr5
+  @end
+
+@#mugr5
+@if `p20 is 5 then do
+  @begin
+  @do goto mugwin
+  @end
+@if `p20 not 5 then do
+  @begin
+  @do goto mugr6
+  @end
+
+@#mugr6
+@if `p20 is 6 then do
+  @begin
+  @do goto muglose
+  @end
+@if `p20 not 6 then do
+  @begin
+  @do goto mugr7
+  @end
+
+@#mugr7
+@if `p20 is 7 then do
+  @begin
+  @do goto muglose
+  @end
+@if `p20 not 7 then do
+  @begin
+  @do goto mugr8
+  @end
+
+@#mugr8
+@if `p20 is 8 then do
+  @begin
+  @do goto mugwin
+  @end
+@if `p20 not 8 then do
+  @begin
+  @do goto mugr9
+  @end
+
+@#mugr9
+@if `p20 is 9 then do
+  @begin
+  @do goto muglose
+  @end
+@if `p20 not 9 then do
+  @begin
+  @do goto mugr10
+  @end
+
+@#mugr10
+@if `p20 is 10 then do
+  @begin
+  @do goto mugwin
+  @end
+
+@#mugwin
+@clear screen
+@pauseoff
+@displayfile toss.ans
+@pauseon
+@show
+`k
+`r0`c `r1 `%You sank my Battleship(tm)! `r0
+
+`2You knock the mug off the old man's head and leave him dry as a bone!
+
+`0You win `$$`p25`0!
+
+`k
+@do money + `p25
+@do `p33 - 1
+@drawmap
+@update
+
+@#muglose
+@clear screen
+@pauseoff
+@displayfile toss.ans
+@pauseon
+@show
+`k
+`r0`c `r1 `%Curses! Foiled Again! `r0
+
+`2Oh, too bad! You knock the mug off the old man's head and soak him with ale!
+
+`2Actually, that's kinda funny, now that you think about it!
+
+`0You lose `$$`p25`0!
+
+`k
+@do money - `p25
+@do `p33 - 1
+@drawmap
+@update
+
+
+@#teeth
+@do `p30 is money
+@do `v01 is 1
+@show
+`r0`c `r1 `%Playing Games With The Old Man `r0
+
+  `$"I'm pretty good at guessing things, so I'll play the
+  hideen-teeth game with you, Old Man," `2you say. 
+
+  `0"Oh gooddy! How much do you want to bet?"
+
+  `2(`0You have `$$`p30 `0and `%`p33 `0gambles left`2)
+
+@do write
+`x`x
+@choice
+Bet $1
+Bet $5
+Bet $10
+Bet $20
+Bet $50
+Bet $100
+Last chance to quit
+@if responce is 1 then do
+  @begin
+  @if &money < 1 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 1
+  @do `p20 is 0
+  @do goto tothran
+  @end
+
+@if responce is 2 then do
+  @begin
+  @if &money < 5 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 5
+  @do `p20 is 0
+  @do goto tothran
+  @end
+
+@if responce is 3 then do
+  @begin
+  @if &money < 10 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 10
+  @do `p20 is 0
+  @do goto tothran
+  @end
+
+@if responce is 4 then do
+  @begin
+  @if &money < 20 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 20
+  @do `p20 is 0
+  @do goto tothran
+  @end
+
+@if responce is 5 then do
+  @begin
+  @if &money < 50 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 50
+  @do `p20 is 0
+  @do goto tothran
+  @end
+
+@if responce is 6 then do
+  @begin
+  @if &money < 100 then do
+    @begin
+    @do goto nodough
+    @end
+  @do `p25 is 100
+  @do `p20 is 0
+  @do goto tothran
+  @end
+
+@if responce is 7 then do
+  @begin
+  @drawmap
+  @update
+  @end
+
+@#tothran
+@do `p20 random 10 1
+@if `p20 is 1 then do
+  @begin
+  @do goto tothwin
+  @end
+@if `p20 not 1 then do
+  @begin
+  @do goto tothr2
+  @end
+
+@#tothr2
+@if `p20 is 2 then do
+  @begin
+  @do goto tothlose
+  @end
+@if `p20 not 2 then do
+  @begin
+  @do goto tothr3
+  @end
+
+@#tothr3
+@if `p20 is 3 then do
+  @begin
+  @do goto tothlose
+  @end
+@if `p20 not 3 then do
+  @begin
+  @do goto tothr4
+  @end
+
+@#tothr4
+@if `p20 is 4 then do
+  @begin
+  @do goto tothwin
+  @end
+@if `p20 not 4 then do
+  @begin
+  @do goto tothr5
+  @end
+
+@#tothr5
+@if `p20 is 5 then do
+  @begin
+  @do goto tothwin
+  @end
+@if `p20 not 5 then do
+  @begin
+  @do goto tothr6
+  @end
+
+@#tothr6
+@if `p20 is 6 then do
+  @begin
+  @do goto tothlose
+  @end
+@if `p20 not 6 then do
+  @begin
+  @do goto tothr7
+  @end
+
+@#tothr7
+@if `p20 is 7 then do
+  @begin
+  @do goto tothlose
+  @end
+@if `p20 not 7 then do
+  @begin
+  @do goto tothr8
+  @end
+
+@#tothr8
+@if `p20 is 8 then do
+  @begin
+  @do goto tothwin
+  @end
+@if `p20 not 8 then do
+  @begin
+  @do goto tothr9
+  @end
+
+@#tothr9
+@if `p20 is 9 then do
+  @begin
+  @do goto tothlose
+  @end
+@if `p20 not 9 then do
+  @begin
+  @do goto tothr10
+  @end
+
+@#tothr10
+@if `p20 is 10 then do
+  @begin
+  @do goto tothwin
+  @end
+
+@#tothwin
+@do `p23 random 3 1
+@show
+`r0`c `r1 `%Picking the Old Man's Teeth `r0
+
+      `2You tell the man to turn over mug #`p23.
+
+      `2Underneath the mug is...
+`k
+      `0The Old Man's teeth!
+
+      `0You win `$$`p25`0!
+`k
+@do money + `p25
+@do `p33 - 1
+@drawmap
+@update
+
+@#tothlose
+@do `p23 random 3 1
+@show
+`r0`c `r1 `%Picking the Old Man's Teeth `r0
+
+      `2You tell the man to turn over mug #`p23.
+
+      `2Underneath the mug is...
+`k
+      `0Absolutly nothing!
+
+      `0You lose `$$`p25`0!
+`k
+@do money - `p25
+@do `p33 - 1
+@drawmap
+@update
+
+@#nodough
+@show
+`r0`c `r1 `%No Dough `r0
+
+  `0Sorry S&sir, but you don't have that much money.
+  Maybe you should stop by the bank first...
+
+`k
+@drawmap
+@update
+
+@#noplay
+@show
+`r0`c `r1 `%No Cheats! `r0
+
+  `0Sorry S&sir, but you don't have any gambles left.
+  Looks like you'll have to wait until tomorrow to play.
+
+`k
+@drawmap
+@update
+
+@#BACK
+@do saybar
+`%The back room where Chance would help young warriors. The door's locked. 
+
+
+
+@#BAR
+@do saybar
+`%This is where Chance would serve his customers from...
+
+
+@#CHATWALL
+;Chat wall in Dark Cloak Tavern
+@do moveback
+@busy
+@show
+`r0`c  `r1  SCRIBBLING ON THE BULLETIN BOARD  `r0
+
+@if cloak.txt exist false then do
+ @begin
+ @writefile cloak.txt
+  `%Chance `2: `0It's been nice doing business with all of you, but I am
+  `%Chance `2: `0moving away now that the Dragon is dead. I will miss you all.
+ @end
+
+@if cloak.txt exist true then do
+ @begin
+ @displayfile cloak.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile cloak.txt
+  `%`n`2 : `0`s03
+ @do trim bar.txt 17
+ @drawmap
+ @update
+
+@#strange
+@do moveback
+@busy
+@do `v01 is 1
+@show
+`r0`c `r1 `%A Strange Meeting With A Stranger `r0
+
+  `0"Hold it, `N`0. Just where do you think you're going?" a voice asks.
+
+  `$"I going to go back there and explore. How did you know may name?"
+
+  `0"It's my job to know names. It's also my job to change them."
+
+  `$"Wow! Can you really cahnge my name?"
+
+  `0"If it is your desire, then yes, I can."
+
+  `2What do you do now?
+
+@do write
+`x`x
+@choice
+Ask the stranger to change your name
+Get out of here before things get too spooky
+@if responce is 2 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do goto newname
+  @end
+
+@#newname
+@offmap
+@busy
+@label nname
+@clear screen
+@show
+`r0`c `r1 `%Changing Your Name  `r0
+`\`\ `0"So ya wanna change your name huh? Ok. But it'll cost ya `$$200`0. Deal?`\
+@do `v01 is 1
+@choice
+<&money 199 `%Sure! Just change it!
+`%On second thought, `N`%'s not so bad.
+@if responce is 1 then do
+  @begin
+  @label me
+  @clear screen
+  @do `v01 is 1
+  @show
+
+  `0REMEMBER: Your new name will show up when you press `2(`0V`2)`0, but you will have
+            to quit te game before it will show up when you press `2(`0S`2)`0.
+
+  @do write
+  `0You decide you want to be known as: 
+  @do readstring 30 NIL
+  @do stripbad `s10
+  ; change dark blue to light blue in their name
+  @do replaceall `1 `! `s10
+  @do `p20 is length `s10
+  @if `p20 less 1 then do
+    @begin
+    @do goto me
+    @end
+
+
+  @if `p20 less 3 then do
+    @begin
+    @show
+
+
+  `0The stranger disagrees.  `0"Not such a short name!"
+    @do goto me
+    @end
+
+  @if checkdupe `s10 true then do
+    @begin
+    @show
+
+
+  `2The starnger disagrees.  `0"Hello! We already know someone with that name!"
+    @do goto me
+    @end
+   
+    @show
+`\`\  `0You decide on `0`s10`0.  The stranger studies you carefully.`\
+@do write
+`x`x
+@choice
+"That is a good name.  You have chosen very well."
+"What, are you NUTS?!  Try again."
+    @if response is 2 then goto me
+    @do copytoname
+    @do money - 200
+    @do goto strange
+    @end
+
+@if responce is 2 then goto strange
+
+@#nomore

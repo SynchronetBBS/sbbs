@@ -1,0 +1,59 @@
+
+                The The Sea Serpent by Peter Pelliccia V1.00
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (5)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Nice IGM for LORD2, which adds a bit of flair to the game.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM SHIP.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the screen west of PortTown and you will see
+  a ship. Purchase it and it will take you almost anywhere.
+
+
+  Oh Yeah, a personal thanks to Seth for his great game and for most
+  the routines I used in this IGM. 
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Sea Serpent `2by `0Peter Pelliccia
+replacescreen: 721 1 noshow
+
+replacescreen: 801 2 noshow
+
+replacescreen: 952 3 show
+
+replacescreen: 71 4 noshow
+
+replacescreen: 152 5 noshow
+
+replacescreen: 536 6 noshow
+
+replacescreen: 444 7 noshow
+;456
+replacescreen: 539 8 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, its sort of a cool IGM. It lets you become the captain of a ship
+  and lets you sail the Eight seas (g). Better than having a castle.           
+  If you like it drop me a line at: petros@.cobweb.com.au

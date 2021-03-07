@@ -1,0 +1,145 @@
+
+           Help for making IGM's that install with IGM.EXE V1.00
+
+What is IGM.EXE?
+
+It is a utility that install uninstall IGM's into LORD2 - without it, it
+would be very hard because the Sysop would have to manually do it, or you
+would have to include the whole MAP.DAT file and ruin any other things
+the sysop had installed.
+
+Things it does for you:
+
+ * Provides a standard.
+ * installs an IGM by typing "igm igmname.igm".
+ * Can replace maps *AND* will automatically add the map if the destination
+   block is empty.
+ * Creates it's own uninstall data!
+ * Uninstalls by trying to install it twice. (typing the same thing again)
+ * When uninstalling an IGM, it restores whatever was there.  (note, if the
+   map didn't exist before, it leaves the IGM's screen.. this is fine, even
+   though it will never be used)
+ * Updates the 3rdparty.dat file - this is just a text file used by the
+   LORD2 help screen which shows which IGM's are installed.  If no IGM's
+   are installed, it shouldn't exist.  (IGM will delete it if you uninstall
+   the last IGM)
+
+   A player can view IGM's installed in the game by hitting ?, then
+   choosing 'Current Game Settings'.
+
+ * When replacing/adding screens, you can specify if they 'show up on the
+   map or not'
+
+
+  ******* STEP BY STEP INSTRUCTIONS ON MAKING AN IGM **********
+
+  Ok, lets say you just made 'Bill's tavern' somewhere with the World editor
+  in LORD2, and made it warp to a new screen that has the inside, and this
+  has some hotspots that call stuff from bill.ref.
+
+  And now you want to share it with the rest of the world.  Is it hard?  No!
+
+  * Step 1
+
+  Download CRAZY100.ZIP, this is an example IGM I made to use as a template.
+
+  Edit CRAZY.IGM and rename it to BILL.IGM.  This is your IGM control file.
+
+  This is where we tell IGM.EXE what screens to replace, the name of the IGM
+  and any additional information you want the sysop to know.
+
+  Look for the string
+
+  igmname: `0Crazy Man's House `2by `0Seth A. Robinson
+
+  and replace it with "igmname: Bill's Tavern by Joe Smoe" or whatever.
+
+  * Step 2
+
+  Go into the World editor.  Write down the BLOCK #'s of the two screens
+  you use.  Next, while on top of one of the screens, hit E to extract the
+  map.  When it asks for a filename choose BILL.DAT.  (it MUST be called
+  this to match BILL.IGM)
+
+  Do the same thing with the other screen - notice it says 'Saved as record 1'
+  and 'saved as record 2'.  This is important!
+
+  Now you have created your BILL.DAT file, which will be used to replaced
+  the screen when the IGM is installed.
+
+  * Step 3
+
+  Now edit the place where you see
+
+  replacescreen: 1439 1 show
+
+  and change the 1439 to the BLOCK # to replace, and the 1 to the record
+  # of the map to replace it with.  (it will read that from BILL.DAT)
+
+  If you leave the 'show' this means it WILL show up on the players map.  If
+  you put 'noshow' this means it will NOT show up on the players map.  (do
+  this for inside houses, hidden things, etc)
+
+  Make *SURE* you have a carriage return ABOVE and BELOW each replacescreen
+  command.  Can't remember why that is important, or even if it is but..
+
+  Optionally, you can add an
+
+  installmessage:
+
+  Anything under this will be shown to the user when he installs the
+  IGM.  Always put this at the END.
+
+  * Step 4
+
+  Ok!  Time to test it out.  Copy bill.igm, bill.dat and bill.ref into a
+  dir with a FRESH copy of LORD2 installed.
+
+  Type "IGM bill" or "IGM bill.igm" (it will add the .IGM)
+
+  It should say it installed ok.
+
+  Next check the World Editor - is the map there?  Does it look right?
+
+  It should have made a bill.sav file.
+
+  Now type "igm bill" again - it should UNINSTALL.  Go check - did it really
+  change the screens it replaced back to normal?  (remember, if there was
+  no screen there originally, its ok that it is still the screen from your
+  IGM.. it only changes REPLACEMENTS back.)
+
+  If everything looked good, put bill.igm, bill.ref, bill.dat and a
+  file_id.diz into a dir and zip it!  You've created your first IGM!!!
+
+  *** Suggestions ****
+
+  * Don't use any player or global vars.. save and load your own using the
+    @writefile and @readfile commands.
+  * Don't include any .REFs that overwrite .refs written by me
+  * Don't add new items and include the items.dat file
+
+  If you break any of those rules, be SURE to note it in text in
+  bill.igm - so the sysop knows.  He can compare it to his other IGM's and
+  see if there is a conflict or not.
+
+  Note from Seth:
+
+  I wrote this real quick.. I realize that people may want to keep track of
+  'have you been here yet today' etc vars and are wondering if this is
+  possible with @writefile and @readfile.
+
+  It is - (your IGM basically would run its own maint by comparing the
+  &time var) although it would be kinda slow... (you would have to have
+  a file made for each guy that went in, could add up)
+
+  I may add an easier way of data keeping for IGM's later, like a command
+  to keep track of this for you...  But you can actually do a lot what
+  you have, for instance, check out CASTLE?.REF, how I have ownable places,
+  these do it completely with it's own little .txt file it makes to save
+  info.. 
+
+
+  Thanks, and if you have questions/problems, feel free to email me at
+  sethable@rtsoft.com.  I'm slow sometimes, but I ALWAYS reply.
+
+  -Seth

@@ -1,0 +1,27 @@
+
+                TURGON'S BACKDOOR by MAMOOSOFT PROGRAMMING
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes!
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Turgon's Backdoor `2from `0 Mamoosoft Programming
+
+replacescreen: 68 1 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Turgon's Backdoor introduces users to Sauraman, the dishonest record
+  keeper at the Training Center.  Perhaps he can help them... for a price!

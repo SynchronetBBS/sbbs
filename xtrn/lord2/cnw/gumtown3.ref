@@ -1,0 +1,325 @@
+; Script file GUMTOWN3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE checkhit 000000518
+@DECLARE kneecap 000000666
+@DECLARE youdead 000000962
+@DECLARE youok 000001593
+@DECLARE nooneruns 000001649
+@DECLARE beathit 000001778
+@DECLARE hitmen 000001934
+@DECLARE cando 000002590
+@DECLARE trainy 000003426
+@DECLARE loneys 000003766
+@DECLARE hirehit 000004591
+@DECLARE beahit 000005847
+@DECLARE spineless 000006299
+@DECLARE spiney 000006470
+@NOCHECK
+; End of .REF index
+
+@#checkhit
+@dataload hitgum.idf &playernum `p20
+@if `p20 is 1 then goto youdead
+@if `p20 is 0 then goto youok
+@if `p20 is 2 then goto kneecap
+
+@#kneecap
+@show
+`r0`c  `r1  The Hitmen  `r0  
+
+`2You get Kneecaped on a personal order from an anonymous hitman.
+
+`2Ask around, if you find out who it was, kick their ass!
+
+`4                You lose 5 Dodge!
+
+`k
+
+@do `p05 - 5
+@datasave hitgum.idf &playernum 0
+@drawmap
+@update
+
+@#youdead
+@fight
+;name
+The Hitmen
+;string said when you see him
+`4"It's Just Business."
+;power move kill string
+My Kung-Fu is the best!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+Breaks your kneecaps|766
+makes you cement shoes|940
+shoots you with his baretta|1200
+NONE|NONE
+NONE|NONE
+;defense
+500
+;gold reward
+666
+;experience
+5000
+;hit points
+2000
+;if win: ref file|name or NONE
+gumtown3.ref|beathit
+;if lose: ref file|name or NONE
+gametxt.ref|die
+;if runs: ref file|name or NONE
+gumtown3.ref|nooneruns
+@datasave hitgum.idf &playernum 0
+@closescript
+@end
+
+@#youok
+@do saybar
+ We won't hit on you. Today
+
+@#nooneruns
+@show
+`r0`c  `r1  Running from the Hitmen  `r0  
+
+No one rums from the Gumtown Hitmen.
+`k
+
+@drawmap
+@update
+
+@#beathit
+@show
+`r0`c  `r1 The Gumtown Hitmen  `r0  
+
+
+`2 You Beat the `3Gumtown Hitmen.
+
+`4Gain 3 Strength
+
+`k
+@do `p04 + 3
+@Drawmap
+@update
+
+@#hitmen
+@do moveback
+@dataload beatnorm.idf &playernum `p20
+@do `v01 is 1
+@show
+`r0`c  `r1  Visiting the Hitmen  `r0  
+                                       
+`2Hi, I'm Arnold J.                     
+
+ `3Is anyone really bugging you?       `2Yes! Then have them erased!
+
+`2It's as simple as `$A`4B`1C`2. Just Pay us the `$$50000 `2and as soon
+`2as they enter Gumtown `$KA-SPLAT`2.
+
+@do write
+`x`x
+@CHOICE
+>&money 49999 Hire a `3Hitman.
+=`p20 0 Ask to become a `3Hitman.
+=`p20 1 What can us Hitmen do
+Leave
+@if response is 1 then goto hirehit
+@if response is 2 then goto beahit
+@if response is 3 then goto cando
+@drawmap
+@update
+
+@#cando
+@do `v01 is 1
+@show
+`r0`c  `r1`% Being a Hitman.  `r0
+`0Here at `3Gumtown Hitmen Inc. `0 there are a number of things a qualified
+`0Hitman can do. Firstly we encourage all our members to keep in shape.
+`0So, we ofer a fully equipped gym for you to workout in. It takes `$2000 `0turns
+`0and you can improve your body alot. Nextly You can take part in the age old
+`0tradition of `5lone-sharking`0. Make a lone to someone who can't pay it
+`0then break their legs. So much fun! We must insist that the minimum loan
+`0is `$$50000 `0though. So what will it be?
+
+@do write
+`x`x
+@CHOICE
+>`p11 1999 Do some training.
+Go to other Hitman Stuff.
+>&money 49000 The fun of lone sharking
+Leave
+@if response is 1 then goto trainy
+@if response is 3 then goto loneys
+@if response is 2 then goto hitmen
+@drawmap
+@update
+
+@#trainy
+@do `p11 - 2000
+@do `p04 + 4
+@do `p03 + 3
+@do `p05 + 4
+@show
+`r0`c  `r1`% The Hitman Training Centre.  `r0
+
+`2You really work hard and `$2000 `2turns later you are stronger, more
+
+`2agile and those headaches are gone! Good for You.
+
+             `4 You Gain 3 HP, 4 muscle and 4 dodge! 
+
+
+`k
+@drawmap
+@update
+
+
+@#loneys
+@do `p30 is 7
+@do `v40 is 50000
+@routine deposit in vaults.ref
+
+@do money - 50000
+@show
+`r0`c  `r1`% Sharking a Lone.  `r0
+
+
+  `2Who do you want to make a lone to?
+    @chooseplayer `p20
+
+        
+
+    @if `p20 is 0 then do
+      @begin
+      @show
+  `2You give your money to`l.`l.`l.`l.`l.NOBODY`l.`k
+      @do goto hitmen
+      @end
+
+    @do `s02 is getname `p20
+
+    @if `p20 is 0 then do
+    @begin
+    @do addlog
+      `s02 `2is being lone-sharked by `n. 
+    @datasave hitgum.idf `p20 2
+
+@show
+   `2You will have `s02`2's kneecaps broken.
+
+   `4He'll find it hard walking! `$Hahahahahahahha.........
+`k
+@drawmap
+@update
+
+    @end
+
+    @if `p20 not 0 then do
+    @begin
+    @show
+    `3He's already under contract!
+    `k
+    @drawmap
+    @update
+    @end
+
+
+
+@#hirehit
+@show
+`r0`c  `r1`% Choosing A Victim.  `r0
+
+`5 So, who do you want `4GNAR , `$KA-POW ,`2and `%GA-SPLATED`2?
+
+  `2Who do you want to send it to?
+    @chooseplayer `p20
+
+   
+    @if `p20 is 0 then do
+      @begin
+      @show
+  `2You decide to keep your money - for now.`\`\`k
+      @do goto hitmen
+      @end
+
+@do `p30 is 7
+@do `v40 is 50000
+@routine deposit in vaults.ref
+    @do money - 50000
+    @do `s02 is getname `p20
+    @datasave hitgum.idf `p20 1
+    @do addlog
+      `s02 `2had better not show up in `1G`2u`3m`4t`5o`6w`7n`2. 
+    @writefile mail\mail`p20.dat
+  `@Delivery from The Gumtown Hitmen:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+                   `4Contract on `s02
+`2In accordance with the wishes of `n , the `1G`2u`3m`4t`5o`6w`7n `2hitmen
+`2have declared that `s02 `2is to be erased as soon as they enter
+`1G`2u`3m`4t`5o`6w`7n`2. If you are this person we would advise that
+`2you don't show you sorry ass in  `1G`2u`3m`4t`5o`6w`7n `2ever again.
+`2                                      -The `1G`2u`3m`4t`5o`6w`7n `3Hitmen.
+
+    @show
+`\`\  `2Ok! A `4warning `2has been sent. `S02 `2will be notified.`\`\`k
+
+`$Don't worry, we'll rub out `s02
+
+`k
+@drawmap
+@update
+
+@#beahit
+@do `v01 is 1
+@show
+`r0`c  `r1  Becoming a Hitman  `r0
+`4S&sir,
+`2     Do you realise what you are saying. You want to join us.
+`2To do that you'll have to fight `$Spiney Norman!`2.
+`2He is one tough customer.
+`2              Are you sure you want to join?
+
+@do write
+`x`x
+@CHOICE
+Yes. Errr... Maybe
+No way. Not `$Spiney Norman!
+@if responce is 1 then goto spiney
+@if responce is 2 then goto spineless
+@drawmap
+@update
+
+@#spineless
+@show
+`r0`c  `r1  Chickening Out  `r0
+`2That's a very wise decision S&sir.
+`2You may live to regret it, but at least you'll live.
+
+`k
+@drawmap
+@update
+
+@#spiney
+@pauseoff
+@show
+`r0`c  `r1  Fighting Spiney Norman  `r0
+`0Only the bravest, strongest, nastiest people can beat
+`$Spiney Norman `0and become `1G`2u`3m`4t`5o`6w`7n `3Hitmen.
+`0I'll wish you good luck kid:
+
+`l.`l.`l.`l.`l.You'll Need it.
+[0mÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+[A[71CÄÄÄÄÄÄÄÄ¿³[78C³³[3C[1;35mSpiney Norman is[0m [1;35ma[0m[9C
+[A[31C[43m [40m [43m [40m [43m [40m [43m [40m [43m [40m 
+[A[41C[43m [40m [43m [40m [43m [40m [43m [40m[7C[32mHe is a
+[A[62C master of [37m[6C³³[29C[43m                   [40m[30C³³[3C
+[A[4C[1;35mhedgehog![0m [1;35mOh Dear[0m[8C[43m                [40m
+[A[45C[43m     [40m[5C[32mfigurative language.[37m[4C³³[27C
+[A[28C[43m      [30mO[37m         [30mO[37m      [40m[28C³³[3C
+[A[4C[1;35mYou are in trouble[0m[6C[43m           [30m[37m    [40m
+[A[44C[43m       [40m[4C[32mPuns, parody, hyperbole[37m ³³[27C
+[A[28C[43m                       [40m[28C³³[27C[43m     [30m---[40m
+[A[36C[43m-----------[37m    [40m[4C[32mmetaphor, bathos.......
+[A[78C[37m ³³[28C[43m                     [40m[29C³ÀÄÄÄÄÄÄÄÄÄÄÄÄ
+[A[13CÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+[A[77CÄÄÙ[0m

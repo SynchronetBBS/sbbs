@@ -1,0 +1,47 @@
+
+                -=<Habib's Tavern v1.00 by Ryan Fields>=-
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Habib's Tavern IGM for LORD ][.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM habib.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4H`#a`$b`2i`1b`#'`5s `7Tavern `2by `0Ryan Fields
+replacescreen: 1253 1 show
+
+replacescreen: 26 2 noshow
+
+replacescreen: 27 3 noshow
+
+replacescreen: 28 4 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `4H`#a`$b`2i`1b`#'`5s `7Tavern v1.00.  `2This is my first IGM
+  for `0LORD ][`2.  If you find any bugs, or have any compliments 
+  or complaints, please e-mail me at: 
+  `%Habib1469@juno.com.
+  
+  `2ENJOY!

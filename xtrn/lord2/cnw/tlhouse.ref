@@ -1,0 +1,1810 @@
+@#LOCATION
+@If &map is 1274 then `p29 is 1
+@If &map is 1121 then `p29 is 1
+@If &map is 320 then `p29 is 2
+@If &map is 80 then `p29 is 2
+@If &map is 1255 then `p29 is 3
+@If &map is 1175 then `p29 is 3
+@If &map is 1028 then `p29 is 4
+@If &map is 1342 then `p29 is 4
+@If &map is 55 then `p29 is 5
+@If &map is 1340 then `p29 is 5
+
+
+@#REGISTER
+@routine LOCATION
+@do moveback
+@busy
+@if `p29 is 1 then `p20 is 11
+@if `p29 is 2 then `p20 is 12
+@if `p29 is 3 then `p20 is 13
+@if `p29 is 4 then `p20 is 14
+@if `p29 is 5 then `p20 is 15 
+@routine getplace2 in myhome.ref
+@do saybar
+`$Would you like to make `s01 `$your home? [Y/n]
+@do readspecial `s05 YN
+@if `s05 is N then do
+        @begin
+        @do saybar
+`$No problem, maybe another time you will decide to make this your home.
+        @closescript
+        @end
+@if `s05 is Y then do
+        @begin
+        @do `p69 is `p20
+        @do saybar
+`$GREAT, `s01 `$is now your new home. Have fun.
+        @dataload tlban`p29.idf &playernum `p20
+        @if `p20 > 0 then goto BANNED
+        @datasave tlmember.idf &playernum `p29
+        @update
+        @closescript
+        @end
+@update
+@closescript
+
+
+@#CHATWALL
+@label latexwall
+@routine LOCATION
+@do moveback
+@busy
+@show
+`r0`c  `r1  WRITING ON THE BOARD  `r0
+
+@if tlchat`p29.txt exist false then do
+ @begin
+  @if `v06 is 1 then do
+  @begin
+   @writefile tlchat`p29.txt
+   `1L`9a`%t`9e`1x `2: `0Get Lost!
+  @end
+  @if `v06 is 0 then do
+  @begin
+ @writefile tlchat`p29.txt
+  `1L`9a`%t`9e`1x `2: `0www.angelfire.com/co/coolhouse
+  `1L`9a`%t`9e`1x `2: `0Coolhouse BBS open 8.00-22.00. Number:(09)827-3726
+  @end
+ @end
+
+@if tlchat`p29.txt exist true then do
+ @begin
+ @displayfile tlchat`p29.txt
+ @end
+
+@show
+@
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile tlchat`p29.txt
+  `%`n`2 : `0`s03
+ @do trim tlchat`p29.txt 17
+ @drawmap
+ @update
+@end
+@end
+
+@#ownhouse
+@routine LOCATION
+@show
+`\`\`4You already have a teamhouse
+`k
+@drawmap
+@update
+@closescript
+@end
+
+@#nomoney
+@routine LOCATION
+@do move 20 20
+@do write
+`2HaHa I want to train but I have no money!
+@key bottom
+@drawmap
+@update
+@closescript
+
+@#NOTURNS
+@routine LOCATION
+@do move 20 20
+@do write
+`2HaHa I want to train but I have no time left!
+@key bottom
+@drawmap
+@update
+@closescript
+
+@#Dragon
+@do moveback
+@label tdoor
+@routine LOCATION
+@If tltpet`p29.dat exists false then do
+        @begin
+        @writefile tltpet`p29.dat
+1
+1
+1
+`%
+        @end
+
+@readfile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+@readfile tlhouse`p29.dat
+`p24
+@do `p23 = money
+@if `v05 > 0 then do
+        @begin
+        @do `p28 is `v05
+        @do `p28 / 96
+        @end
+
+@do move 1 1
+@clear screen
+@do `s03 is `p20
+@do `s04 is `p21
+@do `s05 is `p22
+@do pad `s03 8
+@do pad `s04 8
+@do pad `s05 8
+@routine viewdragon in dragons.ref
+@readfile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+@do move 50 1
+@do write
+`r1  `$-  `2Train your pet Dragon  `$-  `r0
+@do move 55 2
+@do write
+`r4`% Strenght : `s03 `r0
+@do move 55 3
+@do write
+`r4`% Defense  : `s04 `r0
+@do move 55 4
+@do write
+`r4`% Hitpoints: `s05 `r0
+@do move 55 5
+@do write
+`2Your money : `$$`p23`2
+
+@do `p27 is 7
+@if `p20 > 1000 then `p27 is 17
+@do move 56 `p27
+@do `v01 is 1
+@choice
+Help
+>&money 499 <`p28 `p11 `4Train 1 Strenght `2(`$$500`2)
+>&money 699 <`p28 `p11 `4Train 1 Defense  `2(`$$700`2)
+>&money 399 <`p28 `p11 `4Train 1 Hitpoint `2(`$$400`2)
+=`p24 &playernum `s01Change dragon colour
+=`p24 &playernum `%Send dragon out
+`3Get Lost
+@if responce is 6 then do
+        @begin
+        @do move 55 7
+        @do write
+`0Your pet can only be sent
+        @do move 55 8
+        @do write
+`0to TEAMs that are at `@WAR
+        @do move 55 9
+        @do write
+`%                          `%
+        @do move 55 10
+        @do `p20 is 0
+        @do `p21 is 0
+        @do `p22 is 0
+        @do `p23 is 0
+        @do `p24 is 0
+        @do `p25 is 0
+        @do `s01 is `8-
+        @do `s02 is `8-
+        @do `s03 is `8-
+        @do `s04 is `8-
+        @do `s05 is `8-
+        @if tltname1.dat exists true then do
+                @begin
+                @readfile tltname1.dat
+`s01
+                @do `p24 is `p29
+                @do `p24 + 10
+                @dataload tlrelate.idf `p24 `p20
+                @end
+        @if tltname2.dat exists true then do
+                @begin
+                @readfile tltname2.dat
+`s02
+                @do `p24 is `p29
+                @do `p24 + 20
+                @dataload tlrelate.idf `p24 `p21
+                @end
+        @if tltname3.dat exists true then do
+                @begin
+                @readfile tltname3.dat
+`s03
+                @do `p24 is `p29
+                @do `p24 + 30
+                @dataload tlrelate.idf `p24 `p22
+                @end
+        @if tltname4.dat exists true then do
+                @begin
+                @readfile tltname4.dat
+`s04
+                @do `p24 is `p29
+                @do `p24 + 40
+                @dataload tlrelate.idf `p24 `p23
+                @end
+        @if tltname5.dat exists true then do
+                @begin
+                @readfile tltname5.dat
+`s05
+                @do `p24 is `p29
+                @do `p24 + 50
+                @dataload tlrelate.idf `p24 `p25
+                @end
+        @if `s01 is `8- then `p41 is 1
+        @if `s02 is `8- then `p42 is 1
+        @if `s03 is `8- then `p43 is 1
+        @if `s04 is `8- then `p44 is 1
+        @if `s05 is `8- then `p45 is 1
+        @do `v01 is 1
+        @choice
+!`p29 1 =`p41 0 =`p20 3 `$`s01
+!`p29 2 =`p42 0 =`p21 3 `$`s02
+!`p29 3 =`p43 0 =`p22 3 `$`s03
+!`p29 4 =`p44 0 =`p23 3 `$`s04
+!`p29 5 =`p45 0 =`p25 3 `$`s05
+Forget it
+        @do write
+`\`\`\`\`%Feature currently unavailable.
+        @key bottom
+        @do goto dragon
+        @end
+@if response is 5 then do
+        @begin
+        @readfile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+        @do move 38 15
+        @do write
+`2Which colour do you wish your pet to be?
+        @do move 38 16
+        @do write
+`s01ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+        @do move 38 17
+        @do write
+`s01³  `1(1)   `4(4)   `7(7)   `0(0)   `#(#)
+        @do move 38 18
+        @do write
+`s01³  `2(2)   `5(5)   `8(8)   `!(!)   `$($)
+        @do move 38 19
+        @do write
+`s01³  `3(3)   `6(6)   `9(9)   `@(@)   `%(%)
+        @do move 38 20
+        @do write
+Press the corrisponding colour key :
+        @do readspecial `s01 0123456789!@#$%
+        @do `s02 is `
+        @do `s02 add `s01
+        @do delete tltpet`p29.dat
+        @writefile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s02
+        @do goto tdoor
+        @end
+@if response is 1 then do
+@begin
+@do move 1 1
+@clear screen
+@show
+`r0               `r1  `$-  `2Training your pet Dragon  `$-  `r0
+                      `r4`% Strenght : `s03 `r0
+                      `r4`% Defense  : `s04 `r0
+                      `r4`% Hitpoints: `s05 `r0
+
+                `2Help????What help??You need help??
+             Just train your dragon and don't get killed.
+
+       `2- `%It takes 15 minutes to train for 1 point.
+
+       `2- `%Your dragon will protect your members in the
+             house and guard your door.
+
+`r0               `r1  `$-  `2Talk to the TeamGuard to see  `$-  `r0
+       `2- `%A complete list of official members of the team.
+
+       `2- `%Relations with other teams.
+
+       `2- `%If not a member, they can request it.
+
+@key bottom
+@show
+
+                       `8[soon in TeamLord]
+`2- Dragon can be sent out to attack other team house dragons.
+`2- Dragon can be sent out to attack other players.
+`2- Team Owner can control who is members and BAN them if they wish.
+`2- If a player is BAN, dragon will chase them down if they enter the house.
+
+
+
+                                                            `8[only in CNW!]
+@key bottom
+@do goto tdoor
+@end
+
+@if response is 2 then do
+        @begin
+        @if money < 500 then do
+                @begin
+                @do goto nomoney
+                @end
+;TURNS, it takes time to train a dragon.
+        @if `v05 > 0 then do
+                @begin
+                @do `p28 is `v05
+                @do `p28 / 96
+                @if `p11 < `p28 then do
+                        @begin
+                        @do goto noturns
+                        @end
+                @do `p11 - `p28
+                @end
+
+        @do money - 500
+        @readfile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+        @do `p20 + 1
+        @do delete tltpet`p29.dat
+        @writefile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+        @do goto tdoor
+        @end
+@if response is 3 then do
+        @begin
+        @if money < 700 then do
+                @begin
+                @do goto nomoney
+                @end
+;TURNS, it takes time to train a dragon.
+        @if `v05 > 0 then do
+                @begin
+                @do `p28 is `v05
+                @do `p28 / 96
+                @if `p11 < `p28 then do
+                        @begin
+                        @do goto noturns
+                        @end
+                @do `p11 - `p28
+                @end
+        @do money - 700
+        @do `p21 + 1
+        @do delete tltpet`p29.dat
+        @writefile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+        @do goto tdoor
+        @end
+@if response is 4 then do
+        @begin
+
+        @if money < 400 then do
+                @begin
+                @do goto nomoney
+                @end
+;TURNS, it takes time to train a dragon.
+        @if `v05 > 0 then do
+                @begin
+                @do `p28 is `v05
+                @do `p28 / 96
+                @if `p11 < `p28 then do
+                        @begin
+                        @do goto noturns
+                        @end
+                @do `p11 - `p28
+                @end
+
+@do money - 400
+@do `p22 + 1
+@do delete tltpet`p29.dat
+@writefile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+@do goto tdoor
+@end
+@drawmap
+@update
+@closescript
+
+
+@#MYBANK
+;team treasury
+@routine LOCATION
+@do moveback
+@do `p20 is 0
+@if tltres`p29.dat exist true then do
+  @begin
+  @readfile tltres`p29.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tltres`p29.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete tltres`p29.dat
+  @writefile tltres`p29.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile tlhouse`p29.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0TeamLord Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile tltres`p29.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete tltres`p29.dat
+  @writefile tltres`p29.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile tlhouse`p29.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0TeamLord Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+
+
+@#HEALME
+@routine LOCATION
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healers  `r0
+
+  `2The good doctor looks you over for wounds carefully.
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+
+@#doorguard
+@do moveback
+@busy
+@dataload tlban`p29.idf &playernum `p20
+@if `p20 > 0 then goto FIGHTGUARD
+@label startg
+@routine LOCATION
+@if tlhouse`p29.dat exist false then do
+  @begin
+  @do saybar
+`0"What are thou doing here??" `2the guard barks.
+  @closescript
+  @end
+@readfile tlhouse`p29.dat
+`p20
+`s05
+@readfile tltname`p29.dat
+`s04
+@if `p20 not &playernum then do
+        @begin
+        @do move 1 1
+        @clear screen
+        @show
+`r0`c  `r1 `@Team `s04 `r0
+
+  `2"Hi, what can I do for you today?" `1says the Team Guard.
+
+        @do `v01 is 1
+        @do `p24 is 0
+        @dataload tlmember.idf &playernum `p24
+        @dataload tlmember.idf &playernum `p24
+        @choice
+Show me the Team Relations
+List me the Team Members
+Who's running this Operation?
+=`p24 0 Make me a MEMBER!
+=`p24 `p29 Write TeamMail
+Leave
+        @if responce is 6 then do
+                @begin
+                @drawmap
+                @update
+                @closescript
+                @end
+        @if responce is 5 then goto MAILTEAM
+        @if responce is 2 then do
+                @begin
+                @routine MEMBERS
+                @end
+        @if responce is 4 then do
+                @begin
+                @datasave tlmember.idf &playernum `p29
+                @end
+        @if responce is 3 then do
+                @begin
+                @DO `s02 IS GETNAME `p20
+                @show
+`\`\`\  `2"Our Team leader is `s02."
+                @key bottom
+                @end
+        @if responce is 1 then do
+                @begin
+                @do `s09 is doorguard
+                @do `s10 is TLHOUSE.REF
+                @do `p29 is 0
+                @routine STARTREL
+                @end
+        @routine LOCATION
+        @do goto startg
+        @end
+
+
+@do `v01 is 1 
+@show
+`r0`c  `r1 `@Team LEADER `s04 `@Options `r0
+
+  `2The huge guard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set Team password (`0`s05`%)
+Ownership options
+Change the Name of the team
+Team Members
+Team Relations
+Write TeamMail
+Leave
+@if responce is 6 then goto MAILTEAM
+@if responce is 4 then do
+        @begin
+        @routine MEMBERS
+        @end
+@if responce is 5 then do
+        @begin
+@label STARTREL
+        @do move 1 1
+        @clear screen
+        @show
+`r4`$ÚÄÄ `%TEAM `$ÄÄÄÄÄÄÄÄÄ`%vs`$ÄÄÄÄÄÄÄÄÄ> `%TEAM `$ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ> `%STATUS `$ÄÄÄ¿
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0 `r1`%Team     `r0
+`r4`$³`r0                                                                   `r4³`r0 `r1`%Relations`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$³`r0                                                                   `r4³`r0
+`r4`$ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ`r0
+        @do `p20 is 0
+        @do `p25 is -2
+        @do `p26 is 2
+        @do `p21 is 0
+        @do `s01 is `8-
+        @do `s02 is `8-
+        @do `s03 is `8-
+        @do `s04 is `8-
+        @do `s05 is `8-
+        @if tltname1.dat exists true then do
+                @begin
+                @readfile tltname1.dat
+`s01
+                @end
+        @if tltname2.dat exists true then do
+                @begin
+                @readfile tltname2.dat
+`s02
+                @end
+        @if tltname3.dat exists true then do
+                @begin
+                @readfile tltname3.dat
+`s03
+                @end
+        @if tltname4.dat exists true then do
+                @begin
+                @readfile tltname4.dat
+`s04
+                @end
+        @if tltname5.dat exists true then do
+                @begin
+                @readfile tltname5.dat
+`s05
+                @end
+        @do move 2 2
+        @do write
+`%`s01
+        @do move 2 6
+        @do write
+`%`s02
+        @do move 2 10
+        @do write
+`%`s03
+        @do move 2 14
+        @do write
+`%`s04
+        @do move 2 18
+        @do write
+`%`s05
+
+        @do `p26 is 2
+        @do `p25 is 1
+       @label names
+        @if `p25 is 1 then do
+                @begin
+                @if `s01 is `8- then do
+                        @begin
+                        @do `p26 + 4
+                        @do goto SKIPNAME
+                        @end
+                @end
+        @if `p25 is 2 then do
+                @begin
+                @if `s02 is `8- then do
+                        @begin
+                        @do `p26 + 4
+                        @do goto SKIPNAME
+                        @end
+                @end
+        @if `p25 is 3 then do
+                @begin
+                @if `s03 is `8- then do
+                        @begin
+                        @do `p26 + 4
+                        @do goto SKIPNAME
+                        @end
+                @end
+        @if `p25 is 4 then do
+                @begin
+                @if `s04 is `8- then do
+                        @begin
+                        @do `p26 + 4
+                        @do goto SKIPNAME
+                        @end
+                @end
+        @if `p25 is 5 then do
+                @begin
+                @if `s05 is `8- then do
+                        @begin
+                        @do `p26 + 4
+                        @do goto SKIPNAME
+                        @end
+                @end
+        @if `p25 NOT 1 then do
+                @begin
+                @do move 30 `p26
+                @do write
+`%`s01
+                @do `p24 is `p25
+                @do `p24 + 10
+                @dataload tlrelate.idf `p24 `p21
+                @routine RELATIONS
+                @do move 60 `p26
+                @do write
+`%`s06
+                @do `p24 + 1 
+                @do `p26 + 1 
+                @end
+        @if `p25 NOT 2 then do
+                @begin
+                @do move 30 `p26
+                @do write
+`%`s02
+                @do `p24 is `p25
+                @do `p24 + 20
+                @dataload tlrelate.idf `p24 `p21
+                @routine RELATIONS
+                @do move 60 `p26
+                @do write
+`%`s06
+                @do `p24 + 1 
+                @do `p26 + 1 
+                @end
+        @if `p25 NOT 3 then do
+                @begin
+                @do move 30 `p26
+                @do write
+`%`s03
+                @do `p24 is `p25
+                @do `p24 + 30
+                @dataload tlrelate.idf `p24 `p21
+                @routine RELATIONS
+                @do move 60 `p26
+                @do write
+`%`s06
+                @do `p24 + 1 
+                @do `p26 + 1 
+                @end
+        @if `p25 NOT 4 then do
+                @begin
+                @do move 30 `p26
+                @do write
+`%`s04
+                @do `p24 is `p25
+                @do `p24 + 40
+                @dataload tlrelate.idf `p24 `p21
+                @routine RELATIONS
+                @do move 60 `p26
+                @do write
+`%`s06
+                @do `p24 + 1 
+                @do `p26 + 1 
+                @end
+        @if `p25 NOT 5 then do
+                @begin
+                @do move 30 `p26
+                @do write
+`%`s05
+                @do `p24 is `p25
+                @do `p24 + 50
+                @dataload tlrelate.idf `p24 `p21
+                @routine RELATIONS
+                @do move 60 `p26
+                @do write
+`%`s06
+                @do `p24 + 1 
+                @do `p26 + 1 
+                @end
+       @label SKIPNAME
+        @do `p25 + 1
+        @if `p25 < 6 then goto names
+        @if `p29 is 0 then do
+                @begin
+                @key bottom
+                @run `s09 in `s10
+                @closescript
+                @end
+
+        @do move 70 7
+        @do write
+`r0 `r1`$Would    `r0
+        @do move 70 8
+        @do write
+`r0 `r1`$you like `r0
+        @do move 70 9
+        @do write
+`r0 `r1`$to change`r0
+        @do move 70 10
+        @do write
+`r0 `r1`$relations`r0
+        @do move 70 11
+        @do write
+`r0 `r1`$         `r0
+        @do move 70 12
+        @do write
+`r0 `r1`7  [N/Y]  `r0
+        @do move 72 13
+        @do readspecial `s07 NY
+        @if `s07 is Y then goto RELATECH
+        @do goto startg
+        @end
+@if response is 3 then do
+  @begin
+
+ @do write
+`\`x`x
+  @do readstring 75 NIL `s06 
+  @do `p20 is length `s06
+  @if `p20 < 2 then do
+   @begin
+@do goto startg
+@end
+@show
+`\  `0"Alright!"
+
+@do stripbad `s06
+@do delete tltname`p29.dat
+@writefile tltname`p29.dat
+`s06
+@do goto startg
+ @end
+  
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$5000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your castle to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete tlhouse`p29.dat
+  @writefile tlhouse`p29.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0TeamLord note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of TeamHouse #`p29 to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%TeamHouse #`p29`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your castle back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do `p30 is 2
+  @do `v40 is 5000
+  @routine widthdraw in vaults.ref
+  @do delete tlhouse`p29.dat
+  @do money + 5000
+  @show
+`\`\  `%HOUSE SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%TeamHouse #`p29`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete tlhouse`p29.dat
+  @writefile tlhouse`p29.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@routine LOCATION
+@bitset `t92 1 1
+@do moveback
+
+ @if tlhouse`p29.dat exist false then do
+ @begin
+ @do saybar
+TeamHouse for sale.
+ @end 
+
+@if tlhouse`p29.dat exist true then do
+ @begin
+@readfile tltname`p29.dat
+`s06
+@
+@readfile tlhouse`p29.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2TeamHouse of `s06.
+ @end 
+
+@#enter
+@routine LOCATION
+@do moveback
+@dataload tlban`p29.idf &playernum `p20
+@if `p20 > 0 then goto BANNED
+@offmap
+@if tlhouse`p29.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2TeamHouse 1.
+  `2 If you want start a team you must buy one of these TeamHouses
+
+  `2The asking price is `$$10,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 9999 Start a Team.
+<&money 10000 Sigh wistfully and leave since you don't have enough.
+>&money 9999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if tlhouse`p29.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+@if `p29 is 1 then `p29 is 2
+@if `p29 is 2 then `p29 is 1
+@if `p29 is 3 then `p29 is 1
+@if `p29 is 4 then `p29 is 1
+@if `p29 is 5 then `p29 is 1
+@if tlhouse`p29.dat exist true then do
+        @begin
+        @readfile tlhouse`p29.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do goto ownhouse
+                @end
+        @end
+
+@if `p29 is 1 then `p29 is 2
+@if `p29 is 2 then `p29 is 3
+@if tlhouse`p29.dat exist true then do
+        @begin
+        @readfile tlhouse`p29.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do goto ownhouse
+                @end
+        @end
+
+@if `p29 is 2 then `p29 is 3
+@if `p29 is 3 then `p29 is 4
+@if tlhouse`p29.dat exist true then do
+        @begin
+        @readfile tlhouse`p29.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do goto ownhouse
+                @end
+        @end
+
+@if `p29 is 3 then `p29 is 4
+@if `p29 is 4 then `p29 is 5
+@if tlhouse`p29.dat exist true then do
+        @begin
+        @readfile tlhouse`p29.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do goto ownhouse
+                @end
+        @end
+
+@routine LOCATION
+@writefile tlhouse`p29.dat
+&playernum
+NONE
+    @do `p30 is 2
+    @do `v40 is 10000
+    @routine deposit in vaults.ref
+    @do money - 10000
+    @routine LOCATION
+    @do addlog
+  `0`n `2buys `%TeamHouse #`p29`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this house!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile tlhouse`p29.dat
+`p20
+`s01
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete tlhouse`p29.dat
+   @do delete tlban`p29.dat
+    @do addlog
+  `%TeamHouse #`p29`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @readfile tltname`p29.dat
+`s06
+  @show
+`r0`c  `r1 `s06 `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Give Password
+Attack the Door Dragon
+Run
+@if response is 2 then do
+@begin
+@label FIGHTDRAG
+@readfile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+@routine VIEWDRAGON in DRAGONS.REF
+@readfile tltpet`p29.dat
+`p20
+`p21
+`p22
+`s01
+@key bottom
+@fight
+;name
+pet Dragon
+;string said when you see him
+`0"Muaarrhhh!!"`2yells the dragon
+;power move kill string
+HaHa!! and now kill all team members!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+grills you|`p20
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+`p21
+;gold reward
+0
+;experience
+1
+;hit points
+`p22
+;if win: ref file|name or NONE
+TLDRAG.REF|VOITTO
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+TLDRAG.REF|JUOKSU
+@end
+ 
+ @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+  @readfile tltname`p29.dat
+`s06
+    @show
+`\`\  `0"Welcome to `%`s06`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+  @readfile tltname`p29.dat
+`s06
+  @writefile mail\mail`p20.dat
+  `0`s06 Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bKICKED`2 away.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+ @do goto done
+
+
+@end
+;let him in
+@label letmein
+@routine dismounth in vehicle.ref
+@if `p29 is 1 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1121
+        @end
+@if `p29 is 2 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 80
+        @end
+@if `p29 is 3 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1175
+        @end
+@if `p29 is 4 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1342
+        @end
+@if `p29 is 5 then do
+        @begin
+        @do x is 39
+        @do y is 19
+        @do map is 1340
+        @end
+@loadmap &map
+@drawmap
+@update
+
+@#RELATECH
+@routine LOCATION
+@do move 1 1
+@clear screen
+@SHOW
+                  `r1 `$- `%CHANGING RELATIONS `$- `r0
+
+     `2Here you can select your current STATUS with other teams.
+
+                       `7Ú`8/`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`8\`7¿
+                       `7³                         ³
+                       `7³                         ³
+                       `7³                         ³
+                       `7³                         ³
+                       `7³                         ³
+                       `7À`8\`7ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`8/`7Ù
+
+@do move 25 6
+@do `v01 is 1
+@do `p41 is 0
+@do `p42 is 0
+@do `p43 is 0
+@do `p44 is 0
+@do `p45 is 0
+@if `s01 is `8- then `p41 is 1
+@if `s02 is `8- then `p42 is 1
+@if `s03 is `8- then `p43 is 1
+@if `s04 is `8- then `p44 is 1
+@if `s05 is `8- then `p45 is 1
+@choice
+!`p29 1 =`p41 0 `$`s01
+!`p29 2 =`p42 0 `$`s02
+!`p29 3 =`p43 0 `$`s03
+!`p29 4 =`p44 0 `$`s04
+!`p29 5 =`p45 0 `$`s05
+`%Do Nothing
+@if responce is 6 then goto startg
+@if responce is 1 then do
+        @begin
+        @do `p24 is `p29
+        @do `p24 + 10
+        @do `s07 is `s01
+        @end
+@if responce is 2 then do
+        @begin
+        @do `p24 is `p29
+        @do `p24 + 20
+        @do `s07 is `s02
+        @end
+@if responce is 3 then do
+        @begin
+        @do `p24 is `p29
+        @do `p24 + 30
+        @do `s07 is `s03
+        @end
+@if responce is 4 then do
+        @begin
+        @do `p24 is `p29
+        @do `p24 + 40
+        @do `s07 is `s04
+        @end
+@if responce is 5 then do
+        @begin
+        @do `p24 is `p29
+        @do `p24 + 50
+        @do `s07 is `s05
+        @end
+
+
+@dataload tlrelate.idf `p24 `p21
+@routine RELATIONS
+@do move 1 13
+@show
+`2 Your current relations with `$`s07 `2is `s06`2.
+`2                  How do you wish to change it to.
+                           `7Ú`8/`7ÄÄÄÄÄÄÄ`8\`7¿
+                           `7³         ³
+                           `7³         ³
+                           `7³         ³
+                           `7³         ³
+                           `7³         ³
+                           `7À`8\`7ÄÄÄÄÄÄÄ`8/`7Ù
+@do move 29 16
+@do `v01 is 1
+@choice
+`8  NONE   `%
+`5  PEACE  `%
+`$ ALLIES  `%
+`@   WAR   `%
+`%No change
+@if responce is 1 then do
+        @begin
+        @datasave tlrelate.idf `p24 0
+        @end
+@if responce is 2 then do
+        @begin
+        @datasave tlrelate.idf `p24 1
+        @end
+@if responce is 3 then do
+        @begin
+        @datasave tlrelate.idf `p24 2
+        @end
+@if responce is 4 then do
+        @begin
+        @datasave tlrelate.idf `p24 3
+        @end
+@do goto startg
+
+@#RELATIONS
+@if `p21 is 0 then `s06 is `r0`8NONE
+@if `p21 is 1 then `s06 is `r0`5PEACE
+@if `p21 is 2 then `s06 is `r0`$ALLIES
+@if `p21 is 3 then `s06 is `r0`@WAR
+
+@#MEMTABLE
+@do `p40 is 0
+@do move 1 1
+@clear screen
+@readfile tltname`p29.dat
+`s04
+@show
+                     `r0  `r1 `@Team `s04 `@Members `r0
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@label members2
+@do write
+³                         ³                         ³                        ³`\
+@do `p40 + 1
+@if `p40 < 15 then goto members2
+@do write
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ`\
+
+@#MEMBERS
+@do `p41 is 0
+@do `p42 is 0
+@routine MEMTABLE
+@do `p25 is 0
+@do `p28 is 0
+@do `p40 is 2
+@do `p41 is 2
+@label MEMBERS1
+@do `p28 + 1
+@DO `p25 IS DELETED `p28
+@if `p25 is 1 then do
+        @begin
+        @datasave tlmember.idf `p28 0
+        @end
+@dataload tlmember.idf `p28 `p27
+@if `p27 is `p29 then do
+        @begin
+        @if `p42 is 15 then `p40 is 28
+        @if `p42 is 31 then `p40 is 54
+        @if `p42 is 46 then do
+                @begin
+                @do `p40 is 2
+                @do `p41 is 2
+                @key bottom
+                @routine memtable
+                @end
+        @do `p41 + 1
+        @do `s03 is getname `p28
+        @do move `p40 `p41
+        @do `p42 + 1
+        @do write
+`%`s03
+        @end
+
+@if `p28 is &totalaccounts then do
+        @begin
+        @readfile tlhouse`p29.dat
+`p20
+        @if `p20 is &playernum then goto MEMOPTION
+        @do move 30 19
+        @do write
+`r1 `@TOTAL MEMBERS: `p42 `r0
+        @key bottom
+        @do goto startg
+        @end
+@do goto MEMBERS1
+
+@#MEMOPTION
+; Only TeamLeader should access these options.
+@do move 50 19
+@do write
+`r1 `@TOTAL MEMBERS: `p42 `r0
+@do move 10 19
+@do `v01 is 1
+@choice
+`%Do Nothing
+`4Kick Someone
+`@Ban Someone
+`7View BAN list
+@if responce is 1 then goto startg
+@if responce is 4 then goto VIEWBANS
+@CLEARBLOCK 19 23
+@do move 10 19
+@CHOOSEPLAYER `p20
+@datasave tlmember.idf `p20 0
+@routine LOCATION
+@readfile tltname`p29.dat
+`s01
+@if responce is 2 then do
+        @begin
+        @writefile mail\mail`p20.dat
+  `0Team `s01 `0Message:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ `%You have been KICKED from TEAM `s01
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+        @end
+@if responce is 3 then do
+        @begin
+        @datasave tlban`p29.idf `p20 1
+        @writefile mail\mail`p20.dat
+  `0Team `s01 `0Message:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ `%You have been BAN from TEAM `s01
+ `%Do not attempt to return or you will be hunted down.
+ `%If you wish to plea for re-entry, you must contact the
+ `%Team Leader.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+        @end
+@do goto startg
+
+@#BANNED
+@do move 1 1
+@clear screen
+@run FIGHTDRAG
+
+@#FIGHTGUARD
+; for now just say this
+@do saybar
+`$TeamGuard: `%what are you doing in here?
+@drawmap
+@update
+
+@#VIEWBANS
+@routine LOCATION
+@do `p41 is 0
+@do `p42 is 0
+@routine MEMTABLE
+@do move 1 1
+@readfile tltname`p29.dat
+`s04
+@do write
+                     `r0  `r1 `@Team `s04 `@BANS `r0                            `%
+@do `p25 is 0
+@do `p28 is 0
+@do `p40 is 2
+@do `p41 is 2
+@label VIEWBANS2
+@do `p28 + 1
+@DO `p25 IS DELETED `p28
+@if `p25 is 1 then do
+        @begin
+        @datasave tlban`p29.idf `p28 0
+        @end
+@dataload tlban`p29.idf `p28 `p27
+@if `p27 > 0 then do
+        @begin
+        @if `p42 is 15 then `p40 is 28
+        @if `p42 is 31 then `p40 is 54
+        @if `p42 is 46 then do
+                @begin
+                @do `p40 is 2
+                @do `p41 is 2
+                @key bottom
+                @routine memtable
+                @end
+        @do `p41 + 1
+        @do `s03 is getname `p28
+        @do move `p40 `p41
+        @do `p42 + 1
+        @do write
+`%`s03
+        @end
+
+@if `p28 is &totalaccounts then do
+        @begin
+        @do move 30 19
+        @do write
+`r1 `@TOTAL BANS: `p42 `r0
+        @do move 2 19
+        @do `v01 is 1
+        @choice
+`%Do Nothing
+`3Un-BAN someone
+`#Un-BAN everyone
+        @if responce is 1 then goto startg
+        @if responce is 3 then do
+                @begin
+                @do delete tlban`p29.idf
+                @do goto startg
+                @end
+        @if responce is 2 then do
+                @begin
+                @CLEARBLOCK 19 23
+                @do move 10 19
+                @CHOOSEPLAYER `p20
+                @datasave tlban`p29.idf `p20 0
+                @routine LOCATION
+                @writefile mail\mail`p20.dat
+  `0Team `s04 `0Message:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ `%You have been REMOVED from the BAN list.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+                @end
+        @do goto startg
+        @end
+@do goto VIEWBANS2
+
+@#MAILTEAM
+@do `s01 is `x
+@do `s02 is `x
+@do `s03 is `x
+@do `s04 is `x
+@do `s05 is `x
+@do `s06 is `x
+@do `s07 is `x
+@do `s08 is `x
+@do `s09 is `x
+@do `s10 is `x
+@do write
+`\`\`%Write your message, max of 9 lines. "-" to end`\
+@do write
+`81:`x
+@DO READSTRING 70 - `s02
+@if `s02 is - then goto startg
+@do write
+`\`82:`x
+@DO READSTRING 70 - `s03
+@if `s03 is - then goto writeit
+@do write
+`\`83:`x
+@DO READSTRING 70 - `s04
+@if `s04 is - then goto writeit
+@do write
+`\`84:`x
+@DO READSTRING 70 - `s05
+@if `s05 is - then goto writeit
+@do write
+`\`85:`x
+@DO READSTRING 70 - `s06
+@if `s06 is - then goto writeit
+@do write
+`\`86:`x
+@DO READSTRING 70 - `s07
+@if `s07 is - then goto writeit
+@do write
+`\`87:`x
+@DO READSTRING 70 - `s08
+@if `s08 is - then goto writeit
+@do write
+`\`88:`x
+@DO READSTRING 70 - `s09
+@if `s09 is - then goto writeit
+@do write
+`\`89:`x
+@DO READSTRING 70 - `s10
+@label WRITEIT
+@do `p25 is 0
+@do `p28 is 0
+@do `p40 is 2
+@do `p41 is 2
+@label MAIL2
+@do `p28 + 1
+@DO `p25 IS DELETED `p28
+@if `p25 is 1 then do
+        @begin
+        @datasave tlmember.idf `p28 0
+        @end
+@dataload tlmember.idf `p28 `p27
+@if `p27 is `p29 then do
+        @begin
+        @do `s01 is @MESSAGE`x`N
+        @writefile mail\mail`p28.dat
+`s01
+        @readfile tltname`p29.dat
+`s01
+        @writefile mail\mail`p28.dat
+  `0TeamLord `s01 `0Reports:
+`s02        
+        @if `s03 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s03
+        @if `s04 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s04
+        @if `s05 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s05
+        @if `s06 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s06
+        @if `s07 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s07
+        @if `s08 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s08 
+        @if `s09 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s09
+        @if `s10 is - then goto endwrite
+        @writefile mail\mail`p28.dat
+`s10
+@label endwrite
+        @do `s01 is @DONE
+        @writefile mail\mail`p28.dat
+`s01
+        @do `s01 is @REPLY`x&playernum
+        @writefile mail\mail`p28.dat
+`s01
+        @end
+             
+@if `p28 is &totalaccounts then do
+        @begin
+        @do goto startg
+        @end
+@do goto mail2
+
+@#done

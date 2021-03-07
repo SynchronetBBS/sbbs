@@ -1,0 +1,531 @@
+; Script file KNUCKLE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE start 000000538
+@DECLARE knuckle 000000575
+@DECLARE rollem 000002208
+@DECLARE checkum 000002447
+@DECLARE knucklehelp 000003457
+@DECLARE othergames 000003802
+@DECLARE ogames 000003817
+@DECLARE noturnz 000004332
+@DECLARE game2 000004547
+@DECLARE g2 000004558
+@DECLARE roll2 000006159
+@DECLARE check2 000006396
+@DECLARE timehelp 000007373
+@DECLARE nogame 000008077
+@DECLARE nomore 000008332
+@NOCHECK
+; End of .REF index
+
+@#start
+@do moveback
+@busy
+@label knuckle
+@if `p33 is 0 then do
+  @begin
+  @do goto nogame
+  @end
+@do `v01 is 1
+@do `p28 is 0
+@do `p30 is money
+@show
+`r0`c `r1 `%A Game Of Knucklebones `r0
+
+   `0How much would you like to bet?
+   `2(you have `$$`p30 `2and `0`p33 `2gambles left)
+
+@do write
+`x`x
+@choice
+Bet $5
+Bet $10
+Bet $20
+Bet $50
+Bet $100
+Ask for help on Knucklebones
+Inquire about other games
+Leave
+@if responce is 8 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 5
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto rollem
+  @end
+
+@if responce is 2 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 10
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto rollem
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 20
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto rollem
+  @end
+
+@if responce is 4 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 50
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto rollem
+  @end
+
+@if responce is 5 then do
+  @begin
+  @do `p33 - 1
+  @do `p28 is 100
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto rollem
+  @end
+
+@if responce is 6 then do
+  @begin
+  @do goto knucklehelp
+  @end
+
+@if responce is 7 then do
+  @begin
+  @do goto othergames
+  @end
+
+@#rollem
+@if 1 is 1 then do
+  @begin
+  @do `p20 random 6 1
+  @do `p21 random 6 1
+  @do `p22 + `p20
+  @do `p22 + `p21
+  @do `p24 random 6 1
+  @do `p25 random 6 1
+  @do `p26 + `p24
+  @do `p26 + `p25
+  @do goto checkum
+  @end
+
+@#checkum
+@if `p22 > `p26 then do
+  @begin
+  @show
+`r0`c
+`\`\
+  `0You Roll:
+
+  `0Roll 1: `%`p20
+  `0Roll 2: `%`p21
+
+  `0Total : `%`p22
+`k
+  `0House Rolls:
+
+  `0Roll 1: `%`p24
+  `0Roll 2: `%`p25
+
+  `0Total : `%`p26
+
+`k
+  `0You Win!
+`k
+  @do money + `p28
+  @do goto start
+  @end
+
+@if `p22 < `p26 then do
+  @begin
+  @show
+`r0`c
+`\`\
+  `0You Roll:
+
+  `0Roll 1: `%`p20
+  `0Roll 2: `%`p21
+
+  `0Total : `%`p22
+`k
+  `0House Rolls:
+
+  `0Roll 1: `%`p24
+  `0Roll 2: `%`p25
+
+  `0Total : `%`p26
+
+`k
+  `0You Lose!
+`k
+  @do money - `p28
+  @do goto start
+  @end
+
+@if `p22 = `p26 then do
+  @begin
+  @show
+`r0`c
+`\`\
+  `0You Roll:
+
+  `0Roll 1: `%`p20
+  `0Roll 2: `%`p21
+
+  `0Total : `%`p22
+
+  `0House Rolls:
+
+  `0Roll 1: `%`p24
+  `0Roll 2: `%`p25
+
+  `0Total : `%`p26
+
+`k
+  `0It's A Tie! Try Again!
+`k
+  @do `p28 is 5
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto rollem
+  @end
+
+@#knucklehelp
+@show
+`r0`c `r1 `%Help on Knucklebones `r0
+
+   `0Knucklebones is a craps-type game. The object is to score the highest
+   total on two dice. If you get the higher number, you win your bet. If
+   the House gets the higher number, you lose your bet. If you tie, you get
+   to throw the dice again.
+
+`k
+@do goto knuckle
+
+
+@#othergames
+@label ogames
+@do `v01 is 1
+@show
+`r0`c `r1 Games Of Chance `r0
+
+  `0Which game would you like to play?
+
+@do write
+`x`x
+@choice
+3 Shells
+Knucklebones for Turns
+Nevermind
+Leave
+@if responce is 3 then do
+  @begin
+  @do goto knuckle
+  @end
+  
+@if responce is 4 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 1 then do
+  @begin
+  @run game3 in shell.ref
+  @end
+
+@if responce is 2 then do
+  @begin
+  @if `v05 is 0 then goto noturnz
+  @do goto game2
+  @end
+
+@#noturnz
+@show
+`r0`c `r1 `%Our Apologies `r0
+
+  `0I'm sorry, but it looks like your sysop has set LORD 2 to
+  `%Unlimited turns`0. Therefore, this game will do you no good.
+
+  Sorry.
+
+`k
+@do goto ogames
+
+@#game2
+@label g2
+@do `v01 is 1
+@do `p28 is 0
+@do `p30 is money
+@show
+`r0`c `r1 `%Gambling for Turns `r0
+
+   `0How much would you like to bet?
+   `2(you have `$$`p30 `2and `0`p33 `2gambles left)
+
+@do write
+`x`x
+@choice
+Bet $5
+Bet $10
+Bet $20
+Bet $50
+Bet $100
+Ask for help on Knucklebones
+Return to the Other Games Menu
+Leave
+@if responce is 8 then do
+  @begin
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if responce is 7 then goto othergames
+
+@if responce is 6 then goto timehelp
+
+@if responce is 1 then do
+  @begin
+  @do `p33 - 1
+  @do money - 5
+  @do `p28 is 10
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto roll2
+  @end
+
+@if responce is 2 then do
+  @begin
+  @do `p33 - 1
+  @do money - 10
+  @do `p28 is 30
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto roll2
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do `p33 - 1
+  @do money - 20
+  @do `p28 is 50
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto roll2
+  @end
+
+@if responce is 4 then do
+  @begin
+  @do `p33 - 1
+  @do money - 50
+  @do `p28 is 100
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto roll2
+  @end
+
+@if responce is 5 then do
+  @begin
+  @do `p33 - 1
+  @do money - 100
+  @do `p28 is 350
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto roll2
+  @end
+
+@#roll2
+@if 1 is 1 then do
+  @begin
+  @do `p20 random 6 1
+  @do `p21 random 6 1
+  @do `p22 + `p20
+  @do `p22 + `p21
+  @do `p24 random 6 1
+  @do `p25 random 6 1
+  @do `p26 + `p24
+  @do `p26 + `p25
+  @do goto check2
+  @end
+
+@#check2
+@if `p22 > `p26 then do
+  @begin
+  @show
+`r0`c
+`\`\
+  `0You Roll:
+
+  `0Roll 1: `%`p20
+  `0Roll 2: `%`p21
+
+  `0Total : `%`p22
+`k
+  `0House Rolls:
+
+  `0Roll 1: `%`p24
+  `0Roll 2: `%`p25
+
+  `0Total : `%`p26
+
+`k
+  `0You Win `%`p28 `0Turns!
+`k
+  @do `p11 + `p28
+  @do goto g2
+  @end
+
+@if `p22 < `p26 then do
+  @begin
+  @show
+`r0`c
+`\`\
+  `0You Roll:
+
+  `0Roll 1: `%`p20
+  `0Roll 2: `%`p21
+
+  `0Total : `%`p22
+`k
+  `0House Rolls:
+
+  `0Roll 1: `%`p24
+  `0Roll 2: `%`p25
+
+  `0Total : `%`p26
+
+`k
+  `0You Lose!
+`k
+  @do goto g2
+  @end
+
+@if `p22 = `p26 then do
+  @begin
+  @show
+`r0`c
+`\`\
+  `0You Roll:
+
+  `0Roll 1: `%`p20
+  `0Roll 2: `%`p21
+
+  `0Total : `%`p22
+
+  `0House Rolls:
+
+  `0Roll 1: `%`p24
+  `0Roll 2: `%`p25
+
+  `0Total : `%`p26
+
+`k
+  `0It's A Tie! Try Again!
+`k
+  @do `p20 is 0
+  @do `p21 is 0
+  @do `p22 is 0
+  @do `p24 is 0
+  @do `p25 is 0
+  @do `p26 is 0
+  @do goto roll2
+  @end
+
+@#timehelp
+@show
+`r0`c `r1 `%Help On Knucklebones For Time `r0
+
+   `0Knucklebones is a craps-type game. The object is to score the highest
+   total on two dice. If you get the higher number, you win your bet. If
+   the House gets the higher number, you lose your bet. If you tie, you get
+   to throw the dice again.
+
+`k
+  
+   `0Here's the list of how many turns you can win:
+
+             `0Bet            Turns Won
+             `0-`2=`0-            `0-`2=`0-`2=`0-`2=`0-`2=`0-
+             `$$5                 10
+             `$$10                30
+             `$$20                50
+             `$$50               100
+             `$$100              350
+
+`k
+
+@do goto g2
+
+@#nogame
+@show
+`r0`c `r1 `%Our Apologies `r0
+
+   `0"I'm sorry, but we can't allow you to gameble anymore today," `2a
+   casino employee tells you.
+
+   Looks like you're out of gambles. You'll have to come back tomorrow.
+
+`k
+@drawmap
+@update
+
+@#nomore

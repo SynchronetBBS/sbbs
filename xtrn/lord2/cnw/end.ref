@@ -1,0 +1,48 @@
+; Script file END.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE monster1 000000180
+@DECLARE fight 000000708
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Death Angel
+;string said when you see him
+Oh dear god, help me now! ITS DEATH!!!
+;power move kill string
+Even an angel can be bad.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Uses his sickle|120
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+88
+;gold reward
+100
+;exerience
+500
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+ 
+ 
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do goto monster1

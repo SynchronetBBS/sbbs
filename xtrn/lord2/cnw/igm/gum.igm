@@ -1,0 +1,68 @@
+
+                Gumtown by Gum-Lass V2.09
+                
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.01a
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (7)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM GUM.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `1G`2u`3m`4t`5o`6w`7n `2by `1G`2u`3m`4-`5L`6a`7s`8s `0V2.09
+replacescreen: 465 1 show
+
+replacescreen: 107 2 noshow
+
+replacescreen: 106 3 noshow
+
+replacescreen: 105 4 noshow
+
+replacescreen: 104 5 noshow
+
+replacescreen: 103 6 noshow
+
+replacescreen: 102 7 noshow
+
+replacescreen: 101 8 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+            `1G`2u`3m`4t`5o`6w`7n `2by `1G`2u`3m`4-`5L`6a`7s`8s
+            `4+`2An entire new town west of Sosen villiage
+            `4+`2Spice up that dull trip.
+            `4+`2Bet on Horses
+            `4+`2Buy `1G`2u`3m`4-`5L`6a`7s`8s Castle.
+            `4+`2Be the envy of friends and aquaintences.........
+            `4+`2All new, evil and scary enemies (all very tough...)
+            `4+`2Really cool private rooms.
+            `4+`2An absolute goldmine.
+            `4+`2!!!!!!Mud Wrestling!!!!!!!!
+`4NEW+
+            `4+`2Fight a God and enslave him
+            `4+`2Get mugged by the `3Gumtown Bandit`2. Then get even!
+            `4+`2Complain to the Mayor.
+            `4+`2Hitmen-`3hire 'em, join 'em love 'em
+            `4+`2Help Jon Piere get his Waldorf Salad!
+            `4+`$A Couple of Bug Fixes: 
+                            -Fixed the infamous bank bug (Thanks Bobby Queen)
+                            -Fixed the mudwrestling bug (Thanks Bobby Queen)
+                            -Fixed the "Negative Money Bug" (It Sucked)   
+

@@ -1,0 +1,196 @@
+; Script file BLKSHEEP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE start 000000268
+@DECLARE blacksheep 000000284
+@DECLARE gtreesheep 000001790
+@DECLARE thebook 000004708
+@DECLARE done 000005242
+@NOCHECK
+; End of .REF index
+
+@#START
+
+@#BlackSheep
+;At the 'hidden Dark Forest'
+
+ @do moveback
+ @busy
+@do `v01 is 1
+
+@if bitcheck `t01 7 1 then do
+  @begin
+   @do SAYBAR
+   The Black Sheep doesn't seem to be interested in you.
+  @closescript
+  @end
+
+@show
+`r0`c  `%`r1 Black Sheep of the Family `r0
+
+You wonder why this black sheep is standing off by itself?
+The sheep eyes you warily as you approach.  "`0Baa-aahh!!`%"
+
+@do write
+`x`x
+@choice
+Say hello to it.
+Ask it why sheep are so rude and anti-social.
+Try to skin the thing. (That black wool must be worth something...)
+@if response is 1 then do
+  @begin
+  @show
+`\`\  The sheep looks at you and says: "`7Baaaa-aaah!!`%"
+`\`k
+  @end
+
+@if response is 3 then do
+  @begin
+  @show
+`\`\ "`7I might be able to make a few gold pieces with this thing's skin!`%" you think, as you pull out your weapon and head toward it.
+`\`\ The sheep's eyes grow wide as it realizes what you're up to, and it turns and bites you on the ass!
+`\`k
+  @end
+
+@if response is 2 then do
+  @begin
+  @show
+`\`\ "`$Hey!  Why won't any of those stupid sheep talk to me?!`%" you ask indignantly.
+`\`\ "`9Baaa-aa...sheep only speak to those who know the paaa-aassword!`%" it bleats.
+`\`\ The sheep looks over at the white sheep, playing merrily together, and scowls. (You didn't know a sheep could DO that!)
+`\`\ "`9Listen caaa-aarefully.  The paaa-aassword is `4BAH RAM EWE`9!`%"
+`\`k
+  @do `p20 is 1
+  @datasave blackshp.idf &playernum `p20
+  @end
+
+@drawmap
+@update
+
+@#GTreeSheep
+@dataload blackshp.idf &playernum `p20
+@do moveback
+
+@if `p20 is 0 then do
+  @begin
+  @do SAYBAR
+   "`9Baaaa-aa!!`%"  Hmm..guess it has nothing to say right now...
+  @closescript
+  @end
+
+@if `p20 is 2 then do
+  @begin
+  @do SAYBAR
+   It tries to bite you!  Looks like it doesn't like you anymore.  
+  @do moveback
+  @closescript
+  @end
+
+@do moveback
+@busy
+@do `v01 is 1
+
+@if `p20 is 1 then do
+  @begin
+  @show
+`r0`c  `%`r1 The Royal Sheep `r0
+`\ `%You look directly at the sheep and say "`4BAH RAM EWE!`%"
+`x
+`\`\ "`9You know...`%" the sheep's eyes widen as it wonders how you learned the secret.
+`\ "`9What would you like to talk about, human?`%"
+ It looks at you with curious interest.
+`\
+
+  @do write
+  `x`x
+  @choice
+  Talk about the weather.
+  Ask it the most important question you can think of.
+  Ask about Turgon.
+  Ask about Barak.
+@if response is 1 then do
+    @begin
+    @show
+`\`\ "`0Nice weather we're having, ain't it?`%" you say, trying to sound intelligent.
+`\`\ The sheep stares blankly at you, then replies:
+ "`9Uh..yeaaa-aah.  Sure.  Lovely.`%" and tries to leave quickly.
+`k
+    @end
+
+  @if response is 2 then do
+    @begin
+    @show
+`\`\ "`0I've just gotta know...does all that wool make you itch??`%"
+`\`\ The sheep looks at you like you just turned green with orange polka-dots.
+ "`9Uh..naa-aaht really..`%"
+`k
+    @end
+
+  @if response is 3 then do
+    @begin
+    @show
+`\`\ "`0What do you know about Turgon?`%" you ask the sheep.
+`\`\ It looks startled, then says:
+ "`9Turgon?  I haaa-aaven't seen him in YEARS!  He used to come here every day and give us aaa-aall caaa-aarrots.`%"
+`k
+    @end
+
+  @if response is 4 then do
+    @begin
+    @show
+`\`\ "`0Do you know who Barak is?`%" you ask innocently.
+`\`\ The sheep scowls (somehow, that sight makes you uneasy) and spits. 
+`\ "`9Baaa-aarak?!  That humaa-aan frightens us.  He comes in here aaa-aand
+ tries to do baaa-aad things to us!`%" 
+`k
+`\`\ You can't help but smile.  "`0You're kidding!  He told the townspeople
+ that Turgon was the one who did that!`%" 
+`\`\ "`9When he isn't harraaa-aassing us, he sits under those trees over there,
+ aaa-aand writes in a book, or something.`%" 
+`\`\ Well, now.. that's interesting!  You decide you'd like to find out what
+ ol' Barak's been writing about! 
+`\ "`0Do you know what he writes?`%" 
+`\`\ The sheep shakes its head and says, "`9No...but I think he hides his book
+ around there..`%" 
+`\`\ You make a note to check out those trees soon.
+ "`0Thanks alot.  I'd love to hang around and chat some more, but I have to
+`\ get home.  We're having lamb-chops tonight!`%" 
+`\`\ The sheep bleats in horror, and tries to bite you!  You decide you'd
+ better leave quickly.
+`k
+    @do `p20 is 2
+    @datasave blackshp.idf &playernum `p20
+    @do moveback
+    @end
+
+@end
+
+@drawmap
+@update
+      
+@#TheBook
+ @do moveback
+ @busy
+
+@if bitcheck `t01 5 1 then do
+  @begin
+  @do saybar
+    There's nothing here but a hollow tree.
+  @closescript
+  @end
+
+@if bitcheck `t01 5 0 then do
+    @begin
+    @show
+`r0`c  `%`r1 The Hidden Book `r0
+`\ After searching for awhile, you discover a small bundle in a hollow
+`\ in one of the trees!  You unwrap the covering, and realize you've
+`\ found `4Barak's secret box!!`2
+`\ (You discover `$1500 `%gold pieces!!  WOOHOO!)
+`k
+    @do money + 1500
+    @end
+
+@drawmap
+@update
+
+@#Done

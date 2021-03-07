@@ -1,0 +1,227 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                  -=-  Quester  -=-
+
+                              A Lord II InterGame Module
+                               Written By: Peter Jackson
+                                   A.K.A. ... oDiN
+                                 BBS - 706-613-3577
+                               Internet-Odin706@aol.com
+
+                                    Version 2.01
+                               (c)1997 AEsir Software
+
+
+                
+
+
+
+
+      FILES INCLUDED:
+
+      QUESTER.REF  <- Main REF 
+      MAJIC.REF    <- Sysop editable REF
+      BAT.REF      <- Sysop editable REF
+      SPIDER.REF   <- Sysop editable REF
+      UNDEAD.REF   <- Sysop editable REF
+      GOBLIN.REF   <- Sysop editable REF
+      FILE_ID.DIZ  <- Used by BBS's
+      DONATE.DOC   <- Info on donating.
+      QUESTER.DOC  <- Setting it up and general info
+      QBUGRPT.DOC  <- Report flaws to me 
+      
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Index ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+                      Part 1 -=-=-  Introduction and description
+                      Part 2 -=-=-  Setting it up 
+                      Part 3 -=-=-  Acknowledgements
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Introduction ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+
+This IGM was written for use with LORD II version 1.01a+ ONLY it will not
+work with lower versions. This is not an IGM that is too giving, but
+can be altered by you to your specifications.
+
+The first time I uploaded this IGM to the Official Lord II web site the
+review was not very good. Because my IGM would overwrite a handful of
+other IGM's. So I changed it and fixed a few bugs. Now it will be
+compatible with other IGM's. :)
+
+Quester allows your players to complete only 1 quest per day. The quest
+involves fighting your way through a bunch of monsters to a "King" monster
+which once defeated the quest will be completed. There is a reward at the
+end of the quest only if the "King" monster has been defeated. 
+
+There are 5 different quest screens in the game. 1 of these 5 screens is
+chosen randomly and the quest begins.
+
+After the release of Odin's Keep V2.00  I was inspired by a friend to
+write another IGM. The inspiration came from a program that he had
+written for Legend of the Red Dragon. This program allowed the sysop
+to set certain variables that would control the amount of "prizes"
+that the player recieved from any IGM. Thus fixing the buggy
+IGM problem that many of us sysop's have faced.
+
+So I set out to make an IGM for LORD II that the sysop could control, to
+suit his/her own game.
+
+Quester uses 5 seperate REF files that can be edited by the sysop, to adjust
+the level of difficulty for the players.
+
+They are as follows :
+
+SPIDER.REF
+BAT.REF
+MAJIC.REF
+UNDEAD.REF
+GOBLIN.REF
+
+All files above are neccessary to play the game and you must be careful 
+when editing them. I would suggest copying them to a seperate directory
+before you edit. They are easy to understand and edit. Be sure not to
+change the main "flow" of the ref. For instance you wouldn't want to change
+a spider in spider.ref to an elephant or something. :>
+Stick to editing the values such as Defense, Weapon Strength, etc. of the
+monsters to adjust the difficulty. You don't neccessarily have to edit them.
+
+New in Version 2.00
+
+I added a swimming pond, and moved the IGM screens around to make this
+IGM compatible with other Lord II Igm's. Also did some work on the routines
+and artwork. 
+
+New in Version 2.01
+
+Fixed bug that would allow players to blow their flute inside Quester
+and complete an infinite amount of quests. Thanks to Gangster of Love for
+this Bug fix.
+
+Above all have fun and enjoy it. I know your players will !
+
+Try my other IGM's for LORD 2
+
+ * Odin's Keep V2.01 - Own the legendary Keep.
+   Comes fully stocked with your own pet dragon, healer, Swimming Pool
+   and much more.  New this version - Bar with male and female companions,
+   weapons and armour dealers, etc. Redesigned Artwork + bug fix 
+ 
+ * Thor V2.01 - Works with Registered or Unregistered LordII Ver 101a+
+   If player's kill stat 5 or above, Thor will give 1 of 4 blessings.
+   "Blessings" include Muscle, Dodge, Charm and HitPoints. Special code
+   limits one visit per day.
+
+ * COMING SOON *
+
+                Loki's Inn & Valhalla Igm's for Lord2
+                 
+You can get these off my BBS or just E-mail me and I'll send them to you.
+
+You can also get them off my website.
+http://members.aol.com/odin706/title.html
+
+
+Let me know what you think about Quester. Drop a line to me at...
+
+Odin706@aol.com
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Setup ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Setup is simple.
+
+****IMPORTANT*****
+If you have installed Quester Version 2.00
+Before you unpack the new Quester.zip be sure to remove the old version
+of Quester by typing IGM QUESTER.IGM
+******************
+
+Install will replace 7 sections on the game map. Likewise Uninstall
+will restore these sections to their original state.
+
+******If you have more than one IGM installed **************************
+
+Edit QUESTER.IGM to find out which areas on the world map
+will be affected. Thereby you won't overwrite another IGM or Visa/Versa.
+
+*************************************************************************
+
+To Install :>
+
+Copy and unpack the contents of QUEST201.ZIP into a empty directory.
+Then Copy and unpack Quester.zip into your LORD II directory.
+
+Type IGM QUESTER.IGM
+This will install Quester into the game.
+
+To Uninstall :<
+
+Inside your Lord II directory 
+Type IGM QUESTER.IGM
+This will successfully uninstall Quester from your game.
+
+******IMPORTANT*********************************************************
+
+This IGM also generates (5) .idf files to keep track of players last time
+on and such.
+
+#1 - Quest.idf
+#2 - Quest1.idf
+#3 - Quest2.idf
+#4 - Gira.idf
+#5 - Swimb.idf
+
+******BE SURE NOT TO DELETE THESE FILES!********************************
+
+To test it out, from GreenTree go north towards Porttown at the 
+pawn shop (North GreenTree) screen, go west to (Forest with small 
+Mountain) screen, go North to (Tiny Lake) screen. You're there !
+  
+
+
+I will not be held responsible for any mishap caused by using this IGM.
+If you find a bug let me know about it, take a little time and fill
+out the enclosed bugrpt.doc .
+
+
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ Acknowledgements ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+Thanks go out to :
+
+Seth Able Robinson, the creator of LORD II, for making the game.
+
+Calypso, For creating Audacity BBS, the best BBS software I've ever had 
+the pleasure to use.
+
+Juan Diaz, thanks for helping me out with the spelling and routines. 
+
+Gangster of Love, for the inspiration and the bug fix
+
+
+
+
+
+
+
+                                  EOF

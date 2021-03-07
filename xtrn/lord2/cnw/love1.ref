@@ -1,0 +1,212 @@
+; Script file LOVE1.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE date1sign 000000752
+@DECLARE date1 000000852
+@DECLARE date1c 000001212
+@DECLARE date1d 000001373
+@DECLARE takehome 000001615
+@DECLARE date1b 000001746
+@DECLARE hotspot 000002072
+@DECLARE grassspot 000002233
+@DECLARE beach 000002390
+@DECLARE encounter 000002553
+@DECLARE yesdoit 000004323
+@DECLARE nonotnow 000005338
+@DECLARE nomore 000006266
+@NOCHECK
+; End of .REF index
+
+;   LOVERS
+;
+; This is a LoRD2: CNW production.
+;    http://greenmachienbbs.com/lord2/
+;
+; LoRD2 Mailing list (join this to find new versions of CNW)
+;    http://greenmachinebbs.com/lord2/maillist.htm
+;
+; NOTES:
+;       NPC details in TALK.REF
+;
+;
+@#date1sign
+@busy
+@do saybar
+`$Makeout Viewpoint: Couples ONLY!
+@do moveback
+@end
+@closescript
+
+@#date1
+@busy
+@if `p71 > 0 then do
+        @begin
+        @if bitcheck `t51 7 1 then goto date1d
+        @if bitcheck `t50 7 1 then goto takehome
+        @if bitcheck `t50 1 1 then goto date1b
+        @do goto date1c
+        @end
+@do saybar
+`4Oh, I'm all alone, I can't bear it being up there without someone. :(
+@do moveback
+@closescript
+
+@label date1c
+@do `p26 is `p71
+@routine getname in npcname2.ref
+@do saybar
+`$`s01: `$Don't even think about it, thats not why I'm with you.
+@closescript
+
+@label date1d
+@do `p26 is `p71
+@routine getname in npcname2.ref
+@do saybar
+`$`s01: `$Didn't we already go out today? Thats enough for now dear.
+@do quebar
+`$`s01: `$Thanks for thinking about us, you're so kind to me.
+@closescript
+
+@label takehome
+@do `p26 is `p71
+@routine getname in npcname2.ref
+@do saybar
+`$`s01: `$Take me home already!!
+@closescript
+
+
+@label date1b
+@do `p26 is `p71
+@routine getname in npcname2.ref
+@do saybar
+`$`s01: `%This is so romantic of you. Thanks for taking me here.
+@bitset `t50 1 1
+@dataload npc/npc-`p70.idf &playernum `p20
+@do `p20 + 3
+@if `p20 > 200 then `p20 is 200
+@datasave npc/npc-`p70.idf &playernum `p20
+@do `p08 + 2
+@closescript
+
+
+@#hotspot
+@do `t68 is 4
+@if bitcheck `t50 7 1 then goto date1d
+@if bitcheck `t51 7 1 then goto date1d
+@routine locate in locate.ref
+@do goto encounter
+
+@#grassspot
+@do `t68 is 3
+@if bitcheck `t50 7 1 then goto date1d
+@if bitcheck `t51 7 1 then goto date1d
+@routine locate in locate.ref
+@do goto encounter
+
+@#beach
+@do `t68 is 1
+@if bitcheck `t50 7 1 then goto date1d
+@if bitcheck `t51 7 1 then goto date1d
+@routine locate in locate.ref
+@do goto encounter
+
+
+@#encounter
+@do `p26 is `p71
+@routine getname in npcname2.ref
+@dataload npc\npcreqc5.idf `p71 `p21         ;<-- check if can have a lay
+@dataload npc\npc-`p71.idf &playernum `p26   ;<--current charms with npc
+;@dataload npc\laynp`p71.idf &playernum `p22  ;<--lay history of NPC with which players
+;@dataload npc\laypn&playernum.idf `p71 `p23  ;<--lay history of players with which npcs
+;@dataload npc\npcgreed.idf `p71 `p25         ;<--greedy? how much 0-255, 0=not at all 255=very greedy
+;@dataload npc\npcslut.idf `p71 `p27          ;<--pay to sleep with me number (slut value) (this one is really mean) hehe
+
+@if `p26 > `p21 then do  <--is good for a lay!
+        @begin
+        @do saybar
+`$Do a quicky (`%Q`$) or try a long passionate encounter (`%P`$)`x`%(N=None)`x`%[N/q/p]: 
+        @DO READSPECIAL `s02 NQP
+        @if `s02 is N then do
+                @begin
+                @closescript
+                @end
+        @if `s02 is P then do
+                @begin
+                @run startsex in npc-sex.ref
+                @end
+        @if `s02 is Q then do
+                @begin
+                @do saybar
+`$`N: `%You try your quick moves to feel up `s01. `k
+                @do `p20 random 3 1
+                @if `p20 is 1 then do
+                        @begin
+                        @if bitcheck `t51 5 1 then do
+                                @begin
+                                @dataload npc\npcslut.idf `p71 `p27
+                                @if `p27 > 100 then goto yesdoit
+                                @do `p20 random 3 1
+                                @if `p20 is 1 then goto yesdoit
+                                @do goto nonotnow
+                                @end
+                        @label yesdoit
+                        @do saybar
+`$`s01: `%oohh, baby, this is kinky in the `s10, lets get it on! `k
+                        @do `p34 + 1
+                        @do quebar
+`%After about 2 minutes you get off `s01 and return to your travels. `k
+                        @bitset `t51 5 1
+                        @do `p20 random 3 1
+                        @if `p20 is 1 then do
+                                @begin
+                                @bitset `t50 7 1
+                                @bitset `t51 7 1
+                                @end
+                        @routine VD in talk.ref                       
+                        @dataload npc\npc-`p71.idf &playernum `p26
+                        @do `p26 + `p20
+                        @if `p26 > 200000 then `p26 is 200000
+                        @datasave npc/npc-`p71.idf &playernum `p26
+                        @do `p08 + 2
+                        @closescript
+                        @end
+                @label nonotnow
+                @do saybar
+`$`s01: `%oohh, baby, sorry, i'm not in that sort of mode right now.`k
+                @closescript
+                @end
+        @end
+@do `p20 random 4 1
+@if `p20 is 1 then do
+        @begin
+        @do saybar
+`$`s01: `%I'm not ready for you yet.
+        @end
+@if `p20 is 2 then do
+        @begin
+        @do saybar
+`$`s01: `%You're moving too quickly for me.
+        @end
+@if `p20 is 3 then do
+        @begin
+        @do saybar
+`$`s01: `%What you trying to do with me? NO!
+        @do quebar
+`$`s01: `%Please take me home now.
+        @bitset `t50 7 1
+        @bitset `t51 7 1
+        @end
+@if `p20 is 4 then do
+        @begin
+        @do saybar
+`$`s01: `%Get lost, this isn't what i expected from you.
+        @do quebar
+`$`s01: `%Please take me home now.
+        @bitset `t50 7 1
+        @bitset `t51 7 1
+        @end
+@closescript
+@end
+@closescript
+
+@#NOMORE
+@closescript

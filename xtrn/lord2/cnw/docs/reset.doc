@@ -1,0 +1,74 @@
+Reset Ver. 1.07
+
+Changes from ver. 1.01 are cosmetic, no data will be lost
+in an upgrade.
+
+Change from ver. 1.02 Hydra reset accomodates players
+with seth codes in their name.
+
+Change from ver. 1.03, decreased the alignment change a bit.
+Left the code uncompiled so it can be sped up with the indexer.
+Made sure that I could find zero bugs.
+
+Change from version 1.04 is bugfix and added Mimsic Isle to idf reset.
+
+Change from 1.06 is a typo fix.
+
+To install, unzip in the lord2 directory and type "igm reset"
+(without the quotes) and press the enter key.
+
+If you are upgrading from an older version of reset, first type
+"igm reset",  press enter and then unzip the new version,
+then again type "igm reset", and press enter.
+
+                -=-=-=-=-=-=-=-
+
+Sysops, this IGM does nearly nothing in an unregistered
+game or in a new game, as it is aimed at players who have
+completed one or both major quests. This will never happen
+in an unregistered door and may take some time in a newly
+started game, so be patient!
+
+There is a file, resetidf.txt, that holds the names of some
+IDFs that will be reset when a player "resets" himself.
+You may add to this file, one filename per line,
+and have other IGMs reset for the player as well.
+(Do not add reset.idf, it holds the scoreboard.)
+
+NOTE:
+Do not change the first line of resetidf.txt.
+Do not put any blank lines in the file.
+Edit only with a text editor, such as window's notepad
+or qedit.
+
+
+Why reset?
+
+I finished both sides of the game and had done all the
+IGMs that I was able to get in. <grin>  I decided that
+I'd like to restart but didn't want to wait 15 days for
+my character to be deleted.  Mostly, I wanted another
+crack at the "Hydra" IGM.    <Vey nice IGM>
+
+I decided to write an IGM that would let winners start
+over and that would reset Fgrave and Hydra. While I was
+at it I provisioned for resetting other IGMs that used
+an IDF file to store whether they had been "done".
+
+I felt that some "nice" people might NEVER want to
+do the evil required to finish the dark side and so I
+allow them to reset as long as they have done the Koshi
+quest.   (I granted equal favour to the nasties.)
+
+A scoreboard is nice, it's good to keep a record of how
+many times one has won!
+
+A bonus for those desiring to play over and over is that
+retirees who visit their ancestors get to change their
+alignment by 6 up or 3 down per day, handy for the turnaround!
+
+Thanks for looking at reset,
+
+
+        jfw@ica.net     (Jim Wilson)
+

@@ -1,0 +1,125 @@
+; Script file HATE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE hate 000000320
+@DECLARE hatetop 000000336
+@NOCHECK
+; End of .REF index
+
+; Hate Mail .REF File for use with any LORD 2 game.
+; (c) 1997 ShroomTrip Software
+;
+;
+; CNW updated it for WAR game modes of LoRD2: CNW
+;
+@#hate
+@label hatetop
+@do `p21 is &totalaccounts
+@do `p30 random `p21 1
+@do `s02 is getname `p30
+@do `p20 is &totalaccounts
+@do `p29 random `p20 1
+@do `s01 is getname `p29
+@if `s01 equals `s02 then goto hatetop
+@if `s02 equals `s01 then goto hatetop
+@do `p25 random 10 1
+@if `p25 is 1 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0Dear `s02`0,
+    `0I think that you are a ninny, and you will die ny my hand!
+`yHAHAHAHAHAHAHA`0! What do ya say to that, ya loser?
+`x
+                          `0Sincerly,
+                              `%`s01`0
+`k
+  @end
+
+@if `p25 is 2 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0Dear `s02`0,
+    `0I have been watching your ugly face, and I have decided to do the world
+a favor and remove it! When I catch up with you, I will use a very `bdull
+`0razor to give you the closest shave you have ever had!
+`x
+                          `0Sincerly,
+                              `%`s01`0
+`k
+  @end
+
+@if `p25 is 3 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  I'm the best! haha! you can't find me.
+
+`x
+                          `0Sincerly,
+                              `%`s01`0
+`k
+  @end
+
+@if `p25 is 4 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Find me if you dare! I'm hunting you as we speak.
+`x
+                          `0Sincerly,
+                              `%`s01`0
+`k
+  @end
+@if `p25 is 5 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+ Fuck OFF! If i find you, you're gone!
+`k
+  @end
+@if `p25 is 6 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+I dont want to see you alive.
+`k
+  @end
+@if `p25 is 7 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Where the fuck are you, you fuck'n loser.
+`k
+  @end       
+@if `p25 is 8 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+I will kill you the first chance i see you!
+`k
+  @end
+@if `p25 is 9 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+This is war baby, watch out!
+`k
+  @end
+@if `p25 is 10 then do
+  @begin
+  @writefile mail\mail`p30.dat
+  `0WAR NOTES from `s01:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Come and get me, you can't find me, or could you? oh no.
+`k
+  @end

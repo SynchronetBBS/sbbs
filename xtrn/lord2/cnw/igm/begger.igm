@@ -1,0 +1,49 @@
+
+                The Begger by  Craig Goldsmith
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes! (sorta)
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : Yes! Optional :-)
+
+
+  Description:
+
+  Walking along to vist your friend Neb you see a begger hey you
+  
+  have some spare change why not. Chances (2/3) are you might 
+  
+  get something for your generousity. Gold or Alignments Say! 
+
+  To install we so far I anit got a install file so type
+
+  IGM begger.IGM
+
+  To uninstall, do the same thing again.
+
+  To test take a walk to see Neb and the Begger shold be there. :-)
+  
+  For More info read the Doc ... 
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0The Begger `2by `$C`0raig `$G`0oldsmith
+
+replacescreen: 1358 1 show
+
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Met the Begger and give him ya spare change and magic will
+   happen.`$Created by `%C`#raig `%G`#oldsmith. Bugs and Comments
+   Lord Echo or E-mail: gardnerj@onaustralia.com.au. Cya Goldie.
+

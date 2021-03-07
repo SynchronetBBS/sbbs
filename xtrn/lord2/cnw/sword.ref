@@ -1,0 +1,247 @@
+; Script file SWORD.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:30 2001
+
+@DECLARE start 000000427
+@DECLARE pulledsword 000004161
+@DECLARE person1 000004279
+@DECLARE person2 000004394
+@DECLARE person3 000004522
+@DECLARE treasure 000004631
+@DECLARE end2 000005090
+@DECLARE sign 000005153
+@DECLARE ending 000005269
+@DECLARE armour 000005398
+@DECLARE arstart 000005452
+@NOCHECK
+; End of .REF index
+
+@#Start
+
+@do moveback
+
+@if `t87 is 2 then do
+@begin
+    @do goto pulledsword
+                                        ;Help people who got killed
+                                        ;after pulling sword, before
+                                        ;treasure was gained.
+@end
+
+@if `t87 not 0 then do
+@begin
+    @do goto ending
+                                        ;Already have sword.
+                                        ;Get lost!
+@end
+
+@IF `P04 < 100 THEN DO
+@begin
+    @DO SAYBAR
+    You aren't yet strong enough to even think about moving it!
+    @closescript
+@end
+                                        ;Players that get here in script
+                                        ;are strong enough.
+
+@datanewday sword.idf
+@dataload sword.idf &playernum `p20
+
+@if `p20 is 1 then do
+@begin
+  @do saybar
+  Try again tomorrow
+  @closescript
+                                        ;Already tried today. Goodbye!
+@end
+
+@offmap
+@show
+`r0`c                        `7The `%$word `7in the `8$tone
+
+
+                `2You walk up to the white glistening sword and
+                see something engraved on the handle.
+`k
+                `2It reads:
+                        `2He who pulls this sword from this stone
+                is hereby granted the lost treasure of the main-
+                land, Stone Brook!
+`k
+                `%Hey, I live in Stone Brook, and I've never seen
+                 any treasure! `2you protest.
+`k
+                `3Maybe that's because it is the LOST treasure of
+                Stone Brook! `2The sword rumbles.
+`k
+                `%A talking sword?, and a rude sword I might add,
+                after I pull you out, I'm going to have to use
+                you to scratch my behind! `2You snap.
+`k
+                `3NO!!, I'm sorry, anything but that! `2The
+                sword pleads.
+`k
+                `%Ok, just be good and let me TRY to pull you out
+                of this stone, I want my treasure! 
+`k
+`c
+@do `v01 is 1
+                        ;Always set the default choice in range.
+@do write
+`x`x
+@choice
+Attempt to pull out the sword
+Leave it be
+@show
+`\
+@if responce is 2 then do
+@begin
+  @drawmap
+  @update
+  @do saybar
+  "You're a weak warrior, you shouldn't even survive!" the Sword taunts.
+  @closescript
+@end
+
+@show
+`r0`c
+`2You place your hands on the handle of the sword, you make sure you
+`k
+have a tight grip, you take a deep breath, look around to make sure
+`k
+everyone is watching, and then you give it a mighty heave upwards..
+`k
+you`l.`l.`l.`l.
+@do `p20 random 8 1
+
+@if `p20 < 8 then do
+@begin
+                                ; 7 out od 8 they fail.
+   @show
+`r0`c
+`4Don't budge the huge sword`2 The surrounding people laugh at you as you
+start back towards the steps.
+`k
+   @do goto end2
+@end
+
+@if `p20 is 8 then do
+@begin
+   @show
+`r0`c
+`%Remove the sword from the stone!! `2The surrounding people are
+amazed that you triumphed! Now that you think about it so are you!
+`k
+`4SUDDENLY THE SWORD IS SUCKED FROM YOUR HANDS! HEY WHAT HAPPENED!!?!?
+`k
+`2Our deal was you get the treasure, NO SWORD!
+`k
+`%I knew there were strings attached! `2you exclaim.
+`k
+`2Congrats' `5`n`% you have removed the sword!!!, I will now tele-
+port you to Stone Brook, and highlight the path to get to the treasure
+I have closed all of the buildings, so don't try to go into any houses!
+Just follow the white path and open the chest!, you will then be tele-
+ported back here...
+`k
+   @do `t87 is 2
+                        ;Keeps smackrod users from getting the treasure
+                        ;by just going there without pulling the sword.
+
+@label pulledsword
+
+   @do x is 37
+   @do y is 12
+   @do map is 1568
+   @loadmap 1568
+   @drawmap
+   @update
+@end
+
+
+@#person1
+@do moveback
+@do saybar
+If you pull the sword from the stone, you'll get a treasure!
+@closescript
+
+@#Person2
+@do moveback
+@do saybar
+IT CAN'T BE DONE!, I'm the strongest man in the world, and I can't do it!
+@closescript
+
+@#person3
+@do moveback
+@do saybar
+`%Hey `5`n`%, you need more than 100 strength to try!
+@closescript
+
+@#treasure
+@offmap
+@do moveback
+@if `t87 is 2 then do
+@begin
+                                ;We checked, they pulled the sword
+                                ;and don't have the sword now. (`t87)
+   @show
+`r0`c
+`2You slowely unlatch the chest and open it. You find `$15,000 GOLD`2, and
+`012 Gems`2!!!!!!!!
+`k
+   @do money + 15000
+   @do `p19 + 12
+   @do `t87 = 1
+   @do x is 14
+   @do y is 12
+   @do map is 1517
+   @loadmap 1517
+@end
+
+@label end2
+@datasave sword.idf &playernum 1
+@drawmap
+@update
+
+@#SIGN
+@do moveback
+@do saybar
+`%$word `2in the `8$tone`2, by MeRcEr (Michael Naeseth)
+@closescript
+
+
+@label ending
+@do moveback
+@do saybar
+There was only one sword here, and you have it, so quit trying to pull air!
+@closescript
+
+@#Armour
+@offmap
+@do moveback
+@do `v01 is 1
+@label arstart
+@show
+`r0`c  `%Mercer's Armour
+
+`2  You see defense items hanging all over the walls in the shop.
+
+@do write
+`x`x
+@choice
+Look at Mercer's Armour
+Leave
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  14
+  59
+  @end
+
+@if responce not 2 then goto arstart
+@drawmap
+@update
+

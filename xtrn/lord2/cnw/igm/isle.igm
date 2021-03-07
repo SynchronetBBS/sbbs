@@ -1,0 +1,70 @@
+
+                    Isle of the Phreaks by Max Walton V4.5
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : YES!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (8)
+  Adds screens?                                   : Yes! (4)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM isle.IGM
+
+  To uninstall, do the same thing again.
+
+  To test go to the Jagged Sandy Beach north of Flagcity and go to the sign
+  and follow the instructions!
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `5Isle of the Phreaks `!v4.5 `5by `!Max `4(`5Phreak`4) `!Walton
+replacescreen: 63 1 show
+
+replacescreen: 64 2 noshow
+
+replacescreen: 65 3 noshow
+
+replacescreen: 1012 4 show
+
+replacescreen: 1594 5 show
+
+replacescreen: 707 6 noshow
+
+replacescreen: 32 7 noshow
+
+replacescreen: 43 8 show
+
+replacescreen: 1498 9 show
+
+replacescreen: 239 10 show
+
+replacescreen: 56 11 show
+
+replacescreen: 115 12 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2 Travel to the Isle of the Phreaks. And Purchase Phreak's Keep!
+  Lucky owner now has an awesome advantage. And now a teleprting stone to
+  The Underground Passage... if you have it...  And now the skystaff parts
+  charge 400 dollars. A scroll that tells you where all the teleporting
+  stones are!  On the Isle, there is a healer, a mall and a keep you can
+  buy! And also soon, a wizard tower(don't know what all will be in there
+  yet, but there will be one soon!) 
+
+ 

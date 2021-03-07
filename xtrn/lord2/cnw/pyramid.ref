@@ -1,0 +1,3251 @@
+;                  Pyramid's Place Ver. 1.20
+;          There is not that much to see here but this is the
+;          ref of Pyramid's Place. It is not vary neet also
+;          there are even some comands that arnt used in the
+;          IGM.
+;          (c)opyright 1998 Scott Tolboe
+;
+;
+; updated by CNW v137.0
+;
+@#pychek
+@datasave pychek.idf &playernum 1
+@do x is 40
+@do y is 17
+@do map is 1397
+@do goto done
+@end
+
+@#done
+@loadmap &map
+@drawmap
+@update  
+
+@#nowll
+@dataload pychek.idf &playernum `p20
+@if `p20 is 1 then do
+ @begin
+ @do x is 45
+ @do y is 13
+ @do map is 1194
+ @do goto done
+ @end
+@do x is 20
+@do y is 6
+@do map is 1549
+@do goto done
+@end
+
+@#market
+@offmap
+@do moveback
+@show
+`r0`c `r1 Merchant `r0
+
+ `0"Hello. What do you want to do?" `2Asks the Merchant.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Examen his weapons
+Examen his armour
+Look at other Items
+Sell
+Leave
+@
+@if response is 5 then do
+ @begin
+ @do goto ha1
+ @end
+@if response is 1 then do
+ @begin
+ @offmap
+ @do moveback
+ @show
+
+`r0`c `r1 Merchant `r0
+
+ `0This is the weapons market.
+`k
+ @buymanager
+6
+4
+9
+15
+16
+35
+36
+ @do goto ha1
+ @end
+@if response is 2 then do
+ @begin
+ @offmap
+ @do moveback
+ @show
+
+`r0`c `r1 Merchant `r0
+
+ `0This is the armour market.
+`k
+ @buymanager
+10
+12
+13
+14
+37
+ @do goto HA1
+ @end
+@if response is 3 then do
+ @begin
+ @do goto item
+ @end
+
+@if response is 4 then do
+ @begin
+ @offmap
+ @do moveback
+ @show
+`c
+`\
+ @sellmanager
+ @do goto ha1
+ @end
+
+
+@#pheal
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `4Pyramid `%The Healer
+
+  `4Pyramid `2looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, ok?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+  `k
+  @do goto pheal
+  @end
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later," `4Pyramid `2laughs.
+
+`k
+@drawmap
+@update
+
+@#BOUNTYLIST
+@routine BOUNTYLIST in BOUNTY.REF
+
+@#bank1
+@do `p30 is 18
+@do `v01 is 1
+@offmap
+@do moveback
+@do `s09 is pyramid
+@routine DONEQUEST in VAULTS.REF
+@label bankstart
+@label bankstart1
+@show
+`r0`c  `r1 `%Bank Of `4Pyramid's `%Place `r0
+
+
+@if bank more 0 then do
+ @begin
+ @show
+`2  You are holding `$$&money`2, your account is at `$$&bank`2.
+
+ @end
+@if bank is 0 then do
+ @begin
+ @show
+`2  You need to open a bank account over at GreenTree Bank.
+
+ @key
+ @end
+
+@do write
+`x`x
+@choice
+>&bank 0 Make a deposit.
+>&bank 0 Make a withdraw.
+Leave
+
+@if response is 1 then do
+  @begin
+  @do write
+`\
+  @label deposit1
+  @do write
+`\  `0"Deposit how much, s&sir?"`\`\`x`x
+  @do readnum 10 money
+  @if `v40 more money then do
+  @begin
+  @show
+`\`\  `2Maybe you left the money in your other pants?  'cuz it sure ain't here.
+  @do goto deposit1
+  @end
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, this isn't happening and you aren't here.
+  @do goto withdraw1
+  @end
+
+  @routine deposit in vaults.ref
+  @do money - `v40
+  @do bank + `v40
+  @do goto bankstart1
+
+  @end
+
+@if response is 2 then do
+  @begin
+  @do write
+`\
+  @label withdraw1
+  @do write
+`\  `0"Withdraw how much, s&sir?"`\`\`x`x
+  @do `p21 is bank
+  @do `p21 - 1
+  @if `p21 < 0 then `p21 is 0
+  @do readnum 10 `p21
+  @if `v40 more bank then do
+  @begin
+  @show
+`\`\  `2You kind of don't have that much in your account.  Nice bookkeeping!
+  @do goto withdraw1
+  @end
+
+  @if `v40 less 0 then do
+  @begin
+  @show
+`\`\  `2No, I don't think so.
+  @do goto withdraw1
+  @end
+
+  @if `v40 is bank then do
+   @begin
+   @show
+
+
+  `0"But s&sir!  This will close your account with us, are you sure you wish
+  to do that?" `4Pyramid `2says.
+
+  @do write
+`x`x
+  @do `v01 is 1
+  @choice
+Ok, nevermind then.
+Yeah.  Get my damn money.
+@if response is 1 then goto bank1
+
+   @end
+
+  @routine widthdraw in vaults.ref
+  @do money + `v40
+  @do bank - `v40
+  @do goto bankstart1
+  @end
+
+@drawmap
+@update
+
+@#port0
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Magicain  `r0
+
+   `0"It costs `$$1000 for my services."
+
+@key
+@if money < 1000 then do
+        @begin
+        @show
+   `0"I can detect you do not have enough." `2says the Magician.
+        @key
+        @do goto 70
+        @end
+
+@do money - 1000
+@do `p30 is 18
+@do `v40 is 1000
+@routine deposit in vaults.ref
+@do goto port
+
+@#port
+@show
+`r0`c  `r1  Magicain  `r0
+
+  `0"Hello sir. Where do you wish to go today?" `2Asks the Magician.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Stonebrook
+GreenTree
+PortTown
+BoneTown
+FlagCity
+Sosen Village
+ArrisVille
+StonePass Lodge
+Jack's Restaurant
+Nevermind
+@if response is 10 then do
+ @begin
+  @do goto 70
+ @end
+@show
+`\`\  `0"Okay sir.
+
+`k  `0"`0Off you go.`x`x`x`x`x`x`2" Says the Magician.
+
+  `2Then suddenly, you are there, on your own.
+`\`k
+@if response is 1 then do
+ @begin
+  @do x is 36
+  @do y is 7
+  @do map is 1359
+ @end
+@if response is 2 then do
+  @begin
+   @do x is 10
+   @do y is 15
+   @do map is 1356
+  @end
+@if response is 3 then do
+  @begin
+   @do x is 38
+   @do y is 16
+   @do map is 956
+  @end
+@if response is 4 then do
+  @begin
+   @do x is 53
+   @do y is 18
+   @do map is 1572
+  @end
+@if response is 5 then do
+  @begin
+   @do x is 71
+   @do y is 19
+   @do map is 1092
+  @end
+@if response is 6 then do
+  @begin
+   @do x is 36
+   @do y is 5
+   @do map is 456
+  @end
+@if response is 7 then do
+  @begin
+   @do x is 19
+   @do y is 9
+   @do map is 523
+  @end
+@if responce is 8 then do
+  @begin
+   @do x is 40
+   @do y is 11
+   @do map is 880
+  @end
+@if responce is 9 then do
+  @begin
+   @do x is 14
+   @do y is 18
+   @do map is 1278
+  @end
+ @loadmap &map
+ @end
+@drawmap
+@update
+
+@#hi
+@busy
+@offmap
+@do moveback
+@show
+`r0`c  `r1 Man  `r0
+
+ `0 Welcome to Pyramid's Place. There are many things that you can do here.
+
+ `0 There are four rooms that you can buy. The 1,2,3 rooms are the best,
+
+ `0 for the reason that they can be entered from right above me, plus they
+
+ `0 have a Magician. The fourth room is ok.  To get to the rooms go to the red
+
+ `0 stairs. To come to the lobby, go to the black stairs. If you want to 
+
+ `0 and visit Pyramid, go to the gray stairs. Last but not least you can get
+
+ `0 to the buying and selling room by going to the brown stairs.
+
+ `0            Enjoy your stay
+`k
+@drawmap
+@update
+
+@#magician
+@run port
+
+@#heal
+@busy
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Healer  `r0
+
+  `2The doctor carefully looks over your wounds.
+
+  `%YOU ARE COMPLETELY HEALED.
+`\`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#CHATWALL
+@do moveback
+@busy
+@show
+`r0`c  `r1  SCRIBBLING ON THE BULLETIN BOARD  `r0
+
+@if pychat.txt exist false then do
+ @begin
+ @writefile pychat.txt
+  `%Man`2: `0This is a chalk bord havbe fun!
+ @end
+
+@if pychat.txt exist true then do
+ @begin
+ @displayfile pychat.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile pychat.txt
+  `%`n`2 : `0`s03
+ @do trim pychat.txt 17
+ @drawmap
+ @update
+ 
+@#sign
+@do moveback
+@do saybar
+`4Pyramid's place
+
+@#crap
+@do x is 3
+@do y is 18
+@do map is 1396
+@loadmap &map
+@itemexit
+@drawmap
+@update
+@closescript
+@end
+
+@#6
+@do moveback
+@dataload pys.idf &playernum `p20
+
+@if `p20 is 1 then do
+  @begin
+  @do saybar
+`0If you try to get another Pharaoh's armour you will losso it.
+  @datasave pys.idf &playernum 2
+  @end
+@if `p20 is 3 then do
+  @begin
+  @do saybar
+`0You have already lost your Pharaoh's armour what else do you whant to losse?
+  @closecript
+  @end
+@if `p20 is 2 then do
+  @begin
+  @do saybar
+`0You lost all of your Pharaoh's armour.
+  @do `i98 is 0
+  @datasave pys.idf &playernum 3
+  @closescript
+  @end
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2The Pharaoh's armour is hanging.  Attempt to grab it? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+ @begin
+@if `p18 < 600 then do
+  @begin
+
+  @do saybar
+`2Its too high for you to reach.  You need more quest points (600).
+  @closescript
+  @end
+  @do saybar
+`2You found the Pharaoh's armour!  But you still have to get out of here!
+  @do `i98 is 1
+  @datasave pys.idf &playernum 1    
+  @closescript
+@end
+@do saybar
+Just grab it.
+
+@#pyramid
+@offmap
+@do moveback
+@show
+`r0`c `r1 Pyramid `r0
+
+ `0"Hello. What do you want to do?" `2Asks Pyramid.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Bank
+Get healed
+Look for Ankh
+Look for Pharaoh's armour
+Conduct Business
+View bounty list
+Place a bounty
+Pay off your own bounty
+Nevermind
+@if response is 1 then do
+ @begin
+ @do goto Bank1
+ @end
+@if response is 2 then do
+ @begin
+ @do goto pheal
+ @end
+@if response is 3 then do
+ @begin
+ @do goto lookankh
+ @end
+@if response is 4 then do
+ @begin
+ @do goto look
+ @end
+@if response is 5 then do
+ @begin
+ @do goto quest69
+ @end
+@if response is 6 then do
+ @begin
+ @do goto bl
+ @end
+@if response is 7 then do
+ @begin
+ @do goto pb
+ @end
+@if response is 8 then do
+ @begin
+ @do goto pob
+ @end
+@if response is 9 then do
+ @begin
+ @do goto done
+ @end
+
+@#lookankh
+@offmap
+@do moveback
+@show
+`r0`c `r1 Pyramid `r0
+
+`0"If you can find the Ankh you can return to Pyramid's Place any
+
+`0time", Pyramid Says.
+
+`0 You only can look around 1 time per day.
+
+@do `p20 is 0
+@datanewday Pharaoh.idf
+@DATALOAD Pharaoh.idf &playernum `p20
+@do `v01 is 1
+`x`x
+@choice
+=`p20 0 Look for ankh
+leave
+@if response not 2 then do
+@begin
+@do x is 25
+@do y is 5
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@if response is 2 then do
+@do goto pyramid
+@drawmap
+@update
+@end
+
+@#gettingankh
+@do x is 12
+@do y is 7
+@do map is 1478
+@loadmap &map
+@DATASAVE Pharaoh.IDF &playernum 1
+@drawmap
+@update
+@do quebar
+`%OOPS! Wrong chest. Try again tommorow.
+
+@#item
+@offmap
+@do moveback
+@show
+`c
+`\
+@buymanager
+  1
+  3
+  5
+  43
+  20
+  40
+  55
+  @end
+@drawmap
+@update
+
+@#sell
+@offmap
+@do moveback
+@show
+`c
+`\
+ @sellmanager
+  @end
+@drawmap
+@update
+
+@#items
+@offmap
+@do moveback
+@show
+`r0`c `r1Man `r0
+
+ `0This is the items market.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Buy item
+Sell items
+Leave
+@if response is 1 then do
+ @begin
+ @do goto item
+ @end
+@if responce is 2 then do begin
+ @begin
+ @do goto sell
+ @end
+@if response is 3 then do
+@begin
+@do goto ha1
+@end
+
+@#weapons
+@offmap
+@do moveback
+@show
+
+`r0`c `r1 Merchant `r0
+
+ `0This is the weapons market.
+`k
+@buymanager
+15
+16
+35
+36
+38
+49
+@do goto ha1
+@end
+
+@#okthen
+@offmap
+@do moveback
+@show
+
+`r0`c `r1 Merchant `r0
+
+ `0This is the armour market.
+`k
+@buymanager
+14
+37
+59
+62
+68
+@do goto HA1
+@end
+
+@#ha1
+@loadmap &map
+@drawmap
+@update
+@end
+
+@#ha
+@closescript
+@drawmap
+@update
+@end
+
+@#givingankh
+@do moveback
+@dataload ankhp.idf &playernum `p20
+@if `p20 not 1 then do
+  @begin
+  @do saybar
+`0You found the Ankh. Cool.
+  @do `i97 is 1
+  @datasave ankhp.idf &playernum 1
+  @closescript
+  @end
+@do saybar
+`2You have already obtained an ankh, so the chest is empty. Dah.
+
+@#ver.2.00
+@do saybar
+`4This will be in version 2.00
+@end
+
+@#10
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#5
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#4
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#3
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#2
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#1
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#LOOKTHING
+@offmap
+@do moveback
+@show
+`r0`c `r1 Pyramid `r0
+
+ `0"If you can find the Pharaoh's armour,  you get armour that is (+350).
+
+ `0But don't try to get a second or you will lose all of your Pharaoh's
+
+ `0armour. Don't say I didn't warn you.
+
+
+@do `v01 is 1
+`x`x
+@choice
+Look for Pharaoh's armour
+leave
+@if response not 2 then do
+@begin
+@do x is 4
+@do y is 7
+@do map is 1396
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+@if response is 2 then do
+@do goto pyramid
+@end
+
+@#look
+@DO MOVEBACK
+@DATANEWDAY Pharaoh.idf
+@DATALOAD Pharaoh.idf &PLAYERNUM `p20
+@IF `p20 NOT 1 THEN DO
+@BEGIN
+@DO GOTO LOOKTHING
+@CLOSESCRIPT
+@END
+
+@drawmap
+@update
+@do saybar
+`4You messed up, you can't try again till tomorrow.
+@end
+
+@#9
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+@#8
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+
+@#7
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@DO X IS 12
+@DO y IS 7
+@do map is 1478
+@loadmap &map 
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END
+
+
+@#Ankh
+@do quebar
+`4Cool!
+@do x is 40
+@do y is 12
+@do map is 1397
+@loadmap &map
+@itemexit
+@drawmap
+@update
+@end
+
+@#scott
+@do saybar
+`4Pyramid's Place`0 1.20 `0Created by Scott Tolboe
+
+
+@#bl
+@routine bountylist
+@do goto Pyramid
+@end
+
+@#pb
+  @SHOW
+`r0`c  `r1  Talking to Pyramid  `r0
+`\  `$"I need to make someone's life hard, can you help?,"`2 you say.
+
+  `0"Of course... who is our lucky winner?"
+  @chooseplayer `p22
+  @if `p22 is 0 then do
+    @begin
+    @show
+`k
+    @do goto Pyramid
+    @end
+  @if `p22 is &playernum then do
+    @begin
+    @show
+  `0"Ha, I like the concept!" `2Pyramid laughs.  You must have amused him
+  in some small way.`\`\`k
+    @do goto Pyramid
+    @end
+   @show
+  `0"Of course.  How much money are you willing to place?"`2 he asks calmly.
+
+  @do write
+`x`x
+  @do readnum 30
+  @do `p20 is `v40
+  @if `p20 < 1000 then do
+    @begin
+    @show
+`\`\  `0"Minimum bounty is `$1000`0, friend."
+`\`k
+    @do goto Pyramid
+    @end
+  @show
+
+  @if money < `p20 then do
+     @begin
+     @show
+`\  `2You don't have that much gold on you... Better hit the bank.
+
+`k
+     @do goto Pyramid
+     @end
+  @routine deposit in vaults.ref
+  @do money - `p20
+@show
+
+
+  @if bounty.`p22 exist true then do
+    @begin
+    @readfile bounty.`p22
+`p23
+`p24
+    @if `p23 not &playernum then do
+      @begin
+      @if `p24 > `p20 then do
+        @begin
+        @show
+  `0"There is a problem.  Someone has already placed a bounty on that
+  person..  Of course, we will let you do anything for a price.  Try an
+  amount that is at least `$$`p24 `0and I'll think about it."
+`\`k
+        @do goto Pyramid
+        @end
+      @end
+    @end
+
+  @do `s05 is getname `p22
+  @do delete bounty.`p22
+  @writefile bounty.`p22
+&playernum
+`p20
+    @do addlog
+  `0`n `2has set a bounty of `$`p20 `2to kill `0`s05`2!
+     @routine seperate in gametxt.ref
+
+  @show
+  `0"Alright.  The bounty has been placed... The only way to get out of it
+  is if `s05 gets in here and pays it off... or death of course."
+
+`k
+  @do goto Pyramid
+  @END
+
+@#pob
+  @SHOW
+`r0`c  `r1  `%Cutting a deal with Pyramid `r0
+
+  `$"Someone hates me, but I have more money than them.  Please stop
+  chasing me."`2 you state.
+
+@if bounty.&playernum exist false then do
+  @begin
+  @show
+  `0"Huh?  You are not marked by us.  Not yet."
+
+  `2You turn bright red.  `$"I, I uh, knew that..."
+`\`k
+  @do goto Pyramid
+  @end
+  @readfile bounty.&playernum
+`p20
+`p21
+  @show
+  `0"It will cost you `$$`p21 `0to clear your name.  Can you pay it?"
+
+  @do `v01 is 1
+  @do write
+`x`x
+   @choice
+Yes, I can  `2(you have `0`$$&money`2)
+I cannot pay it
+@if responce is 1 then do
+  @begin
+  @if money < `p21 then do
+    @begin
+    @do money / 2
+    @show
+`\`\  `0"Very well, where is the gold?"`2
+
+`2  You search your pockets desperately.  A few moments later you are
+  outside with quite a bruise and some money missing.
+
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+
+    @do `v40 is `p21
+    @routine deposit in vaults.ref
+    @do money - `p21
+    @do delete bounty.&playernum
+    @do addlog
+  `0`n `2convinces the Bounty Hunter Guild to stop chasing s&him.
+     @routine seperate in gametxt.ref
+@show
+`\`\  `0"Very well, now you're no good to me dead."`2
+`\`k
+  @do goto Pyramid
+  @end
+@do goto Pyramid
+  @END
+
+
+@#doorguard1
+@do moveback
+@label startg1
+@if pyr5.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to get the hell out of this room!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile pyr5.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$50,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg1
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your room to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg1
+   @end
+
+  @do delete pyr5.dat
+  @writefile pyr5.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of One of Pyramid's Room to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%One of Pyramid's rooms`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your room back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg1
+   @end
+
+  @do delete pyr5.dat
+  @do `v40 is 50000
+  @do `p30 is 18
+  @routine widthdraw in vaults.ref
+  @do money + 50000
+  @show
+`\`\  `%One of Pyramid's Rooms Sold!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Your Room`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg1
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg1
+   @end
+  @do delete pyr5.dat
+  @writefile pyr5.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg1
+  @end
+
+@drawmap
+@update
+
+
+@#enter1
+@do moveback
+@offmap
+@if pyr5.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2This is one of Pyramid's old rooms now for sale.
+
+  `2It is for sale, however.  The asking price is `$$150,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 149999 Purchase it.
+<&money 150000 Sigh wistfully and leave since you don't have enough.
+>&money 149999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if pyr5.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile pyr5.dat
+&playernum
+NONE
+  @do `v40 is 150000
+  @do `p30 is 18
+  @routine deposit in vaults.ref
+    @do money - 150000
+    @do addlog
+  `0`n `2buys `%A Room`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this room!
+
+`k  `0As a special bonus, two beds, a door guard, your own room
+    `0 a bank, and a Magician plus you can get here from the front
+    `0,are included!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile pyr5.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete pyr5.dat
+    @do addlog
+  `%One of Pyramid's Rooms`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%This Room`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein1
+    @end
+   @writefile mail\mail`p20.dat
+  `0Pyramid's room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein1
+@do x is 60
+@do y is 17
+@do map is 1476
+@loadmap &map
+@do goto done
+@#done
+
+@#sign2
+@do moveback
+
+ @if pyr5.dat exist false then do
+ @begin
+ @do saybar
+Pyramid's Room 2  For sale, enquire inside.
+ @end 
+
+@if pyr5.dat exist true then do
+ @begin
+@readfile pyr5.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Pyramid's Room 2 Property of `0`s01`2.
+ @end 
+
+@#roomguard1
+@do moveback
+@if pyr5.dat exist false then do
+  @begin
+  @do goto enter1
+  @end
+
+;load info on owner
+@readfile pyr5.dat
+`p20
+`s01
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`2"You can't go in there!" Yells the guard.
+  @closescript
+  @end
+@do x is 58
+@do y is 19
+@do map is 1556
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`0Your own room, cool.
+@end
+
+@#MYBANK1
+@do moveback
+@do `p20 is 0
+@if pr5.dat exist true then do
+  @begin
+  @readfile pr5.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar 
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr5.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete pr5.dat
+  @writefile pr5.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile pyr5.dat
+`p20
+`s01
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr5.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete pr5.dat
+  @writefile pr5.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile pyr5.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+  @end
+
+@#doorguard2
+@do moveback
+@label startg2
+@if pyr6.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to get the hell out of this room!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile pyr6.dat
+`p20
+`s01
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$50,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg2
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your room to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg2
+   @end
+
+  @do delete pyr6.dat
+  @writefile pyr6.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of One of Pyramid's Room to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%One of Pyramid's rooms`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your room back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg2
+   @end
+
+  @do delete pyr6.dat
+  @do `v40 is 50000
+  @do `p30 is 18
+  @routine widthdraw in vaults.ref
+  @do money + 50000
+  @show
+`\`\  `%One of Pyramid's Rooms Sold!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Your Room`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+  @do goto startg2
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete pyr6.dat
+  @writefile pyr6.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg2
+  @end
+@drawmap
+@update
+
+@#enter2
+@do moveback
+@offmap
+@if pyr6.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2This is one of Pyramid's old rooms now for sale.
+
+  `2It is for sale, however.  The asking price is `$$150,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 149999 Purchase it.
+<&money 150000 Sigh wistfully and leave since you don't have enough.
+>&money 149999 Leave.
+@if responce is 1 then do
+  @begin
+  @if pyr6.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile pyr6.dat
+&playernum
+NONE
+  @do `v40 is 150000
+  @do `p30 is 18
+  @routine deposit in vaults.ref
+    @do money - 150000
+    @do addlog
+  `0`n `2buys `%A Room`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this room!
+
+`k  `0As a special bonus, two beds, a door guard, your own room
+    `0 a bank, and a Magician plus you can get here from the front
+    `0,are included!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile pyr6.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete pyr6.dat
+    @do addlog
+  `%One of Pyramid's Rooms`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%This Room`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein2
+    @end
+   @writefile mail\mail`p20.dat
+  `0Pyramid's room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+;let him in
+@label letmein2
+@do x is 20
+@do y is 17
+@do map is 1477
+@loadmap &map
+@do goto done
+@#done
+
+@#sign3
+@do moveback
+ @if pyr6.dat exist false then do
+ @begin
+ @do saybar
+Pyramid's Room 3 For sale, enquire inside.
+ @end 
+
+@if pyr6.dat exist true then do
+ @begin
+@readfile pyr6.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Pyramid's Room 3 Property of `0`s01`2.
+ @end 
+
+@#roomguard2
+@do moveback
+@if pyr6.dat exist false then do
+  @begin
+  @do goto enter2
+  @end
+
+;load info on owner
+@readfile pyr6.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`2"You can't go in there!" Yells the guard.
+  @closescript
+  @end
+@do x is 20
+@do y is 10
+@do map is 1556
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`0Your own room, cool.
+@end
+
+@#MYBANK2
+@do moveback
+@do `p20 is 0
+@if pr6.dat exist true then do
+  @begin
+  @readfile pr6.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr6.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete pr6.dat
+  @writefile pr6.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile pyr6.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr6.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete pr6.dat
+  @writefile pr6.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile pyr6.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#doorguard3
+@do moveback
+@label startg3
+@if pyr7.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to get the hell out of this room!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile pyr7.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$50,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg3
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your room to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg3
+   @end
+
+  @do delete pyr7.dat
+  @writefile pyr7.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of One of Pyramid's Room to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%One of Pyramid's rooms`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your room back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg3
+   @end
+
+  @do delete pyr7.dat
+  @do `v40 is 50000
+  @do `p30 is 18
+  @routine widthdraw in vaults.ref
+  @do money + 50000
+  @show
+`\`\  `%One of Pyramid's Rooms Sold!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Your Room`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg3
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg3
+   @end
+  @do delete pyr7.dat
+  @writefile pyr7.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg3
+  @end
+
+@drawmap
+@update
+
+@#enter3
+@do moveback
+@offmap
+@if pyr7.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2This is one of Pyramid's old rooms now for sale.
+
+  `2It is for sale, however.  The asking price is `$$125,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 124999 Purchase it.
+<&money 125000 Sigh wistfully and leave since you don't have enough.
+>&money 124999 Leave.
+@if responce is 1 then do
+  @begin
+  @if pyr7.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile pyr7.dat
+&playernum
+NONE
+  @do `v40 is 125000
+  @do `p30 is 18
+  @routine deposit in vaults.ref
+    @do money - 125000
+    @do addlog
+  `0`n `2buys `%A Room`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this room!
+
+`k  `0As a special bonus, two beds, a door guard, your own room
+    `0 a bank, and a Magician,are included!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile pyr7.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete pyr7.dat
+    @do addlog
+  `%One of Pyramid's Rooms`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%This Room`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein3
+    @end
+   @writefile mail\mail`p20.dat
+  `0Pyramid's room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein3
+@do x is 60
+@do y is 17
+@do map is 1477
+@loadmap &map
+@do goto done
+@#done
+
+@#sign4
+@do moveback
+
+ @if pyr7.dat exist false then do
+ @begin
+ @do saybar
+Pyramid's Room 4 For sale, enquire inside.
+ @end 
+
+@if pyr7.dat exist true then do
+ @begin
+@readfile pyr7.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Pyramid's Room 4 Property of `0`s01`2.
+ @end 
+
+@#roomguard3
+@do moveback
+@if pyr7.dat exist false then do
+  @begin
+  @do goto enter3
+  @end
+
+;load info on owner
+@readfile pyr7.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`2"You can't go in there!" Yells the guard.
+  @closescript
+  @end
+@do x is 58
+@do y is 10
+@do map is 1556
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`0Your own room, cool.
+@end
+
+@#MYBANK3
+;team treasury
+@do moveback
+@do `p20 is 0
+@if pr7.dat exist true then do
+  @begin
+  @readfile pr7.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr7.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete pr7.dat
+  @writefile pr7.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile pyr7.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr7.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete pr7.dat
+  @writefile pr7.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile pyr7.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+@#doorguard
+@do moveback
+@label startg
+@if pyr4.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to get the hell out of this room!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile pyr4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the door guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge doorguard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$50,000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your room to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete pyr4.dat
+  @writefile pyr4.dat
+`p20
+`s01
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of One of Pyramid's Room to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%One of Pyramid's room`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your room back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your room - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete pyr4.dat
+  @do `v40 is 50000
+  @do `p30 is 18
+  @routine widthdraw in vaults.ref
+  @do money + 50000
+  @show
+`\`\  `%One of Pyramid's Rooms Sold!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Your Room`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto start
+   @end
+  @do delete pyr4.dat
+  @writefile pyr4.dat
+&playernum
+`s01
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#enter
+@do moveback
+@offmap
+@if pyr4.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2This is one of Pyramid's old rooms now for sale.
+
+  `2It is for sale, however.  The asking price is `$$150,000`2.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 149999 Purchase it.
+<&money 150000 Sigh wistfully and leave since you don't have enough.
+>&money 149999 Leave.
+@if responce is 1 then do
+  @begin
+  @if pyr4.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile pyr4.dat
+&playernum
+NONE
+  @do `v40 is 150000
+  @do `p30 is 18
+  @routine deposit in vaults.ref
+    @do money - 150000
+    @do addlog
+  `0`n `2buys `%A Room`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this room!
+
+`k  `0As a special bonus, two beds, a door guard, your own room
+    `0 a bank, and a Magician plus you can get here from the front
+    `0,are included!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile pyr4.dat
+`p20
+`s01
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete pyr4.dat
+    @do addlog
+  `%One of Pyramid's Rooms`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A head pops over the gate.  `0"Halt, you!  What business have you with
+  my lord and master, `%`s02`0?" `2the door guard asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation.
+Visit later.
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome to `%This Room`0,"`2 the guard smiles as he opens the gate.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0Pyramid's room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The guard doesn't look too interested.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 20
+@do y is 17
+@do map is 1476
+@loadmap &map
+@do goto done
+@#done
+
+@#sign1
+@do moveback
+
+ @if pyr4.dat exist false then do
+ @begin
+ @do saybar
+Pyramid's Room 1 For sale, enquire inside.
+ @end 
+
+@if pyr4.dat exist true then do
+ @begin
+@readfile pyr4.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Pyramid's Room 1 Property of `0`s01`2.
+ @end 
+
+@#roomguard
+@do moveback
+@if pyr4.dat exist false then do
+  @begin
+  @do goto enter
+  @end
+
+;load info on owner
+@readfile pyr4.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+`2"You can't go in there!" Yells the guard.
+  @closescript
+  @end
+@do x is 20
+@do y is 19
+@do map is 1556
+@loadmap &map
+@drawmap
+@update
+@do quebar
+`0Your own room, cool.
+@end
+
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if pr4.dat exist true then do
+  @begin
+  @readfile pr4.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr4.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete pr4.dat
+  @writefile pr4.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile pyr4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile pr4.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete pr4.dat
+  @writefile pr4.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile pyr4.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Your Room Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+  @end
+
+@#70
+@drawmap
+@update
+
+@#quest69
+@offmap
+@do moveback
+@show
+`r0`c `r1 Pyramid `r0
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Conduct Business
+Nevermind
+@if response is 1 then do
+ @begin
+; @run quest in coquest.ref    <-- where is this file?  (CNW)
+ @do `p20 is 8
+ @run getquest in quest.ref
+ @end
+@if response is 2 then do
+ @begin
+ @do goto Pyramid
+ @end
+
+@#port00
+@run port0
+
+@#port000
+@run port0
+
+@#nomore
+
+@SHOW
+`r0`c  `%`r1 Pyramid`r0
+
+`2 Look again tomorrow.
+
+`k
+@DATASAVE Pharaoh.IDF &playernum 1
+@LOADMAP 1199
+@DO X IS 12
+@DO y IS 7
+@drawmap
+@update
+@closescript
+
+@END
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@END

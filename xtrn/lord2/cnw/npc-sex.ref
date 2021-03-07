@@ -1,0 +1,885 @@
+; Script file NPC-SEX.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:40 2001
+
+@DECLARE clraction 000002504
+@DECLARE clraction2 000002538
+@DECLARE getgender 000002690
+@DECLARE lines 000003725
+@DECLARE leave 000004656
+@DECLARE stats 000005176
+@DECLARE stats1 000005338
+@DECLARE stats2 000005723
+@DECLARE refresh 000005993
+@DECLARE startsex 000008696
+@DECLARE step2 000010146
+@DECLARE front1 000010935
+@DECLARE kiss 000011726
+@DECLARE kiss1 000011798
+@DECLARE back1 000012523
+@DECLARE step3 000013214
+@DECLARE shirtoff1 000013629
+@DECLARE shirtoff2 000015940
+@DECLARE massage1 000018687
+@DECLARE position 000018967
+@DECLARE selitem 000019305
+@DECLARE itemloop 000019679
+@DECLARE itemend 000019792
+@DECLARE itemuse 000019821
+@DECLARE listen 000022809
+@DECLARE nomore 000023177
+@NOCHECK
+; End of .REF index
+
+; NPC-SEX.REF
+;   Requires LoRD2: CNW
+; -called from NPCFLIRT.REF
+; vars used in here.
+; `s01 = npc name
+; `s02 = multi use
+; `s03 = her/his   <recalled on LINES so can be used other places>
+; `s04 = she/he    <recalled on LINES>
+; `s05 = girl/boy  <recalled on LINES>
+; `s06 = dialog line0
+; `s07 = dialog line1
+; `s08 = dialog line2
+; `s09 = dialog line3
+; `s10 = NEW dialog line
+; `p20 = temp var for the current routine
+; `p21 = <not used>
+; `p22 = <not used>
+; `p23 = <not used>
+; `p24 = <not used>
+; `p25 = current npc hp
+; `p26 = the times you flirt-type1
+; `p27 = the times you flirt-type2
+; `p28 = the times you flirt-type3
+; `p29 = sex points for this session
+; `t69: 0:NPC shirt on/off (0=on 1=off) (step1)
+; `t69: 1:NPC pants on/off (step2)
+; `t69: 2:NPC jock/bra on/off (step3)
+; `t69: 3:NPC underwear/panties on/off (sometimes its already off!) (step3)
+; `t69: 4:NPC has hits all flags to start getting nude if 1
+; `t69: 5:NPC has hits all flags for last step of nude if 1
+; `t69: 6:NPC has hits all flags for intercourse if 1
+; `t69: 7:NPC has did cum yet at least 1 time?
+; `t70: 0:PLAYER shirt on/off (0=on 1=off) (step1)
+; `t70: 1:PLAYER pants on/off (step2)
+; `t70: 2:PLAYER jock/bra on/off (step3)
+; `t70: 3:PLAYER underwear/panties on/off (sometimes its already off!) (step3)
+; `t70: 4:PLAYER hits all flags for NPC to feel you can start getting nude if 1
+; `t70: 5:PLAYER hits all flags for NPC to feel last step of nude if 1
+; `t70: 6:PLAYER lost control of situation if 1
+; `t70: 7:PLAYER has did cum yet at least 1 time?
+
+;  @routine VD in talk.ref   <-- do VD checks and pass it on!
+
+@#CLRACTION
+@do `p20 is 4
+@label CLRACTION2
+@do `p20 + 1
+@do move 50 `p20
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@if `p20 < 14 then goto CLRACTION2
+
+@#getgender
+@dataload npc/npcgendr.idf `p70 `p20
+@if `p20 is 0 then do ;straight girl
+        @begin
+        @do `s03 is her
+        @do `s04 is she
+        @do `s05 is girl
+        @end
+@if `p20 is 1 then do ;straight boy
+        @begin
+        @do `s03 is his
+        @do `s04 is he
+        @do `s05 is boy
+        @end
+@if `p20 is 2 then do ;lesbian girl
+        @begin
+        @do `s03 is her
+        @do `s04 is she
+        @do `s05 is girl
+        @end
+@if `p20 is 3 then do ;gay boy
+        @begin
+        @do `s03 is his
+        @do `s04 is he
+        @do `s05 is boy
+        @end
+@if `p20 is 4 then do ;bisexual girl
+        @begin
+        @do `s03 is her
+        @do `s04 is she
+        @do `s05 is girl
+        @end
+@if `p20 is 5 then do ;bisexual boy
+        @begin
+        @do `s03 is his
+        @do `s04 is he
+        @do `s05 is boy
+        @end
+@if `p20 > 5 then do ;OTHER?!?!
+        @begin
+        @do `s03 is it's
+        @do `s04 is it
+        @do `s05 is it
+        @end
+
+@#LINES
+@do `s06 is `s07
+@do `s07 is `s08
+@do `s08 is `s09
+@do `s09 is `s10
+@do move 3 20
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@do move 3 20
+@do write
+`s09
+@do move 3 21
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@do move 3 21
+@do write
+`s08
+@do move 3 22
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@do move 3 22
+@do write
+`s07
+@do move 3 23
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@do move 3 23
+@do write
+`s06
+
+@#LEAVE
+@do `s10 is `%You`xget`xa`xlay.
+@routine lines
+@if `p29 < 1 then `s10 is scary
+@if `p29 > 0 then `s10 is bad
+@if `p29 > 9 then `s10 is boring
+@if `p29 > 20 then `s10 is experimental
+@if `p29 > 30 then `s10 is repetitive
+@if `p29 > 50 then `s10 is sexciting
+@if `p29 > 70 then `s10 is the`xtime`xof`xyour`xlife
+@if `p29 > 100 then `s10 is EXCELENT
+@do `p34 + 1
+@do `s10 is `%Your`xpreformance`xwas`x`$`s10`x`x`x`%(`$`p29`%).
+@routine lines
+@do move 30 24
+@key
+@drawmap
+@update
+@closescript
+
+
+@#stats
+@dataload npc/npc-hp.idf `p70 `p20
+@do `s10 is `$`N
+@DO PAD `s10 17
+@do move 5 4
+@do write
+`s10
+@do `s10 is `%`p02
+@DO `p21 IS LENGTH `s10
+@label stats1
+@if `p21 < 5 then do
+        @begin
+        @do `p21 + 1
+        @do `s10 is `x`s10
+        @if `p21 < 5 then goto stats1
+        @end
+@do PAD `s10 5
+@do move 23 4
+@do write
+`s10
+@do `s10 is `%`p03
+@DO PAD `s10 5
+@do move 29 4
+@do write
+`s10
+@do `s10 is `$`s01
+@DO PAD `s10 17
+@do move 5 5
+@do write
+`s10
+@do `s10 is `%`p25
+@DO `p21 IS LENGTH `s10
+@label stats2
+@if `p21 < 5 then do
+        @begin
+        @do `p21 + 1
+        @do `s10 is `x`s10
+        @if `p21 < 5 then goto stats2
+        @end
+@DO PAD `s10 5
+@do move 23 5
+@do write
+`s10
+@do `s10 is `%`p20
+@DO PAD `s10 5
+@do move 29 5
+@do write
+`s10
+
+@#REFRESH
+;layout the screen frames
+@do move 1 1
+@clear screen
+@do move 4 3
+@do write
+`4ÚÄÄÄÄÄÄÄÄÄÄ[ `8stats `4]ÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 4 4
+@do write
+`4³                 [     /     ]³
+@do move 4 5
+@do write
+`4³                 [     /     ]³
+@do move 4 6
+@do write
+`4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 16 2
+@show
+`3- `#A`5n `#E`5nchanting `#E`5ncounter `#w`5ith `s01 `3-
+@do move 49 4
+@do write
+`4ÚÄÄÄÄÄÄÄÄ[ `8actions `4]ÄÄÄÄÄÄÄÄÄ¿
+@do move 49 5
+@do write
+`4³                            ³
+@do move 49 6
+@do write
+`4³                            ³
+@do move 49 7
+@do write
+`4³                            ³
+@do move 49 8
+@do write
+`4³                            ³
+@do move 49 9
+@do write
+`4³                            ³
+@do move 49 10
+@do write
+`4³                            ³
+@do move 49 11
+@do write
+`4³                            ³
+@do move 49 12
+@do write
+`4³                            ³
+@do move 49 13
+@do write
+`4³                            ³
+@do move 49 14
+@do write
+`4³                            ³
+@do move 49 15
+@do write
+`4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 2 7
+@do write
+`4ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ[ `8viewer `4]ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 2 8
+@do write
+`4³                                            ³
+@do move 2 9
+@do write
+`4³   to be used at a later time               ³
+@do move 2 10
+@do write
+`4³       for viewing the actions              ³
+@do move 2 11
+@do write
+`4³            :D                              ³
+@do move 2 12
+@do write
+`4³                                            ³
+@do move 2 13
+@do write
+`4³                                            ³
+@do move 2 14
+@do write
+`4³                                            ³
+@do move 2 15
+@do write
+`4³                                            ³
+@do move 2 16
+@do write
+`4³    `8These routines are not completed.       ³
+@do move 2 17
+@do write
+`4³    `8Lots of work is needed.                 ³
+@do move 2 18
+@do write
+`4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+@do move 2 19
+@do write
+`4ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ[ `8dialog `4]ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 1 20
+@do write
+`$>`4³                                                                            ³
+@do move 2 21
+@do write
+`4³                                                                            ³
+@do move 2 22
+@do write
+`4³                                                                            ³
+@do move 2 23
+@do write
+`4³                                                                            ³
+@do move 2 24
+@do write
+`4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+@#STARTSEX
+@do moveback
+@routineabort
+@dataload npc/npc-hp.idf `p70 `p20
+@do `p25 is `p20
+@routine getname in npcname.ref
+@routine getgender
+
+
+;clear needed vars
+@do `s06 is NIL
+@do `s07 is NIL
+@do `s08 is NIL
+@do `s09 is NIL
+@do `s10 is NIL
+@do `p26 is 0
+@do `p27 is 0
+@do `p28 is 0
+@do `p29 is 0
+@do `p29 is 0
+@bitset `t69 0 0
+@bitset `t69 1 0
+@bitset `t69 2 0
+@bitset `t69 3 0
+@bitset `t69 4 0
+@bitset `t69 5 0
+@bitset `t69 6 0
+@bitset `t69 7 0
+@bitset `t70 0 0
+@bitset `t70 1 0
+@bitset `t70 2 0
+@bitset `t70 3 0
+@bitset `t70 4 0
+@bitset `t70 5 0
+@bitset `t70 6 0
+@bitset `t70 7 0
+@routine refresh
+@routine stats
+
+;@do `s10 is `@For`xnow`xthis`xmakes`xNO`xeffect`xon`x`s01`xnor`xyou.
+;@routine LINES
+;@do `s10 is  Currently`xtesting.
+;@routine LINES
+
+@do `s10 is `%You're`xanxiously`xstanding`xin`xfront`xof`x`$`s01.
+@routine LINES
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
+`#Rush towards `s03
+`#Aproach `s01 slowly
+`3Use an item
+`4Cowardly walk away
+@if responce is 1 then do
+        @begin
+        @do `s10 is `%You`xquickly`xaproach`x`s01.
+        @routine LINES
+        @do `p29 - 1
+        @do goto STEP2
+        @end
+@if responce is 2 then do
+        @begin
+        @do `s10 is `%You`xsuavely`xaproach`x`s01.
+        @routine LINES
+        @do `p29 + 1
+        @do goto STEP2
+        @end
+@if responce is 3 then goto SELITEM
+@if responce is 4 then goto LEAVE
+
+@#STEP2
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
+`#Peck `s01's right cheek
+`#Go behind `s01
+`3Use something
+`4You're not for me
+`9Change position
+@if responce is 1 then do
+        @begin
+        @do `p26 + 1
+        @do `s10 is `%You`xgive`x`s01`xa`xlight`xpeck`xon`xthe`xright`xcheek.
+        @routine LINES
+        @if `p26 > 10 then do
+                @begin
+                @do `s10 is `$`s01`%: Enough with the pecking already! `@:`1)
+                @routine LINES
+                @end
+        @do goto FRONT1
+        @end
+@if responce is 2 then do
+        @begin
+        @do goto BACK1
+        @end
+@if responce is 3 then goto SELITEM
+@if responce is 4 then goto LEAVE
+@if responce is 5 then goto POSITION
+        @end
+@DO GOTO STEP2
+
+@#FRONT1
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
+`#Peck `s03 left cheek
+`#Go for `s01's lips
+`#Remove some clothing
+`4You're not for me
+`9Change position
+@if responce is 1 then do
+        @begin
+        @do `s10 is `%You`xgive`x`s01`xanother`xpeck`xon`xthe`xleft`xcheek.
+        @routine LINES
+        @if `p26 > 10 then do
+                @begin
+                @do `s10 is `$`s01`%: Enough with the pecking already! `@:`1)
+                @routine LINES
+                @end
+        @do goto FRONT1
+        @end
+@if responce is 2 then do
+        @begin
+        @do `p29 + 1
+        @do goto KISS
+        @end
+@if responce is 3 then goto STEP3
+@if responce is 4 then goto LEAVE
+@if responce is 5 then goto POSITION
+        @end
+@DO GOTO FRONT1
+
+@#KISS
+@do `s02 is Start`xwith`xa
+@do `s03 is Start`xwith`xthe
+@label KISS1
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
+`#`s02 soft kiss
+`#`s03 tongue
+`#Change position
+`4Ewwh, you're leaving
+@if responce is 1 then do
+        @begin
+        @do `s02 is Continue
+        @do `s03 is Now`xtry`xthe
+        @routine getgender
+        @do `s10 is You`xgently`xpress`xlips`xand`xkiss`x`s01.
+        @routine lines
+        @do goto KISS1
+        @end
+@if responce is 2 then do
+        @begin
+        @do `s03 is Continue
+        @do `s02 is Try`xa
+        @do `s10 is You`xlips`xmeet,`xthen`xyour`xtongue`xmeet.
+        @routine lines
+        @do goto KISS1
+        @end
+@if responce is 3 then goto position
+@if responce is 4 then goto LEAVE
+@do goto KISS1
+
+@#BACK1
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
+`#Rub `s01's shoulders
+`#Start to massage `s03 back
+`#Remove some clothing
+`4Ewwh, you're leaving
+`9Change position
+@if responce is 1 then do
+        @begin
+        @do `s10 is You`xrub`xboth`xof`x`s03`xshoulders.
+        @routine lines
+        @do goto BACK1
+        @end
+@if responce is 2 then do
+        @begin
+        @do `s10 is `s04`xlies`xdown`xslowly`xfacing`xdown.`xYou`xprepare`xyour`xfingers.
+        @routine lines
+        @do goto MASSAGE1
+        @end
+@if responce is 3 then goto STEP3
+@if responce is 4 then goto LEAVE
+@if responce is 5 then goto POSITION
+        @end
+@DO GOTO BACK1
+
+@#STEP3
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@routine getgender
+@choice
+-`t69 0 `#Take off `s04 shirt
+-`t70 0 `#Take off `$YOUR `#shirt
+`#Start the massage!
+`4Get up, and walk away
+`9Change position
+@if responce is 1 then goto SHIRTOFF1
+@if responce is 2 then goto SHIRTOFF2
+@if responce is 3 then goto MASSAGE1
+@if responce is 4 then goto LEAVE
+@if responce is 5 then goto POSITION
+
+@#SHIRTOFF1
+        @if bitcheck `t69 4 1 then do
+                @begin
+                @bitset `t69 0 1
+                @do `p20 random 5 1
+                @if `p20 is 1 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xI'll`xhelp`xyou`xthat`xhindorence`xof`xmine.
+                        @bitset `t70 4 1
+                        @do `p29 + 2
+                        @end
+                @if `p20 is 2 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xThanks`x...`xI`xneeded`xthat`xremoved.
+                        @bitset `t70 4 1
+                        @do `p29 + 1
+                        @end
+                @if `p20 is 3 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xYah,`xits`xgetting`xhot`xin`xhere.
+                        @bitset `t70 4 1
+                        @do `p29 + 4
+                        @end
+                @if `p20 is 4 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xOkay,`xI'll`xneed`xhelp`xto`xremove`xit.
+                        @do `p29 + 3
+                        @end
+                @if `p20 is 5 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xSlow`xdown`xs&boy!`x`xNot yet.
+                        @end
+                @end
+        @do `p20 random 5 1
+        @if `p20 is 1 then do
+                @begin
+                @do `s10 is `$`s01`%:`xSlow`xdown`xs&boy!`x`xNot yet.
+                @do `p29 - 1
+                @end
+        @if `p20 is 2 then do
+                @begin
+                @do `s10 is `$`s01`%:`xYou're`xmoving`xtoo`xfast!
+                @do `p29 - 1
+                @end
+        @if `p20 is 3 then do
+                @begin
+                @do `s10 is `$`s01`%:`xHold`xoff`xfor`xa`xbit`xs&boy.
+                @do `p29 - 1
+                @end
+        @if `p20 is 4 then do
+                @begin
+                @do `s10 is `$`s01`%:`xDon't`xeven`xtry`xit.
+                @do `p29 - 4
+                @end
+        @if `p20 is 5 then do
+                @begin
+                @do `s10 is `$`s01`%:`xSlow`xdown`xs&boy!
+                @do `p29 - 1
+                @end
+@routine lines
+@do goto STEP3
+
+@#SHIRTOFF2
+        @if bitcheck `t70 4 1 then do
+                @begin
+                @bitset `t70 0 1
+                @do `p20 random 5 1
+                @if `p20 is 1 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xI'll`xhelp`xyou`xyou`xthat`xdear.
+                        @do `p29 + 2
+                        @end
+                @if `p20 is 2 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xThanks`x...`xI`xneeded`xthat`xremoved.
+                        @do `p29 + 1
+                        @end
+                @if `p20 is 3 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xYah,`xits`xgetting`xhot`xin`xhere,`xI`xshould`xdo`xthe`xsame.
+                        @bitset `t69 4 1
+                        @do `p29 + 4
+                        @end
+                @if `p20 is 4 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xOkay,`xI'll`xneed`xhelp`xto`xremove`xit.
+                        @do `p29 + 3
+                        @end
+                @if `p20 is 5 then do
+                        @begin
+                        @do `s10 is `$`s01`%:`xSlow`xdown`xs&boy!`x`xNot yet.
+                        @end
+                @end
+        @do `p20 random 5 1
+        @if `p20 is 1 then do
+                @begin
+                @do `s10 is `$`s01`%:`xSlow`xdown`xs&boy!`x`xNot yet.
+                @routine lines
+                @routine CLRACTION
+                @routine LISTEN
+                @do `p29 - 1
+                @end
+        @if `p20 is 2 then do
+                @begin
+                @do `s10 is `$`s01`%:`xYou're`xmoving`xtoo`xfast!
+                @routine lines
+                @routine CLRACTION
+                @routine LISTEN
+                @do `p29 - 1
+                @end
+        @if `p20 is 3 then do
+                @begin
+                @do `s10 is `$`s01`%:`xHold`xoff`xfor`xa`xbit`xs&boy.
+                @routine lines
+                @routine CLRACTION
+                @routine LISTEN
+                @do `p29 - 1
+                @end
+        @if `p20 is 4 then do
+                @begin
+                @do `s10 is `$`s01`%:`xDon't`xeven`xtry`xit.
+                @routine lines
+                @routine CLRACTION
+                @routine LISTEN
+                @do `p29 - 4
+                @end
+        @if `p20 is 5 then do
+                @begin
+                @do `s10 is `$`s01`%:`xSlow`xdown`xs&boy!
+                @routine lines
+                @routine CLRACTION
+                @routine LISTEN
+                @do `p29 - 1
+                @end
+@routine lines
+@do goto STEP3
+
+@#MASSAGE1
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
++`t69 0 `#Take off `s03's shirt
++`t70 0 `#Take off `$YOUR `#shirt
+`#Start from top to midsection
++`t69 1 `#Start from midsection up
+`4Get up, and walk away
+`9Change position
+@if responce is 1 then do
+
+@#POSITION
+@routine CLRACTION
+@DO `V01 IS 1
+@do move 50 5
+@choice
+`#Front view
+`#Go behind `s03
+`#Try some lips
+`#Get on top
+`#Get on the bottom
+`9Leave the encounter
+@if responce is 1 then goto front1
+@if responce is 2 then goto back1
+@if responce is 3 then goto kiss
+@if responce is 6 then goto LEAVE
+@do goto POSITION
+
+@#SELITEM
+;why list some items individualy, why not let player figure out what
+;items can be used. Some you'd never even expect can be *toys*. :-)
+@do `p20 is 1
+@routine CLRACTION
+@do move 53 8
+@do write
+ `%U`7p   `%8 `7 
+@do move 53 9
+@do write
+ `7³    ³ ³
+@do move 53 10
+@do write
+`%D`7own  `%2 `7
+@do move 55 5
+@do write
+`8[`7select an item`8]
+
+@label ITEMLOOP
+@do `s03 is npc-sex.ref
+@do `p23 is 50
+@do `p24 is 5
+@do `p20 is 0
+@run itemsel in itemsel.ref
+
+@#ITEMEND
+@do goto LEAVE
+
+@#ITEMUSE
+@do `s10 is `%You`xcan't`xthink`xof`xa`xway`xto`xuse`xthat.`xIf`xyou`xdo,`xyou're`xsick!
+@if `p20 is 0 then do
+        @begin
+        @do `s10 is `%Press`x`$U`x`%or`x`$D`x`%or`x`$2`x`%or`x`$8`x`%to`xselect`xitem.
+        @end
+
+@if `p20 is 1 then do
+        @begin
+        @do `s10 is `%Use`x`4wild`xberries
+        @end
+@if `p20 is 2 then do 
+        @begin
+        @do `s10 is `%Use`x`4poison`xberry
+        @end
+@if `p20 is 3 then do
+        @begin
+        @do `s10 is `%Use`x`%milk.
+        @end
+@if `p20 is 7 then do
+        @begin
+        @do `s10 is `%Use`x`6ancient`xflute            ;<-- (romantic play)
+        @end
+@if `p20 is 8 then do
+        @begin
+         @do `s10 is `%Use`x`4berry`x`%pie
+        @end
+@if `p20 is 11 then do
+        @begin
+         @do `s10 is `%invite`xthe`x`#little`xgirl     ;<--- (bad move)
+        @end
+@if `p20 is 29 then do 
+        @begin
+        @do  `s10 is`%Use `7salmon
+        @end
+@if `p20 is 30 then do 
+        @begin
+        @do `s10 is `%Use`x`!sparking`xsalmon
+        @end
+@if `p20 is 43 then do 
+        @begin
+        @do `s10 is `%Use`x`%chicken`xegg
+        @end
+@if `p20 is 51 then do 
+        @begin
+        @do `s10 is `%Use`x`5Small`xFuzzy`xAnimal
+        @end
+@if `p20 is 57 then do 
+        @begin
+        @do `s10 is `%Use`x`7moon`xstone
+        @end
+@if `p20 is 72 then do 
+        @begin
+        @do `s10 is `%Use`x`1gryphon`xmoon
+        @end
+@if `p20 is 73 then do 
+        @begin
+        @do `s10 is `%Use`xthe`x`4smackrod
+        @end
+@if `p20 is 78 then do 
+        @begin
+        @do `s10 is `%Propose`xwith`x`$wedding`xrings
+        @end
+@if `p20 is 80 then do 
+        @begin
+        @do `s10 is `%Show`xyour`x`7mouse`xtail
+        @end
+@if `p20 is 86 then do 
+        @begin
+        @do `s10 is `%Use`xyour`xbottle`xof`x`#P`5INK`x`#p`5otion
+        @end
+@if `p20 is 87 then do 
+        @begin
+        @do `s10 is `%Use`x`7clean`xrag            ;<-- (for tieing up) :)
+        @end
+@if `p20 is 88 then do 
+        @begin
+        @do `s10 is `%Use`xpot`xof`x`$honey
+        @end
+@if `p20 is 89 then do
+        @begin
+        @do `s10 is `%Use`xjar`xof`x`$honey
+        @end
+@if `p20 is 91 then do
+        @begin
+        @do `s10 is `%Use`x`7black`xpotion            ;<-- (rub oil)
+        @end
+@if `p20 is 92 then do 
+        @begin
+        @do `s10 is `%Use`x`7white`xflower            ;<-- (to give)
+        @end
+@if `p20 is 93 then do 
+        @begin
+        @do `s10 is `%Use`x`7purple`xpotion            ;<-- (rub oil)
+        @end
+@if `p20 is 94 then do 
+        @begin
+        @do `s10 is `%Use`x`7yellow`xpotion            ;<--(rub oil)
+        @end
+@if `p20 is 95 then do
+        @begin
+        @do `s10 is `%Use`x`7Myphon moon (warp away/leave)
+        @end
+@do move 1 1
+@show
+`p22
+@routine lines
+@do `s10 is `8not`xused`xyet,`xjust`xtesting
+@routine lines
+@do goto SELITEM
+@end
+
+
+
+@#LISTEN
+@DO `V01 IS 1
+@do move 40 5
+@choice
+Listen to `s03
+Ignore `s01's plea
+@if responce is 1 then do
+        @begin
+        @do `s10 is `$`N`%:`xOkay, I'll wait.
+        @do `p29 + `p20
+        @end
+@if responce is 2 then do
+        @begin
+        @do `s10 is `$`N`%:`xFUCK YOU BITCH!
+        @bitset `t70 0 1
+        @do `p29 - `p20
+        @end
+@#NOMORE
+--to-do-next--
+USE HP! or something for stamina
+add force remove NPC shirt
+make same routines for paints + panties
+
+

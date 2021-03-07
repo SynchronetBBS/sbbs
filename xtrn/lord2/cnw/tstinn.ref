@@ -1,0 +1,131 @@
+; Script file TSTINN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE chat 000000219
+@DECLARE bartender 000001250
+@NOCHECK
+; End of .REF index
+
+;File that deals with this IGMs Inn
+ 
+@#chat
+@do moveback
+@busy
+@show
+`r0`c  `r1  CHATTING WITH PATRONS  `r0
+ 
+@if bar.txt exist false then do
+ @begin
+ @writefile bar.txt
+  `%Bartender `2: `0Hey down there, finish yer drinks and get out!
+  `%Old Man `2: `0I'll finish *hick* when I want to...
+  `%Silent Shadow `2: `0I'll be the first to defeat that dragon.
+ @end
+ 
+@if bar.txt exist true then do
+ @begin
+ @displayfile bar.txt
+ @end
+ 
+@show
+ 
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+ 
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+ @writefile bar.txt
+  `%`n`2 : `0`s03
+ @do trim bar.txt 17
+ @drawmap
+ @update
+ 
+@#bartender
+@do moveback
+@if `p09 < 2 then do
+  @begin
+  @do saybar
+`0Bartender: `2Get outta my face kid, I've never heard of you!
+  @closescript
+  @end
+@do `v01 is 1
+@show
+`r0`c  `r1 Talking to the bartender `r0
+ 
+  `0"What do ya want, punk?"
+ 
+@do write
+`x`x
+@choice
+Conduct business with the bartender
+Trade in gems
+Leave
+@if responce is 1 then do
+  @begin
+  @do `p20 is 1
+  @run getquest in quest.ref
+  @end
+@if response is 2 then do
+@begin
+;3 gems for `i54 Silver potion,  3 gems for `i53 Gold, `i52 red.
+ @if `p19 < 3 then do
+   @begin
+   @show
+`\`\  `0"Hey, you need at least three gems to get a potion!"
+`\`k
+   @do goto bartender
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `0"Okay, what kind a potion you want?"`2
+ 
+  @do write
+  `x`x
+  @choice
+Silver Potion
+Gold Potion
+Red Potion
+   @if response is 1 then do
+    @begin
+    @do `p19 - 3
+    @do `i54 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+   @if response is 2 then do
+    @begin
+    @do `p19 - 3
+    @do `i53 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+   @if response is 3 then do
+    @begin
+    @do `p19 - 3
+    @do `i52 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+  @end
+@drawmap
+@update

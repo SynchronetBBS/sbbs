@@ -1,0 +1,58 @@
+
+               The Lands of Glendale by Nicholas Morrissey
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (6)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A neat IGM for Lord2.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM GLENDALE.IGM
+
+  To uninstall, do the same thing again.
+
+  To see it, walk to the screen right of the treehouse. You will see that
+  you can enter a new place from above. Walk there and see a new place. There 
+  is a castle to the left, and a town to the right.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `7T`8he `7L`8ands `7o`8f `#G`5lendale `2by `0Nicholas Morrissey `0(`!FLiNK`0)`2
+replacescreen: 1199 1 show
+
+;744
+replacescreen: 822 2 noshow
+;745
+replacescreen: 823 3 noshow
+;746
+replacescreen: 824 4 noshow
+;747
+replacescreen: 825 5 noshow
+;748
+replacescreen: 826 6 noshow
+;749
+replacescreen: 827 7 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This is my newest (4th one if I am right) IGM that I have made. It is 
+  definately my best piece of work. There is a castle and a small town. The
+  town has a healer, a weapon and an armour shop, a trainer, and a hotel.
+
+                  BY: `5F`#L`%i`#N`5K

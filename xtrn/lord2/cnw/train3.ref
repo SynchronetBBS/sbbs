@@ -1,0 +1,256 @@
+; Script file TRAIN3.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:24 2001
+
+@DECLARE win 000000437
+@DECLARE die 000000987
+@DECLARE wakeup 000001204
+@DECLARE arena1 000001476
+@DECLARE arena2 000001668
+@DECLARE arena3 000001957
+@DECLARE master1 000002220
+@DECLARE master2 000002930
+@DECLARE master3 000003667
+@DECLARE startfight 000004394
+@DECLARE closescript 000004931
+@NOCHECK
+; End of .REF index
+
+;training
+@#WIN
+
+@do `p21 is 5
+@do `p03 + `p21
+
+@do `p22 is 2
+@do `p04 + `p22
+
+@do `p23 is 1
+@do `p05 + `p23
+
+
+@do `p09 + 1
+
+@do addlog
+  `r4  `r0 `0`n`2 has beaten `0`e`2 and become level `p09! `r4  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p02 is `p03
+@show
+`r0`c  `r1 `%YOU HAVE FACED YOUR DARKEST FEAR AND TRIUMPHED! `r0 
+
+  `2You wake up well rested.
+
+  `%YOU ARE NOW LEVEL `p09!
+
+  `2You gain `0`p21`2 hitpoints,`0 `p22`2 muscle and `0`p23`2 dodge.
+
+`k
+@run train in atrain.ref
+
+@#DIE
+@do `p02 is 1
+@do `t04 is 1 
+@show
+`r0`c  `r1 `%YOUR NIGHTMARE HAS BESTED YOU `r0 
+
+  `2You wake up screaming to find four men holding you down.
+
+  You have failed.
+
+`k
+@run train in atrain.ref
+
+@#WAKEUP
+`@do `t04 is 1 
+@show
+`r0`c  `r1 `%YOU ESCAPE - THE ONLY WAY YOU KNOW HOW `r0 
+
+  `2You suddenly sit up in bed.  Wiping the beads of sweat from your brow,
+  you wonder how you could have thought you were ready for this...
+
+`k
+@run train in atrain.ref
+
+@#arena1
+@show
+`c  `r1                           `%THE VOID                            `r0
+
+  `7You find yourself surrounded by a vast greyness.
+
+  Looking around you see...
+`k
+@
+
+
+@#arena2
+@show
+`c  `r1                         `%UNDERWATER                            `r0
+
+  `9You are surrounded by the deep blue sea. Amazingly, breathing is not
+  a problem!
+
+  You notice something swimming towards you. As it gets closer, you can
+  see that it is...
+`k
+@
+
+@#arena3
+@show
+`c  `r1                         `%MOUNTAIN TOP                          `r0
+
+  `%You open your eyes to find yourself on the frosty peak of a very
+  high mountain.
+
+  With the sun shining brightly, you feel ready to fight...
+`k
+@
+
+
+
+
+@#master1
+@show
+  A grey shape that fills you a with a sense of emptyness.
+
+`k
+@fight
+;name
+Grey Minion
+;string said when you see him
+It almost seems as though the Grey Minion does not exist...
+;power move kill string
+`%The sense of emptiness has vanished! Way to go!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+attacks with a mind trick|`p22
+plays mind games with you|`p22
+claws your face|`p22
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+TRAIN3.REF|WIN
+;if lose: ref file|name or NONE
+TRAIN3.REF|DIE
+;if runs: ref file|name or NONE
+TRAIN3.REF|WAKEUP
+@closescript
+
+@#master2
+@show
+  A figure in a dark robe holding a scythe.
+
+`k
+@fight
+;name
+Minor Death
+;string said when you see him
+The Minor Death camly beckons you to the other side...
+;power move kill string
+`%Wow! You have defeated death! Don't let it go to your head...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+slashes with its scythe|`p22
+touches you with a deathly cold hand|`p22
+shows you it's evil visage, scaring you|`p22
+NONE|NONE
+NONE|NONE
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+TRAIN3.REF|WIN
+;if lose: ref file|name or NONE
+TRAIN3.REF|DIE
+;if runs: ref file|name or NONE
+TRAIN3.REF|WAKEUP
+@closescript
+
+@#master3
+@show
+  A shadow dragon rushes to attack you!
+
+`k
+@fight
+;name
+Shadow Dragon
+;string said when you see him
+You grab your weapon and prepare to make Dragon Burgers!
+;power move kill string
+`%You did it! Now if only you could find the Red Dragon...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+breaths `@fire`2|`p22
+breaths `7acid`2|`p22
+breaths `0chlorine gas`2|`p22
+breaths `%ice`2|`p22
+breaths `9lightning`2|`p22
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+TRAIN3.REF|WIN
+;if lose: ref file|name or NONE
+TRAIN3.REF|DIE
+;if runs: ref file|name or NONE
+TRAIN3.REF|WAKEUP
+@closescript
+
+
+
+
+@#startfight
+;<--added by CNW for time-->
+@do `p21 is `v05
+@do `p21 / 24
+@do `p11 - `p21
+
+;do math to create monster
+
+@do `p21 is `p03
+@do `p25 is `p09
+@do `p25 random `p25 1
+@do `p21 + `p25
+
+@do `p22 is S&wep_num
+@do `p22 + `p04
+
+@do `p23 is S&arm_num
+@do `p23 + `p05
+
+@do `p24 random `p22
+@do `p21 + `p24
+@do `p24 random `p22
+@do `p21 - `p24
+
+@do `p24 random `p22
+@do `p24 / 5
+@do `p22 - `p24
+
+
+;pick arena
+@do `p20 random 3 1
+@routine arena`p20
+;pick master
+@do `p20 random 3 1
+@routine master`p20
+@#closescript

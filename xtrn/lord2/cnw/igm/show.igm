@@ -1,0 +1,196 @@
+To install, type: IGM SHOW.IGM
+
+  Version of LORD2 required to use it             : 1.01a
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : Yes! (3)
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (5)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (6)
+  Free?                                           : Yes!
+  Version of this IGM                             : 1.9
+
+  I replace the quest.ref, items.ref, gametxt.ref, and items.dat.  Just so
+  they won't overwrite your files, I named them squest.ref, sitems.ref,
+  sgametxt.ref, and sitems.dat.  Below are listed all the changes.
+
+  I add maps to blocks 245, 246, 247, 248, 249, and 250.  If you have a
+ conflict with any other programs, you can easily change one or the other.
+ Just be sure that if you change this one, you make the appropriate changes
+ on ALL the hotspots in it, as well as changing the Mystic Eye to take you
+ to the right place.
+
+  I change block 55.  All I do is add an entrance and two signs.  If this is a
+ problem, go ahead and change it to wherever you like, but be sure to change
+ the exit from the House of Wonders to go to the new entrance.  Also, be sure
+ you put BOTH signs in as well.
+
+
+  Here are all the changes I made to quest.ref, items.ref, gametxt.ref and
+ items.dat:
+
+  QUEST.REF
+  I added the ability for SpringFang to be included in the quest deal.  Just
+ look at squest.ref to see the changes you need to make.  They include adding
+ the line:
+
+  @if `p20 is 7 then `s01 is `3Spr`7ing`4Fa`6ng
+
+ in the @#GETNAME function, and the line:
+
+  @if `p20 is 7 then `s03 is House`xof`xWonders
+  
+ in the @#GETPLACE function.  Finally, you need to replace the line:
+
+  @do `p20 random 6 1
+
+ with:
+ 
+  @do `p20 random 7 1
+
+ This is VERY necessary.
+
+
+  ITEMS.REF
+  All I did was add one item ref for my Mystic Eye item.  It's very simple to
+ add.  All the @datasave lines are for the challenge bit.
+
+ Just add these lines:
+
+ @#MEYE
+  @itemexit
+  @routine enter in show2.ref
+
+
+ anywhere in the file, except of course in another function.
+
+
+  GAMETXT.REF
+  These changes make it so that when someone is killed, if the just happen to
+ be the Greatest Warrior in the Land, the person who killed them will get the
+ money, and all that fun stuff.
+
+  First, locate the @#iwon function in the file.  Then add these lines BEFORE
+ it goes into the bounty stuff:
+
+  @if grshow.shw exist true then do
+   @begin
+   @dataload grshow.shw 1 `p20
+   @dataload grshow.shw 2 `p24
+   @do `s01 is getname `p20
+   @if `v39 is `p20 then do
+    @begin
+    @do money + `p24
+   @do delete grshow.shw
+   @do quebar
+   `2You collect `0$`p24 `2for killing the `$Greatest Warrior in the Land`2!
+   @do addlog
+   `r5  `r0 `0`n `2killed `0`s01`2, and got the `0$`p24 `2for killing the
+@do addlog
+                    `$Greatest Warrior in the Land`2! `r5  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+   @writefile mail\mail`p20.dat
+  `0`3Spr`7ing`4Fa`6ng `2reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`4  You've been killed by `0`n`4.  I warned you to watch your back,
+ but I guess you just didn't pay attention.  Oh well.
+
+
+
+
+@end
+@end
+
+
+  ITEMS.DAT
+  This is where the info is for the Mystic Eye, the Armor of KCD, and the
+ Sword of KCD is.  You simply add this stuff by going into L2CFG and accessing
+ the item editor.  I will list all the stats for these items just as they are
+ listed in the item editor.  It is EXTREMELY necessary that you keep the item
+ numbers the same.
+
+
+  LORD II ITEM EDITOR  editing item (83 of 99)
+  (A) Name of the item  : Mystic Eye
+  (B) Action String     :
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : MEYE
+  (G) Use string        : Look into it.
+  (H) Gold Value        : 0
+  (I) Used only once?   : No
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : Try it out!
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (84 of 99)
+  (A) Name of the item  : Armor of `4K`5C`8D`0
+  (B) Action String     :
+  (C) Used as armour?   : Yes
+  (D) Used as weapon?   : No
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : 
+  (G) Use string        : 
+  (H) Gold Value        : 0
+  (I) Used only once?   : No
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : Greatest armor. (+300)
+  (L) Weapon strength   : 0
+  (M) Armour defence    : 300
+  (N) Quest item?       : No
+
+
+  LORD II ITEM EDITOR  editing item (85 of 99)
+  (A) Name of the item  : Armor of `4K`5C`8D`0
+  (B) Action String     : You savagely slash
+  (C) Used as armour?   : No
+  (D) Used as weapon?   : Yes
+  (E) Can be sold?      : No
+  (F) Ref, if "Usable"? : 
+  (G) Use string        : 
+  (H) Gold Value        : 0
+  (I) Used only once?   : No
+  (J) Breaks 1 out of   : Never breaks
+  (K) Description       : Greatest sword. (+650)
+  (L) Weapon strength   : 650
+  (M) Armour defence    : 0
+  (N) Quest item?       : No
+
+
+
+  One other thing...  This igm creates MANY .shw files.  They are listed in
+ the README file.  So, if you wonder what they are and what they do, go check
+ it out.
+
+
+
+igmname: `3Spr`7ing`4Fa`6ng`2's House of Wonders `5v1.9 `1by Thos Swallow (springfang@hotmail.com)
+
+replacescreen: 245 1 noshow
+
+replacescreen: 246 2 noshow
+
+replacescreen: 247 3 noshow
+
+replacescreen: 248 4 noshow
+
+replacescreen: 249 5 noshow
+
+replacescreen: 250 7 noshow
+
+replacescreen: 55 6 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+   `0Check out the README and SHOW.IGM files for any and all information
+  about this IGM!
+
+   `5Give me your comments!   springfang@hotmail.com

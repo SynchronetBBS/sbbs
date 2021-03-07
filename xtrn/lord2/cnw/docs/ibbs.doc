@@ -1,0 +1,35 @@
+
+         --- Notice to IGM authors for iBBS compatibility ---
+
+    Directories to be added in future versions for iBBS compatibility:
+ /data/     = for all *.IDF and *.DAT files which are used during the game.
+ /ibbs-out/ = files to be processed and sent to another node.
+ /ibbs-in/  = files received from another node.
+
+  Have ALL your data files to store any info about the player or game
+  settings stored in the /data/ directory instead of the main lord2
+  directory. This will make it iBBS compatible and the same time, easier
+  to reset the game.
+
+  Any file in the /data/ directory which gets modified in the game, should
+  be copied into the /ibbs-out/ directory so they can be processed and
+  send to other nodes.
+
+  All IGMs already included in this version of CNW, I will make the
+  apropiate modifications to include iBBS support, if you wish your
+  IGM to be included in future versions, PLEASE make those new regulations
+  to make it iBBS compatible.
+
+  This version of CNW is NOT iBBS ready. The iBBS program is still under
+  developement.
+  If any other door authors wish to make iBBS programs, to handle the
+  processing and distribution, please use these standards laid out
+  here.
+
+
+
+                   Joel Gathercole
+                         -Complete New World
+                         -BBS World Magazine
+              http://thor.prohosting.com/~greenie/
+                Green Machine OSP  514-736-0129

@@ -1,0 +1,529 @@
+;
+;     Locker House version 1.2 (REF FILE #2/6)
+;       by: Joel Gathercole
+;
+;    in aliance with Complete New World 136.3+
+;
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+@#fast
+@do saybar
+`$Not too fast buddy. Please slow down. 
+@end
+@closescript
+
+@#a
+@busy
+@do `p29 is 961
+@do `s01 is a
+@do moveback
+@if lockers`s01.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@run nomore in lockers.ref
+@end
+
+@#b
+@busy
+@do `p29 is 961
+@do `s01 is b
+@do moveback
+@if lockers`s01.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#c
+@busy
+@do `p29 is 961
+@do `s01 is c
+@do moveback
+@if lockers`s01.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#d
+@busy
+@do `p29 is 961
+@do `s01 is d
+@do moveback
+@if lockersd.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#e
+@busy
+@do `p29 is 961
+@do `s01 is e
+@do moveback
+@if lockerse.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#f
+@busy
+@do `p29 is 961
+@do `s01 is f
+@do moveback
+@if lockersf.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#g
+@busy
+@do `p29 is 961
+@do `s01 is g
+@do moveback
+@if lockersg.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#h
+@busy
+@do `p29 is 961
+@do `s01 is h
+@do moveback
+@if lockersh.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#i
+@busy
+@do `p29 is 961
+@do `s01 is i
+@do moveback
+@if lockersi.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#j
+@busy
+@do `p29 is 881
+@do `s01 is j
+@do moveback
+@if lockersj.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#k
+@busy
+@do `p29 is 881
+@do `s01 is k
+@do moveback
+@if lockersk.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#l
+@busy
+@do `p29 is 881
+@do `s01 is l
+@do moveback
+@if lockersl.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#m
+@busy
+@do `p29 is 881
+@do `s01 is m
+@do moveback
+@if lockersm.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#n
+@busy
+@do `p29 is 881
+@do `s01 is n
+@do moveback
+@if lockersn.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#o
+@busy
+@do `p29 is 881
+@do `s01 is o
+@do moveback
+@if lockerso.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#p
+@busy
+@do `p29 is 882
+@do `s01 is p
+@do moveback
+@if lockers`s01.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#q
+@busy
+@do `p29 is 882
+@do `s01 is q
+@do moveback
+@if lockersq.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#r
+@busy
+@do `p29 is 882
+@do `s01 is r
+@do moveback
+@if lockersr.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#s
+@busy
+@do `p29 is 882
+@do `s01 is s
+@do moveback
+@if lockerss.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#t
+@busy
+@do `p29 is 882
+@do `s01 is t
+@do moveback
+@if lockerst.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#u
+@busy
+@do `p29 is 882
+@do `s01 is u
+@do moveback
+@if lockersu.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#v
+@busy
+@do `p29 is 882
+@do `s01 is v
+@do moveback
+@if lockersv.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#w
+@busy
+@do `p29 is 963
+@do `s01 is w
+@do moveback
+@if lockersw.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#x
+@busy
+@do `p29 is 963
+@do `s01 is x
+@do moveback
+@if lockersx.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#y
+@busy
+@do `p29 is 963
+@do `s01 is y
+@do moveback
+@if lockersy.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#z
+@busy
+@do `p29 is 963
+@do `s01 is z
+@do moveback
+@if lockersz.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#a1
+@busy
+@do `p29 is 963
+@do `s01 is 1
+@do moveback
+@if lockers1.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#a2
+@busy
+@do `p29 is 963
+@do `s01 is 2
+@do moveback
+@if lockers2.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#a3
+@busy
+@do `p29 is 963
+@do `s01 is 3
+@do moveback
+@if lockers3.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#a4
+@busy
+@do `p29 is 963
+@do `s01 is 4
+@do moveback
+@if lockers4.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+  
+@#a5
+@busy
+@do `p29 is 963
+@do `s01 is 5
+@do moveback 
+@if lockers5.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+
+@#a6
+@busy
+@do `p29 is 881
+@do `s01 is 6
+@do moveback
+@if lockers6.idf exist false then do
+ @begin
+ @run empty in lockers.ref
+ @end 
+@if lockers`s01.idf exist true then do
+ @begin
+ @run ownlocker in lockers.ref
+ @end
+@end
+@closescript
+

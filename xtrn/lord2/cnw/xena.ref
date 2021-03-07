@@ -1,0 +1,333 @@
+;
+; Xena's House Version 1.21a (beta version)
+;
+;  Modified by LoRD2: Complete New World team with
+;  permission from author of Xena IGM.
+;  Xena IGM author:  quineska@hotmail.com
+;
+;
+;  http://greenmachinebbs.com/lord2
+;
+@nocheck
+@#START
+@do moveback
+@datanewday xena.idf
+@dataload xena.idf &playernum `p20
+@if `p20 is 0 then do
+        @begin
+        ;@routine regcheck
+        @clear screen
+        @do `p25 is `p09
+        @do `p25 * 10
+        @show
+[40m
+[39m[17C[0m‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹‹
+[5C‹‹‹‹‹‹‹‹‹‹‹‹€[1;30m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€‹[0m€
+    €±±±±±±±±±±±±±ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ€
+[5Cﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€[1;30m€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€ﬂ[0m€
+[17Cﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ
+ 
+[35m"I am, the renowned, Xena - Warrior Princess. I know you want to be one of
+the greatest warriors in this realm of magic, foes, friends, good and evil by
+killing the [5;31mRed Dragon.[0m [35mI shall offer you this magical potion
+for just `p25 gold. It gives you more Dodge, Muscle, Experience and More
+Hitpoints."
+ 
+"Do you accept or decline my offer?"[0m
+        
+[37mIt looks like a `6murky `0green slime.[0m       
+        
+        @do `v01 is 1
+        @choice
+        Say, "Hmmm, I could take a bit of it."
+        Respond, "Nah maybye tommorrow"
+        @if responce is 2 then do
+        @begin
+        @show
+        `\
+        [37m"Sorry Xena, not today. I'll come back tommorrow."[0m`\
+        @key
+        @datasave xena.idf &playernum 1
+        @drawmap
+        @update
+        @closescript
+        @end
+ 
+        @if responce is 1 then do
+        @begin
+        @if money < `p25 then do
+                @begin
+                @show
+`\`\`4"Nice try! Did you really think that I, Xena, Warrior Princess would under
+estimate the the amount of money you carrying? For that, my friend, you shall
+not come here ever again!"
+ 
+`%Xena kicks you out the door.`\
+ 
+                @key
+                @datasave xena.idf &playernum 1
+                @drawmap
+                @update
+                @closescript
+                @end
+ 
+ 
+        @show
+        `\`\
+[36mYou drink down the liquid and you suddenly feel [5;31mmuch better[0m`\
+ 
+        @key
+        @do money - `p25
+        @do `p01 + 20
+        @do `p03 + 3
+        @do `p02 + 3
+       ; @do `p04 + (3 * `p09 / 60)  <replaced with below>
+        @do `p20 is `p09
+        @do `p20 * 3
+        @do `p20 / 60
+        @do `p04 + `p20
+
+        ; @do `p05 + (1 * `p09 / 60)  <replaced with below>
+        @do `p20 is `p09
+        @do `p20 / 60
+        @do `p05 + `p20
+ 
+        @datasave xena.idf &playernum 1
+        @drawmap
+        @update
+        @closescript
+        @end
+ 
+@closescript
+@end
+@if `p20 is 4 then do
+        @begin
+        @do saybar
+`%Xena is too busy now to listen to your taunts.
+        @closescript
+        @end
+@offmap
+@clear screen
+@show
+`@So, you came back for more, eh? Well first, a match. I might have retired,
+but I'm still good for any age!`\
+@key
+@do moveback
+@drawmap
+@update
+@do saybar
+`%Xena grabs you by the ear and drags you outside!
+@do `p29 is `p04
+@do `p29 + `p09
+@do `p28 is `p05
+@do `p28 * 3
+@do `p27 is `p29
+@do `p27 * 2
+@do `p26 is `p03
+@do `p26 * 3
+@do `p26 / 2
+@do `p21 random `p05 1
+@do `p28 + `p21
+@fight
+;name
+Xena
+;string said when you see him
+`5"Whenever your ready!" `2you hear from behind.
+;power move kill string
+`2She sits up ground, staring in amazement.
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+punches you|`p04
+slashes you|`p27
+throws her shacrum|`p26
+gives you the pinch|`p29
+bites you|`p04
+;defense
+`p28
+;gold reward
+`p01
+;experience
+`p07
+;hit points
+`p26
+;if win: ref file|name or NONE
+XENA|ENDFIGHT
+;if lose: ref file|name or NONE
+XENA.REF|DIE
+;if runs: ref file|name or NONE
+XENA|RUNFIGHT
+ 
+@#DIE
+@do saybar
+You have failed little one.`l`l`k
+@do quebar
+She spends the next half hour going over your sores.
+@do `p20 is `p03
+@do `p20 / 2
+@do `p02 IS `p20
+@datasave xena.idf &playernum 4
+@drawmap
+@update
+
+@#endfight
+@do saybar
+Congratulations, you have bested me.
+@do quebar
+She spends the next half hour going over your sores.
+@do `p02 IS `p03
+@datasave xena.idf &playernum 4
+@drawmap
+@update
+ 
+@#runfight
+@do x is 75
+@do y is 15
+@drawmap
+@update
+@do saybar
+You manage to run so she can't see you!
+@do quebar
+Come back here you coward! I'll get you!
+@datasave xena.idf &playernum 3
+@drawmap
+@update
+ 
+@#XENAFOUND
+@datanewday xena.idf
+@dataload xena.idf &playernum `p26
+@if `p26 is 3 then do
+        @begin
+        @do saybar
+                                                                              
+        @do saybar
+"So that's where you are! See you in hell!"`l`l`l`l
+;        @key
+        @do saybar
+                                                                            
+        @do saybar
+Xena catches you before you run away. She throws her shacrum at you.`l`l`l`l`l`l
+;        @key
+        @do saybar
+                                                                             
+        @do saybar
+All now you can see is blood.....`l`l`l`l
+;        @key
+        @run die in gametxt.ref
+         @closescript
+         @end
+ 
+@#regcheck
+@if xenainfo.dat exists false then do
+@begin
+@clear screen
+@show
+ 
+`4This program is unregistered. `$Your sysop can register it for `^FREE `$at
+`3http://quineska.bizland.com.`% Also you can pick up more IGMS from
+Quineska Software as well as the latest news concerning our software plus
+other things.
+ 
+Thankyou
+Christopher Armstrong
+`l`l`l`l`l`l
+@key
+@closescript
+@end
+ 
+@readfile xenainfo.dat
+`s10
+`p21
+`p22
+@do `p21 * 8
+@do `p21 + 8374
+@do `p21 / 6
+@do `p21 - 790
+@do `p21 * 89
+@do `p21 / 95
+@do `p21 * 6
+@do `p21 + 267
+@if `p21 not `p22 then do
+@begin
+@clear screen
+@show
+ 
+`4This program is unregistered. `$Your sysop can register it for `^FREE `$at
+`3http://quineska.bizland.com.`% Also you can pick up more IGMS from
+Quineska Software as well as the latest news concerning our software plus
+other things.
+ 
+Thankyou
+Christopher Armstrong
+`l`l`l`l`l`l
+@key
+@end
+ 
+@#sign
+@do moveback
+;@if xenainfo.dat exists false then do
+;@begin
+;@routine unsaybar
+;@end
+;@readfile xenainfo.dat
+;`s10
+;`p21
+;`p22
+;@do `p21 * 8
+;@do `p21 + 8374
+;@do `p21 / 6
+;@do `p21 - 790
+;@do `p21 * 89
+;@do `p21 / 95
+;@do `p21 * 6
+;@do `p21 + 267
+;@if `p21 not `p22 then do
+;@begin
+;@label unregsaybar
+;@do saybar
+;Xena's House by Quineska Software, UNREGISTERED. Please tell your SYSOP to`l`l`l`l`l`l`l`l
+;@do saybar
+;register at http://quineska.bizland.com or quineska@hotmail.com.
+; @closescript
+; @routineabort
+;
+;@end
+;@do saybar
+;Xena's House by Quineska Software. Registered to `s10.
+ 
+;@#unreg
+;@clear screen
+;@show
+ 
+ 
+;`4This program is unregistered. `$Your sysop can register it for `^FREE `$at
+;`3http://quineska.bizland.com.`% Also you can pick up more IGMS from
+;Quineska Software as well as the latest news concerning our software plus
+;other things.
+ 
+;Thankyou
+;Christopher Armstrong
+;`l`l`l`l`l`l
+;@key
+ 
+@#accident
+@if &lasty is 18 then do
+  @begin
+  @dataload xena2.idf &playernum `p20
+   @if `p20 is 1 then goto end
+  @do x is 65
+  @do y is 17
+  @do saybar
+Xena: How the hell did you get in there? Here is $500 as a gift!
+  @datasave xena2.idf &playernum 1
+  @do money + 500
+  @update
+  @closescript
+@end
+@do moveback
+ 
+@#end
+@update
+@closescript
+
+ 

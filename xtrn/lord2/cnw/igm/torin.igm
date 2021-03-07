@@ -1,0 +1,48 @@
+
+                Torin Castle V1.3 by Dave (Jam) Henderson
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A new castle for LORD2 beta 7+ called Torin Castle.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM TORIN.IGM
+
+  To uninstall, do the same thing again.
+
+  The new castle is located south-west of GreenTree.
+  Email me at Davejam@netpage.net.au for comments and/or suggestions.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Torin Castle  `2by `4D`@ave `#(`5Jam`#) `4H`@enderson
+replacescreen: 1202 1 noshow
+
+replacescreen: 1435 2 show
+
+replacescreen: 1351 3 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This is my second `0IGM `2and includes a new castle called Torin 
+  Castle. Email your comments and suggestions to davejam@netpage.net.au.
+  Thankyou for using my product.
+  `$Distribute freely, Enjoy!

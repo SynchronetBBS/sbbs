@@ -1,0 +1,48 @@
+
+            The Wizard's Castle by Bobby Queen & Robby Dittmann V1.3
+
+                              AN IGM FOR LORD2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (2)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  More Complex IGM for LORD2.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM WIZCAST.IGM
+
+  To uninstall, do the same thing again.
+
+  To enter, walk to the screen directly under Stonebrook and to the right
+  you will see a new building - enter it and you're in The Wizard's Castle!
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Wizard's Castle `2by `0Bobby Queen & Robby Dittmann
+;1440
+replacescreen: 1198 1 show
+
+replacescreen: 1521 2 noshow
+
+replacescreen: 1522 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, this IGM adds a Castle that you can sleep in, in the Unregistered
+  version of `0LORD2`2 without screwing anything up.   This Castle even has
+  a maze on the top floor for you to traverse and try to find the treasure.

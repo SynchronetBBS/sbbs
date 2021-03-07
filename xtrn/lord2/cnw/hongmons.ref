@@ -1,0 +1,174 @@
+; Script file HONGMONS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE monster1 000000301
+@DECLARE monster2 000000845
+@DECLARE monster3 000001419
+@DECLARE monster4 000001996
+@DECLARE monster5 000002567
+@DECLARE fight 000003134
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Junkie
+;string said when you see him
+He puts down his crack pipe and attacks you!
+;power move kill string
+You broke his addiction!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with stench|30
+stabs you with a needle|45
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+3
+;experience
+333
+;hit points
+70
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster2
+@fight
+;name
+Mugger
+;string said when you see him
+`4"Gimmy yo wallet" `2a man in a ski mask demands.
+;power move kill string
+That was some American Justice!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+stabs you with his knife|80
+kicks you in the head|51
+slashes your face|73
+NONE|NONE
+NONE|NONE
+;defense
+13
+;gold reward
+543
+;experience
+451
+;hit points
+276
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+STONEP.REF|THIEF
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster3
+@fight
+;name
+Gigantic River Rat
+;string said when you see him
+A huge and vicious rodent runs up to you and attacks!
+;power move kill string
+You splatter its brains with your s&weapon.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites your leg|32
+bites your leg|41
+bites your leg|27
+NONE|NONE
+NONE|NONE
+;defense
+23
+;gold reward
+0
+;experience
+230
+;hit points
+77
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster4
+@fight
+;name
+Psycho
+;string said when you see him
+A man with a smile on his faces pulls a knife on you.
+;power move kill string
+You cure his mental illness with your s&weapon
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+strangles you|78
+stabs you|66
+goes berserk on you|103
+NONE|NONE
+NONE|NONE
+;defense
+35
+;gold reward
+632
+;experience
+500
+;hit points
+166
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+ 
+@#monster5
+@fight
+;name
+Car
+;string said when you see him
+You hear tires squeal as a car charges at you.
+;power move kill string
+The car explodes in a ball of fire killing the driver!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+runs you over|110
+backs over you|78
+sends you fling|81
+rams you|87
+NONE|NONE
+;defense
+45
+;gold reward
+1430
+;experience
+520
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@#FIGHT
+@do `p20 random 12 1
+@if `p20 is 1 then do
+ @begin
+ @run GENRAN in GENRAN.REF
+ @end
+@busy
+@do `p20 random 5 1
+@do goto monster`p20

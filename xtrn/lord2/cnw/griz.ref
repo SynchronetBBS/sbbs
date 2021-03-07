@@ -1,0 +1,74 @@
+; Script file GRIZ.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE table 000000232
+@DECLARE table2 000000522
+@DECLARE grizelda 000001219
+@DECLARE sherie 000001365
+@NOCHECK
+; End of .REF index
+
+@#TABLE
+;Table at grizelda's has some money on it
+@do moveback
+@if bitcheck `t19 3 1 then do
+  @begin
+  @do saybar
+`4You allready took her money!
+  @closescript
+  @end
+
+@DO SAYBAR
+`2Wow, there are 35 gold pieces on the table!  You take 'em.
+@do money + 35
+@bitset `t19 3 1
+
+@#TABLE2
+;This table has a needle laying on it...
+@do moveback
+@if bitcheck `t19 4 1 then do
+  @begin
+  @do saybar
+`4You allready took the needle!
+  @closescript
+  @end
+
+@DO SAYBAR
+`2Wow, there is a neddle laying on the table...
+@do moveback
+@do `p30 random 4 1
+@if `p30 is 1 then saybar
+`2You inject the neddle and you get 1 dodge point
+@do `p05 + 1
+@if `p30 is 2 then saybar
+`2You inject the neddle and you get 1 muscle point
+@do `p04 + 1
+@if `p30 is 3 then saybar
+`2You inject the neddle and you get 2 More MAX Hit Point's!
+@do `p03 + 2
+@if `p30 is 4 then saybar
+`2You inject the neddle and you start to look better you get 2 charm!
+@do `p08 + 2
+@bitset `t19 4 1
+
+@#GRIZELDA
+@do `p70 is 108
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`$Your cute Come to mama!
+@end
+
+@#SHERIE
+@do `p70 is 107
+@do moveback
+@do quebar
+`%Wow She is HOTT!!!
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`$Hi.. Help me Save me... And i will make it worth your while!
+@end
+

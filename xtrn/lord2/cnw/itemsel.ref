@@ -1,0 +1,1287 @@
+; Script file ITEMSEL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:41 2001
+
+@DECLARE itemsel 000003867
+@DECLARE loop 000003892
+@DECLARE 1 000004789
+@DECLARE 2 000004951
+@DECLARE 3 000005114
+@DECLARE 4 000005277
+@DECLARE 5 000005440
+@DECLARE 6 000005603
+@DECLARE 7 000005766
+@DECLARE 8 000006063
+@DECLARE 9 000006226
+@DECLARE 10 000006389
+@DECLARE 11 000006555
+@DECLARE 12 000006722
+@DECLARE 13 000006889
+@DECLARE 14 000007056
+@DECLARE 15 000007223
+@DECLARE 16 000007390
+@DECLARE 17 000007557
+@DECLARE 18 000007724
+@DECLARE 19 000007891
+@DECLARE 20 000008058
+@DECLARE 21 000008225
+@DECLARE 22 000008400
+@DECLARE 23 000008567
+@DECLARE 24 000008734
+@DECLARE 25 000008901
+@DECLARE 26 000009068
+@DECLARE 27 000009235
+@DECLARE 28 000009402
+@DECLARE 29 000009569
+@DECLARE 30 000009736
+@DECLARE 31 000009903
+@DECLARE 32 000010070
+@DECLARE 33 000010237
+@DECLARE 34 000010404
+@DECLARE 35 000010571
+@DECLARE 36 000010738
+@DECLARE 37 000010906
+@DECLARE 38 000011073
+@DECLARE 39 000011240
+@DECLARE 40 000011407
+@DECLARE 41 000011574
+@DECLARE 42 000011741
+@DECLARE 43 000011908
+@DECLARE 44 000012075
+@DECLARE 45 000012242
+@DECLARE 46 000012409
+@DECLARE 47 000012577
+@DECLARE 48 000012744
+@DECLARE 49 000012911
+@DECLARE 50 000013078
+@DECLARE 51 000013245
+@DECLARE 52 000013420
+@DECLARE 53 000013610
+@DECLARE 54 000013777
+@DECLARE 55 000013944
+@DECLARE 56 000014111
+@DECLARE 57 000014278
+@DECLARE 58 000014445
+@DECLARE 59 000014612
+@DECLARE 60 000014779
+@DECLARE 61 000014946
+@DECLARE 62 000015113
+@DECLARE 63 000015280
+@DECLARE 64 000015455
+@DECLARE 65 000015622
+@DECLARE 66 000015789
+@DECLARE 67 000015956
+@DECLARE 68 000016123
+@DECLARE 69 000016290
+@DECLARE 70 000016457
+@DECLARE 71 000016624
+@DECLARE 72 000016791
+@DECLARE 73 000016958
+@DECLARE 74 000017125
+@DECLARE 75 000017292
+@DECLARE 76 000017459
+@DECLARE 77 000017626
+@DECLARE 78 000017793
+@DECLARE 79 000017960
+@DECLARE 80 000018127
+@DECLARE 81 000018294
+@DECLARE 82 000018461
+@DECLARE 83 000018628
+@DECLARE 84 000018795
+@DECLARE 85 000018964
+@DECLARE 86 000019131
+@DECLARE 87 000019298
+@DECLARE 88 000019465
+@DECLARE 89 000019632
+@DECLARE 90 000019799
+@DECLARE 91 000019966
+@DECLARE 92 000020133
+@DECLARE 93 000020300
+@DECLARE 94 000020467
+@DECLARE 95 000020634
+@DECLARE 96 000020801
+@DECLARE 97 000020968
+@DECLARE 98 000021135
+@DECLARE 99 000021302
+@NOCHECK
+; End of .REF index
+
+;
+;     Item Selector v1.0 tool for REFing
+;       by: Joel Gathercole
+;
+;   http://greenmachinebbs.com/lord2/
+;   telnet://greenmachinebbs.com
+;   greenie@darktech.org
+;
+;
+;   This is a stand REF script to be called whenever
+; you need to select items for something.
+;   you can find an example in NPC-SEX.REF
+;   or a copied+modified example in LOCKREF3.REF and LOCKREF4.REF
+;  Those REFs are found in CNW v137.0+ packages
+;
+; IMPORTANT, READ AND DO, IMPORTANT!
+; `s03 = ref file this was called from - eg. @do `s03 is RUNME.REF
+; `p23 = location to print X
+; `p24 = location to print Y
+; `p20 = current selected item #
+; `p22 = quantity of that item
+;
+; Run these codes in your REF to call this REF.
+;----snip-it-start---------
+;  @#ITEMSEL
+;  @do `s03 is <insert full REF filename here>
+;  @do `p23 is <x>    ; <--- where do you want the item to be displayed?
+;  @do `p24 is <y>    ; <--- where do you want the item to be displayed?
+;  @run ITELSEL in ITEMSEL.REF
+;
+;  @#ITEMEND
+;   <insert next thing to do after quiting selection>
+;  
+;  @#ITEMUSE
+;   <using the item coding here>
+;----snip-it-end----------
+; 
+; Questions?
+;   Q- Why is @RUN being used instead of @ROUTINE?
+;   A- Becuase @ROUTINE can only be called 2 times before it gets lost.
+;      If you want to test it with @ROUTINE, be my guest. It might work,
+;       depends on how extended your REF's go.
+;
+@#ITEMSEL
+@do goto loop
+
+@#loop
+@do readspecial `s02 EDU28Q
+@if `s02 is E then do
+        @begin
+        @run ITEMUSE in `s03
+        @end
+@if `s02 is Q then do
+        @begin
+        @run ITEMEND in `s03
+        @end
+@if `s02 is U then do
+        @begin
+        @do `p30 is 1
+        @do `p20 - 1
+        @if `p20 < 1 then `p20 is 99
+        @end
+@if `s02 is 2 then do
+        @begin
+        @do `p30 is 1
+        @do `p20 - 1
+        @if `p20 < 1 then `p20 is 99
+        @end
+@if `s02 is D then do
+        @begin
+        @do `p30 is 0
+        @do `p20 + 1
+        @if `p20 > 99 then `p20 is 1
+        @end
+@if `s02 is 8 then do
+        @begin
+        @do `p30 is 0
+        @do `p20 + 1
+        @if `p20 > 99 then `p20 is 1
+        @end
+@do move `p23 `p24
+@do write
+`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x`x
+@do move `p23 `p24
+@do goto `p20
+@do goto ITEMSEL
+
+@label 1
+ @do `p20 is 1
+@if `i01 > 0 then do
+ @begin
+ @do `p22 is `i01
+ @do write
+`$`+01 `8(`7`i01`8)
+ @do goto loop
+ @end
+@if `p30 is 1 then goto 99
+
+@label 2
+ @do `p20 is 2
+@if `i02 > 0 then do
+ @begin
+ @do `p22 is `i02
+  @do write
+`$`+02 `8(`7`i02`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 1
+
+@label 3
+ @do `p20 is 3
+@if `i03 > 0 then do
+ @begin
+ @do `p22 is `i03
+  @do write
+`$`+03 `8(`7`i03`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 2
+
+@label 4
+ @do `p20 is 4
+@if `i04 > 0 then do
+ @begin
+ @do `p22 is `i04
+  @do write
+`$`+04 `8(`7`i04`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 3
+
+@label 5
+ @do `p20 is 5
+@if `i05 > 0 then do
+ @begin
+ @do `p22 is `i05
+  @do write
+`$`+05 `8(`7`i05`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 4
+
+@label 6
+ @do `p20 is 6
+@if `i06 > 0 then do
+ @begin
+ @do `p22 is `i06
+  @do write
+`$`+06 `8(`7`i06`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 5
+
+@label 7
+; There is a weird bug here, do not know why!?!?! :(
+; This is all exatly the same as the rest, yet a bug exists.
+; @do `p20 is 7
+;@if `i07 > 0 then do
+; @begin
+; @do `p22 is `i07
+; @begin
+;  @do write
+;`$`+07 `8(`7`i07`8)
+;  @do goto loop
+; @end
+@if `p30 is 1 then goto 6
+
+@label 8
+ @do `p20 is 8
+@if `i08 > 0 then do
+ @begin
+ @do `p22 is `i08
+  @do write
+`$`+08 `8(`7`i08`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 7
+
+@label 9
+ @do `p20 is 9
+@if `i09 > 0 then do
+ @begin
+ @do `p22 is `i09
+ @do write
+`$`+09 `8(`7`i09`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 8
+
+@label 10
+ @do `p20 is 10 
+@if `i10 > 0 then do
+ @begin
+ @do `p22 is `i10
+  @do write
+`$`+10 `8(`7`i10`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 9
+
+@label 11
+ @do `p20 is 11 
+@if `i11 > 0 then do
+ @begin
+ @do `p22 is `i11
+  @do write
+`$`+11 `8(`7`i11`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 10
+
+@label 12
+ @do `p20 is 12 
+@if `i12 > 0 then do
+ @begin
+ @do `p22 is `i12
+  @do write
+`$`+12 `8(`7`i12`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 11
+
+@label 13
+ @do `p20 is 13 
+@if `i13 > 0 then do
+ @begin
+ @do `p22 is `i13
+  @do write
+`$`+13 `8(`7`i13`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 12
+
+@label 14
+ @do `p20 is 14 
+@if `i14 > 0 then do
+ @begin
+ @do `p22 is `i14
+  @do write
+`$`+14 `8(`7`i14`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 13
+
+@label 15
+ @do `p20 is 15 
+@if `i15 > 0 then do
+ @begin
+ @do `p22 is `i15
+  @do write
+`$`+15 `8(`7`i15`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 14
+
+@label 16
+ @do `p20 is 16 
+@if `i16 > 0 then do
+ @begin
+ @do `p22 is `i16
+  @do write
+`$`+16 `8(`7`i16`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 15
+
+@label 17
+ @do `p20 is 17 
+@if `i17 > 0 then do
+ @begin
+ @do `p22 is `i17
+  @do write
+`$`+17 `8(`7`i17`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 16
+
+@label 18
+ @do `p20 is 18 
+@if `i18 > 0 then do
+ @begin
+ @do `p22 is `i18
+  @do write
+`$`+18 `8(`7`i18`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 17
+
+@label 19
+ @do `p20 is 19 
+@if `i19 > 0 then do
+ @begin
+ @do `p22 is `i19
+  @do write
+`$`+19 `8(`7`i19`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 18
+
+@label 20
+ @do `p20 is 20 
+@if `i20 > 0 then do
+ @begin
+ @do `p22 is `i20
+  @do write
+`$`+20 `8(`7`i20`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 19
+
+@label 21
+ @do `p20 is 21 
+@if `i21 > 0 then do
+ @begin
+ @do `p22 is `i21
+  @do write
+`$`+21 `8(`7`i21`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 20
+        
+@label 22
+ @do `p20 is 22 
+@if `i22 > 0 then do
+ @begin
+ @do `p22 is `i22
+  @do write
+`$`+22 `8(`7`i22`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 21
+
+@label 23
+ @do `p20 is 23 
+@if `i23 > 0 then do
+ @begin
+ @do `p22 is `i23
+  @do write
+`$`+23 `8(`7`i23`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 22
+
+@label 24
+ @do `p20 is 24 
+@if `i24 > 0 then do
+ @begin
+ @do `p22 is `i24
+  @do write
+`$`+24 `8(`7`i24`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 23
+
+@label 25
+ @do `p20 is 25 
+@if `i25 > 0 then do
+ @begin
+ @do `p22 is `i25
+  @do write
+`$`+25 `8(`7`i25`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 24
+
+@label 26
+ @do `p20 is 26 
+@if `i26 > 0 then do
+ @begin
+ @do `p22 is `i26
+  @do write
+`$`+26 `8(`7`i26`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 25
+
+@label 27
+ @do `p20 is 27 
+@if `i27 > 0 then do
+ @begin
+ @do `p22 is `i27
+  @do write
+`$`+27 `8(`7`i27`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 26
+
+@label 28
+ @do `p20 is 28 
+@if `i28 > 0 then do
+ @begin
+ @do `p22 is `i28
+  @do write
+`$`+28 `8(`7`i28`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 27
+
+@label 29
+ @do `p20 is 29 
+@if `i29 > 0 then do
+ @begin
+ @do `p22 is `i29
+  @do write
+`$`+29 `8(`7`i29`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 28
+
+@label 30
+ @do `p20 is 30 
+@if `i20 > 0 then do
+ @begin
+ @do `p22 is `i30
+  @do write
+`$`+30 `8(`7`i30`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 29
+
+@label 31
+ @do `p20 is 31 
+@if `i31 > 0 then do
+ @begin
+ @do `p22 is `i31
+  @do write
+`$`+31 `8(`7`i31`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 30
+
+@label 32
+ @do `p20 is 32 
+@if `i32 > 0 then do
+ @begin
+ @do `p22 is `i32
+  @do write
+`$`+32 `8(`7`i32`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 31
+
+@label 33
+ @do `p20 is 33 
+@if `i33 > 0 then do
+ @begin
+ @do `p22 is `i33
+  @do write
+`$`+33 `8(`7`i33`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 32
+
+@label 34
+ @do `p20 is 34 
+@if `i34 > 0 then do
+ @begin
+ @do `p22 is `i34
+  @do write
+`$`+34 `8(`7`i34`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 33
+
+@label 35
+ @do `p20 is 35 
+@if `i35 > 0 then do
+ @begin
+ @do `p22 is `i35
+  @do write
+`$`+35 `8(`7`i35`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 34
+
+@label 36
+ @do `p20 is 36 
+@if `i36 > 0 then do
+ @begin
+ @do `p22 is `i36 
+  @do write
+`$`+36 `8(`7`i36`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 35
+
+@label 37
+ @do `p20 is 37 
+@if `i37 > 0 then do
+ @begin
+ @do `p22 is `i37
+  @do write
+`$`+37 `8(`7`i37`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 36
+
+@label 38
+ @do `p20 is 38 
+@if `i38 > 0 then do
+ @begin
+ @do `p22 is `i38
+  @do write
+`$`+38 `8(`7`i38`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 37
+
+@label 39
+ @do `p20 is 39 
+@if `i39 > 0 then do
+ @begin
+ @do `p22 is `i39
+  @do write
+`$`+39 `8(`7`i39`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 38
+
+@label 40
+ @do `p20 is 40 
+@if `i40 > 0 then do
+ @begin
+ @do `p22 is `i40
+  @do write
+`$`+40 `8(`7`i40`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 39
+
+@label 41
+ @do `p20 is 41 
+@if `i41 > 0 then do
+ @begin
+ @do `p22 is `i41
+  @do write
+`$`+41 `8(`7`i41`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 40
+
+@label 42
+ @do `p20 is 42 
+@if `i42 > 0 then do
+ @begin
+ @do `p22 is `i42
+  @do write
+`$`+42 `8(`7`i42`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 41
+
+@label 43
+ @do `p20 is 43 
+@if `i43 > 0 then do
+ @begin
+ @do `p22 is `i43
+  @do write
+`$`+43 `8(`7`i43`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 42
+
+@label 44
+ @do `p20 is 44 
+@if `i44 > 0 then do
+ @begin
+ @do `p22 is `i44
+  @do write
+`$`+44 `8(`7`i44`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 43
+
+@label 45
+ @do `p20 is 45 
+@if `i45 > 0 then do
+ @begin
+ @do `p22 is `i45
+  @do write
+`$`+45 `8(`7`i45`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 44
+
+@label 46
+ @do `p20 is 46 
+@if `i46 > 0 then do
+ @begin
+ @do `p22 is `i46 
+  @do write
+`$`+46 `8(`7`i46`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 45
+
+@label 47
+ @do `p20 is 47 
+@if `i47 > 0 then do
+ @begin
+ @do `p22 is `i47
+  @do write
+`$`+47 `8(`7`i47`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 46
+
+@label 48
+ @do `p20 is 48 
+@if `i48 > 0 then do
+ @begin
+ @do `p22 is `i48
+  @do write
+`$`+48 `8(`7`i48`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 47
+
+@label 49
+ @do `p20 is 49 
+@if `i49 > 0 then do
+ @begin
+ @do `p22 is `i49
+  @do write
+`$`+49 `8(`7`i49`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 48
+
+@label 50
+ @do `p20 is 50 
+@if `i50 > 0 then do
+ @begin
+ @do `p22 is `i50
+  @do write
+`$`+50 `8(`7`i50`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 49
+
+@label 51
+ @do `p20 is 51 
+@if `i51 > 0 then do
+ @begin
+ @do `p22 is `i51
+  @do write
+`$`+51 `8(`7`i51`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 50
+        
+@label 52
+ @do `p20 is 52 
+@if `i52 > 0 then do
+ @begin
+ @do `p22 is `i52 
+  @do write
+`$`+52 `8(`7`i52`8)
+  @do goto loop
+ @end                      
+@if `p30 is 1 then goto 51
+
+@label 53
+ @do `p20 is 53 
+@if `i53 > 0 then do
+ @begin
+ @do `p22 is `i53
+  @do write
+`$`+53 `8(`7`i53`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 52
+
+@label 54
+ @do `p20 is 54 
+@if `i54 > 0 then do
+ @begin
+ @do `p22 is `i54
+  @do write
+`$`+54 `8(`7`i54`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 53
+
+@label 55
+ @do `p20 is 55 
+@if `i55 > 0 then do
+ @begin
+ @do `p22 is `i55
+  @do write
+`$`+55 `8(`7`i55`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 54
+
+@label 56
+ @do `p20 is 56 
+@if `i56 > 0 then do
+ @begin
+ @do `p22 is `i56
+  @do write
+`$`+56 `8(`7`i56`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 55
+
+@label 57
+ @do `p20 is 57 
+@if `i57 > 0 then do
+ @begin
+ @do `p22 is `i57
+  @do write
+`$`+57 `8(`7`i57`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 56
+
+@label 58
+ @do `p20 is 58 
+@if `i58 > 0 then do
+ @begin
+ @do `p22 is `i58
+  @do write
+`$`+58 `8(`7`i58`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 57
+
+@label 59
+ @do `p20 is 59 
+@if `i59 > 0 then do
+ @begin
+ @do `p22 is `i59
+  @do write
+`$`+59 `8(`7`i59`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 58
+
+@label 60
+ @do `p20 is 60 
+@if `i60 > 0 then do
+ @begin
+ @do `p22 is `i60
+  @do write
+`$`+60 `8(`7`i60`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 59
+
+@label 61
+ @do `p20 is 61 
+@if `i61 > 0 then do
+ @begin
+ @do `p22 is `i61
+  @do write
+`$`+61 `8(`7`i61`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 60
+
+@label 62
+ @do `p20 is 62 
+@if `i62 > 0 then do
+ @begin
+ @do `p22 is `i62
+  @do write
+`$`+62 `8(`7`i62`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 61
+
+@label 63
+ @do `p20 is 63 
+@if `i63 > 0 then do
+ @begin
+ @do `p22 is `i63
+  @do write
+`$`+63 `8(`7`i63`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 62
+        
+@label 64
+ @do `p20 is 64 
+@if `i64 > 0 then do
+ @begin
+ @do `p22 is `i64
+  @do write
+`$`+64 `8(`7`i64`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 63
+
+@label 65
+ @do `p20 is 65 
+@if `i65 > 0 then do
+ @begin
+ @do `p22 is `i65
+  @do write
+`$`+65 `8(`7`i65`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 64
+
+@label 66
+ @do `p20 is 66 
+@if `i66 > 0 then do
+ @begin
+ @do `p22 is `i66
+  @do write
+`$`+66 `8(`7`i66`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 65
+
+@label 67
+ @do `p20 is 67 
+@if `i67 > 0 then do
+ @begin
+ @do `p22 is `i67
+  @do write
+`$`+67 `8(`7`i67`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 66
+
+@label 68
+ @do `p20 is 68 
+@if `i68 > 0 then do
+ @begin
+ @do `p22 is `i68
+  @do write
+`$`+68 `8(`7`i68`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 67
+
+@label 69
+ @do `p20 is 69 
+@if `i69 > 0 then do
+ @begin
+ @do `p22 is `i69
+  @do write
+`$`+69 `8(`7`i69`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 68
+
+@label 70
+ @do `p20 is 70 
+@if `i70 > 0 then do
+ @begin
+ @do `p22 is `i70
+  @do write
+`$`+70 `8(`7`i70`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 69
+
+@label 71
+ @do `p20 is 71 
+@if `i71 > 0 then do
+ @begin
+ @do `p22 is `i71
+  @do write
+`$`+71 `8(`7`i71`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 70
+
+@label 72
+ @do `p20 is 72 
+@if `i72 > 0 then do
+ @begin
+ @do `p22 is `i72
+  @do write
+`$`+72 `8(`7`i72`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 71
+
+@label 73
+ @do `p20 is 73 
+@if `i73 > 0 then do
+ @begin
+ @do `p22 is `i73
+  @do write
+`$`+73 `8(`7`i73`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 72
+
+@label 74
+ @do `p20 is 74 
+@if `i74 > 0 then do
+ @begin
+ @do `p22 is `i74
+  @do write
+`$`+74 `8(`7`i74`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 73
+
+@label 75
+ @do `p20 is 75 
+@if `i75 > 0 then do
+ @begin
+ @do `p22 is `i75
+  @do write
+`$`+75 `8(`7`i75`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 74
+
+@label 76
+ @do `p20 is 76 
+@if `i76 > 0 then do
+ @begin
+ @do `p22 is `i76
+  @do write
+`$`+76 `8(`7`i76`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 75
+
+@label 77
+ @do `p20 is 77 
+@if `i77 > 0 then do
+ @begin
+ @do `p22 is `i77
+  @do write
+`$`+77 `8(`7`i77`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 76
+
+@label 78
+ @do `p20 is 78 
+@if `i78 > 0 then do
+ @begin
+ @do `p22 is `i78
+  @do write
+`$`+78 `8(`7`i78`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 77
+
+@label 79
+ @do `p20 is 79 
+@if `i79 > 0 then do
+ @begin
+ @do `p22 is `i79
+  @do write
+`$`+79 `8(`7`i79`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 78
+
+@label 80
+ @do `p20 is 80 
+@if `i80 > 0 then do
+ @begin
+ @do `p22 is `i80
+  @do write
+`$`+80 `8(`7`i80`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 79
+
+@label 81
+ @do `p20 is 81 
+@if `i81 > 0 then do
+ @begin
+ @do `p22 is `i81
+  @do write
+`$`+81 `8(`7`i81`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 80
+
+@label 82
+ @do `p20 is 82 
+@if `i82 > 0 then do
+ @begin
+ @do `p22 is `i82
+  @do write
+`$`+82 `8(`7`i82`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 81
+
+@label 83
+ @do `p20 is 83 
+@if `i83 > 0 then do
+ @begin
+ @do `p22 is `i83
+  @do write
+`$`+83 `8(`7`i83`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 82
+
+@label 84
+ @do `p20 is 84 
+@if `i84 > 0 then do
+ @begin
+ @do `p22 is `i84
+  @do write
+`$`+84 `8(`7`i84`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 83
+
+
+@label 85
+ @do `p20 is 85 
+@if `i85 > 0 then do
+ @begin
+ @do `p22 is `i85
+  @do write
+`$`+85 `8(`7`i85`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 84
+
+@label 86
+ @do `p20 is 86 
+@if `i86 > 0 then do
+ @begin
+ @do `p22 is `i86
+  @do write
+`$`+86 `8(`7`i86`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 85
+
+@label 87
+ @do `p20 is 87 
+@if `i87 > 0 then do
+ @begin
+ @do `p22 is `i87
+  @do write
+`$`+87 `8(`7`i87`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 86
+
+@label 88
+ @do `p20 is 88 
+@if `i88 > 0 then do
+ @begin
+ @do `p22 is `i88
+  @do write
+`$`+88 `8(`7`i88`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 87
+
+@label 89
+ @do `p20 is 89 
+@if `i89 > 0 then do
+ @begin
+ @do `p22 is `i89
+  @do write
+`$`+89 `8(`7`i89`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 88
+
+@label 90
+ @do `p20 is 90 
+@if `i90 > 0 then do
+ @begin
+ @do `p22 is `i90
+  @do write
+`$`+90 `8(`7`i90`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 89
+
+@label 91
+ @do `p20 is 91 
+@if `i91 > 0 then do
+ @begin
+ @do `p22 is `i91
+  @do write
+`$`+91 `8(`7`i91`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 90
+
+@label 92
+@if `i92 > 0 then do
+ @begin
+ @do `p20 is 92 
+ @do `p22 is `i92
+  @do write
+`$`+92 `8(`7`i92`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 91
+
+@label 93
+ @do `p20 is 93 
+@if `i93 > 0 then do
+ @begin
+ @do `p22 is `i93
+  @do write
+`$`+93 `8(`7`i93`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 92
+
+@label 94
+ @do `p20 is 94 
+@if `i94 > 0 then do
+ @begin
+ @do `p22 is `i94
+  @do write
+`$`+94 `8(`7`i94`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 93
+
+@label 95
+ @do `p20 is 95 
+@if `i95 > 0 then do
+ @begin
+ @do `p22 is `i95
+  @do write
+`$`+95 `8(`7`i95`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 94
+
+@label 96
+ @do `p20 is 96 
+@if `i96 > 0 then do
+ @begin
+ @do `p22 is `i96
+  @do write
+`$`+96 `8(`7`i96`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 95
+
+@label 97
+ @do `p20 is 97 
+@if `i97 > 0 then do
+ @begin
+ @do `p22 is `i97
+  @do write
+`$`+97 `8(`7`i97`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 96
+
+@label 98
+ @do `p20 is 98 
+@if `i98 > 0 then do
+ @begin
+ @do `p22 is `i98
+  @do write
+`$`+98 `8(`7`i98`8)
+  @do goto loop
+ @end
+@if `p30 is 1 then goto 97
+
+@label 99
+ @do `p20 is 99 
+@if `i99 > 0 then do
+ @begin
+ @do `p22 is `i99
+  @do write
+`$`+99 `8(`7`i99`8)
+  @do goto loop
+ @end
+@do goto 1
+@end
+

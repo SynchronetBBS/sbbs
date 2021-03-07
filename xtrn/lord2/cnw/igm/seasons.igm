@@ -1,0 +1,45 @@
+
+                       The Seasons 97' v1.00
+
+                by Bryan Turner and Robby Dittmann
+                                
+
+                          AN IGM FOR LORD2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : No!
+  Free?                                           : No!
+
+
+  Description:
+
+  Seasons 97. Tis the Season remember to give to the Needy (read
+  seasons.doc for more info)
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM SEASONS.IGM
+
+  To uninstall, do the same thing again.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `@T`0i`$s `9T`@h`0e `$S`9e`@a`0s`$o`9n`@.`0.`$.`9. `2by `0Bryan Turner `2and `0Robby Dittmann
+
+replacescreen: 1278 1 show
+
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2 This is the continuing story of the Seasons IGM done by Ken Weitzel
+  The Children's Shelter is located next to Jack's Rest. Have Phun!

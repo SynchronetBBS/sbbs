@@ -1,0 +1,27 @@
+; Script file TREASURE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:17 2001
+
+@DECLARE chest 000000172
+@NOCHECK
+; End of .REF index
+
+;Jack's back room
+@#chest
+;secret
+@do moveback
+@dataload jrest.idf &playernum `p97
+@if `p97 is 1 then do
+  @begin
+  @do saybar
+There is nothing in the vault.
+  @closescript
+  @end
+
+@if `p97 is 0 then do
+@do `p21 random 250 0
+@do saybar
+`%You find `p21 gold!!!!!
+@do money + `p21
+@datasave jrest.idf &playernum 1
+@closescript
+@end
+

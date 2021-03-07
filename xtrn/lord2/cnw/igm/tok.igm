@@ -1,0 +1,75 @@
+
+                    The Tower of Krystal by Jared McQuade
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (11)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A Tower with a quest.  Simple rewards and even a comeback-every-day
+  blessing.  Comes with tower basement, a healer, teleporters for those
+  who solve the quest, and a shop.  Designed for higher characters...
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM TOK100.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, go two screens west and one screen south of ruin keep.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Tower of Krystal `2by `0Jared McQuade
+replacescreen: 1352 1 show
+
+replacescreen: 1264 2 show
+
+replacescreen: 909 3 noshow
+
+replacescreen: 829 4 noshow
+
+replacescreen: 828 5 noshow
+
+replacescreen: 830 6 noshow
+
+replacescreen: 749 7 noshow
+
+replacescreen: 669 8 noshow
+
+replacescreen: 668 9 noshow
+
+replacescreen: 589 10 noshow
+
+replacescreen: 590 11 noshow
+
+replacescreen: 670 12 noshow
+
+installmessage:
+
+`r0`c   `2Well, I think I finally figured out this IGM thing! :)  Once again, if
+   `2you like this IGM, because there's no real way to charge for, please send
+   `2money.  This IGM took a week to finally finish and it was hard work. :)
+
+   `2Send donations to:
+      Jared McQuade
+      1703A SW 309TH ST
+      Federal Way, WA  98023
+      USA :)
+
+   `2Like I said, it's not required, but it would be nice.  Any kid of donation
+   `2would do really...  even suggestions!  :)  You can send those via E-mail
+   `2much faster to Marik_TIBBS@Juno.com or DraxTheMad@AOL.com.
+
+   `2Enjoy it.  My users sure do! :)

@@ -1,0 +1,54 @@
+
+                     Paladin's Oasis by Talaphid version 2 (bugfix)
+
+Lord 2 1.01a: backwards compatiblity unknown, probably waaay back
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes
+  Using any LORD2 vars?                           : Yes (Quest vars)
+  Overwrites any original .refs?                  : No  
+  Saves and loads its own vars independently?     : Yes
+  Adds new .refs?                                 : Yes (1- MON.REF)
+  Replaces screens?                               : Yes (1- 1E of Flagcity)
+  Adds screens?                                   : Yes (1)
+  Free?                                           : Yes
+
+
+  Bugfixes:
+   Selling your quest item to Finneg didn't reset quest variables.
+           It should get them all now.
+   This file told IGM.EXE the wrong screen for the entrance. It should
+           have been 1031 rather than the posted 1331.
+
+  Description:
+
+        I thought the game was unfair, balanced towards evil (easy money =
+easy equipment = unfair advantage). This oasis only lets in good guys, and
+even smackrod-equipped persons get deprived of the Catina. The bartender
+here gives a better than average deal on gems (4 gems = +5 attribute).
+There's a transmutationist here, too. I don't recommend giving him a ma's
+pie. That would be interesting >wink<.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM PALO.IGM
+
+  To uninstall, do the same thing again.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%Paladin's `9Oasis `3by `!T`3alaphid
+
+;1031
+replacescreen: 1030 1 show
+;1581
+replacescreen: 1580 2 noshow
+;1582
+replacescreen: 1581 3 noshow
+;1583
+replacescreen: 1582 4 noshow
+
+installmessage:
+
+        `%Paladin's `9Oasis `2INSTALLED.

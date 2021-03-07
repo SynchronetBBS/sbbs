@@ -1,0 +1,198 @@
+; Script file TM.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:20:27 2001
+
+@DECLARE start 000000382
+@DECLARE lazer 000002967
+@DECLARE worker 000003058
+@DECLARE oldman 000003190
+@DECLARE done 000003874
+@DECLARE gdone 000003960
+@DECLARE tdone 000004046
+@DECLARE rdone 000004078
+@DECLARE locked 000004134
+@DECLARE bad! 000004234
+@NOCHECK
+; End of .REF index
+
+@#Start
+@DO MOVEBACK
+@datanewday Tm.idf
+@dataload Tm.idf &playernum `p21
+@IF `p21 IS 1 THEN DO
+ @BEGIN
+  @DO GOTO LOCKED
+ @END
+@IF `p21 IS 2 THEN DO
+ @BEGIN
+  @DO GOTO BAD!
+ @END
+@Clear Screen
+@SHOW
+                            .$.
+                           .$$$.
+                          .$$$$$.
+                          $$$$$$$
+                          '$$$$$'
+                           '$$$'
+                            '$'
+@do `v01 is 1
+@CHOICE
+"Touch the center of the diamond to go back in time."
+"Steal the diamond."
+@IF RESPONCE IS 2 THEN DO
+   @BEGIN
+   @CLEAR SCREEN
+   @SHOW
+ 
+ 
+`0You attempt to jump the two workers by surprise but they were to
+ quick for youm you feel a sharp pain in your back and pass out.
+ 
+ When you awake you feel vary week.
+ 
+`6                          YOU LOSE 2 ALLINMENT
+                        YOU GO DOWN TO 1 HITPOINT
+ 
+   @DO `p02 IS 1
+   @DO `p07 - 2
+  @DO GOTO GDONE
+ @END
+ 
+@IF RESPONCE IS 1 THEN DO
+ @BEGIN
+   @CLEAR SCREEN
+   @SHOW
+   `0The diamond felt somewhat cool when you touch it but it quicky gets hoter
+   and hotter, so it feels unbarable to touch as you attempt to remove your
+   hands you realize that your hands are being drawn into it.
+ 
+@do `p20 random 4 1
+@if `p20 is 1 then do
+ @BEGIN
+@SHOW
+  `1   When you awake, you realize that you don't feel great.  You also
+  notice that the sun appears to have travelled a good distance to the west.
+  And if all that wasn't bad enough, you smell like burnt toast!
+ 
+`6                      You Lose 500 Turns for Today
+ 
+@DO `p11 - 500
+  @DO GOTO DONE
+ @END
+ 
+@if `p20 is 2 then do
+ @BEGIN
+@SHOW
+  `1   When you awake, you  Are Reenergized Somwhat.  You also
+  notice that the sun appears to have gone some distanceto the EAST.
+ 
+`5                      You Gain 500 Turns for Today
+ 
+@DO `p11 + 500
+  @DO GOTO DONE
+ 
+ @END
+ 
+                  
+@if `p20 is 3 then do
+ @BEGIN
+@SHOW
+  `1   When you awake, you feel Like a younger person.  You also
+  notice that the sun appears to have travelled the wrong way.
+ 
+`5                      You GAIN 1000 Turns for Today
+ 
+@DO `p11 + 1000
+  @DO GOTO DONE
+ 
+ @END
+ 
+ 
+@if `p20 is 4 then do
+ @BEGIN
+@SHOW
+ 
+  `1   When you awake, you realize that you feel very very SICK.  You also
+  notice that the sun appears to have travelled a good distance to the west.
+  And if all that wasn't bad enough, you smell like burnt toast!
+ 
+`6                      You Lose 1000 Turns for Today
+ 
+@DO `p11 - 1000
+  @DO GOTO DONE
+ 
+ @END
+ 
+@#Lazer
+@DO SAYBAR
+  You see a vary big lazer on the Wall.
+  @DO GOTO TDONE
+ @END
+ 
+@#Worker
+@DO SAYBAR
+`%Worker:`0Sorry, I'm busy if you want to go back in time, touch the diamond.
+`Y08
+  @DO GOTO TDONE
+ @END
+@#OLDMAN
+@Clear Screen
+@SHOW
+`%Old Man:`0Welcome to my time Machine, would you like to be a Ginipig
+          ..whoops I mean Test Subject with our time Machine were atemping
+          to send somone Back in time?
+ 
+@do `v01 is 1
+@CHOICE
+"I've come To Use the Time Machine."
+"Whoops, Sorry wrong building."
+@IF RESPONCE IS 1 THEN DO
+ @BEGIN
+   @CLEAR SCREEN
+   @SHOW
+ 
+`%Old Man: `0Ok Go over to the other side of the building and touch the
+            Diamond
+@KEY BOTTOM
+@DRAWMAP
+`X25
+@do goto Rdone
+   @END
+ 
+ 
+@IF RESPONCE IS 2 THEN DO
+    @BEGIN
+        @CLEAR SCREEN
+    @SHOW
+ 
+`0"Feel free to come back any time."
+`Y06
+   @DO GOTO RDONE
+ @END 
+@#DONE
+@datasave TM.idf &playernum 1
+@KEY BOTTOM
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@#GDONE
+@datasave TM.idf &playernum 2
+@KEY BOTTOM
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@#TDONE
+@UPDATE
+@CLOSESCRIPT
+@#RDONE
+@KEY BOTTOM
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@#LOCKED
+@DO SAYBAR
+  You touch the dimond but realize it won't work untill tomorow.
+@CLOSESCRIPT
+@#BAD!
+@Do SAYBAR
+  Sorry you can't use the Time Machine today, because you Tried to steal it!
+@CLOSESCRIPT

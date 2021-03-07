@@ -1,0 +1,545 @@
+; Script file FREDDY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:42 2001
+
+@DECLARE sign 000000336
+@DECLARE doorway 000000424
+@DECLARE start 000001259
+@DECLARE buying 000003524
+@DECLARE broke 000005946
+@DECLARE selling 000006322
+@DECLARE door 000008819
+@DECLARE nomore 000012133
+@NOCHECK
+; End of .REF index
+
+@#sign
+@do moveback
+@do saybar
+`%<-- Fast Freddy's Gem Emporium
+@closescript
+ 
+@#doorway
+@do moveback
+@do `p20 is `v05
+@do `p20 / 12
+@if `p11 < `p20 then do
+        @begin
+        @do saybar
+Sorry, we are closed for the rest of the day.
+        @closescript
+        @end
+@if fredgems.idf exists false then do
+        @begin
+        @do `p20 random 100 1
+        @do `p21 random 5000 1
+        @if `p21 < 1000 then `p21 is 5000
+        @if `p20 < 5 then `p20 is 20
+        @datasave fredgems.idf 1 `p20            ;<---gems
+        @datasave fredgems.idf 2 `p21            ;<---gold
+        @end
+
+@datanewday empdoor.idf
+@dataload empdoor.idf &playernum `p20
+@if `p20 is 2 then do
+@begin
+@do moveback
+@do saybar
+`%Perhaps you should wait til Freddy forgets the lock incident.
+@closescript
+@end
+@loadmap 1580
+@do map is 1580
+@do x is 37
+@do y is 11
+@drawmap
+@update
+@closescript
+ 
+@#start
+@offmap
+@clear screen
+@show
+`#You step up to the counter.  The countertop is made of glass, and inside you
+see many fine gemstomes.
+@key
+@show
+ 
+`#A man steps out from behind a curtain and smiles at you.
+@key
+@pauseoff
+@show
+[0;31m[43C[37mÜ[33;47mÜÜÜÜÜÜ[37;40mÜ    [31;42mÚÄÄÄÄÄÄÄÄÄÄÄÄÄ[40m[A
+[69C[42mÄÄÄ¿[40m
+[1;35m"Hi!  I'm Fast Freddy.  Welcome to[8C[0mÛ[33;47mÜ[37;43m[40m[A
+[44C[43m\    /[33;47mÜ[37;40mÛ   [31;42m³[1mALL SALES FINAL![40m[A
+[72C[0;31;42m³[40m
+[1;35mFast Freddy's Gem Emporium.  We buy[7C[0;33mÛÛÛ[34;43mú[40m[A
+[46C[33;40mÛ[34;43mú[33;40mÛÛÛÛ   [31;42mÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ[40m
+[1;35mand sell all kinds of gems.  Are you[6C[0;33mÛÛÛÛ[30;43mÀ[40m[A
+[47C[33;40mÛÛÛÛÛ
+[1;35minterested in buying or selling?"[10C[0;33;46mÛÛ[40mÛ[A
+[46C[31;43mÄÄÙ[33;46mÛÛ[40m
+[44CßßÛÛßß
+[42C[1;34;46mÛÛÛÛÛÛÛÛÛÛ[40m
+[39C[0;33mÜÜ[1;34;46mÛÛ[1CÛÛÛÛÛÛ[1CÛÛ[40m
+[36C[0;33m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+[37C±[6C[1;34mÛÛÛÛÛÛ  Û[0;33mÜ[19C±
+[37C±[32;46m*[1;33m*[0;34;46m*[31m*[1;33m*[0;31;46m*[34m*[40m[A
+[45C[46m[32m*[1;33m*[0;34;46m*[32m*[34m*[1;33m*[0;31;46m*[40m[A
+[52C[46m[32m*[36;43mÜÜ[1;33;46m*[0;32;46m*[1;33m*[0;34;46m*[40m[A
+[59C[46m[1;33m*[0;32;46m*[31m*[1;33m*[0;32;46m*[34m*[1;33m[40m[A
+[65C[46m*[0;31;46m*[1;33m*[0;34;46m*[31m*[32m*[1;33m*[40m[A
+[72C[0;32;46m*[33;40m±
+[37C±[32;46m*[34m*[1;33m*[0;31;46m*[32m*[34m*[31m*[1;33m*[40m[A
+[46C[0;34;46m*[32m**[34m*[1;33m*[0;31;46m*[32m*[31m*[1;33m[40m[A
+[54C[46m*[0;34;46m*[31m*[32m*[1;33m*[0;34;46m*[32m*[31m*[40m[A
+[62C[46m[1;33m*[0;32;46m*[31m*[1;33m*[0;32;46m*[34m*[1;33m[40m[A
+[68C[46m*[0;32;46m*[31m*[1;33m*[0;32;46m*[33;40m±
+[37C±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+[37C±[35C±
+[37C±[35C±
+@pauseon
+@do `v01 is 1
+@choice
+`%Buying
+`%Selling
+`%Neither
+@if response is 1 then do
+@begin
+@do goto buying
+@end
+@if response is 2 then do
+@begin
+@do goto selling
+@end
+@if response is 3 then do
+@begin
+@show
+`#"Well, come back when we can help you."
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+
+@#buying
+@clear screen
+@dataload fredgems.idf 1 `p23
+@show
+`#Fast Freddy unlocks the back of the glass counter.  He removes a tray of gems
+and places it on the countertop for your approval.
+
+ `2I only have `5`p23 `2gems available.
+
+@key
+@show
+ 
+`#"How many gems would you like to buy?"
+ 
+@do readnum 10 0
+@if `v40 = 0 then do
+@begin
+@clear screen
+@show
+`#"I'm sorry you changed your mind.  Come back any time."
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+@if `v40 > `p23 then do
+        @Begin
+        @clear screen
+        @show
+`#"Oh, I'm sorry.  I do not have that many, I only have `p23 gems left.
+
+Come back another time when I have more.
+
+        @key
+        @do goto selling
+        @end
+
+@if `v40 < 0 then do
+@begin
+@clear screen
+@show
+`#"Oh, I'm sorry.  I thought you wanted to BUY some gems.  But that's OK.  I'm
+more than happy to buy some from you!"
+@key
+@do goto selling
+@end
+@clear screen
+@show
+`#You carefully choose the `v40 gems.
+@key
+@do `p20 random 500 500
+@do `p20 * `v40
+@show
+ 
+`#Fast Freddy smiles at you.
+
+`#"Nice choice.  I can see you have a well-trained eye."
+ 
+`#Fast Freddy does some tabulations and opens the cash box.
+ 
+`#"That'll be `p20 gold pieces please."
+
+@if money < `p20 then do
+@begin
+@do goto broke
+@end
+@key
+@show
+ 
+ 
+@do `v01 is 1
+@choice
+`%Pay the man.
+`%That's a bit too expensive.
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`#Fast Freddy frowns.
+@key
+@show
+ 
+`#"I'm sorry you feel that way, but I can guarantee that you won't find a better
+deal anywhere in the realm.  Come back if you change your mind."
+@key
+@show
+ 
+`#Fast Freddy shows you the door.
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+@if response is 1 then do
+@begin
+@do money - `p20
+@do `p19 + `v40
+@dataload fredgems.idf 1 `p23
+@do `p23 - `v40
+@datasave fredgems.idf 1 `p23
+@dataload fredgems.idf 2 `p24
+@do `p24 + `p20
+@datasave fredgems.idf 2 `p24
+@clear screen
+@show
+`#You hand the money over to Fast Freddy and place the gems in your pack.
+@key
+@show
+ 
+`#"Nice doing business with you.  Come back any time!"
+@key
+@show
+ 
+`#Fast Freddy holds the door for you as you exit.
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+ 
+@#broke
+@clear screen
+@show
+`#You search through your backpack for the `p20 gold, but only find &money.
+@key
+@show
+ 
+`#Fast Freddy frowns.
+@key
+@show
+ 
+`#"Perhaps you should come back when you have more money."
+@key
+@show
+ 
+`#Fast Freddy shows you the door.
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+ 
+@#selling
+@clear screen
+@show
+`#Fast Freddy smiles.
+@key
+@show
+ 
+`#"And how many gems would you like to sell me?"
+@key
+@do readnum 10 0
+@if `v40 = 0 then do
+
+@begin
+@clear screen
+@show
+`#"I'm sorry you changed your mind.  Come back any time."
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+@if `v40 < 0 then do
+@begin
+@clear screen
+@show
+`#"Oh, I'm sorry.  I thought you wanted to SELL some gems.  But that's OK.  I'm
+more than happy to sell some to you!"
+@key
+@do goto buying
+@end
+@if `v40 > `p19 then do
+@begin
+@clear screen
+@show
+`#You hunt through your pack trying to find `v40 gems, but you only find `p19.
+@key
+@show
+ 
+`#Fast Freddy frowns.
+@key
+@show
+ 
+`#"Perhaps you should come back when you have some more gems to sell."
+@key
+@show
+ 
+`#Fast Freddy shows you the door.
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+ 
+@clear screen
+@show
+`#Fast Freddy pulls out a magnifying glass and carefully examines the `v40 gems.
+@key
+
+@do `p20 random 300 200
+@do `p20 * `v40
+
+@dataload fredgems.idf 2 `p24
+@if `p20 < `p24 then do
+        @begin
+        @show
+ 
+`#"Well, the quality is a bit questionable.  I can only offer you `p20 for the
+whole lot."
+        @end
+@if `p24 < `p20 then do
+        @begin
+        @show
+ 
+`#"Well, the quality is a bit questionable.  I can only offer you `p24 for the
+whole lot."
+        @do `p20 is `p24
+        @end
+ 
+@key
+@do `v01 is 1
+@choice
+`%I'll take it!
+`%That's all?!? No way!
+@if response is 1 then do
+@begin
+@do money + `p20
+@do `p19 - `v40
+@dataload fredgems.idf 1 `p23
+@do `p23 + `v40
+@datasave fredgems.idf 1 `p23
+@dataload fredgems.idf 2 `p24
+@do `p24 - `p20
+@datasave fredgems.idf 2 `p24
+@clear screen
+@show
+`#You hand over the `v40 gems, and Fast Freddy gives you `p20 gold pieces.
+@key
+@show
+ 
+`#"Come back anytime!"
+@key
+@show
+ 
+`#Fast Freddy holds the door for you as you leave.
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+@if response is 2 then do
+@begin
+@clear screen
+@show
+`#"I'm sorry you feel that way, but I can gurantee that you won't get a better
+offer anywhere in the realm.  Come back if you change your mind."
+@key
+@show
+ 
+`#Fast Freddy shows you the door.
+@key
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@closescript
+@end
+ 
+@#door
+@do moveback
+@datanewday empdoor.idf
+@dataload empdoor.idf &playernum `p20
+@if `p20 is 0 then do
+@begin
+@do saybar
+`%You hear some very strange noises coming from behind that door.
+@datasave empdoor.idf &playernum 1
+@closescript
+@end
+@if `p20 is 1 then do
+@begin
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2There is a HUGE padlock on the door.  Do you try and pick it?? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+@if `s01 is N then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@if `s01 is Y then do
+@begin
+@clear screen
+@show
+`#You start to work on the lock.
+@key
+@show
+ 
+`#W`Wo`Wr`Wk`Wi`Wn`Wg `L. `L. `L. `L W`Wo`Wr`Wk`Wi`Wn`Wg `L. `L. `L. `L `@CLICK!
+@key
+@show
+ 
+`#The lock pops open...
+@key
+@show
+ 
+`#...just in time for you to hear a throat clearing behind you.
+@key
+@show
+ 
+`#You turn around.
+@key
+@clear screen
+@pauseoff
+@show
+ 
+[0;1m[43C[0mÜ[33;47mÜÜÜÜÜÜ[37;40mÜ    [31;42mÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ[40m[A
+[71C[42mÄ¿[40m
+[1;34mA man is standing behind the counter[6C[0mÛ[33;47mÜ[43m [40m[A
+[45C[43m[37m\ /  [33;47mÜ[37;40mÛ   [31;42m³[1mALL SALES FIN[40m[A
+[69C[42mAL![0;31;42m³[40m
+[1;34mwith a bastard sword![17C[0m/³\ [33mÛÛÛ[34;43mú ú[40m[A
+[48C[33;40mÛÛÛÛ   [31;42mÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ[40m
+[38C[37m³³³ [33mÛÛÛÛ[30;43mÀ [33;40mÛÛÛÛ
+[1;34mHe doesn't look happy, and he is[6C[0m³³³  [33;46mÛÛ[40mÛ[A
+[46C[31;43mß  [33;46mÛÛ[40m
+[1;34mpointing toward the door.[13C[0m³³³   [33mßßÛÛßß
+[38C[37m³³³ [1;34;46mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[0;33mÛßß
+[1;34mYou take the hint and decide to[6C[0mß[43mßßß[1;34;47mÜ[40m[A
+[42C[46mÛ[1CÛÛÛÛÛÛ[40m
+leave the building.[17C[0;33m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+[37C±[6C[1;34mÛÛÛÛÛÛ[23C[0;33m±
+[37C±[32;46m*[1;33m*[0;34;46m*[31m*[1;33m*[0;31;46m*[34m*[40m[A
+[45C[46m[32m*[1;33m*[0;34;46m*[32m*[34m*[1;33m*[0;31;46m*[40m[A
+[52C[46m[32m*[31m**[1;33m*[0;32;46m*[1;33m*[0;34;46m*[40m[A
+[59C[46m[1;33m*[0;32;46m*[31m*[1;33m*[0;32;46m*[34m*[1;33m[40m[A
+[65C[46m*[0;31;46m*[1;33m*[0;34;46m*[31m*[32m*[1;33m*[40m[A
+[72C[0;32;46m*[33;40m±
+[37C±[32;46m*[34m*[1;33m*[0;31;46m*[32m*[34m*[31m*[1;33m*[40m[A
+[46C[0;34;46m*[32m**[34m*[1;33m*[0;31;46m*[32m*[31m*[1;33m[40m[A
+[54C[46m*[0;34;46m*[31m*[32m*[1;33m*[0;34;46m*[32m*[31m*[40m[A
+[62C[46m[1;33m*[0;32;46m*[31m*[1;33m*[0;32;46m*[34m*[1;33m[40m[A
+[68C[46m*[0;32;46m*[31m*[1;33m*[0;32;46m*[33;40m±
+[37C±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+[37C±[35C±
+[37C±[35C±
+@key
+@pauseon
+@clear screen
+@show
+`#It probably wasn't a good idea to get Fast Freddy angry.  He has friends
+in LOW places!
+@key
+@show
+ 
+`#I'd watch my step if I were you.
+@key
+@do `p20 is 100000
+@if bounty.&playernum exists true then do
+        @begin
+        @readfile bounty.&playernum
+`p21
+`p21
+        @do `p20 + `p21
+        @do delete bounty.&playernum
+        @end
+@writefile bounty.&playernum
+398
+`p20
+0
+    @do addlog
+  `0According to Nickabrick, Fast Freddy is mad at `n!
+     @routine seperate in gametxt.ref
+@loadmap 1492
+@do map is 1492
+@do x is 44
+@do y is 13
+@drawmap
+@update
+@datasave empdoor.idf &playernum 2
+@closescript
+@end
+@end
+@#nomore

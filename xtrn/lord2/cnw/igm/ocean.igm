@@ -1,0 +1,35 @@
+
+                       Ocean Adventure by Michael Hutson
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes*
+  Overwrites any original .refs?                  : No!#
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (9)
+  Adds screens?                                   : Yes! (66)
+  Free?                                           : Yes!
+
+  *temporarily uses `t70 for doing bitcheck and bitset functions
+  #makes random message routine @#man in PortTown.ref unavailable  
+  
+  Description:
+
+  An incredible adventure at sea! Walk out from docks on Pontoon Boots, fight
+  seagoing enemies, win up to 50 gems a day, and defeat two special monsters 
+  for extra quest points. Extra high random setting for lots of fights and 
+  alignment events.
+
+igmname: `2Ocean Adventure `0by Michael Hutson
+replacescreen:  1156 26 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Walk the waves between major cities and find lots to do on the way.
+  `2(Hint: start from Bone Town)

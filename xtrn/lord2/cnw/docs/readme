@@ -1,0 +1,62 @@
+NOTES ON OCEAN ADVENTURE 1.00 IGM FOR LORD2
+
+Hi, this is my first IGM written for distribution!
+
+A special note of thanks to Jim Wilson, author of Mimsic Isle IGM, for his
+idea of temporarily borrowing an unused byte variable for doing bitchecks.
+=============================================================================
+
+:Possible Bugs
+
+- I haven't tested it in multi-player node, so I hope the @BUSY and @OFFMAP
+commands are used correctly.
+
+- This IGM uses LOTS of blocks already used by other IGMs. <sigh>
+Unfortunately, there's nothing I can do about it. The blocks used are the
+ones dictated by the geographical necessity of creating sea lanes linking the
+major ports.
+
+- Yes, I tried incorporating the two Ansi screens directly into the .REF, and
+it kept bombing out with an error message. Keeping them external and using
+the @DISPLAYFILE command was the only way I could get it to work. They may be
+just too darn big.
+
+=============================================================================
+:Suggestions for stuff to be changed?
+
+-The monster stats were more or less picked out of a hat; so if anyone feels 
+those should be adjusted, I have no quarrel there.
+
+-Ditto, the final warp destination choices after defeating the Kraken were
+pretty much arbitrary. If anyone has better suggestions, then by all means.
+
+-The aftermath of the final battle now seems pretty anti-climatic. Any ideas
+on how that might be improved, or made the culmination of a quest?
+
+-Currently, the Castaway and Kraken battles are one-win only, just like the
+fight with Tash. But should I change that? (I love those Ansi's!). I was
+debating whether to have the Kraken battle be repeatable so that players
+could use that as a central warping point.
+
+=============================================================================
+:Game Continuity Issues
+
+-I had to remove two hotspots from the game in order to comply with the
+maximum of ten hotspots per screen. Sosen Village now has only one exit (big
+deal). In PortTown, I had to eliminate the random messages from the 
+bystander; that was the only hotspot that wasn't indispensable.
+
+-I deliberately chose high monster/random ratios for the screens. First for
+fun, secondly because I wanted to be able to gain and lose alignment faster.
+That and the large number of gems available per day were intended for players
+who've completed most of the conventional game already. If anyone feels this
+disturbs the continuity of the game too much, I suppose those can be toned
+down.
+
+-I didn't think making DragonTooth Island accessible would disturb the game.
+Evil players can get there anyway, and good players can't get past the castle
+gate. Again, let me know if anyone feels that changes the game too much.
+
+-Wackstick users can easily cheat on getting past the checkpoints on the
+docks for whether you own the pontoon boots; but it's more fun if you dont.
+

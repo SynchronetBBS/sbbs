@@ -1,0 +1,177 @@
+; Script file FIGAROP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:39 2001
+
+@DECLARE guy1 000000352
+@DECLARE guy2 000000409
+@DECLARE guy3 000000509
+@DECLARE guard 000001026
+@DECLARE huh 000001129
+@DECLARE wall 000001181
+@DECLARE moveman 000001284
+@DECLARE asa 000001882
+@DECLARE dont 000004262
+@NOCHECK
+; End of .REF index
+
+@#guy1
+@do saybar
+`0Man: `2Hey! Let us outta here!
+ 
+@#guy2
+@do saybar
+`0Man: `2I demand to see Edgar! How dare they keep us in this stinking pit!
+ 
+@#guy3
+@do moveback
+@clear screen
+@show
+ 
+`0     "Relax, they're just blowing off steam. But I'm telling you, there's
+     no sense keeping us here!" `2says the prisoner.
+ 
+`$     "How come!?"
+ 
+`0     "We're just small potatos compared to the real threat lurking out
+     there! And King Edgar knows it!"
+ 
+`$     "Have you ever picked up the soap!?"
+ 
+`0     "Of course I do! Why!? You never use soap when you take a shower!?"
+ 
+`$     "Nevermind..."
+ 
+@key
+@drawmap
+@update
+@closescript
+ 
+@#guard
+@do saybar
+`0Guard: `2These thieves have been terrorizing the vicinity. Stay away from'em!
+ 
+@#huh
+@do saybar
+`7Huh!? This cell is empty!
+ 
+@#wall
+@do saybar
+`2V`6o`8o`9D`0o`@o `%K`#n`!i`3g`4h`5T `4was here 1997!
+ 
+;movibility area
+ 
+@#moveman
+@clear screen
+@do `v01 is 1
+@offmap
+@do moveback
+@show
+ 
+`0     "Hello there! This is the Castle Movibility Area. At the moment we
+     can only move back and forth from the BoneTown Area to the PortTown
+     Area! Which ain't so bad if you think about it!" `2says the old man.
+ 
+`$     "So I can go from PortTown to BoneTown whenever I want!?"
+ 
+`0     "Yes!"
+ 
+`$     "Then whatcha waiting for!? Let's go!"
+ 
+`0     "No problem! That will be `$$100 `0if you don't mind!"
+ 
+`2     You give the old man an evil grin...
+  
+  You are holding `$$&money`2.
+ 
+@do goto asa
+@#asa
+@do write
+`x`x
+@choice
+Go to BoneTown for `$$100
+Inquire about this "Moving Castle Whachamacalit"...
+Maybe next time! I gotta go!
+@if response is 1 then do
+  @begin
+  @if money < 100 then do
+    @begin
+    @show
+`\`\`2  Maybe when ya get da money, you'll GO TO BONETOWN!
+ 
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2You hand the greedy'ol bastard da money and wait... soon the castle
+      arrives at BoneTown (or kinda) and the old man gives you a wink.
+ 
+`0     "Come back anytime! Your wallet is welco... umm... I mean you are
+     welcome here anyday!"
+ 
+`$     "Ya right..."
+      
+`\`k
+   @do money - 100
+   @do x is 44
+   @do y is 12  
+   @do map is 1575
+   @loadmap 1575
+   @drawmap
+   @update
+   @closescript
+  @end
+ 
+@if response is 3 then do
+ @begin
+ @clear screen
+ @show
+ 
+`0     "That's too bad, plus I was giving you a big special! If you don't
+     go soon, I'll put the original price which is `$$1,000,000 `0!!!"
+ 
+`$     "I have legs, I can walk..."
+ 
+`0     "But do your legs have a Garanti that you'll survive from Monsters
+     or be safe from the DragonTooth Clan!? Castle Travelling is 100% safe!"
+ 
+`$     "But walking saves you $100 and you don't have an anoying and greedy
+     old man who's keeping his eyes all time at your money and waiting for
+     the perfect moment to take it..."
+ 
+`0     "You got a point there, I'll hire some guards to keep on eye on this
+     old man, maybe on your next visit it will be 100% safe!"
+ 
+`2     You decide to leave the old man by himself... confused... 
+ 
+ @key
+ @drawmap
+ @update
+ @closescript
+ @end
+ 
+@if response is 2 then do
+  @begin
+  @clear screen
+  @show
+ 
+`0     "Figaro castle was built by an Incredible inventor, it's able to
+     compact itself in a moving vehicle that travels into Underground
+     tunnels and pops up where the ground is soft enough to come out
+     from... that is why you can locate us in almost any Desert! Sand is
+     very easy to come out of..."
+ 
+`$     "So this castle is like a Transformer!?"
+ 
+`0     "No, it cannot change into a big robot and do lotta cool stuff
+     that can only happen in cartoons... Figaro Castle is built only
+     to move from one side to another."
+ 
+`$     "That sucks..."
+ 
+  `0So you wanna go to BoneTown!?
+@do goto asa
+ 
+@#dont
+@do saybar
+`0Old Man: `2That's dangerous!
+@do moveback

@@ -1,0 +1,135 @@
+; Script file SORRY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE stickcinnamon 000000426
+@DECLARE doorpass 000000587
+@DECLARE hotspot1 000000726
+@DECLARE through 000001068
+@DECLARE hotspot2 000001096
+@DECLARE finished 000001409
+@DECLARE hotspot3 000001437
+@DECLARE hotspot4 000001830
+@DECLARE hotspot5 000002126
+@DECLARE cinnamon 000002233
+@NOCHECK
+; End of .REF index
+
+@#stickcinnamon
+@do `s06 is Stick`|of`|cinnamon
+@do `s07 is cinnamon
+@do `s08 is sorry.ref
+@do `s09 is cinnamon.idf
+@run install in install.ref
+@closescript
+
+@#doorpass
+@do `s06 is Doorpass
+@do `s07 is nouse
+@do `s08 is item99.ref
+@do `s09 is NIL
+@run install in install.ref
+@closescript
+
+@#hotspot1
+@do `p29 is &playernum
+@routine Doorpass in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+ @begin
+ @do saybar
+Your Doorpass gains you admission!
+ @do x is 25
+ @do y is 7
+ @update
+ @end
+@if `p20 is 0 then do
+ @begin
+ @do moveback
+ @do saybar
+You must have a Doorpass to pass through
+ @end
+@label through
+@closescript
+
+@#hotspot2
+@do moveback
+@do `p29 is &playernum
+@routine Doorpass in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 0 then do
+ @begin
+ @routine giveitem in item99.ref
+ @do saybar
+You just found a Doorpass!
+ @do goto finished
+ @end
+@do saybar
+You see a spot where something used to be.
+@label finished
+@closescript
+
+@#hotspot3
+@do moveback
+@do `p29 is &playernum
+@routine Stick`xof`xcinnamon in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 0 then do
+ @begin
+ @routine giveitem in item99.ref
+ @datasave cinnamon.idf &playernum 0
+ @end
+@dataload cinnamon.idf &playernum `p30
+@do `p30 + 1
+@datasave cinnamon.idf &playernum `p30
+@do saybar
+You find a stick of cinnamon!
+@closescript
+
+@#hotspot4
+@do moveback
+@do `p29 is &playernum
+@routine Doorpass in extitems.ref
+@routine bitcheck in item99.ref
+@if `p20 is 1 then do
+ @begin
+ @routine takeitem in item99.ref
+ @do saybar
+You surrender your Doorpass upon exiting
+ @end
+@do x is 29
+@do y is 7
+@update
+@closescript
+
+@#hotspot5
+@do moveback
+ @do saybar
+  Doorpass is required to enter.
+ @end
+@update
+@closescript
+
+
+@#cinnamon
+@dataload cinnamon.idf &playernum `p30
+@if `p30 less 1 then do
+ @begin
+ @run errorC in item99.ref
+ @end
+@do `p30 - 1
+@datasave cinnamon.idf &playernum `p30
+@clearblock 13 23
+@do move 1 14
+@show
+                     You chew a stick of cinnamon......
+                         
+                     -Mmm! It's delicious!
+
+                    (you now have `p30 of 'em)
+`k
+@if `p30 is 0 then do
+ @begin
+ @routine takeitem in item99.ref
+ @run menu in item99.ref
+ @end
+@run getname in item99.ref
+@closescript

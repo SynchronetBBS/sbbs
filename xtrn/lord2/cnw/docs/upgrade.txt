@@ -1,0 +1,14 @@
+Before adding this if you already have Wizard's Castle installed please
+uninstall it by typing igm wizard.igm.  Since this new IGM uses different
+names you will then need to delete the following files from your Lord II
+directory.
+
+wizard.dat
+wizard.ref
+wizfight.ref
+wizard.igm
+and wizard.sav if its there.
+
+Then you can re-install it by just hitting wizcast.  I have a batch file
+to install the new version.  Logon and enjoy the enhanced castle!
+

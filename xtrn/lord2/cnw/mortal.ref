@@ -1,0 +1,1016 @@
+; Script file MORTAL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:18 2001
+
+@DECLARE start 000001673
+@DECLARE housesign 000001688
+@DECLARE leavehouse 000001805
+@DECLARE enterhouse 000002000
+@DECLARE mortalimage 000002376
+@DECLARE emptyurn 000002679
+@DECLARE urn1 000003928
+@DECLARE urn2 000004640
+@DECLARE urn3 000005078
+@DECLARE urn4 000005753
+@DECLARE urn5 000006410
+@DECLARE urn6 000007247
+@DECLARE urn7 000008168
+@DECLARE urn8 000010425
+@DECLARE virtualbank 000011685
+@DECLARE bankmenu 000011704
+@DECLARE carriedpenalty 000014164
+@DECLARE accountpenalty 000014377
+@DECLARE mysterylottery 000014583
+@DECLARE getanswer 000015352
+@DECLARE divineoffering 000019252
+@DECLARE offeringmenu 000019275
+@DECLARE penalizegold 000021183
+@DECLARE checkfornewday 000021499
+@DECLARE clearbar 000021513
+@DECLARE endofref 000021639
+@DECLARE realend 000021652
+@NOCHECK
+; End of .REF index
+
+
+; This IGM for Seth Able's "A New World" is the sole
+; work of Rob Cummings, A.K.A. |\/|ortal. This IGM
+; is not to be plagiarized. A $2.00 Registration fee
+; would be nice, but chances are you're all a bunch of
+; lamers and won't cough up the measly 2 bucks. Anyways
+; this IGM works at least with Beta 7 and it doesn't
+; require the Registered Version. Have fun.
+;
+; For those people that would be kind enough to register
+; Send the money to:
+;
+; Robert Cummings
+; 429 Sunnyside Ave.
+; Ottawa, Ontario
+; Canada
+; K1S 0S6
+;
+; The IGM makes use of the following in game variables
+;   uses bit 5 of `t18 to mark daily use of IGM
+;   uses `p97 to determine last day IGM was used
+;
+
+
+;  REF file for old man |\/|ortal's house
+
+@#start
+
+@#houseSign
+
+  @routine clearBar
+  @do saybar
+`2Welcome to old man `4|\/|`6ortal's`2, enter at will...
+@end
+
+@#leaveHouse
+  @do X is 28
+  @do Y is 12
+  @do MAP is 1439
+  @loadmap map
+  @drawmap
+  @update
+  @routine clearBar
+  @do saybar
+`2Aaaah fresh air! Time to get something to eat.
+@end
+
+@#enterHouse
+  @do X is 39
+  @do Y is 14
+  @do MAP is 1346
+  @loadmap map
+  @drawmap
+  @update
+
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @do saybar
+`2Welcome `N! `2Please come closer...
+    @do goto endOfRef
+  @end
+
+  @do saybar
+`2The air seems a little thick!
+@end
+
+@#mortalImage
+
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @do saybar
+`6There are `48 `6urns `N`6... Choose wisely!
+    @do goto endOfRef
+  @end
+
+  @do saybar
+`$You get no answer... Try again tomorrow
+@end
+
+@#emptyUrn
+  @do `p20 random 14 1
+  @if `p20 equals 14 then do
+  @begin
+    @do saybar
+`2The urn is empty!!!
+  @end
+  @if `p20 equals 1 then do
+  @begin
+    @do saybar
+`3The urn is empty!!!
+  @end
+  @if `p20 equals 2 then do
+  @begin
+    @do saybar
+`4The urn is empty!!!
+  @end
+  @if `p20 equals 3 then do
+  @begin
+    @do saybar
+`5The urn is empty!!!
+  @end
+  @if `p20 equals 4 then do
+  @begin
+    @do saybar
+`6The urn is empty!!!
+  @end
+  @if `p20 equals 5 then do
+  @begin
+    @do saybar
+`7The urn is empty!!!
+  @end
+  @if `p20 equals 6 then do
+  @begin
+    @do saybar
+`8The urn is empty!!!
+  @end
+  @if `p20 equals 7 then do
+  @begin
+    @do saybar
+`9The urn is empty!!!
+  @end
+  @if `p20 equals 8 then do
+  @begin
+    @do saybar
+`0The urn is empty!!!
+  @end
+  @if `p20 equals 9 then do
+  @begin
+    @do saybar
+`!The urn is empty!!!
+  @end
+  @if `p20 equals 10 then do
+  @begin
+    @do saybar
+`@The urn is empty!!!
+  @end
+  @if `p20 equals 11 then do
+  @begin
+    @do saybar
+`#The urn is empty!!!
+  @end
+  @if `p20 equals 12 then do
+  @begin
+    @do saybar
+`$The urn is empty!!!
+  @end
+  @if `p20 equals 13 then do
+  @begin
+    @do saybar
+`%The urn is empty!!!
+  @end
+@end
+
+@#urn1
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do saybar
+`!You find...`L`L`L`L
+    @routine clearBar
+
+    @do `p20 random 2 1
+    @if `p20 equals 1 then do
+    @begin
+      @do saybar
+`%Nuttin' `7<sucker>
+      @do goto endOfRef
+    @end
+
+    @do `p20 random 2 1
+    @do `p19 + `p20
+    @if `p20 equals 1 then do
+    @begin
+      @do saybar
+`!a `%gem `!amongst the garbage!
+      @do goto endOfRef
+    @end
+    @if `p20 more 1 then do
+    @begin
+      @do saybar
+`%`p20 `!gems amongst the garbage!
+      @do goto endOfRef
+    @end
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn2
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do `p20 random 3 2
+    @do `p08 + `p20
+    @do saybar
+`2A little voice squeaks from the bottom...`L`L`L`L`L`L
+    @routine clearBar
+    @do saybar
+`2Just for looking for me I shall give you `0`p20 `2charm!
+    @do goto endOfRef
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn3
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do `p20 random 2 1
+    @if `p20 equals 1 then do
+    @begin
+      @do saybar
+`%You get...`L`L`L`L
+      @routine clearBar
+      @do saybar
+`%Nuttin' `7<sucker>
+      @do goto endOfRef
+    @end
+
+    @do `p20 random 3 1
+    @do `p04 + `p20
+    @do saybar
+`$You suddenly find yourself thinking of your father...`L`L`L`L`L`L
+    @routine clearBar
+    @do saybar
+`$The memory gives you new strength. `6`p20 `$new strength to be precise!
+    @do goto endOfRef
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn4
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do `p20 random 2 1
+    @if `p20 equals 1 then do
+    @begin
+      @do saybar
+`%You get...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`%Nuttin' `7<sucker>
+      @do goto endOfRef
+    @end
+
+    @do `p20 random 3 1
+    @do `p05 + `p20
+    @do saybar
+`@You suddenly find yourself thinking of woodland animals...`L`L`L`L`L`L
+    @routine clearBar
+    @do saybar
+`@You sure feel more agile. (`4+`p20 dodge`@)!
+    @do goto endOfRef
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn5
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do `p20 random 4 1
+    @if `p20 less 4 then do
+    @begin
+      @do saybar
+`%You get...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`%Nuttin' `7<sucker>
+      @do goto endOfRef
+    @end
+
+    @do saybar
+`$You suddenly find yourself thinking about old man `4|\/|`6ortal`$...`L`L`L`L`L`L
+    @routine clearBar
+    @do saybar
+`$You feel like a youth compared to old man `4|\/|`6ortal...
+
+    ; ADD 1 LEVEL IF UNLIMITED TURNS
+    @if `v05 equals 0 then do
+    @begin
+      @do `p09 + 1
+      @do goto endOfRef
+    @end
+
+    ; OTHERWISE GIVE THEM ALL MOVES BACK
+    @do `p11 is `v05
+    @do goto endOfRef
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn6
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do `p20 random 3 1
+    @if `p20 less 3 then do
+    @begin
+      @do saybar
+`%You get...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`%Nuttin' `7<sucker>
+      @do goto endOfRef
+    @end
+
+    @do `p20 random 5 1
+    @do `p03 + `p20
+    @do `p02 is `p03
+    @if &sex equals 0 then do
+    @begin
+      @do saybar
+`@Your mind wanders to naughty little thoughts of Old Man `4|\/|`6ortal`@...`L`L`L`L`L`L
+    @end
+    @if &sex equals 1 then do
+    @begin
+      @do saybar
+`@Your mind wanders to naughty little thoughts of `5Barak's `5mother`@...`L`L`L`L`L`L
+    @end
+
+    @routine clearBar
+    @do saybar
+`@You feel like you could last for ever... (`$+`p20 hits`@)
+    @do goto endOfRef
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn7
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @bitset `t18 5 1
+    @do `p20 random 2 1
+    @if `p20 equals 1 then do
+    @begin
+      @do saybar
+`%You get...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`%Nuttin' `7<sucker>
+      @do goto endOfRef
+    @end
+
+    @do saybar
+`!The urn is full of garbage! You decide to rummage through...`L`L`L`L`L`L
+    @routine clearBar
+
+    @routine clearBar
+    @do saybar
+`!You find...`L`L`L`L`L`L
+
+    @do `p20 random 3 1
+    @routine clearBar
+    @if `p20 equals 1 then do
+    @begin
+      @do saybar
+`!Todays `3newspaper`!. The headline reads...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`!Bank decides to `3pay `!customers and their accounts `320% `!interest...
+      @do `p20 is &money
+      @do `p20 / 5
+      @do money + `p20
+      @do `p20 is &bank
+      @do `p20 / 5
+      @do bank + `p20
+      @do goto endOfRef
+    @end
+
+    @if `p20 equals 2 then do
+    @begin
+      @do `s01 is men
+      @if &sex equals 0 then do
+      @begin
+        @do `s01 is women
+      @end
+      @do saybar
+`!A pair of `3Hainds `!underwear for `s01...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`!Throwing caution to the wind, you decide to try them on...`L`L`L`L`L`L
+      @routine clearBar
+      @routine clearBar
+      @if &sex equals 0 then do
+      @begin
+        @do saybar
+`4My God! `!Is that a gun in your pocket or are you just happy to see me???
+        @do sexmale is 1
+        @do goto endOfRef
+      @end
+      @do saybar
+`4My God! `N `!What big breasts you have `0;)
+      @do sexmale is 0
+      @do goto endOfRef
+    @end
+      
+    @if `p20 equals 3 then do
+    @begin
+      @do saybar
+        `!A `3CD-ROM`!. You decide to take it home and check it out...`L`L`L`L`L`L
+      @routine clearBar
+      @do saybar
+`!Its `9'The Adventurer's guide to the New World'`!, by `4|\/|`6ortal...`L`L`L`L`L`L
+
+      @do `p20 random 6 5
+      @do `p18 + `p20
+      @routine clearBar
+      @do saybar
+`!You read the compendium and gain `3`p20 `!quest points.
+      @do goto endOfRef
+    @end
+  @end
+
+  @routine emptyUrn
+@end
+
+@#urn8
+  @routine checkForNewDay
+  @routine clearBar
+
+  ; PLAYER HAS NOT CHECKED AN URN
+  @if bitcheck `t18 5 0 then do
+  @begin
+    @do moveback
+    @bitset `t18 5 1
+    @do saybar
+`0Hey! What's this??? This ain't no urn...`L`L`L`L`L`L
+    
+    @routine clearBar
+    @do saybar
+`0It's a `2computer `0and it's linked to the `2W`0orld `2W`0ide `2M`0ire...`L`L`L`L`L`L
+
+    @clear screen
+    @do `v01 is 1
+    @do move 20 5
+    @show
+`$Choose One of the Following Options...
+    @do move 27 7
+    @choice
+`%Enter the Virtual Bank
+`%Try the Mystery Lottery
+`%Make a Divine Offering
+`%Quit The World Wide Mire
+    @if response equals 1 then do
+    @begin
+      @routine virtualBank
+      @drawmap
+      @update
+      @do goto endOfRef
+    @end
+
+    @if response equals 2 then do
+    @begin
+      @routine mysteryLottery
+      @drawMap
+      @update
+      @if `p02 less 1 then do
+      @begin
+        @routine die in gametxt.ref
+      @end
+
+      @do goto endOfRef
+    @end
+
+    @if response equals 3 then do
+    @begin
+      @routine divineOffering
+      @drawMap
+      @update
+      @do goto endOfRef
+    @end
+
+    @drawmap
+    @update
+    @do goto endOfRef
+  @end
+
+  @routine emptyUrn
+@end
+
+@#virtualBank
+  @label bankMenu
+  @clear screen
+  @do `v01 is 1
+  @do move 20 5
+  @show
+`$You have the following banking options...
+  @do move 20 12
+  @show
+`4Account Balance: `@&bank
+  @do move 20 13
+  @show
+`4Gold Carried: `@&money
+  @do move 24 7
+  @choice
+>&money 0 `%Deposit money from your pocket
+>&bank 0 `%Withdraw money from your account
+>`p19 0 `%Attempt to trick the cashier
+`%Get Back to Adventuring
+  @if response equals 1 then do
+  @begin
+    @do move 20 16
+    @do write
+`#Amount to Deposit:`X
+    @do readnum 10 &money
+    @if `v40 more &money then do
+    @begin
+      @do goto carriedPenalty
+    @end
+    @if `v40 less 0 then do
+    @begin
+      @do goto carriedPenalty
+    @end
+    @if `v40 equals 1 then do
+    @begin
+      @do `v40 is &money
+    @end
+    @do `p20 is `v40
+    @do money - `v40
+    @do bank + `p20
+    @do goto bankMenu
+  @end
+
+  @if response equals 2 then do
+  @begin
+    @do move 20 16
+    @do write
+`#Amount to Withdraw:`X
+    @do readnum 10 &bank
+    @if `v40 more &bank then do
+    @begin
+      @do goto accountPenalty
+    @end
+    @if `v40 less 0 then do
+    @begin
+      @do goto accountPenalty
+    @end
+    @if `v40 equals 1 then do
+    @begin
+      @do `v40 is &bank
+    @end
+    @do `p20 is `v40
+    @do bank - `v40
+    @do money + `p20
+    @do goto bankMenu
+  @end
+  
+  @if response equals 3 then do
+  @begin
+    @do move 14 16
+    @do write
+`#This will cost you `51 `#Gem. Do you wish to continue `4(`@y`4/`@n`4)?
+    @do readspecial `s01 YN
+    @if `s01 is N then do
+    @begin
+      @do goto bankMenu
+    @end
+
+    @do move 14 16
+    @show
+`x                                                               `x
+    @do move 14 16
+    @show
+`1You point over the tellers shoulder and say...`L`L`L`L`L`L
+    @do move 14 17
+    @show
+`2OhMyGod! Whatsat???`L`L`L`L`L`L
+    @do move 14 18
+    @show
+`1While the tellers not looking you make for the money...`L`L`L`L`L`L
+    @do move 14 19
+    @do `p20 random 2 1
+    @if `p20 equals 1 then do
+    @begin
+      @show
+`4Oh no! The teller has caught on to your ploy... better Run!`L`L`L`L`L`L
+      @do move 33 21
+      @key
+      @do goto endOfRef
+    @end
+
+    @do `p20 random 9500 500
+    @do bank + `p20
+    @show
+`2You grab `0`p20 `2gold. Quickly you deposit it and leave...`L`L`L`L`L`L
+    @do move 33 21
+    @key
+    @do goto endOfRef
+  @end
+
+  @do goto endOfRef
+
+  @label carriedPenalty
+    @do `p20 is &money
+    @do `p20 / 10
+    @do money - `p20
+    @do move 14 18
+    @show
+`4Trying to cheat eh? `@10% `4carried gold penalty!`L`L`L`L`L`L
+  @do goto bankMenu
+    
+  @label accountPenalty
+    @do `p20 is &bank
+    @do `p20 / 10
+    @do bank - `p20
+    @do move 14 18
+    @show
+`4Trying to cheat eh? `@10% `4account gold penalty!`L`L`L`L`L`L
+  @do goto bankMenu
+@end
+
+@#mysteryLottery
+  @clear screen
+  @if `v05 equals 0 then do
+  @begin
+    @if `v03 equals 1 then do
+    @begin
+      @do move 14 5
+      @show
+`4Sorry this feature isn't available to players
+      @do move 14 6
+      @show
+`4in games with unlimited lives `@AND `4unlimited moves.
+      @do move 33 18
+      @key
+      @do goto endOfRef
+    @end
+  @end
+  @do `v01 is 1
+  @do move 14 5
+  @show
+`9The Mystery Lottery has a potentially large Payoff
+  @do move 14 6
+  @if `v05 more 0 then do
+  @begin
+    @do `p20 is `v05
+    @do `p20 / 3
+    @do `p20 * 2
+    @show
+`9and thus to enter it will cost you `1`p20 `9moves.`L`L`L`L`L`L
+  @do goto getAnswer
+  @end
+  @show
+`6and thus to enter it will cost you your `1life `9today.`L`L`L`L`L`L
+
+  @label getAnswer
+  @if `v05 more 0 then do
+  @begin
+    @if `p11 less `p20 then do
+    @begin
+      @do move 14 8
+      @show
+`4Sorry but you do not have enough movement points...
+      @do move 33 18
+      @key
+      @do goto endOfRef
+    @end
+  @end
+
+  @do move 19 8
+  @do write
+`#Do you wish to make this payment `4(`@y`4/`@n`4)?
+  @do readspecial `s01 YN
+  @if `s01 is N then do
+  @begin
+    @do goto endOfRef
+  @end
+
+  @if `v05 more 0 then do
+  @begin
+    @do `p11 - `p20
+  @end
+  @if `v05 is 0 then do
+  @begin
+    @do `p02 is 0
+    @do `p02 - 1000
+  @end
+
+  @do move 14 8
+  @show
+`0`x                                              `x
+  @do move 14 8
+  @show
+`#You click on the little lottery woman icon and say...`L`L`L`L`L`L
+  @do move 14 9
+  @do `p21 random 10 1
+  @if `p21 equals 6 then do
+  @begin
+    @show
+`4W`@indoze `4S`@ucks... `4I H`@ate `4S`@will `4G`@ates...`L`L`L`L`L`L
+  @end
+  @if `p21 not 6 then do
+  @begin
+    @show
+`5Gimme 1 big **cking mystery prize ticket...`L`L`L`L`L`L
+  @end
+  @do move 14 10
+  @show
+`#You grab your ticket and wait for the drawing...`L`L`L`L`L`L
+  @do move 14 11
+  @show
+`5The speaker steps up to the mic and says...`L`L`L`L`L`L
+  @do `p20 random 89 10
+  @do `p21 random 89 10
+  @do `p22 random 89 10
+  @do move 14 12
+  @show
+`#The winning numbers are...`L`L`L`L `@`p20 `4- `@`p21 `4- `@`p22.`L`L`L`L`L`L
+  @do `p20 random 10 1
+  @if `p20 not 6 then do
+  @begin
+    @do move 14 13
+    @show
+`5You look at your ticket and realize...`L`L`L`L `4You've lost.`L`L`L`L
+    @do move 33 18
+    @key
+    @do goto endOfRef
+  @end
+
+  @do move 14 13
+  @show
+`5You look at your ticket and realize...`L`L`L`L `^You've won.`L`L`L`L
+  @do move 14 15
+  @show
+`#You walk up to the speaker to receive your prize...`L`L`L`L`L`L
+  @do `p20 random 10 1
+  @if `p20 equals 1 then do
+  @begin
+    @do `i58 + 1
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^Twin-Swords. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 2 then do
+  @begin
+    @do `i62 + 1
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^Blessed Armour. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 3 then do
+  @begin
+    @do `v09 is 1
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `5To be able to attack anyone, anywhere.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 4 then do
+  @begin
+    @do `p21 random 5000 5000
+    @do `p21 * 100
+    @do `p02 + `p21
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^`p21 hitpoints. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 5 then do
+  @begin
+    @do `p21 random 5 5
+    @do `p04 + `p21
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^`p21 muscle. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 6 then do
+  @begin
+    @do `p21 random 5 5
+    @do `p05 + `p21
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^`p21 dodge. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 7 then do
+  @begin
+    @do `p21 random 10 10
+    @do `p03 + `p21
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^+`p21 max hitpoints. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 8 then do
+  @begin
+    @do `p21 random 25 25
+    @do `p08 + `p21
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^`p21 charm. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 9 then do
+  @begin
+    @do `p21 random 7000 3000
+    @do `p21 * 10
+    @do money + `p21
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^`p21 Gold. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @if `p20 equals 10 then do
+  @begin
+    @do `p21 random 7 3
+    @do `p19 + 6
+    @do move 14 16
+    @show
+`5Your prize is...`L`L`L`L `^`p21 gems. `5Congratulations.`L`L`L`L`L`L
+  @end
+
+  @do move 33 18
+  @key
+  @do goto endOfRef
+@end
+
+@#divineOffering
+  @label offeringMenu
+  @clear screen
+  @do `v01 is 1
+  @do move 20 5
+  @show
+`4You have the following divine options...
+  @do move 20 11
+  @show
+`4Your current Alignment is `@`p07
+  @do `p20 is &money
+  @do `p20 + &bank
+  @do move 20 12
+  @show
+`4Your total accumulated gold is `@`p20
+  @do move 20 7
+  @choice
+>`p20 0 `8Give offering to His Majesty Lucifer
+>`p20 0 `%Make offering to The One True God
+`7Leave this place of irrational thought
+  @if response equals 1 then do
+  @begin
+    @do move 20 14
+    @do write
+`8How much to offer Lucifer?`x
+    @do readnum 10 0
+    @if `v40 less 0 then do
+    @begin
+      @do goto penalizeGold
+    @end
+    @if `v40 more `p20 then do
+    @begin
+      @do goto penalizeGold
+    @end
+    @do `p20 is `v40
+    @if `v40 more &money then do
+    @begin
+      @do `p20 - &money
+      @do money is 0
+      @do bank - `p20
+      @do `p20 is `v40
+      @do `p20 / 1000
+      @do `p07 - `p20
+      @do move 20 16
+      @show
+`4Your alignment goes down by `@`p20 `4points`L`L`L`L
+      @do move 33 18
+      @key
+      @do goto offeringMenu
+    @end
+  @end      
+
+  @if response equals 2 then do
+  @begin
+    @do move 20 14
+    @do write
+`%How much to offer The One True God?`x
+    @do readnum 10 0
+    @if `v40 less 0 then do
+    @begin
+      @do goto penalizeGold
+    @end
+    @if `v40 more `p20 then do
+    @begin
+      @do goto penalizeGold
+    @end
+    @do `p20 is `v40
+    @if `v40 more &money then do
+    @begin
+      @do `p20 - &money
+      @do money is 0
+      @do bank - `p20
+      @do `p20 is `v40
+      @do `p20 / 1000
+      @do `p07 + `p20
+      @do move 20 16
+      @show
+`4Your alignment goes up by `@`p20 points`L`L`L`L
+      @do move 33 18
+      @key
+      @do goto offeringMenu
+    @end
+  @end      
+
+  @if response equals 3 then do
+  @begin
+    @do goto endOfRef
+  @end
+
+  @label penalizeGold
+  @do `p20 is &money
+  @do `p20 / 10
+  @do money - `p20
+  @do `p20 is &bank
+  @do `p20 / 10
+  @do bank - `p20
+  @do move 20 16
+  @show
+`4Trying to cheat the Gods eh??
+  @do move 20 17
+  @show
+`4You lose `@10% `4of your gold.
+  @do move 33 20
+  @key
+  @do goto offeringMenu
+@end
+
+
+@#checkForNewDay
+
+@#clearBar
+  @do saybar
+    `0                                                                              `0
+@end
+
+
+
+@#endOfRef
+
+@#realEnd
+

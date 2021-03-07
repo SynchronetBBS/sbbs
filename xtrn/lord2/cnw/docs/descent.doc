@@ -1,0 +1,46 @@
+
+
+
+
+                             Descent of The Dragon
+                      An IGM for LORD II v1.01a and later
+
+
+Installation:
+I know.  You are sitting there saying, "Where the heck is DESCENT.IGM?  What's
+going on?" DESCENT.IGM is written by INSTALL.COM.  The reason for this is that
+it is absolutely essential that this IGM be installed by the installation
+program INSTALL.COM.  The reason for this is that the IGM requires GENRAN.REF
+to be modified.  The original is saved as GENRAN.BAK for easy restoration.
+If GENRAN.BAK already exists the installation will be aborted.
+
+The install program contains a patch so that you may run Soda Machine by
+MamooSoft Programming along with this IGM.  If SODA.REF is found then you
+will be presented with a menu.  Select the apporpriate choice.
+
+To uninstall, type INSTALL /U.  /U is the only command line parameter that
+INSTALL.COM accepts.  GENRAN.BAK MUST exist for uninstallation to be
+successful.
+
+General Information:
+This IGM will add a random event.  A fight with a Blue Dragon.  The player
+must be level 5 or higher.  Once a player has killed this monster, this
+event will no longer happen for that player.  If the player loses the fight
+with the Dragon, the dragon will leave the player for dead with 3 hit points.
+If the player runs, the dragon will most likely detain the player and carry
+him to her lair for her babies to practice on.  If the Lair is entered in
+the normal way, there is a 1 in 900(i think) chance that the dragon will find
+the player no matter the level.  If the player loses that fight they will die.
+If the player runs from that encounter, the normal routines will be ran.
+
+Resetting:
+When you reset your game type DEL CHILD*.IDF
+This will delete the IGM data files.
+
+Acknowledgements:
+Thanks to Seth Robinson for creating the LORD II engine and game
+Thanks to Robby Dittman from MamooSoft Programming.  Soda Machine routines
+ used with permission.
+
+END OF FILE   DESCENT.DOC
+

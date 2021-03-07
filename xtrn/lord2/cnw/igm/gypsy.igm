@@ -1,0 +1,99 @@
+               =-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=
+                  Gypsy Encampment ver 1.0 for LORD2
+                          A new IGM for LORD2
+               =-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=
+                         Use with LORD2 ver 7+
+
+Information
+
+Need registered version of LORD2?		 : Yes 
+  Using any LORD2 vars?                          : No
+  Overwrites any original .refs?                 : No
+  Uses its own vars in its own file		 : Yes!
+  Adds new .refs?                                : Yes! (2)
+  Replaces screens?                              : Yes! (1)
+  Adds screens?                                  : Yes! (6)
+
+
+Description:
+
+  The Gypsy Encampment for Lord2
+ =-:-=-:-=-:-=-:-=-:-=-:-=-:-=-:-=
+
+  This is my first IGM for LORD2, so I hope you like it.
+
+  Features Include:
+   * Time based entrance
+      - There's a Morning and a Evening where different things happen.
+      - The tent is different depending on the time of day you enter the IGM.
+      - Even works with turnless games of LORD2
+   * A Story Teller
+      - Learn about the Gypsy's, if you catch him at a good time.
+   * A Fortune Teller
+      - Have your fortune told!
+   * The Wishing Well
+      - Make a wish, you might get lucky.
+   * The Riddle
+      - Answer his riddles about the Gypsies for something special.
+   * Cooks Wagon, and a Barter Wagon
+      - Buy food, Sell of Buy stuff, The barter Wagon often has new stuff! 	
+
+  Coming Within a week or so!!!!
+   * Gamble in the Tent
+   * Flirt with Lilliana or Djivan, depending on your sex.
+   * More Riddles 
+ 
+  To Install:
+
+   Type: IGM GYPSY.IGM
+
+  To Uninstall:
+
+   do the same thing again.
+
+  To Test:
+
+    Go to the waterfall by the Shrine of Babos, you can't miss it!
+
+  If you have Questions
+
+    Mail Me:     Michael Rodda
+		 745 East 4th Ave
+		 Escondido, Ca. 92025
+
+    Email:   sabo@cts.com
+
+  A Very Special Thanks to
+   Seth Able for making Lord and Lord2
+   Everyone that helped Seth make Lord2
+   Ana Vrin for all the info on Gypsy's
+
+    
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `#The Gypsy Encampment
+replacescreen: 1035 1 show
+
+replacescreen: 81 2 noshow
+
+replacescreen: 82 3 noshow
+
+replacescreen: 83 4 noshow
+
+replacescreen: 84 5 noshow
+
+replacescreen: 85 6 noshow
+
+replacescreen: 86 7 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `!The Gypsy Encampment...Learn their lore, meet their people
+  join in on there games, and have a great time!
+
+  Location: East of the Shrine of Babos
+
+  sabo@cts.com

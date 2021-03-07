@@ -1,0 +1,299 @@
+;var info for the game - so people that add/mess with this world know
+;what to change.  Use a comment ; in front of a line to have it not show
+;up in the player editor.  
+
+;player specific longint vars
+
+`p01 Experience
+`p02 Hit points
+`p03 Hit point max
+`p04 Muscle
+`p05 Dodge
+`p06 Quest 1 stat - >0, picked berries
+`p07 Alignment (negetive is evil)
+`p08 Charm
+`p09 Level
+`p10 Day he last played on
+`p11 Turns left today, if limited play is set in RULES.REF.
+`p12 Is 1 if user has VD
+`p13 Boat destinations. 0 means not on boat
+`p14 Quest origination
+`p15 Quest destination
+`p16 Quest payoff
+`p17 Quest item
+`p18 Quests completed
+`p19 Gems
+;`p20 through `p30 reserved for math.
+`p31 Quests left today
+`p32 Quest age in days
+`p33 Gambles left for today
+`p34 Lays
+`p35 Kills
+`p36 Flute MAP location
+`p37 # of Dates with npc & players
+`p38 flirts today
+`p39 AGE
+;`p40 - `p49 = temp vars for even more math, seems like its needed.
+`p50 Max WELL wishes/day
+`p51 MOSH
+`p52 MOSH
+`p53 MOSH
+`p54 MOSH
+`p55 MOSH
+`p56 MOSH
+`p57 MOSH
+`p58 MOSH
+`p59 <not sure if used yet>
+`p60 <not sure if used yet>
+`p61 MOSH
+`p62 MOSH
+`p63 MOSH
+`p64 MOSH <was REDDTOWN.REF, removed>
+`p65 MOSH
+`p66 MOSH
+`p67 <not sure if used yet>
+`p68 <not sure if used yet>
+`p69 Players Registered HOME (0=East Stonebrook)  (could be a `t var?)
+`p70 Talking with NPC#
+`p71 NPC# is with you
+`p72 Player B-day (day#)
+`p73 Player original starting age 
+`p74 Player B-day (&time)
+`p75 Player starting year #
+`p76 <not sure if used yet>
+`p77 <not sure if used yet>
+`p78 <not sure if used yet>
+`p79 <not sure if used yet>
+`p80  Power's Castle Spys
+`p81  Who's side you are on 1-power 2-shara 3-codax (should be a `t var!!)
+`p82  Power's Favor
+`p83  If you are the queen/second
+`p84  How many royals are dead
+`p85  Royal treasury <??>
+`p86  Day starting as Queen/King
+`p87  Codax's Favor
+`p88  Shara's Favor
+`p89  Codax's Castle Spys
+`p90  Shara's Castle spys !!3x CONFLICT!! (should be a `t var??) (was -The Loose Screw Resort-) (was used by BlackSheep)
+`p91 <was -The Loose Screw Resort-> (used by SAVE.REF)
+`p92 <not sure if used yet> (used by SAVE.REF)
+`p93 <not sure if used yet>  (used by SAVE.REF)
+`p94 <not sure if used yet>  (used by SAVE.REF)
+`p95 <not sure if still used> <was -The Loose Screw Resort-> (was LENNY.REF)
+`p96 Alcohol level (higher the more drunk)7
+`p97 <not used> (was used by wizard's tower igm) (was LENNY.REF)
+`p98 <not used> (was used by wizard's tower igm) (was LENNY.REF)
+`p99 <available>(was Tried to choke mom? - now a `t11:2 var??)(was used by wizard's tower igm)
+
+
+;player specific byte vars.  Some are used with the bitcheck command to turn
+;the byte into 8 yes/no vars.
+
+`t01 Talked to Turgon, 2 - asked him about Greentree
+;`t01: BIT 0: Knows about GreenTree, but no idea where it is, etc.
+;`t01: Bit 1: Asked about GreenTree
+;`t01: Bit 2: Trying to clear Turgeon name
+;`t01: Bit 3: Gave Pie!
+;`t01: Bit 4: Turgon told what happened
+;`t01: Bit 5: found diary!
+;`t01: Bit 6: Talked to Barak after bit4 is set
+;`t01: Bit 7: Read the diary
+;     If ALL set to 1 then Goat Boy lives there.
+`t02 Turgon chest open
+`t03 1 - Talked to Neb, 2 - Beat up Neb
+`t04 1 - Tried to fight master today (reset to 0 at NEWDAY)
+`t05 Old woman, 1 - met her.
+`t06 Amount of items in old woman's cauldron.
+`t07 Opened chest in cave, 1 - yes.
+`t08 Found bird? 1 - yes, 2 bird is dead, 3 bird is released
+`t09 1 - has used shrine today.
+`t10 Fish left in stream today for this player
+;`t11: BIT 0: Took money from Dad's dresser
+;`t11: BIT 1: Tried to choke MOM!
+;`t11: BIT 2: <not sure if used>?
+;`t11: BIT 3: <not sure if used>?
+;`t11: BIT 4: Wasn't Johnny!
+;`t11: BIT 5: told Ma it wasn't - Started Finding ELLE's 'rapest'
+;`t11: BIT 6: You know who did it.
+;`t11: BIT 7: Killed the rapest.
+
+
+;`t12: BIT 0: <not sure if used>?
+;`t12: Bit 1: Killed Jeb's dog
+;`t12: Bit 2: Met Elle
+;`t12: Bit 3: Talked to Ma about Elle
+;`t12: Bit 4: Has talked with Edward 
+;`t12: Bit 5: Has finished Edward quest 
+;`t12: Bit 6: Read the letter even though asked not too
+;`t12: Bit 7: Lost at the Arena today
+
+;`t13: Bit 0: found moonstone at waterfalls?
+;`t13: Bit 1: Found hidden tree?
+;`t13: Bit 2: Opened chest              
+;`t13: Bit 3: Opened chest
+;`t13: Bit 4: Opened chest
+;`t13: Bit 5: Opened chest
+;`t13: Bit 6: Opened chest
+;`t13: Bit 7: Opened chest
+
+;`t14: Bit 1: Learned about flute
+;`t14: Bit 2: Knows 1st 2 songs..
+;`t14: Bit 3: Has killed Tash?
+;`t14: Bit 4: Completed ghost quest
+;`t14: Bit 5: CLOAK.REF
+`t15 Flute X position
+`t16 Flute Y position
+
+;`t17: Bit 0: Chest
+;`t17: Bit 1: Can talk to mother about Koshi
+;`t17: Bit 2: Asked Koshi about Dragon
+;`t17: Bit 3: Talked to mom about dad
+;`t17: Bit 4: Ready to steal Gryphon
+;`t17: Bit 5: Something else?
+;`t17: Bit 6: Has Gryphon!
+;`t17: Bit 7: Has won as good
+
+;`t18: Bit 0: Joined Dragon Tooth or not
+;`t18: Bit 1: Has met Phin.
+;`t18: Bit 2: Has accepted quest.
+;`t18: Bit 3: Has the merchandise
+;`t18: Bit 4: Has delivered it
+;`t18: Bit 5: to mark daily use of MORTAL IGM
+;`t18: Bit 7: Has won as evil
+
+;`t19: Bit 0: <not used anymore?>  (conflict! was used by DangerForest + Blacksheep + original game)
+;`t19: Bit 1: BlackSheep of Family IGM (conflict! was used by DangerForest + Blacksheep + original game)
+;`t19: Bit 2: Andrew Gives stuff away!
+;`t19: Bit 3: Grizelda's House - took table money
+;`t19: Bit 4: Grizelda's House - took needle
+;`t19: Bit 5: Found Baraks Diary
+;`t19: Bit 6: <not used yet> 
+;`t19: Bit 7: mommy gave cash for taxes this year.
+`t20 Deaths in Power's Castle
+`t21 Quests Finished
+`t22 Codax's Castle deaths
+`t23 Shara's Castle deaths
+;`t30-`t39 USED FOR MATH!  <-- got small equations.. use these too.
+`t43 Farm
+`t44 ?
+`t45 Castle1.REF
+`t49 1 = has account at the Locker House
+`t50 Why NPC is with player.
+;`t50: 0: gets quest points when returned
+;`t50: 1: with NPC for romance (date/marriage)
+;`t50: 2: with NPC to cure VD
+;`t50: 3: with NPC to pay taxes
+;`t50: 4: will get bonus for tax quest 
+;`t50: 5: with NPC for a quest
+;`t50: 6: you LOST the NPC. bad player.
+;`t50: 7: return NPC home!
+`t51 Romantic bitsets for dates
+;`t51: 0: kissed today
+;`t51: 1: danced
+;`t51: 2: ate out
+;`t51: 3: swimming (skinny dipping)
+;`t51: 4: makeout mountain
+;`t51: 5: quicky
+;`t51: 6: full lovemaking encounter! (npc-sex.ref)
+;`t51: 7: no more dates! - return NPC home!
+;
+`t56 Dilbert misses
+`t57 Dilbert Chats
+`t65 used by VOYAGE.REF
+`t68 location type (0=grass, list in locate.ref)
+;`t69: 0:NPC-SEX.REF
+;`t69: 1:NPC-SEX.REF
+;`t69: 2:NPC-SEX.REF
+;`t69: 3:NPC-SEX.REF
+;`t69: 4:NPC-SEX.REF
+;`t69: 5:NPC-SEX.REF
+;`t69: 6:NPC-SEX.REF
+;`t69: 7:NPC-SEX.REF
+;`t70: 0:NPC-SEX.REF
+;`t70: 1:NPC-SEX.REF
+;`t70: 2:NPC-SEX.REF
+;`t70: 3:NPC-SEX.REF
+;`t70: 4:NPC-SEX.REF
+;`t70: 5:NPC-SEX.REF
+;`t70: 6:NPC-SEX.REF
+;`t70: 7:NPC-SEX.REF
+`t71 Last FLIRT with player or npc number
+`t72 Last FLIRT was a (0=NPC, 1=PLAYER, 2=other?)
+;`t79: 0: has canoe  <--not realy used yet.. uses canoe.idf
+;`t79: 1: has horse
+;`t79: 2: has wagon
+;`t79: 3: mounted horse 
+;`t79: 4: using wagon
+;`t79: 5: <not used yet> 
+;`t79: 6: <not used yet> 
+;`t79: 7: <not used yet>
+`t80 Your Horse's hp
+`t81 condition of wagon
+`t82 Elles RAPEST, npc# (each player is different) (it wasn't Johnny!)
+`t87 Sword
+`t90 some bit vars
+;`t90: 0: had b-day today if YES (has aged)
+;`t90: 1: Wizard Castle upstairs pass
+;`t90: 2: Wizard Castle West Key
+;`t90: 3: Wizard Castle East Key
+;`t90: 4: Wizard Castle push 1
+;`t90: 5: Wizard Castle push 2
+;`t90: 6: Wizard Castle push 3
+;`t90: 7: Wizard Castle push 4
+`t91 Wizard Castle randomizer and SAVE.REF
+;`t92 "M"AP LOCATIONS
+;`t92: 0: arris training grounds
+;`t92: 1: team1
+;`t92: 2: team2
+;`t92: 3: team3
+;`t92: 4: team4
+;`t92: 5: team5
+;`t92: 6: MystVille
+;`t92: 7: GumTown
+;`t93 "M"AP LOCATIONS
+;`t93: 0: WoodLand UnderGround
+;`t93: 1: SharkTooth Island  <--need to make it avail.
+;`t93: 2: Devil Island
+;`t93: 3:      
+;`t93: 4: 
+;`t93: 5: SwordCastle Cave Quest finished(SRDTOWER.REF)
+;`t93: 6: 
+;`t93: 7:         
+;`t94 dunno yet
+;`t95 dunno yet
+;`t96 dunno yet
+;`t97 dunno yet
+`t98 Not allowed to have (5=SmackRod 6=GryphonMoon, 7=both)
+`t99 1 = is with lover/date?
+
+;Global longint vars used
+`v01 reserved for @choice
+`v02 todays weather
+`v40 reserved
+`v03 0 = Normal play, 1 = Unlimited deaths
+`v04 Lucky Shrine?: 1 = Money, 2, hitpoint, 3, strength 4 defence, else
+      nothing.
+`v05 Turns per day given at each newday - 0 for unlimited.
+`v06 Clean mode - 1 is on
+`v07 Quests chances per day allowed
+`v08 Gambles per day allowed
+`v09 Level at which you can be attacked EVERYWHERE (inns even).  0 means never.
+`v10 How many days for 1 year
+`v11 Current Day # of the year
+`v12 Year #
+`v13 Days of pregnancy for women.
+`v14 Days to keep NPC dead for after being killed by a player.
+`v15 percent of TAXES. (default 15)
+`v16 Interest Rate
+`v17 How much gold to allow for over dues of taxes before put on bounty list.
+`v18 min age to start paying taxes. If under, do not calc it.
+`v19 Min starting age
+`v20 Max starting age
+`v30 Game Type (0=full CNW, 1=basic (no igm), 2=basic+npc, 3=?)
+`v39 reserved
+`v40 reserved for last int & longint query
+;Global string vars
+
+;none used yet, but `s01, `s02, `s03, `s04, `s05 and `s10 are RESERVED for
+;string math, etc.
+

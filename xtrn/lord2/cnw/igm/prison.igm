@@ -1,0 +1,78 @@
+Greentree Prison  by Codax and Dragon's Den Ultd  v 2.0
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+      This Igm requires version 1.0 of Lord 2
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : I think so but not sure
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (9)
+  Free?                                           : Yes!
+
+  Description:
+
+  This Igm accuses you of a crime you may or may not have committed....
+enter the jail...make friends and enemies and attempt to escape.  Or serve
+out your term....Watch out for your good friend and cell mate, Hairy Bob.
+Pump up by crushing rocks, racing, excercising.
+
+ATTENTION:
+
+There are two ways to play this game.  There is the unlimited gambles
+version and the limited gambles version.  The gambling games are harder
+so I think ulimited gambles are ok but others may not.  I have included
+two similar .ref files.  If you would like the ulimited gambling all you
+have to do is rename the file "prisone.ref" to "prisonc.ref"
+
+
+PLEASE SEND DONATIONS FOR DRAGON'S DEN BBS' PHONE LINE
+
+codax_dragon@juno.com   E-mail me for more info
+
+                       or
+
+Send donations:			Codax Dragon
+				107 Patti Lane
+				St. Clairsville, Ohio  43950
+
+
+Location:  1 mile west of Greentree
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `7Greentree Prison `2by `1C`3o`5d`7a`9x
+
+replacescreen: 1355 1 show
+replacescreen: 689 2 noshow
+replacescreen: 769 3 noshow
+replacescreen: 688 4 noshow
+replacescreen: 768 5 noshow
+replacescreen: 610 6 noshow
+replacescreen: 850 7 noshow
+replacescreen: 847 8 noshow
+replacescreen: 607 9 noshow
+replacescreen: 766 10 noshow
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+	Welcome to you're worst nightmare!  This Prison come fully loaded.
+ You have your gym, warden, guards, filth, terrible food, rock crushing,
+ jail cells, and your own best buddy, Hairy Bob.  Watch out for the inmates
+ not all of them are friendly!
+`k
+Location:  1 mile west of Greentree
+`k
+Author: `1C`3o`5d`7a`9x
+
+Please send donations to Dragon's Den BBS it needs to go up!
+107 Patti Lane
+St.Clairsville, Ohio
+    43950
+
+`k                               `k                                 `k

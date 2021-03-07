@@ -1,0 +1,68 @@
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+                         About Devils Island v1.50
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+ Varables used in this IGM
+
+  `p01 = Exp
+  `p02 = HitPt
+  `p03 = MaxPt
+  `p04 = Muscles
+  `p05 = Dodge
+  `p20 = flag settings
+  `p21 = flag settings
+  `p22 = flag settings
+  `p23 = flag settings
+   Money = Users cash
+   &money = User cash
+
+                     These are used in the Quest for the key
+
+ DEVISL1.IDF
+
+  1 = Talked to Demon Knight
+  2 = Receiced Key
+     Defeated Satan (Non) (Sends you up)
+
+ DEVISL2.IDF
+
+  1 = Did quest. (so you can't do it again)
+
+ DEVGOOD.IDF
+
+  1 = Allready Received a goodie
+
+ DEVBATH.IDF
+
+  1 = Went to Bathroom allready
+
+
+Problems with anything?, Just Email me.
+DemonKnight@Ibbs.com
+
+ Btw no tampering with the part that says DO NOT TOUCH USED BY INSTALL.EXE
+ If you touch that will totaly mess up the updator for the next version.
+
+ The ref files are pretty muched mapped out look for
+  ;---
+  ;---<(whatever)>---
+  ;---<
+  they tell you whats going on and or what screen this is in etc..
+   helpfull sometimes :>
+
+
+ As I said edit the ref's world if you want to, but DO NOT! AND I MEAN
+  DO NOT SEND IT AROUND WITH YOUR NAME OR I WILL SUE YOUR ASS..
+
+Devils Island v1.50 Copyright 1997(c), MetaLHeaD Softwarez
+
+-----------------------------------------------------------------------------
+Devisl.Igm  |-| Written By: Demon Knight 
+Devisl.ref  |-| Produced By: MetaLHeaD software
+Devisl2.ref |-| Beta testing: Ror, Insanity sause(215)830-3091
+DevHot.Ref  |-|
+Devisl.Dat  |-|      
+Devils.exe  |-| DarkLandsBBS(215)487-7315 256k Obv/2 Node's
+Install.exe |-|
+Devils.txt  |-| Copyright 1997(c), All Rights Reserved... MetaLHeaD Softwarez
+----All these file included in (c), and info u see above!--------------------

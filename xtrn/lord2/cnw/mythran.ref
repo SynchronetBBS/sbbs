@@ -1,0 +1,1064 @@
+; Script file MYTHRAN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:25 2001
+
+@DECLARE sign 000001005
+@DECLARE rebecca 000001087
+@DECLARE startrebecca 000001323
+@DECLARE endrebecca 000005688
+@DECLARE mythran 000005778
+@DECLARE startmythran 000005820
+@DECLARE talkmythran 000006274
+@DECLARE buymythran 000008255
+@DECLARE fire 000012502
+@DECLARE moneytree 000012605
+@DECLARE herbs 000012975
+@DECLARE moneytree 000013074
+@DECLARE bed1 000013100
+@DECLARE bed2 000013169
+@DECLARE coatrack 000013286
+@DECLARE monster 000013351
+@DECLARE monster1 000013728
+@DECLARE monster2 000014262
+@DECLARE monster3 000014795
+@DECLARE monster4 000015329
+@DECLARE monster5 000015853
+@DECLARE monster6 000016429
+@DECLARE isfight 000017037
+@DECLARE monster11 000017424
+@DECLARE monster12 000017945
+@DECLARE monster13 000018539
+@DECLARE monster14 000019093
+@DECLARE monster15 000019642
+@DECLARE nomore 000020203
+@NOCHECK
+; End of .REF index
+
+; okay guys, dont rip off too much. :)
+
+@#sign
+@do moveback
+@do saybar
+`%Mythrans Cottage v1.12 - by Heath Axton
+
+@#rebecca
+@do moveback
+@datanewday mythran2.idf
+@dataload mythran2.idf &playernum `p20
+@if `p20 not 1 then goto startrebecca
+
+@do saybar
+`#Rebecca `%is too busy to speak with you. Maybe tommorow.
+@closescript
+@end
+
+@label startrebecca
+@busy
+@do `v01 is 1
+@show
+`r0`c  `#`r1 CHATTING UP REBECCA `r0
+
+`2 you take a seat and casually start up a conversation with the GORGEOUS
+`2 rebecca ...
+
+@do write
+`x
+@choice
+`#compliment her cooking.
+=`v06 0 `#smile at her seductively.
+=`v06 0 `#kiss her.
+=`v06 0 `#grab her backside.
+=`v06 0 `#touch her chest.
+=`v06 0 `#ask her to join you in her room.
+@if responce is 1 then do begin
+@begin
+@show
+`\`\ 
+ `$"Hey, that salad your making there looks terrific! So you going to put 
+ that collection of rat guts in now or later?"
+ `k
+ `0"Why thankyou `n!`0" She then`l.`l.`l.`l. 
+ 
+ `%LEANS OVER AND KISSES YOU ON THE CHEEK!
+ 
+ `0"That is very sweet of you."
+ 
+ `%1 CHARM AND ALIGNMENT WAS GAINED.
+
+`k
+@do `p08 + 1
+@do `p07 + 1
+@do `v01 is 7
+@do goto endrebecca
+@end
+
+@if responce is 2 then do begin
+@begin
+@show
+`\`\ 
+ `2 You smile at her seductively.`l.`l.`l.`l. 
+@if `p08 > 1 then do begin
+@begin
+@show
+
+  `%SHE SMILES WARMLY AND ASKS IF YOU WOULD LIKE SOME COFFEE!
+ 
+  `%1 CHARM AND 200 EXPERIENCE WAS GAINED.
+
+`k
+
+@do `p08 + 1
+@do `p01 + 200
+@do `v01 is 7
+@do goto endrebecca
+@end
+@if `p08 < 2 then do begin
+@show
+
+  `4SHE FROWNS AND SAYS SHE IS BUSY!
+
+  `4YOU LOSE 1 CHARM.
+
+`k
+@do `p08 - 1
+@do `v01 is 7
+@do goto endrebecca
+@end
+
+@if responce is 3 then do begin
+@begin
+@show
+`\`\ 
+ `2 As she turns around, you lean over and kiss her.
+ `k
+ `2 She looks astonished! She`l.`l.`l.`l. 
+@if `p08 > 5 then do begin
+@begin
+@show
+
+  `%PULLS YOU TOWARDS HER AND KISSES YOU HARD!
+ 
+  `%WAY TO GO! :) 
+  
+  `%4 CHARM AND 400 EXPERIENCE WAS GAINED.
+
+`k
+
+@do `p08 + 4
+@do `p01 + 400
+@do `v01 is 7
+@do goto endrebecca
+@end
+@if `p08 < 5 then do begin
+@show
+
+  `4SPITS THEN SLAPS YOU ACROSS THE FACE.
+
+  `4YOU LOSE 2 CHARM
+
+`k
+@do `p08 - 2
+@do `v01 is 7
+@do goto endrebecca
+@end
+
+@if responce is 4 then do begin
+@begin
+@show
+`\`\ 
+   `2You drop your s&weapon on the kitchen floor.
+ 
+   `0"Damn! could you please get that for me?"
+ 
+   `$"sure."
+   `k
+   `2As she bends over you run your hands over her well shaped backside`l.`l.`l.`l. 
+
+@if `p08 > 15 then do begin
+@begin
+@show
+
+   `%SHE SEEMS TO BE TAKING A VERY LONG TIME TO PICK UP YOUR S&WEAPON!
+ 
+   `%4 CHARM AND 600 EXPERIENCE WAS GAINED.
+
+`k
+
+@do `p08 + 4
+@do `p01 + 600
+@do `v01 is 7
+@do goto endrebecca
+@end
+@if `p08 < 15 then do begin
+@show
+
+   `4SHE TURNS AROUND AND KICKS YOU IN THE GROIN!
+
+   `4YOU LOSE 3 CHARM AND YOUR HITPOINTS GO DOWN. WAAAY DOWN.
+
+`k
+@do `p08 - 3
+@do `p02 = 1
+@do `v01 is 7
+@do goto endrebecca
+@end
+
+@if responce is 5 then do begin
+@begin
+@show
+`\`\ 
+   `2You grab Rebecca and put her on the table. You take a seat and run your
+   `2hands all over her chest`l.`l.`l.`l. 
+ 
+@if `p08 > 15 then do begin
+@begin
+@show
+
+   `%SHE HELPS YOU BY UNBUTTONING HER SHIRT!
+   
+   `%Yeah Yeah! 
+   
+   `%5 CHARM AND 800 EXPERIENCE WAS GAINED.
+
+`k
+
+@do `p08 + 5
+@do `p01 + 800
+@do `v01 is 7
+@do goto endrebecca
+@end
+@if `p08 < 15 then do begin
+@do `p02 / 2 
+@show
+
+   `4SHE GRABS A KITCHEN KNIFE AND STABS YOU IN THE FACE!
+
+   `$"My face! my face! My beautiful face!" `2You scream as blood fills your eyes.
+
+   `4YOU LOSE 8 CHARM AND `p02 HITPOINTS!
+
+`k
+@do `p08 - 8 
+@do `v01 is 7
+@do goto endrebecca
+@end
+
+@if responce is 6 then do begin
+@begin
+@show
+`\`\ 
+   `$"Hey Rebecca.. umm, I was wondering if you wanted to show me your room?"
+   `k
+   `2She leads you into her room. just as she closes the door you grab her and
+   `2throw her onto the bed, tearing her clothes off`l.`l.`l.`l.`l.`l. 
+ 
+@if `p08 > 30 then do begin
+@begin
+@do `p21 = `p04 * 3
+@show
+
+   `%`p21 MINUTES LATER YOU COME OUT COMPLETELY SATISFIED!
+ 
+   `%REBECCA TELLS YOU TO COME BACK ANY TIME!
+   
+   `%5 CHARM, 1000 EXPERIENCE AND 2 MUSCLE WAS GAINED.
+
+`k
+
+@do `p04 + 2
+@do `p08 + 5
+@do `p01 + 1000
+@do `p34 + 1
+@do `v01 is 7
+@do goto endrebecca
+@end
+@if `p08 < 30 then do begin
+@do `p02 / 2 
+@show
+
+   `4SHE JUMPS UP, PUNCHES YOU IN THE HEAD, AND RUNS DOWN THE HALL.
+
+   `0"MYTHRAN! `n `0JUST TRIED TO `4RAPE `0ME!"
+
+   `4YOU LOSE 10 CHARM AND YOUR HITPOINTS GO DOWN. WAAAY DOWN.
+
+`k
+@do `p08 - 8
+@do `p02 = 1
+@do `v01 is 7
+@do goto endrebecca
+@end
+
+@if responce is 7 then do
+@label endrebecca
+@datasave mythran2.idf &playernum 1
+;@closescript
+@end
+@drawmap
+@update
+
+@#mythran
+@do moveback
+@busy
+@label startmythran
+@do `v01 is 1
+@show
+`r0`c  `%`r1 HAMMERING THE HERMIT `r0
+
+`2  Mythran is a strange old man, in his eyes you can see great wisdom.
+  Although the town people call him a hermit, he does prefer company, and
+  greets you warmly.
+
+`0  "Please `n`0, take a seat."
+
+@do write
+`x`x
+@choice
+talk to mythran
+I hear you sell crap..
+ask for free stuff
+leave him alone.
+@show
+
+@if responce is 1 then do
+@begin
+@do `v01 is 1
+@label talkmythran
+@show
+`r0`c  `%`r1 TALKING TO MYTHRAN `r0
+
+`2  You may talk to Mythran about any one of the following things.
+
+@do write
+`x`x
+@choice
+why the hell do you live on an island?
+who is this `#rebecca `%chick you live with?
+you seem like a man of wisdom, give me some advice.
+stop talking with Mythran.
+@if responce is 1 then do begin
+@begin
+@show
+`\`\ 
+  `0"Ah, the island.. this place is my refruge. People do not understand
+  `0 me `n`0, Besides, this is the only place that allows me to do my research."
+
+  `$"what do you research you crazy old fool?" `2you ask politely.
+
+  `0"I am researching the effects of combining plant cells with animal cells.
+  `0 just picture it `n`0! your dog not only provides a good pet, but bears 
+  `0 a nice crop of tomatoes!"
+
+  `$"What complete crap!" `2you start to burst out laughing.
+
+  `0"Aye, thats what everyone tells me." `2he replies sadly.
+
+`k
+@do `v01 is 1
+@do goto talkmythran
+@end
+
+@if responce is 2 then do begin
+@begin
+@show
+`\`\ 
+  `0"`#Rebecca `0is my apprentice - although she still has much to learn in the 
+  `0 ways of making a good meal, she knows how to make some excellent healing 
+  `0 potions, and has even been known to show me a thing or two."
+
+  `$"Cool! so what are my chances of getting her in the sack, old fart?" `2you ask.
+
+  `0"`#REBECCA `0IS MY APPRENTICE! THERE WILL BE NOTHING OF THE SORT!"  
+
+  `$"Yeah whatever. Sheez, you don't have to get all worked up about it."
+
+`k
+@do `v01 is 2
+@do goto talkmythran
+@end
+
+@if responce is 3 then do begin
+@begin
+@show
+`\`\ 
+  `0"Advice eh? well .. I hear that `#Rebecca `0loves the good guys. Her
+  `0 brother was killed by `4Dragon Tooth `0men, so if you have negative
+  `0 alignment.. keep away from her."
+
+`k
+
+@do `v01 is 3
+@do goto talkmythran
+@end
+
+@if responce is 4 then do begin
+ @begin
+ @do goto startmythran
+ @end
+@end
+
+@if responce is 2 then do 
+@begin
+@do `v01 is 1
+@label buymythran
+@show
+`r0`c  `%`r1 BUYING ITEMS `r0
+
+`0  "Hmmm.. okay, I have a large amount of things I have accumulated 
+`0   over the years.. take your pick."
+
+@do write
+`x`x
+@choice
+armor? you got armor?
+I want to buy a weapon.
+what about `#rebeccas `%potions?
+leave
+@if responce is 2 then do begin
+ @begin
+ @show 
+ `r0`c  `%`r1 BUYING WEAPONS OFF MYTHRAN `r0 
+ 
+  `0"Here is a list of weapons I have found in my travels. They are of no
+   use to me anymore, so you may purchase any of them."
+ 
+ @buymanager
+9
+15
+38
+35
+39
+@do `v01 is 2
+@do goto buymythran
+ @end
+
+@if responce is 1 then do begin
+ @begin
+ @show 
+ `r0`c  `%`r1 BUYING ARMOR OFF MYTHRAN `r0 
+ 
+  `0"A while ago a young man came to me for my services, and to repay me
+   he left me all this junk. And seeing as I dont need any of this, you 
+   may purchase any of them.
+
+ @buymanager
+12
+13
+37
+59
+ @do `v01 is 1
+ @do goto buymythran
+ @end
+
+@if responce is 3 then do begin
+ @begin
+ @show
+ `r0`c  `%`r1 BUYING HEALING POTIONS `r0 
+ 
+  `0"These are the few potions that `#Rebecca `0actually allows me to sell - 
+   all money from these potions go directly back to her."
+
+ @buymanager
+5
+40
+55
+ @do `v01 is 3
+ @do goto buymythran
+ @end
+
+@if responce is 4 then do begin
+@begin
+@do goto startmythran
+@end
+@end
+
+@if response is 3 then do 
+ @begin
+
+; Checking if Data file exists... if not write fake one (don't want this
+; program to crash out)
+
+@if myth&playernum.idf exists false then do begin
+@begin
+@writefile myth&playernum.idf
+1990
+`s02
+@end
+
+; Read the players data file compare it to todays date. If it equals
+; todays date then exit out with message, else do the routine
+
+@readfile myth&playernum.idf
+`s01
+`s02
+@do `s05 is &date
+@if `s01 not `s05 then do
+ @begin
+ @show
+`c
+ `r0`c `%`r1 ASK, AND THOU SHALT RECEIVE `r0 
+
+`0 "Hey Mythran, all the other guys keep on picking on me.. can you help me out?"
+
+`2 After thinking about this new concept for a few minutes, Mythran produces
+`2 a small red box.
+
+`$ "Here my friend, I have something for you."
+`k
+`2 You open the box and find`l.`l.`l.`l.
+
+@do `p20 random 8 1
+;
+; Random Goodies and stuff level dependant
+;
+; 1. Extra Gold
+; 2. Extra Muscle
+; 3. Extra Dodge
+; 4. if Neg alignment (Eviler) If positive (nicer)
+; 5. A healing potion (5 point one)
+
+@if `p20 is 1 then do
+@begin
+ @do `p21 is 0
+ @do `p22 is 0
+ @do `p21 is `v09
+ @do `p21 - 1
+; Do the math, You'll get Gold = level * level * 10
+ @do `p21 * `p21
+ @do `p21 * 10
+ @show
+`% A bag of coins! you are now `$`p21`% gold richer!`\`\`\`k
+ @do money + `p21
+@end
+
+@if `p20 is 2 then do begin
+@begin
+ @show
+`% A Blue Potion!
+
+`k
+
+ @do `i40 + 1
+@end
+
+@if `p20 is 3 then do begin
+@begin
+ @if `p07 less 0 then do begin
+ @begin
+  @show
+`0  A small black pill. After swallowing it, you feel a more Evil! 
+
+`4  You lose 5 alignment!
+
+`k
+  @do `p07 - 5
+ @end
+
+ @if `p07 more 0 then do begin
+ @begin
+  @show
+`0  A small white pill. After swallowing it, you feel a lot Nicer! 
+
+`%  You gain 5 alignment!
+
+`k
+  @do `p07 + 5
+ @end
+
+ @if `p07 equals 0 then do begin
+ @begin
+  @show
+`0  A small white pill. After swallowing it, you feel a lot Nicer! 
+
+`%  You gain 5 alignment!
+
+`k
+  @do `p07 + 5
+ @end
+@end
+
+@if `p20 is 4 then do begin
+@begin
+ @show
+`% A `0Green Potion. `%Oh well, cant win them all.`\`\`k
+ @do `i05 + 1
+@end
+
+@if `p20 is 5 then do begin
+@begin
+ @show
+`% A `0Gold Potion!
+
+`k
+ @do `i53 + 1
+@end
+
+@if `p20 is 6 then do begin
+@begin
+ @show
+`% A `0Silver Potion!
+
+`k
+ @do `i54 + 1
+@end
+
+@if `p20 is 7 then do begin
+@begin
+ @show
+`% A `0White Potion!
+
+`k
+ @do `i55 + 1
+@end
+
+@if `p20 is 8 then do begin
+@begin
+ @show
+`% A `0Fishing Pole `%??
+
+`k
+ @do `i28 + 1
+@end
+
+@if myth&playernum.idf exists true then delete myth&playernum.idf
+@writefile myth&playernum.idf
+&date
+`s02
+@do goto startmythran
+@end
+
+@if `s01 is `s05 then do
+ @begin
+ @show
+`2`\`\  Mythran does is too busy help you right now - try again tommorow
+`\`\`k
+ @do goto startmythran
+ @end
+
+ @drawmap
+ @update
+ @closescript
+@end
+
+
+
+@if responce is 4 then do
+@end
+@drawmap
+@update
+
+@#fire
+@do moveback
+@do saybar
+`%that girl sure does know how to get a good fire going ..
+
+
+@#moneytree
+@do moveback
+@datanewday mythran.idf
+@dataload mythran.idf &playernum `p20
+@if `p20 not 1 then do
+  @begin
+@do `p20 random 100 1
+@do money + `p20
+@do saybar
+`%You find `$$`p20`%! - and who said money doesnt grow on trees.
+
+@datasave mythran.idf &playernum 1
+@closescript
+@end
+
+@do saybar
+`2you have stripped the tree bare - come back tommorow
+
+@#herbs
+@do moveback
+@do saybar
+`%Mythran: `0hey! get the hell away from my herb garden!
+
+@#moneytree
+@do moveback
+
+
+@#bed1
+@do moveback
+@do saybar
+`%this bed is messy and unkept.
+
+@#bed2
+@do moveback
+@do saybar
+`%looks like `#Rebeccas `%bed. hmmm, might come in handy one of these days.
+
+@#coatrack
+@do moveback
+@do saybar
+`%looks like a coat rack
+
+@#monster
+@do `p20 random 6 1
+@if `p20 is 1 then goto monster1
+@if `p20 is 2 then goto monster2
+@if `p20 is 3 then goto monster3
+@if `p20 is 4 then goto monster4
+@if `p20 is 5 then goto monster5
+@if `p20 is 6 then goto monster6
+@if `p20 is 7 then goto monster7
+@if `p20 is 8 then goto monster8
+@if `p20 is 9 then goto monster9
+@if `p20 is 10 then goto monster10
+
+@#monster1
+@fight
+;name
+mutant bat
+;string said when you see him
+something flaps in your face!
+;power move kill string
+you smile as you crush the fallen thing into the ground.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+claws you|3
+bites you|2
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+14
+;experience
+7
+;hit points
+7
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+huge spider
+;string said when you see him
+you feel something crawling up your leg
+;power move kill string
+you rip each of its legs off one by one.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|4
+poisons you|7
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+1
+;gold reward
+19
+;experience
+10
+;hit points
+12
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+huge rat
+;string said when you see him
+a huge rat drops from the ceiling onto your head!
+;power move kill string
+you crush the dead rat into the ground
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+claws you|3
+bites you|2
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+12
+;experience
+7
+;hit points
+7
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+acid snail
+;string said when you see him
+you feel something burning into your leg
+;power move kill string
+you decide not to eat this carcass
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+burns you|5
+slimes you|6
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+4
+;gold reward
+18
+;experience
+7
+;hit points
+9
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+large fungus
+;string said when you see him
+you foolishly stood on a yellow patch of ground.
+;power move kill string
+die fungus! you laugh evily. hey cool, there's $3 just lying here.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spits acid at you|1
+poisons you|2
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+3
+;experience
+12
+;hit points
+20
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Joshua Goh
+;string said when you see him
+you stare in terror as an evil asian guy leaps at you with a pencil.
+;power move kill string
+Goh Josh! Goh!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+throws boxes of x-wing vs tie-fighter at you|5
+says a few sentances sarcasticly|6
+makes a fool of himself|10
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+400
+;experience
+20
+;hit points
+50
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#isfight
+@do `p20 random 5 1
+@if `p20 is 1 then goto monster11
+@if `p20 is 2 then goto monster12
+@if `p20 is 3 then goto monster13
+@if `p20 is 4 then goto monster14
+@if `p20 is 5 then goto monster15
+@if `p20 is 6 then goto monster16
+@if `p20 is 7 then goto monster17
+@if `p20 is 8 then goto monster18
+@if `p20 is 9 then goto monster19
+@if `p20 is 10 then goto monster20
+
+@#monster11
+@fight
+;name
+pack of wolves
+;string said when you see him
+a tribe of wolves appear from nowhere
+;power move kill string
+you leave the bodies to rot.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+maul you|1
+attack you|1
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+45
+;experience
+34
+;hit points
+80
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster12
+@fight
+;name
+Ross
+;string said when you see him
+"LORD 2 SUCKS!" you hear from behind.
+;power move kill string
+you carve his body up into little peices and decorate surrounding trees.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+pretends he can program|1
+invades your cupboard|1
+throws rolls of fat|1
+NONE|NONE
+NONE|NONE
+;defense
+3
+;gold reward
+300
+;experience
+4
+;hit points
+100
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster13
+@fight
+;name
+evil fairy
+;string said when you see him
+you hear a tiny voice scream "screw the f***ing flowers!"
+;power move kill string
+you leave the tiny body to stain the ground
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+daks you|1
+pulls your hair|1
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+2
+;gold reward
+4
+;experience
+4
+;hit points
+5
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster14
+@fight
+;name
+rattle snake
+;string said when you see him
+you hear a distinct rattling sound to your left
+;power move kill string
+you leave the tiny body to stain the ground
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|14
+strangles you|12
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+1
+;gold reward
+20
+;experience
+21
+;hit points
+4
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster15
+@fight
+;name
+giant echidna
+;string said when you see him
+that strange rock you just stood on begins to move
+;power move kill string
+you pull out a few of its spikes and stick them in its eyes
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|3
+pricks you|8
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+5
+;gold reward
+21
+;experience
+14
+;hit points
+3
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#NOMORE
+

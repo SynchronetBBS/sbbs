@@ -1,0 +1,54 @@
+
+                         The Visitors by Talaphid
+
+Lord 2 1.01a: backwards compatiblity unknown, probably waaay back
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Most Certainly
+  Using any LORD2 vars?                           : Yup 
+  Overwrites any original .refs?                  : No  
+  Saves and loads its own vars independently?     : Yes (Alientel.INF)
+  Adds new .refs?                                 : Yes (1- ALIEN.REF)
+  Replaces screens?                               : Yes (1- 1N3W of Arris)
+  Adds screens?                                   : Yes (3)
+  Free?                                           : Yes
+
+
+  Description:
+
+        An alien spacecraft has crashlanded near Arrisville. Go and explore
+this strange vessel, find out what insideous schemes these visitors have in
+store for the human race!
+
+        Three levels of alien to explore, from the water tank below to the
+orbital contact/ alien spaceship in the stars. If you are confused, the
+ï shapes, in this IGM, are ALIENS. Its kinda obvious though, since the IGM's
+internal maps aren't wilderness. There's a trading alien captain, and a
+transporter that can be very interesting if multiple people are online.
+Since the coinage of the humans isn't of any value to the aliens, the player
+can only trade in gems. If the prices of items are unfair, search for
+references to `p19 -- that's gems, and change them. Not too difficult.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM ALIEN.IGM
+
+  To uninstall, do the same thing again, and erase ALIENTEL.INF, if it
+  exists.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `%THE VISITORS `3by `!T`3alaphid
+
+replacescreen: 441 1 show
+
+replacescreen: 46 2 noshow
+
+replacescreen: 47 3 noshow
+
+replacescreen: 48 4 noshow
+
+installmessage:
+
+        `%The Visitors... are amoung us.

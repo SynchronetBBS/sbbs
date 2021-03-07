@@ -1,0 +1,192 @@
+; Script file DIVINEC.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:36 2001
+
+@DECLARE begintal 000000686
+@DECLARE telehome 000001026
+@DECLARE peter 000001322
+@DECLARE incubus 000002058
+@DECLARE raphael 000002284
+@DECLARE beel 000002519
+@DECLARE isa 000003358
+@DECLARE nomore 000004168
+@NOCHECK
+; End of .REF index
+
+;-----------------------------------------
+;       Version 0.11 of Divine Comedy ref by Talaphid Elsdragon [ Tal ]
+;               Contact via TALAPHID@JUNO.COM
+;       Have a good idea but can't/won't implement it? Email me, I'll give
+;       ya credit and stuffs [and, rather obviously, add the idea] -- if I
+;       like it. =)
+
+
+@#BEGINTAL
+@do moveback
+@datanewday divdeity.idf
+@do saybar
+`@F`4iend `%Prophet`3: `!K`9now well your fate before it is too late.      
+@KEY
+@do saybar
+`L`7before you can speak, the prophet is gone, and you have been teleported...`L 
+@KEY
+@do x is 15
+@do y is 14
+@do MAP is 321
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@#TELEHOME
+@do saybar
+`0 You step upon the hazy `9blue`0 aura of all creation, and `L`L. `L`L. `L`L.
+@KEY
+@do saybar
+`L`3you find yourself in your bed... it was all a dream, you tell your self...
+@KEY
+@do MAP is 155
+@do x is 28
+@do y is 7
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@#PETER
+@dataload divpeter.idf &playernum `p91
+@if `p91 is 0 then do
+ @begin
+ @if `i22 not 0 then do
+  @begin
+  @if `i23 not 0 then do
+   @begin
+   @if `i24 not 0 then do
+    @if `i25 not 0 then do
+     @begin
+     @do `i22 - 1
+     @do `i23 - 1
+     @do `i24 - 1
+     @do `i25 - 1
+     @do `p91 is 1
+     @datasave divpeter.idf &playernum `p91
+    @end
+   @end
+  @end
+ @end
+ @end
+@if `p91 is 0 then do
+ @begin
+  @do saybar
+`%Pe`7te`8r`3: `7I require you bring me the four shards of a `%Skystaff`3.
+  @do moveback
+  @closescript
+ @end
+@if `p91 is 1 then do
+ @begin
+     @do saybar
+`%Pe`7te`8r`3: `7You have given me my due. You may proceed.
+ @closescript
+ @end
+@closescript
+
+;`p07 == alignment
+
+@#INCUBUS
+@if `p07 > -20 then do
+ @begin
+@do saybar
+`r1`@I`4ncubus`3: `%Only those of evil intent may pass!
+@do moveback
+ @closescript
+ @end
+@do saybar
+`r1`@I`4ncubus`3: `7Ah... a fellow daemonspawn.
+@closescript
+
+@#RAPHAEL
+@if `p07 less 20 then do
+ @begin
+@do saybar
+`r1`%R`7aphael`3: `%BEGONE, CHILD OF DARKNESS!!!
+ @do moveback
+ @closescript
+ @end
+@do saybar
+`r1`%R`7aphael`3: `7Its so nice to see another source of light.
+@closescript
+
+@#BEEL
+@dataload divdeity.idf &playernum `p92
+@if `p92 is 1 then do
+ @begin
+ @do saybar
+`@Greed is good, my minion, but nonetheless, nothing more today.
+ @closescript
+ @end
+@DO `p92 RANDOM 4 1
+@if `p92 is 1 then do
+ @begin
+ @do `p93 is 15 * `p09 * `p09
+ @do saybar
+`@I'm giving you `$`p93 gold`@. Use it towards fiendish ends.
+ @do money + `p93
+ @end
+@if `p92 is 2 then do
+ @begin
+ @do saybar
+`@I'm giving you `05 gems`@. May your greedy little heart stop.
+ @do `p19 + 5
+ @end
+@if `p92 is 3 then do
+ @begin
+ @do saybar
+`@I'm giving you `%2 dodge`@, since I deem thee agility-challenged. 
+ @do `p04 + 2
+ @end
+@if `p92 is 4 then do
+ @begin
+ @do saybar
+`@I'm giving you `%5 muscle`@, since I deem thee might-impaired.
+ @do `p05 + 5
+ @end
+@do `p92 is 1
+@datasave divdeity.idf &playernum `p92
+@closescript
+
+@#ISA
+@dataload divdeity.idf &playernum `p92
+@if `p92 is 1 then do
+ @begin
+ @do saybar
+`%Don't give in to greed... visit again tomorrow.
+ @closescript
+ @end
+@DO `p92 RANDOM 4 1
+@if `p92 is 1 then do
+ @begin
+ @do saybar
+`%I'm giving you `9500 energy`%. Spread the light, child.
+ @do `p11 + 500
+ @end
+@if `p92 is 2 then do
+ @begin
+ @do saybar
+`%I'm giving you `03 gems`%. Too bad material wealth is sometimes needed...
+ @do `p19 + 3
+ @end
+@if `p92 is 3 then do
+ @begin
+ @do saybar
+`%I'm bestowing `75 dodge`%, because we know survival is an asset. 
+ @do `p04 + 5
+ @end
+@if `p92 is 4 then do
+ @begin
+ @do saybar
+`%I'm giving you `75 muscle`%, to rightuously crush the enemies of light!
+ @do `p05 + 5
+ @end
+@do `p92 is 1
+@datasave divdeity.idf &playernum `p92
+@closescript
+
+@#NOMORE

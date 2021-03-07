@@ -1,0 +1,358 @@
+; Script file WIZFIGHT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE monster1 000000500
+@DECLARE monster2 000001059
+@DECLARE monster3 000001638
+@DECLARE monster4 000002226
+@DECLARE monster5 000002762
+@DECLARE monster6 000003356
+@DECLARE monster7 000003906
+@DECLARE findmoney 000004456
+@DECLARE findkid 000004565
+@DECLARE findbird 000005284
+@DECLARE event 000006172
+@DECLARE sbrook 000006325
+@DECLARE nomore 000006456
+@NOCHECK
+; End of .REF index
+
+@#monster1
+@fight
+;name
+Giant Scorpion
+;string said when you see him
+You see a huge Scorpion scurrying towards you..!
+;power move kill string
+You sure sliced up that big bug!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+grabs with its pinchers|2
+bites you|2
+painfully stings you|4
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+2
+;experience
+3
+;hit points
+7
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Giant Rat
+;string said when you see him
+A large ugly rat appears - biting viciously at you!
+;power move kill string
+You've roasted this darn rat!  Lunch anyone?
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|3
+bites your leg|4
+chomps your hand|4
+gnaws on your ankle|4
+chews on your toes|3
+;defense
+0
+;gold reward
+3
+;experience
+3
+;hit points
+8
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Giant Tarantula
+;string said when you see him
+A Tarantula is staring straight at you!
+;power move kill string
+Time to de-leg this beast..  NOW!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites you|4
+crawls up your leg|4
+chases you backwards|2
+scares the heck out of you|3
+`bsinks its fangs into`2 you|6
+;defense
+0
+;gold reward
+7
+;experience
+6
+;hit points
+13
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Knight in Armor
+;string said when you see him
+Hey, what are you doing up here in the maze?
+;power move kill string
+He wasn't that strong!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits with mace|2
+stabs you|5
+stomps on your toes|2
+NONE|NONE
+NONE|NONE
+;defense
+7
+;gold reward
+6
+;experience
+5
+;hit points
+9
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster5
+@fight
+;name
+Baby Dragon
+;string said when you see him
+`0He's trying to protect his masters property!
+;power move kill string
+Looks like the Baby Dragon got the whuppin' he had coming...
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bites your arm|5
+roars a deafening roar|2
+spits fire at you|7
+bites on your leg|5
+NONE|NONE
+;defense
+4
+;gold reward
+8
+;experience
+6
+;hit points
+13
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster6
+@fight
+;name
+Ugly Troll
+;string said when you see him
+What's that?  A monster?  Nope, its an ugly troll!
+;power move kill string
+He'll never see tomorrow!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+scratches your face|6
+bites your legs|3
+spits in your face|2
+NONE|NONE
+NONE|NONE
+;defense
+2
+;gold reward
+2
+;experience
+5
+;hit points
+6
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster7
+@fight
+;name
+Angry Wife
+;string said when you see her
+What the he!! are you doing up here?
+;power move kill string
+The Wizard's wife is pushing up daisies!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+stabs you|5
+slaps your ugly face|3
+stomps on your foot|2
+NONE|NONE
+NONE|NONE
+;defense
+0
+;gold reward
+1
+;experience
+2
+;hit points
+2
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+@#findmoney
+@do `p20 random 20 1
+@do money + `p20
+@do saybar
+`2You find a pouch with `$$`p20`2 in it!
+
+
+@#findkid
+@do `v01 is 1
+@if `i11 > 0 then do
+ @begin
+ @closescript
+ @end
+@busy
+@show
+`r0`c  `%`r1 TRAVELING EVENT `r0
+
+`2  You come across a small girl - she couldn't be older than twelve.  She
+  is crying.  `0"S&sir, will you take me home?" `2she asks, pitifully.
+
+@do write
+`x`x
+@choice
+Agree to take her home, wherever that might be.
+Leave her here to rot.
+@if response is 2 then do
+  @begin
+  @show
+
+
+  `$"Sorry little girl, find your own way home.  Haw!" `2you tell her.
+
+`k
+  @end
+
+@if response is 1 then do
+  @begin
+  @do `i11 is 1
+  @show
+
+
+  `2You agree to take her home.   She says her mother is waiting for her
+  at the Red Dragon Inn.
+
+`k
+  @end
+@drawmap
+@update
+
+@#findbird
+@busy
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0  `2A bird flies over your head.  Hit it with a stone? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+  @begin
+  @do saybar
+The bird flies out the west window.
+  @closescript
+  @end
+
+@if `p09 is 1 then do
+  @begin
+  @do `p20 random 2 1
+  @if `p20 is 1 then do
+    @begin
+    @do saybar
+`2The stone misses.  The bird gets away.
+    @closescript
+    @end
+  @end
+
+@if l2tree.dat exists true then do
+  @begin
+  @readfile l2tree.dat
+`s01
+  @end
+
+@if l2tree.dat exists false then do
+  @begin
+  @do `s01 is SECRET
+  @end
+
+@show
+`r0`c  `r1  Your aim was true  `r0
+
+`2  The bird falls to the floor!
+
+`k  `2There is a note on his leg with the following written on it:
+
+  `0"The treehouse password is `%`s01`0"
+
+`k
+   @drawmap
+   @update
+   @closescript
+
+@#event
+@do `p20 random 3 1
+@if `p20 is 1 then goto findkid
+@if `p20 is 2 then goto findmoney
+@if `p20 is 3 then goto findbird
+
+@show
+Whatup!
+
+@#sbrook
+@do `p20 random 4 1
+@if `p20 is 1 then goto event
+
+@busy
+@do write
+`'
+@do `p20 random 7 1
+@do goto monster`p20
+
+@#NOMORE

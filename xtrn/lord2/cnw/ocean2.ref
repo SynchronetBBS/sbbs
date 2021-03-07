@@ -1,0 +1,21 @@
+; Script file OCEAN2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE maelstrom 000000159
+@NOCHECK
+; End of .REF index
+
+@#maelstrom
+@do `p20 is x
+@do `p20 - 78
+@do `p20 * x
+@do `p21 is y
+@do `p21 - 22
+@do `p21 * y
+@do `p21 * 5
+@do `p20 + `p21
+@if `p20 less -1901 then do
+ @begin
+ @run caught in ocean.ref
+ @end
+@closescript
+; in it's own REF to speed up access time

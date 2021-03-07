@@ -1,0 +1,790 @@
+                 Legend of the Red Dragon II: New World FAQ
+                           Version 1.1 by Veloran
+                  Meant for registered LORD II version 1.01
+
+
+Table of Contents
+-=-=-=-=-=-=-=-=-
+
+                                Chapter
+Introduction ..................... 1
+How to get started ............... 1.1
+Game objectives .................. 2
+  Being good (Koshi) ............. 2.1
+  Being evil (Dragon Tooth) ...... 2.2
+  Other quests ................... 2.3
+Tips ............................. 3
+Secrets .......................... 4
+Items ............................ 5
+Geography ........................ 6
+  Towns and villages ............. 6.1
+  Other places of interest ....... 6.2 
+Question section ................. 7
+Other stuff ...................... 8
+
+Chapter 1: Introduction
+-=-=-=-=-=-=-=-=-=-=-=-
+  If you've downloaded this file, I think you know what LORD II is. If you
+don't know what LORD II is, then... WHICH CAVE HAVE YOU LIVING IN? LORD II
+IS LIKE THE HOTTEST THING THAT A BBS CAN HAVE!! *cough* *cough* *ahem* 
+  Anyway, this FAQ should tell you most of the things you need to know
+about the doorgame.
+  Quite a few of you probably have not yet tried making IGMs, and may not
+know what the LORD II can or cannot do. It's good to try, so you'd know what
+to expect in the game. For more help, consult Seth Able (see chapter 8).
+
+Chapter 1.2: How to get started
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Firstly, you have to create your charater. Decide if your charater will be
+male or female and give him/her a name. LORD II uses colour codes similar to
+those in LORD. Here's a list of them.
+
+`1 is dark blue, `2 is dark green, `3 is dark cyan, `4 is dark red,
+`5 is dark purple, `6 is dark brown, `7 is grey, `8 is dark grey, `9 is blue
+`0 is green, `! is cyan, `@ is red, `# is magenta, `$ is yellow, `% is white
+and `^ is black
+
+  You can't use black in your name and in most other places. There are
+background colour codes, but you can't use them much.
+  Ok, now you start of in bed. Talk to your mother (the  further right of
+the bed you're on). Do you wanna be good or evil? This is the time to decide.
+Be good? Ask her for the pie. Be bad? STRANGLE HER!! :) Don't worry - she
+won't die.
+  Of course, I recommend you get the pie. Go outside, and go to the berry
+bush (the reddish ±). "Push" against it, and you'll have some berries!
+  Go back into the house and "push" against the table (the yellow ã). You now
+have 5 gold. If you want, you can get the money before you go out.
+  Outside, follow the road to the left, to the next screen. You'll find
+yourself just outside the town of Stonebrook. Go in. There are a few shops
+there, as mentioned in chapter 6.1. Go into the shop labeled "Grocery Store"
+and buy milk. Go back out of the town, and back to your mother's house. Talk
+to her again and give her the berries and milk for the pie. You should now
+have a berry pie!
+  Go back to the bush and pluck some berries. Press "v" for your inventory
+menu, and highlight "Cluster of Wildberries". Press enter, and choose to
+arm it as a weapon. Eating it replenishes 1 HP.
+  Go back out of the village, then go down 2 screens. If you're getting
+whacked up by a monster, just run, and go back to the town and heal if you
+need to. Go into the hut 2 screens down from the town of Stonebrook.
+  Talk to the man, and find out all you can. Give him your berry pie too.
+You can get another one later. Found out all you could? Go to the wall on the
+left of the house. Near the top of the wall, there's a secret passage
+(chapter 4). Continue through the passage and "push" against the table. You
+will get a heavy coat. Arm this item the way you did with the berries.
+  Go out, and get another pie.
+  If you have enough money, go buy a better weapon.
+When you've got that next pie, go 1 screen down, then 1 screen left from
+outside Stonebrook. Go in and talk to the hag nicely, please. Give her your
+pie for her stew and taste it. You'll get +5 max HP. She wants her parrot if
+you want to taste her brew again? Fine.
+  Go back and get another pie, but you could get it later. You won't be
+needing it for anymore quests (I think).
+  When you have $50, go into Jack's restaurant from the purple tree on Neb's
+road. Buy a gloworm, and put it in your pocket to save it for later. Go into
+the condemed cave, 1 screen down from the hag's house. While inside, eat the
+gloworm. The place should become "bright". Go up the path into the next
+screen, avoid the snakes (ë) and you'll be in the next screen. Walk to the
+2 chests and "push" against them. One of them will contain an ancient flute.
+See chapter 2.3 for more on the item. Walk to the table looking thing, and
+you'll find Hector the parrot. Get out of the cave.
+  If you're good, set Hector free via the inventory menu. If you're bad, give
+Hector to the old hag.
+  Save up enough to get a short sword, don't bother about paying Neb much.
+With 15 HP, a short sword, a heavy coat, face Neb and beat the heck out of
+him. Run if you don't think you can win him.
+  After that, continue past his road left 2 screens. Greentree and the rest
+of the game awaits...
+
+Chapter 2: Game objectives
+-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  The main objective in LORD II is to win either as good, or evil. Your
+alignment tells you how you're doing. Let's say, 10 alignment shows that
+you're nice, and -10 alignment shows you're quite evil.
+  How to get good or evil? Well, it's actually quite simple. When you
+get an event where you have to decide between, let's say, helping an
+injured man or beating the heck out of him and taking his money, as
+shown below.
+
+ Ú
+  You hear an injured person nearby.  Investigate? [Y/N] :
+                                                          Ù
+
+  Don't waste the opportunity to get or lose alignment! Choose yes and
+the following will happen:
+
+ Ú
+  Aid a fellow traveler
+
+  "Please help me!" the injured man screams.  His leg seems to have
+  taken quite a blow.
+
+Help the man out
+Beat him and take his money
+Leave                                                              Ù
+
+  If you go on to help him:
+
+ Ú
+  You help the man, and with the first aid are able to get him on his
+  way to a city where he can further heal.
+
+  YOUR ALIGNMENT GOES UP BY ONE!
+                                                                     Ù
+
+  As you can see, you don't get much, but it's not always the case.
+But if you decide to be evil:
+
+ Ú
+  "Sure I'll help you .. die!"  You slam him with your weapon, and
+  after he falls unconscious you raid his purse.
+
+  You find 250 gold!
+
+  YOUR ALIGNMENT GOES DOWN BY TWO!                                Ù
+
+  That's what happens. It doesn't always pay to be evil though. And the
+rewards aren't always the same. Being good or evil doesn't only mean what
+you do, but even say in some cases. Check chapter 3 tip 19 on how to gain
+or lose alignment quickly.
+
+Chapter 2.1: Being good
+-=-=-=-=-=-=-=-=-=-=-=-
+  In the previous chapter, there's information on how to be good or bad.
+But what can you do when you're good?
+  Well, if you've made up your mind to be good, read this. The main
+in LORD II as a good guy is to help the Koshi people. You can find their
+cave far west of Arrisland, but you'll need the Cloud Sword and 100
+alignment to enter. To get the Cloud Sword, you have to construct the
+Skystaff, of which has parts you can buy induvidualy from travelling
+traders, one of the random events you can find while travelling. (Find
+out more from chapter 5) Once you do have the required, go to the cave
+and show the statue your Cloud Sword. It'll let you in.
+  Inside the cave, there are 3 other holes. The one at the top-middle
+will lead you to a table with a moonstone (find out more in chapter 5).
+the one in the middle, will take you to the Koshi marketplace. Some nice
+stuff to buy there. The top-left entrance will lead you to the most
+important place in there.
+  Inside the sort of a room, talk to the person in the middle. Try to talk
+politely. Then, you'll be instructed to talk to your mother. Do so, and
+find out the truth. Go back to the Koshi cavern and talk to Dahma again.
+This time, she'll tell you to get the Gryphon Moon back, but won't tell
+you how. Go to Prince Corin in Arrisville, and ask him your favour. You'll
+be brought to the Dragon Tooth island where you have to take the Gryphon
+Moon back. Wear the disguise you have been given as soon as you land on the
+island, just to be safe. Walk straight into the inner sanctum of the castle,
+Go to the table, get the Gryphon Moon and get out of there! Go back and talk
+to Dahma and Prince Corin. The Gryphon Moon is yours! (Learn more on the
+Gryphon Moon in chapter 5) You will receive some experience points and
+quest points on completing the game. Your triumph will be anounced in the
+daily news, and you would have a white "K" on dark blue marked beside your
+quest points in the player listing.
+
+Chapter 2.2: Being evil
+-=-=-=-=-=-=-=-=-=-=-=-
+  Of course, if you don't want to be good, you can be evil. First, get evil.
+If you meet up with the Dragon Tooth battalion, inquire about recruitment.
+You'll be brought to the Dragon Tooth island. If it's your first time into
+the castle, they'll make you fight with a captured Koshi warrior as a test.
+  After you defeat him and get -100 alignment, you can go into the castle.
+There's a weapon store inside, where you can buy some cool stuff. Proceed
+into the inner sanctum, and talk to the man standing there. He'll introduce
+himself, and if you have 100 quest points, you'll be sent on a mission to
+steal the Koshi Smackrod.
+  Go to the bar in Bonetown, talk to One Eye, and he'll send you into the
+Koshi Caves. Try to get the Moonstone there (see chapter 2.1) and then go
+to the top-left cave. Walk to the guy in the middle, you'll steal the
+Smackrod. Get out of there, and look for the Dragon Tooth battalion again.
+Go back to the castle and talk to the Dragon Tooth leader. He'll let you
+keep the Smackrod (Check it out in chapter 5) and will get some experience
+points and quest points. News of your deed will be shown in the daily news.
+There will be a black "D" on dark red marked beside your quest points in the
+player listing.
+
+  Note: You can win BOTH endings! And get BOTH the Gryphon Moon and the
+        Smackrod! Your character will not be reset after winning.
+
+Chapter 2.3: Other quests
+-=-=-=-=-=-=-=-=-=-=-=-=-
+  Other than winning the game, good or evil, there are a few other quests to
+do. The berry pie is quite useful, as you would find out soon enough.
+  One of the simpler quests, is finding Hector the parrot in the condemned
+cave. Can't see in there? Get a gloworm from Jack's Restaurant (get there
+from the secret tree on Neb's road) and eat it while in the cave. Go deeper
+into the cave and get the parrot, and the ancient flute from one of the
+chests. The flute comes in handy later. Anyway, what you want to do with
+the parrot is up to you, give it to the old woman to cook, or set it free.
+  Anyway, about the ancient flute, find the music shop west of Arrisville,
+talk to the guy there and learn how to play the two songs from him. Read
+chapter 5 for more information on the flute.
+  The next quest, is beating up Neb, when you're powerful enough. No need
+to explain this one.
+  If you find a little girl, bring her back to her mother at the Red Dragon
+Inn. You'll get a little reward. Kill her, you lose alignment.
+  South of Stonebrook, in the shack, talk to the old man. He'll tell you
+who he is. Offer him your berry pie to learn more. The next thing to do is
+get Barak's diary. It's all the evidence you need. You'll find it in the
+house just beside the Greentree church. You'll need at least 15 quest
+points to pick the lock and get in. Get the book from one of the chests
+inside the house. DO NOT TALK TO THE PERSON THERE. Just get the dairy and
+leave. Go back to the shack and talk to the guy again. Show him the diary.
+  Another quest, sort of, is getting the mountain amulet from one of the beds
+in Stonepass Lodge. Show the amulet to the mage at Snowy Pass and he'll let
+you pass through his cave.
+  One more that I know of, is in Ma's Boarding house in Greentree. Get a
+room, go upstairs, talk to the girl there. Thengo down and talk to her
+mother. She'll give you a letter and tell you to go to a hut somewhere
+south of Greentree. Find the hut, get the people inside to come with you,
+go back to Ma's Boarding house, and talk to "Ma".
+  There are also little deliveries you can make by conducting business with
+certain people. You'll be rewarded with a random amount of cash, and if you
+finish the delivery in the same day as you start it, you'll get a random
+bonus.
+  That's about all for quests, some IGMs have quests, but I won't go into
+that.
+
+Chapter 3: Tips
+-=-=-=-=-=-=-=-
+  Things I think you should do:
+
+1. Get that berry pie. It's useful! You can get another one when you don't
+   have one anymore.
+2. If there's nowhere else much to go and rest in the unregistered version,
+   go to the treehouse. You can get the password by hitting a bird with a
+   stone. It's one of the random happenings while you're travelling.
+3. Before you get Hector the parrot (see chapter 2.3), put all else you can
+   give to the old woman to put in her stew, then taste it. You'll get 5
+   more maximum hitpoints.
+4. Start a bank account.
+5. Get a fishing rod and go fishing everyday. It's a great way to earn money!
+   Sell your fish at the house 'o fish in PortTown. Each salmon fetches $50
+   while each sparkling green salmon is worth $250! Chance of getting a
+   sparkling green salmon is 3/16.
+6. Level up whenever you can.
+7. Try to do the delivery quests as much as possible, and finish each of
+   the deliveries the day you get the job. You'll get a random extra bonus.
+8. Bring along enough healing potions with you, always.
+9. When something is happening at the Shrine of Babos, stated in the news,
+   pray at the shrine. You'll get a little something.
+10. Any items like old weapons you don't need? Sell them.
+11. If you're getting pretty seriously hurt, heal as soon as possible. And
+    If you're really getting whacked up in a fight, run! He who fights and
+    runs away, gets to fight another day!
+12. Know your strength. If the monsters in a certain map are too powerful,
+    get out of there.
+13. Decide if you want to be good or evil before you start, and stick to
+    whichever route you choose all the way, until you've won the game.
+    Remember that you can win both endings!
+14. If you're going anywhere, check your turns. Decide if you should go if
+    you don't think you can finish the journey and stay someplace safe.
+15. There are lots of suspicious looking land formations in LORD II, but
+    not everything is something.
+16. Road are good, they guide you, but they don't save turns when you're
+    moving. You don't have to follow exactly on them.
+17. Read signs. They sometimes show you directions, or tell you important
+    stuff.
+18. Buy a map. It's good to know where you are and where to go.
+19. A fast way to gain/lose alignment is to roam around Bonetown.
+20. Make friends with other players. They may help and not attack you. It's
+    good to know a few more people anyway. :)
+21. Don't mind if you keep dying. It's a game, and it's all for fun! :)
+
+Chapter 4: Secrets
+-=-=-=-=-=-=-=-=-=-
+  A few secrets that you may not know of:
+
+1. In Greentree, in the bottom-middle screen, there's a tree in the wall.
+   You can walk into it and come out at the screen just below the city.
+   Not much, but it's a shortcut. You can go in the same way.
+2. In Turgon's shack, there's a secret passage, and it's further up on the
+   left wall, as shown below.
+
+                 ²²²²²²²²²²²²²²²²²²²² ²²²²²²²²²²²²²²²²²²²
+                 ²  ÔÍÍÍ¾                               ²
+                 ²                                      ²
+           XXXXXXXX                                     ²
+           X     ²                                      ²
+           X     ²                                      ²
+           X     ²                                      ²
+           X     ²                                      ²
+           X     ²   ÕÍÍ¸                              ²
+           X     ²   ³  ³                               ²
+           X     ²   ÔÍÍ¾                               ²
+           X     ²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²²
+           X
+           XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                                         ²²²²²²²   X
+                                         ² ã   ²   X
+                                         ²      XXXX
+                                         ²²²²²²²
+
+3. In the screen above the little hut as shown below, there's a secret
+   passage, the route has been marked, as you can see. There's a red potion
+   (see chapter 5) on the table in the next screen.
+
+ 
+      XXXXXXXXXXXX           XXXXXXXXXXXXXXXXXXXXXXX 
+        X         XXXXXXXXXXXXXXXX 
+     X             ïï                 XX
+       X          ïï                   
+        X                               
+           X                           
+           X                     
+          XXX                                 
+        XXXX                                       
+    XXXXX                            
+XXXXXXXX                ïï                
+                     ïï                                             
+               
+                                      
+                                         
+                                      
+                       
+            
+            
+
+4. Deep in the dark forest, in the picture shown below, there's a secret
+   passage into a lair. Inside the lair, also shown below, has teleport
+   spots hidden all over. I've marked the spots to go. Then you will fight
+   a creature called Tash. Defeat him, you'll get a moonstone (see Chapter
+   5). If you run, you'll be transported to some really strange place.
+
+    
+    
+            
+                    
+                 
+         
+       
+     
+        
+                      
+     ï           
+    XX  
+    X   
+    X   
+     XXXXXXXX      
+       X     
+               
+                    
+             
+
+
+                                TASH'S LAIR
+                                  °°°°°°°
+                                °°°°   °°°°          ï = Exit
+                              °°°°       °°°°        ê = Tash
+                            °°°°           °°°°
+                            °°XXXXXXXX OOOOOO°°
+                            °°°°     X O   °°°°
+                              °°°°   XOO °°°°
+          °°°°°°°               °°°° ïO°°°°
+        °°°°   °°°°               °°°°°°°
+      °°°°       °°°°                                   °°°°°°°°
+    °°°°           °°°°  Follow the path marked by X   °°°    °°°
+    °°       X       °°   Walk to Tash, then follow   °°°      °°°
+    °°°°     X     °°°°             the O            °°°    ê   °°°
+      °°°°   X   °°°°                                °°    OXX   °°
+        °°°° X °°°°                                  °°°     X  °°°
+          °°°°°°°                                     °°°  XXX °°°
+                                                       °°°    °°°
+                                                        °°°°°°°°
+
+5. At the Stonepass Lodge screen, go up the trunk of the big tree there.
+   You'll get an apple.
+6. In Stonepass Lodge, there's a mountain amulet under one of the beds. See
+   chapter 2.3 for more on this.
+7. There's a little passage near Castle Coldrake. The only way through is
+   through the castle or with your Smackrod (see chapter 5). There are 2
+   silver potions (see chapter 5) on the table.
+8. Along the shoreline from Castle Coldrake to Sosen Village, there's one
+   part of the shore that will extend into the next screen. Go there, and
+   you'll find a tree with a red potion (see chapter 5) in it.
+9. Somewhere in Smallwood field, which is surrounded by Bigwood forest north
+   of Sosen, there's a large purple tree. Walk into it. You'll be in some
+   weird little place. Get the moonstone (see chapter 5) on the table.
+10. In Arrisville inn, walk around a while and you might encounter a ghost.
+    He'll talk to you and give you his ring. Go to the Rockholm Mountains
+    just west of Castle Coldrake and find the old Red Dragon's lair (It's in
+    the bottom-right parts of the area). Go into the cave and look around.
+11. In one of the waterfalls a few screens west of PortTown, there's a secret
+    passage, as shown. It leads to a moonstone (see chapter 5).
+
+                       ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïXïïïïïïïïïïïïïïïïïïïï
+                       ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïXïïïïïïïïïïïïïïïïïïïï
+                       ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïXïïïïïïïïïïïïïïïïïïïï
+ÛÛÛÛÛÛÛÛÛÛ§§§§§§§§      ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïXïïïïïïïïïïïïïïïïïïïï
+ÛÛÛÛÛÛÛÛÛÛÛÛÛÛ§§§§§     ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïXïïïïïïïïïïïïïïïïïïïï
+          ÛÛÛÛÛÛÛ§§      ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïXïïïïïïïïïïïïïïïïïïïï
+            ÛÛÛÛÛÛÛÛ    ïïïïïïïïïïïïïïïïïïïïïïïïïïïïÛÛÛÛXÛÛÛÛÛïïïïïïïïïïïïïïï
+               ÛÛÛÛÛÛÛÛ      ïïïïïïïïïïïïïÛÛÛÛÛÛïïïïïÛÛÛÛÛÛXÛÛÛÛÛÛÛïïïïïïïïïïïïï
+                 ÛÛÛÛÛÛÛÛÛ      ïïïïïïïïïÛÛÛÛÛÛÛÛÛïÛÛÛÛÛÛXXXÛÛÛÛÛÛÛïïïïïïï ï
+                     ÛÛÛÛÛÛÛÛÛÛ    ïïïïïÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛXÛÛÛÛÛÛÛïïïïïïïï
+ï                     ÛÛÛÛÛÛÛÛÛÛÛÛXXXXXXXXXXXXXXXXXXXXÛÛÛXÛÛÛÛÛ  ïïïïïï
+ïïïï                       ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛXXXXXÛÛÛÛ     ïï
+ïïïïïïï    ï                           ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ          
+ïïïïïïïïï ïï                                                             
+ïïïïïïïïïïïïïïïï                           ï                  
+ïïïïïïïïïïïïïïïïï ï                       ïï
+ïïïïïïïïïïïïïïïïïïïï                     ïïïïï   
+ïïïïïïïïïïïïïïïïïïïïï     ïï           ïïïïïïïï                       
+ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïï ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïï 
+ïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïïï
+
+12. In Greentree, where you find the sheep, there's a tree on the right of
+    the fence. Go just stand north of the tree and move west. You can go in.
+13. In the house on the right, just beside Barak's house, there's a woman
+    who doesn't want you to use her toilet. Check the bowl and you'll find
+    a travel pass in it. You can use this to go pass the gate at Stonepass
+    lodge.
+14. At the massive tree near Stonebrook, there is a way inside. There's a
+    small amount of gold there.
+
+Chapter 5: Items
+-=-=-=-=-=-=-=-=-
+  In this chapter, I'll be explaining the items. If an item has a "W" after
+it, it's a weapon. If it has a "A" after it, it's armour. If it has a number
+marked after it, it can only be used that many times. If it doesn't have
+anything marked after it, it has some other purpose, and can be used forever,
+without it running out or anything.
+
+Healing items: Cluster of wildberries (get from bush/shops, heals 1 HP)
+                                                                FREE/$1
+               Berry pie (get from mother, heals 50 HP)         $1/$2
+               Green potion (buy, heals 10 HP)                  $5
+               Blue potion (buy, heals 50 HP)                   $75
+               White potion (buy, heals 200 HP)                 $300
+               Koshi snack (buy, heals all HP)                  $400
+
+Special potions: Red potion (trade/find, +5 max HP)               3 gems/FREE
+                 Silver potion (trade/find, +1 dodge)             3 gems/FREE
+                 Gold potion (trade/find, +2 muscle)              3 gems/FREE
+                 Travel potion (buy, random teleportation)        $500
+
+Game won special items: Gryphon Moon (win, replenishes turns to a maximum of
+                        turns the Sysop permits. However, you can repeatedly
+                        use it provided you have less than the max turns!)
+
+                        Smackrod (win, teleport to anywhere in the same
+                        screen.) Tip: You can break into the private rooms,
+                        for example, the rooms in Sosen Inn, and steal the
+                        money from the safe.
+
+Other items: Barak's dairy (steal, evidence for Turgon)           FREE
+             Wizard wand (get, see chapter 6.2)                   FREE
+             Poisonberry (?, lose 1 HP)                           ?
+             Milk (buy, for pie)                                  $1
+             Ancient flute          (find, see chapter 2.3)       FREE
+             Parrot                 (find,        "       )       FREE
+             Little girl            (find,        "       )       FREE
+             Gloworm                (buy,         "       )       $50
+             Apple                  (find,        "       )       FREE
+             Ma's letter            (get,         "       )       FREE
+             Laura and Uncle Edward (get,         "       )       FREE 
+             Skystaff base     (buy, see chapter 2.1)             $100
+             Skystaff middle   (buy,         "      )             $100
+             Skystaff top      (buy,         "      )             $100
+             Skystaff gemstone (buy,         "      )             $100
+             Cloud Sword       (get,         "      , weapon +18) FREE
+             World map (buy, see chapter 3)                       $20
+             Travel pass (find, see chapter 4)                    FREE
+             Fishing pole (buy, see chapter 3)                    $500
+             Ticket to "x" (buy, boat ticket to "x")   Arrisville $8000
+                                                    Sosen Village $1500
+                                                         PortTown $1000
+                                                         FlagCity $1000
+             Salmon (get, see chapter 3)                          FREE/$100
+             Sparkling green salmon (get, see chapter 3)          FREE
+             Mountain amulet (see chapter 2.3, chapter 4)         FREE
+             Chicken egg (find, sell)                             FREE
+             Small fuzzy animal (buy, ?)                          $1000
+             Moonstone (find, gives you 500 more turns per day)   FREE
+             Ghost's ring (get, see chapter 2.3)                  FREE
+             Disguise (get, see chapter 2.1)                      FREE
+
+Delivery Items (see chapter 2.3, chapter 3): Sack
+                                             Satchel
+                                             Small bag
+                                             Letter
+                                             Small purse
+
+  Of course, there is still the weapons and armour, but I won't go into that.
+
+Chapter 6: Geography
+-=-=-=-=-=-=-=-=-=-=-
+  Are there certain things in the map that you're not sure what they are?
+If so, refer to the key below.
+
+ °±²Û - Green for grass, passable
+        Brown for road, passable
+        Blue for water, unpassable
+        Yellow for sand, passable
+        White for snow, passable
+                  clouds, passable
+        Cyan for sky, unpassable
+        White on cyan for ice, unpassable
+        Black for entrance
+                  hole, fall and die
+                  dark place, could be passable
+ Û - Brown for road, passable
+               table, unpassable
+     Other than colours shown above, table, unpassable
+  - Tree, unpassable
+ ï - Rock, unpassable
+  - Grey, other player
+     Other colour/inverted colour, hotspot person
+ ã - Table, unpassable
+ Ñ - Sign, unpassable
+ Ü ß - Usually bed, white on cyan, passable
+ ë - Snake, harmful
+ ê - Sheep/Person, unpassable
+ ì - Chair, passable   
+     Teleporter
+ ÉÍÍ
+ ºÛÛ - Booth table, lines passable, block not passable
+ ÈÍÍ 
+ Í Ä - Other than booth seat can be fence, wall, unpassable
+ ğ - Staircase, passable
+
+  That's all the map symbols I can think of for now. Some of the symbols I
+mentioned may not be unpassable if I stated so as there are secret routes to
+things. Don't forget to get a map (see chapter 3).
+
+Chapter 6.1: Towns and villages
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+Stonebrook:
+  You start in your mother's house in Stonebrook village. Up one map from
+the village there are a few more houses. Go a map left and you'll find the
+treehouse (see chapter 3).
+  From the main village, head left a screen and you'll find the town. Inside,
+There's a pawn shop, a healer, a weapons shop and a grocery store. Empty
+little place...
+  Dock: no                   Delivery: no
+
+Greentree:
+  Pretty much the main city. This is where you have a better weapon shop, an
+armour shop, a healer, a scribe where you make annoucements in the news, the
+Red Dragon Inn, Ma's boarding house, the training centre, a church , a bank
+and a few houses. There's a pawn shop near the road from Greentree to
+PortTown.
+  Dock: no                   Delivery: Bartender in Red Dragon Inn 
+
+PortTown:
+  As the name suggests, it's a port city. There's a fish related shop, an
+inn, a healer, a bank, a boat ticket booth, a strange miscelaneous shop and
+of course, a port. Of course, you could take a boat to some other places.
+But there's a cargo ship which you can stowaway on if you have -10 alignment.
+You could get caught though...
+  Dock: Yes                  Delivery: Smithy in House 'o Fish
+
+Sosen village:
+  A quiet little village with a inn you can buy (see chapter 6.2), a bank,
+a miscelaneous store and a few houses.
+  Dock: Yes                  Delivery: Basil in top-left house
+
+Arrisville:
+  A small town with Prince Corin's castle, healers, a bank, a ticket booth,
+a weapons shop and an inn. Prince Corin is an important character in the
+Koshi ending (see chapter 2.1). There's a quest to do with the inn here too
+(see chapter 2.3).
+  Dock: Yes                  Delivery: Prince Corin in castle
+
+Flagcity:
+  Flag city is a moderate sized city, with a town council, a bounty office,
+a healer, a bank, an inn, an apocethery (sells potions) and a ticket booth.
+The bounty office is fun, if you have money. Watch out if you have a price
+on your head...
+  Dock: Yes                  Delivery: Nickabrick in bounty office
+
+Bonetown:
+  Not a really pleasant place to go. There's a bar, a few houses, one of
+which is "different", a "funhouse", a healer, an arena, a casino and a pawn
+shop. You have to pay admission fees, and you pay much more if you're a
+good guy.
+  Dock: Leaving city only    Delivery: Selena in pawn shop
+
+  Some IGMs add cities too, but I'm not going to talk about that.
+
+Chapter 6.2: Other places of interest
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Other than those cities and towns, there are a few other nice places to
+go. I won't mention secret places though.
+
+Stonebrook area
+ Treehouse:
+  This little treehouse is a nice place to sleep. No one can attack you
+  there and it's free too. The only thing is that you need the password.
+  You'll find it as one of the random events while travelling. You can
+  also ban other people from the treehouse even if they have the password.
+  There's a public chat board there too.
+   Location: 1 map west of Northeast Stonebrook Village
+
+ Turgon's House (see chapter 2.3, chapter 4)
+   Location: 2 maps south of Stonebrook
+
+ Condemned cave (see chapter 2.3)
+   Location: 1 map west of Turgon's house
+
+ Old woman's house (see chapter 2.3)
+   Location: 1 map north of condemned cave
+
+ Jack's restaurant:
+  Cosy little restaurant. Order food! (see chapter 2.3)
+   Location: 1 map north of Neb's road through purple tree
+
+Greentree area
+ Shrine of Babos (see chapter 3)
+   Location: 3 maps west of pawn shop near Greentree
+
+ Runion Keep:                              
+  A ruined keep, with a safe, two beds and a doorguard. Sells for $3,000.
+   Location: 1 map north of Greentree, then 2 maps west
+
+ Cabin (see chapter 2.3)
+   Location: 2 maps south of Greentree, then 1 map south-west
+
+PortTown area
+ Fishing dock:
+  A place for fishing (see chapter 3).  
+   Location: 2 maps south of PortTown
+
+ Waterfall:
+  Another place for fishing (see chapter 3).
+   Location: 1 map south-west of PortTown
+
+Stonepass Lodge area
+ Glimmering pond:
+  Another place for fishing (see chapter 3).
+
+ Castle Coldrake:
+  A small castle with a safe, a healer (free), stables where you can ride
+  to Sosen village, Stonepass Lodge and PortTown and a traditional doorguard.
+  There are 2 entrances/exits to the castle, one of them leading to a little
+  hut (see chapter 4). Sells for $20,000.
+   Location: 7 maps north of Stonepass Lodge
+
+ Rockholm mountains:
+  A maze of mountains, in which contains the old Red Dragon's lair (see
+  chapter 4).
+   Location: 1 map west of Castle Coldrake
+             10 map area
+
+Sosen village area
+ Ferry terminal:
+  For taking a ferry over to Arrisland ferry terminal.
+   Location: 1 map north-west of Sosen, then 2 maps north
+
+ Sosen inn:
+  It is in Sosen village, and as I said in chapter 6.1, I'll explain more
+  here. It sells for $40,000. You get a private bedroom with a safe, with
+  the usual password options. You can set the inn fees, and when people stay
+  at your inn, you can collect the money.
+   Location: Inside Sosen Village
+
+Arrisville area
+ Ferry terminal:
+  For taking a ferry over to Sosen ferry terminal.
+   Location: 4 maps north of Arrisville
+
+ Koshi mountains (see chapter 2.1)
+   Location: 8 maps west of Arrisland ferry terminal
+
+Flagcity area
+ Wizard's Tower:
+  Maybe the best built-in piece of buyable property, the wizard's tower is
+  standing at 2 storeys high. In the first storey, you have the traditional
+  doorguard, a free full healing fountain and a table. On the table there's
+  a wizard's wand which you can use anytime, anywhere to automatically
+  teleport yourself back to the tower. If you have the wand but someone else
+  owns the tower, you can enter provided you have the password and it isn't
+  set to not let anyone in at all. If you have the wand but nobody owns the
+  tower, you can't use the wand at all.
+  The second storey has 3 teleporters, one to Bonetown (red ì), one to
+  PortTown (blue ì) and one to Greentree (green ì).
+  It may cost $40,000, but I think it's worth it.
+   Location: 2 maps south-east of Flagcity, then 1 map east
+
+Bonetown area
+ Snowy pass:
+  A passage to the other end, which is near Greentree. It's shorter than
+  through the desert. Of course, it could get shorter if you have the
+  mountain amulet (see chapter 4).
+   Location: 1 map north of Bonetown, then 5 maps east (Bonetown end)
+             7 maps (full tunnel length), 4 maps (shortcut length)
+             4 maps west of cabin (Greentree end)
+
+Chapter 7: Question section
+-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Since this is the first release of this FAQ, I'll just put in the
+things that I didn't mention and I think some of you newbies may ask.
+
+Q: "How do I fight enemies?"
+
+A: Just roam around certain maps. Places like inside houses and just outside
+   a town don't usually have anyone to fight. The maps run a .REF or .REC
+   file which contains monster information and other random happenings info.
+   From the map editor, the sysop can change the chance of running the file
+   per each step taken, though not advised.
+
+Q: "How do I enter a town or building?"
+
+A: Such buildings would have a different looking block, such as a black Û or
+   Ü symbol. Or maybe you enter through the gap in a wall, like ÍÍ ÍÍ, the
+   gap being the entrance.
+
+Q: "How do I fight players?"
+
+A: Well, you have to get on the square your target player is on, then press
+   "h". There'll be a bar of options, like giving him money, items, writing
+   a note and attacking him. If that other guy is online, you can go into
+   chat mode with him. There are places, like inns, where fighting isn't
+   allowed.
+
+Q: "How do I level up?"
+
+A: Go to the training centre in Greentree, and can train if you have enough
+   experience points. You'll have to fight and win a random monster. If you
+   fail, which includes running away, you can't try again until the next day.
+   Don't worry about dying here. If you get beaten by the monster, your
+   hitpoints will go down to one.
+
+Q: "How do I cure VD?"
+
+A: Donate 100 times your level to the Greentree Church. For example, if
+   you're level 14, donate $14,000. You'll get cured.
+
+Chapter 8: Other stuff
+-=-=-=-=-=-=-=-=-=-=-=-
+  My other stuff here refers to credits and information. Don't ask for
+"cheats", please. If you're bent on cheating, plead with your sysop to use
+the player editor. :)
+
+If you have any questions about LORD II you want to ask (gameplay):
+E-mail me:                                   veloran@mbox3.singnet.com.sg
+Or better still, mail Seth Able at:          sethable@rtsoft.com
+
+Or you could visit:
+The RTSoft web site:                   http://www.rtsoft.com
+The êmega BBS web site:                http://web.singnet.com.sg/~denosha
+
+For the latest updates of this FAQ, visit the êmega BBS Web Site!
+
+Legal Copyright Stuff:
+The author will not be liable for damamges arising from the misuse of this
+information. This text file should not crash your hard disk, poison your
+dog, burn your house or get you fired from work. This file can be
+distributed freely anywhere provided it's original integrity is maintained.
+This document in it's wholeness can only be reproduced on request from the
+author and subsiquent approval. If this document is to be altered in any way
+what so ever, the author must be informed and the matter will be discussed.
+When being reproduced or/and altered, the author's credits and rest of the
+information onwards from chapter 8 must still be intact. 
+
+                Thanks to Spencer Voice for his feedback.
+           Thanks to Black Death for putting this FAQ on his page.
+    Thanks to Seth Able and the rest of the RTSoft team for making LORD II.
+        And thanks to any others whom I may have forgotten to mention.
+
+             This FAQ was done entirely by Veloran of êmega BBS.
+
+                   êmega BBS: (065)-466-6759 (Singapore)

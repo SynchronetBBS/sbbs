@@ -1,0 +1,155 @@
+
+The Battlefield by Codax and Dragon's Den Ultd   v1.3
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  QUICK INFO:
+
+  Version of LORD2 required to use it             : 1.00
+  Is registered version of LORD2 required to use? : Yes
+  Using any LORD2 vars?                           : `p80-`p90, `t04, `t20-`t24
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (3)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes (14)
+  Author                                          : Codax
+  Free?                                           : Yes!
+	  This igm is dedicated to Zoë Grioneff 
+
+  Description
+=-=-=-=-=-=-=-
+	Bodies are heaped opon each other.  The smell of rotting carcases 
+fills the air!  How can civilized people do this to each other?  And how,
+can you join in!!  Take sides with Power the Evil Dragon, Shara Phoenix,
+Codax and some of your other friends from Dragon's Den Utld's Igms.  Take
+aim with a crossbow and see a huge story unfold!  Add the igm with the 
+most movement thus far!
+
+    ALL FILES ARE NEEDED IN ORDER FOR THIS IGM TO MAKE SENSE!!
+
+List of Files
+	
+	battle.igm      --->This file/Instalation file
+	battle.rec      --->Main Ref/Rec file
+	battle2.rec     --->Part2 of Main Ref/Rec File
+	battlexh.rec    --->Has all the Xhair info
+	battlefx.rec    --->All Visual FX for Battlefield
+	battlest.ref    --->Big Cinimatic type scenes
+	battle.dat      --->Used by Igm.exe to add maps
+	battle1.ans     --->Battle area
+	battle2.ans     --->Porathe
+	battle3.ans     --->Porathe 2
+	battle4.ans     --->Underground Porathe
+	battle5.ans     --->Underground remains of Porathe
+	battle6.ans     --->Execution Chamber
+	battleqs.cod    --->Queens list
+
+Varlist
+=-=-=-=-
+`p80  Power's Castle Spys
+`p81  Who's side you are on 1-power 2-shara 3-codax
+`p82  Power's Favor
+`p83  If you are the queen/second
+`p84  How many royals are dead
+`p85  Royal treasury
+`p86  Day starting as Queen/King
+`p87  Codax's Favor
+`p88  Shara's Favor
+`p89  Codax's Castle Spys
+`p90  Shara's Castle spys
+
+`t20 Deaths in Power's Castle
+`t21 Quests Finished
+`t22 Codax's Castle deaths
+`t23 Shara's Castle deaths
+
+
+Want more fun?  Try out other igms by Codax & Dragon's Den Ultd
+
+The Pit
+Greentree Prison
+Dragon's Den Housing
+Scavenger Hunt
+Cave of Hope and Despair
+The Pond
+
+  If you are upgrading from a previous version just copy then new
+  recs over the old ones.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM battle.igm
+
+  To uninstall, do the same thing again.
+
+
+Location:  1 mile west and 2 miles north of Sosen Village
+
+Special Offer
+=-=-=-=-=-=-=
+Lord2 igm Authors, would you like the source for all the visual
+effects of this game?  If so send a $5 money order or check to
+
+Codax Dragon            -\
+107 Patti Ln             |   This price covers 3 1/2 inch disk
+St.Clairsville, Oh       |-  and shipping.  A percentage of this
+43950                    |   money will be sent to Bobby Queen's
+			-/   Lord2 igm Page to help keep it up!
+
+(There are 10 easy timesaving animation routines, the big 8 minute cinema
+ sequence, all movement, and much more!)
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0The Battlefield by `1C`3o`5d`7a`9x `0and `#Dragon's `$Den `%Ultd
+
+replacescreen: 295 1 show
+
+replacescreen: 294 2 show
+
+replacescreen: 293 3 show
+
+replacescreen: 292 4 show
+
+replacescreen: 213 5 show
+
+replacescreen: 373 6 show
+
+replacescreen: 484 7 noshow
+
+replacescreen: 486 8 noshow
+
+replacescreen: 488 9 noshow
+
+replacescreen: 564 10 noshow
+
+replacescreen: 566 11 noshow
+
+replacescreen: 568 12 noshow
+
+replacescreen: 644 13 noshow
+
+replacescreen: 646 14 noshow
+
+replacescreen: 648 15 noshow
+
+
+installmessage:
+
+`0 
+
+  `%ABOUT THIS IGM:
+
+`%Location:  1 mile west and 2 mile north of Sosen Village
+
+	Take sides in a three sided war against seemingly impossible
+  odds.  This igm has the most movement of any igm thus far so you
+  can enjoy cinimatic type scenes with love loss and heartbreak.
+  This igm has igm has over 30 minutes of movement!!
+
+   Author: `1C`3o`5d`7a`9x
+   Dragon's Den Ultd
+   http://www.geocities.com/SiliconValley/Way/9982/index.html
+   Codax_dragon@juno.com
+
+`l`l`l`$SUPPORT DRAGON'S DEN BBS!!!!!`L`l`l`l`l`l
+														      

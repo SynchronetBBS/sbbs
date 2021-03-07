@@ -1,0 +1,153 @@
+; Script file DEINSTAL.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:23 2001
+
+@DECLARE deinstal 000000480
+@DECLARE loop2 000001063
+@DECLARE writeitem 000001425
+@DECLARE loop3 000001454
+@DECLARE postitem 000002158
+@DECLARE done4 000002281
+@DECLARE loop4 000002406
+@DECLARE done5 000002500
+@DECLARE loop5 000002578
+@DECLARE next 000003008
+@DECLARE quit 000003082
+@DECLARE nonesuch 000003135
+@DECLARE errora 000003208
+@NOCHECK
+; End of .REF index
+
+@#deinstal
+@show
+Enter name of item to remove from game
+@do readstring 50 NIL `s05
+@do `s04 is NIL
+@if `s05 is `s04 then goto nonesuch
+@show
+`\
+searching for item to be removed...
+@do `p22 is -1
+@do `p29 is 1
+@routine `s05 in extitems.ref
+@if `p22 is -1 then goto nonesuch
+@show
+Ok, item found, beginning deinstall..
+@if extitems.bak exists true then delete extitems.bak
+@copyfile extitems.dat extitems.bak
+@do delete extitems.dat
+@do delete extitems.ref
+@do `p23 is `p22
+@do `p23 * 10
+@do `p24 is 301
+@show
+Processing records may require a few minutes....
+@label loop2
+@if `p24 less 2 then goto done4
+@if `p23 is 0 then goto writeitem
+@do `p24 - 1
+@do `p23 - 1
+@readfile extitems.bak
+`s05
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+@do trim extitems.bak `p24
+@show
+`p24 lines left to process
+@do goto loop2
+
+@label writeitem
+@do `p25 is 1
+@label loop3
+@if `p25 is 1 then `s05 is @#ITEM`p22
+@if `p25 is 2 then `s05 is @label`x___`p22
+@if `p25 is 3 then `s05 is @do`x`~01`xis`xNIL
+@if `p25 is 4 then `s05 is @do`x`~02`xis`xnouse
+@if `p25 is 5 then `s05 is @do`x`~03`xis`xITEM99.ref
+@if `p25 is 6 then `s05 is ;@dataload`x`s04`x`=29`x`=30
+@if `p25 is 7 then `s05 is ;@do`x`~01`xadd`x`x[`=30]
+@if `p25 is 8 then `s05 is @do`x`=22`xis`x`p22
+@if `p25 is 9 then `s05 is @closescript
+@if `p25 is 10 then `s05 is NIL
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+@do `p25 + 1
+@if `p25 is 11 then goto postitem
+@do `s05 is NIL
+@do goto loop3
+
+@label postitem
+@do `p24 - 10
+@do `p23 is 29
+@do `p23 - `p22
+@do `p23 * 10
+@do trim extitems.bak `p24
+@do goto loop2
+
+@label done4
+@show
+Item removed from External Items index.
+Updating player's inventories..
+@do `p24 is 1
+@do `p25 is 0
+@label loop4
+@if `p25 is `p22 then goto done5
+@do `p24 * 2
+@do `p25 + 1
+@do goto loop4
+
+@label done5
+@if extitems.idf exists false then goto errorA 
+@do `p23 is 1
+@label loop5
+@dataload extitems.idf `p23 `p21
+@if `p21 is 0 then goto next
+@if `p21 less 0 then goto errorA
+@if `p21 more 1073741823 then goto errorA
+@do `p25 is `p21
+@if `p25 less `p24 then goto next 
+@do `p25 / `p24
+@do `p26 is `p25
+@do `p26 / 2
+@do `p26 * 2
+@if `p26 is `p25 then `p20 is 0
+@if `p26 not `p25 then `p20 is 1
+@if `p20 is 1 then do
+ @begin
+ @do `p21 - `p24
+ @datasave extitems.idf `p23 `p21
+ @end
+@label next
+@do `p23 + 1
+@if `p23 is 31 then goto quit
+@do goto loop5
+@label quit
+@show
+All done!
+@closescript
+
+
+@label nonesuch
+@show
+`\
+No item with that name found!
+@closescript
+
+@label errorA
+@show
+`r0 `c
+`bERROR!
+`4An illegal value has been detected for record number &playernum in the
+file EXTITEMS.IDF. This value should never be negative, nor greater than
+1,073,741,823 (=[2^30]-1). If this message has been triggered, either the
+file does not exist, the file record has been altered, or data corruption 
+has taken place. `k
+@closescript

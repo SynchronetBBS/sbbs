@@ -1,0 +1,1271 @@
+@#exitlab
+@do y - 2
+@end
+ 
+@#touga
+@do moveback
+@do saybar
+<- University of Greater Arrisville
+@end
+ 
+@#arches
+@do saybar
+You walk through the arches.
+@end
+ 
+@#map
+@do moveback
+@clear screen
+@pauseoff
+@show
+[?7h[255D[2C[0;30;43m                                          [40m
+[A[44C[43m                                  [40m
+  [43m  [42m ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ[40m[A
+[57C[42mÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ» [43m  [40m
+  [43m  [42m º                                     [46mÉÍÍÍÍÍÍÍ»[40m[A
+[52C[42m                      º [43m  [40m
+  [43m  [42m º       [46mÉÍÍÍÍÍÍÍ»[42m                     [40m[A
+[43C[46mº       º[42m                      º [43m  [40m
+  [43m  [42m º       [46mº       º[42m                     [40m[A
+[43C[46mº DORMS º[42m   [46mÉÍÍÍÍÍÍÍÍÍÍ»[42m       º [43m  [40m
+  [43m  [42m º       [46mº CHAPELº[42m                     [40m[A
+[43C[46mº       º[42m   [46mº  ALCHEMY º[42m       º [43m  [40m
+  [43m  [42m º       [46mº       º[42m                     [40m[A
+[43C[46mº       º[42m   [46mº   DEPT.  º[42m       º [43m  [40m
+  [43m  [42m º       [46mº       º[42m                     [40m[A
+[43C[46mÈÍÍÍ[1CÍÍÍ¼[42m   [46mÈÍÍÍÍÍ[1CÍÍÍÍ¼[42m       º [40m[A
+[76C[43m  [40m
+  [43m  [42m º       [46mÈÍÍÍ[1CÍÍÍ¼[42m                      [40m[A
+[44C[42m   [43m [42m             [43m [42m            º [43m[40m[A
+[76C[43m  [40m
+  [43m  [42m º           [43m [42m                         [40m[A
+[43C[43m                           [42m    º [43m  [40m
+  [43m  [42m º  [43m                                    [42m   [40m[A
+[47C[42m                      [43m [42m    º [43m  [40m
+  [43m  [42m º  [43m [42m                             [43m [40m[A
+[39C[42m       [46mÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»[42m      [43m [42m [31m[40m[A
+[71C[42mÑ  [30mº[1mï[43m  [40m
+  [43m  [42m [0;30;42mº  [43m [42m              [46mÉÍÍÍÍÍÍÍÍ[40m[A
+[32C[46mÍ»[42m    [43m [42m       [46mº               º[42m [40m[A
+[64C[42m     [43m    (ð   [40m
+  [43m  [42m º  [43m [42m              [46mº PHYSICS º[42m   [40m[A
+[37C[42m [43m [42m       [46mº CLASSROOMS    [1C[43m       [40m[A
+[70C[42m [1;37m [D  [0;30;42mº[1mï[43m  [40m
+  [43m  [42m [0;30;42mº[46mÉÍÍÍ»[42m            [46mº  DEPT. [40m[A
+[32C[46m [1C[43m     [42m       [46mº               º[42m   [40m[A
+[66C[42m   [1;37mYou  [0;30;42mº [43m  [40m
+  [43m  [42m º[46mº[1;34;44m<*>[0;30;46mº[42m            [40m[A
+[23C[46mº         º[42m            [46mÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼[42m  [40m[A
+[65C[42m    [1;37mare  [0;30;42mº [43m  [40m
+  [43m  [42m º[46mÈÍÍÍ¼[42m            [46mÈÍÍÍÍÍÍÍÍÍ¼[42m   [40m[A
+[37C[42m                                [1;37mhere [0;30;42mº [40m[A
+[76C[43m  [40m
+  [43m  [42m º                                                   [40m[A
+[57C[42m                 º [43m  [40m
+  [43m  [42m ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ[40m[A
+[57C[42mÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼ [43m  [40m
+  [43m  [42m             [1;37mUNIVERSITY OF GREATER ARRISVILLE:[40m[A
+[50C[42m  CAMPUS MAP              [43m  [40m
+  [43m                                                            [40m[A
+[62C[43m                [40m
+@key
+@pauseon
+@drawmap
+@update
+@closescript
+ 
+@#fountain
+@do saybar
+`%What a pretty fountain!  I wonder why it's full of soap bubbles?
+@end
+ 
+@#chapel
+@DO MOVEBACK
+@datanewday ugachap.idf
+@dataload ugachap.idf &playernum `p20
+ 
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @DO GOTO LOCKED
+ @END
+@CLEAR SCREEN
+@SHOW
+`2        You enter the chapel building.  An older man approaches.  He smiles
+and extends his hand.  You're not sure why, but you feel relaxed in his  
+presence.  You take his hand and shake it.
+@KEY BOTTOM
+@CLEAR SCREEN
+@SHOW
+ 
+[0;1m   [0;33mÜÜÜÜÜÜ
+  ÛÛÛÛÛÛÛÛ
+ [37m°°°°°°°[33mÛ[36;43mÞ[40m
+[37m°°°°[33mÛÛ[37m°°[33mÛÛÛÛÛ
+[37m°°°°[33mÛÛÛÛ[1;30;43mÜ[0;33mÛÛ
+ [37m°°[33mÛÛÛÛÛ[1;30;43mßßß[17C[32;40m"Welcome to the UGA Campus Chapel.  I am the
+    [0;33mÛÛÛÛ[15C[1;32mcampus chaplain.  How can I help you?"
+   [0;35mÛÛÛÛÛÛ
+  ÛÛ[1;30;45mÞßßÝ[0;35mÛÛ
+  ÛÛ[1;30;45mÞ[0;35mÛÛ[1;30;45mßßßßßßß[40mÛ[0;33mÛÛß
+  [35mÛÛ[1;30;45mßßßßßß[40mßßßßß
+  [0;35mÛÛÛÛÛÛÛÛ
+  ÛÛÛÛÛÛÛÛ
+ 
+ 
+ 
+@do `v01 is 1
+@CHOICE
+`%"I've come seeking knowledge."
+`%"You mean this isn't gym class?  Sorry, I gotta jet."
+`%"I've come to beat you up, you religious fanatic."
+@IF RESPONCE IS 3 THEN DO
+ @BEGIN
+  @CLEAR SCREEN
+  @SHOW
+[?7h[255D[13C[0;1;33mÛÛ[0;30mÛ
+[14C[1;33mÛÛ[0;30mÛ
+[15C[1;33mÛÛ[0;30mÛ
+[16C[1;33mÛÛ[0;30mÛ
+[17C[1;33mÛÛ
+[17CÛ Û[21C[37mAs you draw back your fist to punch
+[16C[33mÛ Û Û[16C[37mthe old man, you hear a thunder clap and
+[15C[33mÛ  ÛÛ ÛÛ[14C[37msee a bright flash.  Then suddenly, all
+[14C[33mÛ  Û  Û  Û[13C[37mis dark.
+[13C[33mÛ  Û    Û  ÛÛ
+[12CÛ  Û[6CÛ  [0;30mÛ[1;33mÛÛ
+[11CÛÛ[0;30mÛ[1;33mÛ[6CÛ    Û Û
+[10CÛ[0;30mÛ [1;33mÛ[6CÛ[6CÛ Û
+[9CÛ  Û Û    Û Û    Û   Û
+[7CÛÛ  Û[6CÛ   Û[8CÛ
+[6CÛ   Û[6CÛ[5CÛ[8CÛ
+[5CÛ   Û Û[5CÛÛ   Û Û[6CÛ Û
+[8CÛ   Û   Û  Û[5CÛ    Û   Û
+[13CÛ[12CÛ[8CÛ
+  @KEY BOTTOM
+  @CLEAR SCREEN
+  @SHOW
+ 
+ 
+ 
+  `0   When you awake, you realize that you don't feel very well.  You also
+  notice that the sun appears to have travelled a good distance to the west.
+  And if all that wasn't bad enough, you smell like burnt toast!
+ 
+ 
+`6                          HITPOINTS ARE AT 1
+                         ALIGNMENT IS MINUS 4
+                       YOU HAVE LOST 500 TURNS
+   @DO `p02 IS 1
+   @DO `p11 - 500
+   @DO `p07 - 4
+  @DO GOTO DONE
+ @END
+ 
+@IF RESPONCE IS 2 THEN DO
+ @BEGIN
+   @SHOW
+ 
+ 
+`0"Feel free to come back any time."
+   @DO GOTO DONE
+ @END
+@CLEAR SCREEN
+@SHOW
+ 
+ 
+ 
+ 
+       `0 "There is much knowledge to be gained from studying God's Law.  It
+will help you to become a better person."`2
+@DO `p07 + 1
+@DO `p20 RANDOM 10 1
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        I am the Lord your God.  You shall have
+        no other God's before me.             
+`0                                        Exodus 20:2-3
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 2 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not make for yourself an idol.  You 
+        shall not bow down to them or worship them.
+`0                                        Exodus 20:4-5
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 3 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not misuse the name of the Lord your God.
+       
+`0                                        Exodus 20:7  
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 4 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        Remember the Sabbath day by keeping it holy.
+                                                          
+`0                                        Exodus 20:8 
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 5 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        Honor your father and your mother.       
+                                                      
+`0                                        Exodus 20:12 
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 6 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not commit murder.          
+                                           
+`0                                        Exodus 20:13 
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 8 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not commit adultery.                    
+                                     
+`0                                        Exodus 20:14  
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 7 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not steal.                               
+                                                              
+`0                                        Exodus 20:15  
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 7 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not give false testimony against your
+        neighbor.                              
+`0                                        Exodus 20:16  
+  @DO GOTO DONE
+ @END
+@IF `p20 IS 10 THEN DO
+ @BEGIN
+  @SHOW
+ 
+        You shall not covet anything that is your neighbor's.
+                                                              
+`0                                        Exodus 20:17
+  @DO GOTO DONE
+ @END
+@#DONE
+@datasave ugachap.idf &playernum 1
+@KEY BOTTOM
+@DRAWMAP
+@UPDATE
+@CLOSESCRIPT
+@#LOCKED
+@DO SAYBAR
+`%  The chapel door is locked.  Try again tomorrow.
+@CLOSESCRIPT
+ 
+@#teleport
+@do moveback
+@datasave lab.idf &playernum 1
+@clear screen
+@show
+`2You feel a rush of wind and a burst of color explodes before your eyes.
+@key
+@show
+ 
+`2Suddenly everything goes black.  Blacker than your worst nightmare.  You close
+your eyes to fight off the blackness.
+@key
+@show
+ 
+`2Then the wind stops.  Slowly you open your eyes.
+@key
+@do `p20 random 8 1
+@if `p20 is 1 then goto church
+@if `p20 is 2 then goto orphan
+@if `p20 is 3 then goto daves
+@if `p20 is 4 then goto library
+@if `p20 is 5 then goto overlook
+@if `p20 is 6 then goto kiteria
+@if `p20 is 7 then goto witness
+@if `p20 is 8 then goto hydra
+ 
+@#overlook
+@if overlook.rec exists true then do
+@begin
+@do map is 237
+@loadmap 237
+@do x is 40
+@do y is 16
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+The Overlook Hotel, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#church
+@if church.ref exists true then do
+@begin
+@do map is 1280
+@loadmap 1280
+@do x is 18
+@do y is 16
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+The Stonebrook Church, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#witness
+@if witness.rec exists true then do
+@begin
+@do map is 1572
+@loadmap 1572
+@do x is 31
+@do y is 11
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+The Witness Protection Program, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#orphan
+@if orphan.ref exists true then do
+@begin
+@do map is 1436
+@loadmap 1436
+@do x is 57
+@do y is 9
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+The Greentree Orphanage, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#kiteria
+@if kiteria.ref exists true then do
+@begin
+@do map is 1113
+@loadmap 1113
+@do x is 32
+@do y is 19
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+Kiteria's Kastle, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#hydra
+@if island.rec exists true then do
+@begin
+@do map is 934
+@loadmap 934
+@do x is 47
+@do y is 14
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+The Island of the Hydra, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#daves
+@if mine.rec exists true then do
+@begin
+@do map is 1195
+@loadmap 1195
+@do x is 34
+@do y is 11
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+Dahlonega Dave's Do-It-Yourself Mining, another fine IGM from Mamoosoft
+Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#library
+@if wally.rec exists true then do
+@begin
+@do map is 1196
+@loadmap 1196
+@do x is 56
+@do y is 12
+@do `p11 + 500
+@show
+ 
+`2You are no longer in the physics lab, and judging by the sun, it is much
+earlier in the day!
+@key
+@show
+ 
+`2That crazy thing actually worked!
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You are right where you started.
+@key
+@show
+ 
+`2The pad did not seem to work this time.  Perhaps if your SysOp installed
+Wise Wally's Public Library, another fine IGM from Mamoosoft Programming!
+@key
+@drawmap
+@update
+@closescript
+ 
+@#enterphys
+@clear screen
+@show
+`2As you enter the physics building, you notice rows of desks and chairs.
+@key
+@show
+ 
+`2There are some computations on the blackboard.
+@key
+@pauseoff
+@show
+ 
+[0;1m[12C[0;33mÞ[30;43mÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ[40m[A
+[53C[43mÜÜÜÜÜÜÜÜÜÜÜÜ[33;40mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛ  [1;37mE = «mc[0;30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;37mm [A
+[53C= «E[0;30mÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;37mE ò mc [0;30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[A
+[60CÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛ[1;37mE = ¬mc[0;30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[A
+[60CÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;37mc = mEý[0;30mÛÛÛÛÛÛÛÛÛ[A
+[60CÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;37mE ó mc[0;30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[A
+[60CÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛ[1;37mE = m ö c   [0;30mÛÛÛÛÛÛÛÛ[1;37mm = Ecý[0;30mÛÛ[A
+[46CÛÛÛÛÛÛ[1;37mc = ¬m[0;30mÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;37mc = mý«E[0;30mÛÛÛÛÛÛÛÛÛÛÛÛÛ[1;37mE = mc[A
+[53Cý[0;30mÛÛÛÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30mÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ[33mÝ
+[12CÞ[30;43mßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß[40m[A
+[65C[33;40mÝ
+ 
+@key
+@pauseon
+@clear screen
+@show
+`2There is a door on the far side of the room.  The sign on the door says:
+ 
+`%                 Dr. Hanselfelter Ubermeister
+            Professor of Physics and Bloodletting
+@key
+@do map is 1578
+@loadmap 1578
+@do x is 58
+@do y is 10
+@drawmap
+@update
+@closescript
+ 
+@#lablock
+@do moveback
+@do saybar
+`%The door to the lab is locked.
+@closescript
+ 
+@#secretary
+@do moveback
+@datanewday msjones.idf
+@dataload msjones.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do saybar
+`%Miss Jones is busy filing something.
+@closescript
+@end
+@clear screen
+@show
+`#"Welcome to Professor Ubermeister's office.  I'm his secretary, Miss Jones.
+How can I help you?"
+ 
+@do `v01 is 1
+@choice
+`%I'd like to see the professor.
+`%I'm sorry.  I think I'm in the wrong place.
+@if response is 2 then do
+@begin
+@show
+ 
+ 
+ 
+`#"That's OK.  Happens all the time."
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+ 
+ 
+ 
+`#"Are you here to help with the experiment?"
+ 
+@do `v01 is 1
+@choice
+`%What experiment?
+`%Sure!  I'd like to help.
+@if response is 1 then do
+@begin
+@show
+ 
+ 
+`#"Never mind.  The professor is very busy.  You'll need to come back later."
+@key
+@show
+ 
+`2She motions towards the door and gets back to her work.
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@datasave msjones.idf &playernum 1
+@show
+`2Miss Jones gets up from behind her desk and escorts you to a small door at the
+back of the office.
+@key
+@show
+ 
+`2She unlocks the door and motions you inside.
+@key
+@do x is 23
+@do y is 11
+@drawmap
+@update
+@closescript
+ 
+@#prof
+@do moveback
+@datanewday prof.idf
+@dataload prof.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do saybar
+`%The Professor is busy working.
+@closescript
+@end
+@clear screen
+@show
+`2You see a disheveled looking man in a white coat.  In front of him is what
+looks like a small stage, with steps in the front.
+@key
+@show
+ 
+`2He appears to be working on it with some strange tools.
+@key
+@show
+ 
+`2You clear your throat to get his attention, and he looks up from his work.
+@key
+@clear screen
+@show
+`@"Welcome to my laboratory.  I am Professor Ubermeister.  Are you to be a
+guinea pi... I mean... volunteer?"
+ 
+@do `v01 is 1
+@choice
+`%No
+`%Yes
+@if response is 1 then do
+@begin
+@clear screen
+@show
+`@"I'm sorry, I am very busy.  If you are not here to help, please show
+yourself out."
+@key
+@drawmap
+@update
+@closescript
+@end
+@datasave prof.idf &playernum 1
+@clear screen
+@show
+`@"Very good!  I think my invention is ready for testing.
+@key
+@show
+ 
+`@"I bet your are wondering what it is, eh?  Well, I will tell you.  It is
+a time traveling device!"
+@key
+@show
+ 
+`@"So far it is only working simply.  It will send you back in time about 500
+turns."
+@key
+@show
+ 
+`@"There is one small problem that I have not worked out yet.  I think that when
+it sends you back in time, it may also transport you to someplace else in the
+realm."
+@key
+@show
+ 
+`@"You see, time and space are related.  The very fabric of the universe is
+woven from the two.  There are some very interesting theories on...."
+@key
+@show
+ 
+`@"I see by that look on your face that I am rambling.  So sorry.  Anyway, to
+make the device work, simply climb those stairs.  When you reach the top, the
+device will activate itself."
+@key
+@show
+ 
+`@The professor looks at you expectantly.
+@key
+@drawmap
+@update
+@closescript
+ 
+@#noenter
+@datanewday lab.idf
+@dataload lab.idf &playernum `p20
+@if `p20 is 1 then do
+@begin
+@do moveback
+@do saybar
+`%Professor Ubermeister's office is locked.
+@closescript
+@end
+ 
+@#classroom
+@datanewday class.idf
+@dataload class.idf &playernum `p20
+@if `p20 = 1 then goto noclass
+@loadmap 1577
+@do map is 1577
+@do x is 74
+@do y is 11
+@drawmap
+@update
+@do saybar
+`%The door opens automatically.  This building is ADA compliant!
+@closescript
+ 
+@#noclass
+@do moveback
+@do saybar
+`%Classes are over for the day so the building is locked.
+@closescript
+ 
+@#Eunice
+@datanewday eunice.idf
+@dataload eunice.idf &playernum `p20
+@if `p20 = 1 then do
+@begin
+@do saybar
+`%Eunice is busy filing something.
+@closescript
+@end
+@datasave eunice.idf &playernum 1
+@clear screen
+@datasave class.idf &playernum 1
+@show
+`#"Hi.  I'm Eunice the secretary.  I need you to take this message to
+Professor Dittmann.  She's an attractive young blonde woman; you can't
+miss her.  Unfortunately, I forgot which classroom she's in, and classes
+are almost done for the day.  Please try and catch her before she leaves!"
+@key
+@do `p20 random 8 1
+@writefile foundher.idf
+`p20
+@writefile attempts.idf
+0
+@drawmap
+@update
+@closescript
+ 
+@#first
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 1 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#second
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 2 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#third
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 3 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#fourth
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 4 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#fifth
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 5 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#sixth
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 6 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#seventh
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 7 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+@#eighth
+@do moveback
+@readfile attempts.idf
+`p20
+@if `p20 > 3 then goto sheleft
+@readfile foundher.idf
+`p20
+@if `p20 = 8 then do
+@begin
+@do goto foundher
+@closescript
+@end
+@do saybar
+`%Sorry, wrong class.
+@readfile attempts.idf
+`p20
+@do `p20 + 1
+@do delete attempts.idf
+@writefile attempts.idf
+`p20
+@closescript
+ 
+ 
+@#sheleft
+@clear screen
+@show
+`2The door is locked.  Classes seem to be done for the day.  She must have left
+already.
+@key
+@show
+ 
+`2Eunice, the secretary,  thanks you anyway and hurries you out of the building
+so she can lock up for the day.
+@key
+@loadmap 522
+@do map is 522
+@do x is 63
+@do y is 14
+@drawmap
+@update
+@closescript
+ 
+@#foundher
+@clear screen
+@show
+`2Well done!  You found Professor Dittmann and completed the quest!
+@key
+@show
+ 
+`2Professor Dittmann is even more attractive than Eunice described her.  Too
+bad she's married to a dashing young computer programmer!
+@key
+@show
+ 
+`2She is very glad to get the message.  She thanks you and hurries off.
+@key
+@show
+ 
+`2You have finished this quest and gain `@1 quest point`2!
+@do `p18 + 1
+@key
+@show
+ 
+`2Eunice, the secretary,  thanks you and hurries you out of the building so she
+can lock up for the day.
+@key
+@loadmap 522
+@do map is 522
+@do x is 63
+@do y is 14
+@drawmap
+@update
+@closescript
+ 
+@#alchemy
+@do moveback
+@do `p20 is `v05
+@do `p20 / 12
+@if `p11 < `p20 then do
+        @begin
+        @do saybar
+LOCKED, Nobody is answering.
+        @closescript
+        @end
+
+@offmap
+@clear screen
+@show
+`2As you enter the building you are struck by strange and disturbing smells.
+@key
+@show
+ 
+`2There is a light fog in the room of a color which you have never before seen.
+@key
+@show
+ 
+`2As your eyes adjust, you notice that the room is filled with all kinds of
+laboratory equipment.
+@key
+@show
+ 
+`2In the center of the room is table.  Behind the table is a man.  He looks
+very busy.
+ 
+@key
+@do `v01 is 1
+@choice
+`%Leave before I disturb him.
+`%Try to get his attention
+@if response is 1 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2You clear your throat to get his attention.
+@key
+@show
+ 
+`2He looks up and smiles.
+@key
+@show
+ 
+`9"Hello friend," he says.  "You're just in time.  I've been working on a way
+to change gems into gold, and I think I've finally found the right formula."
+@key
+@show
+ 
+`9"I don't suppose you have any gems on you?  I'll let you keep the gold if
+it works."
+ 
+@do `v01 is 1
+@choice
+`%No thanks.  I'm not interested.
+`%Let me look in my pack and see.
+@if response is 1 then do
+@begin
+@show
+ 
+ 
+`9"Very well.  Come back if you change your mind."
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@if `p19 = 0 then do
+@begin
+@show
+`2You dig deep down in your pack but cannot find any gems.
+@key
+@show
+ 
+`9"That's too bad.  Come back later if you find some."
+@key
+@drawmap
+@update
+@closescript
+@end
+@show
+`2You dig deep down in your pack and find `L.`L.`L. `%`p19 `2gems!
+@key
+@do goto gemnum
+@#gemnum
+@show
+`2How many are you going to give him?
+@do readnum 10 0
+@clear screen
+@if `v40 > `p19 then do
+@begin
+@show
+ 
+`2You don't have `%`v40 `2gems.  You only have `%`p19`2.
+@key
+@do goto gemnum
+@end
+@if `v40 < 0 then do
+@begin
+@show
+ 
+`2You cannot give a negative number.
+@key
+@do goto gemnum
+@end
+@if `v40 = 0 then do
+@begin
+@show
+`9"Too bad you changed your mind.  Come back later if you change it again."
+@key
+@drawmap
+@update
+@closescript
+@end
+@clear screen
+@show
+`2The alchemist greatfully accepts the `v40 gems.
+@do `p19 - `v40
+@key
+@show
+ 
+`2He drops them into a large flask filled with a green liquid.
+@key
+@show
+ 
+`2The liquid begins to bubble with a red froth.
+@key
+@show
+ 
+`2Suddenly there is a brilliant flash of light.
+@key
+@do `p20 random 5 1
+@if `p20 = 1 then goto boom
+@clear screen
+@show
+`2The liquid rises through a tube, swirls around, and spills out into a barrel.
+@key
+@show
+ 
+`2As you look into the barrel, you cannot believe your eyes!
+@key
+@do `p20 random 1500 500
+@do `v40 * `p20
+@show
+ 
+`2At the bottom of the barrel you see `%`v40 `2gold pieces!
+@key
+@do money + `v40
+@clear screen
+@show
+`2The alchemist jumps for joy, then draws the money from the barrel and
+hands it to you.
+@key
+@show
+ 
+`9"Thanks for your help.  Come back anytime!"
+@key
+@drawmap
+@update
+@closescript
+ 
+@#boom
+@clear screen
+@show
+`2When you open your eyes you see that the alchemist and his equipment look
+a bit like burnt toast.
+@key
+@show
+ 
+`2Your gems are nowhere to be found.
+@key
+@show
+ 
+`9"Gosh, sorry about that.  Let me do a little more work, and you can come
+back later if you want."
+@key
+@drawmap
+@update
+@closescript
+ 
+@#nomore

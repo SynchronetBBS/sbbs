@@ -1,0 +1,234 @@
+; Script file ORPHAN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE start 000000393
+@DECLARE entrance 000001135
+@DECLARE brats 000002276
+@DECLARE donate 000002597
+@DECLARE broke 000003220
+@DECLARE five 000003419
+@DECLARE hundred 000003636
+@DECLARE thousand 000003947
+@DECLARE done 000004258
+@DECLARE locked 000004451
+@NOCHECK
+; End of .REF index
+
+@#start
+@do moveback
+@datanewday orphan.idf
+@dataload orphan.idf &playernum `p20
+@IF `p20 IS 1 THEN DO
+ @BEGIN
+  @DO GOTO LOCKED
+ @END
+@clear screen
+@show
+
+`2     As you enter the building, you see a broken sign hanging from the door.
+It reads `1GREENTREE ORPHANAGE`2.  As you push the door open, it squeaks on rusty
+hinges.
+
+@key
+@show
+`2     This place is obviously a relic of the days when the Red Dragon made
+orphans of many children.  Now it is very run down.  The windows are broken,
+and the furniture is in disrepair.
+
+@key
+@show
+`2     The sounds of children playing (and fighting) can be heard outside.  It
+is apparent that the orphanage suffers from a serious lack of funding.
+
+@key
+@do goto entrance
+@#entrance
+@clear screen
+@show
+
+[?7h[255D[40m
+
+
+
+
+[0;1m[20C‹‹‹‹‹‹‹‹
+[9C[30m‹€€€[0;36m∞[1;30m€€€€€€€€[0;33m€€€[1;37;43mﬂ[40m€€
+[8C[30m€€€€[0;36m∞∞[1;30m€€€€€€€€[0;33mﬂ€€€[34;43m˙[1;37;40m€
+[6C[30m‹€€€€[0;36m∞∞∞[1;30m€€€€€€€€   [0;33mﬂ
+[5C[1;30m€€€€€[0;36m∞∞∞∞   [1;30mﬂﬂﬂ€€[17C[32mAn elderly woman is scrubbing the floor.
+[5C[30m€€€€€[0;36m∞∞∞∞[6C[1;30m€€
+   €€€€€€€[0;36m∞∞∞∞[7C[1;30m€€‹
+[0;33m‹‹€[1;30m€€€€€€€€€€[9C[0m‹[33;47mﬂﬂﬂ[37;40m‹‹
+[31m±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+
+
+@do `v01 is 1
+@choice
+Leave before she sees me.
+Speak with the woman.
+@if response is 1 then do
+ @begin
+ @do goto done
+ @end
+@clear screen
+@show
+
+`2     You clear your throat, and the woman looks up from her work.
+
+`0     "Can I help you?" she asks.
+
+@do `v01 is 1
+@choice
+No thanks, I'm just looking around.
+I'd like to make a donation.
+Why do you waste your time with these stupid brats?
+@if response is 1 then do
+ @begin
+ @do goto entrance
+ @end
+@if response is 2 then do
+ @begin
+ @do goto donate
+ @end
+@if response is 3 then do
+ @begin
+ @do goto brats
+ @end
+
+@#brats
+@clear screen
+@show
+
+`0     The woman stares at you in disbelief.  Suddenly, tears well up in her
+eyes.
+@key
+@show
+
+`0     "Because noone else will," she says quietly.  She asks you to leave and
+returns to her work.
+@key
+@do `p07 - 2
+@show
+
+`5    ALIGNEMENT GOES DOWN BY 2
+@key
+@do goto done
+
+@#donate
+@clear screen
+@show
+
+`0     The woman stares at you in disbelief.  Suddenly, tears of joy well up in
+her eyes.
+
+`0     "A donation?!  Bless you!  As you can see, our donations are few and far
+between.  Anything you could give would help us immensely."
+
+@key
+@if money < 5 then do
+ @begin
+ @do goto broke
+ @end
+
+@clear screen
+@show
+
+`2How much would you like to donate?
+
+@do `v01 is 1
+@choice
+5
+500
+5000
+@if response is 1 then do
+ @begin
+ @do goto five
+ @end
+@if response is 2 then do
+ @begin
+ @do goto hundred
+ @end
+@if response is 3 then do
+ @begin
+ @do goto thousand
+ @end
+
+@#broke
+@clear screen
+@show
+
+`2     You realize that you are not carrying enough money with you.  You tell
+the woman that you will be back later, and you quietly leave.
+
+@key
+@do goto done
+
+@#five
+@clear screen
+@show
+
+`0     You hand 5 gold pieces to the woman.  She thanks you and takes the money.
+
+@key
+@do money - 5
+@show
+`5     You feel really good about yourself.
+
+@key
+@do goto done
+
+@#hundred
+@if money < 500 then do
+ @begin
+ @do goto broke
+ @end
+@clear screen
+@show
+
+`0     You hand 500 gold pieces to the woman.  She gives you a big smile, and
+thanks you as she takes the money.
+
+@key
+@do money - 500
+@do `p07 + 1
+@show
+`5     ALIGNMENT GOES UP BY 1
+
+@key
+@do goto done
+
+@#thousand
+@if money < 5000 then do
+ @begin
+ @do goto broke
+ @end
+@clear screen
+@show
+
+`0     You hand 5000 gold pieces to the woman.  She gives you a HUGE smile, and
+thanks you as she takes the money.
+
+@key
+@do money - 5000
+@do `p07 + 5
+@show
+`5     ALIGNMENT GOES UP BY 5
+
+@key
+@do goto done
+
+@#done
+@clear screen
+@show
+
+`0     As you leave the orphanage, the door squeaks loudly on its rusty hinges.
+
+@key
+@datasave orphan.idf &playernum 1
+@drawmap
+@update
+@closescript
+
+@#locked
+  @DO SAYBAR
+The orphanage is locked.  Try again tomorrow.
+@closescript

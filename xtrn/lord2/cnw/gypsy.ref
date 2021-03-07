@@ -1,0 +1,899 @@
+; Script file GYPSY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE sign 000001066
+@DECLARE gypsy 000001442
+@DECLARE kid1 000002101
+@DECLARE kid2 000002996
+@DECLARE lili 000003265
+@DECLARE flirtf 000004448
+@DECLARE flirtf 000004463
+@DECLARE lady 000010229
+@DECLARE guy 000010588
+@DECLARE cook 000010940
+@DECLARE menu 000011009
+@DECLARE barter 000013988
+@DECLARE shop 000014062
+@DECLARE wares 000014611
+@DECLARE wares 000014625
+@DECLARE chandler 000015814
+@DECLARE couple 000016920
+@DECLARE woman1 000017533
+@DECLARE woman2 000017691
+@DECLARE woman21 000017882
+@DECLARE woman3 000018059
+@DECLARE woman31 000018242
+@DECLARE woman4 000018398
+@DECLARE viollca 000018628
+@DECLARE gimi 000019285
+@DECLARE kaku 000020294
+@DECLARE bexhet 000020384
+@DECLARE nuzi 000020474
+@DECLARE game 000020562
+@DECLARE random 000020696
+@DECLARE toomany 000022646
+@NOCHECK
+; End of .REF index
+
+;this is main ref for Gypsy Encampment, it has the basic stuff and
+;determins the time of day for the player entering the IGM
+
+@#sign
+;The entrance
+@offmap
+@do `p70 is 28
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@show
+`r0`c`2"Welcome to the Gypsy encampment!" says a pretty young woman
+  "May the gods bless your legs for being here."
+`\`k
+@drawmap
+@end
+@update
+@closescript
+@end
+;-------------------------------------------------------------------------
+
+@#gypsy
+;Turn setup
+@datanewday gypsy1.idf
+@datanewday gypsy2.idf
+@if `v05 is 0 then do
+@begin
+;checking for unlimited play
+  @do x is 16
+  @do y is 14
+  @do map is 85
+  @loadmap 85
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if `p11 > 1501 then do
+@begin
+;checking turns for morning
+  @do x is 16
+  @do y is 14
+  @do map is 81
+  @loadmap 81
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if `p11 < 1500 then do
+@begin
+;checking for nighttime
+  @do x is 16
+  @do y is 14
+  @do map is 82
+  @loadmap 82
+  @drawmap
+  @update
+  @closescript
+  @end
+;-------------------------------------------------------------------------
+
+@#kid1
+;kid in the morning
+@do moveback
+@do `p20 random 10 1
+@if `p20 is 1 then saybar
+`2Have you visited Spiuni yet? He has the best Mariki around.
+@if `p20 is 2 then saybar
+`2The fortune teller knows everything.
+@if `p20 is 3 then saybar
+`2May the god's bless your legs
+@if `p20 is 4 then saybar
+`2The wishing well has been know to really grant wishes
+@if `p20 is 5 then saybar
+`2Not all things work here at all times.
+@if `p20 is 6 then saybar
+`2You should talk to Marcel, he may tell you a story.
+@if `p20 is 7 then saybar
+`2Watch out for Mario, he is not a nice man.
+@if `p20 is 8 then saybar
+`2Please go take a look at the stage.
+@if `p20 is 9 then saybar
+`2Make sure to visit us during the day and at night.
+@if `p20 is 10 then saybar
+`2Why not talk to Nicu? He talks in funny riddles.
+
+;-------------------------------------------------------------------------
+@#kid2
+;2nd kid in the morning
+@DO SAYBAR
+`2"Thanks for the gold stranger" the kid laughs at you and runs away.
+@do money - 10
+@do moveback                                               
+;-------------------------------------------------------------------------
+@#Lili
+;Liliana is someone for guy's to flirt with
+@do moveback
+@do `p70 is 29
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+
+@if sexmale not 1 then do
+  @begin
+  @show
+`r0`c  `2You see a gorgeous woman dancing in the middle of the tent. Men
+  seem to be flocking around her. You wonder briefly if you should ask
+  her for beauty advice. Then you realize if you walk too close to her
+  you would seem  awfully homely. You turn and walk away, giving the
+  woman a dirty look over your shoulder.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if sexmale is 1 then do
+  @begin
+  @show
+`r0`c  `5The most gorgeous woman you have ever seen is dancing alone
+  under the tent. Her simple skirt flares out around her knees every
+  time she moves. As you stand mesmerized by her dancing you notice
+  she is looking right at you, a seductive smile playing across her
+  lips. You take a deep breath, steel you nerves and walk over to
+  her. "Hello stranger. My name is Lilliana" she looks you over and
+  whispers to you invitingly "What is your pleasure?"
+  `\`k
+ @do goto flirtf
+
+@if `v06 is 1 then do
+  @begin
+  @closescript
+  @end
+@end
+
+@#flirtf
+@label flirtf
+@dataload npc\npcfl`p70.idf &playernum `p23
+@dataload npc\npctimes.idf 29 `p21
+@if `p23 > `p21 then `p22 then goto toomany
+@do `p23 + 1
+@datasave npc\npcfl`p70.idf &playernum `p23
+@do `p23 random 3 1
+@do `p24 random 5 1
+;to make a possible "no-effect" on NPC :)
+@do `p23 - 1
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Wink at her
+Ask to kiss her hand
+Give her a hug
+Kiss her deeply
+Slip your hand up her skirt
+Take her behind a hay bail
+Decide against putting the move on Lilliana right now
+@if response is 1 then do
+  @begin
+  @if money > 999 then do
+    @begin
+    @show
+`r0`cShe smiles and winks back.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if money < 1000 then do
+    @begin
+    @show
+`r0`cShe frowns and turns away.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @do `p08 - 1
+        @if `p24 is 3 then `p08 - 2
+    @drawmap
+    @update
+    @closescript
+    @end
+@if response is 2 then do
+  @begin
+  @if money > 2900 then do
+    @begin
+    @show
+`r0`cShe holds her delicate hand out, allowing you to give it a gentle kiss.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if money < 3000 then do
+    @begin
+    @show
+`r0`cShe looks as if your kissing her hand might be truly disgusting.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @do `p08 - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+@if response is 3 then do
+  @begin
+  @if money > 4999  then do
+    @begin
+    @show
+`r0`cShe throws her arms around you returning your hug.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if money < 5000 then do
+    @begin
+    @show
+`r0`cShe pushes you away angrily.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @do `p08 - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+@if response is 4 then do
+  @begin
+  @if money > 7499 then do
+    @begin
+    @show
+`r0`cShe returns your kiss with passion.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if money < 7500 then do
+    @begin
+    @show
+`r0`cAs you lean forward to kiss her she slaps your face.
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @do `p08 - 1
+        @if `p24 is 3 then `p08 - 2
+    @drawmap
+    @update
+    @closescript
+    @end
+@if response is 5 then do
+  @begin
+  @if money > 9999 then do
+    @begin
+    @show
+`r0`cShe doesn't object to your advances, in fact she's smiling!
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if money < 10000 then do
+    @begin
+    @show
+`r0`cShe punches your lights out!
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 - `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @do `p08 - 1
+        @if `p24 is 3 then `p08 - 6
+        @do `p
+    @drawmap
+    @update
+    @closescript
+    @end
+@if response is 6 then do
+  @begin
+  @if money > 19999 then do
+    @begin
+    @show
+`r0`cYou suggest ducking behind the nearest hay bale and she takes your
+hand and leads you there!
+`\`k
+        @dataload npc/npc-`p70.idf &playernum `p22
+        @do `p22 + `p23
+        @datasave npc/npc-`p70.idf &playernum `p22
+        @if `p24 is 3 then `p08 + 1
+                                @dataload npc\npcvd.idf `p70 `p28
+                                @if `p28 > 0 then do
+                                        @begin
+                                        @do `p12 is 1
+                                        @end
+                                @if `p12 > 0 then do
+                                        @begin
+                                        @datasave npc\npcvd.idf `p70 1
+                                        @end
+                                @do `p34 + 1
+                                @dataload npc\npclays.idf `p70 `p28
+                                @do `p28 + 1
+                                @datasave npc\npclays.idf `p70 `p28
+                                @dataload npc\laynp`p70.idf &playernum `p28
+                                @do `p28 + 1
+                                @datasave npc\laynp`p70.idf &playernum `p28
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if money < 20000 then do
+    @begin
+    @show
+`r0`cYou grab her hand to lead her behind a hay bale and she kicks and
+screams causing quite a scene!
+`\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+@if response is 7 then do
+  @begin
+  @show
+`r0`cYou decide against putting the moves on Lilliana and walk away.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+;-------------------------------------------------------------------------
+@#lady
+;Lilliana is someone for the guy's to flirt with
+@do moveback
+@if sexmale is 1 then saybar
+`5Lilliana`#:I'll flirt with you later
+@if sexmale not 1 then saybar
+`5Lilliana`#:Don't you think Djivan is the cutest?
+@if `v06 is 1 then do
+  @begin
+  @closescript
+  @end
+
+;-------------------------------------------------------------------------
+@#GUY
+;Djivan is someone for gal's to flirt with
+@do moveback
+@if sexmale is 0 then saybar
+`8Djivan:`2I'll flirt with you later
+@if sexmale not 0 then saybar
+`8Djivan:`2Don't you think Liliana is the cutest?
+@if `v06 is 1 then do
+  @begin
+  @closescrit
+  @end
+
+;-------------------------------------------------------------------------
+
+@#cook
+;Spiuni the cook
+@offmap
+@do moveback
+@do `v01 is 1
+@label menu
+@show
+`r0`c  `2You sniff the air and wonder to yourself "What is that delicious
+  fragrance?" As you follow the smell your stomach growls hungrily and you
+  hope whatever that smell belongs to is edible! The side of the wagon that
+  you are nearing is folded down, revealing a counter on which several items
+  of food are placed. A large man sees you and smiles. "Please come closer
+  and sample some of my delicacies," he calls. Trying not to drool you look
+  at his menu. "Excuse me Mr... um?" you say. "Spiuni!" he laughs,"Call me
+  Spiuni!" "Uh, yes, well Spiuni, what is all this food?" you ask. "Tell me
+  what you would like and I will tell you what it is and how much it costs."
+  offers Spiuni helpfully. You point to each dish and listen to Spiuni
+  carefully before making your decision.
+                              `5Menu
+@do write
+`x`x
+@choice
+Sir bread with butter- delicious bread smothered in garlic and butter - 5gp
+But guli and bushalonoodles- very sweet and sour panfried noodles - 5gp
+Mariki- a many layered sweet pizza - 10gp
+Pani neva- cool clear water - 3gp
+You decide your not hungry after all.
+@if response is 5 the do
+  @begin
+  @show
+`r0`c  `2"You dont see anything to please you palate? Maybe you'll come
+  back when you're hungrier." says Spiuni.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@if response is 1 then do
+  @begin
+  @if money < 5 then do
+    @begin
+    @show
+`\`\`2"I'm sorry I cant sell you that, you dont have enough gold!" Spiuni says
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2"Ahh the best bread there is" Spiuni says as he hands you the
+  HUGE piece of bread.
+`\
+   @do money - 5
+   @drawmap
+   @update
+   @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @if money < 5 then do
+    @begin
+    @show
+`\`\`2"I'm sorry I cant sell you that, you dont have enough gold!" Spiuni says
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\  `2"You will never find a better tasting dish of Noodles around!"
+`\
+   @do money - 5
+   @drawmap
+   @update
+   @closescript
+  @end
+@if response is 3 then do
+  @begin
+  @if money < 10 then do
+    @begin
+    @show
+`\`\`2"I'm sorry I cant sell you that, you dont have enough gold!" Spiuni says
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\`2"The best pizza on this side of the world!" says Spiuni.
+`\
+   @do money - 10
+   @drawmap
+   @update
+   @closescript
+  @end
+@if response is 4 then do
+  @begin
+  @if money < 3 then do
+    @begin
+    @show
+`\`\`2"I'm sorry myfriend, but you can't even afford a glass of water!"
+`k
+    @drawmap
+    @update
+    @closescript
+    @end
+   @show
+`\`\`2"A nice glass of ice cold water to quinch your thirst!"
+`\
+   @do money - 3
+   @drawmap
+   @update
+   @closescript
+  @end
+
+@drawmap
+@update
+
+;-------------------------------------------------------------------------
+@#barter
+;Mario's Barter Wagon
+@offmap
+@do moveback
+@do `v01 is 1
+@label shop
+@show
+`r0`c  `%You see a interesting wagon with a sigh that reads
+
+`r0`c                   `r6`5==============================`r0
+                   `r6`5|| `%Mario's Wagon of Goodies `5||`r0
+                   `r6`5==============================`r0`\
+`2    `0    A middle-aged Gypsy man waves at you frantically. "Hello
+        dear stranger," he calls. "I am Mario.  Perhaps I can
+        interest you in some of my wares?" He looks you over and
+        then adds "Or perhaps I can lighten your load a bit?"`\
+@do goto wares
+
+@#wares
+@label wares
+@do write
+`x`x
+@do `v01 is 3
+@choice
+Look at Mario's wares.
+Show Mario your goods.
+Turn away because you really have no need in dealing with him.
+@if response is 3 then do begin
+  @begin
+  @SHOW
+`r0`c  `0"That is to bad my friend for I think we could have
+          profited from each other."  With that Mario returns
+          to his work behind the counter.
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@if response is 2 then do begin
+  @begin
+  @sellmanager
+4
+5
+9
+10
+11
+12
+13
+14
+15
+`c
+  @do goto shop
+  @end
+
+@if response is 1 then do begin
+  @begin
+  @do `p20 random 4 1
+  @if `p20 is 1 then do
+    @begin
+    @buymanager
+4
+10
+13
+16
+20
+28
+38
+51
+`c
+    @do goto shop
+    @end
+  @if `p20 is 2 then do
+    @begin
+    @buymanager
+9
+12
+15
+35
+37
+59
+50
+51
+    @do goto shop
+    @end
+  @if `p20 is 3 then do
+    @begin
+    @buymanager
+49
+43
+39
+36
+14
+3
+28
+51
+    @do goto shop
+    @end
+  @if `p20 is 4 then do
+    @begin
+    @buymanager
+50
+20
+36
+35
+13
+3
+37
+51
+    @do goto shop
+    @end
+
+;-------------------------------------------------------------------------
+;Below is all tent stuff
+
+@#chandler
+@do `p70 is 30
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do `p20 random 10 1
+  @if `p20 is 1 then saybar
+`8Chandler`2:You know Marcel is the best storyteller there is!
+  @if `p20 is 2 then saybar
+`2I hear the maker of this IGM is making a new world as well, look for it!
+  @if `p20 is 3 then saybar
+`8Chandler`2:Liliana is one hot Gypsy!
+  @if `p20 is 4 then saybar
+`8Chandler`2:Djivan is the best looking guy in the village!
+  @if `p20 is 5 then saybar
+`8Chandler`2:Nicu is not only a master at riddles, but elixers as well!
+  @if `p20 is 6 then saybar
+`8Chandler`2:Mario always seems to have something new on hand.
+  @if `p20 is 7 then saybar
+`8Chandler`2:One day Nadja will be as strong as Jeta.
+  @if `p20 is 8 then saybar
+`8Chandler`2:Sometimes your wishs can come true.
+  @if `p20 is 9 then saybar
+`8Chandler`2:I hear Nicu sleep's in the nude .`l .`l .`l hahaha.
+  @if `p20 is 10 then saybar
+`8Chandler`2:Marcel can be real grumpy when first waking up.
+@end
+;-------------------------------------------------------------------------
+@#couple
+  @do moveback
+  @offmap
+  @show
+`r0`c  `!A young couple sits on a bale of hay whispering to each other.
+  As you walk by you clumsily trip over the mans foot.
+  `9"Te bisterdon tumare anave!" `!He yells angrily. You stand up hoping
+  to defend yourself when the woman yells at you.
+  `#"Nuzi is right. May your name be forgotten!" `!You hurriedly walk away,
+  brushing yourself off. You also vow to repeat your name at least twice
+  a day.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+
+;-------------------------------------------------------------------------
+;women on the stage
+@#woman1
+@do `p70 is 31
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do saybar
+`$Lela`#:Get off the stage you berk!
+@end
+
+@#woman2
+@do `p70 is 32
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do saybar
+`0Mirella`#:If you really want to do something, get Viollca up here!
+@end
+
+@#woman21
+@do `p70 is 32
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do saybar
+`0Mirella`#:I see you like the Gypsy ways! Stay awhile.
+@end
+
+@#woman3
+@do `p70 is 33
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do saybar
+`5Sherif`#:We need Viollca up here to practice dancing with!
+@end
+
+@#woman31
+@do `p70 is 33
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do saybar
+`5Sherif`#:Ohh, you dance so well!
+@end
+
+@#woman4
+@do `p70 is 34
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @do saybar
+`!Viollca`#:Come dance with us!
+@end
+
+;-------------------------------------------------------------------------
+@#Viollca
+@do `p70 is 34
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @offmap
+  @show
+`r0`c  `!A young lady is busily cleaning one of the tables. She does'nt
+  even look up when you approach. `2"Excuse me miss? Why are all these
+  tables set up?" `!Without even looking at you she replies, `#"All of these
+  tables are set up for this evenings entertainment. Why not come back
+  later?" `!You think about asking her a few more questions but decide
+  against it since she seems so busy.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@end
+;-------------------------------------------------------------------------
+@#Gimi
+@do `p70 is 34
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+  @offmap
+  @show
+`r0`c  `9You see a small boy leaning against the wall. He seems to be
+  making something. He looks up at you and smiles. `!"May the gods bless
+  your legs stranger." `9he says to you softly. `2"What are you doing there?"
+  `9you ask him. He stands up straight and takes a deep breath `!"I am
+  called Gimi, and I am making a patrin for our Gypsy brothers. I will
+  place this on the road as a sign to others that we have been here. It
+  is a very important job I have." `9He recites carefully. `2"Well good for
+  you Gimi." `9you tell him. He looks at you expectantly. Not knowing what
+  else to do you pat him on the head and say `2"you better get back to that
+  important job, don't let me disturb you." `9With a shrug he returns to his
+  work.
+`\`k
+  @drawmap
+  @update
+  @closescript
+  @end
+@end
+;-------------------------------------------------------------------------
+@#kaku
+@do moveback
+@do saybar
+`9kaku`!:In the next version, you can gamble here!
+
+@#bexhet
+@do moveback
+@do saybar
+`9Bexhet`!:In the next version, you can gamble here!
+
+@#nuzi
+@do moveback
+@do saybar
+`9Nuzi`!:In the next version, you can gamble here!
+
+@#game
+
+;-------------------------------------------------------------------------
+;The random stuff that happens on the maps
+
+@#random
+@do `p20 random 6 1
+@if `p20 is 1 then saybar
+`$The sound of children playing nearby makes you smile.
+@if `p20 is 2 then saybar
+`$You find a small kis on the ground with 10 gold in it.
+  @do money + 10
+@if `p20 is 3 then saybar
+`$Something around here smells really good!
+@if `p20 is 4 then saybar
+`$You see a tarot card flutter past you in the wind
+@if `p20 is 5 then saybar
+`$The friendly Gypsies smile as you walk by.
+@if `p20 is 6 then do
+  @begin
+  @offmap
+  @show
+`r0`c  `6You come across a sad looking brown bear. He is tethered by a
+  chain to a large stake driven into the ground. As you approach he
+  stands up and you see a sign around his neck. It reads "The Amazing
+  Dancing Bear". What do you do
+`\`k
+  @do `v01 is 1
+  @do write
+  `x`x
+  @choice
+Break the bonds and free the bear.
+Ignore the bear and walk away.
+Laugh at the bear and make it dance.
+  @if response is 2 then do
+    @begin
+    @show
+`r0`c`6You decide the bear is not yours to worry about so you turn slowly
+and walk away. You hear the bear sit down with a sigh behind you.
+`\`k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if response is 1 then do
+    @begin
+    @show
+`r0`c`6You rush forward and break the chains, freeing the bear. It stands
+up on its huge back paws and gives you a strong bear hug before galloping
+off into the forest. You gain 1 alignment point.
+`\`k
+    @do `p07 + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+  @if response is 3 then do
+    @begin
+    @show
+`r0`c`6Grabbing a nearby stick you begin to poke and prob the bear, trying
+to get it to dance. At first it only yawns lazily but soon it grows
+angry. It raises up on it's hind legs and swats the stick away. You
+laugh at the bear and walk away, proud of yourself for annoying the
+heck out of it. You lose 1 alignment point.
+`\`k
+    @do `p07 - 1
+    @drawmap
+    @update
+    @closescript
+    @end
+
+@#toomany
+@drawmap
+@update
+@do saybar
+`$Lilliana: `%Not today hunny, you've done enough for me today.
+@closescript
+

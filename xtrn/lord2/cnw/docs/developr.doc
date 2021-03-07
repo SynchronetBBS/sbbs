@@ -1,0 +1,1229 @@
+Beta testers and debugger's documentation file for
+Externally Defined Items package Beta 1.00, by Michael Hutson
+
+=============================================================================
+Table of Contents
+
+1. Introduction & Overview: What the External Items package is, what files
+   it uses, and an overview of how it works.
+2. Using an external item from a menu: @#menu in ITEM99.REF
+    A. Initialization
+    B. Label Loop
+    C. Getting Data: Labels Getname, Nada, and Nouse
+    D. Label Display
+    E. Menu Choices and Results: Labels Command, Next, Runref, & Quit
+3. Using an external item from a routine: @#bitcheck, @#giveitem, and  
+   @#takeitem in ITEM99.REF
+4. INSTALL.REF
+5. DEINSTAL.REF
+6. Appendix: Source code of ADDEXT99.EXE
+============================================================================
+1. INTRODUCTION & OVERVIEW
+
+This is the second of two .DOC files written to explain the workings of the
+Externally Defined Items package for LORD2. The first file, EXTITEMS.DOC,
+covered basic information on how to install and use the package. This file
+goes into the workings of the package in greater detail for the benefit of
+Beta testers, debuggers, or simply those curious to know exactly how it
+works. In particular, it contains heavily annotated copies of the files 
+ITEM99.REF, INSTALL.REF, and DEINSTAL.REF with full explanations of the 
+purpose and reasoning behind each line of the scripts.
+
+The Externally Defined Items package (or simply, External Items package) is a
+system of .REF and data files that allow players of LORD2 to reference items 
+outside of LORD2's ITEMS.DAT and ITEMS.REF file system. It is intended to 
+make it possible for writers of Internal Game Modules (IGMs) to add custom 
+items to the game without the necessity of manually editing LORD2's Item 
+Menu, and to have the .REF file for the IGM contain the routine for that 
+item's action, instead of having to edit ITEMS.REF.
+
+The main files used with the External Items package are:
+
+- ADDEXT99.EXE: A utility program to automatically configure Lord2's main
+item files, ITEMS.DAT and ITEMS.REF, to work with the External Items package.
+
+- EXTITEMS.DAT: A master file containing the index of external items that 
+have been installed to the game. When an item is added or deleted from the
+game, this file is updated, and the data contained in it used to generate:
+
+- EXTITEMS.REF: This .REF file contains up to 30 routines, one for each 
+possible external item, each routine setting variables to equal the value
+needed to define the item. It is a "working" copy of EXTITEMS.DAT.
+
+- EXTITEMS.IDF: This is the data file containing the players' external item
+inventories. The number in the record for each player is considered as a 
+30-digit binary number, with each bit a yes or no flag for possession of an
+external item.
+  
+- ITEM99.REF: The routines in this file are the "engine" of the External
+Items package. It allows a player to see and use any external items they
+possess, and allows routines in a .REF to test for, give, or take a player's
+external items.
+
+- INSTALL.REF: This file installs an external item into the EXTITEMS .DAT and
+.REF files, allowing it to be recognized by the package.
+
+- DEINSTAL.REF: And this removes an item that is no longer wanted.
+
+    How it works is this: The file EXTITEMS.IDF contains 200 records, one for
+each possible Lord2 player, and each record stores a long integer. The long
+integer will be used to store a numerical value from 0 to 1,073,741,823. This
+number represents the value of 30 binary digits, from 0-29. The main "engine"
+of the package are the routines in the file ITEM99.REF, which uses the value
+returned from EXTITEMS.IDF to determine if a player does or does not possess
+any of 30 possible items. The data for these items is referenced by using
+the command @ROUTINE to go to one of 30 routines in the file EXTITEMS.REF,
+where string and longint variables used to define the items are set, so that
+ITEM99.REF can then call the routine of where that item's use routine is.
+    New items that are being added from an IGM are added to the list of items
+using the INSTALL.REF file, with the help of the master copy of the item data
+in EXTITEMS.DAT. And if an IGM should be removed from Lord2, the item used
+with it can be removed using the DEINSTAL.REF file.
+
+    The rest of this documentation file is devoted to explaining each line
+of the the files ITEM99.REF and INSTALL.REF (DEINSTAL.REF largely consists
+of the same routines as INSTALL.REF). It is hoped that this doc file will be
+helpful to those interested in knowing exactly how the program works. I
+apologize in advance for any deficiencies, especially since it's difficult
+to remember what I might be taking for granted that someone else wouldn't
+know. Please feel free to send any questions or comments to the author at
+the E-mail address listed in the README.1ST file included with these files.
+
+============================================================================
+2. @#MENU in ITEM99.REF
+
+This is the routine that displays what external items a player finds if they 
+go into their Items menu and choose to see what extra items they possess. 
+It is what is run when a player "uses" item99. It takes the value for their
+external item inventory, and looks for any bits equaling one. The first one
+found is displayed to a "scrollbox", and they are given the option to use
+that item, search for other external items, or quit to their regular item
+menu.
+
+----------------------------------------------------------------------------
+ A. INITIALIZATION
+
+@#menu; header for routine
+............................................................................
+; The following lines initialize the variables used by @#menu
+
+@do `p20 is 0; returns final value of whether player possesses an item with
+; 0 for no and 1 for yes. Default is 0 for no they dont.
+
+@do `p21 is 0; number stored in player's record in EXTITEMS.IDF, used to
+;determine which items they own. Default is 0 for no items at all.
+
+@do `p22 is 0; this is the number of which item is being checked to see if
+;player owns it. It can refer either to which routine in EXTITEMS.REF is 
+;being run, or which bit in the binary value of p21 is being tested. 
+
+@do `p23 is 1; this number is set in the label command to either 1 or -1, 
+;depending on whether a player checking his extra items scrollbox choses to
+;scroll Up or Down the list. Default is 1 for down. It's used in label next
+;to reset the variables for which item will be searched for next.
+
+@do `p24 is 1; as part of the math for checking the binary value of the
+;player's inventory record, this variable will be set to 2^`p22. 
+
+;in addition, the following variables will be used in different places:
+; p25 scratch value used for math
+; p26 scratch value used for math
+; p29 set to equal &playernum
+; p30 used to determine if an error message should quit to the Item menu or
+      to the screen player is on. Also used in other routines as the value
+      returned for the quantity of an external item from an .IDF file.
+; s01 name of external item
+; s02 name of header of routine for what item does
+; s03 name of reffile of routine for what item does
+; s04 scratch string used for testing if string is NIL, and for padding
+;     item name to center display
+; s05 value of readspecial for player's choice of action in label command
+............................................................................
+
+;The following lines get the value of the player's external items inventory,
+; and attempts to do some error trapping
+
+@if extitems.idf exists false then goto error1; you'd think the inventory 
+;file would have to have been added, but who knows?
+
+@dataload extitems.idf &playernum `p21; gets value stored in current player's
+;record.
+
+@if `p21 is 0 then goto nada; if they possess nothing at all, can skip
+;procedure to check their inventory.
+
+@if `p21 less 0 then goto error1
+@if `p21 more 1073741823 then goto error1; checks for illegal values. The
+;number in their inventory should never be negative, nor greater than the
+;value of all bits 0-29 = 1. Actually, I could have squeezed out 31 items 
+;by testing bit 30, but 30 is a nice round number and it gives some leeway
+;so that setting the value doesn't crash if the record has somehow been
+;screwed up.
+
+----------------------------------------------------------------------------
+ B. LABEL LOOP
+
+;label loop returns the value of the bit being checked (initially bit 0)
+;to `p20. This is the heart of the program, and I actually believe God told
+;me how to do it. How it works is this: Let's say we want to know whether
+;bit 4 (= 2^4 = 16) in the binary value of a long integer would equal 0 or 1. 
+;if we list the values of a binary string, we get
+;             value|.. 128 64 32 16 8 4 2 1  
+;             bit  |..   7  6  5  4 3 2 1 0
+;all the values above bit 4 are binary multiples of the value of bit 4 
+;(32= 16*2, 64= 16*4, etc.), and all the bits below bit 4 together could only 
+;add up to 16-1. So if we divide the number being tested by 16, we get a 
+;result that is how many multiples of 16 the first number is. If that result 
+;is even, it means that the value being tested contains only even multiples 
+;of bit 4, meaning bit 4 has to be 0. If the result is odd, it means that
+;bit 4 has to be 1. The math to figure this out:
+
+@label loop; when the label next is finished setting up the variables for the
+;next bit to test, it returns to this point
+
+@do `p25 is `p21; `p25 as a scratch copy of player's inventory number.
+
+@if `p25 less `p24 then goto next; p24 equals the value resulting from the 
+;bit being checked (p24 = 2^p22). If this number is greater than the value
+;of the player's inventory, then we know they can't own that item, and it
+;goes to begin the next check. (if we're checking the value of bit 4 (=16),
+;and the number being checked is less than 16, bit 4 is obviously 0.)
+;Goes to label next to set up for next bit to check.
+
+@do `p25 / `p24; divides the value of the player's inventory number by 2^p22
+
+@do `p26 is `p25; scratch copy of the resulting quotient
+
+@do `p26 / 2
+@do `p26 * 2 ; since divison rounds off all values to integers, it will not 
+;have the same value it started with if it was odd, and will if it was even
+
+@if `p26 is `p25 then `p20 is 0
+@if `p26 not `p25 then `p20 is 1; our final results
+
+@if `p20 is 0 then goto next; if the result is zero, they don't have that
+;item. Label next will set up for the next bit to be checked.
+
+-----------------------------------------------------------------------------
+ C. LABEL GETNAME
+
+;Ok, we've found a bit equaling one, meaning they have that item. We can
+;then call the routine in EXTITEMS.REF that sets the values for that item.
+
+@label getname; this label is used by the routines for external items that 
+;temporarily display a message overwriting the scrollbox. When done, those
+;routines will jump back here to redraw the scrollbox with the current item. 
+;It's necessary to reacquire the string for the item name because items with 
+;a quantity have the format <itemname> [##], where ## is the quantity of 
+;that item, which will have changed if they called the use routine for an 
+;expendable item.
+
+@if `p20 is 1 then do; hmm..this may be left over from an older version of
+;the code. As far as I can tell, p20 WILL equal 1 whenever this is run. But
+;it doesn't hurt anything so I'm not going to monkey with it.
+
+ @begin; see above-may be unnecessary
+ 
+ @do `s04 is Item`p22; each routine in EXTITEMS.REF has the header format
+ ;ITEM#, where # is 0-29. s04 is used here a temporary scratch string to
+ ;equal the name of the header of the routine that will be called.
+ 
+ @do `p29 is &playernum; p29 must ALWAYS be set to equal &playernum before
+ ;ever calling a routine in EXTITEMS.REF. This is because the routines in
+ ;EXTITEMS.REF include a line that when enabled has the format:
+ ; @dataload ITEM.idf `P29 `P30
+ ;This is the line that acquires the data for an item with an associated
+ ;.IDF file giving it a quantity. P29 is used as the value of &playernum, 
+ ;and if it is not set, it will either give incorrect results or crash the
+ ;routine. And why, you ask, doesn't the line simply use &playernum
+ ;directly? <SIGH>. To make a long story short, the INSTALL.REF and
+ ;DEINSTAL.REF files have to copy lines of code into a string, and if I
+ ;used &playernum, it would copy the VALUE of &playernum, not the literal
+ ;string. After much tearing out of hair over this, I concluded that the
+ ;only practical way around this was to use a P variable, and always make
+ ;sure it's initialized before use. I stress this so strongly because IGM 
+ ;writers creating routines that use external items MUST remember to include
+ ;this line. See EXTITEMS.DOC for examples.
+ 
+ @routine `s04 in extitems.ref; ok, we have `s04 equal the name of the header
+ ;of the routine that we want to go to, so we go there and get the data we
+ ;need. NOTE: for those interested, the command ROUTINE will accept a string
+ ;variable for the header, but will NOT accept a string for the filename-
+ ;that has to be given explicitly. RUN will accept string variables for both.
+
+; When a routine in EXTITEMS.REF is run, the routines there will set
+; variables for the item in question. A typical routine is shown below:
+
+|@#ITEM1; the header name, allows us to run the routine by referencing a 
+|;bit# from the player's item inventory.
+|
+|@label Stick of gum; this alllows us to run the same routine by referencing
+|;the NAME of the item, this is done from .REFs that use external items.
+|
+|@do `s01 is Stick`xof`xgum
+|@do `s02 is gum
+|@do `s03 is test.ref; sets the three main string variables used to for the
+|;item's properties: it's name, the header of it's use routine, and the ref
+|;file that routine is in.
+|
+|@dataload gum.idf `P29 `P30; this line will be disabled by a preceding ; if
+|; there is in fact no .IDF file for that item.
+|
+|@do `s01 add  [`P30]; adds to the item name the number set by the preceding
+|;line. Also disabled by a preceding ; if no such .IDF
+|
+|@do `P22 is 1; If the routine has been called by name rather than by Item#,
+|;this sets the item/bit#.
+|
+|@closescript; end of routine.
+ 
+;Anyway, to continue the commands following the label getname; 
+;now that we have gotten the data we need, we are ready to display the data:
+ 
+ @do goto display
+
+ @end; may be unnecessary if the above IF command is redundant.
+.............................................................................
+
+;If the player has an item99, but has no external items , this routine sets
+;s01 so that the scrollbox has something to display
+
+@label nada
+@do `s01 is <All`xyou`xhave`xis`xan`xempty`xsack!>
+@do goto display
+............................................................................
+
+;This is the use routine for items that are intended to simply be tokens for 
+;testing that the player has one of, that don't otherwise do anything. Such 
+;an object will have a routine in EXTITEMS.REF that sets `s02 to NOUSE and
+;`s03 to ITEM99.REF, and the label runref will simply jump back to here if
+;that's the case.
+
+@label nouse
+@do `s01 is You`xcant`xthink`xof`xany`xway`xto`xuse`xthis`xitem!
+
+----------------------------------------------------------------------------
+ D. LABEL DISPLAY
+
+;Next, some error trapping against the possibility that somehow a mixup
+;occurred that has caused a player's inventory record to indicate they own
+;an item that doesn't exist. If the label loop caused label getname to go
+;to a record in EXTITEMS.REF that is blank, the item name in s01 will be NIL, 
+;and that is tested for. The message in @#errorB is pretty self-explanatory.
+
+@label display; finally, where all those do goto display commands end up.
+@do `s04 is NIL
+@if `s01 is `s04 then do
+ @begin
+ @run errorB in item99.ref
+ @end; this test is done using `s04 because for some reason you can't test
+;if an empty string equals NIL. You have to set another string to NIL, and
+;then compare the two.
+
+;And now, finally, something the player can actually see happening. Having
+;done all the preliminary work, we are ready to proudly display the results
+;of our search:
+
+@clearblock 13 23; in the regular items menu, clears the lower half of  
+;the screen below the player's stats
+
+@do move 1 14; moves the cursor to column 1 line 14 onscreen
+@show
+                                  EXTRA ITEMS
+            `r1ษออออออออออออออออออออออออออออออออออออออออออออออออออป`r0  
+            `r1 บ                                                  บ`r0
+            `r1ศออออออออออออออออออออออออออออออออออออออออออออออออออผ`r0
+              Use U and D to scroll, Enter to choose, Q to exit
+              Your Command?
+
+@do move 15 16; moves the cursor to the first space of the scrollbox
+
+;we want the name of the item being displayed to be centered. The following
+;makes sure that the name string is padded with the proper number of spaces:
+
+@do `p25 is length `s01; get string length for following math.
+
+@if `p25 less 49 then do; the name string should be 50 characters or less. If
+;it's 50 or 49, obviously no padding needed.
+ 
+ @begin
+ @do `p26 is 50; length string should be after padding
+ @do `p26 - `p25; minus length of item name, equals number of spaces to pad
+ @do `p26 / 2; and half those spaces will go in front of the item name
+ @do `p25 + `p26; length name string should be with front spaces padded
+ @do frontpad `s01 `p25; does the front padding
+ @do pad `s01 49; adds spaces to the end of the name string to bring it up
+ ;to the proper length. Somehow 50 is too long, so I put 49.
+ @end
+
+; And then the centered string is displayed in the scrollbox
+@show
+`r1`s01; background set to blue to highlight item name.
+----------------------------------------------------------------------------
+
+ E. MENU CHOICES AND RESULTS: labels command, runref, next, & quit.
+
+;Now we are ready to offer the player a choice of what he wants to do.
+
+@label command; hmm.. possibly another fossil from the development process. 
+; I don't see any goto's to this label, unless there's something I'm 
+; forgetting; Maybe will be cleaned up in the revised version.
+
+@do move 29 19; moves cursor to just after question mark in Your Command?
+
+@do write
+`d `d; this is a backspace, a space, then another backspace. What this does
+;is after the player has entered a letter, when the action of that command
+;has been completed, it will space over the previous entry leaving a blank 
+;for the next command to be entered.
+
+@do readspecial `s05 equd; only possible entries are E, Q, U, & D, for Enter,
+; Quit, scroll Up, or scroll Down. Readspecial will take an enter or return
+; as defaulting to the first entry, which is why E is there.
+
+@if `s05 is E then goto runref; see label runref below
+
+@if `s05 is Q then goto quit; see label quit below
+
+@if `s05 is U then do
+ @begin
+ @do `p23 is -1
+ @do goto next
+ @end
+; if player has multiple items and want's to scroll up his list, this sets
+; the variable that will determine the direction of the search.
+
+@if `s05 is D then do
+ @begin
+ @do `p23 is 1
+ @do goto next
+ @end
+; ditto for scroll down, only sets to 1 instead of -1
+.............................................................................
+
+; This is run after label loop has checked a bit (initially 0) for possession
+; of an item and gotten a result of 0 (no), or if player is scrolling through
+; their list of external items in their scrollbox. It resets the variables
+; used so that label loop will have the correct values to do the math for
+; checking the next bit.
+
+@label next; label to goto when ready to check next bit
+
+@if `p21 is 0 then goto nada; if they have no items at all, no point in doing
+;any of the following lines, so just goes back to label nada, which sets
+;s01 to the "empty sack" message and redisplays it.
+
+@do `p22 + `p23; p22 is the bit being checked, and p23 is the amount that
+;number should be incremented for the next search. p23 equals 1 if they have
+;just entered their external items menu or chosen to scroll Down; and it will
+;equal -1 if from they have chosen to scroll Up.
+
+@if `p22 more 29 then do
+ @begin
+ @do `p22 is 0
+ @do `p24 is 1
+ @do goto loop
+ @end; p22 should be 0-29, and if incrementing it makes it greater than 29,
+;this section wraps p22 back to 0 and p24 back to 2^0. Then they are sent
+;back to label loop to begin next bit test. 
+
+@if `p22 less 0 then do
+ @begin
+ @do `p22 is 29
+ @do `p24 is 536870912
+ @do goto loop
+ @end; And similarly, if they have deincremented below zero, this section 
+;wraps p22 back to 29, and p24 to 2^29
+
+@if `p23 is 1 then `p24 * 2
+@if `p23 is -1 then `p24 / 2
+@do goto loop; p24 should equal 2^p22. Depending on whether p22 was
+;incremented by 1 or -1, sets p24 to new value of 2^p22; then goes to label
+;loop for next bit check.
+.............................................................................
+
+; If player has found an external item, and chooses from label command to
+;try to use it, they are sent to this label. S02 and s03 will have been set
+;to the header name and reffile name of where the item's use routine is
+;located.
+
+@label runref
+@if `p21 is 0 then goto display; If they have no external items, the empty
+;sack message will have been set, and hitting the enter command will only
+;redisplay that.
+@run `s02 in `s03; jumps to the use routine for the chosen item.
+
+............................................................................
+
+; The error message in header errorA needs to know whether to quit back to
+;the player's item menu, or to a screen. This label set p30 to 1 for
+;returning back to the item menu, and the header @#bitcheck has a label
+;setting it to -1 to quit to the screen.
+@label error1
+@do `p30 is 1
+@run errorA in item99.ref
+............................................................................
+
+; And finally, if they have chosen to quit from their external items
+;scrollbox:
+@label quit
+@run stats in gametxt.ref; redraws their stats/inventory screen.
+@closescript
+
+=============================================================================
+3. USING EXTERNAL ITEMS FROM A ROUTINE
+ 
+ A. @#bitcheck in ITEM99.REf
+
+;This routine is similar in many ways to the routine @#menu, in that it does
+;much the same basic task: determine if a player owns an external item or
+;not. The main difference is that this routine will be called from routines
+;in .REF files that are written to check for, give, or take external items.
+
+@#bitcheck; header name
+............................................................................
+
+;like @#menu, variables are initialized first. The main differences here are
+;that p22 is not set because the bitcheck routine will always be called
+;after the reffile routine has first gotten the item data from EXTITEMS.REF,
+;which will have set p22 to the proper value. Also, p23 is used here as a
+;loop counter instead of an increment setting.
+
+@do `p20 is 0
+@do `p21 is 0
+@do `p23 is 0 ; here p23 is a loop counter
+@do `p24 is 1
+............................................................................
+
+;likewise very similar to @#menu, except that if an error is detected here,
+;the error message will need to quit to a screen, not the item menu. So a
+;call is made to label error2, which sets p30 to the value needed. Also, if
+;player has lost their Item 99, a check of their inventory will zero out 
+;their previous belongings.
+
+@if extitems.idf exists false then goto error2 
+@if `i99 is 0 then do
+ @begin
+ @datasave extitems.idf &playernum 0
+ @end
+@dataload extitems.idf &playernum `p21
+@if `p21 less 0 then goto error2
+@if `p21 more 1073741823 then goto error2
+............................................................................
+
+; This next section runs a loop until p24 is set to equal 2^p22
+@label exponent
+@if `p23 is `p22 then goto done
+@do `p23 + 1
+@do `p24 * 2
+@do goto exponent
+............................................................................
+
+;having set p24 to the needed value, the math to get bit p22 = 0 or 1 is
+;is done. See section 2B, label loop, for full explanation of math.
+@label done
+@do `p25 is `p21
+@if `p25 less `p24 then goto finished 
+@do `p25 / `p24
+@do `p26 is `p25
+@do `p26 / 2
+@do `p26 * 2
+@if `p26 is `p25 then `p20 is 0
+@if `p26 not `p25 then `p20 is 1
+@do goto finished
+...........................................................................
+
+;p30 is set to the value that header errorA will need to know to abort to
+;the map screen, instead of the item menu.
+@label error2
+@do `p30 is -1
+@routineabort; this is necessary since @#bitcheck is being run from a 
+;ROUTINE command in a .REFfile.
+@run errorA in item99.ref
+............................................................................
+
+;And now we're done. P20 has been set to 0 or 1, and the .REFfile that called
+;this routine will then use that information to determine what to do next.
+@label finished
+@closescript
+-----------------------------------------------------------------------------
+ B. @#giveitem and @#takeitem in ITEM99.REF
+
+;Having used the previous @#bitcheck routine to determine if a player owns
+;an item, the .REFfile may then have a routine to give them that item or take
+;it away. Running @#bitcheck first is mandatory, not only because the 
+;.REFfile should check if they already have it first, but also because 
+;checking for the item does 95% of the work needed to set up the variables 
+;to the proper values to give or take the item. Thus @#giveitem, and the 
+;following routine @#takeitem, both presume that the variables used have 
+;been preset by @#bitcheck.
+
+@#giveitem
+@if `p20 is 0 then do; elementary error trapping, trying to prevent a stupid
+;ref writer from trying to give player an item if they already have it. Of
+;course if they were not merely stupid but idiotic, and reset p20 to equal
+;0, then they could screw things up. Oh well, I tried.
+
+ @begin
+ @if `i99 is 0 then `i99 is 1; if this is a player's very first external 
+ ;item, this gives them an Item 99, a "sack" to put their external items in.
+ 
+ @do `p21 + `p24; if they don't have the item, the bit for that item in the
+;binary value of the player's inventory number will be zero. P24 will have 
+;been set to equal 2^p22, and adding that value to the player's inventory 
+;number will set that bit to 1.
+ 
+ @datasave extitems.idf &playernum `p21; and then of course, the new value
+;for the player's inventory number is saved to their record in EXTITEMS.IDF
+ @end
+@closescript
+
+;@#takeitem is identical, except that if they have the item, then to remove
+;it you would subtract the value of p24
+
+@#takeitem
+@if `p20 is 1 then do
+ @begin
+ @do `p21 - `p24
+ @datasave extitems.idf &playernum `p21
+ @end
+@closescript
+
+=============================================================================
+
+4. INSTALL.REF
+
+    The Externally Defined Items package would be pointless if there wasn't
+some way to automatically install IGM writer's external items. This is done
+by INSTALL.REF. 
+    The file EXTITEMS.REF contains the routines used by the package to set 
+variables for each item. In effect, the 30 routines in that file serve as 
+data records. To be able to install or deinstall external items amounts to 
+being able to do a random read or write to each "record".
+    Doing this within the limitations of the LORD2 .REF language presented a
+considerable challenge, but INSTALL.REF, and it's associate DEINSTAL.REF do
+just that. It is done by an indirect process that starts with the master
+file EXTITEMS.DAT, a non-working copy of EXTITEMS.REF. This is copied to a
+temporary file EXTITEMS.BAK, which is used for the install procedure, while
+the original EXTITEMS.DAT and EXTITEMS.REF files are deleted so that updated
+copies can be generated. The first line of EXTITEMS.BAK is read using the
+@readfile command, and the data written to the new copies of EXTITEMS.DAT and
+.REF. Then the first line of the EXTITEMS.BAK file is trimmed using the
+@DO TRIM command, so that the next line can be read and written. At the point
+where the new data needs to be added, the new data is written to the .DAT
+and .REF files, and then the remaining records added. The end result is new
+copies of EXTITEMS .DAT and .REF containing the new data.
+
+INSTALL.REF is never run directly; it is called from a routine in a REF
+where the variables for the item data are set, and then the command to run 
+install+install.ref. The main reason for this is that if the installation 
+started from INSTALL.REF, it would have to prompt the user for the header and
+filename to get the data from, put that information in string variables, and
+then do a @ROUTINE <string> in <string>, and the @ROUTINE command will NOT
+accept a string variable for the filename. So the install procedure begins 
+with running the item definition routine from a batch file with a line 
+similar to the following:
+call lord2 <header>+<reffile.ref> 
+where <header> is the name of the routine, and <reffile.ref> the name of the
+.REF file it is located in. For example, the external item Stick of gum is
+installed by the line call lord2 stickgum+sorry.ref
+
+So first, we'll look at an example .REF containing the 
+data for an external item:
+
+@#stickgum; name of header to run
+
+@do `s06 is Stick`|of`|gum; here spaces in the item name are padded using
+;`|. The reason for this is explained in the section on label loop2.
+
+@do `s07 is gum; name of header of item's use routine.
+
+@do `s08 is sorry.ref; name of .ref that item's use routine is in
+
+@do `s09 is gum.idf; the name of the .IDF file associated with the item if
+;it's supposed to have a quantity. If none, `s09 is NIL
+
+@run install in install.ref
+@closescript ; and now that the string variables are set, we can call the
+;main install routine.
+............................................................................
+
+;first, @#install has to check if the item has already been installed. After 
+;trying to figure out a way to do this by checking each record and testing 
+;the returned values of s01, I realized the simplest (if slightly inelegant) 
+;way to do the check was to simply to call the routine by that name and see 
+;if it is found. If it isn't, you get an error message, but fortunately that 
+;doesn't end the routine; you simply ignore it and proceed.
+
+@#install
+@show
+checking for duplicate record...
+
+(Note: If you get an error message saying that the item wasn't found in
+ EXTITEMS.REF, don't worry! It's _Expected_ to do that. Just hit a key to
+ continue..)
+
+@do `p22 is -1; p22 set to a value that will not occur in any routine in
+;EXTITEMS.REF, so we know if one was found
+
+@do `p29 is 1; remember, p29 must always be set to accomodate any .IDF files
+;that might be checked by the item routine. @#install runs locally, so 
+;instead of setting p29 to &playernum (which would be 0), we simply set it 
+;to 1. 
+
+@do `s05 is `s06; We need to preserve the current value of s06, but we also
+;need a copy that can be altered in the next line:
+
+@do replaceall `| `x `s05; this replaces the "pseudo-padding" used in the
+;original string with actual padded spaces, so we can call the routine.
+
+@routine `s05 in extitems.ref; if such a label exists in EXTITEMS.REF, the
+;value of p22 will be set to a value between 0 and 29.
+
+@if `p22 not -1 then goto duplicate; gives message item already found
+;installed and quits. If wasn't found, an error message results which can
+;be ignored.
+.............................................................................
+
+;next, it's determined if EXTITEMS.REF already has the maximum 30 items 
+;installed.
+
+@show
+Ok, item not already installed; searching for open record slot...
+@do `p23 is 0; loop counter initialized at 0 for starting search of records
+; 0-29; also, this will preserve the item # of the record being rewritten.
+
+@do `p29 is 1; p29 set before calling routine in EXTITEMS.REf. Probably not
+;strictly necessary here since it was set earlier, but never a bad idea.
+
+@label loop1; loop to find empty slot.
+
+@if `p23 is 30 then goto full; if loop has run thirty times and still no
+;unused slot found, file is full.
+
+@routine Item`p23 in extitems.ref; will test each header one at a time
+;starting with Item0
+
+@do `s04 is NIL; scratch string for NIL comparison
+
+@if `s01 is `s04 then goto done1; unused slots will return an NIL string as
+;the item name. If one has been found, that's the first empty record slot
+;available, and ready to begin install.
+
+@do `p23 + 1
+@do goto loop1; if no unused slot found yet, check next one.
+............................................................................
+
+;Now the process of rewriting the EXTITEMS files begins. First, we do some
+;file handling
+
+@label done1
+@show
+Ok, record slot available, beginning install.
+
+@if extitems.bak exists true then delete extitems.bak; deletes old (probably
+;empty) file from last time @#install run.
+
+@copyfile extitems.dat extitems.bak; creates backup copy of main file that
+;will be the file actually worked with.
+
+@do delete extitems.dat; the original file is deleted so that we can write
+;to a new file by that name. This wouldn't be necessary if the Lord2 .REF
+;language had a simple Rename file command.
+
+@do delete extitems.ref; and we're going to create a new version of this file
+; as well
+.............................................................................
+
+; In the next section, we copy all the records that come before the one
+;that will be replaced.
+
+@do `p22 * 10; previously (in label loop1), we found an unused record in
+;EXTITEMS.REF. P22 would have been set there to whatever the record number
+; was. Each record is 10 lines long (9 lines plus a space), so this gives us
+;the number of lines in the file EXTITEMS.DAT that have to be copied before
+;we reach the record that's to be replaced.
+
+@do `p24 is 301; EXTITEMS.DAT (and it's copies .BAK and .REF) consist of 30
+;routines each 10 lines long. For some reason however, the @DO TRIM command
+;imposes an overhead of one line: i.e., if you tell it to trim a text file
+;to 2 lines, you will see one line of text. So we initialize p24, the number
+;of lines to trim the file to, at 301
+
+@show
+Processing records may require a few minutes....
+@label loop2
+@if `p24 less 2 then goto done4; this line is because the label loop2 will
+;be done twice- once before the item data is written, and once after. This
+;command tells it it's done when all of EXTITEMS.BAK has been read. I
+;couldn't tell you if it would work just as well to say @if `p24 is 1; I
+;originally wrote this after I couldn't figure out why the label wasn't 
+;terminating and I put it in in case the value 1 was somehow being skipped.
+
+@if `p22 is 0 then goto writeitem; when p22 is deincremented to 0, the lines
+;preceding the record to be replaced have been copied, and this loop is done.
+
+@do `p24 - 1; once we finish reading the current first line of EXTITEMS.BAK,
+;we will want to trim that first line away. So value to trim to is set.
+
+@do `p22 - 1; number of lines left to process reduced by 1
+
+@readfile extitems.bak
+`s05; reads the current first line of the file..
+
+@writefile extitems.dat
+`s05; ..and writes it to it's replacement
+
+; Ok, now, I am finally going to explain why the routines to define the
+;external items use `| for padding spaces, and why we have two files,
+;EXTITEMS.DAT and EXTITEMS.REF. To rewrite the EXTITEMS files with the new
+;item data, we have to copy the records that won't be changed into the new
+;files. The problem is variables. We need to have EXTITEMS.REF contain lines
+;with active variable code. But if you try to define a string with variables
+;in it, you get the VALUE of the variables, not the literal code. That's what
+;it was meant to do!. The only way around this was to have two files:
+;EXTITEMS.DAT has invalid ` codes substituted for the variable codes used in
+;EXTITEMS.REF. This makes EXTITEMS.DAT copyable. And then, the .DAT version
+;is used to generate the .REF version by this trick: if you have an
+;invalid code, such as `| in a string, and then you use @do replaceall to 
+;change all the | into x, the string is NOT REINTERPRETED! That is, it isn't
+;checked again to see if any of the characters in the string are a valid
+;variable code. (It will substitute the variable value if you replace the 
+;full `| with `x). So now we can write the string to EXTITEMS.REF as follows:
+
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+
+; finally, having previously reduced the size that EXTITEMS.BAK should be
+;trimed to by one, we do that trim, and are ready to run the loop again.
+
+@do trim extitems.bak `p24
+@show
+`p24 lines left to process
+@do goto loop2
+............................................................................
+
+;At this point we will have copied all the old records preceding the one
+;to be changed. Now we are ready to write the new routine based on the values
+;that were set by the definition for the new item.
+
+@label writeitem; loop2 exits to this label when the previous records are
+;done copying.
+
+@do `p25 is 1; p25 is used here as a counter for which line of 10 in the
+;new record is being written. That way I could simply set the definition for
+;the line and then run a loop to do the data processing.
+
+@label loop3; loop for writing lines 1-10 in record for new item.
+
+@if `p25 is 1 then `s05 is @#ITEM`p23; creates header for new record
+
+@if `p25 is 2 then do
+ @begin
+ @do `s05 is @label`x`s06
+ @do replaceall `| `x `s05
+ @end; what all this is about is, the second of 10 lines in the record is a
+;label with the itemname, so record can be called by item name. That label
+;should NOT have pseudo-padded spaces, so this creates a string with the
+;item name as it should finally appear.
+
+;The following lines set s05 to write the invalid code version that will be
+;saved in EXTITEMS.DAT
+@if `p25 is 3 then `s05 is @do`x`~01`xis`x`s06;
+@if `p25 is 4 then `s05 is @do`x`~02`xis`x`s07
+@if `p25 is 5 then `s05 is @do`x`~03`xis`x`s08
+
+;now we have the two lines devoted to if an item has a related .IDF file for
+;a quantity. We want the lines inactivated if there is no file, so we test to
+;see if s09 (the variable for the .IDF file name) is NIL. If it is, the lines
+;are preceded by a semi-colon, commenting the line out.
+
+@if `p25 is 6 then do
+ @begin
+ 
+ @if `s09 is `s04 then `s05 is ; ;s04 was set to NIL back in label loop1,
+;remember?
+ 
+ @do `s05 add @dataload`x`s09`x`=29`x`=30; fortunately, if this line is being
+;run, it's because we're on the sixth cycle of loop3. And s05 is reset to NIL
+;at the end of each loop, so at this point s05 will either be nothing or a
+;semicolon. Then rest of line added.
+ 
+ @end
+
+;ditto, line seven tests for if there is an IDF file name, and comments the
+;line out if there isn't.
+
+@if `p25 is 7 then do
+ @begin
+ @if `s09 is `s04 then `s05 is ;
+ @do `s05 add @do`x`~01`xadd`x`x[`=30]
+ @end
+
+@if `p25 is 8 then `s05 is @do`x`=22`xis`x`p23; makes sure the item routine
+;sets p22 to the item number, if routine was called by the item name label.
+
+@if `p25 is 9 then `s05 is @closescript
+@if `p25 is 10 then `s05 is NIL; last line, and then a blank line seperating
+;the records
+
+;now we write the line verbatim to EXTITEMS.DAT, and then do the conversion
+;to get the version to write to EXTITEMS.REF
+
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+
+@do `p25 + 1; set p25 for next line of 10
+@if `p25 is 11 then goto postitem; if all 10 done, exit loop
+@do `s05 is NIL; makes sure s05 is reset to nothing, because of how cycles
+;6 and 7 of loop 3 do an s05 ADD instead of an s05 IS.
+@do goto loop3
+
+............................................................................
+
+;After the lines for the new item record have been written, the rest is 
+;simply continuing to copy the remaining records to the new files.
+
+@label postitem
+@do `p24 - 10; we want to delete an extra 10 lines from our count, since
+;those are the record that's being replaced.
+
+@do `p22 is 29; to get the number of cycles the read/write/trim cycle has to
+;run, we first set p22 to the maximum number of records that could remain to
+;copy
+
+@do `p22 - `p23; then we subtract the number that we know have already been
+;done
+
+@do `p22 * 10; and the number left to do times 10 is the number of lines
+;left to process.
+@do trim extitems.bak `p24; we trim the lines no longer needed, and continue.
+@do goto loop2
+.............................................................................
+
+; And here are the three labels INSTALL can quit to:
+
+@label done4
+@show
+INSTALLATION COMPLETE
+@closescript
+
+@label full
+@show
+Sorry, the maximum of 30 items are already installed!
+@closescript
+
+@label duplicate
+@show
+That item is already installed as Item `p22 of EXTITEMS.REF
+@closescript
+
+=============================================================================
+
+5. DEINSTAL.REF
+
+    Deinstal works very much like INSTALL. The main differences are that it
+is run directly, since it doesn't need to have data passed to it from another
+.REF file. The record to be copied over is replaced with a generic blank
+record. And also, once done, DEINSTAL makes sure that any players who have
+that item # in their inventories have that item deleted. It is a very good
+idea to make sure that any backups or installations of the External Items
+package are using the three EXTITEMS files that contain the same items, 
+or else a mismatch may occur. Rather then comment on each line here since so
+many are the same or similar to others that have been explained elsewhere in
+this document, it will simply refer you to where to look for more info.
+.............................................................................
+
+;first, sysop enters name of external item to be removed, a maximum of 50 
+;characters with the default of NIL. Name is case sensitive, so doublecheck
+;the label in EXTITEMS.REF if you're not sure.
+
+@#deinstal
+@show
+Enter name of item to remove from game
+@do readstring 50 NIL `s05
+@do `s04 is NIL
+@if `s05 is `s04 then goto nonesuch
+............................................................................
+
+;next we search for item by name. This time, if an error is found, it's an
+;error- no item by the name you're looking for found. Check spelling perhaps?
+
+@show
+`\
+searching for item to be removed...
+@do `p22 is -1
+@do `p29 is 1
+@routine `s05 in extitems.ref
+@if `p22 is -1 then goto nonesuch
+............................................................................
+
+;the next section is virtually identical to the lines so long-windedly 
+;explained for INSTALL.REF. 
+
+@show
+Ok, item found, beginning deinstall..
+@if extitems.bak exists true then delete extitems.bak
+@copyfile extitems.dat extitems.bak
+@do delete extitems.dat
+@do delete extitems.ref
+@do `p23 is `p22
+@do `p23 * 10
+@do `p24 is 301
+@show
+Processing records may require a few minutes....
+@label loop2
+@if `p24 less 2 then goto done4
+@if `p23 is 0 then goto writeitem
+@do `p24 - 1
+@do `p23 - 1
+@readfile extitems.bak
+`s05
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+@do trim extitems.bak `p24
+@show
+`p24 lines left to process
+@do goto loop2
+............................................................................
+
+;again, this is virtually identical to the routine for INSTALL.REF. About the
+;only difference here is that most of the data to be written is a standard
+;"blank" record, so it's hardcoded here.
+
+@label writeitem
+@do `p25 is 1
+@label loop3
+@if `p25 is 1 then `s05 is @#ITEM`p22
+@if `p25 is 2 then `s05 is @label`x___`p22
+@if `p25 is 3 then `s05 is @do`x`~01`xis`xNIL
+@if `p25 is 4 then `s05 is @do`x`~02`xis`xnouse
+@if `p25 is 5 then `s05 is @do`x`~03`xis`xITEM99.ref
+@if `p25 is 6 then `s05 is ;@dataload`x`s04`x`=29`x`=30
+@if `p25 is 7 then `s05 is ;@do`x`~01`xadd`x`x[`=30]
+@if `p25 is 8 then `s05 is @do`x`=22`xis`x`p22
+@if `p25 is 9 then `s05 is @closescript
+@if `p25 is 10 then `s05 is NIL
+@writefile extitems.dat
+`s05
+@do replaceall | x `s05
+@do replaceall ~ s `s05
+@do replaceall = p `s05
+@writefile extitems.ref
+`s05
+@do `p25 + 1
+@if `p25 is 11 then goto postitem
+@do `s05 is NIL
+@do goto loop3
+
+@label postitem
+@do `p24 - 10
+@do `p23 is 29
+@do `p23 - `p22
+@do `p23 * 10
+@do trim extitems.bak `p24
+@do goto loop2
+............................................................................
+
+;ok something new here. We check the value for each player's external items
+;inventory , using a routine similar to @#checkitem in ITEM99.ref, and if
+;they have it doing a routine similar to @#takeitem in ITEM99.ref.
+;that way player doesn't keep an item that's been deleted.
+
+@label done4
+@show
+Item removed from External Items index.
+Updating player's inventories..
+@do `p24 is 1
+@do `p25 is 0
+@label loop4
+@if `p25 is `p22 then goto done5
+@do `p24 * 2
+@do `p25 + 1
+@do goto loop4
+
+@label done5
+@if extitems.idf exists false then goto errorA 
+@do `p23 is 1
+@label loop5
+@dataload extitems.idf `p23 `p21
+@if `p21 is 0 then goto next
+@if `p21 less 0 then goto errorA
+@if `p21 more 1073741823 then goto errorA
+@do `p25 is `p21
+@if `p25 less `p24 then goto next 
+@do `p25 / `p24
+@do `p26 is `p25
+@do `p26 / 2
+@do `p26 * 2
+@if `p26 is `p25 then `p20 is 0
+@if `p26 not `p25 then `p20 is 1
+@if `p20 is 1 then do
+ @begin
+ @do `p21 - `p24
+ @datasave extitems.idf `p23 `p21
+ @end
+@label next
+@do `p23 + 1
+@if `p23 is 31 then goto quit
+@do goto loop5
+@label quit
+@show
+All done!
+@closescript
+
+
+@label nonesuch
+@show
+`\
+No item with that name found!
+@closescript
+
+@label errorA
+@show
+`r0 `c
+`bERROR!
+`4An illegal value has been detected for record number &playernum in the
+file EXTITEMS.IDF. This value should never be negative, nor greater than
+1,073,741,823 (=[2^30]-1). If this message has been triggered, either the
+file does not exist, the file record has been altered, or data corruption 
+has taken place. `k
+@closescript
+
+=============================================================================
+
+6. APPENDIX: Source code for ADDEXT99.EXE
+
+Lord2's main data files are Pascal typed files. ADDEXT99.EXE is a compiled
+Pascal program that writes to ITEMS.DAT to add item99, and then appends the
+header for item99 in ITEMS.REF. My thanks to Seth Able Robinson for providing
+the data record structure in his 3RDPARTY.DOC file.
+
+PROGRAM addext99;    
+USES crt;    
+    
+TYPE item_struct = record  {used by item.ref}
+        name: string[30]; {name of item}
+        action: string[40];  {string for hitting someone with it}
+        use_once,armour,weapon,sell,used: boolean;
+        value: longint;   {gold value}
+        breakage: integer;  {break percentage per use}
+        max_buy: integer;  {unused for now}
+        def,strength: integer;  {strength/defence added if equipped}
+        eat: integer;    {unused for now}
+        ref: string[12]; {label of .ref procedure in ITEMS.REF}
+        use_action: string[30]; {text for using it with the .ref}
+        descrip: string[30]; {description of item that shows to the right}
+        drop: boolean; {if true, item cannot be dropped, it is a quest item}
+        extra: array[1..37] of char;  {reserved}
+        end;
+
+TYPE item_rec = record {the entire ITEMS.DAT file is ONE of this
+record format}
+                i: array[1..99] of item_struct;
+                end;
+
+VAR item: item_rec;
+VAR itemfile: FILE OF item_rec;
+VAR oldfile: TEXT;
+VAR newfile: TEXT;
+VAR nextline: STRING;
+VAR copyline: INTEGER;
+
+PROCEDURE checknextln;
+       BEGIN
+        READLN (oldfile, nextline);
+        IF EOF (oldfile)
+           THEN copyline := 1;
+        IF nextline = '@#NOMOREITEMS'
+           THEN copyline := 2;
+        IF nextline = '@#item99'
+           THEN copyline := 3;
+       END; {read&test}
+
+BEGIN
+ ASSIGN(itemfile, 'items.dat');
+ RESET (itemfile);
+ READ (itemfile, item);
+ IF (item.i[99].name = '')
+  THEN BEGIN
+       WITH item.i[99] DO
+           BEGIN
+           name := '`$Extra Items';
+           action := '';
+           armour := FALSE;
+           weapon := FALSE;
+           sell := TRUE;
+           ref := 'ITEM99';
+           use_action := 'See what else you own';
+           value := 2;
+           use_once := FALSE;
+           breakage := 0;
+           descrip := 'A sackfull of various junk';
+           strength := 0;
+           def := 0;
+           drop := FALSE;
+           END; {with}
+       SEEK (itemfile, 0);
+       WRITE (itemfile, item);
+       CLOSE (itemfile);
+       WRITELN ('Item99 added to ITEMS.DAT');
+       END {then}
+  ELSE BEGIN
+       CLOSE (itemfile);
+       WRITELN ('Item99 already in use; install aborted.');
+       HALT;
+       END; {else}
+   
+   ASSIGN (oldfile,'items.ref');
+   ASSIGN (newfile,'additems.ref');
+   RESET (oldfile);
+   REWRITE (newfile);
+   copyline := 0;
+   checknextln;
+   WHILE copyline = 0 DO
+      BEGIN           
+        WRITELN(newfile, nextline);
+        checknextln;
+      END; {while}
+   CASE copyline OF
+      1: BEGIN
+         CLOSE (oldfile);
+         CLOSE (newfile);
+         ERASE (newfile);
+         WRITELN ('error: neither header @#item99 nor @#NOMOREITEMS found');
+         END; {case1}
+      2: BEGIN
+         CLOSE (oldfile);
+         WRITELN (newfile, '@#item99');
+         WRITELN (newfile, '@run menu in item99.ref');
+         WRITELN (newfile, '@closescript');
+         WRITELN (newfile);
+         WRITELN (newfile, '@#NOMOREITEMS');
+         CLOSE (newfile);
+         ERASE (oldfile);
+         RENAME (newfile, 'items.ref');
+         WRITELN ('header @#item99 added to ITEMS.REF');
+         WRITELN ('Lord2 now configured for External Items!');
+         END; {case2}
+      3: BEGIN
+         CLOSE (oldfile);
+         CLOSE (newfile);
+         ERASE (newfile);
+         WRITELN ('header for item99 already in ITEMS.REF. Quitting.');
+         END; {case3}
+      END; {case}
+END.

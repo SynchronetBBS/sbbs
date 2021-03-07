@@ -1,0 +1,201 @@
+; Script file LOCKMANT.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:19 2001
+
+@DECLARE maint 000000240
+@DECLARE top 000000468
+@DECLARE accountloop 000005117
+@DECLARE accountend 000006118
+@NOCHECK
+; End of .REF index
+
+@#maint
+@datanewday lockmant.IDF
+@dataload lockmant.idf 1 `p24
+@if `p24 is 1 then goto accountend
+@datasave lockmant.idf 1 1
+@do `s04 is a
+@do write
+      `%Locker Room Rent maint in progress.`\
+@do goto top
+@end
+
+@label top
+@if lockers`s04.idf exist false then goto accountloop
+@if lockers`s04.idf exist true then do
+        @begin
+        @readfile lockers`s04.idf
+`p25
+`p27
+`p26
+`s05
+@do `p23 is &time
+@do `p23 - `p27 
+@do `p26 - `p23
+@do `p22 is `p27
+@do `p22 + `p26
+@DO `s01 IS GETNAME `p25
+@do write
+      `$`s01 `%is renting `$locker room `s04`%. Updating rent.`\
+@if `p26 is 2 then do
+         @begin
+         @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You have 2 days left on your rent.
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is 1 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You have 1 day left on your rent.
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is 0 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  This is your last day left on your account, you have 7
+`0  days to either pack-up and leave or continue your rent.
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -1 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 1 day over due on your account. 
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -2 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 2 days over due on your account. 
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -3 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 3 days over due on your account. 
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -4 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 4 days over due on your account. 
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -5 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 5 days over due on your account. 
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -6 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 6 days over due on your account. 
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 is -7 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You are 7 days over due on your account. This is your
+`0  FINAL day to come and take your stuff and pay your
+`0  over due rent. Tommorow EVERYTHING will be pawned at
+`0  the pawn shop.
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do goto accountloop
+         @end
+
+@if `p26 < -7 then do
+        @begin
+        @writefile mail\mail`p25.dat
+  `0Locker Room `%`s04 `0Reports
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+`0  You have lost EVERYTHING in your locker room. You were
+`0  way past over due on your rent, so we pawned it all
+`0  at the pawn shop.                            `$GOOD-BYE
+`2+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-+
+         @do delete lockers`s04.idf
+         @do delete lockbb`s04.idf
+         @do delete lock`s04.idf
+         @do delete locki`s04.idf
+         @do delete lockt`s04.idf
+         @do goto accountloop
+         @end
+@do goto accountloop
+@end
+@do goto accountloop
+
+@label accountloop
+@if `s04 is 6 then goto accountend
+@if `s04 is 5 then `s04 is 6
+@if `s04 is 4 then `s04 is 5
+@if `s04 is 3 then `s04 is 4
+@if `s04 is 2 then `s04 is 3
+@if `s04 is 1 then `s04 is 2
+@if `s04 is z then `s04 is 1
+@if `s04 is y then `s04 is z
+@if `s04 is x then `s04 is y
+@if `s04 is w then `s04 is x
+@if `s04 is v then `s04 is w
+@if `s04 is u then `s04 is v
+@if `s04 is t then `s04 is u
+@if `s04 is s then `s04 is t
+@if `s04 is r then `s04 is s
+@if `s04 is q then `s04 is r
+@if `s04 is p then `s04 is q
+@if `s04 is o then `s04 is p
+@if `s04 is n then `s04 is o
+@if `s04 is m then `s04 is n
+@if `s04 is l then `s04 is m
+@if `s04 is k then `s04 is l
+@if `s04 is j then `s04 is k
+@if `s04 is i then `s04 is j
+@if `s04 is h then `s04 is i
+@if `s04 is g then `s04 is h
+@if `s04 is f then `s04 is g
+@if `s04 is e then `s04 is f
+@if `s04 is d then `s04 is e
+@if `s04 is c then `s04 is d
+@if `s04 is b then `s04 is c
+@if `s04 is a then `s04 is b
+@do goto top
+
+@label accountend
+@closescript
+@end
+
+

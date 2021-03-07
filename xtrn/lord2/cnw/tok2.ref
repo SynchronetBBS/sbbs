@@ -1,0 +1,68 @@
+; Script file TOK2.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE stonebrook 000000300
+@DECLARE greentree 000000342
+@DECLARE sosen 000000379
+@DECLARE porttown 000000415
+@DECLARE jumpup 000000452
+@DECLARE jumpdown 000000720
+@NOCHECK
+; End of .REF index
+
+@#StoneBrook
+@do saybar
+To Stonebrook
+
+@#GreenTree
+@do saybar
+To Greentree
+
+@#Sosen
+@do saybar
+To Sosen
+
+@#PortTown
+@do saybar
+To PortTown
+
+@#jumpup
+@dataload tok.idf &playernum `p27
+@if `p27 more 0 then do
+@begin
+@do x is 33
+@do y is 3
+@do map is 828
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+
+@do x is 47
+@do y is 3
+@do map is 831
+@loadmap &map
+@drawmap
+@update
+@closescript
+
+@#jumpdown
+@if `p27 more 0 then do
+@begin
+@do x is 47
+@do y is 5
+@do map is 829
+@loadmap &map
+@drawmap
+@update
+@closescript
+@end
+
+@do x is 33
+@do y is 5
+@do map is 831
+@loadmap &map
+@drawmap
+@update
+@closescript
+

@@ -1,0 +1,68 @@
+
+
+                     <==[ MYTHRANS COTTAGE v1.12 ]==>
+
+
+==> QUICK INSTALLATION <==
+
+copy all the files in this archive to your lord2 directory, then in the lord2
+directory run MYTHRAN.BAT
+
+to uninstall, run MYTHRAN.BAT
+
+==> NEAT INSTALLATION <==
+
+delete the following files, then copy *.* to your lord 2 directory 
+(assuming this igm is in its own directory right now)
+
+FILE_ID.DIZ
+README.NOW
+
+then run MYTHRAN.BAT
+
+==> UN-INSTALLATION <==
+
+Simply run MYTHRAN.BAT for the second time.
+
+==> ABOUT <==
+
+ when I first played lord 2, I fell in love with it right away. I am a huge
+ rpg fan and I decided to contribute to this great game by making an IGM. 
+
+==> FREQUENTLY ASKED QUESTIONS <== 
+
+ Q: hey, I found a bug! now what?
+ A: tell me! my email is : fcc_fear@hotmail.com , or you can send me some mail
+    on the gooses nest (in brissy, aus) +61-7-3217-2532
+
+ Q: isn't mythran a character from ultima 8 : pagan?
+ A: he sure is.
+
+ Q: hey, I think this igm is so cool I feel the urge to give free money!
+ A: well, I dont want any. donate it to some starving children or something..
+ 
+ Q: hey, why didnt you compile.exe the bastard?
+ A: so people can LEARN off my script - you can do a bit of cut-and-pasting
+    if you want to. (If you do please give me some credit! :)
+
+ Q: will you be releasing any more igms?
+ A: that is a definite yes. I am also working on a new world, and a .ref that  
+    lets you choose between worlds when you first start playing the game (so
+    a player can DIE in one world, then start playing in another world as a
+    completely different character). It will manage all the files and
+    maintanence and stuff. this is a very small IGM, but I only really did
+    this as a learning point. 
+
+=> CREDITS <=
+
+ thanks go out to goose, no teeth, and seth for writing such awesome doors.
+ (although teos was a bit of a flop. but we won't go into that.)
+
+ author's email: fcc_fear@hotmail.com
+
+=> DISCLAIMER <=
+
+ If this file damages your machine it is not my responsibility. When it left
+ here it was clean as a whistle, so dont come knocking on my door if you start
+ shitting and vomiting at the same time - thanks.
+

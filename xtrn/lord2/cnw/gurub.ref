@@ -1,0 +1,592 @@
+; Script file GURUB.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:30 2001
+
+@DECLARE oasis 000000975
+@DECLARE oasis2 000001132
+@DECLARE sign1 000001290
+@DECLARE sign2 000001357
+@DECLARE sign3 000001421
+@DECLARE gurum 000001514
+@DECLARE gurub 000001855
+@DECLARE guru 000002122
+@DECLARE apple 000004517
+@DECLARE rep 000004784
+@DECLARE berry 000004821
+@DECLARE poison 000005110
+@DECLARE egg 000005429
+@DECLARE barren 000005713
+@DECLARE defence1 000005975
+@DECLARE defence2 000006251
+@DECLARE strength1 000006528
+@DECLARE strength2 000006806
+@DECLARE nothing 000007082
+@DECLARE random1 000007363
+@DECLARE random2 000007554
+@DECLARE random3 000007760
+@DECLARE random4 000007957
+@DECLARE bye 000008148
+@DECLARE bye2 000008255
+@DECLARE guard 000008344
+@DECLARE charm1 000008435
+@DECLARE charm2 000008715
+@DECLARE charm3 000008995
+@DECLARE exp1 000009273
+@DECLARE exp2 000009560
+@DECLARE exp3 000009847
+@NOCHECK
+; End of .REF index
+
+@#OASIS
+@datanewday OASIS.idf
+@dataload OASIS.idf &playernum `p20
+@if `p20 EQUALS 1 then goto bye
+@if `p20 not 1 then do
+  @begin
+@do goto oasis2
+ 
+@#OASIS2
+@do moveback
+@do saybar
+`2You drink from the oasis and gain 100 turns!!!
+@do `p11 + 100
+@datasave OASIS.IDF &playernum 1
+@closescript
+@end
+ 
+@#SIGN1
+@do moveback
+@do saybar
+`5Drink and be rejuvinated.
+ 
+@#SIGN2
+@do moveback
+@do saybar
+`5Greater wisdom awaits.
+ 
+@#SIGN3
+@do moveback
+@do saybar
+`2Watch for shrine of Tree Of Wisdom in next version.
+ 
+@#GURUM
+@progname GURU BOB
+@do moveback
+@datanewday gurub.idf
+@dataload GURUB.idf &playernum `p20
+@if `p20 EQUALS 1 then goto bye2
+@if `p20 not 1 then do
+  @begin
+@if `p07 > -50 then goto GURUB
+@if `p07 < -50 then do saybar
+`7Guru Bob:`@I'm sorry but one as evil as you can not benefit from my wisdom!
+@drawmap
+@update
+@end
+ 
+@#GURUB
+@do moveback
+@offmap
+@clear screen
+@busy
+@do `v01 is 1
+@show
+`r0`c  `r1  Guru Bob `r0
+ 
+   `2A strange looking Indian Guy,who you take to be Guru Bob,stares at you.
+ 
+   `7"What do you wish of the tree of infinite wisdom?"`2Guru Bob asks.
+`k
+@label guru
+@show
+`r0`c`%  `r1 Time to get answers to all your questions `r0
+ 
+`2  The Guru stares at you expectantly.
+`k
+@do write
+`x`x
+@choice
+Ask the Guru what he has to offer you
+Ask for some fruit,boy are you famished
+Ask for combat skill enhancement
+Ask for charisma boost
+Ask for knowledge
+Leave this nutcase
+@
+ 
+@if response is 1 then do
+ @begin
+ @show
+`r0`c`%  `r1 Time to get answers to all your questions `r0
+ 
+   `7"Well I offer many services for NOTHING"`2he says.
+ 
+   `7"I will show you a pamphlet"`2he says as he hands you a pamphlet.
+`k
+`r0`c`%  `r1 The Guru's pamphlet `r0
+ 
+    `4( Combat Knowledge )
+    `5Through the knowledge of the tree of wisdom I can increase your strength
+     and defence by small Amounts.
+ 
+     `!PRICE:`$FREE
+`k    
+    `4( Charm Enhancement )
+    `5The tree also tells me how to help the charismatic impaired to increase
+    their luck with the ladies.
+ 
+     `!PRICE:`$FREE
+`k
+    `4( Knowledge )
+    `5Increase your wisdom for that next level of experience with my quick
+    and easy method.
+ 
+     `!PRICE:`$FREE
+`k
+    @do goto guru
+    @END
+ 
+@if response is 2 then do
+ @begin
+ @show
+`r0`c`%  `r1 Asking the tree for fruit `r0
+ 
+   `$"This may sound a bit stupid..."`2you say feeling a bit silly asking
+   the tree of ultimate wisdom for this.
+   `$"...but I'm really hungry,could I please have some fruit?"
+ 
+`k `7"Well let's ask the tree then."`2says Guru Bob.
+`k
+@do goto random1
+@END
+ 
+@if response is 3 then do
+ @begin
+ @clear screen
+ @show
+`r0`c`%  `r1 Asking the Guru for combat enhancement `r0
+ 
+   `$"Could I please ask the tree to increase my form as a warrior?"`2you ask.
+ 
+ 
+`k `7"Well let's ask the tree then."`2says Guru Bob.
+`k
+@do goto random2
+@end
+ 
+@if response is 4 then do
+ @begin
+ @clear screen
+ @show
+`r0`c`%  `r1 Asking the Guru for charisma `r0
+ 
+   `$"Could I please ask the tree to increase my beauty?"`2you ask.
+ 
+ 
+`k `7"Well let's ask the tree then."`2says Guru Bob.
+`k
+@do goto random3
+@end
+ 
+@if response is 5 then do
+ @begin
+ @clear screen
+ @show
+`r0`c`%  `r1 Asking the Guru for experience `r0
+ 
+   `$"Could I please ask the tree to increase my knowledge?"`2you ask.
+ 
+ 
+`k `7"Well let's ask the tree then."`2says Guru Bob.
+`k
+@do goto random4
+@end
+ 
+@if response is 6 then do
+@begin
+@drawmap
+@update
+ 
+@#APPLE
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive an.....
+`k
+ `0 APPLE!!!!!
+ `0 YUM!!!!!
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `i19 + 1
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto REP
+ 
+@#REP
+@drawmap
+@update
+@end
+ 
+@#BERRY
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive a.....
+`k
+ `0 CLUSTER OF WILDBERRIES!!!!!
+ `0 YUM!!!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `i01 + 1
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@DO GOTO REP
+ 
+@#POISON
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive a.....
+`k
+ `4 POISONBERRY!!!!!
+ `0 Guess the tree is trying to tell you something!!!!!
+ 
+ 
+ 
+  `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `i02 + 1
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#EGG
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive an.....
+`k
+ `0 EGG!!!!!
+ `0 WHAT THE HELL???!!!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `i43 + 1
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#BARREN
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 NOTHING!!!!!
+ `0 DAMN!!!!!
+ 
+ 
+ 
+  `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#DEFENCE1
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 2 MORE DEFENCE
+ `0 YEH!!!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p05 + 2
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#DEFENCE2
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 3 MORE DEFENCE
+ `0 YEH!!!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p05 + 3
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#STRENGTH1
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 3 MORE STRENGTH
+ `0 YEH!!!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p04 + 3
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#STRENGTH2
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 5 MORE STRENGTH
+ `0 YEH!!!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p04 + 5
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#NOTHING
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 NOTHING
+ `0 YEH!!!!! Wahoo!!!!
+ Stupid Tree!!!
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#RANDOM1
+@do `p20 random 5 1 
+@if `p20 is 1 then goto APPLE
+@if `p20 is 2 then goto BERRY
+@if `p20 is 3 then goto POISON
+@if `p20 is 4 then goto EGG
+@if `p20 is 5 then goto BARREN
+ 
+@#RANDOM2
+@do `p20 random 5 1
+@if `p20 is 1 then goto DEFENCE1
+@if `p20 is 2 then goto DEFENCE2
+@if `p20 is 3 then goto NOTHING
+@if `p20 is 4 then goto STRENGTH1
+@if `p20 is 5 then goto STRENGTH2
+ 
+@#RANDOM3
+@do `p20 random 5 1
+@if `p20 is 1 then goto CHARM1
+@if `p20 is 2 then goto CHARM2
+@if `p20 is 3 then goto CHARM3
+@if `p20 is 4 then goto NOTHING
+@if `p20 is 5 then goto NOTHING
+ 
+@#RANDOM4
+@do `p20 random 5 1 
+@if `p20 is 1 then goto EXP1
+@if `p20 is 2 then goto EXP2
+@if `p20 is 3 then goto EXP3
+@if `p20 is 4 then goto NOTHING
+@if `p20 is 5 then goto NOTHING
+ 
+ 
+@#BYE
+@do moveback
+@do saybar
+`2Looks like you've already drank from the oasis today its bone-dry.
+ 
+@#BYE2
+@do moveback
+@do saybar
+`2Sorry you may only visit the Guru once per day!
+ 
+@#GUARD
+@do moveback
+@do saybar
+`4Burly Guard:`2None may touch the tree of wisdom.
+ 
+@#charm1
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 1 CHARM
+ `0 YEH!!!!! Wahoo!!!!
+ 
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p08 + 1
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#charm2
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 2 CHARM
+ `0 YEH!!!!! Wahoo!!!!
+ 
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p08 + 2
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#charm3
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 5 CHARM
+ `0 YEH!!!!! Wahoo!!!!
+ 
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p08 + 5
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#exp1
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 100 EXPERINCE!
+ `0 YEH!!!!! Wahoo!!!!
+ 
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p01 + 100
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do goto rep
+ 
+@#exp2
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 500 EXPERINCE!
+ `0 YEH!!!!! Wahoo!!!!
+ 
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p01 + 500
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+ 
+@end
+@do gOto REP
+ 
+@#exp3
+`r0`c`%  `r1 Receiving your wish  `r0
+@show
+  You receive.....
+`k
+ `0 1000 EXPERINCE!
+ `0 YEH!!!!! Wahoo!!!!
+ 
+ 
+ 
+ 
+ `$"Gee thanks Mr Guru Bob sir you say as you leave.
+`k
+@do `p01 + 1000
+@datasave GURUB.IDF &playernum 1
+@DRAWMAP
+@UPDATE
+@end
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

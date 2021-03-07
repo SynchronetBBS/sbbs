@@ -1,0 +1,1033 @@
+; Script file WGRAVE.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:43 2001
+
+@DECLARE sign 000001649
+@DECLARE graverob 000001816
+@DECLARE gravenoway 000006905
+@DECLARE graveend 000006993
+@DECLARE digger 000007101
+@DECLARE talktop 000007183
+@DECLARE shack 000009482
+@DECLARE shacktop 000009541
+@DECLARE potionnoway 000013139
+@DECLARE potionbottom 000013254
+@DECLARE flirtbottom 000018472
+@DECLARE flirtnope 000018514
+@DECLARE flirtend 000018654
+@DECLARE warpback 000018801
+@DECLARE jimbob 000019048
+@DECLARE gravenowarp 000019288
+@DECLARE lemonaid 000019369
+@DECLARE juicetop 000019429
+@DECLARE lemonnope 000024647
+@DECLARE lemonbottom 000024899
+@DECLARE tjimbob 000026299
+@NOCHECK
+; End of .REF index
+
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|The Warrior's Graveyard IGM for Lord2 - The New World            |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Ref notes:                                                       |
+;|                                                                 |
+;|wgrave.ref   - Copyright 1997 Lloyd Hannesson and Tech'n Software|
+;|               http://www.techn.com/      -     support@techn.com|
+;|               -> The main Ref file for The Warrior's Graveyard  |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+;|Please! If you are gonna copy and of these routines, please let  |
+;|me know by an email, or include my name in your docs :)          |
+;|-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-|
+ 
+;------------------------------------------------------------
+ 
+@#sign
+;Sign found out front
+@do moveback
+@do saybar
+The Warrior's Graveyard - Keep Out!
+ 
+;------------------------------------------------------------
+ 
+@#graverob
+; Isn't grave robbing just plain bad?
+@do moveback
+@datanewday graverob.idf
+@dataload graverob.idf &playernum `p20
+@if `p20 is 1 then goto gravenoway
+@busy
+@do `v01 is 1
+@show
+ `r0`c  `r1  The Open Grave  `r0
+ 
+`2    While walking around you almost fall into a big hole that has been
+`2  dug into the ground.
+ 
+`$  "Hmm an open grave, I wonder why no one has covered up this body?"`2,
+`2  you think to your self.
+ 
+`$  "Gee, what should I do"`2, you ponder.
+ 
+`k
+`r0`c
+`2  Looking upon the Tombstone you read...
+`2  
+ @do `p25 is 1 ; Temp variable for Gold
+ @do `p26 is 1 ; Temp variable for Gems
+ @do `p20 random 6 1
+@if `p20 is 1 then do begin
+ @begin
+ @show
+`0         ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+`0       Üß                            ßÜ
+`0      Û     `2-=-=-`%Edward Drake`2-=-=-`0     Û
+`0      Û                                Û
+`0      Û `2A good man, who lived a short  `0Û
+`0      Û `2life. Died by the hands of the `0Û
+`0      Û `2of the evil Barbarrion Syril.  `0Û
+`0      Û `2    May He Rest In Peace.      `0Û
+`0      Û                                Û
+ @do `p25 is `p09
+ @do `p25 * 134
+ @do `p26 is 1
+ @end
+@if `p20 is 2 then do begin
+ @begin
+ @show
+`0         ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+`0       Üß                            ßÜ
+`0      Û    `2-[ `%Sir Thomas of Marks `2]-`0   Û
+`0      Û                                Û
+`0      Û `2  This Valliant knight, who    `0Û
+`0      Û `2 faught hard in every battle.  `0Û
+`0      Û `2 Died by arrow of an archer,   `0Û
+`0      Û `2while he slept. A tragic loss. `0Û
+`0      Û `2     May He Rest In Peace.     `0Û
+`0      Û                                Û
+ @do `p25 is `p09
+ @do `p25 * 120
+ @do `p26 is 2
+ @end
+@if `p20 is 3 then do begin
+ @begin
+ @show
+`0         ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+`0       Üß                            ßÜ
+`0      Û        `2-[ `%Duke Osgood `2]-`0       Û
+`0      Û                                Û
+`0      Û `2 A good man, who lived a short `0Û
+`0      Û `2life. While walking through his`0Û
+`0      Û `2 castle one day, a Battle axe  `0Û
+`0      Û `2 mysteriously fell and chopped `0Û
+`0      Û `2 him in two. A sad sad story.  `0Û
+`0      Û `2     May They Rest In Two.     `0Û
+`0      Û                                Û
+ @do `p25 is `p09
+ @do `p25 * 160
+ @do `p26 is 1
+ @end
+@if `p20 is 4 then do begin
+ @begin
+ @show
+`0         ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+`0       Üß                            ßÜ
+`0      Û       `2-[ `%Chelsea Crudz `2]-`0      Û
+`0      Û                                Û
+`0      Û `2She was a sinner.  She sold    `0Û
+`0      Û `2her body for a few measly      `0Û
+`0      Û `2pieces of gold. She died from  `0Û 
+`0      Û `2a VD she caught from her goat. `0Û 
+`0      Û `2    May She Rest In Peace.     `0Û
+`0      Û                                Û
+ @do `p25 is `p09
+ @do `p25 * 340
+ @do `p26 is 5
+ @end
+@if `p20 is 5 then do begin
+ @begin
+ @show
+`0         ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+`0       Üß                            ßÜ
+`0      Û        `2-[ `%Lady Claria `2]-`0       Û
+`0      Û                                Û
+`0      Û `2A tragic loss to her family,   `0Û
+`0      Û `2and all who knew her. Janet    `0Û
+`0      Û `2Claria died giving birth to    `0Û 
+`0      Û `2her son Marcus.                `0Û 
+`0      Û `2    May She Rest In Peace.     `0Û
+`0      Û                                Û
+ @do `p25 is `p09
+ @do `p25 * 440
+ @do `p26 is 3
+ @end
+@if `p20 is 6 then do begin
+ @begin
+ @show
+`0         ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+`0       Üß                            ßÜ
+`0      Û   `2-=-= `%Princess Scarlet `2=-=-`0   Û
+`0      Û                                Û
+`0      Û `2She died a quick death.        `0Û
+`0      Û `2Sentenced to beheadment after  `0Û
+`0      Û `2her husband found her in bed   `0Û 
+`0      Û `2with 3 other men!              `0Û 
+`0      Û `2   May She Rest In Pieces.     `0Û
+`0      Û                                Û
+ @do `p25 is `p09
+ @do `p25 * 290
+ @do `p26 is 2
+ @end
+@show
+`2`\  Do you want to rob this grave?
+@do write
+`x`x`x`x
+@do `v01 is 1
+@choice
+Yes
+No
+@if responce is 1 then do begin
+ @begin
+ @show
+`\`\
+`2    Slowly you reach down into the grave as not to be seen. You slip
+`2  your hand into the corpse's pockets...
+ 
+`$  "Fool! Buried with all the riches intact!"`2, you think to yerself.
+ 
+`$  "No one will notice them missing I guess!!"
+ 
+`k
+ 
+`2   You find `$`p25`2 Gold and `5`p26 `2Gems in the pockets, way to go!
+ 
+`2   You also `4Lose 1 Alignment `2for being so evil! 
+ 
+`k
+ @do money + `p25
+ @do `p19 + `p26
+ @do `p07 - 1
+ @datasave graverob.idf &playernum 1
+@do addlog
+  `r5  `r0 `0`n`2 has robbed a grave in `0The Warrior's Graveyard`2! `r5  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+ @end
+@if responce is 2 then do begin
+ @begin
+ @show
+`\`\    `2You decide to be nice and let this body rest in peace...
+ 
+`k
+ @datasave graverob.idf &playernum 1
+ @end
+ 
+@drawmap
+@do goto graveend
+@label gravenoway
+ @do saybar
+Nah, I wouldn't try grave robbing again till tomorrow...
+@label graveend
+ 
+@update
+@closescript
+ 
+ 
+;------------------------------------------------------------
+ 
+@#digger
+; Talking to the gravedigger
+@do moveback
+@busy
+@do `v01 is 1
+@label talktop
+@pauseoff
+@show
+ `r0`c  `r1  Talking to the Grave Digger  `r0
+ 
+`2    You walk up to this dirty scarred man. Even though his outer
+`2  appearance is revolting, you can tell he has a warm heart by his
+`2  friendly smile.
+ 
+`2  "`0E'ye don't get many a visitor down here, what can I do you for?`2"
+`2  he asks. What should you talk about???
+ 
+@do write
+`x`x`x`x
+@do `v01 is 1
+@choice
+Who's the lucky person?
+Ghosts.
+Treasure.
+Old Hag
+Nevermind
+@if responce is 1 then do begin
+ @begin
+ @show
+ `r0`c  `r1  Talking to the Grave Digger  `r0
+ 
+`2  Who is this grave for you ask??? Well it's for `%`N!!
+`2  Hehehe just kidding. This is actualy a grave for the great warrior
+`2  Jim Bob Jones! People say that his generous soul is still roaming the
+`2  night, looking for a good deed or two to do. Consider yourself lucky
+`2  if you meet him.
+ 
+`k
+ @do goto talktop
+ @end
+@if responce is 2 then do begin
+ @begin
+ @show
+ `r0`c  `r1  Talking to the Grave Digger  `r0
+ 
+`2  Ghosts yah say??? Well yah there are always a few ghosts to be found
+`2  in a Graveyard, you just hafta know where to look! I hear that a few
+`2  ghosts that have been seen here, have actually been friendly!
+ 
+`k
+ @do goto talktop
+ @end
+@if responce is 3 then do begin
+ @begin
+ @show
+ `r0`c  `r1  Talking to the Grave Digger  `r0
+ 
+`2  So you want me to tell you about treasure eh? Well alls I can tell you
+`2  is that most Great Warriors ask to be buried intact. That means all
+`2  their Weapons, Armor, and riches! Don't be Grave robbing tho, it's far
+`2  too dangerous for a Warrior like you.
+ 
+`k
+ @do goto talktop
+ @end
+@if responce is 4 then do begin
+ @begin
+ @show
+ `r0`c  `r1  Talking to the Grave Digger  `r0
+ 
+`2  Hmmmmm, the hag. What can I say about her that her looks don't explain
+`2  for themselves! As of late the Hag has taken a real likin' to the art
+`2  of Alchemy! Who knows what she can mix up. Legend has it that this Hag
+`2  wasn't always such a foul creature, people say that she once was even
+`2  more beautiful then the legendary Barmaid `5VIOLET!!!`2 The stories people
+`2  make up.
+ 
+`k
+ @do goto talktop
+ @end
+ 
+@pauseon
+@drawmap
+@update
+@closescript
+ 
+;------------------------------------------------------------
+ 
+@#shack
+;The Shack out back
+@do moveback
+@busy
+@label shacktop
+@do `v01 is 1
+@show
+ `r0`c  `r1  In the Old Shack  `r0
+ 
+`2    Upon entering the shack you are surprised to see another. But this
+`2  Hag's looks surprise you more! Not since `3Grizilda the Hun`2 have you
+`2  ever seen such a beastly looking woman. She greets you by saying
+`2  "`0Hi! I'm Helga! Who are you?`2".  The stench of garlic on her breath is
+`2  quite overpowering.
+ 
+@do write
+`x`x`x`x
+@do `v01 is 1
+@choice
+Gossip with the Hag
+Ask the hag to make you a Potion
+=sex 0 Flirt with the hag
+Leave before you pass out
+@if responce is 1 then do begin
+ @begin
+   @show
+ `r0`c  `r1  Gossiping with the Hag  `r0
+ 
+`2  "`$So hag, is there anything new or cool you have to tell me. You must
+`$  know some nice juicy gossip don't you!?`2"
+ 
+`2  "`0Well there isn't anything to gossip about here, this is a Graveyard
+`0  if you haven't allready noticed.`2"
+ 
+`2  "`$Ummm ok, but there has to be something you can tell me, isn't there?`2"
+ 
+`2  "`0Well just that the 3 main ghosts that live here were asking about you
+`0  you should try to find them, I think they've taken a liking to you!`2"
+ 
+`2  "`$Ghosts!? Umm yah sure old woman...`2"`%
+ 
+`k
+ 
+ @do goto shacktop
+ @end
+@if responce is 2 then do begin
+ @begin
+   @show
+     @datanewday gravepot.idf
+     @dataload gravepot.idf &playernum `p20
+     @if `p20 is 1 then goto potionnoway
+     @show
+ `r0`c  `r1  Getting a Potion  `r0
+ 
+`2  "`$Hey Hag! What's that stuff you are making? It looks wierd!`2"
+ 
+`2  "`0This? Well this is my special recipe. It's not to stable, so it's
+`0  effects can't be guessed... It may be very good, or it may hurt you.
+`0  It's all up to you... do you want to try it or not?
+ 
+ 
+@do write
+`2  Do you want to take the chance? `5[`0Y`5/`0N`5] `2
+@do readspecial `s01 YN
+ 
+@if `s01 is Y then do
+  @begin
+  @show
+ 
+`2  You decide to take the chance, and try her potion... was this wise!?
+ 
+`2  You take the small glowing vile... it's murky contents swirl as you lift
+`2  it to your lips... you drink it down and...
+ 
+`L`L`L`k
+ 
+   @do `p20 random 8 1
+   @if `p20 is 1 then do begin
+    @begin
+     @show
+`2  You gain `%1 strength`2!!!`%
+ 
+`k
+     @do `p04 + 1
+    @end
+ 
+   @if `p20 is 2 then do begin
+    @begin
+     @show
+`2  You gain `%1 dodge`2!!!`%
+ 
+`k
+     @do `p05 + 1
+    @end
+ 
+ 
+   @if `p20 is 3 then do begin
+    @begin
+     @show
+`2  You gain `%1 charm`2!!!`%
+ 
+`k
+     @do `p08 + 1
+    @end
+ 
+   @if `p20 is 4 then do begin
+    @begin
+     @show
+`2  You lose `41 strength`2!!!`%
+ 
+`k
+     @do `p04 - 1
+    @end
+ 
+   @if `p20 is 5 then do begin
+    @begin
+     @show
+`2  You lose `41 dodge`2!!!`%
+ 
+`k
+     @do `p05 - 1
+    @end
+ 
+ 
+   @if `p20 is 6 then do begin
+    @begin
+     @show
+`2  You lose `41 charm`2!!!`%
+ 
+`k
+     @do `p08 - 1
+    @end
+ 
+   @if `p20 is 7 then do begin
+    @begin
+     @show
+`2  Your hit points are `%Maxed`2!!!`%
+ 
+`k
+     @do `p02 is `p03
+     @do `p02 * 2
+    @end
+ 
+   @if `p20 is 8 then do begin
+    @begin
+     @show
+`2  Your hit points are `%4Way Down`2!!!`%
+ 
+`k
+     @do `p02 is 1
+    @end
+ 
+@do addlog
+  `r5  `r0 `0`n`2 has tried a potion in `0The Warrior's Graveyard`2! `r5  `r0
+@do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+ 
+   @datasave gravepot.idf &playernum 1
+   @do goto potionbottom
+  @end
+ 
+@if `s01 is N then do
+  @begin
+  @show
+ 
+ 
+`2  You decide against the potion. Good choice! That stuff looks scary!`%
+ 
+`k
+   @do goto potionbottom
+  @end
+ 
+ 
+   @label potionnoway
+   @show
+ 
+ 
+`2  You decide against more potion... that stuff will kill yah!`%
+ 
+`k
+ 
+ @label potionbottom
+ @do goto shacktop
+ 
+@end
+ 
+@if responce is 3 then do begin
+ @begin
+   @datanewday graflirt.idf
+   @dataload graflirt.idf &playernum `p20
+   @if `p20 is 1 then goto flirtnope
+   @show
+ `r0`c  `r1  Flirting with the Hag  `r0
+ 
+`2  You take a good look at the Hag standing in front of you.
+`2  "`$Hmmm she doesn't look that bad`2", you think to yourself...
+ 
+`2  Either you've just eaten some `4F`5u`9n`0k`1y`2 mushrooms, or you are just
+`2  going crazy... The latter is probably more like it....
+ 
+`2  What do you want to do?
+ 
+@do write
+`x`x`x`x
+@do `v01 is 1
+@choice
+>`p08 0  Wink at her
+>`p08 3  Kiss her hand
+>`p08 5  Kiss her on the lips
+>`p08 7  Fondle her backside
+>`p08 9  Pull her closer
+>`p08 11  Tackle her to the ground
+Run Away!!!
+@if responce is 1 then do
+ @begin
+   @show
+ `r0`c  `r1  Winking at the Hag  `r0
+ 
+`2  You turn towards the Hag and give her a stong and meaningfull wink,
+`2  she notices this and smiles ear to ear!! Ewww what ugly rotten teeth
+`2  she has!
+ 
+`2  "`$Damnit! Go see the dentist wench!`2", you scream at her... she doesn't
+`2  seem to notice the insult though...
+ 
+`0  Your `@Charm`0 goes up by `%1. 
+ 
+`k
+  @datasave graflirt.idf &playernum 1
+  @do `p08 + 1
+ @end
+@if responce is 2 then do
+ @begin
+   @show
+ `r0`c  `r1  Kissing the Hag's hand  `r0
+ 
+`2  You grab the Hag's hand and bring it to your mouth, it is all wrinkled
+`2  and covered with warts. You close your eyes as you kiss, you don't want
+`2  to throw up now!
+ 
+`2  You plant your kiss, and the Hag almost faints from excitment!
+ 
+`2  You spit out a few hairs that must of fallen off her hand when you kissed
+`2  it... What were you thinking!?
+ 
+`0  Your `@Charm`0 goes up by `%2. 
+ 
+`k
+  @do `p08 + 2
+  @datasave graflirt.idf &playernum 1
+ @end
+@if responce is 3 then do
+ @begin
+   @show
+ `r0`c  `r1  Kissing the Hag's Lips  `r0
+ 
+`2  You look over and smile coyly at the Hag. She just stands there, looking
+`2  as gross and disgusting as usual...
+ 
+`2  You slowly saunter over, not wanting to rush, but never taking your eyes
+`2  off of the Hag.
+ 
+`2  She just stands there, all inocent looking, waiting for you to say what
+`2  you want to say...
+ 
+`2  You open your mouth, but you don't have anything to say...
+ 
+`2  You plant a large firm wet kiss on the Hag... Slime trickles out of your
+`2  mouth after you are done.
+ 
+`0  Your `@Charm`0 goes up by `%2. 
+ 
+`k
+  @do `p08 + 2
+  @datasave graflirt.idf &playernum 1
+ @end
+@if responce is 4 then do
+ @begin
+   @show
+ `r0`c  `r1  Grabbing the Hag's Ass  `r0
+ 
+`2  You ask the Hag to show you something off of the shelf behind her, when
+`2  she finally has her back towards you, you slowly extend your hand and
+`2  grab her ass!
+ 
+`2  You slowly move your hand around, her loose flabby ass swaying with your
+`2  movements
+ 
+`2  The Hag turns around and licks her lips, like she wants more!
+ 
+`0  Your `@Charm`0 goes up by `%3. 
+ 
+`k
+  @do `p08 + 3
+  @datasave graflirt.idf &playernum 1
+ @end
+@if responce is 5 then do
+ @begin
+   @show
+ `r0`c  `r1  Grabbing the Hag's Ass  `r0
+ 
+`2  You walk over to the hag, staring her directly in the eyes. You just
+`2  cut a little smile and pull her closer. The smell of unwashed skin
+`2  nearly makes you lose it, but you manage.
+ 
+`2  The Hag meakly looks you in the face and shyly smiles.
+ 
+`2  You run your hands all over her body, and gently kiss her neck all over,
+`2  she just moans and pulls you closer
+ 
+`2  When you think she has enough you push her away from you. You back off
+`2  totally disgusted with your actions!
+ 
+`0  Your `@Charm`0 goes up by `%3. 
+ 
+`k
+  @do `p08 + 3
+  @datasave graflirt.idf &playernum 1
+ @end
+@if responce is 6 then do
+ @begin
+   @show
+ `r0`c  `r1  Grabbing the Hag's Ass  `r0
+ 
+`2  You slowly walk over to the hag looking at her and smiling
+ 
+`2  "`$So baby, do you ah... wanna do it!?`2", you ask
+ 
+`2  The Hag smiles and starts to open her dress
+ 
+`2  You tackle her, 15 minutes later you stand up and dust off your clothes.
+`2  You notice that the hag looks different!? She isn't ugly any more! In
+`2  fact she is the best looking gal you've seen in the realm!
+ 
+`2  "`0Thank you `&`N`0 for breaking the spell put on me!!
+ 
+`2  "`$Spell!? Please explain!`2"`%
+ 
+`k`k`%
+ `r0`c  `r1  Learning the Truth  `r0
+ 
+`2  "`0Well one day while walking through the forest, I saw this naked man
+`0  sitting there. I didn't know this at the time, but he had a very jelous
+`0  woman for a wife. He was just sitting there, and I wasn't doing anything,
+`0  so we ahh, well to make a long story short his jelous wife put this
+`0  terrible spell on me!`2"
+ 
+`2  "`$Gee that's awfull!`2", you exclaim. Just then the Hag starts to change
+`2  back into her gruesome self.
+ 
+`2  "`0You see, the spell is never totally broken`2"
+ 
+`0  Your `@Charm`0 goes up by `%4. 
+ 
+`k
+  @do `p08 + 4
+  @datasave graflirt.idf &playernum 1
+ @end
+ 
+   @do addlog
+  `r5  `r0 `0`n`2 flirted with the Old Hag in the `0The Warrior's Graveyard`2! `r5  `r0
+   @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+ 
+ @label flirtbottom
+ 
+ @do goto flirtend
+ @label flirtnope
+   @show ;Has allready flirted today
+ 
+ 
+`2  You think once a day is enough, you don't want to scare her!`%
+ 
+`k
+ 
+ @label flirtend
+ @do goto shacktop
+ @end
+ 
+@drawmap
+@update
+@closescript
+ 
+ 
+;------------------------------------------------------------
+ 
+@#warpback
+; Warp back from Jim Bob Jones
+@do x is 39
+@do y is 14
+@do map is 572
+@loadmap 572
+@do saybar
+You reappear in the graveyard as quickly as you vanished, strange!
+ 
+;------------------------------------------------------------
+ 
+@#jimbob
+; Warp to Jim Bob Jones
+@datanewday gravesec.idf
+@dataload gravesec.idf &playernum `p20
+@if `p20 is 1 then goto gravenowarp
+@do x is 78
+@do y is 7
+@do map is 572
+@loadmap 572
+@datasave gravesec.idf &playernum 1
+@label gravenowarp
+ 
+;------------------------------------------------------------
+ 
+@#lemonaid
+;The Lemon-Aid stand
+@do moveback
+@busy
+@label juicetop
+@do `v01 is 1
+@show
+ `r0`c  `r1  At the Lemon-Aid stand  `r0
+ 
+`2    You wander over to what seems to ba a Lemon-Aide Stand, and to
+`2  your suprise, That's what it is! You wonder what the heck a Lemon-Aide
+`2  Stand could be doing in the middle of a graveyard,
+ 
+`$  "Hmmm I wonder how much corpses drink!"`2, you think to yourself.
+ 
+`2  You stop yourself from laughing though, you don't want to hurt his
+`2  feelings.
+ 
+@do write
+`x`x`x`x
+@do `v01 is 1
+@choice
+Gossip with the Juice Seller
+Buy some aid
+Sign the comment sheet
+Get Outta Here!
+@if responce is 1 then do begin
+ @begin
+  @pauseoff
+  @show
+ `r0`c  `r1  Talking to the Grave Digger  `r0
+ 
+`$  "Who the hell buys yer juice man???? This is a graveyard dead people are
+`$  buried here if you didn't already know!!"`2, you scream!
+`k
+`0  "I know that!!!! What do you think I am stupid??? I make it fer the ghosts
+`0  that are here!!!"`2, says the man meakly.
+`k
+`$  "Ghosts??? of who???"`2, you ask. `0"Well the only ghosts that buy my
+`0  Lemon-Aid are Jim Bob Jones, and `4LAZ`3er ey`4E`2"
+`k
+`$  "Where do I find them old man?"`2, you ask.
+`k
+`0  "Well, you just have to know where to look I guess, the Ghosts are
+`0  real shy by nature. I wouldn't be suprised if there were more then the"
+`0  two that buy my juice!"`2, sayz the man...
+ 
+ 
+`k
+  @pauseon
+  @do goto juicetop
+  @end
+@if responce is 2 then do begin
+ @begin
+  @datanewday gravelem.idf
+  @dataload gravelem.idf &playernum `p20
+  @if `p20 is 1 then goto lemonnope
+  @pauseoff
+  @show
+ `r0`c  `r1  Buying Lemon-Aid  `r0
+ 
+`2  You look at the Lemon-Aid the Juice-Seller is pushing on you, and
+`2  say, "`$What the hell is in that stuff???? It almost looks green!?`2"
+ 
+`0  "Well it's Lemon-Aid! Duh. Why else would I be at a Lemon-Aid stand!?
+`0  That greenish tinge is from the special ingredient I add......It has
+`0  some weird effects, but the ghosts seem to like it."
+ 
+@if &money less 1000 then do begin
+  @begin
+    @show
+`2  Too bad you don't have the `01000`2 gold that the juice seller charges
+`2  for his `$Lemon-Aid`2. Ahh well get some cash and come back!
+ 
+`k
+    @do goto lemonbottom
+  @end
+@do write
+`2  Do you want to try the `$Lemon-Aid`2??  Only `01000`2 Gold! `5[`0Y`5/`0N`5] `2
+ 
+@do readspecial `s01 YN~
+ 
+@if `s01 is Y then do
+  @begin
+  @show
+ 
+`2  You take the sweet smelling `$Lemon-Aid`2, and swallow all of it. You cringe
+`2  at the taste, but you manage to hold the foul tasting liquid down.
+ 
+`2  You start to feel weird, you notice that.......
+`L`L`L
+  @do money - 1000
+  @do `p20 random 10 1
+  @if `p20 is 1 then do begin
+    @begin
+      @show
+`2  You gain `%1 strength`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p04 + 1
+    @end
+  @if `p20 is 2 then do begin
+    @begin
+      @show
+`2  You lose `41 strength`2!!!
+ 
+`2  Your belly feels as though it's on fire! Maybe you should stay away
+`2  from `$Lemon-Aid for a while!
+ 
+`k
+      @do `p04 - 1
+    @end
+  @if `p20 is 3 then do begin
+    @begin
+      @show
+`2  You gain `%1 dodge`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p05 + 1
+    @end
+  @if `p20 is 4 then do begin
+    @begin
+      @show
+`2  You lose `41 dodge`2!!!
+ 
+`2  Your belly feels as though it's on fire! Maybe you should stay away
+`2  from `$Lemon-Aid for a while!
+ 
+`k
+      @do `p05 - 1
+    @end
+  @if `p20 is 5 then do begin
+    @begin
+      @show
+`2  You gain `%1 charm`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p08 + 1
+    @end
+  @if `p20 is 6 then do begin
+    @begin
+      @show
+`2  You lose `41 charm`2!!!
+ 
+`2  Your belly feels as though it's on fire! Maybe you should stay away
+`2  from `$Lemon-Aid for a while!
+ 
+`k
+      @do `p08 - 1
+    @end
+  @if `p20 is 7 then do begin
+    @begin
+      @show
+`2  You gain `%2 strength`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p04 + 2
+    @end
+  @if `p20 is 8 then do begin
+    @begin
+      @show
+`2  You gain `%2 dodge`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p05 + 2
+    @end
+  @if `p20 is 9 then do begin
+    @begin
+      @show
+`2  You gain `%3 strength`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p04 + 3
+    @end
+  @if `p20 is 10 then do begin
+    @begin
+      @show
+`2  You gain `%2 charm`2!!!
+ 
+`2  "`$Damn! This Lemon-Aid is great!`2", you exclaim as you leave
+ 
+`k
+      @do `p08 + 2
+    @end
+ 
+   @datasave gravelem.idf &playernum 1
+   @do addlog
+  `r5  `r0 `0`n`2 has bought some `$Lemon-Aid`2 at `0The Warrior's Graveyard`2! `r5  `r0
+   @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+ 
+  @end
+ 
+@if `s01 is N then do
+  @begin
+  @show
+ 
+`2  You decide not to take the chance... good idea!
+ 
+`k
+  @end
+ 
+@if `s01 is ~ then do
+  @begin
+  @show
+ 
+`2  You found the secret key! You lucky person....
+ 
+`k
+  @end
+ 
+  @pauseon
+  @do goto lemonbottom
+  @label lemonnope
+    @show
+ `r0`c  `r1  Buying Lemon-Aid  `r0
+ 
+`2  "`0Sorry! But if you drink too much of this stuff, you'll turn into a
+`0  ghost yourself!`2", says the Juice Seller
+ 
+`2  Damn, maybe you should try again tomorrow?
+ 
+`k
+  @label lemonbottom
+  @do goto juicetop
+ @end
+ 
+@if responce is 3 then do begin
+ @begin
+ @show
+ `r0`c  `r1  Signing the Comment sheet `r0
+ 
+  `2You look at the comment sheet to see what others have said.
+ 
+ @if gracom.txt exist false then do
+  @begin
+    @writefile gracom.txt
+`%Jim Bob Jones`2 : `0This Juice rocks! I can't get enough!
+        `@Tanya`2 : `0I must agree, it is cool! And thirst quenching!
+      `%Gerorge`2 : `0I dont't like it when the wierd stuff happens tho...
+         `%Zeus`2 : `0Send your comments to support@techn.com
+  @end
+  @if gracom.txt exist true then do
+    @begin
+      @displayfile gracom.txt
+    @end
+  @show
+ 
+  @do `s04 is `%
+  @do `s04 add `n
+  @do strip `s04 
+  @do `s04 add `x`2:`x`0
+  @do `p20 is length `s04
+  @do `p21 is 65
+  @do `p21 - `p20
+  @do write
+  `2Enter your comment (enter to quit)`\  `s04
+  @do readstring `p21 nil `s03
+  @do stripbad `s03
+ 
+  @do `p24 is length `s03
+  @if `p24 more 3 then do begin
+   @begin
+     @writefile gracom.txt
+         `%`n`2 : `0`s03
+     @do trim gracom.txt 20
+     @do addlog
+  `r5  `r0 `0`n`2 has left a comment at `0The Warrior's Graveyard`2! `r5  `r0
+     @do addlog
+                                 `2-`0=`2-`%=`2-`0=`2-
+   @end
+ @pauseon
+ @do goto juicetop
+ @end
+ 
+@drawmap
+@update
+@closescript
+ 
+;------------------------------------------------------------
+ 
+@#tjimbob
+;Jim Bob Jones
+@do moveback
+@do saybar
+I'll be able to help you in the next version!
+ 
+;------------------------------------------------------------

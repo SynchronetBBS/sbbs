@@ -1,0 +1,54 @@
+
+               Castle Camelot V1.35 by Dave (Jam) Henderson
+
+                         AN IGM FOR LORD2 1.01a+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (3)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  A new castle for LORD2 beta 7+ called Camelot.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM JCAMELOT.IGM
+
+  To uninstall, do the same thing again.
+
+  The new castle is located North-East of Sosen Village.
+  Email me at Davejam@netpage.net.au for comments and/or suggestions.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Camelot v1.35  `2by `4D`@ave `#(`5Jam`#) `4H`@enderson
+replacescreen: 1442 1 noshow
+
+replacescreen: 1443 2 noshow
+
+replacescreen: 1441 3 noshow
+
+replacescreen: 297 4 show
+
+replacescreen: 296 5 show
+
+replacescreen: 376 6 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2This is my third `0IGM `2and includes a new castle called Camelot. 
+   Email your comments and suggestions to davejam@netpage.net.au.
+   Thankyou for using my product.
+

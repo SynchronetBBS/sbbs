@@ -1,0 +1,905 @@
+; Script file SHIP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:34 2001
+
+@DECLARE map 000000691
+@DECLARE hammock 000000774
+@DECLARE ship 000000879
+@DECLARE shipstart 000000913
+@DECLARE showship 000001206
+@DECLARE mybank 000005326
+@DECLARE pilot 000008265
+@DECLARE healme 000009493
+@DECLARE doorguard 000009719
+@DECLARE startg 000009748
+@DECLARE sign 000013077
+@DECLARE guardchat 000013375
+@DECLARE enter 000014194
+@DECLARE done 000015518
+@DECLARE letmein 000017186
+@DECLARE done 000017265
+@DECLARE port? 000017276
+@DECLARE letmein 000018928
+@DECLARE cabinguard 000019015
+@DECLARE letmein 000020752
+@DECLARE done 000020833
+@NOCHECK
+; End of .REF index
+
+@#map
+@do saybar
+`2You study the map carefully to plot your course.
+@end
+
+@#hammock
+@do saybar
+`2The hammock could easily rock you to sleep, with the motion of the waves.
+@end
+
+@#ship
+@do moveback
+
+@label shipstart
+@show
+`r0`c `r1 `2You have reached the top of the mountain!  `r0
+
+@choice
+`3Head on back.
+`2Look out over the ocean.
+@If response is 2 then do
+@begin
+@routine showship
+@do goto shipstart
+@end
+
+@if response is 1 then do
+@begin
+@drawmap
+@update
+@closescript
+@end
+
+@#showship
+@pauseoff
+@show
+[?7h[40m[2J[0;1;44m                          [36m∞∞∞∞∞         [40m[s
+[u[44m                                        [2;1H       ∞∞∞∞   [40m[s
+[u[44m             ∞∞∞∞∞        [0;31;44m‹‹‹‹€€[43m [44m       [40m[s
+[u[44m                [1;36m∞∞∞∞∞∞    [3;1H     ∞∞∞±±∞∞         [40m[s
+[u[44m        ∞∞     [0;33;44m‹‹‹‹‹‹‹‹‹‹[30;43mƒ[33;44m‹‹‹‹‹‹‹‹[40m[s
+[u[44m‹‹           [1;36m∞∞∞±±±∞∞∞   [4;1H    ∞∞±±±±∞           [40m[s
+[u[44m  [0;31;44m‹‹‹€€[43m [44m       [1;30m€[47m            [40m[s
+[u[47m     ﬂ[44m‹         [36m∞∞∞±±±±∞      [5;1H      ∞∞±±∞∞∞ [40m[s
+[u[44m   [0;33;44m‹‹‹‹‹‹‹‹‹‹‹‹[30;43mƒ[33;44m‹‹‹‹‹‹‹‹[1;30;43m[40m[s
+[u[43mﬂ[47m‹                 ﬂ[44m‹         [37m∞∞±±∞∞∞     [40m
+[6;1H[44m       [36m∞∞∞        [30mﬂ[47m‹                   ﬁ  [40m[s
+[u[47m                 [44m›         [37m∞∞∞∞       [7;1H      [40m[s
+[u[44m              [30mﬂ[47m‹                 ›        ‹‹‹     [40m[s
+[u[47m   [44m›          [37m∞∞        [8;1H           [36m∞∞∞ [40m[s
+[u[44m       [30;47m›              ‹ﬂ ‹‹‹[44mﬂﬂ[43mﬂﬂﬂ[44m   ﬂ[40m[s
+[u[44mﬂﬂ[47m‹‹‹‹[44mﬂ                     [9;1H        [36m∞∞∞[40m[s
+[u[44m∞±∞∞      [30m‹[47mﬂ    ‹‹‹‹‹   [0;43mﬂ[1;30mﬂ[0;33;44m[40m[s
+[u[44m‹[1;30;43mﬂﬂ[0;33;44m‹‹‹‹[30;43m–––––[33;44m‹‹‹‹‹‹‹[40m[s
+[u[1;30;43mﬂ[0;33;44m‹                      [10;1H          [40m[s
+[u[44m[1;36m∞±±±∞∞   [30m‹[40m€[47m‹‹[44mﬂﬂﬂﬂ[43m   [44m  ﬂ[40m[s
+[u[44mﬂ[47m‹[40m€[47m‹‹                  ﬂ[44m‹               [40m[s
+[u[44m       [11;1H           [36m∞∞∞   [0;33;44m‹[1;30;43mﬂ[40m[s
+[u[0;33;44m‹‹‹‹‹‹‹‹[30;43mƒƒƒ[33;44m‹‹‹‹‹‹‹‹[1;30;47m€         [40m[s
+[u[47m          ﬂ[44m‹    [0;33;44m‹               [12;1H      [40m[s
+[u[44m            [1;30mﬂ[47m‹[0;47m€€€€€€€€€€€€€€€€€€€[1;30mﬂ[40m[s
+[u[47m‹                  ﬁ[44m   ‹[47mﬂ[0;33;47mﬂ[44m‹     ‹ﬂ [40m[s
+[u[44m     [13;1H                    [1;30mﬂ[47m‹              [40m[s
+[u[47m    ﬁ                   [44m› ‹[47mﬂ   [0;33;47mﬂ[44m‹ ‹[40m[s
+[u[44mﬂ        [14;1H                      [1;30;47m›           [40m[s
+[u[47m      ﬁ                  ‹[44m› [47m›      [0;33;47mﬂ[40m[s
+[u[44m‹         [15;1H          [31m‹‹‹‹‹‹‹     [1;30mﬁ[47m   [40m[s
+[u[47m             ﬁ    ‹‹‹‹‹          [44m›  [40m€[47m        [40m[s
+[u[0;33;47mﬂ[44m‹       [16;1H          [31m≤[43m [1;33m [D[40m[s
+[u[43m  [D [0;31m≤[44m   [1;30m‹[47mﬂ  ‹‹‹[43mﬂﬂﬂﬂ[47m‹‹‹ [40m[s
+[u[47m   ‹ﬂ‹‹[44mﬂﬂﬂ[43m   ﬂ[44mﬂﬂﬂﬂ[47m‹‹‹‹‹[44mﬂ  ‹[47m›  [40m[s
+[u[47m        [0;33;47mﬂ[44m‹     [17;1H          [31m≤[43m [40m[s
+[u[43m[1;33m [D  [D [0;31m≤[44m  [1;30;47m€‹[44mﬂﬂﬂﬂ  [40m[s
+[u[43m    [44m  ﬂﬂﬂ[47m‹[44mﬂﬂﬂ     [43m   [0;30;43m…ÕÕÕÕÕÕª[40m[s
+[u[44m [1;40m€[44m ‹ﬂ[0;33;44m‹ﬂ[1;30mﬂ[47m›       ‹[44mﬂ [40m[s
+[u[0;33;44mﬂ‹   [18;1H          [40m∫[30;43m––––––[1mﬂ[40m[s
+[u[0;33;44m‹‹‹‹‹    [43m    [44m    [1;30;43mﬂ[0;33;44m‹‹‹‹‹[40m[s
+[u[30;43m––––––––––––––––[1;44m‹ﬂ[0;33;44m‹ﬂ  [1;30m‹[40m€[s
+[u[47m   ‹‹[44mﬂﬂ        [19;1H[46m   [34m∞    ∞ [0;33m∫[43m[40m[s
+[u[43m   [30mÈ È È È  –––––––––––– È È È È È È È È È È  ∫[1;46mﬂ[40m[s
+[u[46m ‹‹ﬂ  ﬂﬂﬂ     [34m∞    ∞ [20;1H  ∞    ∞   [0;33m∫[43m   [40m[s
+[u[43m                                         [30m∫[1;46mﬂﬂﬂ  [40m[s
+[u[46m[34m∞    ∞    ∞    ∞  [21;1H ∞    ∞    ∞[0;33m∫[43m     [40m[s
+[u[43m                                     [30m∫[1;34;46m∞    ∞ [40m[s
+[u[46m   ∞    ∞    ∞   [22;1H     ∞    ∞    ∞    ∞    ∞    ∞    ∞[40m[s
+[u[46m    ∞    ∞    ∞    ∞    ∞    ∞    ∞    ∞   ∞[23;1H    ∞    [40m[A
+[9C[46m∞    ∞    ∞    ∞    ∞    ∞    ∞    ∞    ∞    ∞    ∞    ∞   [40m[A
+[68C[46m ∞    ∞   ∞ [0m[255D `k
+`c `\`\`\`\`\`\`\`\`!You gaze at the mighty ship and vow that one day you will sail the Eight Seas
+with her yourself.
+ `k
+@#MYBANK
+;team treasury
+@do moveback
+@do `p20 is 0
+@if shiptres.dat exist true then do
+  @begin
+  @readfile shiptres.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`$You find the hidden safe and carefully open it.`\`\
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @clearblock 22 24
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+@clearblock 22 26
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile shiptres.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete shiptres.dat
+  @writefile shiptres.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile ship$.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0The Sea Serpent Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @clearblock 21 24
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile shiptres.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete shiptres.dat
+  @writefile shiptres.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile ship$.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0The Sea Serpent Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+
+
+@#PILOT
+;lets them warp to a view places
+@offmap
+@do moveback
+@show
+`r0`c  `r1  Sailor `r0
+
+  `0"Greetings, s&sir!  Where can we drop you off today?" `2a smartly dressed
+  sailor asks.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Flagcity Docks
+ArrisVille
+PortTown
+Sosen Village
+I'll stay here, thanks
+@if response not 5 then do
+  @begin
+@show
+`\`\  `0"We shall leave at once!" he shouts importantly.
+
+`k  `2The ship comes to life as the crew raises anchor and sets sail!
+
+  `2You never knew it could feel so good to be in charge of a magnificent
+  vessel such as this one. You arrive safely.`\`\`\
+  `0"I bid you a goodday s&sir, and await your return."
+
+  `2It feels great to be alive.    
+
+`k
+@if responce is 1 then do
+  @begin
+   ;Flagcity Docks
+   @do x is 42
+   @do y is 15
+   @do map is 71
+  @end
+
+@if responce is 2 then do
+  @begin
+   ;ArrisVille
+   @do x is 67
+   @do y is 19
+   @do map is 444
+  @end
+
+@if responce is 3 then do
+  @begin
+   ;Porttown
+   @do x is 42
+   @do y is 3
+   @do map is 152
+  @end
+
+@if responce is 4 then do
+  @begin
+   ;Sosen Village
+   @do x is 41
+   @do y is 18
+   @do map is 536
+  @end
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+@#HEALME
+;free heal
+@offmap
+@do moveback
+@show
+`r0`c  `r1  The Healers  `r0
+
+  `2The ship's surgeon looks you over for wounds carefully.
+
+  `%YOU ARE COMPLETEY HEALED.
+
+`k
+@do `p02 is `p03
+@drawmap
+@update
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the ship, as well as sell it
+;back or transfer ownership.
+@if ship$.dat exist false then do
+  @begin
+  @do saybar
+`0"You have 5 minutes to vacate this ship!" `2the guard barks.
+  @closescript
+  @end
+
+@readfile ship$.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the guard, nice of him to let you in.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The huge guard snaps to attention when he sees you are going to
+  address him.
+
+@do write
+`x`x
+@choice
+Set password to gain entrance (currently is `0`s01`%)
+Ownership options
+Leave
+@
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$50000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your ship to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ship$.dat
+  @writefile ship$.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of The Sea Serpent to you. 
+  Password to enter will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%The Sea Serpent`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your ship back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete ship$.dat
+  @do money + 50000
+  @show
+`\`\  `%SHIP SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%The Sea Serpent`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete ship$.dat
+  @writefile ship$.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the guard promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+
+@#sign
+@do moveback
+
+ @if ship$.dat exist false then do
+ @begin
+ @do saybar
+Seay Serpent - For sale cheap, enquire inside.
+ @end 
+
+@if ship$.dat exist true then do
+ @begin
+@readfile ship$.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+@#guardchat
+@show
+`c
+ `3The guard looks you up and down and decides you worthy enough of a reply.
+ He proceeds to tell you about the splendid looking ship that is floating
+ majestically on the ocean before you. He says:`\`\
+ `2"The Sea Serpent is the pride of the Eight Seas. Never has she failed her
+ captain. Not only will you be envied by all who live on The New World
+ `#(Seth Able himself would give his right arm to own her)`2, you will also
+ gain the following bonuses.`\`\
+ `7Drop of points at `@FlagCity, PortTown, Sosen Village, and Arrisvile.
+ `7Not only will she drop you off but the crew will wait until you are ready
+ to depart.`\
+ The Sea Serpent also comes with her own ship's surgeon and a secret vault
+ where you can keep all your gold.`\
+ `!Well worth the asking price of $100,000
+ `k
+
+@#enter
+@do moveback
+@offmap
+@if ship$.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2The Sea Serpent is a magnificient vessel that has sailed the Eight Seas
+  and beyond. It has beheld many adventures and is ready for many more.
+
+  Buy now and be the proud owner of your own ship.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 99999 Purchase it.
+Why should I Buy this old Tub?
+Have another look at the ship.
+<&money 100000 Sigh wistfully and leave since you don't have enough.
+>&money 99999 Leave.
+@
+
+@if response is 2 then do
+  @begin
+  @routine guardchat
+  @do goto enter
+  @end
+
+@if response is 3 then do
+  @begin
+  @routine showship
+  @do goto enter
+  @end
+
+@if responce is 1 then do
+  @begin
+  @if ship$.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile ship$.dat
+&playernum
+NONE
+    @do money - 100000
+    @do addlog
+  `0`n `2buys `%The fabled Sea Serpent`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, Captain `N! `r0
+`\`2  Nice job!  You now own this great ship!
+
+  `2Enjoy your many adventures.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile ship$.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete ship$.dat
+    @do addlog
+  `%The Sea Serpent`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2The guard bars your way.
+
+  `0"Captain `s02`0 has declared that `4NO`0 visitors shall be allowed!"
+  `2he says viciously.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A guard bars your way.  `0"Halt, you!  What business have you with
+  Captain `s02`0?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+What is the Pass word?
+Never mind. 
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Welcome aboard the guard salutes as he lets you by.`\`\`k
+    @do goto letmein
+    @end
+   @writefile mail\mail`p20.dat
+  `0The Sea Serpent Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to sweet talk the guard by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2That ain't it, now piss off afore I skittle your gizzards.`\`\`k
+   @do goto done
+   @end
+
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 20
+@do y is 10
+@do map is 801
+@loadmap 801
+@do goto done
+@#done
+
+@#port?
+ @if ship$.dat exist false then do
+ @begin
+ @do saybar
+Sorry this section of the dock is reserved for Guests of The Sea Serpent.
+ @end 
+@if ship$.dat exist true then do
+ @begin
+
+@readfile ship$.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Master `s02`0 has declared that `4NO`0 visitors shall be allowed!" `2a
+  voice calls from behind the wall.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A guard bars your way..  `0"Halt, you!  What business have you with
+  `@Captain `s02`0?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+What is the Pass word?
+Never Mind.
+
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Sorry but `@Captain `S02 `0had to sail. Your gonna have to hoof it from here. `\`\`\`k
+  `2You then notice that the ship indeed has sailed without you, and turn
+  to continue your quest on foot.`\`\`\`k
+    @drawmap
+    @do moveback
+    @update
+    @do goto done
+    @do goto letmein
+    @end
+
+   @show
+`\`\  `2Good try matey, now piss off!`\`\`k
+    @drawmap
+    @do moveback
+    @update
+    @do goto done
+
+   @do goto done
+   @end
+
+    @drawmap
+    @do moveback
+    @update
+    @do goto done
+  @do goto done
+
+  @end
+
+;let him in
+@label letmein
+@do x is 20
+@do y is 10
+@do map is 801
+@loadmap 801
+@do goto done
+
+@#cabinguard
+@readfile ship$.dat
+`p20
+`s01
+@
+
+@if `p20 not &playernum then do
+  @begin
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+   @show
+`r0`c  `r1 None shall pass `r0
+
+  `2You pound on the door for some time before you get an answer.
+
+  `0"Captain`s02`0 has declared that `4NO`0 one is allowed beyond this `2a
+  point" says the burly guard.
+
+  `4Ouch!
+
+`k
+   @do goto done
+   @end
+
+  @show
+`r0`c  `r1 Stand and unfold thyself `r0
+
+`2  A guard bars your way..  `0"Halt, you!  What business have you with
+  `@Captain `s02`0?" `2he asks.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+What is the Pass word?
+Never Mind.
+
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Sorry but this area is restricted. `@Captain `S02 `0is the only person
+   allowed behind this door.`\`\
+   `2You feel it prudent not to press the point and to wait for your
+   journey's end.`\`\`\`\`\`k
+
+    @drawmap
+    @do moveback
+    @update
+    @do goto done
+    @do goto letmein
+    @end
+
+   @show
+`\`\  `4Shit, you got the pass word wrong. `2The guard sounds a warning! You are
+  picked up by 4 burly sailors and are thrown overboard.`\`\`\
+  `3You swim for your life. You finally manage to swim to safety. You pull
+  yourself up on the beach and thank your lucky stars you were close to shore. `\`\`k
+    @do x is 8
+    @do y is 10  
+    @do map is 945
+    @loadmap 945
+    @do goto done
+    @end
+
+    @drawmap
+    @do moveback
+    @update
+    @do goto done
+  @do goto done
+
+  @end
+
+ ;let him in
+@label letmein
+@do x is 40
+@do y is 14
+@do map is 721
+@loadmap 721
+@do goto done
+
+@#done

@@ -1,0 +1,805 @@
+; Script file MINN.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE enter 000000448
+@DECLARE done 000001612
+@DECLARE letmein 000002018
+@DECLARE doorguard 000002182
+@DECLARE startg 000002211
+@DECLARE sign 000007398
+@DECLARE innkeeper 000007764
+@DECLARE pass2 000009287
+@DECLARE done 000010636
+@DECLARE pass1 000010742
+@DECLARE chatwall 000011073
+@DECLARE tresure 000012043
+@NOCHECK
+; End of .REF index
+
+@#enter
+@do moveback
+@offmap
+
+
+@if myst1.dat exist false then do
+  @begin
+  @show
+`r0`c  `r1 `%For Sale `r0
+
+  `2Myst Inn - money making opportunity.  Buy it now, only asking
+  `$$50,000`2.
+  
+  Buy now and recieve the following bonuses:
+
+  `0* `2Private area for you
+
+  `0* `2rooms are for visitors to enter and pay.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+>&money 49999 Purchase it.
+<&money 50000 Sigh wistfully and leave since you don't have enough.
+>&money 49999 Leave.
+@
+
+@if responce is 1 then do
+  @begin
+  @if myst1.dat exist true then do
+    @begin
+    @show
+`\`\  `2Oh crap!  Someone bought it while you were thinking about it.  You
+  will regret your snail like thinking for the rest of your days.`\`\`k
+    @do goto done
+    @end
+
+  @writefile myst1.dat
+&playernum
+NONE
+0
+0
+0
+0
+    @do `p30 is 11
+    @do `v40 is 50000
+    @routine deposit in vaults.ref
+    @do money - 50000
+    @do addlog
+  `0`n `2buys `%Myst Inn`2!
+     @routine seperate in gametxt.ref
+
+  @show
+`r0`c  `r1 `%Why hello there, landowner! `r0
+`\`2  Nice job!  You now own this Inn!
+
+  `2Enjoy your new home.`\`\`k
+  @end
+
+@label done
+@drawmap
+@update
+@closescript
+  @end
+
+@readfile myst1.dat
+`p20
+`s01
+@
+
+@do `p21 is deleted `p20
+
+@if `p21 is 1 then do
+  @begin
+   ;owner got deleted!!!  Lets put it up for sale again.
+   @do delete myst1.dat
+    @do addlog
+  `%Myst Inn`2 is put on the market today.
+     @routine seperate in gametxt.ref
+
+   ;run script again
+   @do goto enter
+  @end
+
+;let him in
+@label letmein
+@do x is 39
+@do y is 19
+@do map is 1250
+@loadmap &map
+@do goto done
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#doorguard
+@do moveback
+@label startg
+;guy who owns on it pushes against the door guard symbol.  This lets him
+;control the password to gain entrance to the castle, as well as sell it
+;back or transfer ownership.
+
+@if myst1a.dat exist false then do
+  @begin
+  @writefile myst1a.dat
+200
+0
+  @end
+
+
+@if myst1.dat exist false then do
+  @begin
+  @do saybar
+`0"Get out please!  The Inn has been sold!" `2the Innkeeper commands.
+ @closescript
+  @end
+
+@readfile myst1.dat
+`p20
+`s01
+@
+
+  @readfile myst1a.dat
+`p26
+`p27
+  @
+
+
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+  @do saybar
+You wave to the Innkeeper.
+  @closescript
+  @end
+@busy
+
+
+@do `v01 is 1 ;set default choice to 1
+@show
+`r0`c  `r1 Instructing your servants `r0
+
+  `2The Innkeeper stops working for a moment.
+
+@do write
+`x`x
+@choice
+Set password to private bedroom. (currently is `0`s01`%)
+Ownership options
+Set inn fee (currently is at `$$`p26`%)
+Take money from register
+Leave
+@
+
+@if responce is 4 then do
+  @begin
+  @if `p27 < 1 then do
+   @begin  
+@show
+`\`\  `0"Before you look in that register.. lemmie tell you business has
+  been a little slow." `2the Innkeeper tells you.
+
+`k  `$"How slow?" `2you ask.
+
+`k  `0"Ok, we have not had a single customer since you last checked, ARE
+  YOU HAPPY NOW!?" `2the Innkeeper cries as he bursts into tears.
+
+`k
+   @do goto doorguard
+   @end
+
+
+  @readfile myst1a.dat
+`p26
+`p27
+  @
+  @do money + `p27
+  @do delete myst1a.dat
+  @writefile myst1a.dat
+`p26
+0
+  @
+
+  @show
+`\`\  `2Sure, we've made `$$`p27`2, here ya go!
+
+`k
+  @end
+
+@if responce is 3 then do
+  @begin
+  @do write
+`\`\`x`xNew fee? :`x
+  @do readnum 10 `p26
+  @if `v40 < 0 then do
+    @begin
+    @show
+`\`\  `2Price set to `$$`v40`2.
+
+`k  `2You think you're pretty smart, don't you.
+
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes, yes I do.  Now please give me 1,000,000 gold for free, I deserve it.
+No, you oh computer are the true master.  We humans suck.
+@if responce is 1 then do
+  @begin
+  @show
+`\`\  `2GET OUT OF HERE BEFORE I `bDELETE`2 YOU!  Next time I will.
+
+  @do goto doorguard
+  @end
+
+@if responce is 2 then do
+  @begin
+  @show
+`\`\  The computer playfully slaps your ass as it walks out.
+
+  @do goto doorguard
+
+  @end
+
+    @do goto doorguard
+    @end
+  @readfile myst1a.dat
+`p26
+`p27
+  @
+  @do `p26 is `v40
+  @do delete myst1a.dat
+  @writefile myst1a.dat
+`p26
+`p27
+  @
+  @do goto doorguard
+  @end
+
+
+
+@if responce is 2 then do
+ @begin
+ @show
+`r0`c  `r1 Ownership Options `r0
+
+  `2You retrieve your deed and carefully look it over.
+   
+   @do `v01 is 1
+   @do write
+`x`x
+   @choice
+Transfer deed to someone else
+Sell property back to the bank for `$10000`%.
+Do nothing of the sort
+ @if response is 1 then do
+   @begin
+   @show
+`\`\  `2Transfer to whom?
+   @chooseplayer `p20
+
+   @if `p20 is 0 then do
+    @begin
+    @show
+  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+    @end
+   @do `s02 is getname `p20
+   @show
+`2  Are you sure you wish to give your Inn to `0`s02`2?
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do delete myst1.dat
+  @writefile myst1.dat
+`p20
+`s01
+0
+0
+0
+0
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has transferred ownership of Myst Inn to you. 
+  Password to enter bedroom will remain `0"`s01"`2 unless
+  `2you come by and change it.
+
+    @do addlog
+  `0`n`2 has given `%Myst Inn`2 to `0`s02`2!
+     @routine seperate in gametxt.ref
+
+    @show
+`\`\  `2Deed transfered.  Oh well - it was fun while it lasted.`\`\`k
+   @do goto done
+   @end
+  @if response is 2 then do
+    @begin
+    @show
+`\`\`2  Are you sure you wish to sell your Inn back to the bank?`\
+@do `v01 is 1
+@do write
+`x`x
+@choice
+Yes
+Not on your life.
+ @if responce is 2 then do
+   @begin
+    @show
+`\`\  `2You decide to keep your domain - for now.`\`\`k
+    @do goto startg
+   @end
+
+  @do `p30 is 11
+  @do `v40 is 10000
+  @routine widthdraw in vaults.ref
+  @do delete myst1.dat
+  @do delete myst1a.dat
+  @do money + 10000
+  @show
+`\`\  `%INN SOLD!`2`\`\`k
+    @do addlog
+  `0`n`2 has sold `%Myst Inn`2 back to the bank!
+    @routine seperate in gametxt.ref
+    @do goto done
+    @end
+
+
+  @do goto startg
+ @end
+
+@if responce is 1 then do
+  @begin
+  @do write
+`\`\  `0"And the new password, s&sir?" `2(enter `4NONE`2 for no access to anyone)`\  `2Password:`x
+  @do readstring 40 `s01 `s01 
+  @do `p20 is length `s01
+  @if `p20 < 2 then do
+   @begin
+   @show
+`\`\  `2You decide the current password is ok.`\`\`k
+   @do goto startg
+   @end
+  @do delete myst1.dat
+  @writefile myst1.dat
+&playernum
+`s01
+0
+0
+0
+0
+@show
+`\`\  `0"Yes s&sir, I will not forget it!" `2the Innkeeper promises.`\`\`k
+   @do goto startg
+  @end
+
+@drawmap
+@update
+               
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#sign
+@do moveback
+
+ @if myst1.dat exist false then do
+ @begin
+ @do saybar
+Myst Inn - For Sale! Enquire inside.
+ @end 
+
+@if myst1.dat exist true then do
+ @begin
+@readfile myst1.dat
+`p20
+`s01
+@
+@do `s01 is getname `p20
+ @do saybar
+`2Property of `0`s01`2.
+ @end 
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#innkeeper
+@do moveback
+
+@if myst1.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@readfile myst1.dat
+`p20
+`s01
+@
+
+@if `p20 is &playernum then do
+  @begin
+  @do moveback
+  @do saybar
+`0Innkeeper: `2Greetings, s&sir!
+  @closescript
+  @end
+
+
+
+@if myst1a.dat exist false then do
+  @begin
+  @writefile myst1a.dat
+200
+0
+  @
+  @end
+
+  @readfile myst1a.dat
+`p26
+`p27
+  @
+
+
+@do `v01 is 1
+@show
+`r0`c  `r1  `%Getting a room  `r0
+
+`2  The Innkeeper looks at you.  `0"Kin I getcha a room?  Today it costs
+  only `$$`p26!`2"
+
+@do write
+`x`x
+@choice
+Yeah, what a great deal.
+Shyeah, right.
+@if responce is 3 then do
+        @begin
+        @do `p69 is 24
+        @do write
+`\ Myst Ville is now your home. `\`k
+        @do goto innkeeper
+        @end
+@if responce is 1 then do
+  @begin
+  @if money < `p26 then do
+    @begin
+    @show
+`\`\  `2You sort of lack the funds right now.  Looks like you're sleeping
+  outside...
+
+`k
+   @do goto innkeeper
+   @end
+
+  @do money - `p26
+  @do `p27 + `p26
+  @do delete myst1a.dat
+  @writefile myst1a.dat
+`p26
+`p27
+  @
+   @writefile mail\mail`p20.dat
+  `0Business note:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has stayed at your Inn!  Cha-CHING!
+
+  @do y - 2
+  @drawmap
+  @update
+  @do saybar
+`0Bartender:  `2"Great! Enjoy your stay, and leave a compliment!"
+  @closescript
+  @end
+
+@drawmap
+@update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#pass2
+@if myst1.dat exist false then do
+  @begin
+  @closescript
+  @end
+
+@if &lastx is 41 then do
+  @begin
+  @closescript
+  @end
+
+@readfile myst1.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@do moveback
+
+  @do `s02 is getname `p20
+  @do upcase `s01
+  @if `s01 is NONE then do
+   @begin
+  @do moveback
+  @do saybar
+`0Innkeeper:  `2No one is allowed over there.. it's private.
+
+   @closescript
+   @end
+
+  @show
+`r0`c  `r1 Entrance to the private area `r0
+
+`2  `2The Innkeeper looks over at you.  `0"Hey!  What business do you have
+  going in there?"
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Offer an explanation
+Nevermind
+  @if response is 1 then do
+   @begin
+   @do write
+`\`\  `2Say what? :`x
+  @do readstring 40 NIL `s03 
+  @do upcase `s03
+  @do upcase `s01
+
+  @if `s03 is `s01 then do
+    @begin
+    @show
+`\`\  `0"Ok, go on in then!"`\`\`k
+    @do x + 1
+    @drawmap
+    @update
+    @closescript
+    @end
+   @writefile mail\mail`p20.dat
+  `0Inkeeper Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 attempted to get to the private bedroom by saying
+  `0"`s03"`2.  `2He was `bNOT`2 allowed in.
+
+   @show
+`\`\  `2The Innkeeper isn't impressed.`\`\`k
+   @do moveback
+   @do goto done
+   @end
+
+  @do goto done
+
+
+ @#done
+ @drawmap
+ @update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#pass1
+@readfile myst1.dat
+`p20
+`s01
+@if `p20 is &playernum then do
+  @begin
+  @closescript
+  @end
+
+@if &lasty is 16 then do
+  @begin
+  @do moveback
+  @do saybar
+`0Innkeeper:  `2You need to pay me before you can go back there.
+  @end
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#CHATWALL
+@do moveback
+@busy
+@show
+`r0`c  `r1  Write your Compliments  `r0
+
+@if myst2.txt exist false then do
+ @begin
+ @writefile myst1.txt
+  `%Billy `2: `0I thought this place was Great!
+ @end
+
+@if myst2.txt exist true then do
+ @begin
+ @displayfile myst2.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile myst2.txt
+  `%`n`2 : `0`s03
+ @do trim myst2.txt 17
+ @drawmap
+ @update
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+@#tresure
+;team treasury
+@do moveback
+@do `p20 is 0
+@if mtres.dat exist true then do
+  @begin
+  @readfile mtres.dat
+`p20
+  @
+  @end
+
+@clearblock 20 21
+@do move 3 21
+@do write
+`r0`2  Treasury is at `$$`p20`2 - (`0T`2)ake, (`0L`2)eave or (`0N`2)evermind? [`0N`2] :`%`x
+@do readspecial `s01 NTL
+@if `s01 is N then do
+ @begin
+ @do saybar
+You close the safe, carefully.
+ @closescript
+ @end
+
+@if `s01 is T then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 0
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > `p20 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Not enough in here for that.
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You take nothing.
+    @closescript
+   @end
+//withdrawl.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile mtres.dat
+`p20
+  @
+
+  @if `p20 < `p21 then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+Oh no!  Someone took the money while you were thinking about it!
+    @closescript
+    @end
+
+    @do `p20 - `p21
+    @do money + `p21
+  @do delete mtres.dat
+  @writefile mtres.dat
+`p20
+  @
+    @clearblock 21 24
+    @do saybar
+`2You take `$`p21`2 from the treasury.
+
+//if not owner, lets notify him
+
+@readfile myst1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Sosen Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has taken `$$`p21 `2from the treasury.
+
+  @end
+  @closescript
+  @end
+
+@if `s01 is L then do
+  @begin
+  @do move 5 23
+  @do write
+`0`r0Amount? `0: `%
+ @do readnum 10 &money
+  @do `p21 is `v40
+  @if `p21 < 1 then `p21 is 0
+  @if `p21 > money then do
+    @begin
+    @clearblock 21 24
+    @do saybar
+You are not carrying that much!
+    @closescript
+    @end
+
+ @if `p21 is 0 then do
+   @begin
+    @clearblock 21 24
+    @do saybar
+You decide to leave nothing.  Ha!
+    @closescript
+   @end
+
+  @do money - `p21
+
+//deposit.. we read from the file again so cheating won't be possible with
+//correct timing
+  @readfile mtres.dat
+`p20
+  @
+  @do `p20 + `p21
+  @do delete mtres.dat
+  @writefile mtres.dat
+`p20
+  @
+    @clearblock 21 24
+//if not owner, lets notify him
+
+@readfile myst1.dat
+`p20
+`s01
+@
+;load owner and current password
+
+@if `p20 not &playernum then do
+  @begin
+   @writefile mail\mail`p20.dat
+  `0Sosen Inn Reports:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0  `n`2 has deposited `$$`p21 `2to the treasury.
+
+  @end
+
+
+    @do saybar
+`2You leave `$`p21`2 in the treasury.
+  @closescript
+
+
+  @end
+
+

@@ -1,0 +1,451 @@
+; Script file SCORP.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:22 2001
+
+@DECLARE oldman 000000374
+@DECLARE drunk 000001654
+@DECLARE hotlady 000003547
+@DECLARE drunklady 000003726
+@DECLARE healers 000003897
+@DECLARE bartender 000005605
+@DECLARE dealer 000007020
+@DECLARE abstart 000007074
+@DECLARE maid 000007509
+@NOCHECK
+; End of .REF index
+
+@#OLDMAN
+@do saybar
+You walk up to the oldman...
+@do moveback
+@do `p70 is 80
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do move 24 9
+@do write
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 24 13
+@do write
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 24 10
+@do write
+³                        ³
+@do move 24 11
+@do write
+³                        ³
+@do move 24 12
+@do write
+³                        ³
+@do move 25 10
+@choice
+Damn you are really old
+Kick The Old man.
+Nevermind
+@if response is 1 then do
+ @begin
+ @do move 16 15
+ @do write
+`0"Damn you i am only 90 something.... That is not old..."`l`l`l
+ @do move 16 16
+ @do write
+`$"That is not old.. if you are a tree.." `2you giggle`l`l`l
+ @do move 16 17
+ @do write
+`0"You better run" `2he yells`l`l`l
+ @do move 16 18
+ @do write
+`$"Why what are you going to do?? hehehe" `2you snicker.`l`l
+ @key
+ @drawmap
+ @update
+ @end
+
+@if response is 2 then do
+ @begin
+ @show
+`\`\  `4"Aaawwww!!! Damn you!! `2The old man shouts.
+
+`k  `$"Ha Ha!" `2You better run now....
+
+ `k
+ @end
+
+@if response is 3 then do
+ @begin
+ @show
+ `\`\  `$"Nevermind... I forgot." `2you tell the old man.
+ 
+     `0"I do that often ..... what did you say?" `2asks the old man.
+
+  `k
+  @end
+@end
+
+@#DRUNK
+@do `p70 is 81
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do move 24 9
+@do write
+ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+@do move 24 13
+@do write
+ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+@do move 24 10
+@do write
+³                        ³
+@do move 24 11
+@do write
+³                        ³
+@do move 24 12
+@do write
+³                        ³
+@do move 25 10
+@do `v01 is 1
+@choice
+Let me have some of that
+Are you drunk
+Nevermind
+@if response is 2 then do
+ @begin
+ @do move 23 15
+ @do write
+`4"Nop... I ani't drink..." hontest.`l`l`l`l`l`l
+ @do move 33 17
+ @do write
+`$"Ha Ha!"`l`l`l`l`l`\
+ @key
+ @drawmap
+ @update
+ @end
+
+@if response is 3 then do
+ @begin
+ @do move 23 15
+ @do write
+`$"Nevermind... "`2you tell the drunk man.`l`l`l
+ @do move 25 17
+ @do write
+`0"Wht dif yu say?" `2asks the old man.`l`l`l
+@key
+@drawmap
+@update
+  @end
+@if response is 1 then do
+@begin
+@if `p96 > 15 then do
+  @begin
+  @drawmap
+  @update
+  @do saybar
+`4You are already drunk!
+  @closescript
+  @end
+ @show
+`c
+`\`\  `0"Umm sure... guess. so. Just don't dirk it oll ..."
+
+
+`k  `$You chug the bottle... 
+  
+ `k
+@drawmap
+@update
+@DO SAYBAR
+@do moveback
+@do `p30 random 4 1
+@if `p30 is 1 then do
+@begin
+@do saybar
+`2You drink the stuff and you throw-up... But, get 1 dodge point.
+@do `p96 + 3
+@do `p05 + 1
+@do `p02 / 15
+@end
+
+@if `p30 is 2 then do
+@begin
+@do saybar
+`2You drink the stuff and you get 2 muscle points but loose 1 doge point.
+@do `p96 + 5
+@do `p04 + 2
+@do `p05 - 1
+@end
+
+@if `p30 is 3 then do
+@begin
+@do saybar
+`2You drink the stuff and you get 5 More MAX Hit Point's but loose 1 dodge point.
+@do `p96 + 5
+@do `p03 + 5
+@do `p05 - 1
+@end
+
+@if `p30 is 4 then do
+@begin
+@do saybar
+`2You drink the stuff and you start to look better you get 1 charm!
+@do `p96 + 4
+@do `p08 + 1
+@end
+
+@end
+
+@#HOTLADY
+@do `p70 is 82
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`$Go away... Don't touch me i am carring mace...
+@do moveback
+
+@#DRUNKLADY
+@do `p70 is 83
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`2Hey hot suff.. Want some of this??
+@do moveback
+@end
+
+@#healers
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+
+`2  Devin looks you over for wounds.
+
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+
+
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+
+
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+
+`k
+ @end
+
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Devin informs you.
+
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+
+  `2You gulp down the weird black pills
+
+  `4HIT POINTS GO DOWN TO 1.
+
+`k
+ @end
+
+  @drawmap
+  @update
+  @closescript
+  @end
+
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+
+@show
+`0"You have no ailments, come back later," `2Devin laughs.
+
+`k
+@drawmap
+@update
+
+@#bartender
+@do moveback
+@if `p09 < 3 then do
+  @begin
+  @do saybar
+`0Brandon: `4Get the hell outta here I've never heard of you!
+  @closescript
+  @end
+@do `v01 is 1
+@show
+`r0`c  `r1 Talking to the brandon `r0
+
+  `0"What do ya want, punk?"
+
+@do write
+`x`x
+@choice
+Get a drink
+Conduct business with the brandon
+Trade in gems
+Leave
+@if responce is 1 then do
+        @begin
+        @show
+
+       I just ran out of drinks.
+
+       @key
+        @end
+@if responce is 2 then do
+  @begin
+  @do `p20 is 10
+  @run getquest in quest.ref
+  @end
+@if response is 3 then do
+@begin
+;3 gems for `i54 Silver potion,  3 gems for `i53 Gold, `i52 red.
+ @if `p19 < 3 then do
+   @begin
+   @show
+`\`\  `0"Hey, you need at least three gems to get a potion!"
+`\`k
+   @do goto bartender
+   @end
+  @do `v01 is 1
+  @show
+`\`\  `0"Okay, what kind a potion you want?"`2
+
+  @do write
+  `x`x
+  @choice
+Silver Potion
+Gold Potion
+Red Potion
+   @if response is 1 then do
+    @begin
+    @do `p19 - 3
+    @do `i54 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+   @if response is 2 then do
+    @begin
+    @do `p19 - 3
+    @do `i53 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+   @if response is 3 then do
+    @begin
+    @do `p19 - 3
+    @do `i52 + 1
+    @show
+`\`\  `0"Allright, there you go"`2
+`\`k
+    @end
+  @end
+@drawmap
+@update
+@end
+
+@#DEALER
+@offmap
+@do moveback
+@do `v01 is 1
+@label abstart
+@show
+`r0`c  `4X-Acutioner's Weapon's And Armour
+
+`2  You lots of weapons and things... You walk up to X-Acutioner... He opens
+    His Jacket and shows you his stuff...
+
+@do write
+`x`x
+@choice
+Examine his wares.
+Nevermind
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  9
+  12
+  13
+  14
+  15
+  16
+  34
+  36
+  37
+  49
+  @end
+
+@if responce not 2 then goto abstart
+@drawmap
+@update
+
+@#MAID
+@do `p70 is 84
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`$Hello how may I help you??
+@end

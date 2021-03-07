@@ -1,0 +1,40 @@
+; Script file CANOEDAY.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:37 2001
+
+@DECLARE canoe 000000228
+@DECLARE top 000000519
+@DECLARE end 000000846
+@DECLARE nomore 000000856
+@NOCHECK
+; End of .REF index
+
+@#canoe
+@datanewday canoe.chk
+@dataload canoe.chk 1 `p20
+@if `p20 is 0 then do
+        @begin
+        @do write
+      `%Processing Canoe maintence.`\
+        @do `p20 is 1
+        @datasave canoe.chk 1 1
+        @do `p21 is 1
+        @do goto top
+        @end
+@closescript
+
+@label top
+@dataload canoe.idf `p21 `p20
+@if `p20 > 0 then do
+ @begin
+ @DO `s01 IS GETNAME `p21
+ @dataload canoeday.idf `p21 `p20
+ @do `p20 + 1
+ @datasave canoeday.idf `p21 `p20
+ @do write
+  `$`s01 `%is renting a canoe and hasn't paid in `p20 days now.`\
+ @end
+@do `p21 + 1
+@if `p21 > 200 then goto end
+@do goto top
+
+@#end
+@#nomore

@@ -1,0 +1,198 @@
+; Script file ATLANTIS.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:20 2001
+
+@DECLARE welcome 000000448
+@DECLARE bob 000000550
+@DECLARE lassie 000000739
+@DECLARE healer 000000913
+@DECLARE mainsign 000002638
+@DECLARE sign1 000002733
+@DECLARE sign2 000002821
+@DECLARE sign3 000002904
+@DECLARE sign4 000002990
+@DECLARE sign5 000003060
+@DECLARE sign6 000003152
+@DECLARE sosenat 000003232
+@NOCHECK
+; End of .REF index
+
+@#WELCOME
+@do moveback
+@do saybar
+`%Guard: `2Welcome to Atlantis `n!`2  Becareful where you step!!
+ 
+@#BOB
+;Weapons store of Atlantis
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1  Bob's Store  `r0
+ 
+ 
+ 
+ 
+@buymanager
+64
+58
+49
+@drawmap
+@update
+ 
+@#LASSIE
+;Armor store of Atlantis
+@do moveback
+@offmap
+@busy
+@show
+`r0`c                           `r1  Lassie's Store  `r0
+@buymanager
+37
+59
+@drawmap
+@update
+ 
+@#HEALER
+@offmap
+@do moveback
+@do `v01 is 1
+@show
+`r0`c  `%The Healers
+ 
+`2  Joel looks you over for wounds.
+ 
+@do write
+`x`x
+@if `p02 < `p03 then do
+ @begin
+@do `p20 is `p03
+@do `p20 - `p02
+@do `p20 / 2
+ 
+ 
+ @show
+`0"You don't look so good, friend!  I'll fix ya up for `$`p20`0 gold, k?"
+ 
+@do write
+`x`x
+@choice
+Heal yourself for `$$`p20`%. (you have `$$&money`%)
+Limp on out.
+@show
+`\
+@if response is 1 then do begin
+ @begin
+ @if money < `p20 then do
+  @begin
+  @show
+  `0"Sorry old s&boy, we don't do charity work here."
+ 
+ @do write
+`x`x
+ @choice
+Well Christ!  How am I supposed to make money when I can barely walk?
+Jesus, how 'bout a little compassion for once in your life old man!
+How 'bout some of your 'special' pills then?
+Yes sir.
+@show
+ 
+ 
+@if response is 4 then do
+ @begin
+ @show
+  `0"That's a good lad, now get along with you!" `2 he laughs.
+ 
+`k
+ @end
+ 
+@if response is 1 then do
+ @begin
+ @show
+  `0"Damn it, s&boy, be a s&man for once in your life!"`2 he yells.
+ 
+`k
+ @end
+@if response is 2 then do
+ @begin
+ @show
+  `0"I cannot respect a man who doesn't work," `2Joel informs you.
+ 
+`k
+ @end
+@if response is 3 then do
+ @begin
+ @do `p02 = 1
+ @show
+  `0"Sure.  Take uh.. these." `2 he snickers.
+ 
+  `2You gulp down the weird black pills
+ 
+  `4HIT POINTS GO DOWN TO 1.
+ 
+`k
+ @end
+ 
+  @drawmap
+  @update
+  @closescript
+  @end
+ 
+@do money - `p20
+@do `p21 = `p03
+@do `p21 - `p02
+@do `p02 = `p03
+@show
+  `2You feel much better as `0`p21`2 hitpoints are restored.
+ 
+`k
+  @end
+  @drawmap
+  @update
+  @closescript
+@end
+ 
+@show
+`0"You have no ailments, come back later," `2Joel laughs.
+ 
+`k
+@drawmap
+@update
+ 
+@#MAINSIGN
+@do moveback
+@do saybar
+`6These signs are used to communicate with the outside.
+ 
+@#SIGN1
+@do moveback
+@do saybar
+`%Barak : `6Mom! You are always ruining my life!
+ 
+@#SIGN2
+@do moveback
+@do saybar
+`%Father : `6Oh yes, I'm dead!! LALALALALA!
+ 
+@#SIGN3
+@do moveback
+@do saybar
+`%Mother : `6Hmmm, now where'd that kid go????
+ 
+@#SIGN4
+@do moveback
+@do saybar
+`%Timmy : `6Lassie, OH Lassie!
+ 
+@#SIGN5
+@do moveback
+@do saybar
+`%Custer : `6HELP! The calivery is going down! AGHH!
+ 
+@#SIGN6
+@do moveback
+@do saybar
+`4DHWLJUHFDUI BING! `6Man, its broken!
+ 
+@#SOSENAT
+@do moveback
+@do saybar
+`6Sosen Village (41 1/2 miles) ------> 

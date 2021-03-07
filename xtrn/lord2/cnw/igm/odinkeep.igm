@@ -1,0 +1,45 @@
+
+                     Odin's Keep by Peter Jackson V2.00
+
+                           AN IGM FOR LORD2 1.00+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : Yes!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (3)
+  Free?                                           : Yes!
+
+
+  Description:
+    
+  To install, unzip into your LORD2 dir and type:
+
+  IGM ODINKEEP.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk to the East Forest that is east of Porttown. 
+  
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Odin's Keep `2by `0Peter Jackson
+replacescreen: 1037 1 show
+;877
+replacescreen: 879 2 noshow
+
+replacescreen: 796 3 noshow
+;797
+replacescreen: 798 4 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2It's a great Igm, read Sysop.doc for full details.

@@ -1,0 +1,53 @@
+
+                            SLAYER's Domain v2.01
+
+                             Ben Mondoux
+
+                    
+
+  Is registered version of LORD2 required to use? : Yeppers!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : Yes!
+  Adds new .refs?                                 : Yes! (2)
+  Replaces screens?                               : Yes! (2)
+  Adds screens?                                   : Yes! (9)
+  Free?                                           : Of course! 
+
+
+Description:  A groovy IGM along the jagged beach!  Tons of shops, training  
+centre, casino, stables (used once a day) and two quests.
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `1S`4L`!A`3Y`@E`%R`0's Domain v2.01 `2by`0 Ben Mondoux
+replacescreen: 172 1 show
+
+replacescreen: 173 2 show
+
+replacescreen: 252 3 noshow
+
+replacescreen: 253 4 noshow
+
+replacescreen: 332 5 noshow
+
+replacescreen: 333 6 noshow
+
+;775
+replacescreen: 854 7 noshow
+
+replacescreen: 855 8 show
+
+replacescreen: 856 9 show
+
+replacescreen: 935 10 show
+
+replacescreen: 1191 11 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+   Shops etc. and two quests, one with a moving sequence.  Email bug reports,
+   comments and suggestions to me at bmondoux@geocities.com.  I really 
+   apreciate feedback.

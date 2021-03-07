@@ -1,0 +1,246 @@
+; Script file PENTAGRM.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:21 2001
+
+@DECLARE deathshift 000000859
+@DECLARE show 000001330
+@DECLARE huh 000002361
+@DECLARE fightdeath 000002976
+@DECLARE oops 000003576
+@DECLARE punish 000003791
+@DECLARE bill 000004063
+@DECLARE fred 000004183
+@DECLARE statue 000004357
+@DECLARE staff 000004453
+@DECLARE bloody1 000004700
+@DECLARE bloody2 000004809
+@DECLARE rudy 000004888
+@DECLARE julia 000005072
+@DECLARE kita 000005266
+@NOCHECK
+; End of .REF index
+
+;For THE VOODOO TEMPLE! This .REF has more stuff for Rudy's Pentagram!
+;This .REF is 100% Writin by VooDoo KnighT! KNiGHTSoFT(R).
+
+;
+; This .REF is no longer 100% by Voodoo Knight. sorry man..
+;
+; I've added a few npcs routines in here, and fixed a little bug
+;                                       Greenie - CNW
+;
+
+
+@#deathshift
+@do moveback
+@clear screen
+
+  @if `p07 > -5 then do
+  @if `p07 < -5 then goto show
+
+   @do `p02 is 1
+   @begin
+   @show
+
+`2     DEATHSHIFT reads your mind, without Hesitating, he takes his Staff Of
+     Destruction and fires an incredible beam into your chest!
+
+`2     Getting up back on your feet, you decide to avoid the guy!
+
+     `4You need AT LEAST -5 Alignment to talk with THE GOD OF DESTRUCTION!
+
+@key
+@drawmap
+@update
+@closescript
+
+@#show
+@clear screen
+@show
+[2J[0m
+[56CÜÜÜÜ 
+[44CÜÜÜ [33m°±Ü²ß[37mÜ[1;47m°±²Û²±°[0mßß   
+[19C[1;30mÜ [0;33mÜ    [37m[14Cßß[1;47m°°±²²±°[0mÜÜÜ[1;47m°±°[0mÛßßß
+[15C[1;30m Ü[47m²±°[37m±[0mÜ[33mß²±  [37m[14C[1;30m   [0mßßß[1;47m°±°[0mÛßßß  
+[15C[1;30m  ßß[47m²°[37m°±[0mÜÜ[1;47m°[30;40mß[0m
+[19C[1;30m  ßß[0mßß 
+
+[1;30m       [0m[8C[1;30m"yyeeeeessssssss moooorrrtttaaalllll........?"[0m
+@key
+@do moveback
+@clear screen
+@show
+
+`$     "Hi Ugly! Nice place ya got around here!" `2you say with a smile.
+
+`8     "uuuhhh.... thou tongue shalt be removed for thee words!"
+
+@DO `V01 is 1
+@choice
+Huh!?
+Prepare to DIE DEATHSHIT!
+Punish me my lord, for I am inferior...
+Umm... oops! Gotta go! I think I'm in the wrong Dimension!
+@if response is 1 then do
+ @begin
+ @do goto huh
+ @end
+@if response is 2 then do
+ @begin
+ @do goto fightdeath
+ @end
+@if response is 3 then do
+ @begin
+ @do goto punish
+ @end
+@if response is 4 then do
+ @begin
+ @do goto oops
+ @end
+
+@#huh
+@clear screen
+@show
+
+`8     "Thou DARE question thee?" `2DeathShift screams out pointing his staff
+     in your direction.
+
+`$     "What!? No, of course not! What made you think that?" `2you explain.
+
+`8     "THOU ASKED ANOTHER QUESTION!!!" `2he says in a even louder voice.
+
+`$     "AAAAHHHH!!! No no! Please! I didn't do it in purpose!!!" `2you say
+     begging on your knees.
+
+`8     "Thou shall leave thee alone now!" `2DeathShift says by putting his
+     staff down.
+
+`2     You decide to leave DeathShift the God Of Destruction alone!
+
+@key
+@drawmap
+@update
+@closescript
+
+@#fightdeath
+@do moveback
+@do `p02 is 1
+@do x is 36
+@do y is 18
+@clear screen
+@show
+
+`2     You raise your s&weapon `2at DEATHSHIFT...
+
+`8     "Thee mortal wish to CHALLENGE ME? THEE GOD OF DESTRUCTION!?"
+
+`2     DeathShift, without hesitating, grabs his STAFF OF DESTRUCTION and blasts
+     an incredible `8Ray Of Dark Power `2into your chest, you're projected away
+     and land on the ground!  You're very lucky, DeathShift's Staff was
+     weak on power because he used it awhile ago... you've been badly injured
+     but you're still alive!
+
+@key
+@drawmap
+@update
+@closescript
+
+@#oops
+@clear screen
+@show
+
+`8     "Farewell mortal! Thou shalt return another day!"
+
+`$     "I'll think about it!" `2you say and wave goodbye to the evil figure.
+
+@key
+@drawmap
+@update
+@closescript
+
+@#punish
+@clear screen
+@show
+
+`8     "Thou punishment will be to pray to THEE!"
+
+`$     "Yes my lord!" `2you reply in a Darth Vader voice. =)
+
+`2     DEATHSHIFT gives you a sign to leave him alone.     
+@if `p56 is 5 then goto bill
+@if `p56 is 0 then goto fred
+
+@#bill
+@show
+
+`8    "Remember your punishment!" `2DEATHSHIFT points out.
+
+@key
+@drawmap
+@update
+@closescript
+
+@#fred
+@do `p07 - 10
+@show
+
+`4    For being as evil as you are, you're alignment just dropped by 10!
+@do `p56 is 5
+@end
+
+@key
+@drawmap
+@update
+@closescript
+
+
+@#statue
+@do saybar
+`7Here's a statue of DEATHSHIFT... and he looks alot nicer as a Statue!
+
+@#staff
+@do moveback
+@do `p20 random 2 1
+@if `p20 is 1 then saybar
+`7This is DEATHSHIFT's `4Staff Of Destruction`7! Look but don't touch!
+@if `p20 is 2 then saybar
+`4Staff Of Destruction `7<Made In Japan> `%... WOW! Now that's quality!
+
+@#bloody1
+@do saybar
+`%These are the remaining `4body parts `%of the last person who fought DEATHSHIFT!
+
+@#bloody2
+@do saybar
+`%This guy's `@skin `%has been pulled Inside-Out! Yuck!
+
+@#rudy
+@do `p70 is 25
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Rudy: `2I've completed the Pentagram to DEATHSHIFT's Dimension!
+@end
+
+@#julia
+@do `p70 is 26
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Julia: `2DeathShift can read your mind! If you are not evil, you will die!
+@end
+
+@#kita
+@do `p70 is 27
+@do moveback
+@routine talk in talk.ref
+@if `p20 is 0 then do
+@begin
+@do saybar
+`0Kita: `2Welcome to Rudy's Pentagram Gateway! Lord DeathShift awaits you!
+@end
+
+;DeathShift is created by VooDoo KnighT from his
+;"Warriors Of The Mystic Mountain" AD&D Campaign! Please don't rip him off!

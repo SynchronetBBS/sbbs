@@ -1,0 +1,47 @@
+
+                           Knotwood Village V2.50
+
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : No!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Super simple IGM for LORD2, to be used as a template.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM KNOTWOOD.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, walk into GreenTree and down the steps near the fenced sheep.
+
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0Knotwood Village `2by `0Sean E. Andersen aka Sneakers
+replacescreen: 67 1 noshow
+
+replacescreen: 998 2 noshow
+
+replacescreen: 999 3 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `2Well, this is my first `0LORD2`2 IGM, hope you like it. Visit the shops
+  and castle, or even travel to many locations. Just added is a wishing
+  fountain. It would've been nice to have an option to steal money from the
+  fountain. :) I did what I can, and would've liked to added much more to it.

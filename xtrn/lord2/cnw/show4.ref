@@ -1,0 +1,520 @@
+; Script file SHOW4.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:33 2001
+
+@DECLARE info 000000626
+@DECLARE infos 000002498
+@DECLARE raises 000002546
+@DECLARE startfights 000003813
+@DECLARE springy1 000004192
+@DECLARE win 000004784
+@DECLARE die 000005321
+@DECLARE wakeup 000005525
+@DECLARE levelup 000005725
+@DECLARE levels 000005838
+@DECLARE ok 000005867
+@DECLARE statue 000005898
+@DECLARE stat 000008150
+@DECLARE statue1 000008184
+@DECLARE statue2 000008718
+@DECLARE statue3 000009292
+@DECLARE won1 000009809
+@DECLARE won2 000010076
+@DECLARE won3 000010386
+@NOCHECK
+; End of .REF index
+
+@#info
+@do moveback
+@busy
+@offmap
+@clear screen
+@show
+`c
+       `2This is the fightin' zone!  To my left is the level up castle, and
+     to my right is the monster cave.  Which would you like to learn more
+     about?
+
+@do `v01 is 1
+@choice
+Level Up Castle
+Monster Cave
+Neither
+@if responce is 1 then do
+ @begin
+  @show
+  `c
+       `2That is simply a place where you can level up, just like Barak's
+     Training Center.  If you fail here, though, it won't count as a failure
+     at Barak's.
+
+       `3Spr`7ing`4Fa`6ng `2doesn't believe in that stupid Nightmare Dream leveling
+     crap.  He prefers to fight you himself, so that he can truly judge if
+     you are worthy or not.  Don't worry though, he won't go at you with all
+     his might.  He's really very kind.
+   `\`k
+  @do goto infos
+ @end
+@if responce is 2 then do
+ @begin
+  @show
+  `c
+       `2At the monster cave, you enter a dank, dark, deadly, and mysterious
+     cavern, where there are several random monsters and events for you to run
+     into.  Each time you enter it, you lose 5 turns.  Plus, some of the events
+     do some really horrible things.  Some are good though.  Anyway, about the
+     monsters you fight...
+
+        There are three groups of monsters, each consisting of 7 individual
+     monsters.  You can fight the first group from level 1 to level 20, the
+     second from 21 to 40, and the third from 41 on.  You will still fight the
+     monsters from the earlier groups, as well as encounter the same events,
+     when you are on the harder groups.  There will just be some new ones as
+     well.  Oh, and yes, you CAN really die there.  It saves you the problem
+     of haveing to walk around and waste tons of turns trying to get in a
+     fight.
+
+   `\`k
+  @do goto infos
+ @end
+@if responce is 3 then do
+ @do goto infos
+
+@#infos
+ @drawmap
+ @update
+ @closescript
+
+@#raises
+;can they raise their level?
+
+@do `p20 is `p09
+@do `p20 * 100
+@do `p20 * `p09
+
+@if `p20 > `p01 then do
+ @begin
+ @do `p21 is `p20
+ @do `p21 - `p01
+ @show
+
+
+  `2Next level raise at `%`p20`2.
+
+  `0"You need exactly `%`p21`0 more experience before your next level raise!"
+
+  `2Man, that SUCKS!!
+
+`k
+@run levels
+@closescript
+@end
+
+ @dataload show3.shw &playernum `p20
+ @if `p20 is 1 then do
+ @begin
+ @show
+
+
+  `0"You can try again tomorrow."
+
+  `2You glumly leave...
+
+`k
+@do goto levels
+@closescript
+@end
+
+
+ @show
+
+
+  `0"You have been sitting at level `p09 long enough."
+
+@if `p09 IS 1 then do
+ @begin
+ @show
+  `$"Cool!  So where is the master I fight?" `2you beam with pride.
+
+`k  `0"Master?  Why, you get to fight `3Spr`7ing`4Fa`6ng`0 himself!" `2the booth
+ master exclaims.
+
+  `2Alright!  A chance against the master himself!
+
+@end
+@show
+`k
+`c  `r1`4 HAVING FUN WITH SPRINGFANG `r0
+
+`2  The Booth master leads you into the throne room.
+
+    "This s&boy thinks they can defeat you and become a s&man!"
+
+`k  `3Spr`7ing`4Fa`6ng `2looks up.  `2"`4Well, we'll have to go easy on s&him, then!`2"
+
+    He comes at you hog-tied.  This should be easy!
+
+`k
+@do goto startfights
+@closescript
+
+@#startfights
+
+;do math to create monster
+
+@do `p21 is `p03
+@do `p25 is `p09
+;@do `p25 * `p25
+@do `p25 random `p25
+@do `p21 + `p25
+
+@do `p22 is S&wep_num
+@do `p22 + `p04
+
+@do `p23 is S&arm_num
+@do `p23 + `p05
+
+@do `p24 random `p22
+@do `p21 + `p24
+@do `p24 random `p22
+@do `p21 - `p24
+
+@do `p24 random `p22
+@do `p24 / 5
+@do `p22 - `p24
+
+@routine springy1
+
+@#springy1
+@fight
+;name
+`3Spr`7ing`4Fa`6ng
+;string said when you see him
+Man, he doesn't look so tough NOW...
+;power move kill string
+You catch him off guard and send him to the floor!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+slashes you|`p22
+hops on you|`p22
+chokes you|`p22
+slaps you|`p22
+hurts you|`p22
+;defense
+`p23
+;gold reward
+0
+;experience
+0
+;hit points
+`p21
+;if win: ref file|name or NONE
+SHOW4.REF|WIN
+;if lose: ref file|name or NONE
+SHOW4.REF|DIE
+;if runs: ref file|name or NONE
+SHOW4.REF|WAKEUP
+@closescript
+
+@#WIN
+
+@do `p21 is 5
+@do `p03 + `p21
+
+@do `p22 is 2
+@do `p04 + `p22
+
+@do `p23 is 1
+@do `p05 + `p23
+
+
+@do `p09 + 1
+
+@do addlog
+  `r5  `r0 `0`n`2 has beaten `3Spr`7ing`4Fa`6ng `2and become level `p09! `r5  `r0
+@writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@do `p02 is `p03
+@show
+`r0`c  `r1 YOU HAVE FACED A HOG-TIED MAN AND TRIUMPHED! `r0 
+
+  `2You feel proud.
+
+  `%YOU ARE NOW LEVEL `p09.
+
+  `2You gain `0`p21`2 hitpoints,`0 `p22`2 muscle and `0`p23`2 dodge.
+
+`k
+@run levels
+
+@#DIE
+@do `p02 is 1
+@datasave show3.shw &playernum 1 
+@show
+`r0`c  `r4 YOUR HOG-TIED BETTER HAS BESTED YOU `r0 
+
+  `2You scream as you hit the ground.
+
+  You have failed.
+
+`k
+@run levels
+
+@#WAKEUP
+@datasave show3.shw &playernum 1 
+@show
+`r0`c  `r4 YOU ESCAPE - THE ONLY WAY YOU KNOW HOW `r0 
+
+  `2You run away, as `3Spr`7ing`4Fa`6ng `2sits there and laughs...
+
+`k
+@run levels
+
+@#levelup
+  @do moveback
+  @busy
+  @offmap
+  @datanewday show3.shw
+  @clear screen
+  @run raises
+  @end
+
+@#levels
+ @drawmap
+ @update
+
+@#ok
+@drawmap
+@update
+
+@#statue
+ @do moveback
+ @offmap
+ @dataload statue.shw &playernum `p20
+  @clear screen
+  @show
+  `c
+       `2You gaze upon the great statue of `4K`5C`8D`2.  You can't help but stand
+     in awe of his carved majesty.  It almost seems as if it could come
+     to life...  There is an inscription on the base.  It reads:
+
+          `6Whoever shall touch the hilt of `4K`5C`8D`6's sword and prove
+          s&himself worthy shall gain the greatest weapon of all.
+
+@if `i83 is 0 then do
+ @begin
+ @show
+       `2Below the inscription is a hole.  It looks as if you need to put
+     something in it before anything will happen...
+
+       `2You don't have it yet.  Come back later...
+
+ @end
+
+@if `i83 is 1 then do
+ @begin
+ @if `p20 is 0 then do
+ @begin
+ @show
+       `2The `0Mystic Eye `2fits inside the hole perfectly.  Do you want
+     to touch the hilt?
+
+ @end
+@end
+ @if `p20 is 1 then do
+ @begin
+ @show
+       `2The armour is nice, but don't you want the `0sword`2?
+
+ @end
+@if `p20 is 2 then do
+ @begin
+ @show
+       `2You've already gotten the Armour and the Sword.  There isn't
+     anything else.
+
+ @end
+ @do `v01 is 1
+ @choice
+=`i83 1 <`p20 2 Heck no!
+=`p20 2 I'm done here...
+=`i83 0 I can't do anything right now...
+=`i83 1 =`p20 0 Touch the hilt!
+=`i83 1 =`p20 1 Um...  Sure....
+@if responce is 4 then do
+ @begin
+  @show
+  `c
+       `2You reach up confidently and touch the sword hilt.
+
+       Nothing happens.
+
+       Suddenly, the huge statue turns toward you and, oddly enough,
+     it begins to taunt you...
+     `\`k
+  @drawmap
+  @update
+     @do goto statue2
+ @end
+@if responce is 5 then do
+ @begin
+  @show
+  `c
+       `2Hesitatingly, you finger the sword hilt.  The statue appears to break
+     apart, and `4K`5C`8D`2(?) comes at you from inside of it!
+
+       `2"`8So, you think that you are worthy of this sword.  Let us see how
+     well you do against it!`2"
+
+       Suddenly, he raises his sword and charges you!
+     `\`k
+  @drawmap
+  @update
+     @do goto statue3
+ @end
+@if responce is 1 then do
+ @begin
+  @do goto stat
+ @end
+@if responce is 2 then do
+ @begin
+  @do goto stat
+ @end
+@if responce is 3 then do
+ @begin
+  @do goto stat
+ @end
+
+@#stat
+ @drawmap
+ @update
+
+@#statue1
+@fight
+;name
+`4K`5C`8D`2's Spirit
+;string said when you see him
+Oh crap...
+;power move kill string
+The spirit vanishes...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+possesses you|700
+screeches|625
+slashes at you|676
+flits around|701
+does stuff|686
+;defense
+650
+;gold reward
+1000
+;experience
+1500
+;hit points
+3000
+;if win: ref file|name or NONE
+SHOW4.REF|WON1
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#statue2
+@fight
+;name
+`4K`5C`8D`2's Statue
+;string said when you see him
+Did that statue just move?
+;power move kill string
+It crumbles, but comes back together...
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+lands on you|700
+starts an earthquake|725
+throws rocks|776
+jumps around|801
+sits down|786
+;defense
+800
+;gold reward
+2000
+;experience
+3000
+;hit points
+6000
+;if win: ref file|name or NONE
+SHOW4.REF|WON2
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#statue3
+@fight
+;name
+`4K`5C`8D
+;string said when you see him
+I thought he was dead...?
+;power move kill string
+What a wimp!  HA!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+attacks|1000
+slices|925
+dices|986
+juliennes|910
+laughs at you|975
+;defense
+1000
+;gold reward
+20000
+;experience
+10000
+;hit points
+10000
+;if win: ref file|name or NONE
+SHOW4.REF|WON3
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#won1
+  @do addlog
+  `r5  `r0 `0`n`2 has beaten `4K`5C`8D`2's Spirit! `r5  `r0
+  @writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@show
+`c
+       `2You didn't get anything!  Maybe you NEED something?
+       `\`k
+@do goto stat
+
+@#won2
+  @do addlog
+  `r5  `r0 `0`n`2 has beaten `4K`5C`8D`2's Statue! `r5  `r0
+  @writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@show
+`c
+       `2You get the `4K`5C`8D `2Armor!
+       `\`k
+       @do `i84 is 1
+       @datasave statue.shw &playernum 1
+@do goto stat
+
+@#won3
+@do `i85 is 1
+       @datasave statue.shw &playernum 2
+  @do addlog
+  `r5  `r0 `0`n`2 has beaten `4K`5C`8D`2!!!!!!!!!! `r5  `r0
+  @writefile lognow.txt
+                                 `2-`0=`2-`%=`2-`0=`2-
+@show
+`c
+       `2You get the `4K`5C`8D `2Sword!
+       `\`k
+@do goto stat
+

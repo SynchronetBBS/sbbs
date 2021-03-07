@@ -1,0 +1,58 @@
+
+          RED DRAGON TOWN (The town from LORD1) - By VooDoo KnighT
+
+  QUICK INFO:
+
+  Version of LORD2 required to use it              : v1.0 (Not BETA)
+  Is registered version of LORD2 required to use? : Yep(sorry! it does!)
+  Using any LORD2 vars?                           : Yep
+  Overwrites any original .refs?                  : Nope
+  Saves and loads its own vars independently?     : Yep
+  Adds new .refs?                                 : Yep
+  Replaces screens?                               : Yep
+  Adds screens?                                   : Yep
+  Free?                                           : Nope(Scared ya didn't it)
+                                                    
+                                                
+  Description:
+  I'M THE FIRST!!! This IGM was created on August 24 1997 ... I'm the 1ST
+  to have created the Village from LORD 1!!! And it KICKS HEAVY ASS!!! Why?
+  Cuz I'm >>SO<< PROUD OF MY WORK!!! INSTALL IT... I GARANTIE you'll have
+  SO MUCH FUN!!!
+
+  How to install:
+        IGM REDDTOWN
+
+  How to uninstall:
+        IGM REDDTOWN
+
+  **COMMING SOON** Another KICK ASS Installation Program by KooK!!!
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `4RED DRAGON `2Town (The town from LORD1) `0by `7VooDoo KnighT
+replacescreen: 1020 1 show
+
+replacescreen: 1000 2 noshow
+
+replacescreen: 1001 3 noshow
+
+replacescreen: 920 4 noshow
+
+replacescreen: 921 5 noshow
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+                `8K`7N`%iGHTSo`7F`8T `2- `0*FRee* QuaLiTy iGMS By Da PRoS
+
+   `4RED DRAGON `2TOWN `0is my 3rd LORD 2 IGM ... and I'm SO PROUD
+   `0about this one because it's my first "COMPLETE" town!!! Be sure
+   `0to check out our webpage to d/load other LORD 2 IGM's by KNiGHTSoFT!
+   `%http://www.angelfire.com/ks/knightsoft/index.html
+
+   `2OTHER IGMs by VooDoo KnighT - `0VooDoo Temple (with help of TSUNAMI)
+                                   `0Figaro Castle
+
+   `2Reach us at my BBS : `0MisTy MounTainS BBS (514)461-3460
+   `2VooDoo KnighT : `0knightsoft@hotmail.com

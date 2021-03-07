@@ -1,0 +1,560 @@
+; Script file PRISOND.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:26 2001
+
+@DECLARE genran 000000686
+@DECLARE event1 000000736
+@DECLARE event2 000002165
+@DECLARE event3 000003677
+@DECLARE event4 000005132
+@DECLARE no 000005505
+@DECLARE win 000006669
+@DECLARE smart 000006714
+@DECLARE event5 000006817
+@DECLARE another 000007405
+@DECLARE event6 000007644
+@DECLARE event7 000008160
+@DECLARE event8 000008696
+@DECLARE event9 000008749
+@DECLARE event10 000009287
+@DECLARE prischat 000009850
+@DECLARE save 000010984
+@NOCHECK
+; End of .REF index
+
+;Greentree Prison Version 2 by Codax and Dragon's Den Ultd
+;This update should fix the freeze problem
+
+@#genran
+@do `p20 random 10 1
+@run event`p20
+
+@#event1
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2You hear an injured person nearby.  Investigate? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is Y then do
+  @begin
+@do `p20 RAndom 5 1
+@if `p20 is 1 then `s01 is `0leg`2
+@if `p20 is 2 then `s01 is `0head`2
+@if `p20 is 3 then `s01 is `0arm`2
+@if `p20 is 4 then `s01 is `0face`2
+@if `p20 is 5 then `s01 is `0leg`2
+  @show
+`r0`c  `r1  `%Aid a fellow prisoner  `r0
+
+  `0"Please help me!" `2the injured man screams.  His `s01 seems to have
+  taken quite a blow.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the man out
+Beat him and take his money
+Leave
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@end
+
+@if response is 1 then do
+  @begin
+  @do `p07 + 1
+  @show
+`\`\  `2You help the man, and with the first aid are able to get him on his
+  way to the healer where he can further heal.
+
+  `bYOUR ALIGNMENT GOES UP BY ONE!`b
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+@if response is 2 then do
+  @begin
+  @do `p07 - 2
+  @do `p20 random 1300 221
+  @do money + `p20
+  @show
+`\`\  `$"Sure I'll help you .. die!"  `2You slam him with your s&weapon, and
+  after he falls unconscious you raid his purse.
+
+  `2You find `$`p20 `2gold!
+
+  `bYOUR ALIGNMENT GOES DOWN BY TWO!`0
+`\`k
+@drawmap
+@update
+  @closescript
+  @end
+ @end
+@do saybar
+You are much too busy to help the man.
+
+
+@#event2
+@if `v06 is 1 then goto genran
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0`2A man is being raped by two men nearby.  Interrupt them? [`0Y`2/`0N`2] :`x
+@do readspecial `s01 YN
+
+@if `s01 is N then do
+@begin
+@drawmap
+@Update
+@end
+
+@if `s01 is Y then do
+  @begin
+  @show
+`r0`c  `r1  Violation or a right, you decide  `r0
+
+  `0"Please help me!" `2the man screams.  The two men don't even look up.
+   They seem to be having quite the good time.
+
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Help the man and kill the attackers
+Join in the fun
+Leave the encounter
+@if responce is 2 then do
+  @begin
+@drawmap
+@update
+@do `p07 - 1
+@do quebar
+A few hours later you are finished!  Yeah!  Alignment goes down by one.
+  @closescript
+  @end
+@if responce is 1 then do
+  @begin
+@drawmap
+@update
+  @fight
+;name
+The Men
+;string said when you see him
+`0"Kill that s&boy!  S&he saw us" `2they yell!
+;power move kill string
+You strike a blow for justice this day!
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+sock you|45
+clothesline you|52
+laugh as one trips you for|36
+NONE|NONE
+NONE|NONE
+;defense
+30
+;gold reward
+89
+;experience
+54
+;hit points
+136
+;if win: ref file|name or NONE
+Prisond.ref|Save
+;if lose: ref file|name or NONE
+prisonb.ref|strike
+;if runs: ref file|name or NONE
+GENRAN.REF|4RUN
+  @end
+@if responce is 3 then do
+@begin
+@drawmap
+@update
+@End
+
+@closescript
+@end
+
+@#event3
+@busy
+@do `v01 is 1
+@show
+`r0`c  `%`r1  EVENT - Someone's being mugged  `r0
+
+  `2You step around the corner when you notice a hooded man robbing a
+  defenseless woman.  He wields two daggers and seems to be getting
+  ready to depart.
+
+  `2What do you do:
+
+@do write
+`x`x
+@choice
+Defend the poor woman
+Help out the thief
+Leave
+@if response is 1 then do
+  @begin
+  @do `p07 + 1
+  @do `p08 + 1
+  @show
+`\`\  `2You run at the thief yelling and getting your s&weapon ready.  He
+  sees you and quickly sheaths his daggers running to the shadows.
+  `0"You best hope I don't come across you first next time,"  `2he yells.
+  `2The woman he was robbing seems a daze from the whole thing.  She
+  looks up at you, and gives you a great big kiss.  Some reward!
+`\`k  `%YOUR ALIGNMENT AND CHARM GO UP BY ONE!`0
+`\`k
+  @end
+@if response is 2 then do
+  @begin
+  @do `p20 random 290 310
+  @do money + `p20
+  @do `p07 - 2
+  @show
+`\`\  `2You head over and get your s&weapon ready.  You kneel next to them
+  `$"Mind if I help buddy?" `2 you ask.  He glares at you and seems surprised
+  but them nods, better you help him than the victim.  You hold the poor girl
+  down as the thief blows a fine powder in her eyes, then grabs her purse.
+  `0"Here you go buddy, thanks!"  `2he says and tosses you some of the loot.
+`\`k  You get `$`p20 `2gold.
+`\`k  `bYOUR ALIGNMENT GOES DOWN BY TWO!`b
+`\`k
+  @end
+@drawmap
+@update
+
+@#event4
+@if `v06 is 1 then do goto genran
+
+@show
+
+	`r0`c`%`r1  Uh oh  `r0`2
+
+   Two men come toward you.  They reach for you and say "We can do this the
+ easy way or the hard way!"  The first unzips his pants. "Sexy s&boy"
+
+@do `v01 is 1
+@choice
+Let them have thier way with you
+Fight Back
+Run
+@
+
+@if responce is 1 then do
+@begin
+@do `p20 Random 60 1
+@label no
+@show
+`2
+   That's exactly what they wanted to hear!  The first bends you over
+ and holds you down while the other undresses you.  He rips several of
+ your anal muscles in his process.  Just when you think you cannot take
+ anymore, they swith roles and his friend does the same!  `0`p20 minutes
+ later, you are left, laying on the floor, weakend.
+`k
+@do `p02 is 1
+@do `p12 is 1
+@drawmap
+@update
+@do saybar
+They left you a couple of gems and a burning sensation
+@do `p19 + 5
+@end
+
+@if responce is 3 then do goto no
+
+@if responce is 2 then do
+@begin
+@drawmap
+@update
+@do saybar
+Don't you dare touch me!
+@fight
+;name
+Cell mates
+;string said when you see him
+"We can't possibly let you get away!" they say
+;power move kill string
+Go straiten yourselves out.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Kicks you|50
+punches you|70
+full frenzy|100
+NONE|NONE
+NONE|NONE
+;defense
+50
+;gold reward
+100
+;experience
+300
+;hit points
+500
+;if win: ref file|name or NONE
+prisond.ref|win
+;if lose: ref file|name or NONE
+prisond.ref|no
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#win
+@do quebar
+Don't ever come back
+
+@#smart
+@key
+@drawmap
+@update
+@do saybar
+Smart move, who knows how many friends that guy had!
+
+@#event5
+@fight
+;name
+Disgruntled Guard
+;string said when you see him
+A man comes up running and screaming
+;power move kill string
+Uh oh better hide.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+Hits you with his blackjack|100
+Sprays you with mace|50
+Shoots you with crossbow|150
+NONE|NONE
+NONE|NONE
+;defense
+150
+;gold reward
+123
+;experience
+200
+;hit points
+500
+;if win: ref file|name or NONE
+prisond.ref|another
+;if lose: ref file|name or NONE
+prison.ref|execute
+;if runs: ref file|name or NONE
+prisond.ref|smart
+
+@#another
+@do `p20 Random 3 1
+@if `p20 more 1 then do
+@begin
+@do saybar
+Here comes another guard
+@key
+@run event5
+@end
+
+@if `p20 is 1 then do
+@begin
+@do saybar
+Looks like no more guards are around...Lucky you!
+@key
+@end
+
+
+@#event6
+@fight
+;name
+Angry Inmate
+;string said when you see him
+A man comes up running and screaming
+;power move kill string
+He needs help.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+laughs scarily|24
+punches you|20
+Kicks you|10
+NONE|NONE
+NONE|NONE
+;defense
+15
+;gold reward
+20
+;experience
+5
+;hit points
+25
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+prisonb.ref|strike
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#event7
+@fight
+;name
+Escaping Inmate
+;string said when you see him
+A man comes up running and screaming
+;power move kill string
+He would have never made it past the guards.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+charges|50
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+19
+;gold reward
+300
+;experience
+5
+;hit points
+300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+prisonb.ref|strike
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#event8
+@do saybar
+Gotta find a way outta here
+
+@#event9
+@fight
+;name
+Prostitute
+;string said when you see him
+A woman in tight clothes and a low top charges you
+;power move kill string
+Too bad.  She was cute too!
+;sex - 1 is male, 2 is female, 3 is it
+2
+;weapon and strength for the weapon, up to 5
+scratches you|90
+NONE|NONE
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+500
+;experience
+15
+;hit points
+1300
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+prisonb.ref|strike
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#event10
+@fight
+;name
+Pimp
+;string said when you see him
+A man comes up running and screaming
+;power move kill string
+Too bad you didn't know him when he was alive.
+;sex - 1 is male, 2 is female, 3 is it
+1
+;weapon and strength for the weapon, up to 5
+hits you with a beeper|50
+Kicks you in the nose|90
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+100
+;gold reward
+1000
+;experience
+100
+;hit points
+500
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+prisonb.ref|strike
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#prischat
+@do moveback
+@busy
+@show
+`r0`c  `r1  CARVING ON THE BOARD  `r0
+
+@if prischat.txt exist false then do
+ @begin
+  @if `v06 is 1 then do
+  @begin
+   @writefile prischat.txt
+   `%Warden `2: `0Keep in line!.
+  @end
+  @if `v06 is 0 then do
+  @begin
+ @writefile prischat.txt
+  `%Warden `2: `0Keep in line or answer to me!
+  `%John `2: `0One more day!
+  `%Inmate  `2:`0I'm looking for a prison bitch!
+  @end
+ @end
+
+@if prischat.txt exist true then do
+ @begin
+ @displayfile prischat.txt
+ @end
+
+@show
+
+@
+(Do tricky stuff with name to determine how much they can type)
+@DO `s04 is `%
+@DO `s04 add `n
+@DO STRIP `s04 <-- Strips all none color ` codes out
+@DO `s04 add `x`2:`x`0
+@DO `p20 is length `s04
+@DO `p21 is 76
+@DO `p21 - `p20
+@DO WRITE
+  `2Enter a special message or `0ENTER`2 to abort.`\  `s04
+@DO READSTRING `p21 NIL `s03 <--Read string, NIL is default. (nothing)
+@do stripbad `s03
+@SHOW
+
+@DO `p24 is length `s03
+@IF `p24 less 3 then do
+ @begin
+ @drawmap
+ @update
+ @closescript
+ @end
+
+ @writefile prischat.txt
+  `%`n`2 : `0`s03
+ @do trim prischat.txt 17
+ @drawmap
+ @update
+
+@#save
+@do saybar
+You saved him!  Alignment goes up 1!
+@do `p07 + 1

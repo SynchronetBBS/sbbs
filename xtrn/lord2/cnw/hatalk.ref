@@ -1,0 +1,338 @@
+; Script file HATALK.REF, indexed by REFINDEX v0.01 on Sun Mar 18 22:19:37 2001
+
+@DECLARE monster1 000000497
+@DECLARE monster2 000001082
+@DECLARE monster3 000001647
+@DECLARE monster4 000002261
+@DECLARE woodft 000002864
+@DECLARE owlsign 000002931
+@DECLARE eeyore 000003020
+@DECLARE poohsign 000003088
+@DECLARE pondsign 000003159
+@DECLARE toywish 000003297
+@DECLARE chrisrob 000004778
+@DECLARE dressup 000005650
+@DECLARE dress 000005702
+@NOCHECK
+; End of .REF index
+
+
+@#monster1
+@fight
+;name
+Heffalump
+;string said when you see him
+From behind a tree appears a heffalump...
+;power move kill string
+You stomp on its rotting carcas!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+slaps you around with its fuzzy trunk|44
+gouges you with its ivory tusks|29
+sits on you|35
+NONE|NONE
+NONE|NONE
+;defense
+29
+;gold reward
+300
+;experience
+200
+;hit points
+189
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster2
+@fight
+;name
+Woozle
+;string said when you see him
+Awoozle sneaks up behind you...
+;power move kill string
+You send him back into the hole he came from.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+bounces on your head|50
+slaps you to the ground|48
+gnaws on your leg|39
+NONE|NONE
+NONE|NONE
+;defense
+35
+;gold reward
+500
+;experience
+350
+;hit points
+313
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster3
+@fight
+;name
+Rampant Thistle
+;string said when you see him
+Something scratches your leg, you look down...
+;power move kill string
+You mould its spines into a victory pincushion for mum!!
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+spikes you|53
+jumps up and scratches your cheek|43
+stabs your eyes with its thorns|55
+NONE|NONE
+NONE|NONE
+;defense
+22
+;gold reward
+245
+;experience
+199
+;hit points
+187
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+@#monster4
+@fight
+;name
+Rabbit with a hoe
+;string said when you see him
+The sound of rabbit's voice startles you...
+;power move kill string
+You take his hoe and give it to Eeyore
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+gashes your leg with his hoe|10
+flicks manure in your face|33
+uses the hoe to trip you up|29
+NONE|NONE
+NONE|NONE
+;defense
+14
+;gold reward
+99
+;experience
+111
+;hit points
+121
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+
+
+
+@#woodft
+@busy
+@do `p20 random 4 1
+@do goto monster`p20
+
+
+
+@#OWLSIGN
+;A stock message outline
+@DO SAYBAR
+`2Wise old Owl's tree!!
+@DO MOVEBACK
+
+@#EEYORE
+@DO SAYBAR
+`2Eeyore's Thistle Patch!!
+@DO MOVEBACK
+
+@#POOHSIGN
+@DO SAYBAR
+`2Winnie the Pooh lives here!
+@DO MOVEBACK
+
+@#PONDSIGN
+@DO SAYBAR
+`2You stare into the glimmering pond!
+@DO MOVEBACK
+
+--------------------------------------------------------
+
+@#toywish
+@do moveback
+@do write
+`r1
+@clearblock 21 21
+@do move 3 21
+@do write
+`r0 `2Do you want to step inside the closet? (`$$500`2) [`0Y`2\`0N`2]: `x
+@do readspecial `s01 YN
+@if `s01 is Y then do
+  @begin
+  @if money < 500 then do
+    @begin
+    @show
+  `\`\ You don't have enough money!"
+  `k
+    @drawmap
+    @update
+    @closescript
+    @end
+  @do money - 500
+  @show
+`\`\  `r0`c `r1 Christopher Robins Toy Closet! `r0
+
+      `2Where would you like to go?  The only place we don't go 
+      to is Arrisville, cause our toy boat can't make it!!
+`\`k
+@do write
+`x`x
+@do `v01 is 1
+@choice
+Green Tree
+Porttown
+Flag City
+Bone Town
+Sosen Village
+Stonepass Lodge
+Leave
+@if response is 1 then do
+  @begin
+  ;Green Tree
+   @do x is 46
+   @do y is 10
+   @do map is 147
+  @end
+
+@if response is 2 then do
+  @begin
+   ;Porttown
+   @do x is 40
+   @do y is 14
+   @do map is 152
+  @end
+
+@if responce is 3 then do
+  @begin
+  ;Flag City
+  @do x is 41
+  @do y is 12
+  @do map is 151
+ @end
+
+@if responce is 4 then do
+  @begin
+  ;Bone Town
+  @do x is 32
+  @do y is 12
+  @do map is 1287
+ @end
+
+@if responce is 5 then do
+  @begin
+  ;sosen village
+  @do x is 40
+  @do y is 13
+  @do map is 536
+ @end
+
+@if responce is 6 then do
+  @begin
+  ;Stone village
+  @do x is 39
+  @do y is 11
+  @do map is 880
+ @end
+
+
+  @loadmap &map
+  @end
+@drawmap
+@update
+
+--------------------------------------------------------
+
+@#chrisrob
+@do moveback
+@do `p20 random 9 1
+@if `p20 is 1 then saybar
+`%Christopher: `0Did you know I have a magical Toy Closet!
+@if `p20 is 2 then saybar
+`%Christopher: `0You can visit Eeyore and he gives you stuff...
+@if `p20 is 3 then saybar
+`%Christopher: `0Have you seen my Dress Up corner?
+@if `p20 is 4 then saybar
+`%Christopher: `0Be Careful what you buy from Old Owl!!
+@if `p20 is 5 then saybar
+`%Christopher: `0I think Pooh is dealing in illegal honey!
+@if `p20 is 6 then saybar
+`%Christopher: `0I hear Eeyore is the best Lord2 player around...
+@if `p20 is 7 then saybar
+`%Christopher: `0Have you seen any Heffalumps or Woozles around?
+@if `p20 is 8 then saybar
+`%Christopher: `0They come in ones or twozles!!!
+@if `p20 is 9 then saybar
+`%Christopher: `0I reckon this game rules!
+
+--------------------------------------------------------
+
+@#dressup
+@offmap
+@do moveback
+@do `v01 is 1
+@label dress
+@show
+`r0`c  `%Christopher Robbin's Dress Ups
+
+`2  You see lots of choices of dress ups that can be bought here.
+
+@do write
+`x`x
+@choice
+Examine the clothing
+Choose an accessory
+Go outside.
+@show
+`\
+@if responce is 1 then do begin
+ @begin
+@buymanager
+  10
+  12
+  13
+  14
+  37
+  59
+  @end
+
+@if responce is 2 then do begin
+ @begin
+@buymanager
+  9
+  15
+  16
+  38
+  35
+  36
+  39
+  58
+  @end
+
+@if responce not 3 then goto dress
+@drawmap
+@update

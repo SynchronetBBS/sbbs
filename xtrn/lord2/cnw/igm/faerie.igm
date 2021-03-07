@@ -1,0 +1,53 @@
+
+                    The Faerie Glade by Jay Weber V1.00
+                        (C) 1997 ShroomTrip Software
+                           AN IGM FOR LORD2 BETA 7+
+
+  QUICK INFO:
+
+  Is registered version of LORD2 required to use? : Yes!
+  Using any LORD2 vars?                           : No!
+  Overwrites any original .refs?                  : No!
+  Saves and loads its own vars independently?     : No!
+  Adds new .refs?                                 : Yes! (1)
+  Replaces screens?                               : Yes! (1)
+  Adds screens?                                   : Yes! (1)
+  Free?                                           : Yes!
+
+
+  Description:
+
+  Pretty simple IGM for LORD2.
+
+  To install, unzip into your LORD2 dir and type:
+
+  IGM FAERIE.IGM
+
+  To uninstall, do the same thing again.
+
+  To test, go to the PURPLE TREE near Turgon's Shack. It will be on the 
+  right side of the screen. It warps you to the Glade. The exit is between
+  the two white brackets in the upper left corner.
+
+Visit the ShroomTrip Software Web Site at:
+http://www.afn.org/~afn50378/STHome.html
+
+E-Mail us at: afn50378@afn.org
+
+/////////////////////////// BELOW IS FOR USE BY IGM.EXE ///////////////////
+
+igmname: `0F`!aerie `0G`!lade `2by `0Jay Weber
+replacescreen: 1519 1 show
+
+replacescreen: 1520 2 show
+
+installmessage:
+
+  `%ABOUT THIS IGM:
+
+  `0This IGM adds a F`!aerie `0G`!lade `0where a player can talk to 5 Faeries,
+  a woman by the pond, and the Faerie Queen, and arrange the flowers in the
+  Garden `#(`0Kinda like LORD 1`#)`0.
+
+
+                                                       

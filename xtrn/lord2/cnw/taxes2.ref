@@ -1,0 +1,963 @@
+;
+;    Property TAXES routine.
+; 
+; You dont want a player to own too much land with-out pay the taxes,
+;    right? :)
+;
+;
+@#DOTAXES
+@do `p21 is `v15
+@do `p21 * `p22
+@do `p21 / 100
+@dataload taxyear.idf &playernum `p29
+@writefile mail\mail&playernum.dat
+  `0Tax Office:
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`0 `%You're taxes for the property `$`s08 for year `p29 is
+`$`p21 `%gold. It has been added to your final taxes owed.
+`2-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+`k
+@dataload taxes.idf &playernum `p24
+@do `p24 + `p21
+@datasave taxes.idf &playernum `p24
+@#FINDPROPS
+@if qcastle.dat exist true then do
+        @begin
+        @readfile qcastle.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile qtres.dat
+`p30
+                @do `s08 is QFortress`xDeed
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @routine dotaxes
+                @end
+        @end
+
+@if keep.dat exist true then do
+        @begin
+;Odins Keep
+        @readfile keep.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Odins`xKeep`xDeed
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @routine dotaxes
+                @end
+        @end
+@if tlhouse4.dat exist true then do
+        @begin
+        @readfile tlhouse4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres4.dat
+`p30
+                @do `s08 is Team`xHouse`x4`xDeed
+                @routine dotaxes
+                @end
+        @end
+
+@if tlhouse5.dat exist true then do
+        @begin
+        @readfile tlhouse5.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres5.dat
+`p30
+                @do `s08 is Team`xHouse`x5`xDeed
+                @do `p22 is 10000
+                @do `p23 is 5000
+                @routine dotaxes
+                @end
+        @end
+
+;Underground City
+@if pass1.dat exist true then do
+        @begin
+        @readfile pass1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile pastre1.dat
+`p30
+                @do `s08 is Underground`xCity`x-`xHome`x#1
+                @do `p22 is 20000
+                @do `p23 is 10500
+                @routine dotaxes
+                @end
+        @end
+
+@if pass2.dat exist true then do
+        @begin
+        @readfile pass2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile pastre2.dat
+`p30
+                @do `s08 is Underground`xCity`x-`xHome`x#2
+                @do `p22 is 20000
+                @do `p23 is 10500
+                @routine dotaxes
+                @end
+        @end
+
+@if pass3.dat exist true then do
+        @begin
+        @readfile pass3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile pastre3.dat
+`p30
+                @do `s08 is Underground`xCity`x-`xHome`x#3
+                @do `p22 is 20000
+                @do `p23 is 10500
+                @routine dotaxes
+                @end
+        @end
+
+;jasminita's deed
+@if castle77.dat exist true then do
+        @begin
+        @readfile castle77.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Jasminita's`xDeed`x-`xDragon`xHousing
+                @do `p22 is 15000
+                @do `p23 is 7500
+                @routine dotaxes
+                @end
+        @end
+
+;Esperanto's deed
+@if castle79.dat exist true then do
+        @begin
+        @readfile castle79.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Esperanto's`xDeed`x-`xDragon`xHousing
+                @do `p22 is 25000
+                @do `p23 is 15500
+                @routine dotaxes
+                @end
+        @end
+
+@if tlhouse1.dat exist true then do
+        @begin
+        @readfile tlhouse1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres1.dat
+`p30
+                @do `s08 is Team`xHouse`x1`xDeed
+                @do `p22 is 10000
+                @do `p23 is 5000
+                @routine dotaxes
+                @end
+        @end
+
+
+@if tlhouse3.dat exist true then do
+        @begin
+        @readfile tlhouse3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres3.dat
+`p30
+                @do `s08 is Team`xHouse`x3`xDeed
+                @do `p22 is 10000
+                @do `p23 is 5000
+                @routine dotaxes
+                @end
+        @end
+
+
+;Gumtown Castle
+@if gumcast.dat exist true then do
+        @begin
+        @readfile gumcast.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile gumtres.dat
+`p30
+                @do `s08 is Gumtown`xCastle`xDeed
+                @do `p22 is 200000
+                @do `p23 is 100000
+                @routine dotaxes
+                @end
+        @end
+@if castle4.dat exist true then do
+        @begin
+        @readfile castle4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tres4.dat
+`p30
+                @readfile castle4a.dat
+`p26
+`p24
+                @readfile ninnw6.dat
+`s04
+`s04
+                @readfile ninn1b.dat
+`p25
+`p27
+                @do `p27 + `p24
+                @do `p22 is 25000
+                @do `p23 is 10000
+                @do `s08 is Sosen`xInn`xDeed
+                @routine dotaxes
+                @end
+        @end
+
+;IceLord
+@if castle1.dat exist true then do
+        @begin
+        @readfile castle1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is IceLord`xKeep`xDeed
+                @readfile tres1.dat
+`p30
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @routine dotaxes
+                @end
+        @end
+
+
+;other castles
+
+@if castle2.dat exist true then do
+        @begin
+        @readfile castle2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Castle`xColdrake
+                @readfile tres2.dat
+`p30
+                @do `p22 is 20000
+                @do `p23 is 10000
+                @routine dotaxes
+                @end
+        @end
+
+@if castle3.dat exist true then do
+        @begin
+        @readfile castle3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Wizard's`xTower`xDeed
+                @readfile tres3.dat
+`p30
+                @do `p22 is 40000
+                @do `p23 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+;cottage inn
+@if cott.dat exist true then do
+        @begin
+        @readfile cott.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Cottage`xInn`xDeed
+                @readfile cotta.dat
+`p26
+`p27
+                @do `p22 is 65000
+                @do `p23 is 40000
+                @routine dotaxes
+                @end
+        @end
+
+@if tlhouse2.dat exist true then do
+        @begin
+        @readfile tlhouse2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile tltres2.dat
+`p30
+                @do `s08 is Team`xHouse`x2`xDeed
+                @do `p22 is 10000
+                @do `p23 is 5000
+                @routine dotaxes
+                @end
+        @end
+        
+
+@if NINN1.dat exist true then do
+;Ma's Boarding house
+        @begin
+        @readfile ninn1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn1a.dat
+`p26
+`p24
+                @readfile ninn1b.dat
+`p25
+`p27
+                @readfile ninnw1.DAT
+`s04
+`s04
+                @readfile ninnt1.DAT
+`p30
+                @do `p27 + `p24
+                @do `s06 is Inside`xGreenTree. East`xend.
+                @routine dotaxes
+                @end
+        @end
+
+
+@if NINN2.dat exist true then do
+;Sea Hag Hotel
+        @begin
+        @readfile ninn2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn2a.dat
+`p26
+`p24
+                @readfile ninn2b.dat
+`p25
+`p27
+                @readfile ninnw2.DAT
+`s04
+`s04
+                @readfile ninnt2.DAT
+`p30
+                @do `p22 is 65000
+                @do `p23 is 30000
+                @do `p27 + `p24
+                @do `s08 is Sea`xHag`xHotel`xDeed
+                @routine dotaxes
+                @end
+        @end
+
+;The Woodlog Inn
+@if NINN3.dat exist true then do
+        @begin
+        @readfile ninn3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn3a.dat
+`p26
+`p24
+                @readfile ninn3b.dat
+`p25
+`p27
+                @readfile ninnw3.DAT
+`s04
+`s04
+                @readfile ninnt3.DAT
+`p30
+                @do `p22 is 65000
+                @do `p23 is 30000
+                @do `p27 + `p24
+                @do `s08 is The`xWoodlog`xInn`xDeed
+                @routine dotaxes
+                @end
+        @end
+
+;FlagCity Inn
+@if NINN4.dat exist true then do
+        @begin
+        @readfile ninn4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile ninn4a.dat
+`p26
+`p24
+                @readfile ninn4b.dat
+`p25
+`p27
+                @readfile ninnw4.DAT
+`s04
+`s04
+                @readfile ninnt4.DAT
+`p30
+                @do `p22 is 65000
+                @do `p23 is 30000
+                @do `p27 + `p24
+                @do `s08 is Flag`xCity`xInn`xDeed
+                @routine dotaxes
+                @end
+        @end
+
+@if room1.dat exist true then do
+        @begin
+        @readfile room1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x101
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room2.dat exist true then do
+        @begin
+        @readfile room2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x102
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room3.dat exist true then do
+        @begin
+        @readfile room3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x103
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+@if room4.dat exist true then do
+        @begin
+        @readfile room4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `p22 is 15000
+                @do `s08 is Loki`xInn`x-`xRoom`x104
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room5.dat exist true then do
+        @begin
+        @readfile room5.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x105
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room6.dat exist true then do
+        @begin
+        @readfile room6.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x106
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room7.dat exist true then do
+        @begin
+        @readfile room7.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x107
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+@if room8.dat exist true then do
+        @begin
+        @readfile room8.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x108
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room9.dat exist true then do
+        @begin
+        @readfile room9.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x109
+                @do `p22 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if room10.dat exist true then do
+        @begin
+        @readfile room10.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x110
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+@if room11.dat exist true then do
+        @begin
+        @readfile room11.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x111
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+@if room12.dat exist true then do
+        @begin
+        @readfile room12.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x112
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+@if room13.dat exist true then do
+        @begin
+        @readfile room13.dat
+`p20               
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x113 
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+@if room14.dat exist true then do
+        @begin
+        @readfile room14.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x114
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+@if room15.dat exist true then do
+        @begin
+        @readfile room15.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x115
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+@if room16.dat exist true then do
+        @begin
+        @readfile room16.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x116
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+@if room17.dat exist true then do
+        @begin
+        @readfile room17.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x117
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+
+@if castle71.dat exist true then do
+        @begin
+        @readfile castle71.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do `p22 is 1
+                @routine dotaxes
+                @end
+        @end
+
+@if castle72.dat exist true then do
+        @begin
+        @readfile castle72.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do `p22 is 1
+                @routine dotaxes
+                @end
+        @end
+
+@if castle73.dat exist true then do
+        @begin
+        @readfile castle73.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do `p22 is 1
+                @routine dotaxes
+                @end
+        @end
+
+@if castle74.dat exist true then do
+        @begin
+        @readfile castle74.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Little`xShack`x-`xDragon`xHousing
+                @do `p22 is 1
+                @routine dotaxes
+                @end
+        @end
+
+@if castle75.dat exist true then do
+        @begin
+        @readfile castle75.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x-`xDragon`xHousing
+                @do `p22 is 1
+                @routine dotaxes
+                @end
+        @end
+
+@if castle76.dat exist true then do
+        @begin
+        @readfile castle76.dat
+`p20
+`p29
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Beautiful`xHouse`x-`xDragon`xHousing
+                @do `p22 is 5
+                @routine dotaxes
+                @end
+        @end
+
+@if castle78.dat exist true then do
+        @begin
+        @readfile castle78.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Royal's`xDeed`x-`xDragon`xHousing
+                @do `s06 is Just`xeast`xof`xGreenTree.
+                @do `p22 is 20000
+                @do `p23 is 10000
+                @routine dotaxes
+                @end
+        @end
+
+@if house1.dat exist true then do
+        @begin
+        @readfile house1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is GreenTree`xManor
+                @readfile bucket.dat
+`p30
+                @do `p22 is 5000
+                @do `p23 is 2500
+                @routine dotaxes
+                @end
+        @end
+
+@if ffhouse1.dat exist true then do
+        @begin
+        @readfile ffhouse1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#1`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @routine dotaxes
+                @end
+        @end
+@if ffhouse2.dat exist true then do
+        @begin
+        @readfile ffhouse2.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#2`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if ffhouse3.dat exist true then do
+        @begin
+        @readfile ffhouse3.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#3`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if ffhouse4.dat exist true then do
+        @begin
+        @readfile ffhouse4.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#4`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @routine dotaxes
+                @end
+        @end
+@if ffhouse5.dat exist true then do
+        @begin
+        @readfile ffhouse5.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is House`x#5`x-`xFortress`xFear
+                @do `p22 is 20000
+                @do `p23 is 15000
+                @routine dotaxes
+                @end
+        @end
+
+@if jcastle.dat exist true then do
+        @begin
+        @readfile jcastle.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Torin`xCastle
+                @do `p22 is 50000
+                @do `p23 is 25000
+                @routine dotaxes
+                @end
+        @end
+@if 1stclass.dat exist true then do
+        @begin
+        @readfile 1stclass.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Extacy's`x1st`xClass`xHouse
+                @do `p22 is 7000
+                @do `p23 is 3000
+                @routine dotaxes
+                @end
+        @end
+@if myst1.dat exist true then do
+        @begin
+        @readfile myst1.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @readfile myst1a.dat
+`p26
+`p27
+                @do `s08 is Myst`xInn
+                @do `p22 is 50000
+                @do `p23 is 10000
+                @routine dotaxes
+                @end
+        @end
+@if felhouse.dat exist true then do
+        @begin
+        @readfile felhouse.dat
+`p20
+`p26
+`p27
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Felicity`xGuest`xHouse
+                @do `p22 is 7000
+                @do `p23 is 5000
+                @routine dotaxes
+                @end
+        @end
+@if blackdgn.dat exist true then do
+        @begin
+        @readfile blackdgn.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Black`xDragon`xCastle
+                @do `p22 is 100000
+                @do `p23 is 50000
+                @readfile dragtres.dat
+`p30
+                @routine dotaxes
+                @end
+        @end
+@if ship$.dat exist true then do
+        @begin
+        @readfile ship$.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is 
+                @do `p22 is 100000
+                @do `p23 is 50000
+                @readfile shiptres.dat
+`p30
+                @do `s08 is The`xSea`xSerpent
+                @routine dotaxes
+                @end
+        @end
+@if camelot.dat exist true then do
+        @begin
+        @readfile camelot.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is 
+                @do `p22 is 60000
+                @do `p23 is 30000
+                @readfile cam.dat
+`p30
+                @do `s08 is Castle`xCamelot
+                @routine dotaxes
+                @end
+        @end
+@if hong3.dat exist true then do
+        @begin
+        @readfile hong3.dat
+`p20
+`s01
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is 
+                @do `p22 is 20000
+                @do `p23 is 10000
+                @readfile hong3a.dat
+`p25
+`p27
+                @readfile tres5.dat
+`p30
+                @do `s08 is Hong`xKong`xStudio
+                @routine dotaxes
+                @end
+        @end
+@if room18.dat exist true then do
+        @begin
+        @readfile room18.dat
+`p20
+`s03
+        @if `p20 is &playernum then do
+                @begin
+                @do `s08 is Loki`xInn`x-`xRoom`x118
+                @do `p22 is 20000
+                @routine dotaxes
+                @end
+        @end
+@run doneprops in taxes.ref
+
