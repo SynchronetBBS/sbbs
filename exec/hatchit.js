@@ -23,7 +23,7 @@ function pick_file()
 	var fctx = {};
 
 	function do_pick_file(dir) {
-		var filedir = new FileBase(dir);
+		var filedir = new OldFileBase(dir);
 		var files;
 		var file;
 
