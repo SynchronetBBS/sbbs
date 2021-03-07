@@ -53,7 +53,7 @@ function get_message_offsets(type)
 
 //	for(last_offset=0; (idx=msgbase.get_msg_index(true,last_offset)) != null;last_offset++) {
 	var total_msgs = msgbase.total_msgs;
-	for (var last_offset = 0; last_offset < msgbase.total_msgs; last_offset++) {
+	for (var last_offset = 0; last_offset < total_msgs; last_offset++) {
 		var idx = msgbase.get_msg_index(true, last_offset);
 		if (typeof idx === 'undefined' || idx === null) continue;
 		if(idx.attr&MSG_DELETE)
