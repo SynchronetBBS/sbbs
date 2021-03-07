@@ -1,11 +1,14 @@
-<h4><?xjs write(locale.strings.sidebar_node_list.label_title); ?></h4>
+<h4>
+    <? write(locale.strings.sidebar_node_list.label_title); ?>
+</h4>
+
 <div id="sbbs-nodelist"></div>
 
 <script type="text/javascript">
 
-    const anl = <?xjs write(settings.active_node_list); ?>;
-    const nch = '<?xjs write(settings.active_node_list ? locale.strings.sidebar_node_list.label_connection_column : locale.strings.sidebar_node_list.label_node_column) ?>';
-    const nll = <?xjs write(system.node_list.length); ?>;
+    const anl = <? write(settings.active_node_list); ?>;
+    const nch = '<? write(settings.active_node_list ? locale.strings.sidebar_node_list.label_connection_column : locale.strings.sidebar_node_list.label_node_column) ?>';
+    const nll = <? write(system.node_list.length); ?>;
     var niu = 0;
 
     function _sb_nodelist(evt) {
@@ -34,8 +37,8 @@
                     '</td>' +
                 '</tr>'
             );
-            if (c.user && <?xjs write(user.alias != settings.guest); ?>) {
-                $(`#nodelist-${c.node}`).attr('title', '<?xjs write(locale.strings.sidebar_node_list.label_send_telegram); ?>');
+            if (c.user && <? write(user.alias != settings.guest); ?>) {
+                $(`#nodelist-${c.node}`).attr('title', '<? write(locale.strings.sidebar_node_list.label_send_telegram); ?>');
                 $(`#nodelist-${c.node}`).css('cursor', 'pointer');
                 $(`#nodelist-${c.node}`).click(() => sendTelegram(c.user));
             }
