@@ -29,7 +29,7 @@
 #include <termios.h>
 #endif
 
-#define STARTUP_INI_BITDESC_TABLES
+#define STARTUP_INI_JSOPT_BITDESC_TABLE
 #include "sbbs.h"
 #include "ciolib.h"
 #include "ini_file.h"
